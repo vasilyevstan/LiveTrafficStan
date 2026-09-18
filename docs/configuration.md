@@ -69,8 +69,10 @@ VITE_CENTER_LABEL=Tallinn Bay
 
 The configured center is the immediate fallback and session home. If browser
 location permission is already granted, the app resolves a rounded one-shot
-position before starting provider queries. Otherwise it starts at the
-configured center and offers an explicit `Use location` action.
+position before starting provider queries. If permission changes to granted
+while the page remains open, one lookup updates the session home automatically.
+Otherwise it starts at the configured center and offers an explicit
+`Use location` action.
 
 A settled map pan changes only the active query center. Pure zoom does not
 change provider scope. Center returns to the session home and fits the selected

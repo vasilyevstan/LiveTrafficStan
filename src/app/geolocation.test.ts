@@ -4,6 +4,7 @@ import {
   browserLocationFailureMessage,
   readBrowserLocationPermission,
   requestBrowserLocation,
+  subscribeBrowserLocationPermission,
   type BrowserLocationEnvironment,
 } from './geolocation'
 
@@ -41,6 +42,41 @@ describe('browser geolocation', () => {
 
     await expect(readBrowserLocationPermission(environment)).resolves.toBe(
       'unsupported',
+    )
+  })
+
+  it('observes a permission change without starting continuous location tracking', async () => {
+    let changeListener: (() => void) | undefined
+    const status = {
+      state: 'prompt' as PermissionState,
+      addEventListener: vi.fn(
+        (_type: 'change', listener: () => void) => {
+          changeListener = listener
+        },
+      ),
+      removeEventListener: vi.fn(),
+    }
+    const listener = vi.fn()
+    const environment: BrowserLocationEnvironment = {
+      secure: true,
+      permissions: {
+        query: vi.fn().mockResolvedValue(status),
+      },
+      geolocation: { getCurrentPosition: vi.fn() },
+    }
+
+    const unsubscribe = await subscribeBrowserLocationPermission(
+      environment,
+      listener,
+    )
+    status.state = 'granted'
+    changeListener?.()
+
+    expect(listener).toHaveBeenCalledWith('granted')
+    unsubscribe()
+    expect(status.removeEventListener).toHaveBeenCalledWith(
+      'change',
+      changeListener,
     )
   })
 

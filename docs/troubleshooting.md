@@ -90,13 +90,15 @@ Marine query changes must not create a new MQTT client.
 
 ## Browser location is not used
 
-V1.1 automatically reads location only when permission is already granted.
-Prompt, denied, unsupported, insecure, timeout, and unavailable states keep the
-configured Tallinn fallback until an explicit attempt succeeds.
+V1.1 automatically reads location when permission is already granted or
+changes to granted while the page is open. Prompt, denied, unsupported,
+insecure, timeout, and unavailable states keep the configured Tallinn fallback
+until permission is granted or an explicit attempt succeeds.
 
 - Use HTTPS or localhost.
 - Check the browser's site permission and operating-system location setting.
-- Retry the explicit location action after changing permission.
+- After changing permission, return to the page; if the browser does not emit a
+  permission-change event, use the explicit location action or reload once.
 - Treat an approximate result as expected: the app rounds coordinates before
   provider use and never persists them.
 

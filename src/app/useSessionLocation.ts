@@ -6,6 +6,7 @@ import {
   getBrowserLocationEnvironment,
   readBrowserLocationPermission,
   requestBrowserLocation,
+  subscribeBrowserLocationPermission,
 } from './geolocation'
 
 export type SessionLocationPhase =
@@ -46,13 +47,20 @@ export const useSessionLocation = (
 ) => {
   const [state, setState] = useState(() => initialState(fallback))
   const requestRevisionRef = useRef(0)
+  const locationAttemptRef = useRef(false)
+  const phaseRef = useRef(state.phase)
   const mountedRef = useRef(false)
+
+  useEffect(() => {
+    phaseRef.current = state.phase
+  }, [state.phase])
 
   useEffect(() => {
     mountedRef.current = true
     return () => {
       mountedRef.current = false
       requestRevisionRef.current += 1
+      locationAttemptRef.current = false
     }
   }, [])
 
@@ -92,7 +100,9 @@ export const useSessionLocation = (
         return
       }
       if (permission !== 'granted') {
-        finishFallback('Location is one-shot, rounded, and not saved.')
+        finishFallback(
+          'Choose Use location after granting access. Location is rounded and not saved.',
+        )
         return
       }
 
@@ -133,6 +143,8 @@ export const useSessionLocation = (
   }, [config, fallback])
 
   const requestLocation = useCallback(() => {
+    if (locationAttemptRef.current) return
+
     const environment = getBrowserLocationEnvironment()
     const canRequest = environment.secure && Boolean(environment.geolocation)
     const requestRevision = ++requestRevisionRef.current
@@ -148,6 +160,7 @@ export const useSessionLocation = (
       return
     }
 
+    locationAttemptRef.current = true
     setState((current) => ({
       ...current,
       phase: 'locating',
@@ -190,7 +203,49 @@ export const useSessionLocation = (
           message: browserLocationFailureMessage(reason),
         }))
       })
+      .finally(() => {
+        if (requestRevision === requestRevisionRef.current) {
+          locationAttemptRef.current = false
+        }
+      })
   }, [config])
+
+  useEffect(() => {
+    let disposed = false
+    let unsubscribe: () => void = () => undefined
+    const environment = getBrowserLocationEnvironment()
+
+    void subscribeBrowserLocationPermission(
+      environment,
+      (permission) => {
+        if (disposed) return
+        if (permission === 'granted' && phaseRef.current !== 'located') {
+          requestLocation()
+          return
+        }
+        if (permission === 'denied') {
+          setState((current) => ({
+            ...current,
+            phase: 'error',
+            canRequest:
+              environment.secure && Boolean(environment.geolocation),
+            message: browserLocationFailureMessage('denied'),
+          }))
+        }
+      },
+    ).then((cleanup) => {
+      if (disposed) {
+        cleanup()
+      } else {
+        unsubscribe = cleanup
+      }
+    })
+
+    return () => {
+      disposed = true
+      unsubscribe()
+    }
+  }, [requestLocation])
 
   return {
     ...state,

@@ -21,6 +21,14 @@ export interface BrowserLocationSettings {
 
 interface BrowserPermissionStatus {
   state: PermissionState
+  addEventListener?(
+    type: 'change',
+    listener: () => void,
+  ): void
+  removeEventListener?(
+    type: 'change',
+    listener: () => void,
+  ): void
 }
 
 interface BrowserPermissions {
@@ -72,6 +80,34 @@ export const readBrowserLocationPermission = async (
     return status.state
   } catch {
     return 'unsupported'
+  }
+}
+
+export const subscribeBrowserLocationPermission = async (
+  environment: BrowserLocationEnvironment,
+  listener: (permission: PermissionState) => void,
+) => {
+  if (
+    !environment.secure ||
+    !environment.geolocation ||
+    !environment.permissions
+  ) {
+    return () => undefined
+  }
+
+  try {
+    const status = await environment.permissions.query({
+      name: 'geolocation',
+    })
+    if (!status.addEventListener || !status.removeEventListener) {
+      return () => undefined
+    }
+
+    const handleChange = () => listener(status.state)
+    status.addEventListener('change', handleChange)
+    return () => status.removeEventListener?.('change', handleChange)
+  } catch {
+    return () => undefined
   }
 }
 

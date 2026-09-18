@@ -86,11 +86,11 @@ invariant.
 
 ## Privacy-safe browser location
 
-Location is one-shot and session-only. The app automatically reads it only when
-permission is already granted; otherwise it starts at Tallinn and offers an
-explicit action. Coordinates are rounded before provider use, never persisted,
-not reverse-geocoded, and not displayed with unnecessary precision. Continuous
-tracking is outside scope.
+Location is one-shot and session-only. The app automatically reads it when
+permission is already granted or changes to granted while the page is open;
+otherwise it starts at Tallinn and offers an explicit action. Coordinates are
+rounded before provider use, never persisted, not reverse-geocoded, and not
+displayed with unnecessary precision. Continuous tracking is outside scope.
 
 ## Explicit persisted light and dark themes
 
