@@ -12,6 +12,7 @@ interface LiveStatusProps {
 const providerLabel = (name: string, status: ProviderStatus) => {
   if (status.paused) return `${name} paused`
   if (status.phase === 'error') return `${name} unavailable`
+  if (status.updating) return `${name} updating area`
   if (status.phase === 'loading' || status.phase === 'idle') {
     return `${name} connecting`
   }

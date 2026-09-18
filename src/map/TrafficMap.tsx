@@ -14,6 +14,7 @@ import {
 } from 'maplibre-gl'
 import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
 import type { AppCenter } from '../config/appConfig'
+import type { Coordinates } from '../domain/center'
 import { radiusBounds, radiusPolygonCoordinates } from '../domain/geo'
 import type {
   DisplayAircraft,
@@ -64,7 +65,10 @@ interface TrafficMapProps {
   aircraftVisible: boolean
   vesselsVisible: boolean
   interpolationDurationMs: number
+  fitRequestId: number
+  panSettleMs: number
   onSelect: (id: string | null) => void
+  onQueryCenterChange: (center: Coordinates) => void
   onMapError: (message: string | null) => void
 }
 
@@ -184,7 +188,10 @@ export function TrafficMap({
   aircraftVisible,
   vesselsVisible,
   interpolationDurationMs,
+  fitRequestId,
+  panSettleMs,
   onSelect,
+  onQueryCenterChange,
   onMapError,
 }: TrafficMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -194,6 +201,9 @@ export function TrafficMap({
   const lastFrameRef = useRef(0)
   const aircraftMotionRef = useRef<MotionStates>(new Map())
   const vesselMotionRef = useRef<MotionStates>(new Map())
+  const userPanRef = useRef(false)
+  const panSettleTimerRef = useRef<number | null>(null)
+  const lastFitRequestRef = useRef(fitRequestId)
   const renderStateRef = useRef<RenderState>({
     aircraft,
     vessels,
@@ -207,6 +217,7 @@ export function TrafficMap({
     trail,
   })
   const selectRef = useRef(onSelect)
+  const queryCenterChangeRef = useRef(onQueryCenterChange)
   const errorRef = useRef(onMapError)
 
   const renderSources = useCallback((now: number) => {
@@ -265,6 +276,10 @@ export function TrafficMap({
   }, [onSelect])
 
   useEffect(() => {
+    queryCenterChangeRef.current = onQueryCenterChange
+  }, [onQueryCenterChange])
+
+  useEffect(() => {
     errorRef.current = onMapError
   }, [onMapError])
 
@@ -280,16 +295,42 @@ export function TrafficMap({
 
   useEffect(() => {
     if (!containerRef.current) return
+    const initialView = viewStateRef.current
 
     const map = new MapLibreMap({
       container: containerRef.current,
       style: mapStyleUrl,
-      center: [center.longitude, center.latitude],
+      center: [initialView.center.longitude, initialView.center.latitude],
       zoom: 8,
       attributionControl: false,
       maxPitch: 60,
     })
     mapRef.current = map
+
+    const clearPanSettleTimer = () => {
+      if (panSettleTimerRef.current === null) return
+      window.clearTimeout(panSettleTimerRef.current)
+      panSettleTimerRef.current = null
+    }
+
+    map.on('dragstart', () => {
+      clearPanSettleTimer()
+      userPanRef.current = true
+    })
+
+    map.on('moveend', () => {
+      if (!userPanRef.current) return
+      userPanRef.current = false
+      clearPanSettleTimer()
+      panSettleTimerRef.current = window.setTimeout(() => {
+        panSettleTimerRef.current = null
+        const settledCenter = map.getCenter()
+        queryCenterChangeRef.current({
+          latitude: settledCenter.lat,
+          longitude: settledCenter.lng,
+        })
+      }, panSettleMs)
+    })
 
     map.addControl(
       new AttributionControl({
@@ -454,6 +495,8 @@ export function TrafficMap({
 
     return () => {
       loadedRef.current = false
+      clearPanSettleTimer()
+      userPanRef.current = false
       if (frameRef.current !== null) {
         window.cancelAnimationFrame(frameRef.current)
         frameRef.current = null
@@ -461,7 +504,7 @@ export function TrafficMap({
       map.remove()
       mapRef.current = null
     }
-  }, [center.latitude, center.longitude, mapStyleUrl, scheduleRender])
+  }, [mapStyleUrl, panSettleMs, scheduleRender])
 
   useEffect(() => {
     renderStateRef.current = { aircraft, vessels, selectedId }
@@ -511,6 +554,19 @@ export function TrafficMap({
     const map = mapRef.current
     if (!map || !loadedRef.current) return
     setSourceData(map, SOURCE_RADIUS, radiusData(center, radiusKm))
+  }, [center, radiusKm])
+
+  useEffect(() => {
+    if (lastFitRequestRef.current === fitRequestId) return
+    lastFitRequestRef.current = fitRequestId
+
+    const map = mapRef.current
+    if (!map || !loadedRef.current) return
+    userPanRef.current = false
+    if (panSettleTimerRef.current !== null) {
+      window.clearTimeout(panSettleTimerRef.current)
+      panSettleTimerRef.current = null
+    }
     map.fitBounds(radiusBounds(center, radiusKm), {
       padding:
         window.innerWidth < 720
@@ -518,7 +574,7 @@ export function TrafficMap({
           : { top: 70, right: 360, bottom: 70, left: 70 },
       duration: 650,
     })
-  }, [center, radiusKm])
+  }, [center, fitRequestId, radiusKm])
 
   return (
     <div

@@ -18,9 +18,16 @@ export interface AppConfig {
   map: {
     styleUrl: string
   }
+  navigation: {
+    coordinatePrecision: number
+    panSettleMs: number
+    geolocationTimeoutMs: number
+    geolocationMaximumAgeMs: number
+  }
   aircraft: FreshnessThresholds & {
     endpointBaseUrl: string
     refreshIntervalMs: number
+    rateLimitBackoffMaxMs: number
   }
   marine: FreshnessThresholds & {
     restBaseUrl: string
@@ -28,6 +35,7 @@ export interface AppConfig {
     mqttConnectTimeoutMs: number
     mqttReconnectPeriodMs: number
     metadataRefreshIntervalMs: number
+    queryRestRefreshIntervalMs: number
     restLookbackMs: number
     snapshotFlushIntervalMs: number
   }
@@ -119,6 +127,12 @@ export const createAppConfig = (
         ['https:'],
       ),
     },
+    navigation: {
+      coordinatePrecision: 3,
+      panSettleMs: 350,
+      geolocationTimeoutMs: 8_000,
+      geolocationMaximumAgeMs: 5 * 60_000,
+    },
     aircraft: {
       endpointBaseUrl: readEndpoint(
         env,
@@ -127,6 +141,7 @@ export const createAppConfig = (
         ['https:'],
       ),
       refreshIntervalMs: 20_000,
+      rateLimitBackoffMaxMs: 5 * 60_000,
       staleAfterMs: 45_000,
       expireAfterMs: 120_000,
     },
@@ -146,6 +161,7 @@ export const createAppConfig = (
       mqttConnectTimeoutMs: 10_000,
       mqttReconnectPeriodMs: 15_000,
       metadataRefreshIntervalMs: 5 * 60_000,
+      queryRestRefreshIntervalMs: 5 * 60_000,
       restLookbackMs: 15 * 60_000,
       snapshotFlushIntervalMs: 1_000,
       staleAfterMs: 2 * 60_000,

@@ -63,6 +63,7 @@ export type ProviderPhase = 'idle' | 'loading' | 'live' | 'error'
 export interface ProviderStatus {
   phase: ProviderPhase
   paused: boolean
+  updating?: boolean
   lastSuccessAt?: number
   lastDataAt?: number
   error?: string

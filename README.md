@@ -6,7 +6,7 @@ single React application, without accounts, a database, or persistent tracking.
 
 ![LiveTrafficStan showing live aircraft and vessels around Tallinn](docs/images/live-traffic-map.png)
 
-## V1 features
+## Current features
 
 - Live aircraft from [ADSB.lol](https://www.adsb.lol/) with approximately
   20-second refreshes.
@@ -16,6 +16,11 @@ single React application, without accounts, a database, or persistent tracking.
 - OpenStreetMap-derived vector maps from
   [OpenFreeMap](https://openfreemap.org/), rendered with MapLibre GL JS.
 - Configurable 10, 20, 50, and 100 km Tallinn-centered radii.
+- Automatic traffic-area changes after a settled pan, while zoom remains
+  visual and the selected radius remains the explicit coverage boundary.
+- A session Home/Center action plus privacy-safe one-shot browser location:
+  already-granted permission is used automatically, otherwise location is an
+  explicit action with Tallinn fallback.
 - Independent aircraft and ship layers plus 25, 50, 100, and 150 metre minimum
   vessel-length filters.
 - Honest detail cards, provider-specific health, stale/expired handling, and
@@ -68,6 +73,11 @@ The application keeps one MapLibre instance and updates persistent GeoJSON
 sources and layers. Marine MQTT messages are merged and emitted at most once
 per second. Aircraft polling and marine connections pause while the document is
 hidden and resume immediately when it becomes visible.
+
+Session home center, active provider query center, camera, and radius are
+separate state. Settled pans replace the latest desired provider center without
+adding aircraft requests beyond the 20-second cadence. Marine center changes
+reuse and refilter the global MQTT cache rather than reconnecting.
 
 See [Architecture](docs/architecture.md) for component boundaries, data flow,
 failure isolation, rendering, and deployment details.
@@ -129,8 +139,10 @@ provider attribution when implementing a deployment adapter.
   browser. V1 does not persist received traffic.
 - Trails disappear on refresh and are intentionally limited to the selected
   object.
-- V1 has no location search, device geolocation, route enrichment, playback,
-  weather overlays, accounts, saved preferences, or offline mode.
+- Browser location is one-shot, rounded, and session-only; it is not continuous
+  tracking and exact coordinates are not persisted.
+- V1.1 has no location search, route enrichment, playback, weather overlays,
+  accounts, saved center preferences, or offline mode.
 
 Planned work is tracked in
 [GitHub Issues](https://github.com/vasilyevstan/LiveTrafficStan/issues), not

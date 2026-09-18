@@ -13,8 +13,12 @@ describe('createAppConfig', () => {
     expect(config.defaultRadiusKm).toBe(20)
     expect(config.radiusPresetsKm).toEqual([10, 20, 50, 100])
     expect(config.defaultVesselLengthMeters).toBe(50)
+    expect(config.navigation.coordinatePrecision).toBe(3)
+    expect(config.navigation.geolocationTimeoutMs).toBe(8_000)
     expect(config.aircraft.refreshIntervalMs).toBe(20_000)
+    expect(config.aircraft.rateLimitBackoffMaxMs).toBe(5 * 60_000)
     expect(config.marine.mqttReconnectPeriodMs).toBe(15_000)
+    expect(config.marine.queryRestRefreshIntervalMs).toBe(5 * 60_000)
     expect(config.trail.durationMs).toBe(15 * 60_000)
   })
 

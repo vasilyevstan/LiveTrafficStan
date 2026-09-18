@@ -47,6 +47,7 @@ export class DigitrafficMarineProvider {
   private metadataController?: AbortController
   private running = false
   private lastStatusEmission = 0
+  private lastLocationRefreshStartedAt?: number
 
   constructor(options: DigitrafficOptions) {
     this.config = options.config
@@ -58,7 +59,7 @@ export class DigitrafficMarineProvider {
     if (this.running) return
     this.running = true
     this.updateStatus({ phase: 'loading', paused: false, error: undefined }, true)
-    void this.refreshLocations()
+    void this.refreshLocations(true)
     void this.refreshMetadata()
     void this.connectMqtt()
     this.metadataInterval = window.setInterval(
@@ -97,8 +98,6 @@ export class DigitrafficMarineProvider {
     this.query = query
     if (!this.running) return
 
-    this.locationController?.abort()
-    this.locationController = undefined
     this.flush()
     void this.refreshLocations()
   }
@@ -110,16 +109,28 @@ export class DigitrafficMarineProvider {
     }
   }
 
-  private async refreshLocations() {
+  private async refreshLocations(force = false) {
     if (!this.running || this.locationController) return
+
+    const startedAt = Date.now()
+    if (
+      !force &&
+      this.lastLocationRefreshStartedAt !== undefined &&
+      startedAt - this.lastLocationRefreshStartedAt <
+        this.config.queryRestRefreshIntervalMs
+    ) {
+      return
+    }
 
     const controller = new AbortController()
     this.locationController = controller
-    const from = Date.now() - this.config.restLookbackMs
+    this.lastLocationRefreshStartedAt = startedAt
+    const query = this.query
+    const from = startedAt - this.config.restLookbackMs
     const search = new URLSearchParams({
-      latitude: this.query.center.latitude.toString(),
-      longitude: this.query.center.longitude.toString(),
-      radius: this.query.radiusKm.toString(),
+      latitude: query.center.latitude.toString(),
+      longitude: query.center.longitude.toString(),
+      radius: query.radiusKm.toString(),
       from: from.toString(),
     })
 
