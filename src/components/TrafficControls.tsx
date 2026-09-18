@@ -1,3 +1,5 @@
+import type { Theme } from '../app/theme'
+
 interface TrafficControlsProps {
   radiusPresetsKm: readonly number[]
   radiusKm: number
@@ -9,6 +11,14 @@ interface TrafficControlsProps {
   onAircraftVisibleChange: (visible: boolean) => void
   vesselsVisible: boolean
   onVesselsVisibleChange: (visible: boolean) => void
+  centerDisabled: boolean
+  onCenter: () => void
+  locationAvailable: boolean
+  locationLoading: boolean
+  locationMessage?: string
+  onUseLocation: () => void
+  theme: Theme
+  onThemeChange: (theme: Theme) => void
 }
 
 export function TrafficControls({
@@ -22,6 +32,14 @@ export function TrafficControls({
   onAircraftVisibleChange,
   vesselsVisible,
   onVesselsVisibleChange,
+  centerDisabled,
+  onCenter,
+  locationAvailable,
+  locationLoading,
+  locationMessage,
+  onUseLocation,
+  theme,
+  onThemeChange,
 }: TrafficControlsProps) {
   return (
     <aside className="control-panel" aria-label="Map controls">
@@ -48,7 +66,50 @@ export function TrafficControls({
       </fieldset>
 
       <fieldset className="control-group">
-        <legend>Radius</legend>
+        <legend>Theme</legend>
+        <div className="control-options control-options--two">
+          {(['light', 'dark'] as const).map((option) => (
+            <button
+              key={option}
+              type="button"
+              className={theme === option ? 'is-active' : undefined}
+              aria-pressed={theme === option}
+              onClick={() => onThemeChange(option)}
+            >
+              {option.toUpperCase()}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+
+      <fieldset className="control-group">
+        <legend>View</legend>
+        <div className="control-options control-options--two">
+          <button
+            type="button"
+            disabled={centerDisabled}
+            onClick={onCenter}
+          >
+            CENTER
+          </button>
+          <button
+            type="button"
+            disabled={!locationAvailable || locationLoading}
+            aria-describedby={locationMessage ? 'location-status' : undefined}
+            onClick={onUseLocation}
+          >
+            {locationLoading ? 'LOCATING...' : 'USE LOCATION'}
+          </button>
+        </div>
+        {locationMessage && (
+          <p id="location-status" className="control-note" role="status">
+            {locationMessage}
+          </p>
+        )}
+      </fieldset>
+
+      <fieldset className="control-group">
+        <legend>Traffic radius</legend>
         <div className="control-options">
           {radiusPresetsKm.map((preset) => (
             <button
@@ -62,6 +123,9 @@ export function TrafficControls({
             </button>
           ))}
         </div>
+        <p className="control-note control-note--muted">
+          Zoom keeps this data radius.
+        </p>
       </fieldset>
 
       <fieldset className="control-group">

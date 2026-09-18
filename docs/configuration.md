@@ -15,6 +15,7 @@ cp .env.example .env.local
 | `VITE_CENTER_LONGITUDE` | `24.7536` | Finite number from -180 through 180 |
 | `VITE_CENTER_LABEL` | `Tallinn, Estonia` | Non-empty display label; blank uses the default |
 | `VITE_MAP_STYLE_URL` | `https://tiles.openfreemap.org/styles/positron` | HTTPS URL or root-relative path |
+| `VITE_MAP_DARK_STYLE_URL` | `https://tiles.openfreemap.org/styles/dark` | HTTPS URL or root-relative path |
 | `VITE_AIRCRAFT_ENDPOINT` | `/api/aircraft` | HTTPS URL or root-relative path |
 | `VITE_MARINE_REST_ENDPOINT` | `https://meri.digitraffic.fi` | HTTPS URL or root-relative path |
 | `VITE_MARINE_MQTT_ENDPOINT` | `wss://meri.digitraffic.fi:443/mqtt` | Secure WebSocket URL or root-relative path |
@@ -32,21 +33,26 @@ credentials, or personal information in them.
 The following behavior is centralized in `src/config/appConfig.ts` rather than
 spread through components:
 
-| Setting | V1 value |
+| Setting | Current value |
 | --- | --- |
 | Radius presets | 10, 20, 50, 100 km |
 | Default radius | 20 km |
 | Vessel-length presets | 25, 50, 100, 150 m |
 | Default minimum vessel length | 50 m |
 | Aircraft refresh | 20 seconds |
+| Aircraft maximum rate-limit backoff | 5 minutes |
 | Aircraft stale / expiry | 45 seconds / 120 seconds |
 | Marine metadata refresh | 5 minutes |
+| Marine query REST refresh gate | 5 minutes |
 | Marine MQTT connect timeout / reconnect | 10 seconds / 15 seconds |
 | Marine REST lookback | 15 minutes |
 | Marine snapshot flush | 1 second |
 | Marine stale / expiry | 2 minutes / 10 minutes |
 | Trail duration / cap | 15 minutes / 180 points per object |
 | Maximum interpolation duration | 1.5 seconds |
+| Query/geolocation coordinate precision | 3 decimal places |
+| Settled-pan delay | 350 ms |
+| Geolocation timeout / cached-position age | 8 seconds / 5 minutes |
 
 Changing these constants changes application behavior and should include
 targeted tests where the value affects filtering, freshness, history, or motion.
@@ -61,8 +67,17 @@ VITE_CENTER_LONGITUDE=24.70
 VITE_CENTER_LABEL=Tallinn Bay
 ```
 
-The current UI keeps the center fixed for the session. Search, browser
-geolocation, arbitrary centers, and remembered preferences are roadmap items.
+The configured center is the immediate fallback and session home. If browser
+location permission is already granted, the app resolves a rounded one-shot
+position before starting provider queries. If permission changes to granted
+while the page remains open, one lookup updates the session home automatically.
+Otherwise it starts at the configured center and offers an explicit
+`Use location` action.
+
+A settled map pan changes only the active query center. Pure zoom does not
+change provider scope. Center returns to the session home and fits the selected
+radius. Neither home nor query coordinates are persisted. Arbitrary search and
+remembered coordinates remain roadmap items.
 
 ## Aircraft endpoint and proxy
 
@@ -92,6 +107,27 @@ MapLibre's module worker is explicitly bundled through Vite in
 `npm run dev` and `npm run preview`; loading the style JSON alone is not proof
 that vector tiles are being parsed.
 
+`VITE_MAP_STYLE_URL` configures the Light style and
+`VITE_MAP_DARK_STYLE_URL` configures the Dark style. A missing preference,
+invalid stored value, or unavailable storage selects Light. Theme storage uses
+the `livetrafficstan.theme` key and contains only `light` or `dark`; map center
+coordinates are never stored.
+
+The accepted V1.1 behavioral configuration keeps:
+
+| Setting | Decision |
+| --- | --- |
+| Light map style | OpenFreeMap Positron |
+| Dark map style | OpenFreeMap Dark |
+| Theme default | Light |
+| Aircraft query cadence during map movement | No faster than 20 seconds |
+| Marine query-triggered REST refresh | No more than once per 5 minutes |
+| Geolocation precision | Rounded to approximately 3 decimal places |
+| Geolocation mode | One-shot, permission-aware, session-only |
+
+Navigation timing and privacy values are centralized in
+`src/config/appConfig.ts`.
+
 ## Marine endpoints
 
 The REST endpoint must expose Digitraffic-compatible AIS location and vessel
@@ -106,3 +142,7 @@ vessels-v2/status
 
 The app sends `Digitraffic-User: LiveTrafficStan/1.0` on REST requests and uses
 an ephemeral random MQTT client identifier. Neither value contains user data.
+
+Map movement must not place browser location or other personal information in
+that header. Center/radius updates reuse the MQTT connection and should rely on
+the global message cache before considering another radius REST request.

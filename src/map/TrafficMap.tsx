@@ -8,12 +8,13 @@ import type {
 } from 'geojson'
 import {
   AttributionControl,
-  type GeoJSONSource,
   Map as MapLibreMap,
   setWorkerUrl,
 } from 'maplibre-gl'
 import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
+import type { Theme } from '../app/theme'
 import type { AppCenter } from '../config/appConfig'
+import type { Coordinates } from '../domain/center'
 import { radiusBounds, radiusPolygonCoordinates } from '../domain/geo'
 import type {
   DisplayAircraft,
@@ -33,20 +34,22 @@ import {
   createHelicopterIcon,
   createVesselIcon,
 } from './icons'
+import {
+  installTrafficStyle,
+  LAYER_AIRCRAFT,
+  LAYER_AIRCRAFT_HALO,
+  LAYER_VESSEL_HALO,
+  LAYER_VESSELS,
+  setTrafficLayerVisibility,
+  setTrafficSourceData,
+  SOURCE_AIRCRAFT,
+  SOURCE_RADIUS,
+  SOURCE_TRAIL,
+  SOURCE_VESSELS,
+  type TrafficStyleImages,
+} from './trafficStyle'
 
 setWorkerUrl(maplibreWorkerUrl)
-
-const SOURCE_AIRCRAFT = 'traffic-aircraft'
-const SOURCE_VESSELS = 'traffic-vessels'
-const SOURCE_TRAIL = 'traffic-trail'
-const SOURCE_RADIUS = 'traffic-radius'
-const LAYER_AIRCRAFT = 'traffic-aircraft-symbols'
-const LAYER_VESSELS = 'traffic-vessel-symbols'
-
-const emptyPoints = (): FeatureCollection<Point> => ({
-  type: 'FeatureCollection',
-  features: [],
-})
 
 const emptyTrail = (): FeatureCollection<LineString> => ({
   type: 'FeatureCollection',
@@ -57,6 +60,7 @@ interface TrafficMapProps {
   center: AppCenter
   radiusKm: number
   mapStyleUrl: string
+  theme: Theme
   aircraft: readonly DisplayAircraft[]
   vessels: readonly DisplayVessel[]
   trail: readonly TrailPoint[]
@@ -64,7 +68,10 @@ interface TrafficMapProps {
   aircraftVisible: boolean
   vesselsVisible: boolean
   interpolationDurationMs: number
+  fitRequestId: number
+  panSettleMs: number
   onSelect: (id: string | null) => void
+  onQueryCenterChange: (center: Coordinates) => void
   onMapError: (message: string | null) => void
 }
 
@@ -151,32 +158,16 @@ const trailData = (
   }
 }
 
-const setSourceData = (
-  map: MapLibreMap,
-  sourceId: string,
-  data:
-    | FeatureCollection<Point>
-    | FeatureCollection<LineString>
-    | FeatureCollection<Polygon>,
-) => {
-  const source = map.getSource(sourceId)
-  if (source) (source as GeoJSONSource).setData(data)
-}
-
-const setLayerVisibility = (
-  map: MapLibreMap,
-  layerId: string,
-  visible: boolean,
-) => {
-  if (map.getLayer(layerId)) {
-    map.setLayoutProperty(layerId, 'visibility', visible ? 'visible' : 'none')
-  }
-}
+const fitPadding = () =>
+  window.innerWidth < 720
+    ? { top: 180, right: 28, bottom: 90, left: 28 }
+    : { top: 70, right: 360, bottom: 70, left: 70 }
 
 export function TrafficMap({
   center,
   radiusKm,
   mapStyleUrl,
+  theme,
   aircraft,
   vessels,
   trail,
@@ -184,7 +175,10 @@ export function TrafficMap({
   aircraftVisible,
   vesselsVisible,
   interpolationDurationMs,
+  fitRequestId,
+  panSettleMs,
   onSelect,
+  onQueryCenterChange,
   onMapError,
 }: TrafficMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -194,6 +188,19 @@ export function TrafficMap({
   const lastFrameRef = useRef(0)
   const aircraftMotionRef = useRef<MotionStates>(new Map())
   const vesselMotionRef = useRef<MotionStates>(new Map())
+  const userPanRef = useRef(false)
+  const panSettleTimerRef = useRef<number | null>(null)
+  const lastFitRequestRef = useRef(fitRequestId)
+  const fitRequestRef = useRef(fitRequestId)
+  const styleGenerationRef = useRef(0)
+  const initialStyleUrlRef = useRef(mapStyleUrl)
+  const desiredStyleUrlRef = useRef(mapStyleUrl)
+  const requestedStyleUrlRef = useRef(mapStyleUrl)
+  const appliedStyleUrlRef = useRef(mapStyleUrl)
+  const themeRef = useRef(theme)
+  const appliedThemeRef = useRef(theme)
+  const initialFitCompleteRef = useRef(false)
+  const trafficImagesRef = useRef<TrafficStyleImages | null>(null)
   const renderStateRef = useRef<RenderState>({
     aircraft,
     vessels,
@@ -207,14 +214,21 @@ export function TrafficMap({
     trail,
   })
   const selectRef = useRef(onSelect)
+  const queryCenterChangeRef = useRef(onQueryCenterChange)
   const errorRef = useRef(onMapError)
+
+  useEffect(() => {
+    desiredStyleUrlRef.current = mapStyleUrl
+    themeRef.current = theme
+    fitRequestRef.current = fitRequestId
+  }, [fitRequestId, mapStyleUrl, theme])
 
   const renderSources = useCallback((now: number) => {
     const map = mapRef.current
     if (!map || !loadedRef.current) return
 
     const state = renderStateRef.current
-    setSourceData(
+    setTrafficSourceData(
       map,
       SOURCE_AIRCRAFT,
       trafficFeatures(
@@ -224,7 +238,7 @@ export function TrafficMap({
         state.selectedId,
       ),
     )
-    setSourceData(
+    setTrafficSourceData(
       map,
       SOURCE_VESSELS,
       trafficFeatures(
@@ -260,9 +274,118 @@ export function TrafficMap({
     frameRef.current = window.requestAnimationFrame(draw)
   }, [renderSources])
 
+  const clearPendingPan = useCallback(() => {
+    userPanRef.current = false
+    if (panSettleTimerRef.current === null) return
+    window.clearTimeout(panSettleTimerRef.current)
+    panSettleTimerRef.current = null
+  }, [])
+
+  const fitCurrentView = useCallback(
+    (map: MapLibreMap, duration: number) => {
+      clearPendingPan()
+      const currentView = viewStateRef.current
+      map.fitBounds(
+        radiusBounds(currentView.center, currentView.radiusKm),
+        {
+          padding: fitPadding(),
+          duration,
+        },
+      )
+    },
+    [clearPendingPan],
+  )
+
+  const getTrafficImages = useCallback(() => {
+    if (!trafficImagesRef.current) {
+      trafficImagesRef.current = {
+        aircraft: createAircraftIcon(),
+        helicopter: createHelicopterIcon(),
+        vessel: createVesselIcon(),
+      }
+    }
+    return trafficImagesRef.current
+  }, [])
+
+  const installCurrentStyle = useCallback(
+    (map: MapLibreMap) => {
+      const now = performance.now()
+      const renderState = renderStateRef.current
+      const viewState = viewStateRef.current
+      installTrafficStyle(
+        map,
+        {
+          theme: themeRef.current,
+          aircraft: trafficFeatures(
+            renderState.aircraft,
+            aircraftMotionRef.current,
+            now,
+            renderState.selectedId,
+          ),
+          vessels: trafficFeatures(
+            renderState.vessels,
+            vesselMotionRef.current,
+            now,
+            renderState.selectedId,
+          ),
+          trail: trailData(viewState.trail),
+          radius: radiusData(viewState.center, viewState.radiusKm),
+          aircraftVisible: viewState.aircraftVisible,
+          vesselsVisible: viewState.vesselsVisible,
+        },
+        getTrafficImages(),
+      )
+      loadedRef.current = true
+      errorRef.current(null)
+      scheduleRender()
+
+      if (!initialFitCompleteRef.current) {
+        initialFitCompleteRef.current = true
+        lastFitRequestRef.current = fitRequestRef.current
+        fitCurrentView(map, 0)
+      } else if (lastFitRequestRef.current !== fitRequestRef.current) {
+        lastFitRequestRef.current = fitRequestRef.current
+        fitCurrentView(map, 650)
+      }
+    },
+    [fitCurrentView, getTrafficImages, scheduleRender],
+  )
+
+  const switchMapStyle = useCallback(
+    (map: MapLibreMap, nextStyleUrl: string) => {
+      const generation = ++styleGenerationRef.current
+      loadedRef.current = false
+      requestedStyleUrlRef.current = nextStyleUrl
+
+      const handleStyleLoad = () => {
+        if (generation !== styleGenerationRef.current) return
+        appliedStyleUrlRef.current = nextStyleUrl
+        appliedThemeRef.current = themeRef.current
+        installCurrentStyle(map)
+      }
+
+      map.once('style.load', handleStyleLoad)
+      try {
+        map.setStyle(nextStyleUrl)
+      } catch (error) {
+        map.off('style.load', handleStyleLoad)
+        requestedStyleUrlRef.current = appliedStyleUrlRef.current
+        loadedRef.current = map.isStyleLoaded() === true
+        errorRef.current(
+          error instanceof Error ? error.message : 'Map style change failed',
+        )
+      }
+    },
+    [installCurrentStyle],
+  )
+
   useEffect(() => {
     selectRef.current = onSelect
   }, [onSelect])
+
+  useEffect(() => {
+    queryCenterChangeRef.current = onQueryCenterChange
+  }, [onQueryCenterChange])
 
   useEffect(() => {
     errorRef.current = onMapError
@@ -280,16 +403,38 @@ export function TrafficMap({
 
   useEffect(() => {
     if (!containerRef.current) return
+    const initialView = viewStateRef.current
 
     const map = new MapLibreMap({
       container: containerRef.current,
-      style: mapStyleUrl,
-      center: [center.longitude, center.latitude],
+      style: initialStyleUrlRef.current,
+      center: [initialView.center.longitude, initialView.center.latitude],
       zoom: 8,
       attributionControl: false,
       maxPitch: 60,
     })
     mapRef.current = map
+
+    map.on('dragstart', () => {
+      clearPendingPan()
+      userPanRef.current = true
+    })
+
+    map.on('moveend', () => {
+      if (!userPanRef.current) return
+      userPanRef.current = false
+      if (panSettleTimerRef.current !== null) {
+        window.clearTimeout(panSettleTimerRef.current)
+      }
+      panSettleTimerRef.current = window.setTimeout(() => {
+        panSettleTimerRef.current = null
+        const settledCenter = map.getCenter()
+        queryCenterChangeRef.current({
+          latitude: settledCenter.lat,
+          longitude: settledCenter.lng,
+        })
+      }, panSettleMs)
+    })
 
     map.addControl(
       new AttributionControl({
@@ -303,149 +448,43 @@ export function TrafficMap({
       'bottom-right',
     )
 
+    map.on('click', (event) => {
+      const layers = [LAYER_AIRCRAFT, LAYER_VESSELS].filter((layerId) =>
+        Boolean(map.getLayer(layerId)),
+      )
+      if (layers.length === 0) return
+      const features = map.queryRenderedFeatures(event.point, { layers })
+      const id = features[0]?.properties?.id
+      selectRef.current(typeof id === 'string' ? id : null)
+    })
+
+    map.on('mousemove', (event) => {
+      const layers = [LAYER_AIRCRAFT, LAYER_VESSELS].filter((layerId) =>
+        Boolean(map.getLayer(layerId)),
+      )
+      const features =
+        layers.length > 0
+          ? map.queryRenderedFeatures(event.point, { layers })
+          : []
+      map.getCanvas().style.cursor = features.length > 0 ? 'pointer' : ''
+    })
+
     map.on('load', () => {
-      loadedRef.current = true
-      errorRef.current(null)
-      const currentView = viewStateRef.current
-
-      map.addImage('aircraft', createAircraftIcon(), { pixelRatio: 2 })
-      map.addImage('helicopter', createHelicopterIcon(), { pixelRatio: 2 })
-      map.addImage('vessel', createVesselIcon(), { pixelRatio: 2 })
-
-      map.addSource(SOURCE_RADIUS, {
-        type: 'geojson',
-        data: radiusData(currentView.center, currentView.radiusKm),
-      })
-      map.addSource(SOURCE_TRAIL, {
-        type: 'geojson',
-        data: emptyTrail(),
-      })
-      map.addSource(SOURCE_AIRCRAFT, {
-        type: 'geojson',
-        data: emptyPoints(),
-      })
-      map.addSource(SOURCE_VESSELS, {
-        type: 'geojson',
-        data: emptyPoints(),
-      })
-
-      map.addLayer({
-        id: 'traffic-radius-fill',
-        type: 'fill',
-        source: SOURCE_RADIUS,
-        paint: {
-          'fill-color': '#1ea7d4',
-          'fill-opacity': 0.035,
-        },
-      })
-      map.addLayer({
-        id: 'traffic-radius-line',
-        type: 'line',
-        source: SOURCE_RADIUS,
-        paint: {
-          'line-color': '#1685aa',
-          'line-opacity': 0.55,
-          'line-width': 1.25,
-          'line-dasharray': [3, 3],
-        },
-      })
-      map.addLayer({
-        id: 'traffic-selected-trail',
-        type: 'line',
-        source: SOURCE_TRAIL,
-        paint: {
-          'line-color': '#138daf',
-          'line-opacity': 0.72,
-          'line-width': 2.4,
-          'line-dasharray': [1, 2],
-        },
-      })
-
-      for (const [id, source, color] of [
-        ['traffic-aircraft-halo', SOURCE_AIRCRAFT, '#35c8ef'],
-        ['traffic-vessel-halo', SOURCE_VESSELS, '#f1a246'],
-      ] as const) {
-        map.addLayer({
-          id,
-          type: 'circle',
-          source,
-          filter: ['==', ['get', 'selected'], true],
-          paint: {
-            'circle-radius': 16,
-            'circle-color': color,
-            'circle-opacity': 0.18,
-            'circle-stroke-color': color,
-            'circle-stroke-opacity': 0.75,
-            'circle-stroke-width': 2,
-          },
-        })
+      if (loadedRef.current) return
+      if (
+        desiredStyleUrlRef.current === requestedStyleUrlRef.current &&
+        requestedStyleUrlRef.current !== initialStyleUrlRef.current
+      ) {
+        return
+      }
+      if (desiredStyleUrlRef.current !== initialStyleUrlRef.current) {
+        switchMapStyle(map, desiredStyleUrlRef.current)
+        return
       }
 
-      map.addLayer({
-        id: LAYER_AIRCRAFT,
-        type: 'symbol',
-        source: SOURCE_AIRCRAFT,
-        layout: {
-          'icon-image': ['get', 'markerIcon'],
-          'icon-size': ['get', 'markerScale'],
-          'icon-rotate': ['get', 'heading'],
-          'icon-rotation-alignment': 'map',
-          'icon-pitch-alignment': 'map',
-          'icon-allow-overlap': true,
-          'icon-ignore-placement': true,
-        },
-        paint: {
-          'icon-opacity': ['case', ['get', 'stale'], 0.42, 0.96],
-        },
-      })
-      map.addLayer({
-        id: LAYER_VESSELS,
-        type: 'symbol',
-        source: SOURCE_VESSELS,
-        layout: {
-          'icon-image': ['get', 'markerIcon'],
-          'icon-size': ['get', 'markerScale'],
-          'icon-rotate': ['get', 'heading'],
-          'icon-rotation-alignment': 'map',
-          'icon-pitch-alignment': 'map',
-          'icon-allow-overlap': true,
-          'icon-ignore-placement': true,
-        },
-        paint: {
-          'icon-opacity': ['case', ['get', 'stale'], 0.42, 0.96],
-        },
-      })
-
-      map.on('click', (event) => {
-        const features = map.queryRenderedFeatures(event.point, {
-          layers: [LAYER_AIRCRAFT, LAYER_VESSELS],
-        })
-        const id = features[0]?.properties?.id
-        selectRef.current(typeof id === 'string' ? id : null)
-      })
-      map.on('mousemove', (event) => {
-        const features = map.queryRenderedFeatures(event.point, {
-          layers: [LAYER_AIRCRAFT, LAYER_VESSELS],
-        })
-        map.getCanvas().style.cursor = features.length > 0 ? 'pointer' : ''
-      })
-
-      setLayerVisibility(map, LAYER_AIRCRAFT, currentView.aircraftVisible)
-      setLayerVisibility(map, LAYER_VESSELS, currentView.vesselsVisible)
-      setSourceData(map, SOURCE_TRAIL, trailData(currentView.trail))
-      setSourceData(
-        map,
-        SOURCE_RADIUS,
-        radiusData(currentView.center, currentView.radiusKm),
-      )
-      scheduleRender()
-      map.fitBounds(radiusBounds(currentView.center, currentView.radiusKm), {
-        padding:
-          window.innerWidth < 720
-            ? { top: 180, right: 28, bottom: 90, left: 28 }
-            : { top: 70, right: 360, bottom: 70, left: 70 },
-        duration: 0,
-      })
+      appliedStyleUrlRef.current = initialStyleUrlRef.current
+      appliedThemeRef.current = themeRef.current
+      installCurrentStyle(map)
     })
 
     map.on('error', (event) => {
@@ -453,7 +492,9 @@ export function TrafficMap({
     })
 
     return () => {
+      styleGenerationRef.current += 1
       loadedRef.current = false
+      clearPendingPan()
       if (frameRef.current !== null) {
         window.cancelAnimationFrame(frameRef.current)
         frameRef.current = null
@@ -461,7 +502,30 @@ export function TrafficMap({
       map.remove()
       mapRef.current = null
     }
-  }, [center.latitude, center.longitude, mapStyleUrl, scheduleRender])
+  }, [
+    clearPendingPan,
+    fitCurrentView,
+    installCurrentStyle,
+    panSettleMs,
+    switchMapStyle,
+  ])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+
+    if (mapStyleUrl !== requestedStyleUrlRef.current) {
+      switchMapStyle(map, mapStyleUrl)
+      return
+    }
+
+    if (!loadedRef.current) return
+
+    if (theme !== appliedThemeRef.current) {
+      appliedThemeRef.current = theme
+      installCurrentStyle(map)
+    }
+  }, [installCurrentStyle, mapStyleUrl, switchMapStyle, theme])
 
   useEffect(() => {
     renderStateRef.current = { aircraft, vessels, selectedId }
@@ -490,35 +554,37 @@ export function TrafficMap({
   useEffect(() => {
     const map = mapRef.current
     if (!map || !loadedRef.current) return
-    setLayerVisibility(map, LAYER_AIRCRAFT, aircraftVisible)
-    setLayerVisibility(map, 'traffic-aircraft-halo', aircraftVisible)
+    setTrafficLayerVisibility(map, LAYER_AIRCRAFT, aircraftVisible)
+    setTrafficLayerVisibility(map, LAYER_AIRCRAFT_HALO, aircraftVisible)
   }, [aircraftVisible])
 
   useEffect(() => {
     const map = mapRef.current
     if (!map || !loadedRef.current) return
-    setLayerVisibility(map, LAYER_VESSELS, vesselsVisible)
-    setLayerVisibility(map, 'traffic-vessel-halo', vesselsVisible)
+    setTrafficLayerVisibility(map, LAYER_VESSELS, vesselsVisible)
+    setTrafficLayerVisibility(map, LAYER_VESSEL_HALO, vesselsVisible)
   }, [vesselsVisible])
 
   useEffect(() => {
     const map = mapRef.current
     if (!map || !loadedRef.current) return
-    setSourceData(map, SOURCE_TRAIL, trailData(trail))
+    setTrafficSourceData(map, SOURCE_TRAIL, trailData(trail))
   }, [trail])
 
   useEffect(() => {
     const map = mapRef.current
     if (!map || !loadedRef.current) return
-    setSourceData(map, SOURCE_RADIUS, radiusData(center, radiusKm))
-    map.fitBounds(radiusBounds(center, radiusKm), {
-      padding:
-        window.innerWidth < 720
-          ? { top: 180, right: 28, bottom: 90, left: 28 }
-          : { top: 70, right: 360, bottom: 70, left: 70 },
-      duration: 650,
-    })
+    setTrafficSourceData(map, SOURCE_RADIUS, radiusData(center, radiusKm))
   }, [center, radiusKm])
+
+  useEffect(() => {
+    if (lastFitRequestRef.current === fitRequestId) return
+    const map = mapRef.current
+    if (!map || !loadedRef.current) return
+
+    lastFitRequestRef.current = fitRequestId
+    fitCurrentView(map, 650)
+  }, [fitCurrentView, fitRequestId])
 
   return (
     <div

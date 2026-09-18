@@ -1,13 +1,20 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
 import { useAircraftTraffic } from './app/useAircraftTraffic'
 import { useMarineTraffic } from './app/useMarineTraffic'
 import { useNow } from './app/useNow'
+import { useSessionLocation } from './app/useSessionLocation'
+import { useTheme } from './app/useTheme'
 import { useTrailHistory } from './app/useTrailHistory'
 import { LiveStatus } from './components/LiveStatus'
 import { TrafficControls } from './components/TrafficControls'
 import { TrafficDetails } from './components/TrafficDetails'
-import { APP_CONFIG } from './config/appConfig'
+import { APP_CONFIG, type AppCenter } from './config/appConfig'
+import {
+  centerFromCoordinates,
+  sameCenterCoordinates,
+  type Coordinates,
+} from './domain/center'
 import type { DisplayTrafficEntity, TrafficEntity } from './domain/traffic'
 import { TrafficMap } from './map/TrafficMap'
 import {
@@ -25,35 +32,66 @@ function App() {
   const [vesselsVisible, setVesselsVisible] = useState(true)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [mapError, setMapError] = useState<string | null>(null)
+  const [queryCenter, setQueryCenter] = useState<AppCenter | null>(null)
+  const [fitRequestId, setFitRequestId] = useState(0)
+  const { theme, setTheme } = useTheme()
+  const appliedLocationRevisionRef = useRef(0)
+  const location = useSessionLocation(
+    APP_CONFIG.center,
+    APP_CONFIG.navigation,
+  )
   const now = useNow()
 
+  useEffect(() => {
+    if (
+      !location.initialReady ||
+      location.revision <= appliedLocationRevisionRef.current
+    ) {
+      return
+    }
+
+    const alreadyStarted = queryCenter !== null
+    appliedLocationRevisionRef.current = location.revision
+    setQueryCenter(location.homeCenter)
+    if (alreadyStarted) setFitRequestId((current) => current + 1)
+  }, [
+    location.homeCenter,
+    location.initialReady,
+    location.revision,
+    queryCenter,
+  ])
+
+  const activeCenter = queryCenter ?? location.homeCenter
+  const providersEnabled = queryCenter !== null
   const aircraftResult = useAircraftTraffic(
-    APP_CONFIG.center,
+    activeCenter,
     radiusKm,
     APP_CONFIG.aircraft,
+    providersEnabled,
   )
   const marineResult = useMarineTraffic(
-    APP_CONFIG.center,
+    activeCenter,
     radiusKm,
     APP_CONFIG.marine,
+    providersEnabled,
   )
   const nearbyAircraft = useMemo(
     () =>
       filterTrafficByRadius(
         aircraftResult.entities,
-        APP_CONFIG.center,
+        activeCenter,
         radiusKm,
       ),
-    [aircraftResult.entities, radiusKm],
+    [activeCenter, aircraftResult.entities, radiusKm],
   )
   const nearbyVessels = useMemo(
     () =>
       filterTrafficByRadius(
         marineResult.entities,
-        APP_CONFIG.center,
+        activeCenter,
         radiusKm,
       ),
-    [marineResult.entities, radiusKm],
+    [activeCenter, marineResult.entities, radiusKm],
   )
 
   const aircraft = useMemo(
@@ -98,22 +136,66 @@ function App() {
     }
   }, [aircraftVisible, selectedEntity, selectedId, vesselsVisible])
 
+  const requestFit = useCallback(() => {
+    setFitRequestId((current) => current + 1)
+  }, [])
+
+  const handleRadiusChange = useCallback(
+    (nextRadiusKm: number) => {
+      if (nextRadiusKm === radiusKm) return
+      setRadiusKm(nextRadiusKm)
+      requestFit()
+    },
+    [radiusKm, requestFit],
+  )
+
+  const handleQueryCenterChange = useCallback((coordinates: Coordinates) => {
+    const nextCenter = centerFromCoordinates(
+      coordinates,
+      APP_CONFIG.navigation.coordinatePrecision,
+      'Map area',
+    )
+    setQueryCenter((current) => {
+      if (current && sameCenterCoordinates(current, nextCenter)) return current
+      return nextCenter
+    })
+  }, [])
+
+  const handleCenter = useCallback(() => {
+    setQueryCenter(location.homeCenter)
+    requestFit()
+  }, [location.homeCenter, requestFit])
+
   return (
     <main className="app-shell">
-      <TrafficMap
-        center={APP_CONFIG.center}
-        radiusKm={radiusKm}
-        mapStyleUrl={APP_CONFIG.map.styleUrl}
-        aircraft={aircraft}
-        vessels={vessels}
-        trail={trail}
-        selectedId={selectedId}
-        aircraftVisible={aircraftVisible}
-        vesselsVisible={vesselsVisible}
-        interpolationDurationMs={APP_CONFIG.interpolationDurationMs}
-        onSelect={setSelectedId}
-        onMapError={setMapError}
-      />
+      {queryCenter ? (
+        <TrafficMap
+          center={queryCenter}
+          radiusKm={radiusKm}
+          mapStyleUrl={
+            theme === 'dark'
+              ? APP_CONFIG.map.darkStyleUrl
+              : APP_CONFIG.map.lightStyleUrl
+          }
+          theme={theme}
+          aircraft={aircraft}
+          vessels={vessels}
+          trail={trail}
+          selectedId={selectedId}
+          aircraftVisible={aircraftVisible}
+          vesselsVisible={vesselsVisible}
+          interpolationDurationMs={APP_CONFIG.interpolationDurationMs}
+          fitRequestId={fitRequestId}
+          panSettleMs={APP_CONFIG.navigation.panSettleMs}
+          onSelect={setSelectedId}
+          onQueryCenterChange={handleQueryCenterChange}
+          onMapError={setMapError}
+        />
+      ) : (
+        <div className="traffic-map map-placeholder" role="status">
+          Resolving the starting area...
+        </div>
+      )}
       <div className="radar-shade" aria-hidden="true" />
 
       <div className="interface-layer">
@@ -125,7 +207,7 @@ function App() {
             <div>
               <h1>LiveTrafficStan</h1>
               <p>
-                {APP_CONFIG.center.label} / {radiusKm} km
+                {activeCenter.label} / {radiusKm} km
               </p>
             </div>
           </div>
@@ -141,7 +223,7 @@ function App() {
         <TrafficControls
           radiusPresetsKm={APP_CONFIG.radiusPresetsKm}
           radiusKm={radiusKm}
-          onRadiusChange={setRadiusKm}
+          onRadiusChange={handleRadiusChange}
           vesselLengthPresetsMeters={APP_CONFIG.vesselLengthPresetsMeters}
           minimumVesselLengthMeters={minimumVesselLengthMeters}
           onMinimumVesselLengthChange={setMinimumVesselLengthMeters}
@@ -149,6 +231,14 @@ function App() {
           onAircraftVisibleChange={setAircraftVisible}
           vesselsVisible={vesselsVisible}
           onVesselsVisibleChange={setVesselsVisible}
+          centerDisabled={!queryCenter}
+          onCenter={handleCenter}
+          locationAvailable={location.canRequest}
+          locationLoading={location.locating}
+          locationMessage={location.message}
+          onUseLocation={location.requestLocation}
+          theme={theme}
+          onThemeChange={setTheme}
         />
 
         {selectedEntity && (

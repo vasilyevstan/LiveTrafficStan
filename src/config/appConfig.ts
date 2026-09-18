@@ -16,11 +16,19 @@ export interface AppConfig {
   vesselLengthPresetsMeters: readonly number[]
   defaultVesselLengthMeters: number
   map: {
-    styleUrl: string
+    lightStyleUrl: string
+    darkStyleUrl: string
+  }
+  navigation: {
+    coordinatePrecision: number
+    panSettleMs: number
+    geolocationTimeoutMs: number
+    geolocationMaximumAgeMs: number
   }
   aircraft: FreshnessThresholds & {
     endpointBaseUrl: string
     refreshIntervalMs: number
+    rateLimitBackoffMaxMs: number
   }
   marine: FreshnessThresholds & {
     restBaseUrl: string
@@ -28,6 +36,7 @@ export interface AppConfig {
     mqttConnectTimeoutMs: number
     mqttReconnectPeriodMs: number
     metadataRefreshIntervalMs: number
+    queryRestRefreshIntervalMs: number
     restLookbackMs: number
     snapshotFlushIntervalMs: number
   }
@@ -41,7 +50,8 @@ export interface AppConfig {
 const DEFAULTS = {
   latitude: 59.437,
   longitude: 24.7536,
-  mapStyleUrl: 'https://tiles.openfreemap.org/styles/positron',
+  lightMapStyleUrl: 'https://tiles.openfreemap.org/styles/positron',
+  darkMapStyleUrl: 'https://tiles.openfreemap.org/styles/dark',
   aircraftEndpoint: '/api/aircraft',
   marineRestEndpoint: 'https://meri.digitraffic.fi',
   marineMqttEndpoint: 'wss://meri.digitraffic.fi:443/mqtt',
@@ -112,12 +122,24 @@ export const createAppConfig = (
     vesselLengthPresetsMeters: [25, 50, 100, 150],
     defaultVesselLengthMeters: 50,
     map: {
-      styleUrl: readEndpoint(
+      lightStyleUrl: readEndpoint(
         env,
         'VITE_MAP_STYLE_URL',
-        DEFAULTS.mapStyleUrl,
+        DEFAULTS.lightMapStyleUrl,
         ['https:'],
       ),
+      darkStyleUrl: readEndpoint(
+        env,
+        'VITE_MAP_DARK_STYLE_URL',
+        DEFAULTS.darkMapStyleUrl,
+        ['https:'],
+      ),
+    },
+    navigation: {
+      coordinatePrecision: 3,
+      panSettleMs: 350,
+      geolocationTimeoutMs: 8_000,
+      geolocationMaximumAgeMs: 5 * 60_000,
     },
     aircraft: {
       endpointBaseUrl: readEndpoint(
@@ -127,6 +149,7 @@ export const createAppConfig = (
         ['https:'],
       ),
       refreshIntervalMs: 20_000,
+      rateLimitBackoffMaxMs: 5 * 60_000,
       staleAfterMs: 45_000,
       expireAfterMs: 120_000,
     },
@@ -146,6 +169,7 @@ export const createAppConfig = (
       mqttConnectTimeoutMs: 10_000,
       mqttReconnectPeriodMs: 15_000,
       metadataRefreshIntervalMs: 5 * 60_000,
+      queryRestRefreshIntervalMs: 5 * 60_000,
       restLookbackMs: 15 * 60_000,
       snapshotFlushIntervalMs: 1_000,
       staleAfterMs: 2 * 60_000,

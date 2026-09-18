@@ -24,7 +24,11 @@ Digitraffic explicitly recommends five-minute REST polling, which is too infrequ
 
 REST remains useful for an initial radius-limited position snapshot and an initial vessel metadata snapshot. The metadata response observed during planning contained fewer than one thousand records and was under 300 KB uncompressed, so one startup fetch is simpler and lighter than dozens of per-vessel requests.
 
-Radius changes reuse the MQTT connection and restart only the radius-limited REST location request. Automatic reconnect attempts are spaced 15 seconds apart to remain within Digitraffic's documented connection allowance.
+Center and radius changes reuse the MQTT connection and immediately refilter
+the global in-memory message cache. A new radius-limited REST snapshot is
+allowed only after the five-minute query refresh gate. Automatic reconnect
+attempts are spaced 15 seconds apart to remain within Digitraffic's documented
+connection allowance.
 
 ## Application-owned traffic models
 
@@ -51,3 +55,78 @@ Recent provider-observed positions are kept only in browser memory, pruned by ti
 ## Repository documentation and Wiki
 
 Version-controlled documents under `docs/` are the canonical technical record. The GitHub Wiki provides a comprehensive project-oriented view and links back to canonical files where appropriate. GitHub requires the user to initialize the first empty Wiki page; all subsequent Wiki content is managed through Git.
+
+## V1.1 home, query, camera, and radius state
+
+The V1.1 map experience separates four concepts that V1 treated as one:
+
+- the session `homeCenter`, resolved from a rounded one-shot user location when
+  permission is already granted or explicitly requested, otherwise Tallinn;
+- the active `queryCenter` used by both traffic providers;
+- the freely pannable and zoomable MapLibre camera;
+- the selected 10, 20, 50, or 100 km query radius.
+
+A settled user pan automatically moves the active query area. Pure zoom remains
+visual and does not silently enlarge or shrink provider scope. The radius circle
+continues to explain the actual coverage boundary. Center returns to the
+session home and fits the current radius.
+
+## Provider-safe automatic panning
+
+ADSB.lol publishes dynamic rather than fixed rate limits. Automatic panning
+therefore replaces the latest desired query in the existing 20-second polling
+schedule instead of starting extra requests. Obsolete work is canceled or
+ignored, and rate-limit responses remain visible and back off explicitly.
+
+Digitraffic sends global vessel updates over the existing MQTT subscription.
+Center and radius changes refilter that cache immediately without reconnecting.
+Radius REST initialization is throttled rather than repeated for every camera
+movement. The existing 15-second minimum MQTT reconnect interval remains an
+invariant.
+
+## Privacy-safe browser location
+
+Location is one-shot and session-only. The app automatically reads it when
+permission is already granted or changes to granted while the page is open;
+otherwise it starts at Tallinn and offers an explicit action. Coordinates are
+rounded before provider use, never persisted, not reverse-geocoded, and not
+displayed with unnecessary precision. Continuous tracking is outside scope.
+
+## Explicit persisted light and dark themes
+
+The Positron presentation remains the default Light theme. V1.1 provides an
+explicit Dark choice backed by the OpenFreeMap dark style and CSS custom
+properties. Only the selected theme is persisted.
+
+MapLibre remains a single instance. Because `map.setStyle` removes custom
+style-owned state, the map layer installer restores traffic images,
+sources, layers, data, visibility, radius, and trail after every `style.load`
+without changing camera, selection, provider state, or connections.
+
+## `dev`-based pull request delivery
+
+Feature and documentation branches start from `dev` and merge into `dev`
+through checked pull requests. Releases enter `main` only through a checked
+`dev` to `main` pull request. Repository rulesets require pull requests and
+block force pushes/deletion while retaining an explicit administrator emergency
+bypass. Required human self-review is intentionally not configured because it
+would deadlock CLI-owned changes; automated validation is the technical gate.
+
+Project-specific Copilot instructions and focused read-only reviewers preserve
+the MapLibre, provider-rate, privacy, and delivery lessons from V1. They support
+implementation and review but do not introduce another approval layer.
+
+## Apache-2.0 with preserved project attribution
+
+The source-code license changes from MIT to Apache License 2.0 and adds a
+`NOTICE` file identifying LiveTrafficStan and its original author. Apache-2.0
+remains a standard permissive open-source license, permits commercial and
+proprietary derivative products, includes an explicit patent grant, and
+requires distributed derivative works to preserve applicable notices and a
+readable copy of the project's attribution.
+
+This meets the goal of keeping the repository public and broadly reusable while
+retaining credit if the software becomes part of another product. A custom
+advertising clause was rejected because it would reduce compatibility with
+standard open-source licensing. Provider data remains under its own licenses
+and attribution requirements.

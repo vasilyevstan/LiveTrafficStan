@@ -31,7 +31,7 @@ The API documentation says the API is free to use and that public ADSB.lol data 
 
 LiveTrafficStan V1 runs locally and polls one small geographic query approximately every 20 seconds. Because direct browser requests are blocked by CORS, Vite proxies the same-origin development and preview path to ADSB.lol. A future static deployment will need an equivalent small serverless/edge proxy or a replacement provider.
 
-Visible attribution must identify ADSB.lol and ODbL 1.0. The application's MIT license covers source code only; it does not relicense provider data.
+Visible attribution must identify ADSB.lol and ODbL 1.0. The application's Apache License 2.0 covers source code only; it does not relicense provider data.
 
 ### Why Airplanes.live was not selected
 
@@ -68,7 +68,11 @@ Digitraffic is suitable for V1:
 
 Digitraffic recommends a five-minute REST fetch interval for both AIS locations and vessel metadata. V1 therefore uses MQTT for live position updates rather than over-polling the REST endpoint. REST supplies an initial radius-limited location snapshot and a compact metadata snapshot, then MQTT updates positions and metadata in real time.
 
-The live MQTT connection is reused when the user changes radius. Reconnect attempts are spaced at least 15 seconds apart, keeping automatic retry below Digitraffic's documented limit of five connection requests per minute per IP.
+The live MQTT connection is reused when the user changes center or radius, and
+the global message cache is refiltered immediately. Query movement can request
+a new radius REST snapshot no more than once every five minutes. Reconnect
+attempts are spaced at least 15 seconds apart, keeping automatic retry below
+Digitraffic's documented limit of five connection requests per minute per IP.
 
 Browser requests identify the application as `LiveTrafficStan/1.0`; no personal information is included in the header or MQTT client identifier.
 
@@ -81,7 +85,15 @@ Invalid or missing dimensions remain unavailable and are never guessed.
 
 ## Source-code license versus data licenses
 
-LiveTrafficStan source code is MIT-licensed. Runtime map, aircraft, and marine data retain their providers' licenses and attribution requirements:
+LiveTrafficStan source code is licensed under Apache License 2.0 and includes a
+`NOTICE` file identifying the original project and author. Under section 4 of
+the license, distributed derivative works must retain applicable notices and a
+readable copy of the `NOTICE` attribution. This is a permissive source-code
+license: compliant derivative products may use different terms for their own
+additions.
+
+Runtime map, aircraft, and marine data retain their providers' separate
+licenses and attribution requirements:
 
 - map data: OpenStreetMap/OpenMapTiles/OpenFreeMap attribution
 - aircraft data: ADSB.lol, ODbL 1.0
