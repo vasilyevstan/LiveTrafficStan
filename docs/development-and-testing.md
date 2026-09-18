@@ -38,17 +38,32 @@ pushes targeting `dev` or `main`.
 
 ## Branch and pull request flow
 
-1. Update local `dev` from `origin/dev`.
+1. Fetch `origin` and align local `dev` to `origin/dev`.
 2. Create a focused feature, fix, or documentation branch from `dev`.
 3. Open a detailed pull request back to `dev`.
 4. Merge only after the `validate` check succeeds.
 5. Release accumulated checked work with a `dev` to `main` pull request.
+
+Do not merge an older local `dev` history back into the remote branch after a
+squash release. If the trees are equivalent but commit histories differ, update
+the local branch reference to `origin/dev` before creating work.
 
 Repository rulesets require pull requests and prevent branch deletion and force
 pushes on both protected branches. An administrator bypass exists only for a
 declared emergency. Normal CLI-owned changes still use the pull request path.
 Do not configure a mandatory self-review that prevents the repository owner
 from merging automated work after checks.
+
+Keep GitHub's automatic merged-branch deletion disabled: a release pull request
+uses persistent `dev` as its head and the global setting can delete it. Delete
+merged feature branches explicitly after verifying the merge; never delete
+`dev`.
+
+Keep one primary workstream per Issue. Use another focused pull request under
+the same Issue only for an independent acceptance group or a prerequisite that
+was unblocked later. Partial pull requests use non-closing references, and an
+evidence-backed external blocker remains visibly linked until its criteria are
+complete.
 
 ## Automated test coverage
 
@@ -77,6 +92,11 @@ V1.1 tests also cover:
   outcomes without coordinate persistence;
 - theme storage validation and unavailable-storage behavior;
 - idempotent MapLibre style installation and restoration of custom state.
+
+Geolocation tests must distinguish permission from acquisition. A granted
+permission can still produce delayed success, timeout, unavailable, or obsolete
+late callbacks. Repeated tests use deterministic browser abstractions and fake
+time rather than relying on the current machine's location service.
 
 ## Browser smoke test
 
@@ -126,7 +146,8 @@ Browser developer tools can block one provider at a time:
 Restore access and confirm the provider returns to current state without a page
 reload. While the Network panel is open, hide the page long enough to confirm
 aircraft polling and the marine connection stop, then restore visibility and
-confirm immediate recovery.
+confirm recovery at the next permitted provider boundary. Do not describe
+provider-safe cadence, `Retry-After`, or MQTT reconnect spacing as immediate.
 
 ## Provider contract probes
 
@@ -135,6 +156,11 @@ official documentation in `docs/data-sources-and-licensing.md` and use small,
 rate-conscious live probes. Do not put captured live payloads containing
 unnecessary data into the repository; reduce fixtures to only fields required
 by the test.
+
+Use local fixtures, fake clocks, fake maps, mocked fetch, and mocked MQTT for
+repeated lifecycle checks. A milestone needs one bounded real-provider browser
+smoke, not repeated live loops for scenarios that deterministic tests can
+prove.
 
 ## Dependency and bundle discipline
 
