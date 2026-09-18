@@ -94,12 +94,12 @@ tracking is outside scope.
 
 ## Explicit persisted light and dark themes
 
-The current Positron presentation remains the default Light theme. V1.1 adds an
+The Positron presentation remains the default Light theme. V1.1 provides an
 explicit Dark choice backed by the OpenFreeMap dark style and CSS custom
 properties. Only the selected theme is persisted.
 
 MapLibre remains a single instance. Because `map.setStyle` removes custom
-style-owned state, the map layer installer must restore traffic images,
+style-owned state, the map layer installer restores traffic images,
 sources, layers, data, visibility, radius, and trail after every `style.load`
 without changing camera, selection, provider state, or connections.
 

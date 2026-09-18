@@ -67,7 +67,7 @@ Live provider availability, WebSocket behavior, WebGL rendering, and CORS/proxy
 configuration require browser smoke testing because unit fixtures cannot prove
 those external contracts.
 
-V1.1 feature tests must also cover:
+V1.1 tests also cover:
 
 - latest-query coalescing and a minimum 20-second aircraft request-start gap;
 - obsolete request cancellation/result rejection and rate-limit backoff;

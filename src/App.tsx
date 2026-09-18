@@ -4,6 +4,7 @@ import { useAircraftTraffic } from './app/useAircraftTraffic'
 import { useMarineTraffic } from './app/useMarineTraffic'
 import { useNow } from './app/useNow'
 import { useSessionLocation } from './app/useSessionLocation'
+import { useTheme } from './app/useTheme'
 import { useTrailHistory } from './app/useTrailHistory'
 import { LiveStatus } from './components/LiveStatus'
 import { TrafficControls } from './components/TrafficControls'
@@ -33,6 +34,7 @@ function App() {
   const [mapError, setMapError] = useState<string | null>(null)
   const [queryCenter, setQueryCenter] = useState<AppCenter | null>(null)
   const [fitRequestId, setFitRequestId] = useState(0)
+  const { theme, setTheme } = useTheme()
   const appliedLocationRevisionRef = useRef(0)
   const location = useSessionLocation(
     APP_CONFIG.center,
@@ -170,7 +172,12 @@ function App() {
         <TrafficMap
           center={queryCenter}
           radiusKm={radiusKm}
-          mapStyleUrl={APP_CONFIG.map.styleUrl}
+          mapStyleUrl={
+            theme === 'dark'
+              ? APP_CONFIG.map.darkStyleUrl
+              : APP_CONFIG.map.lightStyleUrl
+          }
+          theme={theme}
           aircraft={aircraft}
           vessels={vessels}
           trail={trail}
@@ -230,6 +237,8 @@ function App() {
           locationLoading={location.locating}
           locationMessage={location.message}
           onUseLocation={location.requestLocation}
+          theme={theme}
+          onThemeChange={setTheme}
         />
 
         {selectedEntity && (

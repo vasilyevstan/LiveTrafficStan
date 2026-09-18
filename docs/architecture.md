@@ -164,11 +164,12 @@ configured 20-second cadence. The marine provider updates its filter and emits
 matching cached MQTT records immediately while reusing its client and
 throttling radius REST refreshes.
 
-## V1.1 target theme lifecycle
+## Theme lifecycle
 
 Application colors are CSS custom properties selected by a validated
-`light | dark` preference. The map uses the corresponding configured
-OpenFreeMap style.
+`light | dark` preference stored under `livetrafficstan.theme`. Missing,
+invalid, or unavailable storage selects Light. The map uses the corresponding
+configured OpenFreeMap style.
 
 Theme changes call `map.setStyle` on the existing instance. An idempotent
 installer runs after `style.load` to restore repository-owned images, GeoJSON
@@ -176,6 +177,3 @@ sources, layers, current data, visibility, radius, and selected trail.
 Interaction listeners remain registered once, and a style revision prevents a
 late obsolete load from winning. Provider hooks, React selection/history, and
 camera state do not restart.
-
-The theme lifecycle remains the accepted target for the following dark-theme
-feature pull request; the navigation boundary above is implemented.

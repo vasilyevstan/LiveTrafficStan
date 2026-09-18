@@ -1,9 +1,116 @@
+:root,
+:root[data-theme='light'] {
+  color-scheme: light;
+  --app-background: #dce8ec;
+  --root-text: #102c38;
+  --placeholder-text: #315866;
+  --radar-edge: rgba(4, 24, 38, 0.08);
+  --radar-top: rgba(4, 29, 46, 0.05);
+  --radar-blend: multiply;
+  --panel-text: #e8f7fb;
+  --panel-background: rgba(5, 25, 40, 0.9);
+  --panel-border: rgba(104, 205, 235, 0.24);
+  --panel-shadow: rgba(1, 14, 25, 0.24);
+  --heading-text: #f1fbfe;
+  --subtle-text: #9dc5d1;
+  --accent-border: rgba(99, 216, 255, 0.65);
+  --accent-soft: rgba(99, 216, 255, 0.08);
+  --accent-grid: rgba(99, 216, 255, 0.36);
+  --accent-line: #7ce2ff;
+  --divider: rgba(139, 205, 224, 0.16);
+  --summary-text: #c7e4ec;
+  --summary-strong: #e8fbff;
+  --provider-text: #89b1bd;
+  --provider-separator: #4f7e8d;
+  --legend-text: #91b8c4;
+  --button-border: rgba(129, 199, 220, 0.22);
+  --button-text: #a9cbd5;
+  --button-background: rgba(120, 194, 218, 0.07);
+  --button-hover-text: #effbfe;
+  --button-hover-border: rgba(102, 218, 250, 0.68);
+  --button-active-text: #f2fcff;
+  --button-active-border: rgba(99, 216, 255, 0.82);
+  --button-active-background: rgba(46, 175, 213, 0.22);
+  --button-active-shadow: rgba(35, 186, 227, 0.1);
+  --button-disabled-text: #668994;
+  --button-disabled-border: rgba(129, 199, 220, 0.12);
+  --button-disabled-background: rgba(120, 194, 218, 0.035);
+  --note-text: #d3b47f;
+  --note-muted: #739ca8;
+  --detail-heading: #f2fbfe;
+  --detail-divider: rgba(139, 205, 224, 0.12);
+  --detail-label: #7da6b2;
+  --detail-text: #e2f2f6;
+  --stale-border: rgba(241, 180, 93, 0.34);
+  --stale-text: #f3c98c;
+  --stale-background: rgba(241, 180, 93, 0.09);
+  --error-border: rgba(232, 125, 125, 0.45);
+  --error-text: #f2cccc;
+  --error-muted: #cfaeae;
+  --attribution-text: #41606a;
+  --attribution-link: #1d667b;
+  --attribution-background: rgba(255, 255, 255, 0.86);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --app-background: #07131d;
+  --root-text: #e4f0f4;
+  --placeholder-text: #9bbbc6;
+  --radar-edge: rgba(73, 208, 244, 0.09);
+  --radar-top: rgba(73, 208, 244, 0.05);
+  --radar-blend: screen;
+  --panel-text: #edfaff;
+  --panel-background: rgba(2, 14, 23, 0.94);
+  --panel-border: rgba(103, 218, 250, 0.3);
+  --panel-shadow: rgba(0, 0, 0, 0.52);
+  --heading-text: #f5fcff;
+  --subtle-text: #a8cbd5;
+  --accent-border: rgba(112, 225, 255, 0.75);
+  --accent-soft: rgba(99, 216, 255, 0.11);
+  --accent-grid: rgba(112, 225, 255, 0.42);
+  --accent-line: #87e8ff;
+  --divider: rgba(139, 213, 233, 0.2);
+  --summary-text: #d2e9ef;
+  --summary-strong: #f1fcff;
+  --provider-text: #9fc3cd;
+  --provider-separator: #628b97;
+  --legend-text: #a0c6d0;
+  --button-border: rgba(131, 211, 232, 0.28);
+  --button-text: #bdd8df;
+  --button-background: rgba(95, 190, 217, 0.09);
+  --button-hover-text: #ffffff;
+  --button-hover-border: rgba(112, 225, 255, 0.82);
+  --button-active-text: #ffffff;
+  --button-active-border: rgba(112, 225, 255, 0.92);
+  --button-active-background: rgba(34, 172, 211, 0.3);
+  --button-active-shadow: rgba(44, 202, 241, 0.14);
+  --button-disabled-text: #6f929c;
+  --button-disabled-border: rgba(131, 211, 232, 0.13);
+  --button-disabled-background: rgba(95, 190, 217, 0.04);
+  --note-text: #e0c38e;
+  --note-muted: #87abb5;
+  --detail-heading: #f5fcff;
+  --detail-divider: rgba(139, 213, 233, 0.16);
+  --detail-label: #91b7c1;
+  --detail-text: #e8f5f8;
+  --stale-border: rgba(245, 187, 102, 0.42);
+  --stale-text: #ffd196;
+  --stale-background: rgba(241, 180, 93, 0.12);
+  --error-border: rgba(244, 133, 133, 0.55);
+  --error-text: #ffd5d5;
+  --error-muted: #dfb8b8;
+  --attribution-text: #c3d9e0;
+  --attribution-link: #7ce2ff;
+  --attribution-background: rgba(3, 16, 26, 0.88);
+}
+
 :root {
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
-  color: #102c38;
-  background: #dce8ec;
+  color: var(--root-text);
+  background: var(--app-background);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -25,6 +132,7 @@ body,
 body {
   min-width: 320px;
   overflow: hidden;
+  background: var(--app-background);
 }
 
 button,

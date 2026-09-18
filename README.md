@@ -15,6 +15,8 @@ single React application, without accounts, a database, or persistent tracking.
   REST initialization and MQTT over secure WebSockets.
 - OpenStreetMap-derived vector maps from
   [OpenFreeMap](https://openfreemap.org/), rendered with MapLibre GL JS.
+- Explicit Light and Dark themes that persist locally and switch the base map
+  without recreating MapLibre or resetting live traffic state.
 - Configurable 10, 20, 50, and 100 km Tallinn-centered radii.
 - Automatic traffic-area changes after a settled pan, while zoom remains
   visual and the selected radius remains the explicit coverage boundary.
@@ -79,6 +81,11 @@ separate state. Settled pans replace the latest desired provider center without
 adding aircraft requests beyond the 20-second cadence. Marine center changes
 reuse and refilter the global MQTT cache rather than reconnecting.
 
+Light/Dark changes use `map.setStyle` on that same MapLibre instance. An
+idempotent installer restores traffic images, sources, layers, current data,
+visibility, radius, and trail after each style load while preserving camera,
+selection, provider state, and connections.
+
 See [Architecture](docs/architecture.md) for component boundaries, data flow,
 failure isolation, rendering, and deployment details.
 
@@ -94,6 +101,7 @@ available for:
 | `VITE_CENTER_LONGITUDE` | `24.7536` |
 | `VITE_CENTER_LABEL` | `Tallinn, Estonia` |
 | `VITE_MAP_STYLE_URL` | `https://tiles.openfreemap.org/styles/positron` |
+| `VITE_MAP_DARK_STYLE_URL` | `https://tiles.openfreemap.org/styles/dark` |
 | `VITE_AIRCRAFT_ENDPOINT` | `/api/aircraft` |
 | `VITE_MARINE_REST_ENDPOINT` | `https://meri.digitraffic.fi` |
 | `VITE_MARINE_MQTT_ENDPOINT` | `wss://meri.digitraffic.fi:443/mqtt` |
@@ -141,6 +149,8 @@ provider attribution when implementing a deployment adapter.
   object.
 - Browser location is one-shot, rounded, and session-only; it is not continuous
   tracking and exact coordinates are not persisted.
+- Theme preference is limited to explicit Light/Dark selection; there is no
+  automatic system-theme mode.
 - V1.1 has no location search, route enrichment, playback, weather overlays,
   accounts, saved center preferences, or offline mode.
 

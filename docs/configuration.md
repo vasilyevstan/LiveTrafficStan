@@ -15,6 +15,7 @@ cp .env.example .env.local
 | `VITE_CENTER_LONGITUDE` | `24.7536` | Finite number from -180 through 180 |
 | `VITE_CENTER_LABEL` | `Tallinn, Estonia` | Non-empty display label; blank uses the default |
 | `VITE_MAP_STYLE_URL` | `https://tiles.openfreemap.org/styles/positron` | HTTPS URL or root-relative path |
+| `VITE_MAP_DARK_STYLE_URL` | `https://tiles.openfreemap.org/styles/dark` | HTTPS URL or root-relative path |
 | `VITE_AIRCRAFT_ENDPOINT` | `/api/aircraft` | HTTPS URL or root-relative path |
 | `VITE_MARINE_REST_ENDPOINT` | `https://meri.digitraffic.fi` | HTTPS URL or root-relative path |
 | `VITE_MARINE_MQTT_ENDPOINT` | `wss://meri.digitraffic.fi:443/mqtt` | Secure WebSocket URL or root-relative path |
@@ -104,9 +105,10 @@ MapLibre's module worker is explicitly bundled through Vite in
 `npm run dev` and `npm run preview`; loading the style JSON alone is not proof
 that vector tiles are being parsed.
 
-V1.1 retains `VITE_MAP_STYLE_URL` as the Light style override and adds a
-separate HTTPS Dark style override. A missing preference or invalid stored
-value selects Light. Theme storage contains only `light` or `dark`; map center
+`VITE_MAP_STYLE_URL` configures the Light style and
+`VITE_MAP_DARK_STYLE_URL` configures the Dark style. A missing preference,
+invalid stored value, or unavailable storage selects Light. Theme storage uses
+the `livetrafficstan.theme` key and contains only `light` or `dark`; map center
 coordinates are never stored.
 
 The accepted V1.1 behavioral configuration keeps:
@@ -122,8 +124,7 @@ The accepted V1.1 behavioral configuration keeps:
 | Geolocation mode | One-shot, permission-aware, session-only |
 
 Navigation timing and privacy values are centralized in
-`src/config/appConfig.ts`. The dark-theme feature pull request will add its
-separate style override to the environment table.
+`src/config/appConfig.ts`.
 
 ## Marine endpoints
 
