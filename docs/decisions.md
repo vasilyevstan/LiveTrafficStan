@@ -111,3 +111,18 @@ would deadlock CLI-owned changes; automated validation is the technical gate.
 Project-specific Copilot instructions and focused read-only reviewers preserve
 the MapLibre, provider-rate, privacy, and delivery lessons from V1. They support
 implementation and review but do not introduce another approval layer.
+
+## Apache-2.0 with preserved project attribution
+
+The source-code license changes from MIT to Apache License 2.0 and adds a
+`NOTICE` file identifying LiveTrafficStan and its original author. Apache-2.0
+remains a standard permissive open-source license, permits commercial and
+proprietary derivative products, includes an explicit patent grant, and
+requires distributed derivative works to preserve applicable notices and a
+readable copy of the project's attribution.
+
+This meets the goal of keeping the repository public and broadly reusable while
+retaining credit if the software becomes part of another product. A custom
+advertising clause was rejected because it would reduce compatibility with
+standard open-source licensing. Provider data remains under its own licenses
+and attribution requirements.

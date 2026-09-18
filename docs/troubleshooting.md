@@ -143,4 +143,5 @@ Do not hide MapLibre attribution controls. The application must visibly credit:
 - ADSB.lol and ODbL;
 - Fintraffic Digitraffic and CC BY 4.0.
 
-The MIT source license does not replace these runtime data obligations.
+The Apache License 2.0 source license and project `NOTICE` do not replace these
+runtime data obligations.
