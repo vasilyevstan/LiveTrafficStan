@@ -84,6 +84,8 @@ those external contracts.
 
 V1.1 tests also cover:
 
+- synchronous MapLibre construction failure without map-resource cleanup or
+  application teardown;
 - latest-query coalescing and a minimum 20-second aircraft request-start gap;
 - obsolete request cancellation/result rejection and rate-limit backoff;
 - marine center/radius changes without MQTT reconnect or REST bursts;
@@ -142,6 +144,11 @@ Browser developer tools can block one provider at a time:
   usable;
 - block OpenFreeMap and confirm controls/status remain available with a compact
   map error.
+
+When changing map initialization, also exercise a deliberately throwing map
+constructor. Confirm that `Map unavailable` is visible, sibling controls remain
+usable, and no map listener, animation loop, retry, or cleanup method runs
+without an instance.
 
 Restore access and confirm the provider returns to current state without a page
 reload. While the Network panel is open, hide the page long enough to confirm

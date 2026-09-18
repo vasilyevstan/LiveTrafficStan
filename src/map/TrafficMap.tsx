@@ -35,6 +35,10 @@ import {
   createVesselIcon,
 } from './icons'
 import {
+  createMapSafely,
+  type TrafficMapError,
+} from './mapInitialization'
+import {
   installTrafficStyle,
   LAYER_AIRCRAFT,
   LAYER_AIRCRAFT_HALO,
@@ -72,7 +76,7 @@ interface TrafficMapProps {
   panSettleMs: number
   onSelect: (id: string | null) => void
   onQueryCenterChange: (center: Coordinates) => void
-  onMapError: (message: string | null) => void
+  onMapError: (error: TrafficMapError | null) => void
 }
 
 interface RenderState {
@@ -371,9 +375,11 @@ export function TrafficMap({
         map.off('style.load', handleStyleLoad)
         requestedStyleUrlRef.current = appliedStyleUrlRef.current
         loadedRef.current = map.isStyleLoaded() === true
-        errorRef.current(
-          error instanceof Error ? error.message : 'Map style change failed',
-        )
+        errorRef.current({
+          kind: 'runtime',
+          message:
+            error instanceof Error ? error.message : 'Map style change failed',
+        })
       }
     },
     [installCurrentStyle],
@@ -405,14 +411,20 @@ export function TrafficMap({
     if (!containerRef.current) return
     const initialView = viewStateRef.current
 
-    const map = new MapLibreMap({
-      container: containerRef.current,
-      style: initialStyleUrlRef.current,
-      center: [initialView.center.longitude, initialView.center.latitude],
-      zoom: 8,
-      attributionControl: false,
-      maxPitch: 60,
-    })
+    const map = createMapSafely(
+      () =>
+        new MapLibreMap({
+          container: containerRef.current!,
+          style: initialStyleUrlRef.current,
+          center: [initialView.center.longitude, initialView.center.latitude],
+          zoom: 8,
+          attributionControl: false,
+          maxPitch: 60,
+        }),
+      (error) => errorRef.current(error),
+    )
+    if (!map) return
+
     mapRef.current = map
 
     map.on('dragstart', () => {
@@ -488,7 +500,12 @@ export function TrafficMap({
     })
 
     map.on('error', (event) => {
-      if (event.error) errorRef.current(event.error.message)
+      if (event.error) {
+        errorRef.current({
+          kind: 'runtime',
+          message: event.error.message,
+        })
+      }
     })
 
     return () => {
