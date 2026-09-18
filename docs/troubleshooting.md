@@ -20,11 +20,17 @@ If the worker loads, verify that the configured style and its tiles allow CORS,
 and that the browser supports WebGL2. A style JSON response by itself does not
 prove that vector tiles rendered.
 
-During V1.1 theme work, also inspect `style.load` handling. `map.setStyle`
-removes repository-owned images, sources, and layers; the application must
-reinstall them after every style load. Duplicate-source errors indicate that
-the installer is not idempotent. A base map with no traffic/radius after a
-theme change indicates that rehydration did not restore current source data.
+When a theme switch leaves the map blank, inspect `style.load` handling.
+`map.setStyle` removes repository-owned images, sources, and layers; the
+application reinstalls them after every style load. Duplicate-source errors
+indicate that the installer is not idempotent. A base map with no
+traffic/radius after a theme change indicates that rehydration did not restore
+current source data.
+
+If the application theme changes but the base map does not, verify both
+`VITE_MAP_STYLE_URL` and `VITE_MAP_DARK_STYLE_URL`, then restart Vite after
+editing `.env.local`. Invalid saved values fall back to Light. To reset a valid
+choice, remove `livetrafficstan.theme` from the site's local storage.
 
 ## Aircraft shows unavailable
 
