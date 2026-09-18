@@ -24,7 +24,11 @@ Digitraffic explicitly recommends five-minute REST polling, which is too infrequ
 
 REST remains useful for an initial radius-limited position snapshot and an initial vessel metadata snapshot. The metadata response observed during planning contained fewer than one thousand records and was under 300 KB uncompressed, so one startup fetch is simpler and lighter than dozens of per-vessel requests.
 
-Radius changes reuse the MQTT connection and restart only the radius-limited REST location request. Automatic reconnect attempts are spaced 15 seconds apart to remain within Digitraffic's documented connection allowance.
+Center and radius changes reuse the MQTT connection and immediately refilter
+the global in-memory message cache. A new radius-limited REST snapshot is
+allowed only after the five-minute query refresh gate. Automatic reconnect
+attempts are spaced 15 seconds apart to remain within Digitraffic's documented
+connection allowance.
 
 ## Application-owned traffic models
 

@@ -68,7 +68,11 @@ Digitraffic is suitable for V1:
 
 Digitraffic recommends a five-minute REST fetch interval for both AIS locations and vessel metadata. V1 therefore uses MQTT for live position updates rather than over-polling the REST endpoint. REST supplies an initial radius-limited location snapshot and a compact metadata snapshot, then MQTT updates positions and metadata in real time.
 
-The live MQTT connection is reused when the user changes radius. Reconnect attempts are spaced at least 15 seconds apart, keeping automatic retry below Digitraffic's documented limit of five connection requests per minute per IP.
+The live MQTT connection is reused when the user changes center or radius, and
+the global message cache is refiltered immediately. Query movement can request
+a new radius REST snapshot no more than once every five minutes. Reconnect
+attempts are spaced at least 15 seconds apart, keeping automatic retry below
+Digitraffic's documented limit of five connection requests per minute per IP.
 
 Browser requests identify the application as `LiveTrafficStan/1.0`; no personal information is included in the header or MQTT client identifier.
 

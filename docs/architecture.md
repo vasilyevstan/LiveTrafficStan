@@ -63,13 +63,15 @@ Aircraft and marine providers have separate state, cancellation, and error
 paths. A failure in one provider produces `PARTIAL` status while the other
 continues to render.
 
-- Aircraft requests never overlap. An `AbortController` cancels obsolete work,
-  polling pauses when the document is hidden, and visibility restoration causes
-  an immediate request.
+- Aircraft requests never overlap. A revision-aware controller cancels obsolete
+  work, rejects late old-area results, and prevents request starts more often
+  than every 20 seconds. Polling pauses when the document is hidden; visibility
+  restoration resumes at the next cadence-safe boundary.
 - Marine REST requests are deduplicated by controller state. MQTT reconnects
-  no more often than every 15 seconds after disconnection. Radius changes abort
-  only the obsolete radius REST request and reuse the live MQTT connection;
-  page hiding or unmount stops all REST, interval, timeout, and MQTT resources.
+  no more often than every 15 seconds after disconnection. Center/radius changes
+  immediately refilter cached global MQTT records, reuse the live connection,
+  and permit a radius REST refresh no more than every five minutes. Page hiding
+  or unmount stops all REST, interval, timeout, and MQTT resources.
 - Provider errors remain visible until a successful request or subscription
   recovers that provider.
 
@@ -129,10 +131,10 @@ The built client is otherwise static. A production deployment needs:
 Adding hosting, CI, caching, or a production proxy is intentionally deferred to
 the deployment roadmap issue.
 
-## V1.1 target state boundaries
+## Navigation state boundaries
 
-V1.1 introduces an application-owned navigation boundary without making the
-MapLibre camera itself provider state:
+The application has an application-owned navigation boundary without making
+the MapLibre camera itself provider state:
 
 ```text
 permission-aware startup --> homeCenter (session only)
@@ -156,7 +158,7 @@ reports only settled user-driven center changes and suppresses feedback from
 startup, Center, radius fits, style changes, and resize. Provider hooks consume
 `queryCenter`; they never inspect arbitrary camera bounds.
 
-The aircraft hook becomes one revision-aware polling scheduler. Query changes
+The aircraft hook uses one revision-aware polling scheduler. Query changes
 replace the latest desired request but cannot create starts more often than the
 configured 20-second cadence. The marine provider updates its filter and emits
 matching cached MQTT records immediately while reusing its client and
@@ -175,6 +177,5 @@ Interaction listeners remain registered once, and a style revision prevents a
 late obsolete load from winning. Provider hooks, React selection/history, and
 camera state do not restart.
 
-These sections describe the accepted V1.1 architecture. The subsequent feature
-pull requests must convert the existing V1 center/style coupling to this model
-before the behavior is considered released.
+The theme lifecycle remains the accepted target for the following dark-theme
+feature pull request; the navigation boundary above is implemented.

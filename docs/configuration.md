@@ -32,21 +32,26 @@ credentials, or personal information in them.
 The following behavior is centralized in `src/config/appConfig.ts` rather than
 spread through components:
 
-| Setting | V1 value |
+| Setting | Current value |
 | --- | --- |
 | Radius presets | 10, 20, 50, 100 km |
 | Default radius | 20 km |
 | Vessel-length presets | 25, 50, 100, 150 m |
 | Default minimum vessel length | 50 m |
 | Aircraft refresh | 20 seconds |
+| Aircraft maximum rate-limit backoff | 5 minutes |
 | Aircraft stale / expiry | 45 seconds / 120 seconds |
 | Marine metadata refresh | 5 minutes |
+| Marine query REST refresh gate | 5 minutes |
 | Marine MQTT connect timeout / reconnect | 10 seconds / 15 seconds |
 | Marine REST lookback | 15 minutes |
 | Marine snapshot flush | 1 second |
 | Marine stale / expiry | 2 minutes / 10 minutes |
 | Trail duration / cap | 15 minutes / 180 points per object |
 | Maximum interpolation duration | 1.5 seconds |
+| Query/geolocation coordinate precision | 3 decimal places |
+| Settled-pan delay | 350 ms |
+| Geolocation timeout / cached-position age | 8 seconds / 5 minutes |
 
 Changing these constants changes application behavior and should include
 targeted tests where the value affects filtering, freshness, history, or motion.
@@ -61,9 +66,15 @@ VITE_CENTER_LONGITUDE=24.70
 VITE_CENTER_LABEL=Tallinn Bay
 ```
 
-The V1 UI keeps the center fixed for the session. V1.1 will add a session-only
-home center, automatic settled-pan query centers, and one-shot browser
-geolocation. Arbitrary search and remembered coordinates remain roadmap items.
+The configured center is the immediate fallback and session home. If browser
+location permission is already granted, the app resolves a rounded one-shot
+position before starting provider queries. Otherwise it starts at the
+configured center and offers an explicit `Use location` action.
+
+A settled map pan changes only the active query center. Pure zoom does not
+change provider scope. Center returns to the session home and fits the selected
+radius. Neither home nor query coordinates are persisted. Arbitrary search and
+remembered coordinates remain roadmap items.
 
 ## Aircraft endpoint and proxy
 
@@ -110,9 +121,9 @@ The accepted V1.1 behavioral configuration keeps:
 | Geolocation precision | Rounded to approximately 3 decimal places |
 | Geolocation mode | One-shot, permission-aware, session-only |
 
-The feature pull requests will add the typed constants and environment table
-entry when the behavior is implemented. Timing and privacy values must remain
-centralized in `src/config/appConfig.ts`, not duplicated in components.
+Navigation timing and privacy values are centralized in
+`src/config/appConfig.ts`. The dark-theme feature pull request will add its
+separate style override to the environment table.
 
 ## Marine endpoints
 
