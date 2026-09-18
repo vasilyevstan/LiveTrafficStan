@@ -16,6 +16,10 @@ import {
   type Coordinates,
 } from './domain/center'
 import type { DisplayTrafficEntity, TrafficEntity } from './domain/traffic'
+import {
+  mapErrorPresentation,
+  type TrafficMapError,
+} from './map/mapInitialization'
 import { TrafficMap } from './map/TrafficMap'
 import {
   filterTrafficByRadius,
@@ -31,7 +35,7 @@ function App() {
   const [aircraftVisible, setAircraftVisible] = useState(true)
   const [vesselsVisible, setVesselsVisible] = useState(true)
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [mapError, setMapError] = useState<string | null>(null)
+  const [mapError, setMapError] = useState<TrafficMapError | null>(null)
   const [queryCenter, setQueryCenter] = useState<AppCenter | null>(null)
   const [fitRequestId, setFitRequestId] = useState(0)
   const { theme, setTheme } = useTheme()
@@ -165,6 +169,7 @@ function App() {
     setQueryCenter(location.homeCenter)
     requestFit()
   }, [location.homeCenter, requestFit])
+  const mapErrorContent = mapError ? mapErrorPresentation(mapError) : null
 
   return (
     <main className="app-shell">
@@ -249,10 +254,10 @@ function App() {
           />
         )}
 
-        {mapError && (
+        {mapErrorContent && (
           <div className="map-error" role="status">
-            <strong>Map data issue</strong>
-            <span>{mapError}</span>
+            <strong>{mapErrorContent.title}</strong>
+            <span>{mapErrorContent.message}</span>
           </div>
         )}
       </div>

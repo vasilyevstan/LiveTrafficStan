@@ -5,6 +5,12 @@
 Check the browser console and Network panel for the style, worker, vector tile,
 sprite, and glyph requests.
 
+If the interface shows **Map unavailable**, MapLibre failed before an instance
+could be created. The rest of the application remains mounted intentionally.
+Reload once and check browser graphics/WebGL support or graphics acceleration.
+This state is separate from aircraft and marine provider health, and the
+application does not automatically retry an unknown constructor failure.
+
 MapLibre 6 uses a separate module worker to fetch and parse vector tiles. Vite
 cannot rely on MapLibre's inferred adjacent worker URL after dependency
 prebundling, so `TrafficMap.tsx` explicitly imports
