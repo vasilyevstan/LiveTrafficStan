@@ -21,8 +21,9 @@ single React application, without accounts, a database, or persistent tracking.
 - Automatic traffic-area changes after a settled pan, while zoom remains
   visual and the selected radius remains the explicit coverage boundary.
 - A session Home/Center action plus privacy-safe one-shot browser location:
-  already-granted permission is used automatically, otherwise location is an
-  explicit action with Tallinn fallback.
+  already-granted permission and grants made while the page is open are used
+  automatically; otherwise location is an explicit action with Tallinn
+  fallback.
 - Independent aircraft and ship layers plus 25, 50, 100, and 150 metre minimum
   vessel-length filters.
 - Honest detail cards, provider-specific health, stale/expired handling, and
