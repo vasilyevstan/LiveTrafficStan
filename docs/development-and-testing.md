@@ -93,7 +93,9 @@ V1.1 tests also cover:
 - granted, prompt, denied, unsupported, timeout, and explicit geolocation
   outcomes without coordinate persistence;
 - theme storage validation and unavailable-storage behavior;
-- idempotent MapLibre style installation and restoration of custom state.
+- idempotent MapLibre style installation and restoration of custom state;
+- theme-keyed traffic image replacement, including identical style URLs and
+  stale/live opacity updates.
 
 Geolocation tests must distinguish permission from acquisition. A granted
 permission can still produce delayed success, timeout, unavailable, or obsolete
@@ -131,6 +133,9 @@ For the V1.1 map experience, additionally verify:
 6. Repeated Light/Dark changes preserve camera, live traffic, selected object,
    trail, controls, and provider connections.
 7. Both themes remain readable on desktop and a narrow mobile viewport.
+8. Aircraft, helicopter, and vessel artwork retains its identity over land,
+   water, and busy detail at actual marker scale; stale markers remain
+   recognizable and distinct from live markers.
 
 Repeat the core check with `npm run build && npm run preview`. Confirm that
 `dist/assets/` contains a `maplibre-gl-worker-*.js` file and that the preview

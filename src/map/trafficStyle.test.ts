@@ -27,11 +27,16 @@ const radius: FeatureCollection<Polygon> = {
   type: 'FeatureCollection',
   features: [],
 }
-const images = {
+const lightImages = {
   aircraft: {},
   helicopter: {},
   vessel: {},
 } as TrafficStyleImages
+const darkImages = {
+  aircraft: { theme: 'dark-aircraft' },
+  helicopter: { theme: 'dark-helicopter' },
+  vessel: { theme: 'dark-vessel' },
+} as unknown as TrafficStyleImages
 
 const snapshot = (
   theme: 'light' | 'dark',
@@ -53,6 +58,7 @@ describe('installTrafficStyle', () => {
     const paint = new Map<string, unknown>()
     const visibility = new Map<string, unknown>()
     const addImage = vi.fn((id: string) => imageIds.add(id))
+    const updateImage = vi.fn()
     const addSource = vi.fn((id: string) => {
       sources.set(id, { setData: vi.fn() })
     })
@@ -62,6 +68,7 @@ describe('installTrafficStyle', () => {
     const map = {
       hasImage: (id: string) => imageIds.has(id),
       addImage,
+      updateImage,
       getSource: (id: string) => sources.get(id),
       addSource,
       getLayer: (id: string) => layers.get(id),
@@ -74,14 +81,30 @@ describe('installTrafficStyle', () => {
       },
     } as unknown as MapLibreMap
 
-    installTrafficStyle(map, snapshot('light'), images)
-    installTrafficStyle(map, snapshot('dark'), images)
+    installTrafficStyle(map, snapshot('light'), lightImages)
+    installTrafficStyle(map, snapshot('dark'), darkImages)
 
     expect(addImage).toHaveBeenCalledTimes(3)
+    expect(updateImage).toHaveBeenCalledTimes(3)
+    expect(updateImage).toHaveBeenCalledWith(
+      'aircraft',
+      darkImages.aircraft,
+    )
+    expect(updateImage).toHaveBeenCalledWith(
+      'helicopter',
+      darkImages.helicopter,
+    )
+    expect(updateImage).toHaveBeenCalledWith('vessel', darkImages.vessel)
     expect(addSource).toHaveBeenCalledTimes(4)
     expect(addLayer).toHaveBeenCalledTimes(7)
     expect(sources.get(SOURCE_AIRCRAFT)?.setData).toHaveBeenCalledTimes(1)
     expect(paint.get('traffic-radius-line:line-color')).toBe('#67ddff')
+    expect(paint.get(`${LAYER_AIRCRAFT}:icon-opacity`)).toEqual([
+      'case',
+      ['get', 'stale'],
+      0.52,
+      0.98,
+    ])
     expect(visibility.get(`${LAYER_AIRCRAFT}:visibility`)).toBe('visible')
     expect(visibility.get(`${LAYER_VESSELS}:visibility`)).toBe('none')
   })

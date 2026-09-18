@@ -204,7 +204,9 @@ export function TrafficMap({
   const themeRef = useRef(theme)
   const appliedThemeRef = useRef(theme)
   const initialFitCompleteRef = useRef(false)
-  const trafficImagesRef = useRef<TrafficStyleImages | null>(null)
+  const trafficImagesRef = useRef<
+    Partial<Record<Theme, TrafficStyleImages>>
+  >({})
   const renderStateRef = useRef<RenderState>({
     aircraft,
     vessels,
@@ -300,15 +302,17 @@ export function TrafficMap({
     [clearPendingPan],
   )
 
-  const getTrafficImages = useCallback(() => {
-    if (!trafficImagesRef.current) {
-      trafficImagesRef.current = {
-        aircraft: createAircraftIcon(),
-        helicopter: createHelicopterIcon(),
-        vessel: createVesselIcon(),
-      }
+  const getTrafficImages = useCallback((activeTheme: Theme) => {
+    const cachedImages = trafficImagesRef.current[activeTheme]
+    if (cachedImages) return cachedImages
+
+    const images = {
+      aircraft: createAircraftIcon(activeTheme),
+      helicopter: createHelicopterIcon(activeTheme),
+      vessel: createVesselIcon(activeTheme),
     }
-    return trafficImagesRef.current
+    trafficImagesRef.current[activeTheme] = images
+    return images
   }, [])
 
   const installCurrentStyle = useCallback(
@@ -316,10 +320,11 @@ export function TrafficMap({
       const now = performance.now()
       const renderState = renderStateRef.current
       const viewState = viewStateRef.current
+      const activeTheme = themeRef.current
       installTrafficStyle(
         map,
         {
-          theme: themeRef.current,
+          theme: activeTheme,
           aircraft: trafficFeatures(
             renderState.aircraft,
             aircraftMotionRef.current,
@@ -337,7 +342,7 @@ export function TrafficMap({
           aircraftVisible: viewState.aircraftVisible,
           vesselsVisible: viewState.vesselsVisible,
         },
-        getTrafficImages(),
+        getTrafficImages(activeTheme),
       )
       loadedRef.current = true
       errorRef.current(null)

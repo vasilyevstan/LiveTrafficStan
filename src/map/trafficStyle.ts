@@ -52,6 +52,8 @@ const themePaint = (theme: Theme) =>
         trailOpacity: 0.82,
         aircraftHalo: '#5ce2ff',
         vesselHalo: '#ffc06d',
+        liveIconOpacity: 0.98,
+        staleIconOpacity: 0.52,
       }
     : {
         radiusFill: '#1ea7d4',
@@ -62,6 +64,8 @@ const themePaint = (theme: Theme) =>
         trailOpacity: 0.72,
         aircraftHalo: '#35c8ef',
         vesselHalo: '#f1a246',
+        liveIconOpacity: 0.98,
+        staleIconOpacity: 0.54,
       }
 
 export const setTrafficSourceData = (
@@ -88,7 +92,11 @@ const ensureImage = (
   id: keyof TrafficStyleImages,
   image: ImageData,
 ) => {
-  if (!map.hasImage(id)) map.addImage(id, image, { pixelRatio: 2 })
+  if (map.hasImage(id)) {
+    map.updateImage(id, image)
+  } else {
+    map.addImage(id, image, { pixelRatio: 2 })
+  }
 }
 
 const ensureSource = (
@@ -192,7 +200,12 @@ export const installTrafficStyle = (
       'icon-ignore-placement': true,
     },
     paint: {
-      'icon-opacity': ['case', ['get', 'stale'], 0.42, 0.96],
+      'icon-opacity': [
+        'case',
+        ['get', 'stale'],
+        paint.staleIconOpacity,
+        paint.liveIconOpacity,
+      ],
     },
   })
   ensureLayer(map, {
@@ -209,7 +222,12 @@ export const installTrafficStyle = (
       'icon-ignore-placement': true,
     },
     paint: {
-      'icon-opacity': ['case', ['get', 'stale'], 0.42, 0.96],
+      'icon-opacity': [
+        'case',
+        ['get', 'stale'],
+        paint.staleIconOpacity,
+        paint.liveIconOpacity,
+      ],
     },
   })
 
@@ -272,6 +290,16 @@ export const installTrafficStyle = (
       'circle-stroke-color',
       paint.vesselHalo,
     )
+  }
+  for (const layerId of [LAYER_AIRCRAFT, LAYER_VESSELS]) {
+    if (map.getLayer(layerId)) {
+      map.setPaintProperty(layerId, 'icon-opacity', [
+        'case',
+        ['get', 'stale'],
+        paint.staleIconOpacity,
+        paint.liveIconOpacity,
+      ])
+    }
   }
 
   setTrafficLayerVisibility(map, LAYER_AIRCRAFT, snapshot.aircraftVisible)

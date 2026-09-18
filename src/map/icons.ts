@@ -1,4 +1,39 @@
+import type { Theme } from '../app/theme'
+
 type IconPainter = (context: CanvasRenderingContext2D) => void
+
+export interface TrafficIconTreatment {
+  aircraftFill: string
+  aircraftDetail: string
+  vesselFill: string
+  vesselDetail: string
+  outerEdge: string
+  innerEdge: string
+  shadow: string
+}
+
+export const trafficIconTreatment = (
+  theme: Theme,
+): TrafficIconTreatment =>
+  theme === 'dark'
+    ? {
+        aircraftFill: '#72e4ff',
+        aircraftDetail: '#b9f2ff',
+        vesselFill: '#ffc878',
+        vesselDetail: '#fff0d0',
+        outerEdge: 'rgba(0, 9, 15, 0.92)',
+        innerEdge: '#eef9fb',
+        shadow: 'rgba(0, 0, 0, 0.58)',
+      }
+    : {
+        aircraftFill: '#27b7de',
+        aircraftDetail: '#087b9d',
+        vesselFill: '#ed9d3f',
+        vesselDetail: '#6a3a0b',
+        outerEdge: 'rgba(255, 255, 255, 0.9)',
+        innerEdge: '#06243a',
+        shadow: 'rgba(1, 14, 25, 0.38)',
+      }
 
 const createIcon = (paint: IconPainter) => {
   const canvas = document.createElement('canvas')
@@ -15,27 +50,51 @@ const createIcon = (paint: IconPainter) => {
 
 const fillShape = (
   context: CanvasRenderingContext2D,
+  treatment: TrafficIconTreatment,
   color: string,
   draw: () => void,
 ) => {
   context.save()
-  context.shadowColor = 'rgba(1, 14, 25, 0.55)'
-  context.shadowBlur = 6
-  context.shadowOffsetY = 2
+  context.shadowColor = treatment.shadow
+  context.shadowBlur = 5
+  context.shadowOffsetY = 1.5
   context.fillStyle = color
-  context.strokeStyle = '#06243a'
-  context.lineWidth = 2.5
   context.beginPath()
   draw()
   context.closePath()
   context.fill()
+  context.shadowColor = 'transparent'
+  context.strokeStyle = treatment.outerEdge
+  context.lineWidth = 5
+  context.stroke()
+  context.strokeStyle = treatment.innerEdge
+  context.lineWidth = 2.25
   context.stroke()
   context.restore()
 }
 
-export const createAircraftIcon = () =>
+const strokeDetail = (
+  context: CanvasRenderingContext2D,
+  treatment: TrafficIconTreatment,
+  detailColor: string,
+  draw: () => void,
+) => {
+  context.save()
+  context.beginPath()
+  draw()
+  context.strokeStyle = treatment.outerEdge
+  context.lineWidth = 5
+  context.stroke()
+  context.strokeStyle = detailColor
+  context.lineWidth = 2.5
+  context.stroke()
+  context.restore()
+}
+
+export const createAircraftIcon = (theme: Theme) =>
   createIcon((context) => {
-    fillShape(context, '#63d8ff', () => {
+    const treatment = trafficIconTreatment(theme)
+    fillShape(context, treatment, treatment.aircraftFill, () => {
       context.moveTo(32, 3)
       context.lineTo(38, 24)
       context.lineTo(59, 34)
@@ -55,20 +114,22 @@ export const createAircraftIcon = () =>
     })
   })
 
-export const createHelicopterIcon = () =>
+export const createHelicopterIcon = (theme: Theme) =>
   createIcon((context) => {
-    context.save()
-    context.strokeStyle = '#8de8ff'
-    context.lineWidth = 3
-    context.beginPath()
-    context.moveTo(7, 25)
-    context.lineTo(57, 25)
-    context.moveTo(32, 7)
-    context.lineTo(32, 43)
-    context.stroke()
-    context.restore()
+    const treatment = trafficIconTreatment(theme)
+    strokeDetail(
+      context,
+      treatment,
+      treatment.aircraftDetail,
+      () => {
+        context.moveTo(7, 25)
+        context.lineTo(57, 25)
+        context.moveTo(32, 7)
+        context.lineTo(32, 43)
+      },
+    )
 
-    fillShape(context, '#63d8ff', () => {
+    fillShape(context, treatment, treatment.aircraftFill, () => {
       context.moveTo(32, 12)
       context.quadraticCurveTo(44, 18, 43, 33)
       context.lineTo(37, 45)
@@ -83,9 +144,10 @@ export const createHelicopterIcon = () =>
     })
   })
 
-export const createVesselIcon = () =>
+export const createVesselIcon = (theme: Theme) =>
   createIcon((context) => {
-    fillShape(context, '#ffb763', () => {
+    const treatment = trafficIconTreatment(theme)
+    fillShape(context, treatment, treatment.vesselFill, () => {
       context.moveTo(32, 4)
       context.lineTo(50, 20)
       context.lineTo(45, 55)
@@ -96,7 +158,7 @@ export const createVesselIcon = () =>
     })
 
     context.save()
-    context.strokeStyle = 'rgba(6, 36, 58, 0.75)'
+    context.strokeStyle = treatment.vesselDetail
     context.lineWidth = 3
     context.beginPath()
     context.moveTo(21, 28)
