@@ -16,6 +16,7 @@ export const useMarineTraffic = (
   center: AppCenter,
   radiusKm: number,
   config: AppConfig['marine'],
+  enabled = true,
 ) => {
   const [result, setResult] =
     useState<TrafficProviderResult<Vessel>>(initialResult)
@@ -29,6 +30,13 @@ export const useMarineTraffic = (
   }, [center, radiusKm])
 
   useEffect(() => {
+    if (!enabled) {
+      providerRef.current?.stop()
+      providerRef.current = undefined
+      setResult(initialResult)
+      return
+    }
+
     let disposed = false
     let provider: DigitrafficMarineProvider | undefined
 
@@ -90,7 +98,7 @@ export const useMarineTraffic = (
       }
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [config])
+  }, [config, enabled])
 
   return result
 }
