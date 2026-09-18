@@ -92,6 +92,13 @@ otherwise it starts at Tallinn and offers an explicit action. Coordinates are
 rounded before provider use, never persisted, not reverse-geocoded, and not
 displayed with unnecessary precision. Continuous tracking is outside scope.
 
+Browser permission and position acquisition are separate states. A granted
+permission means that the application may request location; it does not promise
+that the operating system can return a cold or delayed fix before the configured
+timeout. A timeout therefore keeps the current home usable and must remain
+retryable without weakening the one-shot, rounded, session-only privacy
+contract.
+
 ## Explicit persisted light and dark themes
 
 The Positron presentation remains the default Light theme. V1.1 provides an
@@ -115,6 +122,35 @@ would deadlock CLI-owned changes; automated validation is the technical gate.
 Project-specific Copilot instructions and focused read-only reviewers preserve
 the MapLibre, provider-rate, privacy, and delivery lessons from V1. They support
 implementation and review but do not introduce another approval layer.
+
+GitHub's repository-wide automatic merged-branch deletion remains disabled.
+Release pull requests use persistent `dev` as their head, so global automatic
+deletion can remove the branch even when branch rules otherwise describe it as
+persistent. Merged feature branches are deleted explicitly; `dev` is never
+treated as disposable.
+
+## Issue-scoped delivery and external blockers
+
+One GitHub Issue owns one primary delivery workstream. Broad Issues may use
+additional focused pull requests when their acceptance groups are independent
+or when an external prerequisite is resolved later. Partial work uses
+non-closing references and does not close the parent until all non-blocked
+criteria are complete.
+
+Provider access, credentials, account roles, data rights, or licensing become a
+separate blocker only after concrete evidence identifies the missing
+prerequisite. The blocker records affected criteria and measurable completion
+evidence while unrelated ready work continues. Placeholder adapters, inferred
+data, client-side secrets, and success-shaped fallbacks are not acceptable
+substitutes.
+
+## Deterministic checks before live probes
+
+Repeated lifecycle and rate-limit verification uses local fixtures, fake clocks,
+fake maps, mocked fetch, and mocked MQTT. A release milestone then performs one
+bounded real-provider smoke. This preserves evidence for cancellation, retries,
+pause/resume, style rehydration, and error isolation without turning test loops
+into provider load.
 
 ## Apache-2.0 with preserved project attribution
 

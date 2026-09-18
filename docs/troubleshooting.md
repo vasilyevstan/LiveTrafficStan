@@ -97,8 +97,15 @@ until permission is granted or an explicit attempt succeeds.
 
 - Use HTTPS or localhost.
 - Check the browser's site permission and operating-system location setting.
+- Permission being allowed only authorizes the request. A cold or delayed
+  operating-system position can still exceed the application's bounded lookup
+  window.
 - After changing permission, return to the page; if the browser does not emit a
   permission-change event, use the explicit location action or reload once.
+- If the application reports a timeout, dismiss any remaining permission UI,
+  keep the current map open, and use the explicit location action to retry.
+  Restarting a browser with a pending update can also restore its connection to
+  the operating-system location service.
 - Treat an approximate result as expected: the app rounds coordinates before
   provider use and never persists them.
 
