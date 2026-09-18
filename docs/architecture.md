@@ -128,3 +128,53 @@ The built client is otherwise static. A production deployment needs:
 
 Adding hosting, CI, caching, or a production proxy is intentionally deferred to
 the deployment roadmap issue.
+
+## V1.1 target state boundaries
+
+V1.1 introduces an application-owned navigation boundary without making the
+MapLibre camera itself provider state:
+
+```text
+permission-aware startup --> homeCenter (session only)
+                                   |
+                  Center ----------+
+                                   v
+settled user pan ------------> queryCenter + selected radius
+                                   |
+                    +--------------+--------------+
+                    |                             |
+        cadence-capped aircraft query     marine cache refilter
+                                              + throttled REST
+
+MapLibre camera <--- explicit fits --- home/query/radius
+       |
+       +--- free pan and visual-only zoom
+```
+
+`App` owns home/query center and explicit camera-fit commands. `TrafficMap`
+reports only settled user-driven center changes and suppresses feedback from
+startup, Center, radius fits, style changes, and resize. Provider hooks consume
+`queryCenter`; they never inspect arbitrary camera bounds.
+
+The aircraft hook becomes one revision-aware polling scheduler. Query changes
+replace the latest desired request but cannot create starts more often than the
+configured 20-second cadence. The marine provider updates its filter and emits
+matching cached MQTT records immediately while reusing its client and
+throttling radius REST refreshes.
+
+## V1.1 target theme lifecycle
+
+Application colors are CSS custom properties selected by a validated
+`light | dark` preference. The map uses the corresponding configured
+OpenFreeMap style.
+
+Theme changes call `map.setStyle` on the existing instance. An idempotent
+installer runs after `style.load` to restore repository-owned images, GeoJSON
+sources, layers, current data, visibility, radius, and selected trail.
+Interaction listeners remain registered once, and a style revision prevents a
+late obsolete load from winning. Provider hooks, React selection/history, and
+camera state do not restart.
+
+These sections describe the accepted V1.1 architecture. The subsequent feature
+pull requests must convert the existing V1 center/style coupling to this model
+before the behavior is considered released.

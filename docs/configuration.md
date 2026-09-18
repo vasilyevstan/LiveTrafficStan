@@ -61,8 +61,9 @@ VITE_CENTER_LONGITUDE=24.70
 VITE_CENTER_LABEL=Tallinn Bay
 ```
 
-The current UI keeps the center fixed for the session. Search, browser
-geolocation, arbitrary centers, and remembered preferences are roadmap items.
+The V1 UI keeps the center fixed for the session. V1.1 will add a session-only
+home center, automatic settled-pan query centers, and one-shot browser
+geolocation. Arbitrary search and remembered coordinates remain roadmap items.
 
 ## Aircraft endpoint and proxy
 
@@ -92,6 +93,27 @@ MapLibre's module worker is explicitly bundled through Vite in
 `npm run dev` and `npm run preview`; loading the style JSON alone is not proof
 that vector tiles are being parsed.
 
+V1.1 retains `VITE_MAP_STYLE_URL` as the Light style override and adds a
+separate HTTPS Dark style override. A missing preference or invalid stored
+value selects Light. Theme storage contains only `light` or `dark`; map center
+coordinates are never stored.
+
+The accepted V1.1 behavioral configuration keeps:
+
+| Setting | Decision |
+| --- | --- |
+| Light map style | OpenFreeMap Positron |
+| Dark map style | OpenFreeMap Dark |
+| Theme default | Light |
+| Aircraft query cadence during map movement | No faster than 20 seconds |
+| Marine query-triggered REST refresh | No more than once per 5 minutes |
+| Geolocation precision | Rounded to approximately 3 decimal places |
+| Geolocation mode | One-shot, permission-aware, session-only |
+
+The feature pull requests will add the typed constants and environment table
+entry when the behavior is implemented. Timing and privacy values must remain
+centralized in `src/config/appConfig.ts`, not duplicated in components.
+
 ## Marine endpoints
 
 The REST endpoint must expose Digitraffic-compatible AIS location and vessel
@@ -106,3 +128,7 @@ vessels-v2/status
 
 The app sends `Digitraffic-User: LiveTrafficStan/1.0` on REST requests and uses
 an ephemeral random MQTT client identifier. Neither value contains user data.
+
+Map movement must not place browser location or other personal information in
+that header. Center/radius updates reuse the MQTT connection and should rely on
+the global message cache before considering another radius REST request.

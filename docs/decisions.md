@@ -51,3 +51,63 @@ Recent provider-observed positions are kept only in browser memory, pruned by ti
 ## Repository documentation and Wiki
 
 Version-controlled documents under `docs/` are the canonical technical record. The GitHub Wiki provides a comprehensive project-oriented view and links back to canonical files where appropriate. GitHub requires the user to initialize the first empty Wiki page; all subsequent Wiki content is managed through Git.
+
+## V1.1 home, query, camera, and radius state
+
+The V1.1 map experience separates four concepts that V1 treated as one:
+
+- the session `homeCenter`, resolved from a rounded one-shot user location when
+  permission is already granted or explicitly requested, otherwise Tallinn;
+- the active `queryCenter` used by both traffic providers;
+- the freely pannable and zoomable MapLibre camera;
+- the selected 10, 20, 50, or 100 km query radius.
+
+A settled user pan automatically moves the active query area. Pure zoom remains
+visual and does not silently enlarge or shrink provider scope. The radius circle
+continues to explain the actual coverage boundary. Center returns to the
+session home and fits the current radius.
+
+## Provider-safe automatic panning
+
+ADSB.lol publishes dynamic rather than fixed rate limits. Automatic panning
+therefore replaces the latest desired query in the existing 20-second polling
+schedule instead of starting extra requests. Obsolete work is canceled or
+ignored, and rate-limit responses remain visible and back off explicitly.
+
+Digitraffic sends global vessel updates over the existing MQTT subscription.
+Center and radius changes refilter that cache immediately without reconnecting.
+Radius REST initialization is throttled rather than repeated for every camera
+movement. The existing 15-second minimum MQTT reconnect interval remains an
+invariant.
+
+## Privacy-safe browser location
+
+Location is one-shot and session-only. The app automatically reads it only when
+permission is already granted; otherwise it starts at Tallinn and offers an
+explicit action. Coordinates are rounded before provider use, never persisted,
+not reverse-geocoded, and not displayed with unnecessary precision. Continuous
+tracking is outside scope.
+
+## Explicit persisted light and dark themes
+
+The current Positron presentation remains the default Light theme. V1.1 adds an
+explicit Dark choice backed by the OpenFreeMap dark style and CSS custom
+properties. Only the selected theme is persisted.
+
+MapLibre remains a single instance. Because `map.setStyle` removes custom
+style-owned state, the map layer installer must restore traffic images,
+sources, layers, data, visibility, radius, and trail after every `style.load`
+without changing camera, selection, provider state, or connections.
+
+## `dev`-based pull request delivery
+
+Feature and documentation branches start from `dev` and merge into `dev`
+through checked pull requests. Releases enter `main` only through a checked
+`dev` to `main` pull request. Repository rulesets require pull requests and
+block force pushes/deletion while retaining an explicit administrator emergency
+bypass. Required human self-review is intentionally not configured because it
+would deadlock CLI-owned changes; automated validation is the technical gate.
+
+Project-specific Copilot instructions and focused read-only reviewers preserve
+the MapLibre, provider-rate, privacy, and delivery lessons from V1. They support
+implementation and review but do not introduce another approval layer.
