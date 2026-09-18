@@ -52,7 +52,7 @@ spread through components:
 | Maximum interpolation duration | 1.5 seconds |
 | Query/geolocation coordinate precision | 3 decimal places |
 | Settled-pan delay | 350 ms |
-| Geolocation timeout / cached-position age | 8 seconds / 5 minutes |
+| Geolocation timeout / cached-position age | 20 seconds / 5 minutes |
 
 Changing these constants changes application behavior and should include
 targeted tests where the value affects filtering, freshness, history, or motion.
@@ -72,7 +72,9 @@ location permission is already granted, the app resolves a rounded one-shot
 position before starting provider queries. If permission changes to granted
 while the page remains open, one lookup updates the session home automatically.
 Otherwise it starts at the configured center and offers an explicit
-`Use location` action.
+`Use location` action. The lookup remains bounded but allows up to 20 seconds
+for a cold operating-system position; a timeout keeps the current Home and
+leaves the action available for an explicit retry.
 
 A settled map pan changes only the active query center. Pure zoom does not
 change provider scope. Center returns to the session home and fits the selected
