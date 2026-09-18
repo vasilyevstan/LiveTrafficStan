@@ -110,6 +110,13 @@ style-owned state, the map layer installer restores traffic images,
 sources, layers, data, visibility, radius, and trail after every `style.load`
 without changing camera, selection, provider state, or connections.
 
+Traffic artwork keeps cyan aircraft and amber vessels in both themes. The
+theme-specific canvas treatment changes fill luminance, detail color, shadow,
+and two-tone edge contrast while retaining silhouettes and heading/course
+rotation. Image IDs are replaced through MapLibre when the theme changes,
+including when both theme options reference the same style URL. The image cache
+contains only the bounded light and dark sets.
+
 ## `dev`-based pull request delivery
 
 Feature and documentation branches start from `dev` and merge into `dev`
