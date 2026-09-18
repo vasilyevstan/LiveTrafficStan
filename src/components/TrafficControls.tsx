@@ -1,3 +1,5 @@
+import type { Theme } from '../app/theme'
+
 interface TrafficControlsProps {
   radiusPresetsKm: readonly number[]
   radiusKm: number
@@ -15,6 +17,8 @@ interface TrafficControlsProps {
   locationLoading: boolean
   locationMessage?: string
   onUseLocation: () => void
+  theme: Theme
+  onThemeChange: (theme: Theme) => void
 }
 
 export function TrafficControls({
@@ -34,6 +38,8 @@ export function TrafficControls({
   locationLoading,
   locationMessage,
   onUseLocation,
+  theme,
+  onThemeChange,
 }: TrafficControlsProps) {
   return (
     <aside className="control-panel" aria-label="Map controls">
@@ -56,6 +62,23 @@ export function TrafficControls({
           >
             SHIPS
           </button>
+        </div>
+      </fieldset>
+
+      <fieldset className="control-group">
+        <legend>Theme</legend>
+        <div className="control-options control-options--two">
+          {(['light', 'dark'] as const).map((option) => (
+            <button
+              key={option}
+              type="button"
+              className={theme === option ? 'is-active' : undefined}
+              aria-pressed={theme === option}
+              onClick={() => onThemeChange(option)}
+            >
+              {option.toUpperCase()}
+            </button>
+          ))}
         </div>
       </fieldset>
 

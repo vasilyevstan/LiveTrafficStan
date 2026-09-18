@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -8,7 +8,22 @@
       name="description"
       content="Live aircraft and significant marine traffic around Tallinn, Estonia."
     />
-    <meta name="theme-color" content="#071a2b" />
+    <meta name="theme-color" content="#dce8ec" />
+    <script>
+      (() => {
+        let theme = 'light'
+        try {
+          if (localStorage.getItem('livetrafficstan.theme') === 'dark') {
+            theme = 'dark'
+          }
+        } catch {}
+        document.documentElement.dataset.theme = theme
+        document.documentElement.style.colorScheme = theme
+        document
+          .querySelector('meta[name="theme-color"]')
+          ?.setAttribute('content', theme === 'dark' ? '#07131d' : '#dce8ec')
+      })()
+    </script>
     <title>LiveTrafficStan</title>
   </head>
   <body>

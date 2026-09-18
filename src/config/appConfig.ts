@@ -16,7 +16,8 @@ export interface AppConfig {
   vesselLengthPresetsMeters: readonly number[]
   defaultVesselLengthMeters: number
   map: {
-    styleUrl: string
+    lightStyleUrl: string
+    darkStyleUrl: string
   }
   navigation: {
     coordinatePrecision: number
@@ -49,7 +50,8 @@ export interface AppConfig {
 const DEFAULTS = {
   latitude: 59.437,
   longitude: 24.7536,
-  mapStyleUrl: 'https://tiles.openfreemap.org/styles/positron',
+  lightMapStyleUrl: 'https://tiles.openfreemap.org/styles/positron',
+  darkMapStyleUrl: 'https://tiles.openfreemap.org/styles/dark',
   aircraftEndpoint: '/api/aircraft',
   marineRestEndpoint: 'https://meri.digitraffic.fi',
   marineMqttEndpoint: 'wss://meri.digitraffic.fi:443/mqtt',
@@ -120,10 +122,16 @@ export const createAppConfig = (
     vesselLengthPresetsMeters: [25, 50, 100, 150],
     defaultVesselLengthMeters: 50,
     map: {
-      styleUrl: readEndpoint(
+      lightStyleUrl: readEndpoint(
         env,
         'VITE_MAP_STYLE_URL',
-        DEFAULTS.mapStyleUrl,
+        DEFAULTS.lightMapStyleUrl,
+        ['https:'],
+      ),
+      darkStyleUrl: readEndpoint(
+        env,
+        'VITE_MAP_DARK_STYLE_URL',
+        DEFAULTS.darkMapStyleUrl,
         ['https:'],
       ),
     },
