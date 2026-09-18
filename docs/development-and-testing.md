@@ -33,6 +33,23 @@ npm test -- --run
 npm run build
 ```
 
+The same commands run in `.github/workflows/validate.yml` for pull requests and
+pushes targeting `dev` or `main`.
+
+## Branch and pull request flow
+
+1. Update local `dev` from `origin/dev`.
+2. Create a focused feature, fix, or documentation branch from `dev`.
+3. Open a detailed pull request back to `dev`.
+4. Merge only after the `validate` check succeeds.
+5. Release accumulated checked work with a `dev` to `main` pull request.
+
+Repository rulesets require pull requests and prevent branch deletion and force
+pushes on both protected branches. An administrator bypass exists only for a
+declared emergency. Normal CLI-owned changes still use the pull request path.
+Do not configure a mandatory self-review that prevents the repository owner
+from merging automated work after checks.
+
 ## Automated test coverage
 
 The V1 suite uses sanitized, local values and does not call live providers. It
@@ -50,6 +67,17 @@ Live provider availability, WebSocket behavior, WebGL rendering, and CORS/proxy
 configuration require browser smoke testing because unit fixtures cannot prove
 those external contracts.
 
+V1.1 feature tests must also cover:
+
+- latest-query coalescing and a minimum 20-second aircraft request-start gap;
+- obsolete request cancellation/result rejection and rate-limit backoff;
+- marine center/radius changes without MQTT reconnect or REST bursts;
+- home/query/camera/radius state transitions;
+- granted, prompt, denied, unsupported, timeout, and explicit geolocation
+  outcomes without coordinate persistence;
+- theme storage validation and unavailable-storage behavior;
+- idempotent MapLibre style installation and restoration of custom state.
+
 ## Browser smoke test
 
 Use `npm run dev` and verify:
@@ -65,6 +93,20 @@ Use `npm run dev` and verify:
    clears selection safely.
 8. A narrow mobile viewport keeps controls readable and the map usable.
 9. Map and provider attribution remains visible.
+
+For the V1.1 map experience, additionally verify:
+
+1. A settled pan automatically recenters the query/radius circle without
+   snapping the camera back.
+2. Rapid pans resolve to the latest area without increasing aircraft request
+   cadence.
+3. Pure wheel, button, and pinch zoom do not change query scope.
+4. Center returns to the session home and fits the selected radius.
+5. Already-granted location starts near the rounded browser location without a
+   prompt; other permission states retain Tallinn until explicit action.
+6. Repeated Light/Dark changes preserve camera, live traffic, selected object,
+   trail, controls, and provider connections.
+7. Both themes remain readable on desktop and a narrow mobile viewport.
 
 Repeat the core check with `npm run build && npm run preview`. Confirm that
 `dist/assets/` contains a `maplibre-gl-worker-*.js` file and that the preview

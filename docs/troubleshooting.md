@@ -20,6 +20,12 @@ If the worker loads, verify that the configured style and its tiles allow CORS,
 and that the browser supports WebGL2. A style JSON response by itself does not
 prove that vector tiles rendered.
 
+During V1.1 theme work, also inspect `style.load` handling. `map.setStyle`
+removes repository-owned images, sources, and layers; the application must
+reinstall them after every style load. Duplicate-source errors indicate that
+the installer is not idempotent. A base map with no traffic/radius after a
+theme change indicates that rehydration did not restore current source data.
+
 ## Aircraft shows unavailable
 
 The default browser endpoint is `/api/aircraft`, which Vite proxies to
@@ -65,6 +71,30 @@ live stream.
 Digitraffic vessels without valid AIS reference-point dimensions are retained
 by the provider but cannot pass a positive minimum-length filter. Their length
 is not guessed.
+
+V1.1 keeps the selected radius as the provider boundary. Zooming out can expose
+map area outside the radius circle, but it intentionally does not fetch traffic
+there. A settled pan moves the query area automatically; aircraft may wait
+until the next allowed 20-second poll, while marine traffic is refiltered from
+the live MQTT cache.
+
+If camera movement causes repeated requests, verify that pure zoom and
+programmatic fits are suppressed and that rapid pan centers are coalesced.
+Marine query changes must not create a new MQTT client.
+
+## Browser location is not used
+
+V1.1 automatically reads location only when permission is already granted.
+Prompt, denied, unsupported, insecure, timeout, and unavailable states keep the
+configured Tallinn fallback until an explicit attempt succeeds.
+
+- Use HTTPS or localhost.
+- Check the browser's site permission and operating-system location setting.
+- Retry the explicit location action after changing permission.
+- Treat an approximate result as expected: the app rounds coordinates before
+  provider use and never persists them.
+
+A location failure must not disable the map or either traffic provider.
 
 ## A selected object or trail disappears
 
