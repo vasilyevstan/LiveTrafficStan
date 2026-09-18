@@ -138,7 +138,7 @@ export const createAppConfig = (
     navigation: {
       coordinatePrecision: 3,
       panSettleMs: 350,
-      geolocationTimeoutMs: 8_000,
+      geolocationTimeoutMs: 20_000,
       geolocationMaximumAgeMs: 5 * 60_000,
     },
     aircraft: {

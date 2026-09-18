@@ -99,6 +99,8 @@ Geolocation tests must distinguish permission from acquisition. A granted
 permission can still produce delayed success, timeout, unavailable, or obsolete
 late callbacks. Repeated tests use deterministic browser abstractions and fake
 time rather than relying on the current machine's location service.
+Include a successful result beyond the former eight-second window, timeout then
+retry, duplicate permission/click suppression, and unmount invalidation.
 
 ## Browser smoke test
 

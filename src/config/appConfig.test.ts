@@ -14,7 +14,7 @@ describe('createAppConfig', () => {
     expect(config.radiusPresetsKm).toEqual([10, 20, 50, 100])
     expect(config.defaultVesselLengthMeters).toBe(50)
     expect(config.navigation.coordinatePrecision).toBe(3)
-    expect(config.navigation.geolocationTimeoutMs).toBe(8_000)
+    expect(config.navigation.geolocationTimeoutMs).toBe(20_000)
     expect(config.map.lightStyleUrl).toContain('/positron')
     expect(config.map.darkStyleUrl).toContain('/dark')
     expect(config.aircraft.refreshIntervalMs).toBe(20_000)

@@ -95,6 +95,7 @@ export function TrafficControls({
           <button
             type="button"
             disabled={!locationAvailable || locationLoading}
+            aria-busy={locationLoading}
             aria-describedby={locationMessage ? 'location-status' : undefined}
             onClick={onUseLocation}
           >

@@ -105,7 +105,7 @@ until permission is granted or an explicit attempt succeeds.
 - Check the browser's site permission and operating-system location setting.
 - Permission being allowed only authorizes the request. A cold or delayed
   operating-system position can still exceed the application's bounded lookup
-  window.
+  window. V1.2 allows up to 20 seconds while keeping the current Home usable.
 - After changing permission, return to the page; if the browser does not emit a
   permission-change event, use the explicit location action or reload once.
 - If the application reports a timeout, dismiss any remaining permission UI,

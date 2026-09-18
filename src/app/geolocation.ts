@@ -163,7 +163,7 @@ export const browserLocationFailureMessage = (
     case 'denied':
       return 'Location permission is blocked; keeping the current home area.'
     case 'timeout':
-      return 'Location lookup timed out; keeping the current home area.'
+      return 'Location lookup timed out; keeping the current home area. Use location to retry.'
     case 'insecure':
       return 'Location needs HTTPS or localhost; using the configured home area.'
     case 'unavailable':
