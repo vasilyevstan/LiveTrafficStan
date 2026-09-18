@@ -100,9 +100,11 @@ operational thresholds, and examples.
 | Aircraft | ADSB.lol | ODbL 1.0 | Same-origin Vite proxy |
 | Marine | Fintraffic Digitraffic | CC BY 4.0 | Direct REST and MQTT |
 
-The repository's MIT license applies to source code only. It does not relicense
-map, aircraft, or marine data. Required attribution remains visible on the map.
-See [Data Sources and Licensing](docs/data-sources-and-licensing.md) for the
+The repository's Apache License 2.0 applies to source code only. Distributed
+derivative works must preserve the attribution in [`NOTICE`](NOTICE) as
+described by the license. The source license does not relicense map, aircraft,
+or marine data, whose required attribution remains visible on the map. See
+[Data Sources and Licensing](docs/data-sources-and-licensing.md) for the
 verified contracts, official links, and the reasons Airplanes.live and OpenSky
 were not selected for V1.
 
@@ -146,4 +148,8 @@ silently expanded into V1.
 
 ## License
 
-LiveTrafficStan source code is available under the [MIT License](LICENSE).
+LiveTrafficStan source code is available under the
+[Apache License 2.0](LICENSE). Redistributions and derivative works must retain
+the applicable license, copyright, and [`NOTICE`](NOTICE) attribution. This
+keeps the project open for permissive personal and commercial use while
+preserving credit to the original project and author.
