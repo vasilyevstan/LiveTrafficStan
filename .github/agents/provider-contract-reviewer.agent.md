@@ -49,6 +49,12 @@ Check these project invariants:
 - Static aircraft metadata never changes a live traffic entity, provider
   health, freshness, history, selection, or marker. Model, configuration, and
   wake category are selected-object context only.
+- Identifier-allocation country context is a pure bundled lookup from exact
+  ICAO24 or valid ordinary ship-station MMSI. It must add no request, cache,
+  scheduler, persisted/history field, provider coupling, or inference from
+  registration, callsign, operator, route, or location. Invalid,
+  special-purpose, unresolved, conflicting, and excluded allocations remain
+  unavailable, with source pins, hashes, exclusions, and licenses explicit.
 - Viewport eligibility is decided against 100 km before ADSB.lol's outward
   nautical-mile rounding. A 100 km eligible request therefore uses 54 NM
   (100.008 km transport coverage) without widening display eligibility.

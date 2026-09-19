@@ -7,6 +7,11 @@ import {
   formatTimestamp,
   formatVerticalSpeed,
 } from '../domain/format'
+import {
+  countryForAircraftHex,
+  flagStateForMmsi,
+  formatCountryAllocation,
+} from '../domain/countryAllocations'
 import type {
   AircraftMetadataUnavailableReason,
   AircraftMetadataViewState,
@@ -179,6 +184,10 @@ export function TrafficDetails({
       ? (entity.callsign ?? entity.registration ?? entity.hex)
       : (entity.name ?? `MMSI ${entity.mmsi}`)
   const direction = entity.courseDegrees ?? entity.headingDegrees
+  const countryAllocation =
+    entity.kind === 'aircraft'
+      ? countryForAircraftHex(entity.hex)
+      : flagStateForMmsi(entity.mmsi)
 
   return (
     <aside
@@ -214,6 +223,14 @@ export function TrafficDetails({
             <DetailRow label="Callsign" value={entity.callsign} />
             <DetailRow label="Registration" value={entity.registration} />
             <DetailRow label="ICAO hex" value={entity.hex} />
+            <DetailRow
+              label="Registration allocation"
+              value={
+                countryAllocation === undefined
+                  ? undefined
+                  : formatCountryAllocation(countryAllocation)
+              }
+            />
             <DetailRow label="Aircraft type" value={entity.aircraftType} />
             <DetailRow label="Category" value={entity.category} />
             <DetailRow
@@ -253,6 +270,14 @@ export function TrafficDetails({
             <DetailRow label="Vessel name" value={entity.name} />
             <DetailRow label="Vessel type" value={entity.vesselType} />
             <DetailRow label="MMSI" value={entity.mmsi} />
+            <DetailRow
+              label="Flag state"
+              value={
+                countryAllocation === undefined
+                  ? undefined
+                  : formatCountryAllocation(countryAllocation)
+              }
+            />
             <DetailRow label="IMO" value={entity.imo} />
             <DetailRow label="Call sign" value={entity.callSign} />
             <DetailRow

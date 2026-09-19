@@ -8,10 +8,10 @@ import type {
 import { TrafficDetails } from './TrafficDetails'
 
 const aircraft: DisplayAircraft = {
-  id: 'aircraft:abc123',
+  id: 'aircraft:511123',
   kind: 'aircraft',
   provider: 'ADSB.lol',
-  hex: 'ABC123',
+  hex: '511123',
   registration: 'ES-ABC',
   aircraftType: 'A320',
   callsign: 'TST123',
@@ -28,7 +28,7 @@ const aircraft: DisplayAircraft = {
 
 const availableMetadata: AircraftMetadataViewState = {
   phase: 'available',
-  identityKey: 'ABC123|ES-ABC|A320',
+  identityKey: '511123|ES-ABC|A320',
   metadata: {
     databaseRegistration: 'ES-ABC',
     typeCode: 'A320',
@@ -71,6 +71,8 @@ describe('TrafficDetails aircraft metadata', () => {
     expect(html).toContain('ODC-By 1.0')
     expect(html).toContain('Publication age is not per-aircraft')
     expect(html).toContain('ADSB.lol')
+    expect(html).toContain('Registration allocation')
+    expect(html).toContain('Estonia (EE)')
     expect(html).not.toContain('Operating airline')
   })
 
@@ -105,7 +107,7 @@ describe('TrafficDetails aircraft metadata', () => {
         entity={aircraft}
         aircraftMetadata={{
           phase: 'unavailable',
-          identityKey: 'ABC123|ES-ABC|A320',
+          identityKey: '511123|ES-ABC|A320',
           reason: 'registration-conflict',
         }}
         now={1_800_000_001_000}
@@ -118,7 +120,7 @@ describe('TrafficDetails aircraft metadata', () => {
         entity={aircraft}
         aircraftMetadata={{
           phase: 'error',
-          identityKey: 'ABC123|ES-ABC|A320',
+          identityKey: '511123|ES-ABC|A320',
           message: 'Aircraft metadata returned HTTP 503',
         }}
         now={1_800_000_001_000}
@@ -170,6 +172,7 @@ describe('TrafficDetails aircraft metadata', () => {
     expect(html).toContain('Metadata report')
     expect(html).toContain('Unavailable')
     expect(html).toContain('no ETA year or port relationship is inferred')
+    expect(html).not.toContain('Flag state')
   })
 
   it('keeps vessel metadata age separate from position age', () => {
@@ -210,5 +213,40 @@ describe('TrafficDetails aircraft metadata', () => {
     expect(html).toContain('10 min ago')
     expect(html).toContain('Position report')
     expect(html).toContain('just now')
+  })
+
+  it('shows flag state only for an ordinary assigned ship-station MMSI', () => {
+    const vessel: DisplayVessel = {
+      id: 'vessel:276123456',
+      kind: 'vessel',
+      provider: 'Digitraffic',
+      mmsi: 276_123_456,
+      vesselCategory: 'cargo',
+      navigationCategory: 'underway',
+      name: 'TEST SHIP',
+      position: {
+        latitude: 59.4,
+        longitude: 24.7,
+        observedAt: 1_800_000_000_000,
+      },
+      receivedAt: 1_800_000_000_000,
+      markerIcon: 'vessel-cargo',
+      markerScale: 1,
+      freshness: 'live',
+    }
+    const html = renderToStaticMarkup(
+      <TrafficDetails
+        entity={vessel}
+        aircraftMetadata={{ phase: 'idle' }}
+        now={1_800_000_001_000}
+        units="metric"
+        historical
+        onClose={() => undefined}
+      />,
+    )
+
+    expect(html).toContain('Flag state')
+    expect(html).toContain('Estonia (EE)')
+    expect(html).not.toContain('Registration allocation')
   })
 })
