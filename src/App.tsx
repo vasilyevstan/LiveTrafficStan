@@ -29,6 +29,10 @@ import {
 } from './domain/layerPreferences'
 import type { DisplayTrafficEntity, TrafficEntity } from './domain/traffic'
 import {
+  DEFAULT_TRAIL_PREFERENCES,
+  trailHistoryConfig,
+} from './domain/trailPreferences'
+import {
   DEFAULT_VESSEL_FILTERS,
   filterVessels,
   orderVesselSearchResults,
@@ -64,6 +68,9 @@ function App() {
   )
   const [layerPreferences, setLayerPreferences] = useState(
     DEFAULT_LAYER_PREFERENCES,
+  )
+  const [trailPreferences, setTrailPreferences] = useState(
+    DEFAULT_TRAIL_PREFERENCES,
   )
   const {
     aircraftVisible,
@@ -403,11 +410,20 @@ function App() {
     aircraftMetadataProvider,
     now,
   )
+  const trailDurationMinutes = trailPreferences.durationMinutes
+  const activeTrailConfig = useMemo(
+    () =>
+      trailHistoryConfig(
+        { durationMinutes: trailDurationMinutes },
+        APP_CONFIG.trail,
+      ),
+    [trailDurationMinutes],
+  )
   const trail = useTrailHistory(
     sourceEntities,
     selectedId,
     now,
-    APP_CONFIG.trail,
+    activeTrailConfig,
     historyResetRevision,
   )
 
@@ -687,7 +703,9 @@ function App() {
         ports={ports}
         airports={airports}
         weatherObservations={weatherObservations}
-        trail={activeViewport ? trail : []}
+        trail={
+          activeViewport && trailPreferences.visible ? trail : []
+        }
         selectedId={selectedId}
         selectedPortId={selectedPortId}
         selectedAirportId={selectedAirportId}
@@ -793,6 +811,8 @@ function App() {
           onRefreshWeather={weatherResult.refresh}
           clusteringEnabled={clusteringEnabled}
           onClusteringEnabledChange={setClusteringEnabled}
+          trailPreferences={trailPreferences}
+          onTrailPreferencesChange={setTrailPreferences}
           centerDisabled={
             !location.initialReady || mapError?.kind === 'initialization'
           }

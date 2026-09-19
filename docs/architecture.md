@@ -205,12 +205,19 @@ the receipt timestamp otherwise.
 
 The map interpolates for at most 1.5 seconds between two provider-observed
 positions. It never extrapolates beyond the newest observation. Trails contain
-only observed positions, are pruned after 15 minutes, are capped at 180 points
-per object, and are rendered only for the selected object. A committed
-coordinate, place-result, Center, or successful Use Location navigation clears
-selection and resets retained trail points so observations from the previous
-area are not connected to the new view. Invalid input and failed search do not
-alter the existing selection or history.
+only observed positions and render only for the selected object. Users can hide
+the line or choose 5, 15, 30, or 60 minutes; the default remains 15 minutes.
+The selected duration permits at most 12 points per minute for each object, and
+the whole in-memory trail map is capped at 50,000 points with deterministic
+oldest-first eviction. A committed coordinate, place-result, Center, or
+successful Use Location navigation clears selection and resets retained trail
+points so observations from the previous area are not connected to the new
+view. Invalid input and failed search do not alter the existing selection or
+history.
+
+This slice remains volatile and session-only. The separate Issue #9 playback
+slice will add an allowlisted provider-qualified observation record before any
+IndexedDB write; rendered trail points are not a durable storage schema.
 
 ## Map rendering
 

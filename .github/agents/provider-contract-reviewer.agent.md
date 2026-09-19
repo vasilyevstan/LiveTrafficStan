@@ -68,6 +68,11 @@ Check these project invariants:
 - Enrichment and persisted observations retain source, age, identity confidence,
   licensing, attribution, retention, and cache limits. Do not infer routes,
   operators, destinations, coverage, or port calls from incomplete data.
+- Device-local traffic persistence is explicit opt-in, origin-local, private,
+  provider-qualified, time/count/byte bounded, clearable, and independently
+  fallible. No export, sharing, cross-device synchronization, backend history,
+  service-worker live cache, or public retained-history output is covered by
+  the current ADSB.lol/ODbL and Fintraffic/CC BY decision.
 - Optional static port data makes zero startup requests and uses one pinned,
   immutable same-origin asset with a total deadline, stream byte cap, SHA-256,
   strict UTF-8/JSON/schema/count/rank validation, and fulfilled-only session

@@ -69,7 +69,8 @@ spread through components:
 | Marine REST lookback | 15 minutes |
 | Marine snapshot flush | 1 second |
 | Marine stale / expiry | 2 minutes / 10 minutes |
-| Trail duration / cap | 15 minutes / 180 points per object |
+| Selected trail | Shown by default; session-only; 5, 15, 30, or 60 minutes |
+| Trail point caps | 12 points/minute per object; 50,000 points overall |
 | Maximum interpolation duration | 1.5 seconds |
 | Query/geolocation coordinate precision | 3 decimal places |
 | Settled-viewport delay | 350 ms |
@@ -81,6 +82,13 @@ spread through components:
 
 Changing these constants changes application behavior and should include
 targeted tests where the value affects filtering, freshness, history, or motion.
+
+Trail duration and visibility are plain session state in V1.4's first history
+slice. The released 15-minute/180-point behavior remains the default. Reducing
+the duration prunes immediately; increasing it collects future provider
+observations only and does not reconstruct points that were not retained.
+Hiding the trail changes only the selected-object line and does not change
+provider acquisition.
 
 Vessel search and filters are serializable React state, not provider
 configuration. All criteria combine with AND after freshness and exact viewport

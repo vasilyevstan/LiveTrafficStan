@@ -2,6 +2,10 @@ import type { StaticAircraftMetadataProviderConfig } from '../providers/aircraft
 import type { StaticAirportsProviderConfig } from '../providers/airports/staticAirportsProvider'
 import type { StaticPortsProviderConfig } from '../providers/ports/staticPortsProvider'
 import type { AwcMetarProviderConfig } from '../providers/weather/awcMetarProvider'
+import {
+  DEFAULT_TRAIL_PREFERENCES,
+  TRAIL_DURATION_OPTIONS_MINUTES,
+} from '../domain/trailPreferences'
 import aircraftMetadataSource from './aircraftMetadataSource.json'
 import airportsSource from './airportsSource.json'
 import portsSource from './portsSource.json'
@@ -72,8 +76,10 @@ export interface AppConfig {
     snapshotFlushIntervalMs: number
   }
   trail: {
-    durationMs: number
-    maxPointsPerEntity: number
+    durationOptionsMinutes: readonly number[]
+    defaultDurationMinutes: number
+    pointsPerMinute: number
+    maxTotalPoints: number
   }
   interpolationDurationMs: number
 }
@@ -361,8 +367,10 @@ export const createAppConfig = (
       expireAfterMs: 10 * 60_000,
     },
     trail: {
-      durationMs: 15 * 60_000,
-      maxPointsPerEntity: 180,
+      durationOptionsMinutes: TRAIL_DURATION_OPTIONS_MINUTES,
+      defaultDurationMinutes: DEFAULT_TRAIL_PREFERENCES.durationMinutes,
+      pointsPerMinute: 12,
+      maxTotalPoints: 50_000,
     },
     interpolationDurationMs: 1_500,
   }

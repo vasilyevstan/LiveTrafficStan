@@ -395,7 +395,8 @@
 }
 
 .vessel-discovery__label,
-.vessel-discovery__filters label > span {
+.vessel-discovery__filters label > span,
+.history-controls label > span {
   display: block;
   margin-bottom: 5px;
   color: var(--legend-text);
@@ -409,7 +410,8 @@
 }
 
 .vessel-discovery input[type='search'],
-.vessel-discovery select {
+.vessel-discovery select,
+.history-controls select {
   min-width: 0;
   min-height: 34px;
   width: 100%;
@@ -425,7 +427,9 @@
 .vessel-discovery input:hover,
 .vessel-discovery input:focus-visible,
 .vessel-discovery select:hover,
-.vessel-discovery select:focus-visible {
+.vessel-discovery select:focus-visible,
+.history-controls select:hover,
+.history-controls select:focus-visible {
   border-color: var(--button-hover-border);
   outline: none;
 }

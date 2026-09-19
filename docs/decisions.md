@@ -4,6 +4,12 @@
 
 LiveTrafficStan is a local-first browser application with no database, accounts, authentication, or persistent backend. This keeps the V1 deployable as static assets except for the aircraft CORS proxy described below.
 
+V1.4 may add an opt-in browser IndexedDB for private, origin-local traffic
+history. That is not a server, account, shared database, or backend. It remains
+off until the complete persistence/playback slice includes bounded storage,
+deletion, quota/corruption behavior, provider-qualified provenance, and visible
+attribution.
+
 ## React, TypeScript, Vite, and MapLibre
 
 React and TypeScript provide a small typed component model. Vite supplies the development server, production build, and the smallest local proxy needed for aircraft data. MapLibre GL JS provides an open map renderer and efficient GeoJSON sources and layers.
@@ -457,6 +463,32 @@ Committed navigation clears selection and resets old retained trail points,
 then uses the existing settled full-canvas viewport pipeline. It does not
 recreate MapLibre, change filters/layers/themes, add a provider scheduler, or
 reconnect marine MQTT.
+
+## Configurable trails and local-history rights boundary
+
+Selected-object trails stay session-only in the first Issue #9 slice. They use
+plain serializable visibility/duration state, retain the released visible
+15-minute default, offer 5/15/30/60-minute choices, and remain bounded by both
+per-object and 50,000-point aggregate caps. Hiding a trail is a display choice,
+not a provider or recording policy.
+
+The dated 2026-09-19 rights review authorizes a later persistence slice only
+for explicit opt-in, personal, origin-local playback:
+
+- ADSB.lol labels the live API ODbL 1.0. ODbL grants extraction, derivative
+  databases, and permanent reproduction, while public use of a derivative
+  database or its produced work can add share-alike and machine-readable-access
+  obligations.
+- Fintraffic licenses Digitraffic open data under CC BY 4.0 with linked source
+  and license credit plus a notice that LiveTrafficStan filters and normalizes
+  the data.
+- No user history is uploaded, exported, shared, synchronized, served from a
+  backend, or placed in a service-worker response cache.
+- Public retained-history output, export, shared/cross-device history, or a
+  backend requires a fresh provider-rights decision before implementation.
+
+This decision does not itself ship durable storage. Persistence remains
+default-off and enters only with the full playback/deletion boundary.
 
 ## Explicit Auto, Light, and Dark theme preference
 

@@ -295,8 +295,12 @@ coordinate/place/Home navigation changes area. That navigation also resets
 retained trail points so the app cannot draw a line across unrelated views.
 Invalid input and failed search leave the current traffic selection and
 history unchanged. Trails exist only in memory, contain only provider
-observations, and are limited to 15 minutes and 180 points. Refreshing the page
-clears them.
+observations, and default to 15 minutes and 180 points. Use the Trail controls
+to show/hide the selected line or choose 5, 15, 30, or 60 minutes. Each setting
+keeps at most 12 points per minute per object, and all trails share a
+50,000-point aggregate cap. Increasing the duration cannot restore points that
+were already pruned; it collects future observations. Refreshing the page
+clears this session-only history.
 
 Port selection is separate. Selecting traffic clears a selected port, selecting
 a port clears traffic selection, hiding PORTS or committed navigation clears

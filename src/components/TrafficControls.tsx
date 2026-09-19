@@ -3,11 +3,13 @@ import type { PlaceSearchState } from '../app/PlaceSearchController'
 import type { AppCenter } from '../config/appConfig'
 import type { Airport } from '../domain/airports'
 import type { DisplayAircraft, DisplayVessel } from '../domain/traffic'
+import type { TrailPreferences } from '../domain/trailPreferences'
 import type { VesselFilterState } from '../domain/vesselFilters'
 import type { DisplayWeatherObservation } from '../domain/weatherObservations'
 import type { PlaceSearchResult } from '../providers/geocoding/photonProvider'
 import { AircraftDiscovery } from './AircraftDiscovery'
 import { AirportContext } from './AirportContext'
+import { HistoryControls } from './HistoryControls'
 import { LocationSearch } from './LocationSearch'
 import { VesselDiscovery } from './VesselDiscovery'
 import { WeatherContext } from './WeatherContext'
@@ -61,6 +63,8 @@ interface TrafficControlsProps {
   onRefreshWeather: () => void
   clusteringEnabled: boolean
   onClusteringEnabledChange: (enabled: boolean) => void
+  trailPreferences: TrailPreferences
+  onTrailPreferencesChange: (preferences: TrailPreferences) => void
   centerDisabled: boolean
   onCenter: () => void
   locationAvailable: boolean
@@ -129,6 +133,8 @@ export function TrafficControls({
   onRefreshWeather,
   clusteringEnabled,
   onClusteringEnabledChange,
+  trailPreferences,
+  onTrailPreferencesChange,
   centerDisabled,
   onCenter,
   locationAvailable,
@@ -288,6 +294,11 @@ export function TrafficControls({
           flight status, airport board, or endorsement.
         </p>
       </fieldset>
+
+      <HistoryControls
+        trailPreferences={trailPreferences}
+        onTrailPreferencesChange={onTrailPreferencesChange}
+      />
 
       <AircraftDiscovery
         query={aircraftQuery}
