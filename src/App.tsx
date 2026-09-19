@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
 import { useAircraftTraffic } from './app/useAircraftTraffic'
+import { useAircraftMetadata } from './app/useAircraftMetadata'
 import { LocationCameraIntent } from './app/locationCameraIntent'
 import { useMarineTraffic } from './app/useMarineTraffic'
 import { useNow } from './app/useNow'
@@ -21,6 +22,7 @@ import {
 } from './map/mapInitialization'
 import { TrafficMap } from './map/TrafficMap'
 import type { PlaceSearchResult } from './providers/geocoding/photonProvider'
+import { StaticAircraftMetadataProvider } from './providers/aircraftMetadata/staticAircraftMetadataProvider'
 import {
   filterTrafficByViewport,
   filterVesselsByMinimumLength,
@@ -70,6 +72,10 @@ function App() {
     APP_CONFIG.navigation.coordinatePrecision,
   )
   const now = useNow()
+  const aircraftMetadataProvider = useMemo(
+    () => new StaticAircraftMetadataProvider(APP_CONFIG.aircraftMetadata),
+    [],
+  )
 
   const commitNavigation = useCallback(
     (
@@ -187,6 +193,11 @@ function App() {
   const selectedEntity = useMemo(
     () => displayEntities.find((entity) => entity.id === selectedId),
     [displayEntities, selectedId],
+  )
+  const aircraftMetadata = useAircraftMetadata(
+    selectedEntity?.kind === 'aircraft' ? selectedEntity : undefined,
+    aircraftMetadataProvider,
+    now,
   )
   const trail = useTrailHistory(
     sourceEntities,
@@ -362,6 +373,7 @@ function App() {
         {selectedEntity && (
           <TrafficDetails
             entity={selectedEntity}
+            aircraftMetadata={aircraftMetadata}
             now={now}
             onClose={() => setSelectedId(null)}
           />

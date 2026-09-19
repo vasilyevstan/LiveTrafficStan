@@ -77,6 +77,31 @@ deployed SHA.
 Production activation credentials are intentionally absent until Issue #39 is
 resolved. Do not place them in `.env.local` or any `VITE_*` variable.
 
+## Aircraft metadata shows unavailable
+
+Aircraft metadata is optional selected-object context. It never controls the
+live ADS-B marker, trail, selection, or provider status.
+
+- **No current database record** means the selected ICAO24 address is absent
+  from the pinned projection.
+- **Registration or type does not match** means live identity evidence conflicts
+  with the static record. The app rejects the record rather than guessing that
+  an address was not reassigned.
+- **Registration is duplicated** means the source contains the same normalized
+  registration for multiple aircraft, so the projection marks it ambiguous.
+- **Snapshot exceeded its 45-day limit** means the immutable source version
+  needs a reviewed refresh. The current version becomes stale only after
+  `2026-10-28T07:35:29Z`.
+- A timeout, HTTP error, malformed asset, checksum error, or blocked static path
+  remains local to the metadata section. Check `index.json` and the selected
+  two-hex-prefix shard under `/aircraft-metadata/2026-09-13-v1/`.
+
+Run `npm run check:aircraft-metadata` to validate the committed data without a
+network request. Do not edit a deployed immutable version in place or bypass
+identity/staleness checks. A refreshed source, schema, generator, or byte set
+requires a new output version followed by
+`npm run update:aircraft-metadata`.
+
 ## Marine shows unavailable or reconnecting
 
 Digitraffic requires both HTTPS REST and secure WebSocket access. Check:
@@ -233,6 +258,8 @@ Do not hide MapLibre attribution controls. The application must visibly credit:
 - OpenFreeMap, OpenMapTiles, and OpenStreetMap contributors;
 - Photon and OpenStreetMap contributors beside the Location control;
 - ADSB.lol and ODbL;
+- Mictronics aircraft-database and ODC-By 1.0 whenever static aircraft metadata
+  is displayed;
 - Fintraffic Digitraffic and CC BY 4.0, including the filtering/normalization
   change notice.
 

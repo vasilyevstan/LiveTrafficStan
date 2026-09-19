@@ -29,7 +29,8 @@ preserve truthful partial operation when one provider fails.
   blocker Issue. Do not add placeholder code, claim blocked criteria complete,
   or hold unrelated ready work behind the blocker.
 - Before merge, run `npm run lint`, `npm run typecheck`,
-  `npm test -- --run`, and `npm run build`.
+  `npm test -- --run`, `npm run check:aircraft-metadata`, and
+  `npm run build`.
 - Use existing npm scripts and dependencies. Add a framework or dependency only
   when a demonstrated requirement cannot be met with current mechanisms.
 
@@ -102,6 +103,28 @@ preserve truthful partial operation when one provider fails.
   controllers, cadence, connections, and session Home.
 - Motion interpolates only between observed positions. Trails contain observed
   points and remain bounded by both time and count.
+- Static aircraft metadata is selected-object context only. It must not mutate
+  live traffic entities, provider health/freshness, trails, selection, camera,
+  or the provider-reported aircraft marker taxonomy.
+- Keep the Mictronics metadata source pinned by commit, publication instant,
+  internal version, archive/license checksums, schema, and immutable output
+  version. Source code remains Apache-2.0; the derivative database is conveyed
+  under ODC-By with a co-located full license, visible attribution, and the
+  database-rights/contents-rights distinction.
+- Aircraft metadata makes zero startup requests. Selection may load one
+  validated index/type asset and one validated ICAO24-prefix shard under one
+  five-second deadline and streamed byte caps. Cache only fulfilled complete
+  assets: one index and the bounded shard LRU. Aborted, rejected, partial,
+  malformed, oversized, or checksum-failing work never enters cache.
+- Match metadata by exact six-character ICAO24. Present live registration and
+  type must match after case and outer-whitespace normalization only; duplicated
+  registrations are unavailable. Missing live registration may yield only an
+  explicit ICAO24-only result. Do not add registration-only, punctuation
+  removal, fuzzy, callsign, owner, operator, or airline inference.
+- Tag metadata state with the complete selected identity and revision. Aircraft
+  changes, vessel/empty selection, and unmount abort old work; stale callbacks
+  cannot display A after A to B to A. Reevaluate publication-age and future
+  clock rules while details remain open without refetching.
 - Production aircraft proxy changes must keep the fixed ADSB.lol origin, exact
   `/api/aircraft/v2/point/{lat}/{lon}/{radiusNm}` allowlist, canonical
   coordinate validation, 1-54 NM bound, total deadline, response-size cap,
@@ -129,7 +152,9 @@ preserve truthful partial operation when one provider fails.
 - Keep `docs/` canonical and update the README and Wiki when released behavior
   changes.
 - Preserve visible OpenFreeMap/OpenStreetMap, ADSB.lol, and Digitraffic
-  attribution and the provider licensing records.
+  attribution and the provider licensing records. When static aircraft metadata
+  is displayed, also preserve Mictronics and ODC-By attribution plus the
+  snapshot publication date.
 - Do not expand a focused change into reverse geocoding, search autocomplete,
   continuous location, persistent tracking, PWA, weather, clustering, or
   backend work unless the request explicitly includes it.

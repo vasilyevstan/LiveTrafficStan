@@ -6,3 +6,16 @@ LiveTrafficStan was originally developed by Stanislav Vassiljev
 
 This product includes software developed for the LiveTrafficStan project:
 https://github.com/vasilyevstan/LiveTrafficStan
+
+Aircraft metadata distributed under public/aircraft-metadata is a derivative
+database generated from Mictronics aircraft-database:
+https://github.com/Mictronics/aircraft-database
+
+The derivative aircraft metadata database is made available under the Open
+Data Commons Attribution License (ODC-By) 1.0, not under the Apache License
+2.0 that covers LiveTrafficStan source code:
+https://opendatacommons.org/licenses/by/1-0/
+
+The complete ODC-By license is distributed alongside each aircraft metadata
+version. ODC-By governs database rights and does not warrant the contents or
+clear every independent right in individual contents.

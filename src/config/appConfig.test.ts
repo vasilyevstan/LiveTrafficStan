@@ -28,6 +28,14 @@ describe('createAppConfig', () => {
     expect(config.map.touchHitTolerancePx).toBe(8)
     expect(config.aircraft.refreshIntervalMs).toBe(20_000)
     expect(config.aircraft.rateLimitBackoffMaxMs).toBe(5 * 60_000)
+    expect(config.aircraftMetadata).toMatchObject({
+      baseUrl: '/aircraft-metadata/2026-09-13-v1',
+      timeoutMs: 5_000,
+      shardCacheEntries: 8,
+      staleAfterDays: 45,
+      futureToleranceHours: 24,
+      sourceDatabaseVersion: 522,
+    })
     expect(MAX_AIRCRAFT_RADIUS_NM).toBe(
       aircraftQueryRadiusNauticalMiles(config.map.maximumViewportRadiusKm),
     )

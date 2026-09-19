@@ -19,6 +19,8 @@ Digitraffic REST + MQTT -> marine adapter -> normalized Vessel[]
                                                         |
                            React overlays <-> persistent MapLibre map
 
+selected Aircraft -> static metadata index + prefix shard -> details panel only
+
 coordinate text -> local parser ------------------------+
 named text -> Photon adapter -> PlaceSearchResult[] ----+-> view navigation
 session Home / one-shot location -----------------------+
@@ -36,6 +38,7 @@ does not hold a provider credential or create server-side state.
 | `src/config/` | Typed defaults and validation of browser-safe environment overrides |
 | `src/domain/` | Application-owned traffic types, geographic helpers, location-input parsing, and formatting |
 | `src/providers/aircraft/` | ADSB.lol request, runtime payload checks, normalization, and unit conversion |
+| `src/providers/aircraftMetadata/` | Bounded same-origin static metadata loading, provenance/schema/hash validation, exact identity matching, and shard LRU |
 | `src/providers/marine/` | Digitraffic capabilities, REST/MQTT lifecycle, metadata merging, normalization, and opt-in development diagnostics |
 | `src/providers/geocoding/` | Photon request construction, response bounds, runtime GeoJSON validation, result normalization, and attribution identity |
 | `src/app/` | React hooks/controllers for provider lifecycle, place-search cancellation/cache, navigation intent, time ticks, and trail history |
@@ -85,6 +88,15 @@ features, preserves provider order, deduplicates stable OpenStreetMap
 identities, and emits bounded application-owned `PlaceSearchResult` records.
 Raw Photon payloads never enter React or MapLibre.
 
+Selected-aircraft metadata is another independent boundary. It accepts only the
+normalized live ICAO24, registration, and type identity. The provider loads no
+asset until selection, then reads one validated index/type dictionary and at
+most one two-hex-prefix TSV shard under one deadline. Exact ICAO24 is primary;
+present live registration and type must agree, duplicated registrations are
+unavailable, and missing live registration produces an explicit ICAO24-only
+confidence label. Metadata remains separate from the live `Aircraft` object and
+never changes provider health, freshness, history, or marker artwork.
+
 ## Lifecycle and failure isolation
 
 Aircraft and marine providers have separate state, cancellation, and error
@@ -109,6 +121,11 @@ continues to render.
   active request, rejects stale revisions, enforces local submit and
   rate-limit deadlines, and keeps a bounded session-only success/empty cache.
   Search failure does not change the current camera or either traffic provider.
+- Aircraft metadata has its own selected-identity controller. It aborts on
+  aircraft changes, vessel/empty selection, or unmount. State carries the full
+  identity key plus a monotonic revision, so late A callbacks cannot render
+  after A to B to A selection changes. Only complete valid assets enter one
+  index cache and an eight-shard LRU; failure remains local to the detail card.
 
 ## Freshness, motion, and history
 
@@ -199,6 +216,9 @@ vector tiles will remain in a loading state.
 - History is bounded by both time and count.
 - Network work pauses while the page is hidden or the viewport is ineligible,
   without resetting session timing or cache state.
+- Aircraft metadata has zero startup requests and lazy prefix loading. Static
+  assets use immutable deployment caching, while application memory retains
+  only one index and eight validated shards.
 
 ## Deployment boundary
 
@@ -206,7 +226,8 @@ Cloudflare Workers with Static Assets is the selected one-unit production
 boundary:
 
 1. `dist/` is served as Static Assets;
-2. fingerprinted `/assets/*` responses use immutable browser caching;
+2. fingerprinted `/assets/*` and versioned `/aircraft-metadata/*` responses use
+   immutable browser caching;
 3. Worker code runs first only for `/api` and `/api/*`;
 4. the only forwarded route is
    `GET /api/aircraft/v2/point/{latitude}/{longitude}/{radiusNm}`;

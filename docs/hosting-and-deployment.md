@@ -124,7 +124,7 @@ Monitor real usage before considering the paid plan or any rate-control change.
 ```text
 browser
   |
-  +-- / and /assets/* -----------------> Cloudflare Static Assets
+  +-- /, /assets/*, /aircraft-metadata/* -> Cloudflare Static Assets
   |
   +-- /api/aircraft/v2/point/... ------> Cloudflare Worker
                                                |
@@ -152,6 +152,8 @@ real 404 responses rather than `index.html`.
 
 - `/assets/*` uses one-year immutable browser caching because Vite fingerprints
   those filenames;
+- `/aircraft-metadata/*` uses one-year immutable browser caching because every
+  source, schema, generator, or byte change receives a new versioned path;
 - `/` and `/index.html` revalidate;
 - all asset paths use `nosniff`, clickjacking protection, and a conservative
   referrer policy.
@@ -271,6 +273,9 @@ npm run preview:worker
 
 - `check:deploy` performs a credential-free Wrangler bundle and Static Assets
   dry run.
+- `check:aircraft-metadata` validates the committed version, license, inventory,
+  hashes, grammar, counts, and publication-age policy without upstream network
+  access before the build is eligible to deploy.
 - `preview:worker` builds the client and runs the actual local `workerd`
   runtime.
 
@@ -417,6 +422,11 @@ After a subsequent version exists:
 Cloudflare supports rollback among the 100 most recent versions. Older recovery
 uses the exact repository SHA and locked dependency/build inputs. This design
 has no database or storage migration to reverse.
+
+Versioned metadata files already retained in browser or edge immutable caches
+do not need destructive invalidation. A forward update or rollback points
+application code at the corresponding immutable version path; unreferenced old
+files are inert.
 
 ## Re-evaluation conditions
 

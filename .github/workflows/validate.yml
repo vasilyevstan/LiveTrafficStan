@@ -45,6 +45,9 @@ jobs:
       - name: Test
         run: npm test -- --run
 
+      - name: Check aircraft metadata
+        run: npm run check:aircraft-metadata
+
       - name: Build
         run: npm run build
 
