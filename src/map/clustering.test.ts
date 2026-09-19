@@ -1,4 +1,5 @@
 import type { Feature, Point } from 'geojson'
+import { GeoJSONVT } from '@maplibre/geojson-vt'
 import type { MapGeoJSONFeature } from 'maplibre-gl'
 import { describe, expect, it, vi } from 'vitest'
 import {
@@ -35,6 +36,62 @@ const point = (
   properties: { selected },
   geometry: { type: 'Point', coordinates },
 })
+
+const trafficPoint = (
+  kind: 'aircraft' | 'vessel',
+  coordinates: [number, number],
+  properties: Record<string, unknown> = {},
+): Feature<Point> => {
+  const id = `${kind}:one`
+  return {
+    type: 'Feature',
+    id,
+    properties: {
+      id,
+      heading: 90,
+      markerIcon: `${kind}-generic-live`,
+      markerScale: 1,
+      selected: false,
+      stale: false,
+      retainedFalse: false,
+      retainedZero: 0,
+      retainedNull: null,
+      ...properties,
+    },
+    geometry: { type: 'Point', coordinates },
+  }
+}
+
+const applyTrafficUpdates = (
+  initial: Feature<Point>,
+  updates: readonly Feature<Point>[],
+) => {
+  const index = new GeoJSONVT(
+    {
+      type: 'FeatureCollection',
+      features: [initial],
+    },
+    { updateable: true },
+  )
+  let previous = initial
+  for (const next of updates) {
+    const diff = trafficSourceDiff([previous], [next])
+    expect(
+      diff.update?.every(
+        (update) => !Object.hasOwn(update, 'removeAllProperties'),
+      ),
+    ).toBe(true)
+    index.updateData(diff)
+    const data = index.getData()
+    if (data.type !== 'FeatureCollection') {
+      throw new Error('Expected updateable GeoJSONVT data')
+    }
+    expect(data.features).toHaveLength(1)
+    expect(data.features[0]?.id).toBe(next.id)
+    expect(data.features[0]?.properties).toEqual(next.properties)
+    previous = next
+  }
+}
 
 describe('traffic clustering', () => {
   it('toggles the two existing sources without changing fixed options', async () => {
@@ -120,7 +177,6 @@ describe('traffic clustering', () => {
             type: 'Point',
             coordinates: [25.1, 60.1],
           },
-          removeAllProperties: true,
           addOrUpdateProperties: [
             { key: 'selected', value: true },
           ],
@@ -130,5 +186,72 @@ describe('traffic clustering', () => {
     expect(trafficSourceDiff([unchanged, moved], [unchanged, moved])).toEqual(
       {},
     )
+  })
+
+  it.each(['aircraft', 'vessel'] as const)(
+    'preserves %s marker properties across repeated worker updates',
+    (kind) => {
+      const initial = trafficPoint(kind, [24.75, 59.44])
+      const selected = trafficPoint(kind, [24.75, 59.44], {
+        selected: true,
+      })
+      const staleTurn = trafficPoint(kind, [24.75, 59.44], {
+        heading: 135,
+        selected: true,
+        stale: true,
+      })
+      const moved = trafficPoint(kind, [24.76, 59.45], {
+        heading: 160,
+        markerScale: 1.1,
+        selected: true,
+        stale: false,
+      })
+
+      applyTrafficUpdates(initial, [selected, staleTurn, moved])
+    },
+  )
+
+  it('removes only absent properties while retaining falsy values', () => {
+    const previous = trafficPoint('aircraft', [24.75, 59.44], {
+      obsolete: 'remove',
+    })
+    const next = trafficPoint('aircraft', [24.75, 59.44], {
+      selected: true,
+    })
+
+    const diff = trafficSourceDiff([previous], [next])
+
+    expect(diff.update).toEqual([
+      {
+        id: 'aircraft:one',
+        removeProperties: ['obsolete'],
+        addOrUpdateProperties: Object.entries(next.properties ?? {}).map(
+          ([key, value]) => ({ key, value }),
+        ),
+      },
+    ])
+    expect(diff.update?.[0]).not.toHaveProperty('removeAllProperties')
+    applyTrafficUpdates(previous, [next])
+  })
+
+  it('detects removal when an own property previously held undefined', () => {
+    const previous = point('aircraft:one', [24.75, 59.44])
+    previous.properties = {
+      selected: false,
+      optional: undefined,
+    }
+    const next = point('aircraft:one', [24.75, 59.44])
+
+    expect(trafficSourceDiff([previous], [next])).toEqual({
+      update: [
+        {
+          id: 'aircraft:one',
+          removeProperties: ['optional'],
+          addOrUpdateProperties: [
+            { key: 'selected', value: false },
+          ],
+        },
+      ],
+    })
   })
 })
