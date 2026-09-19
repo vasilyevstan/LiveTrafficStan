@@ -144,6 +144,45 @@ The complete dated comparison, request-volume calculation, rights analysis,
 proxy handoff, and re-evaluation conditions are in
 [Aircraft Provider Evaluation](aircraft-provider-evaluation.md).
 
+## Selected-flight routes: no active source
+
+LiveTrafficStan does not currently display aircraft origin, destination,
+schedule, delay, cancellation, or diversion data.
+
+The dated
+[Aircraft Route Enrichment Evaluation](aircraft-route-enrichment-evaluation.md)
+found no source that is both authorized for this project and able to associate
+route data with the selected flight occurrence using a provider-issued
+flight/leg identity plus bounded date/time context.
+
+- ADSB.lol and ADSBDB/VRS-style route lookups are callsign-based standing
+  tables. ADSB.lol can additionally test geographic plausibility. Neither
+  supplies date-specific operational intent.
+- Airplanes.live publishes no dated operational route-association endpoint in
+  the inspected schema.
+- OpenSky flight endpoints provide previous-day-or-earlier track-derived
+  estimated airports and require a written agreement for operational REST use
+  in a live product.
+- FlightAware AeroAPI and AeroDataBox are technically credible future
+  candidates, but LiveTrafficStan has no applicable account, credential,
+  accepted plan, approved budget, provider-specific identity contract, or
+  authorized Tallinn sample.
+- Public airport boards, airline sites, trackers, and widgets are not
+  integration or republication licenses and will not be scraped.
+
+[Issue #44](https://github.com/vasilyevstan/LiveTrafficStan/issues/44)
+records the exact source, rights, identity, sample, cost, retention,
+attribution, and credential evidence required before implementation. Issue #39
+remains the separate public Cloudflare deployment gate.
+
+Callsign and registration may later corroborate a provider occurrence match;
+they can never establish a route alone. Heading, track, current position,
+geographic plausibility, nearby airports, and Mictronics static metadata remain
+prohibited route inferences.
+
+No route-provider key, Worker route, cache, domain field, placeholder panel, or
+mock production response is added while the source gate is open.
+
 ## Aircraft metadata: Mictronics aircraft-database
 
 - Source repository:

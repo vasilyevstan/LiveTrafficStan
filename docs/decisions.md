@@ -39,6 +39,43 @@ licensing, credential, and operational complexity without a demonstrated
 requirement. The existing application-owned provider interface is sufficient
 for a future deliberate replacement.
 
+## Aircraft route enrichment remains blocked
+
+The dated
+[aircraft route enrichment evaluation](aircraft-route-enrichment-evaluation.md)
+found no authorized source that can associate origin and destination with the
+selected flight occurrence using provider identity plus bounded temporal
+context.
+
+Keyless standing-route sources are callsign-only, and ADSB.lol's optional
+route path adds only geographic plausibility. OpenSky supplies historical
+track-derived estimated airports and requires a written agreement for
+operational REST use. FlightAware AeroAPI and AeroDataBox have credible
+operational fields but require unconfigured accounts, server-held credentials,
+approved budgets, applicable display/combination/retention terms, and
+provider-specific occurrence matching.
+
+Issue #44 is therefore the explicit source-authorization blocker. No provider
+interface, route fields, unavailable-only UI, Worker endpoint, secret name,
+cache, or placeholder response is added before that gate is complete.
+
+A future route association must use a provider-issued occurrence/leg identity
+plus bounded temporal context. Callsign and registration are corroborating
+evidence only. Movement, heading, position, nearest airports, geographic
+plausibility, and static Mictronics metadata never infer a route.
+
+Route enrichment starts only after explicit aircraft selection. Live ADSB.lol
+polling, camera movement, trails, map updates, metadata refreshes, and provider
+retry never start or refresh it. Failure, expiry, throttle, cancellation, or
+ambiguity cannot alter the live marker, position age, freshness, aircraft
+cadence/backoff, trails, static metadata, selection, map health, or another
+provider.
+
+The source blocker and Issue #39 remain separate: source authorization can be
+proved before a public deployment exists, but credentialed route enrichment
+cannot ship until the selected secret-holding production path is deployed and
+validated.
+
 ## Cloudflare Worker plus Static Assets
 
 Cloudflare Workers with Static Assets is the smallest production boundary for
