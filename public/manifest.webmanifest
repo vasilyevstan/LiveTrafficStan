@@ -1,0 +1,25 @@
+{
+  "id": "/",
+  "name": "LiveTrafficStan",
+  "short_name": "TrafficStan",
+  "description": "Live aircraft and significant marine traffic with private local playback.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#dce8ec",
+  "theme_color": "#dce8ec",
+  "icons": [
+    {
+      "src": "/icons/livetrafficstan-192-v1.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/livetrafficstan-512-v1.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

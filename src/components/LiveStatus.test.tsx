@@ -64,4 +64,23 @@ describe('LiveStatus', () => {
     expect(html).toContain('Browser offline; local playback remains available')
     expect(html).not.toContain('aria-live')
   })
+
+  it('states that live traffic is unavailable while offline', () => {
+    const html = renderToStaticMarkup(
+      <LiveStatus
+        aircraftCount={0}
+        vesselCount={0}
+        aircraftStatus={{ phase: 'live', paused: true }}
+        marineStatus={{ phase: 'live', paused: true }}
+        marineCapabilities={DIGITRAFFIC_MARINE_CAPABILITIES}
+        now={1_800_000_000_000}
+        online={false}
+      />,
+    )
+
+    expect(html).toContain('<strong>OFFLINE</strong>')
+    expect(html).toContain(
+      'Live traffic is unavailable while the browser is offline',
+    )
+  })
 })

@@ -87,6 +87,11 @@ export function LiveStatus({
         </span>
       </div>
       <div className="live-status__providers">
+        {!online && historicalAt === undefined && (
+          <span>
+            Live traffic is unavailable while the browser is offline
+          </span>
+        )}
         {historicalAt !== undefined && (
           <span>
             {online

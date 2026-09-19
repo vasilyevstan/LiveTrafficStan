@@ -148,6 +148,15 @@ Map-experience tests also cover:
 - shared-camera precedence over delayed geolocation, initial viewport
   publication without a fit, and independent camera reporting for repeated
   ineligible views;
+- deterministic shell allowlist/content version/budget, exact navigation and
+  asset routing, recorded-active predecessor cleanup, superseded-waiting
+  workers, atomic failed install, interrupted inactive-cache recovery,
+  active-cache preservation, authorized activation, failed-first-install
+  presentation, and owned-cache-only retirement;
+- manifest root scope, 192/512 icon dimensions, maskable purpose, and mutable/
+  immutable deployment headers;
+- source-free Light/Dark fallback styles without sprites, glyphs, sources, or
+  external URLs;
 - idempotent MapLibre style installation and restoration of custom state;
 - theme-keyed traffic image replacement, including identical style URLs and
   stale/live opacity updates;
@@ -301,6 +310,44 @@ The same pass proves:
 - one MapLibre canvas, visible attribution, reachable preferences, and the
   58vh control-panel bound hold at 390x844 and 390x568;
 - no runtime exception or console error is reported.
+
+## Issue #12 PWA and offline acceptance
+
+The generated normal shell contains 10 URLs and 2,447,478 uncompressed bytes,
+below the 4 MiB fail-closed budget. Production Chromium reports no
+installability errors. First install reaches `activated` without claiming the
+page or showing **REFRESH APP**; the next reload is controlled.
+
+Cold-offline acceptance clears the ordinary HTTP cache before reloading. It
+proves:
+
+- CacheStorage contains only root/index, four hashed Vite assets, manifest,
+  favicon, and two icons;
+- live traffic is explicitly unavailable and basemap tiles are explicitly not
+  cached;
+- the source-free fallback keeps one MapLibre canvas;
+- 180 consented IndexedDB observations remain available and three vessels render
+  in HISTORY mode;
+- the historical Return to Live action and attribution remain visible while
+  the scrollable controls stay at or below 58vh at 390x844 and 390x568;
+- reconnect restores the external style in the same canvas with one shell
+  cache and no unexpected runtime/console errors.
+
+The A→B→A production exercise proves:
+
+- a B network document and new hashed asset load under controller A;
+- B waits and prompts, then reloads each of two controlled tabs exactly once;
+- B can serve an A-only deferred asset from the predecessor cache;
+- only A and B shell generations coexist, and an unrelated cache survives;
+- API and static context requests never enter CacheStorage;
+- rollback A waits/prompts and reloads both tabs once;
+- offline rollback navigation uses current A rather than predecessor B;
+- an excluded `/elsewhere` navigation receives no offline HTML fallback;
+- a worker with a missing precache asset never becomes waiting, leaves A active,
+  and removes its partial cache;
+- retirement reloads both tabs once, unregisters without a loop, deletes only
+  shell caches, preserves the unrelated cache, exact preferences/history
+  settings, and three IndexedDB rows, and leaves retirement `/sw.js` available.
 
 ## Browser smoke test
 

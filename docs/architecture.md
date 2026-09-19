@@ -53,8 +53,10 @@ provider credential or creates server-side state.
 | `src/app/` | React hooks/controllers for provider lifecycle, unified preference persistence, place-search cancellation/cache, navigation intent, time ticks, offline state, and traffic-history orchestration |
 | `src/history/` | Provider-qualified observation projection, bounded session history, IndexedDB transactions, settings, indexes, playback, and gap-aware historical trails |
 | `src/traffic/` | Filtering, freshness/expiry, interpolation, and selected-trail history |
-| `src/map/` | MapLibre lifecycle, GeoJSON sources/layers, feature selection, and marker images |
+| `src/map/` | MapLibre lifecycle, external/local-fallback styles, GeoJSON sources/layers, feature selection, and marker images |
 | `src/components/` | Status, controls, and selected-object details |
+| `scripts/pwa-shell.mjs` | Deterministic shell allowlist/versioning, request classification, two-generation cleanup, and normal/retirement worker source |
+| `public/manifest.webmanifest` | Root-scoped standalone install metadata and versioned maskable icons |
 
 ## Provider boundaries
 
@@ -510,3 +512,55 @@ and any loaded port, airport, or weather source/selection.
 Interaction listeners remain registered once, and a style revision prevents a
 late obsolete load from winning. Provider hooks, React selection/history, and
 camera state do not restart.
+
+## Application-shell and offline lifecycle
+
+The service worker is build output, not hand-maintained source. After Vite emits
+the exact hashed application, MapLibre-worker, and lazy MQTT files,
+`scripts/generate-service-worker.mjs` scans `dist`, computes a content version,
+including the worker policy source so worker-only changes receive a new cache
+identity, enforces a 4 MiB uncompressed budget, and writes stable `/sw.js`.
+
+The precache allowlist contains only:
+
+- `/` and `/index.html`;
+- built `/assets/*`;
+- `manifest.webmanifest`, `favicon.svg`, and the versioned 192/512 icons.
+
+It excludes `/api/*`, Digitraffic REST/MQTT, OpenFreeMap styles/tiles/glyphs/
+sprites, Photon, AWC, aircraft metadata, airports, ports, and IndexedDB
+history. Root/index navigations are network-first with cached `index.html`
+fallback. Exact shell assets are cache-first; any other request is not handled
+by the service worker and receives no SPA fallback.
+
+Install precaching is fail-closed. A waiting generation is complete before it
+can activate. Cached root-response metadata records the generation that was
+actually active when the candidate installed, so a superseded waiting worker
+cannot displace the real predecessor. Activation retains only its own cache and
+that recorded predecessor, deleting no unrelated caches. The active generation
+is always searched first, including rollback to an already-existing cache; the
+predecessor remains available for an older tab's deferred hashed import.
+An incomplete inactive cache left by browser termination is rebuilt on the next
+install attempt; an incomplete cache marked active is never replaced in place.
+
+The application registers only in production secure contexts with
+`updateViaCache: none`. First install does not call `skipWaiting`, claim the
+open page, or show an update action. A later waiting worker appears as
+**REFRESH APP**; the user action authorizes `skipWaiting`, conditional
+`clients.claim`, and one guarded reload per controlled tab.
+
+When an external style cannot load, `TrafficMap` installs a bundled
+source-free, theme-aware background into the same MapLibre instance. It then
+installs the normal traffic/history sources and reports a viewport, allowing
+retained IndexedDB entities and trails to render without claiming an offline
+basemap. Reconnect retries the configured external style in the same map and
+preserves camera, selection, history, and provider controllers.
+
+`npm run build:pwa-retire` disables normal registration and emits an
+unconditionally activating retirement worker at the same `/sw.js` path. The
+protected production workflow selects the `pwa-retirement` artifact for this
+exact-SHA deployment. It deletes only `livetrafficstan-shell-*` caches,
+unregisters, and navigates controlled windows once. Preferences, history
+settings, unrelated caches, and IndexedDB are outside that boundary. A pre-PWA
+rollback must continue serving this worker at `/sw.js` for dormant
+registrations.

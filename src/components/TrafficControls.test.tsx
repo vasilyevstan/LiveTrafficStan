@@ -83,6 +83,9 @@ const renderControls = (
       shareDisabled={false}
       onShare={() => undefined}
       onResetPreferences={() => undefined}
+      appUpdateAvailable={false}
+      appUpdateActivating={false}
+      onRefreshApp={() => undefined}
       locationNavigationDisabled={false}
       activeLocationLabel="Home: Tallinn, Estonia"
       coordinatePrecision={3}
@@ -117,6 +120,16 @@ describe('TrafficControls', () => {
     expect(html).toContain('RESET PREFERENCES')
     expect(html).toContain('role="status"')
     expect(html).toContain('https://example.test/#v=1')
+  })
+
+  it('exposes a non-blocking waiting application update', () => {
+    const html = renderControls({
+      appShellStatus: 'An application update is ready.',
+      appUpdateAvailable: true,
+    })
+    expect(html).toContain('REFRESH APP')
+    expect(html).toContain('An application update is ready.')
+    expect(html).toContain('role="status"')
   })
 
   it('keeps clustering as a provider-neutral optional layer preference', () => {

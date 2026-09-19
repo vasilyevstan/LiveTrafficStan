@@ -77,6 +77,13 @@ Check these project invariants:
   fallible. No export, sharing, cross-device synchronization, backend history,
   service-worker live cache, or public retained-history output is covered by
   the current ADSB.lol/ODbL and Fintraffic/CC BY decision.
+- The application-shell worker may cache only root/index, hashed build assets,
+  manifest, favicon, and versioned icons. APIs, MQTT, map resources, Photon,
+  AWC, metadata/context datasets, and private history must bypass it and must
+  never receive a cached HTML success fallback.
+- Update cleanup is prefix-owned and retains only current/predecessor shell
+  generations. Failed precache cannot replace the active worker; retirement
+  cannot delete unrelated caches, preferences, history settings, or IndexedDB.
 - Stored history is an allowlist, not a serialized live entity. It excludes
   interpolation frames, destination/ETA, browser location, current METAR, and
   third-party aircraft metadata; every row carries schema, normalization,

@@ -7,6 +7,10 @@ export type TrafficMapError =
       kind: 'runtime'
       message: string
     }
+  | {
+      kind: 'basemap'
+      message: string
+    }
 
 export const MAP_INITIALIZATION_ERROR: TrafficMapError = {
   kind: 'initialization',
@@ -26,6 +30,11 @@ export const createMapSafely = <T>(
 }
 
 export const mapErrorPresentation = (error: TrafficMapError) => ({
-  title: error.kind === 'initialization' ? 'Map unavailable' : 'Map data issue',
+  title:
+    error.kind === 'initialization'
+      ? 'Map unavailable'
+      : error.kind === 'basemap'
+        ? 'Basemap unavailable'
+        : 'Map data issue',
   message: error.message,
 })

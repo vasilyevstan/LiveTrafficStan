@@ -381,6 +381,37 @@ Valid fragment fields override saved preferences for that page without being
 saved automatically. Browser Home/location, queries, selection, history, and
 provider state are never serialized.
 
+## Installable application shell
+
+`npm run build` is the canonical PWA build:
+
+```text
+tsc -b && vite build && node scripts/generate-service-worker.mjs
+```
+
+The generator fails above 4 MiB of uncompressed allowlisted shell responses.
+It emits stable `/sw.js` with a content-versioned cache containing only root/
+`index.html`, built `/assets/*`, the manifest, favicon, and versioned icons.
+Do not add provider responses, map resources, Photon, weather, aircraft
+metadata, airport/port datasets, or history rows to that allowlist.
+
+Deployment headers must keep `/sw.js`, `/index.html`, and
+`/manifest.webmanifest` revalidated. Hashed assets and versioned icons are
+immutable. `/sw.js` must be JavaScript and expose `Service-Worker-Allowed: /`.
+
+Normal production registration requires a secure context and uses
+`updateViaCache: none`. Vite development does not register a worker.
+`npm run build:pwa-retire` builds the no-registration rollback shell and emits
+the stable retirement worker. In the protected production workflow choose the
+`pwa-retirement` artifact for the exact current-main SHA. Do not roll directly
+to a release that removes `/sw.js`; dormant browser registrations still need
+to receive retirement.
+
+The service worker has no generic navigation fallback. Only `/` and
+`/index.html` navigations use cached `index.html` when network fetch fails.
+Routes such as `/elsewhere` and every non-shell request preserve ordinary
+network/404 behavior.
+
 ## Marine endpoints
 
 The REST endpoint must expose Digitraffic-compatible AIS location and vessel

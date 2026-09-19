@@ -109,6 +109,13 @@ Check these project invariants:
 - Metric versus aviation/nautical changes formatting only and cannot alter
   provider work, viewport eligibility, filter membership, selection/history,
   or the one-map lifecycle.
+- External-style failure installs only the source-free theme background into
+  the existing MapLibre instance. It must still report a viewport and render
+  retained traffic/trails, state that basemap tiles are not cached, and retry
+  the configured style in the same camera/map after reconnect.
+- PWA install/update/retirement cannot create a second canvas, reapply an old
+  shared camera, hide attribution/Return to Live, or exceed the checked 58vh
+  control bound at 390x844 and 390x568.
 - Vessel discovery keeps search, typed filters, matching-versus-shown counts,
   reset state, hidden-SHIPS selection behavior, local port loading/error/retry,
   and source-limit wording readable and keyboard-usable in both supported
