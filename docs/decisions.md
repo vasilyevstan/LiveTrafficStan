@@ -327,6 +327,31 @@ immutable output URL.
 This metadata never changes the provider-reported marker vocabulary. Model,
 configuration, and wake category are selected-object context only.
 
+## Bundled identifier-allocation country context
+
+Selected details derive optional country context locally rather than adding an
+enrichment provider. Aircraft use only exact six-character ICAO24 addresses
+against validated inclusive state-allocation ranges. Vessels use only valid
+nine-digit ordinary ship-station MMSIs beginning with 2 through 7 and an
+unambiguous assigned MID.
+
+The result is display-only `Country name (ISO)` text labelled **Registration
+allocation** for aircraft or **Flag state** for vessels. It is not operator,
+owner, crew, citizenship, route, location, operating area, current
+jurisdiction, or live-registry evidence. Unknown, special-purpose, unassigned,
+conflicting, malformed, and excluded values omit the row.
+
+The projection uses pinned open-licensed third-party source data plus a
+canonical hash-pinned CC0 Wikidata cross-check. It copies no ITU/ICAO
+publication layout or text, excludes every known ambiguous or invalid source
+row, and is checked offline in CI. Registration-prefix fallback and decorative
+flags are intentionally deferred.
+
+Keeping this as a pure domain lookup avoids changes to provider normalization,
+map/source properties, history records, persistence, loading, cache, or
+networking. Live and historical details therefore use the same deterministic
+derivation.
+
 ## Explicit MapLibre worker bundling
 
 MapLibre 6 loads vector tiles through a separate module worker. Vite prebundles the main dependency, which makes MapLibre's inferred adjacent worker URL point at a file Vite did not emit. The result is a loaded style with vector tiles stuck indefinitely in a loading state.

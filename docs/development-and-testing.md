@@ -24,6 +24,8 @@ default ADSB.lol and AWC integrations.
 | `npm run test:watch` | Run Vitest in watch mode |
 | `npm run check:aircraft-metadata` | Offline validation of the committed pinned metadata database |
 | `npm run update:aircraft-metadata` | Explicit maintainer regeneration from the pinned upstream archive and license |
+| `npm run check:country-allocations` | Network-free validation of bundled MID and ICAO24 country allocations |
+| `npm run update:country-allocations` | Explicit maintainer regeneration from pinned open-licensed sources and canonical cross-checks |
 | `npm run check:ports` | Network-free validation of the committed Natural Earth port projection |
 | `npm run update:ports` | Explicit maintainer regeneration from the pinned Natural Earth source |
 | `npm run check:airports` | Network-free validation of the committed OurAirports projection |
@@ -40,6 +42,7 @@ npm run lint
 npm run typecheck
 npm test -- --run
 npm run check:aircraft-metadata
+npm run check:country-allocations
 npm run check:ports
 npm run check:airports
 npm run build
@@ -180,6 +183,10 @@ Map-experience tests also cover:
   ICAO24-only matching, conflicts, ambiguity, malformed/partial assets,
   streamed byte caps, one total deadline, fulfilled-only caches, A to B to A
   callback races, vessel/empty cancellation, and exact age boundaries.
+- deterministic MID/ICAO24 allocation projection, canonical Wikidata
+  cross-check hashes, fail-closed ambiguity/source-error exclusions, MMSI
+  special-format rejection, exact aircraft range boundaries, and accessible
+  selected-detail labels without network work.
 - deterministic Natural Earth projection, immutable inventory/checksum/size/
   rank checks, bounded lazy runtime loading, timeout/abort/error isolation,
   fulfilled-only caching, ranked zoom layers, and theme-aware visibility.
@@ -211,6 +218,19 @@ requires network access plus the system `unzip` executable. It verifies both
 downloaded SHA-256 values before reading the archive. Review the generated diff
 and measured counts; a source, schema, generator, or byte change requires a new
 output version rather than replacement under an old immutable URL.
+
+`npm run check:country-allocations` makes no upstream request. It validates the
+generated SHA-256 and deterministic gzip size, exact 282-MID and 192-aircraft
+range inventories, excluded ambiguity/error rows, ISO grammar, sorted
+non-overlapping ranges, and representative boundary fixtures.
+
+`npm run update:country-allocations` is an explicit maintainer operation. It
+downloads exact commit-pinned Apache-2.0 MID and CC0 ICAO24 projections plus two
+bounded Wikidata SPARQL responses. Wikidata bindings are schema-checked,
+canonically sorted and serialized, then verified against configured SHA-256
+values before use. The projection includes only exact unambiguous MID
+agreement, rejects invalid/special ICAO rows, verifies the reviewed state-to-ISO
+crosswalk, and refuses changed bytes under an existing output version.
 
 `npm run check:ports` makes no upstream request. It validates the immutable
 directory inventory, raw bytes, SHA-256, deterministic gzip-9 size, complete

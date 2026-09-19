@@ -298,6 +298,89 @@ The full source comparison, measured projection, rejected alternatives,
 matching rules, and re-evaluation conditions are in
 [Aircraft Metadata Evaluation](aircraft-metadata-evaluation.md).
 
+## Offline aircraft and vessel country allocations
+
+Country rows in selected details are bundled identifier-derived context. They
+make no runtime request and do not change traffic providers, normalization,
+history records, persistence, map state, or selection.
+
+### Vessel MID projection
+
+- Source repository:
+  <https://github.com/michaeljfazio/MIDs>
+- Pinned commit:
+  `ebcc3c8fbb7ada9df11f857e78db2400f1e08155`
+- Source file: `mids.json`
+- Source SHA-256:
+  `94d4be029c1174af41b56426f9310155cf52d2ff331dd98ab0d19dd0c65ff58c`
+- License: Apache License 2.0
+- Cross-check: Wikidata properties P2979 and P297, structured data under
+  CC0 1.0 Universal
+- Canonical cross-check SHA-256:
+  `ba83216afa73d6b6d0daec91b553a63968455a57b560c5902b7c5487f47fc53b`
+- Retrieval review: `2026-09-19`
+
+The Apache source has 292 MID mappings. The pinned CC0 cross-check has the same
+292 unique MID values across 297 rows. Projection groups every row for a MID
+before accepting it and retains only exact one-ISO agreement. Ten ambiguous or
+ISO-less territory allocations are excluded: 204, 255, 303, 306, 501, 607,
+608, 618, 635, and 665. The committed result contains 282 MIDs.
+
+ITU's current allocation table and ITU-R M.585 / USCG guidance define the MID
+and special MMSI semantics, but LiveTrafficStan does not redistribute their
+publication layout or text. Only a safe integer with exactly nine digits, first
+digit 2 through 7, and an included assigned MID can produce **Flag state**.
+Group, coast, SAR-aircraft, handheld, craft-associated, AtoN, SART/MOB/EPIRB,
+unassigned, conflicting, and malformed identifiers remain unknown.
+
+### Aircraft ICAO24 projection
+
+- Source repository:
+  <https://github.com/ibosoftnet/icao-aircraft-addresses>
+- Pinned commit:
+  `2ac0f294274beddb57212eb7531ff87dfd869de5`
+- Source file: `Hexadecimal Addresses (Amendment 92).csv`
+- Source revision stated by the source:
+  ICAO Annex 10 Volume III, Table 9-1, Amendment 92,
+  effective `2024-07-22`
+- Source SHA-256:
+  `2a7bf997fee6ba7edaa83687a2179b903632a817f45172b4a6f531b872474166`
+- License applied by the source repository: CC0 1.0 Universal
+- ISO crosswalk: Wikidata P297 English-label result under CC0 1.0 Universal
+- Canonical crosswalk SHA-256:
+  `dca67d4d0f8ad71e1d068f146f50c51f2ebbd68e5e7c01cb2d205e2e0b18e264`
+- Retrieval review: `2026-09-19`
+
+The source has 196 non-overlapping rows. LiveTrafficStan excludes the Comoros
+row because its declared zero count conflicts with range `035000-0357FF`,
+rather than silently repairing it. The three `ICAO(1)`/`ICAO(2)` temporary or
+special-use rows are also excluded. The committed projection contains 192
+validated inclusive ranges.
+
+The source is a third-party open-licensed factual transcription, not an ICAO
+permission grant or live registry. LiveTrafficStan copies no ICAO publication
+layout or explanatory text. Exact six-character hexadecimal addresses can
+produce **Registration allocation** only within an included range. Gaps,
+malformed addresses, excluded rows, and special-use blocks remain unknown.
+Registration-prefix fallback is not implemented.
+
+### Generated output and meaning
+
+`src/config/countryAllocations.generated.json` contains 282 MID mappings and
+192 ICAO24 ranges: 14,148 raw bytes and 5,394 deterministic gzip-9 bytes. It
+has SHA-256
+`f621390e58660f42a4c5351b7a93b0b4b1464c98e5add78f498fc6ecc918f7a9`.
+
+`npm run check:country-allocations` validates it offline.
+`npm run update:country-allocations` fetches only configured sources, enforces
+byte/hash bounds, canonicalizes and hash-checks mutable SPARQL results, applies
+the reviewed exclusion and ISO-alias inventory, and refuses changed bytes
+under the existing output version.
+
+The displayed country and ISO code describe identifier allocation only. They
+do not establish operator, owner, crew, citizenship, departure, destination,
+location, current jurisdiction, or verified current registration.
+
 ## Weather observations: NOAA/NWS Aviation Weather Center
 
 - API documentation: <https://aviationweather.gov/data/api/>
@@ -533,11 +616,17 @@ separate licenses and attribution requirements:
 - live aircraft data: ADSB.lol, ODbL 1.0
 - static aircraft metadata derivative database: Mictronics
   aircraft-database, ODC-By 1.0
+- bundled vessel MID projection: michaeljfazio/MIDs, Apache-2.0, intersected
+  with a CC0 Wikidata cross-check
+- bundled aircraft address allocation projection:
+  ibosoftnet/icao-aircraft-addresses, CC0 1.0, with a CC0 Wikidata ISO
+  crosswalk
 - marine data: Fintraffic Digitraffic, CC BY 4.0
 - optional port context: Natural Earth Ports, public domain
 - optional airport context: OurAirports, public domain
 
 The application does not persist or redistribute a live traffic database. It
 does distribute the separately identified static aircraft metadata derivative
-database under ODC-By 1.0 and the separately identified public-domain Natural
+database under ODC-By 1.0, the separately identified Apache-2.0/CC0 country
+allocation projections, and the separately identified public-domain Natural
 Earth port projection and OurAirports airport projection.

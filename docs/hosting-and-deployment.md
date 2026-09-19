@@ -338,6 +338,9 @@ npm run preview:worker
 - `check:aircraft-metadata` validates the committed version, license, inventory,
   hashes, grammar, counts, and publication-age policy without upstream network
   access before the build is eligible to deploy.
+- `check:country-allocations` validates the bundled MID and ICAO24 projection,
+  hashes, exclusions, ranges, counts, and representative fixtures without
+  upstream network access.
 - `preview:worker` builds the client and runs the actual local `workerd`
   runtime.
 

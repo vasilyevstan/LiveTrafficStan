@@ -13,6 +13,10 @@ single React application, without accounts, a database, or persistent tracking.
 - Lazily loaded selected-aircraft model, configuration, and wake-category
   context from a pinned ODC-By aircraft database, with exact identity checks,
   source age, confidence, and local failure isolation.
+- Offline selected-detail country context: aircraft registration allocation
+  from vetted ICAO24 ranges and vessel flag state from valid ordinary MMSIs.
+  Unknown, special-purpose, conflicting, and malformed identifiers are omitted
+  rather than guessed.
 - Local current-aircraft search by callsign, registration, ICAO24, or reported
   type. Search ranks exact, prefix, and substring matches without changing the
   map, camera, providers, or visible marker set.
@@ -113,6 +117,7 @@ npm run lint
 npm run typecheck
 npm test -- --run
 npm run check:aircraft-metadata
+npm run check:country-allocations
 npm run check:ports
 npm run check:airports
 npm run build
@@ -269,6 +274,7 @@ operational thresholds, and examples.
 | Place search | Photon / OpenStreetMap | OSM ODbL attribution applies | Direct browser access on explicit submit |
 | Aircraft | ADSB.lol | ODbL 1.0 | Same-origin Vite or Cloudflare Worker proxy |
 | Aircraft metadata | Mictronics aircraft-database derivative | ODC-By 1.0 | Immutable same-origin static assets, loaded only after selection |
+| Country allocations | michaeljfazio/MIDs, ibosoftnet ICAO24 transcription, Wikidata cross-check | Apache-2.0 and CC0 1.0 | Bundled deterministic local lookup |
 | Marine | Fintraffic Digitraffic | CC BY 4.0 | Direct regional REST and MQTT |
 | Port context | Natural Earth Ports | Public domain | Immutable same-origin static asset, loaded only when enabled |
 | Airport context | OurAirports | Public domain | Immutable same-origin static asset, loaded only when enabled |
@@ -279,8 +285,8 @@ aircraft metadata is a derivative database conveyed under ODC-By 1.0 with its
 full license alongside the generated files. Distributed derivative works must
 preserve the applicable [`NOTICE`](NOTICE) and data-license attribution. The
 source license does not relicense map, search, live aircraft, aircraft
-metadata, marine data, or the separately identified public-domain Natural
-Earth port and OurAirports projections. See
+metadata, marine data, country-allocation projections, or the separately
+identified public-domain Natural Earth port and OurAirports projections. See
 [Data Sources and Licensing](docs/data-sources-and-licensing.md), the dated
 [Aircraft Provider Evaluation](docs/aircraft-provider-evaluation.md), and the
 dated [Aircraft Metadata Evaluation](docs/aircraft-metadata-evaluation.md), the

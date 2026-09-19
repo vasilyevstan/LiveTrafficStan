@@ -32,8 +32,8 @@ preserve truthful partial operation when one provider fails.
   blocker Issue. Do not add placeholder code, claim blocked criteria complete,
   or hold unrelated ready work behind the blocker.
 - Before merge, run `npm run lint`, `npm run typecheck`,
-  `npm test -- --run`, `npm run check:aircraft-metadata`, and
-  `npm run build`.
+  `npm test -- --run`, `npm run check:aircraft-metadata`,
+  `npm run check:country-allocations`, and `npm run build`.
 - Static markup, pure unit tests, and HTTP smoke do not prove rendered MapLibre
   selection, focus, touch, or responsive layout. Use a real-browser acceptance
   check for those claims and record measured evidence.
@@ -112,6 +112,10 @@ preserve truthful partial operation when one provider fails.
 - Static aircraft metadata is selected-object context only. It must not mutate
   live traffic entities, provider health/freshness, trails, selection, camera,
   or the provider-reported aircraft marker taxonomy.
+- Country allocation remains a bundled, synchronous display-only lookup from
+  exact ICAO24 or valid ordinary MMSI. It adds no request, cache, scheduler,
+  persistence, or normalized field; malformed, special-use, conflicting, and
+  excluded values stay unavailable.
 - Keep the Mictronics metadata source pinned by commit, publication instant,
   internal version, archive/license checksums, schema, and immutable output
   version. Source code remains Apache-2.0; the derivative database is conveyed

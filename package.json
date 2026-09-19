@@ -10,6 +10,7 @@
     "build:pwa-retire": "tsc -b && vite build --mode pwa-retire && node scripts/generate-service-worker.mjs --retire",
     "check:aircraft-metadata": "node scripts/check-aircraft-metadata.mjs",
     "check:airports": "node scripts/check-airports.mjs",
+    "check:country-allocations": "node scripts/check-country-allocations.mjs",
     "check:ports": "node scripts/check-ports.mjs",
     "check:deploy": "wrangler deploy --dry-run",
     "typecheck": "tsc -b --pretty false",
@@ -19,6 +20,7 @@
     "test:watch": "vitest",
     "update:aircraft-metadata": "node scripts/update-aircraft-metadata.mjs",
     "update:airports": "node scripts/update-airports.mjs",
+    "update:country-allocations": "node scripts/update-country-allocations.mjs",
     "update:ports": "node scripts/update-ports.mjs",
     "preview": "vite preview"
   },

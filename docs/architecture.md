@@ -20,6 +20,7 @@ Digitraffic REST + MQTT -> marine adapter -> normalized Vessel[]
                            React overlays <-> persistent MapLibre map
 
 selected Aircraft -> static metadata index + prefix shard -> details panel only
+selected ICAO24/MMSI -> bundled validated allocation tables -> details only
 PORTS toggle -> validated static Natural Earth projection -> port map/details
 AIRPORTS toggle -> validated static OurAirports projection -> airport map/details
 METAR toggle -> explicit airport ICAO codes -> same-origin AWC route
@@ -42,7 +43,7 @@ provider credential or creates server-side state.
 | Area | Responsibility |
 | --- | --- |
 | `src/config/` | Typed defaults and validation of browser-safe environment overrides |
-| `src/domain/` | Application-owned traffic/port/airport/weather types, local discovery and filters, geographic helpers, location-input parsing, versioned preferences/share state, unit conversion, and formatting |
+| `src/domain/` | Application-owned traffic/port/airport/weather types, local discovery and filters, pure country-allocation lookup, geographic helpers, location-input parsing, versioned preferences/share state, unit conversion, and formatting |
 | `src/providers/aircraft/` | ADSB.lol request, runtime payload checks, normalization, and unit conversion |
 | `src/providers/aircraftMetadata/` | Bounded same-origin static metadata loading, provenance/schema/hash validation, exact identity matching, and shard LRU |
 | `src/providers/marine/` | Digitraffic capabilities, REST/MQTT lifecycle, metadata merging, normalization, and opt-in development diagnostics |
@@ -108,6 +109,14 @@ present live registration and type must agree, duplicated registrations are
 unavailable, and missing live registration produces an explicit ICAO24-only
 confidence label. Metadata remains separate from the live `Aircraft` object and
 never changes provider health, freshness, history, or marker artwork.
+
+Country allocation is a smaller bundled boundary. Pure synchronous helpers
+derive an optional country name and ISO code from the selected entity's
+existing ICAO24 or ordinary ship-station MMSI. The generated tables are
+validated at build time and imported with the application bundle, so opening
+details creates no request, cache, loading state, persistence, provider work,
+or history-schema change. Unknown, special-purpose, conflicting, invalid, and
+excluded source rows produce no detail row.
 
 Vessel discovery is an application-owned display boundary after freshness and
 exact viewport filtering. Search and typed filters consume only normalized
