@@ -26,6 +26,11 @@ describe('createAppConfig', () => {
     expect(config.map.homeViewRadiusKm).toBe(20)
     expect(config.map.maximumViewportRadiusKm).toBe(100)
     expect(config.map.touchHitTolerancePx).toBe(8)
+    expect(config.map.clustering).toEqual({
+      radiusPx: 42,
+      minimumPoints: 3,
+      maximumZoom: 10,
+    })
     expect(config.aircraft.refreshIntervalMs).toBe(20_000)
     expect(config.aircraft.rateLimitBackoffMaxMs).toBe(5 * 60_000)
     expect(config.aircraftMetadata).toMatchObject({

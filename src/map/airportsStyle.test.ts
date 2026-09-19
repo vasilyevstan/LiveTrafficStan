@@ -9,7 +9,7 @@ import {
   airportFeatures,
   installAirportsStyle,
 } from './airportsStyle'
-import { LAYER_AIRCRAFT_HALO } from './trafficStyle'
+import { LAYER_SELECTED_TRAIL } from './trafficStyle'
 
 const airports: Airport[] = [
   {
@@ -58,7 +58,7 @@ describe('airport map style', () => {
   it('is idempotent, zoom-aware, theme-aware, persistent at high zoom, and installs below traffic', () => {
     const sources = new Map<string, { setData: ReturnType<typeof vi.fn> }>()
     const layers = new Map<string, Record<string, unknown>>([
-      [LAYER_AIRCRAFT_HALO, { id: LAYER_AIRCRAFT_HALO }],
+      [LAYER_SELECTED_TRAIL, { id: LAYER_SELECTED_TRAIL }],
     ])
     const visibility = new Map<string, unknown>()
     const paint = new Map<string, unknown>()
@@ -99,7 +99,7 @@ describe('airport map style', () => {
     expect(sources.get(SOURCE_AIRPORTS)?.setData).toHaveBeenCalledTimes(1)
     expect(addLayer).toHaveBeenCalledTimes(AIRPORT_LAYER_IDS.length)
     expect(
-      addLayer.mock.calls.every(([, before]) => before === LAYER_AIRCRAFT_HALO),
+      addLayer.mock.calls.every(([, before]) => before === LAYER_SELECTED_TRAIL),
     ).toBe(true)
     expect(layers.get(LAYER_AIRPORTS_LARGE)).toMatchObject({
       minzoom: 4,

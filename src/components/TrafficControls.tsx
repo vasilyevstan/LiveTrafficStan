@@ -42,6 +42,8 @@ interface TrafficControlsProps {
   onAirportsVisibleChange: (visible: boolean) => void
   onAirportSelect: (id: string) => void
   onRetryAirports: () => void
+  clusteringEnabled: boolean
+  onClusteringEnabledChange: (enabled: boolean) => void
   centerDisabled: boolean
   onCenter: () => void
   locationAvailable: boolean
@@ -93,6 +95,8 @@ export function TrafficControls({
   onAirportsVisibleChange,
   onAirportSelect,
   onRetryAirports,
+  clusteringEnabled,
+  onClusteringEnabledChange,
   centerDisabled,
   onCenter,
   locationAvailable,
@@ -164,6 +168,14 @@ export function TrafficControls({
             {airportsVisible && airportsLoading
               ? 'AIRPORTS...'
               : 'AIRPORTS'}
+          </button>
+          <button
+            type="button"
+            className={clusteringEnabled ? 'is-active' : undefined}
+            aria-pressed={clusteringEnabled}
+            onClick={() => onClusteringEnabledChange(!clusteringEnabled)}
+          >
+            CLUSTERS
           </button>
         </div>
         {portsVisible && portsError && (

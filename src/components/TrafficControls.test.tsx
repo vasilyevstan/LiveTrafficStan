@@ -37,6 +37,8 @@ const renderControls = (
       onAirportsVisibleChange={() => undefined}
       onAirportSelect={() => undefined}
       onRetryAirports={() => undefined}
+      clusteringEnabled={false}
+      onClusteringEnabledChange={() => undefined}
       centerDisabled={false}
       onCenter={() => undefined}
       locationAvailable
@@ -64,6 +66,11 @@ describe('TrafficControls', () => {
     expect(html).toContain('>LIGHT<')
     expect(html).toContain('>DARK<')
     expect(html).toContain('aria-pressed="true">AUTO')
+  })
+
+  it('keeps clustering as a provider-neutral optional layer preference', () => {
+    const html = renderControls({ clusteringEnabled: true })
+    expect(html).toContain('aria-pressed="true">CLUSTERS')
   })
 
   it('keeps optional port loading, failure, retry, and source limits local', () => {

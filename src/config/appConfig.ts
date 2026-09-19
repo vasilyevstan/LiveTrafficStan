@@ -26,6 +26,11 @@ export interface AppConfig {
     homeViewRadiusKm: number
     maximumViewportRadiusKm: number
     touchHitTolerancePx: number
+    clustering: {
+      radiusPx: number
+      minimumPoints: number
+      maximumZoom: number
+    }
   }
   navigation: {
     coordinatePrecision: number
@@ -185,6 +190,11 @@ export const createAppConfig = (
       homeViewRadiusKm: 20,
       maximumViewportRadiusKm: 100,
       touchHitTolerancePx: 8,
+      clustering: {
+        radiusPx: 42,
+        minimumPoints: 3,
+        maximumZoom: 10,
+      },
     },
     navigation: {
       coordinatePrecision: 3,

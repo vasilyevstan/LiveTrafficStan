@@ -53,6 +53,7 @@ function App() {
   const [vesselsVisible, setVesselsVisible] = useState(true)
   const [portsVisible, setPortsVisible] = useState(false)
   const [airportsVisible, setAirportsVisible] = useState(false)
+  const [clusteringEnabled, setClusteringEnabled] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [selectedPortId, setSelectedPortId] = useState<string | null>(null)
   const [selectedAirportId, setSelectedAirportId] = useState<string | null>(
@@ -467,6 +468,9 @@ function App() {
         viewRadiusKm={APP_CONFIG.map.homeViewRadiusKm}
         maximumViewportRadiusKm={APP_CONFIG.map.maximumViewportRadiusKm}
         touchHitTolerancePx={APP_CONFIG.map.touchHitTolerancePx}
+        clusterRadiusPx={APP_CONFIG.map.clustering.radiusPx}
+        clusterMinimumPoints={APP_CONFIG.map.clustering.minimumPoints}
+        clusterMaximumZoom={APP_CONFIG.map.clustering.maximumZoom}
         coordinatePrecision={APP_CONFIG.navigation.coordinatePrecision}
         mapStyleUrl={
           theme === 'dark'
@@ -486,6 +490,7 @@ function App() {
         vesselsVisible={vesselsVisible}
         portsVisible={portsVisible}
         airportsVisible={airportsVisible}
+        clusteringEnabled={clusteringEnabled}
         interpolationDurationMs={APP_CONFIG.interpolationDurationMs}
         viewRequestId={viewRequest.id}
         viewportSettleMs={APP_CONFIG.navigation.viewportSettleMs}
@@ -563,6 +568,8 @@ function App() {
           onAirportsVisibleChange={setAirportsVisible}
           onAirportSelect={handleAirportSelect}
           onRetryAirports={airportsResult.retry}
+          clusteringEnabled={clusteringEnabled}
+          onClusteringEnabledChange={setClusteringEnabled}
           centerDisabled={
             !location.initialReady || mapError?.kind === 'initialization'
           }

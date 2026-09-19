@@ -8,7 +8,7 @@ import {
 import type { Theme } from '../app/theme'
 import type { Port } from '../domain/ports'
 import { LAYER_AIRPORTS_MEDIUM } from './airportsStyle'
-import { LAYER_AIRCRAFT_HALO } from './trafficStyle'
+import { LAYER_SELECTED_TRAIL } from './trafficStyle'
 
 export const SOURCE_PORTS = 'context-ports'
 export const LAYER_PORTS_MAJOR = 'context-ports-major'
@@ -102,8 +102,8 @@ const ensureLayer = (
   if (!map.getLayer(layer.id)) {
     const beforeLayer = map.getLayer(LAYER_AIRPORTS_MEDIUM)
       ? LAYER_AIRPORTS_MEDIUM
-      : map.getLayer(LAYER_AIRCRAFT_HALO)
-        ? LAYER_AIRCRAFT_HALO
+      : map.getLayer(LAYER_SELECTED_TRAIL)
+        ? LAYER_SELECTED_TRAIL
         : undefined
     map.addLayer(
       layer,

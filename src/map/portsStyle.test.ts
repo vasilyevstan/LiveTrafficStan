@@ -14,7 +14,7 @@ import {
   portFeatures,
 } from './portsStyle'
 import { LAYER_AIRPORTS_MEDIUM } from './airportsStyle'
-import { LAYER_AIRCRAFT_HALO } from './trafficStyle'
+import { LAYER_SELECTED_TRAIL } from './trafficStyle'
 
 const ports: Port[] = [
   {
@@ -59,7 +59,7 @@ describe('port map style', () => {
   it('is idempotent, zoom-aware, theme-aware, and installs below traffic', () => {
     const sources = new Map<string, { setData: ReturnType<typeof vi.fn> }>()
     const layers = new Map<string, Record<string, unknown>>([
-      [LAYER_AIRCRAFT_HALO, { id: LAYER_AIRCRAFT_HALO }],
+      [LAYER_SELECTED_TRAIL, { id: LAYER_SELECTED_TRAIL }],
     ])
     const visibility = new Map<string, unknown>()
     const paint = new Map<string, unknown>()
@@ -98,7 +98,7 @@ describe('port map style', () => {
       LAYER_PORT_LABELS_MAJOR,
     ])
     expect(
-      addLayer.mock.calls.every(([, before]) => before === LAYER_AIRCRAFT_HALO),
+      addLayer.mock.calls.every(([, before]) => before === LAYER_SELECTED_TRAIL),
     ).toBe(true)
     expect(layers.get(LAYER_PORTS_MAJOR)).toMatchObject({
       minzoom: 5,
@@ -118,7 +118,7 @@ describe('port map style', () => {
   it('stays below airports when ports load after the airport style', () => {
     const sources = new Map<string, { setData: ReturnType<typeof vi.fn> }>()
     const layers = new Map<string, Record<string, unknown>>([
-      [LAYER_AIRCRAFT_HALO, { id: LAYER_AIRCRAFT_HALO }],
+      [LAYER_SELECTED_TRAIL, { id: LAYER_SELECTED_TRAIL }],
       [LAYER_AIRPORTS_MEDIUM, { id: LAYER_AIRPORTS_MEDIUM }],
     ])
     const addLayer = vi.fn(

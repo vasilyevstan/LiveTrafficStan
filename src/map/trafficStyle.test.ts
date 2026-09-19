@@ -7,6 +7,8 @@ import type { Map as MapLibreMap } from 'maplibre-gl'
 import { describe, expect, it, vi } from 'vitest'
 import { TRAFFIC_MARKER_ICONS } from '../domain/traffic'
 import {
+  LAYER_AIRCRAFT_CLUSTER_COUNT,
+  LAYER_AIRCRAFT_CLUSTERS,
   LAYER_AIRCRAFT,
   LAYER_VESSELS,
   SOURCE_AIRCRAFT,
@@ -39,6 +41,10 @@ const snapshot = (
   trail,
   aircraftVisible: true,
   vesselsVisible: false,
+  clusteringEnabled: false,
+  clusterRadiusPx: 42,
+  clusterMinimumPoints: 3,
+  clusterMaximumZoom: 10,
 })
 
 describe('installTrafficStyle', () => {
@@ -50,8 +56,10 @@ describe('installTrafficStyle', () => {
     const visibility = new Map<string, unknown>()
     const addImage = vi.fn((id: string) => imageIds.add(id))
     const updateImage = vi.fn()
-    const addSource = vi.fn((id: string) => {
+    const sourceOptions = new Map<string, unknown>()
+    const addSource = vi.fn((id: string, options: unknown) => {
       sources.set(id, { setData: vi.fn() })
+      sourceOptions.set(id, options)
     })
     const addLayer = vi.fn((layer: { id: string }) => {
       layers.set(layer.id, layer)
@@ -92,8 +100,29 @@ describe('installTrafficStyle', () => {
       )
     }
     expect(addSource).toHaveBeenCalledTimes(3)
-    expect(addLayer).toHaveBeenCalledTimes(5)
+    expect(addLayer).toHaveBeenCalledTimes(9)
     expect(sources.get(SOURCE_AIRCRAFT)?.setData).toHaveBeenCalledTimes(2)
+    expect(sourceOptions.get(SOURCE_AIRCRAFT)).toMatchObject({
+      cluster: false,
+      clusterRadius: 42,
+      clusterMaxZoom: 10,
+      clusterMinPoints: 3,
+    })
+    expect(layers.get(LAYER_AIRCRAFT)).toMatchObject({
+      filter: ['!', ['has', 'point_count']],
+    })
+    expect(layers.get(LAYER_AIRCRAFT_CLUSTERS)).toMatchObject({
+      filter: ['has', 'point_count'],
+    })
+    expect(layers.get(LAYER_AIRCRAFT_CLUSTER_COUNT)).toMatchObject({
+      layout: {
+        'text-field': [
+          'concat',
+          'AIR ',
+          ['to-string', ['get', 'point_count_abbreviated']],
+        ],
+      },
+    })
     expect(paint.get('traffic-selected-trail:line-color')).toBe('#138daf')
     expect(paint.get(`${LAYER_AIRCRAFT}:icon-opacity`)).toEqual([
       'case',
@@ -102,6 +131,9 @@ describe('installTrafficStyle', () => {
       0.98,
     ])
     expect(visibility.get(`${LAYER_AIRCRAFT}:visibility`)).toBe('visible')
+    expect(
+      visibility.get(`${LAYER_AIRCRAFT_CLUSTERS}:visibility`),
+    ).toBe('visible')
     expect(visibility.get(`${LAYER_VESSELS}:visibility`)).toBe('none')
   })
 })
