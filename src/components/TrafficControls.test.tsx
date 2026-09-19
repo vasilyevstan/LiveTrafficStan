@@ -42,8 +42,8 @@ const renderControls = (
       locationAvailable
       locationLoading={false}
       onUseLocation={() => undefined}
-      theme="light"
-      onThemeChange={() => undefined}
+      themePreference="light"
+      onThemePreferenceChange={() => undefined}
       locationNavigationDisabled={false}
       activeLocationLabel="Home: Tallinn, Estonia"
       coordinatePrecision={3}
@@ -58,6 +58,14 @@ const renderControls = (
   )
 
 describe('TrafficControls', () => {
+  it('renders Auto, Light, and Dark as explicit theme preferences', () => {
+    const html = renderControls({ themePreference: 'auto' })
+    expect(html).toContain('>AUTO<')
+    expect(html).toContain('>LIGHT<')
+    expect(html).toContain('>DARK<')
+    expect(html).toContain('aria-pressed="true">AUTO')
+  })
+
   it('keeps optional port loading, failure, retry, and source limits local', () => {
     const loading = renderControls({
       portsVisible: true,

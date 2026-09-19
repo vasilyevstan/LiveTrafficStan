@@ -75,7 +75,11 @@ function App() {
   const appliedLocationRevisionRef = useRef(0)
   const airportSelectionGraceUntilRef = useRef(0)
   const locationCameraIntentRef = useRef(new LocationCameraIntent())
-  const { theme, setTheme } = useTheme()
+  const {
+    theme,
+    themePreference,
+    setThemePreference,
+  } = useTheme()
   const location = useSessionLocation(
     APP_CONFIG.center,
     APP_CONFIG.navigation,
@@ -567,8 +571,8 @@ function App() {
           locationLoading={location.locating}
           locationMessage={location.message}
           onUseLocation={handleUseLocation}
-          theme={theme}
-          onThemeChange={setTheme}
+          themePreference={themePreference}
+          onThemePreferenceChange={setThemePreference}
           locationNavigationDisabled={mapError?.kind === 'initialization'}
           activeLocationLabel={activeLocationLabel}
           coordinatePrecision={APP_CONFIG.navigation.coordinatePrecision}

@@ -1,4 +1,4 @@
-import type { Theme } from '../app/theme'
+import type { ThemePreference } from '../app/theme'
 import type { PlaceSearchState } from '../app/PlaceSearchController'
 import type { AppCenter } from '../config/appConfig'
 import type { Airport } from '../domain/airports'
@@ -48,8 +48,8 @@ interface TrafficControlsProps {
   locationLoading: boolean
   locationMessage?: string
   onUseLocation: () => void
-  theme: Theme
-  onThemeChange: (theme: Theme) => void
+  themePreference: ThemePreference
+  onThemePreferenceChange: (preference: ThemePreference) => void
   locationNavigationDisabled: boolean
   activeLocationLabel: string
   coordinatePrecision: number
@@ -99,8 +99,8 @@ export function TrafficControls({
   locationLoading,
   locationMessage,
   onUseLocation,
-  theme,
-  onThemeChange,
+  themePreference,
+  onThemePreferenceChange,
   locationNavigationDisabled,
   activeLocationLabel,
   coordinatePrecision,
@@ -230,14 +230,16 @@ export function TrafficControls({
 
       <fieldset className="control-group">
         <legend>Theme</legend>
-        <div className="control-options control-options--two">
-          {(['light', 'dark'] as const).map((option) => (
+        <div className="control-options control-options--three">
+          {(['auto', 'light', 'dark'] as const).map((option) => (
             <button
               key={option}
               type="button"
-              className={theme === option ? 'is-active' : undefined}
-              aria-pressed={theme === option}
-              onClick={() => onThemeChange(option)}
+              className={
+                themePreference === option ? 'is-active' : undefined
+              }
+              aria-pressed={themePreference === option}
+              onClick={() => onThemePreferenceChange(option)}
             >
               {option.toUpperCase()}
             </button>
