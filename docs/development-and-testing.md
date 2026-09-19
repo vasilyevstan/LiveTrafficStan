@@ -23,6 +23,8 @@ the `/api/aircraft` proxy required by the default ADSB.lol integration.
 | `npm run test:watch` | Run Vitest in watch mode |
 | `npm run build` | Type-check and create the production bundle in `dist/` |
 | `npm run preview` | Serve the production bundle with the local aircraft proxy |
+| `npm run check:deploy` | Bundle the Worker and Static Assets without credentials or deployment |
+| `npm run preview:worker` | Build and run the actual local Cloudflare `workerd` boundary |
 
 Before publishing a change, run:
 
@@ -31,10 +33,12 @@ npm run lint
 npm run typecheck
 npm test -- --run
 npm run build
+npm run check:deploy
 ```
 
 The same commands run in `.github/workflows/validate.yml` for pull requests and
-pushes targeting `dev` or `main`.
+pushes targeting `dev` or `main`. The Wrangler dry run is credential-free and
+does not call a live provider.
 
 ## Branch and pull request flow
 
@@ -170,6 +174,38 @@ Repeat the core check with `npm run build && npm run preview`. Confirm that
 `dist/assets/` contains a `maplibre-gl-worker-*.js` file and that the preview
 page renders vector tiles. This catches an easy-to-miss MapLibre/Vite worker
 regression.
+
+For the production edge boundary, run `npm run preview:worker`. Confirm:
+
+1. `/` returns the built client.
+2. The emitted MapLibre worker uses immutable caching and `nosniff`.
+3. A missing hashed asset returns 404 rather than HTML.
+4. Invalid aircraft coordinates return 400 and unsupported API paths return
+   404 without an upstream request.
+5. One valid fixed-route aircraft request succeeds with the public project
+   User-Agent.
+6. Worker responses use no-store and expose no CORS wildcard.
+
+Do not repeatedly use the local edge check as a provider load loop. All path,
+timeout, body-size, redirect, status, `Retry-After`, and cancellation cases use
+mocked deterministic tests.
+
+## Production deployment validation
+
+The production workflow is manual, exact-SHA, and restricted to the GitHub
+`production` environment on `main`. It reruns the full suite and Wrangler dry
+run before deploying, then rechecks that the requested SHA is still the current
+`origin/main`.
+
+The post-deploy script compares public `index.html` and the dynamically named
+MapLibre worker with the validated local bytes. It then checks one ADSB request,
+proxy rejection paths, Digitraffic REST/preflight, and one bounded MQTT
+subscription. The MQTT client disables reconnect and is force-closed.
+
+This automated check does not replace a real browser acceptance pass for vector
+tile rendering, Web Worker execution, browser WSS, themes, attribution,
+provider isolation, and mobile layout. Public deployment remains blocked on
+Issue #39 until permanent Cloudflare credentials exist.
 
 ## Failure and lifecycle checks
 

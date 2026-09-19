@@ -3,14 +3,15 @@
 ## System shape
 
 LiveTrafficStan V1 is a browser application with no authentication, database,
-or persistent backend. React owns controls and selected-object UI state.
-Provider adapters own external protocols and normalization. MapLibre owns
-high-frequency geographic rendering.
+or persistent backend. Production adds one stateless fixed-route Cloudflare
+Worker because ADSB.lol does not expose browser CORS. React owns controls and
+selected-object UI state. Provider adapters own external protocols and
+normalization. MapLibre owns high-frequency geographic rendering.
 
 ```text
                        visibility lifecycle
                                |
-ADSB.lol -> Vite proxy -> aircraft adapter -> normalized Aircraft[]
+ADSB.lol -> same-origin aircraft proxy -> aircraft adapter -> normalized Aircraft[]
                                                         |
 Digitraffic REST + MQTT -> marine adapter -> normalized Vessel[]
                                                         |
@@ -19,9 +20,10 @@ Digitraffic REST + MQTT -> marine adapter -> normalized Vessel[]
                            React overlays <-> persistent MapLibre map
 ```
 
-The only server-side behavior in local V1 is Vite's same-origin proxy from
-`/api/aircraft/*` to `https://api.adsb.lol/*`. It exists because ADSB.lol does
-not currently provide browser CORS headers; it does not hold a credential.
+Local development and preview use Vite's same-origin proxy. Production uses a
+strict Cloudflare Worker that accepts only the validated ADSB.lol point route.
+It exists because ADSB.lol does not currently provide browser CORS headers; it
+does not hold a provider credential or create server-side state.
 
 ## Source responsibilities
 
@@ -178,16 +180,33 @@ vector tiles will remain in a loading state.
 
 ## Deployment boundary
 
-The built client is otherwise static. A production deployment needs:
+Cloudflare Workers with Static Assets is the selected one-unit production
+boundary:
 
-1. a static host for `dist/`;
-2. HTTPS and WebSocket access to the configured map and marine providers;
-3. a same-origin `/api/aircraft` proxy with the Vite rewrite semantics, or an
-   alternative aircraft endpoint that explicitly permits browser CORS;
-4. unchanged visible provider attribution.
+1. `dist/` is served as Static Assets;
+2. fingerprinted `/assets/*` responses use immutable browser caching;
+3. Worker code runs first only for `/api` and `/api/*`;
+4. the only forwarded route is
+   `GET /api/aircraft/v2/point/{latitude}/{longitude}/{radiusNm}`;
+5. OpenFreeMap and Digitraffic HTTPS/WSS remain direct browser connections;
+6. visible provider attribution remains unchanged.
 
-Adding hosting, CI, caching, or a production proxy is intentionally deferred to
-the deployment roadmap issue.
+The production proxy accepts canonical finite latitude/longitude values and
+integer radii from 1 through 54 NM. It rejects query strings, other methods,
+other paths, redirects, responses over 4 MiB, and work exceeding the ten-second
+total deadline. It constructs a fixed ADSB.lol destination, forwards only a
+JSON accept header and stable public project User-Agent, preserves upstream
+status/body/content type/`Retry-After`, and sets no-store behavior in both
+directions.
+
+No application database, general backend, provider scheduler, shared live
+cache, preview deployment, or server-side marine relay is added. Worker
+observability is disabled because request URLs contain rounded camera
+coordinates. Cloudflare still processes ordinary hosting metadata.
+
+Production activation, public browser smoke, and rollback against a prior
+version wait only on the permanent account/credential prerequisite in Issue
+#39. See [Hosting and Deployment](hosting-and-deployment.md).
 
 ## Navigation and viewport boundaries
 

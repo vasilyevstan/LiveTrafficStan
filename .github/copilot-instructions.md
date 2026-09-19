@@ -80,6 +80,18 @@ preserve truthful partial operation when one provider fails.
   failures distinctly, and guard retries from obsolete late callbacks.
 - Motion interpolates only between observed positions. Trails contain observed
   points and remain bounded by both time and count.
+- Production aircraft proxy changes must keep the fixed ADSB.lol origin, exact
+  `/api/aircraft/v2/point/{lat}/{lon}/{radiusNm}` allowlist, canonical
+  coordinate validation, 1-54 NM bound, total deadline, response-size cap,
+  redirect rejection, no-store policy, and upstream status/body/`Retry-After`.
+  Never forward browser credentials or arbitrary headers, add wildcard CORS,
+  log coordinate-bearing URLs, or introduce a shared live cache without
+  provider-rights and measured-value evidence.
+- Production deployment uses one serialized exact-current-`main` workflow.
+  Cloudflare credentials remain only in the `production` environment, which is
+  restricted to `main`; checked pull requests and dry runs receive no secret.
+  A first deployment records `previous: none - bootstrap`, and real rollback
+  evidence requires a later prior version.
 
 ## Change discipline
 

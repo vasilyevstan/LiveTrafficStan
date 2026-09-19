@@ -93,9 +93,9 @@ The default browser request is root-relative:
 ```
 
 Vite development and preview rewrite `/api/aircraft` to
-`https://api.adsb.lol`. A production platform must provide the equivalent
-same-origin rule. Setting `VITE_AIRCRAFT_ENDPOINT` to an absolute URL bypasses
-that rule, but it works only if the target explicitly allows browser CORS.
+`https://api.adsb.lol`. Production uses the checked Cloudflare Worker.
+Setting `VITE_AIRCRAFT_ENDPOINT` to an absolute URL bypasses those same-origin
+routes, but it works only if the target explicitly allows browser CORS.
 
 For an eligible viewport, the rounded camera center and conservative enclosing
 radius are sent to ADSB.lol. The application decides eligibility against the
@@ -104,6 +104,18 @@ An exact 100 km viewport therefore requests 54 NM, or 100.008 km of transport
 coverage, while the client still displays only objects inside the actual
 viewport polygon. Deployment proxies must not alter coordinates, units, or
 this boundary behavior.
+
+The production Worker enforces the exact `/v2/point` path, canonical coordinate
+ranges, and integer 1-54 NM radius. It rejects query strings and every other
+method/path, never follows upstream redirects, keeps a ten-second total
+deadline, rejects responses over 4 MiB, and preserves upstream status, body,
+`Content-Type`, and `Retry-After`. It sends a stable public project User-Agent
+because ADSB.lol rejects generic Worker identification; no browser cookie,
+authorization, or arbitrary header is forwarded.
+
+Live aircraft responses are never placed in a shared deployment cache.
+Fingerprint-named application assets are cached immutably instead. See
+[Hosting and Deployment](hosting-and-deployment.md).
 
 ## Map style
 

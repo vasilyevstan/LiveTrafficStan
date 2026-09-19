@@ -47,6 +47,15 @@ Check these project invariants:
 - Credentials stay server-side behind allowlisted routes. A missing authorized
   provider or account becomes an explicit blocker rather than client-side
   secrets, scraping, or success-shaped placeholder data.
+- The production aircraft proxy accepts only the exact ADSB.lol point route,
+  canonical coordinates, and integer 1-54 NM radius. It uses a fixed upstream,
+  bounded total timeout and body size, manual redirect rejection, no-store in
+  both directions, stable public project identification, and preserves
+  upstream status/body/`Content-Type`/`Retry-After`.
+- Proxy and deployment changes never forward browser cookies, authorization,
+  forwarding headers, or client destinations; never add wildcard CORS, shared
+  live caching, or coordinate-bearing logs; and never expose Cloudflare
+  credentials outside the `main`-restricted production environment.
 
 For each finding, include severity, file and line, the concrete request/state
 sequence, provider or privacy impact, and the smallest safe correction. Ignore

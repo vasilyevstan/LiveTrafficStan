@@ -65,6 +65,14 @@ Test the production output and its local aircraft proxy with:
 npm run preview
 ```
 
+Test the production Cloudflare boundary locally with:
+
+```bash
+npm run build
+npm run check:deploy
+npm run preview:worker
+```
+
 ## Architecture
 
 Provider-specific code validates and normalizes external payloads before React
@@ -122,7 +130,7 @@ operational thresholds, and examples.
 | Purpose | Provider | Runtime data license | V1 access |
 | --- | --- | --- | --- |
 | Map | OpenFreeMap / OpenMapTiles / OpenStreetMap | Provider and OSM attribution applies | Direct browser access |
-| Aircraft | ADSB.lol | ODbL 1.0 | Same-origin Vite proxy |
+| Aircraft | ADSB.lol | ODbL 1.0 | Same-origin Vite or Cloudflare Worker proxy |
 | Marine | Fintraffic Digitraffic | CC BY 4.0 | Direct regional REST and MQTT |
 
 The repository's Apache License 2.0 applies to source code only. Distributed
@@ -137,22 +145,31 @@ decisions to retain ADSB.lol and Fintraffic Digitraffic.
 
 ## Deployment
 
-`npm run build` creates static assets in `dist/`, but a fully static host is not
-enough for the default aircraft integration. ADSB.lol does not currently send
-browser CORS headers, so production hosting needs a small same-origin
-serverless/edge proxy equivalent to the rule in [`vite.config.ts`](vite.config.ts),
-or a compatible replacement aircraft provider.
+Cloudflare Workers with Static Assets is the selected production boundary. It
+deploys the Vite client and one strict same-origin ADSB.lol point proxy as an
+atomic unit. Hashed assets, including the MapLibre worker, use immutable browser
+caching; live aircraft responses use no shared cache.
 
-No proxy secret is required. Do not remove the 100 km viewport eligibility
-check, outward transport rounding, exact viewport filtering, or provider
-attribution when implementing a deployment adapter.
+The proxy accepts only
+`GET /api/aircraft/v2/point/{latitude}/{longitude}/{radiusNm}`, validates the
+current 1-54 NM transport contract, uses a total upstream deadline and body
+limit, rejects redirects, and preserves provider status, body, and
+`Retry-After`. It forwards no browser credentials or arbitrary headers and
+keeps request URL logging disabled.
+
+The deploy-ready code is not yet a claimed public deployment. Permanent
+Cloudflare account authorization and environment credentials are tracked in
+[Issue #39](https://github.com/vasilyevstan/LiveTrafficStan/issues/39).
+See [Hosting and Deployment](docs/hosting-and-deployment.md) for the dated
+platform matrix, request budget, proxy contract, exact-SHA workflow, smoke,
+monitoring, privacy, and rollback procedure.
 
 ## Known limitations
 
 - Public providers offer no application SLA, and live traffic coverage varies
   by receiver availability and time.
 - The default aircraft endpoint works through Vite development and preview;
-  arbitrary static hosting needs the proxy described above.
+  public Cloudflare activation remains blocked on Issue #39.
 - Digitraffic is a regional source with an unknown exact coverage boundary.
   Its all-published-vessels MQTT stream is filtered in the browser; this local
   filtering does not reduce incoming MQTT bandwidth.
@@ -179,6 +196,7 @@ silently expanded into V1.
 - [Data Sources and Licensing](docs/data-sources-and-licensing.md)
 - [Aircraft Provider Evaluation](docs/aircraft-provider-evaluation.md)
 - [Marine Provider Evaluation](docs/marine-provider-evaluation.md)
+- [Hosting and Deployment](docs/hosting-and-deployment.md)
 - [Development and Testing](docs/development-and-testing.md)
 - [Troubleshooting](docs/troubleshooting.md)
 - [Engineering Decisions](docs/decisions.md)
