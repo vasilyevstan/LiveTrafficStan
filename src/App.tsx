@@ -170,6 +170,7 @@ function App() {
         homeCenter={location.homeCenter}
         homeViewRadiusKm={APP_CONFIG.map.homeViewRadiusKm}
         maximumViewportRadiusKm={APP_CONFIG.map.maximumViewportRadiusKm}
+        touchHitTolerancePx={APP_CONFIG.map.touchHitTolerancePx}
         coordinatePrecision={APP_CONFIG.navigation.coordinatePrecision}
         mapStyleUrl={
           theme === 'dark'

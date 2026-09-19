@@ -95,6 +95,9 @@ Map-experience tests also cover:
 - session-lived aircraft and marine pause/resume without cadence, backoff,
   reconnect, REST, metadata, or cache resets;
 - Home/camera/viewport eligibility state transitions;
+- exact-first touch picking, CSS-pixel threshold, duplicate world copies,
+  ambiguity, hidden/expired IDs, drag, pinch, cancellation, unknown modality,
+  and touch-followed-by-mouse behavior;
 - granted, prompt, denied, unsupported, timeout, and explicit geolocation
   outcomes without coordinate persistence;
 - theme storage validation and unavailable-storage behavior;
@@ -149,6 +152,11 @@ For the viewport-driven map experience, additionally verify:
 10. Aircraft, helicopter, and vessel artwork retains its identity over land,
    water, and busy detail at actual marker scale; stale markers remain
    recognizable and distinct from live markers.
+11. A direct touch hit selects normally, an isolated near miss inside the
+    8 CSS-pixel box selects the sole eligible ID, and an outside or ambiguous
+    tap clears/retains selection according to the normal empty-hit path.
+12. Mouse, touch-followed-by-mouse, drag, and pinch interactions do not receive
+    the touch fallback, and device pixel ratio does not change the threshold.
 
 Repeat the core check with `npm run build && npm run preview`. Confirm that
 `dist/assets/` contains a `maplibre-gl-worker-*.js` file and that the preview
