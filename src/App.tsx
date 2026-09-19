@@ -6,15 +6,22 @@ import { LocationCameraIntent } from './app/locationCameraIntent'
 import { useMarineTraffic } from './app/useMarineTraffic'
 import { useNow } from './app/useNow'
 import { usePlaceSearch } from './app/usePlaceSearch'
+import { usePorts } from './app/usePorts'
 import { useSessionLocation } from './app/useSessionLocation'
 import { useTheme } from './app/useTheme'
 import { useTrailHistory } from './app/useTrailHistory'
 import { LiveStatus } from './components/LiveStatus'
+import { PortDetails } from './components/PortDetails'
 import { TrafficControls } from './components/TrafficControls'
 import { TrafficDetails } from './components/TrafficDetails'
 import { APP_CONFIG } from './config/appConfig'
 import type { AppCenter } from './config/appConfig'
 import type { DisplayTrafficEntity, TrafficEntity } from './domain/traffic'
+import {
+  DEFAULT_VESSEL_FILTERS,
+  filterVessels,
+  orderVesselSearchResults,
+} from './domain/vesselFilters'
 import type { ViewportAssessment } from './domain/viewport'
 import {
   mapErrorPresentation,
@@ -23,10 +30,8 @@ import {
 import { TrafficMap } from './map/TrafficMap'
 import type { PlaceSearchResult } from './providers/geocoding/photonProvider'
 import { StaticAircraftMetadataProvider } from './providers/aircraftMetadata/staticAircraftMetadataProvider'
-import {
-  filterTrafficByViewport,
-  filterVesselsByMinimumLength,
-} from './traffic/filter'
+import { StaticPortsProvider } from './providers/ports/staticPortsProvider'
+import { filterTrafficByViewport } from './traffic/filter'
 import { displayTraffic } from './traffic/freshness'
 
 interface ViewRequest {
@@ -35,12 +40,14 @@ interface ViewRequest {
 }
 
 function App() {
-  const [minimumVesselLengthMeters, setMinimumVesselLengthMeters] = useState(
-    APP_CONFIG.defaultVesselLengthMeters,
+  const [vesselFilters, setVesselFilters] = useState(
+    DEFAULT_VESSEL_FILTERS,
   )
   const [aircraftVisible, setAircraftVisible] = useState(true)
   const [vesselsVisible, setVesselsVisible] = useState(true)
+  const [portsVisible, setPortsVisible] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedPortId, setSelectedPortId] = useState<string | null>(null)
   const [mapError, setMapError] = useState<TrafficMapError | null>(null)
   const [viewportReport, setViewportReport] = useState<{
     assessment: ViewportAssessment
@@ -76,6 +83,11 @@ function App() {
     () => new StaticAircraftMetadataProvider(APP_CONFIG.aircraftMetadata),
     [],
   )
+  const portsProvider = useMemo(
+    () => new StaticPortsProvider(APP_CONFIG.ports),
+    [],
+  )
+  const portsResult = usePorts(portsVisible, portsProvider)
 
   const commitNavigation = useCallback(
     (
@@ -88,6 +100,7 @@ function App() {
         locationCameraIntentRef.current.beginExplicitViewIntent()
       }
       setSelectedId(null)
+      setSelectedPortId(null)
       setHistoryResetRevision((current) => current + 1)
       setViewportReport(null)
       setViewReady(true)
@@ -174,13 +187,24 @@ function App() {
     () => displayTraffic(viewportAircraft, now, APP_CONFIG.aircraft),
     [viewportAircraft, now],
   )
+  const currentVessels = useMemo(
+    () => displayTraffic(viewportVessels, now, APP_CONFIG.marine),
+    [now, viewportVessels],
+  )
   const vessels = useMemo(
+    () => filterVessels(currentVessels, vesselFilters),
+    [currentVessels, vesselFilters],
+  )
+  const vesselResults = useMemo(
+    () => orderVesselSearchResults(vessels, vesselFilters.query),
+    [vesselFilters.query, vessels],
+  )
+  const ports = useMemo(
     () =>
-      filterVesselsByMinimumLength(
-        displayTraffic(viewportVessels, now, APP_CONFIG.marine),
-        minimumVesselLengthMeters,
-      ),
-    [minimumVesselLengthMeters, now, viewportVessels],
+      portsResult.state.phase === 'ready'
+        ? portsResult.state.dataset.ports
+        : [],
+    [portsResult.state],
   )
   const sourceEntities = useMemo<TrafficEntity[]>(
     () => [...viewportAircraft, ...viewportVessels],
@@ -193,6 +217,10 @@ function App() {
   const selectedEntity = useMemo(
     () => displayEntities.find((entity) => entity.id === selectedId),
     [displayEntities, selectedId],
+  )
+  const selectedPort = useMemo(
+    () => ports.find((port) => port.id === selectedPortId),
+    [ports, selectedPortId],
   )
   const aircraftMetadata = useAircraftMetadata(
     selectedEntity?.kind === 'aircraft' ? selectedEntity : undefined,
@@ -217,6 +245,14 @@ function App() {
       setSelectedId(null)
     }
   }, [aircraftVisible, selectedEntity, selectedId, vesselsVisible])
+
+  useEffect(() => {
+    if (!portsVisible && selectedPortId) setSelectedPortId(null)
+  }, [portsVisible, selectedPortId])
+
+  useEffect(() => {
+    if (selectedPortId && !selectedPort) setSelectedPortId(null)
+  }, [selectedPort, selectedPortId])
 
   const handleViewportChange = useCallback(
     (assessment: ViewportAssessment, reportViewRequestId: number) => {
@@ -271,6 +307,16 @@ function App() {
     setActiveLocationLabel('Custom view')
   }, [cancelPlaceSearch])
 
+  const handleTrafficSelect = useCallback((id: string | null) => {
+    setSelectedPortId(null)
+    setSelectedId(id)
+  }, [])
+
+  const handlePortSelect = useCallback((id: string | null) => {
+    setSelectedId(null)
+    setSelectedPortId(id)
+  }, [])
+
   const mapErrorContent = mapError ? mapErrorPresentation(mapError) : null
   const mapSubtitle = !viewReady
     ? 'Preparing map view'
@@ -279,6 +325,15 @@ function App() {
       : currentAssessment
         ? 'Traffic paused'
         : 'Updating map view'
+  const vesselEmptyMessage =
+    currentAssessment?.kind === 'ineligible'
+      ? 'Live traffic is paused for this view.'
+      : marineResult.status.phase === 'error'
+        ? 'The marine source is unavailable.'
+        : marineResult.status.phase === 'idle' ||
+            marineResult.status.phase === 'loading'
+          ? 'The marine source is connecting.'
+          : 'No current ships are shown in this view.'
 
   return (
     <main className="app-shell">
@@ -297,14 +352,18 @@ function App() {
         theme={theme}
         aircraft={aircraft}
         vessels={vessels}
+        ports={ports}
         trail={activeViewport ? trail : []}
         selectedId={selectedId}
+        selectedPortId={selectedPortId}
         aircraftVisible={aircraftVisible}
         vesselsVisible={vesselsVisible}
+        portsVisible={portsVisible}
         interpolationDurationMs={APP_CONFIG.interpolationDurationMs}
         viewRequestId={viewRequest.id}
         viewportSettleMs={APP_CONFIG.navigation.viewportSettleMs}
-        onSelect={setSelectedId}
+        onSelect={handleTrafficSelect}
+        onSelectPort={handlePortSelect}
         onViewportChange={handleViewportChange}
         onManualViewChange={handleManualViewChange}
         onMapError={setMapError}
@@ -333,13 +392,27 @@ function App() {
         </header>
 
         <TrafficControls
-          vesselLengthPresetsMeters={APP_CONFIG.vesselLengthPresetsMeters}
-          minimumVesselLengthMeters={minimumVesselLengthMeters}
-          onMinimumVesselLengthChange={setMinimumVesselLengthMeters}
+          vesselFilters={vesselFilters}
+          vesselResults={vesselResults}
+          totalVessels={currentVessels.length}
+          vesselEmptyMessage={vesselEmptyMessage}
+          onVesselFiltersChange={setVesselFilters}
+          onVesselSelect={handleTrafficSelect}
           aircraftVisible={aircraftVisible}
           onAircraftVisibleChange={setAircraftVisible}
           vesselsVisible={vesselsVisible}
           onVesselsVisibleChange={setVesselsVisible}
+          portsVisible={portsVisible}
+          portsLoading={
+            portsVisible && portsResult.state.phase === 'loading'
+          }
+          portsError={
+            portsVisible && portsResult.state.phase === 'error'
+              ? portsResult.state.message
+              : undefined
+          }
+          onPortsVisibleChange={setPortsVisible}
+          onRetryPorts={portsResult.retry}
           centerDisabled={
             !location.initialReady || mapError?.kind === 'initialization'
           }
@@ -376,6 +449,14 @@ function App() {
             aircraftMetadata={aircraftMetadata}
             now={now}
             onClose={() => setSelectedId(null)}
+          />
+        )}
+
+        {selectedPort && portsResult.state.phase === 'ready' && (
+          <PortDetails
+            port={selectedPort}
+            source={portsResult.state.dataset.source}
+            onClose={() => setSelectedPortId(null)}
           />
         )}
 

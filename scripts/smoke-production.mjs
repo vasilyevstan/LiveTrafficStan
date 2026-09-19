@@ -1,6 +1,9 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { readdir, readFile } from 'node:fs/promises'
 import { connect } from 'mqtt'
+import portsSource from '../src/config/portsSource.json' with {
+  type: 'json',
+}
 
 const [deploymentUrl, expectedReleaseSha] = process.argv.slice(2)
 
@@ -82,6 +85,19 @@ const verifyStaticAssets = async () => {
   assert(
     remoteWorker.headers.get('cache-control')?.includes('immutable'),
     'Fingerprinted assets are not configured for immutable caching',
+  )
+
+  const portPath =
+    `/ports/${portsSource.projection.outputVersion}/ports.geojson`
+  const localPorts = await readFile(`dist${portPath}`)
+  const remotePorts = await remoteBytes(portPath)
+  assert(
+    sha256(remotePorts.bytes) === sha256(localPorts),
+    'Deployed port projection does not match the validated build',
+  )
+  assert(
+    remotePorts.headers.get('cache-control')?.includes('immutable'),
+    'Versioned port data is not configured for immutable caching',
   )
 }
 

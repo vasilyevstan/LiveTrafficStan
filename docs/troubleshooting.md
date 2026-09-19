@@ -117,10 +117,36 @@ initialization may still provide a recent snapshot when streaming is
 temporarily unavailable, but the status remains honest about a disconnected
 live stream.
 
+## Ports show unavailable
+
+The optional Natural Earth layer is independent of live traffic. No port
+request occurs until PORTS is enabled. If the control reports an error:
+
+- inspect
+  `/ports/natural-earth-v5.1.2-v1/ports.geojson` for HTTP, timeout, body-size,
+  UTF-8, JSON, schema, record-count, rank-distribution, or SHA-256 failure;
+- run `npm run check:ports` to validate the committed asset without a network
+  request;
+- confirm deployment preserved the exact versioned path and immutable cache
+  header;
+- use **Retry ports** after restoring the asset.
+
+A port failure must not change aircraft or marine status, hide traffic, alter
+vessel filters, or make the map unavailable. Do not replace a failed asset with
+an empty success. Never edit bytes under an existing immutable version path;
+update the manifest and choose a new output version.
+
+Natural Earth is generalized and incomplete even when loading succeeds. Missing
+Muuga, Paldiski, Porvoo, or another terminal is not a runtime error. The source
+warns that some points may be approximate by up to 20 miles, so it is not
+appropriate for harbour operations, navigation, port-call inference, or ETA
+interpretation.
+
 ## Traffic counts are lower than expected
 
 - Pan or zoom out within the supported viewport limit.
-- Lower the minimum ship length.
+- Reset vessel filters or adjust category, navigation, reported-speed, minimum,
+  maximum, and unknown-length choices.
 - Confirm the relevant layer is enabled.
 - Remember that the app filters normalized provider data to the actual visible
   polygon, not only its larger enclosing query circle.
@@ -130,7 +156,10 @@ live stream.
 
 Digitraffic vessels without valid AIS reference-point dimensions are retained
 by the provider but cannot pass a positive minimum-length filter. Their length
-is not guessed.
+is not guessed. The default remains 50 m with unknown length excluded. A zero
+speed is known; the below/at-least-one-knot boundary is exactly 1.852 km/h.
+Reserved AIS ship-type subcodes remain unknown rather than being grouped with
+defined passenger, cargo, or tanker codes.
 
 Settled pan, zoom, rotation, pitch, Home, and resize changes all update the
 traffic viewport. If its conservative enclosing radius exceeds 100 km, the app
@@ -210,13 +239,19 @@ persist results. Escape closes current results and returns focus to the input.
 
 ## A selected object or trail disappears
 
-Selection is cleared when its layer is hidden, when filtering removes the
-object, when the object expires, or when a committed coordinate/place/Home
-navigation changes area. That navigation also resets retained trail points so
-the app cannot draw a line across unrelated views. Invalid input and failed
-search leave the current selection and history unchanged. Trails exist only in
-memory, contain only provider observations, and are limited to 15 minutes and
-180 points. Refreshing the page clears them.
+Traffic selection is cleared when its layer is hidden, when filtering removes
+the object, when the object expires, or when a committed
+coordinate/place/Home navigation changes area. That navigation also resets
+retained trail points so the app cannot draw a line across unrelated views.
+Invalid input and failed search leave the current traffic selection and
+history unchanged. Trails exist only in memory, contain only provider
+observations, and are limited to 15 minutes and 180 points. Refreshing the page
+clears them.
+
+Port selection is separate. Selecting traffic clears a selected port, selecting
+a port clears traffic selection, hiding PORTS or committed navigation clears
+the selected port, and an empty map click clears both. Port selection never
+creates a traffic trail or a nearby-vessel relationship.
 
 ## Configuration fails at startup
 
@@ -262,6 +297,8 @@ Do not hide MapLibre attribution controls. The application must visibly credit:
   is displayed;
 - Fintraffic Digitraffic and CC BY 4.0, including the filtering/normalization
   change notice.
+- Natural Earth and its public-domain terms, with generalized/incomplete
+  wording for the optional port layer.
 
 Digitraffic is a regional source with an unknown exact coverage boundary. A
 connected stream and zero ships shown do not prove that a location is covered

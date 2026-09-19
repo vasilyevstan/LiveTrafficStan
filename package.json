@@ -8,6 +8,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "check:aircraft-metadata": "node scripts/check-aircraft-metadata.mjs",
+    "check:ports": "node scripts/check-ports.mjs",
     "check:deploy": "wrangler deploy --dry-run",
     "typecheck": "tsc -b --pretty false",
     "lint": "oxlint .",
@@ -15,6 +16,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "update:aircraft-metadata": "node scripts/update-aircraft-metadata.mjs",
+    "update:ports": "node scripts/update-ports.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -23,6 +23,8 @@ the `/api/aircraft` proxy required by the default ADSB.lol integration.
 | `npm run test:watch` | Run Vitest in watch mode |
 | `npm run check:aircraft-metadata` | Offline validation of the committed pinned metadata database |
 | `npm run update:aircraft-metadata` | Explicit maintainer regeneration from the pinned upstream archive and license |
+| `npm run check:ports` | Network-free validation of the committed Natural Earth port projection |
+| `npm run update:ports` | Explicit maintainer regeneration from the pinned Natural Earth source |
 | `npm run build` | Type-check and create the production bundle in `dist/` |
 | `npm run preview` | Serve the production bundle with the local aircraft proxy |
 | `npm run check:deploy` | Bundle the Worker and Static Assets without credentials or deployment |
@@ -35,6 +37,7 @@ npm run lint
 npm run typecheck
 npm test -- --run
 npm run check:aircraft-metadata
+npm run check:ports
 npm run build
 npm run check:deploy
 ```
@@ -82,7 +85,8 @@ covers:
   retry guidance, enclosing-circle transport, and metric conversion;
 - Digitraffic REST/MQTT normalization, capabilities, provenance, dimensions,
   ETA, missing metadata, one-connection batching, and bounded diagnostics;
-- vessel minimum-length filtering;
+- local vessel search, deterministic result ordering, category/navigation/speed
+  filters, inclusive length bounds, and explicit unknown-value behavior;
 - current, stale, and expired transitions;
 - trail time pruning and point caps;
 - interpolation bounds and no extrapolation.
@@ -126,6 +130,9 @@ Map-experience tests also cover:
   ICAO24-only matching, conflicts, ambiguity, malformed/partial assets,
   streamed byte caps, one total deadline, fulfilled-only caches, A to B to A
   callback races, vessel/empty cancellation, and exact age boundaries.
+- deterministic Natural Earth projection, immutable inventory/checksum/size/
+  rank checks, bounded lazy runtime loading, timeout/abort/error isolation,
+  fulfilled-only caching, ranked zoom layers, and theme-aware visibility.
 
 `npm run check:aircraft-metadata` makes no upstream request. It validates the
 pinned source and license identity, configured immutable version, co-located
@@ -137,6 +144,18 @@ requires network access plus the system `unzip` executable. It verifies both
 downloaded SHA-256 values before reading the archive. Review the generated diff
 and measured counts; a source, schema, generator, or byte change requires a new
 output version rather than replacement under an old immutable URL.
+
+`npm run check:ports` makes no upstream request. It validates the immutable
+directory inventory, raw bytes, SHA-256, deterministic gzip-9 size, complete
+GeoJSON grammar, ordered IDs, coordinates, record count, and rank
+distribution.
+
+`npm run update:ports` is an explicit maintainer operation. It downloads only
+the pinned commit URL, enforces a 1 MiB source cap, verifies the source
+SHA-256, regenerates the minimal projection, checks every expected measurement,
+and refuses to replace changed bytes under an existing immutable version. Any
+source, projection, generator, or generated-byte change requires a new output
+version.
 
 Geolocation tests must distinguish permission from acquisition. A granted
 permission can still produce delayed success, timeout, unavailable, or obsolete
@@ -174,6 +193,26 @@ Use `npm run dev` and verify:
     snapshot age, Mictronics attribution, and ODC-By. Conflicts and blocked
     metadata requests stay local while live ADS-B, selection, trail, marker,
     and provider status remain unchanged.
+15. Vessel search matches normalized name, callsign, MMSI, and IMO without any
+    provider request. Combined category, navigation, speed, and inclusive
+    length filters keep matching/shown counts truthful, preserve the 50 m
+    reset state, and clear a selection only when the selected vessel no longer
+    passes.
+16. With SHIPS hidden, matching results remain counted but cannot be selected.
+    Re-enabling SHIPS restores map visibility without reconnecting MQTT or
+    starting REST work.
+17. No `/ports/` request occurs while PORTS is disabled. First enable makes one
+    bounded request; hiding and re-enabling uses the fulfilled session cache.
+    A blocked/corrupt asset reports a local error and Retry works without
+    changing map, aircraft, marine, or traffic-provider status.
+18. Port rank groups appear only at their configured zooms, disappear above
+    zoom 13, survive Light/Dark style rehydration, remain visually distinct
+    from ships, and keep Natural Earth public-domain/generalization wording
+    visible.
+19. Exact and touch-fallback traffic picking retains priority over ports.
+    Port selection is separate from traffic selection, explicit navigation or
+    hiding PORTS clears it, and port details never claim facilities, calls,
+    nearby vessels, destination, or ETA.
 
 For the viewport-driven map experience, additionally verify:
 
@@ -221,8 +260,10 @@ For the viewport-driven map experience, additionally verify:
 Repeat the core check with `npm run build && npm run preview`. Confirm that
 `dist/assets/` contains a `maplibre-gl-worker-*.js` file and that the preview
 page renders vector tiles. Also confirm the immutable metadata index and one
-shard are present in `dist/aircraft-metadata/`. This catches easy-to-miss
-MapLibre/Vite worker or static-dataset packaging regressions.
+shard are present in `dist/aircraft-metadata/`, and the exact immutable
+`dist/ports/natural-earth-v5.1.2-v1/ports.geojson` asset is present. This
+catches easy-to-miss MapLibre/Vite worker or static-dataset packaging
+regressions.
 
 For the production edge boundary, run `npm run preview:worker`. Confirm:
 
@@ -265,6 +306,8 @@ Browser developer tools can block one provider at a time:
   usable;
 - block OpenFreeMap and confirm controls/status remain available with a compact
   map error.
+- block `/ports/*` and confirm only the optional port status fails; the map,
+  both traffic providers, vessel filters, and traffic selection remain usable.
 
 When changing map initialization, also exercise a deliberately throwing map
 constructor. Confirm that `Map unavailable` is visible, sibling controls remain
@@ -318,6 +361,45 @@ not the current viewport. Payload bytes exclude MQTT/WebSocket/TLS framing and
 compression. Provider-emitted vessel counts are query-circle values before
 exact viewport and user filtering. Never present one trace as a load test,
 coverage census, SLA, or cross-provider benchmark.
+
+## Dense vessel-filter measurement
+
+On 2026-09-19, a deterministic fixture measured one full local search,
+category, navigation, reported-speed, minimum-length, maximum-length, and
+result-ordering pass after 20 warmups over 200 iterations:
+
+| Fixture | Matches | Median | p95 | Maximum |
+| --- | ---: | ---: | ---: | ---: |
+| 2,000 vessels | 45 | 0.396 ms | 0.430 ms | 0.529 ms |
+| 5,000 vessels | 118 | 1.004 ms | 2.471 ms | 2.822 ms |
+| 10,000 vessels | 232 | 2.077 ms | 2.402 ms | 5.266 ms |
+
+This Node 24 / Vitest 5 measurement proves the deterministic filter path is
+small on the test machine. It is not browser input-to-paint evidence, a provider
+load test, or a device-wide performance guarantee. Browser acceptance still
+records input timing, paint, and long tasks with the actual MapLibre view.
+
+The production-preview browser fixture then rendered 2,000 current vessels
+(1,513 passing the default filter). Four local search updates settled React and
+MapLibre within three animation frames, measured at 33.3-49.6 ms, with no
+reported long task. Search/filter/reset/hide operations left one aircraft
+request, one marine location request, one metadata request, and one MQTT
+connection unchanged. This is representative acceptance evidence on the test
+machine, not a universal frame-time guarantee.
+
+The same browser pass proved zero port requests while disabled, one request on
+first enable, fulfilled-cache reuse after hide/show and Light/Dark style
+rehydration, traffic-first picking at an overlapping Tallinn point, ports-only
+picking with traffic hidden, selection clearing, 503 isolation and retry, and
+disabled-error cleanup, plus source/detail visibility at 390x844 and 390x568.
+A Natural Earth asset failure left one MapLibre canvas and all 2,000 marine
+fixture records active.
+
+Against exact base `e36eee06144d737998e1d95d8a659deec8e3a927`, the production
+build added 19,970 raw / 5,659 gzip-9 bytes of main JavaScript and 2,330 raw /
+348 gzip-9 bytes of CSS. The optional port asset is not fetched at startup; it
+adds 154,218 raw, 22,482 gzip-9, or 18,429 Brotli-quality-11 bytes only after
+PORTS is enabled. The MapLibre worker and MQTT chunk were unchanged.
 
 Production builds must remove the diagnostics query flag, collector, counters,
 timing calls, logging, and title changes. Verify this alongside the normal

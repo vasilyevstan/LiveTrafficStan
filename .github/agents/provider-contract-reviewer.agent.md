@@ -30,6 +30,11 @@ Check these project invariants:
 - Provider payloads are validated and normalized before map/UI use; units,
   timestamps, enclosing-circle transport, exact viewport filtering, missing
   fields, and AIS sentinel values remain truthful.
+- Vessel search and category/navigation/speed/length filters run only after
+  provider normalization, freshness, and viewport filtering. They do not alter
+  traffic queries, provider snapshots, MQTT subscriptions, REST/metadata
+  gates, reconnect behavior, or aircraft work. Unknown values and reserved AIS
+  subcodes remain explicit rather than being folded into known categories.
 - Marker categories come only from reported ADS-B emitter category or AIS ship
   type fields at the provider boundary. Unknown values stay generic; speed,
   altitude, model, name, route, operator, position, and movement never infer a
@@ -63,6 +68,15 @@ Check these project invariants:
 - Enrichment and persisted observations retain source, age, identity confidence,
   licensing, attribution, retention, and cache limits. Do not infer routes,
   operators, destinations, coverage, or port calls from incomplete data.
+- Optional static port data makes zero startup requests and uses one pinned,
+  immutable same-origin asset with a total deadline, stream byte cap, SHA-256,
+  strict UTF-8/JSON/schema/count/rank validation, and fulfilled-only session
+  cache. Abort, timeout, malformed, oversized, or checksum-failing work is not
+  cached; failure stays separate from map and traffic-provider health.
+- Port source version, commit, publication instant, public-domain status,
+  measured output, immutable update rule, visible attribution, generalized
+  accuracy, and incompleteness remain explicit. Ports never become coverage,
+  facilities, calls, nearby-vessel relationships, destinations, or ETAs.
 - The aircraft metadata source is pinned by commit, publication instant,
   internal version, archive checksum, license checksum, schema, and immutable
   output URL. Apache-2.0 applies to code; the derivative database remains under

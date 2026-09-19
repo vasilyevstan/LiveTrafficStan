@@ -1,0 +1,34 @@
+{
+  "source": {
+    "name": "Natural Earth Ports",
+    "repositoryUrl": "https://github.com/nvkelso/natural-earth-vector",
+    "tag": "v5.1.2",
+    "commit": "f1890d9f152c896d250a77557a5751a93d494776",
+    "publishedAt": "2022-05-13T23:22:31Z",
+    "sourcePath": "geojson/ne_10m_ports.geojson",
+    "sourceUrl": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/f1890d9f152c896d250a77557a5751a93d494776/geojson/ne_10m_ports.geojson",
+    "sourceSha256": "c5a5028f5187a5e1b9fe7f0fab99804a8be7482099a2365d404fb7e9dd6b5457",
+    "termsUrl": "https://www.naturalearthdata.com/about/terms-of-use/",
+    "documentationUrl": "https://www.naturalearthdata.com/downloads/10m-cultural-vectors/ports/",
+    "licenseName": "Public domain"
+  },
+  "projection": {
+    "schemaVersion": 1,
+    "outputVersion": "natural-earth-v5.1.2-v1",
+    "expected": {
+      "sourceRecords": 1081,
+      "projectedRecords": 1081,
+      "rawBytes": 154218,
+      "gzipBytes": 22482,
+      "sha256": "5694848fdcceb681061aac318f62efeffe8c1ade65707d86706a30369d9aeba1",
+      "rankCounts": {
+        "3": 67,
+        "4": 76,
+        "5": 150,
+        "6": 229,
+        "7": 297,
+        "8": 262
+      }
+    }
+  }
+}

@@ -15,11 +15,12 @@ ADSB.lol -> same-origin aircraft proxy -> aircraft adapter -> normalized Aircraf
                                                         |
 Digitraffic REST + MQTT -> marine adapter -> normalized Vessel[]
                                                         |
-                                 freshness + filters + bounded history
+                           freshness + local vessel filters + bounded history
                                                         |
                            React overlays <-> persistent MapLibre map
 
 selected Aircraft -> static metadata index + prefix shard -> details panel only
+PORTS toggle -> validated static Natural Earth projection -> port map/details
 
 coordinate text -> local parser ------------------------+
 named text -> Photon adapter -> PlaceSearchResult[] ----+-> view navigation
@@ -36,10 +37,11 @@ does not hold a provider credential or create server-side state.
 | Area | Responsibility |
 | --- | --- |
 | `src/config/` | Typed defaults and validation of browser-safe environment overrides |
-| `src/domain/` | Application-owned traffic types, geographic helpers, location-input parsing, and formatting |
+| `src/domain/` | Application-owned traffic/port types, vessel filters, geographic helpers, location-input parsing, and formatting |
 | `src/providers/aircraft/` | ADSB.lol request, runtime payload checks, normalization, and unit conversion |
 | `src/providers/aircraftMetadata/` | Bounded same-origin static metadata loading, provenance/schema/hash validation, exact identity matching, and shard LRU |
 | `src/providers/marine/` | Digitraffic capabilities, REST/MQTT lifecycle, metadata merging, normalization, and opt-in development diagnostics |
+| `src/providers/ports/` | Bounded lazy same-origin port loading plus checksum, schema, and source-provenance validation |
 | `src/providers/geocoding/` | Photon request construction, response bounds, runtime GeoJSON validation, result normalization, and attribution identity |
 | `src/app/` | React hooks/controllers for provider lifecycle, place-search cancellation/cache, navigation intent, time ticks, and trail history |
 | `src/traffic/` | Filtering, freshness/expiry, interpolation, and bounded history |
@@ -97,6 +99,21 @@ unavailable, and missing live registration produces an explicit ICAO24-only
 confidence label. Metadata remains separate from the live `Aircraft` object and
 never changes provider health, freshness, history, or marker artwork.
 
+Vessel discovery is an application-owned display boundary after freshness and
+exact viewport filtering. Search and typed filters consume only normalized
+`Vessel` fields and never alter provider queries, the global MQTT
+subscription, REST/metadata gates, cache ownership, or source snapshots.
+Unknown category, navigation, speed, and length values remain explicit rather
+than being coerced into known values.
+
+Optional port context is not a traffic provider. The runtime provider makes no
+request until the PORTS layer is enabled, then loads one immutable same-origin
+GeoJSON file under a five-second deadline and 512 KiB cap. It verifies UTF-8,
+JSON, complete feature grammar, ordered IDs, coordinates, ranks, record count,
+rank distribution, and SHA-256 before a fulfilled-only session cache is
+created. Ports have separate IDs and selection and never enter traffic counts,
+trails, provider health, destination/ETA logic, or vessel relationships.
+
 ## Lifecycle and failure isolation
 
 Aircraft and marine providers have separate state, cancellation, and error
@@ -126,6 +143,9 @@ continues to render.
   identity key plus a monotonic revision, so late A callbacks cannot render
   after A to B to A selection changes. Only complete valid assets enter one
   index cache and an eight-shard LRU; failure remains local to the detail card.
+- Port loading has its own lazy state and retry. Failure remains inside the
+  layer control, leaves MapLibre and both traffic providers usable, and never
+  creates a success-shaped empty port dataset.
 
 ## Freshness, motion, and history
 
@@ -151,6 +171,13 @@ alter the existing selection or history.
 trail use persistent GeoJSON sources and layers whose data or visibility is
 updated in place. This avoids one React component or DOM marker per traffic
 object.
+
+The optional port source is separate from those traffic sources. Rank groups
+appear progressively from zoom 5 through 10, all port rendering stops at zoom
+13 because the coordinates are generalized, and neutral theme-aware styling
+stays below traffic layers. Exact traffic picking and touch fallback run before
+port picking. Selecting a port clears traffic selection and vice versa; an
+empty map click clears both.
 
 After settled pan, zoom, rotation, pitch, Home, and real resize changes, the map
 unprojects a bounded sample of the full-canvas perimeter, including every
@@ -179,10 +206,16 @@ MapLibre never parse raw ADS-B or AIS category codes. The bounded vocabulary is:
 | ADS-B A7 | Helicopter |
 | AIS ship type 30 | Fishing |
 | AIS ship type 52 | Tug |
-| AIS ship types 60-69 | Passenger |
-| AIS ship types 70-79 | Cargo |
-| AIS ship types 80-89 | Tanker |
+| AIS ship types 60-64 or 69 | Passenger |
+| AIS ship types 70-74 or 79 | Cargo |
+| AIS ship types 80-84 or 89 | Tanker |
 | Other, missing, invalid, or unsupported AIS types | Generic vessel |
+
+The local filter taxonomy is slightly broader than the artwork vocabulary:
+types 31, 32, 50-55, 58, and 59 are `tug-service`; known non-filter categories
+20-24, 29, 33-37, 40-44, 49, 90-94, and 99 are `other`. Reserved subcodes such
+as 65-68, 75-78, 85-88, and 95-98 remain `unknown`; they are not silently
+folded into passenger, cargo, tanker, or other.
 
 The category is never inferred from speed, altitude, name, callsign, operator,
 route, location, or movement. A later provider-reported category can change the
@@ -219,6 +252,9 @@ vector tiles will remain in a loading state.
 - Aircraft metadata has zero startup requests and lazy prefix loading. Static
   assets use immutable deployment caching, while application memory retains
   only one index and eight validated shards.
+- Port context has zero startup requests, one bounded lazy static load, and a
+  fulfilled-only session cache. Local vessel search/filter changes perform no
+  network work and do not rebuild the map.
 
 ## Deployment boundary
 
@@ -226,14 +262,14 @@ Cloudflare Workers with Static Assets is the selected one-unit production
 boundary:
 
 1. `dist/` is served as Static Assets;
-2. fingerprinted `/assets/*` and versioned `/aircraft-metadata/*` responses use
-   immutable browser caching;
+2. fingerprinted `/assets/*`, versioned `/aircraft-metadata/*`, and versioned
+   `/ports/*` responses use immutable browser caching;
 3. Worker code runs first only for `/api` and `/api/*`;
 4. the only forwarded route is
    `GET /api/aircraft/v2/point/{latitude}/{longitude}/{radiusNm}`;
 5. OpenFreeMap, Photon, and Digitraffic HTTPS/WSS remain direct browser
    connections;
-6. map, search, aircraft, and marine attribution remains visible.
+6. map, search, aircraft, marine, and optional-port attribution remains visible.
 
 The production proxy accepts canonical finite latitude/longitude values and
 integer radii from 1 through 54 NM. It rejects query strings, other methods,
@@ -311,7 +347,8 @@ configured OpenFreeMap style.
 
 Theme changes call `map.setStyle` on the existing instance. An idempotent
 installer runs after `style.load` to restore repository-owned images, GeoJSON
-sources, layers, current data, visibility, and selected trail.
+sources, layers, current data, visibility, selected trail, and any loaded port
+source/selection.
 Interaction listeners remain registered once, and a style revision prevents a
 late obsolete load from winning. Provider hooks, React selection/history, and
 camera state do not restart.

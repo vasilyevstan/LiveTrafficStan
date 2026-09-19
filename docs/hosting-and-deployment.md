@@ -235,7 +235,8 @@ availability promise, provider quota, coverage measurement, or load test. The
 
 ## Cache and rate-protection decision
 
-Cache fingerprinted application assets, not live aircraft responses.
+Cache fingerprinted application assets and immutable versioned metadata/port
+assets, not live aircraft responses.
 
 No Worker Cache API, shared response cache, `stale-while-revalidate`, or
 `stale-if-error` is enabled because:
@@ -350,6 +351,7 @@ older SHA.
 - the dynamically discovered `maplibre-gl-worker-*.js` bytes equal the
   validated local build;
 - Static Asset security headers;
+- the immutable Natural Earth port asset path and caching policy;
 - one successful same-origin ADSB point request;
 - the exact `X-LiveTrafficStan-Release` value;
 - `no-store` aircraft behavior;
@@ -423,10 +425,10 @@ Cloudflare supports rollback among the 100 most recent versions. Older recovery
 uses the exact repository SHA and locked dependency/build inputs. This design
 has no database or storage migration to reverse.
 
-Versioned metadata files already retained in browser or edge immutable caches
-do not need destructive invalidation. A forward update or rollback points
-application code at the corresponding immutable version path; unreferenced old
-files are inert.
+Versioned aircraft-metadata and port files already retained in browser or edge
+immutable caches do not need destructive invalidation. A forward update or
+rollback points application code at the corresponding immutable version path;
+unreferenced old files are inert.
 
 ## Re-evaluation conditions
 

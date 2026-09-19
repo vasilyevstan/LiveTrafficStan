@@ -1,5 +1,7 @@
 import type { StaticAircraftMetadataProviderConfig } from '../providers/aircraftMetadata/staticAircraftMetadataProvider'
+import type { StaticPortsProviderConfig } from '../providers/ports/staticPortsProvider'
 import aircraftMetadataSource from './aircraftMetadataSource.json'
+import portsSource from './portsSource.json'
 
 export interface AppCenter {
   latitude: number
@@ -45,6 +47,7 @@ export interface AppConfig {
     rateLimitBackoffMaxMs: number
   }
   aircraftMetadata: StaticAircraftMetadataProviderConfig
+  ports: StaticPortsProviderConfig
   marine: FreshnessThresholds & {
     restBaseUrl: string
     mqttUrl: string
@@ -232,6 +235,24 @@ export const createAppConfig = (
       futureToleranceHours:
         aircraftMetadataSource.projection.futureToleranceHours,
       expectedCounts: aircraftMetadataSource.projection.expected,
+    },
+    ports: {
+      assetUrl: `/ports/${portsSource.projection.outputVersion}/ports.geojson`,
+      timeoutMs: 5_000,
+      maximumBytes: 512 * 1_024,
+      schemaVersion: portsSource.projection.schemaVersion,
+      outputVersion: portsSource.projection.outputVersion,
+      sourceName: portsSource.source.name,
+      sourceRepositoryUrl: portsSource.source.repositoryUrl,
+      sourceTag: portsSource.source.tag,
+      sourceCommit: portsSource.source.commit,
+      sourcePublishedAt: portsSource.source.publishedAt,
+      sourceTermsUrl: portsSource.source.termsUrl,
+      sourceDocumentationUrl: portsSource.source.documentationUrl,
+      sourceLicenseName: portsSource.source.licenseName,
+      expectedRecords: portsSource.projection.expected.projectedRecords,
+      expectedSha256: portsSource.projection.expected.sha256,
+      expectedRankCounts: portsSource.projection.expected.rankCounts,
     },
     marine: {
       restBaseUrl: readEndpoint(

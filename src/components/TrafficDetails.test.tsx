@@ -137,6 +137,8 @@ describe('TrafficDetails aircraft metadata', () => {
       kind: 'vessel',
       provider: 'Digitraffic',
       mmsi: 123456789,
+      vesselCategory: 'unknown',
+      navigationCategory: 'unknown',
       name: 'TEST SHIP',
       position: {
         latitude: 59.4,
@@ -159,5 +161,48 @@ describe('TrafficDetails aircraft metadata', () => {
 
     expect(html).not.toContain('Aircraft metadata')
     expect(html).not.toContain('AIRBUS A-320')
+    expect(html).toContain('Position report')
+    expect(html).toContain('Metadata report')
+    expect(html).toContain('Unavailable')
+    expect(html).toContain('no ETA year or port relationship is inferred')
+  })
+
+  it('keeps vessel metadata age separate from position age', () => {
+    const vessel: DisplayVessel = {
+      id: 'vessel:123456789',
+      kind: 'vessel',
+      provider: 'Digitraffic',
+      mmsi: 123456789,
+      vesselCategory: 'cargo',
+      navigationCategory: 'underway',
+      name: 'TEST SHIP',
+      destination: 'TALLINN',
+      eta: '09-18 14:30 UTC',
+      metadataObservedAt: 1_799_999_400_000,
+      position: {
+        latitude: 59.4,
+        longitude: 24.7,
+        observedAt: 1_800_000_000_000,
+      },
+      receivedAt: 1_800_000_000_000,
+      markerIcon: 'vessel-cargo',
+      markerScale: 1,
+      freshness: 'live',
+    }
+    const html = renderToStaticMarkup(
+      <TrafficDetails
+        entity={vessel}
+        aircraftMetadata={{ phase: 'idle' }}
+        now={1_800_000_001_000}
+        onClose={() => undefined}
+      />,
+    )
+
+    expect(html).toContain('AIS-reported destination')
+    expect(html).toContain('AIS ETA (year not supplied)')
+    expect(html).toContain('Metadata report')
+    expect(html).toContain('10 min ago')
+    expect(html).toContain('Position report')
+    expect(html).toContain('just now')
   })
 })

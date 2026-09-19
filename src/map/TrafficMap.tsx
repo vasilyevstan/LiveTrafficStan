@@ -14,6 +14,7 @@ import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&ur
 import type { Theme } from '../app/theme'
 import type { AppCenter } from '../config/appConfig'
 import { boundsAroundCenter } from '../domain/geo'
+import type { Port } from '../domain/ports'
 import type {
   DisplayAircraft,
   DisplayTrafficEntity,
@@ -44,6 +45,12 @@ import {
   TouchInteractionTracker,
   uniqueEligibleFeatureId,
 } from './touchPicking'
+import {
+  PORT_LAYER_IDS,
+  installPortsStyle,
+  portFeatures,
+  setPortsVisibility,
+} from './portsStyle'
 import {
   installTrafficStyle,
   LAYER_AIRCRAFT,
@@ -76,14 +83,18 @@ interface TrafficMapProps {
   theme: Theme
   aircraft: readonly DisplayAircraft[]
   vessels: readonly DisplayVessel[]
+  ports: readonly Port[]
   trail: readonly TrailPoint[]
   selectedId: string | null
+  selectedPortId: string | null
   aircraftVisible: boolean
   vesselsVisible: boolean
+  portsVisible: boolean
   interpolationDurationMs: number
   viewRequestId: number
   viewportSettleMs: number
   onSelect: (id: string | null) => void
+  onSelectPort: (id: string | null) => void
   onViewportChange: (
     assessment: ViewportAssessment,
     viewRequestId: number,
@@ -98,9 +109,15 @@ interface RenderState {
   selectedId: string | null
 }
 
+interface PortRenderState {
+  ports: readonly Port[]
+  selectedPortId: string | null
+}
+
 interface ViewState {
   aircraftVisible: boolean
   vesselsVisible: boolean
+  portsVisible: boolean
   trail: readonly TrailPoint[]
 }
 
@@ -207,14 +224,18 @@ export function TrafficMap({
   theme,
   aircraft,
   vessels,
+  ports,
   trail,
   selectedId,
+  selectedPortId,
   aircraftVisible,
   vesselsVisible,
+  portsVisible,
   interpolationDurationMs,
   viewRequestId,
   viewportSettleMs,
   onSelect,
+  onSelectPort,
   onViewportChange,
   onManualViewChange,
   onMapError,
@@ -252,12 +273,18 @@ export function TrafficMap({
     vessels,
     selectedId,
   })
+  const portRenderStateRef = useRef<PortRenderState>({
+    ports,
+    selectedPortId,
+  })
   const viewStateRef = useRef<ViewState>({
     aircraftVisible,
     vesselsVisible,
+    portsVisible,
     trail,
   })
   const selectRef = useRef(onSelect)
+  const selectPortRef = useRef(onSelectPort)
   const viewportChangeRef = useRef(onViewportChange)
   const manualViewChangeRef = useRef(onManualViewChange)
   const errorRef = useRef(onMapError)
@@ -454,6 +481,15 @@ export function TrafficMap({
         },
         getTrafficImages(activeTheme),
       )
+      const portState = portRenderStateRef.current
+      if (portState.ports.length > 0) {
+        installPortsStyle(
+          map,
+          portFeatures(portState.ports, portState.selectedPortId),
+          activeTheme,
+          viewState.portsVisible,
+        )
+      }
       loadedRef.current = true
       errorRef.current(null)
       scheduleRender()
@@ -505,6 +541,10 @@ export function TrafficMap({
   }, [onSelect])
 
   useEffect(() => {
+    selectPortRef.current = onSelectPort
+  }, [onSelectPort])
+
+  useEffect(() => {
     viewportChangeRef.current = onViewportChange
   }, [onViewportChange])
 
@@ -520,9 +560,10 @@ export function TrafficMap({
     viewStateRef.current = {
       aircraftVisible,
       vesselsVisible,
+      portsVisible,
       trail,
     }
-  }, [aircraftVisible, trail, vesselsVisible])
+  }, [aircraftVisible, portsVisible, trail, vesselsVisible])
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -618,6 +659,11 @@ export function TrafficMap({
       return layers
     }
 
+    const activePortLayers = () =>
+      viewStateRef.current.portsVisible
+        ? PORT_LAYER_IDS.filter((layerId) => map.getLayer(layerId))
+        : []
+
     const selectableTrafficIds = () => {
       const ids = new Set<string>()
       const renderState = renderStateRef.current
@@ -630,6 +676,9 @@ export function TrafficMap({
       }
       return ids
     }
+
+    const selectablePortIds = () =>
+      new Set(portRenderStateRef.current.ports.map(({ id }) => id))
 
     map.on('moveend', () => {
       scheduleViewportReport(map)
@@ -646,6 +695,7 @@ export function TrafficMap({
           'Map: <a href="https://openfreemap.org/" target="_blank">OpenFreeMap</a>',
           'Aircraft: <a href="https://www.adsb.lol/" target="_blank" rel="noreferrer">ADSB.lol</a> (<a href="https://opendatacommons.org/licenses/odbl/1-0/" target="_blank" rel="noreferrer">ODbL 1.0</a>)',
           'Marine: <a href="https://www.digitraffic.fi/en/marine-traffic/" target="_blank" rel="noreferrer">Fintraffic Digitraffic</a> (<a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">CC BY 4.0</a>; filtered and normalized)',
+          'Optional ports: <a href="https://www.naturalearthdata.com/downloads/10m-cultural-vectors/ports/" target="_blank" rel="noreferrer">Natural Earth</a> (<a href="https://www.naturalearthdata.com/about/terms-of-use/" target="_blank" rel="noreferrer">public domain</a>; generalized and incomplete)',
         ],
       }),
       'bottom-right',
@@ -655,29 +705,72 @@ export function TrafficMap({
       const touchFallbackAllowed = touchTracker.consumeClick(
         event.originalEvent,
       )
-      const layers = activeTrafficLayers()
-      if (layers.length === 0) return
-      const eligibleIds = selectableTrafficIds()
-      const exactFeatures = map.queryRenderedFeatures(event.point, { layers })
-      const exactId = exactEligibleFeatureId(exactFeatures, eligibleIds)
-      if (exactId) {
-        selectRef.current(exactId)
-        return
-      }
-      if (!touchFallbackAllowed) {
-        selectRef.current(null)
-        return
+      const trafficLayers = activeTrafficLayers()
+      const trafficIds = selectableTrafficIds()
+      if (trafficLayers.length > 0) {
+        const exactTraffic = exactEligibleFeatureId(
+          map.queryRenderedFeatures(event.point, {
+            layers: trafficLayers,
+          }),
+          trafficIds,
+        )
+        if (exactTraffic) {
+          selectPortRef.current(null)
+          selectRef.current(exactTraffic)
+          return
+        }
+        if (touchFallbackAllowed) {
+          const nearbyTraffic = uniqueEligibleFeatureId(
+            map.queryRenderedFeatures(
+              expandedHitBox(event.point, touchHitTolerancePx),
+              { layers: trafficLayers },
+            ),
+            trafficIds,
+          )
+          if (nearbyTraffic) {
+            selectPortRef.current(null)
+            selectRef.current(nearbyTraffic)
+            return
+          }
+        }
       }
 
-      const nearbyFeatures = map.queryRenderedFeatures(
-        expandedHitBox(event.point, touchHitTolerancePx),
-        { layers },
-      )
-      selectRef.current(uniqueEligibleFeatureId(nearbyFeatures, eligibleIds))
+      const portLayers = activePortLayers()
+      const portIds = selectablePortIds()
+      if (portLayers.length > 0) {
+        const exactPort = exactEligibleFeatureId(
+          map.queryRenderedFeatures(event.point, {
+            layers: portLayers,
+          }),
+          portIds,
+        )
+        if (exactPort) {
+          selectRef.current(null)
+          selectPortRef.current(exactPort)
+          return
+        }
+        if (touchFallbackAllowed) {
+          const nearbyPort = uniqueEligibleFeatureId(
+            map.queryRenderedFeatures(
+              expandedHitBox(event.point, touchHitTolerancePx),
+              { layers: portLayers },
+            ),
+            portIds,
+          )
+          if (nearbyPort) {
+            selectRef.current(null)
+            selectPortRef.current(nearbyPort)
+            return
+          }
+        }
+      }
+
+      selectRef.current(null)
+      selectPortRef.current(null)
     })
 
     map.on('mousemove', (event) => {
-      const layers = activeTrafficLayers()
+      const layers = [...activeTrafficLayers(), ...activePortLayers()]
       const features =
         layers.length > 0
           ? map.queryRenderedFeatures(event.point, { layers })
@@ -781,6 +874,18 @@ export function TrafficMap({
   ])
 
   useEffect(() => {
+    portRenderStateRef.current = { ports, selectedPortId }
+    const map = mapRef.current
+    if (!map || !loadedRef.current || ports.length === 0) return
+    installPortsStyle(
+      map,
+      portFeatures(ports, selectedPortId),
+      themeRef.current,
+      viewStateRef.current.portsVisible,
+    )
+  }, [ports, selectedPortId])
+
+  useEffect(() => {
     const map = mapRef.current
     if (!map || !loadedRef.current) return
     setTrafficLayerVisibility(map, LAYER_AIRCRAFT, aircraftVisible)
@@ -793,6 +898,12 @@ export function TrafficMap({
     setTrafficLayerVisibility(map, LAYER_VESSELS, vesselsVisible)
     setTrafficLayerVisibility(map, LAYER_VESSEL_HALO, vesselsVisible)
   }, [vesselsVisible])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !loadedRef.current) return
+    setPortsVisibility(map, portsVisible)
+  }, [portsVisible])
 
   useEffect(() => {
     const map = mapRef.current

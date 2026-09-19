@@ -261,13 +261,54 @@ Invalid or missing dimensions remain unavailable and are never guessed.
 
 Digitraffic vessel metadata exposes the AIS ship type field defined by
 [ITU-R Recommendation M.1371](https://www.itu.int/rec/R-REC-M.1371/en).
-LiveTrafficStan maps only type 30 to fishing, type 52 to tug, ranges 60-69 to
-passenger, 70-79 to cargo, and 80-89 to tanker artwork. Other towing, service,
-special-purpose, missing, invalid, and unsupported codes retain the generic
-vessel silhouette. Names, navigation status, speed, and destination do not
-change that classification. Digitraffic currently filters type 30 fishing
-vessels upstream; the type-30 mapping remains a truthful provider-boundary
-fallback if an authorized compatible source supplies that code later.
+LiveTrafficStan maps only type 30 to fishing, type 52 to tug, 60-64/69 to
+passenger, 70-74/79 to cargo, and 80-84/89 to tanker artwork. Reserved subcodes
+65-68, 75-78, 85-88, and 95-98 remain unknown rather than being folded into a
+defined category. Other towing, service, special-purpose, missing, invalid,
+and unsupported codes retain the generic vessel silhouette. Names, navigation
+status, speed, and destination do not change that classification. Digitraffic
+currently filters type 30 fishing vessels upstream; the type-30 mapping remains
+a truthful provider-boundary fallback if an authorized compatible source
+supplies that code later.
+
+The local filter taxonomy additionally groups 31, 32, 50-55, 58, and 59 as
+`tug-service`; 20-24, 29, 33-37, 40-44, 49, 90-94, and 99 are known `other`.
+This affects only normalized display filtering. It does not create another
+provider category, alter marker inference, or change upstream traffic.
+
+## Port context: Natural Earth Ports
+
+- Repository: <https://github.com/nvkelso/natural-earth-vector>
+- Source notes:
+  <https://www.naturalearthdata.com/downloads/10m-cultural-vectors/ports/>
+- Terms: <https://www.naturalearthdata.com/about/terms-of-use/>
+- Tag: `v5.1.2`
+- Commit: `f1890d9f152c896d250a77557a5751a93d494776`
+- Source file: `geojson/ne_10m_ports.geojson`
+- License/status: public domain
+- Runtime access: optional immutable same-origin static asset
+
+The source file is pinned by commit and SHA-256. The deterministic projection
+retains only Natural Earth ID, name, scalerank, longitude, and latitude. It
+contains 1,081 points and is distributed at
+`/ports/natural-earth-v5.1.2-v1/ports.geojson`. The committed manifest records
+the exact source/output checksums, counts, rank distribution, and measured
+raw/gzip sizes; `npm run check:ports` verifies them without network access.
+
+Natural Earth's port points are generalized and incomplete. Its official notes
+warn that some locations may be approximate by up to 20 miles, and the dataset
+omits relevant regional terminals including Muuga, Paldiski, and Porvoo. It is
+therefore used only as optional geographic context. LiveTrafficStan does not
+represent it as a port authority, current facility inventory, navigation aid,
+coverage source, or operational harbour database, and does not infer a port
+call, berth, facility, destination, ETA, or nearby-vessel relationship.
+
+The layer is off by default and makes no startup request. First enable loads
+the complete immutable asset under a deadline and byte cap, validates its
+SHA-256 and full grammar, and caches only a fulfilled dataset for the current
+session. Blocking or corrupting the asset leaves aircraft and marine traffic
+unchanged. Source, projection, generator, or generated-byte changes require a
+new immutable version path.
 
 ## Source-code license versus data licenses
 
@@ -287,7 +328,9 @@ separate licenses and attribution requirements:
 - static aircraft metadata derivative database: Mictronics
   aircraft-database, ODC-By 1.0
 - marine data: Fintraffic Digitraffic, CC BY 4.0
+- optional port context: Natural Earth Ports, public domain
 
 The application does not persist or redistribute a live traffic database. It
 does distribute the separately identified static aircraft metadata derivative
-database under ODC-By 1.0.
+database under ODC-By 1.0 and the separately identified public-domain Natural
+Earth port projection.
