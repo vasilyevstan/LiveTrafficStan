@@ -123,16 +123,17 @@ operational thresholds, and examples.
 | --- | --- | --- | --- |
 | Map | OpenFreeMap / OpenMapTiles / OpenStreetMap | Provider and OSM attribution applies | Direct browser access |
 | Aircraft | ADSB.lol | ODbL 1.0 | Same-origin Vite proxy |
-| Marine | Fintraffic Digitraffic | CC BY 4.0 | Direct REST and MQTT |
+| Marine | Fintraffic Digitraffic | CC BY 4.0 | Direct regional REST and MQTT |
 
 The repository's Apache License 2.0 applies to source code only. Distributed
 derivative works must preserve the attribution in [`NOTICE`](NOTICE) as
 described by the license. The source license does not relicense map, aircraft,
 or marine data, whose required attribution remains visible on the map. See
-[Data Sources and Licensing](docs/data-sources-and-licensing.md) and the
-dated [Aircraft Provider Evaluation](docs/aircraft-provider-evaluation.md) for
-the verified contracts, official links, request-volume calculation, and the
-decision to retain ADSB.lol.
+[Data Sources and Licensing](docs/data-sources-and-licensing.md), the dated
+[Aircraft Provider Evaluation](docs/aircraft-provider-evaluation.md), and the
+dated [Marine Provider Evaluation](docs/marine-provider-evaluation.md) for the
+verified contracts, official links, measured/request-volume evidence, and the
+decisions to retain ADSB.lol and Fintraffic Digitraffic.
 
 ## Deployment
 
@@ -152,8 +153,9 @@ attribution when implementing a deployment adapter.
   by receiver availability and time.
 - The default aircraft endpoint works through Vite development and preview;
   arbitrary static hosting needs the proxy described above.
-- Digitraffic's global MQTT stream is filtered to the eligible viewport in the
-  browser; this local filtering does not reduce incoming MQTT bandwidth.
+- Digitraffic is a regional source with an unknown exact coverage boundary.
+  Its all-published-vessels MQTT stream is filtered in the browser; this local
+  filtering does not reduce incoming MQTT bandwidth.
 - Views whose conservative enclosing radius exceeds 100 km pause live traffic
   until the user zooms in or reduces tilt. Partial coverage is never presented
   as complete.
@@ -176,6 +178,7 @@ silently expanded into V1.
 - [Configuration](docs/configuration.md)
 - [Data Sources and Licensing](docs/data-sources-and-licensing.md)
 - [Aircraft Provider Evaluation](docs/aircraft-provider-evaluation.md)
+- [Marine Provider Evaluation](docs/marine-provider-evaluation.md)
 - [Development and Testing](docs/development-and-testing.md)
 - [Troubleshooting](docs/troubleshooting.md)
 - [Engineering Decisions](docs/decisions.md)

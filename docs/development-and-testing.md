@@ -73,7 +73,8 @@ covers:
 - configuration defaults and invalid overrides;
 - ADSB.lol request construction, abort forwarding, response/error validation,
   retry guidance, enclosing-circle transport, and metric conversion;
-- Digitraffic REST/MQTT normalization, dimensions, ETA, and missing metadata;
+- Digitraffic REST/MQTT normalization, capabilities, provenance, dimensions,
+  ETA, missing metadata, one-connection batching, and bounded diagnostics;
 - vessel minimum-length filtering;
 - current, stale, and expired transitions;
 - trail time pruning and point caps;
@@ -205,6 +206,29 @@ Use local fixtures, fake clocks, fake maps, mocked fetch, and mocked MQTT for
 repeated lifecycle checks. A milestone needs one bounded real-provider browser
 smoke, not repeated live loops for scenarios that deterministic tests can
 prove.
+
+For a bounded Digitraffic stream measurement in development, use one ordinary
+application tab:
+
+```text
+http://127.0.0.1:5173/?marineDiagnostics=1
+```
+
+The opt-in collector observes the existing provider instance. It creates no
+client, subscription, request, timer, payload archive, identifier inventory, or
+telemetry upload. Once per minute and on final provider shutdown it writes one
+aggregate JSON snapshot to the console and page title. Use a fixed eligible
+view and record the source SHA, UTC interval, browser/platform, and limitations.
+
+Message and payload-byte totals describe the full Digitraffic wildcard stream,
+not the current viewport. Payload bytes exclude MQTT/WebSocket/TLS framing and
+compression. Provider-emitted vessel counts are query-circle values before
+exact viewport and user filtering. Never present one trace as a load test,
+coverage census, SLA, or cross-provider benchmark.
+
+Production builds must remove the diagnostics query flag, collector, counters,
+timing calls, logging, and title changes. Verify this alongside the normal
+production build when editing the instrumentation.
 
 ## Dependency and bundle discipline
 

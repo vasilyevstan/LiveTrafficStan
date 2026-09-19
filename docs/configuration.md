@@ -155,6 +155,6 @@ an ephemeral random MQTT client identifier. Neither value contains user data.
 
 Map movement must not place browser location or other personal information in
 that header. Eligible viewport updates reuse the MQTT connection and should
-rely on the global message cache before considering another bounded REST
+rely on the provider-wide message cache before considering another bounded REST
 request. Hidden and ineligible-view pauses retain MQTT, REST, and metadata
 deadlines rather than reconstructing the provider.

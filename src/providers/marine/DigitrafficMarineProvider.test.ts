@@ -307,11 +307,14 @@ describe('DigitrafficMarineProvider query updates', () => {
     )
 
     const onDiagnostics = vi.fn()
+    const onSnapshot = vi.fn()
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const config = createAppConfig({}).marine
     const provider = new DigitrafficMarineProvider({
-      config: createAppConfig({}).marine,
+      config,
       query: query(59.437, 24.754),
       callbacks: {
-        onSnapshot: vi.fn(),
+        onSnapshot,
         onStatus: vi.fn(),
       },
       diagnostics: {
@@ -322,6 +325,7 @@ describe('DigitrafficMarineProvider query updates', () => {
     const internals = provider as unknown as {
       openMqttClient: (generation: number) => Promise<void>
       handleMqttMessage: (topic: string, payload: Uint8Array) => void
+      flush: (reason: 'immediate' | 'scheduled') => void
     }
     const openMqttClient = vi
       .spyOn(internals, 'openMqttClient')
@@ -374,6 +378,9 @@ describe('DigitrafficMarineProvider query updates', () => {
     internals.handleMqttMessage('vessels-v2/status', payloads[4]!)
 
     await vi.advanceTimersByTimeAsync(1_000)
+    expect(warn).toHaveBeenCalledWith(
+      'Ignored malformed Digitraffic location: invalid JSON',
+    )
 
     const snapshot = onDiagnostics.mock.calls.at(-1)?.[0]
     expect(snapshot).toMatchObject({
@@ -405,6 +412,29 @@ describe('DigitrafficMarineProvider query updates', () => {
       },
     })
     expect(openMqttClient).toHaveBeenCalledTimes(1)
+    expect(onSnapshot.mock.calls.at(-1)?.[0]?.[0]).toMatchObject({
+      mmsi: 230123456,
+      position: {
+        latitude: 59.45,
+        longitude: 24.76,
+        observedAt: 1_800_000_001_000,
+      },
+    })
+
+    vi.setSystemTime(
+      1_800_000_001_000 + config.expireAfterMs + 1,
+    )
+    internals.flush('immediate')
+    expect(onDiagnostics.mock.calls.at(-1)?.[0]).toMatchObject({
+      cache: {
+        locations: 0,
+        maxLocations: 1,
+        metadata: 1,
+        maxMetadata: 1,
+        expiredLocations: 1,
+      },
+    })
+    expect(onSnapshot.mock.calls.at(-1)?.[0]).toEqual([])
 
     provider.stop()
     const callsAfterStop = onDiagnostics.mock.calls.length

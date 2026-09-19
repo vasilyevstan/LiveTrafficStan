@@ -166,7 +166,12 @@ Do not hide MapLibre attribution controls. The application must visibly credit:
 
 - OpenFreeMap, OpenMapTiles, and OpenStreetMap contributors;
 - ADSB.lol and ODbL;
-- Fintraffic Digitraffic and CC BY 4.0.
+- Fintraffic Digitraffic and CC BY 4.0, including the filtering/normalization
+  change notice.
+
+Digitraffic is a regional source with an unknown exact coverage boundary. A
+connected stream and zero ships shown do not prove that a location is covered
+or vessel-free.
 
 The Apache License 2.0 source license and project `NOTICE` do not replace these
 runtime data obligations.
