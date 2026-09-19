@@ -292,6 +292,10 @@ The token should be scoped to the selected account and the Worker-edit
 permission required by Wrangler. Neither value belongs in Git, issue text,
 `VITE_*`, client JavaScript, or pull-request workflows.
 
+There is deliberately no local production-deploy package script. Permanent
+deployments must use the serialized checked workflow so exact-SHA, current-main,
+environment, smoke, and rollback evidence stay attached to one operation.
+
 Cloudflare documents an unauthenticated temporary-account path for agents, but
 it requires user acceptance of Cloudflare's Terms of Service and Privacy
 Policy, must be claimed, and is not the permanent production/CI account model.
