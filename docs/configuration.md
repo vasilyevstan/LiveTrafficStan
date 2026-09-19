@@ -71,6 +71,14 @@ spread through components:
 | Marine stale / expiry | 2 minutes / 10 minutes |
 | Selected trail | Shown by default; session-only; 5, 15, 30, or 60 minutes |
 | Trail point caps | 12 points/minute per object; 50,000 points overall |
+| Session observation history | 60 minutes; 50,000 records; 16 MiB logical payload |
+| History sampling | Newer provider source time; at most one sample per provider/entity per 10 seconds |
+| Durable local history | Disabled by default; 1, 6, or 24 hours; default 1 hour |
+| Durable history caps | 100,000 records; 32 MiB logical payload; first reached limit wins |
+| Pending durable queue | 5,000 records or 4 MiB; oldest uncommitted records drop visibly |
+| IndexedDB write / maintenance | 250 records per batch / prune every 5 minutes |
+| Playback | 0.5×, 1×, 2×, or 4×; cursor publication at most every 100 ms |
+| Historical trail gaps | Aircraft 120 seconds; vessels 600 seconds; session/navigation changes also split |
 | Maximum interpolation duration | 1.5 seconds |
 | Query/geolocation coordinate precision | 3 decimal places |
 | Settled-viewport delay | 350 ms |
@@ -83,12 +91,23 @@ spread through components:
 Changing these constants changes application behavior and should include
 targeted tests where the value affects filtering, freshness, history, or motion.
 
-Trail duration and visibility are plain session state in V1.4's first history
-slice. The released 15-minute/180-point behavior remains the default. Reducing
+Trail duration and visibility remain plain session state. The released
+15-minute/180-point behavior remains the default. Reducing
 the duration prunes immediately; increasing it collects future provider
 observations only and does not reconstruct points that were not retained.
 Hiding the trail changes only the selected-object line and does not change
 provider acquisition.
+
+Private history settings use
+`livetrafficstan.history.settings.v1`. Observations use IndexedDB database
+`livetrafficstan-history`, schema version 1, with primary key
+`[provider, entityId, observedAt]`. BroadcastChannel
+`livetrafficstan-history` is primary cross-tab invalidation; storage key
+`livetrafficstan.history.invalidate.v1` is the fallback. These names are
+versioned data contracts, not environment-variable overrides. Invalidation
+messages are typed; destructive messages include the committed recording epoch
+and Clear includes its receipt-time boundary. Pending batches retain their
+enqueue epoch and are never rewritten under a later authorization.
 
 Vessel search and filters are serializable React state, not provider
 configuration. All criteria combine with AND after freshness and exact viewport

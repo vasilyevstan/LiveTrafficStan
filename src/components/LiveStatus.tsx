@@ -1,4 +1,4 @@
-import { formatAge } from '../domain/format'
+import { formatAge, formatTimestamp } from '../domain/format'
 import type { ProviderStatus } from '../domain/traffic'
 import type { MarineProviderCapabilities } from '../providers/types'
 
@@ -9,6 +9,8 @@ interface LiveStatusProps {
   marineStatus: ProviderStatus
   marineCapabilities: MarineProviderCapabilities
   now: number
+  online: boolean
+  historicalAt?: number
 }
 
 const providerLabel = (
@@ -32,20 +34,27 @@ export function LiveStatus({
   marineStatus,
   marineCapabilities,
   now,
+  online,
+  historicalAt,
 }: LiveStatusProps) {
   const statuses = [aircraftStatus, marineStatus]
   const allPaused = statuses.every((status) => status.paused)
   const liveCount = statuses.filter((status) => status.phase === 'live').length
   const errorCount = statuses.filter((status) => status.phase === 'error').length
-  const mode = allPaused
-    ? 'PAUSED'
-    : liveCount === 2
-      ? 'LIVE'
-      : liveCount === 1 && errorCount === 1
-        ? 'PARTIAL'
-        : errorCount === 2
-          ? 'OFFLINE'
-          : 'CONNECTING'
+  const mode =
+    historicalAt !== undefined
+      ? 'HISTORY'
+      : !online
+        ? 'OFFLINE'
+      : allPaused
+        ? 'PAUSED'
+        : liveCount === 2
+          ? 'LIVE'
+          : liveCount === 1 && errorCount === 1
+            ? 'PARTIAL'
+            : errorCount === 2
+              ? 'OFFLINE'
+              : 'CONNECTING'
   const latestUpdate = Math.max(
     aircraftStatus.lastDataAt ?? 0,
     marineStatus.lastDataAt ?? 0,
@@ -54,8 +63,12 @@ export function LiveStatus({
   return (
     <section
       className={`live-status live-status--${mode.toLowerCase()}`}
-      aria-live="polite"
-      aria-label="Traffic provider status"
+      aria-live={historicalAt === undefined ? 'polite' : undefined}
+      aria-label={
+        historicalAt === undefined
+          ? 'Traffic provider status'
+          : 'Historical traffic status'
+      }
     >
       <div className="live-status__summary">
         <span className="live-status__dot" aria-hidden="true" />
@@ -67,9 +80,20 @@ export function LiveStatus({
           {vesselCount} ships shown · regional source
         </span>
         <span aria-hidden="true">/</span>
-        <span>updated {formatAge(latestUpdate || undefined, now)}</span>
+        <span>
+          {historicalAt === undefined
+            ? `updated ${formatAge(latestUpdate || undefined, now)}`
+            : `at ${formatTimestamp(historicalAt)}`}
+        </span>
       </div>
       <div className="live-status__providers">
+        {historicalAt !== undefined && (
+          <span>
+            {online
+              ? 'Live acquisition continues in the background when eligible'
+              : 'Browser offline; local playback remains available'}
+          </span>
+        )}
         <span title={aircraftStatus.error}>
           {providerLabel('Aircraft', aircraftStatus)}
         </span>

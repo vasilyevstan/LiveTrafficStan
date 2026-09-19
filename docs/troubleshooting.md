@@ -294,13 +294,49 @@ the object, when the object expires, or when a committed
 coordinate/place/Home navigation changes area. That navigation also resets
 retained trail points so the app cannot draw a line across unrelated views.
 Invalid input and failed search leave the current traffic selection and
-history unchanged. Trails exist only in memory, contain only provider
+history unchanged. Selected trails exist only in memory, contain only provider
 observations, and default to 15 minutes and 180 points. Use the Trail controls
 to show/hide the selected line or choose 5, 15, 30, or 60 minutes. Each setting
 keeps at most 12 points per minute per object, and all trails share a
 50,000-point aggregate cap. Increasing the duration cannot restore points that
 were already pruned; it collects future observations. Refreshing the page
-clears this session-only history.
+clears volatile session history, but explicitly enabled private local history
+may remain available for playback within its configured bounds.
+
+## Local history is unavailable, full, or not deleting
+
+Private local history is off by default. **ENABLE LOCAL** authorizes only this
+browser origin. The status distinguishes initializing, writing, blocked,
+stale-tab, quota, deletion, and generic failure states.
+
+- If the database is blocked or this tab is stale, close other LiveTrafficStan
+  tabs and use **RETRY LOCAL HISTORY** or reload.
+- If quota is full, durable writes stop visibly. Session history and live
+  traffic continue. Clear history to delete rows and retry.
+- **CLEAR HISTORY** removes volatile and durable observations but keeps the
+  opt-in setting. **DISABLE & DELETE** also turns recording off.
+- Clear and Disable reject stale queued writes with a recording epoch. If
+  deletion fails, the app reports failure rather than claiming success.
+- Same-origin tabs receive typed invalidations. Clear removes their volatile
+  session history and pending writes before reload; Disable removes pending
+  writes. A transient failed batch stays queued and is not silently discarded.
+- Quota/write suspension survives passive reloads. Clear is the recovery path
+  for quota exhaustion; **RETRY LOCAL HISTORY** retries other visible storage
+  failures.
+- Browser storage eviction can remove local history. The configured 1/6/24
+  hours is a maximum, not a guarantee.
+
+Historical mode is labeled **HISTORY PAUSED** or **HISTORY PLAYING**. Scrubbing
+does not query providers or move the live viewport query. Center, coordinate
+navigation, a place result, or successful Use Location returns to live before
+committing the new view. Manual pan/zoom may stay historical while the separate
+live query follows the viewport. Current METAR and third-party aircraft
+metadata are intentionally unavailable in history.
+
+When the browser goes offline, an already-open page can continue local
+playback. Live aircraft and marine acquisition pause through their existing
+controllers and resume at preserved cadence/reconnect boundaries when online.
+This is not an offline app-shell or offline-basemap guarantee.
 
 Port selection is separate. Selecting traffic clears a selected port, selecting
 a port clears traffic selection, hiding PORTS or committed navigation clears

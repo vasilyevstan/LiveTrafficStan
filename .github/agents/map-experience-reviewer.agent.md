@@ -54,10 +54,10 @@ Check these project invariants:
 - Aircraft and vessel clusters remain separate, are not application entity IDs,
   and cannot be selected by an entity fallback path.
 - `clusterMinPoints` is a source-creation option; runtime toggles use only
-  supported cluster options. Because clustered GeoJSON `setData()` rebuilds
-  Supercluster even above the visible cluster zoom, interpolation must stay
-  suspended while clustering is enabled and unchanged snapshots must not
-  rebuild once per animation frame.
+  supported cluster options. Clustered traffic keeps stable feature IDs and
+  uses bounded `updateData` diffs for ordinary movement; full `setData`
+  replacement remains limited to source/style installation and forced
+  recovery. Interpolation stays suspended while clustering is enabled.
 - Optional static context layers use separate sources, IDs, selection, details,
   visibility, and failure state. Style changes restore any fulfilled context
   data without another request; traffic exact/touch picking remains ahead of
@@ -69,8 +69,20 @@ Check these project invariants:
 - Generalized port points remain zoom-ranked, visually neutral, below traffic,
   and absent above their documented maximum zoom. Selection does not imply a
   facility, port call, destination, ETA, nearby vessel, or operational status.
-- Historical playback is unmistakably non-live and cannot move the live query
-  or make provider calls while scrubbing.
+- Historical playback is unmistakably non-live. Scrubbing cannot move the live
+  query or create an additional provider call; ordinary eligible acquisition
+  may continue through its existing schedule.
+- Playback freezes its range on entry, scrubbing pauses, speeds remain
+  0.5×/1×/2×/4×, the endpoint pauses rather than silently returning live, and
+  **RETURN TO LIVE** remains directly actionable above attribution at both
+  390x844 and 390x568.
+- Historical rendering reuses normal viewport filtering, discovery filters,
+  search, clustering, selection, and details, but disables interpolation and
+  excludes current METAR and third-party aircraft metadata. Vessel metadata
+  cannot appear before its own historical observation time.
+- Gap-aware historical trails split on aircraft/vessel thresholds and
+  session/navigation changes. A theme/style reload restores every segment
+  without joining gaps or recreating the map.
 - Configurable selected trails remain observation-only, selected-object-only,
   session state. Hiding the line does not pause collection, duration expansion
   does not fabricate missing points, and per-object plus aggregate caps remain

@@ -60,6 +60,13 @@ single React application, without accounts, a database, or persistent tracking.
   in-memory trail configurable to 5, 15, 30, or 60 minutes. Trails remain
   session-only, keep the released 15-minute default, and have per-object plus
   aggregate point caps.
+- Always-on bounded session observation history plus optional private
+  origin-local IndexedDB history. Durable recording is off by default, uses
+  1/6/24-hour retention choices, and can be cleared or disabled and deleted.
+- Explicit historical playback with a frozen range, scrub, play/pause,
+  0.5×/1×/2×/4× speed, gap-aware selected trails, and one-action return to
+  live. Playback changes display time only; eligible live acquisition
+  continues in the background.
 - Responsive floating controls, keyboard focus states, non-color status labels,
   and a small provider-reported set of original aircraft and vessel
   silhouettes with generic fallbacks.
@@ -112,8 +119,10 @@ or MapLibre sees them:
 
 ```text
 ADSB.lol polling ───────┐
-                       ├─> normalized traffic -> freshness/history -> map + UI
-Digitraffic REST/MQTT ──┘
+                       ├─> normalized traffic -> live display + bounded session history
+Digitraffic REST/MQTT ──┘                         |
+                                                  ├─> optional private IndexedDB
+                                                  └─> historical index/playback -> map + UI
 
 selected aircraft -> static metadata index + one prefix shard -> details only
 
@@ -172,6 +181,17 @@ settled station-set changes, explicit refresh, and retry share one session
 request-start gate of at least 60 seconds. Reports become stale after 75
 minutes and expire after 120 minutes. Hiding the layer preserves a fulfilled
 same-view result without persisting it.
+
+Traffic history stores only allowlisted normalized provider observations.
+Session history is always volatile and bounded. Private IndexedDB recording is
+explicit opt-in and bounded by retention time, record count, and logical bytes.
+Clear and Disable use an authorization epoch so queued or stale-tab writes
+cannot restore deleted observations. Pending batches retain their enqueue
+epoch, destructive cross-tab invalidations clear the affected volatile queue,
+and failed writes remain queued behind an explicit visible suspension rather
+than being reported as saved. Historical mode reuses the normal search, filter,
+selection, clustering, and details paths, but disables interpolation and hides
+current-only aircraft metadata and METAR context.
 
 See [Architecture](docs/architecture.md) for component boundaries, data flow,
 failure isolation, rendering, and deployment details.
@@ -268,8 +288,9 @@ monitoring, privacy, and rollback procedure.
 - Views whose conservative enclosing radius exceeds 100 km pause live traffic
   until the user zooms in or reduces tilt. Partial coverage is never presented
   as complete.
-- Trails disappear on refresh and are intentionally limited to the selected
-  object.
+- Selected trails remain intentionally limited to one object. Volatile session
+  history disappears on refresh; explicitly enabled private local history may
+  survive within its configured bounds.
 - Browser location is one-shot, rounded, and session-only; it is not continuous
   tracking and exact coordinates are not persisted.
 - Named place text is sent to Photon only after explicit submission. Photon is
@@ -296,8 +317,10 @@ monitoring, privacy, and rollback procedure.
   airport board, operational status, or global coverage guarantee. Enabling it
   sends visible qualifying ICAO station IDs through the application host to
   AWC.
-- There is no reverse geocoding, route enrichment, playback, radar,
-  precipitation forecast, account, saved center preference, or offline mode.
+- There is no reverse geocoding, route enrichment, radar, precipitation
+  forecast, account, saved center preference, offline app shell, or offline
+  basemap guarantee. An already-open page can replay retained local history
+  while offline, and labels live acquisition as paused.
 
 Planned work is tracked in
 [GitHub Issues](https://github.com/vasilyevstan/LiveTrafficStan/issues), not

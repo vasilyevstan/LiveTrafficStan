@@ -54,6 +54,23 @@ const renderControls = (
       onClusteringEnabledChange={() => undefined}
       trailPreferences={{ visible: true, durationMinutes: 15 }}
       onTrailPreferencesChange={() => undefined}
+      historySettings={{ version: 1, enabled: false, retentionHours: 1 }}
+      historyStatus={{
+        phase: 'disabled',
+        recordCount: 0,
+        logicalBytes: 0,
+      }}
+      historyRecordCount={0}
+      playback={{ mode: 'live' }}
+      onHistoryEnabledChange={() => undefined}
+      onHistoryRetentionChange={() => undefined}
+      onClearHistory={() => undefined}
+      onRetryHistory={() => undefined}
+      onEnterHistory={() => undefined}
+      onPlayHistory={() => undefined}
+      onPauseHistory={() => undefined}
+      onScrubHistory={() => undefined}
+      onPlaybackSpeedChange={() => undefined}
       centerDisabled={false}
       onCenter={() => undefined}
       locationAvailable

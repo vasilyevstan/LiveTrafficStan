@@ -96,6 +96,20 @@ covers:
 - current, stale, and expired transitions;
 - trail visibility, 5/15/30/60-minute pruning, per-object point caps,
   deterministic 50,000-point aggregate eviction, and future-only expansion;
+- provider-qualified historical projection, excluded enrichment fields,
+  exact provider/kind/license tuples, canonical logical-byte recomputation,
+  source-time/receipt-time separation, and vessel metadata cursor gating;
+- 60-minute session-history sampling, count/byte pruning, stationary reports,
+  navigation segments, and clear boundaries that reject cached resurrection;
+- IndexedDB opt-in, authorization epochs, atomic repair versus concurrent
+  disable, retention/count/byte pruning, malformed/extra-field removal,
+  metadata recount, quota retry/suspension, blocked upgrades, and unsupported
+  versions;
+- serialized passive loads and explicit mutations, typed destructive
+  invalidation, enqueue-epoch batches, failed-batch restoration, and in-flight
+  clear invalidation;
+- frozen playback ranges, speed/scrub/endpoint behavior, durable/session
+  deduplication, split indexes, historical snapshots, and gap-aware trails;
 - interpolation bounds and no extrapolation.
 
 Live provider availability, WebSocket behavior, WebGL rendering, and CORS/proxy
@@ -222,6 +236,34 @@ two-station AWC JSON responses with `public, max-age=60`, JSON content type, and
 `nosniff`. These bounded local measurements are regression evidence, not a
 public-load or provider-capacity claim.
 
+## Issue #9 history acceptance
+
+The deterministic large-history check uses 100,000 valid observations across
+1,000 entities. On the accepted implementation it measured:
+
+- actual Chromium IndexedDB read/validation/sort: 948.6 ms;
+- observation-index build: 20.9 ms;
+- historical snapshot p95 / maximum: 0.5 / 1.0 ms;
+- selected 100-point trail extraction: 0.3 ms;
+- measured load heap increase: 52,576,573 bytes;
+- the application retained 87,038 rows from a 38,551,000-logical-byte seed,
+  proving the 32 MiB bound rather than silently keeping all 100,000;
+- application reload-to-ready with the bounded retained store: 3,317.5 ms;
+- disabling while a full passive reload was active at 4× CPU remained disabled
+  after reload and left zero durable rows;
+- desktop scrub-to-two-frame paint p95 / maximum: 35.1 / 35.2 ms;
+- 390x844 with 4× CPU throttling p95 / maximum: 35.9 / 36.0 ms;
+- no measured browser long task above 50 ms in either scrub run.
+
+The production-preview lifecycle check starts from disabled empty storage,
+records real provider observations after explicit opt-in, reloads them, scrubs
+and plays at multiple speeds, pauses at the frozen endpoint, returns live via
+Center and the explicit action, plays while offline, clears, disables/deletes,
+and verifies that two-tab Clear invalidates both durable and volatile history.
+It also checks one MapLibre canvas, visible attribution, no runtime exceptions,
+real touch movement, and direct Return to Live access at 390x844 and 390x568.
+Provider HTTP failures are provider-state evidence, not JavaScript exceptions.
+
 ## Browser smoke test
 
 Use `npm run dev` and verify:
@@ -309,6 +351,30 @@ Use `npm run dev` and verify:
 29. AIR and SEA clusters remain separate, expand to the reported zoom, never
     open entity details, and do not increase aircraft, marine, metadata, Photon,
     airport, port, or METAR requests.
+30. Durable history starts disabled and empty. Enabling it is explicit, and
+    the status distinguishes durable from total currently available records.
+31. New provider observations persist after opt-in and survive reload. The
+    actual oldest/newest retained range is shown rather than the requested
+    maximum.
+32. Entering history freezes the range. Scrub pauses, 0.5×/1×/2×/4× playback
+    advances without creating an additional provider start, the endpoint
+    pauses, and Return to Live is explicit.
+33. Historical display remains unmistakable, disables interpolation, hides
+    current METAR and third-party aircraft metadata, and gates vessel metadata
+    to the cursor.
+34. Clear removes session and durable observations without disabling consent.
+    Disable turns recording off and deletes rows. Neither action allows queued
+    writes to repopulate the database.
+35. A second same-origin tab observes clear/disable invalidation. Blocked or
+    stale tabs report recovery guidance rather than continuing to write. Clear
+    removes both durable and volatile history in the peer, and queued records
+    cannot be retagged under the new epoch.
+36. Offline historical playback remains usable while live aircraft and marine
+    acquisition pause through existing controllers. Returning online preserves
+    their cadence, backoff, reconnect, REST, and metadata gates.
+37. At 390x844 and 390x568 the control panel remains at or below 58vh, Return
+    to Live is not covered by attribution, and a real touch drag can begin on an
+    unobstructed map region.
 
 For the viewport-driven map experience, additionally verify:
 

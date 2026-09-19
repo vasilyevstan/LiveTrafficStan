@@ -2,13 +2,11 @@
 
 ## Static-first V1
 
-LiveTrafficStan is a local-first browser application with no database, accounts, authentication, or persistent backend. This keeps the V1 deployable as static assets except for the aircraft CORS proxy described below.
-
-V1.4 may add an opt-in browser IndexedDB for private, origin-local traffic
-history. That is not a server, account, shared database, or backend. It remains
-off until the complete persistence/playback slice includes bounded storage,
-deletion, quota/corruption behavior, provider-qualified provenance, and visible
-attribution.
+LiveTrafficStan is a local-first browser application with no server database,
+accounts, authentication, or persistent backend. This keeps the V1 deployable
+as static assets except for the aircraft CORS proxy described below. V1.4 adds
+an opt-in browser IndexedDB for private, origin-local traffic history. It is
+not a server, account, shared database, or backend.
 
 ## React, TypeScript, Vite, and MapLibre
 
@@ -339,9 +337,12 @@ V1 imports `maplibre-gl-worker.mjs` through Vite's `?worker&url` handling and ca
 
 V1 animates briefly between two positions already supplied by a provider. It does not continue movement beyond the latest observed coordinate. This removes abrupt visual jumps without presenting predicted positions as live facts.
 
-## In-memory bounded history
+## Bounded session history and selected trails
 
-Recent provider-observed positions are kept only in browser memory, pruned by time and a point cap, and shown only for the selected object. Refreshing the page clears history by design.
+Recent provider-observed positions are always kept in a bounded volatile
+session store. Only the selected object's configured trail is rendered.
+Refreshing clears that session store; the separate explicit opt-in durable
+boundary is described below.
 
 ## Repository documentation and Wiki
 
@@ -464,16 +465,16 @@ then uses the existing settled full-canvas viewport pipeline. It does not
 recreate MapLibre, change filters/layers/themes, add a provider scheduler, or
 reconnect marine MQTT.
 
-## Configurable trails and local-history rights boundary
+## Configurable trails and private local playback
 
-Selected-object trails stay session-only in the first Issue #9 slice. They use
+Selected-object trails stay session-only. They use
 plain serializable visibility/duration state, retain the released visible
 15-minute default, offer 5/15/30/60-minute choices, and remain bounded by both
 per-object and 50,000-point aggregate caps. Hiding a trail is a display choice,
 not a provider or recording policy.
 
-The dated 2026-09-19 rights review authorizes a later persistence slice only
-for explicit opt-in, personal, origin-local playback:
+The dated 2026-09-19 rights review authorizes the shipped persistence boundary
+only for explicit opt-in, personal, origin-local playback:
 
 - ADSB.lol labels the live API ODbL 1.0. ODbL grants extraction, derivative
   databases, and permanent reproduction, while public use of a derivative
@@ -487,8 +488,36 @@ for explicit opt-in, personal, origin-local playback:
 - Public retained-history output, export, shared/cross-device history, or a
   backend requires a fresh provider-rights decision before implementation.
 
-This decision does not itself ship durable storage. Persistence remains
-default-off and enters only with the full playback/deletion boundary.
+The store remains off by default and records only an allowlisted versioned
+observation schema. Session history is separately bounded and volatile.
+Durable history uses 1/6/24-hour retention plus 100,000-record and 32 MiB
+logical limits; the first reached limit prunes oldest receipt-time records.
+Clear and Disable atomically increment a recording epoch and delete rows, and
+every queued write rechecks both authorization and epoch inside its
+transaction. Pending batches retain their enqueue epoch. Typed cross-tab Clear
+invalidations also clear volatile history and pending work, while Disable
+clears pending work. Failed batches remain queued behind a visible suspension.
+
+Stored-row validation reconstructs the exact allowlisted schema, requires the
+approved provider/kind/license tuple, drops additional properties, and
+recomputes logical bytes. Validation, malformed-row deletion, metadata recount,
+and pruning occur in one readwrite transaction so repair cannot overwrite a
+newer authorization epoch. Successfully committed rows are retained as bounded
+in-memory deltas until session pruning needs them, avoiding periodic full-store
+rescans during ordinary recording.
+
+Playback changes display time only. It freezes its range on entry, supports
+scrub, play/pause, and 0.5×/1×/2×/4× speeds, and stops at the endpoint until
+the user explicitly returns live. Current provider controllers remain mounted
+and continue ordinary eligible acquisition. Offline, hidden, unmounted, and
+ineligible-view reasons compose through the existing pause boundary without
+resetting aircraft cadence, `Retry-After`, MQTT reconnect, REST, or metadata
+gates.
+
+Current-only METAR and third-party aircraft metadata are absent in history.
+Destination, ETA, interpolation frames, browser location, export, sharing,
+synchronization, service-worker live caching, and backend history remain
+outside the decision.
 
 ## Explicit Auto, Light, and Dark theme preference
 
@@ -525,10 +554,11 @@ entity fallback ignores clusters. Fixed source creation uses a 42 CSS-pixel
 radius, minimum count 3, and maximum cluster zoom 10. Runtime toggles change
 only the supported `cluster` source option.
 
-MapLibre rebuilds the Supercluster index on every GeoJSON `setData()` even
+MapLibre rebuilds the Supercluster index on every full GeoJSON `setData()` even
 above the visible cluster zoom. Per-frame interpolation is therefore
-suspended whenever clustering is enabled and stable snapshot signatures skip
-unchanged freshness frames. This avoids a 20 fps index rebuild without
+suspended whenever clustering is enabled. Ordinary stable-ID traffic movement
+uses `updateData` diffs, while style/source installation and forced recovery
+retain complete snapshots. This avoids repeated full index rebuilds without
 changing provider acquisition, source observations, selection, or trails.
 
 ## Bounded AWC METAR/SPECI observation overlay
