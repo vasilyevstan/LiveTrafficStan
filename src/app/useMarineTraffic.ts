@@ -33,10 +33,12 @@ const developmentDiagnostics = (): MarineDiagnosticsOptions | undefined => {
   return {
     sampleIntervalMs: 60_000,
     onSnapshot: (snapshot) => {
+      const serialized = JSON.stringify(snapshot)
       console.info(
         'LiveTrafficStan marine diagnostics',
-        JSON.stringify(snapshot),
+        serialized,
       )
+      document.title = `LiveTrafficStan diagnostics ${serialized}`
     },
   }
 }
