@@ -47,6 +47,7 @@ const renderControls = (
       selectedWeatherId={null}
       weatherEmptyMessage="No current METAR observations are shown."
       weatherCanRefresh
+      weatherRetryUsesAirports={false}
       onWeatherVisibleChange={() => undefined}
       onWeatherSelect={() => undefined}
       onRetryWeather={() => undefined}
@@ -68,10 +69,6 @@ const renderControls = (
       onClearHistory={() => undefined}
       onRetryHistory={() => undefined}
       onEnterHistory={() => undefined}
-      onPlayHistory={() => undefined}
-      onPauseHistory={() => undefined}
-      onScrubHistory={() => undefined}
-      onPlaybackSpeedChange={() => undefined}
       centerDisabled={false}
       onCenter={() => undefined}
       locationAvailable
@@ -100,6 +97,57 @@ const renderControls = (
   )
 
 describe('TrafficControls', () => {
+  it('separates compact navigation and settings panels without duplicating controls', () => {
+    const html = renderControls()
+    const mapDetailsIndex = html.indexOf(
+      '<details id="traffic-controls-map-tools"',
+    )
+    const settingsPanelIndex = html.indexOf(
+      '<aside class="control-panel control-panel--settings"',
+    )
+    const settingsDetailsIndex = html.indexOf(
+      '<details id="traffic-controls-settings"',
+    )
+    const navigationPrimary = html.slice(0, mapDetailsIndex)
+    const navigationMore = html.slice(mapDetailsIndex, settingsPanelIndex)
+    const settingsPrimary = html.slice(
+      settingsPanelIndex,
+      settingsDetailsIndex,
+    )
+    const settingsMore = html.slice(settingsDetailsIndex)
+
+    expect(navigationPrimary).toContain('id="location-search-input"')
+    expect(navigationPrimary).toContain('>CENTER<')
+    expect(navigationPrimary).toContain('>AIRCRAFT<')
+    expect(navigationPrimary).toContain('>SHIPS<')
+    expect(navigationPrimary).not.toContain('>AUTO<')
+    expect(navigationPrimary).not.toContain('href=')
+    expect(navigationMore).toContain(
+      '<summary id="traffic-controls-map-tools-summary">MORE</summary>',
+    )
+    expect(navigationMore).toContain('aria-label="Location search details"')
+    expect(navigationMore).toContain('<legend>Layers</legend>')
+    expect(navigationMore).toContain('Aircraft discovery')
+    expect(navigationMore).toContain('Vessel discovery')
+    expect(navigationMore).toContain('USE LOCATION')
+    expect(navigationMore).not.toContain('<legend>History</legend>')
+    expect(settingsPrimary).toContain('>AUTO<')
+    expect(settingsPrimary).toContain('>LIGHT<')
+    expect(settingsPrimary).toContain('>DARK<')
+    expect(settingsPrimary).toContain('>TRAILS<')
+    expect(settingsMore).toContain(
+      '<summary id="traffic-controls-settings-summary">MORE</summary>',
+    )
+    expect(settingsMore).toContain('<legend>History</legend>')
+    expect(settingsMore).toContain('<legend>Preferences</legend>')
+    expect(settingsMore).not.toContain('<legend>Layers</legend>')
+    expect(html.match(/name="traffic-control-panels"/g)).toHaveLength(2)
+    expect(html.match(/id="location-search-input"/g)).toHaveLength(1)
+    expect(html.match(/>AIRCRAFT</g)).toHaveLength(1)
+    expect(html.match(/>SHIPS</g)).toHaveLength(1)
+    expect(html.match(/>TRAILS</g)).toHaveLength(1)
+  })
+
   it('renders Auto, Light, and Dark as explicit theme preferences', () => {
     const html = renderControls({ themePreference: 'auto' })
     expect(html).toContain('>AUTO<')
@@ -130,6 +178,38 @@ describe('TrafficControls', () => {
     expect(html).toContain('REFRESH APP')
     expect(html).toContain('An application update is ready.')
     expect(html).toContain('role="status"')
+    expect(html.match(/REFRESH APP/g)).toHaveLength(1)
+  })
+
+  it('promotes one recovery operation without duplicating shared airport retry', () => {
+    const html = renderControls({
+      airportsVisible: true,
+      airportsError: 'Airport data timed out',
+      weatherVisible: true,
+      weatherError: 'Airport station context unavailable',
+      weatherRetryUsesAirports: true,
+    })
+
+    expect(html.match(/RETRY AIRPORTS/g)).toHaveLength(1)
+    expect(html).not.toContain('RETRY METAR')
+    expect(html).toContain('Airports unavailable')
+    expect(html).toContain('METAR unavailable')
+  })
+
+  it('keeps lower-priority independent recovery actions inside More', () => {
+    const html = renderControls({
+      historyStatus: {
+        phase: 'error',
+        recordCount: 0,
+        logicalBytes: 0,
+        message: 'History database unavailable',
+      },
+      weatherVisible: true,
+      weatherError: 'Weather request timed out',
+    })
+
+    expect(html.match(/RETRY HISTORY/g)).toHaveLength(1)
+    expect(html.match(/RETRY METAR/g)).toHaveLength(1)
   })
 
   it('keeps clustering as a provider-neutral optional layer preference', () => {
@@ -143,7 +223,9 @@ describe('TrafficControls', () => {
     })
 
     expect(html).toContain('<legend>Trail</legend>')
-    expect(html).toContain('aria-pressed="true">HIDE')
+    expect(html).toContain('aria-pressed="false">TRAILS')
+    expect(html).not.toContain('>SHOW<')
+    expect(html).not.toContain('>HIDE<')
     expect(html).toContain('<option value="30" selected="">30 MIN</option>')
   })
 

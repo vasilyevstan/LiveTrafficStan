@@ -65,6 +65,15 @@ Check these project invariants:
   uses bounded `updateData` diffs for ordinary movement; full `setData`
   replacement remains limited to source/style installation and forced
   recovery. Interpolation stays suspended while clustering is enabled.
+- MapLibre source diffs follow the installed `updateData` contract.
+  `removeAllProperties` is terminal and must never be combined with properties
+  expected to survive or be re-added. Property-only updates retain marker
+  identity, icon, scale, heading, selected, stale, and other styling fields.
+- Selecting a rendered aircraft or vessel keeps that same marker visible and
+  pickable through the immediate source update, ordinary refreshes, and style
+  rehydration without moving the camera. Selection clears only through the
+  documented explicit navigation, empty-hit, hide/filter, expiry, or mutually
+  exclusive context-selection paths.
 - Optional static context layers use separate sources, IDs, selection, details,
   visibility, and failure state. Style changes restore any fulfilled context
   data without another request; traffic exact/touch picking remains ahead of
@@ -99,6 +108,17 @@ Check these project invariants:
 - Added controls must not let the mobile overlay consume the entire map.
   Verify a real touch drag starts on an unobscured map region at both 390x844
   and 390x568 while the control panel remains scrollable and reachable.
+- Keep the primary controls compact and task-based. Navigate and Explore keeps
+  search, Center, Aircraft, and Ships visible; Settings keeps theme and Trails
+  visible. Secondary controls belong behind two stable native disclosures that
+  are mutually exclusive. Active historical controls and one urgent actionable
+  recovery remain visible. A collapsed disclosure removes descendants from the
+  tab order, survives normal rerenders, preserves search state, and restores
+  focus to a visible control.
+- Measure each collapsed panel, the combined expanded-stack bound, overlay
+  obstruction, and attribution visibility in a real browser. The 58vh bound
+  applies to the whole stack; it alone does not prove that the default surfaces
+  remain lightweight.
 - Theme preference and resolved rendering theme stay separate. Missing or
   invalid storage remains Light; only explicit Auto follows system changes,
   and pre-paint/React resolution must agree without duplicate listeners.

@@ -24,6 +24,9 @@ preserve truthful partial operation when one provider fails.
   focused pull requests when acceptance groups are independent or a documented
   external prerequisite is later resolved. Use non-closing Issue references
   until every non-blocked criterion is complete.
+- Record an unrelated defect discovered during implementation or review as its
+  own GitHub Issue. Do not broaden the active Issue unless the defect is tightly
+  coupled to the change or blocks its documented acceptance criteria.
 - When a legal, provider, account, credential, or licensing dependency is
   demonstrated, record the evidence in the parent Issue and create a detailed
   blocker Issue. Do not add placeholder code, claim blocked criteria complete,
@@ -31,6 +34,9 @@ preserve truthful partial operation when one provider fails.
 - Before merge, run `npm run lint`, `npm run typecheck`,
   `npm test -- --run`, `npm run check:aircraft-metadata`, and
   `npm run build`.
+- Static markup, pure unit tests, and HTTP smoke do not prove rendered MapLibre
+  selection, focus, touch, or responsive layout. Use a real-browser acceptance
+  check for those claims and record measured evidence.
 - Use existing npm scripts and dependencies. Add a framework or dependency only
   when a demonstrated requirement cannot be met with current mechanisms.
 

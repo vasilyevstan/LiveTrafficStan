@@ -684,12 +684,46 @@ or when an external prerequisite is resolved later. Partial work uses
 non-closing references and does not close the parent until all non-blocked
 criteria are complete.
 
+An unrelated defect discovered during implementation, review, or release
+acceptance receives its own Issue. It joins the active work only when it is
+tightly coupled to the change or blocks a documented acceptance criterion;
+otherwise it remains separately prioritized instead of broadening the current
+delivery.
+
 Provider access, credentials, account roles, data rights, or licensing become a
 separate blocker only after concrete evidence identifies the missing
 prerequisite. The blocker records affected criteria and measurable completion
 evidence while unrelated ready work continues. Placeholder adapters, inferred
 data, client-side secrets, and success-shaped fallbacks are not acceptable
 substitutes.
+
+## Compact controls and rendered interaction evidence
+
+The primary map controls remain intentionally small and split by task. The
+upper Navigate and Explore panel keeps one location input plus Center, Aircraft,
+and Ships visible; its native disclosure contains search feedback, location,
+secondary layers, discovery, context, and source detail. The lower Settings
+panel keeps Auto, Light, Dark, and Trails visible; its native disclosure
+contains trail duration, local-history setup, units, sharing, reset, and
+application detail. The two disclosures share one native `name`, so at most one
+is open.
+
+The location input stays mounted while its feedback is collapsed, preserving
+entered text and in-flight state. Active historical controls and one urgent
+actionable recovery remain visible outside both disclosures, and mandatory map
+or selected-item attribution is never hidden. The combined expanded stack,
+rather than each panel independently, owns the 58vh budget.
+
+Selection updates must retain the complete MapLibre feature-property contract.
+In particular, `removeAllProperties` is terminal in the installed source-diff
+implementation and cannot be combined with properties expected to survive or be
+re-added.
+
+Pure tests, server-rendered markup, and HTTP smoke cannot establish that a
+marker remains painted, focus returns to a visible control, or a mobile map
+strip is touchable. Those claims require a real-browser check with measured
+camera, source properties, overlay bounds, attribution, and an actual input
+gesture.
 
 ## Deterministic checks before live probes
 

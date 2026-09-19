@@ -18,10 +18,6 @@ const baseProps: Parameters<typeof HistoryControls>[0] = {
   onClearHistory: () => undefined,
   onRetryHistory: () => undefined,
   onEnterHistory: () => undefined,
-  onPlayHistory: () => undefined,
-  onPauseHistory: () => undefined,
-  onScrubHistory: () => undefined,
-  onPlaybackSpeedChange: () => undefined,
 }
 
 describe('HistoryControls', () => {
@@ -51,7 +47,18 @@ describe('HistoryControls', () => {
     expect(html).toContain('<option value="60" selected="">60 MIN</option>')
   })
 
-  it('renders opt-in persistence and historical playback controls', () => {
+  it('keeps duration settings without duplicating promoted trail visibility', () => {
+    const html = renderToStaticMarkup(
+      <HistoryControls {...baseProps} trailVisibilityPromoted />,
+    )
+
+    expect(html).toContain('<legend>Trail</legend>')
+    expect(html).not.toContain('>SHOW<')
+    expect(html).not.toContain('>HIDE<')
+    expect(html).toContain('Selected trail duration')
+  })
+
+  it('renders opt-in persistence without duplicating active playback controls', () => {
     const html = renderToStaticMarkup(
       <HistoryControls
         {...baseProps}
@@ -75,11 +82,29 @@ describe('HistoryControls', () => {
     expect(html).toContain('<legend>History</legend>')
     expect(html).toContain('DISABLE &amp; DELETE')
     expect(html).toContain('6 HOURS')
-    expect(html).toContain('type="range" min="1000" max="10000" step="1"')
     expect(html).toContain(
       'This is the actual retained range, not the requested maximum.',
     )
-    expect(html).toContain('>PLAY<')
-    expect(html).toContain('aria-pressed="true">2×')
+    expect(html).not.toContain('type="range"')
+    expect(html).not.toContain('>PLAY<')
+    expect(html).not.toContain('ENTER HISTORY')
+  })
+
+  it('suppresses a promoted persistence retry without hiding its status', () => {
+    const html = renderToStaticMarkup(
+      <HistoryControls
+        {...baseProps}
+        historyStatus={{
+          phase: 'error',
+          recordCount: 0,
+          logicalBytes: 0,
+          message: 'History database unavailable',
+        }}
+        retryPromoted
+      />,
+    )
+
+    expect(html).toContain('History database unavailable')
+    expect(html).not.toContain('RETRY LOCAL HISTORY')
   })
 })

@@ -69,6 +69,13 @@ interface ViewRequest {
   camera?: MapCameraState
 }
 
+const canRestoreFocus = (element: HTMLElement | null) =>
+  Boolean(
+    element?.isConnected &&
+      element.getClientRects().length > 0 &&
+      !element.matches(':disabled, [aria-disabled="true"]'),
+  )
+
 function App() {
   const [sharedState] = useState(() =>
     readBrowserShareState(APP_CONFIG.navigation.coordinatePrecision),
@@ -150,6 +157,10 @@ function App() {
   }>()
   const [historyResetRevision, setHistoryResetRevision] = useState(0)
   const returnToLiveRef = useRef<() => void>(() => undefined)
+  const mapToolsSummaryRef = useRef<HTMLElement>(null)
+  const settingsSummaryRef = useRef<HTMLElement>(null)
+  const historyPlaybackControlRef = useRef<HTMLInputElement>(null)
+  const detailFocusOriginIdRef = useRef<string | null>(null)
   const appliedLocationRevisionRef = useRef(0)
   const airportSelectionGraceUntilRef = useRef(0)
   const location = useSessionLocation(
@@ -290,6 +301,7 @@ function App() {
       if (options.explicit !== false) {
         locationCameraIntent.beginExplicitViewIntent()
       }
+      detailFocusOriginIdRef.current = null
       setSelectedId(null)
       setSelectedPortId(null)
       setSelectedAirportId(null)
@@ -390,9 +402,13 @@ function App() {
     historyResetRevision,
     APP_CONFIG.history,
   )
+  const {
+    enterHistory,
+    returnToLive,
+  } = history
   useEffect(() => {
-    returnToLiveRef.current = history.returnToLive
-  }, [history.returnToLive])
+    returnToLiveRef.current = returnToLive
+  }, [returnToLive])
   const historyActive = history.playback.mode !== 'live'
   const historicalViewportEntities = useMemo(
     () =>
@@ -759,62 +775,143 @@ function App() {
     )
   }, [resetPreferences])
 
-  const handleTrafficSelect = useCallback((id: string | null) => {
-    setSelectedPortId(null)
-    setSelectedAirportId(null)
-    setSelectedWeatherId(null)
-    setSelectedId(id)
-  }, [])
+  const focusAfterRender = useCallback(
+    (
+      originId: string | null,
+      fallback: 'map-tools' | 'settings' = 'map-tools',
+    ) => {
+      globalThis.requestAnimationFrame(() => {
+        const origin = originId
+          ? document.getElementById(originId)
+          : null
+        const fallbackTarget =
+          fallback === 'settings'
+            ? settingsSummaryRef.current
+            : mapToolsSummaryRef.current
+        const target = canRestoreFocus(origin) ? origin : fallbackTarget
+        if (canRestoreFocus(target)) target?.focus()
+      })
+    },
+    [],
+  )
 
-  const handlePortSelect = useCallback((id: string | null) => {
+  const selectTraffic = useCallback(
+    (id: string | null, originId: string | null) => {
+      detailFocusOriginIdRef.current = id ? originId : null
+      setSelectedPortId(null)
+      setSelectedAirportId(null)
+      setSelectedWeatherId(null)
+      setSelectedId(id)
+    },
+    [],
+  )
+
+  const handleMapTrafficSelect = useCallback(
+    (id: string | null) => selectTraffic(id, null),
+    [selectTraffic],
+  )
+  const handleAircraftDiscoverySelect = useCallback(
+    (id: string) =>
+      selectTraffic(id, `aircraft-discovery-result-${id}`),
+    [selectTraffic],
+  )
+  const handleVesselDiscoverySelect = useCallback(
+    (id: string) =>
+      selectTraffic(id, `vessel-discovery-result-${id}`),
+    [selectTraffic],
+  )
+
+  const handleMapPortSelect = useCallback((id: string | null) => {
+    detailFocusOriginIdRef.current = null
     setSelectedId(null)
     setSelectedAirportId(null)
     setSelectedWeatherId(null)
     setSelectedPortId(id)
   }, [])
 
-  const handleAirportSelect = useCallback((id: string | null) => {
-    airportSelectionGraceUntilRef.current = id
-      ? Date.now() + APP_CONFIG.navigation.viewportSettleMs + 100
-      : 0
-    setSelectedId(null)
-    setSelectedPortId(null)
-    setSelectedWeatherId(null)
-    setSelectedAirportId(id)
-  }, [])
+  const selectAirport = useCallback(
+    (id: string | null, originId: string | null) => {
+      detailFocusOriginIdRef.current = id ? originId : null
+      airportSelectionGraceUntilRef.current = id
+        ? Date.now() + APP_CONFIG.navigation.viewportSettleMs + 100
+        : 0
+      setSelectedId(null)
+      setSelectedPortId(null)
+      setSelectedWeatherId(null)
+      setSelectedAirportId(id)
+    },
+    [],
+  )
+  const handleMapAirportSelect = useCallback(
+    (id: string | null) => selectAirport(id, null),
+    [selectAirport],
+  )
+  const handleAirportContextSelect = useCallback(
+    (id: string) =>
+      selectAirport(id, `airport-context-result-${id}`),
+    [selectAirport],
+  )
 
-  const handleWeatherSelect = useCallback((id: string | null) => {
+  const selectWeather = useCallback(
+    (id: string | null, originId: string | null) => {
+      detailFocusOriginIdRef.current = id ? originId : null
+      setSelectedId(null)
+      setSelectedPortId(null)
+      setSelectedAirportId(null)
+      setSelectedWeatherId(id)
+    },
+    [],
+  )
+  const handleMapWeatherSelect = useCallback(
+    (id: string | null) => selectWeather(id, null),
+    [selectWeather],
+  )
+  const handleWeatherContextSelect = useCallback(
+    (id: string) =>
+      selectWeather(id, `weather-context-result-${id}`),
+    [selectWeather],
+  )
+
+  const restoreDetailFocus = useCallback(() => {
+    const originId = detailFocusOriginIdRef.current
+    detailFocusOriginIdRef.current = null
+    focusAfterRender(originId)
+  }, [focusAfterRender])
+
+  const handleCloseTraffic = useCallback(() => {
     setSelectedId(null)
+    restoreDetailFocus()
+  }, [restoreDetailFocus])
+
+  const handleClosePort = useCallback(() => {
     setSelectedPortId(null)
-    setSelectedAirportId(null)
-    setSelectedWeatherId(id)
-  }, [])
+    restoreDetailFocus()
+  }, [restoreDetailFocus])
 
   const handleCloseAirport = useCallback(() => {
-    const airportId = selectedAirportId
     airportSelectionGraceUntilRef.current = 0
     setSelectedAirportId(null)
-    if (!airportId) return
-    globalThis.requestAnimationFrame(() => {
-      const target =
-        document.getElementById(`airport-context-result-${airportId}`) ??
-        document.getElementById('airports-layer-toggle')
-      target?.focus()
-    })
-  }, [selectedAirportId])
+    restoreDetailFocus()
+  }, [restoreDetailFocus])
 
   const handleCloseWeather = useCallback(() => {
-    const observationId = selectedWeatherId
     setSelectedWeatherId(null)
-    if (!observationId) return
+    restoreDetailFocus()
+  }, [restoreDetailFocus])
+
+  const handleEnterHistory = useCallback(() => {
+    enterHistory()
     globalThis.requestAnimationFrame(() => {
-      const target =
-        document.getElementById(
-          `weather-context-result-${observationId}`,
-        ) ?? document.getElementById('weather-layer-toggle')
-      target?.focus()
+      if (canRestoreFocus(historyPlaybackControlRef.current)) {
+        historyPlaybackControlRef.current?.focus()
+      }
     })
-  }, [selectedWeatherId])
+  }, [enterHistory])
+
+  const handleReturnToLive = useCallback(() => {
+    returnToLive()
+    focusAfterRender('history-enter-button', 'settings')
+  }, [focusAfterRender, returnToLive])
 
   const mapErrorContent = mapError ? mapErrorPresentation(mapError) : null
   const mapSubtitle = historyActive
@@ -901,7 +998,9 @@ function App() {
       : weatherResult.retry
 
   return (
-    <main className="app-shell">
+    <main
+      className={`app-shell${historyActive ? ' app-shell--history' : ''}`}
+    >
       <TrafficMap
         viewCenter={viewRequest.center}
         viewCamera={viewRequest.camera}
@@ -940,10 +1039,10 @@ function App() {
         interpolationDurationMs={APP_CONFIG.interpolationDurationMs}
         viewRequestId={viewRequest.id}
         viewportSettleMs={APP_CONFIG.navigation.viewportSettleMs}
-        onSelect={handleTrafficSelect}
-        onSelectPort={handlePortSelect}
-        onSelectAirport={handleAirportSelect}
-        onSelectWeather={handleWeatherSelect}
+        onSelect={handleMapTrafficSelect}
+        onSelectPort={handleMapPortSelect}
+        onSelectAirport={handleMapAirportSelect}
+        onSelectWeather={handleMapWeatherSelect}
         onViewportChange={handleViewportChange}
         onCameraChange={setMapCamera}
         onManualViewChange={handleManualViewChange}
@@ -984,14 +1083,14 @@ function App() {
           totalAircraft={aircraft.length}
           aircraftEmptyMessage={aircraftEmptyMessage}
           onAircraftQueryChange={setAircraftQuery}
-          onAircraftSelect={handleTrafficSelect}
+          onAircraftSelect={handleAircraftDiscoverySelect}
           vesselFilters={vesselFilters}
           vesselResults={vesselResults}
           totalVessels={currentVessels.length}
           vesselEmptyMessage={vesselEmptyMessage}
           units={units}
           onVesselFiltersChange={setVesselFilters}
-          onVesselSelect={handleTrafficSelect}
+          onVesselSelect={handleVesselDiscoverySelect}
           aircraftVisible={aircraftVisible}
           onAircraftVisibleChange={setAircraftVisible}
           vesselsVisible={vesselsVisible}
@@ -1021,7 +1120,7 @@ function App() {
           selectedAirportId={selectedAirportId}
           airportsEmptyMessage={airportsEmptyMessage}
           onAirportsVisibleChange={setAirportsVisible}
-          onAirportSelect={handleAirportSelect}
+          onAirportSelect={handleAirportContextSelect}
           onRetryAirports={airportsResult.retry}
           weatherVisible={weatherVisible}
           weatherLoading={weatherLoading}
@@ -1034,8 +1133,11 @@ function App() {
           selectedWeatherId={selectedWeatherId}
           weatherEmptyMessage={weatherEmptyMessage}
           weatherCanRefresh={weatherResult.canRefresh}
+          weatherRetryUsesAirports={
+            airportsResult.state.phase === 'error'
+          }
           onWeatherVisibleChange={setWeatherVisible}
-          onWeatherSelect={handleWeatherSelect}
+          onWeatherSelect={handleWeatherContextSelect}
           onRetryWeather={handleRetryWeather}
           onRefreshWeather={weatherResult.refresh}
           clusteringEnabled={clusteringEnabled}
@@ -1057,11 +1159,7 @@ function App() {
             void history.clearHistory()
           }}
           onRetryHistory={history.retryPersistence}
-          onEnterHistory={history.enterHistory}
-          onPlayHistory={history.play}
-          onPauseHistory={history.pause}
-          onScrubHistory={history.scrub}
-          onPlaybackSpeedChange={history.setSpeed}
+          onEnterHistory={handleEnterHistory}
           centerDisabled={
             !location.initialReady || mapError?.kind === 'initialization'
           }
@@ -1095,6 +1193,8 @@ function App() {
           onLocationNavigate={handleLocationNavigate}
           onPlaceResultSelect={handlePlaceResultSelect}
           onPlaceSearchCancel={cancelPlaceSearch}
+          mapToolsSummaryRef={mapToolsSummaryRef}
+          settingsSummaryRef={settingsSummaryRef}
         />
 
         {!historyActive && currentAssessment?.kind === 'ineligible' && (
@@ -1108,7 +1208,12 @@ function App() {
           <HistoryModeNotice
             playback={history.playback}
             entityCount={displayEntities.length}
-            onReturnToLive={history.returnToLive}
+            playbackControlRef={historyPlaybackControlRef}
+            onPlay={history.play}
+            onPause={history.pause}
+            onScrub={history.scrub}
+            onSpeedChange={history.setSpeed}
+            onReturnToLive={handleReturnToLive}
           />
         )}
 
@@ -1119,7 +1224,7 @@ function App() {
             now={displayNow}
             units={units}
             historical={historyActive}
-            onClose={() => setSelectedId(null)}
+            onClose={handleCloseTraffic}
           />
         )}
 
@@ -1127,7 +1232,7 @@ function App() {
           <PortDetails
             port={selectedPort}
             source={portsResult.state.dataset.source}
-            onClose={() => setSelectedPortId(null)}
+            onClose={handleClosePort}
           />
         )}
 

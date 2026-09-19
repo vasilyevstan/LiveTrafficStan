@@ -95,6 +95,7 @@ export function AircraftDiscovery({
           {listedAircraft.map((entity) => (
             <li key={entity.id}>
               <button
+                id={`aircraft-discovery-result-${entity.id}`}
                 type="button"
                 disabled={!aircraftVisible}
                 onClick={() => onSelect(entity.id)}

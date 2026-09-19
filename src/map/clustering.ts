@@ -52,7 +52,13 @@ const sameFeatureProperties = (
     ...Object.keys(secondProperties),
   ])
   for (const key of keys) {
-    if (firstProperties[key] !== secondProperties[key]) return false
+    if (
+      Object.hasOwn(firstProperties, key) !==
+        Object.hasOwn(secondProperties, key) ||
+      firstProperties[key] !== secondProperties[key]
+    ) {
+      return false
+    }
   }
   return true
 }
@@ -83,15 +89,30 @@ export const trafficSourceDiff = (
     const geometryChanged = !samePointGeometry(existing, feature)
     const propertiesChanged = !sameFeatureProperties(existing, feature)
     if (!geometryChanged && !propertiesChanged) continue
+    const existingProperties = existing.properties ?? {}
+    const nextProperties = feature.properties ?? {}
+    const removeProperties = propertiesChanged
+      ? Object.keys(existingProperties).filter(
+          (key) => !Object.hasOwn(nextProperties, key),
+        )
+      : []
+    const addOrUpdateProperties = propertiesChanged
+      ? Object.entries(nextProperties).map(([key, value]) => ({
+          key,
+          value,
+        }))
+      : []
     update.push({
       id,
       ...(geometryChanged ? { newGeometry: feature.geometry } : {}),
       ...(propertiesChanged
         ? {
-            removeAllProperties: true,
-            addOrUpdateProperties: Object.entries(
-              feature.properties ?? {},
-            ).map(([key, value]) => ({ key, value })),
+            ...(removeProperties.length > 0
+              ? { removeProperties }
+              : {}),
+            ...(addOrUpdateProperties.length > 0
+              ? { addOrUpdateProperties }
+              : {}),
           }
         : {}),
     })

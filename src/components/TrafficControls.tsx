@@ -1,3 +1,10 @@
+import {
+  useRef,
+  type FocusEvent,
+  type MutableRefObject,
+  type Ref,
+  type SyntheticEvent,
+} from 'react'
 import type { ThemePreference } from '../app/theme'
 import type { PlaceSearchState } from '../app/PlaceSearchController'
 import type { AppCenter } from '../config/appConfig'
@@ -9,7 +16,6 @@ import type { VesselFilterState } from '../domain/vesselFilters'
 import type { DisplayWeatherObservation } from '../domain/weatherObservations'
 import type {
   PlaybackRange,
-  PlaybackSpeed,
   PlaybackState,
 } from '../history/playback'
 import type {
@@ -21,7 +27,11 @@ import type { PlaceSearchResult } from '../providers/geocoding/photonProvider'
 import { AircraftDiscovery } from './AircraftDiscovery'
 import { AirportContext } from './AirportContext'
 import { HistoryControls } from './HistoryControls'
-import { LocationSearch } from './LocationSearch'
+import {
+  LocationSearchDetails,
+  LocationSearchInput,
+} from './LocationSearch'
+import { useLocationSearchModel } from './useLocationSearchModel'
 import { VesselDiscovery } from './VesselDiscovery'
 import { WeatherContext } from './WeatherContext'
 
@@ -69,6 +79,7 @@ interface TrafficControlsProps {
   selectedWeatherId: string | null
   weatherEmptyMessage: string
   weatherCanRefresh: boolean
+  weatherRetryUsesAirports: boolean
   onWeatherVisibleChange: (visible: boolean) => void
   onWeatherSelect: (id: string) => void
   onRetryWeather: () => void
@@ -87,10 +98,6 @@ interface TrafficControlsProps {
   onClearHistory: () => void
   onRetryHistory: () => void
   onEnterHistory: () => void
-  onPlayHistory: () => void
-  onPauseHistory: () => void
-  onScrubHistory: (cursor: number) => void
-  onPlaybackSpeedChange: (speed: PlaybackSpeed) => void
   centerDisabled: boolean
   onCenter: () => void
   locationAvailable: boolean
@@ -118,6 +125,62 @@ interface TrafficControlsProps {
   onLocationNavigate: (center: AppCenter) => void
   onPlaceResultSelect: (result: PlaceSearchResult) => void
   onPlaceSearchCancel: () => void
+  mapToolsSummaryRef?: Ref<HTMLElement>
+  settingsSummaryRef?: Ref<HTMLElement>
+}
+
+type PromotedActionKind =
+  | 'app-update'
+  | 'history'
+  | 'weather'
+  | 'airports'
+  | 'ports'
+
+interface PromotedAction {
+  kind: PromotedActionKind
+  label: string
+  message: string
+  buttonLabel: string
+  disabled?: boolean
+  run: () => void
+}
+
+const handleDisclosureFocus = (
+  event: FocusEvent<HTMLDetailsElement>,
+  focusedWithinRef: MutableRefObject<boolean>,
+) => {
+  const summary = event.currentTarget.firstElementChild
+  focusedWithinRef.current = event.target !== summary
+}
+
+const handleDisclosureBlur = (
+  event: FocusEvent<HTMLDetailsElement>,
+  focusedWithinRef: MutableRefObject<boolean>,
+) => {
+  const next = event.relatedTarget
+  if (!(next instanceof Node) || !event.currentTarget.contains(next)) {
+    focusedWithinRef.current = false
+  }
+}
+
+const handleDisclosureToggle = (
+  event: SyntheticEvent<HTMLDetailsElement>,
+  focusedWithinRef: MutableRefObject<boolean>,
+) => {
+  const details = event.currentTarget
+  if (details.open) return
+
+  const summary = details.firstElementChild
+  if (
+    summary instanceof HTMLElement &&
+    (focusedWithinRef.current ||
+      (document.activeElement instanceof Node &&
+        details.contains(document.activeElement) &&
+        document.activeElement !== summary))
+  ) {
+    globalThis.requestAnimationFrame(() => summary.focus())
+  }
+  focusedWithinRef.current = false
 }
 
 export function TrafficControls({
@@ -164,6 +227,7 @@ export function TrafficControls({
   selectedWeatherId,
   weatherEmptyMessage,
   weatherCanRefresh,
+  weatherRetryUsesAirports,
   onWeatherVisibleChange,
   onWeatherSelect,
   onRetryWeather,
@@ -182,10 +246,6 @@ export function TrafficControls({
   onClearHistory,
   onRetryHistory,
   onEnterHistory,
-  onPlayHistory,
-  onPauseHistory,
-  onScrubHistory,
-  onPlaybackSpeedChange,
   centerDisabled,
   onCenter,
   locationAvailable,
@@ -213,211 +273,359 @@ export function TrafficControls({
   onLocationNavigate,
   onPlaceResultSelect,
   onPlaceSearchCancel,
+  mapToolsSummaryRef,
+  settingsSummaryRef,
 }: TrafficControlsProps) {
+  const mapToolsDetailsRef = useRef<HTMLDetailsElement>(null)
+  const focusedWithinMapToolsRef = useRef(false)
+  const focusedWithinSettingsRef = useRef(false)
+  const historyNeedsRecovery = [
+    'blocked',
+    'stale-tab',
+    'error',
+    'deletion-failed',
+  ].includes(historyStatus.phase)
+  const promotedAction: PromotedAction | undefined =
+    appUpdateAvailable || appUpdateActivating
+      ? {
+          kind: 'app-update',
+          label: 'APP UPDATE',
+          message:
+            appShellStatus ??
+            (appUpdateActivating
+              ? 'Applying the application update.'
+              : 'An application update is ready.'),
+          buttonLabel: appUpdateActivating
+            ? 'REFRESHING...'
+            : 'REFRESH APP',
+          disabled: appUpdateActivating,
+          run: onRefreshApp,
+        }
+      : historyNeedsRecovery
+        ? {
+            kind: 'history',
+            label: 'HISTORY',
+            message:
+              historyStatus.message ??
+              'Private local history needs attention.',
+            buttonLabel: 'RETRY HISTORY',
+            run: onRetryHistory,
+          }
+        : weatherVisible && weatherError
+          ? {
+              kind: 'weather',
+              label: 'METAR',
+              message: weatherError,
+              buttonLabel: weatherRetryUsesAirports
+                ? 'RETRY AIRPORTS'
+                : 'RETRY METAR',
+              run: onRetryWeather,
+            }
+          : airportsVisible && airportsError
+            ? {
+                kind: 'airports',
+                label: 'AIRPORTS',
+                message: airportsError,
+                buttonLabel: 'RETRY AIRPORTS',
+                run: onRetryAirports,
+              }
+            : portsVisible && portsError
+              ? {
+                  kind: 'ports',
+                  label: 'PORTS',
+                  message: portsError,
+                  buttonLabel: 'RETRY PORTS',
+                  run: onRetryPorts,
+                }
+              : undefined
+  const suppressAirportRetry =
+    promotedAction?.kind === 'airports' ||
+    (promotedAction?.kind === 'weather' && weatherRetryUsesAirports)
+  const [locationSearch, locationSearchInputRef] = useLocationSearchModel({
+    coordinatePrecision,
+    maximumQueryLength: maximumLocationQueryLength,
+    searchState: placeSearchState,
+    onSearch: onPlaceSearch,
+    onNavigate: onLocationNavigate,
+    onSelectResult: onPlaceResultSelect,
+    onCancel: onPlaceSearchCancel,
+    onRevealDetails: () => {
+      if (mapToolsDetailsRef.current) {
+        mapToolsDetailsRef.current.open = true
+      }
+    },
+  })
+
   return (
-    <aside className="control-panel" aria-label="Map controls">
-      <LocationSearch
-        disabled={locationNavigationDisabled}
-        activeLabel={activeLocationLabel}
-        coordinatePrecision={coordinatePrecision}
+    <div className="control-stack" aria-label="Map controls">
+      <aside
+        className="control-panel control-panel--operations"
+        aria-label="Navigate and explore"
+      >
+      <LocationSearchInput
+        model={locationSearch}
+        inputRef={locationSearchInputRef}
         maximumQueryLength={maximumLocationQueryLength}
         searchState={placeSearchState}
-        onSearch={onPlaceSearch}
-        onNavigate={onLocationNavigate}
-        onSelectResult={onPlaceResultSelect}
-        onCancel={onPlaceSearchCancel}
+        disabled={locationNavigationDisabled}
       />
+      <div
+        className="control-options control-options--three control-panel__primary"
+        role="group"
+        aria-label="Map navigation and traffic layers"
+      >
+        <button type="button" disabled={centerDisabled} onClick={onCenter}>
+          CENTER
+        </button>
+        <button
+          type="button"
+          className={aircraftVisible ? 'is-active' : undefined}
+          aria-pressed={aircraftVisible}
+          onClick={() => onAircraftVisibleChange(!aircraftVisible)}
+        >
+          AIRCRAFT
+        </button>
+        <button
+          type="button"
+          className={vesselsVisible ? 'is-active' : undefined}
+          aria-pressed={vesselsVisible}
+          onClick={() => onVesselsVisibleChange(!vesselsVisible)}
+        >
+          SHIPS
+        </button>
+      </div>
 
-      <fieldset className="control-group">
-        <legend>Layers</legend>
-        <div className="control-options control-options--two">
-          <button
-            type="button"
-            className={aircraftVisible ? 'is-active' : undefined}
-            aria-pressed={aircraftVisible}
-            onClick={() => onAircraftVisibleChange(!aircraftVisible)}
-          >
-            AIRCRAFT
-          </button>
-          <button
-            type="button"
-            className={vesselsVisible ? 'is-active' : undefined}
-            aria-pressed={vesselsVisible}
-            onClick={() => onVesselsVisibleChange(!vesselsVisible)}
-          >
-            SHIPS
-          </button>
-          <button
-            type="button"
-            className={portsVisible ? 'is-active' : undefined}
-            aria-pressed={portsVisible}
-            aria-busy={portsVisible && portsLoading}
-            onClick={() => onPortsVisibleChange(!portsVisible)}
-          >
-            {portsVisible && portsLoading ? 'PORTS...' : 'PORTS'}
-          </button>
-          <button
-            id="airports-layer-toggle"
-            type="button"
-            className={airportsVisible ? 'is-active' : undefined}
-            aria-pressed={airportsVisible}
-            aria-busy={airportsVisible && airportsLoading}
-            onClick={() => onAirportsVisibleChange(!airportsVisible)}
-          >
-            {airportsVisible && airportsLoading
-              ? 'AIRPORTS...'
-              : 'AIRPORTS'}
-          </button>
-          <button
-            type="button"
-            className={clusteringEnabled ? 'is-active' : undefined}
-            aria-pressed={clusteringEnabled}
-            onClick={() => onClusteringEnabledChange(!clusteringEnabled)}
-          >
-            CLUSTERS
-          </button>
-          <button
-            id="weather-layer-toggle"
-            type="button"
-            className={weatherVisible ? 'is-active' : undefined}
-            aria-pressed={weatherVisible}
-            aria-busy={
-              weatherVisible && (weatherLoading || weatherWaiting)
-            }
-            onClick={() => onWeatherVisibleChange(!weatherVisible)}
-          >
-            {weatherVisible && weatherLoading ? 'METAR...' : 'METAR'}
-          </button>
-        </div>
-        {portsVisible && portsError && (
-          <div className="control-note ports-status" role="status">
-            <span>Ports unavailable: {portsError}</span>
-            <button type="button" onClick={onRetryPorts}>
-              RETRY PORTS
-            </button>
-          </div>
-        )}
-        {airportsVisible && airportsError && (
-          <div className="control-note ports-status" role="status">
-            <span>Airports unavailable: {airportsError}</span>
-            <button type="button" onClick={onRetryAirports}>
-              RETRY AIRPORTS
-            </button>
-          </div>
-        )}
-        {weatherVisible && weatherError && (
-          <div className="control-note ports-status" role="status">
-            <span>METAR unavailable: {weatherError}</span>
-            <button type="button" onClick={onRetryWeather}>
-              RETRY METAR
-            </button>
-          </div>
-        )}
-        {weatherVisible && !weatherError && weatherStatusMessage && (
-          <div className="control-note ports-status" role="status">
-            <span>{weatherStatusMessage}</span>
-            {weatherReady && (
+      <details
+        ref={mapToolsDetailsRef}
+        id="traffic-controls-map-tools"
+        name="traffic-control-panels"
+        className="control-panel__more"
+        onFocusCapture={(event) =>
+          handleDisclosureFocus(event, focusedWithinMapToolsRef)
+        }
+        onBlurCapture={(event) =>
+          handleDisclosureBlur(event, focusedWithinMapToolsRef)
+        }
+        onToggle={(event) =>
+          handleDisclosureToggle(event, focusedWithinMapToolsRef)
+        }
+      >
+        <summary
+          id="traffic-controls-map-tools-summary"
+          ref={mapToolsSummaryRef}
+        >
+          MORE
+        </summary>
+        <div className="control-panel__more-body">
+          <LocationSearchDetails
+            model={locationSearch}
+            activeLabel={activeLocationLabel}
+            searchState={placeSearchState}
+          />
+
+          <fieldset className="control-group">
+            <legend>Layers</legend>
+            <div className="control-options control-options--two">
               <button
                 type="button"
-                disabled={!weatherCanRefresh}
-                onClick={onRefreshWeather}
+                className={portsVisible ? 'is-active' : undefined}
+                aria-pressed={portsVisible}
+                aria-busy={portsVisible && portsLoading}
+                onClick={() => onPortsVisibleChange(!portsVisible)}
               >
-                REFRESH METAR
+                {portsVisible && portsLoading ? 'PORTS...' : 'PORTS'}
               </button>
+              <button
+                id="airports-layer-toggle"
+                type="button"
+                className={airportsVisible ? 'is-active' : undefined}
+                aria-pressed={airportsVisible}
+                aria-busy={airportsVisible && airportsLoading}
+                onClick={() => onAirportsVisibleChange(!airportsVisible)}
+              >
+                {airportsVisible && airportsLoading
+                  ? 'AIRPORTS...'
+                  : 'AIRPORTS'}
+              </button>
+              <button
+                type="button"
+                className={clusteringEnabled ? 'is-active' : undefined}
+                aria-pressed={clusteringEnabled}
+                onClick={() =>
+                  onClusteringEnabledChange(!clusteringEnabled)
+                }
+              >
+                CLUSTERS
+              </button>
+              <button
+                id="weather-layer-toggle"
+                type="button"
+                className={weatherVisible ? 'is-active' : undefined}
+                aria-pressed={weatherVisible}
+                aria-busy={
+                  weatherVisible && (weatherLoading || weatherWaiting)
+                }
+                onClick={() => onWeatherVisibleChange(!weatherVisible)}
+              >
+                {weatherVisible && weatherLoading ? 'METAR...' : 'METAR'}
+              </button>
+            </div>
+            {portsVisible && portsError && (
+              <div className="control-note ports-status" role="status">
+                <span>Ports unavailable: {portsError}</span>
+                {promotedAction?.kind !== 'ports' && (
+                  <button type="button" onClick={onRetryPorts}>
+                    RETRY PORTS
+                  </button>
+                )}
+              </div>
             )}
-          </div>
-        )}
-        <p className="control-note control-note--muted">
-          Ports:{' '}
-          <a href="https://www.naturalearthdata.com/downloads/10m-cultural-vectors/ports/">
-            Natural Earth
-          </a>{' '}
-          (<a href="https://www.naturalearthdata.com/about/terms-of-use/">
-            public domain
-          </a>
-          ); generalized and incomplete.
-        </p>
-        <p className="control-note control-note--muted">
-          Airports: <a href="https://ourairports.com/data/">OurAirports</a>{' '}
-          (<a href="https://ourairports.com/data/">public domain</a>); static
-          large and medium airport context, not operational data.
-        </p>
-        <p className="control-note control-note--muted">
-          METAR/SPECI observations:{' '}
-          <a href="https://aviationweather.gov/data/api/">
-            NOAA/NWS Aviation Weather Center
-          </a>
-          ; generally public-domain observations. Enabling this layer sends
-          visible qualifying ICAO station IDs through the application host
-          to AWC. Coverage is limited by AWC reporting and the pinned
-          large/medium-airport dataset. Source and retrieval times are shown;
-          this modified presentation is not an official forecast, operational
-          flight status, airport board, or endorsement.
-        </p>
-      </fieldset>
+            {airportsVisible && airportsError && (
+              <div className="control-note ports-status" role="status">
+                <span>Airports unavailable: {airportsError}</span>
+                {!suppressAirportRetry && (
+                  <button type="button" onClick={onRetryAirports}>
+                    RETRY AIRPORTS
+                  </button>
+                )}
+              </div>
+            )}
+            {weatherVisible && weatherError && (
+              <div className="control-note ports-status" role="status">
+                <span>METAR unavailable: {weatherError}</span>
+                {promotedAction?.kind !== 'weather' && (
+                  <button type="button" onClick={onRetryWeather}>
+                    RETRY METAR
+                  </button>
+                )}
+              </div>
+            )}
+            {weatherVisible && !weatherError && weatherStatusMessage && (
+              <div className="control-note ports-status" role="status">
+                <span>{weatherStatusMessage}</span>
+                {weatherReady && (
+                  <button
+                    type="button"
+                    disabled={!weatherCanRefresh}
+                    onClick={onRefreshWeather}
+                  >
+                    REFRESH METAR
+                  </button>
+                )}
+              </div>
+            )}
+            <p className="control-note control-note--muted">
+              Ports:{' '}
+              <a href="https://www.naturalearthdata.com/downloads/10m-cultural-vectors/ports/">
+                Natural Earth
+              </a>{' '}
+              (
+              <a href="https://www.naturalearthdata.com/about/terms-of-use/">
+                public domain
+              </a>
+              ); generalized and incomplete.
+            </p>
+            <p className="control-note control-note--muted">
+              Airports:{' '}
+              <a href="https://ourairports.com/data/">OurAirports</a>{' '}
+              (<a href="https://ourairports.com/data/">public domain</a>);
+              static large and medium airport context, not operational data.
+            </p>
+            <p className="control-note control-note--muted">
+              METAR/SPECI observations:{' '}
+              <a href="https://aviationweather.gov/data/api/">
+                NOAA/NWS Aviation Weather Center
+              </a>
+              ; generally public-domain observations. Enabling this layer
+              sends visible qualifying ICAO station IDs through the
+              application host to AWC. Coverage is limited by AWC reporting
+              and the pinned large/medium-airport dataset. Source and retrieval
+              times are shown; this modified presentation is not an official
+              forecast, operational flight status, airport board, or
+              endorsement.
+            </p>
+          </fieldset>
 
-      <HistoryControls
-        trailPreferences={trailPreferences}
-        onTrailPreferencesChange={onTrailPreferencesChange}
-        historySettings={historySettings}
-        historyStatus={historyStatus}
-        historyRange={historyRange}
-        historyRecordCount={historyRecordCount}
-        playback={playback}
-        onHistoryEnabledChange={onHistoryEnabledChange}
-        onHistoryRetentionChange={onHistoryRetentionChange}
-        onClearHistory={onClearHistory}
-        onRetryHistory={onRetryHistory}
-        onEnterHistory={onEnterHistory}
-        onPlayHistory={onPlayHistory}
-        onPauseHistory={onPauseHistory}
-        onScrubHistory={onScrubHistory}
-        onPlaybackSpeedChange={onPlaybackSpeedChange}
-      />
+          <AircraftDiscovery
+            query={aircraftQuery}
+            aircraft={aircraftResults}
+            totalAircraft={totalAircraft}
+            aircraftVisible={aircraftVisible}
+            emptyMessage={aircraftEmptyMessage}
+            onQueryChange={onAircraftQueryChange}
+            onSelect={onAircraftSelect}
+          />
 
-      <AircraftDiscovery
-        query={aircraftQuery}
-        aircraft={aircraftResults}
-        totalAircraft={totalAircraft}
-        aircraftVisible={aircraftVisible}
-        emptyMessage={aircraftEmptyMessage}
-        onQueryChange={onAircraftQueryChange}
-        onSelect={onAircraftSelect}
-      />
+          <VesselDiscovery
+            filters={vesselFilters}
+            vessels={vesselResults}
+            totalVessels={totalVessels}
+            vesselsVisible={vesselsVisible}
+            emptyMessage={vesselEmptyMessage}
+            units={units}
+            onFiltersChange={onVesselFiltersChange}
+            onSelect={onVesselSelect}
+          />
 
-      <VesselDiscovery
-        filters={vesselFilters}
-        vessels={vesselResults}
-        totalVessels={totalVessels}
-        vesselsVisible={vesselsVisible}
-        emptyMessage={vesselEmptyMessage}
-        units={units}
-        onFiltersChange={onVesselFiltersChange}
-        onSelect={onVesselSelect}
-      />
+          {airportsVisible && airportsReady && (
+            <AirportContext
+              airports={airportsInView}
+              selectedAirportId={selectedAirportId}
+              emptyMessage={airportsEmptyMessage}
+              onSelect={onAirportSelect}
+            />
+          )}
 
-      {airportsVisible && airportsReady && (
-        <AirportContext
-          airports={airportsInView}
-          selectedAirportId={selectedAirportId}
-          emptyMessage={airportsEmptyMessage}
-          onSelect={onAirportSelect}
-        />
-      )}
+          {weatherVisible && weatherReady && (
+            <WeatherContext
+              observations={weatherObservations}
+              selectedObservationId={selectedWeatherId}
+              emptyMessage={weatherEmptyMessage}
+              now={now}
+              onSelect={onWeatherSelect}
+            />
+          )}
 
-      {weatherVisible && weatherReady && (
-        <WeatherContext
-          observations={weatherObservations}
-          selectedObservationId={selectedWeatherId}
-          emptyMessage={weatherEmptyMessage}
-          now={now}
-          onSelect={onWeatherSelect}
-        />
-      )}
+          <fieldset className="control-group">
+            <legend>View</legend>
+            <div className="control-options control-options--one">
+              <button
+                type="button"
+                disabled={!locationAvailable || locationLoading}
+                aria-busy={locationLoading}
+                aria-describedby={
+                  locationMessage ? 'location-status' : undefined
+                }
+                onClick={onUseLocation}
+              >
+                {locationLoading ? 'LOCATING...' : 'USE LOCATION'}
+              </button>
+            </div>
+            {locationMessage && (
+              <p
+                id="location-status"
+                className="control-note"
+                role="status"
+              >
+                {locationMessage}
+              </p>
+            )}
+          </fieldset>
+        </div>
+      </details>
+      </aside>
 
-      <fieldset className="control-group">
-        <legend>Theme</legend>
-        <div className="control-options control-options--three">
+      <aside
+        className={`control-panel control-panel--settings${
+          promotedAction ? ' control-panel--urgent' : ''
+        }`}
+        aria-label="Settings"
+      >
+        <div
+          className="control-options control-options--four control-panel__primary"
+          role="group"
+          aria-label="Theme and trails"
+        >
           {(['auto', 'light', 'dark'] as const).map((option) => (
             <button
               key={option}
@@ -431,96 +639,153 @@ export function TrafficControls({
               {option.toUpperCase()}
             </button>
           ))}
-        </div>
-      </fieldset>
-
-      <fieldset className="control-group">
-        <legend>Preferences</legend>
-        <div className="control-options control-options--two">
           <button
             type="button"
-            className={units === 'metric' ? 'is-active' : undefined}
-            aria-pressed={units === 'metric'}
-            onClick={() => onUnitsChange('metric')}
-          >
-            METRIC
-          </button>
-          <button
-            type="button"
-            className={
-              units === 'aviation-nautical' ? 'is-active' : undefined
+            className={trailPreferences.visible ? 'is-active' : undefined}
+            aria-pressed={trailPreferences.visible}
+            onClick={() =>
+              onTrailPreferencesChange({
+                ...trailPreferences,
+                visible: !trailPreferences.visible,
+              })
             }
-            aria-pressed={units === 'aviation-nautical'}
-            onClick={() => onUnitsChange('aviation-nautical')}
           >
-            AVIATION / NAUTICAL
+            TRAILS
           </button>
-          <button type="button" disabled={shareDisabled} onClick={onShare}>
-            SHARE VIEW
-          </button>
-          <button type="button" onClick={onResetPreferences}>
-            RESET PREFERENCES
-          </button>
-          {appUpdateAvailable && (
-            <button
-              type="button"
-              disabled={appUpdateActivating}
-              onClick={onRefreshApp}
-            >
-              {appUpdateActivating ? 'REFRESHING APP...' : 'REFRESH APP'}
-            </button>
+        </div>
+
+        <div
+          className="control-panel__urgent"
+          hidden={!promotedAction}
+          role={promotedAction ? 'status' : undefined}
+          aria-live={promotedAction ? 'polite' : undefined}
+          aria-atomic={promotedAction ? 'true' : undefined}
+        >
+          {promotedAction && (
+            <>
+              <span title={promotedAction.message}>
+                {promotedAction.label}
+              </span>
+              <button
+                type="button"
+                disabled={promotedAction.disabled}
+                onClick={promotedAction.run}
+              >
+                {promotedAction.buttonLabel}
+              </button>
+            </>
           )}
         </div>
-        {preferenceStatus && (
-          <p className="control-note" role="status">
-            {preferenceStatus}
-          </p>
-        )}
-        {manualShareUrl && (
-          <label className="preference-share-link">
-            <span>Copy this share link</span>
-            <input
-              type="text"
-              readOnly
-              value={manualShareUrl}
-              onFocus={(event) => event.currentTarget.select()}
+
+        <details
+          id="traffic-controls-settings"
+          name="traffic-control-panels"
+          className="control-panel__more"
+          onFocusCapture={(event) =>
+            handleDisclosureFocus(event, focusedWithinSettingsRef)
+          }
+          onBlurCapture={(event) =>
+            handleDisclosureBlur(event, focusedWithinSettingsRef)
+          }
+          onToggle={(event) =>
+            handleDisclosureToggle(event, focusedWithinSettingsRef)
+          }
+        >
+          <summary
+            id="traffic-controls-settings-summary"
+            ref={settingsSummaryRef}
+          >
+            MORE
+          </summary>
+          <div className="control-panel__more-body">
+            <HistoryControls
+              trailPreferences={trailPreferences}
+              onTrailPreferencesChange={onTrailPreferencesChange}
+              historySettings={historySettings}
+              historyStatus={historyStatus}
+              historyRange={historyRange}
+              historyRecordCount={historyRecordCount}
+              playback={playback}
+              onHistoryEnabledChange={onHistoryEnabledChange}
+              onHistoryRetentionChange={onHistoryRetentionChange}
+              onClearHistory={onClearHistory}
+              onRetryHistory={onRetryHistory}
+              onEnterHistory={onEnterHistory}
+              retryPromoted={promotedAction?.kind === 'history'}
+              trailVisibilityPromoted
             />
-          </label>
-        )}
-        {appShellStatus && (
-          <p className="control-note" role="status">
-            {appShellStatus}
-          </p>
-        )}
-      </fieldset>
 
-      <fieldset className="control-group">
-        <legend>View</legend>
-        <div className="control-options control-options--two">
-          <button
-            type="button"
-            disabled={centerDisabled}
-            onClick={onCenter}
-          >
-            CENTER
-          </button>
-          <button
-            type="button"
-            disabled={!locationAvailable || locationLoading}
-            aria-busy={locationLoading}
-            aria-describedby={locationMessage ? 'location-status' : undefined}
-            onClick={onUseLocation}
-          >
-            {locationLoading ? 'LOCATING...' : 'USE LOCATION'}
-          </button>
-        </div>
-        {locationMessage && (
-          <p id="location-status" className="control-note" role="status">
-            {locationMessage}
-          </p>
-        )}
-      </fieldset>
-
-    </aside>
+            <fieldset className="control-group">
+              <legend>Preferences</legend>
+              <div className="control-options control-options--two">
+                <button
+                  type="button"
+                  className={units === 'metric' ? 'is-active' : undefined}
+                  aria-pressed={units === 'metric'}
+                  onClick={() => onUnitsChange('metric')}
+                >
+                  METRIC
+                </button>
+                <button
+                  type="button"
+                  className={
+                    units === 'aviation-nautical'
+                      ? 'is-active'
+                      : undefined
+                  }
+                  aria-pressed={units === 'aviation-nautical'}
+                  onClick={() => onUnitsChange('aviation-nautical')}
+                >
+                  AVIATION / NAUTICAL
+                </button>
+                <button
+                  type="button"
+                  disabled={shareDisabled}
+                  onClick={onShare}
+                >
+                  SHARE VIEW
+                </button>
+                <button type="button" onClick={onResetPreferences}>
+                  RESET PREFERENCES
+                </button>
+                {appUpdateAvailable &&
+                  promotedAction?.kind !== 'app-update' && (
+                    <button
+                      type="button"
+                      disabled={appUpdateActivating}
+                      onClick={onRefreshApp}
+                    >
+                      {appUpdateActivating
+                        ? 'REFRESHING APP...'
+                        : 'REFRESH APP'}
+                    </button>
+                  )}
+              </div>
+              {preferenceStatus && (
+                <p className="control-note" role="status">
+                  {preferenceStatus}
+                </p>
+              )}
+              {manualShareUrl && (
+                <label className="preference-share-link">
+                  <span>Copy this share link</span>
+                  <input
+                    type="text"
+                    readOnly
+                    value={manualShareUrl}
+                    onFocus={(event) => event.currentTarget.select()}
+                  />
+                </label>
+              )}
+              {appShellStatus && (
+                <p className="control-note" role="status">
+                  {appShellStatus}
+                </p>
+              )}
+            </fieldset>
+          </div>
+        </details>
+      </aside>
+    </div>
   )
 }
