@@ -373,11 +373,14 @@ Use `npm run dev` and verify:
    exclusive context, hiding/filtering the selected entity, or allowing it to
    expire clears selection safely. Failed navigation and ordinary same-entity
    refreshes do not.
-8. The default primary controls remain compact, require no scroll, and hide
-   secondary tools and explanatory links behind one keyboard-operable
-   disclosure. Measure collapsed and expanded bounds at desktop, 390x844, and
-   390x568; verify focus returns to a visible control and perform a real touch
-   drag on an unobscured map region.
+8. The default Navigate and Explore and Settings panels remain compact and
+   require no scroll. Search, Center, Aircraft, and Ships stay visible above;
+   theme and Trails stay visible below. Secondary tools and explanatory links
+   live behind the panels' mutually exclusive native disclosures. Measure each
+   collapsed panel and the combined expanded stack at desktop, 390x844, and
+   390x568; verify search state and disclosure identity survive rerenders,
+   focus returns to a visible control, and a real touch drag works on an
+   unobscured map region.
 9. Map and provider attribution remains visible.
 10. Strict coordinates navigate with no Photon request; named text makes one
     explicit bounded request and renders Photon/OpenStreetMap attribution.
@@ -701,9 +704,9 @@ The production-preview browser fixture proved:
   aircraft or map availability;
 - no arrival, departure, or board request;
 - full-size MapLibre canvases and scrollable/reachable controls at 390x844 and
-  390x568; the mobile control panel is capped at 58 viewport-height units so a
-  touchable map strip remains available, while bottom padding keeps MapLibre
-  attribution from intercepting the final controls.
+  390x568; each collapsed panel is at most 112 CSS pixels and the combined
+  expanded stack is capped at 58 viewport-height units, leaving a touchable map
+  strip while keeping MapLibre attribution reachable.
 
 Local `workerd` returned the airport asset with
 `Cache-Control: public, max-age=31536000, immutable` and

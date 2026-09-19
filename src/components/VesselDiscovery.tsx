@@ -249,6 +249,7 @@ export function VesselDiscovery({
           {listedVessels.map((vessel) => (
             <li key={vessel.id}>
               <button
+                id={`vessel-discovery-result-${vessel.id}`}
                 type="button"
                 disabled={!vesselsVisible}
                 onClick={() => onSelect(vessel.id)}
