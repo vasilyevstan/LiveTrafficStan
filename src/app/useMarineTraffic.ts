@@ -2,22 +2,50 @@ import { useEffect, useRef, useState } from 'react'
 import type { AppConfig } from '../config/appConfig'
 import type { TrafficProviderResult, Vessel } from '../domain/traffic'
 import { DigitrafficMarineProvider } from '../providers/marine/DigitrafficMarineProvider'
-import type { TrafficQuery } from '../providers/types'
+import { DIGITRAFFIC_MARINE_CAPABILITIES } from '../providers/marine/digitrafficCapabilities'
+import type { MarineDiagnosticsOptions } from '../providers/marine/marineDiagnostics'
+import type {
+  MarineProviderCapabilities,
+  TrafficQuery,
+} from '../providers/types'
 
-const initialResult = (): TrafficProviderResult<Vessel> => ({
+interface MarineTrafficResult extends TrafficProviderResult<Vessel> {
+  capabilities: MarineProviderCapabilities
+}
+
+const initialResult = (): MarineTrafficResult => ({
   entities: [],
   status: {
     phase: 'idle',
     paused: true,
   },
+  capabilities: DIGITRAFFIC_MARINE_CAPABILITIES,
 })
+
+const developmentDiagnostics = (): MarineDiagnosticsOptions | undefined => {
+  if (
+    !import.meta.env.DEV ||
+    new URLSearchParams(window.location.search).get('marineDiagnostics') !== '1'
+  ) {
+    return undefined
+  }
+
+  return {
+    sampleIntervalMs: 60_000,
+    onSnapshot: (snapshot) => {
+      console.info(
+        'LiveTrafficStan marine diagnostics',
+        JSON.stringify(snapshot),
+      )
+    },
+  }
+}
 
 export const useMarineTraffic = (
   query: TrafficQuery | null,
   config: AppConfig['marine'],
 ) => {
-  const [result, setResult] =
-    useState<TrafficProviderResult<Vessel>>(initialResult)
+  const [result, setResult] = useState<MarineTrafficResult>(initialResult)
   const providerRef = useRef<DigitrafficMarineProvider | undefined>(undefined)
   const queryRef = useRef<TrafficQuery | null>(query)
   const startProviderRef = useRef<
@@ -57,6 +85,7 @@ export const useMarineTraffic = (
       const provider = new DigitrafficMarineProvider({
         config,
         query: initialQuery,
+        diagnostics: developmentDiagnostics(),
         callbacks: {
           onSnapshot: (entities) => {
             if (!disposed) {

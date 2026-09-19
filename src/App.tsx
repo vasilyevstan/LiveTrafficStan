@@ -209,6 +209,7 @@ function App() {
             vesselCount={vesselsVisible ? vessels.length : 0}
             aircraftStatus={aircraftResult.status}
             marineStatus={marineResult.status}
+            marineCapabilities={marineResult.capabilities}
             now={now}
           />
         </header>

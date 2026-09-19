@@ -9,3 +9,26 @@ export interface TrafficQuery {
 export interface AircraftDataProvider {
   fetchSnapshot(query: TrafficQuery, signal: AbortSignal): Promise<Aircraft[]>
 }
+
+export interface MarineProviderCapabilities {
+  id: string
+  name: string
+  browserAccess: 'direct-keyless' | 'server-required'
+  restGeography: 'radius' | 'none'
+  streamGeography: 'all-published-vessels' | 'geographic'
+  metadata: boolean
+  license: {
+    name: string
+    url: string
+    attribution: string
+    modificationNotice: string
+  }
+  coverage: {
+    kind: 'regional' | 'unknown'
+    label: string
+    exactBoundaryKnown: boolean
+    exclusions: readonly string[]
+    evidenceUrl: string
+    reviewedOn: string
+  }
+}

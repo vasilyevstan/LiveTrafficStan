@@ -13,6 +13,12 @@ import {
   parseDigitrafficRestLocations,
   parseDigitrafficRestMetadata,
 } from './digitrafficNormalization'
+import {
+  createMarineDiagnosticsCollector,
+  type MarineDiagnosticMessageKind,
+  type MarineDiagnosticsCollector,
+  type MarineDiagnosticsOptions,
+} from './marineDiagnostics'
 
 interface DigitrafficCallbacks {
   onSnapshot: (vessels: Vessel[]) => void
@@ -23,9 +29,11 @@ interface DigitrafficOptions {
   config: AppConfig['marine']
   query: TrafficQuery
   callbacks: DigitrafficCallbacks
+  diagnostics?: MarineDiagnosticsOptions
 }
 
 const DIGITRAFFIC_USER = 'LiveTrafficStan/1.0'
+const UTF8_DECODER = new TextDecoder()
 
 export class DigitrafficMarineProvider {
   private readonly locations = new Map<number, MarineLocationRecord>()
@@ -54,11 +62,17 @@ export class DigitrafficMarineProvider {
   private lastMetadataRefreshStartedAt?: number
   private lastMqttConnectAttemptAt?: number
   private locationRefreshPending = false
+  private readonly diagnostics?: MarineDiagnosticsCollector
 
   constructor(options: DigitrafficOptions) {
     this.config = options.config
     this.query = options.query
     this.callbacks = options.callbacks
+    if (import.meta.env.DEV && options.diagnostics) {
+      this.diagnostics = createMarineDiagnosticsCollector(
+        options.diagnostics,
+      )
+    }
   }
 
   start(paused = false) {
@@ -75,9 +89,11 @@ export class DigitrafficMarineProvider {
   }
 
   stop() {
+    if (!this.running) return
     this.running = false
     this.paused = false
     this.deactivateNetwork()
+    if (import.meta.env.DEV) this.diagnostics?.emit(Date.now(), true)
   }
 
   setPaused(paused: boolean) {
@@ -98,14 +114,14 @@ export class DigitrafficMarineProvider {
 
     this.updateStatus(
       {
-        phase: this.status.phase === 'idle' ? 'loading' : this.status.phase,
+        phase: this.mqttConnected ? 'live' : 'loading',
         paused: false,
         updating: true,
         error: this.status.phase === 'idle' ? undefined : this.status.error,
       },
       true,
     )
-    this.flush()
+    this.flush('immediate')
     this.requestLocationRefresh()
     void this.refreshMetadata()
     void this.connectMqtt()
@@ -153,7 +169,7 @@ export class DigitrafficMarineProvider {
     this.query = query
     if (!this.isActive()) return
 
-    this.flush()
+    this.flush('immediate')
     this.requestLocationRefresh()
   }
 
@@ -417,46 +433,7 @@ export class DigitrafficMarineProvider {
 
     client.on('message', (topic, payload) => {
       if (!isCurrentClient()) return
-      if (topic === 'vessels-v2/status') {
-        this.noteLiveSuccess()
-        return
-      }
-
-      const segments = topic.split('/')
-      const mmsi = Number(segments[1])
-      const kind = segments[2]
-      if (!Number.isInteger(mmsi) || mmsi <= 0) return
-
-      let parsed: unknown
-      try {
-        parsed = JSON.parse(payload.toString('utf8'))
-      } catch {
-        this.warnPayload(kind, 'invalid JSON')
-        return
-      }
-
-      if (kind === 'location') {
-        const location = parseDigitrafficMqttLocation(parsed, mmsi)
-        if (!location) {
-          this.warnPayload(kind, 'invalid fields')
-          return
-        }
-        this.mergeLocation(location)
-        this.noteLiveSuccess(location.observedAt)
-        this.scheduleFlush()
-        return
-      }
-
-      if (kind === 'metadata') {
-        const record = parseDigitrafficMqttMetadata(parsed, mmsi)
-        if (!record) {
-          this.warnPayload(kind, 'invalid fields')
-          return
-        }
-        this.mergeMetadata(record)
-        this.noteLiveSuccess()
-        this.scheduleFlush()
-      }
+      this.handleMqttMessage(topic, payload)
     })
 
     client.on('offline', () => {
@@ -523,6 +500,12 @@ export class DigitrafficMarineProvider {
     const current = this.locations.get(location.mmsi)
     if (!current || location.observedAt >= current.observedAt) {
       this.locations.set(location.mmsi, location)
+      if (import.meta.env.DEV) {
+        this.diagnostics?.recordCache(
+          this.locations.size,
+          this.metadata.size,
+        )
+      }
     }
   }
 
@@ -530,6 +513,12 @@ export class DigitrafficMarineProvider {
     const current = this.metadata.get(record.mmsi)
     if (!current || record.timestamp >= current.timestamp) {
       this.metadata.set(record.mmsi, record)
+      if (import.meta.env.DEV) {
+        this.diagnostics?.recordCache(
+          this.locations.size,
+          this.metadata.size,
+        )
+      }
     }
   }
 
@@ -537,18 +526,24 @@ export class DigitrafficMarineProvider {
     if (!this.isActive() || this.flushTimer !== undefined) return
     this.flushTimer = window.setTimeout(() => {
       this.flushTimer = undefined
-      this.flush()
+      this.flush('scheduled')
     }, this.config.snapshotFlushIntervalMs)
   }
 
-  private flush() {
+  private flush(reason: 'immediate' | 'scheduled') {
     if (!this.isActive()) return
 
+    const startedAt =
+      import.meta.env.DEV && this.diagnostics
+        ? performance.now()
+        : undefined
     const now = Date.now()
     const vessels: Vessel[] = []
+    let expiredLocations = 0
     for (const [mmsi, location] of this.locations) {
       if (now - location.observedAt > this.config.expireAfterMs) {
         this.locations.delete(mmsi)
+        expiredLocations += 1
         continue
       }
       if (distanceKm(this.query.center, location) > this.query.radiusKm) continue
@@ -567,13 +562,28 @@ export class DigitrafficMarineProvider {
     )
     this.callbacks.onSnapshot(vessels)
     this.emitStatus()
+    if (
+      import.meta.env.DEV &&
+      this.diagnostics &&
+      startedAt !== undefined
+    ) {
+      this.diagnostics.recordFlush({
+        reason,
+        processingMs: performance.now() - startedAt,
+        emittedVessels: vessels.length,
+        expiredLocations,
+        locationCacheSize: this.locations.size,
+        metadataCacheSize: this.metadata.size,
+      })
+      this.diagnostics.emit(Date.now())
+    }
   }
 
   private noteRestSuccess(dataTimestamp?: number) {
     const now = Date.now()
     this.status = {
       ...this.status,
-      phase: this.mqttConnected ? 'live' : this.status.phase,
+      phase: this.mqttConnected ? 'live' : 'loading',
       updating: false,
       error: this.mqttConnected ? undefined : this.status.error,
       lastSuccessAt: now,
@@ -582,7 +592,7 @@ export class DigitrafficMarineProvider {
           ? Math.max(this.status.lastDataAt ?? 0, dataTimestamp)
           : this.status.lastDataAt,
     }
-    this.emitStatus()
+    this.emitStatus(true)
   }
 
   private noteLiveSuccess(dataTimestamp?: number) {
@@ -631,6 +641,87 @@ export class DigitrafficMarineProvider {
     if (!force && now - this.lastStatusEmission < 1_000) return
     this.lastStatusEmission = now
     this.callbacks.onStatus({ ...this.status })
+  }
+
+  private handleMqttMessage(topic: string, payload: Uint8Array) {
+    if (!this.isActive()) return
+
+    const startedAt =
+      import.meta.env.DEV && this.diagnostics
+        ? performance.now()
+        : undefined
+    let kind: MarineDiagnosticMessageKind = 'other'
+    let accepted = false
+    let batchable = false
+
+    try {
+      if (topic === 'vessels-v2/status') {
+        kind = 'status'
+        accepted = true
+        this.noteLiveSuccess()
+        return
+      }
+
+      const segments = topic.split('/')
+      const mmsi = Number(segments[1])
+      const topicKind = segments[2]
+      if (topicKind === 'location' || topicKind === 'metadata') {
+        kind = topicKind
+      }
+      if (!Number.isInteger(mmsi) || mmsi <= 0) return
+
+      let parsed: unknown
+      try {
+        parsed = JSON.parse(UTF8_DECODER.decode(payload))
+      } catch {
+        this.warnPayload(topicKind, 'invalid JSON')
+        return
+      }
+
+      if (topicKind === 'location') {
+        const location = parseDigitrafficMqttLocation(parsed, mmsi)
+        if (!location) {
+          this.warnPayload(topicKind, 'invalid fields')
+          return
+        }
+        this.mergeLocation(location)
+        this.noteLiveSuccess(location.observedAt)
+        this.scheduleFlush()
+        accepted = true
+        batchable = true
+        return
+      }
+
+      if (topicKind === 'metadata') {
+        const record = parseDigitrafficMqttMetadata(parsed, mmsi)
+        if (!record) {
+          this.warnPayload(topicKind, 'invalid fields')
+          return
+        }
+        this.mergeMetadata(record)
+        this.noteLiveSuccess()
+        this.scheduleFlush()
+        accepted = true
+        batchable = true
+      }
+    } finally {
+      if (
+        import.meta.env.DEV &&
+        this.diagnostics &&
+        startedAt !== undefined
+      ) {
+        this.diagnostics.recordMessage({
+          kind,
+          payloadBytes: payload.byteLength,
+          accepted,
+          batchable,
+          processingMs: performance.now() - startedAt,
+          locationCacheSize: this.locations.size,
+          metadataCacheSize: this.metadata.size,
+        })
+        this.diagnostics.emit(Date.now())
+      }
+    }
   }
 
   private warnPayload(kind: string | undefined, reason: string) {
