@@ -535,8 +535,9 @@ The production-preview browser fixture proved:
   aircraft or map availability;
 - no arrival, departure, or board request;
 - full-size MapLibre canvases and scrollable/reachable controls at 390x844 and
-  390x568, with mobile bottom padding keeping MapLibre attribution from
-  intercepting the final controls.
+  390x568; the mobile control panel is capped at 58 viewport-height units so a
+  touchable map strip remains available, while bottom padding keeps MapLibre
+  attribution from intercepting the final controls.
 
 Local `workerd` returned the airport asset with
 `Cache-Control: public, max-age=31536000, immutable` and
