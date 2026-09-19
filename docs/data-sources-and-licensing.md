@@ -115,17 +115,18 @@ ODbL section 3.1 grants extraction, creation of derivative databases, and
 temporary or permanent reproduction. Its public-use conditions remain
 distinct from a user's personal origin-local database.
 
-Issue #9 may therefore persist an allowlisted normalized aircraft observation
-record only when the user explicitly opts in and only for personal playback in
-that browser origin. The application operator receives no copy. No export,
+Issue #9 persists an allowlisted normalized aircraft observation record only
+when the user explicitly opts in and only for personal playback in that
+browser origin. The application operator receives no copy. No export,
 sharing, cross-device synchronization, backend history, service-worker live
 response cache, or public retained-history publication is permitted by this
 decision. Any such future use requires a new ODbL/provider-policy review.
 ADSB.lol/ODbL attribution must remain visible during playback.
 
-This configurable-trail slice still writes no IndexedDB data. It records the
-decision before the complete default-off persistence/playback boundary is
-implemented.
+The implementation identifies this decision as
+`adsb-lol-odbl-local-playback-2026-09-19` in every stored ADSB.lol row. Visible
+ADSB.lol/ODbL attribution remains on the map during live and historical
+display.
 
 The normalized `category` field is treated as a reported ADS-B emitter
 category. The bounded icon mapping follows the published
@@ -373,11 +374,12 @@ LiveTrafficStan filters and normalizes the provider data.
 
 CC BY 4.0 permits reproduction and adaptation, including applicable database
 rights, subject to linked source/license attribution and an indication of
-modification. Issue #9 may retain provider-qualified normalized Digitraffic
+modification. Issue #9 retains provider-qualified normalized Digitraffic
 observations in the same explicit opt-in, origin-local store as aircraft data.
-No server, export, shared history, or cross-device database is part of that
-decision. This configurable-trail slice remains session-only and does not yet
-write the store.
+Stored rows use decision ID
+`fintraffic-cc-by-local-playback-2026-09-19`. No server, export, shared history,
+or cross-device database is part of that decision. Destination, ETA, and
+current-only enrichment remain excluded.
 
 The provider was reevaluated on 2026-09-19 against AISstream.io, Datalastic,
 and Kpler/MarineTraffic. It remains the only reviewed option that is keyless,

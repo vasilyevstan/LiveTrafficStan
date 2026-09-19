@@ -48,7 +48,7 @@ import {
   firstTrafficClusterTarget,
   setTrafficClustering,
   shouldAnimateTrafficSources,
-  trafficSnapshotSignature,
+  trafficSourceDiff,
 } from './clustering'
 import {
   exactEligibleFeatureId,
@@ -114,7 +114,7 @@ interface TrafficMapProps {
   ports: readonly Port[]
   airports: readonly Airport[]
   weatherObservations: readonly DisplayWeatherObservation[]
-  trail: readonly TrailPoint[]
+  trailSegments: readonly (readonly TrailPoint[])[]
   selectedId: string | null
   selectedPortId: string | null
   selectedAirportId: string | null
@@ -125,6 +125,7 @@ interface TrafficMapProps {
   airportsVisible: boolean
   weatherVisible: boolean
   clusteringEnabled: boolean
+  interpolateTraffic: boolean
   interpolationDurationMs: number
   viewRequestId: number
   viewportSettleMs: number
@@ -167,7 +168,7 @@ interface ViewState {
   portsVisible: boolean
   airportsVisible: boolean
   weatherVisible: boolean
-  trail: readonly TrailPoint[]
+  trailSegments: readonly (readonly TrailPoint[])[]
 }
 
 const trafficFeatures = (
@@ -212,23 +213,28 @@ const prefersReducedMotion = () => {
 }
 
 const trailData = (
-  points: readonly TrailPoint[],
+  segments: readonly (readonly TrailPoint[])[],
 ): FeatureCollection<LineString> => {
-  if (points.length < 2) return emptyTrail()
-
-  const feature: Feature<LineString> = {
-    type: 'Feature',
-    properties: {},
-    geometry: {
-      type: 'LineString',
-      coordinates: points.map((point) => [point.longitude, point.latitude]),
-    },
-  }
-
-  return {
-    type: 'FeatureCollection',
-    features: [feature],
-  }
+  const features: Feature<LineString>[] = segments.flatMap((points) =>
+    points.length < 2
+      ? []
+      : [
+          {
+            type: 'Feature',
+            properties: {},
+            geometry: {
+              type: 'LineString',
+              coordinates: points.map((point) => [
+                point.longitude,
+                point.latitude,
+              ]),
+            },
+          },
+        ],
+  )
+  return features.length === 0
+    ? emptyTrail()
+    : { type: 'FeatureCollection', features }
 }
 
 const fitPadding = () =>
@@ -295,7 +301,7 @@ export function TrafficMap({
   ports,
   airports,
   weatherObservations,
-  trail,
+  trailSegments,
   selectedId,
   selectedPortId,
   selectedAirportId,
@@ -306,6 +312,7 @@ export function TrafficMap({
   airportsVisible,
   weatherVisible,
   clusteringEnabled,
+  interpolateTraffic,
   interpolationDurationMs,
   viewRequestId,
   viewportSettleMs,
@@ -335,6 +342,7 @@ export function TrafficMap({
   })
   const viewportSettleMsRef = useRef(viewportSettleMs)
   const clusteringEnabledRef = useRef(clusteringEnabled)
+  const interpolateTrafficRef = useRef(interpolateTraffic)
   const clusterConfigRef = useRef({
     radiusPx: clusterRadiusPx,
     minimumPoints: clusterMinimumPoints,
@@ -346,10 +354,14 @@ export function TrafficMap({
   const interactionGenerationRef = useRef(0)
   const clusterExpansionGenerationRef = useRef(0)
   const clusterUpdateChainRef = useRef<Promise<void>>(Promise.resolve())
-  const lastClusteredSignatureRef = useRef<{
-    aircraft?: string
-    vessels?: string
+  const lastTrafficFeaturesRef = useRef<{
+    aircraft?: readonly Feature<Point>[]
+    vessels?: readonly Feature<Point>[]
   }>({})
+  const trafficUpdateGenerationRef = useRef({
+    aircraft: 0,
+    vessels: 0,
+  })
   const initialStyleUrlRef = useRef(mapStyleUrl)
   const desiredStyleUrlRef = useRef(mapStyleUrl)
   const requestedStyleUrlRef = useRef(mapStyleUrl)
@@ -383,7 +395,7 @@ export function TrafficMap({
     portsVisible,
     airportsVisible,
     weatherVisible,
-    trail,
+    trailSegments,
   })
   const selectRef = useRef(onSelect)
   const selectPortRef = useRef(onSelectPort)
@@ -404,6 +416,7 @@ export function TrafficMap({
     }
     viewportSettleMsRef.current = viewportSettleMs
     clusteringEnabledRef.current = clusteringEnabled
+    interpolateTrafficRef.current = interpolateTraffic
     clusterConfigRef.current = {
       radiusPx: clusterRadiusPx,
       minimumPoints: clusterMinimumPoints,
@@ -419,6 +432,7 @@ export function TrafficMap({
     viewRequestId,
     mapStyleUrl,
     maximumViewportRadiusKm,
+    interpolateTraffic,
     theme,
     viewportSettleMs,
   ])
@@ -445,29 +459,45 @@ export function TrafficMap({
         vesselMotionRef.current,
       ],
     ] as const) {
-      const signature = clustered
-        ? trafficSnapshotSignature(entities, state.selectedId)
-        : undefined
-      if (
-        clustered &&
-        !force &&
-        lastClusteredSignatureRef.current[kind] === signature
-      ) {
-        continue
-      }
-      setTrafficSourceData(
-        map,
-        sourceId,
-        trafficFeatures(
-          entities,
-          motion,
-          now,
-          state.selectedId,
-          !clustered,
-        ),
+      const data = trafficFeatures(
+        entities,
+        motion,
+        now,
+        state.selectedId,
+        interpolateTrafficRef.current && !clustered,
       )
-      lastClusteredSignatureRef.current[kind] = signature
-      updated = true
+      const source = map.getSource(sourceId) as GeoJSONSource | undefined
+      const previous = lastTrafficFeaturesRef.current[kind]
+      if (!force && source && previous) {
+        const diff = trafficSourceDiff(previous, data.features)
+        if (Object.keys(diff).length > 0) {
+          const styleGeneration = styleGenerationRef.current
+          const updateGeneration =
+            ++trafficUpdateGenerationRef.current[kind]
+          void source.updateData(diff).catch((error: unknown) => {
+            if (
+              styleGeneration !== styleGenerationRef.current ||
+              updateGeneration !==
+                trafficUpdateGenerationRef.current[kind]
+            ) {
+              return
+            }
+            errorRef.current({
+              kind: 'runtime',
+              message:
+                error instanceof Error
+                  ? error.message
+                  : 'Traffic source update failed',
+            })
+          })
+          updated = true
+        }
+      } else {
+        trafficUpdateGenerationRef.current[kind] += 1
+        setTrafficSourceData(map, sourceId, data)
+        updated = true
+      }
+      lastTrafficFeaturesRef.current[kind] = data.features
     }
 
     if (updated) sourceDataGenerationRef.current += 1
@@ -599,25 +629,29 @@ export function TrafficMap({
       const renderState = renderStateRef.current
       const viewState = viewStateRef.current
       const activeTheme = themeRef.current
+      const aircraftFeatures = trafficFeatures(
+        renderState.aircraft,
+        aircraftMotionRef.current,
+        now,
+        renderState.selectedId,
+        interpolateTrafficRef.current &&
+          !clusteringEnabledRef.current,
+      )
+      const vesselFeatures = trafficFeatures(
+        renderState.vessels,
+        vesselMotionRef.current,
+        now,
+        renderState.selectedId,
+        interpolateTrafficRef.current &&
+          !clusteringEnabledRef.current,
+      )
       installTrafficStyle(
         map,
         {
           theme: activeTheme,
-          aircraft: trafficFeatures(
-            renderState.aircraft,
-            aircraftMotionRef.current,
-            now,
-            renderState.selectedId,
-            !clusteringEnabledRef.current,
-          ),
-          vessels: trafficFeatures(
-            renderState.vessels,
-            vesselMotionRef.current,
-            now,
-            renderState.selectedId,
-            !clusteringEnabledRef.current,
-          ),
-          trail: trailData(viewState.trail),
+          aircraft: aircraftFeatures,
+          vessels: vesselFeatures,
+          trail: trailData(viewState.trailSegments),
           aircraftVisible: viewState.aircraftVisible,
           vesselsVisible: viewState.vesselsVisible,
           clusteringEnabled: clusteringEnabledRef.current,
@@ -627,7 +661,10 @@ export function TrafficMap({
         },
         getTrafficImages(activeTheme),
       )
-      lastClusteredSignatureRef.current = {}
+      lastTrafficFeaturesRef.current = {
+        aircraft: aircraftFeatures.features,
+        vessels: vesselFeatures.features,
+      }
       sourceDataGenerationRef.current += 1
       const portState = portRenderStateRef.current
       if (portState.ports.length > 0) {
@@ -687,7 +724,6 @@ export function TrafficMap({
       sourceDataGenerationRef.current += 1
       clusterOptionsGenerationRef.current += 1
       clusterExpansionGenerationRef.current += 1
-      lastClusteredSignatureRef.current = {}
       loadedRef.current = false
       requestedStyleUrlRef.current = nextStyleUrl
 
@@ -750,14 +786,14 @@ export function TrafficMap({
       portsVisible,
       airportsVisible,
       weatherVisible,
-      trail,
+      trailSegments,
     }
   }, [
     aircraftVisible,
     airportsVisible,
     weatherVisible,
     portsVisible,
-    trail,
+    trailSegments,
     vesselsVisible,
   ])
 
@@ -1296,7 +1332,6 @@ export function TrafficMap({
 
         sourceDataGenerationRef.current += 1
         if (!clusteringEnabled) {
-          lastClusteredSignatureRef.current = {}
           renderSources(performance.now(), true)
           scheduleRender()
         }
@@ -1324,19 +1359,20 @@ export function TrafficMap({
       aircraftMotionRef.current,
       aircraft as readonly TrafficEntity[],
       now,
-      interpolationDurationMs,
+      interpolateTraffic ? interpolationDurationMs : 0,
     )
     vesselMotionRef.current = reconcileMotionStates(
       vesselMotionRef.current,
       vessels as readonly TrafficEntity[],
       now,
-      interpolationDurationMs,
+      interpolateTraffic ? interpolationDurationMs : 0,
     )
     scheduleRender()
   }, [
     aircraft,
     vessels,
     selectedId,
+    interpolateTraffic,
     interpolationDurationMs,
     scheduleRender,
   ])
@@ -1427,8 +1463,8 @@ export function TrafficMap({
   useEffect(() => {
     const map = mapRef.current
     if (!map || !loadedRef.current) return
-    setTrafficSourceData(map, SOURCE_TRAIL, trailData(trail))
-  }, [trail])
+    setTrafficSourceData(map, SOURCE_TRAIL, trailData(trailSegments))
+  }, [trailSegments])
 
   useEffect(() => {
     if (lastViewRequestRef.current === viewRequestId) return
@@ -1443,7 +1479,9 @@ export function TrafficMap({
     <div
       ref={containerRef}
       className="traffic-map"
-      aria-label={`Live traffic map: ${viewLabel}`}
+      aria-label={`${
+        interpolateTraffic ? 'Live' : 'Historical'
+      } traffic map: ${viewLabel}`}
     />
   )
 }

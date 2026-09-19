@@ -6,6 +6,16 @@ import type { DisplayAircraft, DisplayVessel } from '../domain/traffic'
 import type { TrailPreferences } from '../domain/trailPreferences'
 import type { VesselFilterState } from '../domain/vesselFilters'
 import type { DisplayWeatherObservation } from '../domain/weatherObservations'
+import type {
+  PlaybackRange,
+  PlaybackSpeed,
+  PlaybackState,
+} from '../history/playback'
+import type {
+  HistoryPersistenceSettings,
+  HistoryPersistenceStatus,
+  HistoryRetentionHours,
+} from '../history/settings'
 import type { PlaceSearchResult } from '../providers/geocoding/photonProvider'
 import { AircraftDiscovery } from './AircraftDiscovery'
 import { AirportContext } from './AirportContext'
@@ -65,6 +75,20 @@ interface TrafficControlsProps {
   onClusteringEnabledChange: (enabled: boolean) => void
   trailPreferences: TrailPreferences
   onTrailPreferencesChange: (preferences: TrailPreferences) => void
+  historySettings: HistoryPersistenceSettings
+  historyStatus: HistoryPersistenceStatus
+  historyRange?: PlaybackRange
+  historyRecordCount: number
+  playback: PlaybackState
+  onHistoryEnabledChange: (enabled: boolean) => void
+  onHistoryRetentionChange: (hours: HistoryRetentionHours) => void
+  onClearHistory: () => void
+  onRetryHistory: () => void
+  onEnterHistory: () => void
+  onPlayHistory: () => void
+  onPauseHistory: () => void
+  onScrubHistory: (cursor: number) => void
+  onPlaybackSpeedChange: (speed: PlaybackSpeed) => void
   centerDisabled: boolean
   onCenter: () => void
   locationAvailable: boolean
@@ -135,6 +159,20 @@ export function TrafficControls({
   onClusteringEnabledChange,
   trailPreferences,
   onTrailPreferencesChange,
+  historySettings,
+  historyStatus,
+  historyRange,
+  historyRecordCount,
+  playback,
+  onHistoryEnabledChange,
+  onHistoryRetentionChange,
+  onClearHistory,
+  onRetryHistory,
+  onEnterHistory,
+  onPlayHistory,
+  onPauseHistory,
+  onScrubHistory,
+  onPlaybackSpeedChange,
   centerDisabled,
   onCenter,
   locationAvailable,
@@ -298,6 +336,20 @@ export function TrafficControls({
       <HistoryControls
         trailPreferences={trailPreferences}
         onTrailPreferencesChange={onTrailPreferencesChange}
+        historySettings={historySettings}
+        historyStatus={historyStatus}
+        historyRange={historyRange}
+        historyRecordCount={historyRecordCount}
+        playback={playback}
+        onHistoryEnabledChange={onHistoryEnabledChange}
+        onHistoryRetentionChange={onHistoryRetentionChange}
+        onClearHistory={onClearHistory}
+        onRetryHistory={onRetryHistory}
+        onEnterHistory={onEnterHistory}
+        onPlayHistory={onPlayHistory}
+        onPauseHistory={onPauseHistory}
+        onScrubHistory={onScrubHistory}
+        onPlaybackSpeedChange={onPlaybackSpeedChange}
       />
 
       <AircraftDiscovery

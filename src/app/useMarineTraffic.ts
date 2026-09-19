@@ -8,6 +8,7 @@ import type {
   MarineProviderCapabilities,
   TrafficQuery,
 } from '../providers/types'
+import { shouldPauseTraffic } from './trafficPause'
 
 interface MarineTrafficResult extends TrafficProviderResult<Vessel> {
   capabilities: MarineProviderCapabilities
@@ -60,7 +61,9 @@ export const useMarineTraffic = (
 
     if (provider) {
       if (query) provider.updateQuery(query)
-      provider.setPaused(document.hidden || query === null)
+      provider.setPaused(
+        shouldPauseTraffic(query, document.hidden, navigator.onLine),
+      )
       return
     }
 
@@ -102,7 +105,13 @@ export const useMarineTraffic = (
         },
       })
       providerRef.current = provider
-      provider.start(document.hidden || queryRef.current === null)
+      provider.start(
+        shouldPauseTraffic(
+          queryRef.current,
+          document.hidden,
+          navigator.onLine,
+        ),
+      )
     }
 
     startProviderRef.current = startProvider
@@ -110,11 +119,17 @@ export const useMarineTraffic = (
 
     const handleVisibilityChange = () => {
       providerRef.current?.setPaused(
-        document.hidden || queryRef.current === null,
+        shouldPauseTraffic(
+          queryRef.current,
+          document.hidden,
+          navigator.onLine,
+        ),
       )
     }
 
     document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('online', handleVisibilityChange)
+    window.addEventListener('offline', handleVisibilityChange)
 
     return () => {
       disposed = true
@@ -122,6 +137,8 @@ export const useMarineTraffic = (
       providerRef.current?.stop()
       providerRef.current = undefined
       document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('online', handleVisibilityChange)
+      window.removeEventListener('offline', handleVisibilityChange)
     }
   }, [config])
 

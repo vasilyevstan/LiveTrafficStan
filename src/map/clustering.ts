@@ -1,10 +1,10 @@
-import type { Point } from 'geojson'
+import type { Feature, Point } from 'geojson'
 import type {
   GeoJSONSource,
+  GeoJSONSourceDiff,
   MapGeoJSONFeature,
   Map as MapLibreMap,
 } from 'maplibre-gl'
-import type { DisplayTrafficEntity } from '../domain/traffic'
 import {
   SOURCE_AIRCRAFT,
   SOURCE_VESSELS,
@@ -19,30 +19,91 @@ export interface TrafficClusterTarget {
   center: [number, number]
 }
 
-export const trafficSnapshotSignature = (
-  entities: readonly DisplayTrafficEntity[],
-  selectedId: string | null,
-) =>
-  entities
-    .map((entity) =>
-      [
-        entity.id,
-        entity.position.observedAt,
-        entity.position.latitude,
-        entity.position.longitude,
-        entity.courseDegrees ?? entity.headingDegrees ?? 0,
-        entity.markerIcon,
-        entity.markerScale,
-        entity.freshness,
-        entity.id === selectedId ? 1 : 0,
-      ].join(':'),
-    )
-    .join('|')
-
 export const shouldAnimateTrafficSources = (
   clusteringEnabled: boolean,
   hasActiveTrafficMotion: boolean,
 ) => !clusteringEnabled && hasActiveTrafficMotion
+
+const featureId = (feature: Feature<Point>) =>
+  typeof feature.id === 'string' || typeof feature.id === 'number'
+    ? feature.id
+    : undefined
+
+const samePointGeometry = (
+  first: Feature<Point>,
+  second: Feature<Point>,
+) => {
+  const [firstLongitude, firstLatitude] = first.geometry.coordinates
+  const [secondLongitude, secondLatitude] = second.geometry.coordinates
+  return (
+    firstLongitude === secondLongitude &&
+    firstLatitude === secondLatitude
+  )
+}
+
+const sameFeatureProperties = (
+  first: Feature<Point>,
+  second: Feature<Point>,
+) => {
+  const firstProperties = first.properties ?? {}
+  const secondProperties = second.properties ?? {}
+  const keys = new Set([
+    ...Object.keys(firstProperties),
+    ...Object.keys(secondProperties),
+  ])
+  for (const key of keys) {
+    if (firstProperties[key] !== secondProperties[key]) return false
+  }
+  return true
+}
+
+export const trafficSourceDiff = (
+  previous: readonly Feature<Point>[],
+  next: readonly Feature<Point>[],
+): GeoJSONSourceDiff => {
+  const previousById = new Map(
+    previous.flatMap((feature) => {
+      const id = featureId(feature)
+      return id === undefined ? [] : [[id, feature] as const]
+    }),
+  )
+  const nextIds = new Set<string | number>()
+  const add: Feature<Point>[] = []
+  const update: NonNullable<GeoJSONSourceDiff['update']> = []
+
+  for (const feature of next) {
+    const id = featureId(feature)
+    if (id === undefined) continue
+    nextIds.add(id)
+    const existing = previousById.get(id)
+    if (!existing) {
+      add.push(feature)
+      continue
+    }
+    const geometryChanged = !samePointGeometry(existing, feature)
+    const propertiesChanged = !sameFeatureProperties(existing, feature)
+    if (!geometryChanged && !propertiesChanged) continue
+    update.push({
+      id,
+      ...(geometryChanged ? { newGeometry: feature.geometry } : {}),
+      ...(propertiesChanged
+        ? {
+            removeAllProperties: true,
+            addOrUpdateProperties: Object.entries(
+              feature.properties ?? {},
+            ).map(([key, value]) => ({ key, value })),
+          }
+        : {}),
+    })
+  }
+
+  const remove = [...previousById.keys()].filter((id) => !nextIds.has(id))
+  return {
+    ...(remove.length > 0 ? { remove } : {}),
+    ...(add.length > 0 ? { add } : {}),
+    ...(update.length > 0 ? { update } : {}),
+  }
+}
 
 export const setTrafficClustering = async (
   map: MapLibreMap,

@@ -81,6 +81,21 @@ export interface AppConfig {
     pointsPerMinute: number
     maxTotalPoints: number
   }
+  history: {
+    sessionRetentionMs: number
+    sessionMaxRecords: number
+    sessionMaxLogicalBytes: number
+    sampleIntervalMs: number
+    durableMaxRecords: number
+    durableMaxLogicalBytes: number
+    pendingWriteMaxRecords: number
+    pendingWriteMaxLogicalBytes: number
+    writeBatchRecords: number
+    maintenanceIntervalMs: number
+    playbackPublishIntervalMs: number
+    aircraftTrailGapMs: number
+    vesselTrailGapMs: number
+  }
   interpolationDurationMs: number
 }
 
@@ -371,6 +386,21 @@ export const createAppConfig = (
       defaultDurationMinutes: DEFAULT_TRAIL_PREFERENCES.durationMinutes,
       pointsPerMinute: 12,
       maxTotalPoints: 50_000,
+    },
+    history: {
+      sessionRetentionMs: 60 * 60_000,
+      sessionMaxRecords: 50_000,
+      sessionMaxLogicalBytes: 16 * 1_024 * 1_024,
+      sampleIntervalMs: 10_000,
+      durableMaxRecords: 100_000,
+      durableMaxLogicalBytes: 32 * 1_024 * 1_024,
+      pendingWriteMaxRecords: 5_000,
+      pendingWriteMaxLogicalBytes: 4 * 1_024 * 1_024,
+      writeBatchRecords: 250,
+      maintenanceIntervalMs: 5 * 60_000,
+      playbackPublishIntervalMs: 100,
+      aircraftTrailGapMs: 120_000,
+      vesselTrailGapMs: 600_000,
     },
     interpolationDurationMs: 1_500,
   }

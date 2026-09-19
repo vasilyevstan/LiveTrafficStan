@@ -50,8 +50,9 @@ provider credential or creates server-side state.
 | `src/providers/airports/` | Bounded lazy same-origin airport loading plus checksum, schema, and source-provenance validation |
 | `src/providers/weather/` | Canonical same-origin AWC requests, bounded JSON validation, METAR/SPECI normalization, newest-report selection, and source provenance |
 | `src/providers/geocoding/` | Photon request construction, response bounds, runtime GeoJSON validation, result normalization, and attribution identity |
-| `src/app/` | React hooks/controllers for provider lifecycle, place-search cancellation/cache, navigation intent, time ticks, and trail history |
-| `src/traffic/` | Filtering, freshness/expiry, interpolation, and bounded history |
+| `src/app/` | React hooks/controllers for provider lifecycle, place-search cancellation/cache, navigation intent, time ticks, offline state, and traffic-history orchestration |
+| `src/history/` | Provider-qualified observation projection, bounded session history, IndexedDB transactions, settings, indexes, playback, and gap-aware historical trails |
+| `src/traffic/` | Filtering, freshness/expiry, interpolation, and selected-trail history |
 | `src/map/` | MapLibre lifecycle, GeoJSON sources/layers, feature selection, and marker images |
 | `src/components/` | Status, controls, and selected-object details |
 
@@ -157,9 +158,10 @@ continues to render.
 
 - Aircraft requests never overlap. A revision-aware controller cancels obsolete
   work, rejects late old-area results, and prevents request starts more often
-  than every 20 seconds. Polling pauses when the document is hidden or the
-  viewport is ineligible; restoration resumes at the next cadence-safe or
-  `Retry-After` boundary without reconstructing the controller.
+  than every 20 seconds. Polling pauses when the browser is offline, the
+  document is hidden, or the viewport is ineligible; restoration resumes at
+  the next cadence-safe or `Retry-After` boundary without reconstructing the
+  controller.
 - Marine REST requests are deduplicated by controller state. MQTT reconnects
   no more often than every 15 seconds after disconnection. Eligible viewport
   changes immediately refilter cached provider-wide MQTT records, reuse the live
@@ -215,16 +217,55 @@ points so observations from the previous area are not connected to the new
 view. Invalid input and failed search do not alter the existing selection or
 history.
 
-This slice remains volatile and session-only. The separate Issue #9 playback
-slice will add an allowlisted provider-qualified observation record before any
-IndexedDB write; rendered trail points are not a durable storage schema.
+The history boundary has two stores:
+
+- an always-on volatile session store bounded to 60 minutes, 50,000 records,
+  16 MiB logical payload, and one provider/entity sample per 10 seconds;
+- an explicit opt-in IndexedDB store bounded to 1, 6, or 24 hours, 100,000
+  records, and 32 MiB logical payload.
+
+Both store only versioned normalized ADSB.lol or Fintraffic Digitraffic
+observations with provider, license-decision, source-time, receipt-time,
+session, and navigation-segment identity. Interpolation frames, route data,
+destination/ETA, browser location, current METAR, and third-party aircraft
+metadata are not persisted. Vessel metadata is visible in history only after
+its own observation time.
+
+IndexedDB writes recheck opt-in authorization and a monotonic recording epoch
+inside the transaction. Clear and Disable increment that epoch atomically with
+deletion, so queued work cannot repopulate old observations. Every pending
+batch retains the epoch under which it was enqueued. Typed cross-tab Clear
+invalidations clear volatile session history and pending writes before reload;
+Disable clears pending writes. Failed batches remain queued, while quota or
+transaction suspension remains visible until explicit recovery.
+
+Startup validation, malformed-row deletion, canonical-row repair, metadata
+recount, and optional pruning share one readwrite transaction. The repair
+preserves the transaction-current authorization and epoch, enforces exact
+provider/kind/license tuples, strips fields outside the persistence allowlist,
+and recomputes logical bytes. It cannot write an earlier metadata snapshot over
+a concurrent Clear or Disable.
+
+Playback freezes the available range on entry and has `live`,
+`history-paused`, and `history-playing` states. Scrubbing pauses; playback
+publishes at no more than 10 Hz and stops at the frozen endpoint. Live
+acquisition continues through the existing controllers while eligible, but
+offline, hidden, unmounted, and ineligible-view states still pause provider
+work without resetting cadence or reconnect gates. Historical snapshots use
+separate durable and session indexes so current ingestion does not rebuild a
+100,000-record index. Successfully committed rows accumulate as bounded
+in-memory deltas and merge into the durable index when volatile rows begin
+pruning; ordinary long-running recording does not rescan the complete
+IndexedDB store every minute.
 
 ## Map rendering
 
 `TrafficMap` creates one MapLibre instance. Aircraft, vessels, and the selected
 trail use persistent GeoJSON sources and layers whose data or visibility is
 updated in place. This avoids one React component or DOM marker per traffic
-object.
+object. Stable feature IDs use incremental `GeoJSONSource.updateData` diffs for
+ordinary traffic movement; style replacement and forced recovery still install
+complete source snapshots.
 
 The optional port, airport, and weather sources are separate from traffic.
 Port rank groups
@@ -316,9 +357,10 @@ vector tiles will remain in a loading state.
   style rehydration updates the same bounded image IDs.
 - Motion animation samples normalized state rather than adding provider points
   on every frame.
-- History is bounded by both time and count.
-- Network work pauses while the page is hidden or the viewport is ineligible,
-  without resetting session timing or cache state.
+- Session and durable history have independent time, count, and logical-byte
+  bounds.
+- Network work pauses while offline, hidden, or viewport-ineligible, without
+  resetting session timing or cache state.
 - Aircraft metadata has zero startup requests and lazy prefix loading. Static
   assets use immutable deployment caching, while application memory retains
   only one index and eight validated shards.
