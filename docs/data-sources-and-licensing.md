@@ -183,6 +183,40 @@ prohibited route inferences.
 No route-provider key, Worker route, cache, domain field, placeholder panel, or
 mock production response is added while the source gate is open.
 
+## Airport arrival/departure boards: no active source
+
+LiveTrafficStan does not currently display airport arrivals or departures.
+Airport/time-window enumeration is a separate capability from selected-flight
+origin/destination association.
+
+The dated
+[Airport Arrival and Departure Board Evaluation](airport-board-evaluation.md)
+found technically credible commercial candidates, but no source currently has
+the project account, accepted terms/order, approved budget, display and
+combination rights, retention rule, secure credential, source-age contract,
+and permitted Tallinn samples required for implementation.
+
+- OpenSky's airport endpoints expose previous-day-or-earlier overnight
+  reconstructed flights with estimated airports/times; they are not a current
+  operational board, and operational REST use requires a written agreement.
+- FlightAware AeroAPI exposes strong airport-flight operations and provider
+  identity, but the project has no account/key/order/budget. Written
+  combination permission may be required for use with ADSB.lol, and published
+  documents state conflicting default retention periods that an accepted
+  agreement must resolve.
+- AeroDataBox exposes airport/time-window operations, but the project has no
+  selected plan or key, and the inspected board rows do not carry the
+  individual-flight `lastUpdatedUtc` contract. Coverage may be scheduled,
+  delayed, asymmetric, or ADS-B-derived.
+- aviationstack requires an account/key and no approved project plan,
+  contract, budget, or source-age semantics exist.
+- Public airport, airline, and tracker pages will not be scraped.
+
+[Issue #46](https://github.com/vasilyevstan/LiveTrafficStan/issues/46)
+records the exact authorization and sample evidence required. No board is
+constructed from visible aircraft, heading, proximity, callsign, static airport
+points, or cached selected-flight lookups.
+
 ## Aircraft metadata: Mictronics aircraft-database
 
 - Source repository:
@@ -349,6 +383,50 @@ session. Blocking or corrupting the asset leaves aircraft and marine traffic
 unchanged. Source, projection, generator, or generated-byte changes require a
 new immutable version path.
 
+## Airport context: OurAirports
+
+- Downloads and terms: <https://ourairports.com/data/>
+- Data dictionary:
+  <https://ourairports.com/help/data-dictionary.html>
+- Repository: <https://github.com/davidmegginson/ourairports-data>
+- Commit: `5ed85eed28722bea80ebdde9e255e09b1e7317a8`
+- Source file: `airports.csv`
+- Source publication instant: `2026-09-19T01:53:15Z`
+- Source bytes: `12,725,082`
+- Source SHA-256:
+  `6c890e97b82939a2501938b32eb597b18d5c5ce803576d3193e2049a149a58bb`
+- License/status: public domain
+- Runtime access: optional immutable same-origin static asset
+
+OurAirports releases all data to the Public Domain, requests but does not
+require credit, and provides no guarantee of accuracy or fitness. Its exports
+are updated nightly, but LiveTrafficStan pins one reviewed commit rather than
+changing runtime data in place.
+
+The deterministic projection retains every `large_airport` and
+`medium_airport`, sorted by persistent numeric OurAirports ID. It contains
+5,280 points: 1,174 large and 4,106 medium. The immutable output is
+`/airports/ourairports-2026-09-19-v1/airports.geojson`, with 1,329,838 raw
+bytes, 225,625 deterministic gzip-9 bytes, and SHA-256
+`1edb55fe75653367895ed913f2725915ef0b529aed12eecf9d931ed8c38df9d6`.
+`npm run check:airports` verifies the committed projection without network
+access.
+
+The source's persistent numeric `id`, `ident`, explicit optional `icao_code`,
+explicit optional `iata_code`, municipality, country code, name, type, and
+coordinates have distinct meanings. In particular, `ident` is not always an
+ICAO code and is never substituted for a missing explicit ICAO field.
+Municipality identifies the primary municipality served and is not necessarily
+the physical municipality.
+
+The layer is off by default and makes no startup request. First enable loads
+and validates the complete immutable asset under a deadline, byte cap, exact
+size, and checksum; only a fulfilled dataset is cached for the page session.
+Failure remains separate from the map and traffic providers. The UI describes
+the points as static reference context and does not infer current scheduled
+service, operating status, navigation authority, routes, arrivals, departures,
+or relationships to visible aircraft.
+
 ## Source-code license versus data licenses
 
 LiveTrafficStan source code is licensed under Apache License 2.0 and includes a
@@ -368,8 +446,9 @@ separate licenses and attribution requirements:
   aircraft-database, ODC-By 1.0
 - marine data: Fintraffic Digitraffic, CC BY 4.0
 - optional port context: Natural Earth Ports, public domain
+- optional airport context: OurAirports, public domain
 
 The application does not persist or redistribute a live traffic database. It
 does distribute the separately identified static aircraft metadata derivative
 database under ODC-By 1.0 and the separately identified public-domain Natural
-Earth port projection.
+Earth port projection and OurAirports airport projection.

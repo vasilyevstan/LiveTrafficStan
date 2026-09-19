@@ -13,6 +13,7 @@ import {
 import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
 import type { Theme } from '../app/theme'
 import type { AppCenter } from '../config/appConfig'
+import type { Airport } from '../domain/airports'
 import { boundsAroundCenter } from '../domain/geo'
 import type { Port } from '../domain/ports'
 import type {
@@ -39,12 +40,19 @@ import {
   createMapSafely,
   type TrafficMapError,
 } from './mapInitialization'
+import { pickContextFeature } from './contextPicking'
 import {
   exactEligibleFeatureId,
   expandedHitBox,
   TouchInteractionTracker,
   uniqueEligibleFeatureId,
 } from './touchPicking'
+import {
+  AIRPORT_LAYER_IDS,
+  airportFeatures,
+  installAirportsStyle,
+  setAirportsVisibility,
+} from './airportsStyle'
 import {
   PORT_LAYER_IDS,
   installPortsStyle,
@@ -84,17 +92,21 @@ interface TrafficMapProps {
   aircraft: readonly DisplayAircraft[]
   vessels: readonly DisplayVessel[]
   ports: readonly Port[]
+  airports: readonly Airport[]
   trail: readonly TrailPoint[]
   selectedId: string | null
   selectedPortId: string | null
+  selectedAirportId: string | null
   aircraftVisible: boolean
   vesselsVisible: boolean
   portsVisible: boolean
+  airportsVisible: boolean
   interpolationDurationMs: number
   viewRequestId: number
   viewportSettleMs: number
   onSelect: (id: string | null) => void
   onSelectPort: (id: string | null) => void
+  onSelectAirport: (id: string | null) => void
   onViewportChange: (
     assessment: ViewportAssessment,
     viewRequestId: number,
@@ -114,10 +126,16 @@ interface PortRenderState {
   selectedPortId: string | null
 }
 
+interface AirportRenderState {
+  airports: readonly Airport[]
+  selectedAirportId: string | null
+}
+
 interface ViewState {
   aircraftVisible: boolean
   vesselsVisible: boolean
   portsVisible: boolean
+  airportsVisible: boolean
   trail: readonly TrailPoint[]
 }
 
@@ -196,13 +214,20 @@ const canvasPerimeter = (width: number, height: number, segments = 8) => {
 }
 
 const viewportSignature = (assessment: ViewportAssessment) => {
-  if (assessment.kind === 'ineligible') {
-    return `${assessment.kind}:${assessment.reason}:${assessment.message}`
+  let viewport
+  if (assessment.kind === 'eligible') {
+    viewport = assessment.viewport
+  } else {
+    if (!assessment.viewport) {
+      return `${assessment.kind}:${assessment.reason}:${assessment.message}`
+    }
+    viewport = assessment.viewport
   }
 
-  const { center, enclosingRadiusKm, polygon } = assessment.viewport
+  const { center, enclosingRadiusKm, polygon } = viewport
   return [
     assessment.kind,
+    assessment.kind === 'ineligible' ? assessment.reason : '',
     center.latitude,
     center.longitude,
     enclosingRadiusKm,
@@ -225,17 +250,21 @@ export function TrafficMap({
   aircraft,
   vessels,
   ports,
+  airports,
   trail,
   selectedId,
   selectedPortId,
+  selectedAirportId,
   aircraftVisible,
   vesselsVisible,
   portsVisible,
+  airportsVisible,
   interpolationDurationMs,
   viewRequestId,
   viewportSettleMs,
   onSelect,
   onSelectPort,
+  onSelectAirport,
   onViewportChange,
   onManualViewChange,
   onMapError,
@@ -277,14 +306,20 @@ export function TrafficMap({
     ports,
     selectedPortId,
   })
+  const airportRenderStateRef = useRef<AirportRenderState>({
+    airports,
+    selectedAirportId,
+  })
   const viewStateRef = useRef<ViewState>({
     aircraftVisible,
     vesselsVisible,
     portsVisible,
+    airportsVisible,
     trail,
   })
   const selectRef = useRef(onSelect)
   const selectPortRef = useRef(onSelectPort)
+  const selectAirportRef = useRef(onSelectAirport)
   const viewportChangeRef = useRef(onViewportChange)
   const manualViewChangeRef = useRef(onManualViewChange)
   const errorRef = useRef(onMapError)
@@ -490,6 +525,18 @@ export function TrafficMap({
           viewState.portsVisible,
         )
       }
+      const airportState = airportRenderStateRef.current
+      if (airportState.airports.length > 0) {
+        installAirportsStyle(
+          map,
+          airportFeatures(
+            airportState.airports,
+            airportState.selectedAirportId,
+          ),
+          activeTheme,
+          viewState.airportsVisible,
+        )
+      }
       loadedRef.current = true
       errorRef.current(null)
       scheduleRender()
@@ -545,6 +592,10 @@ export function TrafficMap({
   }, [onSelectPort])
 
   useEffect(() => {
+    selectAirportRef.current = onSelectAirport
+  }, [onSelectAirport])
+
+  useEffect(() => {
     viewportChangeRef.current = onViewportChange
   }, [onViewportChange])
 
@@ -561,9 +612,16 @@ export function TrafficMap({
       aircraftVisible,
       vesselsVisible,
       portsVisible,
+      airportsVisible,
       trail,
     }
-  }, [aircraftVisible, portsVisible, trail, vesselsVisible])
+  }, [
+    aircraftVisible,
+    airportsVisible,
+    portsVisible,
+    trail,
+    vesselsVisible,
+  ])
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -664,6 +722,11 @@ export function TrafficMap({
         ? PORT_LAYER_IDS.filter((layerId) => map.getLayer(layerId))
         : []
 
+    const activeAirportLayers = () =>
+      viewStateRef.current.airportsVisible
+        ? AIRPORT_LAYER_IDS.filter((layerId) => map.getLayer(layerId))
+        : []
+
     const selectableTrafficIds = () => {
       const ids = new Set<string>()
       const renderState = renderStateRef.current
@@ -679,6 +742,9 @@ export function TrafficMap({
 
     const selectablePortIds = () =>
       new Set(portRenderStateRef.current.ports.map(({ id }) => id))
+
+    const selectableAirportIds = () =>
+      new Set(airportRenderStateRef.current.airports.map(({ id }) => id))
 
     map.on('moveend', () => {
       scheduleViewportReport(map)
@@ -696,6 +762,7 @@ export function TrafficMap({
           'Aircraft: <a href="https://www.adsb.lol/" target="_blank" rel="noreferrer">ADSB.lol</a> (<a href="https://opendatacommons.org/licenses/odbl/1-0/" target="_blank" rel="noreferrer">ODbL 1.0</a>)',
           'Marine: <a href="https://www.digitraffic.fi/en/marine-traffic/" target="_blank" rel="noreferrer">Fintraffic Digitraffic</a> (<a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">CC BY 4.0</a>; filtered and normalized)',
           'Optional ports: <a href="https://www.naturalearthdata.com/downloads/10m-cultural-vectors/ports/" target="_blank" rel="noreferrer">Natural Earth</a> (<a href="https://www.naturalearthdata.com/about/terms-of-use/" target="_blank" rel="noreferrer">public domain</a>; generalized and incomplete)',
+          'Optional airports: <a href="https://ourairports.com/data/" target="_blank" rel="noreferrer">OurAirports</a> (<a href="https://ourairports.com/data/" target="_blank" rel="noreferrer">public domain</a>; static large and medium airport context)',
         ],
       }),
       'bottom-right',
@@ -716,6 +783,7 @@ export function TrafficMap({
         )
         if (exactTraffic) {
           selectPortRef.current(null)
+          selectAirportRef.current(null)
           selectRef.current(exactTraffic)
           return
         }
@@ -729,48 +797,84 @@ export function TrafficMap({
           )
           if (nearbyTraffic) {
             selectPortRef.current(null)
+            selectAirportRef.current(null)
             selectRef.current(nearbyTraffic)
             return
           }
         }
       }
 
+      const airportLayers = activeAirportLayers()
+      const airportIds = selectableAirportIds()
       const portLayers = activePortLayers()
       const portIds = selectablePortIds()
-      if (portLayers.length > 0) {
-        const exactPort = exactEligibleFeatureId(
-          map.queryRenderedFeatures(event.point, {
-            layers: portLayers,
-          }),
-          portIds,
-        )
-        if (exactPort) {
-          selectRef.current(null)
-          selectPortRef.current(exactPort)
-          return
-        }
-        if (touchFallbackAllowed) {
-          const nearbyPort = uniqueEligibleFeatureId(
-            map.queryRenderedFeatures(
-              expandedHitBox(event.point, touchHitTolerancePx),
-              { layers: portLayers },
-            ),
-            portIds,
-          )
-          if (nearbyPort) {
-            selectRef.current(null)
-            selectPortRef.current(nearbyPort)
-            return
-          }
-        }
+      const contextPick = pickContextFeature(
+        {
+          exactAirport: () =>
+            airportLayers.length > 0
+              ? exactEligibleFeatureId(
+                  map.queryRenderedFeatures(event.point, {
+                    layers: airportLayers,
+                  }),
+                  airportIds,
+                )
+              : undefined,
+          exactPort: () =>
+            portLayers.length > 0
+              ? exactEligibleFeatureId(
+                  map.queryRenderedFeatures(event.point, {
+                    layers: portLayers,
+                  }),
+                  portIds,
+                )
+              : undefined,
+          nearbyAirport: () =>
+            airportLayers.length > 0
+              ? uniqueEligibleFeatureId(
+                  map.queryRenderedFeatures(
+                    expandedHitBox(event.point, touchHitTolerancePx),
+                    { layers: airportLayers },
+                  ),
+                  airportIds,
+                )
+              : undefined,
+          nearbyPort: () =>
+            portLayers.length > 0
+              ? uniqueEligibleFeatureId(
+                  map.queryRenderedFeatures(
+                    expandedHitBox(event.point, touchHitTolerancePx),
+                    { layers: portLayers },
+                  ),
+                  portIds,
+                )
+              : undefined,
+        },
+        touchFallbackAllowed,
+      )
+      if (contextPick?.kind === 'airport') {
+        selectRef.current(null)
+        selectPortRef.current(null)
+        selectAirportRef.current(contextPick.id)
+        return
+      }
+      if (contextPick?.kind === 'port') {
+        selectRef.current(null)
+        selectAirportRef.current(null)
+        selectPortRef.current(contextPick.id)
+        return
       }
 
       selectRef.current(null)
       selectPortRef.current(null)
+      selectAirportRef.current(null)
     })
 
     map.on('mousemove', (event) => {
-      const layers = [...activeTrafficLayers(), ...activePortLayers()]
+      const layers = [
+        ...activeTrafficLayers(),
+        ...activeAirportLayers(),
+        ...activePortLayers(),
+      ]
       const features =
         layers.length > 0
           ? map.queryRenderedFeatures(event.point, { layers })
@@ -886,6 +990,18 @@ export function TrafficMap({
   }, [ports, selectedPortId])
 
   useEffect(() => {
+    airportRenderStateRef.current = { airports, selectedAirportId }
+    const map = mapRef.current
+    if (!map || !loadedRef.current || airports.length === 0) return
+    installAirportsStyle(
+      map,
+      airportFeatures(airports, selectedAirportId),
+      themeRef.current,
+      viewStateRef.current.airportsVisible,
+    )
+  }, [airports, selectedAirportId])
+
+  useEffect(() => {
     const map = mapRef.current
     if (!map || !loadedRef.current) return
     setTrafficLayerVisibility(map, LAYER_AIRCRAFT, aircraftVisible)
@@ -904,6 +1020,12 @@ export function TrafficMap({
     if (!map || !loadedRef.current) return
     setPortsVisibility(map, portsVisible)
   }, [portsVisible])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !loadedRef.current) return
+    setAirportsVisibility(map, airportsVisible)
+  }, [airportsVisible])
 
   useEffect(() => {
     const map = mapRef.current

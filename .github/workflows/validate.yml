@@ -51,6 +51,9 @@ jobs:
       - name: Check ports
         run: npm run check:ports
 
+      - name: Check airports
+        run: npm run check:airports
+
       - name: Build
         run: npm run build
 

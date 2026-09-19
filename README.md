@@ -13,6 +13,9 @@ single React application, without accounts, a database, or persistent tracking.
 - Lazily loaded selected-aircraft model, configuration, and wake-category
   context from a pinned ODC-By aircraft database, with exact identity checks,
   source age, confidence, and local failure isolation.
+- Local current-aircraft search by callsign, registration, ICAO24, or reported
+  type. Search ranks exact, prefix, and substring matches without changing the
+  map, camera, providers, or visible marker set.
 - Live marine traffic from
   [Fintraffic Digitraffic](https://www.digitraffic.fi/en/marine-traffic/) using
   REST initialization and MQTT over secure WebSockets.
@@ -39,6 +42,10 @@ single React application, without accounts, a database, or persistent tracking.
   separate selection, failure, and attribution. Port points are generalized
   and incomplete and are never treated as operational harbour or vessel-call
   data.
+- An optional, lazily loaded OurAirports layer containing pinned large and
+  medium airport reference points, static details, and a bounded keyboard
+  list for the current view. It does not imply operational status, routes,
+  arrivals, or departures.
 - Honest detail cards, provider-specific health, stale/expired handling, and
   partial operation when one provider fails.
 - Short interpolation only between observed positions and a bounded 15-minute
@@ -70,6 +77,7 @@ npm run typecheck
 npm test -- --run
 npm run check:aircraft-metadata
 npm run check:ports
+npm run check:airports
 npm run build
 ```
 
@@ -100,6 +108,9 @@ Digitraffic REST/MQTT ──┘
 selected aircraft -> static metadata index + one prefix shard -> details only
 
 PORTS toggle -> pinned same-origin Natural Earth projection -> map + port details
+AIRPORTS toggle -> pinned same-origin OurAirports projection -> map + airport details
+
+current aircraft -> local literal search -> existing traffic selection
 
 coordinate input ── local validation ─┐
 Photon forward search ─> place results ├─> explicit camera navigation
@@ -134,6 +145,12 @@ provider caches, or source snapshots. The optional port dataset is another
 independent same-origin boundary: it makes no request until enabled, validates
 the complete immutable asset before caching, and remains separate from traffic
 IDs, counts, trails, selection, and provider health.
+
+Aircraft discovery searches only the current non-expired viewport aircraft
+already held by the application. The optional airport dataset follows the same
+independent static-context boundary as ports, but keeps large and medium airport
+points visible at higher zooms and exposes static provenance rather than
+operational flight information.
 
 See [Architecture](docs/architecture.md) for component boundaries, data flow,
 failure isolation, rendering, and deployment details.
@@ -170,6 +187,7 @@ operational thresholds, and examples.
 | Aircraft metadata | Mictronics aircraft-database derivative | ODC-By 1.0 | Immutable same-origin static assets, loaded only after selection |
 | Marine | Fintraffic Digitraffic | CC BY 4.0 | Direct regional REST and MQTT |
 | Port context | Natural Earth Ports | Public domain | Immutable same-origin static asset, loaded only when enabled |
+| Airport context | OurAirports | Public domain | Immutable same-origin static asset, loaded only when enabled |
 
 The repository's Apache License 2.0 applies to source code only. The bundled
 aircraft metadata is a derivative database conveyed under ODC-By 1.0 with its
@@ -177,13 +195,14 @@ full license alongside the generated files. Distributed derivative works must
 preserve the applicable [`NOTICE`](NOTICE) and data-license attribution. The
 source license does not relicense map, search, live aircraft, aircraft
 metadata, marine data, or the separately identified public-domain Natural
-Earth port projection. See
+Earth port and OurAirports projections. See
 [Data Sources and Licensing](docs/data-sources-and-licensing.md), the dated
 [Aircraft Provider Evaluation](docs/aircraft-provider-evaluation.md), and the
-dated [Aircraft Metadata Evaluation](docs/aircraft-metadata-evaluation.md), and
-the dated [Marine Provider Evaluation](docs/marine-provider-evaluation.md) for the
-verified contracts, official links, measured/request-volume evidence, and the
-decisions to retain ADSB.lol and Fintraffic Digitraffic.
+dated [Aircraft Metadata Evaluation](docs/aircraft-metadata-evaluation.md), the
+dated [Marine Provider Evaluation](docs/marine-provider-evaluation.md), and the
+[Airport Board Evaluation](docs/airport-board-evaluation.md) for verified
+contracts, official links, measured/request-volume evidence, and unresolved
+authorization gates.
 
 ## Deployment
 
@@ -233,6 +252,12 @@ monitoring, privacy, and rollback procedure.
   complete port inventory. Some source points may be approximate by up to
   20 miles, and the app does not infer facilities, berths, operational status,
   port calls, nearby-vessel relationships, destinations, or ETAs.
+- OurAirports points are optional static reference context. The source
+  disclaims accuracy and fitness, and the app does not infer current service,
+  airport operations, aircraft relationships, routes, arrivals, or departures.
+- Current arrival and departure boards remain blocked on an authorized
+  airport/time-window provider contract in
+  [Issue #46](https://github.com/vasilyevstan/LiveTrafficStan/issues/46).
 - Theme preference is limited to explicit Light/Dark selection; there is no
   automatic system-theme mode.
 - There is no reverse geocoding, route enrichment, playback, weather overlay,
@@ -249,6 +274,7 @@ silently expanded into V1.
 - [Data Sources and Licensing](docs/data-sources-and-licensing.md)
 - [Aircraft Provider Evaluation](docs/aircraft-provider-evaluation.md)
 - [Aircraft Metadata Evaluation](docs/aircraft-metadata-evaluation.md)
+- [Airport Board Evaluation](docs/airport-board-evaluation.md)
 - [Marine Provider Evaluation](docs/marine-provider-evaluation.md)
 - [Hosting and Deployment](docs/hosting-and-deployment.md)
 - [Development and Testing](docs/development-and-testing.md)

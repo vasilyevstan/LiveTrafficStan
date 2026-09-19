@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
 import { useAircraftTraffic } from './app/useAircraftTraffic'
 import { useAircraftMetadata } from './app/useAircraftMetadata'
+import { useAirports } from './app/useAirports'
 import { LocationCameraIntent } from './app/locationCameraIntent'
 import { useMarineTraffic } from './app/useMarineTraffic'
 import { useNow } from './app/useNow'
@@ -10,12 +11,15 @@ import { usePorts } from './app/usePorts'
 import { useSessionLocation } from './app/useSessionLocation'
 import { useTheme } from './app/useTheme'
 import { useTrailHistory } from './app/useTrailHistory'
+import { AirportDetails } from './components/AirportDetails'
 import { LiveStatus } from './components/LiveStatus'
 import { PortDetails } from './components/PortDetails'
 import { TrafficControls } from './components/TrafficControls'
 import { TrafficDetails } from './components/TrafficDetails'
 import { APP_CONFIG } from './config/appConfig'
 import type { AppCenter } from './config/appConfig'
+import { orderAircraftSearchResults } from './domain/aircraftSearch'
+import { airportsInViewport } from './domain/airports'
 import type { DisplayTrafficEntity, TrafficEntity } from './domain/traffic'
 import {
   DEFAULT_VESSEL_FILTERS,
@@ -30,6 +34,7 @@ import {
 import { TrafficMap } from './map/TrafficMap'
 import type { PlaceSearchResult } from './providers/geocoding/photonProvider'
 import { StaticAircraftMetadataProvider } from './providers/aircraftMetadata/staticAircraftMetadataProvider'
+import { StaticAirportsProvider } from './providers/airports/staticAirportsProvider'
 import { StaticPortsProvider } from './providers/ports/staticPortsProvider'
 import { filterTrafficByViewport } from './traffic/filter'
 import { displayTraffic } from './traffic/freshness'
@@ -40,14 +45,19 @@ interface ViewRequest {
 }
 
 function App() {
+  const [aircraftQuery, setAircraftQuery] = useState('')
   const [vesselFilters, setVesselFilters] = useState(
     DEFAULT_VESSEL_FILTERS,
   )
   const [aircraftVisible, setAircraftVisible] = useState(true)
   const [vesselsVisible, setVesselsVisible] = useState(true)
   const [portsVisible, setPortsVisible] = useState(false)
+  const [airportsVisible, setAirportsVisible] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [selectedPortId, setSelectedPortId] = useState<string | null>(null)
+  const [selectedAirportId, setSelectedAirportId] = useState<string | null>(
+    null,
+  )
   const [mapError, setMapError] = useState<TrafficMapError | null>(null)
   const [viewportReport, setViewportReport] = useState<{
     assessment: ViewportAssessment
@@ -63,6 +73,7 @@ function App() {
   )
   const [historyResetRevision, setHistoryResetRevision] = useState(0)
   const appliedLocationRevisionRef = useRef(0)
+  const airportSelectionGraceUntilRef = useRef(0)
   const locationCameraIntentRef = useRef(new LocationCameraIntent())
   const { theme, setTheme } = useTheme()
   const location = useSessionLocation(
@@ -88,6 +99,11 @@ function App() {
     [],
   )
   const portsResult = usePorts(portsVisible, portsProvider)
+  const airportsProvider = useMemo(
+    () => new StaticAirportsProvider(APP_CONFIG.airports),
+    [],
+  )
+  const airportsResult = useAirports(airportsVisible, airportsProvider)
 
   const commitNavigation = useCallback(
     (
@@ -101,6 +117,7 @@ function App() {
       }
       setSelectedId(null)
       setSelectedPortId(null)
+      setSelectedAirportId(null)
       setHistoryResetRevision((current) => current + 1)
       setViewportReport(null)
       setViewReady(true)
@@ -156,6 +173,12 @@ function App() {
     viewReady && currentAssessment?.kind === 'eligible'
       ? currentAssessment.viewport
       : null
+  const contextViewport =
+    viewReady && currentAssessment
+      ? currentAssessment.kind === 'eligible'
+        ? currentAssessment.viewport
+        : currentAssessment.viewport ?? null
+      : null
   const trafficQuery = useMemo(
     () =>
       activeViewport
@@ -187,6 +210,10 @@ function App() {
     () => displayTraffic(viewportAircraft, now, APP_CONFIG.aircraft),
     [viewportAircraft, now],
   )
+  const aircraftResults = useMemo(
+    () => orderAircraftSearchResults(aircraft, aircraftQuery),
+    [aircraft, aircraftQuery],
+  )
   const currentVessels = useMemo(
     () => displayTraffic(viewportVessels, now, APP_CONFIG.marine),
     [now, viewportVessels],
@@ -206,6 +233,20 @@ function App() {
         : [],
     [portsResult.state],
   )
+  const airports = useMemo(
+    () =>
+      airportsResult.state.phase === 'ready'
+        ? airportsResult.state.dataset.airports
+        : [],
+    [airportsResult.state],
+  )
+  const visibleAirports = useMemo(
+    () =>
+      contextViewport
+        ? airportsInViewport(airports, contextViewport)
+        : [],
+    [airports, contextViewport],
+  )
   const sourceEntities = useMemo<TrafficEntity[]>(
     () => [...viewportAircraft, ...viewportVessels],
     [viewportAircraft, viewportVessels],
@@ -221,6 +262,10 @@ function App() {
   const selectedPort = useMemo(
     () => ports.find((port) => port.id === selectedPortId),
     [ports, selectedPortId],
+  )
+  const selectedAirport = useMemo(
+    () => airports.find((airport) => airport.id === selectedAirportId),
+    [airports, selectedAirportId],
   )
   const aircraftMetadata = useAircraftMetadata(
     selectedEntity?.kind === 'aircraft' ? selectedEntity : undefined,
@@ -251,8 +296,46 @@ function App() {
   }, [portsVisible, selectedPortId])
 
   useEffect(() => {
+    if (!airportsVisible && selectedAirportId) setSelectedAirportId(null)
+  }, [airportsVisible, selectedAirportId])
+
+  useEffect(() => {
     if (selectedPortId && !selectedPort) setSelectedPortId(null)
   }, [selectedPort, selectedPortId])
+
+  useEffect(() => {
+    if (!selectedAirportId) return
+    if (!selectedAirport) {
+      setSelectedAirportId(null)
+      return
+    }
+    if (
+      contextViewport &&
+      visibleAirports.some(({ id }) => id === selectedAirportId)
+    ) {
+      return
+    }
+
+    const delayMs = Math.max(
+      0,
+      airportSelectionGraceUntilRef.current - Date.now(),
+    )
+    if (delayMs === 0) {
+      setSelectedAirportId(null)
+      return
+    }
+    const timeout = window.setTimeout(() => {
+      setSelectedAirportId((current) =>
+        current === selectedAirportId ? null : current,
+      )
+    }, delayMs)
+    return () => window.clearTimeout(timeout)
+  }, [
+    contextViewport,
+    selectedAirport,
+    selectedAirportId,
+    visibleAirports,
+  ])
 
   const handleViewportChange = useCallback(
     (assessment: ViewportAssessment, reportViewRequestId: number) => {
@@ -309,13 +392,37 @@ function App() {
 
   const handleTrafficSelect = useCallback((id: string | null) => {
     setSelectedPortId(null)
+    setSelectedAirportId(null)
     setSelectedId(id)
   }, [])
 
   const handlePortSelect = useCallback((id: string | null) => {
     setSelectedId(null)
+    setSelectedAirportId(null)
     setSelectedPortId(id)
   }, [])
+
+  const handleAirportSelect = useCallback((id: string | null) => {
+    airportSelectionGraceUntilRef.current = id
+      ? Date.now() + APP_CONFIG.navigation.viewportSettleMs + 100
+      : 0
+    setSelectedId(null)
+    setSelectedPortId(null)
+    setSelectedAirportId(id)
+  }, [])
+
+  const handleCloseAirport = useCallback(() => {
+    const airportId = selectedAirportId
+    airportSelectionGraceUntilRef.current = 0
+    setSelectedAirportId(null)
+    if (!airportId) return
+    globalThis.requestAnimationFrame(() => {
+      const target =
+        document.getElementById(`airport-context-result-${airportId}`) ??
+        document.getElementById('airports-layer-toggle')
+      target?.focus()
+    })
+  }, [selectedAirportId])
 
   const mapErrorContent = mapError ? mapErrorPresentation(mapError) : null
   const mapSubtitle = !viewReady
@@ -334,6 +441,19 @@ function App() {
             marineResult.status.phase === 'loading'
           ? 'The marine source is connecting.'
           : 'No current ships are shown in this view.'
+  const aircraftEmptyMessage =
+    currentAssessment?.kind === 'ineligible'
+      ? 'Live traffic is paused for this view.'
+      : aircraftResult.status.phase === 'error'
+        ? 'The aircraft source is unavailable.'
+        : aircraftResult.status.phase === 'idle' ||
+            aircraftResult.status.phase === 'loading'
+          ? 'The aircraft source is connecting.'
+          : 'No current aircraft are shown in this view.'
+  const airportsEmptyMessage =
+    contextViewport
+      ? 'No large or medium airports are shown in this view.'
+      : 'Airport context is unavailable while the map view is updating.'
 
   return (
     <main className="app-shell">
@@ -353,17 +473,21 @@ function App() {
         aircraft={aircraft}
         vessels={vessels}
         ports={ports}
+        airports={airports}
         trail={activeViewport ? trail : []}
         selectedId={selectedId}
         selectedPortId={selectedPortId}
+        selectedAirportId={selectedAirportId}
         aircraftVisible={aircraftVisible}
         vesselsVisible={vesselsVisible}
         portsVisible={portsVisible}
+        airportsVisible={airportsVisible}
         interpolationDurationMs={APP_CONFIG.interpolationDurationMs}
         viewRequestId={viewRequest.id}
         viewportSettleMs={APP_CONFIG.navigation.viewportSettleMs}
         onSelect={handleTrafficSelect}
         onSelectPort={handlePortSelect}
+        onSelectAirport={handleAirportSelect}
         onViewportChange={handleViewportChange}
         onManualViewChange={handleManualViewChange}
         onMapError={setMapError}
@@ -392,6 +516,12 @@ function App() {
         </header>
 
         <TrafficControls
+          aircraftQuery={aircraftQuery}
+          aircraftResults={aircraftResults}
+          totalAircraft={aircraft.length}
+          aircraftEmptyMessage={aircraftEmptyMessage}
+          onAircraftQueryChange={setAircraftQuery}
+          onAircraftSelect={handleTrafficSelect}
           vesselFilters={vesselFilters}
           vesselResults={vesselResults}
           totalVessels={currentVessels.length}
@@ -413,6 +543,22 @@ function App() {
           }
           onPortsVisibleChange={setPortsVisible}
           onRetryPorts={portsResult.retry}
+          airportsVisible={airportsVisible}
+          airportsLoading={
+            airportsVisible && airportsResult.state.phase === 'loading'
+          }
+          airportsReady={airportsResult.state.phase === 'ready'}
+          airportsError={
+            airportsVisible && airportsResult.state.phase === 'error'
+              ? airportsResult.state.message
+              : undefined
+          }
+          airportsInView={visibleAirports}
+          selectedAirportId={selectedAirportId}
+          airportsEmptyMessage={airportsEmptyMessage}
+          onAirportsVisibleChange={setAirportsVisible}
+          onAirportSelect={handleAirportSelect}
+          onRetryAirports={airportsResult.retry}
           centerDisabled={
             !location.initialReady || mapError?.kind === 'initialization'
           }
@@ -457,6 +603,15 @@ function App() {
             port={selectedPort}
             source={portsResult.state.dataset.source}
             onClose={() => setSelectedPortId(null)}
+          />
+        )}
+
+        {selectedAirport && airportsResult.state.phase === 'ready' && (
+          <AirportDetails
+            airport={selectedAirport}
+            source={airportsResult.state.dataset.source}
+            coordinatePrecision={APP_CONFIG.navigation.coordinatePrecision}
+            onClose={handleCloseAirport}
           />
         )}
 

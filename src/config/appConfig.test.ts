@@ -36,6 +36,14 @@ describe('createAppConfig', () => {
       futureToleranceHours: 24,
       sourceDatabaseVersion: 522,
     })
+    expect(config.airports).toMatchObject({
+      assetUrl:
+        '/airports/ourairports-2026-09-19-v1/airports.geojson',
+      timeoutMs: 5_000,
+      expectedBytes: 1_329_838,
+      expectedRecords: 5280,
+      sourceLicenseName: 'Public domain',
+    })
     expect(config.ports).toMatchObject({
       assetUrl: '/ports/natural-earth-v5.1.2-v1/ports.geojson',
       timeoutMs: 5_000,
