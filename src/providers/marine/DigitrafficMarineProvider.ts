@@ -41,13 +41,19 @@ export class DigitrafficMarineProvider {
   private mqttClient?: MqttClient
   private mqttConnectTimer?: number
   private mqttConnected = false
-  private metadataInterval?: number
+  private locationRefreshTimer?: number
+  private metadataRefreshTimer?: number
   private flushTimer?: number
   private locationController?: AbortController
   private metadataController?: AbortController
   private running = false
+  private paused = false
+  private networkGeneration = 0
   private lastStatusEmission = 0
   private lastLocationRefreshStartedAt?: number
+  private lastMetadataRefreshStartedAt?: number
+  private lastMqttConnectAttemptAt?: number
+  private locationRefreshPending = false
 
   constructor(options: DigitrafficOptions) {
     this.config = options.config
@@ -55,29 +61,70 @@ export class DigitrafficMarineProvider {
     this.callbacks = options.callbacks
   }
 
-  start() {
+  start(paused = false) {
     if (this.running) return
     this.running = true
-    this.updateStatus({ phase: 'loading', paused: false, error: undefined }, true)
-    void this.refreshLocations(true)
-    void this.refreshMetadata()
-    void this.connectMqtt()
-    this.metadataInterval = window.setInterval(
-      () => void this.refreshMetadata(),
-      this.config.metadataRefreshIntervalMs,
-    )
+    this.paused = paused
+
+    if (paused) {
+      this.updateStatus({ paused: true, updating: false }, true)
+      return
+    }
+
+    this.activateNetwork()
   }
 
   stop() {
     this.running = false
+    this.paused = false
+    this.deactivateNetwork()
+  }
+
+  setPaused(paused: boolean) {
+    if (!this.running || this.paused === paused) return
+    this.paused = paused
+
+    if (paused) {
+      this.deactivateNetwork()
+      this.updateStatus({ paused: true, updating: false }, true)
+      return
+    }
+
+    this.activateNetwork()
+  }
+
+  private activateNetwork() {
+    if (!this.isActive()) return
+
+    this.updateStatus(
+      {
+        phase: this.status.phase === 'idle' ? 'loading' : this.status.phase,
+        paused: false,
+        updating: true,
+        error: this.status.phase === 'idle' ? undefined : this.status.error,
+      },
+      true,
+    )
+    this.flush()
+    this.requestLocationRefresh()
+    void this.refreshMetadata()
+    void this.connectMqtt()
+  }
+
+  private deactivateNetwork() {
+    this.networkGeneration += 1
     this.locationController?.abort()
     this.metadataController?.abort()
     this.locationController = undefined
     this.metadataController = undefined
 
-    if (this.metadataInterval !== undefined) {
-      window.clearInterval(this.metadataInterval)
-      this.metadataInterval = undefined
+    if (this.locationRefreshTimer !== undefined) {
+      window.clearTimeout(this.locationRefreshTimer)
+      this.locationRefreshTimer = undefined
+    }
+    if (this.metadataRefreshTimer !== undefined) {
+      window.clearTimeout(this.metadataRefreshTimer)
+      this.metadataRefreshTimer = undefined
     }
     if (this.flushTimer !== undefined) {
       window.clearTimeout(this.flushTimer)
@@ -95,11 +142,27 @@ export class DigitrafficMarineProvider {
   }
 
   updateQuery(query: TrafficQuery) {
+    if (
+      this.query.center.latitude === query.center.latitude &&
+      this.query.center.longitude === query.center.longitude &&
+      this.query.radiusKm === query.radiusKm
+    ) {
+      return
+    }
+
     this.query = query
-    if (!this.running) return
+    if (!this.isActive()) return
 
     this.flush()
-    void this.refreshLocations()
+    this.requestLocationRefresh()
+  }
+
+  private isActive() {
+    return this.running && !this.paused
+  }
+
+  private isActiveGeneration(generation: number) {
+    return this.isActive() && generation === this.networkGeneration
   }
 
   private requestHeaders() {
@@ -109,20 +172,46 @@ export class DigitrafficMarineProvider {
     }
   }
 
-  private async refreshLocations(force = false) {
-    if (!this.running || this.locationController) return
+  private requestLocationRefresh() {
+    if (!this.isActive()) return
+    this.locationRefreshPending = true
+    void this.refreshLocations()
+  }
 
-    const startedAt = Date.now()
+  private scheduleLocationRefresh(delayMs: number) {
+    if (!this.isActive() || this.locationRefreshTimer !== undefined) return
+    this.locationRefreshTimer = window.setTimeout(() => {
+      this.locationRefreshTimer = undefined
+      void this.refreshLocations()
+    }, delayMs)
+  }
+
+  private async refreshLocations() {
     if (
-      !force &&
-      this.lastLocationRefreshStartedAt !== undefined &&
-      startedAt - this.lastLocationRefreshStartedAt <
-        this.config.queryRestRefreshIntervalMs
+      !this.isActive() ||
+      !this.locationRefreshPending ||
+      this.locationController
     ) {
       return
     }
 
+    const startedAt = Date.now()
+    if (
+      this.lastLocationRefreshStartedAt !== undefined &&
+      startedAt - this.lastLocationRefreshStartedAt <
+        this.config.queryRestRefreshIntervalMs
+    ) {
+      this.scheduleLocationRefresh(
+        this.lastLocationRefreshStartedAt +
+          this.config.queryRestRefreshIntervalMs -
+          startedAt,
+      )
+      return
+    }
+
+    this.locationRefreshPending = false
     const controller = new AbortController()
+    const generation = this.networkGeneration
     this.locationController = controller
     this.lastLocationRefreshStartedAt = startedAt
     const query = this.query
@@ -144,6 +233,12 @@ export class DigitrafficMarineProvider {
       )
       if (!response.ok) throw await responseError('Digitraffic', response)
       const locations = parseDigitrafficRestLocations(await response.json())
+      if (
+        controller.signal.aborted ||
+        !this.isActiveGeneration(generation)
+      ) {
+        return
+      }
       for (const location of locations) this.mergeLocation(location)
       this.noteRestSuccess(
         locations.reduce(
@@ -153,19 +248,51 @@ export class DigitrafficMarineProvider {
       )
       this.scheduleFlush()
     } catch (error) {
-      if (!controller.signal.aborted) this.noteError(error)
+      if (
+        !controller.signal.aborted &&
+        this.isActiveGeneration(generation)
+      ) {
+        this.noteError(error)
+      }
     } finally {
       if (this.locationController === controller) {
         this.locationController = undefined
       }
+      if (this.locationRefreshPending && this.isActive()) {
+        void this.refreshLocations()
+      }
     }
   }
 
+  private scheduleMetadataRefresh(delayMs: number) {
+    if (!this.isActive() || this.metadataRefreshTimer !== undefined) return
+    this.metadataRefreshTimer = window.setTimeout(() => {
+      this.metadataRefreshTimer = undefined
+      void this.refreshMetadata()
+    }, delayMs)
+  }
+
   private async refreshMetadata() {
-    if (!this.running || this.metadataController) return
+    if (!this.isActive() || this.metadataController) return
+
+    const startedAt = Date.now()
+    if (
+      this.lastMetadataRefreshStartedAt !== undefined &&
+      startedAt - this.lastMetadataRefreshStartedAt <
+        this.config.metadataRefreshIntervalMs
+    ) {
+      this.scheduleMetadataRefresh(
+        this.lastMetadataRefreshStartedAt +
+          this.config.metadataRefreshIntervalMs -
+          startedAt,
+      )
+      return
+    }
 
     const controller = new AbortController()
+    const generation = this.networkGeneration
     this.metadataController = controller
+    this.lastMetadataRefreshStartedAt = startedAt
     try {
       const response = await fetch(
         `${this.config.restBaseUrl}/api/ais/v1/vessels`,
@@ -176,21 +303,56 @@ export class DigitrafficMarineProvider {
       )
       if (!response.ok) throw await responseError('Digitraffic', response)
       const metadata = parseDigitrafficRestMetadata(await response.json())
+      if (
+        controller.signal.aborted ||
+        !this.isActiveGeneration(generation)
+      ) {
+        return
+      }
       for (const record of metadata) this.mergeMetadata(record)
       this.noteRestSuccess()
       this.scheduleFlush()
     } catch (error) {
-      if (!controller.signal.aborted) this.noteError(error)
+      if (
+        !controller.signal.aborted &&
+        this.isActiveGeneration(generation)
+      ) {
+        this.noteError(error)
+      }
     } finally {
       if (this.metadataController === controller) {
         this.metadataController = undefined
+      }
+      if (this.isActive()) {
+        this.scheduleMetadataRefresh(this.config.metadataRefreshIntervalMs)
       }
     }
   }
 
   private async connectMqtt() {
-    if (!this.running || this.mqttClient) return
+    if (
+      !this.isActive() ||
+      this.mqttClient ||
+      this.mqttConnectTimer !== undefined
+    ) {
+      return
+    }
 
+    const now = Date.now()
+    if (
+      this.lastMqttConnectAttemptAt !== undefined &&
+      now - this.lastMqttConnectAttemptAt <
+        this.config.mqttReconnectPeriodMs
+    ) {
+      this.scheduleMqttConnect()
+      return
+    }
+
+    this.lastMqttConnectAttemptAt = now
+    await this.openMqttClient(this.networkGeneration)
+  }
+
+  private async openMqttClient(generation: number) {
     let connect: typeof import('mqtt').connect
     try {
       const mqttModule = await import('mqtt')
@@ -199,11 +361,13 @@ export class DigitrafficMarineProvider {
           ? mqttModule.connect
           : mqttModule.default.connect
     } catch (error) {
-      this.noteError(error)
-      this.scheduleMqttConnect()
+      if (this.isActiveGeneration(generation)) {
+        this.noteError(error)
+        this.scheduleMqttConnect()
+      }
       return
     }
-    if (!this.running || this.mqttClient) return
+    if (!this.isActiveGeneration(generation) || this.mqttClient) return
 
     let client: MqttClient
     try {
@@ -216,14 +380,23 @@ export class DigitrafficMarineProvider {
         reconnectPeriod: this.config.mqttReconnectPeriodMs,
       })
     } catch (error) {
-      this.noteError(error)
-      this.scheduleMqttConnect()
+      if (this.isActiveGeneration(generation)) {
+        this.noteError(error)
+        this.scheduleMqttConnect()
+      }
       return
     }
 
+    if (!this.isActiveGeneration(generation)) {
+      client.end(true)
+      return
+    }
     this.mqttClient = client
+    const isCurrentClient = () =>
+      this.isActiveGeneration(generation) && this.mqttClient === client
 
     client.on('connect', () => {
+      if (!isCurrentClient()) return
       client.subscribe(
         [
           'vessels-v2/+/location',
@@ -231,6 +404,7 @@ export class DigitrafficMarineProvider {
           'vessels-v2/status',
         ],
         (error) => {
+          if (!isCurrentClient()) return
           if (error) {
             this.mqttConnected = false
             this.noteError(error)
@@ -242,7 +416,7 @@ export class DigitrafficMarineProvider {
     })
 
     client.on('message', (topic, payload) => {
-      if (!this.running) return
+      if (!isCurrentClient()) return
       if (topic === 'vessels-v2/status') {
         this.noteLiveSuccess()
         return
@@ -286,7 +460,7 @@ export class DigitrafficMarineProvider {
     })
 
     client.on('offline', () => {
-      if (this.running) {
+      if (isCurrentClient()) {
         this.mqttConnected = false
         this.updateStatus(
           {
@@ -299,7 +473,8 @@ export class DigitrafficMarineProvider {
     })
 
     client.on('reconnect', () => {
-      if (this.running) {
+      if (isCurrentClient()) {
+        this.lastMqttConnectAttemptAt = Date.now()
         this.mqttConnected = false
         this.updateStatus(
           {
@@ -312,7 +487,7 @@ export class DigitrafficMarineProvider {
     })
 
     client.on('error', (error) => {
-      if (this.running) {
+      if (isCurrentClient()) {
         this.mqttConnected = false
         this.noteError(error)
       }
@@ -321,17 +496,27 @@ export class DigitrafficMarineProvider {
 
   private scheduleMqttConnect() {
     if (
-      !this.running ||
+      !this.isActive() ||
       this.mqttClient ||
       this.mqttConnectTimer !== undefined
     ) {
       return
     }
 
+    const now = Date.now()
+    const delayMs =
+      this.lastMqttConnectAttemptAt === undefined
+        ? 0
+        : Math.max(
+            0,
+            this.lastMqttConnectAttemptAt +
+              this.config.mqttReconnectPeriodMs -
+              now,
+          )
     this.mqttConnectTimer = window.setTimeout(() => {
       this.mqttConnectTimer = undefined
       void this.connectMqtt()
-    }, this.config.mqttReconnectPeriodMs)
+    }, delayMs)
   }
 
   private mergeLocation(location: MarineLocationRecord) {
@@ -349,7 +534,7 @@ export class DigitrafficMarineProvider {
   }
 
   private scheduleFlush() {
-    if (!this.running || this.flushTimer !== undefined) return
+    if (!this.isActive() || this.flushTimer !== undefined) return
     this.flushTimer = window.setTimeout(() => {
       this.flushTimer = undefined
       this.flush()
@@ -357,7 +542,7 @@ export class DigitrafficMarineProvider {
   }
 
   private flush() {
-    if (!this.running) return
+    if (!this.isActive()) return
 
     const now = Date.now()
     const vessels: Vessel[] = []
@@ -389,6 +574,7 @@ export class DigitrafficMarineProvider {
     this.status = {
       ...this.status,
       phase: this.mqttConnected ? 'live' : this.status.phase,
+      updating: false,
       error: this.mqttConnected ? undefined : this.status.error,
       lastSuccessAt: now,
       lastDataAt:
@@ -407,6 +593,7 @@ export class DigitrafficMarineProvider {
       ...this.status,
       phase: 'live',
       paused: false,
+      updating: false,
       error: undefined,
       lastSuccessAt: now,
       lastDataAt:
@@ -421,6 +608,7 @@ export class DigitrafficMarineProvider {
     this.updateStatus(
       {
         phase: 'error',
+        updating: false,
         error: errorMessage(error),
       },
       true,

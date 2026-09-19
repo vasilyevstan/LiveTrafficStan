@@ -41,6 +41,9 @@ const locationSettings = (
   maximumAgeMs: config.geolocationMaximumAgeMs,
 })
 
+const locationWaitMessage = (subject: string, timeoutMs: number) =>
+  `${subject}; a cold fix can take up to ${Math.ceil(timeoutMs / 1_000)} seconds.`
+
 export const useSessionLocation = (
   fallback: AppCenter,
   config: AppConfig['navigation'],
@@ -110,8 +113,12 @@ export const useSessionLocation = (
         ...current,
         phase: 'locating',
         canRequest,
-        message: 'Finding your starting area...',
+        message: locationWaitMessage(
+          'Finding your starting area',
+          config.geolocationTimeoutMs,
+        ),
       }))
+      locationAttemptRef.current = true
 
       try {
         const homeCenter = await requestBrowserLocation(
@@ -133,6 +140,10 @@ export const useSessionLocation = (
             ? error.reason
             : 'unavailable'
         finishFallback(browserLocationFailureMessage(reason), true)
+      } finally {
+        if (requestRevision === requestRevisionRef.current) {
+          locationAttemptRef.current = false
+        }
       }
     }
 
@@ -165,7 +176,10 @@ export const useSessionLocation = (
       ...current,
       phase: 'locating',
       canRequest: true,
-      message: 'Finding your location...',
+      message: locationWaitMessage(
+        'Finding your location',
+        config.geolocationTimeoutMs,
+      ),
     }))
 
     void requestBrowserLocation(environment, locationSettings(config))
@@ -224,6 +238,8 @@ export const useSessionLocation = (
           return
         }
         if (permission === 'denied') {
+          requestRevisionRef.current += 1
+          locationAttemptRef.current = false
           setState((current) => ({
             ...current,
             phase: 'error',

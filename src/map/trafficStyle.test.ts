@@ -2,10 +2,10 @@ import type {
   FeatureCollection,
   LineString,
   Point,
-  Polygon,
 } from 'geojson'
 import type { Map as MapLibreMap } from 'maplibre-gl'
 import { describe, expect, it, vi } from 'vitest'
+import { TRAFFIC_MARKER_ICONS } from '../domain/traffic'
 import {
   LAYER_AIRCRAFT,
   LAYER_VESSELS,
@@ -23,15 +23,12 @@ const trail: FeatureCollection<LineString> = {
   type: 'FeatureCollection',
   features: [],
 }
-const radius: FeatureCollection<Polygon> = {
-  type: 'FeatureCollection',
-  features: [],
-}
-const images = {
-  aircraft: {},
-  helicopter: {},
-  vessel: {},
-} as TrafficStyleImages
+const imageSet = (theme: string) =>
+  Object.fromEntries(
+    TRAFFIC_MARKER_ICONS.map((id) => [id, { theme: `${theme}-${id}` }]),
+  ) as unknown as TrafficStyleImages
+const lightImages = imageSet('light')
+const darkImages = imageSet('dark')
 
 const snapshot = (
   theme: 'light' | 'dark',
@@ -40,7 +37,6 @@ const snapshot = (
   aircraft: points,
   vessels: points,
   trail,
-  radius,
   aircraftVisible: true,
   vesselsVisible: false,
 })
@@ -53,6 +49,7 @@ describe('installTrafficStyle', () => {
     const paint = new Map<string, unknown>()
     const visibility = new Map<string, unknown>()
     const addImage = vi.fn((id: string) => imageIds.add(id))
+    const updateImage = vi.fn()
     const addSource = vi.fn((id: string) => {
       sources.set(id, { setData: vi.fn() })
     })
@@ -62,6 +59,7 @@ describe('installTrafficStyle', () => {
     const map = {
       hasImage: (id: string) => imageIds.has(id),
       addImage,
+      updateImage,
       getSource: (id: string) => sources.get(id),
       addSource,
       getLayer: (id: string) => layers.get(id),
@@ -74,14 +72,35 @@ describe('installTrafficStyle', () => {
       },
     } as unknown as MapLibreMap
 
-    installTrafficStyle(map, snapshot('light'), images)
-    installTrafficStyle(map, snapshot('dark'), images)
+    installTrafficStyle(map, snapshot('light'), lightImages)
+    installTrafficStyle(map, snapshot('dark'), darkImages)
+    installTrafficStyle(map, snapshot('light'), lightImages)
 
-    expect(addImage).toHaveBeenCalledTimes(3)
-    expect(addSource).toHaveBeenCalledTimes(4)
-    expect(addLayer).toHaveBeenCalledTimes(7)
-    expect(sources.get(SOURCE_AIRCRAFT)?.setData).toHaveBeenCalledTimes(1)
-    expect(paint.get('traffic-radius-line:line-color')).toBe('#67ddff')
+    expect(addImage).toHaveBeenCalledTimes(TRAFFIC_MARKER_ICONS.length)
+    expect(updateImage).toHaveBeenCalledTimes(
+      TRAFFIC_MARKER_ICONS.length * 2,
+    )
+    expect(imageIds).toEqual(new Set(TRAFFIC_MARKER_ICONS))
+    for (const imageId of TRAFFIC_MARKER_ICONS) {
+      expect(updateImage).toHaveBeenCalledWith(
+        imageId,
+        darkImages[imageId],
+      )
+      expect(updateImage).toHaveBeenCalledWith(
+        imageId,
+        lightImages[imageId],
+      )
+    }
+    expect(addSource).toHaveBeenCalledTimes(3)
+    expect(addLayer).toHaveBeenCalledTimes(5)
+    expect(sources.get(SOURCE_AIRCRAFT)?.setData).toHaveBeenCalledTimes(2)
+    expect(paint.get('traffic-selected-trail:line-color')).toBe('#138daf')
+    expect(paint.get(`${LAYER_AIRCRAFT}:icon-opacity`)).toEqual([
+      'case',
+      ['get', 'stale'],
+      0.54,
+      0.98,
+    ])
     expect(visibility.get(`${LAYER_AIRCRAFT}:visibility`)).toBe('visible')
     expect(visibility.get(`${LAYER_VESSELS}:visibility`)).toBe('none')
   })

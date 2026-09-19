@@ -22,11 +22,12 @@ ADSB.lol does not currently provide browser CORS headers. V1 uses Vite's develop
 
 Digitraffic explicitly recommends five-minute REST polling, which is too infrequent for smoothly updated live vessel positions. V1 uses the provider's MQTT-over-WebSocket feed for live location and metadata messages.
 
-REST remains useful for an initial radius-limited position snapshot and an initial vessel metadata snapshot. The metadata response observed during planning contained fewer than one thousand records and was under 300 KB uncompressed, so one startup fetch is simpler and lighter than dozens of per-vessel requests.
+REST remains useful for an initial bounded position snapshot and an initial vessel metadata snapshot. The metadata response observed during planning contained fewer than one thousand records and was under 300 KB uncompressed, so one startup fetch is simpler and lighter than dozens of per-vessel requests.
 
-Center and radius changes reuse the MQTT connection and immediately refilter
-the global in-memory message cache. A new radius-limited REST snapshot is
-allowed only after the five-minute query refresh gate. Automatic reconnect
+Eligible viewport changes reuse the MQTT connection and immediately refilter
+the global in-memory message cache. A new location REST snapshot for the
+viewport's enclosing circle is allowed only after the five-minute query refresh
+gate. Automatic reconnect
 attempts are spaced 15 seconds apart to remain within Digitraffic's documented
 connection allowance.
 
@@ -37,6 +38,25 @@ Provider payloads are decoded and normalized at the provider boundary. Map and U
 ## MapLibre sources and layers
 
 Aircraft, vessels, and the selected trail are represented as GeoJSON sources. MapLibre symbol and line layers are updated in place, avoiding a React component or DOM marker for every traffic object.
+
+## Bounded provider-reported silhouette vocabulary
+
+The map uses ten original canvas images: light/small fixed-wing, generic
+fixed-wing, heavy fixed-wing, helicopter, cargo, tanker, passenger, fishing,
+tug, and generic vessel. Cyan still means aircraft and amber still means marine
+traffic; category is conveyed by shape rather than a new color system.
+
+Normalization maps only trusted provider fields to application-owned icon keys.
+ADS-B A1/A2 use light fixed-wing, A5 heavy fixed-wing, and A7 helicopter.
+A3/A4/A6 retain their existing labels and scales but use generic fixed-wing
+art. AIS type 30 uses fishing, type 52 tug, 60-69 passenger, 70-79 cargo, and
+80-89 tanker. Every unsupported or missing category uses the corresponding
+generic fallback.
+
+No model/type string, speed, name, route, operator, position, or movement is
+used to infer a category. This keeps the vocabulary truthful and avoids a
+classification service or dataset. The ten images are generated once per theme
+and reinstalled through the existing single-map style lifecycle.
 
 ## Explicit MapLibre worker bundling
 
@@ -56,33 +76,58 @@ Recent provider-observed positions are kept only in browser memory, pruned by ti
 
 Version-controlled documents under `docs/` are the canonical technical record. The GitHub Wiki provides a comprehensive project-oriented view and links back to canonical files where appropriate. GitHub requires the user to initialize the first empty Wiki page; all subsequent Wiki content is managed through Git.
 
-## V1.1 home, query, camera, and radius state
+## Bounded viewport-driven traffic
 
-The V1.1 map experience separates four concepts that V1 treated as one:
+The visible MapLibre canvas is the traffic display boundary. After settled pan,
+zoom, rotation, pitch, Home, or real resize changes, the map reports its
+sampled full-canvas perimeter and camera center. Floating controls remain
+overlays and do not reduce the geographic area that must be covered.
 
-- the session `homeCenter`, resolved from a rounded one-shot user location when
-  permission is already granted or explicitly requested, otherwise Tallinn;
-- the active `queryCenter` used by both traffic providers;
-- the freely pannable and zoomable MapLibre camera;
-- the selected 10, 20, 50, or 100 km query radius.
+Domain code canonicalizes and unwraps longitudes around a center rounded to
+three decimal places. It rejects non-finite, degenerate, unsafe, or
+world-spanning geometry. The farthest footprint point defines a conservative
+enclosing circle. Views requiring more than 100 km are ineligible: traffic and
+trails are hidden, provider work pauses, invalid selection clears, and the UI
+asks the user to zoom in or reduce tilt. The app does not clamp, subdivide, or
+claim partial results are complete.
 
-A settled user pan automatically moves the active query area. Pure zoom remains
-visual and does not silently enlarge or shrink provider scope. The radius circle
-continues to explain the actual coverage boundary. Center returns to the
-session home and fits the current radius.
+For eligible views, providers receive the enclosing circle while display
+filtering uses the actual unwrapped polygon. The 100 km decision occurs before
+ADSB.lol's required whole-nautical-mile rounding, so the boundary request uses
+54 NM (100.008 km transport coverage) but display eligibility remains 100 km.
+Center restores a session Home framing comparable to the earlier 20 km view;
+that value is camera framing, not a selectable traffic radius.
 
-## Provider-safe automatic panning
+## Provider-safe viewport updates
 
-ADSB.lol publishes dynamic rather than fixed rate limits. Automatic panning
-therefore replaces the latest desired query in the existing 20-second polling
+ADSB.lol publishes dynamic rather than fixed rate limits. Settled camera
+changes replace the latest desired query in the existing 20-second polling
 schedule instead of starting extra requests. Obsolete work is canceled or
 ignored, and rate-limit responses remain visible and back off explicitly.
 
 Digitraffic sends global vessel updates over the existing MQTT subscription.
-Center and radius changes refilter that cache immediately without reconnecting.
-Radius REST initialization is throttled rather than repeated for every camera
-movement. The existing 15-second minimum MQTT reconnect interval remains an
-invariant.
+Eligible viewport changes refilter that cache immediately without reconnecting.
+Location REST initialization is throttled rather than repeated for every camera
+movement. Aircraft and marine instances remain session-lived across hidden and
+ineligible-view pauses, preserving aircraft cadence and `Retry-After`, MQTT's
+15-second connection spacing, five-minute REST/metadata gates, and marine
+caches.
+
+Layer toggles are display preferences. They do not stop or reconstruct provider
+lifecycles.
+
+## Touch-only isolated marker tolerance
+
+Every traffic selection keeps the exact rendered-point query first. A completed
+single-touch tap may use an 8 CSS-pixel extension in each axis only when that
+exact query is empty. The fallback deduplicates world copies by application ID
+and selects only one unique currently eligible entity.
+
+Mouse and unknown-modality clicks remain exact, including mouse input on hybrid
+devices. A later mouse pointer-down clears prior touch evidence. Drag, pinch,
+cancel, stale/hidden entities, clusters without application IDs, and multiple
+nearby IDs do not activate a guessed selection. The tolerance is expressed in
+CSS pixels and is not multiplied by device pixel ratio.
 
 ## Privacy-safe browser location
 
@@ -92,6 +137,13 @@ otherwise it starts at Tallinn and offers an explicit action. Coordinates are
 rounded before provider use, never persisted, not reverse-geocoded, and not
 displayed with unnecessary precision. Continuous tracking is outside scope.
 
+Browser permission and position acquisition are separate states. A granted
+permission means that the application may request location; it does not promise
+that the operating system can return a cold or delayed fix before the configured
+timeout. A timeout therefore keeps the current home usable and must remain
+retryable without weakening the one-shot, rounded, session-only privacy
+contract.
+
 ## Explicit persisted light and dark themes
 
 The Positron presentation remains the default Light theme. V1.1 provides an
@@ -100,8 +152,15 @@ properties. Only the selected theme is persisted.
 
 MapLibre remains a single instance. Because `map.setStyle` removes custom
 style-owned state, the map layer installer restores traffic images,
-sources, layers, data, visibility, radius, and trail after every `style.load`
+sources, layers, data, visibility, and trail after every `style.load`
 without changing camera, selection, provider state, or connections.
+
+Traffic artwork keeps cyan aircraft and amber vessels in both themes. The
+theme-specific canvas treatment changes fill luminance, detail color, shadow,
+and two-tone edge contrast while retaining silhouettes and heading/course
+rotation. Image IDs are replaced through MapLibre when the theme changes,
+including when both theme options reference the same style URL. The image cache
+contains only the bounded light and dark sets.
 
 ## `dev`-based pull request delivery
 
@@ -115,6 +174,35 @@ would deadlock CLI-owned changes; automated validation is the technical gate.
 Project-specific Copilot instructions and focused read-only reviewers preserve
 the MapLibre, provider-rate, privacy, and delivery lessons from V1. They support
 implementation and review but do not introduce another approval layer.
+
+GitHub's repository-wide automatic merged-branch deletion remains disabled.
+Release pull requests use persistent `dev` as their head, so global automatic
+deletion can remove the branch even when branch rules otherwise describe it as
+persistent. Merged feature branches are deleted explicitly; `dev` is never
+treated as disposable.
+
+## Issue-scoped delivery and external blockers
+
+One GitHub Issue owns one primary delivery workstream. Broad Issues may use
+additional focused pull requests when their acceptance groups are independent
+or when an external prerequisite is resolved later. Partial work uses
+non-closing references and does not close the parent until all non-blocked
+criteria are complete.
+
+Provider access, credentials, account roles, data rights, or licensing become a
+separate blocker only after concrete evidence identifies the missing
+prerequisite. The blocker records affected criteria and measurable completion
+evidence while unrelated ready work continues. Placeholder adapters, inferred
+data, client-side secrets, and success-shaped fallbacks are not acceptable
+substitutes.
+
+## Deterministic checks before live probes
+
+Repeated lifecycle and rate-limit verification uses local fixtures, fake clocks,
+fake maps, mocked fetch, and mocked MQTT. A release milestone then performs one
+bounded real-provider smoke. This preserves evidence for cancellation, retries,
+pause/resume, style rehydration, and error isolation without turning test loops
+into provider load.
 
 ## Apache-2.0 with preserved project attribution
 

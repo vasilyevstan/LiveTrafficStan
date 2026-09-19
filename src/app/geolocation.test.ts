@@ -10,7 +10,7 @@ import {
 
 const settings = {
   coordinatePrecision: 3,
-  timeoutMs: 8_000,
+  timeoutMs: 20_000,
   maximumAgeMs: 300_000,
 }
 
@@ -106,10 +106,41 @@ describe('browser geolocation', () => {
       expect.any(Function),
       {
         enableHighAccuracy: false,
-        timeout: 8_000,
+        timeout: 20_000,
         maximumAge: 300_000,
       },
     )
+  })
+
+  it('accepts a slow one-shot result beyond the previous timeout window', async () => {
+    vi.useFakeTimers()
+    try {
+      const getCurrentPosition = vi.fn((success) => {
+        setTimeout(() => {
+          success({
+            coords: {
+              latitude: 59.43749,
+              longitude: 24.7536,
+            },
+          })
+        }, 9_000)
+      })
+      const environment: BrowserLocationEnvironment = {
+        secure: true,
+        geolocation: { getCurrentPosition },
+      }
+
+      const location = requestBrowserLocation(environment, settings)
+      await vi.advanceTimersByTimeAsync(9_000)
+
+      await expect(location).resolves.toEqual({
+        latitude: 59.437,
+        longitude: 24.754,
+        label: 'Near you',
+      })
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it.each([
@@ -134,6 +165,11 @@ describe('browser geolocation', () => {
         new BrowserLocationError(reason),
       )
       expect(browserLocationFailureMessage(reason)).toBeTruthy()
+      if (reason === 'timeout') {
+        expect(browserLocationFailureMessage(reason)).toContain(
+          'Use location to retry',
+        )
+      }
     },
   )
 

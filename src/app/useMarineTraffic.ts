@@ -1,50 +1,62 @@
 import { useEffect, useRef, useState } from 'react'
-import type { AppCenter, AppConfig } from '../config/appConfig'
+import type { AppConfig } from '../config/appConfig'
 import type { TrafficProviderResult, Vessel } from '../domain/traffic'
 import { DigitrafficMarineProvider } from '../providers/marine/DigitrafficMarineProvider'
 import type { TrafficQuery } from '../providers/types'
 
-const initialResult: TrafficProviderResult<Vessel> = {
+const initialResult = (): TrafficProviderResult<Vessel> => ({
   entities: [],
   status: {
     phase: 'idle',
-    paused: false,
+    paused: true,
   },
-}
+})
 
 export const useMarineTraffic = (
-  center: AppCenter,
-  radiusKm: number,
+  query: TrafficQuery | null,
   config: AppConfig['marine'],
-  enabled = true,
 ) => {
   const [result, setResult] =
     useState<TrafficProviderResult<Vessel>>(initialResult)
   const providerRef = useRef<DigitrafficMarineProvider | undefined>(undefined)
-  const queryRef = useRef<TrafficQuery>({ center, radiusKm })
+  const queryRef = useRef<TrafficQuery | null>(query)
+  const startProviderRef = useRef<
+    ((initialQuery: TrafficQuery) => void) | undefined
+  >(undefined)
 
   useEffect(() => {
-    const query = { center, radiusKm }
     queryRef.current = query
-    providerRef.current?.updateQuery(query)
-  }, [center, radiusKm])
+    const provider = providerRef.current
 
-  useEffect(() => {
-    if (!enabled) {
-      providerRef.current?.stop()
-      providerRef.current = undefined
-      setResult(initialResult)
+    if (provider) {
+      if (query) provider.updateQuery(query)
+      provider.setPaused(document.hidden || query === null)
       return
     }
 
-    let disposed = false
-    let provider: DigitrafficMarineProvider | undefined
+    if (query) {
+      startProviderRef.current?.(query)
+    } else {
+      setResult((current) => ({
+        ...current,
+        status: {
+          ...current.status,
+          paused: true,
+          updating: false,
+        },
+      }))
+    }
+  }, [query])
 
-    const start = () => {
-      provider?.stop()
-      provider = new DigitrafficMarineProvider({
+  useEffect(() => {
+    let disposed = false
+
+    const startProvider = (initialQuery: TrafficQuery) => {
+      if (disposed || providerRef.current) return
+
+      const provider = new DigitrafficMarineProvider({
         config,
-        query: queryRef.current,
+        query: initialQuery,
         callbacks: {
           onSnapshot: (entities) => {
             if (!disposed) {
@@ -59,46 +71,28 @@ export const useMarineTraffic = (
         },
       })
       providerRef.current = provider
-      provider.start()
+      provider.start(document.hidden || queryRef.current === null)
     }
 
-    const pause = () => {
-      provider?.stop()
-      provider = undefined
-      providerRef.current = undefined
-      setResult((current) => ({
-        ...current,
-        status: {
-          ...current.status,
-          paused: true,
-        },
-      }))
-    }
+    startProviderRef.current = startProvider
+    if (queryRef.current) startProvider(queryRef.current)
 
     const handleVisibilityChange = () => {
-      if (document.hidden) {
-        pause()
-      } else {
-        start()
-      }
+      providerRef.current?.setPaused(
+        document.hidden || queryRef.current === null,
+      )
     }
 
     document.addEventListener('visibilitychange', handleVisibilityChange)
-    if (document.hidden) {
-      pause()
-    } else {
-      start()
-    }
 
     return () => {
       disposed = true
-      provider?.stop()
-      if (providerRef.current === provider) {
-        providerRef.current = undefined
-      }
+      startProviderRef.current = undefined
+      providerRef.current?.stop()
+      providerRef.current = undefined
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [config, enabled])
+  }, [config])
 
   return result
 }

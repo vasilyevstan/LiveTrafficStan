@@ -11,17 +11,18 @@ export interface FreshnessThresholds {
 
 export interface AppConfig {
   center: AppCenter
-  radiusPresetsKm: readonly number[]
-  defaultRadiusKm: number
   vesselLengthPresetsMeters: readonly number[]
   defaultVesselLengthMeters: number
   map: {
     lightStyleUrl: string
     darkStyleUrl: string
+    homeViewRadiusKm: number
+    maximumViewportRadiusKm: number
+    touchHitTolerancePx: number
   }
   navigation: {
     coordinatePrecision: number
-    panSettleMs: number
+    viewportSettleMs: number
     geolocationTimeoutMs: number
     geolocationMaximumAgeMs: number
   }
@@ -117,8 +118,6 @@ export const createAppConfig = (
 
   return {
     center,
-    radiusPresetsKm: [10, 20, 50, 100],
-    defaultRadiusKm: 20,
     vesselLengthPresetsMeters: [25, 50, 100, 150],
     defaultVesselLengthMeters: 50,
     map: {
@@ -134,11 +133,14 @@ export const createAppConfig = (
         DEFAULTS.darkMapStyleUrl,
         ['https:'],
       ),
+      homeViewRadiusKm: 20,
+      maximumViewportRadiusKm: 100,
+      touchHitTolerancePx: 8,
     },
     navigation: {
       coordinatePrecision: 3,
-      panSettleMs: 350,
-      geolocationTimeoutMs: 8_000,
+      viewportSettleMs: 350,
+      geolocationTimeoutMs: 20_000,
       geolocationMaximumAgeMs: 5 * 60_000,
     },
     aircraft: {

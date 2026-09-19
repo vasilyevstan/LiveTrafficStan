@@ -28,14 +28,19 @@ export const distanceKm = (
       Math.cos(secondLatitude) *
       Math.sin(longitudeDelta / 2) ** 2
 
+  const boundedHaversine = Math.min(1, Math.max(0, haversine))
+
   return (
     2 *
     EARTH_RADIUS_KM *
-    Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine))
+    Math.atan2(
+      Math.sqrt(boundedHaversine),
+      Math.sqrt(1 - boundedHaversine),
+    )
   )
 }
 
-export const radiusBounds = (
+export const boundsAroundCenter = (
   center: AppCenter,
   radiusKm: number,
 ): [[number, number], [number, number]] => {
@@ -47,38 +52,4 @@ export const radiusBounds = (
     [center.longitude - longitudeDelta, center.latitude - latitudeDelta],
     [center.longitude + longitudeDelta, center.latitude + latitudeDelta],
   ]
-}
-
-export const radiusPolygonCoordinates = (
-  center: AppCenter,
-  radiusKm: number,
-  steps = 72,
-) => {
-  const angularDistance = radiusKm / EARTH_RADIUS_KM
-  const centerLatitude = toRadians(center.latitude)
-  const centerLongitude = toRadians(center.longitude)
-  const coordinates: [number, number][] = []
-
-  for (let index = 0; index <= steps; index += 1) {
-    const bearing = (index / steps) * Math.PI * 2
-    const latitude = Math.asin(
-      Math.sin(centerLatitude) * Math.cos(angularDistance) +
-        Math.cos(centerLatitude) *
-          Math.sin(angularDistance) *
-          Math.cos(bearing),
-    )
-    const longitude =
-      centerLongitude +
-      Math.atan2(
-        Math.sin(bearing) *
-          Math.sin(angularDistance) *
-          Math.cos(centerLatitude),
-        Math.cos(angularDistance) -
-          Math.sin(centerLatitude) * Math.sin(latitude),
-      )
-
-    coordinates.push([(longitude * 180) / Math.PI, (latitude * 180) / Math.PI])
-  }
-
-  return coordinates
 }

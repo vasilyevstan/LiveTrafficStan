@@ -1,9 +1,6 @@
 import type { Theme } from '../app/theme'
 
 interface TrafficControlsProps {
-  radiusPresetsKm: readonly number[]
-  radiusKm: number
-  onRadiusChange: (radiusKm: number) => void
   vesselLengthPresetsMeters: readonly number[]
   minimumVesselLengthMeters: number
   onMinimumVesselLengthChange: (lengthMeters: number) => void
@@ -22,9 +19,6 @@ interface TrafficControlsProps {
 }
 
 export function TrafficControls({
-  radiusPresetsKm,
-  radiusKm,
-  onRadiusChange,
   vesselLengthPresetsMeters,
   minimumVesselLengthMeters,
   onMinimumVesselLengthChange,
@@ -95,6 +89,7 @@ export function TrafficControls({
           <button
             type="button"
             disabled={!locationAvailable || locationLoading}
+            aria-busy={locationLoading}
             aria-describedby={locationMessage ? 'location-status' : undefined}
             onClick={onUseLocation}
           >
@@ -106,26 +101,6 @@ export function TrafficControls({
             {locationMessage}
           </p>
         )}
-      </fieldset>
-
-      <fieldset className="control-group">
-        <legend>Traffic radius</legend>
-        <div className="control-options">
-          {radiusPresetsKm.map((preset) => (
-            <button
-              key={preset}
-              type="button"
-              className={preset === radiusKm ? 'is-active' : undefined}
-              aria-pressed={preset === radiusKm}
-              onClick={() => onRadiusChange(preset)}
-            >
-              {preset} km
-            </button>
-          ))}
-        </div>
-        <p className="control-note control-note--muted">
-          Zoom keeps this data radius.
-        </p>
       </fieldset>
 
       <fieldset className="control-group">

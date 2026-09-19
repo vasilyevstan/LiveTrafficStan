@@ -16,14 +16,26 @@ const FEET_PER_MINUTE_TO_METERS_PER_SECOND = 0.00508
 const aircraftCategory = (category: string | undefined) => {
   switch (category) {
     case 'A1':
-      return { label: 'Light aircraft', scale: 0.78, icon: 'aircraft' as const }
+      return {
+        label: 'Light aircraft',
+        scale: 0.78,
+        icon: 'aircraft-light' as const,
+      }
     case 'A2':
-      return { label: 'Small aircraft', scale: 0.9, icon: 'aircraft' as const }
+      return {
+        label: 'Small aircraft',
+        scale: 0.9,
+        icon: 'aircraft-light' as const,
+      }
     case 'A3':
     case 'A4':
       return { label: 'Large aircraft', scale: 1.08, icon: 'aircraft' as const }
     case 'A5':
-      return { label: 'Heavy aircraft', scale: 1.22, icon: 'aircraft' as const }
+      return {
+        label: 'Heavy aircraft',
+        scale: 1.22,
+        icon: 'aircraft-heavy' as const,
+      }
     case 'A6':
       return {
         label: 'High-performance aircraft',
@@ -140,7 +152,7 @@ export class AdsbLolAircraftProvider implements AircraftDataProvider {
   }
 
   async fetchSnapshot(query: TrafficQuery, signal: AbortSignal) {
-    const radiusNauticalMiles = Math.max(1, Math.ceil(query.radiusKm / 1.852))
+    const radiusNauticalMiles = aircraftQueryRadiusNauticalMiles(query.radiusKm)
     const url =
       `${this.endpointBaseUrl}/v2/point/` +
       `${query.center.latitude}/${query.center.longitude}/${radiusNauticalMiles}`
@@ -165,3 +177,6 @@ export class AdsbLolAircraftProvider implements AircraftDataProvider {
     return normalizeAdsbLolResponse(payload, query, Date.now())
   }
 }
+
+export const aircraftQueryRadiusNauticalMiles = (radiusKm: number) =>
+  Math.max(1, Math.ceil(radiusKm / 1.852))

@@ -5,6 +5,12 @@
 Check the browser console and Network panel for the style, worker, vector tile,
 sprite, and glyph requests.
 
+If the interface shows **Map unavailable**, MapLibre failed before an instance
+could be created. The rest of the application remains mounted intentionally.
+Reload once and check browser graphics/WebGL support or graphics acceleration.
+This state is separate from aircraft and marine provider health, and the
+application does not automatically retry an unknown constructor failure.
+
 MapLibre 6 uses a separate module worker to fetch and parse vector tiles. Vite
 cannot rely on MapLibre's inferred adjacent worker URL after dependency
 prebundling, so `TrafficMap.tsx` explicitly imports
@@ -24,8 +30,8 @@ When a theme switch leaves the map blank, inspect `style.load` handling.
 `map.setStyle` removes repository-owned images, sources, and layers; the
 application reinstalls them after every style load. Duplicate-source errors
 indicate that the installer is not idempotent. A base map with no
-traffic/radius after a theme change indicates that rehydration did not restore
-current source data.
+traffic after a theme change indicates that rehydration did not restore current
+source data.
 
 If the application theme changes but the base map does not, verify both
 `VITE_MAP_STYLE_URL` and `VITE_MAP_DARK_STYLE_URL`, then restart Vite after
@@ -46,7 +52,7 @@ ADSB.lol. Common causes are:
 The provider retries on its normal polling cadence. A temporary failure can
 therefore show `PARTIAL` before recovering. Inspect the warning in the browser
 console and the HTTP response rather than treating zero aircraft as an error:
-zero is valid when no aircraft are inside the exact radius.
+zero is valid when no aircraft are inside the current visible viewport.
 
 ## Marine shows unavailable or reconnecting
 
@@ -65,11 +71,11 @@ live stream.
 
 ## Traffic counts are lower than expected
 
-- Increase the radius.
+- Pan or zoom out within the supported viewport limit.
 - Lower the minimum ship length.
 - Confirm the relevant layer is enabled.
-- Remember that V1 applies exact geographic filtering after provider
-  normalization.
+- Remember that the app filters normalized provider data to the actual visible
+  polygon, not only its larger enclosing query circle.
 - Provider coverage depends on nearby receivers and current traffic.
 - Objects with invalid coordinates are rejected; stale objects are marked and
   expired objects are removed.
@@ -78,15 +84,19 @@ Digitraffic vessels without valid AIS reference-point dimensions are retained
 by the provider but cannot pass a positive minimum-length filter. Their length
 is not guessed.
 
-V1.1 keeps the selected radius as the provider boundary. Zooming out can expose
-map area outside the radius circle, but it intentionally does not fetch traffic
-there. A settled pan moves the query area automatically; aircraft may wait
-until the next allowed 20-second poll, while marine traffic is refiltered from
-the live MQTT cache.
+Settled pan, zoom, rotation, pitch, Home, and resize changes all update the
+traffic viewport. If its conservative enclosing radius exceeds 100 km, the app
+hides traffic and trails, pauses both providers, and shows **Zoom in to see live
+traffic** or **Zoom in or reduce tilt to see live traffic**. This is not an
+empty provider response. Zoom in or reduce tilt; the existing provider
+instances resume at their next allowed cadence, reconnect, REST, or metadata
+boundary.
 
-If camera movement causes repeated requests, verify that pure zoom and
-programmatic fits are suppressed and that rapid pan centers are coalesced.
-Marine query changes must not create a new MQTT client.
+If camera movement causes repeated requests, verify that settled updates are
+coalesced and that unchanged enclosing queries do not restart provider work.
+Theme changes, layer toggles, and selection must not change the query. Marine
+viewport changes must not create a new provider instance or bypass the
+five-minute REST gate.
 
 ## Browser location is not used
 
@@ -97,8 +107,15 @@ until permission is granted or an explicit attempt succeeds.
 
 - Use HTTPS or localhost.
 - Check the browser's site permission and operating-system location setting.
+- Permission being allowed only authorizes the request. A cold or delayed
+  operating-system position can still exceed the application's bounded lookup
+  window. The app allows up to 20 seconds while keeping the current Home usable.
 - After changing permission, return to the page; if the browser does not emit a
   permission-change event, use the explicit location action or reload once.
+- If the application reports a timeout, dismiss any remaining permission UI,
+  keep the current map open, and use the explicit location action to retry.
+  Restarting a browser with a pending update can also restore its connection to
+  the operating-system location service.
 - Treat an approximate result as expected: the app rounds coordinates before
   provider use and never persists them.
 

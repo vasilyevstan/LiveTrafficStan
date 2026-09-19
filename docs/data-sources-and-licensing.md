@@ -33,6 +33,14 @@ LiveTrafficStan V1 runs locally and polls one small geographic query approximate
 
 Visible attribution must identify ADSB.lol and ODbL 1.0. The application's Apache License 2.0 covers source code only; it does not relicense provider data.
 
+The normalized `category` field is treated as a reported ADS-B emitter
+category. The bounded icon mapping follows the published
+[DO-260B emitter category definitions](https://support.adsbexchange.com/hc/en-us/articles/44705224053517-Emitter-Category-ADS-B-DO-260B-2-2-3-2-5-2):
+A1/A2 light or small fixed-wing, A5 heavy fixed-wing, and A7 rotorcraft.
+A3/A4/A6 keep generic fixed-wing artwork and their existing truthful labels.
+Missing and unsupported values remain generic. No aircraft purpose or exact
+model is inferred.
+
 ### Why Airplanes.live was not selected
 
 - Official API description: <https://airplanes.live/api-docs/>
@@ -66,11 +74,12 @@ Digitraffic is suitable for V1:
 - its official browser example supports MQTT over secure WebSockets;
 - its terms permit commercial and non-commercial reuse with attribution.
 
-Digitraffic recommends a five-minute REST fetch interval for both AIS locations and vessel metadata. V1 therefore uses MQTT for live position updates rather than over-polling the REST endpoint. REST supplies an initial radius-limited location snapshot and a compact metadata snapshot, then MQTT updates positions and metadata in real time.
+Digitraffic recommends a five-minute REST fetch interval for both AIS locations and vessel metadata. V1 therefore uses MQTT for live position updates rather than over-polling the REST endpoint. REST supplies an initial location snapshot for the eligible viewport's conservative enclosing circle and a compact metadata snapshot, then MQTT updates positions and metadata in real time.
 
-The live MQTT connection is reused when the user changes center or radius, and
-the global message cache is refiltered immediately. Query movement can request
-a new radius REST snapshot no more than once every five minutes. Reconnect
+The live MQTT connection is reused while the eligible viewport changes, and
+the global message cache is refiltered immediately. Viewport movement can
+request a new bounded REST snapshot no more than once every five minutes.
+Reconnect
 attempts are spaced at least 15 seconds apart, keeping automatic retry below
 Digitraffic's documented limit of five connection requests per minute per IP.
 
@@ -82,6 +91,14 @@ Vessel length and width are derived from the AIS reference-point dimensions:
 - width = reference point C + reference point D
 
 Invalid or missing dimensions remain unavailable and are never guessed.
+
+Digitraffic vessel metadata exposes the AIS ship type field defined by
+[ITU-R Recommendation M.1371](https://www.itu.int/rec/R-REC-M.1371/en).
+LiveTrafficStan maps only type 30 to fishing, type 52 to tug, ranges 60-69 to
+passenger, 70-79 to cargo, and 80-89 to tanker artwork. Other towing, service,
+special-purpose, missing, invalid, and unsupported codes retain the generic
+vessel silhouette. Names, navigation status, speed, and destination do not
+change that classification.
 
 ## Source-code license versus data licenses
 

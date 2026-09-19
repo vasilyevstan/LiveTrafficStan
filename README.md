@@ -17,9 +17,10 @@ single React application, without accounts, a database, or persistent tracking.
   [OpenFreeMap](https://openfreemap.org/), rendered with MapLibre GL JS.
 - Explicit Light and Dark themes that persist locally and switch the base map
   without recreating MapLibre or resetting live traffic state.
-- Configurable 10, 20, 50, and 100 km Tallinn-centered radii.
-- Automatic traffic-area changes after a settled pan, while zoom remains
-  visual and the selected radius remains the explicit coverage boundary.
+- Viewport-driven traffic after settled pan, zoom, rotation, pitch, Home, and
+  resize changes.
+- A truthful 100 km enclosing-query limit: wider or unsafe views pause traffic
+  and ask the user to zoom in rather than showing partial coverage as complete.
 - A session Home/Center action plus privacy-safe one-shot browser location:
   already-granted permission and grants made while the page is open are used
   automatically; otherwise location is an explicit action with Tallinn
@@ -31,7 +32,10 @@ single React application, without accounts, a database, or persistent tracking.
 - Short interpolation only between observed positions and a bounded 15-minute
   in-memory trail for the selected object.
 - Responsive floating controls, keyboard focus states, non-color status labels,
-  and original programmatically drawn marker silhouettes.
+  and a small provider-reported set of original aircraft and vessel
+  silhouettes with generic fallbacks.
+- Touch-specific selection tolerance for isolated markers; exact mouse hits stay
+  unchanged and ambiguous nearby traffic is never guessed.
 
 ## Quick start
 
@@ -74,17 +78,19 @@ Digitraffic REST/MQTT ──┘
 
 The application keeps one MapLibre instance and updates persistent GeoJSON
 sources and layers. Marine MQTT messages are merged and emitted at most once
-per second. Aircraft polling and marine connections pause while the document is
-hidden and resume immediately when it becomes visible.
+per second. Aircraft polling and marine connections pause while the document is hidden or
+the visible map cannot be covered by the bounded query. Their session-lived
+cadence, backoff, reconnect, REST, metadata, and cache state survives the pause.
 
-Session home center, active provider query center, camera, and radius are
-separate state. Settled pans replace the latest desired provider center without
-adding aircraft requests beyond the 20-second cadence. Marine center changes
-reuse and refilter the global MQTT cache rather than reconnecting.
+The application derives a safely unwrapped full-canvas footprint from MapLibre
+after settled camera changes. Providers receive its conservative enclosing
+circle, while normalized aircraft and vessels are filtered to the actual
+viewport polygon before display. Floating controls do not shrink the geographic
+query area.
 
 Light/Dark changes use `map.setStyle` on that same MapLibre instance. An
 idempotent installer restores traffic images, sources, layers, current data,
-visibility, radius, and trail after each style load while preserving camera,
+visibility, and trail after each style load while preserving camera,
 selection, provider state, and connections.
 
 See [Architecture](docs/architecture.md) for component boundaries, data flow,
@@ -135,8 +141,9 @@ browser CORS headers, so production hosting needs a small same-origin
 serverless/edge proxy equivalent to the rule in [`vite.config.ts`](vite.config.ts),
 or a compatible replacement aircraft provider.
 
-No proxy secret is required. Do not remove exact-radius client filtering or
-provider attribution when implementing a deployment adapter.
+No proxy secret is required. Do not remove the 100 km viewport eligibility
+check, outward transport rounding, exact viewport filtering, or provider
+attribution when implementing a deployment adapter.
 
 ## Known limitations
 
@@ -144,8 +151,11 @@ provider attribution when implementing a deployment adapter.
   by receiver availability and time.
 - The default aircraft endpoint works through Vite development and preview;
   arbitrary static hosting needs the proxy described above.
-- Digitraffic's global MQTT stream is filtered to the selected radius in the
-  browser. V1 does not persist received traffic.
+- Digitraffic's global MQTT stream is filtered to the eligible viewport in the
+  browser; this local filtering does not reduce incoming MQTT bandwidth.
+- Views whose conservative enclosing radius exceeds 100 km pause live traffic
+  until the user zooms in or reduces tilt. Partial coverage is never presented
+  as complete.
 - Trails disappear on refresh and are intentionally limited to the selected
   object.
 - Browser location is one-shot, rounded, and session-only; it is not continuous

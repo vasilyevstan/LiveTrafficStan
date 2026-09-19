@@ -12,15 +12,6 @@
   inset: 0;
 }
 
-.map-placeholder {
-  display: grid;
-  place-items: center;
-  color: var(--placeholder-text);
-  font-size: 0.82rem;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-
 .radar-shade {
   position: absolute;
   inset: 0;
@@ -40,7 +31,8 @@
 .brand-panel,
 .control-panel,
 .details-panel,
-.map-error {
+.map-error,
+.viewport-notice {
   pointer-events: auto;
   color: var(--panel-text);
   background: var(--panel-background);
@@ -365,9 +357,22 @@
   font-size: 0.72rem;
 }
 
-.map-error span {
+.map-error span,
+.viewport-notice span {
   margin-top: 3px;
   color: var(--error-muted);
+}
+
+.viewport-notice {
+  position: absolute;
+  left: 16px;
+  bottom: 36px;
+  display: grid;
+  width: min(330px, calc(100vw - 32px));
+  padding: 11px 13px;
+  border-radius: 10px;
+  pointer-events: none;
+  font-size: 0.72rem;
 }
 
 .maplibregl-ctrl-attrib {
@@ -458,6 +463,13 @@
   .map-error {
     right: 8px;
     bottom: 30px;
+  }
+
+  .viewport-notice {
+    right: 8px;
+    bottom: 30px;
+    left: 8px;
+    width: auto;
   }
 }
 

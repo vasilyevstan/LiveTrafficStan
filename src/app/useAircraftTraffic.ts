@@ -1,67 +1,92 @@
 import { useEffect, useRef, useState } from 'react'
-import type { AppCenter, AppConfig } from '../config/appConfig'
+import type { AppConfig } from '../config/appConfig'
 import type { Aircraft, TrafficProviderResult } from '../domain/traffic'
 import { AdsbLolAircraftProvider } from '../providers/aircraft/adsbLolProvider'
 import type { TrafficQuery } from '../providers/types'
 import { AircraftTrafficController } from './AircraftTrafficController'
 
-const initialResult: TrafficProviderResult<Aircraft> = {
+const initialResult = (): TrafficProviderResult<Aircraft> => ({
   entities: [],
   status: {
     phase: 'idle',
-    paused: false,
+    paused: true,
   },
-}
+})
 
 export const useAircraftTraffic = (
-  center: AppCenter,
-  radiusKm: number,
+  query: TrafficQuery | null,
   config: AppConfig['aircraft'],
-  enabled = true,
 ) => {
   const [result, setResult] =
     useState<TrafficProviderResult<Aircraft>>(initialResult)
   const controllerRef = useRef<AircraftTrafficController | undefined>(undefined)
-  const queryRef = useRef<TrafficQuery>({ center, radiusKm })
+  const queryRef = useRef<TrafficQuery | null>(query)
+  const startControllerRef = useRef<
+    ((initialQuery: TrafficQuery) => void) | undefined
+  >(undefined)
 
   useEffect(() => {
-    const query = { center, radiusKm }
     queryRef.current = query
-    controllerRef.current?.updateQuery(query)
-  }, [center, radiusKm])
+    const controller = controllerRef.current
 
-  useEffect(() => {
-    if (!enabled) {
-      controllerRef.current?.stop()
-      controllerRef.current = undefined
-      setResult(initialResult)
+    if (controller) {
+      if (query) controller.updateQuery(query)
+      controller.setPaused(document.hidden || query === null)
       return
     }
 
-    const controller = new AircraftTrafficController({
-      provider: new AdsbLolAircraftProvider(config.endpointBaseUrl),
-      initialQuery: queryRef.current,
-      refreshIntervalMs: config.refreshIntervalMs,
-      rateLimitBackoffMaxMs: config.rateLimitBackoffMaxMs,
-      onResult: setResult,
-    })
-    controllerRef.current = controller
+    if (query) {
+      startControllerRef.current?.(query)
+    } else {
+      setResult((current) => ({
+        ...current,
+        status: {
+          ...current.status,
+          paused: true,
+          updating: false,
+        },
+      }))
+    }
+  }, [query])
+
+  useEffect(() => {
+    let disposed = false
+
+    const startController = (initialQuery: TrafficQuery) => {
+      if (disposed || controllerRef.current) return
+
+      const controller = new AircraftTrafficController({
+        provider: new AdsbLolAircraftProvider(config.endpointBaseUrl),
+        initialQuery,
+        refreshIntervalMs: config.refreshIntervalMs,
+        rateLimitBackoffMaxMs: config.rateLimitBackoffMaxMs,
+        onResult: (nextResult) => {
+          if (!disposed) setResult(nextResult)
+        },
+      })
+      controllerRef.current = controller
+      controller.start(document.hidden || queryRef.current === null)
+    }
+
+    startControllerRef.current = startController
+    if (queryRef.current) startController(queryRef.current)
 
     const handleVisibilityChange = () => {
-      controller.setPaused(document.hidden)
+      controllerRef.current?.setPaused(
+        document.hidden || queryRef.current === null,
+      )
     }
 
     document.addEventListener('visibilitychange', handleVisibilityChange)
-    controller.start(document.hidden)
 
     return () => {
-      controller.stop()
-      if (controllerRef.current === controller) {
-        controllerRef.current = undefined
-      }
+      disposed = true
+      startControllerRef.current = undefined
+      controllerRef.current?.stop()
+      controllerRef.current = undefined
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [config, enabled])
+  }, [config])
 
   return result
 }
