@@ -10,6 +10,7 @@ import {
   type GeoJSONSource,
   Map as MapLibreMap,
   setWorkerUrl,
+  type StyleSpecification,
 } from 'maplibre-gl'
 import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
 import type { Theme } from '../app/theme'
@@ -46,6 +47,14 @@ import {
   createMapSafely,
   type TrafficMapError,
 } from './mapInitialization'
+import {
+  BASEMAP_FALLBACK_MESSAGE,
+  fallbackMapStyle,
+  fallbackMapStyleKey,
+  isFallbackMapStyleKey,
+  reconnectedWhileStylePending,
+  shouldRetryAfterFallbackLoad,
+} from './fallbackMapStyle'
 import { pickContextFeature } from './contextPicking'
 import {
   clusterExpansionZoom,
@@ -113,6 +122,7 @@ interface TrafficMapProps {
   clusterMaximumZoom: number
   coordinatePrecision: number
   mapStyleUrl: string
+  online: boolean
   theme: Theme
   aircraft: readonly DisplayAircraft[]
   vessels: readonly DisplayVessel[]
@@ -302,6 +312,7 @@ export function TrafficMap({
   clusterMaximumZoom,
   coordinatePrecision,
   mapStyleUrl,
+  online,
   theme,
   aircraft,
   vessels,
@@ -376,6 +387,11 @@ export function TrafficMap({
   const desiredStyleUrlRef = useRef(mapStyleUrl)
   const requestedStyleUrlRef = useRef(mapStyleUrl)
   const appliedStyleUrlRef = useRef(mapStyleUrl)
+  const fallbackActiveRef = useRef(false)
+  const fallbackReasonRef = useRef<string | undefined>(undefined)
+  const retryExternalAfterFallbackRef = useRef(false)
+  const onlineRef = useRef(online)
+  const previousOnlineRef = useRef(online)
   const themeRef = useRef(theme)
   const appliedThemeRef = useRef(theme)
   const initialFitCompleteRef = useRef(false)
@@ -418,6 +434,7 @@ export function TrafficMap({
 
   useEffect(() => {
     desiredStyleUrlRef.current = mapStyleUrl
+    onlineRef.current = online
     themeRef.current = theme
     viewRequestRef.current = viewRequestId
     viewCenterRef.current = viewCenter
@@ -444,6 +461,7 @@ export function TrafficMap({
     mapStyleUrl,
     maximumViewportRadiusKm,
     interpolateTraffic,
+    online,
     theme,
     viewportSettleMs,
   ])
@@ -726,7 +744,15 @@ export function TrafficMap({
         )
       }
       loadedRef.current = true
-      errorRef.current(null)
+      errorRef.current(
+        fallbackActiveRef.current
+          ? {
+              kind: 'basemap',
+              message:
+                fallbackReasonRef.current ?? BASEMAP_FALLBACK_MESSAGE,
+            }
+          : null,
+      )
       scheduleRender()
 
       if (!initialFitCompleteRef.current) {
@@ -755,34 +781,75 @@ export function TrafficMap({
   )
 
   const switchMapStyle = useCallback(
-    (map: MapLibreMap, nextStyleUrl: string) => {
-      const generation = ++styleGenerationRef.current
-      sourceDataGenerationRef.current += 1
-      clusterOptionsGenerationRef.current += 1
-      clusterExpansionGenerationRef.current += 1
-      loadedRef.current = false
-      requestedStyleUrlRef.current = nextStyleUrl
+    (
+      map: MapLibreMap,
+      nextStyle: string | StyleSpecification,
+      nextStyleKey: string,
+      fallbackReason?: string,
+    ) => {
+      const applyStyle = (
+        style: string | StyleSpecification,
+        styleKey: string,
+        reason?: string,
+      ) => {
+        const generation = ++styleGenerationRef.current
+        sourceDataGenerationRef.current += 1
+        clusterOptionsGenerationRef.current += 1
+        clusterExpansionGenerationRef.current += 1
+        loadedRef.current = false
+        requestedStyleUrlRef.current = styleKey
+        fallbackReasonRef.current = reason
 
-      const handleStyleLoad = () => {
-        if (generation !== styleGenerationRef.current) return
-        appliedStyleUrlRef.current = nextStyleUrl
-        appliedThemeRef.current = themeRef.current
-        installCurrentStyle(map)
-      }
+        const handleStyleLoad = () => {
+          if (generation !== styleGenerationRef.current) return
+          appliedStyleUrlRef.current = styleKey
+          fallbackActiveRef.current = reason !== undefined
+          appliedThemeRef.current = themeRef.current
+          if (
+            shouldRetryAfterFallbackLoad(
+              retryExternalAfterFallbackRef.current,
+              onlineRef.current,
+              reason,
+            )
+          ) {
+            retryExternalAfterFallbackRef.current = false
+            applyStyle(
+              desiredStyleUrlRef.current,
+              desiredStyleUrlRef.current,
+            )
+            return
+          }
+          if (reason === undefined) {
+            retryExternalAfterFallbackRef.current = false
+          }
+          installCurrentStyle(map)
+        }
 
-      map.once('style.load', handleStyleLoad)
-      try {
-        map.setStyle(nextStyleUrl)
-      } catch (error) {
-        map.off('style.load', handleStyleLoad)
-        requestedStyleUrlRef.current = appliedStyleUrlRef.current
-        loadedRef.current = map.isStyleLoaded() === true
-        errorRef.current({
-          kind: 'runtime',
-          message:
-            error instanceof Error ? error.message : 'Map style change failed',
-        })
+        map.once('style.load', handleStyleLoad)
+        try {
+          map.setStyle(style)
+        } catch (error) {
+          map.off('style.load', handleStyleLoad)
+          if (reason === undefined) {
+            applyStyle(
+              fallbackMapStyle(themeRef.current),
+              fallbackMapStyleKey(themeRef.current),
+              BASEMAP_FALLBACK_MESSAGE,
+            )
+            return
+          }
+          requestedStyleUrlRef.current = appliedStyleUrlRef.current
+          loadedRef.current = map.isStyleLoaded() === true
+          errorRef.current({
+            kind: 'runtime',
+            message:
+              error instanceof Error
+                ? error.message
+                : 'Map fallback style failed',
+          })
+        }
       }
+      applyStyle(nextStyle, nextStyleKey, fallbackReason)
     },
     [installCurrentStyle],
   )
@@ -1272,14 +1339,15 @@ export function TrafficMap({
 
     map.on('load', () => {
       if (loadedRef.current) return
-      if (
-        desiredStyleUrlRef.current === requestedStyleUrlRef.current &&
-        requestedStyleUrlRef.current !== initialStyleUrlRef.current
-      ) {
+      if (requestedStyleUrlRef.current !== initialStyleUrlRef.current) {
         return
       }
       if (desiredStyleUrlRef.current !== initialStyleUrlRef.current) {
-        switchMapStyle(map, desiredStyleUrlRef.current)
+        switchMapStyle(
+          map,
+          desiredStyleUrlRef.current,
+          desiredStyleUrlRef.current,
+        )
         return
       }
 
@@ -1290,6 +1358,18 @@ export function TrafficMap({
 
     map.on('error', (event) => {
       if (event.error) {
+        if (
+          !loadedRef.current &&
+          !isFallbackMapStyleKey(requestedStyleUrlRef.current)
+        ) {
+          switchMapStyle(
+            map,
+            fallbackMapStyle(themeRef.current),
+            fallbackMapStyleKey(themeRef.current),
+            BASEMAP_FALLBACK_MESSAGE,
+          )
+          return
+        }
         errorRef.current({
           kind: 'runtime',
           message: event.error.message,
@@ -1330,19 +1410,57 @@ export function TrafficMap({
   useEffect(() => {
     const map = mapRef.current
     if (!map) return
+    const retryAfterDelayedFailure = reconnectedWhileStylePending(
+      online,
+      previousOnlineRef.current,
+      loadedRef.current,
+    )
+    previousOnlineRef.current = online
+    if (!online) retryExternalAfterFallbackRef.current = false
 
-    if (mapStyleUrl !== requestedStyleUrlRef.current) {
-      switchMapStyle(map, mapStyleUrl)
+    if (
+      isFallbackMapStyleKey(requestedStyleUrlRef.current) ||
+      fallbackActiveRef.current
+    ) {
+      if (online) {
+        retryExternalAfterFallbackRef.current = false
+        switchMapStyle(map, mapStyleUrl, mapStyleUrl)
+      } else {
+        const nextFallbackKey = fallbackMapStyleKey(theme)
+        if (nextFallbackKey !== requestedStyleUrlRef.current) {
+          switchMapStyle(
+            map,
+            fallbackMapStyle(theme),
+            nextFallbackKey,
+            BASEMAP_FALLBACK_MESSAGE,
+          )
+        }
+      }
       return
     }
 
+    if (mapStyleUrl !== requestedStyleUrlRef.current) {
+      retryExternalAfterFallbackRef.current = false
+      switchMapStyle(map, mapStyleUrl, mapStyleUrl)
+      return
+    }
+
+    if (retryAfterDelayedFailure) {
+      retryExternalAfterFallbackRef.current = true
+    }
     if (!loadedRef.current) return
 
     if (theme !== appliedThemeRef.current) {
       appliedThemeRef.current = theme
       installCurrentStyle(map)
     }
-  }, [installCurrentStyle, mapStyleUrl, switchMapStyle, theme])
+  }, [
+    installCurrentStyle,
+    mapStyleUrl,
+    online,
+    switchMapStyle,
+    theme,
+  ])
 
   useEffect(() => {
     const generation = ++clusterOptionsGenerationRef.current

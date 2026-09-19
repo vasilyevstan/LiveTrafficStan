@@ -105,6 +105,10 @@ interface TrafficControlsProps {
   onResetPreferences: () => void
   preferenceStatus?: string
   manualShareUrl?: string
+  appShellStatus?: string
+  appUpdateAvailable: boolean
+  appUpdateActivating: boolean
+  onRefreshApp: () => void
   locationNavigationDisabled: boolean
   activeLocationLabel: string
   coordinatePrecision: number
@@ -196,6 +200,10 @@ export function TrafficControls({
   onResetPreferences,
   preferenceStatus,
   manualShareUrl,
+  appShellStatus,
+  appUpdateAvailable,
+  appUpdateActivating,
+  onRefreshApp,
   locationNavigationDisabled,
   activeLocationLabel,
   coordinatePrecision,
@@ -453,6 +461,15 @@ export function TrafficControls({
           <button type="button" onClick={onResetPreferences}>
             RESET PREFERENCES
           </button>
+          {appUpdateAvailable && (
+            <button
+              type="button"
+              disabled={appUpdateActivating}
+              onClick={onRefreshApp}
+            >
+              {appUpdateActivating ? 'REFRESHING APP...' : 'REFRESH APP'}
+            </button>
+          )}
         </div>
         {preferenceStatus && (
           <p className="control-note" role="status">
@@ -469,6 +486,11 @@ export function TrafficControls({
               onFocus={(event) => event.currentTarget.select()}
             />
           </label>
+        )}
+        {appShellStatus && (
+          <p className="control-note" role="status">
+            {appShellStatus}
+          </p>
         )}
       </fieldset>
 

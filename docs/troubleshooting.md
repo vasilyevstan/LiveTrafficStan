@@ -26,6 +26,11 @@ If the worker loads, verify that the configured style and its tiles allow CORS,
 and that the browser supports WebGL2. A style JSON response by itself does not
 prove that vector tiles rendered.
 
+**Basemap unavailable** with a visible plain background is the deliberate
+fallback, not a second map. OpenFreeMap resources are external and are not
+service-worker-cached. Retained local traffic/history can still render over the
+background. Reconnecting retries the configured style in the same canvas.
+
 When a theme switch leaves the map blank, inspect `style.load` handling.
 `map.setStyle` removes repository-owned images, sources, and layers; the
 application reinstalls them after every style load. Duplicate-source errors
@@ -346,10 +351,42 @@ committing the new view. Manual pan/zoom may stay historical while the separate
 live query follows the viewport. Current METAR and third-party aircraft
 metadata are intentionally unavailable in history.
 
-When the browser goes offline, an already-open page can continue local
-playback. Live aircraft and marine acquisition pause through their existing
-controllers and resume at preserved cadence/reconnect boundaries when online.
-This is not an offline app-shell or offline-basemap guarantee.
+After one successful production installation and controlled reload, the
+application shell can start cold offline. Live aircraft and marine acquisition
+pause through their existing controllers and resume at preserved cadence/
+reconnect boundaries when online. IndexedDB playback remains explicitly
+historical. External basemap tiles are not cached; the plain local fallback is
+not an offline-basemap guarantee.
+
+## The application shell does not install or update
+
+The worker registers only in a production build, secure context, and browser
+with Service Worker support. `npm run dev` intentionally has no registration.
+Check:
+
+- `/manifest.webmanifest` is JSON with root `id`, `start_url`, and `scope`;
+- both versioned PNG icons return successfully;
+- `/sw.js` returns JavaScript, `Cache-Control: ... must-revalidate`, and
+  `Service-Worker-Allowed: /`;
+- the generated shell remains below 4 MiB and every precache response returns
+  successfully.
+
+First install does not show **REFRESH APP** and does not claim the already-open
+page; reload once after the shell reports ready. A later waiting generation
+shows **REFRESH APP**. If activation fails, do not delete caches or unregister
+manually until the failed precache request is identified—the active generation
+remains usable by design.
+
+At most two `livetrafficstan-shell-*` caches are expected after an update or
+rollback. Other origin caches must survive. Provider, map, search, weather,
+metadata, port, airport, and history responses must never appear in a shell
+cache.
+
+For rollback to a pre-PWA release, deploy `npm run build:pwa-retire` and keep
+its `/sw.js` response available. Removing that endpoint immediately strands
+dormant registrations. Retirement is complete when the registration and only
+the `livetrafficstan-shell-*` caches are gone; preferences and IndexedDB history
+must remain.
 
 Port selection is separate. Selecting traffic clears a selected port, selecting
 a port clears traffic selection, hiding PORTS or committed navigation clears

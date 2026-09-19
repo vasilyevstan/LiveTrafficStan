@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && node scripts/generate-service-worker.mjs",
+    "build:pwa-retire": "tsc -b && vite build --mode pwa-retire && node scripts/generate-service-worker.mjs --retire",
     "check:aircraft-metadata": "node scripts/check-aircraft-metadata.mjs",
     "check:airports": "node scripts/check-airports.mjs",
     "check:ports": "node scripts/check-ports.mjs",

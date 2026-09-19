@@ -573,6 +573,41 @@ Reset restores preference defaults and removes the share fragment without
 moving the camera/Home or touching private-history settings, consent, epochs,
 or IndexedDB.
 
+## Dependency-free generated application shell
+
+The installable shell uses a small generated native service worker rather than
+adding a PWA framework. Vite already emits every required hashed application
+chunk, including the MapLibre worker and lazy MQTT bundle, so a post-build Node
+step can enumerate and version the exact shell with less policy surface.
+
+Only root/index, hashed assets, manifest, favicon, and versioned icons are
+preloaded. APIs, MQTT, external map resources, Photon, AWC, static context
+datasets, and private history are excluded. Root navigation is network-first;
+shell assets are cache-first; all other requests bypass the worker. This keeps
+offline state truthful and prevents stale live/provider output from becoming a
+success-shaped response.
+
+Updates keep at most current and predecessor shell caches. This is the smallest
+handover that protects old controlled tabs and deferred hashed imports while
+bounding cleanup. The candidate records which cache is truly active during
+install rather than inferring lineage from CacheStorage insertion order, so a
+superseded waiting generation cannot evict the real predecessor. First install
+never prompts. Worker policy source participates in the cache identity, while a
+same-identity defensive path leaves active metadata untouched. A waiting update
+activates only after **REFRESH APP**, then reloads controlled tabs once.
+Rollback uses the same path in reverse and searches the active generation
+before its predecessor.
+
+The offline map is not a basemap cache. A source-free theme background lets the
+existing MapLibre instance calculate viewport geometry and render retained
+historical overlays. It states that basemap tiles are not cached and retries
+the external style on reconnect.
+
+Rollback to a non-PWA release uses a special retirement build. Its stable
+worker activates immediately, deletes only LiveTrafficStan shell caches,
+unregisters, and navigates clients once without touching local preferences,
+unrelated caches, history settings, or IndexedDB.
+
 ## Separate optional traffic clustering
 
 Clustering is a remembered display preference and starts off. Aircraft and

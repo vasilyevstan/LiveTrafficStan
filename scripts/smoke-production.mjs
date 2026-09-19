@@ -66,6 +66,66 @@ const verifyStaticAssets = async () => {
     'Deployed index.html is not configured for revalidation',
   )
 
+  const localServiceWorker = await readFile('dist/sw.js')
+  const remoteServiceWorker = await remoteBytes('/sw.js')
+  assert(
+    sha256(remoteServiceWorker.bytes) === sha256(localServiceWorker),
+    'Deployed service worker does not match the validated build',
+  )
+  assert(
+    remoteServiceWorker.headers
+      .get('cache-control')
+      ?.includes('must-revalidate'),
+    'Deployed service worker is not configured for revalidation',
+  )
+  assert(
+    remoteServiceWorker.headers
+      .get('content-type')
+      ?.includes('application/javascript'),
+    'Deployed service worker has the wrong content type',
+  )
+  assert(
+    remoteServiceWorker.headers.get('service-worker-allowed') === '/',
+    'Deployed service worker scope header is missing',
+  )
+
+  const localManifest = await readFile('dist/manifest.webmanifest')
+  const remoteManifest = await remoteBytes('/manifest.webmanifest')
+  assert(
+    sha256(remoteManifest.bytes) === sha256(localManifest),
+    'Deployed manifest does not match the validated build',
+  )
+  assert(
+    remoteManifest.headers
+      .get('cache-control')
+      ?.includes('must-revalidate'),
+    'Deployed manifest is not configured for revalidation',
+  )
+  assert(
+    remoteManifest.headers
+      .get('content-type')
+      ?.includes('application/manifest+json'),
+    'Deployed manifest has the wrong content type',
+  )
+
+  for (const size of [192, 512]) {
+    const iconPath = `/icons/livetrafficstan-${size}-v1.png`
+    const localIcon = await readFile(`dist${iconPath}`)
+    const remoteIcon = await remoteBytes(iconPath)
+    assert(
+      sha256(remoteIcon.bytes) === sha256(localIcon),
+      `Deployed ${size}px icon does not match the validated build`,
+    )
+    assert(
+      remoteIcon.headers.get('content-type')?.includes('image/png'),
+      `Deployed ${size}px icon has the wrong content type`,
+    )
+    assert(
+      remoteIcon.headers.get('cache-control')?.includes('immutable'),
+      `Deployed ${size}px icon is not immutable`,
+    )
+  }
+
   const workerFiles = (await readdir('dist/assets')).filter((name) =>
     /^maplibre-gl-worker-[A-Za-z0-9_-]+\.js$/.test(name),
   )

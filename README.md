@@ -75,6 +75,18 @@ single React application, without accounts, a database, or persistent tracking.
   0.5×/1×/2×/4× speed, gap-aware selected trails, and one-action return to
   live. Playback changes display time only; eligible live acquisition
   continues in the background.
+- An installable dependency-free application shell. The generated service
+  worker caches only the exact HTML, hashed application assets, manifest,
+  favicon, and versioned icons; it never caches live APIs, MQTT, map resources,
+  search, weather, static context datasets, or private history.
+- Truthful cold-offline startup after installation. Live acquisition is marked
+  unavailable, external basemap tiles are not promised, and a bundled
+  source-free background lets retained IndexedDB traffic and trails render in
+  explicit HISTORY mode.
+- Non-blocking application updates with an explicit **Refresh app** action,
+  bounded current/predecessor shell caches, and a tested retirement build that
+  removes only application-shell caches without deleting preferences or private
+  history.
 - Responsive floating controls, keyboard focus states, non-color status labels,
   and a small provider-reported set of original aircraft and vessel
   silhouettes with generic fallbacks.
@@ -210,6 +222,19 @@ than being reported as saved. Historical mode reuses the normal search, filter,
 selection, clustering, and details paths, but disables interpolation and hides
 current-only aircraft metadata and METAR context.
 
+`npm run build` generates `/sw.js` from the exact Vite output and worker policy,
+and rejects an application shell above 4 MiB uncompressed. Root navigation is
+network-first with cached `index.html` only as the offline fallback. Exact shell
+assets are cache-first across the current and immediate predecessor generations
+so an older controlled tab can finish a deferred hashed import during an
+update. Every other request keeps ordinary network behavior and receives no
+generic HTML fallback.
+
+The local source-free MapLibre fallback contains only a theme-aware background.
+It is installed into the existing map when the configured external style cannot
+load and is replaced in that same map after reconnect. It does not imitate or
+cache OpenFreeMap land, water, labels, tiles, glyphs, or sprites.
+
 See [Architecture](docs/architecture.md) for component boundaries, data flow,
 failure isolation, rendering, and deployment details.
 
@@ -338,9 +363,10 @@ monitoring, privacy, and rollback procedure.
   sends visible qualifying ICAO station IDs through the application host to
   AWC.
 - There is no reverse geocoding, route enrichment, radar, precipitation
-  forecast, account, saved center preference, offline app shell, or offline
-  basemap guarantee. An already-open page can replay retained local history
-  while offline, and labels live acquisition as paused.
+  forecast, account, saved center preference, or offline basemap guarantee.
+  An installed shell can start cold offline and replay retained private local
+  history over a plain local background; no cached provider response or map
+  resource is presented as current.
 
 Planned work is tracked in
 [GitHub Issues](https://github.com/vasilyevstan/LiveTrafficStan/issues), not

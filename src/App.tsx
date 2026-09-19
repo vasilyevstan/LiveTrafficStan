@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
 import { useAppPreferences } from './app/useAppPreferences'
+import { useAppShell } from './app/useAppShell'
 import { useAircraftTraffic } from './app/useAircraftTraffic'
 import { useAircraftMetadata } from './app/useAircraftMetadata'
 import { useAirports } from './app/useAirports'
@@ -166,6 +167,7 @@ function App() {
   )
   const now = useNow()
   const online = useOnlineStatus()
+  const appShell = useAppShell()
   const setLayerPreference = useCallback(
     (key: keyof LayerPreferences, value: boolean) => {
       updatePreferences((current) => ({
@@ -916,6 +918,7 @@ function App() {
             ? APP_CONFIG.map.darkStyleUrl
             : APP_CONFIG.map.lightStyleUrl
         }
+        online={online}
         theme={theme}
         aircraft={aircraft}
         vessels={vessels}
@@ -1077,6 +1080,10 @@ function App() {
             shareFeedback?.message ?? preferenceStatus?.message
           }
           manualShareUrl={shareFeedback?.manualUrl}
+          appShellStatus={appShell.message}
+          appUpdateAvailable={appShell.updateAvailable}
+          appUpdateActivating={appShell.phase === 'activating'}
+          onRefreshApp={appShell.activateUpdate}
           locationNavigationDisabled={mapError?.kind === 'initialization'}
           activeLocationLabel={activeLocationLabel}
           coordinatePrecision={APP_CONFIG.navigation.coordinatePrecision}
