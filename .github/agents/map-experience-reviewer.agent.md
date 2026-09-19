@@ -20,6 +20,9 @@ Check these project invariants:
 - Rapid style changes cannot let an obsolete `style.load` win.
 - Traffic images are keyed by the active visual treatment and can be replaced
   even when light and dark use the same style URL.
+- Every application marker icon has one bounded original image in both themes.
+  Full style rehydration restores the complete image set without duplicate IDs,
+  missing-image errors, map recreation, or provider work.
 - Settled pan, zoom, rotation, pitch, Home, and real resize changes all update
   the desired traffic viewport without fitting the camera back to provider
   data.

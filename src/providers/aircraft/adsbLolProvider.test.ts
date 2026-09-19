@@ -54,6 +54,7 @@ describe('normalizeAdsbLolResponse', () => {
       courseDegrees: 91,
       headingDegrees: 94,
       verticalSpeedMps: 3.048,
+      markerIcon: 'aircraft',
       markerScale: 1.08,
     })
 
@@ -90,6 +91,94 @@ describe('normalizeAdsbLolResponse', () => {
 
     expect(result).toHaveLength(1)
     expect(result[0]?.altitudeMeters).toBe(0)
+  })
+
+  it('maps only reported emitter categories to the bounded icon vocabulary', () => {
+    const aircraft = normalizeAdsbLolResponse(
+      {
+        now: 1_800_000_000_000,
+        ac: [
+          { hex: 'a10001', lat: 59.44, lon: 24.75, category: 'A1' },
+          { hex: 'a20002', lat: 59.44, lon: 24.75, category: 'A2' },
+          { hex: 'a30003', lat: 59.44, lon: 24.75, category: 'A3' },
+          { hex: 'a40004', lat: 59.44, lon: 24.75, category: 'A4' },
+          { hex: 'a50005', lat: 59.44, lon: 24.75, category: 'A5' },
+          { hex: 'a60006', lat: 59.44, lon: 24.75, category: 'A6' },
+          { hex: 'a70007', lat: 59.44, lon: 24.75, category: 'A7' },
+          {
+            hex: 'unknown',
+            lat: 59.44,
+            lon: 24.75,
+            category: 'A8',
+            t: 'H125',
+            gs: 500,
+          },
+          {
+            hex: 'missing',
+            lat: 59.44,
+            lon: 24.75,
+            t: 'HELICOPTER',
+            gs: 0,
+          },
+        ],
+      },
+      query,
+      1_800_000_000_000,
+    )
+
+    expect(
+      aircraft.map(({ category, markerIcon, markerScale }) => ({
+        category,
+        markerIcon,
+        markerScale,
+      })),
+    ).toEqual([
+      {
+        category: 'Light aircraft',
+        markerIcon: 'aircraft-light',
+        markerScale: 0.78,
+      },
+      {
+        category: 'Small aircraft',
+        markerIcon: 'aircraft-light',
+        markerScale: 0.9,
+      },
+      {
+        category: 'Large aircraft',
+        markerIcon: 'aircraft',
+        markerScale: 1.08,
+      },
+      {
+        category: 'Large aircraft',
+        markerIcon: 'aircraft',
+        markerScale: 1.08,
+      },
+      {
+        category: 'Heavy aircraft',
+        markerIcon: 'aircraft-heavy',
+        markerScale: 1.22,
+      },
+      {
+        category: 'High-performance aircraft',
+        markerIcon: 'aircraft',
+        markerScale: 1,
+      },
+      {
+        category: 'Rotorcraft',
+        markerIcon: 'helicopter',
+        markerScale: 0.92,
+      },
+      {
+        category: undefined,
+        markerIcon: 'aircraft',
+        markerScale: 0.94,
+      },
+      {
+        category: undefined,
+        markerIcon: 'aircraft',
+        markerScale: 0.94,
+      },
+    ])
   })
 
   it('rejects a malformed top-level response', () => {

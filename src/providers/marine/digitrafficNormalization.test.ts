@@ -7,6 +7,7 @@ import {
   parseDigitrafficRestLocations,
   parseDigitrafficRestMetadata,
   vesselLengthMeters,
+  vesselMarkerIcon,
   vesselWidthMeters,
 } from './digitrafficNormalization'
 
@@ -125,6 +126,7 @@ describe('Digitraffic normalization', () => {
       speedKph: 18.52,
       navigationStatus: 'Moored',
       eta: '09-18 14:30 UTC',
+      markerIcon: 'vessel-cargo',
     })
 
     const withoutMetadata = normalizeDigitrafficVessel(
@@ -134,6 +136,79 @@ describe('Digitraffic normalization', () => {
     )
     expect(withoutMetadata.lengthMeters).toBeUndefined()
     expect(withoutMetadata.name).toBeUndefined()
+  })
+
+  it('maps only trusted AIS ship types to the bounded icon vocabulary', () => {
+    expect(
+      [
+        30,
+        31,
+        52,
+        53,
+        60,
+        69,
+        70,
+        79,
+        80,
+        89,
+        90,
+        0,
+        undefined,
+      ].map(vesselMarkerIcon),
+    ).toEqual([
+      'vessel-fishing',
+      'vessel',
+      'vessel-tug',
+      'vessel',
+      'vessel-passenger',
+      'vessel-passenger',
+      'vessel-cargo',
+      'vessel-cargo',
+      'vessel-tanker',
+      'vessel-tanker',
+      'vessel',
+      'vessel',
+      'vessel',
+    ])
+  })
+
+  it('changes metadata-driven artwork without changing vessel identity', () => {
+    const location = parseDigitrafficMqttLocation(
+      {
+        time: 1_800_000_000,
+        lat: 59.44,
+        lon: 24.75,
+        sog: 15,
+      },
+      230123456,
+    )
+    expect(location).toBeDefined()
+
+    const generic = normalizeDigitrafficVessel(
+      location!,
+      {
+        mmsi: 230123456,
+        timestamp: 1_800_000_000_000,
+        name: 'CARGO EXPRESS',
+      },
+      1_800_000_002_000,
+    )
+    const cargo = normalizeDigitrafficVessel(
+      location!,
+      {
+        mmsi: 230123456,
+        timestamp: 1_800_000_003_000,
+        name: 'CARGO EXPRESS',
+        shipType: 70,
+      },
+      1_800_000_004_000,
+    )
+
+    expect(generic.markerIcon).toBe('vessel')
+    expect(cargo.markerIcon).toBe('vessel-cargo')
+    expect(cargo.id).toBe(generic.id)
+    expect(cargo.position).toEqual(generic.position)
+    expect(cargo.speedKph).toBe(generic.speedKph)
   })
 
   it('does not present the saturated AIS draught code as exact', () => {

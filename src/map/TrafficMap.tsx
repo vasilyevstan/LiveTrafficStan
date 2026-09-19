@@ -32,9 +32,7 @@ import {
   type MotionStates,
 } from '../traffic/interpolation'
 import {
-  createAircraftIcon,
-  createHelicopterIcon,
-  createVesselIcon,
+  createTrafficIcons,
 } from './icons'
 import {
   createMapSafely,
@@ -418,11 +416,7 @@ export function TrafficMap({
     const cachedImages = trafficImagesRef.current[activeTheme]
     if (cachedImages) return cachedImages
 
-    const images = {
-      aircraft: createAircraftIcon(activeTheme),
-      helicopter: createHelicopterIcon(activeTheme),
-      vessel: createVesselIcon(activeTheme),
-    }
+    const images = createTrafficIcons(activeTheme)
     trafficImagesRef.current[activeTheme] = images
     return images
   }, [])

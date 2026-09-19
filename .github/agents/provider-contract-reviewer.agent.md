@@ -30,6 +30,10 @@ Check these project invariants:
 - Provider payloads are validated and normalized before map/UI use; units,
   timestamps, enclosing-circle transport, exact viewport filtering, missing
   fields, and AIS sentinel values remain truthful.
+- Marker categories come only from reported ADS-B emitter category or AIS ship
+  type fields at the provider boundary. Unknown values stay generic; speed,
+  altitude, model, name, route, operator, position, and movement never infer a
+  silhouette.
 - Viewport eligibility is decided against 100 km before ADSB.lol's outward
   nautical-mile rounding. A 100 km eligible request therefore uses 54 NM
   (100.008 km transport coverage) without widening display eligibility.

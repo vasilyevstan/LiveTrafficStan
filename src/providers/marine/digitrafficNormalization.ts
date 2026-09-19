@@ -1,5 +1,5 @@
 import { isValidCoordinate } from '../../domain/geo'
-import type { Vessel } from '../../domain/traffic'
+import type { TrafficMarkerIcon, Vessel } from '../../domain/traffic'
 import {
   finiteInteger,
   finiteNumber,
@@ -273,6 +273,23 @@ export const vesselTypeName = (shipType: number | undefined) => {
   return 'Other vessel'
 }
 
+export const vesselMarkerIcon = (
+  shipType: number | undefined,
+): TrafficMarkerIcon => {
+  if (shipType === 30) return 'vessel-fishing'
+  if (shipType === 52) return 'vessel-tug'
+  if (shipType !== undefined && shipType >= 60 && shipType <= 69) {
+    return 'vessel-passenger'
+  }
+  if (shipType !== undefined && shipType >= 70 && shipType <= 79) {
+    return 'vessel-cargo'
+  }
+  if (shipType !== undefined && shipType >= 80 && shipType <= 89) {
+    return 'vessel-tanker'
+  }
+  return 'vessel'
+}
+
 export const navigationStatusName = (status: number | undefined) => {
   const names: Record<number, string> = {
     0: 'Under way using engine',
@@ -334,7 +351,7 @@ export const normalizeDigitrafficVessel = (
     draughtMeters: draught,
     eta: decodeAisEta(metadata?.eta),
     navigationStatus: navigationStatusName(location.navigationStatus),
-    markerIcon: 'vessel',
+    markerIcon: vesselMarkerIcon(metadata?.shipType),
     markerScale: Math.min(
       1.35,
       Math.max(0.78, 0.78 + (lengthMeters ?? 40) / 400),

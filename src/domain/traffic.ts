@@ -1,5 +1,18 @@
 export type TrafficKind = 'aircraft' | 'vessel'
 export type TrafficFreshness = 'live' | 'stale'
+export const TRAFFIC_MARKER_ICONS = [
+  'aircraft',
+  'aircraft-light',
+  'aircraft-heavy',
+  'helicopter',
+  'vessel',
+  'vessel-cargo',
+  'vessel-tanker',
+  'vessel-passenger',
+  'vessel-fishing',
+  'vessel-tug',
+] as const
+export type TrafficMarkerIcon = (typeof TRAFFIC_MARKER_ICONS)[number]
 
 export interface GeoPosition {
   latitude: number
@@ -16,7 +29,7 @@ interface TrafficEntityBase {
   headingDegrees?: number
   courseDegrees?: number
   speedKph?: number
-  markerIcon: 'aircraft' | 'helicopter' | 'vessel'
+  markerIcon: TrafficMarkerIcon
   markerScale: number
 }
 
