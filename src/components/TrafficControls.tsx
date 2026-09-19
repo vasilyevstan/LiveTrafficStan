@@ -1,13 +1,22 @@
 import type { Theme } from '../app/theme'
 import type { PlaceSearchState } from '../app/PlaceSearchController'
 import type { AppCenter } from '../config/appConfig'
-import type { DisplayVessel } from '../domain/traffic'
+import type { Airport } from '../domain/airports'
+import type { DisplayAircraft, DisplayVessel } from '../domain/traffic'
 import type { VesselFilterState } from '../domain/vesselFilters'
 import type { PlaceSearchResult } from '../providers/geocoding/photonProvider'
+import { AircraftDiscovery } from './AircraftDiscovery'
+import { AirportContext } from './AirportContext'
 import { LocationSearch } from './LocationSearch'
 import { VesselDiscovery } from './VesselDiscovery'
 
 interface TrafficControlsProps {
+  aircraftQuery: string
+  aircraftResults: readonly DisplayAircraft[]
+  totalAircraft: number
+  aircraftEmptyMessage: string
+  onAircraftQueryChange: (query: string) => void
+  onAircraftSelect: (id: string) => void
   vesselFilters: VesselFilterState
   vesselResults: readonly DisplayVessel[]
   totalVessels: number
@@ -23,6 +32,16 @@ interface TrafficControlsProps {
   portsError?: string
   onPortsVisibleChange: (visible: boolean) => void
   onRetryPorts: () => void
+  airportsVisible: boolean
+  airportsLoading: boolean
+  airportsReady: boolean
+  airportsError?: string
+  airportsInView: readonly Airport[]
+  selectedAirportId: string | null
+  airportsEmptyMessage: string
+  onAirportsVisibleChange: (visible: boolean) => void
+  onAirportSelect: (id: string) => void
+  onRetryAirports: () => void
   centerDisabled: boolean
   onCenter: () => void
   locationAvailable: boolean
@@ -43,6 +62,12 @@ interface TrafficControlsProps {
 }
 
 export function TrafficControls({
+  aircraftQuery,
+  aircraftResults,
+  totalAircraft,
+  aircraftEmptyMessage,
+  onAircraftQueryChange,
+  onAircraftSelect,
   vesselFilters,
   vesselResults,
   totalVessels,
@@ -58,6 +83,16 @@ export function TrafficControls({
   portsError,
   onPortsVisibleChange,
   onRetryPorts,
+  airportsVisible,
+  airportsLoading,
+  airportsReady,
+  airportsError,
+  airportsInView,
+  selectedAirportId,
+  airportsEmptyMessage,
+  onAirportsVisibleChange,
+  onAirportSelect,
+  onRetryAirports,
   centerDisabled,
   onCenter,
   locationAvailable,
@@ -92,7 +127,7 @@ export function TrafficControls({
 
       <fieldset className="control-group">
         <legend>Layers</legend>
-        <div className="control-options control-options--three">
+        <div className="control-options control-options--two">
           <button
             type="button"
             className={aircraftVisible ? 'is-active' : undefined}
@@ -118,12 +153,32 @@ export function TrafficControls({
           >
             {portsVisible && portsLoading ? 'PORTS...' : 'PORTS'}
           </button>
+          <button
+            id="airports-layer-toggle"
+            type="button"
+            className={airportsVisible ? 'is-active' : undefined}
+            aria-pressed={airportsVisible}
+            aria-busy={airportsVisible && airportsLoading}
+            onClick={() => onAirportsVisibleChange(!airportsVisible)}
+          >
+            {airportsVisible && airportsLoading
+              ? 'AIRPORTS...'
+              : 'AIRPORTS'}
+          </button>
         </div>
         {portsVisible && portsError && (
           <div className="control-note ports-status" role="status">
             <span>Ports unavailable: {portsError}</span>
             <button type="button" onClick={onRetryPorts}>
               RETRY PORTS
+            </button>
+          </div>
+        )}
+        {airportsVisible && airportsError && (
+          <div className="control-note ports-status" role="status">
+            <span>Airports unavailable: {airportsError}</span>
+            <button type="button" onClick={onRetryAirports}>
+              RETRY AIRPORTS
             </button>
           </div>
         )}
@@ -137,7 +192,22 @@ export function TrafficControls({
           </a>
           ); generalized and incomplete.
         </p>
+        <p className="control-note control-note--muted">
+          Airports: <a href="https://ourairports.com/data/">OurAirports</a>{' '}
+          (<a href="https://ourairports.com/data/">public domain</a>); static
+          large and medium airport context, not operational data.
+        </p>
       </fieldset>
+
+      <AircraftDiscovery
+        query={aircraftQuery}
+        aircraft={aircraftResults}
+        totalAircraft={totalAircraft}
+        aircraftVisible={aircraftVisible}
+        emptyMessage={aircraftEmptyMessage}
+        onQueryChange={onAircraftQueryChange}
+        onSelect={onAircraftSelect}
+      />
 
       <VesselDiscovery
         filters={vesselFilters}
@@ -148,6 +218,15 @@ export function TrafficControls({
         onFiltersChange={onVesselFiltersChange}
         onSelect={onVesselSelect}
       />
+
+      {airportsVisible && airportsReady && (
+        <AirportContext
+          airports={airportsInView}
+          selectedAirportId={selectedAirportId}
+          emptyMessage={airportsEmptyMessage}
+          onSelect={onAirportSelect}
+        />
+      )}
 
       <fieldset className="control-group">
         <legend>Theme</legend>

@@ -25,6 +25,8 @@ the `/api/aircraft` proxy required by the default ADSB.lol integration.
 | `npm run update:aircraft-metadata` | Explicit maintainer regeneration from the pinned upstream archive and license |
 | `npm run check:ports` | Network-free validation of the committed Natural Earth port projection |
 | `npm run update:ports` | Explicit maintainer regeneration from the pinned Natural Earth source |
+| `npm run check:airports` | Network-free validation of the committed OurAirports projection |
+| `npm run update:airports` | Explicit maintainer regeneration from the pinned OurAirports source |
 | `npm run build` | Type-check and create the production bundle in `dist/` |
 | `npm run preview` | Serve the production bundle with the local aircraft proxy |
 | `npm run check:deploy` | Bundle the Worker and Static Assets without credentials or deployment |
@@ -38,6 +40,7 @@ npm run typecheck
 npm test -- --run
 npm run check:aircraft-metadata
 npm run check:ports
+npm run check:airports
 npm run build
 npm run check:deploy
 ```
@@ -87,6 +90,8 @@ covers:
   ETA, missing metadata, one-connection batching, and bounded diagnostics;
 - local vessel search, deterministic result ordering, category/navigation/speed
   filters, inclusive length bounds, and explicit unknown-value behavior;
+- local aircraft literal matching and exact/prefix/substring ordering across
+  callsign, registration, ICAO24, and reported type;
 - current, stale, and expired transitions;
 - trail time pruning and point caps;
 - interpolation bounds and no extrapolation.
@@ -133,6 +138,10 @@ Map-experience tests also cover:
 - deterministic Natural Earth projection, immutable inventory/checksum/size/
   rank checks, bounded lazy runtime loading, timeout/abort/error isolation,
   fulfilled-only caching, ranked zoom layers, and theme-aware visibility.
+- deterministic OurAirports CSV parsing/projection, immutable
+  inventory/checksum/size/count checks, bounded lazy runtime loading,
+  timeout/abort/error isolation, fulfilled-only caching, zoom tiers, static
+  details, viewport list, and deterministic airport/port pick precedence.
 
 `npm run check:aircraft-metadata` makes no upstream request. It validates the
 pinned source and license identity, configured immutable version, co-located
@@ -156,6 +165,19 @@ SHA-256, regenerates the minimal projection, checks every expected measurement,
 and refuses to replace changed bytes under an existing immutable version. Any
 source, projection, generator, or generated-byte change requires a new output
 version.
+
+`npm run check:airports` makes no upstream request. It validates the immutable
+directory inventory, raw bytes, SHA-256, deterministic gzip-9 size, complete
+GeoJSON grammar, sorted persistent IDs, coordinates, record count, kind
+distribution, and Tallinn fixture.
+
+`npm run update:airports` is an explicit maintainer operation. It downloads
+only the pinned commit URL, enforces a separate 16 MiB source cap, verifies the
+12,725,082-byte CSV SHA-256, parses quoted UTF-8 CSV including embedded
+newlines, regenerates the large/medium projection, checks every expected
+measurement, and refuses to replace changed bytes under an existing immutable
+version. Any source, projection, generator, or generated-byte change requires
+a new output version.
 
 Geolocation tests must distinguish permission from acquisition. A granted
 permission can still produce delayed success, timeout, unavailable, or obsolete
@@ -213,6 +235,25 @@ Use `npm run dev` and verify:
     Port selection is separate from traffic selection, explicit navigation or
     hiding PORTS clears it, and port details never claim facilities, calls,
     nearby vessels, destination, or ETA.
+20. Aircraft search matches current callsign, registration, ICAO24, and type
+    with literal exact/prefix/substring ranking. Typing, clearing, and a
+    no-match result create no aircraft, marine, metadata, Photon, or Worker
+    request and do not filter map markers or move the camera.
+21. No `/airports/` request occurs while AIRPORTS is disabled. First enable
+    makes one bounded request; hiding and re-enabling uses the fulfilled
+    session cache. A blocked or corrupt asset reports a local retryable error
+    without changing map or traffic-provider health.
+22. Large airport points/labels appear from zoom 4/5 and medium points/labels
+    from zoom 7/8, remain visible at high zoom, survive Light/Dark style
+    rehydration, render above ports and below traffic, and retain visible
+    OurAirports/Public Domain attribution.
+23. Tallinn airport details show EETN/TLL, persistent OurAirports ID, ident,
+    municipality/country, coordinates, source commit/date/output version, and
+    explicit non-operational/no-inference wording.
+24. The bounded airport list is reachable by keyboard. Closing airport details
+    restores focus to the originating result when present or AIRPORTS otherwise.
+    Airport, port, and traffic selection clearing and exact-before-near-miss
+    precedence remain deterministic.
 
 For the viewport-driven map experience, additionally verify:
 
@@ -261,7 +302,9 @@ Repeat the core check with `npm run build && npm run preview`. Confirm that
 `dist/assets/` contains a `maplibre-gl-worker-*.js` file and that the preview
 page renders vector tiles. Also confirm the immutable metadata index and one
 shard are present in `dist/aircraft-metadata/`, and the exact immutable
-`dist/ports/natural-earth-v5.1.2-v1/ports.geojson` asset is present. This
+`dist/ports/natural-earth-v5.1.2-v1/ports.geojson` and
+`dist/airports/ourairports-2026-09-19-v1/airports.geojson` assets are present.
+This
 catches easy-to-miss MapLibre/Vite worker or static-dataset packaging
 regressions.
 
@@ -308,6 +351,9 @@ Browser developer tools can block one provider at a time:
   map error.
 - block `/ports/*` and confirm only the optional port status fails; the map,
   both traffic providers, vessel filters, and traffic selection remain usable.
+- block `/airports/*` and confirm only the optional airport status fails; the
+  map, traffic providers, aircraft search, ports, and traffic selection remain
+  usable.
 
 When changing map initialization, also exercise a deliberately throwing map
 constructor. Confirm that `Map unavailable` is visible, sibling controls remain
@@ -404,6 +450,39 @@ PORTS is enabled. The MapLibre worker and MQTT chunk were unchanged.
 Production builds must remove the diagnostics query flag, collector, counters,
 timing calls, logging, and title changes. Verify this alongside the normal
 production build when editing the instrumentation.
+
+## Aircraft and airport discovery measurement
+
+Against exact base `ff592bbef008e0fcc01895ace0e53b5b4050b51e`, the final
+production build adds 20,008 raw / 3,670 gzip-9 bytes of main JavaScript and
+12 raw / 1 gzip-9 byte of CSS. The MapLibre worker and MQTT chunk are
+byte-identical to the base build. The optional airport asset adds 1,329,838
+raw or 225,625 deterministic gzip-9 bytes only after AIRPORTS is enabled.
+
+The production-preview browser fixture proved:
+
+- one MapLibre canvas and the emitted MapLibre worker;
+- zero airport requests at startup, exactly one request on first enable, and
+  fulfilled-session reuse across hide/show and Light/Dark style rehydration;
+- a local registration search returning one of three current aircraft without
+  changing aircraft, marine, metadata, Photon, or airport request counters;
+- selection through the existing aircraft details path;
+- Tallinn EETN/TLL details, persistent OurAirports ID, static provenance,
+  no-inference wording, keyboard button selection, and focus restoration;
+- airport listing and selection remaining usable after zooming out far enough
+  to pause bounded live traffic;
+- airport failure isolation and successful retry without changing live
+  aircraft or map availability;
+- no arrival, departure, or board request;
+- full-size MapLibre canvases and scrollable/reachable controls at 390x844 and
+  390x568, with mobile bottom padding keeping MapLibre attribution from
+  intercepting the final controls.
+
+Local `workerd` returned the airport asset with
+`Cache-Control: public, max-age=31536000, immutable` and
+`X-Content-Type-Options: nosniff`; a missing airport version returned a true
+404 rather than the application shell. The only browser diagnostic was an
+external OpenFreeMap font-range 404 already outside this feature boundary.
 
 ## Dependency and bundle discipline
 

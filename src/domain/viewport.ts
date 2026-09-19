@@ -33,6 +33,7 @@ export type ViewportAssessment =
       message:
         | 'Zoom in to see live traffic'
         | 'Zoom in or reduce tilt to see live traffic'
+      viewport?: TrafficViewport
     }
 
 interface ViewportLimits {
@@ -57,6 +58,7 @@ export const unwrapLongitude = (
 const ineligible = (
   reason: 'too-wide' | 'invalid',
   pitchDegrees: number,
+  viewport?: TrafficViewport,
 ): ViewportAssessment => ({
   kind: 'ineligible',
   reason,
@@ -64,6 +66,7 @@ const ineligible = (
     pitchDegrees > 0.5
       ? 'Zoom in or reduce tilt to see live traffic'
       : 'Zoom in to see live traffic',
+  viewport,
 })
 
 const polygonArea = (polygon: readonly Coordinates[]) => {
@@ -137,25 +140,30 @@ export const assessTrafficViewport = (
   const enclosingRadiusKm = Math.max(
     ...polygon.map((coordinate) => distanceKm(roundedCenter, coordinate)),
   )
-  if (
-    !Number.isFinite(enclosingRadiusKm) ||
-    enclosingRadiusKm - limits.maximumRadiusKm > RADIUS_EPSILON_KM
-  ) {
-    return ineligible('too-wide', sample.pitchDegrees)
+  if (!Number.isFinite(enclosingRadiusKm)) {
+    return ineligible('invalid', sample.pitchDegrees)
+  }
+  const roundedRadiusKm = Math.max(
+    0.001,
+    Math.ceil(enclosingRadiusKm * 1_000 - 1e-9) / 1_000,
+  )
+  const viewport = {
+    center: roundedCenter,
+    enclosingRadiusKm: roundedRadiusKm,
+    polygon,
+  }
+  if (enclosingRadiusKm - limits.maximumRadiusKm > RADIUS_EPSILON_KM) {
+    return ineligible('too-wide', sample.pitchDegrees, viewport)
   }
 
   return {
     kind: 'eligible',
     viewport: {
-      center: roundedCenter,
-      enclosingRadiusKm: Math.max(
-        0.001,
-        Math.min(
-          limits.maximumRadiusKm,
-          Math.ceil(enclosingRadiusKm * 1_000 - 1e-9) / 1_000,
-        ),
+      ...viewport,
+      enclosingRadiusKm: Math.min(
+        limits.maximumRadiusKm,
+        viewport.enclosingRadiusKm,
       ),
-      polygon,
     },
   }
 }

@@ -21,6 +21,8 @@ Digitraffic REST + MQTT -> marine adapter -> normalized Vessel[]
 
 selected Aircraft -> static metadata index + prefix shard -> details panel only
 PORTS toggle -> validated static Natural Earth projection -> port map/details
+AIRPORTS toggle -> validated static OurAirports projection -> airport map/details
+current Aircraft[] -> local literal search -> existing traffic selection
 
 coordinate text -> local parser ------------------------+
 named text -> Photon adapter -> PlaceSearchResult[] ----+-> view navigation
@@ -37,11 +39,12 @@ does not hold a provider credential or create server-side state.
 | Area | Responsibility |
 | --- | --- |
 | `src/config/` | Typed defaults and validation of browser-safe environment overrides |
-| `src/domain/` | Application-owned traffic/port types, vessel filters, geographic helpers, location-input parsing, and formatting |
+| `src/domain/` | Application-owned traffic/port/airport types, local discovery and vessel filters, geographic helpers, location-input parsing, and formatting |
 | `src/providers/aircraft/` | ADSB.lol request, runtime payload checks, normalization, and unit conversion |
 | `src/providers/aircraftMetadata/` | Bounded same-origin static metadata loading, provenance/schema/hash validation, exact identity matching, and shard LRU |
 | `src/providers/marine/` | Digitraffic capabilities, REST/MQTT lifecycle, metadata merging, normalization, and opt-in development diagnostics |
 | `src/providers/ports/` | Bounded lazy same-origin port loading plus checksum, schema, and source-provenance validation |
+| `src/providers/airports/` | Bounded lazy same-origin airport loading plus checksum, schema, and source-provenance validation |
 | `src/providers/geocoding/` | Photon request construction, response bounds, runtime GeoJSON validation, result normalization, and attribution identity |
 | `src/app/` | React hooks/controllers for provider lifecycle, place-search cancellation/cache, navigation intent, time ticks, and trail history |
 | `src/traffic/` | Filtering, freshness/expiry, interpolation, and bounded history |
@@ -106,6 +109,13 @@ subscription, REST/metadata gates, cache ownership, or source snapshots.
 Unknown category, navigation, speed, and length values remain explicit rather
 than being coerced into known values.
 
+Aircraft discovery is another local display boundary after exact viewport and
+freshness filtering. Literal case-insensitive matching covers current callsign,
+registration, ICAO24, and provider-reported type. Exact, prefix, and substring
+ranking preserves display order for ties. Typing never filters map markers,
+moves the camera, queries a provider, or loads static metadata; selecting a
+result reuses the existing traffic selection path.
+
 Optional port context is not a traffic provider. The runtime provider makes no
 request until the PORTS layer is enabled, then loads one immutable same-origin
 GeoJSON file under a five-second deadline and 512 KiB cap. It verifies UTF-8,
@@ -113,6 +123,18 @@ JSON, complete feature grammar, ordered IDs, coordinates, ranks, record count,
 rank distribution, and SHA-256 before a fulfilled-only session cache is
 created. Ports have separate IDs and selection and never enter traffic counts,
 trails, provider health, destination/ETA logic, or vessel relationships.
+
+Optional airport context is likewise not a traffic provider. AIRPORTS starts
+off and lazily loads one immutable same-origin GeoJSON projection under a
+five-second deadline and approximately 1.5 MiB cap. The provider verifies the
+exact byte count, SHA-256, UTF-8/JSON grammar, ordered persistent IDs,
+coordinates, field grammar, record count, and large/medium distribution before
+creating a fulfilled-only session cache. Static airport points have separate
+IDs and selection and never imply operating status, route, arrival, departure,
+or a relationship to visible aircraft. A geometrically valid map footprint
+remains available to this static context even when its enclosing radius is too
+wide for live traffic; the 100 km provider gate does not disable airport
+listing or selection.
 
 ## Lifecycle and failure isolation
 
@@ -146,6 +168,9 @@ continues to render.
 - Port loading has its own lazy state and retry. Failure remains inside the
   layer control, leaves MapLibre and both traffic providers usable, and never
   creates a success-shaped empty port dataset.
+- Airport loading has its own lazy state and retry with the same isolation.
+  Disable or unmount aborts unfinished work; an obsolete success or failure
+  cannot publish into current UI state.
 
 ## Freshness, motion, and history
 
@@ -172,12 +197,16 @@ trail use persistent GeoJSON sources and layers whose data or visibility is
 updated in place. This avoids one React component or DOM marker per traffic
 object.
 
-The optional port source is separate from those traffic sources. Rank groups
+The optional port and airport sources are separate from those traffic sources.
+Port rank groups
 appear progressively from zoom 5 through 10, all port rendering stops at zoom
 13 because the coordinates are generalized, and neutral theme-aware styling
-stays below traffic layers. Exact traffic picking and touch fallback run before
-port picking. Selecting a port clears traffic selection and vice versa; an
-empty map click clears both.
+stays below airport and traffic layers. Large airport points start at zoom 4
+and labels at zoom 5; medium points and labels start at zoom 7 and 8, with no
+upper zoom cutoff. Exact traffic picking and touch fallback run first, followed
+by exact airport, exact port, airport touch fallback, then port touch fallback.
+Selecting any one kind clears the other selections; an empty map click clears
+all.
 
 After settled pan, zoom, rotation, pitch, Home, and real resize changes, the map
 unprojects a bounded sample of the full-canvas perimeter, including every
@@ -255,6 +284,9 @@ vector tiles will remain in a loading state.
 - Port context has zero startup requests, one bounded lazy static load, and a
   fulfilled-only session cache. Local vessel search/filter changes perform no
   network work and do not rebuild the map.
+- Airport context has zero startup requests, one bounded lazy static load, and
+  a fulfilled-only session cache. Local aircraft search changes perform no
+  network work and do not rebuild the map.
 
 ## Deployment boundary
 
@@ -262,14 +294,16 @@ Cloudflare Workers with Static Assets is the selected one-unit production
 boundary:
 
 1. `dist/` is served as Static Assets;
-2. fingerprinted `/assets/*`, versioned `/aircraft-metadata/*`, and versioned
-   `/ports/*` responses use immutable browser caching;
+2. fingerprinted `/assets/*`, versioned `/aircraft-metadata/*`, versioned
+   `/ports/*`, and versioned `/airports/*` responses use immutable browser
+   caching;
 3. Worker code runs first only for `/api` and `/api/*`;
 4. the only forwarded route is
    `GET /api/aircraft/v2/point/{latitude}/{longitude}/{radiusNm}`;
 5. OpenFreeMap, Photon, and Digitraffic HTTPS/WSS remain direct browser
    connections;
-6. map, search, aircraft, marine, and optional-port attribution remains visible.
+6. map, search, aircraft, marine, optional-port, and optional-airport
+   attribution remains visible.
 
 The production proxy accepts canonical finite latitude/longitude values and
 integer radii from 1 through 54 NM. It rejects query strings, other methods,
@@ -348,7 +382,7 @@ configured OpenFreeMap style.
 Theme changes call `map.setStyle` on the existing instance. An idempotent
 installer runs after `style.load` to restore repository-owned images, GeoJSON
 sources, layers, current data, visibility, selected trail, and any loaded port
-source/selection.
+or airport source/selection.
 Interaction listeners remain registered once, and a style revision prevents a
 late obsolete load from winning. Provider hooks, React selection/history, and
 camera state do not restart.

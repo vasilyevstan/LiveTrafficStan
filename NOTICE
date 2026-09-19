@@ -30,3 +30,12 @@ https://www.naturalearthdata.com/about/terms-of-use/
 The projected port points are generalized and incomplete. Some source
 locations may be approximate by up to 20 miles and are not operational harbour
 information.
+
+Optional airport context distributed under public/airports is derived from
+OurAirports:
+https://ourairports.com/data/
+
+OurAirports releases its data to the Public Domain and requests, but does not
+require, credit. It provides no guarantee of accuracy or fitness for use. The
+projected airport points are static reference context and are not navigation or
+operational flight information.

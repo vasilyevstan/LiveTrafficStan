@@ -7,6 +7,7 @@ import {
 } from 'maplibre-gl'
 import type { Theme } from '../app/theme'
 import type { Port } from '../domain/ports'
+import { LAYER_AIRPORTS_MEDIUM } from './airportsStyle'
 import { LAYER_AIRCRAFT_HALO } from './trafficStyle'
 
 export const SOURCE_PORTS = 'context-ports'
@@ -99,11 +100,14 @@ const ensureLayer = (
   layer: LayerSpecification,
 ) => {
   if (!map.getLayer(layer.id)) {
+    const beforeLayer = map.getLayer(LAYER_AIRPORTS_MEDIUM)
+      ? LAYER_AIRPORTS_MEDIUM
+      : map.getLayer(LAYER_AIRCRAFT_HALO)
+        ? LAYER_AIRCRAFT_HALO
+        : undefined
     map.addLayer(
       layer,
-      map.getLayer(LAYER_AIRCRAFT_HALO)
-        ? LAYER_AIRCRAFT_HALO
-        : undefined,
+      beforeLayer,
     )
   }
 }

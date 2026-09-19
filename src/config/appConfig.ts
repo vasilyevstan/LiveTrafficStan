@@ -1,6 +1,8 @@
 import type { StaticAircraftMetadataProviderConfig } from '../providers/aircraftMetadata/staticAircraftMetadataProvider'
+import type { StaticAirportsProviderConfig } from '../providers/airports/staticAirportsProvider'
 import type { StaticPortsProviderConfig } from '../providers/ports/staticPortsProvider'
 import aircraftMetadataSource from './aircraftMetadataSource.json'
+import airportsSource from './airportsSource.json'
 import portsSource from './portsSource.json'
 
 export interface AppCenter {
@@ -47,6 +49,7 @@ export interface AppConfig {
     rateLimitBackoffMaxMs: number
   }
   aircraftMetadata: StaticAircraftMetadataProviderConfig
+  airports: StaticAirportsProviderConfig
   ports: StaticPortsProviderConfig
   marine: FreshnessThresholds & {
     restBaseUrl: string
@@ -235,6 +238,24 @@ export const createAppConfig = (
       futureToleranceHours:
         aircraftMetadataSource.projection.futureToleranceHours,
       expectedCounts: aircraftMetadataSource.projection.expected,
+    },
+    airports: {
+      assetUrl: `/airports/${airportsSource.projection.outputVersion}/airports.geojson`,
+      timeoutMs: 5_000,
+      maximumBytes: 1_536 * 1_024,
+      schemaVersion: airportsSource.projection.schemaVersion,
+      outputVersion: airportsSource.projection.outputVersion,
+      sourceName: airportsSource.source.name,
+      sourceRepositoryUrl: airportsSource.source.repositoryUrl,
+      sourceCommit: airportsSource.source.commit,
+      sourcePublishedAt: airportsSource.source.publishedAt,
+      sourceTermsUrl: airportsSource.source.termsUrl,
+      sourceDocumentationUrl: airportsSource.source.documentationUrl,
+      sourceLicenseName: airportsSource.source.licenseName,
+      expectedBytes: airportsSource.projection.expected.rawBytes,
+      expectedRecords: airportsSource.projection.expected.projectedRecords,
+      expectedSha256: airportsSource.projection.expected.sha256,
+      expectedKindCounts: airportsSource.projection.expected.kindCounts,
     },
     ports: {
       assetUrl: `/ports/${portsSource.projection.outputVersion}/ports.geojson`,

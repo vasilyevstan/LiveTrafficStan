@@ -13,6 +13,7 @@ import {
   installPortsStyle,
   portFeatures,
 } from './portsStyle'
+import { LAYER_AIRPORTS_MEDIUM } from './airportsStyle'
 import { LAYER_AIRCRAFT_HALO } from './trafficStyle'
 
 const ports: Port[] = [
@@ -112,5 +113,36 @@ describe('port map style', () => {
     for (const layerId of PORT_LAYER_IDS) {
       expect(visibility.get(`${layerId}:visibility`)).toBe('none')
     }
+  })
+
+  it('stays below airports when ports load after the airport style', () => {
+    const sources = new Map<string, { setData: ReturnType<typeof vi.fn> }>()
+    const layers = new Map<string, Record<string, unknown>>([
+      [LAYER_AIRCRAFT_HALO, { id: LAYER_AIRCRAFT_HALO }],
+      [LAYER_AIRPORTS_MEDIUM, { id: LAYER_AIRPORTS_MEDIUM }],
+    ])
+    const addLayer = vi.fn(
+      (layer: Record<string, unknown>, before?: string) => {
+        layers.set(layer.id as string, { ...layer, before })
+      },
+    )
+    const map = {
+      getSource: (id: string) => sources.get(id),
+      addSource: (id: string) => {
+        sources.set(id, { setData: vi.fn() })
+      },
+      getLayer: (id: string) => layers.get(id),
+      addLayer,
+      setLayoutProperty: vi.fn(),
+      setPaintProperty: vi.fn(),
+    } as unknown as MapLibreMap
+
+    installPortsStyle(map, portFeatures(ports, null), 'light', true)
+
+    expect(
+      addLayer.mock.calls.every(
+        ([, before]) => before === LAYER_AIRPORTS_MEDIUM,
+      ),
+    ).toBe(true)
   })
 })

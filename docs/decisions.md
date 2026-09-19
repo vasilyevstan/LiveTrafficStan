@@ -76,6 +76,28 @@ proved before a public deployment exists, but credentialed route enrichment
 cannot ship until the selected secret-holding production path is deployed and
 validated.
 
+## Airport arrival and departure boards remain blocked
+
+Airport/time-window boards are independent of selected-flight route lookup.
+The dated
+[airport board evaluation](airport-board-evaluation.md)
+found no currently configured and authorized source with the complete
+account/plan, rights, retention, source-age, Tallinn-sample, quota, cost, and
+server-held credential contract required by Issue #5.
+
+OpenSky's airport flights are previous-day-or-earlier overnight
+reconstructions with estimated airports/times, not current operational rows.
+FlightAware AeroAPI and AeroDataBox are technically credible but require
+project-specific commercial authorization and unresolved combination,
+retention, source-age, and plan evidence. aviationstack is likewise
+unconfigured. Human-facing airport, airline, and tracker pages will not be
+scraped.
+
+Issue #46 is therefore the explicit board authorization blocker. No board
+component, domain record, Worker route, credential name, cache, placeholder,
+or mock production response is added. A future board failure must remain
+independent of ADS-B, marine traffic, static airport context, and the map.
+
 ## Cloudflare Worker plus Static Assets
 
 Cloudflare Workers with Static Assets is the smallest production boundary for
@@ -165,6 +187,20 @@ subcodes between those values remain unknown. Search/filter state never mutates
 the provider snapshot, and hiding SHIPS keeps matching counts truthful while
 disabling result selection.
 
+## Local aircraft discovery after viewport and freshness filtering
+
+Aircraft search runs over current `DisplayAircraft[]` after provider
+normalization, exact viewport filtering, freshness calculation, and expiry.
+It performs case-insensitive literal matching over callsign, registration,
+ICAO24, and provider-reported type, ordered by exact, prefix, then substring
+match with stable display-order ties.
+
+The input is bounded to 64 characters and the accessible result list to 20.
+Search does not hide nonmatching markers, move the camera, change Home, query a
+provider or geocoder, load metadata while typing, or create another scheduler.
+Selecting a result reuses the existing traffic details, trail, and
+selected-aircraft metadata path.
+
 ## Pinned Natural Earth ports as optional context
 
 Natural Earth Ports `v5.1.2` at commit
@@ -192,6 +228,34 @@ export returned HTTP 403 during review, so a stable current export and
 dataset-specific rights/update contract could not be inspected reproducibly.
 That does not make Natural Earth equivalent in completeness; it supports only
 the narrower generalized-context feature.
+
+## Pinned OurAirports points as optional context
+
+OurAirports at commit
+`5ed85eed28722bea80ebdde9e255e09b1e7317a8` is selected for the
+static airport layer. Its Public Domain terms permit the projection, request
+credit, and disclaim accuracy and fitness. The source's persistent numeric ID
+is retained; `ident`, explicit ICAO, and explicit IATA values remain separate.
+
+The deterministic projection includes all 5,280 current large and medium
+airport records rather than treating `scheduled_service` as a live operational
+guarantee. It is one 1,329,838-byte immutable GeoJSON asset, compressed to
+225,625 deterministic gzip-9 bytes.
+
+The layer is off by default and makes no startup request. One same-origin load
+is guarded by a deadline, body cap, exact bytes, SHA-256, full grammar/count
+validation, and fulfilled-only session caching. Large and medium points use
+separate zoom thresholds, render above generalized ports and below traffic,
+and remain available at high zoom. Valid wide-view geometry can continue to
+filter and select this static context even while the 100 km live-traffic gate
+is paused.
+
+A bounded "Airports in this view" list gives keyboard users the same static
+selection path as map users. Airport, port, and traffic selections are mutually
+exclusive. Exact traffic and traffic touch fallback retain priority; exact
+airport and port hits precede either context layer's near-miss. Static details
+never claim navigation authority, operating status, current service, route,
+arrival, departure, or a relationship to a visible aircraft.
 
 ## Application-owned traffic models
 
