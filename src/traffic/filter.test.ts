@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import type { Vessel } from '../domain/traffic'
+import type { TrafficViewport } from '../domain/viewport'
 import {
-  filterTrafficByRadius,
+  filterTrafficByViewport,
   filterVesselsByMinimumLength,
 } from './filter'
 
@@ -25,6 +26,21 @@ const vessel = (
   markerScale: 1,
 })
 
+const viewport: TrafficViewport = {
+  center: {
+    latitude: 59,
+    longitude: 24,
+    label: 'Map view',
+  },
+  enclosingRadiusKm: 20,
+  polygon: [
+    { latitude: 59.2, longitude: 23.8 },
+    { latitude: 59.2, longitude: 24.2 },
+    { latitude: 58.8, longitude: 24.2 },
+    { latitude: 58.8, longitude: 23.8 },
+  ],
+}
+
 describe('filterVesselsByMinimumLength', () => {
   it('keeps only vessels with a reliable length at or above the threshold', () => {
     expect(
@@ -35,12 +51,11 @@ describe('filterVesselsByMinimumLength', () => {
     ).toEqual(['2', '4'])
   })
 
-  it('removes retained entities outside a changed radius immediately', () => {
+  it('removes retained entities outside the visible viewport immediately', () => {
     expect(
-      filterTrafficByRadius(
+      filterTrafficByViewport(
         [vessel('1', 50), vessel('2', 50, 60)],
-        { latitude: 59, longitude: 24 },
-        20,
+        viewport,
       ).map((item) => item.id),
     ).toEqual(['1'])
   })

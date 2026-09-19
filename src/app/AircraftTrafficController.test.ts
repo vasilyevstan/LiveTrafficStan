@@ -136,4 +136,75 @@ describe('AircraftTrafficController', () => {
     expect(provider.fetchSnapshot).toHaveBeenCalledTimes(2)
     controller.stop()
   })
+
+  it('preserves cadence and the latest query across repeated pauses', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+    const calls: TrafficQuery[] = []
+    const provider: AircraftDataProvider = {
+      fetchSnapshot: vi.fn(async (nextQuery) => {
+        calls.push(nextQuery)
+        return []
+      }),
+    }
+    const controller = new AircraftTrafficController({
+      provider,
+      initialQuery: query(59.437, 24.754),
+      refreshIntervalMs: 20_000,
+      rateLimitBackoffMaxMs: 300_000,
+      onResult: vi.fn(),
+      runtime,
+      onWarning: vi.fn(),
+    })
+
+    controller.start()
+    await flush()
+    await vi.advanceTimersByTimeAsync(5_000)
+    controller.setPaused(true)
+    controller.updateQuery(query(60, 25))
+    controller.setPaused(false)
+    controller.setPaused(true)
+    controller.setPaused(false)
+
+    await vi.advanceTimersByTimeAsync(14_999)
+    expect(calls).toHaveLength(1)
+    await vi.advanceTimersByTimeAsync(1)
+    expect(calls).toEqual([
+      query(59.437, 24.754),
+      query(60, 25),
+    ])
+    controller.stop()
+  })
+
+  it('does not reset Retry-After while paused', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+    const provider: AircraftDataProvider = {
+      fetchSnapshot: vi
+        .fn()
+        .mockRejectedValueOnce(new ProviderError('rate limited', 429, 60_000))
+        .mockResolvedValueOnce([]),
+    }
+    const controller = new AircraftTrafficController({
+      provider,
+      initialQuery: query(59.437, 24.754),
+      refreshIntervalMs: 20_000,
+      rateLimitBackoffMaxMs: 300_000,
+      onResult: vi.fn(),
+      runtime,
+      onWarning: vi.fn(),
+    })
+
+    controller.start()
+    await flush()
+    await vi.advanceTimersByTimeAsync(10_000)
+    controller.setPaused(true)
+    await vi.advanceTimersByTimeAsync(20_000)
+    controller.setPaused(false)
+    await vi.advanceTimersByTimeAsync(29_999)
+    expect(provider.fetchSnapshot).toHaveBeenCalledTimes(1)
+    await vi.advanceTimersByTimeAsync(1)
+    expect(provider.fetchSnapshot).toHaveBeenCalledTimes(2)
+    controller.stop()
+  })
 })

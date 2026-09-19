@@ -1,13 +1,15 @@
-import { distanceKm } from '../domain/geo'
-import type { GeoPosition, TrafficEntity, Vessel } from '../domain/traffic'
+import type { TrafficEntity, Vessel } from '../domain/traffic'
+import {
+  isCoordinateInViewport,
+  type TrafficViewport,
+} from '../domain/viewport'
 
-export const filterTrafficByRadius = <T extends TrafficEntity>(
+export const filterTrafficByViewport = <T extends TrafficEntity>(
   entities: readonly T[],
-  center: Pick<GeoPosition, 'latitude' | 'longitude'>,
-  radiusKm: number,
+  viewport: TrafficViewport,
 ) =>
-  entities.filter(
-    (entity) => distanceKm(center, entity.position) <= radiusKm,
+  entities.filter((entity) =>
+    isCoordinateInViewport(entity.position, viewport),
   )
 
 export const filterVesselsByMinimumLength = <T extends Vessel>(

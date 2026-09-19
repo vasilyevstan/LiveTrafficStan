@@ -140,7 +140,7 @@ export class AdsbLolAircraftProvider implements AircraftDataProvider {
   }
 
   async fetchSnapshot(query: TrafficQuery, signal: AbortSignal) {
-    const radiusNauticalMiles = Math.max(1, Math.ceil(query.radiusKm / 1.852))
+    const radiusNauticalMiles = aircraftQueryRadiusNauticalMiles(query.radiusKm)
     const url =
       `${this.endpointBaseUrl}/v2/point/` +
       `${query.center.latitude}/${query.center.longitude}/${radiusNauticalMiles}`
@@ -165,3 +165,6 @@ export class AdsbLolAircraftProvider implements AircraftDataProvider {
     return normalizeAdsbLolResponse(payload, query, Date.now())
   }
 }
+
+export const aircraftQueryRadiusNauticalMiles = (radiusKm: number) =>
+  Math.max(1, Math.ceil(radiusKm / 1.852))

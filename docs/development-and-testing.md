@@ -71,7 +71,8 @@ The V1 suite uses sanitized, local values and does not call live providers. It
 covers:
 
 - configuration defaults and invalid overrides;
-- ADSB.lol response validation, exact-radius filtering, and metric conversion;
+- ADSB.lol response validation, enclosing-circle transport, and metric
+  conversion;
 - Digitraffic REST/MQTT normalization, dimensions, ETA, and missing metadata;
 - vessel minimum-length filtering;
 - current, stale, and expired transitions;
@@ -82,14 +83,18 @@ Live provider availability, WebSocket behavior, WebGL rendering, and CORS/proxy
 configuration require browser smoke testing because unit fixtures cannot prove
 those external contracts.
 
-V1.1 tests also cover:
+Map-experience tests also cover:
 
 - synchronous MapLibre construction failure without map-resource cleanup or
   application teardown;
 - latest-query coalescing and a minimum 20-second aircraft request-start gap;
 - obsolete request cancellation/result rejection and rate-limit backoff;
-- marine center/radius changes without MQTT reconnect or REST bursts;
-- home/query/camera/radius state transitions;
+- antimeridian, rotated, tilted, invalid, exact-100-km, and
+  outside-polygon/inside-circle viewport geometry;
+- marine viewport changes without MQTT reconnect or REST bursts;
+- session-lived aircraft and marine pause/resume without cadence, backoff,
+  reconnect, REST, metadata, or cache resets;
+- Home/camera/viewport eligibility state transitions;
 - granted, prompt, denied, unsupported, timeout, and explicit geolocation
   outcomes without coordinate persistence;
 - theme storage validation and unavailable-storage behavior;
@@ -111,7 +116,8 @@ Use `npm run dev` and verify:
 1. OpenFreeMap labels and land/water geometry render, not only the overlays.
 2. The status reaches `LIVE` or a truthful provider-specific `PARTIAL` state.
 3. Aircraft and vessels appear when current provider coverage contains them.
-4. All radius and vessel-length presets update the map and counts.
+4. Pan, zoom, rotate, pitch, Home, and resize update the visible traffic area
+   after settling.
 5. Aircraft and ship layer toggles work independently.
 6. Selecting an object opens the correct detail card and a trail appears only
    after multiple observations are available.
@@ -120,20 +126,27 @@ Use `npm run dev` and verify:
 8. A narrow mobile viewport keeps controls readable and the map usable.
 9. Map and provider attribution remains visible.
 
-For the V1.1 map experience, additionally verify:
+For the viewport-driven map experience, additionally verify:
 
-1. A settled pan automatically recenters the query/radius circle without
-   snapping the camera back.
-2. Rapid pans resolve to the latest area without increasing aircraft request
-   cadence.
-3. Pure wheel, button, and pinch zoom do not change query scope.
-4. Center returns to the session home and fits the selected radius.
-5. Already-granted location starts near the rounded browser location without a
+1. Settled pan, wheel/button/pinch zoom, rotation, pitch, and real resize update
+   the desired traffic viewport without snapping the camera back.
+2. Rapid camera changes resolve to the latest area without increasing aircraft
+   request cadence or reconnecting marine MQTT.
+3. A view at or below the 100 km enclosing limit shows exact polygon-filtered
+   traffic; an object inside the query circle but outside the visible footprint
+   stays hidden.
+4. Wider or unsafe views hide traffic and trails, clear selection, pause both
+   providers, and show the zoom or tilt prompt. Zooming back in resumes at the
+   preserved provider boundaries.
+5. Center returns to session Home using the initial local framing.
+6. Already-granted location starts near the rounded browser location without a
    prompt; other permission states retain Tallinn until explicit action.
-6. Repeated Light/Dark changes preserve camera, live traffic, selected object,
+7. Dateline, rotated, pitched, and desktop/mobile resized views remain bounded
+   and do not become a falsely small query.
+8. Repeated Light/Dark changes preserve camera, live traffic, selected object,
    trail, controls, and provider connections.
-7. Both themes remain readable on desktop and a narrow mobile viewport.
-8. Aircraft, helicopter, and vessel artwork retains its identity over land,
+9. Both themes remain readable on desktop and a narrow mobile viewport.
+10. Aircraft, helicopter, and vessel artwork retains its identity over land,
    water, and busy detail at actual marker scale; stale markers remain
    recognizable and distinct from live markers.
 
@@ -158,10 +171,12 @@ usable, and no map listener, animation loop, retry, or cleanup method runs
 without an instance.
 
 Restore access and confirm the provider returns to current state without a page
-reload. While the Network panel is open, hide the page long enough to confirm
-aircraft polling and the marine connection stop, then restore visibility and
-confirm recovery at the next permitted provider boundary. Do not describe
-provider-safe cadence, `Retry-After`, or MQTT reconnect spacing as immediate.
+reload. While the Network panel is open, hide the page or make the viewport
+ineligible long enough to confirm aircraft polling and the marine connection
+stop, then restore an eligible visible state and confirm recovery at the next
+permitted provider boundary. Combine both pause reasons in both orders. Do not
+describe provider-safe cadence, `Retry-After`, MQTT reconnect spacing, or
+five-minute REST/metadata gates as immediate.
 
 ## Provider contract probes
 

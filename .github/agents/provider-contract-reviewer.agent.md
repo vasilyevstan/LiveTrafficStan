@@ -11,13 +11,13 @@ affect provider load, data truthfulness, privacy, or recovery.
 Check these project invariants:
 
 - ADSB.lol requests remain non-overlapping and no more frequent than the
-  configured polling cadence, including rapid pan/radius/Center changes.
+  configured polling cadence, including rapid viewport and Home changes.
 - Latest-query revisions win; obsolete requests are aborted and obsolete
   responses cannot replace current-area data.
 - Dynamic rate limits are surfaced. `429` and `Retry-After` cause explicit,
   bounded backoff rather than a success-shaped fallback or request burst.
 - Digitraffic query changes reuse the existing global MQTT connection, refilter
-  caches immediately, and do not repeatedly refresh radius REST data.
+  caches immediately, and do not repeatedly refresh bounded REST data.
 - MQTT reconnect attempts remain at least 15 seconds apart and all timers,
   requests, and clients stop cleanly on page hiding or unmount.
 - Intentional pause reasons compose. Disabling and resuming a view, provider, or
@@ -28,8 +28,11 @@ Check these project invariants:
   or unmounted generation.
 - Aircraft and marine errors stay independent and visible until real recovery.
 - Provider payloads are validated and normalized before map/UI use; units,
-  timestamps, radius filtering, missing fields, and AIS sentinel values remain
-  truthful.
+  timestamps, enclosing-circle transport, exact viewport filtering, missing
+  fields, and AIS sentinel values remain truthful.
+- Viewport eligibility is decided against 100 km before ADSB.lol's outward
+  nautical-mile rounding. A 100 km eligible request therefore uses 54 NM
+  (100.008 km transport coverage) without widening display eligibility.
 - Successful empty results, unknown or regional coverage, updating, paused,
   stale, historical, offline, and provider failure states remain distinct.
 - Geolocation is one-shot, permission-aware, rounded before provider use, and
