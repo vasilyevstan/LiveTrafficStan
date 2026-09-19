@@ -73,6 +73,9 @@ Check these project invariants:
   or make provider calls while scrubbing.
 - Theme, Center, location, and layer controls keep semantic buttons,
   truthful pressed state, keyboard focus, contrast, and usable mobile layout.
+- Added controls must not let the mobile overlay consume the entire map.
+  Verify a real touch drag starts on an unobscured map region at both 390x844
+  and 390x568 while the control panel remains scrollable and reachable.
 - Theme preference and resolved rendering theme stay separate. Missing or
   invalid storage remains Light; only explicit Auto follows system changes,
   and pre-paint/React resolution must agree without duplicate listeners.

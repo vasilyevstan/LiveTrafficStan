@@ -714,7 +714,7 @@
     right: 8px;
     left: 8px;
     width: auto;
-    max-height: calc(100vh - 134px);
+    max-height: min(58vh, calc(100vh - 134px));
     overflow-y: auto;
     padding: 10px 11px 126px;
   }
@@ -786,7 +786,7 @@
     top: 112px;
     right: 6px;
     left: 6px;
-    max-height: calc(100vh - 118px);
+    max-height: min(58vh, calc(100vh - 118px));
     padding: 8px 9px 126px;
   }
 
