@@ -220,6 +220,55 @@ timeout. A timeout therefore keeps the current home usable and must remain
 retryable without weakening the one-shot, rounded, session-only privacy
 contract.
 
+## Explicit coordinates and Photon forward search
+
+One compact Location form handles both direct coordinates and named places.
+Strict decimal `latitude, longitude` input is recognized before any provider
+path, validated against coordinate ranges, rounded with the existing
+three-decimal privacy precision, and navigated locally. Named text is sent only
+after explicit submit; typing never schedules network work.
+
+Photon's public endpoint was selected after a dated comparison with the public
+Nominatim instance. Photon's current terms permit project use subject to fair
+use, throttling, service changes, and no availability guarantee. Public
+Nominatim's official one-request-per-second maximum applies to the sum of all
+users of an application, which a static browser-local limiter cannot enforce.
+Adding a proxy solely to approximate that aggregate policy would be larger than
+the required feature.
+
+The Photon adapter is replaceable through one validated HTTPS or root-relative
+configuration value, but the checked deployment adds no geocoder proxy or
+credential. Requests omit browser credentials and custom `User-Agent` headers,
+carry no geolocation bias, and return at most five normalized Point results.
+One active request, revision cancellation, a one-second local submit cooldown,
+an eight-second total timeout, bounded session caching, and explicit `429`
+deadlines contain load without claiming a provider quota. Search failure leaves
+coordinates and the map usable.
+
+Search result labels and submitted text are not persisted. The UI discloses
+that submitted text appears in the Photon URL and that the provider receives
+ordinary network metadata. Visible Photon and OpenStreetMap attribution remains
+next to the control.
+
+## Separate Home and explicit-view intent
+
+Session Home is a Center destination, not the current search target. Coordinate
+navigation and Photon results change the view without changing Home. A later
+Center action therefore returns to the most recent configured or rounded
+geolocated Home.
+
+A small revision-based intent boundary prevents asynchronous geolocation from
+overriding newer explicit work. Search submission, coordinate navigation,
+Center, Use Location, and trusted manual camera movement win over an older
+automatic location callback. That older callback may still update Home
+silently, so a later Center can use it. Programmatic navigation retains its
+label, while trusted canvas movement changes the label to `Custom view`.
+
+Committed navigation clears selection and resets old retained trail points,
+then uses the existing settled full-canvas viewport pipeline. It does not
+recreate MapLibre, change filters/layers/themes, add a provider scheduler, or
+reconnect marine MQTT.
+
 ## Explicit persisted light and dark themes
 
 The Positron presentation remains the default Light theme. V1.1 provides an

@@ -18,6 +18,10 @@ Digitraffic REST + MQTT -> marine adapter -> normalized Vessel[]
                                  freshness + filters + bounded history
                                                         |
                            React overlays <-> persistent MapLibre map
+
+coordinate text -> local parser ------------------------+
+named text -> Photon adapter -> PlaceSearchResult[] ----+-> view navigation
+session Home / one-shot location -----------------------+
 ```
 
 Local development and preview use Vite's same-origin proxy. Production uses a
@@ -30,10 +34,11 @@ does not hold a provider credential or create server-side state.
 | Area | Responsibility |
 | --- | --- |
 | `src/config/` | Typed defaults and validation of browser-safe environment overrides |
-| `src/domain/` | Application-owned traffic types, geographic helpers, and formatting |
+| `src/domain/` | Application-owned traffic types, geographic helpers, location-input parsing, and formatting |
 | `src/providers/aircraft/` | ADSB.lol request, runtime payload checks, normalization, and unit conversion |
 | `src/providers/marine/` | Digitraffic capabilities, REST/MQTT lifecycle, metadata merging, normalization, and opt-in development diagnostics |
-| `src/app/` | React hooks for provider lifecycle, time ticks, and trail history |
+| `src/providers/geocoding/` | Photon request construction, response bounds, runtime GeoJSON validation, result normalization, and attribution identity |
+| `src/app/` | React hooks/controllers for provider lifecycle, place-search cancellation/cache, navigation intent, time ticks, and trail history |
 | `src/traffic/` | Filtering, freshness/expiry, interpolation, and bounded history |
 | `src/map/` | MapLibre lifecycle, GeoJSON sources/layers, feature selection, and marker images |
 | `src/components/` | Status, controls, and selected-object details |
@@ -71,6 +76,15 @@ After provider normalization, the application filters both traffic kinds to the
 actual unwrapped viewport polygon. An object inside the enclosing circle but
 outside the visible rotated or pitched footprint is not displayed.
 
+Place search is a separate non-traffic boundary. Strict decimal coordinate
+pairs are parsed, range-checked, and rounded locally. Other non-empty submitted
+text reaches the Photon adapter only after explicit form submission. The
+adapter permits one fixed configured endpoint, bounded query/result sizes, no
+credentials, and no browser geolocation bias. It validates GeoJSON Point
+features, preserves provider order, deduplicates stable OpenStreetMap
+identities, and emits bounded application-owned `PlaceSearchResult` records.
+Raw Photon payloads never enter React or MapLibre.
+
 ## Lifecycle and failure isolation
 
 Aircraft and marine providers have separate state, cancellation, and error
@@ -91,6 +105,10 @@ continues to render.
   unmount performs final shutdown.
 - Provider errors remain visible until a successful request or subscription
   recovers that provider.
+- Place search has its own cancellable controller and UI state. It permits one
+  active request, rejects stale revisions, enforces local submit and
+  rate-limit deadlines, and keeps a bounded session-only success/empty cache.
+  Search failure does not change the current camera or either traffic provider.
 
 ## Freshness, motion, and history
 
@@ -104,7 +122,11 @@ the receipt timestamp otherwise.
 The map interpolates for at most 1.5 seconds between two provider-observed
 positions. It never extrapolates beyond the newest observation. Trails contain
 only observed positions, are pruned after 15 minutes, are capped at 180 points
-per object, and are rendered only for the selected object.
+per object, and are rendered only for the selected object. A committed
+coordinate, place-result, Center, or successful Use Location navigation clears
+selection and resets retained trail points so observations from the previous
+area are not connected to the new view. Invalid input and failed search do not
+alter the existing selection or history.
 
 ## Map rendering
 
@@ -188,8 +210,9 @@ boundary:
 3. Worker code runs first only for `/api` and `/api/*`;
 4. the only forwarded route is
    `GET /api/aircraft/v2/point/{latitude}/{longitude}/{radiusNm}`;
-5. OpenFreeMap and Digitraffic HTTPS/WSS remain direct browser connections;
-6. visible provider attribution remains unchanged.
+5. OpenFreeMap, Photon, and Digitraffic HTTPS/WSS remain direct browser
+   connections;
+6. map, search, aircraft, and marine attribution remains visible.
 
 The production proxy accepts canonical finite latitude/longitude values and
 integer radii from 1 through 54 NM. It rejects query strings, other methods,
@@ -210,18 +233,19 @@ version wait only on the permanent account/credential prerequisite in Issue
 
 ## Navigation and viewport boundaries
 
-The application keeps session Home and current camera behavior distinct while
-making the settled visible canvas the traffic contract:
+The application keeps session Home, explicit view targets, and the current
+camera distinct while making the settled visible canvas the traffic contract:
 
 ```text
-permission-aware startup --> homeCenter (session only)
-                                   |
-                  Center ----------+
-                                   v
-                         MapLibre Home framing
-                                   |
+configured / allowed auto location -> session Home + initial view
+session Home ------------------------------ Center ----------+
+explicit Use Location -----------> session Home + view ------+
+coordinate / Photon result -------------------------------> view request
+                                                              |
+                                                     MapLibre framing
+                                                              |
 settled pan / zoom / rotate / pitch / resize
-                                   |
+                                                              |
                          full-canvas footprint
                                    |
                     +--------------+--------------+
@@ -234,8 +258,22 @@ settled pan / zoom / rotate / pitch / resize
 ```
 
 `TrafficMap` mounts before any provider query and reports a viewport only after
-MapLibre has usable geometry. `App` owns the latest assessment and Home command.
-Provider data never moves or fits the camera.
+MapLibre has usable geometry. `App` owns the latest assessment, session Home,
+current target label, and monotonic view request. Provider data never moves or
+fits the camera.
+
+Explicit coordinate submission, place-result selection, Center, Use Location,
+and trusted manual map interaction advance a navigation-intent revision. An
+older asynchronous geolocation callback may still update session Home, but it
+cannot steal the camera after a newer explicit intent. A successful explicit
+Use Location may move the view only while it remains the latest intent.
+Coordinate and place navigation never mutate Home.
+
+Programmatic view requests retain their target label. Trusted canvas wheel,
+double-click, supported map-keyboard input, or pointer movement beyond the
+drag threshold changes the visible label to `Custom view`. Simple marker clicks
+do not. All navigation reuses the same MapLibre instance and settled viewport
+pipeline; it does not add another traffic scheduler or reconnect marine MQTT.
 
 The aircraft hook creates one revision-aware polling controller after the first
 eligible query and retains it for the session. The marine hook does the same

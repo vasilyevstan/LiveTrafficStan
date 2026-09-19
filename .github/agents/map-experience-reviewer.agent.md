@@ -28,6 +28,17 @@ Check these project invariants:
   data.
 - Home remains a session-only camera destination; the current MapLibre camera
   supplies the rounded enclosing-query center and actual display footprint.
+- Session Home and the current named/coordinate view target remain separate.
+  Coordinate and place navigation never mutate Home, and Center always uses
+  the latest configured or rounded geolocated Home.
+- Explicit coordinate submit, place search/result navigation, Center, Use
+  Location, and trusted manual camera movement win over older asynchronous
+  geolocation. A late result may update Home silently but cannot steal the
+  current camera after a newer intent.
+- Programmatic navigation preserves its target label. Trusted canvas wheel,
+  double-click, supported map-keyboard movement, or pointer drag marks
+  `Custom view`; do not rely solely on MapLibre `movestart.originalEvent`, and
+  do not treat a marker click without movement as a camera intent.
 - Viewport behavior uses a safely representable full-canvas footprint with
   explicit antimeridian, pitch, rotation, resize, invalid-geometry, and
   over-budget behavior. Empty, wide-view paused, and map-unavailable states are
@@ -46,7 +57,15 @@ Check these project invariants:
   or make provider calls while scrubbing.
 - Theme, Center, location, and layer controls keep semantic buttons,
   truthful pressed state, keyboard focus, contrast, and usable mobile layout.
-- Theme or camera changes do not clear selection/history or reconnect providers.
+- Location search stays explicit-submit, keeps normal form/button semantics,
+  supports Tab and Enter/Space result selection, closes with Escape while
+  restoring input focus, and remains reachable in both 390x844 and 390x568
+  layouts without hiding attribution.
+- Theme changes and ordinary manual camera movement do not clear
+  selection/history or reconnect providers.
+- Committed coordinate, result, Center, or successful Use Location navigation
+  clears selection and pre-navigation trail points, but invalid input, empty
+  results, and search failure do not.
 - Map/style failures remain visible without disabling traffic controls.
 
 For each finding, include severity, file and line, the concrete user scenario,

@@ -1,4 +1,8 @@
 import type { Theme } from '../app/theme'
+import type { PlaceSearchState } from '../app/PlaceSearchController'
+import type { AppCenter } from '../config/appConfig'
+import type { PlaceSearchResult } from '../providers/geocoding/photonProvider'
+import { LocationSearch } from './LocationSearch'
 
 interface TrafficControlsProps {
   vesselLengthPresetsMeters: readonly number[]
@@ -16,6 +20,15 @@ interface TrafficControlsProps {
   onUseLocation: () => void
   theme: Theme
   onThemeChange: (theme: Theme) => void
+  locationNavigationDisabled: boolean
+  activeLocationLabel: string
+  coordinatePrecision: number
+  maximumLocationQueryLength: number
+  placeSearchState: PlaceSearchState
+  onPlaceSearch: (query: string) => void
+  onLocationNavigate: (center: AppCenter) => void
+  onPlaceResultSelect: (result: PlaceSearchResult) => void
+  onPlaceSearchCancel: () => void
 }
 
 export function TrafficControls({
@@ -34,9 +47,30 @@ export function TrafficControls({
   onUseLocation,
   theme,
   onThemeChange,
+  locationNavigationDisabled,
+  activeLocationLabel,
+  coordinatePrecision,
+  maximumLocationQueryLength,
+  placeSearchState,
+  onPlaceSearch,
+  onLocationNavigate,
+  onPlaceResultSelect,
+  onPlaceSearchCancel,
 }: TrafficControlsProps) {
   return (
     <aside className="control-panel" aria-label="Map controls">
+      <LocationSearch
+        disabled={locationNavigationDisabled}
+        activeLabel={activeLocationLabel}
+        coordinatePrecision={coordinatePrecision}
+        maximumQueryLength={maximumLocationQueryLength}
+        searchState={placeSearchState}
+        onSearch={onPlaceSearch}
+        onNavigate={onLocationNavigate}
+        onSelectResult={onPlaceResultSelect}
+        onCancel={onPlaceSearchCancel}
+      />
+
       <fieldset className="control-group">
         <legend>Layers</legend>
         <div className="control-options control-options--two">

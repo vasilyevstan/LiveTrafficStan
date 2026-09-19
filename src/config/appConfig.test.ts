@@ -16,6 +16,11 @@ describe('createAppConfig', () => {
     expect(config.navigation.coordinatePrecision).toBe(3)
     expect(config.navigation.viewportSettleMs).toBe(350)
     expect(config.navigation.geolocationTimeoutMs).toBe(20_000)
+    expect(config.geocoder.endpointBaseUrl).toBe(
+      'https://photon.komoot.io/api',
+    )
+    expect(config.geocoder.resultLimit).toBe(5)
+    expect(config.geocoder.requestCooldownMs).toBe(1_000)
     expect(config.map.lightStyleUrl).toContain('/positron')
     expect(config.map.darkStyleUrl).toContain('/dark')
     expect(config.map.homeViewRadiusKm).toBe(20)
@@ -37,6 +42,7 @@ describe('createAppConfig', () => {
       VITE_CENTER_LONGITUDE: '25',
       VITE_CENTER_LABEL: 'Test center',
       VITE_AIRCRAFT_ENDPOINT: 'https://example.test/aircraft/',
+      VITE_GEOCODER_ENDPOINT: 'https://example.test/search/',
       VITE_MAP_DARK_STYLE_URL: 'https://example.test/dark/',
     })
 
@@ -49,6 +55,15 @@ describe('createAppConfig', () => {
       'https://example.test/aircraft',
     )
     expect(config.map.darkStyleUrl).toBe('https://example.test/dark')
+    expect(config.geocoder.endpointBaseUrl).toBe(
+      'https://example.test/search',
+    )
+
+    expect(
+      createAppConfig({
+        VITE_GEOCODER_ENDPOINT: '/api/geocoder/',
+      }).geocoder.endpointBaseUrl,
+    ).toBe('/api/geocoder')
   })
 
   it('rejects invalid supplied configuration instead of silently masking it', () => {
@@ -63,5 +78,20 @@ describe('createAppConfig', () => {
         VITE_MAP_DARK_STYLE_URL: 'http://insecure.test/dark',
       }),
     ).toThrow(/https:/)
+    expect(() =>
+      createAppConfig({
+        VITE_GEOCODER_ENDPOINT: '//protocol-relative.test/search',
+      }),
+    ).toThrow(/protocol-relative/)
+    expect(() =>
+      createAppConfig({
+        VITE_GEOCODER_ENDPOINT: 'http://insecure.test/search',
+      }),
+    ).toThrow(/HTTPS/)
+    expect(() =>
+      createAppConfig({
+        VITE_GEOCODER_ENDPOINT: 'https://user:secret@example.test/search',
+      }),
+    ).toThrow(/credentials/)
   })
 })

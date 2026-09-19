@@ -25,6 +25,9 @@ single React application, without accounts, a database, or persistent tracking.
   already-granted permission and grants made while the page is open are used
   automatically; otherwise location is an explicit action with Tallinn
   fallback.
+- One explicit-submit location field accepts rounded decimal coordinates
+  locally or named places through Photon. Search failure never blocks
+  coordinate navigation, Center, or the live map.
 - Independent aircraft and ship layers plus 25, 50, 100, and 150 metre minimum
   vessel-length filters.
 - Honest detail cards, provider-specific health, stale/expired handling, and
@@ -82,6 +85,10 @@ or MapLibre sees them:
 ADSB.lol polling ───────┐
                        ├─> normalized traffic -> freshness/history -> map + UI
 Digitraffic REST/MQTT ──┘
+
+coordinate input ── local validation ─┐
+Photon forward search ─> place results ├─> explicit camera navigation
+session Home / location ──────────────┘
 ```
 
 The application keeps one MapLibre instance and updates persistent GeoJSON
@@ -117,6 +124,7 @@ available for:
 | `VITE_CENTER_LABEL` | `Tallinn, Estonia` |
 | `VITE_MAP_STYLE_URL` | `https://tiles.openfreemap.org/styles/positron` |
 | `VITE_MAP_DARK_STYLE_URL` | `https://tiles.openfreemap.org/styles/dark` |
+| `VITE_GEOCODER_ENDPOINT` | `https://photon.komoot.io/api` |
 | `VITE_AIRCRAFT_ENDPOINT` | `/api/aircraft` |
 | `VITE_MARINE_REST_ENDPOINT` | `https://meri.digitraffic.fi` |
 | `VITE_MARINE_MQTT_ENDPOINT` | `wss://meri.digitraffic.fi:443/mqtt` |
@@ -130,13 +138,15 @@ operational thresholds, and examples.
 | Purpose | Provider | Runtime data license | V1 access |
 | --- | --- | --- | --- |
 | Map | OpenFreeMap / OpenMapTiles / OpenStreetMap | Provider and OSM attribution applies | Direct browser access |
+| Place search | Photon / OpenStreetMap | OSM ODbL attribution applies | Direct browser access on explicit submit |
 | Aircraft | ADSB.lol | ODbL 1.0 | Same-origin Vite or Cloudflare Worker proxy |
 | Marine | Fintraffic Digitraffic | CC BY 4.0 | Direct regional REST and MQTT |
 
 The repository's Apache License 2.0 applies to source code only. Distributed
 derivative works must preserve the attribution in [`NOTICE`](NOTICE) as
 described by the license. The source license does not relicense map, aircraft,
-or marine data, whose required attribution remains visible on the map. See
+marine, or place-search data, whose required attribution remains visible in the
+application. See
 [Data Sources and Licensing](docs/data-sources-and-licensing.md), the dated
 [Aircraft Provider Evaluation](docs/aircraft-provider-evaluation.md), and the
 dated [Marine Provider Evaluation](docs/marine-provider-evaluation.md) for the
@@ -180,10 +190,13 @@ monitoring, privacy, and rollback procedure.
   object.
 - Browser location is one-shot, rounded, and session-only; it is not continuous
   tracking and exact coordinates are not persisted.
+- Named place text is sent to Photon only after explicit submission. Photon is
+  a fair-use public service with no availability guarantee; direct coordinate
+  entry remains local and available during search failure or throttling.
 - Theme preference is limited to explicit Light/Dark selection; there is no
   automatic system-theme mode.
-- V1.2 has no location search, route enrichment, playback, weather overlays,
-  accounts, saved center preferences, or offline mode.
+- There is no reverse geocoding, route enrichment, playback, weather overlay,
+  account, saved center preference, or offline mode.
 
 Planned work is tracked in
 [GitHub Issues](https://github.com/vasilyevstan/LiveTrafficStan/issues), not

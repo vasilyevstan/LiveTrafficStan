@@ -16,6 +16,7 @@ cp .env.example .env.local
 | `VITE_CENTER_LABEL` | `Tallinn, Estonia` | Non-empty display label; blank uses the default |
 | `VITE_MAP_STYLE_URL` | `https://tiles.openfreemap.org/styles/positron` | HTTPS URL or root-relative path |
 | `VITE_MAP_DARK_STYLE_URL` | `https://tiles.openfreemap.org/styles/dark` | HTTPS URL or root-relative path |
+| `VITE_GEOCODER_ENDPOINT` | `https://photon.komoot.io/api` | HTTPS Photon-compatible forward-search endpoint or root-relative deployment path; protocol-relative and credential-bearing URLs are rejected |
 | `VITE_AIRCRAFT_ENDPOINT` | `/api/aircraft` | HTTPS URL or root-relative path |
 | `VITE_MARINE_REST_ENDPOINT` | `https://meri.digitraffic.fi` | HTTPS URL or root-relative path |
 | `VITE_MARINE_MQTT_ENDPOINT` | `wss://meri.digitraffic.fi:443/mqtt` | Secure WebSocket URL or root-relative path |
@@ -54,6 +55,10 @@ spread through components:
 | Query/geolocation coordinate precision | 3 decimal places |
 | Settled-viewport delay | 350 ms |
 | Geolocation timeout / cached-position age | 20 seconds / 5 minutes |
+| Place-search result/query limit | 5 results / 100 characters |
+| Place-search cooldown / timeout | 1 second / 8 seconds |
+| Place-search `429` fallback | 60 seconds when no readable `Retry-After` is exposed |
+| Place-search session cache | 20 successful or empty queries / 15 minutes |
 
 Changing these constants changes application behavior and should include
 targeted tests where the value affects filtering, freshness, history, or motion.
@@ -81,8 +86,38 @@ A settled pan, zoom, rotation, pitch, Home, or real resize changes the traffic
 viewport. The full map canvas is included even where floating controls cover
 it. Center returns to the session Home using a fixed local camera framing;
 there is no selectable traffic radius. Neither Home nor viewport coordinates
-are persisted. Arbitrary search and remembered coordinates remain roadmap
-items.
+are persisted. A named-place or coordinate navigation changes only the current
+view; it never changes session Home, so Center still returns to the latest
+configured or rounded geolocated Home.
+
+## Coordinate entry and named-place search
+
+The Location control submits only when the user activates **Go** or presses
+Enter. Two strict decimal numbers separated by one comma are validated and
+rounded locally, then used directly as the next camera target. Valid coordinate
+input never calls a geocoder. Exponent notation, non-finite values, incomplete
+pairs, extra numeric segments, and out-of-range coordinates are rejected.
+Ordinary names containing commas remain named queries.
+
+Named text uses the configured Photon-compatible endpoint with `q` and a
+bounded `limit=5`. The browser sends `Accept: application/json`, omits
+credentials, and adds no custom `User-Agent`, geolocation bias, or automatic
+retry. Only one request remains active. New input, Escape, result selection,
+Center, Use Location, coordinate navigation, or manual camera movement cancels
+obsolete work.
+
+Search starts only on explicit submit, with a one-second per-tab cooldown.
+Successful and empty results are cached in session memory for 15 minutes, up to
+20 entries. A `429` honors a readable `Retry-After`; otherwise the app requires
+one minute before another network search. This is a local fair-use safeguard,
+not a claim about an aggregate provider quota.
+
+The default endpoint is called directly from the browser. Submitted place text
+therefore appears in the Photon request URL, and Photon receives ordinary
+network metadata such as the client IP address. Browser-derived Home
+coordinates are not sent to Photon. A root-relative
+`VITE_GEOCODER_ENDPOINT` is only a deployment substitution point; the checked
+Cloudflare Worker does not add a geocoder proxy.
 
 ## Aircraft endpoint and proxy
 
