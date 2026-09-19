@@ -1,22 +1,28 @@
 import { formatAge } from '../domain/format'
 import type { ProviderStatus } from '../domain/traffic'
+import type { MarineProviderCapabilities } from '../providers/types'
 
 interface LiveStatusProps {
   aircraftCount: number
   vesselCount: number
   aircraftStatus: ProviderStatus
   marineStatus: ProviderStatus
+  marineCapabilities: MarineProviderCapabilities
   now: number
 }
 
-const providerLabel = (name: string, status: ProviderStatus) => {
+const providerLabel = (
+  name: string,
+  status: ProviderStatus,
+  healthyState = 'current',
+) => {
   if (status.paused) return `${name} paused`
   if (status.phase === 'error') return `${name} unavailable`
   if (status.updating) return `${name} updating area`
   if (status.phase === 'loading' || status.phase === 'idle') {
     return `${name} connecting`
   }
-  return `${name} current`
+  return `${name} ${healthyState}`
 }
 
 export function LiveStatus({
@@ -24,6 +30,7 @@ export function LiveStatus({
   vesselCount,
   aircraftStatus,
   marineStatus,
+  marineCapabilities,
   now,
 }: LiveStatusProps) {
   const statuses = [aircraftStatus, marineStatus]
@@ -56,7 +63,9 @@ export function LiveStatus({
         <span aria-hidden="true">/</span>
         <span>{aircraftCount} aircraft</span>
         <span aria-hidden="true">/</span>
-        <span>{vesselCount} ships</span>
+        <span title={marineCapabilities.coverage.label}>
+          {vesselCount} ships shown · regional source
+        </span>
         <span aria-hidden="true">/</span>
         <span>updated {formatAge(latestUpdate || undefined, now)}</span>
       </div>
@@ -65,8 +74,9 @@ export function LiveStatus({
           {providerLabel('Aircraft', aircraftStatus)}
         </span>
         <span title={marineStatus.error}>
-          {providerLabel('Marine', marineStatus)}
+          {providerLabel('Marine stream', marineStatus, 'connected')}
         </span>
+        <span>{marineCapabilities.coverage.label}</span>
       </div>
     </section>
   )

@@ -7,6 +7,7 @@ import {
   nonEmptyString,
   normalizedDirection,
 } from '../guards'
+import { DIGITRAFFIC_PROVIDER_NAME } from './digitrafficCapabilities'
 
 const KNOTS_TO_KPH = 1.852
 
@@ -324,7 +325,7 @@ export const normalizeDigitrafficVessel = (
   return {
     id: `vessel:${location.mmsi}`,
     kind: 'vessel',
-    provider: 'Fintraffic Digitraffic',
+    provider: DIGITRAFFIC_PROVIDER_NAME,
     mmsi: location.mmsi,
     position: {
       latitude: location.latitude,

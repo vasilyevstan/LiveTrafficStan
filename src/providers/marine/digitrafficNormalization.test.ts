@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
+  DIGITRAFFIC_MARINE_CAPABILITIES,
+  DIGITRAFFIC_PROVIDER_NAME,
+} from './digitrafficCapabilities'
+import {
   decodeAisEta,
   normalizeDigitrafficVessel,
   parseDigitrafficMqttLocation,
@@ -118,6 +122,7 @@ describe('Digitraffic normalization', () => {
 
     expect(vessel).toMatchObject({
       id: 'vessel:230123456',
+      provider: DIGITRAFFIC_PROVIDER_NAME,
       name: 'TEST SHIP',
       vesselType: 'Cargo vessel',
       lengthMeters: 100,
@@ -136,6 +141,10 @@ describe('Digitraffic normalization', () => {
     )
     expect(withoutMetadata.lengthMeters).toBeUndefined()
     expect(withoutMetadata.name).toBeUndefined()
+    expect(DIGITRAFFIC_MARINE_CAPABILITIES.coverage).toMatchObject({
+      kind: 'regional',
+      exactBoundaryKnown: false,
+    })
   })
 
   it('maps only trusted AIS ship types to the bounded icon vocabulary', () => {

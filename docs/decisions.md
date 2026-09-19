@@ -50,6 +50,31 @@ gate. Automatic reconnect
 attempts are spaced 15 seconds apart to remain within Digitraffic's documented
 connection allowance.
 
+## Digitraffic remains the sole marine provider
+
+The dated
+[marine-provider evaluation](marine-provider-evaluation.md) retains
+Fintraffic Digitraffic because it remains the only reviewed provider that is
+keyless, browser-native, and licensed under clear CC BY 4.0 terms for this
+public map.
+
+Digitraffic is represented as a regional source with an unknown exact coverage
+boundary. The UI describes transport as connected separately from coverage and
+says how many ships are shown rather than treating zero as proof that no
+vessels exist. Officially documented Class A scope and upstream fishing-vessel
+filtering remain explicit.
+
+AISstream.io requires a server-side key and relay while its returned-data
+rights remain unresolved. Datalastic requires a paid server-held key, has a
+50-NM/92.6-km radius limit, and does not establish permission to expose raw
+coordinates in this public client. Kpler/MarineTraffic requires a commercial
+agreement for public display and redistribution.
+
+No relay, provider selector, automatic geographic selection, alternate
+adapter, failover, aggregation, or MMSI source-precedence framework is added.
+Browser-local filtering of Digitraffic's all-published-vessels MQTT stream
+reduces display work, not incoming network bandwidth.
+
 ## Application-owned traffic models
 
 Provider payloads are decoded and normalized at the provider boundary. Map and UI code consume application-owned aircraft and vessel models and do not depend on raw ADSB.lol or Digitraffic response shapes.

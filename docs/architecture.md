@@ -30,7 +30,7 @@ not currently provide browser CORS headers; it does not hold a credential.
 | `src/config/` | Typed defaults and validation of browser-safe environment overrides |
 | `src/domain/` | Application-owned traffic types, geographic helpers, and formatting |
 | `src/providers/aircraft/` | ADSB.lol request, runtime payload checks, normalization, and unit conversion |
-| `src/providers/marine/` | Digitraffic REST/MQTT lifecycle, metadata merging, and normalization |
+| `src/providers/marine/` | Digitraffic capabilities, REST/MQTT lifecycle, metadata merging, normalization, and opt-in development diagnostics |
 | `src/app/` | React hooks for provider lifecycle, time ticks, and trail history |
 | `src/traffic/` | Filtering, freshness/expiry, interpolation, and bounded history |
 | `src/map/` | MapLibre lifecycle, GeoJSON sources/layers, feature selection, and marker images |
@@ -59,6 +59,12 @@ metadata records. The adapter retains only the latest record per MMSI, removes
 expired locations, and filters its cache to the enclosing circle before
 emitting a snapshot.
 
+The marine boundary also exposes one immutable capability descriptor. It
+records direct keyless browser access, radius REST, the all-published-vessels
+stream, CC BY 4.0 obligations, regional source scope, unknown exact coverage,
+and documented Class A/fishing-vessel exclusions. It is not a provider
+registry and does not drive networking or infer a coverage polygon.
+
 After provider normalization, the application filters both traffic kinds to the
 actual unwrapped viewport polygon. An object inside the enclosing circle but
 outside the visible rotated or pitched footprint is not displayed.
@@ -76,7 +82,7 @@ continues to render.
   `Retry-After` boundary without reconstructing the controller.
 - Marine REST requests are deduplicated by controller state. MQTT reconnects
   no more often than every 15 seconds after disconnection. Eligible viewport
-  changes immediately refilter cached global MQTT records, reuse the live
+  changes immediately refilter cached provider-wide MQTT records, reuse the live
   connection, and permit a location REST refresh no more than every five
   minutes. Hidden or ineligible states stop active REST, interval, timeout, and
   MQTT resources while retaining the provider, cache, and all timing gates;

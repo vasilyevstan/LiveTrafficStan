@@ -96,7 +96,16 @@ proxy handoff, and re-evaluation conditions are in
 - License: Creative Commons Attribution 4.0 (CC BY 4.0)
 - Required attribution: `Source: Fintraffic / digitraffic.fi, license CC 4.0 BY`
 
-Digitraffic is suitable for V1:
+Visible attribution links both the source and license and states that
+LiveTrafficStan filters and normalizes the provider data.
+
+The provider was reevaluated on 2026-09-19 against AISstream.io, Datalastic,
+and Kpler/MarineTraffic. It remains the only reviewed option that is keyless,
+browser-native, and covered by a clear open-data license for this public map.
+The complete matrix and bounded stream measurement are in
+[Marine Provider Evaluation](marine-provider-evaluation.md).
+
+Digitraffic is suitable for the current application:
 
 - its AIS coverage returned current Tallinn-area vessel positions during verification;
 - its REST location endpoint supports latitude, longitude, and radius filters;
@@ -104,10 +113,18 @@ Digitraffic is suitable for V1:
 - its official browser example supports MQTT over secure WebSockets;
 - its terms permit commercial and non-commercial reuse with attribution.
 
-Digitraffic recommends a five-minute REST fetch interval for both AIS locations and vessel metadata. V1 therefore uses MQTT for live position updates rather than over-polling the REST endpoint. REST supplies an initial location snapshot for the eligible viewport's conservative enclosing circle and a compact metadata snapshot, then MQTT updates positions and metadata in real time.
+Digitraffic is a regional source, not a global AIS provider. Its official
+material says marine data is gathered from Finnish Transport Infrastructure
+Agency sources, the AIS service provides Class A position and metadata
+messages, and fishing vessels are filtered upstream. No authoritative exact
+coverage boundary or completeness guarantee was found. An empty result
+therefore means no vessels are currently shown, not that no vessels exist or
+that the location is known to be outside coverage.
+
+Digitraffic recommends a five-minute REST fetch interval for both AIS locations and vessel metadata. LiveTrafficStan therefore uses MQTT for live position updates rather than over-polling the REST endpoint. REST supplies an initial location snapshot for the eligible viewport's conservative enclosing circle and a compact metadata snapshot, then MQTT updates positions and metadata in real time.
 
 The live MQTT connection is reused while the eligible viewport changes, and
-the global message cache is refiltered immediately. Viewport movement can
+the provider-wide message cache is refiltered immediately. Viewport movement can
 request a new bounded REST snapshot no more than once every five minutes.
 Reconnect
 attempts are spaced at least 15 seconds apart, keeping automatic retry below
@@ -128,7 +145,9 @@ LiveTrafficStan maps only type 30 to fishing, type 52 to tug, ranges 60-69 to
 passenger, 70-79 to cargo, and 80-89 to tanker artwork. Other towing, service,
 special-purpose, missing, invalid, and unsupported codes retain the generic
 vessel silhouette. Names, navigation status, speed, and destination do not
-change that classification.
+change that classification. Digitraffic currently filters type 30 fishing
+vessels upstream; the type-30 mapping remains a truthful provider-boundary
+fallback if an authorized compatible source supplies that code later.
 
 ## Source-code license versus data licenses
 
