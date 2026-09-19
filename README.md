@@ -129,9 +129,10 @@ The repository's Apache License 2.0 applies to source code only. Distributed
 derivative works must preserve the attribution in [`NOTICE`](NOTICE) as
 described by the license. The source license does not relicense map, aircraft,
 or marine data, whose required attribution remains visible on the map. See
-[Data Sources and Licensing](docs/data-sources-and-licensing.md) for the
-verified contracts, official links, and the reasons Airplanes.live and OpenSky
-were not selected for V1.
+[Data Sources and Licensing](docs/data-sources-and-licensing.md) and the
+dated [Aircraft Provider Evaluation](docs/aircraft-provider-evaluation.md) for
+the verified contracts, official links, request-volume calculation, and the
+decision to retain ADSB.lol.
 
 ## Deployment
 
@@ -162,7 +163,7 @@ attribution when implementing a deployment adapter.
   tracking and exact coordinates are not persisted.
 - Theme preference is limited to explicit Light/Dark selection; there is no
   automatic system-theme mode.
-- V1.1 has no location search, route enrichment, playback, weather overlays,
+- V1.2 has no location search, route enrichment, playback, weather overlays,
   accounts, saved center preferences, or offline mode.
 
 Planned work is tracked in
@@ -174,6 +175,7 @@ silently expanded into V1.
 - [Architecture](docs/architecture.md)
 - [Configuration](docs/configuration.md)
 - [Data Sources and Licensing](docs/data-sources-and-licensing.md)
+- [Aircraft Provider Evaluation](docs/aircraft-provider-evaluation.md)
 - [Development and Testing](docs/development-and-testing.md)
 - [Troubleshooting](docs/troubleshooting.md)
 - [Engineering Decisions](docs/decisions.md)

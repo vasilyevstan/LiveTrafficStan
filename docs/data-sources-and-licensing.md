@@ -27,11 +27,23 @@ OpenFreeMap is free and open, requires no application key, and is directly compa
 - Rate limits: dynamic according to service load
 - Browser access: the live endpoint did not return CORS headers during V1 verification
 
-The API documentation says the API is free to use and that public ADSB.lol data is licensed under ODbL 1.0. It also warns that API keys may be required in the future and asks production users to make contact so integrations are not broken accidentally.
+The deployed API documentation says the API is currently free to use, asks
+production users to make contact so integrations are not broken accidentally,
+and licenses public ADSB.lol data under ODbL 1.0. The API source repository
+separately announces future feeder-linked API keys. Neither statement is a
+capacity guarantee or current SLA.
 
-LiveTrafficStan V1 runs locally and polls one small geographic query approximately every 20 seconds. Because direct browser requests are blocked by CORS, Vite proxies the same-origin development and preview path to ADSB.lol. A future static deployment will need an equivalent small serverless/edge proxy or a replacement provider.
+LiveTrafficStan polls one small geographic query approximately every 20
+seconds while the page and viewport are eligible. Because direct browser
+requests are blocked by CORS, Vite proxies the same-origin development and
+preview path to ADSB.lol. A future deployment needs an equivalent narrow
+serverless/edge proxy.
 
-Visible attribution must identify ADSB.lol and ODbL 1.0. The application's Apache License 2.0 covers source code only; it does not relicense provider data.
+Visible attribution must identify ADSB.lol and link ODbL 1.0. An interactive
+map or screenshot is an ODbL Produced Work; a publicly used derivative
+database has additional share-alike and machine-readable access obligations.
+The application's Apache License 2.0 covers source code only; it does not
+relicense provider data.
 
 The normalized `category` field is treated as a reported ADS-B emitter
 category. The bounded icon mapping follows the published
@@ -47,11 +59,29 @@ model is inferred.
 - OpenAPI document: <https://airplanes.live/openapi.yaml>
 - Candidate endpoint: `/v2/point/{latitude}/{longitude}/{radius}`
 
-Airplanes.live was evaluated first as requested. Its current live endpoint returned `403` with an instruction to contact the provider and did not return browser CORS headers. That made it unavailable for a self-contained V1 without an external access-grant wait. The approved fallback policy therefore selected ADSB.lol as the smallest verified alternative.
+Airplanes.live was reevaluated on 2026-09-19. It publishes a compatible v2
+point/radius contract, but a current bounded request returned `403` with an
+instruction to contact the provider and did not establish browser CORS for an
+authorized response. The OpenAPI Apache-2.0 metadata does not establish the
+license for returned aircraft data. Its homepage language, general terms, and
+contact-gated endpoint do not establish API-specific rate, caching,
+redistribution, attribution, or public-display rights. ADSB.lol remains the
+smallest verified option.
 
 ### Why OpenSky was not selected
 
-OpenSky remains a worthwhile future option, but its anonymous daily credit allowance is not suitable for a page that can poll every 20 seconds for an extended active session. Authenticated access also introduces protected OAuth credentials and a server-side component. ADSB.lol is materially simpler for the local V1.
+OpenSky's default license is limited to approved non-profit research and
+education, and a written license is required for operational REST API use in a
+live product regardless of non-profit status. The terms also restrict
+redistribution and retention outside the approved purpose. Technically, the
+anonymous 400-credit daily allowance lasts about 2 hours 13 minutes at a
+20-second cadence, authenticated access introduces protected OAuth credentials,
+and the bounding-box state-vector response requires a different adapter.
+ADSB.lol is both legally and technically the smaller current choice.
+
+The complete dated comparison, request-volume calculation, rights analysis,
+proxy handoff, and re-evaluation conditions are in
+[Aircraft Provider Evaluation](aircraft-provider-evaluation.md).
 
 ## Marine traffic: Fintraffic Digitraffic
 

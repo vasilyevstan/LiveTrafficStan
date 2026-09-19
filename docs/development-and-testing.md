@@ -71,8 +71,8 @@ The V1 suite uses sanitized, local values and does not call live providers. It
 covers:
 
 - configuration defaults and invalid overrides;
-- ADSB.lol response validation, enclosing-circle transport, and metric
-  conversion;
+- ADSB.lol request construction, abort forwarding, response/error validation,
+  retry guidance, enclosing-circle transport, and metric conversion;
 - Digitraffic REST/MQTT normalization, dimensions, ETA, and missing metadata;
 - vessel minimum-length filtering;
 - current, stale, and expired transitions;

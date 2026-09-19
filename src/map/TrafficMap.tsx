@@ -593,7 +593,7 @@ export function TrafficMap({
         compact: true,
         customAttribution: [
           'Map: <a href="https://openfreemap.org/" target="_blank">OpenFreeMap</a>',
-          'Aircraft: <a href="https://www.adsb.lol/" target="_blank">ADSB.lol</a> (ODbL)',
+          'Aircraft: <a href="https://www.adsb.lol/" target="_blank" rel="noreferrer">ADSB.lol</a> (<a href="https://opendatacommons.org/licenses/odbl/1-0/" target="_blank" rel="noreferrer">ODbL 1.0</a>)',
           'Marine: <a href="https://www.digitraffic.fi/en/marine-traffic/" target="_blank">Fintraffic Digitraffic</a> (CC BY 4.0)',
         ],
       }),

@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
+  AdsbLolAircraftProvider,
   aircraftQueryRadiusNauticalMiles,
   normalizeAdsbLolResponse,
 } from './adsbLolProvider'
@@ -192,5 +193,74 @@ describe('aircraftQueryRadiusNauticalMiles', () => {
   it('rounds an eligible 100 km viewport outward to 54 nautical miles', () => {
     expect(aircraftQueryRadiusNauticalMiles(100)).toBe(54)
     expect(54 * 1.852).toBeCloseTo(100.008)
+  })
+})
+
+describe('AdsbLolAircraftProvider', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('requests the exact bounded point endpoint and forwards cancellation', async () => {
+    const fetchMock = vi.fn(async () =>
+      new Response(
+        JSON.stringify({
+          now: 1_800_000_000_000,
+          ac: [],
+        }),
+        { status: 200 },
+      ),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    const signal = new AbortController().signal
+    const provider = new AdsbLolAircraftProvider(
+      'https://aircraft.example.test',
+    )
+
+    await expect(provider.fetchSnapshot(query, signal)).resolves.toEqual([])
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://aircraft.example.test/v2/point/59.437/24.7536/11',
+      {
+        signal,
+        headers: {
+          Accept: 'application/json',
+        },
+      },
+    )
+  })
+
+  it('reports invalid JSON without publishing an empty success', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('{', { status: 200 })),
+    )
+    const provider = new AdsbLolAircraftProvider('/api/aircraft')
+
+    await expect(
+      provider.fetchSnapshot(query, new AbortController().signal),
+    ).rejects.toThrow('ADSB.lol returned invalid JSON')
+  })
+
+  it('preserves upstream status, body, and Retry-After guidance', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        new Response('slow down', {
+          status: 429,
+          headers: {
+            'Retry-After': '30',
+          },
+        }),
+      ),
+    )
+    const provider = new AdsbLolAircraftProvider('/api/aircraft')
+
+    await expect(
+      provider.fetchSnapshot(query, new AbortController().signal),
+    ).rejects.toMatchObject({
+      status: 429,
+      retryAfterMs: 30_000,
+      message: 'ADSB.lol returned HTTP 429: slow down',
+    })
   })
 })
