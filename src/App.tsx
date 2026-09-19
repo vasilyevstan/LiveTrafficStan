@@ -11,15 +11,22 @@ import { usePorts } from './app/usePorts'
 import { useSessionLocation } from './app/useSessionLocation'
 import { useTheme } from './app/useTheme'
 import { useTrailHistory } from './app/useTrailHistory'
+import { useWeatherObservations } from './app/useWeatherObservations'
 import { AirportDetails } from './components/AirportDetails'
 import { LiveStatus } from './components/LiveStatus'
 import { PortDetails } from './components/PortDetails'
 import { TrafficControls } from './components/TrafficControls'
 import { TrafficDetails } from './components/TrafficDetails'
+import { WeatherObservationDetails } from './components/WeatherObservationDetails'
 import { APP_CONFIG } from './config/appConfig'
 import type { AppCenter } from './config/appConfig'
 import { orderAircraftSearchResults } from './domain/aircraftSearch'
 import { airportsInViewport } from './domain/airports'
+import {
+  DEFAULT_LAYER_PREFERENCES,
+  updateLayerPreference,
+  type LayerPreferences,
+} from './domain/layerPreferences'
 import type { DisplayTrafficEntity, TrafficEntity } from './domain/traffic'
 import {
   DEFAULT_VESSEL_FILTERS,
@@ -27,6 +34,11 @@ import {
   orderVesselSearchResults,
 } from './domain/vesselFilters'
 import type { ViewportAssessment } from './domain/viewport'
+import { formatTimestamp } from './domain/format'
+import {
+  displayWeatherObservations,
+  selectWeatherStationIds,
+} from './domain/weatherObservations'
 import {
   mapErrorPresentation,
   type TrafficMapError,
@@ -36,6 +48,7 @@ import type { PlaceSearchResult } from './providers/geocoding/photonProvider'
 import { StaticAircraftMetadataProvider } from './providers/aircraftMetadata/staticAircraftMetadataProvider'
 import { StaticAirportsProvider } from './providers/airports/staticAirportsProvider'
 import { StaticPortsProvider } from './providers/ports/staticPortsProvider'
+import { AwcMetarProvider } from './providers/weather/awcMetarProvider'
 import { filterTrafficByViewport } from './traffic/filter'
 import { displayTraffic } from './traffic/freshness'
 
@@ -49,14 +62,23 @@ function App() {
   const [vesselFilters, setVesselFilters] = useState(
     DEFAULT_VESSEL_FILTERS,
   )
-  const [aircraftVisible, setAircraftVisible] = useState(true)
-  const [vesselsVisible, setVesselsVisible] = useState(true)
-  const [portsVisible, setPortsVisible] = useState(false)
-  const [airportsVisible, setAirportsVisible] = useState(false)
-  const [clusteringEnabled, setClusteringEnabled] = useState(false)
+  const [layerPreferences, setLayerPreferences] = useState(
+    DEFAULT_LAYER_PREFERENCES,
+  )
+  const {
+    aircraftVisible,
+    vesselsVisible,
+    portsVisible,
+    airportsVisible,
+    clusteringEnabled,
+    weatherVisible,
+  } = layerPreferences
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [selectedPortId, setSelectedPortId] = useState<string | null>(null)
   const [selectedAirportId, setSelectedAirportId] = useState<string | null>(
+    null,
+  )
+  const [selectedWeatherId, setSelectedWeatherId] = useState<string | null>(
     null,
   )
   const [mapError, setMapError] = useState<TrafficMapError | null>(null)
@@ -95,6 +117,42 @@ function App() {
     APP_CONFIG.navigation.coordinatePrecision,
   )
   const now = useNow()
+  const setLayerPreference = useCallback(
+    (key: keyof LayerPreferences, value: boolean) => {
+      setLayerPreferences((current) =>
+        updateLayerPreference(current, key, value),
+      )
+    },
+    [],
+  )
+  const setAircraftVisible = useCallback(
+    (visible: boolean) =>
+      setLayerPreference('aircraftVisible', visible),
+    [setLayerPreference],
+  )
+  const setVesselsVisible = useCallback(
+    (visible: boolean) =>
+      setLayerPreference('vesselsVisible', visible),
+    [setLayerPreference],
+  )
+  const setPortsVisible = useCallback(
+    (visible: boolean) => setLayerPreference('portsVisible', visible),
+    [setLayerPreference],
+  )
+  const setAirportsVisible = useCallback(
+    (visible: boolean) =>
+      setLayerPreference('airportsVisible', visible),
+    [setLayerPreference],
+  )
+  const setClusteringEnabled = useCallback(
+    (enabled: boolean) =>
+      setLayerPreference('clusteringEnabled', enabled),
+    [setLayerPreference],
+  )
+  const setWeatherVisible = useCallback(
+    (visible: boolean) => setLayerPreference('weatherVisible', visible),
+    [setLayerPreference],
+  )
   const aircraftMetadataProvider = useMemo(
     () => new StaticAircraftMetadataProvider(APP_CONFIG.aircraftMetadata),
     [],
@@ -108,7 +166,14 @@ function App() {
     () => new StaticAirportsProvider(APP_CONFIG.airports),
     [],
   )
-  const airportsResult = useAirports(airportsVisible, airportsProvider)
+  const airportsResult = useAirports(
+    airportsVisible || weatherVisible,
+    airportsProvider,
+  )
+  const weatherProvider = useMemo(
+    () => new AwcMetarProvider(APP_CONFIG.weather),
+    [],
+  )
 
   const commitNavigation = useCallback(
     (
@@ -123,6 +188,7 @@ function App() {
       setSelectedId(null)
       setSelectedPortId(null)
       setSelectedAirportId(null)
+      setSelectedWeatherId(null)
       setHistoryResetRevision((current) => current + 1)
       setViewportReport(null)
       setViewReady(true)
@@ -252,6 +318,59 @@ function App() {
         : [],
     [airports, contextViewport],
   )
+  const weatherStations = useMemo(
+    () =>
+      activeViewport
+        ? airportsInViewport(airports, activeViewport)
+        : [],
+    [activeViewport, airports],
+  )
+  const weatherStationSelection = useMemo(
+    () =>
+      selectWeatherStationIds(
+        weatherStations,
+        APP_CONFIG.weather.maximumStations,
+      ),
+    [weatherStations],
+  )
+  const weatherStationIds =
+    weatherStationSelection.kind === 'ready'
+      ? weatherStationSelection.stationIds
+      : []
+  const weatherStationKey = weatherStationIds.join(',')
+  const weatherQueryEnabled =
+    weatherVisible &&
+    Boolean(activeViewport) &&
+    airportsResult.state.phase === 'ready' &&
+    weatherStationSelection.kind === 'ready'
+  const weatherResult = useWeatherObservations(
+    weatherQueryEnabled,
+    weatherStationIds,
+    weatherProvider,
+    now,
+    APP_CONFIG.weather.requestCooldownMs,
+  )
+  const weatherDataset =
+    weatherQueryEnabled &&
+    weatherResult.state.phase === 'ready' &&
+    weatherResult.state.stationKey === weatherStationKey
+      ? weatherResult.state.dataset
+      : undefined
+  const weatherObservations = useMemo(
+    () =>
+      weatherDataset
+        ? displayWeatherObservations(
+            weatherDataset.observations,
+            now,
+            APP_CONFIG.weather.staleAfterMs,
+            APP_CONFIG.weather.expireAfterMs,
+          )
+        : [],
+    [
+      now,
+      weatherDataset,
+    ],
+  )
   const sourceEntities = useMemo<TrafficEntity[]>(
     () => [...viewportAircraft, ...viewportVessels],
     [viewportAircraft, viewportVessels],
@@ -271,6 +390,13 @@ function App() {
   const selectedAirport = useMemo(
     () => airports.find((airport) => airport.id === selectedAirportId),
     [airports, selectedAirportId],
+  )
+  const selectedWeather = useMemo(
+    () =>
+      weatherObservations.find(
+        (observation) => observation.id === selectedWeatherId,
+      ),
+    [selectedWeatherId, weatherObservations],
   )
   const aircraftMetadata = useAircraftMetadata(
     selectedEntity?.kind === 'aircraft' ? selectedEntity : undefined,
@@ -303,6 +429,10 @@ function App() {
   useEffect(() => {
     if (!airportsVisible && selectedAirportId) setSelectedAirportId(null)
   }, [airportsVisible, selectedAirportId])
+
+  useEffect(() => {
+    if (!weatherVisible && selectedWeatherId) setSelectedWeatherId(null)
+  }, [selectedWeatherId, weatherVisible])
 
   useEffect(() => {
     if (selectedPortId && !selectedPort) setSelectedPortId(null)
@@ -341,6 +471,12 @@ function App() {
     selectedAirportId,
     visibleAirports,
   ])
+
+  useEffect(() => {
+    if (selectedWeatherId && !selectedWeather) {
+      setSelectedWeatherId(null)
+    }
+  }, [selectedWeather, selectedWeatherId])
 
   const handleViewportChange = useCallback(
     (assessment: ViewportAssessment, reportViewRequestId: number) => {
@@ -398,12 +534,14 @@ function App() {
   const handleTrafficSelect = useCallback((id: string | null) => {
     setSelectedPortId(null)
     setSelectedAirportId(null)
+    setSelectedWeatherId(null)
     setSelectedId(id)
   }, [])
 
   const handlePortSelect = useCallback((id: string | null) => {
     setSelectedId(null)
     setSelectedAirportId(null)
+    setSelectedWeatherId(null)
     setSelectedPortId(id)
   }, [])
 
@@ -413,7 +551,15 @@ function App() {
       : 0
     setSelectedId(null)
     setSelectedPortId(null)
+    setSelectedWeatherId(null)
     setSelectedAirportId(id)
+  }, [])
+
+  const handleWeatherSelect = useCallback((id: string | null) => {
+    setSelectedId(null)
+    setSelectedPortId(null)
+    setSelectedAirportId(null)
+    setSelectedWeatherId(id)
   }, [])
 
   const handleCloseAirport = useCallback(() => {
@@ -428,6 +574,19 @@ function App() {
       target?.focus()
     })
   }, [selectedAirportId])
+
+  const handleCloseWeather = useCallback(() => {
+    const observationId = selectedWeatherId
+    setSelectedWeatherId(null)
+    if (!observationId) return
+    globalThis.requestAnimationFrame(() => {
+      const target =
+        document.getElementById(
+          `weather-context-result-${observationId}`,
+        ) ?? document.getElementById('weather-layer-toggle')
+      target?.focus()
+    })
+  }, [selectedWeatherId])
 
   const mapErrorContent = mapError ? mapErrorPresentation(mapError) : null
   const mapSubtitle = !viewReady
@@ -459,6 +618,51 @@ function App() {
     contextViewport
       ? 'No large or medium airports are shown in this view.'
       : 'Airport context is unavailable while the map view is updating.'
+  const weatherStateMatches =
+    weatherResult.state.phase !== 'idle' &&
+    weatherResult.state.stationKey === weatherStationKey
+  const weatherReady = weatherDataset !== undefined
+  const weatherLoading =
+    weatherVisible &&
+    (airportsResult.state.phase === 'loading' ||
+      (weatherStateMatches && weatherResult.state.phase === 'loading'))
+  const weatherWaiting =
+    weatherVisible &&
+    weatherStateMatches &&
+    weatherResult.state.phase === 'waiting'
+  const weatherError =
+    !weatherVisible
+      ? undefined
+      : airportsResult.state.phase === 'error'
+        ? `Airport station context unavailable: ${airportsResult.state.message}`
+        : weatherStateMatches && weatherResult.state.phase === 'error'
+          ? weatherResult.state.message
+          : undefined
+  const weatherStatusMessage =
+    !weatherVisible
+      ? undefined
+      : !activeViewport
+        ? 'METAR observations are paused until the map shows an eligible live-traffic view.'
+        : airportsResult.state.phase === 'loading'
+          ? 'Loading the pinned airport dataset used to choose METAR stations.'
+          : weatherStationSelection.kind === 'too-many'
+            ? `${weatherStationSelection.count} qualifying ICAO stations are visible. Zoom in to stay within the ${APP_CONFIG.weather.maximumStations}-station request limit.`
+            : weatherWaiting &&
+                weatherResult.state.phase === 'waiting'
+              ? `The next request is available at ${formatTimestamp(
+                  weatherResult.state.nextRequestAt,
+                )}.`
+              : weatherDataset
+                ? `Retrieved ${formatTimestamp(weatherDataset.retrievedAt)}. Observations are not forecasts.`
+                : undefined
+  const weatherEmptyMessage =
+    weatherStationIds.length === 0
+      ? 'No qualifying four-letter ICAO METAR stations are shown in this view.'
+      : 'No current METAR or SPECI observations were returned for this view.'
+  const handleRetryWeather =
+    airportsResult.state.phase === 'error'
+      ? airportsResult.retry
+      : weatherResult.retry
 
   return (
     <main className="app-shell">
@@ -482,14 +686,17 @@ function App() {
         vessels={vessels}
         ports={ports}
         airports={airports}
+        weatherObservations={weatherObservations}
         trail={activeViewport ? trail : []}
         selectedId={selectedId}
         selectedPortId={selectedPortId}
         selectedAirportId={selectedAirportId}
+        selectedWeatherId={selectedWeatherId}
         aircraftVisible={aircraftVisible}
         vesselsVisible={vesselsVisible}
         portsVisible={portsVisible}
         airportsVisible={airportsVisible}
+        weatherVisible={weatherVisible}
         clusteringEnabled={clusteringEnabled}
         interpolationDurationMs={APP_CONFIG.interpolationDurationMs}
         viewRequestId={viewRequest.id}
@@ -497,6 +704,7 @@ function App() {
         onSelect={handleTrafficSelect}
         onSelectPort={handlePortSelect}
         onSelectAirport={handleAirportSelect}
+        onSelectWeather={handleWeatherSelect}
         onViewportChange={handleViewportChange}
         onManualViewChange={handleManualViewChange}
         onMapError={setMapError}
@@ -568,6 +776,21 @@ function App() {
           onAirportsVisibleChange={setAirportsVisible}
           onAirportSelect={handleAirportSelect}
           onRetryAirports={airportsResult.retry}
+          weatherVisible={weatherVisible}
+          weatherLoading={weatherLoading}
+          weatherWaiting={weatherWaiting}
+          weatherReady={weatherReady}
+          now={now}
+          weatherError={weatherError}
+          weatherStatusMessage={weatherStatusMessage}
+          weatherObservations={weatherObservations}
+          selectedWeatherId={selectedWeatherId}
+          weatherEmptyMessage={weatherEmptyMessage}
+          weatherCanRefresh={weatherResult.canRefresh}
+          onWeatherVisibleChange={setWeatherVisible}
+          onWeatherSelect={handleWeatherSelect}
+          onRetryWeather={handleRetryWeather}
+          onRefreshWeather={weatherResult.refresh}
           clusteringEnabled={clusteringEnabled}
           onClusteringEnabledChange={setClusteringEnabled}
           centerDisabled={
@@ -625,6 +848,18 @@ function App() {
             onClose={handleCloseAirport}
           />
         )}
+
+        {selectedWeather &&
+          weatherResult.state.phase === 'ready' &&
+          weatherResult.state.stationKey === weatherStationKey && (
+            <WeatherObservationDetails
+              observation={selectedWeather}
+              source={weatherResult.state.dataset.source}
+              retrievedAt={weatherResult.state.dataset.retrievedAt}
+              now={now}
+              onClose={handleCloseWeather}
+            />
+          )}
 
         {mapErrorContent && (
           <div className="map-error" role="status">

@@ -104,6 +104,20 @@ Check these project invariants:
   bounded total timeout and body size, manual redirect rejection, no-store in
   both directions, stable public project identification, and preserves
   upstream status/body/`Content-Type`/`Retry-After`.
+- The production METAR proxy accepts only canonical GET requests with one
+  encoded `ids` parameter containing 1-50 sorted unique uppercase four-letter
+  station IDs. It constructs the fixed AWC JSON URL, rejects redirects and
+  unsafe content types, applies an eight-second/256 KiB bound, forwards no
+  browser credentials, and preserves status and `Retry-After`.
+- Weather acquisition makes zero startup request and has no periodic poller.
+  Enable, station changes, refresh, retry, hide/show, and `Retry-After` share a
+  session-lived 60-second start gate; hidden, disabled, superseded, and
+  unmounted work aborts, while a fulfilled same-view result survives hide/show
+  and style changes.
+- AWC parsing accepts only requested METAR/SPECI records, Unix-second
+  observation times, qualified visibility, numeric/`VRB` wind, and nullable
+  category; malformed nonempty payloads are errors, 204 is empty success, and
+  the newest valid report per station wins.
 - Proxy and deployment changes never forward browser cookies, authorization,
   forwarding headers, or client destinations; never add wildcard CORS, shared
   live caching, or coordinate-bearing logs; and never expose Cloudflare

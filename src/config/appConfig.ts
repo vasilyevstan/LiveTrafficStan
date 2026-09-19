@@ -1,6 +1,7 @@
 import type { StaticAircraftMetadataProviderConfig } from '../providers/aircraftMetadata/staticAircraftMetadataProvider'
 import type { StaticAirportsProviderConfig } from '../providers/airports/staticAirportsProvider'
 import type { StaticPortsProviderConfig } from '../providers/ports/staticPortsProvider'
+import type { AwcMetarProviderConfig } from '../providers/weather/awcMetarProvider'
 import aircraftMetadataSource from './aircraftMetadataSource.json'
 import airportsSource from './airportsSource.json'
 import portsSource from './portsSource.json'
@@ -56,6 +57,10 @@ export interface AppConfig {
   aircraftMetadata: StaticAircraftMetadataProviderConfig
   airports: StaticAirportsProviderConfig
   ports: StaticPortsProviderConfig
+  weather: FreshnessThresholds &
+    AwcMetarProviderConfig & {
+      requestCooldownMs: number
+    }
   marine: FreshnessThresholds & {
     restBaseUrl: string
     mqttUrl: string
@@ -80,6 +85,7 @@ const DEFAULTS = {
   darkMapStyleUrl: 'https://tiles.openfreemap.org/styles/dark',
   geocoderEndpoint: 'https://photon.komoot.io/api',
   aircraftEndpoint: '/api/aircraft',
+  weatherEndpoint: '/api/weather/metar',
   marineRestEndpoint: 'https://meri.digitraffic.fi',
   marineMqttEndpoint: 'wss://meri.digitraffic.fi:443/mqtt',
 } as const
@@ -153,6 +159,34 @@ const readPublicEndpoint = (
   }
 
   return value.replace(/\/+$/, '')
+}
+
+const readSameOriginEndpoint = (
+  env: Record<string, string | undefined>,
+  name: string,
+  fallback: string,
+) => {
+  const value = env[name]?.trim() || fallback
+  if (value.startsWith('//')) {
+    throw new Error(`${name} must not use a protocol-relative URL`)
+  }
+  if (!value.startsWith('/')) {
+    throw new Error(`${name} must use a root-relative same-origin path`)
+  }
+
+  const baseUrl = new URL('https://livetrafficstan.invalid')
+  const parsed = new URL(value, baseUrl)
+  if (
+    parsed.origin !== baseUrl.origin ||
+    parsed.search ||
+    parsed.hash ||
+    parsed.pathname === '/'
+  ) {
+    throw new Error(
+      `${name} must be a root-relative path without a query or fragment`,
+    )
+  }
+  return parsed.pathname.replace(/\/+$/, '')
 }
 
 export const createAppConfig = (
@@ -284,6 +318,25 @@ export const createAppConfig = (
       expectedRecords: portsSource.projection.expected.projectedRecords,
       expectedSha256: portsSource.projection.expected.sha256,
       expectedRankCounts: portsSource.projection.expected.rankCounts,
+    },
+    weather: {
+      endpointBaseUrl: readSameOriginEndpoint(
+        env,
+        'VITE_WEATHER_ENDPOINT',
+        DEFAULTS.weatherEndpoint,
+      ),
+      timeoutMs: 8_000,
+      maximumBytes: 256 * 1_024,
+      maximumStations: 50,
+      futureToleranceMs: 10 * 60_000,
+      requestCooldownMs: 60_000,
+      staleAfterMs: 75 * 60_000,
+      expireAfterMs: 120 * 60_000,
+      sourceName: 'NOAA/NWS Aviation Weather Center',
+      sourceApiUrl: 'https://aviationweather.gov/api/data/metar',
+      sourceDocumentationUrl: 'https://aviationweather.gov/data/api/',
+      sourceTermsUrl: 'https://www.weather.gov/disclaimer',
+      sourceLicenseName: 'U.S. public domain unless marked otherwise',
     },
     marine: {
       restBaseUrl: readEndpoint(

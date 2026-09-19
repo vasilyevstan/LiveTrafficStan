@@ -29,7 +29,7 @@ material complexity.
 ADSB.lol does not currently provide general browser CORS headers. Vite handles
 development and preview; production uses a strict same-origin Cloudflare
 Worker. No provider secret is involved. The Worker validates only the current
-point route, uses a total deadline and body cap, preserves provider
+aircraft point route, uses a total deadline and body cap, preserves provider
 status/body/`Retry-After`, disables invocation URL logs, and does not cache live
 responses.
 
@@ -101,10 +101,10 @@ independent of ADS-B, marine traffic, static airport context, and the map.
 ## Cloudflare Worker plus Static Assets
 
 Cloudflare Workers with Static Assets is the smallest production boundary for
-the Vite client and required ADSB.lol proxy. Static files bypass Worker
-execution; only `/api` and `/api/*` invoke code. The fixed point route
-constructs one hard-coded upstream destination and cannot act as a general
-forwarder.
+the Vite client and required ADSB.lol/AWC proxies. Static files bypass Worker
+execution; only `/api` and `/api/*` invoke code. The fixed aircraft and METAR
+routes construct hard-coded upstream destinations and cannot act as general
+forwarders.
 
 The free plan's 100,000 dynamic requests/day covers about 23 continuously
 active browser sessions at the application's nominal 4,320 request/day upper
@@ -113,14 +113,15 @@ This is a budget estimate, not ADSB.lol capacity permission or an SLA.
 
 Netlify is technically viable but places production deploys, bandwidth,
 requests, and function compute in one 300-credit monthly budget without
-providing a capability this one-route application needs. GitHub Pages plus a
+providing a capability this two-route application needs. GitHub Pages plus a
 separate Worker would add a second deployment unit or split-origin CORS.
 
 Fingerprint-named assets use immutable browser caching. Aircraft responses use
-upstream and downstream `no-store`; no shared response cache or rate-control
+upstream and downstream `no-store`; successful METAR responses use the
+source-aligned 60-second guidance. No shared application cache or rate-control
 service is added without measurements and provider-policy evidence. Worker
-observability is disabled because the route contains rounded camera
-coordinates.
+observability is disabled because routes contain rounded camera coordinates or
+visible station IDs.
 
 Deployments require an exact current `main` SHA, rerun the complete validation
 suite, serialize production operations, deploy code and assets atomically, and
@@ -251,11 +252,12 @@ filter and select this static context even while the 100 km live-traffic gate
 is paused.
 
 A bounded "Airports in this view" list gives keyboard users the same static
-selection path as map users. Airport, port, and traffic selections are mutually
-exclusive. Exact traffic and traffic touch fallback retain priority; exact
-airport and port hits precede either context layer's near-miss. Static details
-never claim navigation authority, operating status, current service, route,
-arrival, departure, or a relationship to a visible aircraft.
+selection path as map users. Airport, port, weather, and traffic selections are
+mutually exclusive. Exact traffic and traffic touch fallback retain priority;
+weather, airport, and port use that order within exact and validated-touch
+context hits. Static details never claim navigation authority, operating
+status, current service, route, arrival, departure, or a relationship to a
+visible aircraft.
 
 ## Application-owned traffic models
 
@@ -456,11 +458,15 @@ then uses the existing settled full-canvas viewport pipeline. It does not
 recreate MapLibre, change filters/layers/themes, add a provider scheduler, or
 reconnect marine MQTT.
 
-## Explicit persisted light and dark themes
+## Explicit Auto, Light, and Dark theme preference
 
 The Positron presentation remains the default Light theme. V1.1 provides an
 explicit Dark choice backed by the OpenFreeMap dark style and CSS custom
-properties. Only the selected theme is persisted.
+properties. Issue #10 adds explicit Auto without changing the default: missing,
+invalid, or inaccessible storage still resolves to Light. Auto follows
+`prefers-color-scheme`, including later system changes, while explicit Light
+and Dark remain overrides. Pre-paint and React resolution use the same
+contract to avoid an initial wrong-theme flash.
 
 MapLibre remains a single instance. Because `map.setStyle` removes custom
 style-owned state, the map layer installer restores traffic images,
@@ -473,6 +479,54 @@ and two-tone edge contrast while retaining silhouettes and heading/course
 rotation. Image IDs are replaced through MapLibre when the theme changes,
 including when both theme options reference the same style URL. The image cache
 contains only the bounded light and dark sets.
+
+## Separate optional traffic clustering
+
+Clustering is a session-only display preference and starts off. Aircraft and
+vessels keep separate MapLibre GeoJSON sources, cluster circles, and `AIR`/`SEA`
+count labels so unlike traffic kinds are never combined. Filtering, viewport
+eligibility, freshness, and expiry run before source data reaches clustering.
+
+Cluster IDs are transient MapLibre implementation details, not application
+entity IDs. A click expands the exact cluster under generation guards; touch
+entity fallback ignores clusters. Fixed source creation uses a 42 CSS-pixel
+radius, minimum count 3, and maximum cluster zoom 10. Runtime toggles change
+only the supported `cluster` source option.
+
+MapLibre rebuilds the Supercluster index on every GeoJSON `setData()` even
+above the visible cluster zoom. Per-frame interpolation is therefore
+suspended whenever clustering is enabled and stable snapshot signatures skip
+unchanged freshness frames. This avoids a 20 fps index rebuild without
+changing provider acquisition, source observations, selection, or trails.
+
+## Bounded AWC METAR/SPECI observation overlay
+
+NOAA/NWS Aviation Weather Center is selected for one optional
+observation-based context layer. Its official API supplies worldwide METAR
+terminal observations and SPECI updates, publishes a 100 request/minute limit,
+requests a public User-Agent, and explicitly does not permit browser CORS.
+The existing Cloudflare boundary therefore adds one strict credential-free
+same-origin route rather than a client-side workaround or general proxy.
+
+The station set comes only from explicit four-letter ICAO codes in the pinned
+large/medium OurAirports projection inside the eligible viewport. At most 50
+sorted unique IDs are sent; an over-limit view asks the user to zoom in rather
+than silently truncating coverage. No station, weather, route, or airport
+operation is inferred from traffic, movement, proximity, `ident`, or IATA.
+
+There is no startup request and no periodic poller. First enable, station-set
+changes, refresh, and retry share a session-lived 60-second start gate and
+longer provider `Retry-After` deadlines. Reports become stale after 75 minutes
+and expire after 120 minutes. Hidden, disabled, superseded, and unmounted work
+aborts; fulfilled same-view data survives hide/show and style changes in memory
+only.
+
+AWC reports are generally U.S. public-domain information unless marked
+otherwise. The app shows source and retrieval times, visible attribution,
+terms, and modified-presentation wording. METAR/SPECI is observed weather, not
+a forecast, operational status, route, board, or coverage guarantee. Radar,
+forecast processing, paid services, persistent weather storage, provider
+selection, and shared application caching remain out of scope.
 
 ## `dev`-based pull request delivery
 

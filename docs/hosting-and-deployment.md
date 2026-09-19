@@ -8,7 +8,8 @@ LiveTrafficStan selects **Cloudflare Workers with Static Assets** as its
 production platform:
 
 - Vite's `dist/` output is served as immutable static assets;
-- one stateless Worker handles only the same-origin ADSB.lol point route;
+- one stateless Worker handles only the same-origin ADSB.lol point and AWC
+  METAR routes;
 - OpenFreeMap, Photon, and Digitraffic REST/MQTT remain direct browser
   connections;
 - no database, queue, persistent server state, authentication service, or
@@ -43,14 +44,16 @@ The smallest complete deployment must preserve:
 
 - one checked Vite build and its hashed MapLibre module worker;
 - same-origin browser aircraft requests under `/api/aircraft`;
+- same-origin browser weather requests under `/api/weather/metar`;
 - the exact ADSB.lol `/v2/point/{latitude}/{longitude}/{radiusNm}` mapping;
 - the 100 km client eligibility decision before outward rounding to 54 NM;
 - upstream status, body, `Content-Type`, and `Retry-After`;
+- canonical 1-50-station AWC JSON requests with no browser credentials;
 - no overlapping or accelerated aircraft request schedule;
 - direct browser Digitraffic REST and secure MQTT WebSockets;
 - direct browser Photon forward search only after explicit submit;
-- visible OpenFreeMap/OpenStreetMap, Photon/OpenStreetMap, ADSB.lol/ODbL, and
-  Digitraffic/CC BY attribution;
+- visible OpenFreeMap/OpenStreetMap, Photon/OpenStreetMap, ADSB.lol/ODbL,
+  AWC/NWS, and Digitraffic/CC BY attribution;
 - independent aircraft, marine, and map failure;
 - rounded, session-only location behavior without application URL logging.
 
@@ -71,7 +74,7 @@ to connect directly to `wss://meri.digitraffic.fi:443/mqtt`.
 | Asset caching | Automatic edge caching plus `_headers` browser policy | CDN asset delivery and configurable headers |
 | Rollback | Restore a recent Worker version containing code and assets | Republish a retained atomic deploy |
 | GitHub deployment auth | Scoped Cloudflare API token and account ID | Netlify account/site authorization |
-| Current operational surface | One platform and one fixed upstream subrequest | One platform, but a shared credit model with no compensating feature needed here |
+| Current operational surface | One platform and two fixed upstream request shapes | One platform, but a shared credit model with no compensating feature needed here |
 
 Official pricing as reviewed:
 
@@ -85,10 +88,10 @@ Official pricing as reviewed:
   15 credits to a production deploy, 20 credits/GB bandwidth, 2 credits per
   10,000 web requests, and 10 credits/GB-hour compute.
 
-Cloudflare is selected because it provides the required same-origin route and
+Cloudflare is selected because it provides the required same-origin routes and
 static client in one atomic unit while keeping static delivery outside Worker
 invocation billing. Netlify remains technically viable but offers no required
-advantage for this one fixed route.
+advantage for these two fixed routes.
 
 GitHub Pages plus a separate Worker was rejected because it creates two
 deployment units and either a split origin with CORS or extra domain/routing
@@ -117,7 +120,10 @@ other Workers on the account consume allowance too.
 
 This calculation is a budget estimate, not a concurrency promise, ADSB.lol
 capacity grant, service-level agreement, or reason to weaken provider pacing.
-Monitor real usage before considering the paid plan or any rate-control change.
+METAR has no periodic poller, so its optional enable/station-change/refresh
+volume cannot be converted into the same continuous-session envelope without
+real usage. Monitor combined route usage before considering the paid plan,
+cache, or any rate-control change.
 
 ## Production boundary
 
@@ -126,9 +132,12 @@ browser
   |
   +-- /, /assets/*, /aircraft-metadata/* -> Cloudflare Static Assets
   |
-  +-- /api/aircraft/v2/point/... ------> Cloudflare Worker
-                                               |
-                                               +--> https://api.adsb.lol
+  +-- /api/aircraft/v2/point/... --+
+  |                                |
+  +-- /api/weather/metar?ids=... --+--> Cloudflare Worker
+                                         |             |
+                                         |             +--> aviationweather.gov
+                                         +----------------> api.adsb.lol
 
 browser --------------------------------> OpenFreeMap HTTPS
 browser --------------------------------> Photon HTTPS on explicit search
@@ -142,7 +151,8 @@ browser --------------------------------> Digitraffic HTTPS + WSS
 - enables the first hobby deployment on `workers.dev`;
 - disables public version preview URLs;
 - explicitly disables Worker observability so invocation URLs containing
-  rounded camera coordinates are not retained in application logs.
+  rounded camera coordinates and weather station IDs are not retained in
+  application logs.
 
 There is no SPA fallback because the current application has no client-side
 routes. Missing hashed JavaScript, CSS, MQTT, or MapLibre worker assets return
@@ -159,11 +169,12 @@ real 404 responses rather than `index.html`.
   referrer policy.
 
 Those rules do not apply to Worker responses. The aircraft proxy sets its own
-`no-store` and `nosniff` headers.
+`no-store` and `nosniff` headers; successful METAR responses use
+`public, max-age=60`, JSON content type, and `nosniff`.
 
 ## Aircraft proxy contract
 
-The only allowed dynamic route is:
+The only allowed aircraft route is:
 
 ```text
 GET /api/aircraft/v2/point/{latitude}/{longitude}/{radiusNm}
@@ -212,6 +223,47 @@ contract. A regression test compares the Worker maximum with
 future viewport-limit change cannot silently work in Vite while production
 rejects it.
 
+## METAR proxy contract
+
+The only weather route is:
+
+```text
+GET /api/weather/metar?ids=EETN%2CEFHK
+```
+
+| Input or behavior | Result |
+| --- | --- |
+| Wrong path | `404 Not Found` |
+| Method other than GET | `405 Method Not Allowed`, `Allow: GET` |
+| Missing, repeated, extra, raw-comma, unsorted, duplicate, lowercase, malformed, or over-50 `ids` | `400 Bad Request` |
+| Valid request | Fixed `https://aviationweather.gov/api/data/metar?ids=...&format=json` upstream |
+| Upstream redirect | `502 Bad Gateway`; never followed or forwarded |
+| HTTP 200 with non-JSON content type | `502 Bad Gateway` |
+| Upstream network/read failure | `502 Bad Gateway` |
+| Eight-second upstream deadline exceeded | `504 Gateway Timeout` |
+| Response over 256 KiB counted bytes | `502 Bad Gateway`; never truncated success |
+| Browser cancellation | Upstream abort and `499` when a response is still possible |
+| Upstream 200/204 or error | Original status, bounded body policy, and `Retry-After` |
+
+The proxy accepts exactly one canonical `ids` query containing 1-50 sorted
+unique uppercase four-letter values. It constructs the hard-coded AWC URL,
+forces JSON, uses `redirect: manual`, sends only JSON accept and the public
+project User-Agent, and forwards no cookie, authorization, origin, referrer,
+forwarding, or arbitrary caller header. It does not log station IDs, raw
+observations, URLs, headers, bodies, or exceptions.
+
+Successful responses receive a 60-second public cache header aligned with the
+observed AWC guidance. This is browser/edge response guidance, not an
+application-owned shared stale-data system or proof of aggregate provider
+capacity. Non-success responses are `no-store`; exposed error bodies are
+bounded plain text with `nosniff`.
+
+The browser provider adds its own eight-second deadline and 256 KiB cap,
+accepts only requested METAR/SPECI stations, and observes one session request
+start at least 60 seconds after the previous start. That local pacing cannot
+prove public aggregate request/egress safety. Issue #39 therefore still owns
+public-account usage measurement and deployed exact-SHA evidence.
+
 ## Bounded implementation observations
 
 On 2026-09-19:
@@ -248,6 +300,12 @@ No Worker Cache API, shared response cache, `stale-while-revalidate`, or
 - repeated extraction, retention, and shared caching need a separate ODbL and
   provider-policy decision.
 
+  METAR differs only in preserving the source's observed 60-second cache
+  guidance. The application has no periodic weather poller, persistent weather
+  cache, stale-if-error success, or cross-user request coordinator. Public
+  aggregate station-query volume and cache behavior must be measured after
+  authorized deployment rather than inferred from one browser's session gate.
+
 The strict route, 54 NM ceiling, ten-second deadline, 4 MiB body bound, no
 proxy retry, existing client schedule, and Cloudflare daily allowance reduce
 accidental load. They are not a global abuse-control system. Do not add an
@@ -263,8 +321,11 @@ npm run dev
 npm run preview
 ```
 
-Vite's convenience proxy preserves the valid route mapping but is broader than
-the production allowlist. Validate the production boundary with:
+Vite's aircraft convenience proxy is broader than the production allowlist.
+Its METAR rewrite is fixed to the AWC JSON path, discards unsupported query
+parameters, strips browser credentials/forwarding headers, and is still not a
+substitute for Worker canonical-input validation. Validate the production
+boundary with:
 
 ```bash
 npm run build
@@ -353,23 +414,28 @@ older SHA.
 - Static Asset security headers;
 - the immutable Natural Earth port asset path and caching policy;
 - one successful same-origin ADSB point request;
+- one bounded canonical same-origin AWC METAR request or valid 204;
 - the exact `X-LiveTrafficStan-Release` value;
 - `no-store` aircraft behavior;
 - malformed-coordinate and unsupported-path rejection;
+- malformed METAR query and unsupported-method rejection;
 - Digitraffic REST preflight and a bounded REST response;
 - one Digitraffic MQTT connection, subscription, JSON message, and explicit
   disconnect.
 
 The MQTT check has a 15-second outer deadline, disables reconnect, and force
-closes the client. The script never prints provider payloads, MMSIs, browser
-coordinates beyond the documented fixed Tallinn fixture, or a secret.
+closes the client. The script never prints provider payloads, METAR reports,
+MMSIs, browser coordinates beyond the documented fixed Tallinn fixture,
+station IDs beyond the documented EETN fixture, or a secret.
 
 An HTTP/Node smoke is not browser acceptance. Before Issue #11 closes, record a
 real browser check of:
 
 - rendered vector tiles and actual MapLibre worker execution;
-- one MapLibre instance through Light/Dark changes;
+- one MapLibre instance through Auto/Light/Dark changes;
 - same-origin aircraft data;
+- optional same-origin METAR data, source age, attribution, and failure
+  isolation;
 - one explicit Photon search with current browser CORS, bounded results,
   privacy disclosure, and visible Photon/OpenStreetMap attribution;
 - direct Digitraffic REST preflight and secure WebSocket
@@ -394,8 +460,8 @@ Do not equate a successful Worker invocation with HTTP success. A Worker can
 correctly execute while returning an upstream 429 or local 504.
 
 Persistent invocation URL logs, Logpush, tracing, and custom request logs remain
-disabled because URLs contain rounded camera coordinates. Cloudflare still
-processes ordinary request/network metadata as the hosting provider; this
+disabled because URLs contain rounded camera coordinates or visible weather
+station IDs. Cloudflare still processes ordinary request/network metadata as the hosting provider; this
 configuration minimizes application-retained location data rather than
 claiming the platform observes none.
 

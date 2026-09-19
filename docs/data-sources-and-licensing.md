@@ -276,6 +276,64 @@ The full source comparison, measured projection, rejected alternatives,
 matching rules, and re-evaluation conditions are in
 [Aircraft Metadata Evaluation](aircraft-metadata-evaluation.md).
 
+## Weather observations: NOAA/NWS Aviation Weather Center
+
+- API documentation: <https://aviationweather.gov/data/api/>
+- OpenAPI schema:
+  <https://aviationweather.gov/data/schema/openapi.yaml>
+- METAR endpoint: <https://aviationweather.gov/api/data/metar>
+- NWS disclaimer and data-use terms: <https://www.weather.gov/disclaimer>
+- Authentication: none
+- Product: worldwide METAR terminal observations, including SPECI updates
+- Published request limit: 100 requests/minute
+- Published typical result maximum: 400 records
+- Browser access: CORS is explicitly not permitted; server-to-server access is
+  required
+- Data status: U.S. government information is generally public domain unless a
+  product is specifically marked otherwise
+
+This decision was verified on 2026-09-19. A bounded planning request for EETN,
+EFHK, EGLL, and KJFK returned HTTP 200, a 1,838-byte JSON body,
+`Cache-Control: max-age=60`, and no browser CORS header. That observation proves
+the current request shape only; it is not an availability, worldwide coverage,
+or capacity guarantee.
+
+LiveTrafficStan requests only explicit four-letter ICAO codes from the pinned
+large/medium OurAirports projection inside the current eligible viewport. The
+set is uppercase, sorted, unique, and capped at 50 without truncation. Enabling
+the optional layer sends those visible station IDs through the application
+host to AWC. The application and Worker do not log station IDs or raw
+observations, but Cloudflare, AWC, and network intermediaries still process
+ordinary request metadata.
+
+The adapter renders only `METAR` and `SPECI`; schema-permitted `SYNOP`, `BUOY`,
+and `CMAN` rows are not silently reclassified. It reads `icaoId`, treats
+`obsTime` as Unix seconds, preserves qualified visibility such as `6+` or
+`10+`, accepts numeric/`VRB` wind direction, keeps a missing flight category
+as unavailable, and deterministically selects the newest valid report per
+station. HTTP 204 is a successful empty set. Malformed nonempty payloads,
+unrequested station IDs, redirects, timeouts, oversized responses, and unsafe
+content types are errors.
+
+There is no startup request or periodic poller. Request starts remain at least
+60 seconds apart per browser session and honor longer `Retry-After` guidance.
+Reports are current through 75 minutes and expire after 120 minutes. The
+interface displays observation time, application retrieval time, source,
+terms, and modified-presentation wording.
+
+METAR/SPECI is observed aviation weather, not a forecast, airport operational
+status, arrival/departure board, route source, or coverage guarantee. Coverage
+is constrained by both AWC reporting and the reduced airport projection; an
+empty response cannot establish that no weather exists. No radar, model
+forecast, paid feed, provider selector, or weather-derived traffic inference is
+added.
+
+The reports are fetched at runtime rather than bundled or redistributed as a
+database. Visible in-product attribution and this source record satisfy the
+current provenance need; no additional `NOTICE` entry is required for this
+slice. Recheck the official terms before public deployment or a retention,
+cache, redistribution, or product-scope change.
+
 ## Marine traffic: Fintraffic Digitraffic
 
 - Marine documentation: <https://www.digitraffic.fi/en/marine-traffic/>

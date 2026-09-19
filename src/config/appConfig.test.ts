@@ -33,6 +33,16 @@ describe('createAppConfig', () => {
     })
     expect(config.aircraft.refreshIntervalMs).toBe(20_000)
     expect(config.aircraft.rateLimitBackoffMaxMs).toBe(5 * 60_000)
+    expect(config.weather).toMatchObject({
+      endpointBaseUrl: '/api/weather/metar',
+      timeoutMs: 8_000,
+      maximumBytes: 256 * 1_024,
+      maximumStations: 50,
+      requestCooldownMs: 60_000,
+      staleAfterMs: 75 * 60_000,
+      expireAfterMs: 120 * 60_000,
+      sourceName: 'NOAA/NWS Aviation Weather Center',
+    })
     expect(config.aircraftMetadata).toMatchObject({
       baseUrl: '/aircraft-metadata/2026-09-13-v1',
       timeoutMs: 5_000,
@@ -92,6 +102,11 @@ describe('createAppConfig', () => {
         VITE_GEOCODER_ENDPOINT: '/api/geocoder/',
       }).geocoder.endpointBaseUrl,
     ).toBe('/api/geocoder')
+    expect(
+      createAppConfig({
+        VITE_WEATHER_ENDPOINT: '/edge/metar/',
+      }).weather.endpointBaseUrl,
+    ).toBe('/edge/metar')
   })
 
   it('rejects invalid supplied configuration instead of silently masking it', () => {
@@ -116,6 +131,21 @@ describe('createAppConfig', () => {
         VITE_GEOCODER_ENDPOINT: 'http://insecure.test/search',
       }),
     ).toThrow(/HTTPS/)
+    expect(() =>
+      createAppConfig({
+        VITE_WEATHER_ENDPOINT: '//collector.example/metar',
+      }),
+    ).toThrow(/protocol-relative/)
+    expect(() =>
+      createAppConfig({
+        VITE_WEATHER_ENDPOINT: 'https://collector.example/metar',
+      }),
+    ).toThrow(/same-origin/)
+    expect(() =>
+      createAppConfig({
+        VITE_WEATHER_ENDPOINT: '/api/weather/metar?format=json',
+      }),
+    ).toThrow(/without a query/)
     expect(() =>
       createAppConfig({
         VITE_GEOCODER_ENDPOINT: 'https://user:secret@example.test/search',

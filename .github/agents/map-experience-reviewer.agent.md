@@ -53,10 +53,19 @@ Check these project invariants:
   ambiguous, drag, pinch, and unknown-modality outcomes remain exact.
 - Aircraft and vessel clusters remain separate, are not application entity IDs,
   and cannot be selected by an entity fallback path.
+- `clusterMinPoints` is a source-creation option; runtime toggles use only
+  supported cluster options. Because clustered GeoJSON `setData()` rebuilds
+  Supercluster even above the visible cluster zoom, interpolation must stay
+  suspended while clustering is enabled and unchanged snapshots must not
+  rebuild once per animation frame.
 - Optional static context layers use separate sources, IDs, selection, details,
   visibility, and failure state. Style changes restore any fulfilled context
   data without another request; traffic exact/touch picking remains ahead of
   context picking; context features never become traffic, trails, or counts.
+- Preserve deterministic context order across asynchronous style installation:
+  ports below airports below weather below live traffic. Picking after traffic
+  and clusters is weather, airport, then port for both exact and validated-touch
+  hits.
 - Generalized port points remain zoom-ranked, visually neutral, below traffic,
   and absent above their documented maximum zoom. Selection does not imply a
   facility, port call, destination, ETA, nearby vessel, or operational status.
@@ -64,6 +73,9 @@ Check these project invariants:
   or make provider calls while scrubbing.
 - Theme, Center, location, and layer controls keep semantic buttons,
   truthful pressed state, keyboard focus, contrast, and usable mobile layout.
+- Theme preference and resolved rendering theme stay separate. Missing or
+  invalid storage remains Light; only explicit Auto follows system changes,
+  and pre-paint/React resolution must agree without duplicate listeners.
 - Vessel discovery keeps search, typed filters, matching-versus-shown counts,
   reset state, hidden-SHIPS selection behavior, local port loading/error/retry,
   and source-limit wording readable and keyboard-usable in both supported

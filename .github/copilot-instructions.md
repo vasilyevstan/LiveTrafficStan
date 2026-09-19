@@ -151,10 +151,12 @@ preserve truthful partial operation when one provider fails.
   unavailable, stale, historical, and offline states truthful and distinct.
 - Keep `docs/` canonical and update the README and Wiki when released behavior
   changes.
-- Preserve visible OpenFreeMap/OpenStreetMap, ADSB.lol, and Digitraffic
-  attribution and the provider licensing records. When static aircraft metadata
-  is displayed, also preserve Mictronics and ODC-By attribution plus the
-  snapshot publication date.
+- Preserve visible OpenFreeMap/OpenStreetMap, ADSB.lol, Digitraffic,
+  OurAirports, Natural Earth, and NOAA/NWS AWC attribution and provider
+  licensing records. Weather presentation must retain source/retrieval time,
+  public-domain caveat, and observation-not-forecast wording. When static
+  aircraft metadata is displayed, also preserve Mictronics and ODC-By
+  attribution plus the snapshot publication date.
 - Do not expand a focused change into reverse geocoding, search autocomplete,
   continuous location, persistent tracking, PWA, weather, clustering, or
   backend work unless the request explicitly includes it.

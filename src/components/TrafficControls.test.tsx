@@ -37,6 +37,19 @@ const renderControls = (
       onAirportsVisibleChange={() => undefined}
       onAirportSelect={() => undefined}
       onRetryAirports={() => undefined}
+      weatherVisible={false}
+      weatherLoading={false}
+      weatherWaiting={false}
+      weatherReady={false}
+      now={Date.UTC(2026, 2, 12, 12)}
+      weatherObservations={[]}
+      selectedWeatherId={null}
+      weatherEmptyMessage="No current METAR observations are shown."
+      weatherCanRefresh
+      onWeatherVisibleChange={() => undefined}
+      onWeatherSelect={() => undefined}
+      onRetryWeather={() => undefined}
+      onRefreshWeather={() => undefined}
       clusteringEnabled={false}
       onClusteringEnabledChange={() => undefined}
       centerDisabled={false}
@@ -150,5 +163,41 @@ describe('TrafficControls', () => {
     expect(disabled).toContain('>AIRPORTS<')
     expect(disabled).not.toContain('AIRPORTS...')
     expect(disabled).not.toContain('Airports unavailable')
+  })
+
+  it('keeps METAR loading, failure, pacing, and provenance local', () => {
+    const loading = renderControls({
+      weatherVisible: true,
+      weatherLoading: true,
+    })
+    expect(loading).toContain('METAR...')
+    expect(loading).toContain('aria-busy="true"')
+
+    const waiting = renderControls({
+      weatherVisible: true,
+      weatherWaiting: true,
+      weatherStatusMessage: 'The next request is available at 12:01 UTC.',
+    })
+    expect(waiting).toContain('The next request is available')
+
+    const failed = renderControls({
+      weatherVisible: true,
+      weatherError: 'Weather request timed out',
+    })
+    expect(failed).toContain('METAR unavailable')
+    expect(failed).toContain('RETRY METAR')
+    expect(failed).toContain('NOAA/NWS Aviation Weather Center')
+    expect(failed).toContain('not an official forecast')
+    expect(failed).toContain('airport board')
+    expect(failed).toContain('visible qualifying ICAO station IDs')
+
+    const disabled = renderControls({
+      weatherVisible: false,
+      weatherLoading: true,
+      weatherError: 'Weather request timed out',
+    })
+    expect(disabled).toContain('>METAR<')
+    expect(disabled).not.toContain('METAR...')
+    expect(disabled).not.toContain('METAR unavailable')
   })
 })
