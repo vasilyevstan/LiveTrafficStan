@@ -123,7 +123,7 @@ five-minute REST gate.
 
 ## Browser location is not used
 
-V1.1 automatically reads location when permission is already granted or
+The app automatically reads location when permission is already granted or
 changes to granted while the page is open. Prompt, denied, unsupported,
 insecure, timeout, and unavailable states keep the configured Tallinn fallback
 until permission is granted or an explicit attempt succeeds.
@@ -144,12 +144,54 @@ until permission is granted or an explicit attempt succeeds.
 
 A location failure must not disable the map or either traffic provider.
 
+## Place search fails or coordinates are rejected
+
+The Location form distinguishes strict decimal coordinates from named text:
+
+- use `latitude, longitude`, for example `59.437, 24.754`;
+- latitude must be from -90 through 90 and longitude from -180 through 180;
+- exponent notation, `NaN`, `Infinity`, incomplete pairs, and extra numeric
+  segments are rejected;
+- ordinary names with commas, such as `Tallinn, Estonia`, remain place queries.
+
+A valid coordinate pair is rounded locally and never calls Photon. If
+coordinates fail while Photon is blocked, correct the local format rather than
+waiting for the provider.
+
+Named search occurs only after explicit submit. **No matching places found** is
+a successful empty response, not an outage. A temporary-limit message means a
+local cooldown or Photon `429` deadline is active; wait for the displayed
+deadline and submit manually again. The app never retries search automatically.
+
+For **Place search is unavailable** or a timeout:
+
+- confirm `https://photon.komoot.io/api?q=Tallinn&limit=5` is reachable;
+- inspect the browser console and Network panel for CORS, JSON, body-size, or
+  provider errors;
+- disable a privacy extension, VPN, or corporate filter only if local policy
+  permits and it is demonstrably blocking Photon;
+- use direct coordinates, Center, or the current map while the service is
+  unavailable.
+
+The default endpoint is a direct browser connection. A root-relative
+`VITE_GEOCODER_ENDPOINT` requires a separately compatible deployment route;
+the checked Cloudflare Worker only proxies aircraft and will return 404 for an
+unimplemented geocoder path. Do not add credentials to a `VITE_*` value or
+work around CORS by disabling browser security.
+
+Submitted place text appears in the Photon request URL. The app sends it only
+on submit, does not send browser Home coordinates for search bias, and does not
+persist results. Escape closes current results and returns focus to the input.
+
 ## A selected object or trail disappears
 
 Selection is cleared when its layer is hidden, when filtering removes the
-object, or when the object expires. Trails exist only in memory, contain only
-provider observations, and are limited to 15 minutes and 180 points. Refreshing
-the page clears them.
+object, when the object expires, or when a committed coordinate/place/Home
+navigation changes area. That navigation also resets retained trail points so
+the app cannot draw a line across unrelated views. Invalid input and failed
+search leave the current selection and history unchanged. Trails exist only in
+memory, contain only provider observations, and are limited to 15 minutes and
+180 points. Refreshing the page clears them.
 
 ## Configuration fails at startup
 
@@ -157,6 +199,7 @@ Review `.env.local` for:
 
 - non-numeric or out-of-range latitude/longitude;
 - malformed endpoint URLs;
+- protocol-relative or credential-bearing geocoder URLs;
 - `http:` map or REST endpoints where HTTPS is required;
 - `ws:` marine endpoints where secure `wss:` is required.
 
@@ -188,6 +231,7 @@ scheme solely to silence the threshold.
 Do not hide MapLibre attribution controls. The application must visibly credit:
 
 - OpenFreeMap, OpenMapTiles, and OpenStreetMap contributors;
+- Photon and OpenStreetMap contributors beside the Location control;
 - ADSB.lol and ODbL;
 - Fintraffic Digitraffic and CC BY 4.0, including the filtering/normalization
   change notice.

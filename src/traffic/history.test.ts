@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import type { Aircraft } from '../domain/traffic'
-import { updateTrailHistory } from './history'
+import {
+  updateTrailHistory,
+  updateTrailHistoryAfterNavigation,
+} from './history'
 
 const config = {
   durationMs: 15 * 60_000,
@@ -74,6 +77,30 @@ describe('updateTrailHistory', () => {
 
     expect(history.get('aircraft:test')).toEqual([
       { observedAt: 900_000, latitude: 59.1, longitude: 24.1 },
+    ])
+  })
+
+  it('drops pre-navigation points before accepting the current observation', () => {
+    const previous = new Map([
+      [
+        'aircraft:test',
+        [
+          { observedAt: 1_000, latitude: 59, longitude: 24 },
+          { observedAt: 2_000, latitude: 59.1, longitude: 24.1 },
+        ],
+      ],
+    ])
+
+    const history = updateTrailHistoryAfterNavigation(
+      previous,
+      [aircraft(3_000, 60, 25)],
+      3_000,
+      config,
+      true,
+    )
+
+    expect(history.get('aircraft:test')).toEqual([
+      { observedAt: 3_000, latitude: 60, longitude: 25 },
     ])
   })
 })

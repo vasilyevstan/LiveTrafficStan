@@ -41,6 +41,22 @@ Check these project invariants:
   stale, historical, offline, and provider failure states remain distinct.
 - Geolocation is one-shot, permission-aware, rounded before provider use, and
   never persisted or included as personal data in headers/logs.
+- Strict valid decimal coordinates navigate locally and never reach Photon.
+  Named search sends no request while typing, uses no geolocation bias, and
+  starts only after explicit submit.
+- Photon work has one active request, revision-aware cancellation, bounded
+  query/result/body sizes, total timeout through body reading, a local
+  repeat-submit cooldown, bounded session-only success/empty caching, and no
+  automatic retry. A `429` honors readable `Retry-After` or the configured
+  fallback deadline.
+- Browser geocoder requests use only the fixed validated endpoint plus `q` and
+  bounded `limit`, send `Accept: application/json`, omit credentials and a
+  custom `User-Agent`, validate GeoJSON Points, preserve provider order, and
+  deduplicate stable OpenStreetMap identities.
+- Submitted place text is disclosed as URL data, Photon/OpenStreetMap
+  attribution stays visible, browser Home coordinates are never sent for
+  search bias, and no unsupported provider-retention claim is made. Search
+  failure remains isolated from coordinates, the camera, and traffic providers.
 - Enrichment and persisted observations retain source, age, identity confidence,
   licensing, attribution, retention, and cache limits. Do not infer routes,
   operators, destinations, coverage, or port calls from incomplete data.

@@ -26,6 +26,16 @@ export interface AppConfig {
     geolocationTimeoutMs: number
     geolocationMaximumAgeMs: number
   }
+  geocoder: {
+    endpointBaseUrl: string
+    resultLimit: number
+    maximumQueryLength: number
+    requestCooldownMs: number
+    timeoutMs: number
+    rateLimitFallbackMs: number
+    cacheMaxEntries: number
+    cacheTtlMs: number
+  }
   aircraft: FreshnessThresholds & {
     endpointBaseUrl: string
     refreshIntervalMs: number
@@ -53,6 +63,7 @@ const DEFAULTS = {
   longitude: 24.7536,
   lightMapStyleUrl: 'https://tiles.openfreemap.org/styles/positron',
   darkMapStyleUrl: 'https://tiles.openfreemap.org/styles/dark',
+  geocoderEndpoint: 'https://photon.komoot.io/api',
   aircraftEndpoint: '/api/aircraft',
   marineRestEndpoint: 'https://meri.digitraffic.fi',
   marineMqttEndpoint: 'wss://meri.digitraffic.fi:443/mqtt',
@@ -101,6 +112,34 @@ const readEndpoint = (
   return value.replace(/\/+$/, '')
 }
 
+const readPublicEndpoint = (
+  env: Record<string, string | undefined>,
+  name: string,
+  fallback: string,
+) => {
+  const value = env[name]?.trim() || fallback
+  if (value.startsWith('//')) {
+    throw new Error(`${name} must not use a protocol-relative URL`)
+  }
+  if (value.startsWith('/')) return value.replace(/\/+$/, '')
+
+  let parsed: URL
+  try {
+    parsed = new URL(value)
+  } catch {
+    throw new Error(`${name} must be a valid HTTPS URL or root-relative path`)
+  }
+
+  if (parsed.protocol !== 'https:') {
+    throw new Error(`${name} must use HTTPS`)
+  }
+  if (parsed.username || parsed.password) {
+    throw new Error(`${name} must not include URL credentials`)
+  }
+
+  return value.replace(/\/+$/, '')
+}
+
 export const createAppConfig = (
   env: Record<string, string | undefined>,
 ): AppConfig => {
@@ -142,6 +181,20 @@ export const createAppConfig = (
       viewportSettleMs: 350,
       geolocationTimeoutMs: 20_000,
       geolocationMaximumAgeMs: 5 * 60_000,
+    },
+    geocoder: {
+      endpointBaseUrl: readPublicEndpoint(
+        env,
+        'VITE_GEOCODER_ENDPOINT',
+        DEFAULTS.geocoderEndpoint,
+      ),
+      resultLimit: 5,
+      maximumQueryLength: 100,
+      requestCooldownMs: 1_000,
+      timeoutMs: 8_000,
+      rateLimitFallbackMs: 60_000,
+      cacheMaxEntries: 20,
+      cacheTtlMs: 15 * 60_000,
     },
     aircraft: {
       endpointBaseUrl: readEndpoint(

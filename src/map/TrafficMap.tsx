@@ -66,8 +66,9 @@ const emptyTrail = (): FeatureCollection<LineString> => ({
 })
 
 interface TrafficMapProps {
-  homeCenter: AppCenter
-  homeViewRadiusKm: number
+  viewCenter: AppCenter
+  viewLabel: string
+  viewRadiusKm: number
   maximumViewportRadiusKm: number
   touchHitTolerancePx: number
   coordinatePrecision: number
@@ -80,13 +81,14 @@ interface TrafficMapProps {
   aircraftVisible: boolean
   vesselsVisible: boolean
   interpolationDurationMs: number
-  homeRequestId: number
+  viewRequestId: number
   viewportSettleMs: number
   onSelect: (id: string | null) => void
   onViewportChange: (
     assessment: ViewportAssessment,
-    homeRequestId: number,
+    viewRequestId: number,
   ) => void
+  onManualViewChange: () => void
   onMapError: (error: TrafficMapError | null) => void
 }
 
@@ -195,8 +197,9 @@ const viewportSignature = (assessment: ViewportAssessment) => {
 }
 
 export function TrafficMap({
-  homeCenter,
-  homeViewRadiusKm,
+  viewCenter,
+  viewLabel,
+  viewRadiusKm,
   maximumViewportRadiusKm,
   touchHitTolerancePx,
   coordinatePrecision,
@@ -209,10 +212,11 @@ export function TrafficMap({
   aircraftVisible,
   vesselsVisible,
   interpolationDurationMs,
-  homeRequestId,
+  viewRequestId,
   viewportSettleMs,
   onSelect,
   onViewportChange,
+  onManualViewChange,
   onMapError,
 }: TrafficMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -224,9 +228,9 @@ export function TrafficMap({
   const vesselMotionRef = useRef<MotionStates>(new Map())
   const viewportSettleTimerRef = useRef<number | null>(null)
   const lastViewportSignatureRef = useRef<string | null>(null)
-  const lastHomeRequestRef = useRef(homeRequestId)
-  const homeRequestRef = useRef(homeRequestId)
-  const homeCenterRef = useRef(homeCenter)
+  const lastViewRequestRef = useRef(viewRequestId)
+  const viewRequestRef = useRef(viewRequestId)
+  const viewCenterRef = useRef(viewCenter)
   const viewportLimitsRef = useRef({
     coordinatePrecision,
     maximumRadiusKm: maximumViewportRadiusKm,
@@ -255,13 +259,14 @@ export function TrafficMap({
   })
   const selectRef = useRef(onSelect)
   const viewportChangeRef = useRef(onViewportChange)
+  const manualViewChangeRef = useRef(onManualViewChange)
   const errorRef = useRef(onMapError)
 
   useEffect(() => {
     desiredStyleUrlRef.current = mapStyleUrl
     themeRef.current = theme
-    homeRequestRef.current = homeRequestId
-    homeCenterRef.current = homeCenter
+    viewRequestRef.current = viewRequestId
+    viewCenterRef.current = viewCenter
     viewportLimitsRef.current = {
       coordinatePrecision,
       maximumRadiusKm: maximumViewportRadiusKm,
@@ -269,8 +274,8 @@ export function TrafficMap({
     viewportSettleMsRef.current = viewportSettleMs
   }, [
     coordinatePrecision,
-    homeCenter,
-    homeRequestId,
+    viewCenter,
+    viewRequestId,
     mapStyleUrl,
     maximumViewportRadiusKm,
     theme,
@@ -378,7 +383,7 @@ export function TrafficMap({
     const signature = viewportSignature(assessment)
     if (signature === lastViewportSignatureRef.current) return
     lastViewportSignatureRef.current = signature
-    viewportChangeRef.current(assessment, homeRequestRef.current)
+    viewportChangeRef.current(assessment, viewRequestRef.current)
   }, [])
 
   const scheduleViewportReport = useCallback(
@@ -392,13 +397,13 @@ export function TrafficMap({
     [clearPendingViewport, reportViewport],
   )
 
-  const fitCurrentHome = useCallback(
+  const fitCurrentView = useCallback(
     (map: MapLibreMap, duration: number) => {
       clearPendingViewport()
       lastViewportSignatureRef.current = null
-      const currentHome = homeCenterRef.current
+      const currentView = viewCenterRef.current
       map.fitBounds(
-        boundsAroundCenter(currentHome, homeViewRadiusKm),
+        boundsAroundCenter(currentView, viewRadiusKm),
         {
           padding: fitPadding(),
           duration,
@@ -409,7 +414,7 @@ export function TrafficMap({
         duration + viewportSettleMsRef.current,
       )
     },
-    [clearPendingViewport, homeViewRadiusKm, scheduleViewportReport],
+    [clearPendingViewport, scheduleViewportReport, viewRadiusKm],
   )
 
   const getTrafficImages = useCallback((activeTheme: Theme) => {
@@ -455,14 +460,14 @@ export function TrafficMap({
 
       if (!initialFitCompleteRef.current) {
         initialFitCompleteRef.current = true
-        lastHomeRequestRef.current = homeRequestRef.current
-        fitCurrentHome(map, 0)
-      } else if (lastHomeRequestRef.current !== homeRequestRef.current) {
-        lastHomeRequestRef.current = homeRequestRef.current
-        fitCurrentHome(map, 650)
+        lastViewRequestRef.current = viewRequestRef.current
+        fitCurrentView(map, 0)
+      } else if (lastViewRequestRef.current !== viewRequestRef.current) {
+        lastViewRequestRef.current = viewRequestRef.current
+        fitCurrentView(map, 650)
       }
     },
-    [fitCurrentHome, getTrafficImages, scheduleRender],
+    [fitCurrentView, getTrafficImages, scheduleRender],
   )
 
   const switchMapStyle = useCallback(
@@ -504,6 +509,10 @@ export function TrafficMap({
   }, [onViewportChange])
 
   useEffect(() => {
+    manualViewChangeRef.current = onManualViewChange
+  }, [onManualViewChange])
+
+  useEffect(() => {
     errorRef.current = onMapError
   }, [onMapError])
 
@@ -517,14 +526,14 @@ export function TrafficMap({
 
   useEffect(() => {
     if (!containerRef.current) return
-    const initialHome = homeCenterRef.current
+    const initialView = viewCenterRef.current
 
     const map = createMapSafely(
       () =>
         new MapLibreMap({
           container: containerRef.current!,
           style: initialStyleUrlRef.current,
-          center: [initialHome.longitude, initialHome.latitude],
+          center: [initialView.longitude, initialView.latitude],
           zoom: 8,
           attributionControl: false,
           maxPitch: 60,
@@ -536,17 +545,56 @@ export function TrafficMap({
     mapRef.current = map
     const touchTracker = new TouchInteractionTracker()
     const canvas = map.getCanvas()
+    const pointerOrigins = new Map<number, { x: number; y: number }>()
+    let manualPointerMovement = false
     const handlePointerDown = (event: PointerEvent) => {
       touchTracker.pointerDown(event)
+      pointerOrigins.set(event.pointerId, {
+        x: event.clientX,
+        y: event.clientY,
+      })
     }
     const handlePointerMove = (event: PointerEvent) => {
       touchTracker.pointerMove(event)
+      const origin = pointerOrigins.get(event.pointerId)
+      if (
+        !manualPointerMovement &&
+        origin &&
+        Math.hypot(
+          event.clientX - origin.x,
+          event.clientY - origin.y,
+        ) >= 3
+      ) {
+        manualPointerMovement = true
+        manualViewChangeRef.current()
+      }
     }
     const handlePointerUp = (event: PointerEvent) => {
       touchTracker.pointerUp(event)
+      pointerOrigins.delete(event.pointerId)
+      if (pointerOrigins.size === 0) manualPointerMovement = false
     }
     const handlePointerCancel = (event: PointerEvent) => {
       touchTracker.pointerCancel(event)
+      pointerOrigins.delete(event.pointerId)
+      if (pointerOrigins.size === 0) manualPointerMovement = false
+    }
+    const handleWheel = () => manualViewChangeRef.current()
+    const handleDoubleClick = () => manualViewChangeRef.current()
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (
+        [
+          'ArrowDown',
+          'ArrowLeft',
+          'ArrowRight',
+          'ArrowUp',
+          '+',
+          '-',
+          '=',
+        ].includes(event.key)
+      ) {
+        manualViewChangeRef.current()
+      }
     }
     canvas.addEventListener('pointerdown', handlePointerDown, { passive: true })
     canvas.addEventListener('pointermove', handlePointerMove, { passive: true })
@@ -554,6 +602,9 @@ export function TrafficMap({
     canvas.addEventListener('pointercancel', handlePointerCancel, {
       passive: true,
     })
+    canvas.addEventListener('wheel', handleWheel, { passive: true })
+    canvas.addEventListener('dblclick', handleDoubleClick, { passive: true })
+    canvas.addEventListener('keydown', handleKeyDown)
 
     const activeTrafficLayers = () => {
       const layers: string[] = []
@@ -669,6 +720,9 @@ export function TrafficMap({
       canvas.removeEventListener('pointermove', handlePointerMove)
       canvas.removeEventListener('pointerup', handlePointerUp)
       canvas.removeEventListener('pointercancel', handlePointerCancel)
+      canvas.removeEventListener('wheel', handleWheel)
+      canvas.removeEventListener('dblclick', handleDoubleClick)
+      canvas.removeEventListener('keydown', handleKeyDown)
       if (frameRef.current !== null) {
         window.cancelAnimationFrame(frameRef.current)
         frameRef.current = null
@@ -678,7 +732,7 @@ export function TrafficMap({
     }
   }, [
     clearPendingViewport,
-    fitCurrentHome,
+    fitCurrentView,
     installCurrentStyle,
     scheduleViewportReport,
     switchMapStyle,
@@ -747,19 +801,19 @@ export function TrafficMap({
   }, [trail])
 
   useEffect(() => {
-    if (lastHomeRequestRef.current === homeRequestId) return
+    if (lastViewRequestRef.current === viewRequestId) return
     const map = mapRef.current
     if (!map || !loadedRef.current) return
 
-    lastHomeRequestRef.current = homeRequestId
-    fitCurrentHome(map, 650)
-  }, [fitCurrentHome, homeRequestId])
+    lastViewRequestRef.current = viewRequestId
+    fitCurrentView(map, 650)
+  }, [fitCurrentView, viewRequestId])
 
   return (
     <div
       ref={containerRef}
       className="traffic-map"
-      aria-label={`Live traffic map with ${homeCenter.label} as Home`}
+      aria-label={`Live traffic map: ${viewLabel}`}
     />
   )
 }

@@ -111,6 +111,14 @@ Map-experience tests also cover:
   stale/live opacity updates;
 - all ten bounded silhouette IDs, ADS-B/AIS category boundaries, generic
   fallbacks, and stable identity when provider metadata changes an icon.
+- strict coordinate/query classification, including malformed numeric pairs,
+  comma-containing place names, range checks, and configured rounding;
+- Photon URL/header construction, bounded response reads, GeoJSON Point
+  validation, stable-identity deduplication, and provider-order preservation;
+- one-active-search cancellation, stale-result rejection, cooldown, timeout,
+  `Retry-After` fallback, and bounded success/empty caching;
+- explicit-navigation precedence over late geolocation and trail reset after a
+  committed view change.
 
 Geolocation tests must distinguish permission from acquisition. A granted
 permission can still produce delayed success, timeout, unavailable, or obsolete
@@ -135,6 +143,12 @@ Use `npm run dev` and verify:
    clears selection safely.
 8. A narrow mobile viewport keeps controls readable and the map usable.
 9. Map and provider attribution remains visible.
+10. Strict coordinates navigate with no Photon request; named text makes one
+    explicit bounded request and renders Photon/OpenStreetMap attribution.
+11. Search results are reachable by keyboard, Enter selects one, and Escape
+    closes results and restores input focus.
+12. Blocking Photon produces a non-blocking search error while coordinate
+    navigation, Center, and live traffic remain usable.
 
 For the viewport-driven map experience, additionally verify:
 
@@ -169,6 +183,15 @@ For the viewport-driven map experience, additionally verify:
     tap clears/retains selection according to the normal empty-hit path.
 14. Mouse, touch-followed-by-mouse, drag, and pinch interactions do not receive
     the touch fallback, and device pixel ratio does not change the threshold.
+15. A coordinate or place result changes only the current view. Center returns
+    to the latest session Home, including one updated by a late allowed
+    geolocation result that did not steal the explicit camera.
+16. Wheel/trackpad, pointer drag, touch drag, double-click, and map-keyboard
+    movement change the label to `Custom view`; a marker click and programmatic
+    camera fit do not.
+17. Repeating the same normalized named query uses the session cache without a
+    second Photon request. New input, Escape, Center, location, coordinate
+    navigation, or manual movement cancels obsolete results.
 
 Repeat the core check with `npm run build && npm run preview`. Confirm that
 `dist/assets/` contains a `maplibre-gl-worker-*.js` file and that the preview
@@ -237,6 +260,14 @@ official documentation in `docs/data-sources-and-licensing.md` and use small,
 rate-conscious live probes. Do not put captured live payloads containing
 unnecessary data into the repository; reduce fixtures to only fields required
 by the test.
+
+For Photon, use one real browser-origin search per acceptance run rather than a
+live loop. Confirm HTTP/JSON success, current CORS behavior, no credentials or
+custom browser `User-Agent`, the configured five-result bound, visible
+Photon/OpenStreetMap attribution, and that a repeated normalized query is
+served from memory. Simulate timeout, `429`, invalid GeoJSON, oversized bodies,
+and outage locally. A synthetic `Origin` request can inspect headers but does
+not replace a real browser CORS check.
 
 Use local fixtures, fake clocks, fake maps, mocked fetch, and mocked MQTT for
 repeated lifecycle checks. A milestone needs one bounded real-provider browser

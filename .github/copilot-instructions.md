@@ -78,6 +78,28 @@ preserve truthful partial operation when one provider fails.
   that the operating system will produce a position before the configured
   timeout. Keep the current home usable, report acquisition and permission
   failures distinctly, and guard retries from obsolete late callbacks.
+- Keep session Home separate from the current view target. Coordinates and
+  place results never mutate Home. Coordinate submission, named search, Center,
+  Use Location, and trusted manual camera movement must prevent an older
+  geolocation callback from stealing the camera while still permitting it to
+  update Home silently.
+- Location input is explicit-submit only. Strict valid decimal coordinates are
+  rounded and navigated locally without a geocoder request; malformed
+  numeric-looking pairs are errors rather than place queries. Do not add
+  typeahead, reverse geocoding, location bias, or another camera/provider
+  scheduler.
+- Photon search allows one active request, bounded results/body/text, revision
+  cancellation, a local repeat-submit cooldown, total timeout, explicit
+  `429`/`Retry-After` handling, and bounded session-only success/empty caching.
+  Browser requests omit credentials and a custom `User-Agent`. Search outage
+  must leave coordinate navigation and traffic usable.
+- Place-search UI must disclose that submitted text appears in the Photon URL,
+  preserve visible Photon/OpenStreetMap attribution, and make no unsupported
+  provider-retention claim. Never send browser-derived Home coordinates for
+  search bias or persist search results.
+- Committed navigation clears selection and pre-navigation trail points but
+  preserves the single map instance, themes, layers, filters, provider
+  controllers, cadence, connections, and session Home.
 - Motion interpolates only between observed positions. Trails contain observed
   points and remain bounded by both time and count.
 - Production aircraft proxy changes must keep the fixed ADSB.lol origin, exact
@@ -108,6 +130,6 @@ preserve truthful partial operation when one provider fails.
   changes.
 - Preserve visible OpenFreeMap/OpenStreetMap, ADSB.lol, and Digitraffic
   attribution and the provider licensing records.
-- Do not expand a focused change into reverse geocoding, continuous location,
-  arbitrary search, persistent tracking, PWA, weather, clustering, or backend
-  work unless the request explicitly includes it.
+- Do not expand a focused change into reverse geocoding, search autocomplete,
+  continuous location, persistent tracking, PWA, weather, clustering, or
+  backend work unless the request explicitly includes it.

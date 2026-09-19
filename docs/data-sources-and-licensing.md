@@ -14,6 +14,62 @@ This document records the data-provider checks made for LiveTrafficStan V1. Prov
 
 OpenFreeMap is free and open, requires no application key, and is directly compatible with MapLibre GL JS. Its public service is provided as-is without an uptime guarantee. The style URL is therefore configuration rather than an application-wide assumption.
 
+## Place search: Photon
+
+- Public endpoint and service terms: <https://photon.komoot.io/>
+- Project source: <https://github.com/komoot/photon>
+- API documentation: <https://github.com/komoot/photon/blob/master/docs/api-v1.md>
+- Default endpoint: `https://photon.komoot.io/api`
+- Authentication: none for the current public endpoint
+- Search mode: explicit forward search only; no autocomplete or reverse
+  geocoding
+- Result data: OpenStreetMap-derived
+- OpenStreetMap copyright and ODbL attribution:
+  <https://www.openstreetmap.org/copyright>
+
+This decision was verified on 2026-09-19. Photon's public-service notice
+expressly permits use for a project, asks clients to behave fairly, warns that
+extensive use can be throttled, provides no availability guarantee, and
+reserves the right to change the service. It does not publish a numerical
+per-application quota or an SLA.
+
+A bounded planning probe using `limit=3` returned HTTP 200, JSON, wildcard CORS,
+three Tallinn results, and 1,139 response bytes. That synthetic-Origin probe was
+header evidence only. The final real-Chrome acceptance check made one
+`Tallinn Airport` request, received five bounded results, and proved current
+browser CORS compatibility for the application's actual request shape. These
+observations are not a permanent CORS or capacity guarantee.
+
+LiveTrafficStan sends named text only after the user explicitly submits the
+Location form. It sends `q`, `limit=5`, and `Accept: application/json`, omits
+credentials, and adds no custom browser `User-Agent`, location bias, or
+automatic retry. Valid decimal coordinates are parsed locally and never sent
+to Photon. Browser-derived Home coordinates are never sent to Photon.
+
+Submitted place text appears in the request URL, and the service receives
+ordinary client network metadata such as the IP address. The interface states
+this before use and makes no claim about provider retention. Successful and
+empty results may remain only in a bounded 15-minute in-memory session cache;
+they are not persisted, placed in application URLs, or used to build a
+redistributed geocoding database.
+
+The Location control visibly credits Photon and OpenStreetMap contributors.
+Provider outage, timeout, invalid response, CORS failure, or throttling affects
+only named search. Coordinate navigation, Home/Center, and the traffic map
+remain available.
+
+### Why public Nominatim was not selected
+
+The official public-instance policy is:
+<https://operations.osmfoundation.org/policies/nominatim/>.
+It permits moderate user-triggered search, but its maximum one request per
+second applies to the sum of all users of a website or application and it
+prohibits client-side autocomplete. A browser-local limiter cannot enforce an
+aggregate application-wide ceiling across independent users. Using public
+Nominatim directly would therefore require an operational control this
+static-first client does not have. Photon was the smaller compliant current
+choice; no geocoder proxy or credential was added.
+
 ## Aircraft: ADSB.lol
 
 - API: <https://api.adsb.lol>
@@ -163,10 +219,11 @@ readable copy of the `NOTICE` attribution. This is a permissive source-code
 license: compliant derivative products may use different terms for their own
 additions.
 
-Runtime map, aircraft, and marine data retain their providers' separate
-licenses and attribution requirements:
+Runtime map, place-search, aircraft, and marine data retain their providers'
+separate licenses and attribution requirements:
 
 - map data: OpenStreetMap/OpenMapTiles/OpenFreeMap attribution
+- place-search data: Photon with OpenStreetMap contributor/ODbL attribution
 - aircraft data: ADSB.lol, ODbL 1.0
 - marine data: Fintraffic Digitraffic, CC BY 4.0
 

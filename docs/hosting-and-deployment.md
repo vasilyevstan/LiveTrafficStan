@@ -9,7 +9,8 @@ production platform:
 
 - Vite's `dist/` output is served as immutable static assets;
 - one stateless Worker handles only the same-origin ADSB.lol point route;
-- OpenFreeMap and Digitraffic REST/MQTT remain direct browser connections;
+- OpenFreeMap, Photon, and Digitraffic REST/MQTT remain direct browser
+  connections;
 - no database, queue, persistent server state, authentication service, or
   general backend is added.
 
@@ -27,8 +28,8 @@ deployment or caching change.
 
 The platform comparison uses:
 
-- **Documented** facts from official Cloudflare, Netlify, GitHub, ADSB.lol, and
-  Digitraffic material;
+- **Documented** facts from official Cloudflare, Netlify, GitHub, ADSB.lol,
+  Photon, and Digitraffic material;
 - **Observed** bounded local or provider checks;
 - **Calculated** request volume from the checked-in 20-second aircraft cadence;
 - **Unknown** for account-specific entitlement, production egress behavior, and
@@ -47,7 +48,8 @@ The smallest complete deployment must preserve:
 - upstream status, body, `Content-Type`, and `Retry-After`;
 - no overlapping or accelerated aircraft request schedule;
 - direct browser Digitraffic REST and secure MQTT WebSockets;
-- visible OpenFreeMap/OpenStreetMap, ADSB.lol/ODbL, and
+- direct browser Photon forward search only after explicit submit;
+- visible OpenFreeMap/OpenStreetMap, Photon/OpenStreetMap, ADSB.lol/ODbL, and
   Digitraffic/CC BY attribution;
 - independent aircraft, marine, and map failure;
 - rounded, session-only location behavior without application URL logging.
@@ -129,6 +131,7 @@ browser
                                                +--> https://api.adsb.lol
 
 browser --------------------------------> OpenFreeMap HTTPS
+browser --------------------------------> Photon HTTPS on explicit search
 browser --------------------------------> Digitraffic HTTPS + WSS
 ```
 
@@ -360,6 +363,8 @@ real browser check of:
 - rendered vector tiles and actual MapLibre worker execution;
 - one MapLibre instance through Light/Dark changes;
 - same-origin aircraft data;
+- one explicit Photon search with current browser CORS, bounded results,
+  privacy disclosure, and visible Photon/OpenStreetMap attribution;
 - direct Digitraffic REST preflight and secure WebSocket
   CONNACK/SUBACK/messages;
 - aircraft/marine failure isolation;
@@ -456,5 +461,7 @@ Provider context:
 
 - [ADSB.lol API](https://www.adsb.lol/docs/open-data/api/)
 - [ADSB.lol API source](https://github.com/adsblol/api)
+- [Photon public endpoint terms](https://photon.komoot.io/)
+- [Photon API documentation](https://github.com/komoot/photon/blob/master/docs/api-v1.md)
 - [Digitraffic marine traffic](https://www.digitraffic.fi/en/marine-traffic/)
 - [Digitraffic terms](https://www.digitraffic.fi/en/terms-of-service/)

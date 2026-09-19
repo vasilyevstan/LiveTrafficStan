@@ -45,3 +45,17 @@ export const updateTrailHistory = (
 
   return next
 }
+
+export const updateTrailHistoryAfterNavigation = (
+  previous: TrailHistory,
+  entities: readonly TrafficEntity[],
+  now: number,
+  config: TrailHistoryConfig,
+  reset: boolean,
+) =>
+  updateTrailHistory(
+    reset ? new Map() : previous,
+    entities,
+    now,
+    config,
+  )
