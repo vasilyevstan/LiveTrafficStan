@@ -69,6 +69,7 @@ describe('AircraftDiscovery', () => {
     expect(html).toContain('AIRCRAFT layer hidden')
     expect(html).toContain('disabled=""')
     expect(html).toContain('Show the AIRCRAFT layer')
+    expect(html).toContain('id="aircraft-discovery-result-aircraft:0"')
     expect(html).toContain(
       `Showing the first ${AIRCRAFT_RESULT_LIMIT} of ${entities.length}`,
     )

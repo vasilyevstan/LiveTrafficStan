@@ -699,12 +699,20 @@ substitutes.
 
 ## Compact controls and rendered interaction evidence
 
-The primary map controls remain intentionally small. Status, Center, theme, and
-one native progressive disclosure form the default surface; secondary search,
-layers, history setup, discovery, preferences, and long explanatory/source text
-belong behind that disclosure. Active historical controls and urgent actionable
-recovery remain visible, and mandatory map or selected-item attribution is never
-hidden.
+The primary map controls remain intentionally small and split by task. The
+upper Navigate and Explore panel keeps one location input plus Center, Aircraft,
+and Ships visible; its native disclosure contains search feedback, location,
+secondary layers, discovery, context, and source detail. The lower Settings
+panel keeps Auto, Light, Dark, and Trails visible; its native disclosure
+contains trail duration, local-history setup, units, sharing, reset, and
+application detail. The two disclosures share one native `name`, so at most one
+is open.
+
+The location input stays mounted while its feedback is collapsed, preserving
+entered text and in-flight state. Active historical controls and one urgent
+actionable recovery remain visible outside both disclosures, and mandatory map
+or selected-item attribution is never hidden. The combined expanded stack,
+rather than each panel independently, owns the 58vh budget.
 
 Selection updates must retain the complete MapLibre feature-property contract.
 In particular, `removeAllProperties` is terminal in the installed source-diff

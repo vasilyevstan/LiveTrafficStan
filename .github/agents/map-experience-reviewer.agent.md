@@ -108,14 +108,17 @@ Check these project invariants:
 - Added controls must not let the mobile overlay consume the entire map.
   Verify a real touch drag starts on an unobscured map region at both 390x844
   and 390x568 while the control panel remains scrollable and reachable.
-- Keep the primary control surface compact. Secondary search, layer, history,
-  discovery, preference, and explanatory content belongs behind one native
-  progressive disclosure; active historical controls and urgent actionable
+- Keep the primary controls compact and task-based. Navigate and Explore keeps
+  search, Center, Aircraft, and Ships visible; Settings keeps theme and Trails
+  visible. Secondary controls belong behind two stable native disclosures that
+  are mutually exclusive. Active historical controls and one urgent actionable
   recovery remain visible. A collapsed disclosure removes descendants from the
-  tab order, survives normal rerenders, and restores focus to a visible control.
-- Measure collapsed height, expanded bounds, combined overlay obstruction, and
-  attribution visibility in a real browser. The existing 58vh expanded bound
-  alone does not prove that the default surface remains lightweight.
+  tab order, survives normal rerenders, preserves search state, and restores
+  focus to a visible control.
+- Measure each collapsed panel, the combined expanded-stack bound, overlay
+  obstruction, and attribution visibility in a real browser. The 58vh bound
+  applies to the whole stack; it alone does not prove that the default surfaces
+  remain lightweight.
 - Theme preference and resolved rendering theme stay separate. Missing or
   invalid storage remains Light; only explicit Auto follows system changes,
   and pre-paint/React resolution must agree without duplicate listeners.

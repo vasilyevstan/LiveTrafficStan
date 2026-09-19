@@ -16,12 +16,19 @@ describe('HistoryModeNotice', () => {
           speed: 1,
         }}
         entityCount={3}
+        onPlay={() => undefined}
+        onPause={() => undefined}
+        onScrub={() => undefined}
+        onSpeedChange={() => undefined}
         onReturnToLive={() => undefined}
       />,
     )
 
     expect(html).toContain('HISTORY PAUSED')
     expect(html).toContain('3 recorded objects')
+    expect(html).toContain('type="range"')
+    expect(html).toContain('>PLAY<')
+    expect(html).toContain('aria-pressed="true">1×')
     expect(html).toContain('RETURN TO LIVE')
     expect(html).not.toContain('aria-live')
   })

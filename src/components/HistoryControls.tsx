@@ -5,8 +5,6 @@ import {
 } from '../domain/trailPreferences'
 import { formatTimestamp } from '../domain/format'
 import {
-  PLAYBACK_SPEEDS,
-  type PlaybackSpeed,
   type PlaybackRange,
   type PlaybackState,
 } from '../history/playback'
@@ -31,10 +29,8 @@ interface HistoryControlsProps {
   onClearHistory: () => void
   onRetryHistory: () => void
   onEnterHistory: () => void
-  onPlayHistory: () => void
-  onPauseHistory: () => void
-  onScrubHistory: (cursor: number) => void
-  onPlaybackSpeedChange: (speed: PlaybackSpeed) => void
+  retryPromoted?: boolean
+  trailVisibilityPromoted?: boolean
 }
 
 const formatLogicalBytes = (bytes: number) =>
@@ -76,10 +72,8 @@ export function HistoryControls({
   onClearHistory,
   onRetryHistory,
   onEnterHistory,
-  onPlayHistory,
-  onPauseHistory,
-  onScrubHistory,
-  onPlaybackSpeedChange,
+  retryPromoted = false,
+  trailVisibilityPromoted = false,
 }: HistoryControlsProps) {
   const setVisible = (visible: boolean) => {
     onTrailPreferencesChange({
@@ -92,24 +86,26 @@ export function HistoryControls({
     <>
       <fieldset className="control-group history-controls">
         <legend>Trail</legend>
-        <div className="control-options control-options--two">
-          <button
-            type="button"
-            className={trailPreferences.visible ? 'is-active' : undefined}
-            aria-pressed={trailPreferences.visible}
-            onClick={() => setVisible(true)}
-          >
-            SHOW
-          </button>
-          <button
-            type="button"
-            className={!trailPreferences.visible ? 'is-active' : undefined}
-            aria-pressed={!trailPreferences.visible}
-            onClick={() => setVisible(false)}
-          >
-            HIDE
-          </button>
-        </div>
+        {!trailVisibilityPromoted && (
+          <div className="control-options control-options--two">
+            <button
+              type="button"
+              className={trailPreferences.visible ? 'is-active' : undefined}
+              aria-pressed={trailPreferences.visible}
+              onClick={() => setVisible(true)}
+            >
+              SHOW
+            </button>
+            <button
+              type="button"
+              className={!trailPreferences.visible ? 'is-active' : undefined}
+              aria-pressed={!trailPreferences.visible}
+              onClick={() => setVisible(false)}
+            >
+              HIDE
+            </button>
+          </div>
+        )}
         <label>
           <span>Selected trail duration</span>
           <select
@@ -199,7 +195,8 @@ export function HistoryControls({
           )}
         {['blocked', 'stale-tab', 'error', 'deletion-failed'].includes(
           historyStatus.phase,
-        ) && (
+        ) &&
+          !retryPromoted && (
           <button
             type="button"
             className="history-action"
@@ -209,8 +206,9 @@ export function HistoryControls({
           </button>
         )}
 
-        {playback.mode === 'live' ? (
+        {playback.mode === 'live' && (
           <button
+            id="history-enter-button"
             type="button"
             className="history-action"
             disabled={!historyRange}
@@ -218,60 +216,6 @@ export function HistoryControls({
           >
             ENTER HISTORY
           </button>
-        ) : (
-          <>
-            <label>
-              <span>
-                Historical cursor {formatTimestamp(playback.cursor)}
-              </span>
-              <input
-                type="range"
-                min={playback.range.oldest}
-                max={playback.range.newest}
-                step={1}
-                value={playback.cursor}
-                onChange={(event) =>
-                  onScrubHistory(Number(event.currentTarget.value))
-                }
-              />
-            </label>
-            <div className="control-options control-options--two">
-              <button
-                type="button"
-                className={
-                  playback.mode === 'history-playing'
-                    ? 'is-active'
-                    : undefined
-                }
-                aria-pressed={playback.mode === 'history-playing'}
-                onClick={
-                  playback.mode === 'history-playing'
-                    ? onPauseHistory
-                    : onPlayHistory
-                }
-              >
-                {playback.mode === 'history-playing' ? 'PAUSE' : 'PLAY'}
-              </button>
-              <span className="playback-speed-label">
-                {playback.speed}× SPEED
-              </span>
-            </div>
-            <div className="control-options">
-              {PLAYBACK_SPEEDS.map((speed) => (
-                <button
-                  key={speed}
-                  type="button"
-                  className={
-                    playback.speed === speed ? 'is-active' : undefined
-                  }
-                  aria-pressed={playback.speed === speed}
-                  onClick={() => onPlaybackSpeedChange(speed)}
-                >
-                  {speed}×
-                </button>
-              ))}
-            </div>
-          </>
         )}
 
         <p className="control-note control-note--muted">
