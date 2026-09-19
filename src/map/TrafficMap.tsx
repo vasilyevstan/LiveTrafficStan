@@ -41,6 +41,12 @@ import {
   type TrafficMapError,
 } from './mapInitialization'
 import {
+  exactEligibleFeatureId,
+  expandedHitBox,
+  TouchInteractionTracker,
+  uniqueEligibleFeatureId,
+} from './touchPicking'
+import {
   installTrafficStyle,
   LAYER_AIRCRAFT,
   LAYER_AIRCRAFT_HALO,
@@ -65,6 +71,7 @@ interface TrafficMapProps {
   homeCenter: AppCenter
   homeViewRadiusKm: number
   maximumViewportRadiusKm: number
+  touchHitTolerancePx: number
   coordinatePrecision: number
   mapStyleUrl: string
   theme: Theme
@@ -193,6 +200,7 @@ export function TrafficMap({
   homeCenter,
   homeViewRadiusKm,
   maximumViewportRadiusKm,
+  touchHitTolerancePx,
   coordinatePrecision,
   mapStyleUrl,
   theme,
@@ -532,6 +540,51 @@ export function TrafficMap({
     if (!map) return
 
     mapRef.current = map
+    const touchTracker = new TouchInteractionTracker()
+    const canvas = map.getCanvas()
+    const handlePointerDown = (event: PointerEvent) => {
+      touchTracker.pointerDown(event)
+    }
+    const handlePointerMove = (event: PointerEvent) => {
+      touchTracker.pointerMove(event)
+    }
+    const handlePointerUp = (event: PointerEvent) => {
+      touchTracker.pointerUp(event)
+    }
+    const handlePointerCancel = (event: PointerEvent) => {
+      touchTracker.pointerCancel(event)
+    }
+    canvas.addEventListener('pointerdown', handlePointerDown, { passive: true })
+    canvas.addEventListener('pointermove', handlePointerMove, { passive: true })
+    canvas.addEventListener('pointerup', handlePointerUp, { passive: true })
+    canvas.addEventListener('pointercancel', handlePointerCancel, {
+      passive: true,
+    })
+
+    const activeTrafficLayers = () => {
+      const layers: string[] = []
+      const viewState = viewStateRef.current
+      if (viewState.aircraftVisible && map.getLayer(LAYER_AIRCRAFT)) {
+        layers.push(LAYER_AIRCRAFT)
+      }
+      if (viewState.vesselsVisible && map.getLayer(LAYER_VESSELS)) {
+        layers.push(LAYER_VESSELS)
+      }
+      return layers
+    }
+
+    const selectableTrafficIds = () => {
+      const ids = new Set<string>()
+      const renderState = renderStateRef.current
+      const viewState = viewStateRef.current
+      if (viewState.aircraftVisible) {
+        for (const entity of renderState.aircraft) ids.add(entity.id)
+      }
+      if (viewState.vesselsVisible) {
+        for (const entity of renderState.vessels) ids.add(entity.id)
+      }
+      return ids
+    }
 
     map.on('moveend', () => {
       scheduleViewportReport(map)
@@ -554,19 +607,32 @@ export function TrafficMap({
     )
 
     map.on('click', (event) => {
-      const layers = [LAYER_AIRCRAFT, LAYER_VESSELS].filter((layerId) =>
-        Boolean(map.getLayer(layerId)),
+      const touchFallbackAllowed = touchTracker.consumeClick(
+        event.originalEvent,
       )
+      const layers = activeTrafficLayers()
       if (layers.length === 0) return
-      const features = map.queryRenderedFeatures(event.point, { layers })
-      const id = features[0]?.properties?.id
-      selectRef.current(typeof id === 'string' ? id : null)
+      const eligibleIds = selectableTrafficIds()
+      const exactFeatures = map.queryRenderedFeatures(event.point, { layers })
+      const exactId = exactEligibleFeatureId(exactFeatures, eligibleIds)
+      if (exactId) {
+        selectRef.current(exactId)
+        return
+      }
+      if (!touchFallbackAllowed) {
+        selectRef.current(null)
+        return
+      }
+
+      const nearbyFeatures = map.queryRenderedFeatures(
+        expandedHitBox(event.point, touchHitTolerancePx),
+        { layers },
+      )
+      selectRef.current(uniqueEligibleFeatureId(nearbyFeatures, eligibleIds))
     })
 
     map.on('mousemove', (event) => {
-      const layers = [LAYER_AIRCRAFT, LAYER_VESSELS].filter((layerId) =>
-        Boolean(map.getLayer(layerId)),
-      )
+      const layers = activeTrafficLayers()
       const features =
         layers.length > 0
           ? map.queryRenderedFeatures(event.point, { layers })
@@ -605,6 +671,10 @@ export function TrafficMap({
       styleGenerationRef.current += 1
       loadedRef.current = false
       clearPendingViewport()
+      canvas.removeEventListener('pointerdown', handlePointerDown)
+      canvas.removeEventListener('pointermove', handlePointerMove)
+      canvas.removeEventListener('pointerup', handlePointerUp)
+      canvas.removeEventListener('pointercancel', handlePointerCancel)
       if (frameRef.current !== null) {
         window.cancelAnimationFrame(frameRef.current)
         frameRef.current = null
@@ -618,6 +688,7 @@ export function TrafficMap({
     installCurrentStyle,
     scheduleViewportReport,
     switchMapStyle,
+    touchHitTolerancePx,
   ])
 
   useEffect(() => {

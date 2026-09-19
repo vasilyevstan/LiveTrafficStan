@@ -37,6 +37,7 @@ spread through components:
 | --- | --- |
 | Initial Home framing | Comparable to a 20 km local view |
 | Maximum eligible enclosing radius | 100 km |
+| Touch marker hit extension | 8 CSS pixels per axis after an exact miss |
 | Vessel-length presets | 25, 50, 100, 150 m |
 | Default minimum vessel length | 50 m |
 | Aircraft refresh | 20 seconds |

@@ -97,6 +97,19 @@ caches.
 Layer toggles are display preferences. They do not stop or reconstruct provider
 lifecycles.
 
+## Touch-only isolated marker tolerance
+
+Every traffic selection keeps the exact rendered-point query first. A completed
+single-touch tap may use an 8 CSS-pixel extension in each axis only when that
+exact query is empty. The fallback deduplicates world copies by application ID
+and selects only one unique currently eligible entity.
+
+Mouse and unknown-modality clicks remain exact, including mouse input on hybrid
+devices. A later mouse pointer-down clears prior touch evidence. Drag, pinch,
+cancel, stale/hidden entities, clusters without application IDs, and multiple
+nearby IDs do not activate a guessed selection. The tolerance is expressed in
+CSS pixels and is not multiplied by device pixel ratio.
+
 ## Privacy-safe browser location
 
 Location is one-shot and session-only. The app automatically reads it when

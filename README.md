@@ -33,6 +33,8 @@ single React application, without accounts, a database, or persistent tracking.
   in-memory trail for the selected object.
 - Responsive floating controls, keyboard focus states, non-color status labels,
   and original programmatically drawn marker silhouettes.
+- Touch-specific selection tolerance for isolated markers; exact mouse hits stay
+  unchanged and ambiguous nearby traffic is never guessed.
 
 ## Quick start
 

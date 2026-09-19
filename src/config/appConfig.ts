@@ -18,6 +18,7 @@ export interface AppConfig {
     darkStyleUrl: string
     homeViewRadiusKm: number
     maximumViewportRadiusKm: number
+    touchHitTolerancePx: number
   }
   navigation: {
     coordinatePrecision: number
@@ -134,6 +135,7 @@ export const createAppConfig = (
       ),
       homeViewRadiusKm: 20,
       maximumViewportRadiusKm: 100,
+      touchHitTolerancePx: 8,
     },
     navigation: {
       coordinatePrecision: 3,
