@@ -18,6 +18,7 @@ const renderControls = (
       vesselResults={[]}
       totalVessels={0}
       vesselEmptyMessage="No current ships are shown in this view."
+      units="metric"
       onVesselFiltersChange={() => undefined}
       onVesselSelect={() => undefined}
       aircraftVisible
@@ -78,6 +79,10 @@ const renderControls = (
       onUseLocation={() => undefined}
       themePreference="light"
       onThemePreferenceChange={() => undefined}
+      onUnitsChange={() => undefined}
+      shareDisabled={false}
+      onShare={() => undefined}
+      onResetPreferences={() => undefined}
       locationNavigationDisabled={false}
       activeLocationLabel="Home: Tallinn, Estonia"
       coordinatePrecision={3}
@@ -98,6 +103,20 @@ describe('TrafficControls', () => {
     expect(html).toContain('>LIGHT<')
     expect(html).toContain('>DARK<')
     expect(html).toContain('aria-pressed="true">AUTO')
+  })
+
+  it('exposes remembered units, explicit sharing, reset, and copy fallback', () => {
+    const html = renderControls({
+      units: 'aviation-nautical',
+      preferenceStatus: 'The share link could not be copied.',
+      manualShareUrl: 'https://example.test/#v=1',
+    })
+    expect(html).toContain('AVIATION / NAUTICAL')
+    expect(html).toContain('aria-pressed="true">AVIATION / NAUTICAL')
+    expect(html).toContain('SHARE VIEW')
+    expect(html).toContain('RESET PREFERENCES')
+    expect(html).toContain('role="status"')
+    expect(html).toContain('https://example.test/#v=1')
   })
 
   it('keeps clustering as a provider-neutral optional layer preference', () => {

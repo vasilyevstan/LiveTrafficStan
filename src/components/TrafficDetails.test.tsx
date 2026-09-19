@@ -57,6 +57,7 @@ describe('TrafficDetails aircraft metadata', () => {
         entity={aircraft}
         aircraftMetadata={availableMetadata}
         now={1_800_000_001_000}
+        units="metric"
         onClose={() => undefined}
       />,
     )
@@ -87,6 +88,7 @@ describe('TrafficDetails aircraft metadata', () => {
         entity={{ ...aircraft, registration: undefined }}
         aircraftMetadata={state}
         now={1_800_000_001_000}
+        units="metric"
         onClose={() => undefined}
       />,
     )
@@ -107,6 +109,7 @@ describe('TrafficDetails aircraft metadata', () => {
           reason: 'registration-conflict',
         }}
         now={1_800_000_001_000}
+        units="metric"
         onClose={() => undefined}
       />,
     )
@@ -119,6 +122,7 @@ describe('TrafficDetails aircraft metadata', () => {
           message: 'Aircraft metadata returned HTTP 503',
         }}
         now={1_800_000_001_000}
+        units="metric"
         onClose={() => undefined}
       />,
     )
@@ -155,6 +159,7 @@ describe('TrafficDetails aircraft metadata', () => {
         entity={vessel}
         aircraftMetadata={availableMetadata}
         now={1_800_000_001_000}
+        units="metric"
         onClose={() => undefined}
       />,
     )
@@ -194,6 +199,7 @@ describe('TrafficDetails aircraft metadata', () => {
         entity={vessel}
         aircraftMetadata={{ phase: 'idle' }}
         now={1_800_000_001_000}
+        units="metric"
         onClose={() => undefined}
       />,
     )

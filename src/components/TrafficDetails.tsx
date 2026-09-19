@@ -12,6 +12,7 @@ import type {
   AircraftMetadataViewState,
 } from '../domain/aircraftMetadata'
 import type { DisplayTrafficEntity } from '../domain/traffic'
+import type { UnitSystem } from '../domain/units'
 
 interface DetailRowProps {
   label: string
@@ -33,6 +34,7 @@ interface TrafficDetailsProps {
   entity: DisplayTrafficEntity
   aircraftMetadata: AircraftMetadataViewState
   now: number
+  units: UnitSystem
   historical?: boolean
   onClose: () => void
 }
@@ -168,6 +170,7 @@ export function TrafficDetails({
   entity,
   aircraftMetadata,
   now,
+  units,
   historical = false,
   onClose,
 }: TrafficDetailsProps) {
@@ -218,7 +221,7 @@ export function TrafficDetails({
               value={
                 entity.altitudeMeters === undefined
                   ? undefined
-                  : formatAltitude(entity.altitudeMeters)
+                  : formatAltitude(entity.altitudeMeters, units)
               }
             />
             <DetailRow
@@ -226,7 +229,7 @@ export function TrafficDetails({
               value={
                 entity.speedKph === undefined
                   ? undefined
-                  : formatSpeed(entity.speedKph)
+                  : formatSpeed(entity.speedKph, units)
               }
             />
             <DetailRow
@@ -240,7 +243,7 @@ export function TrafficDetails({
               value={
                 entity.verticalSpeedMps === undefined
                   ? undefined
-                  : formatVerticalSpeed(entity.verticalSpeedMps)
+                  : formatVerticalSpeed(entity.verticalSpeedMps, units)
               }
             />
             <DetailRow label="Squawk" value={entity.squawk} />
@@ -281,7 +284,7 @@ export function TrafficDetails({
               value={
                 entity.speedKph === undefined
                   ? undefined
-                  : formatSpeed(entity.speedKph)
+                  : formatSpeed(entity.speedKph, units)
               }
             />
             <DetailRow

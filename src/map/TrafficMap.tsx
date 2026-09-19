@@ -16,6 +16,10 @@ import type { Theme } from '../app/theme'
 import type { AppCenter } from '../config/appConfig'
 import type { Airport } from '../domain/airports'
 import { boundsAroundCenter } from '../domain/geo'
+import {
+  roundMapCameraState,
+  type MapCameraState,
+} from '../domain/mapCamera'
 import type { Port } from '../domain/ports'
 import type {
   DisplayAircraft,
@@ -99,6 +103,7 @@ const emptyTrail = (): FeatureCollection<LineString> => ({
 
 interface TrafficMapProps {
   viewCenter: AppCenter
+  viewCamera?: MapCameraState
   viewLabel: string
   viewRadiusKm: number
   maximumViewportRadiusKm: number
@@ -137,6 +142,7 @@ interface TrafficMapProps {
     assessment: ViewportAssessment,
     viewRequestId: number,
   ) => void
+  onCameraChange: (camera: MapCameraState) => void
   onManualViewChange: () => void
   onMapError: (error: TrafficMapError | null) => void
 }
@@ -286,6 +292,7 @@ const viewportSignature = (assessment: ViewportAssessment) => {
 
 export function TrafficMap({
   viewCenter,
+  viewCamera,
   viewLabel,
   viewRadiusKm,
   maximumViewportRadiusKm,
@@ -321,6 +328,7 @@ export function TrafficMap({
   onSelectAirport,
   onSelectWeather,
   onViewportChange,
+  onCameraChange,
   onManualViewChange,
   onMapError,
 }: TrafficMapProps) {
@@ -334,8 +342,10 @@ export function TrafficMap({
   const viewportSettleTimerRef = useRef<number | null>(null)
   const lastViewportSignatureRef = useRef<string | null>(null)
   const lastViewRequestRef = useRef(viewRequestId)
+  const initialViewRequestIdRef = useRef(viewRequestId)
   const viewRequestRef = useRef(viewRequestId)
   const viewCenterRef = useRef(viewCenter)
+  const initialCameraRef = useRef(viewCamera)
   const viewportLimitsRef = useRef({
     coordinatePrecision,
     maximumRadiusKm: maximumViewportRadiusKm,
@@ -402,6 +412,7 @@ export function TrafficMap({
   const selectAirportRef = useRef(onSelectAirport)
   const selectWeatherRef = useRef(onSelectWeather)
   const viewportChangeRef = useRef(onViewportChange)
+  const cameraChangeRef = useRef(onCameraChange)
   const manualViewChangeRef = useRef(onManualViewChange)
   const errorRef = useRef(onMapError)
 
@@ -545,6 +556,18 @@ export function TrafficMap({
       const width = canvas.clientWidth
       const height = canvas.clientHeight
       const center = map.getCenter()
+      cameraChangeRef.current(
+        roundMapCameraState(
+          {
+            latitude: center.lat,
+            longitude: center.lng,
+            zoom: map.getZoom(),
+            bearing: map.getBearing(),
+            pitch: map.getPitch(),
+          },
+          viewportLimitsRef.current.coordinatePrecision,
+        ),
+      )
       const perimeter = canvasPerimeter(width, height).map(([x, y]) => {
         const coordinate = map.unproject([x, y])
         return {
@@ -709,13 +732,26 @@ export function TrafficMap({
       if (!initialFitCompleteRef.current) {
         initialFitCompleteRef.current = true
         lastViewRequestRef.current = viewRequestRef.current
-        fitCurrentView(map, 0)
+        if (
+          initialCameraRef.current &&
+          viewRequestRef.current === initialViewRequestIdRef.current
+        ) {
+          lastViewportSignatureRef.current = null
+          scheduleViewportReport(map, 0)
+        } else {
+          fitCurrentView(map, 0)
+        }
       } else if (lastViewRequestRef.current !== viewRequestRef.current) {
         lastViewRequestRef.current = viewRequestRef.current
         fitCurrentView(map, 650)
       }
     },
-    [fitCurrentView, getTrafficImages, scheduleRender],
+    [
+      fitCurrentView,
+      getTrafficImages,
+      scheduleRender,
+      scheduleViewportReport,
+    ],
   )
 
   const switchMapStyle = useCallback(
@@ -772,6 +808,10 @@ export function TrafficMap({
   }, [onViewportChange])
 
   useEffect(() => {
+    cameraChangeRef.current = onCameraChange
+  }, [onCameraChange])
+
+  useEffect(() => {
     manualViewChangeRef.current = onManualViewChange
   }, [onManualViewChange])
 
@@ -800,14 +840,19 @@ export function TrafficMap({
   useEffect(() => {
     if (!containerRef.current) return
     const initialView = viewCenterRef.current
+    const initialCamera = initialCameraRef.current
 
     const map = createMapSafely(
       () =>
         new MapLibreMap({
           container: containerRef.current!,
           style: initialStyleUrlRef.current,
-          center: [initialView.longitude, initialView.latitude],
-          zoom: 8,
+          center: initialCamera
+            ? [initialCamera.longitude, initialCamera.latitude]
+            : [initialView.longitude, initialView.latitude],
+          zoom: initialCamera?.zoom ?? 8,
+          bearing: initialCamera?.bearing ?? 0,
+          pitch: initialCamera?.pitch ?? 0,
           attributionControl: false,
           maxPitch: 60,
         }),

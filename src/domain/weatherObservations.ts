@@ -6,6 +6,13 @@ export const ICAO_WEATHER_STATION_PATTERN = /^[A-Z]{4}$/
 export type FlightCategory = 'VFR' | 'MVFR' | 'IFR' | 'LIFR' | 'UNKNOWN'
 export type ObservationFreshness = 'current' | 'stale'
 export type WindDirection = number | 'VRB'
+export type VisibilityRelation = 'exact' | 'at-least' | 'less-than'
+
+export interface WeatherVisibility {
+  kilometers: number
+  relation: VisibilityRelation
+  sourceToken: string
+}
 
 export interface WeatherObservation {
   id: string
@@ -19,9 +26,9 @@ export interface WeatherObservation {
   temperatureCelsius?: number
   dewpointCelsius?: number
   windDirection?: WindDirection
-  windSpeedKnots?: number
-  windGustKnots?: number
-  visibility?: string | number
+  windSpeedKph?: number
+  windGustKph?: number
+  visibility?: WeatherVisibility
   altimeterHpa?: number
   rawObservation: string
 }

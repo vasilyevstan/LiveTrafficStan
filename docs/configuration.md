@@ -69,7 +69,7 @@ spread through components:
 | Marine REST lookback | 15 minutes |
 | Marine snapshot flush | 1 second |
 | Marine stale / expiry | 2 minutes / 10 minutes |
-| Selected trail | Shown by default; session-only; 5, 15, 30, or 60 minutes |
+| Selected trail | Shown by default; visibility/duration remembered; observations session-only; 5, 15, 30, or 60 minutes |
 | Trail point caps | 12 points/minute per object; 50,000 points overall |
 | Session observation history | 60 minutes; 50,000 records; 16 MiB logical payload |
 | History sampling | Newer provider source time; at most one sample per provider/entity per 10 seconds |
@@ -91,7 +91,8 @@ spread through components:
 Changing these constants changes application behavior and should include
 targeted tests where the value affects filtering, freshness, history, or motion.
 
-Trail duration and visibility remain plain session state. The released
+Trail duration and visibility are fields in the versioned preference schema.
+The released
 15-minute/180-point behavior remains the default. Reducing
 the duration prunes immediately; increasing it collects future provider
 observations only and does not reconstruct points that were not retained.
@@ -327,11 +328,12 @@ that vector tiles are being parsed.
 
 `VITE_MAP_STYLE_URL` configures the Light style and
 `VITE_MAP_DARK_STYLE_URL` configures the Dark style. The stored
-`livetrafficstan.theme` value may be `auto`, `light`, or `dark`. A missing
-preference, invalid value, or unavailable storage selects Light to preserve the
-previous default. Auto resolves the browser system color scheme and follows
-later changes; explicit Light/Dark choices remain overrides. Map center
-coordinates are never stored.
+`livetrafficstan.preferences.v1` theme field may be `auto`, `light`, or `dark`.
+The legacy `livetrafficstan.theme` value is imported only when the unified key
+is absent and remains a rollback mirror. A missing preference, invalid value,
+or unavailable storage selects Light to preserve the previous default. Auto
+resolves the browser system color scheme and follows later changes; explicit
+Light/Dark choices remain overrides. Map center coordinates are never stored.
 
 The current behavioral configuration keeps:
 
@@ -352,8 +354,32 @@ Navigation timing and privacy values are centralized in
 Layer preferences use one plain serializable boolean shape for aircraft,
 vessels, ports, airports, clustering, and METAR. It deliberately excludes
 provider state, loading/error state, observations, cluster IDs, MapLibre
-objects, and selections. The current Issue #10 implementation keeps that shape
-in session React state; persistence remains future Issue #12 scope.
+objects, and selections. The shape is stored inside
+`livetrafficstan.preferences.v1`.
+
+The complete preference schema also stores:
+
+- `metric | aviation-nautical` presentation units;
+- structured vessel category/navigation/reported-speed/length/unknown-length
+  filters, excluding the free-text query;
+- selected-trail visibility and 5/15/30/60-minute duration.
+
+It never stores camera, Home/browser location, place/aircraft/vessel search
+text, selection, provider state, observations, history consent/retention/data,
+or playback. **RESET PREFERENCES** removes the unified key and legacy theme
+mirror but leaves private-history storage untouched.
+
+Explicit sharing uses a validated fragment with maximum length 2,048:
+
+```text
+#v=1&lat=59.437&lon=24.754&zoom=8.25&bearing=0.0&pitch=0.0&...
+```
+
+The camera is all-or-nothing, coordinates use the configured three-decimal
+privacy precision, and duplicate/unknown/out-of-range fields reject the share.
+Valid fragment fields override saved preferences for that page without being
+saved automatically. Browser Home/location, queries, selection, history, and
+provider state are never serialized.
 
 ## Marine endpoints
 

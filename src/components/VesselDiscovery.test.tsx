@@ -39,6 +39,7 @@ const renderDiscovery = (
       totalVessels={3}
       vesselsVisible
       emptyMessage="No current ships in this view."
+      units="metric"
       onFiltersChange={() => undefined}
       onSelect={() => undefined}
       {...overrides}

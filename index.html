@@ -11,19 +11,174 @@
     <meta name="theme-color" content="#dce8ec" />
     <script>
       (() => {
-        let theme = 'light'
-        try {
-          const preference = localStorage.getItem('livetrafficstan.theme')
-          if (preference === 'dark') {
-            theme = 'dark'
-          } else if (
-            preference === 'auto' &&
-            typeof matchMedia === 'function' &&
-            matchMedia('(prefers-color-scheme: dark)').matches
+        const themeValues = new Set(['auto', 'light', 'dark'])
+        const knownShareKeys = new Set([
+          'v',
+          'lat',
+          'lon',
+          'zoom',
+          'bearing',
+          'pitch',
+          'theme',
+          'units',
+          'aircraft',
+          'vessels',
+          'ports',
+          'airports',
+          'clusters',
+          'weather',
+          'vesselCategory',
+          'vesselNavigation',
+          'vesselSpeed',
+          'vesselMinLength',
+          'vesselMaxLength',
+          'vesselUnknownLength',
+          'trails',
+          'trailMinutes',
+        ])
+        const sharedTheme = () => {
+          const raw = location.hash.startsWith('#')
+            ? location.hash.slice(1)
+            : location.hash
+          if (!raw || raw.length > 2048) return undefined
+          const params = new URLSearchParams(raw)
+          for (const key of params.keys()) {
+            if (
+              !knownShareKeys.has(key) ||
+              params.getAll(key).length !== 1
+            ) {
+              return undefined
+            }
+          }
+          if (params.get('v') !== '1') return undefined
+
+          const cameraKeys = ['lat', 'lon', 'zoom', 'bearing', 'pitch']
+          const presentCameraKeys = cameraKeys.filter((key) =>
+            params.has(key),
+          )
+          if (
+            presentCameraKeys.length > 0 &&
+            presentCameraKeys.length !== cameraKeys.length
           ) {
-            theme = 'dark'
+            return undefined
+          }
+          const boundedNumber = (key, minimum, maximum) => {
+            if (!params.has(key)) return true
+            const rawValue = params.get(key)
+            if (!rawValue || rawValue.trim() === '') return false
+            const value = Number(rawValue)
+            return (
+              Number.isFinite(value) &&
+              value >= minimum &&
+              value <= maximum
+            )
+          }
+          if (
+            !boundedNumber('lat', -90, 90) ||
+            !boundedNumber('lon', -180, 180) ||
+            !boundedNumber('zoom', 0, 22) ||
+            !boundedNumber('bearing', -180, 180) ||
+            !boundedNumber('pitch', 0, 60)
+          ) {
+            return undefined
+          }
+
+          const allowed = (key, values) =>
+            !params.has(key) || values.includes(params.get(key))
+          const booleanKeys = [
+            'aircraft',
+            'vessels',
+            'ports',
+            'airports',
+            'clusters',
+            'weather',
+            'vesselUnknownLength',
+            'trails',
+          ]
+          if (
+            booleanKeys.some(
+              (key) =>
+                params.has(key) &&
+                !['0', '1'].includes(params.get(key)),
+            ) ||
+            !allowed('theme', [...themeValues]) ||
+            !allowed('units', ['metric', 'aviation-nautical']) ||
+            !allowed('vesselCategory', [
+              'all',
+              'cargo',
+              'tanker',
+              'passenger',
+              'fishing',
+              'tug-service',
+              'other',
+              'unknown',
+            ]) ||
+            !allowed('vesselNavigation', [
+              'all',
+              'underway',
+              'anchored',
+              'moored',
+              'restricted',
+              'aground',
+              'fishing',
+              'other',
+              'unknown',
+            ]) ||
+            !allowed('vesselSpeed', [
+              'all',
+              'under-one-knot',
+              'one-knot-or-more',
+              'unknown',
+            ]) ||
+            !allowed('vesselMinLength', ['0', '25', '50', '100', '150']) ||
+            !allowed('vesselMaxLength', [
+              'none',
+              '24',
+              '49',
+              '99',
+              '149',
+            ]) ||
+            !allowed('trailMinutes', ['5', '15', '30', '60'])
+          ) {
+            return undefined
+          }
+          return params.has('theme') ? params.get('theme') : undefined
+        }
+
+        let preference = 'light'
+        try {
+          const shared = sharedTheme()
+          if (shared) {
+            preference = shared
+          } else {
+            const stored = localStorage.getItem(
+              'livetrafficstan.preferences.v1',
+            )
+            if (stored !== null) {
+              try {
+                const parsed = JSON.parse(stored)
+                preference =
+                  parsed &&
+                  parsed.version === 1 &&
+                  themeValues.has(parsed.theme)
+                    ? parsed.theme
+                    : 'light'
+              } catch {
+                preference = 'light'
+              }
+            } else {
+              const legacy = localStorage.getItem('livetrafficstan.theme')
+              preference = themeValues.has(legacy) ? legacy : 'light'
+            }
           }
         } catch {}
+        const theme =
+          preference === 'dark' ||
+          (preference === 'auto' &&
+            typeof matchMedia === 'function' &&
+            matchMedia('(prefers-color-scheme: dark)').matches)
+            ? 'dark'
+            : 'light'
         document.documentElement.dataset.theme = theme
         document.documentElement.style.colorScheme = theme
         document
