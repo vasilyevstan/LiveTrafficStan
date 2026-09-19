@@ -12,11 +12,30 @@ React and TypeScript provide a small typed component model. Vite supplies the de
 
 OpenFreeMap's Positron style is the V1 base map because it is OSM-based, MapLibre-compatible, key-free, muted, and replaceable through one configuration value. The application adds stronger blue traffic and control styling rather than maintaining a large custom map style.
 
-## ADSB.lol through the Vite proxy
+## ADSB.lol remains the sole aircraft provider
 
-Airplanes.live was checked first but currently requires provider contact before live API access. ADSB.lol is the selected fallback because its point/radius API is open, key-free, ODbL-licensed, and returned Tallinn aircraft during verification.
+The dated
+[aircraft-provider evaluation](aircraft-provider-evaluation.md) retains
+ADSB.lol because its point/radius API remains the smallest compatible,
+currently keyless, ODbL-licensed option.
 
-ADSB.lol does not currently provide browser CORS headers. V1 uses Vite's development and preview proxy so the browser calls a same-origin path. No secret is involved. A public static deployment will require an equivalent serverless proxy or a provider change; that work remains outside V1.
+Airplanes.live now publishes a closely compatible v2 contract, but its current
+endpoint is contact-gated and its API-specific data rights, rate, caching,
+attribution, and public-display terms are unresolved. OpenSky's current terms
+require a written license for operational REST use in a live product, and its
+bounding-box state-vector contract, OAuth credentials, and daily credits add
+material complexity.
+
+ADSB.lol does not currently provide general browser CORS headers. V1 uses
+Vite's development and preview proxy so the browser calls a same-origin path.
+No secret is involved. Issue #11 owns the narrow production proxy, validated
+inputs, upstream timeout, status/header preservation, and safe logging.
+
+No provider selector, automatic failover, aggregation, or alternative adapter
+is added. Those mechanisms would introduce provenance, duplicate-resolution,
+licensing, credential, and operational complexity without a demonstrated
+requirement. The existing application-owned provider interface is sufficient
+for a future deliberate replacement.
 
 ## Digitraffic MQTT plus REST metadata
 
