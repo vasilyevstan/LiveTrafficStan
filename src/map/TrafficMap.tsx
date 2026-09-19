@@ -4,7 +4,6 @@ import type {
   FeatureCollection,
   LineString,
   Point,
-  Polygon,
 } from 'geojson'
 import {
   AttributionControl,
@@ -14,8 +13,7 @@ import {
 import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
 import type { Theme } from '../app/theme'
 import type { AppCenter } from '../config/appConfig'
-import type { Coordinates } from '../domain/center'
-import { radiusBounds, radiusPolygonCoordinates } from '../domain/geo'
+import { boundsAroundCenter } from '../domain/geo'
 import type {
   DisplayAircraft,
   DisplayTrafficEntity,
@@ -23,6 +21,10 @@ import type {
   TrafficEntity,
   TrailPoint,
 } from '../domain/traffic'
+import {
+  assessTrafficViewport,
+  type ViewportAssessment,
+} from '../domain/viewport'
 import {
   hasActiveMotion,
   reconcileMotionStates,
@@ -47,7 +49,6 @@ import {
   setTrafficLayerVisibility,
   setTrafficSourceData,
   SOURCE_AIRCRAFT,
-  SOURCE_RADIUS,
   SOURCE_TRAIL,
   SOURCE_VESSELS,
   type TrafficStyleImages,
@@ -61,8 +62,10 @@ const emptyTrail = (): FeatureCollection<LineString> => ({
 })
 
 interface TrafficMapProps {
-  center: AppCenter
-  radiusKm: number
+  homeCenter: AppCenter
+  homeViewRadiusKm: number
+  maximumViewportRadiusKm: number
+  coordinatePrecision: number
   mapStyleUrl: string
   theme: Theme
   aircraft: readonly DisplayAircraft[]
@@ -72,10 +75,13 @@ interface TrafficMapProps {
   aircraftVisible: boolean
   vesselsVisible: boolean
   interpolationDurationMs: number
-  fitRequestId: number
-  panSettleMs: number
+  homeRequestId: number
+  viewportSettleMs: number
   onSelect: (id: string | null) => void
-  onQueryCenterChange: (center: Coordinates) => void
+  onViewportChange: (
+    assessment: ViewportAssessment,
+    homeRequestId: number,
+  ) => void
   onMapError: (error: TrafficMapError | null) => void
 }
 
@@ -86,29 +92,10 @@ interface RenderState {
 }
 
 interface ViewState {
-  center: AppCenter
-  radiusKm: number
   aircraftVisible: boolean
   vesselsVisible: boolean
   trail: readonly TrailPoint[]
 }
-
-const radiusData = (
-  center: AppCenter,
-  radiusKm: number,
-): FeatureCollection<Polygon> => ({
-  type: 'FeatureCollection',
-  features: [
-    {
-      type: 'Feature',
-      properties: {},
-      geometry: {
-        type: 'Polygon',
-        coordinates: [radiusPolygonCoordinates(center, radiusKm)],
-      },
-    },
-  ],
-})
 
 const trafficFeatures = (
   entities: readonly DisplayTrafficEntity[],
@@ -167,9 +154,46 @@ const fitPadding = () =>
     ? { top: 180, right: 28, bottom: 90, left: 28 }
     : { top: 70, right: 360, bottom: 70, left: 70 }
 
+const canvasPerimeter = (width: number, height: number, segments = 8) => {
+  const points: [number, number][] = []
+  for (let index = 0; index < segments; index += 1) {
+    points.push([width * (index / segments), 0])
+  }
+  for (let index = 0; index < segments; index += 1) {
+    points.push([width, height * (index / segments)])
+  }
+  for (let index = 0; index < segments; index += 1) {
+    points.push([width * (1 - index / segments), height])
+  }
+  for (let index = 0; index < segments; index += 1) {
+    points.push([0, height * (1 - index / segments)])
+  }
+  return points
+}
+
+const viewportSignature = (assessment: ViewportAssessment) => {
+  if (assessment.kind === 'ineligible') {
+    return `${assessment.kind}:${assessment.reason}:${assessment.message}`
+  }
+
+  const { center, enclosingRadiusKm, polygon } = assessment.viewport
+  return [
+    assessment.kind,
+    center.latitude,
+    center.longitude,
+    enclosingRadiusKm,
+    ...polygon.flatMap((coordinate) => [
+      coordinate.latitude.toFixed(5),
+      coordinate.longitude.toFixed(5),
+    ]),
+  ].join(':')
+}
+
 export function TrafficMap({
-  center,
-  radiusKm,
+  homeCenter,
+  homeViewRadiusKm,
+  maximumViewportRadiusKm,
+  coordinatePrecision,
   mapStyleUrl,
   theme,
   aircraft,
@@ -179,10 +203,10 @@ export function TrafficMap({
   aircraftVisible,
   vesselsVisible,
   interpolationDurationMs,
-  fitRequestId,
-  panSettleMs,
+  homeRequestId,
+  viewportSettleMs,
   onSelect,
-  onQueryCenterChange,
+  onViewportChange,
   onMapError,
 }: TrafficMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -192,10 +216,16 @@ export function TrafficMap({
   const lastFrameRef = useRef(0)
   const aircraftMotionRef = useRef<MotionStates>(new Map())
   const vesselMotionRef = useRef<MotionStates>(new Map())
-  const userPanRef = useRef(false)
-  const panSettleTimerRef = useRef<number | null>(null)
-  const lastFitRequestRef = useRef(fitRequestId)
-  const fitRequestRef = useRef(fitRequestId)
+  const viewportSettleTimerRef = useRef<number | null>(null)
+  const lastViewportSignatureRef = useRef<string | null>(null)
+  const lastHomeRequestRef = useRef(homeRequestId)
+  const homeRequestRef = useRef(homeRequestId)
+  const homeCenterRef = useRef(homeCenter)
+  const viewportLimitsRef = useRef({
+    coordinatePrecision,
+    maximumRadiusKm: maximumViewportRadiusKm,
+  })
+  const viewportSettleMsRef = useRef(viewportSettleMs)
   const styleGenerationRef = useRef(0)
   const initialStyleUrlRef = useRef(mapStyleUrl)
   const desiredStyleUrlRef = useRef(mapStyleUrl)
@@ -213,21 +243,33 @@ export function TrafficMap({
     selectedId,
   })
   const viewStateRef = useRef<ViewState>({
-    center,
-    radiusKm,
     aircraftVisible,
     vesselsVisible,
     trail,
   })
   const selectRef = useRef(onSelect)
-  const queryCenterChangeRef = useRef(onQueryCenterChange)
+  const viewportChangeRef = useRef(onViewportChange)
   const errorRef = useRef(onMapError)
 
   useEffect(() => {
     desiredStyleUrlRef.current = mapStyleUrl
     themeRef.current = theme
-    fitRequestRef.current = fitRequestId
-  }, [fitRequestId, mapStyleUrl, theme])
+    homeRequestRef.current = homeRequestId
+    homeCenterRef.current = homeCenter
+    viewportLimitsRef.current = {
+      coordinatePrecision,
+      maximumRadiusKm: maximumViewportRadiusKm,
+    }
+    viewportSettleMsRef.current = viewportSettleMs
+  }, [
+    coordinatePrecision,
+    homeCenter,
+    homeRequestId,
+    mapStyleUrl,
+    maximumViewportRadiusKm,
+    theme,
+    viewportSettleMs,
+  ])
 
   const renderSources = useCallback((now: number) => {
     const map = mapRef.current
@@ -280,26 +322,88 @@ export function TrafficMap({
     frameRef.current = window.requestAnimationFrame(draw)
   }, [renderSources])
 
-  const clearPendingPan = useCallback(() => {
-    userPanRef.current = false
-    if (panSettleTimerRef.current === null) return
-    window.clearTimeout(panSettleTimerRef.current)
-    panSettleTimerRef.current = null
+  const clearPendingViewport = useCallback(() => {
+    if (viewportSettleTimerRef.current === null) return
+    window.clearTimeout(viewportSettleTimerRef.current)
+    viewportSettleTimerRef.current = null
   }, [])
 
-  const fitCurrentView = useCallback(
+  const reportViewport = useCallback((map: MapLibreMap) => {
+    if (!loadedRef.current) return
+
+    let assessment: ViewportAssessment
+    try {
+      const canvas = map.getCanvas()
+      const width = canvas.clientWidth
+      const height = canvas.clientHeight
+      const center = map.getCenter()
+      const perimeter = canvasPerimeter(width, height).map(([x, y]) => {
+        const coordinate = map.unproject([x, y])
+        return {
+          latitude: coordinate.lat,
+          longitude: coordinate.lng,
+        }
+      })
+      assessment = assessTrafficViewport(
+        {
+          center: {
+            latitude: center.lat,
+            longitude: center.lng,
+          },
+          perimeter,
+          pitchDegrees: map.getPitch(),
+        },
+        viewportLimitsRef.current,
+      )
+    } catch {
+      assessment = assessTrafficViewport(
+        {
+          center: {
+            latitude: Number.NaN,
+            longitude: Number.NaN,
+          },
+          perimeter: [],
+          pitchDegrees: map.getPitch(),
+        },
+        viewportLimitsRef.current,
+      )
+    }
+
+    const signature = viewportSignature(assessment)
+    if (signature === lastViewportSignatureRef.current) return
+    lastViewportSignatureRef.current = signature
+    viewportChangeRef.current(assessment, homeRequestRef.current)
+  }, [])
+
+  const scheduleViewportReport = useCallback(
+    (map: MapLibreMap, delayMs = viewportSettleMsRef.current) => {
+      clearPendingViewport()
+      viewportSettleTimerRef.current = window.setTimeout(() => {
+        viewportSettleTimerRef.current = null
+        reportViewport(map)
+      }, delayMs)
+    },
+    [clearPendingViewport, reportViewport],
+  )
+
+  const fitCurrentHome = useCallback(
     (map: MapLibreMap, duration: number) => {
-      clearPendingPan()
-      const currentView = viewStateRef.current
+      clearPendingViewport()
+      lastViewportSignatureRef.current = null
+      const currentHome = homeCenterRef.current
       map.fitBounds(
-        radiusBounds(currentView.center, currentView.radiusKm),
+        boundsAroundCenter(currentHome, homeViewRadiusKm),
         {
           padding: fitPadding(),
           duration,
         },
       )
+      scheduleViewportReport(
+        map,
+        duration + viewportSettleMsRef.current,
+      )
     },
-    [clearPendingPan],
+    [clearPendingViewport, homeViewRadiusKm, scheduleViewportReport],
   )
 
   const getTrafficImages = useCallback((activeTheme: Theme) => {
@@ -338,7 +442,6 @@ export function TrafficMap({
             renderState.selectedId,
           ),
           trail: trailData(viewState.trail),
-          radius: radiusData(viewState.center, viewState.radiusKm),
           aircraftVisible: viewState.aircraftVisible,
           vesselsVisible: viewState.vesselsVisible,
         },
@@ -350,14 +453,14 @@ export function TrafficMap({
 
       if (!initialFitCompleteRef.current) {
         initialFitCompleteRef.current = true
-        lastFitRequestRef.current = fitRequestRef.current
-        fitCurrentView(map, 0)
-      } else if (lastFitRequestRef.current !== fitRequestRef.current) {
-        lastFitRequestRef.current = fitRequestRef.current
-        fitCurrentView(map, 650)
+        lastHomeRequestRef.current = homeRequestRef.current
+        fitCurrentHome(map, 0)
+      } else if (lastHomeRequestRef.current !== homeRequestRef.current) {
+        lastHomeRequestRef.current = homeRequestRef.current
+        fitCurrentHome(map, 650)
       }
     },
-    [fitCurrentView, getTrafficImages, scheduleRender],
+    [fitCurrentHome, getTrafficImages, scheduleRender],
   )
 
   const switchMapStyle = useCallback(
@@ -395,8 +498,8 @@ export function TrafficMap({
   }, [onSelect])
 
   useEffect(() => {
-    queryCenterChangeRef.current = onQueryCenterChange
-  }, [onQueryCenterChange])
+    viewportChangeRef.current = onViewportChange
+  }, [onViewportChange])
 
   useEffect(() => {
     errorRef.current = onMapError
@@ -404,24 +507,22 @@ export function TrafficMap({
 
   useEffect(() => {
     viewStateRef.current = {
-      center,
-      radiusKm,
       aircraftVisible,
       vesselsVisible,
       trail,
     }
-  }, [aircraftVisible, center, radiusKm, trail, vesselsVisible])
+  }, [aircraftVisible, trail, vesselsVisible])
 
   useEffect(() => {
     if (!containerRef.current) return
-    const initialView = viewStateRef.current
+    const initialHome = homeCenterRef.current
 
     const map = createMapSafely(
       () =>
         new MapLibreMap({
           container: containerRef.current!,
           style: initialStyleUrlRef.current,
-          center: [initialView.center.longitude, initialView.center.latitude],
+          center: [initialHome.longitude, initialHome.latitude],
           zoom: 8,
           attributionControl: false,
           maxPitch: 60,
@@ -432,25 +533,12 @@ export function TrafficMap({
 
     mapRef.current = map
 
-    map.on('dragstart', () => {
-      clearPendingPan()
-      userPanRef.current = true
+    map.on('moveend', () => {
+      scheduleViewportReport(map)
     })
 
-    map.on('moveend', () => {
-      if (!userPanRef.current) return
-      userPanRef.current = false
-      if (panSettleTimerRef.current !== null) {
-        window.clearTimeout(panSettleTimerRef.current)
-      }
-      panSettleTimerRef.current = window.setTimeout(() => {
-        panSettleTimerRef.current = null
-        const settledCenter = map.getCenter()
-        queryCenterChangeRef.current({
-          latitude: settledCenter.lat,
-          longitude: settledCenter.lng,
-        })
-      }, panSettleMs)
+    map.on('resize', () => {
+      scheduleViewportReport(map)
     })
 
     map.addControl(
@@ -516,7 +604,7 @@ export function TrafficMap({
     return () => {
       styleGenerationRef.current += 1
       loadedRef.current = false
-      clearPendingPan()
+      clearPendingViewport()
       if (frameRef.current !== null) {
         window.cancelAnimationFrame(frameRef.current)
         frameRef.current = null
@@ -525,10 +613,10 @@ export function TrafficMap({
       mapRef.current = null
     }
   }, [
-    clearPendingPan,
-    fitCurrentView,
+    clearPendingViewport,
+    fitCurrentHome,
     installCurrentStyle,
-    panSettleMs,
+    scheduleViewportReport,
     switchMapStyle,
   ])
 
@@ -594,25 +682,19 @@ export function TrafficMap({
   }, [trail])
 
   useEffect(() => {
-    const map = mapRef.current
-    if (!map || !loadedRef.current) return
-    setTrafficSourceData(map, SOURCE_RADIUS, radiusData(center, radiusKm))
-  }, [center, radiusKm])
-
-  useEffect(() => {
-    if (lastFitRequestRef.current === fitRequestId) return
+    if (lastHomeRequestRef.current === homeRequestId) return
     const map = mapRef.current
     if (!map || !loadedRef.current) return
 
-    lastFitRequestRef.current = fitRequestId
-    fitCurrentView(map, 650)
-  }, [fitCurrentView, fitRequestId])
+    lastHomeRequestRef.current = homeRequestId
+    fitCurrentHome(map, 650)
+  }, [fitCurrentHome, homeRequestId])
 
   return (
     <div
       ref={containerRef}
       className="traffic-map"
-      aria-label={`Live traffic map centered on ${center.label}`}
+      aria-label={`Live traffic map with ${homeCenter.label} as Home`}
     />
   )
 }

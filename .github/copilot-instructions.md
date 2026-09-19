@@ -46,18 +46,26 @@ preserve truthful partial operation when one provider fails.
   style JSON is not proof that vector tiles work.
 - `map.setStyle` removes custom images, sources, and layers. Theme changes must
   reinstall them idempotently after `style.load` and restore current data,
-  visibility, radius, trail, selection, and camera without reconnecting
+  visibility, trail, selection, and camera without reconnecting
   providers.
-- Treat session home center, active provider query center, MapLibre camera, and
-  selected radius as separate state. Pure zoom is visual. Radius remains the
-  explicit data boundary.
-- Settled user pans may replace the latest desired query, but must not add
+- Derive traffic from a safely representable full-canvas viewport after settled
+  pan, zoom, rotation, pitch, Home, and real resize changes. Floating controls
+  do not shrink that footprint.
+- Normalize wrapped longitudes around the rounded camera center, reject invalid
+  or world-spanning geometry, and apply the 100 km eligibility limit before
+  ADSB.lol's whole-nautical-mile outward transport rounding. Query the
+  conservative enclosing circle, then filter display to the actual viewport.
+- An ineligible viewport hides traffic and trails, clears invalid selection,
+  pauses providers, and shows a truthful zoom/tilt prompt. Never clamp,
+  subdivide, or present partial coverage as complete.
+- Settled camera changes may replace the latest desired query, but must not add
   ADSB.lol requests beyond the configured aircraft polling cadence. Cancel or
   ignore obsolete revisions and handle `429`/`Retry-After` explicitly.
-- Center/radius changes must reuse the Digitraffic MQTT connection and refilter
-  cached global messages. Do not reconnect MQTT or issue a new radius REST
-  request for every camera event. Reconnect attempts stay at least 15 seconds
-  apart.
+- Viewport query changes must reuse the Digitraffic MQTT connection and refilter
+  cached global messages. Do not reconnect MQTT or issue a new REST request for
+  every camera event. Reconnect attempts stay at least 15 seconds apart.
+- Layer visibility is a display preference and does not create a separate
+  network lifecycle.
 - Any new intentional pause reason must compose with page visibility and
   unmounting without recreating schedulers or resetting aircraft cadence,
   `Retry-After`, MQTT reconnect, marine REST, or metadata deadlines. Late

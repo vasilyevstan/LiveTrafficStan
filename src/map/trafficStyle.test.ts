@@ -2,7 +2,6 @@ import type {
   FeatureCollection,
   LineString,
   Point,
-  Polygon,
 } from 'geojson'
 import type { Map as MapLibreMap } from 'maplibre-gl'
 import { describe, expect, it, vi } from 'vitest'
@@ -20,10 +19,6 @@ const points: FeatureCollection<Point> = {
   features: [],
 }
 const trail: FeatureCollection<LineString> = {
-  type: 'FeatureCollection',
-  features: [],
-}
-const radius: FeatureCollection<Polygon> = {
   type: 'FeatureCollection',
   features: [],
 }
@@ -45,7 +40,6 @@ const snapshot = (
   aircraft: points,
   vessels: points,
   trail,
-  radius,
   aircraftVisible: true,
   vesselsVisible: false,
 })
@@ -95,10 +89,10 @@ describe('installTrafficStyle', () => {
       darkImages.helicopter,
     )
     expect(updateImage).toHaveBeenCalledWith('vessel', darkImages.vessel)
-    expect(addSource).toHaveBeenCalledTimes(4)
-    expect(addLayer).toHaveBeenCalledTimes(7)
+    expect(addSource).toHaveBeenCalledTimes(3)
+    expect(addLayer).toHaveBeenCalledTimes(5)
     expect(sources.get(SOURCE_AIRCRAFT)?.setData).toHaveBeenCalledTimes(1)
-    expect(paint.get('traffic-radius-line:line-color')).toBe('#67ddff')
+    expect(paint.get('traffic-selected-trail:line-color')).toBe('#7ce5ff')
     expect(paint.get(`${LAYER_AIRCRAFT}:icon-opacity`)).toEqual([
       'case',
       ['get', 'stale'],

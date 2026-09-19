@@ -22,11 +22,12 @@ ADSB.lol does not currently provide browser CORS headers. V1 uses Vite's develop
 
 Digitraffic explicitly recommends five-minute REST polling, which is too infrequent for smoothly updated live vessel positions. V1 uses the provider's MQTT-over-WebSocket feed for live location and metadata messages.
 
-REST remains useful for an initial radius-limited position snapshot and an initial vessel metadata snapshot. The metadata response observed during planning contained fewer than one thousand records and was under 300 KB uncompressed, so one startup fetch is simpler and lighter than dozens of per-vessel requests.
+REST remains useful for an initial bounded position snapshot and an initial vessel metadata snapshot. The metadata response observed during planning contained fewer than one thousand records and was under 300 KB uncompressed, so one startup fetch is simpler and lighter than dozens of per-vessel requests.
 
-Center and radius changes reuse the MQTT connection and immediately refilter
-the global in-memory message cache. A new radius-limited REST snapshot is
-allowed only after the five-minute query refresh gate. Automatic reconnect
+Eligible viewport changes reuse the MQTT connection and immediately refilter
+the global in-memory message cache. A new location REST snapshot for the
+viewport's enclosing circle is allowed only after the five-minute query refresh
+gate. Automatic reconnect
 attempts are spaced 15 seconds apart to remain within Digitraffic's documented
 connection allowance.
 
@@ -56,33 +57,45 @@ Recent provider-observed positions are kept only in browser memory, pruned by ti
 
 Version-controlled documents under `docs/` are the canonical technical record. The GitHub Wiki provides a comprehensive project-oriented view and links back to canonical files where appropriate. GitHub requires the user to initialize the first empty Wiki page; all subsequent Wiki content is managed through Git.
 
-## V1.1 home, query, camera, and radius state
+## Bounded viewport-driven traffic
 
-The V1.1 map experience separates four concepts that V1 treated as one:
+The visible MapLibre canvas is the traffic display boundary. After settled pan,
+zoom, rotation, pitch, Home, or real resize changes, the map reports its
+sampled full-canvas perimeter and camera center. Floating controls remain
+overlays and do not reduce the geographic area that must be covered.
 
-- the session `homeCenter`, resolved from a rounded one-shot user location when
-  permission is already granted or explicitly requested, otherwise Tallinn;
-- the active `queryCenter` used by both traffic providers;
-- the freely pannable and zoomable MapLibre camera;
-- the selected 10, 20, 50, or 100 km query radius.
+Domain code canonicalizes and unwraps longitudes around a center rounded to
+three decimal places. It rejects non-finite, degenerate, unsafe, or
+world-spanning geometry. The farthest footprint point defines a conservative
+enclosing circle. Views requiring more than 100 km are ineligible: traffic and
+trails are hidden, provider work pauses, invalid selection clears, and the UI
+asks the user to zoom in or reduce tilt. The app does not clamp, subdivide, or
+claim partial results are complete.
 
-A settled user pan automatically moves the active query area. Pure zoom remains
-visual and does not silently enlarge or shrink provider scope. The radius circle
-continues to explain the actual coverage boundary. Center returns to the
-session home and fits the current radius.
+For eligible views, providers receive the enclosing circle while display
+filtering uses the actual unwrapped polygon. The 100 km decision occurs before
+ADSB.lol's required whole-nautical-mile rounding, so the boundary request uses
+54 NM (100.008 km transport coverage) but display eligibility remains 100 km.
+Center restores a session Home framing comparable to the earlier 20 km view;
+that value is camera framing, not a selectable traffic radius.
 
-## Provider-safe automatic panning
+## Provider-safe viewport updates
 
-ADSB.lol publishes dynamic rather than fixed rate limits. Automatic panning
-therefore replaces the latest desired query in the existing 20-second polling
+ADSB.lol publishes dynamic rather than fixed rate limits. Settled camera
+changes replace the latest desired query in the existing 20-second polling
 schedule instead of starting extra requests. Obsolete work is canceled or
 ignored, and rate-limit responses remain visible and back off explicitly.
 
 Digitraffic sends global vessel updates over the existing MQTT subscription.
-Center and radius changes refilter that cache immediately without reconnecting.
-Radius REST initialization is throttled rather than repeated for every camera
-movement. The existing 15-second minimum MQTT reconnect interval remains an
-invariant.
+Eligible viewport changes refilter that cache immediately without reconnecting.
+Location REST initialization is throttled rather than repeated for every camera
+movement. Aircraft and marine instances remain session-lived across hidden and
+ineligible-view pauses, preserving aircraft cadence and `Retry-After`, MQTT's
+15-second connection spacing, five-minute REST/metadata gates, and marine
+caches.
+
+Layer toggles are display preferences. They do not stop or reconstruct provider
+lifecycles.
 
 ## Privacy-safe browser location
 
@@ -107,7 +120,7 @@ properties. Only the selected theme is persisted.
 
 MapLibre remains a single instance. Because `map.setStyle` removes custom
 style-owned state, the map layer installer restores traffic images,
-sources, layers, data, visibility, radius, and trail after every `style.load`
+sources, layers, data, visibility, and trail after every `style.load`
 without changing camera, selection, provider state, or connections.
 
 Traffic artwork keeps cyan aircraft and amber vessels in both themes. The

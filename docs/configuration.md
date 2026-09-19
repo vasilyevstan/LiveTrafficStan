@@ -35,8 +35,8 @@ spread through components:
 
 | Setting | Current value |
 | --- | --- |
-| Radius presets | 10, 20, 50, 100 km |
-| Default radius | 20 km |
+| Initial Home framing | Comparable to a 20 km local view |
+| Maximum eligible enclosing radius | 100 km |
 | Vessel-length presets | 25, 50, 100, 150 m |
 | Default minimum vessel length | 50 m |
 | Aircraft refresh | 20 seconds |
@@ -51,7 +51,7 @@ spread through components:
 | Trail duration / cap | 15 minutes / 180 points per object |
 | Maximum interpolation duration | 1.5 seconds |
 | Query/geolocation coordinate precision | 3 decimal places |
-| Settled-pan delay | 350 ms |
+| Settled-viewport delay | 350 ms |
 | Geolocation timeout / cached-position age | 20 seconds / 5 minutes |
 
 Changing these constants changes application behavior and should include
@@ -76,10 +76,12 @@ Otherwise it starts at the configured center and offers an explicit
 for a cold operating-system position; a timeout keeps the current Home and
 leaves the action available for an explicit retry.
 
-A settled map pan changes only the active query center. Pure zoom does not
-change provider scope. Center returns to the session home and fits the selected
-radius. Neither home nor query coordinates are persisted. Arbitrary search and
-remembered coordinates remain roadmap items.
+A settled pan, zoom, rotation, pitch, Home, or real resize changes the traffic
+viewport. The full map canvas is included even where floating controls cover
+it. Center returns to the session Home using a fixed local camera framing;
+there is no selectable traffic radius. Neither Home nor viewport coordinates
+are persisted. Arbitrary search and remembered coordinates remain roadmap
+items.
 
 ## Aircraft endpoint and proxy
 
@@ -94,9 +96,13 @@ Vite development and preview rewrite `/api/aircraft` to
 same-origin rule. Setting `VITE_AIRCRAFT_ENDPOINT` to an absolute URL bypasses
 that rule, but it works only if the target explicitly allows browser CORS.
 
-The selected radius is rounded up for ADSB.lol's integer nautical-mile request.
-The client then applies the exact configured kilometre radius, so deployment
-proxies must not alter response coordinates or units.
+For an eligible viewport, the rounded camera center and conservative enclosing
+radius are sent to ADSB.lol. The application decides eligibility against the
+100 km limit before rounding outward to the provider's integer nautical miles.
+An exact 100 km viewport therefore requests 54 NM, or 100.008 km of transport
+coverage, while the client still displays only objects inside the actual
+viewport polygon. Deployment proxies must not alter coordinates, units, or
+this boundary behavior.
 
 ## Map style
 
@@ -115,15 +121,16 @@ invalid stored value, or unavailable storage selects Light. Theme storage uses
 the `livetrafficstan.theme` key and contains only `light` or `dark`; map center
 coordinates are never stored.
 
-The accepted V1.1 behavioral configuration keeps:
+The current behavioral configuration keeps:
 
 | Setting | Decision |
 | --- | --- |
 | Light map style | OpenFreeMap Positron |
 | Dark map style | OpenFreeMap Dark |
 | Theme default | Light |
-| Aircraft query cadence during map movement | No faster than 20 seconds |
+| Aircraft query cadence during camera movement | No faster than 20 seconds |
 | Marine query-triggered REST refresh | No more than once per 5 minutes |
+| Ineligible viewport behavior | Hide traffic/trails and pause providers |
 | Geolocation precision | Rounded to approximately 3 decimal places |
 | Geolocation mode | One-shot, permission-aware, session-only |
 
@@ -146,5 +153,7 @@ The app sends `Digitraffic-User: LiveTrafficStan/1.0` on REST requests and uses
 an ephemeral random MQTT client identifier. Neither value contains user data.
 
 Map movement must not place browser location or other personal information in
-that header. Center/radius updates reuse the MQTT connection and should rely on
-the global message cache before considering another radius REST request.
+that header. Eligible viewport updates reuse the MQTT connection and should
+rely on the global message cache before considering another bounded REST
+request. Hidden and ineligible-view pauses retain MQTT, REST, and metadata
+deadlines rather than reconstructing the provider.

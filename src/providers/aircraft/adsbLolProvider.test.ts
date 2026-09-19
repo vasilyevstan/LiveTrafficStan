@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { normalizeAdsbLolResponse } from './adsbLolProvider'
+import {
+  aircraftQueryRadiusNauticalMiles,
+  normalizeAdsbLolResponse,
+} from './adsbLolProvider'
 
 const query = {
   center: {
@@ -53,6 +56,7 @@ describe('normalizeAdsbLolResponse', () => {
       verticalSpeedMps: 3.048,
       markerScale: 1.08,
     })
+
     expect(result[0]?.speedKph).toBeCloseTo(185.2)
     expect(result[0]?.position.observedAt).toBe(receivedAt - 2_000)
   })
@@ -92,5 +96,12 @@ describe('normalizeAdsbLolResponse', () => {
     expect(() =>
       normalizeAdsbLolResponse({ aircraft: [] }, query, Date.now()),
     ).toThrow(/malformed aircraft response/)
+  })
+})
+
+describe('aircraftQueryRadiusNauticalMiles', () => {
+  it('rounds an eligible 100 km viewport outward to 54 nautical miles', () => {
+    expect(aircraftQueryRadiusNauticalMiles(100)).toBe(54)
+    expect(54 * 1.852).toBeCloseTo(100.008)
   })
 })

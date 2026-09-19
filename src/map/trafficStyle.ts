@@ -2,7 +2,6 @@ import type {
   FeatureCollection,
   LineString,
   Point,
-  Polygon,
 } from 'geojson'
 import {
   type GeoJSONSource,
@@ -14,7 +13,6 @@ import type { Theme } from '../app/theme'
 export const SOURCE_AIRCRAFT = 'traffic-aircraft'
 export const SOURCE_VESSELS = 'traffic-vessels'
 export const SOURCE_TRAIL = 'traffic-trail'
-export const SOURCE_RADIUS = 'traffic-radius'
 export const LAYER_AIRCRAFT = 'traffic-aircraft-symbols'
 export const LAYER_VESSELS = 'traffic-vessel-symbols'
 export const LAYER_AIRCRAFT_HALO = 'traffic-aircraft-halo'
@@ -23,7 +21,6 @@ export const LAYER_VESSEL_HALO = 'traffic-vessel-halo'
 type TrafficGeoJson =
   | FeatureCollection<Point>
   | FeatureCollection<LineString>
-  | FeatureCollection<Polygon>
 
 export interface TrafficStyleImages {
   aircraft: ImageData
@@ -36,7 +33,6 @@ export interface TrafficStyleSnapshot {
   aircraft: FeatureCollection<Point>
   vessels: FeatureCollection<Point>
   trail: FeatureCollection<LineString>
-  radius: FeatureCollection<Polygon>
   aircraftVisible: boolean
   vesselsVisible: boolean
 }
@@ -44,10 +40,6 @@ export interface TrafficStyleSnapshot {
 const themePaint = (theme: Theme) =>
   theme === 'dark'
     ? {
-        radiusFill: '#42d7ff',
-        radiusFillOpacity: 0.055,
-        radiusLine: '#67ddff',
-        radiusLineOpacity: 0.72,
         trail: '#7ce5ff',
         trailOpacity: 0.82,
         aircraftHalo: '#5ce2ff',
@@ -56,10 +48,6 @@ const themePaint = (theme: Theme) =>
         staleIconOpacity: 0.52,
       }
     : {
-        radiusFill: '#1ea7d4',
-        radiusFillOpacity: 0.035,
-        radiusLine: '#1685aa',
-        radiusLineOpacity: 0.55,
         trail: '#138daf',
         trailOpacity: 0.72,
         aircraftHalo: '#35c8ef',
@@ -129,31 +117,10 @@ export const installTrafficStyle = (
   ensureImage(map, 'helicopter', images.helicopter)
   ensureImage(map, 'vessel', images.vessel)
 
-  ensureSource(map, SOURCE_RADIUS, snapshot.radius)
   ensureSource(map, SOURCE_TRAIL, snapshot.trail)
   ensureSource(map, SOURCE_AIRCRAFT, snapshot.aircraft)
   ensureSource(map, SOURCE_VESSELS, snapshot.vessels)
 
-  ensureLayer(map, {
-    id: 'traffic-radius-fill',
-    type: 'fill',
-    source: SOURCE_RADIUS,
-    paint: {
-      'fill-color': paint.radiusFill,
-      'fill-opacity': paint.radiusFillOpacity,
-    },
-  })
-  ensureLayer(map, {
-    id: 'traffic-radius-line',
-    type: 'line',
-    source: SOURCE_RADIUS,
-    paint: {
-      'line-color': paint.radiusLine,
-      'line-opacity': paint.radiusLineOpacity,
-      'line-width': 1.25,
-      'line-dasharray': [3, 3],
-    },
-  })
   ensureLayer(map, {
     id: 'traffic-selected-trail',
     type: 'line',
@@ -231,30 +198,6 @@ export const installTrafficStyle = (
     },
   })
 
-  if (map.getLayer('traffic-radius-fill')) {
-    map.setPaintProperty(
-      'traffic-radius-fill',
-      'fill-color',
-      paint.radiusFill,
-    )
-    map.setPaintProperty(
-      'traffic-radius-fill',
-      'fill-opacity',
-      paint.radiusFillOpacity,
-    )
-  }
-  if (map.getLayer('traffic-radius-line')) {
-    map.setPaintProperty(
-      'traffic-radius-line',
-      'line-color',
-      paint.radiusLine,
-    )
-    map.setPaintProperty(
-      'traffic-radius-line',
-      'line-opacity',
-      paint.radiusLineOpacity,
-    )
-  }
   if (map.getLayer('traffic-selected-trail')) {
     map.setPaintProperty(
       'traffic-selected-trail',

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import './App.css'
 import { useAircraftTraffic } from './app/useAircraftTraffic'
 import { useMarineTraffic } from './app/useMarineTraffic'
@@ -9,26 +9,21 @@ import { useTrailHistory } from './app/useTrailHistory'
 import { LiveStatus } from './components/LiveStatus'
 import { TrafficControls } from './components/TrafficControls'
 import { TrafficDetails } from './components/TrafficDetails'
-import { APP_CONFIG, type AppCenter } from './config/appConfig'
-import {
-  centerFromCoordinates,
-  sameCenterCoordinates,
-  type Coordinates,
-} from './domain/center'
+import { APP_CONFIG } from './config/appConfig'
 import type { DisplayTrafficEntity, TrafficEntity } from './domain/traffic'
+import type { ViewportAssessment } from './domain/viewport'
 import {
   mapErrorPresentation,
   type TrafficMapError,
 } from './map/mapInitialization'
 import { TrafficMap } from './map/TrafficMap'
 import {
-  filterTrafficByRadius,
+  filterTrafficByViewport,
   filterVesselsByMinimumLength,
 } from './traffic/filter'
 import { displayTraffic } from './traffic/freshness'
 
 function App() {
-  const [radiusKm, setRadiusKm] = useState(APP_CONFIG.defaultRadiusKm)
   const [minimumVesselLengthMeters, setMinimumVesselLengthMeters] = useState(
     APP_CONFIG.defaultVesselLengthMeters,
   )
@@ -36,10 +31,13 @@ function App() {
   const [vesselsVisible, setVesselsVisible] = useState(true)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [mapError, setMapError] = useState<TrafficMapError | null>(null)
-  const [queryCenter, setQueryCenter] = useState<AppCenter | null>(null)
-  const [fitRequestId, setFitRequestId] = useState(0)
+  const [viewportReport, setViewportReport] = useState<{
+    assessment: ViewportAssessment
+    homeRequestId: number
+  } | null>(null)
+  const [homeRequestId, setHomeRequestId] = useState(0)
+  const [appliedLocationRevision, setAppliedLocationRevision] = useState(0)
   const { theme, setTheme } = useTheme()
-  const appliedLocationRevisionRef = useRef(0)
   const location = useSessionLocation(
     APP_CONFIG.center,
     APP_CONFIG.navigation,
@@ -49,70 +47,73 @@ function App() {
   useEffect(() => {
     if (
       !location.initialReady ||
-      location.revision <= appliedLocationRevisionRef.current
+      location.revision <= appliedLocationRevision
     ) {
       return
     }
 
-    const alreadyStarted = queryCenter !== null
-    appliedLocationRevisionRef.current = location.revision
-    setQueryCenter(location.homeCenter)
-    if (alreadyStarted) setFitRequestId((current) => current + 1)
+    setAppliedLocationRevision(location.revision)
+    setViewportReport(null)
+    setHomeRequestId((current) => current + 1)
   }, [
-    location.homeCenter,
+    appliedLocationRevision,
     location.initialReady,
     location.revision,
-    queryCenter,
   ])
 
-  const activeCenter = queryCenter ?? location.homeCenter
-  const providersEnabled = queryCenter !== null
-  const aircraftResult = useAircraftTraffic(
-    activeCenter,
-    radiusKm,
-    APP_CONFIG.aircraft,
-    providersEnabled,
-  )
-  const marineResult = useMarineTraffic(
-    activeCenter,
-    radiusKm,
-    APP_CONFIG.marine,
-    providersEnabled,
-  )
-  const nearbyAircraft = useMemo(
+  const currentAssessment =
+    viewportReport?.homeRequestId === homeRequestId
+      ? viewportReport.assessment
+      : null
+  const locationRevisionApplied =
+    location.initialReady &&
+    appliedLocationRevision === location.revision
+  const activeViewport =
+    locationRevisionApplied && currentAssessment?.kind === 'eligible'
+      ? currentAssessment.viewport
+      : null
+  const trafficQuery = useMemo(
     () =>
-      filterTrafficByRadius(
-        aircraftResult.entities,
-        activeCenter,
-        radiusKm,
-      ),
-    [activeCenter, aircraftResult.entities, radiusKm],
+      activeViewport
+        ? {
+            center: activeViewport.center,
+            radiusKm: activeViewport.enclosingRadiusKm,
+          }
+        : null,
+    [activeViewport],
   )
-  const nearbyVessels = useMemo(
+  const aircraftResult = useAircraftTraffic(trafficQuery, APP_CONFIG.aircraft)
+  const marineResult = useMarineTraffic(trafficQuery, APP_CONFIG.marine)
+  const viewportAircraft = useMemo(
     () =>
-      filterTrafficByRadius(
-        marineResult.entities,
-        activeCenter,
-        radiusKm,
-      ),
-    [activeCenter, marineResult.entities, radiusKm],
+      activeViewport
+        ? filterTrafficByViewport(aircraftResult.entities, activeViewport)
+        : [],
+    [activeViewport, aircraftResult.entities],
+  )
+  const viewportVessels = useMemo(
+    () =>
+      activeViewport
+        ? filterTrafficByViewport(marineResult.entities, activeViewport)
+        : [],
+    [activeViewport, marineResult.entities],
   )
 
   const aircraft = useMemo(
-    () => displayTraffic(nearbyAircraft, now, APP_CONFIG.aircraft),
-    [nearbyAircraft, now],
+    () => displayTraffic(viewportAircraft, now, APP_CONFIG.aircraft),
+    [viewportAircraft, now],
   )
   const vessels = useMemo(
     () =>
       filterVesselsByMinimumLength(
-        displayTraffic(nearbyVessels, now, APP_CONFIG.marine),
+        displayTraffic(viewportVessels, now, APP_CONFIG.marine),
         minimumVesselLengthMeters,
       ),
-    [minimumVesselLengthMeters, nearbyVessels, now],
+    [minimumVesselLengthMeters, now, viewportVessels],
   )
   const sourceEntities = useMemo<TrafficEntity[]>(
-    () => [...nearbyAircraft, ...nearbyVessels],
-    [nearbyAircraft, nearbyVessels],
+    () => [...viewportAircraft, ...viewportVessels],
+    [viewportAircraft, viewportVessels],
   )
   const displayEntities = useMemo<DisplayTrafficEntity[]>(
     () => [...aircraft, ...vessels],
@@ -140,67 +141,55 @@ function App() {
     }
   }, [aircraftVisible, selectedEntity, selectedId, vesselsVisible])
 
-  const requestFit = useCallback(() => {
-    setFitRequestId((current) => current + 1)
-  }, [])
-
-  const handleRadiusChange = useCallback(
-    (nextRadiusKm: number) => {
-      if (nextRadiusKm === radiusKm) return
-      setRadiusKm(nextRadiusKm)
-      requestFit()
+  const handleViewportChange = useCallback(
+    (assessment: ViewportAssessment, reportHomeRequestId: number) => {
+      setViewportReport({
+        assessment,
+        homeRequestId: reportHomeRequestId,
+      })
     },
-    [radiusKm, requestFit],
+    [],
   )
 
-  const handleQueryCenterChange = useCallback((coordinates: Coordinates) => {
-    const nextCenter = centerFromCoordinates(
-      coordinates,
-      APP_CONFIG.navigation.coordinatePrecision,
-      'Map area',
-    )
-    setQueryCenter((current) => {
-      if (current && sameCenterCoordinates(current, nextCenter)) return current
-      return nextCenter
-    })
-  }, [])
-
   const handleCenter = useCallback(() => {
-    setQueryCenter(location.homeCenter)
-    requestFit()
-  }, [location.homeCenter, requestFit])
+    setViewportReport(null)
+    setHomeRequestId((current) => current + 1)
+  }, [])
   const mapErrorContent = mapError ? mapErrorPresentation(mapError) : null
+  const mapSubtitle = !locationRevisionApplied
+    ? 'Preparing map view'
+    : currentAssessment?.kind === 'eligible'
+      ? 'Visible traffic area'
+      : currentAssessment
+        ? 'Traffic paused'
+        : 'Updating map view'
 
   return (
     <main className="app-shell">
-      {queryCenter ? (
-        <TrafficMap
-          center={queryCenter}
-          radiusKm={radiusKm}
-          mapStyleUrl={
-            theme === 'dark'
-              ? APP_CONFIG.map.darkStyleUrl
-              : APP_CONFIG.map.lightStyleUrl
-          }
-          theme={theme}
-          aircraft={aircraft}
-          vessels={vessels}
-          trail={trail}
-          selectedId={selectedId}
-          aircraftVisible={aircraftVisible}
-          vesselsVisible={vesselsVisible}
-          interpolationDurationMs={APP_CONFIG.interpolationDurationMs}
-          fitRequestId={fitRequestId}
-          panSettleMs={APP_CONFIG.navigation.panSettleMs}
-          onSelect={setSelectedId}
-          onQueryCenterChange={handleQueryCenterChange}
-          onMapError={setMapError}
-        />
-      ) : (
-        <div className="traffic-map map-placeholder" role="status">
-          Resolving the starting area...
-        </div>
-      )}
+      <TrafficMap
+        homeCenter={location.homeCenter}
+        homeViewRadiusKm={APP_CONFIG.map.homeViewRadiusKm}
+        maximumViewportRadiusKm={APP_CONFIG.map.maximumViewportRadiusKm}
+        coordinatePrecision={APP_CONFIG.navigation.coordinatePrecision}
+        mapStyleUrl={
+          theme === 'dark'
+            ? APP_CONFIG.map.darkStyleUrl
+            : APP_CONFIG.map.lightStyleUrl
+        }
+        theme={theme}
+        aircraft={aircraft}
+        vessels={vessels}
+        trail={activeViewport ? trail : []}
+        selectedId={selectedId}
+        aircraftVisible={aircraftVisible}
+        vesselsVisible={vesselsVisible}
+        interpolationDurationMs={APP_CONFIG.interpolationDurationMs}
+        homeRequestId={homeRequestId}
+        viewportSettleMs={APP_CONFIG.navigation.viewportSettleMs}
+        onSelect={setSelectedId}
+        onViewportChange={handleViewportChange}
+        onMapError={setMapError}
+      />
       <div className="radar-shade" aria-hidden="true" />
 
       <div className="interface-layer">
@@ -211,9 +200,7 @@ function App() {
             </div>
             <div>
               <h1>LiveTrafficStan</h1>
-              <p>
-                {activeCenter.label} / {radiusKm} km
-              </p>
+              <p>{mapSubtitle}</p>
             </div>
           </div>
           <LiveStatus
@@ -226,9 +213,6 @@ function App() {
         </header>
 
         <TrafficControls
-          radiusPresetsKm={APP_CONFIG.radiusPresetsKm}
-          radiusKm={radiusKm}
-          onRadiusChange={handleRadiusChange}
           vesselLengthPresetsMeters={APP_CONFIG.vesselLengthPresetsMeters}
           minimumVesselLengthMeters={minimumVesselLengthMeters}
           onMinimumVesselLengthChange={setMinimumVesselLengthMeters}
@@ -236,7 +220,9 @@ function App() {
           onAircraftVisibleChange={setAircraftVisible}
           vesselsVisible={vesselsVisible}
           onVesselsVisibleChange={setVesselsVisible}
-          centerDisabled={!queryCenter}
+          centerDisabled={
+            !location.initialReady || mapError?.kind === 'initialization'
+          }
           onCenter={handleCenter}
           locationAvailable={location.canRequest}
           locationLoading={location.locating}
@@ -245,6 +231,13 @@ function App() {
           theme={theme}
           onThemeChange={setTheme}
         />
+
+        {currentAssessment?.kind === 'ineligible' && (
+          <div className="viewport-notice" role="status">
+            <strong>Live traffic paused</strong>
+            <span>{currentAssessment.message}</span>
+          </div>
+        )}
 
         {selectedEntity && (
           <TrafficDetails
