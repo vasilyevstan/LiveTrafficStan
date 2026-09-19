@@ -10,19 +10,28 @@ npm run dev
 ```
 
 The development server normally runs at <http://localhost:5173>. It supplies
-the `/api/aircraft` proxy required by the default ADSB.lol integration.
+the fixed `/api/aircraft` and `/api/weather/metar` proxies required by the
+default ADSB.lol and AWC integrations.
 
 ## Commands
 
 | Command | Purpose |
 | --- | --- |
-| `npm run dev` | Start Vite with hot module replacement and the aircraft proxy |
+| `npm run dev` | Start Vite with hot module replacement and the fixed aircraft/METAR proxies |
 | `npm run lint` | Run Oxlint across the repository |
 | `npm run typecheck` | Run strict TypeScript project checks without output |
 | `npm test -- --run` | Run the deterministic Vitest suite once |
 | `npm run test:watch` | Run Vitest in watch mode |
+| `npm run check:aircraft-metadata` | Offline validation of the committed pinned metadata database |
+| `npm run update:aircraft-metadata` | Explicit maintainer regeneration from the pinned upstream archive and license |
+| `npm run check:ports` | Network-free validation of the committed Natural Earth port projection |
+| `npm run update:ports` | Explicit maintainer regeneration from the pinned Natural Earth source |
+| `npm run check:airports` | Network-free validation of the committed OurAirports projection |
+| `npm run update:airports` | Explicit maintainer regeneration from the pinned OurAirports source |
 | `npm run build` | Type-check and create the production bundle in `dist/` |
-| `npm run preview` | Serve the production bundle with the local aircraft proxy |
+| `npm run preview` | Serve the production bundle with the local aircraft/METAR proxies |
+| `npm run check:deploy` | Bundle the Worker and Static Assets without credentials or deployment |
+| `npm run preview:worker` | Build and run the actual local Cloudflare `workerd` boundary |
 
 Before publishing a change, run:
 
@@ -30,11 +39,16 @@ Before publishing a change, run:
 npm run lint
 npm run typecheck
 npm test -- --run
+npm run check:aircraft-metadata
+npm run check:ports
+npm run check:airports
 npm run build
+npm run check:deploy
 ```
 
 The same commands run in `.github/workflows/validate.yml` for pull requests and
-pushes targeting `dev` or `main`.
+pushes targeting `dev` or `main`. The Wrangler dry run is credential-free and
+does not call a live provider.
 
 ## Branch and pull request flow
 
@@ -71,10 +85,14 @@ The V1 suite uses sanitized, local values and does not call live providers. It
 covers:
 
 - configuration defaults and invalid overrides;
-- ADSB.lol response validation, enclosing-circle transport, and metric
-  conversion;
-- Digitraffic REST/MQTT normalization, dimensions, ETA, and missing metadata;
-- vessel minimum-length filtering;
+- ADSB.lol request construction, abort forwarding, response/error validation,
+  retry guidance, enclosing-circle transport, and metric conversion;
+- Digitraffic REST/MQTT normalization, capabilities, provenance, dimensions,
+  ETA, missing metadata, one-connection batching, and bounded diagnostics;
+- local vessel search, deterministic result ordering, category/navigation/speed
+  filters, inclusive length bounds, and explicit unknown-value behavior;
+- local aircraft literal matching and exact/prefix/substring ordering across
+  callsign, registration, ICAO24, and reported type;
 - current, stale, and expired transitions;
 - trail time pruning and point caps;
 - interpolation bounds and no extrapolation.
@@ -101,11 +119,81 @@ Map-experience tests also cover:
 - granted, prompt, denied, unsupported, timeout, and explicit geolocation
   outcomes without coordinate persistence;
 - theme storage validation and unavailable-storage behavior;
+- Auto theme resolution before paint, modern/legacy system listeners, explicit
+  overrides, storage migration, and listener cleanup;
 - idempotent MapLibre style installation and restoration of custom state;
 - theme-keyed traffic image replacement, including identical style URLs and
   stale/live opacity updates;
 - all ten bounded silhouette IDs, ADS-B/AIS category boundaries, generic
   fallbacks, and stable identity when provider metadata changes an icon.
+- strict coordinate/query classification, including malformed numeric pairs,
+  comma-containing place names, range checks, and configured rounding;
+- Photon URL/header construction, bounded response reads, GeoJSON Point
+  validation, stable-identity deduplication, and provider-order preservation;
+- one-active-search cancellation, stale-result rejection, cooldown, timeout,
+  `Retry-After` fallback, and bounded success/empty caching;
+- explicit-navigation precedence over late geolocation and trail reset after a
+  committed view change.
+- deterministic aircraft-metadata projection, checksum failure, exact and
+  ICAO24-only matching, conflicts, ambiguity, malformed/partial assets,
+  streamed byte caps, one total deadline, fulfilled-only caches, A to B to A
+  callback races, vessel/empty cancellation, and exact age boundaries.
+- deterministic Natural Earth projection, immutable inventory/checksum/size/
+  rank checks, bounded lazy runtime loading, timeout/abort/error isolation,
+  fulfilled-only caching, ranked zoom layers, and theme-aware visibility.
+- deterministic OurAirports CSV parsing/projection, immutable
+  inventory/checksum/size/count checks, bounded lazy runtime loading,
+  timeout/abort/error isolation, fulfilled-only caching, zoom tiers, static
+  details, viewport list, and deterministic airport/port pick precedence.
+- provider-neutral JSON round-tripping for the six layer preferences;
+- separate aircraft/vessel cluster source configuration, counts, expansion,
+  entity exclusion, generation races, reduced motion, snapshot signatures, and
+  interpolation suspension;
+- explicit ICAO station selection, over-limit rejection without truncation,
+  METAR/SPECI normalization, Unix-second time, qualified visibility, `VRB`,
+  stale/expiry, empty 204, newest-report selection, abort, timeout, size cap,
+  `429`, and `Retry-After`;
+- strict Worker weather route validation, fixed upstream construction,
+  redirect/content-type/timeout/oversize handling, safe headers, and no
+  credential forwarding;
+- weather-before-airport-before-port picking and all six asynchronous static
+  layer installation orders.
+
+`npm run check:aircraft-metadata` makes no upstream request. It validates the
+pinned source and license identity, configured immutable version, co-located
+ODC-By license, exact file inventory, every shard hash and byte count, complete
+TSV grammar, type references, aggregate counts, and publication-age policy.
+
+`npm run update:aircraft-metadata` is an explicit maintainer operation and
+requires network access plus the system `unzip` executable. It verifies both
+downloaded SHA-256 values before reading the archive. Review the generated diff
+and measured counts; a source, schema, generator, or byte change requires a new
+output version rather than replacement under an old immutable URL.
+
+`npm run check:ports` makes no upstream request. It validates the immutable
+directory inventory, raw bytes, SHA-256, deterministic gzip-9 size, complete
+GeoJSON grammar, ordered IDs, coordinates, record count, and rank
+distribution.
+
+`npm run update:ports` is an explicit maintainer operation. It downloads only
+the pinned commit URL, enforces a 1 MiB source cap, verifies the source
+SHA-256, regenerates the minimal projection, checks every expected measurement,
+and refuses to replace changed bytes under an existing immutable version. Any
+source, projection, generator, or generated-byte change requires a new output
+version.
+
+`npm run check:airports` makes no upstream request. It validates the immutable
+directory inventory, raw bytes, SHA-256, deterministic gzip-9 size, complete
+GeoJSON grammar, sorted persistent IDs, coordinates, record count, kind
+distribution, and Tallinn fixture.
+
+`npm run update:airports` is an explicit maintainer operation. It downloads
+only the pinned commit URL, enforces a separate 16 MiB source cap, verifies the
+12,725,082-byte CSV SHA-256, parses quoted UTF-8 CSV including embedded
+newlines, regenerates the large/medium projection, checks every expected
+measurement, and refuses to replace changed bytes under an existing immutable
+version. Any source, projection, generator, or generated-byte change requires
+a new output version.
 
 Geolocation tests must distinguish permission from acquisition. A granted
 permission can still produce delayed success, timeout, unavailable, or obsolete
@@ -113,6 +201,25 @@ late callbacks. Repeated tests use deterministic browser abstractions and fake
 time rather than relying on the current machine's location service.
 Include a successful result beyond the former eight-second window, timeout then
 retry, duplicate permission/click suppression, and unmount invalidation.
+
+## Issue #10 measured impact
+
+Against exact base `2332111f43062c42d95540176e39594a35a6ec67`:
+
+- main JavaScript: +26,811 raw / +7,036 gzip-9 bytes;
+- `index.html`: +251 raw / +79 gzip-9 bytes for pre-paint Auto resolution;
+- CSS, MapLibre worker, and MQTT chunk: byte-identical;
+- Wrangler dry-run Worker upload: 7.41 to 13.64 KiB raw and 2.41 to 3.16 KiB
+  gzip as reported by Wrangler;
+- no weather bytes or airport asset request occur at startup.
+
+Production-preview fixture acceptance measured a two-animation-frame cluster
+toggle between 18.5 and 30.6 ms and first one-station weather list/map
+publication within 104 to 105 ms, with no browser long-task entries after the
+measurement boundary. The actual local Worker returned 896- to 930-byte
+two-station AWC JSON responses with `public, max-age=60`, JSON content type, and
+`nosniff`. These bounded local measurements are regression evidence, not a
+public-load or provider-capacity claim.
 
 ## Browser smoke test
 
@@ -130,6 +237,77 @@ Use `npm run dev` and verify:
    clears selection safely.
 8. A narrow mobile viewport keeps controls readable and the map usable.
 9. Map and provider attribution remains visible.
+10. Strict coordinates navigate with no Photon request; named text makes one
+    explicit bounded request and renders Photon/OpenStreetMap attribution.
+11. Search results are reachable by keyboard, Enter selects one, and Escape
+    closes results and restores input focus.
+12. Blocking Photon produces a non-blocking search error while coordinate
+    navigation, Center, and live traffic remain usable.
+13. No `/aircraft-metadata/` request occurs before aircraft selection. First
+    selection requests one index and one prefix shard; a same-prefix selection
+    reuses both.
+14. Selected-aircraft metadata shows model/configuration/wake, exact confidence,
+    snapshot age, Mictronics attribution, and ODC-By. Conflicts and blocked
+    metadata requests stay local while live ADS-B, selection, trail, marker,
+    and provider status remain unchanged.
+15. Vessel search matches normalized name, callsign, MMSI, and IMO without any
+    provider request. Combined category, navigation, speed, and inclusive
+    length filters keep matching/shown counts truthful, preserve the 50 m
+    reset state, and clear a selection only when the selected vessel no longer
+    passes.
+16. With SHIPS hidden, matching results remain counted but cannot be selected.
+    Re-enabling SHIPS restores map visibility without reconnecting MQTT or
+    starting REST work.
+17. No `/ports/` request occurs while PORTS is disabled. First enable makes one
+    bounded request; hiding and re-enabling uses the fulfilled session cache.
+    A blocked/corrupt asset reports a local error and Retry works without
+    changing map, aircraft, marine, or traffic-provider status.
+18. Port rank groups appear only at their configured zooms, disappear above
+    zoom 13, survive Light/Dark style rehydration, remain visually distinct
+    from ships, and keep Natural Earth public-domain/generalization wording
+    visible.
+19. Exact and touch-fallback traffic picking retains priority over ports.
+    Port selection is separate from traffic selection, explicit navigation or
+    hiding PORTS clears it, and port details never claim facilities, calls,
+    nearby vessels, destination, or ETA.
+20. Aircraft search matches current callsign, registration, ICAO24, and type
+    with literal exact/prefix/substring ranking. Typing, clearing, and a
+    no-match result create no aircraft, marine, metadata, Photon, or Worker
+    request and do not filter map markers or move the camera.
+21. No `/airports/` request occurs while AIRPORTS is disabled. First enable
+    makes one bounded request; hiding and re-enabling uses the fulfilled
+    session cache. A blocked or corrupt asset reports a local retryable error
+    without changing map or traffic-provider health.
+22. Large airport points/labels appear from zoom 4/5 and medium points/labels
+    from zoom 7/8, remain visible at high zoom, survive Light/Dark style
+    rehydration, render above ports and below traffic, and retain visible
+    OurAirports/Public Domain attribution.
+23. Tallinn airport details show EETN/TLL, persistent OurAirports ID, ident,
+    municipality/country, coordinates, source commit/date/output version, and
+    explicit non-operational/no-inference wording.
+24. The bounded airport list is reachable by keyboard. Closing airport details
+    restores focus to the originating result when present or AIRPORTS otherwise.
+    Airport, port, and traffic selection clearing and exact-before-near-miss
+    precedence remain deterministic.
+25. No `/api/weather/metar` request occurs at startup. First METAR enable loads
+    the airport asset if needed and makes at most one canonical request for the
+    sorted visible ICAO set. Hiding/re-enabling, Light/Dark/Auto changes, and
+    style rehydration reuse a fulfilled same-view result without refetching.
+26. METAR loading, one-minute waiting, empty, stale, expired, error, retry, and
+    refresh states are truthful. Switching A to B to A inside the gate recovers
+    at the next allowed boundary rather than permanently suppressing A. A
+    blocked weather route leaves map, traffic, ports, airports, search, camera,
+    and provider health usable.
+27. The weather list is keyboard reachable; EETN details show report/source
+    time, retrieval time, normalized fields, raw report, AWC terms, and
+    observation-not-forecast wording. Closing restores focus to the originating
+    result or METAR toggle.
+28. Wide/ineligible or over-50-station views issue no weather request and hide
+    obsolete observations. Traffic exact/touch selection precedes weather;
+    weather precedes airport and port within exact and touch context hits.
+29. AIR and SEA clusters remain separate, expand to the reported zoom, never
+    open entity details, and do not increase aircraft, marine, metadata, Photon,
+    airport, port, or METAR requests.
 
 For the viewport-driven map experience, additionally verify:
 
@@ -148,8 +326,9 @@ For the viewport-driven map experience, additionally verify:
    prompt; other permission states retain Tallinn until explicit action.
 7. Dateline, rotated, pitched, and desktop/mobile resized views remain bounded
    and do not become a falsely small query.
-8. Repeated Light/Dark changes preserve camera, live traffic, selected object,
-   trail, controls, and provider connections.
+8. Auto system changes and repeated explicit Light/Dark overrides preserve
+   camera, live traffic, selected object, trail, controls, and provider
+   connections.
 9. Both themes remain readable on desktop and a narrow mobile viewport.
 10. Aircraft, helicopter, and vessel artwork retains its identity over land,
    water, and busy detail at actual marker scale; stale markers remain
@@ -157,18 +336,69 @@ For the viewport-driven map experience, additionally verify:
 11. Light/small, generic, heavy, rotorcraft, cargo, tanker, passenger, fishing,
     tug, and generic-vessel shapes remain distinguishable in Light and Dark
     themes without changing cyan/amber traffic-kind identity.
-12. Rapid theme changes restore all ten image IDs once per style generation,
-    preserve one map, and do not reconnect or query either provider.
+12. Rapid theme changes restore all ten image IDs and loaded static/weather
+    layers once per style generation, preserve one map, and do not reconnect or
+    query any provider.
 13. A direct touch hit selects normally, an isolated near miss inside the
     8 CSS-pixel box selects the sole eligible ID, and an outside or ambiguous
     tap clears/retains selection according to the normal empty-hit path.
 14. Mouse, touch-followed-by-mouse, drag, and pinch interactions do not receive
     the touch fallback, and device pixel ratio does not change the threshold.
+15. A coordinate or place result changes only the current view. Center returns
+    to the latest session Home, including one updated by a late allowed
+    geolocation result that did not steal the explicit camera.
+16. Wheel/trackpad, pointer drag, touch drag, double-click, and map-keyboard
+    movement change the label to `Custom view`; a marker click and programmatic
+    camera fit do not.
+17. Repeating the same normalized named query uses the session cache without a
+    second Photon request. New input, Escape, Center, location, coordinate
+    navigation, or manual movement cancels obsolete results.
 
 Repeat the core check with `npm run build && npm run preview`. Confirm that
 `dist/assets/` contains a `maplibre-gl-worker-*.js` file and that the preview
-page renders vector tiles. This catches an easy-to-miss MapLibre/Vite worker
-regression.
+page renders vector tiles. Also confirm the immutable metadata index and one
+shard are present in `dist/aircraft-metadata/`, and the exact immutable
+`dist/ports/natural-earth-v5.1.2-v1/ports.geojson` and
+`dist/airports/ourairports-2026-09-19-v1/airports.geojson` assets are present.
+This
+catches easy-to-miss MapLibre/Vite worker or static-dataset packaging
+regressions.
+
+For the production edge boundary, run `npm run preview:worker`. Confirm:
+
+1. `/` returns the built client.
+2. The emitted MapLibre worker uses immutable caching and `nosniff`.
+3. A missing hashed asset returns 404 rather than HTML.
+4. Invalid aircraft coordinates return 400 and unsupported API paths return
+   404 without an upstream request.
+5. One valid fixed-route aircraft request succeeds with the public project
+   User-Agent.
+6. Worker responses use no-store and expose no CORS wildcard.
+7. A canonical encoded METAR request returns bounded JSON or 204 with
+   `nosniff`; malformed IDs, raw commas, extra parameters, unsupported methods,
+   redirects, timeouts, oversized responses, unsafe content types, and missing
+   API paths are rejected without an open forwarder.
+
+Do not repeatedly use the local edge check as a provider load loop. All path,
+timeout, body-size, redirect, status, `Retry-After`, and cancellation cases use
+mocked deterministic tests.
+
+## Production deployment validation
+
+The production workflow is manual, exact-SHA, and restricted to the GitHub
+`production` environment on `main`. It reruns the full suite and Wrangler dry
+run before deploying, then rechecks that the requested SHA is still the current
+`origin/main`.
+
+The post-deploy script compares public `index.html` and the dynamically named
+MapLibre worker with the validated local bytes. It then checks one ADSB request,
+proxy rejection paths, Digitraffic REST/preflight, and one bounded MQTT
+subscription. The MQTT client disables reconnect and is force-closed.
+
+This automated check does not replace a real browser acceptance pass for vector
+tile rendering, Web Worker execution, browser WSS, themes, attribution,
+provider isolation, and mobile layout. Public deployment remains blocked on
+Issue #39 until permanent Cloudflare credentials exist.
 
 ## Failure and lifecycle checks
 
@@ -179,6 +409,11 @@ Browser developer tools can block one provider at a time:
   usable;
 - block OpenFreeMap and confirm controls/status remain available with a compact
   map error.
+- block `/ports/*` and confirm only the optional port status fails; the map,
+  both traffic providers, vessel filters, and traffic selection remain usable.
+- block `/airports/*` and confirm only the optional airport status fails; the
+  map, traffic providers, aircraft search, ports, and traffic selection remain
+  usable.
 
 When changing map initialization, also exercise a deliberately throwing map
 constructor. Confirm that `Map unavailable` is visible, sibling controls remain
@@ -201,10 +436,114 @@ rate-conscious live probes. Do not put captured live payloads containing
 unnecessary data into the repository; reduce fixtures to only fields required
 by the test.
 
+For Photon, use one real browser-origin search per acceptance run rather than a
+live loop. Confirm HTTP/JSON success, current CORS behavior, no credentials or
+custom browser `User-Agent`, the configured five-result bound, visible
+Photon/OpenStreetMap attribution, and that a repeated normalized query is
+served from memory. Simulate timeout, `429`, invalid GeoJSON, oversized bodies,
+and outage locally. A synthetic `Origin` request can inspect headers but does
+not replace a real browser CORS check.
+
 Use local fixtures, fake clocks, fake maps, mocked fetch, and mocked MQTT for
 repeated lifecycle checks. A milestone needs one bounded real-provider browser
 smoke, not repeated live loops for scenarios that deterministic tests can
 prove.
+
+For a bounded Digitraffic stream measurement in development, use one ordinary
+application tab:
+
+```text
+http://127.0.0.1:5173/?marineDiagnostics=1
+```
+
+The opt-in collector observes the existing provider instance. It creates no
+client, subscription, request, timer, payload archive, identifier inventory, or
+telemetry upload. Once per minute and on final provider shutdown it writes one
+aggregate JSON snapshot to the console and page title. Use a fixed eligible
+view and record the source SHA, UTC interval, browser/platform, and limitations.
+
+Message and payload-byte totals describe the full Digitraffic wildcard stream,
+not the current viewport. Payload bytes exclude MQTT/WebSocket/TLS framing and
+compression. Provider-emitted vessel counts are query-circle values before
+exact viewport and user filtering. Never present one trace as a load test,
+coverage census, SLA, or cross-provider benchmark.
+
+## Dense vessel-filter measurement
+
+On 2026-09-19, a deterministic fixture measured one full local search,
+category, navigation, reported-speed, minimum-length, maximum-length, and
+result-ordering pass after 20 warmups over 200 iterations:
+
+| Fixture | Matches | Median | p95 | Maximum |
+| --- | ---: | ---: | ---: | ---: |
+| 2,000 vessels | 45 | 0.396 ms | 0.430 ms | 0.529 ms |
+| 5,000 vessels | 118 | 1.004 ms | 2.471 ms | 2.822 ms |
+| 10,000 vessels | 232 | 2.077 ms | 2.402 ms | 5.266 ms |
+
+This Node 24 / Vitest 5 measurement proves the deterministic filter path is
+small on the test machine. It is not browser input-to-paint evidence, a provider
+load test, or a device-wide performance guarantee. Browser acceptance still
+records input timing, paint, and long tasks with the actual MapLibre view.
+
+The production-preview browser fixture then rendered 2,000 current vessels
+(1,513 passing the default filter). Four local search updates settled React and
+MapLibre within three animation frames, measured at 33.3-49.6 ms, with no
+reported long task. Search/filter/reset/hide operations left one aircraft
+request, one marine location request, one metadata request, and one MQTT
+connection unchanged. This is representative acceptance evidence on the test
+machine, not a universal frame-time guarantee.
+
+The same browser pass proved zero port requests while disabled, one request on
+first enable, fulfilled-cache reuse after hide/show and Light/Dark style
+rehydration, traffic-first picking at an overlapping Tallinn point, ports-only
+picking with traffic hidden, selection clearing, 503 isolation and retry, and
+disabled-error cleanup, plus source/detail visibility at 390x844 and 390x568.
+A Natural Earth asset failure left one MapLibre canvas and all 2,000 marine
+fixture records active.
+
+Against exact base `e36eee06144d737998e1d95d8a659deec8e3a927`, the production
+build added 19,970 raw / 5,659 gzip-9 bytes of main JavaScript and 2,330 raw /
+348 gzip-9 bytes of CSS. The optional port asset is not fetched at startup; it
+adds 154,218 raw, 22,482 gzip-9, or 18,429 Brotli-quality-11 bytes only after
+PORTS is enabled. The MapLibre worker and MQTT chunk were unchanged.
+
+Production builds must remove the diagnostics query flag, collector, counters,
+timing calls, logging, and title changes. Verify this alongside the normal
+production build when editing the instrumentation.
+
+## Aircraft and airport discovery measurement
+
+Against exact base `ff592bbef008e0fcc01895ace0e53b5b4050b51e`, the final
+production build adds 20,008 raw / 3,670 gzip-9 bytes of main JavaScript and
+12 raw / 1 gzip-9 byte of CSS. The MapLibre worker and MQTT chunk are
+byte-identical to the base build. The optional airport asset adds 1,329,838
+raw or 225,625 deterministic gzip-9 bytes only after AIRPORTS is enabled.
+
+The production-preview browser fixture proved:
+
+- one MapLibre canvas and the emitted MapLibre worker;
+- zero airport requests at startup, exactly one request on first enable, and
+  fulfilled-session reuse across hide/show and Light/Dark style rehydration;
+- a local registration search returning one of three current aircraft without
+  changing aircraft, marine, metadata, Photon, or airport request counters;
+- selection through the existing aircraft details path;
+- Tallinn EETN/TLL details, persistent OurAirports ID, static provenance,
+  no-inference wording, keyboard button selection, and focus restoration;
+- airport listing and selection remaining usable after zooming out far enough
+  to pause bounded live traffic;
+- airport failure isolation and successful retry without changing live
+  aircraft or map availability;
+- no arrival, departure, or board request;
+- full-size MapLibre canvases and scrollable/reachable controls at 390x844 and
+  390x568; the mobile control panel is capped at 58 viewport-height units so a
+  touchable map strip remains available, while bottom padding keeps MapLibre
+  attribution from intercepting the final controls.
+
+Local `workerd` returned the airport asset with
+`Cache-Control: public, max-age=31536000, immutable` and
+`X-Content-Type-Options: nosniff`; a missing airport version returned a true
+404 rather than the application shell. The only browser diagnostic was an
+external OpenFreeMap font-range 404 already outside this feature boundary.
 
 ## Dependency and bundle discipline
 

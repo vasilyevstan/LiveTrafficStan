@@ -3,35 +3,54 @@
 ## System shape
 
 LiveTrafficStan V1 is a browser application with no authentication, database,
-or persistent backend. React owns controls and selected-object UI state.
-Provider adapters own external protocols and normalization. MapLibre owns
-high-frequency geographic rendering.
+or persistent backend. Production adds one stateless fixed-route Cloudflare
+Worker for browser-incompatible aircraft and weather access. React owns controls and
+selected-object UI state. Provider adapters own external protocols and
+normalization. MapLibre owns high-frequency geographic rendering.
 
 ```text
                        visibility lifecycle
                                |
-ADSB.lol -> Vite proxy -> aircraft adapter -> normalized Aircraft[]
+ADSB.lol -> same-origin aircraft proxy -> aircraft adapter -> normalized Aircraft[]
                                                         |
 Digitraffic REST + MQTT -> marine adapter -> normalized Vessel[]
                                                         |
-                                 freshness + filters + bounded history
+                           freshness + local vessel filters + bounded history
                                                         |
                            React overlays <-> persistent MapLibre map
+
+selected Aircraft -> static metadata index + prefix shard -> details panel only
+PORTS toggle -> validated static Natural Earth projection -> port map/details
+AIRPORTS toggle -> validated static OurAirports projection -> airport map/details
+METAR toggle -> explicit airport ICAO codes -> same-origin AWC route
+             -> normalized observations -> weather map/details
+current Aircraft[] -> local literal search -> existing traffic selection
+
+coordinate text -> local parser ------------------------+
+named text -> Photon adapter -> PlaceSearchResult[] ----+-> view navigation
+session Home / one-shot location -----------------------+
 ```
 
-The only server-side behavior in local V1 is Vite's same-origin proxy from
-`/api/aircraft/*` to `https://api.adsb.lol/*`. It exists because ADSB.lol does
-not currently provide browser CORS headers; it does not hold a credential.
+Local development and preview use fixed Vite same-origin proxies. Production
+uses a strict Cloudflare Worker that accepts only the validated ADSB.lol point
+route and canonical AWC METAR route. Both providers currently require the
+server-to-server boundary for this browser client; neither route holds a
+provider credential or creates server-side state.
 
 ## Source responsibilities
 
 | Area | Responsibility |
 | --- | --- |
 | `src/config/` | Typed defaults and validation of browser-safe environment overrides |
-| `src/domain/` | Application-owned traffic types, geographic helpers, and formatting |
+| `src/domain/` | Application-owned traffic/port/airport/weather types, local discovery and filters, geographic helpers, location-input parsing, serializable layer preferences, and formatting |
 | `src/providers/aircraft/` | ADSB.lol request, runtime payload checks, normalization, and unit conversion |
-| `src/providers/marine/` | Digitraffic REST/MQTT lifecycle, metadata merging, and normalization |
-| `src/app/` | React hooks for provider lifecycle, time ticks, and trail history |
+| `src/providers/aircraftMetadata/` | Bounded same-origin static metadata loading, provenance/schema/hash validation, exact identity matching, and shard LRU |
+| `src/providers/marine/` | Digitraffic capabilities, REST/MQTT lifecycle, metadata merging, normalization, and opt-in development diagnostics |
+| `src/providers/ports/` | Bounded lazy same-origin port loading plus checksum, schema, and source-provenance validation |
+| `src/providers/airports/` | Bounded lazy same-origin airport loading plus checksum, schema, and source-provenance validation |
+| `src/providers/weather/` | Canonical same-origin AWC requests, bounded JSON validation, METAR/SPECI normalization, newest-report selection, and source provenance |
+| `src/providers/geocoding/` | Photon request construction, response bounds, runtime GeoJSON validation, result normalization, and attribution identity |
+| `src/app/` | React hooks/controllers for provider lifecycle, place-search cancellation/cache, navigation intent, time ticks, and trail history |
 | `src/traffic/` | Filtering, freshness/expiry, interpolation, and bounded history |
 | `src/map/` | MapLibre lifecycle, GeoJSON sources/layers, feature selection, and marker images |
 | `src/components/` | Status, controls, and selected-object details |
@@ -59,9 +78,76 @@ metadata records. The adapter retains only the latest record per MMSI, removes
 expired locations, and filters its cache to the enclosing circle before
 emitting a snapshot.
 
+The marine boundary also exposes one immutable capability descriptor. It
+records direct keyless browser access, radius REST, the all-published-vessels
+stream, CC BY 4.0 obligations, regional source scope, unknown exact coverage,
+and documented Class A/fishing-vessel exclusions. It is not a provider
+registry and does not drive networking or infer a coverage polygon.
+
 After provider normalization, the application filters both traffic kinds to the
 actual unwrapped viewport polygon. An object inside the enclosing circle but
 outside the visible rotated or pitched footprint is not displayed.
+
+Place search is a separate non-traffic boundary. Strict decimal coordinate
+pairs are parsed, range-checked, and rounded locally. Other non-empty submitted
+text reaches the Photon adapter only after explicit form submission. The
+adapter permits one fixed configured endpoint, bounded query/result sizes, no
+credentials, and no browser geolocation bias. It validates GeoJSON Point
+features, preserves provider order, deduplicates stable OpenStreetMap
+identities, and emits bounded application-owned `PlaceSearchResult` records.
+Raw Photon payloads never enter React or MapLibre.
+
+Selected-aircraft metadata is another independent boundary. It accepts only the
+normalized live ICAO24, registration, and type identity. The provider loads no
+asset until selection, then reads one validated index/type dictionary and at
+most one two-hex-prefix TSV shard under one deadline. Exact ICAO24 is primary;
+present live registration and type must agree, duplicated registrations are
+unavailable, and missing live registration produces an explicit ICAO24-only
+confidence label. Metadata remains separate from the live `Aircraft` object and
+never changes provider health, freshness, history, or marker artwork.
+
+Vessel discovery is an application-owned display boundary after freshness and
+exact viewport filtering. Search and typed filters consume only normalized
+`Vessel` fields and never alter provider queries, the global MQTT
+subscription, REST/metadata gates, cache ownership, or source snapshots.
+Unknown category, navigation, speed, and length values remain explicit rather
+than being coerced into known values.
+
+Aircraft discovery is another local display boundary after exact viewport and
+freshness filtering. Literal case-insensitive matching covers current callsign,
+registration, ICAO24, and provider-reported type. Exact, prefix, and substring
+ranking preserves display order for ties. Typing never filters map markers,
+moves the camera, queries a provider, or loads static metadata; selecting a
+result reuses the existing traffic selection path.
+
+Optional port context is not a traffic provider. The runtime provider makes no
+request until the PORTS layer is enabled, then loads one immutable same-origin
+GeoJSON file under a five-second deadline and 512 KiB cap. It verifies UTF-8,
+JSON, complete feature grammar, ordered IDs, coordinates, ranks, record count,
+rank distribution, and SHA-256 before a fulfilled-only session cache is
+created. Ports have separate IDs and selection and never enter traffic counts,
+trails, provider health, destination/ETA logic, or vessel relationships.
+
+Optional airport context is likewise not a traffic provider. AIRPORTS starts
+off and lazily loads one immutable same-origin GeoJSON projection under a
+five-second deadline and approximately 1.5 MiB cap. The provider verifies the
+exact byte count, SHA-256, UTF-8/JSON grammar, ordered persistent IDs,
+coordinates, field grammar, record count, and large/medium distribution before
+creating a fulfilled-only session cache. Static airport points have separate
+IDs and selection and never imply operating status, route, arrival, departure,
+or a relationship to visible aircraft. A geometrically valid map footprint
+remains available to this static context even when its enclosing radius is too
+wide for live traffic; the 100 km provider gate does not disable airport
+listing or selection.
+
+Optional weather observations are a separate, non-traffic provider boundary.
+METAR starts off, reuses only explicit four-letter `icaoCode` values from the
+pinned large/medium-airport projection, and sends a sorted unique set of at
+most 50 IDs through `/api/weather/metar`. The browser never calls AWC directly,
+forwards credentials, derives stations from visible traffic, or treats static
+airport `ident`/IATA values as ICAO codes. The adapter accepts only requested
+METAR/SPECI records, validates Unix-second observation time and bounded fields,
+and keeps the newest valid report per station.
 
 ## Lifecycle and failure isolation
 
@@ -76,13 +162,35 @@ continues to render.
   `Retry-After` boundary without reconstructing the controller.
 - Marine REST requests are deduplicated by controller state. MQTT reconnects
   no more often than every 15 seconds after disconnection. Eligible viewport
-  changes immediately refilter cached global MQTT records, reuse the live
+  changes immediately refilter cached provider-wide MQTT records, reuse the live
   connection, and permit a location REST refresh no more than every five
   minutes. Hidden or ineligible states stop active REST, interval, timeout, and
   MQTT resources while retaining the provider, cache, and all timing gates;
   unmount performs final shutdown.
 - Provider errors remain visible until a successful request or subscription
   recovers that provider.
+- Place search has its own cancellable controller and UI state. It permits one
+  active request, rejects stale revisions, enforces local submit and
+  rate-limit deadlines, and keeps a bounded session-only success/empty cache.
+  Search failure does not change the current camera or either traffic provider.
+- Aircraft metadata has its own selected-identity controller. It aborts on
+  aircraft changes, vessel/empty selection, or unmount. State carries the full
+  identity key plus a monotonic revision, so late A callbacks cannot render
+  after A to B to A selection changes. Only complete valid assets enter one
+  index cache and an eight-shard LRU; failure remains local to the detail card.
+- Port loading has its own lazy state and retry. Failure remains inside the
+  layer control, leaves MapLibre and both traffic providers usable, and never
+  creates a success-shaped empty port dataset.
+- Airport loading has its own lazy state and retry with the same isolation.
+  Disable or unmount aborts unfinished work; an obsolete success or failure
+  cannot publish into current UI state.
+- Weather loading has a separate generation, abort controller, and
+  session-lived start gate. There is no startup request or recurring poller.
+  Starts remain at least 60 seconds apart across station changes, refreshes,
+  retries, hide/show, and `Retry-After`. Hidden, disabled, superseded, and
+  unmounted work aborts; a fulfilled same-view result survives hide/show and
+  theme/style changes. Weather failure does not alter map health, traffic,
+  airport/port context, camera, or provider schedules.
 
 ## Freshness, motion, and history
 
@@ -91,12 +199,18 @@ the receipt timestamp otherwise.
 
 - Aircraft becomes stale after 45 seconds and expires after 120 seconds.
 - Marine traffic becomes stale after 2 minutes and expires after 10 minutes.
+- Weather observations become stale after 75 minutes and expire after 120
+  minutes.
 - Expired objects are removed from display.
 
 The map interpolates for at most 1.5 seconds between two provider-observed
 positions. It never extrapolates beyond the newest observation. Trails contain
 only observed positions, are pruned after 15 minutes, are capped at 180 points
-per object, and are rendered only for the selected object.
+per object, and are rendered only for the selected object. A committed
+coordinate, place-result, Center, or successful Use Location navigation clears
+selection and resets retained trail points so observations from the previous
+area are not connected to the new view. Invalid input and failed search do not
+alter the existing selection or history.
 
 ## Map rendering
 
@@ -104,6 +218,29 @@ per object, and are rendered only for the selected object.
 trail use persistent GeoJSON sources and layers whose data or visibility is
 updated in place. This avoids one React component or DOM marker per traffic
 object.
+
+The optional port, airport, and weather sources are separate from traffic.
+Port rank groups
+appear progressively from zoom 5 through 10, all port rendering stops at zoom
+13 because the coordinates are generalized, and neutral theme-aware styling
+stays below airport and traffic layers. Large airport points start at zoom 4
+and labels at zoom 5; medium points and labels start at zoom 7 and 8, with no
+upper zoom cutoff. METAR circles and labels render above ports/airports and
+below traffic; stale reports include text as well as reduced opacity. Picking
+is deterministic: exact traffic, cluster expansion, validated traffic touch
+fallback, exact weather, airport, and port, then weather, airport, and port
+touch fallbacks. Selecting traffic, weather, airport, or port clears the other
+selection kinds; an empty map click clears all.
+
+Aircraft and vessel clustering is an optional session-only display preference.
+Each traffic kind keeps its own clustered GeoJSON source, count label, and
+expansion behavior. Cluster features never become application entity IDs and
+are excluded from touch entity fallback. `clusterMinPoints` is fixed at source
+creation, while the on/off change uses MapLibre's source cluster options.
+Because every `setData()` rebuilds the Supercluster index even above the
+display cluster zoom, per-frame interpolation is suspended whenever clustering
+is enabled; provider snapshots, filtering, freshness, selection, and request
+cadence remain unchanged.
 
 After settled pan, zoom, rotation, pitch, Home, and real resize changes, the map
 unprojects a bounded sample of the full-canvas perimeter, including every
@@ -132,10 +269,16 @@ MapLibre never parse raw ADS-B or AIS category codes. The bounded vocabulary is:
 | ADS-B A7 | Helicopter |
 | AIS ship type 30 | Fishing |
 | AIS ship type 52 | Tug |
-| AIS ship types 60-69 | Passenger |
-| AIS ship types 70-79 | Cargo |
-| AIS ship types 80-89 | Tanker |
+| AIS ship types 60-64 or 69 | Passenger |
+| AIS ship types 70-74 or 79 | Cargo |
+| AIS ship types 80-84 or 89 | Tanker |
 | Other, missing, invalid, or unsupported AIS types | Generic vessel |
+
+The local filter taxonomy is slightly broader than the artwork vocabulary:
+types 31, 32, 50-55, 58, and 59 are `tug-service`; known non-filter categories
+20-24, 29, 33-37, 40-44, 49, 90-94, and 99 are `other`. Reserved subcodes such
+as 65-68, 75-78, 85-88, and 95-98 remain `unknown`; they are not silently
+folded into passenger, cargo, tanker, or other.
 
 The category is never inferred from speed, altitude, name, callsign, operator,
 route, location, or movement. A later provider-reported category can change the
@@ -162,41 +305,77 @@ vector tiles will remain in a loading state.
 - Marine messages are merged continuously but React receives snapshots at most
   once per second.
 - MapLibre sources update without rebuilding the map.
-- The complete ten-image silhouette set is generated once per theme and reused;
+- The complete ten-image silhouette set is generated once per resolved theme and reused;
   style rehydration updates the same bounded image IDs.
 - Motion animation samples normalized state rather than adding provider points
   on every frame.
 - History is bounded by both time and count.
 - Network work pauses while the page is hidden or the viewport is ineligible,
   without resetting session timing or cache state.
+- Aircraft metadata has zero startup requests and lazy prefix loading. Static
+  assets use immutable deployment caching, while application memory retains
+  only one index and eight validated shards.
+- Port context has zero startup requests, one bounded lazy static load, and a
+  fulfilled-only session cache. Local vessel search/filter changes perform no
+  network work and do not rebuild the map.
+- Airport context has zero startup requests, one bounded lazy static load, and
+  a fulfilled-only session cache. Local aircraft search changes perform no
+  network work and do not rebuild the map.
+- METAR has zero startup requests and no periodic poller. A maximum 50-station
+  request is bounded to 256 KiB and starts no more frequently than once per
+  minute per session. Theme changes, style rehydration, clustering, and
+  hide/show of a fulfilled same-view result do not refetch.
 
 ## Deployment boundary
 
-The built client is otherwise static. A production deployment needs:
+Cloudflare Workers with Static Assets is the selected one-unit production
+boundary:
 
-1. a static host for `dist/`;
-2. HTTPS and WebSocket access to the configured map and marine providers;
-3. a same-origin `/api/aircraft` proxy with the Vite rewrite semantics, or an
-   alternative aircraft endpoint that explicitly permits browser CORS;
-4. unchanged visible provider attribution.
+1. `dist/` is served as Static Assets;
+2. fingerprinted `/assets/*`, versioned `/aircraft-metadata/*`, versioned
+   `/ports/*`, and versioned `/airports/*` responses use immutable browser
+   caching;
+3. Worker code runs first only for `/api` and `/api/*`;
+4. the only forwarded routes are the fixed aircraft point route and canonical
+   `GET /api/weather/metar?ids=...`;
+5. OpenFreeMap, Photon, and Digitraffic HTTPS/WSS remain direct browser
+   connections;
+6. map, search, aircraft, marine, optional-port, optional-airport, and weather
+   attribution remains visible.
 
-Adding hosting, CI, caching, or a production proxy is intentionally deferred to
-the deployment roadmap issue.
+The production proxy accepts canonical finite latitude/longitude values and
+integer radii from 1 through 54 NM. It rejects query strings, other methods,
+other paths, redirects, responses over 4 MiB, and work exceeding the ten-second
+total deadline. It constructs a fixed ADSB.lol destination, forwards only a
+JSON accept header and stable public project User-Agent, preserves upstream
+status/body/content type/`Retry-After`, and sets no-store behavior in both
+directions.
+
+No application database, general backend, provider scheduler, shared live
+cache, preview deployment, or server-side marine relay is added. Worker
+observability is disabled because request URLs contain rounded camera
+coordinates or visible station IDs. Cloudflare and upstream network
+intermediaries still process ordinary request metadata.
+
+Production activation, public browser smoke, and rollback against a prior
+version wait only on the permanent account/credential prerequisite in Issue
+#39. See [Hosting and Deployment](hosting-and-deployment.md).
 
 ## Navigation and viewport boundaries
 
-The application keeps session Home and current camera behavior distinct while
-making the settled visible canvas the traffic contract:
+The application keeps session Home, explicit view targets, and the current
+camera distinct while making the settled visible canvas the traffic contract:
 
 ```text
-permission-aware startup --> homeCenter (session only)
-                                   |
-                  Center ----------+
-                                   v
-                         MapLibre Home framing
-                                   |
+configured / allowed auto location -> session Home + initial view
+session Home ------------------------------ Center ----------+
+explicit Use Location -----------> session Home + view ------+
+coordinate / Photon result -------------------------------> view request
+                                                              |
+                                                     MapLibre framing
+                                                              |
 settled pan / zoom / rotate / pitch / resize
-                                   |
+                                                              |
                          full-canvas footprint
                                    |
                     +--------------+--------------+
@@ -209,8 +388,22 @@ settled pan / zoom / rotate / pitch / resize
 ```
 
 `TrafficMap` mounts before any provider query and reports a viewport only after
-MapLibre has usable geometry. `App` owns the latest assessment and Home command.
-Provider data never moves or fits the camera.
+MapLibre has usable geometry. `App` owns the latest assessment, session Home,
+current target label, and monotonic view request. Provider data never moves or
+fits the camera.
+
+Explicit coordinate submission, place-result selection, Center, Use Location,
+and trusted manual map interaction advance a navigation-intent revision. An
+older asynchronous geolocation callback may still update session Home, but it
+cannot steal the camera after a newer explicit intent. A successful explicit
+Use Location may move the view only while it remains the latest intent.
+Coordinate and place navigation never mutate Home.
+
+Programmatic view requests retain their target label. Trusted canvas wheel,
+double-click, supported map-keyboard input, or pointer movement beyond the
+drag threshold changes the visible label to `Custom view`. Simple marker clicks
+do not. All navigation reuses the same MapLibre instance and settled viewport
+pipeline; it does not add another traffic scheduler or reconnect marine MQTT.
 
 The aircraft hook creates one revision-aware polling controller after the first
 eligible query and retains it for the session. The marine hook does the same
@@ -221,13 +414,17 @@ eligibility compose as pause reasons. Layer visibility remains display-only.
 ## Theme lifecycle
 
 Application colors are CSS custom properties selected by a validated
-`light | dark` preference stored under `livetrafficstan.theme`. Missing,
-invalid, or unavailable storage selects Light. The map uses the corresponding
+`auto | light | dark` preference stored under `livetrafficstan.theme`.
+Missing, invalid, or unavailable storage preserves the prior deterministic
+Light default. Auto resolves `prefers-color-scheme: dark` before first paint
+and subscribes to system changes; explicit Light/Dark overrides do not.
+The map receives only the resolved Light or Dark theme and corresponding
 configured OpenFreeMap style.
 
 Theme changes call `map.setStyle` on the existing instance. An idempotent
 installer runs after `style.load` to restore repository-owned images, GeoJSON
-sources, layers, current data, visibility, and selected trail.
+sources, layers, current data, clustering options, visibility, selected trail,
+and any loaded port, airport, or weather source/selection.
 Interaction listeners remain registered once, and a style revision prevents a
 late obsolete load from winning. Provider hooks, React selection/history, and
 camera state do not restart.

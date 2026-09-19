@@ -1,0 +1,35 @@
+{
+  "source": {
+    "name": "Mictronics aircraft-database",
+    "repositoryUrl": "https://github.com/Mictronics/aircraft-database",
+    "commit": "1724959f854f540c95f11872bcd377ecfeb698a2",
+    "publishedAt": "2026-09-13T07:35:29Z",
+    "databaseVersion": 522,
+    "archiveUrl": "https://raw.githubusercontent.com/Mictronics/aircraft-database/1724959f854f540c95f11872bcd377ecfeb698a2/indexedDB.zip",
+    "archiveSha256": "3f274f21154833d47cae45b5e847c3d47463a212c631384bc79493872beb44dc",
+    "licenseUrl": "https://raw.githubusercontent.com/Mictronics/aircraft-database/1724959f854f540c95f11872bcd377ecfeb698a2/LICENSE",
+    "licenseSha256": "11a6d83734845ad09d809667aa219857a5b985b28c258a2eebf5677668a6bd3b",
+    "licenseName": "ODC Attribution License (ODC-By) 1.0",
+    "licenseCanonicalUrl": "https://opendatacommons.org/licenses/by/1-0/"
+  },
+  "projection": {
+    "schemaVersion": 1,
+    "outputVersion": "2026-09-13-v1",
+    "prefixLength": 2,
+    "staleAfterDays": 45,
+    "futureToleranceHours": 24,
+    "expected": {
+      "sourceAircraftRecords": 447779,
+      "sourceTypeRecords": 2788,
+      "projectedTypeRecords": 2774,
+      "availableRecords": 407368,
+      "ambiguousRecords": 403,
+      "duplicateRegistrations": 196,
+      "shardCount": 123,
+      "shardRawBytes": 6844037,
+      "shardGzipBytes": 2555150,
+      "largestShardRawBytes": 377781,
+      "largestShardGzipBytes": 145154
+    }
+  }
+}

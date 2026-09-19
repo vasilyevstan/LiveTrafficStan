@@ -1,3 +1,11 @@
+import type { StaticAircraftMetadataProviderConfig } from '../providers/aircraftMetadata/staticAircraftMetadataProvider'
+import type { StaticAirportsProviderConfig } from '../providers/airports/staticAirportsProvider'
+import type { StaticPortsProviderConfig } from '../providers/ports/staticPortsProvider'
+import type { AwcMetarProviderConfig } from '../providers/weather/awcMetarProvider'
+import aircraftMetadataSource from './aircraftMetadataSource.json'
+import airportsSource from './airportsSource.json'
+import portsSource from './portsSource.json'
+
 export interface AppCenter {
   latitude: number
   longitude: number
@@ -19,6 +27,11 @@ export interface AppConfig {
     homeViewRadiusKm: number
     maximumViewportRadiusKm: number
     touchHitTolerancePx: number
+    clustering: {
+      radiusPx: number
+      minimumPoints: number
+      maximumZoom: number
+    }
   }
   navigation: {
     coordinatePrecision: number
@@ -26,11 +39,28 @@ export interface AppConfig {
     geolocationTimeoutMs: number
     geolocationMaximumAgeMs: number
   }
+  geocoder: {
+    endpointBaseUrl: string
+    resultLimit: number
+    maximumQueryLength: number
+    requestCooldownMs: number
+    timeoutMs: number
+    rateLimitFallbackMs: number
+    cacheMaxEntries: number
+    cacheTtlMs: number
+  }
   aircraft: FreshnessThresholds & {
     endpointBaseUrl: string
     refreshIntervalMs: number
     rateLimitBackoffMaxMs: number
   }
+  aircraftMetadata: StaticAircraftMetadataProviderConfig
+  airports: StaticAirportsProviderConfig
+  ports: StaticPortsProviderConfig
+  weather: FreshnessThresholds &
+    AwcMetarProviderConfig & {
+      requestCooldownMs: number
+    }
   marine: FreshnessThresholds & {
     restBaseUrl: string
     mqttUrl: string
@@ -53,7 +83,9 @@ const DEFAULTS = {
   longitude: 24.7536,
   lightMapStyleUrl: 'https://tiles.openfreemap.org/styles/positron',
   darkMapStyleUrl: 'https://tiles.openfreemap.org/styles/dark',
+  geocoderEndpoint: 'https://photon.komoot.io/api',
   aircraftEndpoint: '/api/aircraft',
+  weatherEndpoint: '/api/weather/metar',
   marineRestEndpoint: 'https://meri.digitraffic.fi',
   marineMqttEndpoint: 'wss://meri.digitraffic.fi:443/mqtt',
 } as const
@@ -101,6 +133,62 @@ const readEndpoint = (
   return value.replace(/\/+$/, '')
 }
 
+const readPublicEndpoint = (
+  env: Record<string, string | undefined>,
+  name: string,
+  fallback: string,
+) => {
+  const value = env[name]?.trim() || fallback
+  if (value.startsWith('//')) {
+    throw new Error(`${name} must not use a protocol-relative URL`)
+  }
+  if (value.startsWith('/')) return value.replace(/\/+$/, '')
+
+  let parsed: URL
+  try {
+    parsed = new URL(value)
+  } catch {
+    throw new Error(`${name} must be a valid HTTPS URL or root-relative path`)
+  }
+
+  if (parsed.protocol !== 'https:') {
+    throw new Error(`${name} must use HTTPS`)
+  }
+  if (parsed.username || parsed.password) {
+    throw new Error(`${name} must not include URL credentials`)
+  }
+
+  return value.replace(/\/+$/, '')
+}
+
+const readSameOriginEndpoint = (
+  env: Record<string, string | undefined>,
+  name: string,
+  fallback: string,
+) => {
+  const value = env[name]?.trim() || fallback
+  if (value.startsWith('//')) {
+    throw new Error(`${name} must not use a protocol-relative URL`)
+  }
+  if (!value.startsWith('/')) {
+    throw new Error(`${name} must use a root-relative same-origin path`)
+  }
+
+  const baseUrl = new URL('https://livetrafficstan.invalid')
+  const parsed = new URL(value, baseUrl)
+  if (
+    parsed.origin !== baseUrl.origin ||
+    parsed.search ||
+    parsed.hash ||
+    parsed.pathname === '/'
+  ) {
+    throw new Error(
+      `${name} must be a root-relative path without a query or fragment`,
+    )
+  }
+  return parsed.pathname.replace(/\/+$/, '')
+}
+
 export const createAppConfig = (
   env: Record<string, string | undefined>,
 ): AppConfig => {
@@ -136,12 +224,31 @@ export const createAppConfig = (
       homeViewRadiusKm: 20,
       maximumViewportRadiusKm: 100,
       touchHitTolerancePx: 8,
+      clustering: {
+        radiusPx: 42,
+        minimumPoints: 3,
+        maximumZoom: 10,
+      },
     },
     navigation: {
       coordinatePrecision: 3,
       viewportSettleMs: 350,
       geolocationTimeoutMs: 20_000,
       geolocationMaximumAgeMs: 5 * 60_000,
+    },
+    geocoder: {
+      endpointBaseUrl: readPublicEndpoint(
+        env,
+        'VITE_GEOCODER_ENDPOINT',
+        DEFAULTS.geocoderEndpoint,
+      ),
+      resultLimit: 5,
+      maximumQueryLength: 100,
+      requestCooldownMs: 1_000,
+      timeoutMs: 8_000,
+      rateLimitFallbackMs: 60_000,
+      cacheMaxEntries: 20,
+      cacheTtlMs: 15 * 60_000,
     },
     aircraft: {
       endpointBaseUrl: readEndpoint(
@@ -154,6 +261,82 @@ export const createAppConfig = (
       rateLimitBackoffMaxMs: 5 * 60_000,
       staleAfterMs: 45_000,
       expireAfterMs: 120_000,
+    },
+    aircraftMetadata: {
+      baseUrl: `/aircraft-metadata/${aircraftMetadataSource.projection.outputVersion}`,
+      timeoutMs: 5_000,
+      indexMaximumBytes: 512 * 1_024,
+      shardMaximumBytes: 512 * 1_024,
+      shardCacheEntries: 8,
+      schemaVersion: aircraftMetadataSource.projection.schemaVersion,
+      outputVersion: aircraftMetadataSource.projection.outputVersion,
+      sourceName: aircraftMetadataSource.source.name,
+      sourceRepositoryUrl: aircraftMetadataSource.source.repositoryUrl,
+      sourceCommit: aircraftMetadataSource.source.commit,
+      sourcePublishedAt: aircraftMetadataSource.source.publishedAt,
+      sourceDatabaseVersion: aircraftMetadataSource.source.databaseVersion,
+      sourceLicenseName: aircraftMetadataSource.source.licenseName,
+      sourceLicenseUrl: aircraftMetadataSource.source.licenseCanonicalUrl,
+      sourceArchiveSha256: aircraftMetadataSource.source.archiveSha256,
+      staleAfterDays: aircraftMetadataSource.projection.staleAfterDays,
+      futureToleranceHours:
+        aircraftMetadataSource.projection.futureToleranceHours,
+      expectedCounts: aircraftMetadataSource.projection.expected,
+    },
+    airports: {
+      assetUrl: `/airports/${airportsSource.projection.outputVersion}/airports.geojson`,
+      timeoutMs: 5_000,
+      maximumBytes: 1_536 * 1_024,
+      schemaVersion: airportsSource.projection.schemaVersion,
+      outputVersion: airportsSource.projection.outputVersion,
+      sourceName: airportsSource.source.name,
+      sourceRepositoryUrl: airportsSource.source.repositoryUrl,
+      sourceCommit: airportsSource.source.commit,
+      sourcePublishedAt: airportsSource.source.publishedAt,
+      sourceTermsUrl: airportsSource.source.termsUrl,
+      sourceDocumentationUrl: airportsSource.source.documentationUrl,
+      sourceLicenseName: airportsSource.source.licenseName,
+      expectedBytes: airportsSource.projection.expected.rawBytes,
+      expectedRecords: airportsSource.projection.expected.projectedRecords,
+      expectedSha256: airportsSource.projection.expected.sha256,
+      expectedKindCounts: airportsSource.projection.expected.kindCounts,
+    },
+    ports: {
+      assetUrl: `/ports/${portsSource.projection.outputVersion}/ports.geojson`,
+      timeoutMs: 5_000,
+      maximumBytes: 512 * 1_024,
+      schemaVersion: portsSource.projection.schemaVersion,
+      outputVersion: portsSource.projection.outputVersion,
+      sourceName: portsSource.source.name,
+      sourceRepositoryUrl: portsSource.source.repositoryUrl,
+      sourceTag: portsSource.source.tag,
+      sourceCommit: portsSource.source.commit,
+      sourcePublishedAt: portsSource.source.publishedAt,
+      sourceTermsUrl: portsSource.source.termsUrl,
+      sourceDocumentationUrl: portsSource.source.documentationUrl,
+      sourceLicenseName: portsSource.source.licenseName,
+      expectedRecords: portsSource.projection.expected.projectedRecords,
+      expectedSha256: portsSource.projection.expected.sha256,
+      expectedRankCounts: portsSource.projection.expected.rankCounts,
+    },
+    weather: {
+      endpointBaseUrl: readSameOriginEndpoint(
+        env,
+        'VITE_WEATHER_ENDPOINT',
+        DEFAULTS.weatherEndpoint,
+      ),
+      timeoutMs: 8_000,
+      maximumBytes: 256 * 1_024,
+      maximumStations: 50,
+      futureToleranceMs: 10 * 60_000,
+      requestCooldownMs: 60_000,
+      staleAfterMs: 75 * 60_000,
+      expireAfterMs: 120 * 60_000,
+      sourceName: 'NOAA/NWS Aviation Weather Center',
+      sourceApiUrl: 'https://aviationweather.gov/api/data/metar',
+      sourceDocumentationUrl: 'https://aviationweather.gov/data/api/',
+      sourceTermsUrl: 'https://www.weather.gov/disclaimer',
+      sourceLicenseName: 'U.S. public domain unless marked otherwise',
     },
     marine: {
       restBaseUrl: readEndpoint(

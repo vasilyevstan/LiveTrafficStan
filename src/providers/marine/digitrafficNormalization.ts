@@ -1,5 +1,10 @@
 import { isValidCoordinate } from '../../domain/geo'
-import type { TrafficMarkerIcon, Vessel } from '../../domain/traffic'
+import type {
+  TrafficMarkerIcon,
+  Vessel,
+  VesselCategory,
+  VesselNavigationCategory,
+} from '../../domain/traffic'
 import {
   finiteInteger,
   finiteNumber,
@@ -7,6 +12,7 @@ import {
   nonEmptyString,
   normalizedDirection,
 } from '../guards'
+import { DIGITRAFFIC_PROVIDER_NAME } from './digitrafficCapabilities'
 
 const KNOTS_TO_KPH = 1.852
 
@@ -47,9 +53,17 @@ const validMmsi = (value: unknown) => {
   return mmsi !== undefined && mmsi > 0 ? mmsi : undefined
 }
 
-const validObservedAt = (value: unknown) => {
+const positiveFiniteNumber = (value: unknown) => {
   const timestamp = finiteNumber(value)
   return timestamp !== undefined && timestamp > 0 ? timestamp : undefined
+}
+
+const validTimestamp = (value: unknown) => {
+  const timestamp = positiveFiniteNumber(value)
+  return timestamp !== undefined &&
+    Number.isFinite(new Date(timestamp).getTime())
+    ? timestamp
+    : undefined
 }
 
 const speedKnots = (value: unknown) => {
@@ -68,12 +82,16 @@ const locationRecord = (
   const mmsi = validMmsi(value.mmsi) ?? fallbackMmsi
   const latitude = finiteNumber(value.lat)
   const longitude = finiteNumber(value.lon)
-  const observedAtSeconds = validObservedAt(value.time)
+  const observedAtSeconds = positiveFiniteNumber(value.time)
+  const observedAt =
+    observedAtSeconds === undefined
+      ? undefined
+      : validTimestamp(observedAtSeconds * 1_000)
   if (
     !mmsi ||
     latitude === undefined ||
     longitude === undefined ||
-    !observedAtSeconds ||
+    !observedAt ||
     !isValidCoordinate(latitude, longitude)
   ) {
     return undefined
@@ -83,7 +101,7 @@ const locationRecord = (
     mmsi,
     latitude,
     longitude,
-    observedAt: observedAtSeconds * 1_000,
+    observedAt,
     speedKnots: speedKnots(value.sog),
     courseDegrees: normalizedDirection(value.cog),
     headingDegrees: normalizedDirection(value.heading),
@@ -98,7 +116,7 @@ const metadataRecord = (
   if (!isRecord(value)) return undefined
 
   const mmsi = validMmsi(value.mmsi) ?? fallbackMmsi
-  const timestamp = validObservedAt(value.timestamp)
+  const timestamp = validTimestamp(value.timestamp)
   if (!mmsi || !timestamp) return undefined
 
   return {
@@ -141,7 +159,7 @@ export const parseDigitrafficRestLocations = (
     const mmsi = validMmsi(properties.mmsi ?? feature.mmsi)
     const longitude = finiteNumber(coordinates[0])
     const latitude = finiteNumber(coordinates[1])
-    const observedAt = validObservedAt(properties.timestampExternal)
+    const observedAt = validTimestamp(properties.timestampExternal)
     if (
       !mmsi ||
       longitude === undefined ||
@@ -249,9 +267,63 @@ export const decodeAisEta = (encoded: number | undefined) => {
   return `${pad(month)}-${pad(day)} ${pad(hour)}:${pad(minute)} UTC`
 }
 
+const isOneOf = (value: number | undefined, values: readonly number[]) =>
+  value !== undefined && values.includes(value)
+
+export const vesselCategory = (
+  shipType: number | undefined,
+): VesselCategory => {
+  if (shipType === 30) return 'fishing'
+  if (
+    isOneOf(shipType, [31, 32, 50, 51, 52, 53, 54, 55, 58, 59])
+  ) {
+    return 'tug-service'
+  }
+  if (shipType !== undefined && (
+    (shipType >= 60 && shipType <= 64) ||
+    shipType === 69
+  )) {
+    return 'passenger'
+  }
+  if (shipType !== undefined && (
+    (shipType >= 70 && shipType <= 74) ||
+    shipType === 79
+  )) {
+    return 'cargo'
+  }
+  if (shipType !== undefined && (
+    (shipType >= 80 && shipType <= 84) ||
+    shipType === 89
+  )) {
+    return 'tanker'
+  }
+  if (shipType !== undefined && (
+    (shipType >= 20 && shipType <= 24) ||
+    shipType === 29 ||
+    (shipType >= 33 && shipType <= 37) ||
+    (shipType >= 40 && shipType <= 44) ||
+    shipType === 49 ||
+    (shipType >= 90 && shipType <= 94) ||
+    shipType === 99
+  )) {
+    return 'other'
+  }
+  return 'unknown'
+}
+
 export const vesselTypeName = (shipType: number | undefined) => {
-  if (shipType === undefined || shipType === 0) return undefined
-  if (shipType >= 20 && shipType <= 29) return 'Wing-in-ground craft'
+  if (
+    shipType === undefined ||
+    vesselCategory(shipType) === 'unknown'
+  ) {
+    return undefined
+  }
+  if (
+    (shipType >= 20 && shipType <= 24) ||
+    shipType === 29
+  ) {
+    return 'Wing-in-ground craft'
+  }
   if (shipType === 30) return 'Fishing vessel'
   if (shipType === 31 || shipType === 32) return 'Towing vessel'
   if (shipType === 33) return 'Dredger'
@@ -259,7 +331,12 @@ export const vesselTypeName = (shipType: number | undefined) => {
   if (shipType === 35) return 'Military vessel'
   if (shipType === 36) return 'Sailing vessel'
   if (shipType === 37) return 'Pleasure craft'
-  if (shipType >= 40 && shipType <= 49) return 'High-speed craft'
+  if (
+    (shipType >= 40 && shipType <= 44) ||
+    shipType === 49
+  ) {
+    return 'High-speed craft'
+  }
   if (shipType === 50) return 'Pilot vessel'
   if (shipType === 51) return 'Search and rescue vessel'
   if (shipType === 52) return 'Tug'
@@ -267,27 +344,36 @@ export const vesselTypeName = (shipType: number | undefined) => {
   if (shipType === 54) return 'Anti-pollution vessel'
   if (shipType === 55) return 'Law enforcement vessel'
   if (shipType === 58) return 'Medical transport'
-  if (shipType >= 60 && shipType <= 69) return 'Passenger vessel'
-  if (shipType >= 70 && shipType <= 79) return 'Cargo vessel'
-  if (shipType >= 80 && shipType <= 89) return 'Tanker'
+  if (shipType === 59) return 'Noncombatant vessel'
+  if (vesselCategory(shipType) === 'passenger') return 'Passenger vessel'
+  if (vesselCategory(shipType) === 'cargo') return 'Cargo vessel'
+  if (vesselCategory(shipType) === 'tanker') return 'Tanker'
   return 'Other vessel'
 }
 
 export const vesselMarkerIcon = (
   shipType: number | undefined,
 ): TrafficMarkerIcon => {
-  if (shipType === 30) return 'vessel-fishing'
+  const category = vesselCategory(shipType)
+  if (category === 'fishing') return 'vessel-fishing'
   if (shipType === 52) return 'vessel-tug'
-  if (shipType !== undefined && shipType >= 60 && shipType <= 69) {
-    return 'vessel-passenger'
-  }
-  if (shipType !== undefined && shipType >= 70 && shipType <= 79) {
-    return 'vessel-cargo'
-  }
-  if (shipType !== undefined && shipType >= 80 && shipType <= 89) {
-    return 'vessel-tanker'
-  }
+  if (category === 'passenger') return 'vessel-passenger'
+  if (category === 'cargo') return 'vessel-cargo'
+  if (category === 'tanker') return 'vessel-tanker'
   return 'vessel'
+}
+
+export const vesselNavigationCategory = (
+  status: number | undefined,
+): VesselNavigationCategory => {
+  if (status === 0 || status === 8) return 'underway'
+  if (status === 1) return 'anchored'
+  if (status === 2 || status === 3 || status === 4) return 'restricted'
+  if (status === 5) return 'moored'
+  if (status === 6) return 'aground'
+  if (status === 7) return 'fishing'
+  if (status === 14) return 'other'
+  return 'unknown'
 }
 
 export const navigationStatusName = (status: number | undefined) => {
@@ -302,7 +388,6 @@ export const navigationStatusName = (status: number | undefined) => {
     7: 'Engaged in fishing',
     8: 'Under way sailing',
     14: 'AIS search and rescue transmitter',
-    15: 'Undefined',
   }
   return status === undefined ? undefined : names[status]
 }
@@ -324,7 +409,7 @@ export const normalizeDigitrafficVessel = (
   return {
     id: `vessel:${location.mmsi}`,
     kind: 'vessel',
-    provider: 'Fintraffic Digitraffic',
+    provider: DIGITRAFFIC_PROVIDER_NAME,
     mmsi: location.mmsi,
     position: {
       latitude: location.latitude,
@@ -346,11 +431,15 @@ export const normalizeDigitrafficVessel = (
         ? metadata.imo
         : undefined,
     vesselType: vesselTypeName(metadata?.shipType),
+    vesselCategory: vesselCategory(metadata?.shipType),
     lengthMeters,
     widthMeters,
     draughtMeters: draught,
     eta: decodeAisEta(metadata?.eta),
     navigationStatus: navigationStatusName(location.navigationStatus),
+    navigationCategory:
+      vesselNavigationCategory(location.navigationStatus),
+    metadataObservedAt: metadata?.timestamp,
     markerIcon: vesselMarkerIcon(metadata?.shipType),
     markerScale: Math.min(
       1.35,

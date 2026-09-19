@@ -12,11 +12,122 @@ React and TypeScript provide a small typed component model. Vite supplies the de
 
 OpenFreeMap's Positron style is the V1 base map because it is OSM-based, MapLibre-compatible, key-free, muted, and replaceable through one configuration value. The application adds stronger blue traffic and control styling rather than maintaining a large custom map style.
 
-## ADSB.lol through the Vite proxy
+## ADSB.lol remains the sole aircraft provider
 
-Airplanes.live was checked first but currently requires provider contact before live API access. ADSB.lol is the selected fallback because its point/radius API is open, key-free, ODbL-licensed, and returned Tallinn aircraft during verification.
+The dated
+[aircraft-provider evaluation](aircraft-provider-evaluation.md) retains
+ADSB.lol because its point/radius API remains the smallest compatible,
+currently keyless, ODbL-licensed option.
 
-ADSB.lol does not currently provide browser CORS headers. V1 uses Vite's development and preview proxy so the browser calls a same-origin path. No secret is involved. A public static deployment will require an equivalent serverless proxy or a provider change; that work remains outside V1.
+Airplanes.live now publishes a closely compatible v2 contract, but its current
+endpoint is contact-gated and its API-specific data rights, rate, caching,
+attribution, and public-display terms are unresolved. OpenSky's current terms
+require a written license for operational REST use in a live product, and its
+bounding-box state-vector contract, OAuth credentials, and daily credits add
+material complexity.
+
+ADSB.lol does not currently provide general browser CORS headers. Vite handles
+development and preview; production uses a strict same-origin Cloudflare
+Worker. No provider secret is involved. The Worker validates only the current
+aircraft point route, uses a total deadline and body cap, preserves provider
+status/body/`Retry-After`, disables invocation URL logs, and does not cache live
+responses.
+
+No provider selector, automatic failover, aggregation, or alternative adapter
+is added. Those mechanisms would introduce provenance, duplicate-resolution,
+licensing, credential, and operational complexity without a demonstrated
+requirement. The existing application-owned provider interface is sufficient
+for a future deliberate replacement.
+
+## Aircraft route enrichment remains blocked
+
+The dated
+[aircraft route enrichment evaluation](aircraft-route-enrichment-evaluation.md)
+found no authorized source that can associate origin and destination with the
+selected flight occurrence using provider identity plus bounded temporal
+context.
+
+Keyless standing-route sources are callsign-only, and ADSB.lol's optional
+route path adds only geographic plausibility. OpenSky supplies historical
+track-derived estimated airports and requires a written agreement for
+operational REST use. FlightAware AeroAPI and AeroDataBox have credible
+operational fields but require unconfigured accounts, server-held credentials,
+approved budgets, applicable display/combination/retention terms, and
+provider-specific occurrence matching.
+
+Issue #44 is therefore the explicit source-authorization blocker. No provider
+interface, route fields, unavailable-only UI, Worker endpoint, secret name,
+cache, or placeholder response is added before that gate is complete.
+
+A future route association must use a provider-issued occurrence/leg identity
+plus bounded temporal context. Callsign and registration are corroborating
+evidence only. Movement, heading, position, nearest airports, geographic
+plausibility, and static Mictronics metadata never infer a route.
+
+Route enrichment starts only after explicit aircraft selection. Live ADSB.lol
+polling, camera movement, trails, map updates, metadata refreshes, and provider
+retry never start or refresh it. Failure, expiry, throttle, cancellation, or
+ambiguity cannot alter the live marker, position age, freshness, aircraft
+cadence/backoff, trails, static metadata, selection, map health, or another
+provider.
+
+The source blocker and Issue #39 remain separate: source authorization can be
+proved before a public deployment exists, but credentialed route enrichment
+cannot ship until the selected secret-holding production path is deployed and
+validated.
+
+## Airport arrival and departure boards remain blocked
+
+Airport/time-window boards are independent of selected-flight route lookup.
+The dated
+[airport board evaluation](airport-board-evaluation.md)
+found no currently configured and authorized source with the complete
+account/plan, rights, retention, source-age, Tallinn-sample, quota, cost, and
+server-held credential contract required by Issue #5.
+
+OpenSky's airport flights are previous-day-or-earlier overnight
+reconstructions with estimated airports/times, not current operational rows.
+FlightAware AeroAPI and AeroDataBox are technically credible but require
+project-specific commercial authorization and unresolved combination,
+retention, source-age, and plan evidence. aviationstack is likewise
+unconfigured. Human-facing airport, airline, and tracker pages will not be
+scraped.
+
+Issue #46 is therefore the explicit board authorization blocker. No board
+component, domain record, Worker route, credential name, cache, placeholder,
+or mock production response is added. A future board failure must remain
+independent of ADS-B, marine traffic, static airport context, and the map.
+
+## Cloudflare Worker plus Static Assets
+
+Cloudflare Workers with Static Assets is the smallest production boundary for
+the Vite client and required ADSB.lol/AWC proxies. Static files bypass Worker
+execution; only `/api` and `/api/*` invoke code. The fixed aircraft and METAR
+routes construct hard-coded upstream destinations and cannot act as general
+forwarders.
+
+The free plan's 100,000 dynamic requests/day covers about 23 continuously
+active browser sessions at the application's nominal 4,320 request/day upper
+envelope, while static asset requests are documented as free and unlimited.
+This is a budget estimate, not ADSB.lol capacity permission or an SLA.
+
+Netlify is technically viable but places production deploys, bandwidth,
+requests, and function compute in one 300-credit monthly budget without
+providing a capability this two-route application needs. GitHub Pages plus a
+separate Worker would add a second deployment unit or split-origin CORS.
+
+Fingerprint-named assets use immutable browser caching. Aircraft responses use
+upstream and downstream `no-store`; successful METAR responses use the
+source-aligned 60-second guidance. No shared application cache or rate-control
+service is added without measurements and provider-policy evidence. Worker
+observability is disabled because routes contain rounded camera coordinates or
+visible station IDs.
+
+Deployments require an exact current `main` SHA, rerun the complete validation
+suite, serialize production operations, deploy code and assets atomically, and
+verify matching client/MapLibre-worker bytes plus bounded provider smoke.
+Account selection and credentials remain the explicit external blocker in
+Issue #39 rather than a client-side secret or temporary-account workaround.
 
 ## Digitraffic MQTT plus REST metadata
 
@@ -30,6 +141,123 @@ viewport's enclosing circle is allowed only after the five-minute query refresh
 gate. Automatic reconnect
 attempts are spaced 15 seconds apart to remain within Digitraffic's documented
 connection allowance.
+
+## Digitraffic remains the sole marine provider
+
+The dated
+[marine-provider evaluation](marine-provider-evaluation.md) retains
+Fintraffic Digitraffic because it remains the only reviewed provider that is
+keyless, browser-native, and licensed under clear CC BY 4.0 terms for this
+public map.
+
+Digitraffic is represented as a regional source with an unknown exact coverage
+boundary. The UI describes transport as connected separately from coverage and
+says how many ships are shown rather than treating zero as proof that no
+vessels exist. Officially documented Class A scope and upstream fishing-vessel
+filtering remain explicit.
+
+AISstream.io requires a server-side key and relay while its returned-data
+rights remain unresolved. Datalastic requires a paid server-held key, has a
+50-NM/92.6-km radius limit, and does not establish permission to expose raw
+coordinates in this public client. Kpler/MarineTraffic requires a commercial
+agreement for public display and redistribution.
+
+No relay, provider selector, automatic geographic selection, alternate
+adapter, failover, aggregation, or MMSI source-precedence framework is added.
+Browser-local filtering of Digitraffic's all-published-vessels MQTT stream
+reduces display work, not incoming network bandwidth.
+
+## Local vessel discovery after provider normalization
+
+Vessel search and filters run only on normalized, fresh, exact-viewport
+entities in React. This keeps one Digitraffic MQTT subscription, preserves the
+five-minute REST/metadata gates and provider-owned caches, and avoids adding a
+server search endpoint or a second scheduler.
+
+The released 50 metre minimum remains the default. Search covers only current
+name, callsign, MMSI, and IMO fields. Category, navigation, reported-speed, and
+inclusive length filters combine with AND. Unknown values are explicit:
+`all` includes them, specific known choices exclude them, and missing length is
+included only when the user opts in. One knot is exactly 1.852 km/h and zero is
+a known speed. The accessible result list is deterministically ordered and
+bounded to 20 while every match remains on the map.
+
+AIS reserved subcodes are not treated as defined categories. Passenger is
+60-64 or 69, cargo is 70-74 or 79, tanker is 80-84 or 89, and the reserved
+subcodes between those values remain unknown. Search/filter state never mutates
+the provider snapshot, and hiding SHIPS keeps matching counts truthful while
+disabling result selection.
+
+## Local aircraft discovery after viewport and freshness filtering
+
+Aircraft search runs over current `DisplayAircraft[]` after provider
+normalization, exact viewport filtering, freshness calculation, and expiry.
+It performs case-insensitive literal matching over callsign, registration,
+ICAO24, and provider-reported type, ordered by exact, prefix, then substring
+match with stable display-order ties.
+
+The input is bounded to 64 characters and the accessible result list to 20.
+Search does not hide nonmatching markers, move the camera, change Home, query a
+provider or geocoder, load metadata while typing, or create another scheduler.
+Selecting a result reuses the existing traffic details, trail, and
+selected-aircraft metadata path.
+
+## Pinned Natural Earth ports as optional context
+
+Natural Earth Ports `v5.1.2` at commit
+`f1890d9f152c896d250a77557a5751a93d494776` is selected as a compact
+public-domain geographic context layer. The deterministic projection retains
+only Natural Earth ID, name, scalerank, and coordinates: 1,081 points,
+154,218 raw bytes, and 22,482 deterministic gzip-9 bytes.
+
+The source is not a comprehensive or operational port database. It omits
+relevant regional terminals, and Natural Earth warns that some points may be
+approximate by up to 20 miles. The UI and details therefore say generalized
+and incomplete and do not show or infer country, facilities, berths, capacity,
+operational status, port calls, nearby-vessel relationships, destination, or
+ETA.
+
+The layer is off by default and makes no startup request. One immutable
+same-origin asset is loaded lazily with a deadline, byte cap, SHA-256, strict
+grammar/count/rank validation, and fulfilled-only session caching. Failure is
+local to the PORTS control. Ports use separate IDs, selection, styling, and
+details; traffic picking retains priority, and ports never enter traffic
+counts, trails, provider health, or provider queries.
+
+NGA World Port Index was not selected for this slice because its official CSV
+export returned HTTP 403 during review, so a stable current export and
+dataset-specific rights/update contract could not be inspected reproducibly.
+That does not make Natural Earth equivalent in completeness; it supports only
+the narrower generalized-context feature.
+
+## Pinned OurAirports points as optional context
+
+OurAirports at commit
+`5ed85eed28722bea80ebdde9e255e09b1e7317a8` is selected for the
+static airport layer. Its Public Domain terms permit the projection, request
+credit, and disclaim accuracy and fitness. The source's persistent numeric ID
+is retained; `ident`, explicit ICAO, and explicit IATA values remain separate.
+
+The deterministic projection includes all 5,280 current large and medium
+airport records rather than treating `scheduled_service` as a live operational
+guarantee. It is one 1,329,838-byte immutable GeoJSON asset, compressed to
+225,625 deterministic gzip-9 bytes.
+
+The layer is off by default and makes no startup request. One same-origin load
+is guarded by a deadline, body cap, exact bytes, SHA-256, full grammar/count
+validation, and fulfilled-only session caching. Large and medium points use
+separate zoom thresholds, render above generalized ports and below traffic,
+and remain available at high zoom. Valid wide-view geometry can continue to
+filter and select this static context even while the 100 km live-traffic gate
+is paused.
+
+A bounded "Airports in this view" list gives keyboard users the same static
+selection path as map users. Airport, port, weather, and traffic selections are
+mutually exclusive. Exact traffic and traffic touch fallback retain priority;
+weather, airport, and port use that order within exact and validated-touch
+context hits. Static details never claim navigation authority, operating
+status, current service, route, arrival, departure, or a relationship to a
+visible aircraft.
 
 ## Application-owned traffic models
 
@@ -49,14 +277,51 @@ traffic; category is conveyed by shape rather than a new color system.
 Normalization maps only trusted provider fields to application-owned icon keys.
 ADS-B A1/A2 use light fixed-wing, A5 heavy fixed-wing, and A7 helicopter.
 A3/A4/A6 retain their existing labels and scales but use generic fixed-wing
-art. AIS type 30 uses fishing, type 52 tug, 60-69 passenger, 70-79 cargo, and
-80-89 tanker. Every unsupported or missing category uses the corresponding
-generic fallback.
+art. AIS type 30 uses fishing, type 52 tug, 60-64/69 passenger, 70-74/79 cargo, and
+80-84/89 tanker. Reserved subcodes and every unsupported or missing category
+use the corresponding generic fallback.
 
 No model/type string, speed, name, route, operator, position, or movement is
 used to infer a category. This keeps the vocabulary truthful and avoids a
 classification service or dataset. The ten images are generated once per theme
 and reinstalled through the existing single-map style lifecycle.
+
+## Pinned static selected-aircraft metadata
+
+The dated
+[aircraft metadata evaluation](aircraft-metadata-evaluation.md) selects the
+Mictronics aircraft-database at commit
+`1724959f854f540c95f11872bcd377ecfeb698a2`. Its exports are explicitly offered
+under ODC-By 1.0, allowing a compact derivative database with visible
+attribution and the full license conveyed alongside the data.
+
+The projection retains only ICAO24, registration, type, model description,
+configuration, wake category, and explicit duplicate-registration ambiguity.
+Owner, operator, photos, notes, and the unlinked operator directory are
+excluded. Registered owner or a callsign prefix is not the current operating
+airline, so the feature deliberately adds no airline claim.
+
+Static same-origin assets are smaller and more reliable than adding a runtime
+metadata API, credential, quota, or server cache. Nothing loads at startup.
+Selecting an aircraft loads one index/type asset and one two-hex-prefix shard
+under a five-second total deadline and byte caps. A fulfilled index plus eight
+fulfilled shards are the only caches; partial, malformed, rejected, or aborted
+work is not cached.
+
+Exact ICAO24 is primary. Present live registration and type must agree, and
+duplicated source registrations are unavailable. An exact ICAO24 lookup without
+live registration is labeled ICAO24-only and keeps the source registration
+distinct. There is no registration fallback, punctuation stripping, fuzzy
+match, owner/operator lookup, or callsign inference.
+
+The source publication instant is dataset-wide age, not per-aircraft
+verification. The snapshot is valid through 45 days, rejects dates more than
+24 hours ahead of the client clock, and reevaluates while open without another
+request. Updating any pin, schema, generator, or generated bytes requires a new
+immutable output URL.
+
+This metadata never changes the provider-reported marker vocabulary. Model,
+configuration, and wake category are selected-object context only.
 
 ## Explicit MapLibre worker bundling
 
@@ -144,11 +409,64 @@ timeout. A timeout therefore keeps the current home usable and must remain
 retryable without weakening the one-shot, rounded, session-only privacy
 contract.
 
-## Explicit persisted light and dark themes
+## Explicit coordinates and Photon forward search
+
+One compact Location form handles both direct coordinates and named places.
+Strict decimal `latitude, longitude` input is recognized before any provider
+path, validated against coordinate ranges, rounded with the existing
+three-decimal privacy precision, and navigated locally. Named text is sent only
+after explicit submit; typing never schedules network work.
+
+Photon's public endpoint was selected after a dated comparison with the public
+Nominatim instance. Photon's current terms permit project use subject to fair
+use, throttling, service changes, and no availability guarantee. Public
+Nominatim's official one-request-per-second maximum applies to the sum of all
+users of an application, which a static browser-local limiter cannot enforce.
+Adding a proxy solely to approximate that aggregate policy would be larger than
+the required feature.
+
+The Photon adapter is replaceable through one validated HTTPS or root-relative
+configuration value, but the checked deployment adds no geocoder proxy or
+credential. Requests omit browser credentials and custom `User-Agent` headers,
+carry no geolocation bias, and return at most five normalized Point results.
+One active request, revision cancellation, a one-second local submit cooldown,
+an eight-second total timeout, bounded session caching, and explicit `429`
+deadlines contain load without claiming a provider quota. Search failure leaves
+coordinates and the map usable.
+
+Search result labels and submitted text are not persisted. The UI discloses
+that submitted text appears in the Photon URL and that the provider receives
+ordinary network metadata. Visible Photon and OpenStreetMap attribution remains
+next to the control.
+
+## Separate Home and explicit-view intent
+
+Session Home is a Center destination, not the current search target. Coordinate
+navigation and Photon results change the view without changing Home. A later
+Center action therefore returns to the most recent configured or rounded
+geolocated Home.
+
+A small revision-based intent boundary prevents asynchronous geolocation from
+overriding newer explicit work. Search submission, coordinate navigation,
+Center, Use Location, and trusted manual camera movement win over an older
+automatic location callback. That older callback may still update Home
+silently, so a later Center can use it. Programmatic navigation retains its
+label, while trusted canvas movement changes the label to `Custom view`.
+
+Committed navigation clears selection and resets old retained trail points,
+then uses the existing settled full-canvas viewport pipeline. It does not
+recreate MapLibre, change filters/layers/themes, add a provider scheduler, or
+reconnect marine MQTT.
+
+## Explicit Auto, Light, and Dark theme preference
 
 The Positron presentation remains the default Light theme. V1.1 provides an
 explicit Dark choice backed by the OpenFreeMap dark style and CSS custom
-properties. Only the selected theme is persisted.
+properties. Issue #10 adds explicit Auto without changing the default: missing,
+invalid, or inaccessible storage still resolves to Light. Auto follows
+`prefers-color-scheme`, including later system changes, while explicit Light
+and Dark remain overrides. Pre-paint and React resolution use the same
+contract to avoid an initial wrong-theme flash.
 
 MapLibre remains a single instance. Because `map.setStyle` removes custom
 style-owned state, the map layer installer restores traffic images,
@@ -161,6 +479,54 @@ and two-tone edge contrast while retaining silhouettes and heading/course
 rotation. Image IDs are replaced through MapLibre when the theme changes,
 including when both theme options reference the same style URL. The image cache
 contains only the bounded light and dark sets.
+
+## Separate optional traffic clustering
+
+Clustering is a session-only display preference and starts off. Aircraft and
+vessels keep separate MapLibre GeoJSON sources, cluster circles, and `AIR`/`SEA`
+count labels so unlike traffic kinds are never combined. Filtering, viewport
+eligibility, freshness, and expiry run before source data reaches clustering.
+
+Cluster IDs are transient MapLibre implementation details, not application
+entity IDs. A click expands the exact cluster under generation guards; touch
+entity fallback ignores clusters. Fixed source creation uses a 42 CSS-pixel
+radius, minimum count 3, and maximum cluster zoom 10. Runtime toggles change
+only the supported `cluster` source option.
+
+MapLibre rebuilds the Supercluster index on every GeoJSON `setData()` even
+above the visible cluster zoom. Per-frame interpolation is therefore
+suspended whenever clustering is enabled and stable snapshot signatures skip
+unchanged freshness frames. This avoids a 20 fps index rebuild without
+changing provider acquisition, source observations, selection, or trails.
+
+## Bounded AWC METAR/SPECI observation overlay
+
+NOAA/NWS Aviation Weather Center is selected for one optional
+observation-based context layer. Its official API supplies worldwide METAR
+terminal observations and SPECI updates, publishes a 100 request/minute limit,
+requests a public User-Agent, and explicitly does not permit browser CORS.
+The existing Cloudflare boundary therefore adds one strict credential-free
+same-origin route rather than a client-side workaround or general proxy.
+
+The station set comes only from explicit four-letter ICAO codes in the pinned
+large/medium OurAirports projection inside the eligible viewport. At most 50
+sorted unique IDs are sent; an over-limit view asks the user to zoom in rather
+than silently truncating coverage. No station, weather, route, or airport
+operation is inferred from traffic, movement, proximity, `ident`, or IATA.
+
+There is no startup request and no periodic poller. First enable, station-set
+changes, refresh, and retry share a session-lived 60-second start gate and
+longer provider `Retry-After` deadlines. Reports become stale after 75 minutes
+and expire after 120 minutes. Hidden, disabled, superseded, and unmounted work
+aborts; fulfilled same-view data survives hide/show and style changes in memory
+only.
+
+AWC reports are generally U.S. public-domain information unless marked
+otherwise. The app shows source and retrieval times, visible attribution,
+terms, and modified-presentation wording. METAR/SPECI is observed weather, not
+a forecast, operational status, route, board, or coverage guarantee. Radar,
+forecast processing, paid services, persistent weather storage, provider
+selection, and shared application caching remain out of scope.
 
 ## `dev`-based pull request delivery
 

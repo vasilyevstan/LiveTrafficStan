@@ -15,6 +15,8 @@ const vessel = (
   kind: 'vessel',
   provider: 'test',
   mmsi: Number(id),
+  vesselCategory: 'unknown',
+  navigationCategory: 'unknown',
   position: {
     latitude,
     longitude: 24,

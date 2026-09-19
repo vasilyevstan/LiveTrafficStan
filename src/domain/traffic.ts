@@ -1,5 +1,22 @@
 export type TrafficKind = 'aircraft' | 'vessel'
 export type TrafficFreshness = 'live' | 'stale'
+export type VesselCategory =
+  | 'cargo'
+  | 'tanker'
+  | 'passenger'
+  | 'fishing'
+  | 'tug-service'
+  | 'other'
+  | 'unknown'
+export type VesselNavigationCategory =
+  | 'underway'
+  | 'anchored'
+  | 'moored'
+  | 'restricted'
+  | 'aground'
+  | 'fishing'
+  | 'other'
+  | 'unknown'
 export const TRAFFIC_MARKER_ICONS = [
   'aircraft',
   'aircraft-light',
@@ -48,6 +65,8 @@ export interface Aircraft extends TrafficEntityBase {
 export interface Vessel extends TrafficEntityBase {
   kind: 'vessel'
   mmsi: number
+  vesselCategory: VesselCategory
+  navigationCategory: VesselNavigationCategory
   name?: string
   vesselType?: string
   imo?: number
@@ -58,6 +77,7 @@ export interface Vessel extends TrafficEntityBase {
   destination?: string
   eta?: string
   navigationStatus?: string
+  metadataObservedAt?: number
 }
 
 export type TrafficEntity = Aircraft | Vessel

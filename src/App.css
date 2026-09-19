@@ -188,6 +188,8 @@
   top: 16px;
   right: 16px;
   width: 310px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
   padding: 14px;
   border-radius: 14px;
 }
@@ -226,7 +228,16 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.control-options--three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .control-options button,
+.location-search__input-row button,
+.location-results button,
+.vessel-discovery button,
+.vessel-results button,
+.ports-status button,
 .close-button {
   min-height: 32px;
   border: 1px solid var(--button-border);
@@ -244,6 +255,16 @@
 
 .control-options button:hover,
 .control-options button:focus-visible,
+.location-search__input-row button:hover,
+.location-search__input-row button:focus-visible,
+.location-results button:hover,
+.location-results button:focus-visible,
+.vessel-discovery button:hover,
+.vessel-discovery button:focus-visible,
+.vessel-results button:hover,
+.vessel-results button:focus-visible,
+.ports-status button:hover,
+.ports-status button:focus-visible,
 .close-button:hover,
 .close-button:focus-visible {
   color: var(--button-hover-text);
@@ -258,12 +279,237 @@
   box-shadow: inset 0 0 18px var(--button-active-shadow);
 }
 
-.control-options button:disabled {
+.control-options button:disabled,
+.location-search__input-row button:disabled,
+.location-search__input-row input:disabled {
   color: var(--button-disabled-text);
   border-color: var(--button-disabled-border);
   background: var(--button-disabled-background);
   cursor: not-allowed;
   opacity: 0.72;
+}
+
+.vessel-discovery button:disabled,
+.vessel-discovery input:disabled,
+.vessel-discovery select:disabled {
+  color: var(--button-disabled-text);
+  border-color: var(--button-disabled-border);
+  background: var(--button-disabled-background);
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.location-search__form > label {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--legend-text);
+  font-size: 0.64rem;
+}
+
+.location-search__input-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 5px;
+}
+
+.location-search__input-row input {
+  min-width: 0;
+  min-height: 34px;
+  padding: 0 9px;
+  border: 1px solid var(--button-border);
+  border-radius: 8px;
+  color: var(--button-text);
+  background: var(--button-background);
+  font-size: 0.72rem;
+}
+
+.location-search__input-row input::placeholder {
+  color: var(--button-disabled-text);
+}
+
+.location-search__input-row input:hover,
+.location-search__input-row input:focus-visible {
+  border-color: var(--button-hover-border);
+  outline: none;
+}
+
+.location-search__input-row input[aria-invalid='true'] {
+  border-color: var(--error-border);
+}
+
+.location-search__input-row button {
+  min-width: 62px;
+  padding: 0 9px;
+}
+
+.location-search__active {
+  overflow: hidden;
+  color: var(--summary-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.location-search__active strong {
+  color: var(--summary-strong);
+}
+
+.location-search__error {
+  color: var(--error-text);
+}
+
+.location-results {
+  display: grid;
+  max-height: 142px;
+  gap: 5px;
+  overflow-y: auto;
+  margin: 7px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.location-results button {
+  width: 100%;
+  min-height: 34px;
+  padding: 7px 9px;
+  text-align: left;
+  line-height: 1.3;
+}
+
+.location-search a {
+  color: var(--accent-line);
+}
+
+.control-panel a {
+  color: var(--accent-line);
+}
+
+.ports-status {
+  display: grid;
+  gap: 5px;
+}
+
+.ports-status button {
+  justify-self: start;
+  min-height: 27px;
+  padding: 0 8px;
+}
+
+.vessel-discovery__label,
+.vessel-discovery__filters label > span {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--legend-text);
+  font-size: 0.64rem;
+}
+
+.vessel-discovery__search-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 5px;
+}
+
+.vessel-discovery input[type='search'],
+.vessel-discovery select {
+  min-width: 0;
+  min-height: 34px;
+  width: 100%;
+  padding: 0 9px;
+  border: 1px solid var(--button-border);
+  border-radius: 8px;
+  color: var(--button-text);
+  background: var(--button-background);
+  font: inherit;
+  font-size: 0.7rem;
+}
+
+.vessel-discovery input:hover,
+.vessel-discovery input:focus-visible,
+.vessel-discovery select:hover,
+.vessel-discovery select:focus-visible {
+  border-color: var(--button-hover-border);
+  outline: none;
+}
+
+.vessel-discovery__search-row button {
+  min-width: 58px;
+  padding: 0 8px;
+}
+
+.vessel-discovery__filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 7px;
+  margin-top: 9px;
+}
+
+.vessel-discovery__checkbox {
+  display: flex;
+  grid-column: 1 / -1;
+  gap: 7px;
+  align-items: center;
+  color: var(--summary-text);
+  font-size: 0.66rem;
+}
+
+.vessel-discovery__checkbox input {
+  margin: 0;
+}
+
+.vessel-discovery__checkbox > span {
+  margin: 0 !important;
+}
+
+.vessel-discovery__summary {
+  display: grid;
+  gap: 4px;
+  margin-top: 9px;
+}
+
+.vessel-discovery__summary p {
+  margin: 0;
+  color: var(--summary-text);
+  font-size: 0.64rem;
+  line-height: 1.35;
+}
+
+.vessel-discovery__summary p + p {
+  color: var(--note-muted);
+}
+
+.vessel-discovery__summary button {
+  justify-self: start;
+  min-height: 28px;
+  padding: 0 9px;
+}
+
+.vessel-results {
+  display: grid;
+  max-height: 156px;
+  gap: 5px;
+  overflow-y: auto;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vessel-results button {
+  display: grid;
+  width: 100%;
+  min-height: 38px;
+  padding: 6px 8px;
+  text-align: left;
+}
+
+.vessel-results strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vessel-results span {
+  margin-top: 2px;
+  color: var(--note-muted);
+  font-size: 0.6rem;
 }
 
 .control-note {
@@ -342,6 +588,44 @@
   margin: 3px 0 0;
   color: var(--detail-text);
   font-size: 0.78rem;
+}
+
+.aircraft-metadata {
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--detail-divider);
+}
+
+.aircraft-metadata h3 {
+  margin: 0;
+  color: var(--detail-heading);
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.aircraft-metadata__grid {
+  margin-top: 7px;
+}
+
+.metadata-status,
+.metadata-attribution {
+  margin: 8px 0 0;
+  color: var(--detail-text);
+  font-size: 0.7rem;
+  line-height: 1.45;
+}
+
+.metadata-status--error {
+  color: var(--error-text);
+}
+
+.metadata-attribution {
+  color: var(--detail-label);
+}
+
+.metadata-attribution a {
+  color: var(--accent-line);
 }
 
 .map-error {
@@ -430,7 +714,9 @@
     right: 8px;
     left: 8px;
     width: auto;
-    padding: 10px 11px;
+    max-height: min(58vh, calc(100vh - 134px));
+    overflow-y: auto;
+    padding: 10px 11px 126px;
   }
 
   .control-group + .control-group {
@@ -500,7 +786,8 @@
     top: 112px;
     right: 6px;
     left: 6px;
-    padding: 8px 9px;
+    max-height: min(58vh, calc(100vh - 118px));
+    padding: 8px 9px 126px;
   }
 
   .control-group + .control-group {
@@ -532,6 +819,9 @@
   }
 
   .control-options button,
+  .vessel-discovery button,
+  .location-search__form button,
+  .location-results button,
   .close-button,
   .app-shell,
   .brand-panel,

@@ -206,4 +206,243 @@ describe('DigitrafficMarineProvider query updates', () => {
     expect(onStatus.mock.calls.at(-1)?.[0]).toMatchObject({ paused: true })
     provider.stop()
   })
+
+  it('keeps a resumed stream connecting until MQTT succeeds again', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(1_800_000_000_000)
+    vi.stubGlobal('window', {
+      setTimeout: globalThis.setTimeout,
+      clearTimeout: globalThis.clearTimeout,
+      setInterval: globalThis.setInterval,
+      clearInterval: globalThis.clearInterval,
+    })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: string | URL | Request) =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify(
+              String(input).endsWith('/api/ais/v1/vessels')
+                ? []
+                : { features: [] },
+            ),
+            {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' },
+            },
+          ),
+        ),
+      ),
+    )
+
+    const onStatus = vi.fn()
+    const provider = new DigitrafficMarineProvider({
+      config: createAppConfig({}).marine,
+      query: query(59.437, 24.754),
+      callbacks: {
+        onSnapshot: vi.fn(),
+        onStatus,
+      },
+    })
+    const internals = provider as unknown as {
+      openMqttClient: (generation: number) => Promise<void>
+      noteLiveSuccess: () => void
+      noteRestSuccess: () => void
+    }
+    vi.spyOn(internals, 'openMqttClient').mockResolvedValue()
+
+    provider.start()
+    await flush()
+    internals.noteLiveSuccess()
+    expect(onStatus.mock.calls.at(-1)?.[0]).toMatchObject({
+      phase: 'live',
+      paused: false,
+    })
+
+    provider.setPaused(true)
+    provider.setPaused(false)
+    await flush()
+    internals.noteRestSuccess()
+
+    expect(onStatus.mock.calls.at(-1)?.[0]).toMatchObject({
+      phase: 'loading',
+      paused: false,
+      updating: false,
+    })
+
+    internals.noteLiveSuccess()
+    expect(onStatus.mock.calls.at(-1)?.[0]).toMatchObject({
+      phase: 'live',
+      paused: false,
+    })
+    provider.stop()
+  })
+
+  it('measures the existing MQTT path without starting another connection', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(1_800_000_000_000)
+    vi.stubGlobal('window', {
+      setTimeout: globalThis.setTimeout,
+      clearTimeout: globalThis.clearTimeout,
+      setInterval: globalThis.setInterval,
+      clearInterval: globalThis.clearInterval,
+    })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: string | URL | Request) =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify(
+              String(input).endsWith('/api/ais/v1/vessels')
+                ? []
+                : { features: [] },
+            ),
+            {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' },
+            },
+          ),
+        ),
+      ),
+    )
+
+    const onDiagnostics = vi.fn()
+    const onSnapshot = vi.fn()
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const config = createAppConfig({}).marine
+    const provider = new DigitrafficMarineProvider({
+      config,
+      query: query(59.437, 24.754),
+      callbacks: {
+        onSnapshot,
+        onStatus: vi.fn(),
+      },
+      diagnostics: {
+        sampleIntervalMs: 0,
+        onSnapshot: onDiagnostics,
+      },
+    })
+    const internals = provider as unknown as {
+      openMqttClient: (generation: number) => Promise<void>
+      handleMqttMessage: (topic: string, payload: Uint8Array) => void
+      flush: (reason: 'immediate' | 'scheduled') => void
+    }
+    const openMqttClient = vi
+      .spyOn(internals, 'openMqttClient')
+      .mockResolvedValue()
+    const encode = (value: unknown) =>
+      new TextEncoder().encode(JSON.stringify(value))
+    const payloads = [
+      encode({
+        timestamp: 1_800_000_000_000,
+        name: 'ÅLAND 🚢',
+        refA: 60,
+        refB: 20,
+      }),
+      encode({
+        time: 1_800_000_000,
+        lat: 59.44,
+        lon: 24.75,
+        sog: 10,
+      }),
+      encode({
+        time: 1_800_000_001,
+        lat: 59.45,
+        lon: 24.76,
+        sog: 11,
+      }),
+      new TextEncoder().encode('{'),
+      encode({ updated: 1_800_000_001 }),
+    ]
+
+    provider.start()
+    await flush()
+    expect(openMqttClient).toHaveBeenCalledTimes(1)
+
+    internals.handleMqttMessage(
+      'vessels-v2/230123456/metadata',
+      payloads[0]!,
+    )
+    internals.handleMqttMessage(
+      'vessels-v2/230123456/location',
+      payloads[1]!,
+    )
+    internals.handleMqttMessage(
+      'vessels-v2/230123456/location',
+      payloads[2]!,
+    )
+    internals.handleMqttMessage(
+      'vessels-v2/230123456/location',
+      payloads[3]!,
+    )
+    internals.handleMqttMessage('vessels-v2/status', payloads[4]!)
+
+    await vi.advanceTimersByTimeAsync(1_000)
+    expect(warn).toHaveBeenCalledWith(
+      'Ignored malformed Digitraffic location: invalid JSON',
+    )
+
+    const snapshot = onDiagnostics.mock.calls.at(-1)?.[0]
+    expect(snapshot).toMatchObject({
+      messages: {
+        total: 5,
+        accepted: 4,
+        invalid: 1,
+        payloadBytes: payloads.reduce(
+          (total, payload) => total + payload.byteLength,
+          0,
+        ),
+        byKind: {
+          location: 3,
+          metadata: 1,
+          status: 1,
+          other: 0,
+        },
+      },
+      batching: {
+        scheduledFlushes: 1,
+        messagesProcessedByFlush: 3,
+        maxMessagesPerFlush: 3,
+      },
+      cache: {
+        locations: 1,
+        maxLocations: 1,
+        metadata: 1,
+        maxMetadata: 1,
+      },
+    })
+    expect(openMqttClient).toHaveBeenCalledTimes(1)
+    expect(onSnapshot.mock.calls.at(-1)?.[0]?.[0]).toMatchObject({
+      mmsi: 230123456,
+      position: {
+        latitude: 59.45,
+        longitude: 24.76,
+        observedAt: 1_800_000_001_000,
+      },
+    })
+
+    vi.setSystemTime(
+      1_800_000_001_000 + config.expireAfterMs + 1,
+    )
+    internals.flush('immediate')
+    expect(onDiagnostics.mock.calls.at(-1)?.[0]).toMatchObject({
+      cache: {
+        locations: 0,
+        maxLocations: 1,
+        metadata: 1,
+        maxMetadata: 1,
+        expiredLocations: 1,
+      },
+    })
+    expect(onSnapshot.mock.calls.at(-1)?.[0]).toEqual([])
+
+    provider.stop()
+    const callsAfterStop = onDiagnostics.mock.calls.length
+    provider.stop()
+    internals.handleMqttMessage(
+      'vessels-v2/230123456/location',
+      payloads[1]!,
+    )
+    expect(onDiagnostics).toHaveBeenCalledTimes(callsAfterStop)
+  })
 })

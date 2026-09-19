@@ -1,42 +1,166 @@
-import type { Theme } from '../app/theme'
+import type { ThemePreference } from '../app/theme'
+import type { PlaceSearchState } from '../app/PlaceSearchController'
+import type { AppCenter } from '../config/appConfig'
+import type { Airport } from '../domain/airports'
+import type { DisplayAircraft, DisplayVessel } from '../domain/traffic'
+import type { VesselFilterState } from '../domain/vesselFilters'
+import type { DisplayWeatherObservation } from '../domain/weatherObservations'
+import type { PlaceSearchResult } from '../providers/geocoding/photonProvider'
+import { AircraftDiscovery } from './AircraftDiscovery'
+import { AirportContext } from './AirportContext'
+import { LocationSearch } from './LocationSearch'
+import { VesselDiscovery } from './VesselDiscovery'
+import { WeatherContext } from './WeatherContext'
 
 interface TrafficControlsProps {
-  vesselLengthPresetsMeters: readonly number[]
-  minimumVesselLengthMeters: number
-  onMinimumVesselLengthChange: (lengthMeters: number) => void
+  aircraftQuery: string
+  aircraftResults: readonly DisplayAircraft[]
+  totalAircraft: number
+  aircraftEmptyMessage: string
+  onAircraftQueryChange: (query: string) => void
+  onAircraftSelect: (id: string) => void
+  vesselFilters: VesselFilterState
+  vesselResults: readonly DisplayVessel[]
+  totalVessels: number
+  vesselEmptyMessage: string
+  onVesselFiltersChange: (filters: VesselFilterState) => void
+  onVesselSelect: (id: string) => void
   aircraftVisible: boolean
   onAircraftVisibleChange: (visible: boolean) => void
   vesselsVisible: boolean
   onVesselsVisibleChange: (visible: boolean) => void
+  portsVisible: boolean
+  portsLoading: boolean
+  portsError?: string
+  onPortsVisibleChange: (visible: boolean) => void
+  onRetryPorts: () => void
+  airportsVisible: boolean
+  airportsLoading: boolean
+  airportsReady: boolean
+  airportsError?: string
+  airportsInView: readonly Airport[]
+  selectedAirportId: string | null
+  airportsEmptyMessage: string
+  onAirportsVisibleChange: (visible: boolean) => void
+  onAirportSelect: (id: string) => void
+  onRetryAirports: () => void
+  weatherVisible: boolean
+  weatherLoading: boolean
+  weatherWaiting: boolean
+  weatherReady: boolean
+  now: number
+  weatherError?: string
+  weatherStatusMessage?: string
+  weatherObservations: readonly DisplayWeatherObservation[]
+  selectedWeatherId: string | null
+  weatherEmptyMessage: string
+  weatherCanRefresh: boolean
+  onWeatherVisibleChange: (visible: boolean) => void
+  onWeatherSelect: (id: string) => void
+  onRetryWeather: () => void
+  onRefreshWeather: () => void
+  clusteringEnabled: boolean
+  onClusteringEnabledChange: (enabled: boolean) => void
   centerDisabled: boolean
   onCenter: () => void
   locationAvailable: boolean
   locationLoading: boolean
   locationMessage?: string
   onUseLocation: () => void
-  theme: Theme
-  onThemeChange: (theme: Theme) => void
+  themePreference: ThemePreference
+  onThemePreferenceChange: (preference: ThemePreference) => void
+  locationNavigationDisabled: boolean
+  activeLocationLabel: string
+  coordinatePrecision: number
+  maximumLocationQueryLength: number
+  placeSearchState: PlaceSearchState
+  onPlaceSearch: (query: string) => void
+  onLocationNavigate: (center: AppCenter) => void
+  onPlaceResultSelect: (result: PlaceSearchResult) => void
+  onPlaceSearchCancel: () => void
 }
 
 export function TrafficControls({
-  vesselLengthPresetsMeters,
-  minimumVesselLengthMeters,
-  onMinimumVesselLengthChange,
+  aircraftQuery,
+  aircraftResults,
+  totalAircraft,
+  aircraftEmptyMessage,
+  onAircraftQueryChange,
+  onAircraftSelect,
+  vesselFilters,
+  vesselResults,
+  totalVessels,
+  vesselEmptyMessage,
+  onVesselFiltersChange,
+  onVesselSelect,
   aircraftVisible,
   onAircraftVisibleChange,
   vesselsVisible,
   onVesselsVisibleChange,
+  portsVisible,
+  portsLoading,
+  portsError,
+  onPortsVisibleChange,
+  onRetryPorts,
+  airportsVisible,
+  airportsLoading,
+  airportsReady,
+  airportsError,
+  airportsInView,
+  selectedAirportId,
+  airportsEmptyMessage,
+  onAirportsVisibleChange,
+  onAirportSelect,
+  onRetryAirports,
+  weatherVisible,
+  weatherLoading,
+  weatherWaiting,
+  weatherReady,
+  now,
+  weatherError,
+  weatherStatusMessage,
+  weatherObservations,
+  selectedWeatherId,
+  weatherEmptyMessage,
+  weatherCanRefresh,
+  onWeatherVisibleChange,
+  onWeatherSelect,
+  onRetryWeather,
+  onRefreshWeather,
+  clusteringEnabled,
+  onClusteringEnabledChange,
   centerDisabled,
   onCenter,
   locationAvailable,
   locationLoading,
   locationMessage,
   onUseLocation,
-  theme,
-  onThemeChange,
+  themePreference,
+  onThemePreferenceChange,
+  locationNavigationDisabled,
+  activeLocationLabel,
+  coordinatePrecision,
+  maximumLocationQueryLength,
+  placeSearchState,
+  onPlaceSearch,
+  onLocationNavigate,
+  onPlaceResultSelect,
+  onPlaceSearchCancel,
 }: TrafficControlsProps) {
   return (
     <aside className="control-panel" aria-label="Map controls">
+      <LocationSearch
+        disabled={locationNavigationDisabled}
+        activeLabel={activeLocationLabel}
+        coordinatePrecision={coordinatePrecision}
+        maximumQueryLength={maximumLocationQueryLength}
+        searchState={placeSearchState}
+        onSearch={onPlaceSearch}
+        onNavigate={onLocationNavigate}
+        onSelectResult={onPlaceResultSelect}
+        onCancel={onPlaceSearchCancel}
+      />
+
       <fieldset className="control-group">
         <legend>Layers</legend>
         <div className="control-options control-options--two">
@@ -56,19 +180,166 @@ export function TrafficControls({
           >
             SHIPS
           </button>
+          <button
+            type="button"
+            className={portsVisible ? 'is-active' : undefined}
+            aria-pressed={portsVisible}
+            aria-busy={portsVisible && portsLoading}
+            onClick={() => onPortsVisibleChange(!portsVisible)}
+          >
+            {portsVisible && portsLoading ? 'PORTS...' : 'PORTS'}
+          </button>
+          <button
+            id="airports-layer-toggle"
+            type="button"
+            className={airportsVisible ? 'is-active' : undefined}
+            aria-pressed={airportsVisible}
+            aria-busy={airportsVisible && airportsLoading}
+            onClick={() => onAirportsVisibleChange(!airportsVisible)}
+          >
+            {airportsVisible && airportsLoading
+              ? 'AIRPORTS...'
+              : 'AIRPORTS'}
+          </button>
+          <button
+            type="button"
+            className={clusteringEnabled ? 'is-active' : undefined}
+            aria-pressed={clusteringEnabled}
+            onClick={() => onClusteringEnabledChange(!clusteringEnabled)}
+          >
+            CLUSTERS
+          </button>
+          <button
+            id="weather-layer-toggle"
+            type="button"
+            className={weatherVisible ? 'is-active' : undefined}
+            aria-pressed={weatherVisible}
+            aria-busy={
+              weatherVisible && (weatherLoading || weatherWaiting)
+            }
+            onClick={() => onWeatherVisibleChange(!weatherVisible)}
+          >
+            {weatherVisible && weatherLoading ? 'METAR...' : 'METAR'}
+          </button>
         </div>
+        {portsVisible && portsError && (
+          <div className="control-note ports-status" role="status">
+            <span>Ports unavailable: {portsError}</span>
+            <button type="button" onClick={onRetryPorts}>
+              RETRY PORTS
+            </button>
+          </div>
+        )}
+        {airportsVisible && airportsError && (
+          <div className="control-note ports-status" role="status">
+            <span>Airports unavailable: {airportsError}</span>
+            <button type="button" onClick={onRetryAirports}>
+              RETRY AIRPORTS
+            </button>
+          </div>
+        )}
+        {weatherVisible && weatherError && (
+          <div className="control-note ports-status" role="status">
+            <span>METAR unavailable: {weatherError}</span>
+            <button type="button" onClick={onRetryWeather}>
+              RETRY METAR
+            </button>
+          </div>
+        )}
+        {weatherVisible && !weatherError && weatherStatusMessage && (
+          <div className="control-note ports-status" role="status">
+            <span>{weatherStatusMessage}</span>
+            {weatherReady && (
+              <button
+                type="button"
+                disabled={!weatherCanRefresh}
+                onClick={onRefreshWeather}
+              >
+                REFRESH METAR
+              </button>
+            )}
+          </div>
+        )}
+        <p className="control-note control-note--muted">
+          Ports:{' '}
+          <a href="https://www.naturalearthdata.com/downloads/10m-cultural-vectors/ports/">
+            Natural Earth
+          </a>{' '}
+          (<a href="https://www.naturalearthdata.com/about/terms-of-use/">
+            public domain
+          </a>
+          ); generalized and incomplete.
+        </p>
+        <p className="control-note control-note--muted">
+          Airports: <a href="https://ourairports.com/data/">OurAirports</a>{' '}
+          (<a href="https://ourairports.com/data/">public domain</a>); static
+          large and medium airport context, not operational data.
+        </p>
+        <p className="control-note control-note--muted">
+          METAR/SPECI observations:{' '}
+          <a href="https://aviationweather.gov/data/api/">
+            NOAA/NWS Aviation Weather Center
+          </a>
+          ; generally public-domain observations. Enabling this layer sends
+          visible qualifying ICAO station IDs through the application host
+          to AWC. Coverage is limited by AWC reporting and the pinned
+          large/medium-airport dataset. Source and retrieval times are shown;
+          this modified presentation is not an official forecast, operational
+          flight status, airport board, or endorsement.
+        </p>
       </fieldset>
+
+      <AircraftDiscovery
+        query={aircraftQuery}
+        aircraft={aircraftResults}
+        totalAircraft={totalAircraft}
+        aircraftVisible={aircraftVisible}
+        emptyMessage={aircraftEmptyMessage}
+        onQueryChange={onAircraftQueryChange}
+        onSelect={onAircraftSelect}
+      />
+
+      <VesselDiscovery
+        filters={vesselFilters}
+        vessels={vesselResults}
+        totalVessels={totalVessels}
+        vesselsVisible={vesselsVisible}
+        emptyMessage={vesselEmptyMessage}
+        onFiltersChange={onVesselFiltersChange}
+        onSelect={onVesselSelect}
+      />
+
+      {airportsVisible && airportsReady && (
+        <AirportContext
+          airports={airportsInView}
+          selectedAirportId={selectedAirportId}
+          emptyMessage={airportsEmptyMessage}
+          onSelect={onAirportSelect}
+        />
+      )}
+
+      {weatherVisible && weatherReady && (
+        <WeatherContext
+          observations={weatherObservations}
+          selectedObservationId={selectedWeatherId}
+          emptyMessage={weatherEmptyMessage}
+          now={now}
+          onSelect={onWeatherSelect}
+        />
+      )}
 
       <fieldset className="control-group">
         <legend>Theme</legend>
-        <div className="control-options control-options--two">
-          {(['light', 'dark'] as const).map((option) => (
+        <div className="control-options control-options--three">
+          {(['auto', 'light', 'dark'] as const).map((option) => (
             <button
               key={option}
               type="button"
-              className={theme === option ? 'is-active' : undefined}
-              aria-pressed={theme === option}
-              onClick={() => onThemeChange(option)}
+              className={
+                themePreference === option ? 'is-active' : undefined
+              }
+              aria-pressed={themePreference === option}
+              onClick={() => onThemePreferenceChange(option)}
             >
               {option.toUpperCase()}
             </button>
@@ -103,24 +374,6 @@ export function TrafficControls({
         )}
       </fieldset>
 
-      <fieldset className="control-group">
-        <legend>Minimum ship length</legend>
-        <div className="control-options">
-          {vesselLengthPresetsMeters.map((preset) => (
-            <button
-              key={preset}
-              type="button"
-              className={
-                preset === minimumVesselLengthMeters ? 'is-active' : undefined
-              }
-              aria-pressed={preset === minimumVesselLengthMeters}
-              onClick={() => onMinimumVesselLengthChange(preset)}
-            >
-              {preset} m
-            </button>
-          ))}
-        </div>
-      </fieldset>
     </aside>
   )
 }

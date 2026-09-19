@@ -69,7 +69,17 @@ describe('assessTrafficViewport', () => {
       kind: 'ineligible',
       reason: 'too-wide',
       message: 'Zoom in to see live traffic',
+      viewport: {
+        center: {
+          latitude: 0,
+          longitude: 0,
+          label: 'Map view',
+        },
+      },
     })
+    if (over.kind === 'ineligible') {
+      expect(over.viewport?.enclosingRadiusKm).toBeGreaterThan(100)
+    }
   })
 
   it('unwraps a bounded antimeridian footprint without treating it as global', () => {

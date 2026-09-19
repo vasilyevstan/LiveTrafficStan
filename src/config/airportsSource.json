@@ -1,0 +1,30 @@
+{
+  "source": {
+    "name": "OurAirports",
+    "repositoryUrl": "https://github.com/davidmegginson/ourairports-data",
+    "commit": "5ed85eed28722bea80ebdde9e255e09b1e7317a8",
+    "publishedAt": "2026-09-19T01:53:15Z",
+    "sourcePath": "airports.csv",
+    "sourceUrl": "https://raw.githubusercontent.com/davidmegginson/ourairports-data/5ed85eed28722bea80ebdde9e255e09b1e7317a8/airports.csv",
+    "sourceBytes": 12725082,
+    "sourceSha256": "6c890e97b82939a2501938b32eb597b18d5c5ce803576d3193e2049a149a58bb",
+    "termsUrl": "https://ourairports.com/data/",
+    "documentationUrl": "https://ourairports.com/help/data-dictionary.html",
+    "licenseName": "Public domain"
+  },
+  "projection": {
+    "schemaVersion": 1,
+    "outputVersion": "ourairports-2026-09-19-v1",
+    "expected": {
+      "sourceRecords": 86095,
+      "projectedRecords": 5280,
+      "rawBytes": 1329838,
+      "gzipBytes": 225625,
+      "sha256": "1edb55fe75653367895ed913f2725915ef0b529aed12eecf9d931ed8c38df9d6",
+      "kindCounts": {
+        "large": 1174,
+        "medium": 4106
+      }
+    }
+  }
+}

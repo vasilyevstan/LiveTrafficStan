@@ -29,7 +29,8 @@ preserve truthful partial operation when one provider fails.
   blocker Issue. Do not add placeholder code, claim blocked criteria complete,
   or hold unrelated ready work behind the blocker.
 - Before merge, run `npm run lint`, `npm run typecheck`,
-  `npm test -- --run`, and `npm run build`.
+  `npm test -- --run`, `npm run check:aircraft-metadata`, and
+  `npm run build`.
 - Use existing npm scripts and dependencies. Add a framework or dependency only
   when a demonstrated requirement cannot be met with current mechanisms.
 
@@ -78,8 +79,64 @@ preserve truthful partial operation when one provider fails.
   that the operating system will produce a position before the configured
   timeout. Keep the current home usable, report acquisition and permission
   failures distinctly, and guard retries from obsolete late callbacks.
+- Keep session Home separate from the current view target. Coordinates and
+  place results never mutate Home. Coordinate submission, named search, Center,
+  Use Location, and trusted manual camera movement must prevent an older
+  geolocation callback from stealing the camera while still permitting it to
+  update Home silently.
+- Location input is explicit-submit only. Strict valid decimal coordinates are
+  rounded and navigated locally without a geocoder request; malformed
+  numeric-looking pairs are errors rather than place queries. Do not add
+  typeahead, reverse geocoding, location bias, or another camera/provider
+  scheduler.
+- Photon search allows one active request, bounded results/body/text, revision
+  cancellation, a local repeat-submit cooldown, total timeout, explicit
+  `429`/`Retry-After` handling, and bounded session-only success/empty caching.
+  Browser requests omit credentials and a custom `User-Agent`. Search outage
+  must leave coordinate navigation and traffic usable.
+- Place-search UI must disclose that submitted text appears in the Photon URL,
+  preserve visible Photon/OpenStreetMap attribution, and make no unsupported
+  provider-retention claim. Never send browser-derived Home coordinates for
+  search bias or persist search results.
+- Committed navigation clears selection and pre-navigation trail points but
+  preserves the single map instance, themes, layers, filters, provider
+  controllers, cadence, connections, and session Home.
 - Motion interpolates only between observed positions. Trails contain observed
   points and remain bounded by both time and count.
+- Static aircraft metadata is selected-object context only. It must not mutate
+  live traffic entities, provider health/freshness, trails, selection, camera,
+  or the provider-reported aircraft marker taxonomy.
+- Keep the Mictronics metadata source pinned by commit, publication instant,
+  internal version, archive/license checksums, schema, and immutable output
+  version. Source code remains Apache-2.0; the derivative database is conveyed
+  under ODC-By with a co-located full license, visible attribution, and the
+  database-rights/contents-rights distinction.
+- Aircraft metadata makes zero startup requests. Selection may load one
+  validated index/type asset and one validated ICAO24-prefix shard under one
+  five-second deadline and streamed byte caps. Cache only fulfilled complete
+  assets: one index and the bounded shard LRU. Aborted, rejected, partial,
+  malformed, oversized, or checksum-failing work never enters cache.
+- Match metadata by exact six-character ICAO24. Present live registration and
+  type must match after case and outer-whitespace normalization only; duplicated
+  registrations are unavailable. Missing live registration may yield only an
+  explicit ICAO24-only result. Do not add registration-only, punctuation
+  removal, fuzzy, callsign, owner, operator, or airline inference.
+- Tag metadata state with the complete selected identity and revision. Aircraft
+  changes, vessel/empty selection, and unmount abort old work; stale callbacks
+  cannot display A after A to B to A. Reevaluate publication-age and future
+  clock rules while details remain open without refetching.
+- Production aircraft proxy changes must keep the fixed ADSB.lol origin, exact
+  `/api/aircraft/v2/point/{lat}/{lon}/{radiusNm}` allowlist, canonical
+  coordinate validation, 1-54 NM bound, total deadline, response-size cap,
+  redirect rejection, no-store policy, and upstream status/body/`Retry-After`.
+  Never forward browser credentials or arbitrary headers, add wildcard CORS,
+  log coordinate-bearing URLs, or introduce a shared live cache without
+  provider-rights and measured-value evidence.
+- Production deployment uses one serialized exact-current-`main` workflow.
+  Cloudflare credentials remain only in the `production` environment, which is
+  restricted to `main`; checked pull requests and dry runs receive no secret.
+  A first deployment records `previous: none - bootstrap`, and real rollback
+  evidence requires a later prior version.
 
 ## Change discipline
 
@@ -94,8 +151,12 @@ preserve truthful partial operation when one provider fails.
   unavailable, stale, historical, and offline states truthful and distinct.
 - Keep `docs/` canonical and update the README and Wiki when released behavior
   changes.
-- Preserve visible OpenFreeMap/OpenStreetMap, ADSB.lol, and Digitraffic
-  attribution and the provider licensing records.
-- Do not expand a focused change into reverse geocoding, continuous location,
-  arbitrary search, persistent tracking, PWA, weather, clustering, or backend
-  work unless the request explicitly includes it.
+- Preserve visible OpenFreeMap/OpenStreetMap, ADSB.lol, Digitraffic,
+  OurAirports, Natural Earth, and NOAA/NWS AWC attribution and provider
+  licensing records. Weather presentation must retain source/retrieval time,
+  public-domain caveat, and observation-not-forecast wording. When static
+  aircraft metadata is displayed, also preserve Mictronics and ODC-By
+  attribution plus the snapshot publication date.
+- Do not expand a focused change into reverse geocoding, search autocomplete,
+  continuous location, persistent tracking, PWA, weather, clustering, or
+  backend work unless the request explicitly includes it.
