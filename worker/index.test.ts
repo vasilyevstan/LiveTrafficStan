@@ -35,6 +35,33 @@ describe('Cloudflare worker routing', () => {
     expect(assetsFetch).not.toHaveBeenCalled()
   })
 
+  it('routes METAR requests through the weather proxy', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        new Response('[]', {
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      ),
+    )
+    const assetsFetch = vi.fn()
+    const response = await worker.fetch(
+      new Request(
+        'https://app.example/api/weather/metar?ids=EETN',
+      ),
+      {
+        ASSETS: { fetch: assetsFetch },
+        RELEASE_SHA: releaseSha,
+      },
+    )
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('x-livetrafficstan-release')).toBe(
+      releaseSha,
+    )
+    expect(assetsFetch).not.toHaveBeenCalled()
+  })
+
   it('rejects the API root without consulting Static Assets', async () => {
     const assetsFetch = vi.fn()
 

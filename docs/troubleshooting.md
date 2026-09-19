@@ -35,7 +35,9 @@ source data.
 
 If the application theme changes but the base map does not, verify both
 `VITE_MAP_STYLE_URL` and `VITE_MAP_DARK_STYLE_URL`, then restart Vite after
-editing `.env.local`. Invalid saved values fall back to Light. To reset a valid
+editing `.env.local`. Invalid saved values fall back to Light. Auto follows
+`prefers-color-scheme`; verify the operating-system/browser scheme and that the
+stored value is `auto`, not an explicit Light/Dark override. To reset a valid
 choice, remove `livetrafficstan.theme` from the site's local storage.
 
 ## Aircraft shows unavailable
@@ -76,6 +78,54 @@ deployed SHA.
 
 Production activation credentials are intentionally absent until Issue #39 is
 resolved. Do not place them in `.env.local` or any `VITE_*` variable.
+
+## METAR shows unavailable, waiting, or empty
+
+METAR is optional and independent of live traffic. It makes no startup request
+and has no periodic poller. First enable may need to load the pinned airport
+asset before it can derive explicit ICAO station IDs.
+
+- **Paused until the map shows an eligible view** means the live-traffic
+  viewport is still updating or exceeds the 100 km safety boundary. Zoom in or
+  reduce tilt.
+- **Too many qualifying stations** means more than 50 explicit four-letter
+  ICAO codes are visible. The app refuses to truncate the station set; zoom in.
+- **No qualifying stations** means the reduced large/medium OurAirports
+  projection has no explicit ICAO code in the view. It is not a global
+  no-weather statement.
+- **No current observations returned** is a valid empty AWC result. It does not
+  prove station coverage, clear weather, or an airport outage.
+- **Waiting** preserves the one-minute session request-start boundary or a
+  longer provider `Retry-After`. Theme changes, clustering, and layer
+  hide/show do not bypass it.
+
+For a local proxy failure, inspect
+`/api/weather/metar?ids=EETN` and confirm Vite or `preview:worker` is serving the
+application rather than opening built files directly. The official AWC API does
+not permit browser CORS, so pointing `VITE_WEATHER_ENDPOINT` directly at
+`aviationweather.gov` is not a supported workaround.
+
+For the Cloudflare boundary:
+
+- `400` means the query was missing, repeated, noncanonical, unsorted,
+  duplicated, lowercase, malformed, over 50 stations, or contained another
+  parameter;
+- `405` means a non-GET request;
+- `502` means a network/read failure, redirect, unsafe content type, or
+  response-size rejection;
+- `504` means the eight-second upstream deadline expired;
+- upstream `429` preserves `Retry-After`.
+
+Use **Retry METAR** after the displayed boundary, or **Refresh METAR** when
+enabled. A weather failure must not change aircraft/marine status, map health,
+camera, search, ports, airports, clustering, or traffic selection. Reports
+older than 75 minutes are labeled stale and reports older than 120 minutes are
+removed.
+
+METAR/SPECI is observed weather, not a forecast, route, airport board, or
+operational status. Enabling it sends visible qualifying ICAO station IDs
+through the application host to AWC. Do not infer missing weather from absent
+static airport points or an empty response.
 
 ## Aircraft metadata shows unavailable
 
@@ -253,6 +303,11 @@ a port clears traffic selection, hiding PORTS or committed navigation clears
 the selected port, and an empty map click clears both. Port selection never
 creates a traffic trail or a nearby-vessel relationship.
 
+Airport and weather selection use the same mutual-exclusion rule. Hiding their
+layer, leaving the eligible station/view set, or committed navigation clears
+the corresponding details. Closing a weather detail restores focus to its
+bounded list result when present or to the METAR toggle.
+
 ## Configuration fails at startup
 
 Review `.env.local` for:
@@ -299,6 +354,9 @@ Do not hide MapLibre attribution controls. The application must visibly credit:
   change notice.
 - Natural Earth and its public-domain terms, with generalized/incomplete
   wording for the optional port layer.
+- OurAirports and its public-domain terms, with static/non-operational wording.
+- NOAA/NWS Aviation Weather Center, source/retrieval time, public-domain caveat,
+  and modified observation-not-forecast wording for METAR/SPECI.
 
 Digitraffic is a regional source with an unknown exact coverage boundary. A
 connected stream and zero ships shown do not prove that a location is covered

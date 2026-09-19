@@ -7,6 +7,7 @@ import type {
 } from 'geojson'
 import {
   AttributionControl,
+  type GeoJSONSource,
   Map as MapLibreMap,
   setWorkerUrl,
 } from 'maplibre-gl'
@@ -23,6 +24,7 @@ import type {
   TrafficEntity,
   TrailPoint,
 } from '../domain/traffic'
+import type { DisplayWeatherObservation } from '../domain/weatherObservations'
 import {
   assessTrafficViewport,
   type ViewportAssessment,
@@ -42,6 +44,13 @@ import {
 } from './mapInitialization'
 import { pickContextFeature } from './contextPicking'
 import {
+  clusterExpansionZoom,
+  firstTrafficClusterTarget,
+  setTrafficClustering,
+  shouldAnimateTrafficSources,
+  trafficSnapshotSignature,
+} from './clustering'
+import {
   exactEligibleFeatureId,
   expandedHitBox,
   TouchInteractionTracker,
@@ -60,10 +69,17 @@ import {
   setPortsVisibility,
 } from './portsStyle'
 import {
+  WEATHER_LAYER_IDS,
+  installWeatherStyle,
+  setWeatherVisibility,
+  weatherFeatures,
+} from './weatherStyle'
+import {
   installTrafficStyle,
+  AIRCRAFT_TRAFFIC_LAYER_IDS,
   LAYER_AIRCRAFT,
-  LAYER_AIRCRAFT_HALO,
-  LAYER_VESSEL_HALO,
+  LAYER_AIRCRAFT_CLUSTERS,
+  LAYER_VESSEL_CLUSTERS,
   LAYER_VESSELS,
   setTrafficLayerVisibility,
   setTrafficSourceData,
@@ -71,6 +87,7 @@ import {
   SOURCE_TRAIL,
   SOURCE_VESSELS,
   type TrafficStyleImages,
+  VESSEL_TRAFFIC_LAYER_IDS,
 } from './trafficStyle'
 
 setWorkerUrl(maplibreWorkerUrl)
@@ -86,6 +103,9 @@ interface TrafficMapProps {
   viewRadiusKm: number
   maximumViewportRadiusKm: number
   touchHitTolerancePx: number
+  clusterRadiusPx: number
+  clusterMinimumPoints: number
+  clusterMaximumZoom: number
   coordinatePrecision: number
   mapStyleUrl: string
   theme: Theme
@@ -93,20 +113,25 @@ interface TrafficMapProps {
   vessels: readonly DisplayVessel[]
   ports: readonly Port[]
   airports: readonly Airport[]
+  weatherObservations: readonly DisplayWeatherObservation[]
   trail: readonly TrailPoint[]
   selectedId: string | null
   selectedPortId: string | null
   selectedAirportId: string | null
+  selectedWeatherId: string | null
   aircraftVisible: boolean
   vesselsVisible: boolean
   portsVisible: boolean
   airportsVisible: boolean
+  weatherVisible: boolean
+  clusteringEnabled: boolean
   interpolationDurationMs: number
   viewRequestId: number
   viewportSettleMs: number
   onSelect: (id: string | null) => void
   onSelectPort: (id: string | null) => void
   onSelectAirport: (id: string | null) => void
+  onSelectWeather: (id: string | null) => void
   onViewportChange: (
     assessment: ViewportAssessment,
     viewRequestId: number,
@@ -131,11 +156,17 @@ interface AirportRenderState {
   selectedAirportId: string | null
 }
 
+interface WeatherRenderState {
+  observations: readonly DisplayWeatherObservation[]
+  selectedWeatherId: string | null
+}
+
 interface ViewState {
   aircraftVisible: boolean
   vesselsVisible: boolean
   portsVisible: boolean
   airportsVisible: boolean
+  weatherVisible: boolean
   trail: readonly TrailPoint[]
 }
 
@@ -144,10 +175,11 @@ const trafficFeatures = (
   motion: MotionStates,
   now: number,
   selectedId: string | null,
+  interpolate: boolean,
 ): FeatureCollection<Point> => ({
   type: 'FeatureCollection',
   features: entities.map((entity) => {
-    const sampled = motion.get(entity.id)
+    const sampled = interpolate && motion.get(entity.id)
       ? sampleMotion(motion.get(entity.id)!, now)
       : entity.position
 
@@ -170,6 +202,14 @@ const trafficFeatures = (
     }
   }),
 })
+
+const prefersReducedMotion = () => {
+  try {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  } catch {
+    return false
+  }
+}
 
 const trailData = (
   points: readonly TrailPoint[],
@@ -244,6 +284,9 @@ export function TrafficMap({
   viewRadiusKm,
   maximumViewportRadiusKm,
   touchHitTolerancePx,
+  clusterRadiusPx,
+  clusterMinimumPoints,
+  clusterMaximumZoom,
   coordinatePrecision,
   mapStyleUrl,
   theme,
@@ -251,20 +294,25 @@ export function TrafficMap({
   vessels,
   ports,
   airports,
+  weatherObservations,
   trail,
   selectedId,
   selectedPortId,
   selectedAirportId,
+  selectedWeatherId,
   aircraftVisible,
   vesselsVisible,
   portsVisible,
   airportsVisible,
+  weatherVisible,
+  clusteringEnabled,
   interpolationDurationMs,
   viewRequestId,
   viewportSettleMs,
   onSelect,
   onSelectPort,
   onSelectAirport,
+  onSelectWeather,
   onViewportChange,
   onManualViewChange,
   onMapError,
@@ -286,7 +334,22 @@ export function TrafficMap({
     maximumRadiusKm: maximumViewportRadiusKm,
   })
   const viewportSettleMsRef = useRef(viewportSettleMs)
+  const clusteringEnabledRef = useRef(clusteringEnabled)
+  const clusterConfigRef = useRef({
+    radiusPx: clusterRadiusPx,
+    minimumPoints: clusterMinimumPoints,
+    maximumZoom: clusterMaximumZoom,
+  })
   const styleGenerationRef = useRef(0)
+  const sourceDataGenerationRef = useRef(0)
+  const clusterOptionsGenerationRef = useRef(0)
+  const interactionGenerationRef = useRef(0)
+  const clusterExpansionGenerationRef = useRef(0)
+  const clusterUpdateChainRef = useRef<Promise<void>>(Promise.resolve())
+  const lastClusteredSignatureRef = useRef<{
+    aircraft?: string
+    vessels?: string
+  }>({})
   const initialStyleUrlRef = useRef(mapStyleUrl)
   const desiredStyleUrlRef = useRef(mapStyleUrl)
   const requestedStyleUrlRef = useRef(mapStyleUrl)
@@ -310,16 +373,22 @@ export function TrafficMap({
     airports,
     selectedAirportId,
   })
+  const weatherRenderStateRef = useRef<WeatherRenderState>({
+    observations: weatherObservations,
+    selectedWeatherId,
+  })
   const viewStateRef = useRef<ViewState>({
     aircraftVisible,
     vesselsVisible,
     portsVisible,
     airportsVisible,
+    weatherVisible,
     trail,
   })
   const selectRef = useRef(onSelect)
   const selectPortRef = useRef(onSelectPort)
   const selectAirportRef = useRef(onSelectAirport)
+  const selectWeatherRef = useRef(onSelectWeather)
   const viewportChangeRef = useRef(onViewportChange)
   const manualViewChangeRef = useRef(onManualViewChange)
   const errorRef = useRef(onMapError)
@@ -334,7 +403,17 @@ export function TrafficMap({
       maximumRadiusKm: maximumViewportRadiusKm,
     }
     viewportSettleMsRef.current = viewportSettleMs
+    clusteringEnabledRef.current = clusteringEnabled
+    clusterConfigRef.current = {
+      radiusPx: clusterRadiusPx,
+      minimumPoints: clusterMinimumPoints,
+      maximumZoom: clusterMaximumZoom,
+    }
   }, [
+    clusterMaximumZoom,
+    clusterMinimumPoints,
+    clusterRadiusPx,
+    clusteringEnabled,
     coordinatePrecision,
     viewCenter,
     viewRequestId,
@@ -344,31 +423,54 @@ export function TrafficMap({
     viewportSettleMs,
   ])
 
-  const renderSources = useCallback((now: number) => {
+  const renderSources = useCallback((now: number, force = false) => {
     const map = mapRef.current
     if (!map || !loadedRef.current) return
 
     const state = renderStateRef.current
-    setTrafficSourceData(
-      map,
-      SOURCE_AIRCRAFT,
-      trafficFeatures(
+    const clustered = clusteringEnabledRef.current
+    let updated = false
+
+    for (const [kind, sourceId, entities, motion] of [
+      [
+        'aircraft',
+        SOURCE_AIRCRAFT,
         state.aircraft,
         aircraftMotionRef.current,
-        now,
-        state.selectedId,
-      ),
-    )
-    setTrafficSourceData(
-      map,
-      SOURCE_VESSELS,
-      trafficFeatures(
+      ],
+      [
+        'vessels',
+        SOURCE_VESSELS,
         state.vessels,
         vesselMotionRef.current,
-        now,
-        state.selectedId,
-      ),
-    )
+      ],
+    ] as const) {
+      const signature = clustered
+        ? trafficSnapshotSignature(entities, state.selectedId)
+        : undefined
+      if (
+        clustered &&
+        !force &&
+        lastClusteredSignatureRef.current[kind] === signature
+      ) {
+        continue
+      }
+      setTrafficSourceData(
+        map,
+        sourceId,
+        trafficFeatures(
+          entities,
+          motion,
+          now,
+          state.selectedId,
+          !clustered,
+        ),
+      )
+      lastClusteredSignatureRef.current[kind] = signature
+      updated = true
+    }
+
+    if (updated) sourceDataGenerationRef.current += 1
   }, [])
 
   const scheduleRender = useCallback(() => {
@@ -383,8 +485,11 @@ export function TrafficMap({
       lastFrameRef.current = now
       renderSources(now)
       if (
-        hasActiveMotion(aircraftMotionRef.current, now) ||
-        hasActiveMotion(vesselMotionRef.current, now)
+        shouldAnimateTrafficSources(
+          clusteringEnabledRef.current,
+          hasActiveMotion(aircraftMotionRef.current, now) ||
+            hasActiveMotion(vesselMotionRef.current, now),
+        )
       ) {
         frameRef.current = window.requestAnimationFrame(draw)
       } else {
@@ -503,19 +608,27 @@ export function TrafficMap({
             aircraftMotionRef.current,
             now,
             renderState.selectedId,
+            !clusteringEnabledRef.current,
           ),
           vessels: trafficFeatures(
             renderState.vessels,
             vesselMotionRef.current,
             now,
             renderState.selectedId,
+            !clusteringEnabledRef.current,
           ),
           trail: trailData(viewState.trail),
           aircraftVisible: viewState.aircraftVisible,
           vesselsVisible: viewState.vesselsVisible,
+          clusteringEnabled: clusteringEnabledRef.current,
+          clusterRadiusPx: clusterConfigRef.current.radiusPx,
+          clusterMinimumPoints: clusterConfigRef.current.minimumPoints,
+          clusterMaximumZoom: clusterConfigRef.current.maximumZoom,
         },
         getTrafficImages(activeTheme),
       )
+      lastClusteredSignatureRef.current = {}
+      sourceDataGenerationRef.current += 1
       const portState = portRenderStateRef.current
       if (portState.ports.length > 0) {
         installPortsStyle(
@@ -537,6 +650,21 @@ export function TrafficMap({
           viewState.airportsVisible,
         )
       }
+      const weatherState = weatherRenderStateRef.current
+      if (
+        viewState.weatherVisible ||
+        weatherState.observations.length > 0
+      ) {
+        installWeatherStyle(
+          map,
+          weatherFeatures(
+            weatherState.observations,
+            weatherState.selectedWeatherId,
+          ),
+          activeTheme,
+          viewState.weatherVisible,
+        )
+      }
       loadedRef.current = true
       errorRef.current(null)
       scheduleRender()
@@ -556,6 +684,10 @@ export function TrafficMap({
   const switchMapStyle = useCallback(
     (map: MapLibreMap, nextStyleUrl: string) => {
       const generation = ++styleGenerationRef.current
+      sourceDataGenerationRef.current += 1
+      clusterOptionsGenerationRef.current += 1
+      clusterExpansionGenerationRef.current += 1
+      lastClusteredSignatureRef.current = {}
       loadedRef.current = false
       requestedStyleUrlRef.current = nextStyleUrl
 
@@ -596,6 +728,10 @@ export function TrafficMap({
   }, [onSelectAirport])
 
   useEffect(() => {
+    selectWeatherRef.current = onSelectWeather
+  }, [onSelectWeather])
+
+  useEffect(() => {
     viewportChangeRef.current = onViewportChange
   }, [onViewportChange])
 
@@ -613,11 +749,13 @@ export function TrafficMap({
       vesselsVisible,
       portsVisible,
       airportsVisible,
+      weatherVisible,
       trail,
     }
   }, [
     aircraftVisible,
     airportsVisible,
+    weatherVisible,
     portsVisible,
     trail,
     vesselsVisible,
@@ -647,6 +785,8 @@ export function TrafficMap({
     const pointerOrigins = new Map<number, { x: number; y: number }>()
     let manualPointerMovement = false
     const handlePointerDown = (event: PointerEvent) => {
+      interactionGenerationRef.current += 1
+      clusterExpansionGenerationRef.current += 1
       touchTracker.pointerDown(event)
       pointerOrigins.set(event.pointerId, {
         x: event.clientX,
@@ -678,8 +818,16 @@ export function TrafficMap({
       pointerOrigins.delete(event.pointerId)
       if (pointerOrigins.size === 0) manualPointerMovement = false
     }
-    const handleWheel = () => manualViewChangeRef.current()
-    const handleDoubleClick = () => manualViewChangeRef.current()
+    const handleWheel = () => {
+      interactionGenerationRef.current += 1
+      clusterExpansionGenerationRef.current += 1
+      manualViewChangeRef.current()
+    }
+    const handleDoubleClick = () => {
+      interactionGenerationRef.current += 1
+      clusterExpansionGenerationRef.current += 1
+      manualViewChangeRef.current()
+    }
     const handleKeyDown = (event: KeyboardEvent) => {
       if (
         [
@@ -692,6 +840,8 @@ export function TrafficMap({
           '=',
         ].includes(event.key)
       ) {
+        interactionGenerationRef.current += 1
+        clusterExpansionGenerationRef.current += 1
         manualViewChangeRef.current()
       }
     }
@@ -717,6 +867,25 @@ export function TrafficMap({
       return layers
     }
 
+    const activeClusterLayers = () => {
+      if (!clusteringEnabledRef.current) return []
+      const layers: string[] = []
+      const viewState = viewStateRef.current
+      if (
+        viewState.aircraftVisible &&
+        map.getLayer(LAYER_AIRCRAFT_CLUSTERS)
+      ) {
+        layers.push(LAYER_AIRCRAFT_CLUSTERS)
+      }
+      if (
+        viewState.vesselsVisible &&
+        map.getLayer(LAYER_VESSEL_CLUSTERS)
+      ) {
+        layers.push(LAYER_VESSEL_CLUSTERS)
+      }
+      return layers
+    }
+
     const activePortLayers = () =>
       viewStateRef.current.portsVisible
         ? PORT_LAYER_IDS.filter((layerId) => map.getLayer(layerId))
@@ -725,6 +894,11 @@ export function TrafficMap({
     const activeAirportLayers = () =>
       viewStateRef.current.airportsVisible
         ? AIRPORT_LAYER_IDS.filter((layerId) => map.getLayer(layerId))
+        : []
+
+    const activeWeatherLayers = () =>
+      viewStateRef.current.weatherVisible
+        ? WEATHER_LAYER_IDS.filter((layerId) => map.getLayer(layerId))
         : []
 
     const selectableTrafficIds = () => {
@@ -745,6 +919,90 @@ export function TrafficMap({
 
     const selectableAirportIds = () =>
       new Set(airportRenderStateRef.current.airports.map(({ id }) => id))
+
+    const selectableWeatherIds = () =>
+      new Set(
+        weatherRenderStateRef.current.observations.map(({ id }) => id),
+      )
+
+    const expandCluster = (
+      target: NonNullable<ReturnType<typeof firstTrafficClusterTarget>>,
+    ) => {
+      manualViewChangeRef.current()
+      const expansionGeneration = ++clusterExpansionGenerationRef.current
+      const styleGeneration = styleGenerationRef.current
+      const sourceDataGeneration = sourceDataGenerationRef.current
+      const clusterOptionsGeneration = clusterOptionsGenerationRef.current
+      const interactionGeneration = interactionGenerationRef.current
+      const requestedView = viewRequestRef.current
+      const source = map.getSource(target.sourceId)
+      if (!source) return
+
+      void (source as GeoJSONSource)
+        .getClusterExpansionZoom(target.clusterId)
+        .then((requestedZoom) => {
+          const viewState = viewStateRef.current
+          const layerVisible =
+            target.kind === 'aircraft'
+              ? viewState.aircraftVisible
+              : viewState.vesselsVisible
+          if (
+            mapRef.current !== map ||
+            !loadedRef.current ||
+            !clusteringEnabledRef.current ||
+            !layerVisible ||
+            expansionGeneration !== clusterExpansionGenerationRef.current ||
+            styleGeneration !== styleGenerationRef.current ||
+            sourceDataGeneration !== sourceDataGenerationRef.current ||
+            clusterOptionsGeneration !==
+              clusterOptionsGenerationRef.current ||
+            interactionGeneration !== interactionGenerationRef.current ||
+            requestedView !== viewRequestRef.current ||
+            !map.getSource(target.sourceId)
+          ) {
+            return
+          }
+
+          map.easeTo({
+            center: target.center,
+            zoom: clusterExpansionZoom(
+              map.getZoom(),
+              requestedZoom,
+              map.getMaxZoom(),
+            ),
+            duration: prefersReducedMotion() ? 0 : 450,
+          })
+        })
+        .catch((error: unknown) => {
+          const viewState = viewStateRef.current
+          const layerVisible =
+            target.kind === 'aircraft'
+              ? viewState.aircraftVisible
+              : viewState.vesselsVisible
+          if (
+            expansionGeneration !== clusterExpansionGenerationRef.current ||
+            mapRef.current !== map ||
+            !loadedRef.current ||
+            !clusteringEnabledRef.current ||
+            !layerVisible ||
+            styleGeneration !== styleGenerationRef.current ||
+            sourceDataGeneration !== sourceDataGenerationRef.current ||
+            clusterOptionsGeneration !==
+              clusterOptionsGenerationRef.current ||
+            interactionGeneration !== interactionGenerationRef.current ||
+            requestedView !== viewRequestRef.current
+          ) {
+            return
+          }
+          errorRef.current({
+            kind: 'runtime',
+            message:
+              error instanceof Error
+                ? error.message
+                : 'Traffic cluster expansion failed',
+          })
+        })
+    }
 
     map.on('moveend', () => {
       scheduleViewportReport(map)
@@ -784,32 +1042,59 @@ export function TrafficMap({
         if (exactTraffic) {
           selectPortRef.current(null)
           selectAirportRef.current(null)
+          selectWeatherRef.current(null)
           selectRef.current(exactTraffic)
           return
         }
-        if (touchFallbackAllowed) {
-          const nearbyTraffic = uniqueEligibleFeatureId(
-            map.queryRenderedFeatures(
-              expandedHitBox(event.point, touchHitTolerancePx),
-              { layers: trafficLayers },
-            ),
-            trafficIds,
-          )
-          if (nearbyTraffic) {
-            selectPortRef.current(null)
-            selectAirportRef.current(null)
-            selectRef.current(nearbyTraffic)
-            return
-          }
+      }
+
+      const clusterLayers = activeClusterLayers()
+      if (clusterLayers.length > 0) {
+        const cluster = firstTrafficClusterTarget(
+          map.queryRenderedFeatures(event.point, {
+            layers: clusterLayers,
+          }),
+        )
+        if (cluster) {
+          expandCluster(cluster)
+          return
         }
       }
 
+      if (touchFallbackAllowed && trafficLayers.length > 0) {
+        const nearbyTraffic = uniqueEligibleFeatureId(
+          map.queryRenderedFeatures(
+            expandedHitBox(event.point, touchHitTolerancePx),
+            { layers: trafficLayers },
+          ),
+          trafficIds,
+        )
+        if (nearbyTraffic) {
+          selectPortRef.current(null)
+          selectAirportRef.current(null)
+          selectWeatherRef.current(null)
+          selectRef.current(nearbyTraffic)
+          return
+        }
+      }
+
+      const weatherLayers = activeWeatherLayers()
+      const weatherIds = selectableWeatherIds()
       const airportLayers = activeAirportLayers()
       const airportIds = selectableAirportIds()
       const portLayers = activePortLayers()
       const portIds = selectablePortIds()
       const contextPick = pickContextFeature(
         {
+          exactWeather: () =>
+            weatherLayers.length > 0
+              ? exactEligibleFeatureId(
+                  map.queryRenderedFeatures(event.point, {
+                    layers: weatherLayers,
+                  }),
+                  weatherIds,
+                )
+              : undefined,
           exactAirport: () =>
             airportLayers.length > 0
               ? exactEligibleFeatureId(
@@ -826,6 +1111,16 @@ export function TrafficMap({
                     layers: portLayers,
                   }),
                   portIds,
+                )
+              : undefined,
+          nearbyWeather: () =>
+            weatherLayers.length > 0
+              ? uniqueEligibleFeatureId(
+                  map.queryRenderedFeatures(
+                    expandedHitBox(event.point, touchHitTolerancePx),
+                    { layers: weatherLayers },
+                  ),
+                  weatherIds,
                 )
               : undefined,
           nearbyAirport: () =>
@@ -851,15 +1146,24 @@ export function TrafficMap({
         },
         touchFallbackAllowed,
       )
+      if (contextPick?.kind === 'weather') {
+        selectRef.current(null)
+        selectPortRef.current(null)
+        selectAirportRef.current(null)
+        selectWeatherRef.current(contextPick.id)
+        return
+      }
       if (contextPick?.kind === 'airport') {
         selectRef.current(null)
         selectPortRef.current(null)
+        selectWeatherRef.current(null)
         selectAirportRef.current(contextPick.id)
         return
       }
       if (contextPick?.kind === 'port') {
         selectRef.current(null)
         selectAirportRef.current(null)
+        selectWeatherRef.current(null)
         selectPortRef.current(contextPick.id)
         return
       }
@@ -867,11 +1171,14 @@ export function TrafficMap({
       selectRef.current(null)
       selectPortRef.current(null)
       selectAirportRef.current(null)
+      selectWeatherRef.current(null)
     })
 
     map.on('mousemove', (event) => {
       const layers = [
         ...activeTrafficLayers(),
+        ...activeClusterLayers(),
+        ...activeWeatherLayers(),
         ...activeAirportLayers(),
         ...activePortLayers(),
       ]
@@ -911,6 +1218,9 @@ export function TrafficMap({
 
     return () => {
       styleGenerationRef.current += 1
+      clusterOptionsGenerationRef.current += 1
+      interactionGenerationRef.current += 1
+      clusterExpansionGenerationRef.current += 1
       loadedRef.current = false
       clearPendingViewport()
       canvas.removeEventListener('pointerdown', handlePointerDown)
@@ -952,6 +1262,60 @@ export function TrafficMap({
       installCurrentStyle(map)
     }
   }, [installCurrentStyle, mapStyleUrl, switchMapStyle, theme])
+
+  useEffect(() => {
+    const generation = ++clusterOptionsGenerationRef.current
+    const styleGeneration = styleGenerationRef.current
+    clusterExpansionGenerationRef.current += 1
+
+    clusterUpdateChainRef.current = clusterUpdateChainRef.current
+      .catch(() => undefined)
+      .then(async () => {
+        const map = mapRef.current
+        if (
+          !map ||
+          !loadedRef.current ||
+          generation !== clusterOptionsGenerationRef.current ||
+          styleGeneration !== styleGenerationRef.current
+        ) {
+          return
+        }
+
+        if (clusteringEnabled) {
+          renderSources(performance.now(), true)
+        }
+        await setTrafficClustering(map, clusteringEnabled)
+        if (
+          mapRef.current !== map ||
+          !loadedRef.current ||
+          generation !== clusterOptionsGenerationRef.current ||
+          styleGeneration !== styleGenerationRef.current
+        ) {
+          return
+        }
+
+        sourceDataGenerationRef.current += 1
+        if (!clusteringEnabled) {
+          lastClusteredSignatureRef.current = {}
+          renderSources(performance.now(), true)
+          scheduleRender()
+        }
+      })
+      .catch((error: unknown) => {
+        if (generation !== clusterOptionsGenerationRef.current) return
+        errorRef.current({
+          kind: 'runtime',
+          message:
+            error instanceof Error
+              ? error.message
+              : 'Traffic clustering change failed',
+        })
+      })
+  }, [
+    clusteringEnabled,
+    renderSources,
+    scheduleRender,
+  ])
 
   useEffect(() => {
     renderStateRef.current = { aircraft, vessels, selectedId }
@@ -1002,17 +1366,44 @@ export function TrafficMap({
   }, [airports, selectedAirportId])
 
   useEffect(() => {
+    weatherRenderStateRef.current = {
+      observations: weatherObservations,
+      selectedWeatherId,
+    }
+    const map = mapRef.current
+    if (
+      !map ||
+      !loadedRef.current ||
+      (!weatherVisible && weatherObservations.length === 0)
+    ) {
+      return
+    }
+    installWeatherStyle(
+      map,
+      weatherFeatures(weatherObservations, selectedWeatherId),
+      themeRef.current,
+      viewStateRef.current.weatherVisible,
+    )
+  }, [
+    selectedWeatherId,
+    weatherObservations,
+    weatherVisible,
+  ])
+
+  useEffect(() => {
     const map = mapRef.current
     if (!map || !loadedRef.current) return
-    setTrafficLayerVisibility(map, LAYER_AIRCRAFT, aircraftVisible)
-    setTrafficLayerVisibility(map, LAYER_AIRCRAFT_HALO, aircraftVisible)
+    for (const layerId of AIRCRAFT_TRAFFIC_LAYER_IDS) {
+      setTrafficLayerVisibility(map, layerId, aircraftVisible)
+    }
   }, [aircraftVisible])
 
   useEffect(() => {
     const map = mapRef.current
     if (!map || !loadedRef.current) return
-    setTrafficLayerVisibility(map, LAYER_VESSELS, vesselsVisible)
-    setTrafficLayerVisibility(map, LAYER_VESSEL_HALO, vesselsVisible)
+    for (const layerId of VESSEL_TRAFFIC_LAYER_IDS) {
+      setTrafficLayerVisibility(map, layerId, vesselsVisible)
+    }
   }, [vesselsVisible])
 
   useEffect(() => {
@@ -1026,6 +1417,12 @@ export function TrafficMap({
     if (!map || !loadedRef.current) return
     setAirportsVisibility(map, airportsVisible)
   }, [airportsVisible])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !loadedRef.current) return
+    setWeatherVisibility(map, weatherVisible)
+  }, [weatherVisible])
 
   useEffect(() => {
     const map = mapRef.current

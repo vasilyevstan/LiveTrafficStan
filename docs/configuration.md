@@ -18,6 +18,7 @@ cp .env.example .env.local
 | `VITE_MAP_DARK_STYLE_URL` | `https://tiles.openfreemap.org/styles/dark` | HTTPS URL or root-relative path |
 | `VITE_GEOCODER_ENDPOINT` | `https://photon.komoot.io/api` | HTTPS Photon-compatible forward-search endpoint or root-relative deployment path; protocol-relative and credential-bearing URLs are rejected |
 | `VITE_AIRCRAFT_ENDPOINT` | `/api/aircraft` | HTTPS URL or root-relative path |
+| `VITE_WEATHER_ENDPOINT` | `/api/weather/metar` | Root-relative same-origin METAR route with no query or fragment; protocol-relative and absolute URLs are rejected |
 | `VITE_MARINE_REST_ENDPOINT` | `https://meri.digitraffic.fi` | HTTPS URL or root-relative path |
 | `VITE_MARINE_MQTT_ENDPOINT` | `wss://meri.digitraffic.fi:443/mqtt` | Secure WebSocket URL or root-relative path |
 
@@ -58,6 +59,10 @@ spread through components:
 | Airport asset request deadline / cap | 5 seconds / 1.5 MiB |
 | Airport records | 5,280 large and medium airports |
 | Airport rendered zoom thresholds | Large points/labels 4/5; medium points/labels 7/8 |
+| Traffic clustering | Off by default; separate aircraft/vessel sources, 42 px radius, 3-point minimum, maximum cluster zoom 10 |
+| METAR station bound / request start gate | 50 explicit ICAO stations / at least 60 seconds |
+| METAR client and Worker deadline / response cap | 8 seconds / 256 KiB |
+| METAR stale / expiry | 75 minutes / 120 minutes |
 | Marine metadata refresh | 5 minutes |
 | Marine query REST refresh gate | 5 minutes |
 | Marine MQTT connect timeout / reconnect | 10 seconds / 15 seconds |
@@ -175,6 +180,44 @@ Live aircraft responses are never placed in a shared deployment cache.
 Fingerprint-named application assets are cached immutably instead. See
 [Hosting and Deployment](hosting-and-deployment.md).
 
+## Weather observations and proxy
+
+The default browser request is root-relative and canonical:
+
+```text
+/api/weather/metar?ids=EETN%2CEFHK
+```
+
+The application derives the station set only from explicit four-letter
+`icaoCode` values in the pinned large/medium OurAirports projection that fall
+inside the current eligible live-traffic viewport. IDs are uppercase, sorted,
+unique, and limited to 50. An over-limit view is not truncated; the UI asks the
+user to zoom in. `ident`, IATA, visible aircraft, routes, movement, and nearby
+geometry are never used as station inference.
+
+Vite development/preview rewrites the fixed route to the AWC JSON endpoint,
+discards unsupported browser query parameters, forces `format=json`, removes
+browser credentials and forwarding headers, and sends the public project
+User-Agent. Production uses the stricter Worker validation described in
+[Hosting and Deployment](hosting-and-deployment.md). Setting
+`VITE_WEATHER_ENDPOINT` remains a same-origin path substitution point for an
+approved deployment boundary, not an upstream-provider selector. Absolute and
+protocol-relative values are rejected, and the client verifies the resolved
+origin before sending station IDs.
+
+There is no startup request and no periodic weather poller. First enable,
+settled station-set changes, explicit refresh, and retry share a session-lived
+minimum 60-second request-start gate and preserve a longer `Retry-After`.
+Hidden, disabled, superseded, or unmounted work aborts. A fulfilled same-view
+result survives hide/show and theme/style changes without persistence or
+refetch. Reports are marked stale after 75 minutes and removed after 120
+minutes.
+
+Enabling METAR sends the visible qualifying ICAO station IDs through the
+application host to AWC. The UI shows source and retrieval time. Coverage is
+limited by both AWC reporting and the pinned airport projection; an empty
+result is not proof of no weather or global coverage.
+
 ## Selected-aircraft metadata
 
 Static metadata configuration is intentionally not exposed through `VITE_*`
@@ -256,9 +299,11 @@ MapLibre's module worker is explicitly bundled through Vite in
 that vector tiles are being parsed.
 
 `VITE_MAP_STYLE_URL` configures the Light style and
-`VITE_MAP_DARK_STYLE_URL` configures the Dark style. A missing preference,
-invalid stored value, or unavailable storage selects Light. Theme storage uses
-the `livetrafficstan.theme` key and contains only `light` or `dark`; map center
+`VITE_MAP_DARK_STYLE_URL` configures the Dark style. The stored
+`livetrafficstan.theme` value may be `auto`, `light`, or `dark`. A missing
+preference, invalid value, or unavailable storage selects Light to preserve the
+previous default. Auto resolves the browser system color scheme and follows
+later changes; explicit Light/Dark choices remain overrides. Map center
 coordinates are never stored.
 
 The current behavioral configuration keeps:
@@ -267,7 +312,7 @@ The current behavioral configuration keeps:
 | --- | --- |
 | Light map style | OpenFreeMap Positron |
 | Dark map style | OpenFreeMap Dark |
-| Theme default | Light |
+| Theme default | Light; Auto is explicit opt-in |
 | Aircraft query cadence during camera movement | No faster than 20 seconds |
 | Marine query-triggered REST refresh | No more than once per 5 minutes |
 | Ineligible viewport behavior | Hide traffic/trails and pause providers |
@@ -276,6 +321,12 @@ The current behavioral configuration keeps:
 
 Navigation timing and privacy values are centralized in
 `src/config/appConfig.ts`.
+
+Layer preferences use one plain serializable boolean shape for aircraft,
+vessels, ports, airports, clustering, and METAR. It deliberately excludes
+provider state, loading/error state, observations, cluster IDs, MapLibre
+objects, and selections. The current Issue #10 implementation keeps that shape
+in session React state; persistence remains future Issue #12 scope.
 
 ## Marine endpoints
 

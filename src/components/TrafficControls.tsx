@@ -1,14 +1,16 @@
-import type { Theme } from '../app/theme'
+import type { ThemePreference } from '../app/theme'
 import type { PlaceSearchState } from '../app/PlaceSearchController'
 import type { AppCenter } from '../config/appConfig'
 import type { Airport } from '../domain/airports'
 import type { DisplayAircraft, DisplayVessel } from '../domain/traffic'
 import type { VesselFilterState } from '../domain/vesselFilters'
+import type { DisplayWeatherObservation } from '../domain/weatherObservations'
 import type { PlaceSearchResult } from '../providers/geocoding/photonProvider'
 import { AircraftDiscovery } from './AircraftDiscovery'
 import { AirportContext } from './AirportContext'
 import { LocationSearch } from './LocationSearch'
 import { VesselDiscovery } from './VesselDiscovery'
+import { WeatherContext } from './WeatherContext'
 
 interface TrafficControlsProps {
   aircraftQuery: string
@@ -42,14 +44,31 @@ interface TrafficControlsProps {
   onAirportsVisibleChange: (visible: boolean) => void
   onAirportSelect: (id: string) => void
   onRetryAirports: () => void
+  weatherVisible: boolean
+  weatherLoading: boolean
+  weatherWaiting: boolean
+  weatherReady: boolean
+  now: number
+  weatherError?: string
+  weatherStatusMessage?: string
+  weatherObservations: readonly DisplayWeatherObservation[]
+  selectedWeatherId: string | null
+  weatherEmptyMessage: string
+  weatherCanRefresh: boolean
+  onWeatherVisibleChange: (visible: boolean) => void
+  onWeatherSelect: (id: string) => void
+  onRetryWeather: () => void
+  onRefreshWeather: () => void
+  clusteringEnabled: boolean
+  onClusteringEnabledChange: (enabled: boolean) => void
   centerDisabled: boolean
   onCenter: () => void
   locationAvailable: boolean
   locationLoading: boolean
   locationMessage?: string
   onUseLocation: () => void
-  theme: Theme
-  onThemeChange: (theme: Theme) => void
+  themePreference: ThemePreference
+  onThemePreferenceChange: (preference: ThemePreference) => void
   locationNavigationDisabled: boolean
   activeLocationLabel: string
   coordinatePrecision: number
@@ -93,14 +112,31 @@ export function TrafficControls({
   onAirportsVisibleChange,
   onAirportSelect,
   onRetryAirports,
+  weatherVisible,
+  weatherLoading,
+  weatherWaiting,
+  weatherReady,
+  now,
+  weatherError,
+  weatherStatusMessage,
+  weatherObservations,
+  selectedWeatherId,
+  weatherEmptyMessage,
+  weatherCanRefresh,
+  onWeatherVisibleChange,
+  onWeatherSelect,
+  onRetryWeather,
+  onRefreshWeather,
+  clusteringEnabled,
+  onClusteringEnabledChange,
   centerDisabled,
   onCenter,
   locationAvailable,
   locationLoading,
   locationMessage,
   onUseLocation,
-  theme,
-  onThemeChange,
+  themePreference,
+  onThemePreferenceChange,
   locationNavigationDisabled,
   activeLocationLabel,
   coordinatePrecision,
@@ -165,6 +201,26 @@ export function TrafficControls({
               ? 'AIRPORTS...'
               : 'AIRPORTS'}
           </button>
+          <button
+            type="button"
+            className={clusteringEnabled ? 'is-active' : undefined}
+            aria-pressed={clusteringEnabled}
+            onClick={() => onClusteringEnabledChange(!clusteringEnabled)}
+          >
+            CLUSTERS
+          </button>
+          <button
+            id="weather-layer-toggle"
+            type="button"
+            className={weatherVisible ? 'is-active' : undefined}
+            aria-pressed={weatherVisible}
+            aria-busy={
+              weatherVisible && (weatherLoading || weatherWaiting)
+            }
+            onClick={() => onWeatherVisibleChange(!weatherVisible)}
+          >
+            {weatherVisible && weatherLoading ? 'METAR...' : 'METAR'}
+          </button>
         </div>
         {portsVisible && portsError && (
           <div className="control-note ports-status" role="status">
@@ -182,6 +238,28 @@ export function TrafficControls({
             </button>
           </div>
         )}
+        {weatherVisible && weatherError && (
+          <div className="control-note ports-status" role="status">
+            <span>METAR unavailable: {weatherError}</span>
+            <button type="button" onClick={onRetryWeather}>
+              RETRY METAR
+            </button>
+          </div>
+        )}
+        {weatherVisible && !weatherError && weatherStatusMessage && (
+          <div className="control-note ports-status" role="status">
+            <span>{weatherStatusMessage}</span>
+            {weatherReady && (
+              <button
+                type="button"
+                disabled={!weatherCanRefresh}
+                onClick={onRefreshWeather}
+              >
+                REFRESH METAR
+              </button>
+            )}
+          </div>
+        )}
         <p className="control-note control-note--muted">
           Ports:{' '}
           <a href="https://www.naturalearthdata.com/downloads/10m-cultural-vectors/ports/">
@@ -196,6 +274,18 @@ export function TrafficControls({
           Airports: <a href="https://ourairports.com/data/">OurAirports</a>{' '}
           (<a href="https://ourairports.com/data/">public domain</a>); static
           large and medium airport context, not operational data.
+        </p>
+        <p className="control-note control-note--muted">
+          METAR/SPECI observations:{' '}
+          <a href="https://aviationweather.gov/data/api/">
+            NOAA/NWS Aviation Weather Center
+          </a>
+          ; generally public-domain observations. Enabling this layer sends
+          visible qualifying ICAO station IDs through the application host
+          to AWC. Coverage is limited by AWC reporting and the pinned
+          large/medium-airport dataset. Source and retrieval times are shown;
+          this modified presentation is not an official forecast, operational
+          flight status, airport board, or endorsement.
         </p>
       </fieldset>
 
@@ -228,16 +318,28 @@ export function TrafficControls({
         />
       )}
 
+      {weatherVisible && weatherReady && (
+        <WeatherContext
+          observations={weatherObservations}
+          selectedObservationId={selectedWeatherId}
+          emptyMessage={weatherEmptyMessage}
+          now={now}
+          onSelect={onWeatherSelect}
+        />
+      )}
+
       <fieldset className="control-group">
         <legend>Theme</legend>
-        <div className="control-options control-options--two">
-          {(['light', 'dark'] as const).map((option) => (
+        <div className="control-options control-options--three">
+          {(['auto', 'light', 'dark'] as const).map((option) => (
             <button
               key={option}
               type="button"
-              className={theme === option ? 'is-active' : undefined}
-              aria-pressed={theme === option}
-              onClick={() => onThemeChange(option)}
+              className={
+                themePreference === option ? 'is-active' : undefined
+              }
+              aria-pressed={themePreference === option}
+              onClick={() => onThemePreferenceChange(option)}
             >
               {option.toUpperCase()}
             </button>

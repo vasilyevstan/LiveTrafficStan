@@ -13,7 +13,14 @@
       (() => {
         let theme = 'light'
         try {
-          if (localStorage.getItem('livetrafficstan.theme') === 'dark') {
+          const preference = localStorage.getItem('livetrafficstan.theme')
+          if (preference === 'dark') {
+            theme = 'dark'
+          } else if (
+            preference === 'auto' &&
+            typeof matchMedia === 'function' &&
+            matchMedia('(prefers-color-scheme: dark)').matches
+          ) {
             theme = 'dark'
           }
         } catch {}

@@ -21,8 +21,9 @@ single React application, without accounts, a database, or persistent tracking.
   REST initialization and MQTT over secure WebSockets.
 - OpenStreetMap-derived vector maps from
   [OpenFreeMap](https://openfreemap.org/), rendered with MapLibre GL JS.
-- Explicit Light and Dark themes that persist locally and switch the base map
-  without recreating MapLibre or resetting live traffic state.
+- Explicit Auto, Light, and Dark theme preferences. Auto follows the browser
+  color-scheme signal, while Light and Dark remain persistent overrides; all
+  three switch the base map without recreating MapLibre or resetting traffic.
 - Viewport-driven traffic after settled pan, zoom, rotation, pitch, Home, and
   resize changes.
 - A truthful 100 km enclosing-query limit: wider or unsafe views pause traffic
@@ -46,6 +47,13 @@ single React application, without accounts, a database, or persistent tracking.
   medium airport reference points, static details, and a bounded keyboard
   list for the current view. It does not imply operational status, routes,
   arrivals, or departures.
+- Optional session-only aircraft and vessel clustering, kept in separate
+  MapLibre sources with distinct counts and expansion behavior. Clustering
+  starts off and never changes provider request cadence or entity identity.
+- An optional METAR/SPECI observation layer from the NOAA/NWS Aviation Weather
+  Center. It uses explicit ICAO codes from the pinned airport projection,
+  shows observation and retrieval age, expires old reports, and remains
+  independent of traffic providers and static airport context.
 - Honest detail cards, provider-specific health, stale/expired handling, and
   partial operation when one provider fails.
 - Short interpolation only between observed positions and a bounded 15-minute
@@ -81,7 +89,7 @@ npm run check:airports
 npm run build
 ```
 
-Test the production output and its local aircraft proxy with:
+Test the production output and its local aircraft and METAR proxies with:
 
 ```bash
 npm run preview
@@ -109,6 +117,8 @@ selected aircraft -> static metadata index + one prefix shard -> details only
 
 PORTS toggle -> pinned same-origin Natural Earth projection -> map + port details
 AIRPORTS toggle -> pinned same-origin OurAirports projection -> map + airport details
+METAR toggle -> qualifying airport ICAO codes -> same-origin AWC proxy
+             -> current observations -> map + weather details
 
 current aircraft -> local literal search -> existing traffic selection
 
@@ -129,7 +139,8 @@ circle, while normalized aircraft and vessels are filtered to the actual
 viewport polygon before display. Floating controls do not shrink the geographic
 query area.
 
-Light/Dark changes use `map.setStyle` on that same MapLibre instance. An
+Resolved Light/Dark changes, including Auto system changes, use `map.setStyle`
+on that same MapLibre instance. An
 idempotent installer restores traffic images, sources, layers, current data,
 visibility, and trail after each style load while preserving camera,
 selection, provider state, and connections.
@@ -152,6 +163,14 @@ independent static-context boundary as ports, but keeps large and medium airport
 points visible at higher zooms and exposes static provenance rather than
 operational flight information.
 
+The optional METAR boundary reuses explicit four-letter ICAO codes from the
+pinned airport dataset; it never infers stations from traffic or movement.
+There is no startup weather request and no periodic poller. First enable,
+settled station-set changes, explicit refresh, and retry share one session
+request-start gate of at least 60 seconds. Reports become stale after 75
+minutes and expire after 120 minutes. Hiding the layer preserves a fulfilled
+same-view result without persisting it.
+
 See [Architecture](docs/architecture.md) for component boundaries, data flow,
 failure isolation, rendering, and deployment details.
 
@@ -170,6 +189,7 @@ available for:
 | `VITE_MAP_DARK_STYLE_URL` | `https://tiles.openfreemap.org/styles/dark` |
 | `VITE_GEOCODER_ENDPOINT` | `https://photon.komoot.io/api` |
 | `VITE_AIRCRAFT_ENDPOINT` | `/api/aircraft` |
+| `VITE_WEATHER_ENDPOINT` | `/api/weather/metar` |
 | `VITE_MARINE_REST_ENDPOINT` | `https://meri.digitraffic.fi` |
 | `VITE_MARINE_MQTT_ENDPOINT` | `wss://meri.digitraffic.fi:443/mqtt` |
 
@@ -188,6 +208,7 @@ operational thresholds, and examples.
 | Marine | Fintraffic Digitraffic | CC BY 4.0 | Direct regional REST and MQTT |
 | Port context | Natural Earth Ports | Public domain | Immutable same-origin static asset, loaded only when enabled |
 | Airport context | OurAirports | Public domain | Immutable same-origin static asset, loaded only when enabled |
+| Weather observations | NOAA/NWS Aviation Weather Center | U.S. public domain unless marked otherwise | Strict same-origin Worker/Vite route, loaded only when METAR is enabled |
 
 The repository's Apache License 2.0 applies to source code only. The bundled
 aircraft metadata is a derivative database conveyed under ODC-By 1.0 with its
@@ -207,9 +228,11 @@ authorization gates.
 ## Deployment
 
 Cloudflare Workers with Static Assets is the selected production boundary. It
-deploys the Vite client and one strict same-origin ADSB.lol point proxy as an
-atomic unit. Hashed assets, including the MapLibre worker, use immutable browser
-caching; live aircraft responses use no shared cache.
+deploys the Vite client with strict same-origin ADSB.lol point and AWC METAR
+routes as one atomic unit. Hashed assets, including the MapLibre worker, use
+immutable browser caching; live aircraft responses use no shared cache and
+successful METAR responses receive only the source-aligned 60-second cache
+guidance.
 
 The proxy accepts only
 `GET /api/aircraft/v2/point/{latitude}/{longitude}/{radiusNm}`, validates the
@@ -217,6 +240,12 @@ current 1-54 NM transport contract, uses a total upstream deadline and body
 limit, rejects redirects, and preserves provider status, body, and
 `Retry-After`. It forwards no browser credentials or arbitrary headers and
 keeps request URL logging disabled.
+
+The weather route accepts only
+`GET /api/weather/metar?ids=EETN%2CEFHK`, with 1-50 sorted unique uppercase
+four-letter IDs and no other parameters. It constructs one fixed AWC JSON
+request, follows no redirects, forwards no browser credentials, uses an
+eight-second deadline and 256 KiB response cap, and preserves `Retry-After`.
 
 The deploy-ready code is not yet a claimed public deployment. Permanent
 Cloudflare account authorization and environment credentials are tracked in
@@ -258,10 +287,15 @@ monitoring, privacy, and rollback procedure.
 - Current arrival and departure boards remain blocked on an authorized
   airport/time-window provider contract in
   [Issue #46](https://github.com/vasilyevstan/LiveTrafficStan/issues/46).
-- Theme preference is limited to explicit Light/Dark selection; there is no
-  automatic system-theme mode.
-- There is no reverse geocoding, route enrichment, playback, weather overlay,
-  account, saved center preference, or offline mode.
+- Auto follows the browser's color-scheme preference, not solar time or map
+  location.
+- METAR coverage is limited by both AWC reporting and the pinned large/medium
+  airport projection. It is observed aviation weather, not a forecast,
+  airport board, operational status, or global coverage guarantee. Enabling it
+  sends visible qualifying ICAO station IDs through the application host to
+  AWC.
+- There is no reverse geocoding, route enrichment, playback, radar,
+  precipitation forecast, account, saved center preference, or offline mode.
 
 Planned work is tracked in
 [GitHub Issues](https://github.com/vasilyevstan/LiveTrafficStan/issues), not

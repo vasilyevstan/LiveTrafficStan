@@ -139,6 +139,66 @@ const verifyAircraftProxy = async () => {
   assert(unsupported.status === 404, 'Unsupported aircraft path was not rejected')
 }
 
+const verifyMetarProxy = async () => {
+  const response = await fetchWithTimeout(
+    new URL('/api/weather/metar?ids=EETN', baseUrl),
+  )
+  assert(
+    response.status === 200 || response.status === 204,
+    `METAR proxy returned ${response.status}`,
+  )
+  assert(
+    response.headers.get('x-livetrafficstan-release') === expectedReleaseSha,
+    'METAR proxy release SHA does not match the deployed source',
+  )
+  assert(
+    response.headers.get('cache-control') === 'public, max-age=60',
+    'METAR proxy cache guidance is incorrect',
+  )
+  assert(
+    response.headers.get('x-content-type-options') === 'nosniff',
+    'METAR proxy nosniff header is missing',
+  )
+  assert(
+    !response.headers.has('access-control-allow-origin'),
+    'METAR proxy unexpectedly allows cross-origin browser access',
+  )
+
+  const body = new Uint8Array(await response.arrayBuffer())
+  assert(body.byteLength <= 256 * 1_024, 'METAR proxy response is oversized')
+  if (response.status === 200) {
+    assert(
+      response.headers.get('content-type')?.includes('application/json'),
+      'METAR proxy did not return JSON',
+    )
+    const payload = JSON.parse(new TextDecoder().decode(body))
+    assert(Array.isArray(payload), 'METAR proxy returned an unexpected payload')
+    assert(
+      payload.every(
+        (record) =>
+          record &&
+          typeof record === 'object' &&
+          record.icaoId === 'EETN',
+      ),
+      'METAR proxy returned an unrequested station',
+    )
+  }
+
+  const invalid = await fetchWithTimeout(
+    new URL('/api/weather/metar?ids=eetn', baseUrl),
+  )
+  assert(invalid.status === 400, 'Invalid METAR station ID was not rejected')
+
+  const unsupportedMethod = await fetchWithTimeout(
+    new URL('/api/weather/metar?ids=EETN', baseUrl),
+    { method: 'POST' },
+  )
+  assert(
+    unsupportedMethod.status === 405,
+    'Unsupported METAR method was not rejected',
+  )
+}
+
 const verifyDigitrafficRest = async () => {
   const endpoint = new URL(
     'https://meri.digitraffic.fi/api/ais/v1/locations',
@@ -221,6 +281,7 @@ const verifyDigitrafficMqtt = () =>
 
 await verifyStaticAssets()
 await verifyAircraftProxy()
+await verifyMetarProxy()
 await verifyDigitrafficRest()
 await verifyDigitrafficMqtt()
 

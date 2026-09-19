@@ -10,13 +10,14 @@ npm run dev
 ```
 
 The development server normally runs at <http://localhost:5173>. It supplies
-the `/api/aircraft` proxy required by the default ADSB.lol integration.
+the fixed `/api/aircraft` and `/api/weather/metar` proxies required by the
+default ADSB.lol and AWC integrations.
 
 ## Commands
 
 | Command | Purpose |
 | --- | --- |
-| `npm run dev` | Start Vite with hot module replacement and the aircraft proxy |
+| `npm run dev` | Start Vite with hot module replacement and the fixed aircraft/METAR proxies |
 | `npm run lint` | Run Oxlint across the repository |
 | `npm run typecheck` | Run strict TypeScript project checks without output |
 | `npm test -- --run` | Run the deterministic Vitest suite once |
@@ -28,7 +29,7 @@ the `/api/aircraft` proxy required by the default ADSB.lol integration.
 | `npm run check:airports` | Network-free validation of the committed OurAirports projection |
 | `npm run update:airports` | Explicit maintainer regeneration from the pinned OurAirports source |
 | `npm run build` | Type-check and create the production bundle in `dist/` |
-| `npm run preview` | Serve the production bundle with the local aircraft proxy |
+| `npm run preview` | Serve the production bundle with the local aircraft/METAR proxies |
 | `npm run check:deploy` | Bundle the Worker and Static Assets without credentials or deployment |
 | `npm run preview:worker` | Build and run the actual local Cloudflare `workerd` boundary |
 
@@ -118,6 +119,8 @@ Map-experience tests also cover:
 - granted, prompt, denied, unsupported, timeout, and explicit geolocation
   outcomes without coordinate persistence;
 - theme storage validation and unavailable-storage behavior;
+- Auto theme resolution before paint, modern/legacy system listeners, explicit
+  overrides, storage migration, and listener cleanup;
 - idempotent MapLibre style installation and restoration of custom state;
 - theme-keyed traffic image replacement, including identical style URLs and
   stale/live opacity updates;
@@ -142,6 +145,19 @@ Map-experience tests also cover:
   inventory/checksum/size/count checks, bounded lazy runtime loading,
   timeout/abort/error isolation, fulfilled-only caching, zoom tiers, static
   details, viewport list, and deterministic airport/port pick precedence.
+- provider-neutral JSON round-tripping for the six layer preferences;
+- separate aircraft/vessel cluster source configuration, counts, expansion,
+  entity exclusion, generation races, reduced motion, snapshot signatures, and
+  interpolation suspension;
+- explicit ICAO station selection, over-limit rejection without truncation,
+  METAR/SPECI normalization, Unix-second time, qualified visibility, `VRB`,
+  stale/expiry, empty 204, newest-report selection, abort, timeout, size cap,
+  `429`, and `Retry-After`;
+- strict Worker weather route validation, fixed upstream construction,
+  redirect/content-type/timeout/oversize handling, safe headers, and no
+  credential forwarding;
+- weather-before-airport-before-port picking and all six asynchronous static
+  layer installation orders.
 
 `npm run check:aircraft-metadata` makes no upstream request. It validates the
 pinned source and license identity, configured immutable version, co-located
@@ -185,6 +201,25 @@ late callbacks. Repeated tests use deterministic browser abstractions and fake
 time rather than relying on the current machine's location service.
 Include a successful result beyond the former eight-second window, timeout then
 retry, duplicate permission/click suppression, and unmount invalidation.
+
+## Issue #10 measured impact
+
+Against exact base `2332111f43062c42d95540176e39594a35a6ec67`:
+
+- main JavaScript: +26,811 raw / +7,036 gzip-9 bytes;
+- `index.html`: +251 raw / +79 gzip-9 bytes for pre-paint Auto resolution;
+- CSS, MapLibre worker, and MQTT chunk: byte-identical;
+- Wrangler dry-run Worker upload: 7.41 to 13.64 KiB raw and 2.41 to 3.16 KiB
+  gzip as reported by Wrangler;
+- no weather bytes or airport asset request occur at startup.
+
+Production-preview fixture acceptance measured a two-animation-frame cluster
+toggle between 18.5 and 30.6 ms and first one-station weather list/map
+publication within 104 to 105 ms, with no browser long-task entries after the
+measurement boundary. The actual local Worker returned 896- to 930-byte
+two-station AWC JSON responses with `public, max-age=60`, JSON content type, and
+`nosniff`. These bounded local measurements are regression evidence, not a
+public-load or provider-capacity claim.
 
 ## Browser smoke test
 
@@ -254,6 +289,25 @@ Use `npm run dev` and verify:
     restores focus to the originating result when present or AIRPORTS otherwise.
     Airport, port, and traffic selection clearing and exact-before-near-miss
     precedence remain deterministic.
+25. No `/api/weather/metar` request occurs at startup. First METAR enable loads
+    the airport asset if needed and makes at most one canonical request for the
+    sorted visible ICAO set. Hiding/re-enabling, Light/Dark/Auto changes, and
+    style rehydration reuse a fulfilled same-view result without refetching.
+26. METAR loading, one-minute waiting, empty, stale, expired, error, retry, and
+    refresh states are truthful. Switching A to B to A inside the gate recovers
+    at the next allowed boundary rather than permanently suppressing A. A
+    blocked weather route leaves map, traffic, ports, airports, search, camera,
+    and provider health usable.
+27. The weather list is keyboard reachable; EETN details show report/source
+    time, retrieval time, normalized fields, raw report, AWC terms, and
+    observation-not-forecast wording. Closing restores focus to the originating
+    result or METAR toggle.
+28. Wide/ineligible or over-50-station views issue no weather request and hide
+    obsolete observations. Traffic exact/touch selection precedes weather;
+    weather precedes airport and port within exact and touch context hits.
+29. AIR and SEA clusters remain separate, expand to the reported zoom, never
+    open entity details, and do not increase aircraft, marine, metadata, Photon,
+    airport, port, or METAR requests.
 
 For the viewport-driven map experience, additionally verify:
 
@@ -272,8 +326,9 @@ For the viewport-driven map experience, additionally verify:
    prompt; other permission states retain Tallinn until explicit action.
 7. Dateline, rotated, pitched, and desktop/mobile resized views remain bounded
    and do not become a falsely small query.
-8. Repeated Light/Dark changes preserve camera, live traffic, selected object,
-   trail, controls, and provider connections.
+8. Auto system changes and repeated explicit Light/Dark overrides preserve
+   camera, live traffic, selected object, trail, controls, and provider
+   connections.
 9. Both themes remain readable on desktop and a narrow mobile viewport.
 10. Aircraft, helicopter, and vessel artwork retains its identity over land,
    water, and busy detail at actual marker scale; stale markers remain
@@ -281,8 +336,9 @@ For the viewport-driven map experience, additionally verify:
 11. Light/small, generic, heavy, rotorcraft, cargo, tanker, passenger, fishing,
     tug, and generic-vessel shapes remain distinguishable in Light and Dark
     themes without changing cyan/amber traffic-kind identity.
-12. Rapid theme changes restore all ten image IDs once per style generation,
-    preserve one map, and do not reconnect or query either provider.
+12. Rapid theme changes restore all ten image IDs and loaded static/weather
+    layers once per style generation, preserve one map, and do not reconnect or
+    query any provider.
 13. A direct touch hit selects normally, an isolated near miss inside the
     8 CSS-pixel box selects the sole eligible ID, and an outside or ambiguous
     tap clears/retains selection according to the normal empty-hit path.
@@ -318,6 +374,10 @@ For the production edge boundary, run `npm run preview:worker`. Confirm:
 5. One valid fixed-route aircraft request succeeds with the public project
    User-Agent.
 6. Worker responses use no-store and expose no CORS wildcard.
+7. A canonical encoded METAR request returns bounded JSON or 204 with
+   `nosniff`; malformed IDs, raw commas, extra parameters, unsupported methods,
+   redirects, timeouts, oversized responses, unsafe content types, and missing
+   API paths are rejected without an open forwarder.
 
 Do not repeatedly use the local edge check as a provider load loop. All path,
 timeout, body-size, redirect, status, `Retry-After`, and cancellation cases use

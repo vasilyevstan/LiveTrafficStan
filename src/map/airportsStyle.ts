@@ -7,7 +7,8 @@ import {
 } from 'maplibre-gl'
 import type { Theme } from '../app/theme'
 import type { Airport } from '../domain/airports'
-import { LAYER_AIRCRAFT_HALO } from './trafficStyle'
+import { LAYER_SELECTED_TRAIL } from './trafficStyle'
+import { LAYER_WEATHER_HALO } from './weatherStyle'
 
 export const SOURCE_AIRPORTS = 'context-airports'
 export const LAYER_AIRPORTS_LARGE = 'context-airports-large'
@@ -90,9 +91,11 @@ const ensureLayer = (
   if (!map.getLayer(layer.id)) {
     map.addLayer(
       layer,
-      map.getLayer(LAYER_AIRCRAFT_HALO)
-        ? LAYER_AIRCRAFT_HALO
-        : undefined,
+      map.getLayer(LAYER_WEATHER_HALO)
+        ? LAYER_WEATHER_HALO
+        : map.getLayer(LAYER_SELECTED_TRAIL)
+          ? LAYER_SELECTED_TRAIL
+          : undefined,
     )
   }
 }
