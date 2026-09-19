@@ -96,6 +96,13 @@ covers:
 - current, stale, and expired transitions;
 - trail visibility, 5/15/30/60-minute pruning, per-object point caps,
   deterministic 50,000-point aggregate eviction, and future-only expansion;
+- versioned preference defaults, partial/invalid storage, legacy-theme
+  migration, unavailable/quota storage, reset, and exclusion of camera/search/
+  history/radius fields;
+- strict fragment version/allowlist/duplicate/length/range validation, atomic
+  camera restoration, three-decimal privacy rounding, and URL round-trip;
+- exact metric/aviation conversions, qualified METAR visibility round-trip, and
+  unchanged vessel one-knot filter membership;
 - provider-qualified historical projection, excluded enrichment fields,
   exact provider/kind/license tuples, canonical logical-byte recomputation,
   source-time/receipt-time separation, and vessel metadata cursor gating;
@@ -136,6 +143,11 @@ Map-experience tests also cover:
 - theme storage validation and unavailable-storage behavior;
 - Auto theme resolution before paint, modern/legacy system listeners, explicit
   overrides, storage migration, and listener cleanup;
+- pre-paint/React parity for shared, unified, legacy, malformed, and default
+  theme resolution;
+- shared-camera precedence over delayed geolocation, initial viewport
+  publication without a fit, and independent camera reporting for repeated
+  ineligible views;
 - idempotent MapLibre style installation and restoration of custom state;
 - theme-keyed traffic image replacement, including identical style URLs and
   stale/live opacity updates;
@@ -263,6 +275,32 @@ and verifies that two-tab Clear invalidates both durable and volatile history.
 It also checks one MapLibre canvas, visible attribution, no runtime exceptions,
 real touch movement, and direct Return to Live access at 390x844 and 390x568.
 Provider HTTP failures are provider-state evidence, not JavaScript exceptions.
+
+## Issue #12 preference, share, and unit acceptance
+
+The PR A Chromium matrix starts from absent preference keys and proves Light and
+Metric render without implicit storage. It then persists Dark,
+Aviation/Nautical, ports, clustering, a structured cargo filter, hidden
+60-minute trails, and verifies that free-text query, camera, radius, history,
+and provider state are absent from the stored schema.
+
+The same pass proves:
+
+- unit changes create no additional aircraft request and preserve one map;
+- an explicit link contains a three-decimal camera plus nonzero bearing/pitch,
+  restores those exact camera fields and controls, and does not overwrite
+  different saved Light/Metric preferences;
+- delayed already-granted geolocation updates Home but does not steal the
+  shared camera; a later Center uses `Home: Near you`;
+- a malformed fragment with an otherwise valid Dark field resolves to Light in
+  both pre-paint and React paths;
+- Clipboard rejection exposes a focusable manual-copy field and status;
+- reset removes unified/legacy preference keys and the fragment, restores
+  defaults, preserves camera, and leaves the exact private-history settings
+  value and IndexedDB record count unchanged;
+- one MapLibre canvas, visible attribution, reachable preferences, and the
+  58vh control-panel bound hold at 390x844 and 390x568;
+- no runtime exception or console error is reported.
 
 ## Browser smoke test
 

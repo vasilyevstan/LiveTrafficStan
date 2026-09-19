@@ -38,7 +38,20 @@ If the application theme changes but the base map does not, verify both
 editing `.env.local`. Invalid saved values fall back to Light. Auto follows
 `prefers-color-scheme`; verify the operating-system/browser scheme and that the
 stored value is `auto`, not an explicit Light/Dark override. To reset a valid
-choice, remove `livetrafficstan.theme` from the site's local storage.
+choice and the other remembered controls, use **RESET PREFERENCES**. The
+authoritative key is `livetrafficstan.preferences.v1`; the legacy
+`livetrafficstan.theme` key is only a rollback mirror. Reset does not clear
+private local history.
+
+If a shared link is ignored, confirm it uses a `#v=1&...` fragment and contains
+no duplicate, unknown, partial-camera, non-finite, or out-of-range fields.
+Opening a valid link does not save its overrides. Shared coordinates are
+rounded, but the link can still remain in browser history or the clipboard.
+
+Changing Metric versus Aviation / Nautical affects formatting only. If provider
+requests, viewport eligibility, vessel filter membership, selection, or
+history changes at the same time, treat that as a regression rather than an
+expected unit conversion.
 
 ## Aircraft shows unavailable
 

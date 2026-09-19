@@ -30,6 +30,10 @@ Check these project invariants:
 - Provider payloads are validated and normalized before map/UI use; units,
   timestamps, enclosing-circle transport, exact viewport filtering, missing
   fields, and AIS sentinel values remain truthful.
+- Provider, filter, viewport, and history values stay metric. A remembered
+  metric/aviation-nautical choice is presentation-only; METAR wind and
+  visibility normalize at the AWC boundary while bounded source qualifiers
+  remain available for truthful display.
 - Vessel search and category/navigation/speed/length filters run only after
   provider normalization, freshness, and viewport filtering. They do not alter
   traffic queries, provider snapshots, MQTT subscriptions, REST/metadata

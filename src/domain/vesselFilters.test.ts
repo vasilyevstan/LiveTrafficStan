@@ -4,6 +4,7 @@ import {
   DEFAULT_VESSEL_FILTERS,
   filterVessels,
   isDefaultVesselFilters,
+  matchesVesselFilters,
   ONE_KNOT_KPH,
   orderVesselSearchResults,
   vesselFilterSummary,
@@ -185,5 +186,27 @@ describe('vessel filters', () => {
         query: 'ship',
       }),
     ).toBe(false)
+  })
+
+  it('changes speed labels without changing the one-knot filter boundary', () => {
+    const filters = {
+      ...DEFAULT_VESSEL_FILTERS,
+      reportedSpeed: 'one-knot-or-more' as const,
+    }
+    expect(vesselFilterSummary(filters, 'metric')).toContain(
+      '1.9 km/h or faster',
+    )
+    expect(
+      vesselFilterSummary(filters, 'aviation-nautical'),
+    ).toContain('1 kn or faster')
+    expect(
+      matchesVesselFilters(
+        vessel('1', {
+          speedKph: ONE_KNOT_KPH,
+          lengthMeters: 50,
+        }),
+        filters,
+      ),
+    ).toBe(true)
   })
 })

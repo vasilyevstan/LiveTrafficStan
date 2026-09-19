@@ -4,6 +4,7 @@ import type { AppCenter } from '../config/appConfig'
 import type { Airport } from '../domain/airports'
 import type { DisplayAircraft, DisplayVessel } from '../domain/traffic'
 import type { TrailPreferences } from '../domain/trailPreferences'
+import type { UnitSystem } from '../domain/units'
 import type { VesselFilterState } from '../domain/vesselFilters'
 import type { DisplayWeatherObservation } from '../domain/weatherObservations'
 import type {
@@ -35,6 +36,7 @@ interface TrafficControlsProps {
   vesselResults: readonly DisplayVessel[]
   totalVessels: number
   vesselEmptyMessage: string
+  units: UnitSystem
   onVesselFiltersChange: (filters: VesselFilterState) => void
   onVesselSelect: (id: string) => void
   aircraftVisible: boolean
@@ -97,6 +99,12 @@ interface TrafficControlsProps {
   onUseLocation: () => void
   themePreference: ThemePreference
   onThemePreferenceChange: (preference: ThemePreference) => void
+  onUnitsChange: (units: UnitSystem) => void
+  shareDisabled: boolean
+  onShare: () => void
+  onResetPreferences: () => void
+  preferenceStatus?: string
+  manualShareUrl?: string
   locationNavigationDisabled: boolean
   activeLocationLabel: string
   coordinatePrecision: number
@@ -119,6 +127,7 @@ export function TrafficControls({
   vesselResults,
   totalVessels,
   vesselEmptyMessage,
+  units,
   onVesselFiltersChange,
   onVesselSelect,
   aircraftVisible,
@@ -181,6 +190,12 @@ export function TrafficControls({
   onUseLocation,
   themePreference,
   onThemePreferenceChange,
+  onUnitsChange,
+  shareDisabled,
+  onShare,
+  onResetPreferences,
+  preferenceStatus,
+  manualShareUrl,
   locationNavigationDisabled,
   activeLocationLabel,
   coordinatePrecision,
@@ -368,6 +383,7 @@ export function TrafficControls({
         totalVessels={totalVessels}
         vesselsVisible={vesselsVisible}
         emptyMessage={vesselEmptyMessage}
+        units={units}
         onFiltersChange={onVesselFiltersChange}
         onSelect={onVesselSelect}
       />
@@ -408,6 +424,52 @@ export function TrafficControls({
             </button>
           ))}
         </div>
+      </fieldset>
+
+      <fieldset className="control-group">
+        <legend>Preferences</legend>
+        <div className="control-options control-options--two">
+          <button
+            type="button"
+            className={units === 'metric' ? 'is-active' : undefined}
+            aria-pressed={units === 'metric'}
+            onClick={() => onUnitsChange('metric')}
+          >
+            METRIC
+          </button>
+          <button
+            type="button"
+            className={
+              units === 'aviation-nautical' ? 'is-active' : undefined
+            }
+            aria-pressed={units === 'aviation-nautical'}
+            onClick={() => onUnitsChange('aviation-nautical')}
+          >
+            AVIATION / NAUTICAL
+          </button>
+          <button type="button" disabled={shareDisabled} onClick={onShare}>
+            SHARE VIEW
+          </button>
+          <button type="button" onClick={onResetPreferences}>
+            RESET PREFERENCES
+          </button>
+        </div>
+        {preferenceStatus && (
+          <p className="control-note" role="status">
+            {preferenceStatus}
+          </p>
+        )}
+        {manualShareUrl && (
+          <label className="preference-share-link">
+            <span>Copy this share link</span>
+            <input
+              type="text"
+              readOnly
+              value={manualShareUrl}
+              onFocus={(event) => event.currentTarget.select()}
+            />
+          </label>
+        )}
       </fieldset>
 
       <fieldset className="control-group">

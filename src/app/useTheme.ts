@@ -1,60 +1,30 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   applyDocumentTheme,
   browserThemeMatchMedia,
-  browserThemeStorage,
-  readStoredThemePreference,
   resolveEffectiveTheme,
-  storeThemePreference,
   watchSystemTheme,
   type Theme,
   type ThemePreference,
 } from './theme'
 
-export const useTheme = () => {
-  const [state, setState] = useState<{
-    preference: ThemePreference
-    theme: Theme
-  }>(() => {
-    const preference = readStoredThemePreference(browserThemeStorage())
-    return {
-      preference,
-      theme: resolveEffectiveTheme(
-        preference,
-        browserThemeMatchMedia(),
-      ),
-    }
-  })
+export const useTheme = (preference: ThemePreference) => {
+  const [theme, setTheme] = useState<Theme>(() =>
+    resolveEffectiveTheme(preference, browserThemeMatchMedia()),
+  )
 
   useEffect(() => {
-    applyDocumentTheme(state.theme)
-  }, [state.theme])
+    setTheme(resolveEffectiveTheme(preference, browserThemeMatchMedia()))
+  }, [preference])
 
   useEffect(() => {
-    if (state.preference !== 'auto') return
-    return watchSystemTheme(browserThemeMatchMedia(), (theme) => {
-      setState((current) =>
-        current.preference === 'auto' && current.theme !== theme
-          ? { ...current, theme }
-          : current,
-      )
-    })
-  }, [state.preference])
+    applyDocumentTheme(theme)
+  }, [theme])
 
-  const setThemePreference = useCallback((preference: ThemePreference) => {
-    storeThemePreference(browserThemeStorage(), preference)
-    setState({
-      preference,
-      theme: resolveEffectiveTheme(
-        preference,
-        browserThemeMatchMedia(),
-      ),
-    })
-  }, [])
+  useEffect(() => {
+    if (preference !== 'auto') return
+    return watchSystemTheme(browserThemeMatchMedia(), setTheme)
+  }, [preference])
 
-  return {
-    theme: state.theme,
-    themePreference: state.preference,
-    setThemePreference,
-  }
+  return theme
 }

@@ -24,6 +24,14 @@ single React application, without accounts, a database, or persistent tracking.
 - Explicit Auto, Light, and Dark theme preferences. Auto follows the browser
   color-scheme signal, while Light and Dark remain persistent overrides; all
   three switch the base map without recreating MapLibre or resetting traffic.
+- One versioned device-local preference schema remembers theme, metric or
+  aviation/nautical presentation units, layers, structured vessel filters, and
+  selected-trail controls. It never stores camera, Home/location, search text,
+  selection, provider state, playback, or private-history consent.
+- An explicit **Share view** action creates a fragment-only link containing a
+  three-decimal camera plus validated presentation state. Opening it does not
+  save those overrides, and its camera wins over a later automatic geolocation
+  result.
 - Viewport-driven traffic after settled pan, zoom, rotation, pitch, Home, and
   resize changes.
 - A truthful 100 km enclosing-query limit: wider or unsafe views pause traffic
@@ -47,7 +55,7 @@ single React application, without accounts, a database, or persistent tracking.
   medium airport reference points, static details, and a bounded keyboard
   list for the current view. It does not imply operational status, routes,
   arrivals, or departures.
-- Optional session-only aircraft and vessel clustering, kept in separate
+- Optional remembered aircraft and vessel clustering, kept in separate
   MapLibre sources with distinct counts and expansion behavior. Clustering
   starts off and never changes provider request cadence or entity identity.
 - An optional METAR/SPECI observation layer from the NOAA/NWS Aviation Weather
@@ -57,9 +65,9 @@ single React application, without accounts, a database, or persistent tracking.
 - Honest detail cards, provider-specific health, stale/expired handling, and
   partial operation when one provider fails.
 - Short interpolation only between observed positions and a selected-object
-  in-memory trail configurable to 5, 15, 30, or 60 minutes. Trails remain
-  session-only, keep the released 15-minute default, and have per-object plus
-  aggregate point caps.
+  in-memory trail configurable to 5, 15, 30, or 60 minutes. Trail visibility
+  and duration are remembered, while the provider observations remain
+  session-only unless private local history is explicitly enabled.
 - Always-on bounded session observation history plus optional private
   origin-local IndexedDB history. Durable recording is off by default, uses
   1/6/24-hour retention choices, and can be cleared or disabled and deleted.
@@ -182,6 +190,15 @@ request-start gate of at least 60 seconds. Reports become stale after 75
 minutes and expire after 120 minutes. Hiding the layer preserves a fulfilled
 same-view result without persisting it.
 
+Presentation preferences are stored under
+`livetrafficstan.preferences.v1`. The legacy theme key is imported only when
+the unified key is absent and remains a rollback compatibility mirror. Shared
+state uses a validated `#v=1&...` fragment with explicit user action; it is not
+sent in HTTP requests, but users should still treat browser history and the
+clipboard as places where a copied rounded view can remain visible. Metric
+values remain canonical for providers, filters, history, and viewport logic;
+aviation/nautical units are formatting only.
+
 Traffic history stores only allowlisted normalized provider observations.
 Session history is always volatile and bounded. Private IndexedDB recording is
 explicit opt-in and bounded by retention time, record count, and logical bytes.
@@ -293,6 +310,9 @@ monitoring, privacy, and rollback procedure.
   survive within its configured bounds.
 - Browser location is one-shot, rounded, and session-only; it is not continuous
   tracking and exact coordinates are not persisted.
+- Preferences are origin-local browser storage. Shared links are deliberate
+  snapshots, not live synchronization, and include a rounded camera that can
+  remain in browser history or the clipboard.
 - Named place text is sent to Photon only after explicit submission. Photon is
   a fair-use public service with no availability guarantee; direct coordinate
   entry remains local and available during search failure or throttling.

@@ -350,6 +350,32 @@
   border-color: var(--error-border);
 }
 
+.preference-share-link {
+  display: grid;
+  gap: 5px;
+  margin-top: 7px;
+  color: var(--muted-text);
+  font-size: 0.62rem;
+}
+
+.preference-share-link input {
+  min-width: 0;
+  min-height: 34px;
+  width: 100%;
+  padding: 0 9px;
+  border: 1px solid var(--button-border);
+  border-radius: 8px;
+  color: var(--button-text);
+  background: var(--button-background);
+  font: inherit;
+  font-size: 0.68rem;
+}
+
+.preference-share-link input:focus-visible {
+  border-color: var(--button-hover-border);
+  outline: none;
+}
+
 .location-search__input-row button {
   min-width: 62px;
   padding: 0 9px;

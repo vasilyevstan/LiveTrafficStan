@@ -467,9 +467,9 @@ reconnect marine MQTT.
 
 ## Configurable trails and private local playback
 
-Selected-object trails stay session-only. They use
-plain serializable visibility/duration state, retain the released visible
-15-minute default, offer 5/15/30/60-minute choices, and remain bounded by both
+Selected-object trail observations stay session-only. Their
+visibility/duration preference is remembered, retains the released visible
+15-minute default, offers 5/15/30/60-minute choices, and remains bounded by both
 per-object and 50,000-point aggregate caps. Hiding a trail is a display choice,
 not a provider or recording policy.
 
@@ -529,6 +529,11 @@ invalid, or inaccessible storage still resolves to Light. Auto follows
 and Dark remain overrides. Pre-paint and React resolution use the same
 contract to avoid an initial wrong-theme flash.
 
+Issue #12 moves theme into the complete
+`livetrafficstan.preferences.v1` schema. The legacy theme key is imported only
+when that schema is absent and is mirrored for rollback compatibility; it is no
+longer an independent authority.
+
 MapLibre remains a single instance. Because `map.setStyle` removes custom
 style-owned state, the map layer installer restores traffic images,
 sources, layers, data, visibility, and trail after every `style.load`
@@ -541,9 +546,36 @@ rotation. Image IDs are replaced through MapLibre when the theme changes,
 including when both theme options reference the same style URL. The image cache
 contains only the bounded light and dark sets.
 
+## Versioned preferences, fragment sharing, and presentation units
+
+The unified preference schema stores only non-sensitive controls: theme,
+presentation units, six layer flags, structured vessel filters without query
+text, and selected-trail visibility/duration. Camera, browser Home/location,
+searches, selections, provider state, observations, playback, and the separate
+private-history authorization/storage contract are excluded.
+
+Explicit sharing creates a readable versioned URL fragment only on user action.
+The camera is complete, bounded, and rounded to the existing three-decimal
+privacy precision. Valid fragment fields override saved preferences and
+defaults for that page, but opening the link does not save them. A shared
+camera initializes the one MapLibre instance and wins over asynchronous
+automatic geolocation; the location result may still update Home for a later
+Center action.
+
+Metric values remain canonical. Aviation/nautical presentation converts metres
+to feet, km/h to knots, and m/s to ft/min. Vessel dimensions and filter
+thresholds remain metres. AWC wind and visibility are normalized to metric at
+the provider boundary while retaining bounded visibility relation/source tokens
+for truthful aviation formatting. Unit changes never alter provider queries,
+viewport eligibility, filter membership, history, selection, or map lifecycle.
+
+Reset restores preference defaults and removes the share fragment without
+moving the camera/Home or touching private-history settings, consent, epochs,
+or IndexedDB.
+
 ## Separate optional traffic clustering
 
-Clustering is a session-only display preference and starts off. Aircraft and
+Clustering is a remembered display preference and starts off. Aircraft and
 vessels keep separate MapLibre GeoJSON sources, cluster circles, and `AIR`/`SEA`
 count labels so unlike traffic kinds are never combined. Filtering, viewport
 eligibility, freshness, and expiry run before source data reaches clustering.

@@ -98,12 +98,21 @@ describe('AWC METAR provider', () => {
         reportType: 'SPECI',
         flightCategory: 'UNKNOWN',
         windDirection: 'VRB',
-        visibility: '6+',
+        windSpeedKph: 20.372,
+        visibility: {
+          kilometers: 9.656064,
+          relation: 'at-least',
+          sourceToken: '6+',
+        },
       }),
       expect.objectContaining({
         stationId: 'EFHK',
         flightCategory: 'MVFR',
-        visibility: 10,
+        visibility: {
+          kilometers: 16.09344,
+          relation: 'exact',
+          sourceToken: '10',
+        },
       }),
     ])
   })
@@ -122,6 +131,36 @@ describe('AWC METAR provider', () => {
         new AbortController().signal,
       ),
     ).resolves.toMatchObject({ observations: [] })
+  })
+
+  it('preserves qualified and fractional visibility while normalizing metric distance', async () => {
+    const dataset = await provider(async () =>
+      new Response(
+        JSON.stringify([
+          report('EETN', { visib: 'M1/4' }),
+          report('EFHK', { visib: 'P6' }),
+        ]),
+      ),
+    ).load(['EETN', 'EFHK'], new AbortController().signal)
+
+    expect(dataset.observations).toEqual([
+      expect.objectContaining({
+        stationId: 'EETN',
+        visibility: {
+          kilometers: 0.402336,
+          relation: 'less-than',
+          sourceToken: 'M1/4',
+        },
+      }),
+      expect.objectContaining({
+        stationId: 'EFHK',
+        visibility: {
+          kilometers: 9.656064,
+          relation: 'at-least',
+          sourceToken: 'P6',
+        },
+      }),
+    ])
   })
 
   it('rejects empty, partial, and cross-origin successful responses', async () => {

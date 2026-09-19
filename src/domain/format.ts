@@ -1,3 +1,11 @@
+import type { WeatherVisibility } from './weatherObservations'
+import {
+  kilometersPerHourToKnots,
+  metersPerSecondToFeetPerMinute,
+  metersToFeet,
+  type UnitSystem,
+} from './units'
+
 const wholeNumber = new Intl.NumberFormat(undefined, {
   maximumFractionDigits: 0,
 })
@@ -21,14 +29,34 @@ export const formatAge = (timestamp: number | undefined, now: number) => {
   return `${hours} hr ago`
 }
 
-export const formatAltitude = (meters: number) =>
-  `${wholeNumber.format(meters)} m`
+export const formatAltitude = (
+  meters: number,
+  units: UnitSystem = 'metric',
+) =>
+  units === 'aviation-nautical'
+    ? `${wholeNumber.format(metersToFeet(meters))} ft`
+    : `${wholeNumber.format(meters)} m`
 
-export const formatSpeed = (kilometersPerHour: number) =>
-  `${wholeNumber.format(kilometersPerHour)} km/h`
+export const formatSpeed = (
+  kilometersPerHour: number,
+  units: UnitSystem = 'metric',
+) =>
+  units === 'aviation-nautical'
+    ? `${wholeNumber.format(
+        kilometersPerHourToKnots(kilometersPerHour),
+      )} kn`
+    : `${wholeNumber.format(kilometersPerHour)} km/h`
 
-export const formatVerticalSpeed = (metersPerSecond: number) => {
+export const formatVerticalSpeed = (
+  metersPerSecond: number,
+  units: UnitSystem = 'metric',
+) => {
   const prefix = metersPerSecond > 0 ? '+' : ''
+  if (units === 'aviation-nautical') {
+    return `${prefix}${wholeNumber.format(
+      metersPerSecondToFeetPerMinute(metersPerSecond),
+    )} ft/min`
+  }
   return `${prefix}${oneDecimal.format(metersPerSecond)} m/s`
 }
 
@@ -37,6 +65,22 @@ export const formatHeading = (degrees: number) =>
 
 export const formatDimension = (meters: number) =>
   `${oneDecimal.format(meters)} m`
+
+export const formatWeatherVisibility = (
+  visibility: WeatherVisibility,
+  units: UnitSystem,
+) => {
+  if (units === 'aviation-nautical') {
+    return `${visibility.sourceToken} statute mi`
+  }
+  const qualifier =
+    visibility.relation === 'at-least'
+      ? 'at least '
+      : visibility.relation === 'less-than'
+        ? 'less than '
+        : ''
+  return `${qualifier}${oneDecimal.format(visibility.kilometers)} km`
+}
 
 export const formatTimestamp = (timestamp: number) =>
   new Intl.DateTimeFormat(undefined, {

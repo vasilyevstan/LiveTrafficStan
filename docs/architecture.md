@@ -42,7 +42,7 @@ provider credential or creates server-side state.
 | Area | Responsibility |
 | --- | --- |
 | `src/config/` | Typed defaults and validation of browser-safe environment overrides |
-| `src/domain/` | Application-owned traffic/port/airport/weather types, local discovery and filters, geographic helpers, location-input parsing, serializable layer preferences, and formatting |
+| `src/domain/` | Application-owned traffic/port/airport/weather types, local discovery and filters, geographic helpers, location-input parsing, versioned preferences/share state, unit conversion, and formatting |
 | `src/providers/aircraft/` | ADSB.lol request, runtime payload checks, normalization, and unit conversion |
 | `src/providers/aircraftMetadata/` | Bounded same-origin static metadata loading, provenance/schema/hash validation, exact identity matching, and shard LRU |
 | `src/providers/marine/` | Digitraffic capabilities, REST/MQTT lifecycle, metadata merging, normalization, and opt-in development diagnostics |
@@ -50,7 +50,7 @@ provider credential or creates server-side state.
 | `src/providers/airports/` | Bounded lazy same-origin airport loading plus checksum, schema, and source-provenance validation |
 | `src/providers/weather/` | Canonical same-origin AWC requests, bounded JSON validation, METAR/SPECI normalization, newest-report selection, and source provenance |
 | `src/providers/geocoding/` | Photon request construction, response bounds, runtime GeoJSON validation, result normalization, and attribution identity |
-| `src/app/` | React hooks/controllers for provider lifecycle, place-search cancellation/cache, navigation intent, time ticks, offline state, and traffic-history orchestration |
+| `src/app/` | React hooks/controllers for provider lifecycle, unified preference persistence, place-search cancellation/cache, navigation intent, time ticks, offline state, and traffic-history orchestration |
 | `src/history/` | Provider-qualified observation projection, bounded session history, IndexedDB transactions, settings, indexes, playback, and gap-aware historical trails |
 | `src/traffic/` | Filtering, freshness/expiry, interpolation, and selected-trail history |
 | `src/map/` | MapLibre lifecycle, GeoJSON sources/layers, feature selection, and marker images |
@@ -280,7 +280,7 @@ fallback, exact weather, airport, and port, then weather, airport, and port
 touch fallbacks. Selecting traffic, weather, airport, or port clears the other
 selection kinds; an empty map click clears all.
 
-Aircraft and vessel clustering is an optional session-only display preference.
+Aircraft and vessel clustering is an optional remembered display preference.
 Each traffic kind keeps its own clustered GeoJSON source, count label, and
 expansion behavior. Cluster features never become application entity IDs and
 are excluded from touch entity fallback. `clusterMinPoints` is fixed at source
@@ -460,15 +460,48 @@ with its provider. Query changes replace the latest desired request or refilter
 the cache without creating another scheduler. Page visibility and viewport
 eligibility compose as pause reasons. Layer visibility remains display-only.
 
+## Portable preferences, explicit sharing, and units
+
+`livetrafficstan.preferences.v1` is the one complete allowlisted preference
+schema. It stores theme, presentation units, six layer flags, structured vessel
+filters without free text, and selected-trail visibility/duration. It excludes
+camera, browser Home/location, searches, selections, provider state,
+observations, history settings/data, and playback.
+
+Startup resolves each supported field from a valid explicit `#v=1&...`
+fragment, then saved preferences, then defaults. A fragment camera is atomic,
+rounded to three decimals, initializes MapLibre directly, schedules the same
+settled viewport assessment as a normal fit, and synchronously fences off
+automatic geolocation. Camera reporting is independent of viewport-assessment
+deduplication so even repeated ineligible views can be shared accurately.
+Opening a link never writes its overrides automatically.
+
+Domain, filter, provider, viewport, and history values remain metric.
+`metric | aviation-nautical` changes formatting only: altitude, speed, vertical
+speed, METAR wind, and numeric/qualified visibility. Vessel dimensions and
+length filters remain metres. AWC wind and visibility are normalized at the
+provider boundary; bounded source visibility tokens are retained so aviation
+qualifiers round-trip without invention.
+
+Reset removes only unified preferences, the legacy theme compatibility key,
+and the current share fragment. It does not move the camera/Home or alter
+private-history consent, epochs, settings, or IndexedDB. Existing selection
+invalidation still applies when reset defaults hide or filter the selected
+object.
+
 ## Theme lifecycle
 
 Application colors are CSS custom properties selected by a validated
-`auto | light | dark` preference stored under `livetrafficstan.theme`.
+`auto | light | dark` field in `livetrafficstan.preferences.v1`.
 Missing, invalid, or unavailable storage preserves the prior deterministic
 Light default. Auto resolves `prefers-color-scheme: dark` before first paint
 and subscribes to system changes; explicit Light/Dark overrides do not.
 The map receives only the resolved Light or Dark theme and corresponding
 configured OpenFreeMap style.
+
+The legacy `livetrafficstan.theme` key is read only when the unified key is
+absent and is mirrored for rollback compatibility. Pre-paint and React apply
+the same fragment/unified/legacy/default precedence.
 
 Theme changes call `map.setStyle` on the existing instance. An idempotent
 installer runs after `style.load` to restore repository-owned images, GeoJSON

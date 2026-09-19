@@ -28,6 +28,13 @@ Check these project invariants:
   data.
 - Home remains a session-only camera destination; the current MapLibre camera
   supplies the rounded enclosing-query center and actual display footprint.
+- A valid shared camera initializes the existing MapLibre instance directly,
+  skips only the Home fit, still publishes an initial settled viewport, and
+  synchronously fences off automatic geolocation. Center keeps the separately
+  updated session Home.
+- Shareable camera reporting is independent of viewport-assessment
+  deduplication, including repeated wide/invalid views. Fragment coordinates
+  use the configured privacy precision and camera is never persisted.
 - Session Home and the current named/coordinate view target remain separate.
   Coordinate and place navigation never mutate Home, and Center always uses
   the latest configured or rounded geolocated Home.
@@ -95,6 +102,13 @@ Check these project invariants:
 - Theme preference and resolved rendering theme stay separate. Missing or
   invalid storage remains Light; only explicit Auto follows system changes,
   and pre-paint/React resolution must agree without duplicate listeners.
+- The unified preference schema owns theme, units, layers, structured vessel
+  filters, and trail controls. It excludes camera/Home, free text, selection,
+  provider state, history consent/data, and playback. Reset cannot touch the
+  private-history contract.
+- Metric versus aviation/nautical changes formatting only and cannot alter
+  provider work, viewport eligibility, filter membership, selection/history,
+  or the one-map lifecycle.
 - Vessel discovery keeps search, typed filters, matching-versus-shown counts,
   reset state, hidden-SHIPS selection behavior, local port loading/error/retry,
   and source-limit wording readable and keyboard-usable in both supported

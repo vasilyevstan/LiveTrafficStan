@@ -1,4 +1,10 @@
-import { formatAge, formatTimestamp } from '../domain/format'
+import {
+  formatAge,
+  formatSpeed,
+  formatTimestamp,
+  formatWeatherVisibility,
+} from '../domain/format'
+import type { UnitSystem } from '../domain/units'
 import {
   flightCategoryLabel,
   type DisplayWeatherObservation,
@@ -10,6 +16,7 @@ interface WeatherObservationDetailsProps {
   source: WeatherObservationSource
   retrievedAt: number
   now: number
+  units: UnitSystem
   onClose: () => void
 }
 
@@ -30,10 +37,13 @@ const DetailRow = ({
 const decimal = (value: number | undefined, suffix: string) =>
   value === undefined ? undefined : `${value.toFixed(1)} ${suffix}`
 
-const wind = (observation: DisplayWeatherObservation) => {
+const wind = (
+  observation: DisplayWeatherObservation,
+  units: UnitSystem,
+) => {
   if (
     observation.windDirection === undefined &&
-    observation.windSpeedKnots === undefined
+    observation.windSpeedKph === undefined
   ) {
     return undefined
   }
@@ -44,13 +54,13 @@ const wind = (observation: DisplayWeatherObservation) => {
         ? 'Variable'
         : `${observation.windDirection} deg`
   const speed =
-    observation.windSpeedKnots === undefined
+    observation.windSpeedKph === undefined
       ? 'speed unavailable'
-      : `${observation.windSpeedKnots} kt`
+      : formatSpeed(observation.windSpeedKph, units)
   const gust =
-    observation.windGustKnots === undefined
+    observation.windGustKph === undefined
       ? ''
-      : `, gusting ${observation.windGustKnots} kt`
+      : `, gusting ${formatSpeed(observation.windGustKph, units)}`
   return `${direction}, ${speed}${gust}`
 }
 
@@ -59,6 +69,7 @@ export function WeatherObservationDetails({
   source,
   retrievedAt,
   now,
+  units,
   onClose,
 }: WeatherObservationDetailsProps) {
   return (
@@ -104,13 +115,13 @@ export function WeatherObservationDetails({
           label="Dewpoint"
           value={decimal(observation.dewpointCelsius, 'C')}
         />
-        <DetailRow label="Wind" value={wind(observation)} />
+        <DetailRow label="Wind" value={wind(observation, units)} />
         <DetailRow
           label="Visibility"
           value={
             observation.visibility === undefined
               ? undefined
-              : `${observation.visibility} statute mi`
+              : formatWeatherVisibility(observation.visibility, units)
           }
         />
         <DetailRow
