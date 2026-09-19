@@ -26,16 +26,48 @@ require a written license for operational REST use in a live product, and its
 bounding-box state-vector contract, OAuth credentials, and daily credits add
 material complexity.
 
-ADSB.lol does not currently provide general browser CORS headers. V1 uses
-Vite's development and preview proxy so the browser calls a same-origin path.
-No secret is involved. Issue #11 owns the narrow production proxy, validated
-inputs, upstream timeout, status/header preservation, and safe logging.
+ADSB.lol does not currently provide general browser CORS headers. Vite handles
+development and preview; production uses a strict same-origin Cloudflare
+Worker. No provider secret is involved. The Worker validates only the current
+point route, uses a total deadline and body cap, preserves provider
+status/body/`Retry-After`, disables invocation URL logs, and does not cache live
+responses.
 
 No provider selector, automatic failover, aggregation, or alternative adapter
 is added. Those mechanisms would introduce provenance, duplicate-resolution,
 licensing, credential, and operational complexity without a demonstrated
 requirement. The existing application-owned provider interface is sufficient
 for a future deliberate replacement.
+
+## Cloudflare Worker plus Static Assets
+
+Cloudflare Workers with Static Assets is the smallest production boundary for
+the Vite client and required ADSB.lol proxy. Static files bypass Worker
+execution; only `/api` and `/api/*` invoke code. The fixed point route
+constructs one hard-coded upstream destination and cannot act as a general
+forwarder.
+
+The free plan's 100,000 dynamic requests/day covers about 23 continuously
+active browser sessions at the application's nominal 4,320 request/day upper
+envelope, while static asset requests are documented as free and unlimited.
+This is a budget estimate, not ADSB.lol capacity permission or an SLA.
+
+Netlify is technically viable but places production deploys, bandwidth,
+requests, and function compute in one 300-credit monthly budget without
+providing a capability this one-route application needs. GitHub Pages plus a
+separate Worker would add a second deployment unit or split-origin CORS.
+
+Fingerprint-named assets use immutable browser caching. Aircraft responses use
+upstream and downstream `no-store`; no shared response cache or rate-control
+service is added without measurements and provider-policy evidence. Worker
+observability is disabled because the route contains rounded camera
+coordinates.
+
+Deployments require an exact current `main` SHA, rerun the complete validation
+suite, serialize production operations, deploy code and assets atomically, and
+verify matching client/MapLibre-worker bytes plus bounded provider smoke.
+Account selection and credentials remain the explicit external blocker in
+Issue #39 rather than a client-side secret or temporary-account workaround.
 
 ## Digitraffic MQTT plus REST metadata
 

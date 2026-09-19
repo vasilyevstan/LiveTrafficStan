@@ -35,9 +35,14 @@ capacity guarantee or current SLA.
 
 LiveTrafficStan polls one small geographic query approximately every 20
 seconds while the page and viewport are eligible. Because direct browser
-requests are blocked by CORS, Vite proxies the same-origin development and
-preview path to ADSB.lol. A future deployment needs an equivalent narrow
-serverless/edge proxy.
+requests are blocked by CORS, Vite proxies local development and preview while
+the selected production Cloudflare Worker provides the strict same-origin
+route.
+
+The production proxy identifies the public project to ADSB.lol, forwards no
+browser credentials or arbitrary headers, follows no redirect, and applies no
+shared live-response cache. Fingerprinted application assets are cached
+separately. Permanent production activation remains tracked by Issue #39.
 
 Visible attribution must identify ADSB.lol and link ODbL 1.0. An interactive
 map or screenshot is an ODbL Produced Work; a publicly used derivative

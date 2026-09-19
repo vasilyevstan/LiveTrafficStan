@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { MAX_AIRCRAFT_RADIUS_NM } from '../../worker/aircraftProxy'
+import { aircraftQueryRadiusNauticalMiles } from '../providers/aircraft/adsbLolProvider'
 import { createAppConfig } from './appConfig'
 
 describe('createAppConfig', () => {
@@ -21,6 +23,9 @@ describe('createAppConfig', () => {
     expect(config.map.touchHitTolerancePx).toBe(8)
     expect(config.aircraft.refreshIntervalMs).toBe(20_000)
     expect(config.aircraft.rateLimitBackoffMaxMs).toBe(5 * 60_000)
+    expect(MAX_AIRCRAFT_RADIUS_NM).toBe(
+      aircraftQueryRadiusNauticalMiles(config.map.maximumViewportRadiusKm),
+    )
     expect(config.marine.mqttReconnectPeriodMs).toBe(15_000)
     expect(config.marine.queryRestRefreshIntervalMs).toBe(5 * 60_000)
     expect(config.trail.durationMs).toBe(15 * 60_000)

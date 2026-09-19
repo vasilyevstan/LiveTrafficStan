@@ -44,7 +44,7 @@ The default browser endpoint is `/api/aircraft`, which Vite proxies to
 ADSB.lol. Common causes are:
 
 - opening `dist/index.html` directly rather than using `npm run preview`;
-- deploying only static files without an equivalent same-origin proxy;
+- deploying only static files without the checked same-origin Worker;
 - a temporary ADSB.lol rate limit or service failure;
 - replacing the endpoint with a server that does not allow browser CORS;
 - network filtering of `api.adsb.lol`.
@@ -53,6 +53,29 @@ The provider retries on its normal polling cadence. A temporary failure can
 therefore show `PARTIAL` before recovering. Inspect the warning in the browser
 console and the HTTP response rather than treating zero aircraft as an error:
 zero is valid when no aircraft are inside the current visible viewport.
+
+For the Cloudflare boundary:
+
+- `404` on `/api/aircraft/v2/point/...` means the production route shape is
+  wrong;
+- `400` means coordinates, radius, or a query string failed strict validation;
+- `405` means a non-GET request;
+- `502` means a network/read failure, redirect, or response-size rejection;
+- `504` means the ten-second total upstream deadline expired;
+- upstream `403`, `429`, and `5xx` remain their original status and body.
+
+ADSB.lol rejects generic Worker identification. The proxy must send the stable
+public LiveTrafficStan User-Agent. Do not work around a `403` by forwarding
+browser headers, cookies, authorization, or a client-controlled destination.
+
+Run `npm run build && npm run check:deploy`, then
+`npm run preview:worker` to distinguish a Worker contract problem from Vite's
+broader convenience proxy. A missing asset must remain a real 404. On a public
+deployment, compare the `X-LiveTrafficStan-Release` header with the exact
+deployed SHA.
+
+Production activation credentials are intentionally absent until Issue #39 is
+resolved. Do not place them in `.env.local` or any `VITE_*` variable.
 
 ## Marine shows unavailable or reconnecting
 
