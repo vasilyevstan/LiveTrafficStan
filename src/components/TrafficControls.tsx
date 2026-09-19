@@ -1,17 +1,28 @@
 import type { Theme } from '../app/theme'
 import type { PlaceSearchState } from '../app/PlaceSearchController'
 import type { AppCenter } from '../config/appConfig'
+import type { DisplayVessel } from '../domain/traffic'
+import type { VesselFilterState } from '../domain/vesselFilters'
 import type { PlaceSearchResult } from '../providers/geocoding/photonProvider'
 import { LocationSearch } from './LocationSearch'
+import { VesselDiscovery } from './VesselDiscovery'
 
 interface TrafficControlsProps {
-  vesselLengthPresetsMeters: readonly number[]
-  minimumVesselLengthMeters: number
-  onMinimumVesselLengthChange: (lengthMeters: number) => void
+  vesselFilters: VesselFilterState
+  vesselResults: readonly DisplayVessel[]
+  totalVessels: number
+  vesselEmptyMessage: string
+  onVesselFiltersChange: (filters: VesselFilterState) => void
+  onVesselSelect: (id: string) => void
   aircraftVisible: boolean
   onAircraftVisibleChange: (visible: boolean) => void
   vesselsVisible: boolean
   onVesselsVisibleChange: (visible: boolean) => void
+  portsVisible: boolean
+  portsLoading: boolean
+  portsError?: string
+  onPortsVisibleChange: (visible: boolean) => void
+  onRetryPorts: () => void
   centerDisabled: boolean
   onCenter: () => void
   locationAvailable: boolean
@@ -32,13 +43,21 @@ interface TrafficControlsProps {
 }
 
 export function TrafficControls({
-  vesselLengthPresetsMeters,
-  minimumVesselLengthMeters,
-  onMinimumVesselLengthChange,
+  vesselFilters,
+  vesselResults,
+  totalVessels,
+  vesselEmptyMessage,
+  onVesselFiltersChange,
+  onVesselSelect,
   aircraftVisible,
   onAircraftVisibleChange,
   vesselsVisible,
   onVesselsVisibleChange,
+  portsVisible,
+  portsLoading,
+  portsError,
+  onPortsVisibleChange,
+  onRetryPorts,
   centerDisabled,
   onCenter,
   locationAvailable,
@@ -73,7 +92,7 @@ export function TrafficControls({
 
       <fieldset className="control-group">
         <legend>Layers</legend>
-        <div className="control-options control-options--two">
+        <div className="control-options control-options--three">
           <button
             type="button"
             className={aircraftVisible ? 'is-active' : undefined}
@@ -90,8 +109,45 @@ export function TrafficControls({
           >
             SHIPS
           </button>
+          <button
+            type="button"
+            className={portsVisible ? 'is-active' : undefined}
+            aria-pressed={portsVisible}
+            aria-busy={portsVisible && portsLoading}
+            onClick={() => onPortsVisibleChange(!portsVisible)}
+          >
+            {portsVisible && portsLoading ? 'PORTS...' : 'PORTS'}
+          </button>
         </div>
+        {portsVisible && portsError && (
+          <div className="control-note ports-status" role="status">
+            <span>Ports unavailable: {portsError}</span>
+            <button type="button" onClick={onRetryPorts}>
+              RETRY PORTS
+            </button>
+          </div>
+        )}
+        <p className="control-note control-note--muted">
+          Ports:{' '}
+          <a href="https://www.naturalearthdata.com/downloads/10m-cultural-vectors/ports/">
+            Natural Earth
+          </a>{' '}
+          (<a href="https://www.naturalearthdata.com/about/terms-of-use/">
+            public domain
+          </a>
+          ); generalized and incomplete.
+        </p>
       </fieldset>
+
+      <VesselDiscovery
+        filters={vesselFilters}
+        vessels={vesselResults}
+        totalVessels={totalVessels}
+        vesselsVisible={vesselsVisible}
+        emptyMessage={vesselEmptyMessage}
+        onFiltersChange={onVesselFiltersChange}
+        onSelect={onVesselSelect}
+      />
 
       <fieldset className="control-group">
         <legend>Theme</legend>
@@ -137,24 +193,6 @@ export function TrafficControls({
         )}
       </fieldset>
 
-      <fieldset className="control-group">
-        <legend>Minimum ship length</legend>
-        <div className="control-options">
-          {vesselLengthPresetsMeters.map((preset) => (
-            <button
-              key={preset}
-              type="button"
-              className={
-                preset === minimumVesselLengthMeters ? 'is-active' : undefined
-              }
-              aria-pressed={preset === minimumVesselLengthMeters}
-              onClick={() => onMinimumVesselLengthChange(preset)}
-            >
-              {preset} m
-            </button>
-          ))}
-        </div>
-      </fieldset>
     </aside>
   )
 }

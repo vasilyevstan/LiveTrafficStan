@@ -31,8 +31,14 @@ single React application, without accounts, a database, or persistent tracking.
 - One explicit-submit location field accepts rounded decimal coordinates
   locally or named places through Photon. Search failure never blocks
   coordinate navigation, Center, or the live map.
-- Independent aircraft and ship layers plus 25, 50, 100, and 150 metre minimum
-  vessel-length filters.
+- Independent aircraft and ship layers plus local vessel search by name,
+  callsign, MMSI, or IMO; typed category, navigation, reported-speed, and
+  inclusive length filters; explicit unknown-value handling; and a reset to
+  the released 50 metre minimum.
+- An optional, lazily loaded, zoom-aware Natural Earth port context layer with
+  separate selection, failure, and attribution. Port points are generalized
+  and incomplete and are never treated as operational harbour or vessel-call
+  data.
 - Honest detail cards, provider-specific health, stale/expired handling, and
   partial operation when one provider fails.
 - Short interpolation only between observed positions and a bounded 15-minute
@@ -63,6 +69,7 @@ npm run lint
 npm run typecheck
 npm test -- --run
 npm run check:aircraft-metadata
+npm run check:ports
 npm run build
 ```
 
@@ -92,6 +99,8 @@ Digitraffic REST/MQTT ──┘
 
 selected aircraft -> static metadata index + one prefix shard -> details only
 
+PORTS toggle -> pinned same-origin Natural Earth projection -> map + port details
+
 coordinate input ── local validation ─┐
 Photon forward search ─> place results ├─> explicit camera navigation
 session Home / location ──────────────┘
@@ -118,6 +127,13 @@ Aircraft metadata is a separate selected-object boundary. It makes no startup
 request, loads one immutable index and one ICAO24-prefix shard on first use,
 validates the complete assets before bounded caching, and never mutates live
 traffic or marker categories.
+
+Vessel discovery is local display filtering after provider freshness and exact
+viewport filtering. It does not alter Digitraffic subscriptions, REST gates,
+provider caches, or source snapshots. The optional port dataset is another
+independent same-origin boundary: it makes no request until enabled, validates
+the complete immutable asset before caching, and remains separate from traffic
+IDs, counts, trails, selection, and provider health.
 
 See [Architecture](docs/architecture.md) for component boundaries, data flow,
 failure isolation, rendering, and deployment details.
@@ -153,13 +169,15 @@ operational thresholds, and examples.
 | Aircraft | ADSB.lol | ODbL 1.0 | Same-origin Vite or Cloudflare Worker proxy |
 | Aircraft metadata | Mictronics aircraft-database derivative | ODC-By 1.0 | Immutable same-origin static assets, loaded only after selection |
 | Marine | Fintraffic Digitraffic | CC BY 4.0 | Direct regional REST and MQTT |
+| Port context | Natural Earth Ports | Public domain | Immutable same-origin static asset, loaded only when enabled |
 
 The repository's Apache License 2.0 applies to source code only. The bundled
 aircraft metadata is a derivative database conveyed under ODC-By 1.0 with its
 full license alongside the generated files. Distributed derivative works must
 preserve the applicable [`NOTICE`](NOTICE) and data-license attribution. The
 source license does not relicense map, search, live aircraft, aircraft
-metadata, or marine data. See
+metadata, marine data, or the separately identified public-domain Natural
+Earth port projection. See
 [Data Sources and Licensing](docs/data-sources-and-licensing.md), the dated
 [Aircraft Provider Evaluation](docs/aircraft-provider-evaluation.md), and the
 dated [Aircraft Metadata Evaluation](docs/aircraft-metadata-evaluation.md), and
@@ -211,6 +229,10 @@ monitoring, privacy, and rollback procedure.
   ICAO24 record in the pinned snapshot. The snapshot becomes intentionally
   unavailable after its 45-day publication-age boundary until a reviewed new
   immutable version is deployed.
+- Natural Earth ports are optional generalized geographic context, not a
+  complete port inventory. Some source points may be approximate by up to
+  20 miles, and the app does not infer facilities, berths, operational status,
+  port calls, nearby-vessel relationships, destinations, or ETAs.
 - Theme preference is limited to explicit Light/Dark selection; there is no
   automatic system-theme mode.
 - There is no reverse geocoding, route enrichment, playback, weather overlay,

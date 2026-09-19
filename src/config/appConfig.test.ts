@@ -36,6 +36,13 @@ describe('createAppConfig', () => {
       futureToleranceHours: 24,
       sourceDatabaseVersion: 522,
     })
+    expect(config.ports).toMatchObject({
+      assetUrl: '/ports/natural-earth-v5.1.2-v1/ports.geojson',
+      timeoutMs: 5_000,
+      expectedRecords: 1081,
+      sourceTag: 'v5.1.2',
+      sourceLicenseName: 'Public domain',
+    })
     expect(MAX_AIRCRAFT_RADIUS_NM).toBe(
       aircraftQueryRadiusNauticalMiles(config.map.maximumViewportRadiusKm),
     )

@@ -107,6 +107,55 @@ adapter, failover, aggregation, or MMSI source-precedence framework is added.
 Browser-local filtering of Digitraffic's all-published-vessels MQTT stream
 reduces display work, not incoming network bandwidth.
 
+## Local vessel discovery after provider normalization
+
+Vessel search and filters run only on normalized, fresh, exact-viewport
+entities in React. This keeps one Digitraffic MQTT subscription, preserves the
+five-minute REST/metadata gates and provider-owned caches, and avoids adding a
+server search endpoint or a second scheduler.
+
+The released 50 metre minimum remains the default. Search covers only current
+name, callsign, MMSI, and IMO fields. Category, navigation, reported-speed, and
+inclusive length filters combine with AND. Unknown values are explicit:
+`all` includes them, specific known choices exclude them, and missing length is
+included only when the user opts in. One knot is exactly 1.852 km/h and zero is
+a known speed. The accessible result list is deterministically ordered and
+bounded to 20 while every match remains on the map.
+
+AIS reserved subcodes are not treated as defined categories. Passenger is
+60-64 or 69, cargo is 70-74 or 79, tanker is 80-84 or 89, and the reserved
+subcodes between those values remain unknown. Search/filter state never mutates
+the provider snapshot, and hiding SHIPS keeps matching counts truthful while
+disabling result selection.
+
+## Pinned Natural Earth ports as optional context
+
+Natural Earth Ports `v5.1.2` at commit
+`f1890d9f152c896d250a77557a5751a93d494776` is selected as a compact
+public-domain geographic context layer. The deterministic projection retains
+only Natural Earth ID, name, scalerank, and coordinates: 1,081 points,
+154,218 raw bytes, and 22,482 deterministic gzip-9 bytes.
+
+The source is not a comprehensive or operational port database. It omits
+relevant regional terminals, and Natural Earth warns that some points may be
+approximate by up to 20 miles. The UI and details therefore say generalized
+and incomplete and do not show or infer country, facilities, berths, capacity,
+operational status, port calls, nearby-vessel relationships, destination, or
+ETA.
+
+The layer is off by default and makes no startup request. One immutable
+same-origin asset is loaded lazily with a deadline, byte cap, SHA-256, strict
+grammar/count/rank validation, and fulfilled-only session caching. Failure is
+local to the PORTS control. Ports use separate IDs, selection, styling, and
+details; traffic picking retains priority, and ports never enter traffic
+counts, trails, provider health, or provider queries.
+
+NGA World Port Index was not selected for this slice because its official CSV
+export returned HTTP 403 during review, so a stable current export and
+dataset-specific rights/update contract could not be inspected reproducibly.
+That does not make Natural Earth equivalent in completeness; it supports only
+the narrower generalized-context feature.
+
 ## Application-owned traffic models
 
 Provider payloads are decoded and normalized at the provider boundary. Map and UI code consume application-owned aircraft and vessel models and do not depend on raw ADSB.lol or Digitraffic response shapes.
@@ -125,9 +174,9 @@ traffic; category is conveyed by shape rather than a new color system.
 Normalization maps only trusted provider fields to application-owned icon keys.
 ADS-B A1/A2 use light fixed-wing, A5 heavy fixed-wing, and A7 helicopter.
 A3/A4/A6 retain their existing labels and scales but use generic fixed-wing
-art. AIS type 30 uses fishing, type 52 tug, 60-69 passenger, 70-79 cargo, and
-80-89 tanker. Every unsupported or missing category uses the corresponding
-generic fallback.
+art. AIS type 30 uses fishing, type 52 tug, 60-64/69 passenger, 70-74/79 cargo, and
+80-84/89 tanker. Reserved subcodes and every unsupported or missing category
+use the corresponding generic fallback.
 
 No model/type string, speed, name, route, operator, position, or movement is
 used to infer a category. This keeps the vocabulary truthful and avoids a

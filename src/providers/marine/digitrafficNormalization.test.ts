@@ -10,8 +10,10 @@ import {
   parseDigitrafficMqttMetadata,
   parseDigitrafficRestLocations,
   parseDigitrafficRestMetadata,
+  vesselCategory,
   vesselLengthMeters,
   vesselMarkerIcon,
+  vesselNavigationCategory,
   vesselWidthMeters,
 } from './digitrafficNormalization'
 
@@ -125,11 +127,14 @@ describe('Digitraffic normalization', () => {
       provider: DIGITRAFFIC_PROVIDER_NAME,
       name: 'TEST SHIP',
       vesselType: 'Cargo vessel',
+      vesselCategory: 'cargo',
       lengthMeters: 100,
       widthMeters: 15,
       draughtMeters: 6.5,
       speedKph: 18.52,
       navigationStatus: 'Moored',
+      navigationCategory: 'moored',
+      metadataObservedAt: 1_800_000_000_000,
       eta: '09-18 14:30 UTC',
       markerIcon: 'vessel-cargo',
     })
@@ -157,10 +162,13 @@ describe('Digitraffic normalization', () => {
         60,
         69,
         70,
+        75,
         79,
         80,
+        85,
         89,
         90,
+        99,
         0,
         undefined,
       ].map(vesselMarkerIcon),
@@ -172,13 +180,103 @@ describe('Digitraffic normalization', () => {
       'vessel-passenger',
       'vessel-passenger',
       'vessel-cargo',
+      'vessel',
       'vessel-cargo',
       'vessel-tanker',
+      'vessel',
       'vessel-tanker',
+      'vessel',
       'vessel',
       'vessel',
       'vessel',
     ])
+  })
+
+  it('keeps defined, reserved, other, and unknown AIS values distinct', () => {
+    expect(
+      [30, 31, 52, 60, 65, 69, 70, 75, 79, 80, 85, 89, 90, 95, 99, 0]
+        .map(vesselCategory),
+    ).toEqual([
+      'fishing',
+      'tug-service',
+      'tug-service',
+      'passenger',
+      'unknown',
+      'passenger',
+      'cargo',
+      'unknown',
+      'cargo',
+      'tanker',
+      'unknown',
+      'tanker',
+      'other',
+      'unknown',
+      'other',
+      'unknown',
+    ])
+
+    const reservedShipTypes = [
+      ...Array.from({ length: 19 }, (_, index) => index + 1),
+      25,
+      26,
+      27,
+      28,
+      38,
+      39,
+      45,
+      46,
+      47,
+      48,
+      56,
+      57,
+      65,
+      66,
+      67,
+      68,
+      75,
+      76,
+      77,
+      78,
+      85,
+      86,
+      87,
+      88,
+      95,
+      96,
+      97,
+      98,
+    ]
+    expect(reservedShipTypes.map(vesselCategory)).toEqual(
+      reservedShipTypes.map(() => 'unknown'),
+    )
+
+    expect(
+      [0, 1, 2, 5, 6, 7, 8, 14, 15, undefined]
+        .map(vesselNavigationCategory),
+    ).toEqual([
+      'underway',
+      'anchored',
+      'restricted',
+      'moored',
+      'aground',
+      'fishing',
+      'underway',
+      'other',
+      'unknown',
+      'unknown',
+    ])
+  })
+
+  it('rejects metadata timestamps outside the JavaScript Date range', () => {
+    const metadata = parseDigitrafficRestMetadata([
+      {
+        mmsi: 230123456,
+        timestamp: Number.MAX_VALUE,
+        name: 'INVALID TIME',
+      },
+    ])
+
+    expect(metadata).toEqual([])
   })
 
   it('changes metadata-driven artwork without changing vessel identity', () => {

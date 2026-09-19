@@ -285,12 +285,31 @@ export function TrafficDetails({
               label="Navigation status"
               value={entity.navigationStatus}
             />
-            <DetailRow label="Destination" value={entity.destination} />
-            <DetailRow label="ETA" value={entity.eta} />
+            <DetailRow
+              label="AIS-reported destination"
+              value={entity.destination}
+            />
+            <DetailRow
+              label="AIS ETA (year not supplied)"
+              value={entity.eta}
+            />
+            <DetailRow
+              label="Metadata report"
+              value={
+                entity.metadataObservedAt === undefined
+                  ? 'Unavailable'
+                  : `${formatTimestamp(entity.metadataObservedAt)} (${formatAge(
+                      entity.metadataObservedAt,
+                      now,
+                    )})`
+              }
+            />
           </>
         )}
         <DetailRow
-          label="Last report"
+          label={
+            entity.kind === 'vessel' ? 'Position report' : 'Last report'
+          }
           value={`${formatTimestamp(entity.position.observedAt)} (${formatAge(
             entity.position.observedAt,
             now,
@@ -300,6 +319,13 @@ export function TrafficDetails({
       </dl>
       {entity.kind === 'aircraft' && (
         <AircraftMetadataDetails state={aircraftMetadata} />
+      )}
+      {entity.kind === 'vessel' && (
+        <p className="metadata-attribution">
+          AIS static and voyage fields are reported separately from position
+          updates. Values are shown as supplied; no ETA year or port
+          relationship is inferred.
+        </p>
       )}
     </aside>
   )

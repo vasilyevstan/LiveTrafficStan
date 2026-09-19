@@ -19,3 +19,14 @@ https://opendatacommons.org/licenses/by/1-0/
 The complete ODC-By license is distributed alongside each aircraft metadata
 version. ODC-By governs database rights and does not warrant the contents or
 clear every independent right in individual contents.
+
+Optional port context distributed under public/ports is derived from Natural
+Earth Ports:
+https://github.com/nvkelso/natural-earth-vector
+
+Natural Earth data is in the public domain:
+https://www.naturalearthdata.com/about/terms-of-use/
+
+The projected port points are generalized and incomplete. Some source
+locations may be approximate by up to 20 miles and are not operational harbour
+information.

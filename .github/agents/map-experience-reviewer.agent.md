@@ -53,10 +53,21 @@ Check these project invariants:
   ambiguous, drag, pinch, and unknown-modality outcomes remain exact.
 - Aircraft and vessel clusters remain separate, are not application entity IDs,
   and cannot be selected by an entity fallback path.
+- Optional static context layers use separate sources, IDs, selection, details,
+  visibility, and failure state. Style changes restore any fulfilled context
+  data without another request; traffic exact/touch picking remains ahead of
+  context picking; context features never become traffic, trails, or counts.
+- Generalized port points remain zoom-ranked, visually neutral, below traffic,
+  and absent above their documented maximum zoom. Selection does not imply a
+  facility, port call, destination, ETA, nearby vessel, or operational status.
 - Historical playback is unmistakably non-live and cannot move the live query
   or make provider calls while scrubbing.
 - Theme, Center, location, and layer controls keep semantic buttons,
   truthful pressed state, keyboard focus, contrast, and usable mobile layout.
+- Vessel discovery keeps search, typed filters, matching-versus-shown counts,
+  reset state, hidden-SHIPS selection behavior, local port loading/error/retry,
+  and source-limit wording readable and keyboard-usable in both supported
+  narrow layouts.
 - Location search stays explicit-submit, keeps normal form/button semantics,
   supports Tab and Enter/Space result selection, closes with Escape while
   restoring input focus, and remains reachable in both 390x844 and 390x568
