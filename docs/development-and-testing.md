@@ -94,7 +94,8 @@ covers:
 - local aircraft literal matching and exact/prefix/substring ordering across
   callsign, registration, ICAO24, and reported type;
 - current, stale, and expired transitions;
-- trail time pruning and point caps;
+- trail visibility, 5/15/30/60-minute pruning, per-object point caps,
+  deterministic 50,000-point aggregate eviction, and future-only expansion;
 - interpolation bounds and no extrapolation.
 
 Live provider availability, WebSocket behavior, WebGL rendering, and CORS/proxy

@@ -56,8 +56,10 @@ single React application, without accounts, a database, or persistent tracking.
   independent of traffic providers and static airport context.
 - Honest detail cards, provider-specific health, stale/expired handling, and
   partial operation when one provider fails.
-- Short interpolation only between observed positions and a bounded 15-minute
-  in-memory trail for the selected object.
+- Short interpolation only between observed positions and a selected-object
+  in-memory trail configurable to 5, 15, 30, or 60 minutes. Trails remain
+  session-only, keep the released 15-minute default, and have per-object plus
+  aggregate point caps.
 - Responsive floating controls, keyboard focus states, non-color status labels,
   and a small provider-reported set of original aircraft and vessel
   silhouettes with generic fallbacks.

@@ -71,6 +71,10 @@ Check these project invariants:
   facility, port call, destination, ETA, nearby vessel, or operational status.
 - Historical playback is unmistakably non-live and cannot move the live query
   or make provider calls while scrubbing.
+- Configurable selected trails remain observation-only, selected-object-only,
+  session state. Hiding the line does not pause collection, duration expansion
+  does not fabricate missing points, and per-object plus aggregate caps remain
+  deterministic across navigation and style changes.
 - Theme, Center, location, and layer controls keep semantic buttons,
   truthful pressed state, keyboard focus, contrast, and usable mobile layout.
 - Added controls must not let the mobile overlay consume the entire map.

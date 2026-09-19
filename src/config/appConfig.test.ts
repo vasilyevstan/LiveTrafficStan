@@ -71,7 +71,12 @@ describe('createAppConfig', () => {
     )
     expect(config.marine.mqttReconnectPeriodMs).toBe(15_000)
     expect(config.marine.queryRestRefreshIntervalMs).toBe(5 * 60_000)
-    expect(config.trail.durationMs).toBe(15 * 60_000)
+    expect(config.trail).toEqual({
+      durationOptionsMinutes: [5, 15, 30, 60],
+      defaultDurationMinutes: 15,
+      pointsPerMinute: 12,
+      maxTotalPoints: 50_000,
+    })
   })
 
   it('accepts explicit center and endpoint configuration', () => {

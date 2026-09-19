@@ -52,6 +52,8 @@ const renderControls = (
       onRefreshWeather={() => undefined}
       clusteringEnabled={false}
       onClusteringEnabledChange={() => undefined}
+      trailPreferences={{ visible: true, durationMinutes: 15 }}
+      onTrailPreferencesChange={() => undefined}
       centerDisabled={false}
       onCenter={() => undefined}
       locationAvailable
@@ -84,6 +86,16 @@ describe('TrafficControls', () => {
   it('keeps clustering as a provider-neutral optional layer preference', () => {
     const html = renderControls({ clusteringEnabled: true })
     expect(html).toContain('aria-pressed="true">CLUSTERS')
+  })
+
+  it('keeps selected-object trail visibility and duration explicit', () => {
+    const html = renderControls({
+      trailPreferences: { visible: false, durationMinutes: 30 },
+    })
+
+    expect(html).toContain('<legend>Trail</legend>')
+    expect(html).toContain('aria-pressed="true">HIDE')
+    expect(html).toContain('<option value="30" selected="">30 MIN</option>')
   })
 
   it('keeps optional port loading, failure, retry, and source limits local', () => {
