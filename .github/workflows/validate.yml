@@ -61,3 +61,11 @@ jobs:
         run: npm run check:deploy
         env:
           WRANGLER_SEND_METRICS: false
+
+      - name: Build PWA retirement bundle
+        run: npm run build:pwa-retire
+
+      - name: Check PWA retirement deployment bundle
+        run: npm run check:deploy
+        env:
+          WRANGLER_SEND_METRICS: false

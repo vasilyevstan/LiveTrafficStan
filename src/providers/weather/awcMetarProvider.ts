@@ -8,6 +8,10 @@ import {
   type WindDirection,
 } from '../../domain/weatherObservations'
 import {
+  knotsToKilometersPerHour,
+  statuteMilesToKilometers,
+} from '../../domain/units'
+import {
   ProviderError,
   parseRetryAfterMs,
 } from '../errors'
@@ -97,11 +101,63 @@ const windDirection = (value: unknown): WindDirection | undefined => {
     : undefined
 }
 
-const visibility = (value: unknown) => {
-  if (typeof value === 'number' && Number.isFinite(value) && value >= 0) {
-    return value
+const parseFraction = (value: string) => {
+  const mixed = /^(\d+)\s+(\d+)\/(\d+)$/.exec(value)
+  const simple = /^(\d+)\/(\d+)$/.exec(value)
+  const match = mixed ?? simple
+  if (!match) return undefined
+  const whole = mixed ? Number(match[1]) : 0
+  const numerator = Number(match[mixed ? 2 : 1])
+  const denominator = Number(match[mixed ? 3 : 2])
+  if (
+    !Number.isFinite(whole) ||
+    !Number.isFinite(numerator) ||
+    !Number.isFinite(denominator) ||
+    denominator <= 0
+  ) {
+    return undefined
   }
-  return boundedText(value, MAX_VISIBILITY_CHARACTERS)
+  return whole + numerator / denominator
+}
+
+const visibility = (value: unknown) => {
+  const sourceToken =
+    typeof value === 'number'
+      ? Number.isFinite(value) && value >= 0
+        ? String(value)
+        : undefined
+      : boundedText(value, MAX_VISIBILITY_CHARACTERS)
+  if (!sourceToken) return undefined
+
+  let relation: 'exact' | 'at-least' | 'less-than' = 'exact'
+  let numericToken = sourceToken.trim().toUpperCase()
+  if (numericToken.startsWith('M') || numericToken.startsWith('<')) {
+    relation = 'less-than'
+    numericToken = numericToken.slice(1).trim()
+  } else if (
+    numericToken.startsWith('P') ||
+    numericToken.endsWith('+')
+  ) {
+    relation = 'at-least'
+    numericToken = numericToken.startsWith('P')
+      ? numericToken.slice(1).trim()
+      : numericToken.slice(0, -1).trim()
+  }
+
+  const statuteMiles =
+    parseFraction(numericToken) ?? Number(numericToken)
+  if (
+    !Number.isFinite(statuteMiles) ||
+    statuteMiles < 0 ||
+    statuteMiles > 100
+  ) {
+    return undefined
+  }
+  return {
+    kilometers: statuteMilesToKilometers(statuteMiles),
+    relation,
+    sourceToken,
+  }
 }
 
 const readBoundedBytes = async (
@@ -199,6 +255,9 @@ const parseObservation = (
     return null
   }
 
+  const windSpeedKnots = optionalNumber(value.wspd, 0, 300)
+  const windGustKnots = optionalNumber(value.wgst, 0, 400)
+
   return {
     id: weatherObservationId(stationId),
     stationId,
@@ -211,8 +270,14 @@ const parseObservation = (
     temperatureCelsius: optionalNumber(value.temp, -100, 70),
     dewpointCelsius: optionalNumber(value.dewp, -120, 70),
     windDirection: windDirection(value.wdir),
-    windSpeedKnots: optionalNumber(value.wspd, 0, 300),
-    windGustKnots: optionalNumber(value.wgst, 0, 400),
+    windSpeedKph:
+      windSpeedKnots === undefined
+        ? undefined
+        : knotsToKilometersPerHour(windSpeedKnots),
+    windGustKph:
+      windGustKnots === undefined
+        ? undefined
+        : knotsToKilometersPerHour(windGustKnots),
     visibility: visibility(value.visib),
     altimeterHpa: optionalNumber(value.altim, 800, 1_100),
     rawObservation,

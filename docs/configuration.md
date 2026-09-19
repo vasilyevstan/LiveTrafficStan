@@ -69,7 +69,16 @@ spread through components:
 | Marine REST lookback | 15 minutes |
 | Marine snapshot flush | 1 second |
 | Marine stale / expiry | 2 minutes / 10 minutes |
-| Trail duration / cap | 15 minutes / 180 points per object |
+| Selected trail | Shown by default; visibility/duration remembered; observations session-only; 5, 15, 30, or 60 minutes |
+| Trail point caps | 12 points/minute per object; 50,000 points overall |
+| Session observation history | 60 minutes; 50,000 records; 16 MiB logical payload |
+| History sampling | Newer provider source time; at most one sample per provider/entity per 10 seconds |
+| Durable local history | Disabled by default; 1, 6, or 24 hours; default 1 hour |
+| Durable history caps | 100,000 records; 32 MiB logical payload; first reached limit wins |
+| Pending durable queue | 5,000 records or 4 MiB; oldest uncommitted records drop visibly |
+| IndexedDB write / maintenance | 250 records per batch / prune every 5 minutes |
+| Playback | 0.5×, 1×, 2×, or 4×; cursor publication at most every 100 ms |
+| Historical trail gaps | Aircraft 120 seconds; vessels 600 seconds; session/navigation changes also split |
 | Maximum interpolation duration | 1.5 seconds |
 | Query/geolocation coordinate precision | 3 decimal places |
 | Settled-viewport delay | 350 ms |
@@ -81,6 +90,25 @@ spread through components:
 
 Changing these constants changes application behavior and should include
 targeted tests where the value affects filtering, freshness, history, or motion.
+
+Trail duration and visibility are fields in the versioned preference schema.
+The released
+15-minute/180-point behavior remains the default. Reducing
+the duration prunes immediately; increasing it collects future provider
+observations only and does not reconstruct points that were not retained.
+Hiding the trail changes only the selected-object line and does not change
+provider acquisition.
+
+Private history settings use
+`livetrafficstan.history.settings.v1`. Observations use IndexedDB database
+`livetrafficstan-history`, schema version 1, with primary key
+`[provider, entityId, observedAt]`. BroadcastChannel
+`livetrafficstan-history` is primary cross-tab invalidation; storage key
+`livetrafficstan.history.invalidate.v1` is the fallback. These names are
+versioned data contracts, not environment-variable overrides. Invalidation
+messages are typed; destructive messages include the committed recording epoch
+and Clear includes its receipt-time boundary. Pending batches retain their
+enqueue epoch and are never rewritten under a later authorization.
 
 Vessel search and filters are serializable React state, not provider
 configuration. All criteria combine with AND after freshness and exact viewport
@@ -300,11 +328,12 @@ that vector tiles are being parsed.
 
 `VITE_MAP_STYLE_URL` configures the Light style and
 `VITE_MAP_DARK_STYLE_URL` configures the Dark style. The stored
-`livetrafficstan.theme` value may be `auto`, `light`, or `dark`. A missing
-preference, invalid value, or unavailable storage selects Light to preserve the
-previous default. Auto resolves the browser system color scheme and follows
-later changes; explicit Light/Dark choices remain overrides. Map center
-coordinates are never stored.
+`livetrafficstan.preferences.v1` theme field may be `auto`, `light`, or `dark`.
+The legacy `livetrafficstan.theme` value is imported only when the unified key
+is absent and remains a rollback mirror. A missing preference, invalid value,
+or unavailable storage selects Light to preserve the previous default. Auto
+resolves the browser system color scheme and follows later changes; explicit
+Light/Dark choices remain overrides. Map center coordinates are never stored.
 
 The current behavioral configuration keeps:
 
@@ -325,8 +354,63 @@ Navigation timing and privacy values are centralized in
 Layer preferences use one plain serializable boolean shape for aircraft,
 vessels, ports, airports, clustering, and METAR. It deliberately excludes
 provider state, loading/error state, observations, cluster IDs, MapLibre
-objects, and selections. The current Issue #10 implementation keeps that shape
-in session React state; persistence remains future Issue #12 scope.
+objects, and selections. The shape is stored inside
+`livetrafficstan.preferences.v1`.
+
+The complete preference schema also stores:
+
+- `metric | aviation-nautical` presentation units;
+- structured vessel category/navigation/reported-speed/length/unknown-length
+  filters, excluding the free-text query;
+- selected-trail visibility and 5/15/30/60-minute duration.
+
+It never stores camera, Home/browser location, place/aircraft/vessel search
+text, selection, provider state, observations, history consent/retention/data,
+or playback. **RESET PREFERENCES** removes the unified key and legacy theme
+mirror but leaves private-history storage untouched.
+
+Explicit sharing uses a validated fragment with maximum length 2,048:
+
+```text
+#v=1&lat=59.437&lon=24.754&zoom=8.25&bearing=0.0&pitch=0.0&...
+```
+
+The camera is all-or-nothing, coordinates use the configured three-decimal
+privacy precision, and duplicate/unknown/out-of-range fields reject the share.
+Valid fragment fields override saved preferences for that page without being
+saved automatically. Browser Home/location, queries, selection, history, and
+provider state are never serialized.
+
+## Installable application shell
+
+`npm run build` is the canonical PWA build:
+
+```text
+tsc -b && vite build && node scripts/generate-service-worker.mjs
+```
+
+The generator fails above 4 MiB of uncompressed allowlisted shell responses.
+It emits stable `/sw.js` with a content-versioned cache containing only root/
+`index.html`, built `/assets/*`, the manifest, favicon, and versioned icons.
+Do not add provider responses, map resources, Photon, weather, aircraft
+metadata, airport/port datasets, or history rows to that allowlist.
+
+Deployment headers must keep `/sw.js`, `/index.html`, and
+`/manifest.webmanifest` revalidated. Hashed assets and versioned icons are
+immutable. `/sw.js` must be JavaScript and expose `Service-Worker-Allowed: /`.
+
+Normal production registration requires a secure context and uses
+`updateViaCache: none`. Vite development does not register a worker.
+`npm run build:pwa-retire` builds the no-registration rollback shell and emits
+the stable retirement worker. In the protected production workflow choose the
+`pwa-retirement` artifact for the exact current-main SHA. Do not roll directly
+to a release that removes `/sw.js`; dormant browser registrations still need
+to receive retirement.
+
+The service worker has no generic navigation fallback. Only `/` and
+`/index.html` navigations use cached `index.html` when network fetch fails.
+Routes such as `/elsewhere` and every non-shell request preserve ordinary
+network/404 behavior.
 
 ## Marine endpoints
 

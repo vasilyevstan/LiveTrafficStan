@@ -1,12 +1,13 @@
 {
   "name": "livetrafficstan",
   "private": true,
-  "version": "1.3.0",
+  "version": "1.4.0",
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && node scripts/generate-service-worker.mjs",
+    "build:pwa-retire": "tsc -b && vite build --mode pwa-retire && node scripts/generate-service-worker.mjs --retire",
     "check:aircraft-metadata": "node scripts/check-aircraft-metadata.mjs",
     "check:airports": "node scripts/check-airports.mjs",
     "check:ports": "node scripts/check-ports.mjs",
@@ -32,6 +33,7 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
+    "fake-indexeddb": "^6.2.5",
     "oxlint": "^1.81.0",
     "typescript": "~6.0.2",
     "vite": "^8.3.0",

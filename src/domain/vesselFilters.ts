@@ -3,6 +3,7 @@ import type {
   VesselCategory,
   VesselNavigationCategory,
 } from './traffic'
+import type { UnitSystem } from './units'
 
 export const ONE_KNOT_KPH = 1.852
 export const VESSEL_SEARCH_MAX_LENGTH = 64
@@ -77,6 +78,49 @@ export const VESSEL_REPORTED_SPEED_LABELS: Record<
   'one-knot-or-more': '1 kn or faster',
   unknown: 'Unknown speed',
 }
+
+export const vesselReportedSpeedLabels = (
+  units: UnitSystem,
+): Record<VesselReportedSpeedFilter, string> =>
+  units === 'aviation-nautical'
+    ? VESSEL_REPORTED_SPEED_LABELS
+    : {
+        all: 'Any reported speed',
+        'under-one-knot': 'Below 1.9 km/h',
+        'one-knot-or-more': '1.9 km/h or faster',
+        unknown: 'Unknown speed',
+      }
+
+export const isVesselCategoryFilter = (
+  value: unknown,
+): value is VesselCategoryFilter =>
+  typeof value === 'string' &&
+  Object.prototype.hasOwnProperty.call(VESSEL_CATEGORY_LABELS, value)
+
+export const isVesselNavigationFilter = (
+  value: unknown,
+): value is VesselNavigationFilter =>
+  typeof value === 'string' &&
+  Object.prototype.hasOwnProperty.call(VESSEL_NAVIGATION_LABELS, value)
+
+export const isVesselReportedSpeedFilter = (
+  value: unknown,
+): value is VesselReportedSpeedFilter =>
+  typeof value === 'string' &&
+  Object.prototype.hasOwnProperty.call(
+    VESSEL_REPORTED_SPEED_LABELS,
+    value,
+  )
+
+export const isVesselMinimumLength = (
+  value: unknown,
+): value is VesselMinimumLength =>
+  VESSEL_MINIMUM_LENGTH_OPTIONS.includes(value as VesselMinimumLength)
+
+export const isVesselMaximumLength = (
+  value: unknown,
+): value is VesselMaximumLength =>
+  VESSEL_MAXIMUM_LENGTH_OPTIONS.includes(value as VesselMaximumLength)
 
 export const normalizeVesselSearchQuery = (query: string) =>
   query.trim().replace(/\s+/g, ' ').toUpperCase()
@@ -209,7 +253,10 @@ export const isDefaultVesselFilters = (filters: VesselFilterState) =>
   filters.includeUnknownLength ===
     DEFAULT_VESSEL_FILTERS.includeUnknownLength
 
-export const vesselFilterSummary = (filters: VesselFilterState) => {
+export const vesselFilterSummary = (
+  filters: VesselFilterState,
+  units: UnitSystem = 'metric',
+) => {
   const criteria = [
     filters.minimumLengthMeters === 0
       ? 'no minimum length'
@@ -231,7 +278,9 @@ export const vesselFilterSummary = (filters: VesselFilterState) => {
   }
   if (filters.reportedSpeed !== 'all') {
     criteria.push(
-      VESSEL_REPORTED_SPEED_LABELS[filters.reportedSpeed].toLowerCase(),
+      vesselReportedSpeedLabels(units)[
+        filters.reportedSpeed
+      ].toLowerCase(),
     )
   }
   return criteria.join(' · ')

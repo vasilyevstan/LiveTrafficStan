@@ -1,3 +1,4 @@
+import type { Feature, Point } from 'geojson'
 import type { MapGeoJSONFeature } from 'maplibre-gl'
 import { describe, expect, it, vi } from 'vitest'
 import {
@@ -5,8 +6,8 @@ import {
   firstTrafficClusterTarget,
   setTrafficClustering,
   shouldAnimateTrafficSources,
-  trafficSnapshotSignature,
   trafficClusterTarget,
+  trafficSourceDiff,
 } from './clustering'
 import {
   SOURCE_AIRCRAFT,
@@ -23,6 +24,17 @@ const feature = (
     properties: { cluster_id: clusterId },
     geometry: { type: 'Point', coordinates },
   }) as unknown as MapGeoJSONFeature
+
+const point = (
+  id: string,
+  coordinates: [number, number],
+  selected = false,
+): Feature<Point> => ({
+  type: 'Feature',
+  id,
+  properties: { selected },
+  geometry: { type: 'Point', coordinates },
+})
 
 describe('traffic clustering', () => {
   it('toggles the two existing sources without changing fixed options', async () => {
@@ -79,31 +91,44 @@ describe('traffic clustering', () => {
     expect(clusterExpansionZoom(8, Number.NaN, 20)).toBe(9)
   })
 
-  it('uses stable snapshot signatures and suppresses clustered interpolation', () => {
-    const entity = {
-      id: 'aircraft:abc123',
-      kind: 'aircraft',
-      hex: 'abc123',
-      provider: 'fixture',
-      receivedAt: 1_000,
-      position: {
-        latitude: 59.44,
-        longitude: 24.75,
-        observedAt: 1_000,
-      },
-      markerIcon: 'aircraft',
-      markerScale: 1,
-      freshness: 'live',
-    } as const
-
-    expect(trafficSnapshotSignature([entity], null)).toBe(
-      'aircraft:abc123:1000:59.44:24.75:0:aircraft:1:live:0',
-    )
-    expect(trafficSnapshotSignature([entity], entity.id)).not.toBe(
-      trafficSnapshotSignature([entity], null),
-    )
+  it('suppresses clustered interpolation', () => {
     expect(shouldAnimateTrafficSources(true, true)).toBe(false)
     expect(shouldAnimateTrafficSources(false, true)).toBe(true)
     expect(shouldAnimateTrafficSources(false, false)).toBe(false)
+  })
+
+  it('builds incremental source changes from stable feature IDs', () => {
+    const unchanged = point('aircraft:one', [24, 59])
+    const moved = point('aircraft:two', [25, 60])
+
+    expect(
+      trafficSourceDiff(
+        [unchanged, moved, point('aircraft:removed', [20, 58])],
+        [
+          unchanged,
+          point('aircraft:two', [25.1, 60.1], true),
+          point('aircraft:added', [26, 61]),
+        ],
+      ),
+    ).toEqual({
+      remove: ['aircraft:removed'],
+      add: [point('aircraft:added', [26, 61])],
+      update: [
+        {
+          id: 'aircraft:two',
+          newGeometry: {
+            type: 'Point',
+            coordinates: [25.1, 60.1],
+          },
+          removeAllProperties: true,
+          addOrUpdateProperties: [
+            { key: 'selected', value: true },
+          ],
+        },
+      ],
+    })
+    expect(trafficSourceDiff([unchanged, moved], [unchanged, moved])).toEqual(
+      {},
+    )
   })
 })

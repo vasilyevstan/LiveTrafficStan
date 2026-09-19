@@ -26,6 +26,11 @@ If the worker loads, verify that the configured style and its tiles allow CORS,
 and that the browser supports WebGL2. A style JSON response by itself does not
 prove that vector tiles rendered.
 
+**Basemap unavailable** with a visible plain background is the deliberate
+fallback, not a second map. OpenFreeMap resources are external and are not
+service-worker-cached. Retained local traffic/history can still render over the
+background. Reconnecting retries the configured style in the same canvas.
+
 When a theme switch leaves the map blank, inspect `style.load` handling.
 `map.setStyle` removes repository-owned images, sources, and layers; the
 application reinstalls them after every style load. Duplicate-source errors
@@ -38,7 +43,20 @@ If the application theme changes but the base map does not, verify both
 editing `.env.local`. Invalid saved values fall back to Light. Auto follows
 `prefers-color-scheme`; verify the operating-system/browser scheme and that the
 stored value is `auto`, not an explicit Light/Dark override. To reset a valid
-choice, remove `livetrafficstan.theme` from the site's local storage.
+choice and the other remembered controls, use **RESET PREFERENCES**. The
+authoritative key is `livetrafficstan.preferences.v1`; the legacy
+`livetrafficstan.theme` key is only a rollback mirror. Reset does not clear
+private local history.
+
+If a shared link is ignored, confirm it uses a `#v=1&...` fragment and contains
+no duplicate, unknown, partial-camera, non-finite, or out-of-range fields.
+Opening a valid link does not save its overrides. Shared coordinates are
+rounded, but the link can still remain in browser history or the clipboard.
+
+Changing Metric versus Aviation / Nautical affects formatting only. If provider
+requests, viewport eligibility, vessel filter membership, selection, or
+history changes at the same time, treat that as a regression rather than an
+expected unit conversion.
 
 ## Aircraft shows unavailable
 
@@ -294,9 +312,81 @@ the object, when the object expires, or when a committed
 coordinate/place/Home navigation changes area. That navigation also resets
 retained trail points so the app cannot draw a line across unrelated views.
 Invalid input and failed search leave the current traffic selection and
-history unchanged. Trails exist only in memory, contain only provider
-observations, and are limited to 15 minutes and 180 points. Refreshing the page
-clears them.
+history unchanged. Selected trails exist only in memory, contain only provider
+observations, and default to 15 minutes and 180 points. Use the Trail controls
+to show/hide the selected line or choose 5, 15, 30, or 60 minutes. Each setting
+keeps at most 12 points per minute per object, and all trails share a
+50,000-point aggregate cap. Increasing the duration cannot restore points that
+were already pruned; it collects future observations. Refreshing the page
+clears volatile session history, but explicitly enabled private local history
+may remain available for playback within its configured bounds.
+
+## Local history is unavailable, full, or not deleting
+
+Private local history is off by default. **ENABLE LOCAL** authorizes only this
+browser origin. The status distinguishes initializing, writing, blocked,
+stale-tab, quota, deletion, and generic failure states.
+
+- If the database is blocked or this tab is stale, close other LiveTrafficStan
+  tabs and use **RETRY LOCAL HISTORY** or reload.
+- If quota is full, durable writes stop visibly. Session history and live
+  traffic continue. Clear history to delete rows and retry.
+- **CLEAR HISTORY** removes volatile and durable observations but keeps the
+  opt-in setting. **DISABLE & DELETE** also turns recording off.
+- Clear and Disable reject stale queued writes with a recording epoch. If
+  deletion fails, the app reports failure rather than claiming success.
+- Same-origin tabs receive typed invalidations. Clear removes their volatile
+  session history and pending writes before reload; Disable removes pending
+  writes. A transient failed batch stays queued and is not silently discarded.
+- Quota/write suspension survives passive reloads. Clear is the recovery path
+  for quota exhaustion; **RETRY LOCAL HISTORY** retries other visible storage
+  failures.
+- Browser storage eviction can remove local history. The configured 1/6/24
+  hours is a maximum, not a guarantee.
+
+Historical mode is labeled **HISTORY PAUSED** or **HISTORY PLAYING**. Scrubbing
+does not query providers or move the live viewport query. Center, coordinate
+navigation, a place result, or successful Use Location returns to live before
+committing the new view. Manual pan/zoom may stay historical while the separate
+live query follows the viewport. Current METAR and third-party aircraft
+metadata are intentionally unavailable in history.
+
+After one successful production installation and controlled reload, the
+application shell can start cold offline. Live aircraft and marine acquisition
+pause through their existing controllers and resume at preserved cadence/
+reconnect boundaries when online. IndexedDB playback remains explicitly
+historical. External basemap tiles are not cached; the plain local fallback is
+not an offline-basemap guarantee.
+
+## The application shell does not install or update
+
+The worker registers only in a production build, secure context, and browser
+with Service Worker support. `npm run dev` intentionally has no registration.
+Check:
+
+- `/manifest.webmanifest` is JSON with root `id`, `start_url`, and `scope`;
+- both versioned PNG icons return successfully;
+- `/sw.js` returns JavaScript, `Cache-Control: ... must-revalidate`, and
+  `Service-Worker-Allowed: /`;
+- the generated shell remains below 4 MiB and every precache response returns
+  successfully.
+
+First install does not show **REFRESH APP** and does not claim the already-open
+page; reload once after the shell reports ready. A later waiting generation
+shows **REFRESH APP**. If activation fails, do not delete caches or unregister
+manually until the failed precache request is identified—the active generation
+remains usable by design.
+
+At most two `livetrafficstan-shell-*` caches are expected after an update or
+rollback. Other origin caches must survive. Provider, map, search, weather,
+metadata, port, airport, and history responses must never appear in a shell
+cache.
+
+For rollback to a pre-PWA release, deploy `npm run build:pwa-retire` and keep
+its `/sw.js` response available. Removing that endpoint immediately strands
+dormant registrations. Retirement is complete when the registration and only
+the `livetrafficstan-shell-*` caches are gone; preferences and IndexedDB history
+must remain.
 
 Port selection is separate. Selecting traffic clears a selected port, selecting
 a port clears traffic selection, hiding PORTS or committed navigation clears

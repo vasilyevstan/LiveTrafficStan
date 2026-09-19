@@ -32,7 +32,8 @@
 .control-panel,
 .details-panel,
 .map-error,
-.viewport-notice {
+.viewport-notice,
+.history-mode-notice {
   pointer-events: auto;
   color: var(--panel-text);
   background: var(--panel-background);
@@ -183,6 +184,12 @@
   animation: none;
 }
 
+.live-status--history .live-status__dot {
+  background: #59c9eb;
+  box-shadow: 0 0 0 4px rgba(89, 201, 235, 0.12);
+  animation: none;
+}
+
 .control-panel {
   position: absolute;
   top: 16px;
@@ -238,6 +245,8 @@
 .vessel-discovery button,
 .vessel-results button,
 .ports-status button,
+.history-action,
+.history-mode-notice button,
 .close-button {
   min-height: 32px;
   border: 1px solid var(--button-border);
@@ -265,6 +274,10 @@
 .vessel-results button:focus-visible,
 .ports-status button:hover,
 .ports-status button:focus-visible,
+.history-action:hover,
+.history-action:focus-visible,
+.history-mode-notice button:hover,
+.history-mode-notice button:focus-visible,
 .close-button:hover,
 .close-button:focus-visible {
   color: var(--button-hover-text);
@@ -337,6 +350,32 @@
   border-color: var(--error-border);
 }
 
+.preference-share-link {
+  display: grid;
+  gap: 5px;
+  margin-top: 7px;
+  color: var(--muted-text);
+  font-size: 0.62rem;
+}
+
+.preference-share-link input {
+  min-width: 0;
+  min-height: 34px;
+  width: 100%;
+  padding: 0 9px;
+  border: 1px solid var(--button-border);
+  border-radius: 8px;
+  color: var(--button-text);
+  background: var(--button-background);
+  font: inherit;
+  font-size: 0.68rem;
+}
+
+.preference-share-link input:focus-visible {
+  border-color: var(--button-hover-border);
+  outline: none;
+}
+
 .location-search__input-row button {
   min-width: 62px;
   padding: 0 9px;
@@ -395,7 +434,9 @@
 }
 
 .vessel-discovery__label,
-.vessel-discovery__filters label > span {
+.vessel-discovery__filters label > span,
+.history-controls label > span,
+.playback-controls label > span {
   display: block;
   margin-bottom: 5px;
   color: var(--legend-text);
@@ -409,7 +450,9 @@
 }
 
 .vessel-discovery input[type='search'],
-.vessel-discovery select {
+.vessel-discovery select,
+.history-controls select,
+.playback-controls select {
   min-width: 0;
   min-height: 34px;
   width: 100%;
@@ -420,14 +463,39 @@
   background: var(--button-background);
   font: inherit;
   font-size: 0.7rem;
+  z-index: 3;
 }
 
 .vessel-discovery input:hover,
 .vessel-discovery input:focus-visible,
 .vessel-discovery select:hover,
-.vessel-discovery select:focus-visible {
+.vessel-discovery select:focus-visible,
+.history-controls select:hover,
+.history-controls select:focus-visible,
+.playback-controls select:hover,
+.playback-controls select:focus-visible {
   border-color: var(--button-hover-border);
   outline: none;
+}
+
+.playback-controls label,
+.playback-controls .history-action {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.playback-controls input[type='range'] {
+  width: 100%;
+  accent-color: var(--accent-line);
+}
+
+.playback-speed-label {
+  display: grid;
+  min-height: 32px;
+  place-items: center;
+  color: var(--subtle-text);
+  font-size: 0.66rem;
 }
 
 .vessel-discovery__search-row button {
@@ -659,6 +727,43 @@
   font-size: 0.72rem;
 }
 
+.history-mode-notice {
+  position: absolute;
+  left: 16px;
+  bottom: 36px;
+  display: flex;
+  width: min(430px, calc(100vw - 32px));
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 13px;
+  border-radius: 10px;
+  font-size: 0.7rem;
+}
+
+.history-mode-notice > div {
+  display: grid;
+  gap: 2px;
+}
+
+.history-mode-notice strong {
+  color: var(--heading-text);
+  letter-spacing: 0.1em;
+}
+
+.history-mode-notice span {
+  color: var(--subtle-text);
+}
+
+.history-mode-notice button {
+  flex: 0 0 auto;
+  padding: 0 10px;
+}
+
+.details-panel--historical {
+  bottom: 126px;
+}
+
 .maplibregl-ctrl-attrib {
   max-width: min(72vw, 760px);
   color: var(--attribution-text) !important;
@@ -742,6 +847,10 @@
     padding: 13px 14px;
   }
 
+  .details-panel--historical {
+    bottom: 224px;
+  }
+
   .details-grid {
     gap: 0 14px;
   }
@@ -754,6 +863,13 @@
   .viewport-notice {
     right: 8px;
     bottom: 30px;
+    left: 8px;
+    width: auto;
+  }
+
+  .history-mode-notice {
+    right: 8px;
+    bottom: 142px;
     left: 8px;
     width: auto;
   }

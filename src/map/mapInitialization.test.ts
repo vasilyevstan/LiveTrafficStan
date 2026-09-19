@@ -47,5 +47,15 @@ describe('mapErrorPresentation', () => {
       title: 'Map data issue',
       message: 'Style request failed',
     })
+
+    expect(
+      mapErrorPresentation({
+        kind: 'basemap',
+        message: 'Showing a local background.',
+      }),
+    ).toEqual({
+      title: 'Basemap unavailable',
+      message: 'Showing a local background.',
+    })
   })
 })

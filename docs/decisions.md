@@ -2,7 +2,11 @@
 
 ## Static-first V1
 
-LiveTrafficStan is a local-first browser application with no database, accounts, authentication, or persistent backend. This keeps the V1 deployable as static assets except for the aircraft CORS proxy described below.
+LiveTrafficStan is a local-first browser application with no server database,
+accounts, authentication, or persistent backend. This keeps the V1 deployable
+as static assets except for the aircraft CORS proxy described below. V1.4 adds
+an opt-in browser IndexedDB for private, origin-local traffic history. It is
+not a server, account, shared database, or backend.
 
 ## React, TypeScript, Vite, and MapLibre
 
@@ -333,9 +337,12 @@ V1 imports `maplibre-gl-worker.mjs` through Vite's `?worker&url` handling and ca
 
 V1 animates briefly between two positions already supplied by a provider. It does not continue movement beyond the latest observed coordinate. This removes abrupt visual jumps without presenting predicted positions as live facts.
 
-## In-memory bounded history
+## Bounded session history and selected trails
 
-Recent provider-observed positions are kept only in browser memory, pruned by time and a point cap, and shown only for the selected object. Refreshing the page clears history by design.
+Recent provider-observed positions are always kept in a bounded volatile
+session store. Only the selected object's configured trail is rendered.
+Refreshing clears that session store; the separate explicit opt-in durable
+boundary is described below.
 
 ## Repository documentation and Wiki
 
@@ -458,6 +465,60 @@ then uses the existing settled full-canvas viewport pipeline. It does not
 recreate MapLibre, change filters/layers/themes, add a provider scheduler, or
 reconnect marine MQTT.
 
+## Configurable trails and private local playback
+
+Selected-object trail observations stay session-only. Their
+visibility/duration preference is remembered, retains the released visible
+15-minute default, offers 5/15/30/60-minute choices, and remains bounded by both
+per-object and 50,000-point aggregate caps. Hiding a trail is a display choice,
+not a provider or recording policy.
+
+The dated 2026-09-19 rights review authorizes the shipped persistence boundary
+only for explicit opt-in, personal, origin-local playback:
+
+- ADSB.lol labels the live API ODbL 1.0. ODbL grants extraction, derivative
+  databases, and permanent reproduction, while public use of a derivative
+  database or its produced work can add share-alike and machine-readable-access
+  obligations.
+- Fintraffic licenses Digitraffic open data under CC BY 4.0 with linked source
+  and license credit plus a notice that LiveTrafficStan filters and normalizes
+  the data.
+- No user history is uploaded, exported, shared, synchronized, served from a
+  backend, or placed in a service-worker response cache.
+- Public retained-history output, export, shared/cross-device history, or a
+  backend requires a fresh provider-rights decision before implementation.
+
+The store remains off by default and records only an allowlisted versioned
+observation schema. Session history is separately bounded and volatile.
+Durable history uses 1/6/24-hour retention plus 100,000-record and 32 MiB
+logical limits; the first reached limit prunes oldest receipt-time records.
+Clear and Disable atomically increment a recording epoch and delete rows, and
+every queued write rechecks both authorization and epoch inside its
+transaction. Pending batches retain their enqueue epoch. Typed cross-tab Clear
+invalidations also clear volatile history and pending work, while Disable
+clears pending work. Failed batches remain queued behind a visible suspension.
+
+Stored-row validation reconstructs the exact allowlisted schema, requires the
+approved provider/kind/license tuple, drops additional properties, and
+recomputes logical bytes. Validation, malformed-row deletion, metadata recount,
+and pruning occur in one readwrite transaction so repair cannot overwrite a
+newer authorization epoch. Successfully committed rows are retained as bounded
+in-memory deltas until session pruning needs them, avoiding periodic full-store
+rescans during ordinary recording.
+
+Playback changes display time only. It freezes its range on entry, supports
+scrub, play/pause, and 0.5×/1×/2×/4× speeds, and stops at the endpoint until
+the user explicitly returns live. Current provider controllers remain mounted
+and continue ordinary eligible acquisition. Offline, hidden, unmounted, and
+ineligible-view reasons compose through the existing pause boundary without
+resetting aircraft cadence, `Retry-After`, MQTT reconnect, REST, or metadata
+gates.
+
+Current-only METAR and third-party aircraft metadata are absent in history.
+Destination, ETA, interpolation frames, browser location, export, sharing,
+synchronization, service-worker live caching, and backend history remain
+outside the decision.
+
 ## Explicit Auto, Light, and Dark theme preference
 
 The Positron presentation remains the default Light theme. V1.1 provides an
@@ -467,6 +528,11 @@ invalid, or inaccessible storage still resolves to Light. Auto follows
 `prefers-color-scheme`, including later system changes, while explicit Light
 and Dark remain overrides. Pre-paint and React resolution use the same
 contract to avoid an initial wrong-theme flash.
+
+Issue #12 moves theme into the complete
+`livetrafficstan.preferences.v1` schema. The legacy theme key is imported only
+when that schema is absent and is mirrored for rollback compatibility; it is no
+longer an independent authority.
 
 MapLibre remains a single instance. Because `map.setStyle` removes custom
 style-owned state, the map layer installer restores traffic images,
@@ -480,9 +546,71 @@ rotation. Image IDs are replaced through MapLibre when the theme changes,
 including when both theme options reference the same style URL. The image cache
 contains only the bounded light and dark sets.
 
+## Versioned preferences, fragment sharing, and presentation units
+
+The unified preference schema stores only non-sensitive controls: theme,
+presentation units, six layer flags, structured vessel filters without query
+text, and selected-trail visibility/duration. Camera, browser Home/location,
+searches, selections, provider state, observations, playback, and the separate
+private-history authorization/storage contract are excluded.
+
+Explicit sharing creates a readable versioned URL fragment only on user action.
+The camera is complete, bounded, and rounded to the existing three-decimal
+privacy precision. Valid fragment fields override saved preferences and
+defaults for that page, but opening the link does not save them. A shared
+camera initializes the one MapLibre instance and wins over asynchronous
+automatic geolocation; the location result may still update Home for a later
+Center action.
+
+Metric values remain canonical. Aviation/nautical presentation converts metres
+to feet, km/h to knots, and m/s to ft/min. Vessel dimensions and filter
+thresholds remain metres. AWC wind and visibility are normalized to metric at
+the provider boundary while retaining bounded visibility relation/source tokens
+for truthful aviation formatting. Unit changes never alter provider queries,
+viewport eligibility, filter membership, history, selection, or map lifecycle.
+
+Reset restores preference defaults and removes the share fragment without
+moving the camera/Home or touching private-history settings, consent, epochs,
+or IndexedDB.
+
+## Dependency-free generated application shell
+
+The installable shell uses a small generated native service worker rather than
+adding a PWA framework. Vite already emits every required hashed application
+chunk, including the MapLibre worker and lazy MQTT bundle, so a post-build Node
+step can enumerate and version the exact shell with less policy surface.
+
+Only root/index, hashed assets, manifest, favicon, and versioned icons are
+preloaded. APIs, MQTT, external map resources, Photon, AWC, static context
+datasets, and private history are excluded. Root navigation is network-first;
+shell assets are cache-first; all other requests bypass the worker. This keeps
+offline state truthful and prevents stale live/provider output from becoming a
+success-shaped response.
+
+Updates keep at most current and predecessor shell caches. This is the smallest
+handover that protects old controlled tabs and deferred hashed imports while
+bounding cleanup. The candidate records which cache is truly active during
+install rather than inferring lineage from CacheStorage insertion order, so a
+superseded waiting generation cannot evict the real predecessor. First install
+never prompts. Worker policy source participates in the cache identity, while a
+same-identity defensive path leaves active metadata untouched. A waiting update
+activates only after **REFRESH APP**, then reloads controlled tabs once.
+Rollback uses the same path in reverse and searches the active generation
+before its predecessor.
+
+The offline map is not a basemap cache. A source-free theme background lets the
+existing MapLibre instance calculate viewport geometry and render retained
+historical overlays. It states that basemap tiles are not cached and retries
+the external style on reconnect.
+
+Rollback to a non-PWA release uses a special retirement build. Its stable
+worker activates immediately, deletes only LiveTrafficStan shell caches,
+unregisters, and navigates clients once without touching local preferences,
+unrelated caches, history settings, or IndexedDB.
+
 ## Separate optional traffic clustering
 
-Clustering is a session-only display preference and starts off. Aircraft and
+Clustering is a remembered display preference and starts off. Aircraft and
 vessels keep separate MapLibre GeoJSON sources, cluster circles, and `AIR`/`SEA`
 count labels so unlike traffic kinds are never combined. Filtering, viewport
 eligibility, freshness, and expiry run before source data reaches clustering.
@@ -493,10 +621,11 @@ entity fallback ignores clusters. Fixed source creation uses a 42 CSS-pixel
 radius, minimum count 3, and maximum cluster zoom 10. Runtime toggles change
 only the supported `cluster` source option.
 
-MapLibre rebuilds the Supercluster index on every GeoJSON `setData()` even
+MapLibre rebuilds the Supercluster index on every full GeoJSON `setData()` even
 above the visible cluster zoom. Per-frame interpolation is therefore
-suspended whenever clustering is enabled and stable snapshot signatures skip
-unchanged freshness frames. This avoids a 20 fps index rebuild without
+suspended whenever clustering is enabled. Ordinary stable-ID traffic movement
+uses `updateData` diffs, while style/source installation and forced recovery
+retain complete snapshots. This avoids repeated full index rebuilds without
 changing provider acquisition, source observations, selection, or trails.
 
 ## Bounded AWC METAR/SPECI observation overlay

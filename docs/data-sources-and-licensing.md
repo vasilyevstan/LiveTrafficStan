@@ -106,6 +106,28 @@ database has additional share-alike and machine-readable access obligations.
 The application's Apache License 2.0 covers source code only; it does not
 relicense provider data.
 
+### Device-local history decision
+
+The decision was rechecked on 2026-09-19 against the official
+[ADSB.lol API page](https://www.adsb.lol/docs/open-data/api/) and
+[ODbL 1.0 legal text](https://opendatacommons.org/licenses/odbl/1-0/).
+ODbL section 3.1 grants extraction, creation of derivative databases, and
+temporary or permanent reproduction. Its public-use conditions remain
+distinct from a user's personal origin-local database.
+
+Issue #9 persists an allowlisted normalized aircraft observation record only
+when the user explicitly opts in and only for personal playback in that
+browser origin. The application operator receives no copy. No export,
+sharing, cross-device synchronization, backend history, service-worker live
+response cache, or public retained-history publication is permitted by this
+decision. Any such future use requires a new ODbL/provider-policy review.
+ADSB.lol/ODbL attribution must remain visible during playback.
+
+The implementation identifies this decision as
+`adsb-lol-odbl-local-playback-2026-09-19` in every stored ADSB.lol row. Visible
+ADSB.lol/ODbL attribution remains on the map during live and historical
+display.
+
 The normalized `category` field is treated as a reported ADS-B emitter
 category. The bounded icon mapping follows the published
 [DO-260B emitter category definitions](https://support.adsbexchange.com/hc/en-us/articles/44705224053517-Emitter-Category-ADS-B-DO-260B-2-2-3-2-5-2):
@@ -349,6 +371,15 @@ cache, redistribution, or product-scope change.
 
 Visible attribution links both the source and license and states that
 LiveTrafficStan filters and normalizes the provider data.
+
+CC BY 4.0 permits reproduction and adaptation, including applicable database
+rights, subject to linked source/license attribution and an indication of
+modification. Issue #9 retains provider-qualified normalized Digitraffic
+observations in the same explicit opt-in, origin-local store as aircraft data.
+Stored rows use decision ID
+`fintraffic-cc-by-local-playback-2026-09-19`. No server, export, shared history,
+or cross-device database is part of that decision. Destination, ETA, and
+current-only enrichment remain excluded.
 
 The provider was reevaluated on 2026-09-19 against AISstream.io, Datalastic,
 and Kpler/MarineTraffic. It remains the only reviewed option that is keyless,

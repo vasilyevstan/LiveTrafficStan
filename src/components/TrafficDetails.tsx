@@ -12,6 +12,7 @@ import type {
   AircraftMetadataViewState,
 } from '../domain/aircraftMetadata'
 import type { DisplayTrafficEntity } from '../domain/traffic'
+import type { UnitSystem } from '../domain/units'
 
 interface DetailRowProps {
   label: string
@@ -33,6 +34,8 @@ interface TrafficDetailsProps {
   entity: DisplayTrafficEntity
   aircraftMetadata: AircraftMetadataViewState
   now: number
+  units: UnitSystem
+  historical?: boolean
   onClose: () => void
 }
 
@@ -167,6 +170,8 @@ export function TrafficDetails({
   entity,
   aircraftMetadata,
   now,
+  units,
+  historical = false,
   onClose,
 }: TrafficDetailsProps) {
   const title =
@@ -177,13 +182,16 @@ export function TrafficDetails({
 
   return (
     <aside
-      className="details-panel"
+      className={`details-panel${
+        historical ? ' details-panel--historical' : ''
+      }`}
       aria-labelledby="selected-traffic-title"
     >
       <div className="details-panel__heading">
         <div>
           <p className="eyebrow">
-            {entity.kind === 'aircraft' ? 'Selected aircraft' : 'Selected ship'}
+            {historical ? 'Historical ' : 'Selected '}
+            {entity.kind === 'aircraft' ? 'aircraft' : 'ship'}
           </p>
           <h2 id="selected-traffic-title">{title}</h2>
         </div>
@@ -193,7 +201,11 @@ export function TrafficDetails({
       </div>
 
       {entity.freshness === 'stale' && (
-        <p className="stale-notice">Position is temporarily stale</p>
+        <p className="stale-notice">
+          {historical
+            ? 'Position was stale at this historical cursor'
+            : 'Position is temporarily stale'}
+        </p>
       )}
 
       <dl className="details-grid">
@@ -209,7 +221,7 @@ export function TrafficDetails({
               value={
                 entity.altitudeMeters === undefined
                   ? undefined
-                  : formatAltitude(entity.altitudeMeters)
+                  : formatAltitude(entity.altitudeMeters, units)
               }
             />
             <DetailRow
@@ -217,7 +229,7 @@ export function TrafficDetails({
               value={
                 entity.speedKph === undefined
                   ? undefined
-                  : formatSpeed(entity.speedKph)
+                  : formatSpeed(entity.speedKph, units)
               }
             />
             <DetailRow
@@ -231,7 +243,7 @@ export function TrafficDetails({
               value={
                 entity.verticalSpeedMps === undefined
                   ? undefined
-                  : formatVerticalSpeed(entity.verticalSpeedMps)
+                  : formatVerticalSpeed(entity.verticalSpeedMps, units)
               }
             />
             <DetailRow label="Squawk" value={entity.squawk} />
@@ -272,7 +284,7 @@ export function TrafficDetails({
               value={
                 entity.speedKph === undefined
                   ? undefined
-                  : formatSpeed(entity.speedKph)
+                  : formatSpeed(entity.speedKph, units)
               }
             />
             <DetailRow
@@ -319,6 +331,12 @@ export function TrafficDetails({
       </dl>
       {entity.kind === 'aircraft' && (
         <AircraftMetadataDetails state={aircraftMetadata} />
+      )}
+      {historical && (
+        <p className="metadata-attribution">
+          Historical provider observation. Current weather and third-party
+          aircraft metadata are intentionally not joined to this time.
+        </p>
       )}
       {entity.kind === 'vessel' && (
         <p className="metadata-attribution">

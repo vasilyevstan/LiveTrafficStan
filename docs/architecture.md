@@ -42,7 +42,7 @@ provider credential or creates server-side state.
 | Area | Responsibility |
 | --- | --- |
 | `src/config/` | Typed defaults and validation of browser-safe environment overrides |
-| `src/domain/` | Application-owned traffic/port/airport/weather types, local discovery and filters, geographic helpers, location-input parsing, serializable layer preferences, and formatting |
+| `src/domain/` | Application-owned traffic/port/airport/weather types, local discovery and filters, geographic helpers, location-input parsing, versioned preferences/share state, unit conversion, and formatting |
 | `src/providers/aircraft/` | ADSB.lol request, runtime payload checks, normalization, and unit conversion |
 | `src/providers/aircraftMetadata/` | Bounded same-origin static metadata loading, provenance/schema/hash validation, exact identity matching, and shard LRU |
 | `src/providers/marine/` | Digitraffic capabilities, REST/MQTT lifecycle, metadata merging, normalization, and opt-in development diagnostics |
@@ -50,10 +50,13 @@ provider credential or creates server-side state.
 | `src/providers/airports/` | Bounded lazy same-origin airport loading plus checksum, schema, and source-provenance validation |
 | `src/providers/weather/` | Canonical same-origin AWC requests, bounded JSON validation, METAR/SPECI normalization, newest-report selection, and source provenance |
 | `src/providers/geocoding/` | Photon request construction, response bounds, runtime GeoJSON validation, result normalization, and attribution identity |
-| `src/app/` | React hooks/controllers for provider lifecycle, place-search cancellation/cache, navigation intent, time ticks, and trail history |
-| `src/traffic/` | Filtering, freshness/expiry, interpolation, and bounded history |
-| `src/map/` | MapLibre lifecycle, GeoJSON sources/layers, feature selection, and marker images |
+| `src/app/` | React hooks/controllers for provider lifecycle, unified preference persistence, place-search cancellation/cache, navigation intent, time ticks, offline state, and traffic-history orchestration |
+| `src/history/` | Provider-qualified observation projection, bounded session history, IndexedDB transactions, settings, indexes, playback, and gap-aware historical trails |
+| `src/traffic/` | Filtering, freshness/expiry, interpolation, and selected-trail history |
+| `src/map/` | MapLibre lifecycle, external/local-fallback styles, GeoJSON sources/layers, feature selection, and marker images |
 | `src/components/` | Status, controls, and selected-object details |
+| `scripts/pwa-shell.mjs` | Deterministic shell allowlist/versioning, request classification, two-generation cleanup, and normal/retirement worker source |
+| `public/manifest.webmanifest` | Root-scoped standalone install metadata and versioned maskable icons |
 
 ## Provider boundaries
 
@@ -157,9 +160,10 @@ continues to render.
 
 - Aircraft requests never overlap. A revision-aware controller cancels obsolete
   work, rejects late old-area results, and prevents request starts more often
-  than every 20 seconds. Polling pauses when the document is hidden or the
-  viewport is ineligible; restoration resumes at the next cadence-safe or
-  `Retry-After` boundary without reconstructing the controller.
+  than every 20 seconds. Polling pauses when the browser is offline, the
+  document is hidden, or the viewport is ineligible; restoration resumes at
+  the next cadence-safe or `Retry-After` boundary without reconstructing the
+  controller.
 - Marine REST requests are deduplicated by controller state. MQTT reconnects
   no more often than every 15 seconds after disconnection. Eligible viewport
   changes immediately refilter cached provider-wide MQTT records, reuse the live
@@ -205,19 +209,65 @@ the receipt timestamp otherwise.
 
 The map interpolates for at most 1.5 seconds between two provider-observed
 positions. It never extrapolates beyond the newest observation. Trails contain
-only observed positions, are pruned after 15 minutes, are capped at 180 points
-per object, and are rendered only for the selected object. A committed
-coordinate, place-result, Center, or successful Use Location navigation clears
-selection and resets retained trail points so observations from the previous
-area are not connected to the new view. Invalid input and failed search do not
-alter the existing selection or history.
+only observed positions and render only for the selected object. Users can hide
+the line or choose 5, 15, 30, or 60 minutes; the default remains 15 minutes.
+The selected duration permits at most 12 points per minute for each object, and
+the whole in-memory trail map is capped at 50,000 points with deterministic
+oldest-first eviction. A committed coordinate, place-result, Center, or
+successful Use Location navigation clears selection and resets retained trail
+points so observations from the previous area are not connected to the new
+view. Invalid input and failed search do not alter the existing selection or
+history.
+
+The history boundary has two stores:
+
+- an always-on volatile session store bounded to 60 minutes, 50,000 records,
+  16 MiB logical payload, and one provider/entity sample per 10 seconds;
+- an explicit opt-in IndexedDB store bounded to 1, 6, or 24 hours, 100,000
+  records, and 32 MiB logical payload.
+
+Both store only versioned normalized ADSB.lol or Fintraffic Digitraffic
+observations with provider, license-decision, source-time, receipt-time,
+session, and navigation-segment identity. Interpolation frames, route data,
+destination/ETA, browser location, current METAR, and third-party aircraft
+metadata are not persisted. Vessel metadata is visible in history only after
+its own observation time.
+
+IndexedDB writes recheck opt-in authorization and a monotonic recording epoch
+inside the transaction. Clear and Disable increment that epoch atomically with
+deletion, so queued work cannot repopulate old observations. Every pending
+batch retains the epoch under which it was enqueued. Typed cross-tab Clear
+invalidations clear volatile session history and pending writes before reload;
+Disable clears pending writes. Failed batches remain queued, while quota or
+transaction suspension remains visible until explicit recovery.
+
+Startup validation, malformed-row deletion, canonical-row repair, metadata
+recount, and optional pruning share one readwrite transaction. The repair
+preserves the transaction-current authorization and epoch, enforces exact
+provider/kind/license tuples, strips fields outside the persistence allowlist,
+and recomputes logical bytes. It cannot write an earlier metadata snapshot over
+a concurrent Clear or Disable.
+
+Playback freezes the available range on entry and has `live`,
+`history-paused`, and `history-playing` states. Scrubbing pauses; playback
+publishes at no more than 10 Hz and stops at the frozen endpoint. Live
+acquisition continues through the existing controllers while eligible, but
+offline, hidden, unmounted, and ineligible-view states still pause provider
+work without resetting cadence or reconnect gates. Historical snapshots use
+separate durable and session indexes so current ingestion does not rebuild a
+100,000-record index. Successfully committed rows accumulate as bounded
+in-memory deltas and merge into the durable index when volatile rows begin
+pruning; ordinary long-running recording does not rescan the complete
+IndexedDB store every minute.
 
 ## Map rendering
 
 `TrafficMap` creates one MapLibre instance. Aircraft, vessels, and the selected
 trail use persistent GeoJSON sources and layers whose data or visibility is
 updated in place. This avoids one React component or DOM marker per traffic
-object.
+object. Stable feature IDs use incremental `GeoJSONSource.updateData` diffs for
+ordinary traffic movement; style replacement and forced recovery still install
+complete source snapshots.
 
 The optional port, airport, and weather sources are separate from traffic.
 Port rank groups
@@ -232,7 +282,7 @@ fallback, exact weather, airport, and port, then weather, airport, and port
 touch fallbacks. Selecting traffic, weather, airport, or port clears the other
 selection kinds; an empty map click clears all.
 
-Aircraft and vessel clustering is an optional session-only display preference.
+Aircraft and vessel clustering is an optional remembered display preference.
 Each traffic kind keeps its own clustered GeoJSON source, count label, and
 expansion behavior. Cluster features never become application entity IDs and
 are excluded from touch entity fallback. `clusterMinPoints` is fixed at source
@@ -309,9 +359,10 @@ vector tiles will remain in a loading state.
   style rehydration updates the same bounded image IDs.
 - Motion animation samples normalized state rather than adding provider points
   on every frame.
-- History is bounded by both time and count.
-- Network work pauses while the page is hidden or the viewport is ineligible,
-  without resetting session timing or cache state.
+- Session and durable history have independent time, count, and logical-byte
+  bounds.
+- Network work pauses while offline, hidden, or viewport-ineligible, without
+  resetting session timing or cache state.
 - Aircraft metadata has zero startup requests and lazy prefix loading. Static
   assets use immutable deployment caching, while application memory retains
   only one index and eight validated shards.
@@ -411,15 +462,48 @@ with its provider. Query changes replace the latest desired request or refilter
 the cache without creating another scheduler. Page visibility and viewport
 eligibility compose as pause reasons. Layer visibility remains display-only.
 
+## Portable preferences, explicit sharing, and units
+
+`livetrafficstan.preferences.v1` is the one complete allowlisted preference
+schema. It stores theme, presentation units, six layer flags, structured vessel
+filters without free text, and selected-trail visibility/duration. It excludes
+camera, browser Home/location, searches, selections, provider state,
+observations, history settings/data, and playback.
+
+Startup resolves each supported field from a valid explicit `#v=1&...`
+fragment, then saved preferences, then defaults. A fragment camera is atomic,
+rounded to three decimals, initializes MapLibre directly, schedules the same
+settled viewport assessment as a normal fit, and synchronously fences off
+automatic geolocation. Camera reporting is independent of viewport-assessment
+deduplication so even repeated ineligible views can be shared accurately.
+Opening a link never writes its overrides automatically.
+
+Domain, filter, provider, viewport, and history values remain metric.
+`metric | aviation-nautical` changes formatting only: altitude, speed, vertical
+speed, METAR wind, and numeric/qualified visibility. Vessel dimensions and
+length filters remain metres. AWC wind and visibility are normalized at the
+provider boundary; bounded source visibility tokens are retained so aviation
+qualifiers round-trip without invention.
+
+Reset removes only unified preferences, the legacy theme compatibility key,
+and the current share fragment. It does not move the camera/Home or alter
+private-history consent, epochs, settings, or IndexedDB. Existing selection
+invalidation still applies when reset defaults hide or filter the selected
+object.
+
 ## Theme lifecycle
 
 Application colors are CSS custom properties selected by a validated
-`auto | light | dark` preference stored under `livetrafficstan.theme`.
+`auto | light | dark` field in `livetrafficstan.preferences.v1`.
 Missing, invalid, or unavailable storage preserves the prior deterministic
 Light default. Auto resolves `prefers-color-scheme: dark` before first paint
 and subscribes to system changes; explicit Light/Dark overrides do not.
 The map receives only the resolved Light or Dark theme and corresponding
 configured OpenFreeMap style.
+
+The legacy `livetrafficstan.theme` key is read only when the unified key is
+absent and is mirrored for rollback compatibility. Pre-paint and React apply
+the same fragment/unified/legacy/default precedence.
 
 Theme changes call `map.setStyle` on the existing instance. An idempotent
 installer runs after `style.load` to restore repository-owned images, GeoJSON
@@ -428,3 +512,55 @@ and any loaded port, airport, or weather source/selection.
 Interaction listeners remain registered once, and a style revision prevents a
 late obsolete load from winning. Provider hooks, React selection/history, and
 camera state do not restart.
+
+## Application-shell and offline lifecycle
+
+The service worker is build output, not hand-maintained source. After Vite emits
+the exact hashed application, MapLibre-worker, and lazy MQTT files,
+`scripts/generate-service-worker.mjs` scans `dist`, computes a content version,
+including the worker policy source so worker-only changes receive a new cache
+identity, enforces a 4 MiB uncompressed budget, and writes stable `/sw.js`.
+
+The precache allowlist contains only:
+
+- `/` and `/index.html`;
+- built `/assets/*`;
+- `manifest.webmanifest`, `favicon.svg`, and the versioned 192/512 icons.
+
+It excludes `/api/*`, Digitraffic REST/MQTT, OpenFreeMap styles/tiles/glyphs/
+sprites, Photon, AWC, aircraft metadata, airports, ports, and IndexedDB
+history. Root/index navigations are network-first with cached `index.html`
+fallback. Exact shell assets are cache-first; any other request is not handled
+by the service worker and receives no SPA fallback.
+
+Install precaching is fail-closed. A waiting generation is complete before it
+can activate. Cached root-response metadata records the generation that was
+actually active when the candidate installed, so a superseded waiting worker
+cannot displace the real predecessor. Activation retains only its own cache and
+that recorded predecessor, deleting no unrelated caches. The active generation
+is always searched first, including rollback to an already-existing cache; the
+predecessor remains available for an older tab's deferred hashed import.
+An incomplete inactive cache left by browser termination is rebuilt on the next
+install attempt; an incomplete cache marked active is never replaced in place.
+
+The application registers only in production secure contexts with
+`updateViaCache: none`. First install does not call `skipWaiting`, claim the
+open page, or show an update action. A later waiting worker appears as
+**REFRESH APP**; the user action authorizes `skipWaiting`, conditional
+`clients.claim`, and one guarded reload per controlled tab.
+
+When an external style cannot load, `TrafficMap` installs a bundled
+source-free, theme-aware background into the same MapLibre instance. It then
+installs the normal traffic/history sources and reports a viewport, allowing
+retained IndexedDB entities and trails to render without claiming an offline
+basemap. Reconnect retries the configured external style in the same map and
+preserves camera, selection, history, and provider controllers.
+
+`npm run build:pwa-retire` disables normal registration and emits an
+unconditionally activating retirement worker at the same `/sw.js` path. The
+protected production workflow selects the `pwa-retirement` artifact for this
+exact-SHA deployment. It deletes only `livetrafficstan-shell-*` caches,
+unregisters, and navigates controlled windows once. Preferences, history
+settings, unrelated caches, and IndexedDB are outside that boundary. A pre-PWA
+rollback must continue serving this worker at `/sw.js` for dormant
+registrations.

@@ -7,6 +7,14 @@ on:
         description: Exact current main commit SHA to deploy
         required: true
         type: string
+      artifact:
+        description: Application or one-time PWA retirement artifact
+        required: true
+        default: application
+        type: choice
+        options:
+          - application
+          - pwa-retirement
 
 permissions:
   contents: read
@@ -81,10 +89,15 @@ jobs:
       - name: Test
         run: npm test -- --run
 
-      - name: Build
+      - name: Build application
+        if: inputs.artifact == 'application'
         run: npm run build
 
-      - name: Check deployment bundle
+      - name: Build PWA retirement artifact
+        if: inputs.artifact == 'pwa-retirement'
+        run: npm run build:pwa-retire
+
+      - name: Check exact deployment bundle
         run: npm run check:deploy
 
       - name: Deploy exact source
@@ -114,6 +127,7 @@ jobs:
             echo "### LiveTrafficStan production deployment"
             echo
             echo "- SHA: \`$RELEASE_SHA\`"
+            echo "- Artifact: \`${{ inputs.artifact }}\`"
             echo "- URL: $DEPLOYMENT_URL"
             echo "- Smoke: passed"
           } >> "$GITHUB_STEP_SUMMARY"

@@ -30,6 +30,10 @@ Check these project invariants:
 - Provider payloads are validated and normalized before map/UI use; units,
   timestamps, enclosing-circle transport, exact viewport filtering, missing
   fields, and AIS sentinel values remain truthful.
+- Provider, filter, viewport, and history values stay metric. A remembered
+  metric/aviation-nautical choice is presentation-only; METAR wind and
+  visibility normalize at the AWC boundary while bounded source qualifiers
+  remain available for truthful display.
 - Vessel search and category/navigation/speed/length filters run only after
   provider normalization, freshness, and viewport filtering. They do not alter
   traffic queries, provider snapshots, MQTT subscriptions, REST/metadata
@@ -68,6 +72,42 @@ Check these project invariants:
 - Enrichment and persisted observations retain source, age, identity confidence,
   licensing, attribution, retention, and cache limits. Do not infer routes,
   operators, destinations, coverage, or port calls from incomplete data.
+- Device-local traffic persistence is explicit opt-in, origin-local, private,
+  provider-qualified, time/count/byte bounded, clearable, and independently
+  fallible. No export, sharing, cross-device synchronization, backend history,
+  service-worker live cache, or public retained-history output is covered by
+  the current ADSB.lol/ODbL and Fintraffic/CC BY decision.
+- The application-shell worker may cache only root/index, hashed build assets,
+  manifest, favicon, and versioned icons. APIs, MQTT, map resources, Photon,
+  AWC, metadata/context datasets, and private history must bypass it and must
+  never receive a cached HTML success fallback.
+- Update cleanup is prefix-owned and retains only current/predecessor shell
+  generations. Failed precache cannot replace the active worker; retirement
+  cannot delete unrelated caches, preferences, history settings, or IndexedDB.
+- Stored history is an allowlist, not a serialized live entity. It excludes
+  interpolation frames, destination/ETA, browser location, current METAR, and
+  third-party aircraft metadata; every row carries schema, normalization,
+  provider, source/receipt time, session/segment, and exact license-decision
+  identity.
+- Session and durable history enforce independent time/count/logical-byte
+  bounds. Retention uses receipt time; playback and freshness use provider
+  observation time. Duration expansion and playback never manufacture missing
+  observations.
+- Clear and Disable atomically increment a recording epoch with deletion.
+  Queued writes retain their enqueue epoch and recheck opt-in and epoch inside
+  the transaction. Typed cross-tab Clear clears volatile and pending history;
+  Disable clears pending history. Failed batches remain queued, and passive
+  reloads cannot clear a quota/write suspension or supersede an explicit
+  consent mutation.
+- Stored-row repair is one transaction with validation, deletion, recount, and
+  pruning. It preserves the transaction-current authorization epoch, rebuilds
+  the exact provider/kind/license allowlist, drops extra fields, and recomputes
+  logical bytes rather than trusting the stored value.
+- Playback leaves the existing provider controllers mounted and adds no
+  scheduler. Scrub, speed, play/pause, and historical selection create no
+  additional provider starts. Offline, hidden, unmounted, and ineligible-view
+  pause reasons compose without resetting cadence, `Retry-After`, MQTT
+  reconnect, REST, or metadata deadlines.
 - Optional static port data makes zero startup requests and uses one pinned,
   immutable same-origin asset with a total deadline, stream byte cap, SHA-256,
   strict UTF-8/JSON/schema/count/rank validation, and fulfilled-only session

@@ -4,6 +4,7 @@ import type { Aircraft, TrafficProviderResult } from '../domain/traffic'
 import { AdsbLolAircraftProvider } from '../providers/aircraft/adsbLolProvider'
 import type { TrafficQuery } from '../providers/types'
 import { AircraftTrafficController } from './AircraftTrafficController'
+import { shouldPauseTraffic } from './trafficPause'
 
 const initialResult = (): TrafficProviderResult<Aircraft> => ({
   entities: [],
@@ -31,7 +32,9 @@ export const useAircraftTraffic = (
 
     if (controller) {
       if (query) controller.updateQuery(query)
-      controller.setPaused(document.hidden || query === null)
+      controller.setPaused(
+        shouldPauseTraffic(query, document.hidden, navigator.onLine),
+      )
       return
     }
 
@@ -65,7 +68,13 @@ export const useAircraftTraffic = (
         },
       })
       controllerRef.current = controller
-      controller.start(document.hidden || queryRef.current === null)
+      controller.start(
+        shouldPauseTraffic(
+          queryRef.current,
+          document.hidden,
+          navigator.onLine,
+        ),
+      )
     }
 
     startControllerRef.current = startController
@@ -73,11 +82,17 @@ export const useAircraftTraffic = (
 
     const handleVisibilityChange = () => {
       controllerRef.current?.setPaused(
-        document.hidden || queryRef.current === null,
+        shouldPauseTraffic(
+          queryRef.current,
+          document.hidden,
+          navigator.onLine,
+        ),
       )
     }
 
     document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('online', handleVisibilityChange)
+    window.addEventListener('offline', handleVisibilityChange)
 
     return () => {
       disposed = true
@@ -85,6 +100,8 @@ export const useAircraftTraffic = (
       controllerRef.current?.stop()
       controllerRef.current = undefined
       document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('online', handleVisibilityChange)
+      window.removeEventListener('offline', handleVisibilityChange)
     }
   }, [config])
 

@@ -7,10 +7,10 @@ import {
   VESSEL_MAXIMUM_LENGTH_OPTIONS,
   VESSEL_MINIMUM_LENGTH_OPTIONS,
   VESSEL_NAVIGATION_LABELS,
-  VESSEL_REPORTED_SPEED_LABELS,
   VESSEL_RESULT_LIMIT,
   VESSEL_SEARCH_MAX_LENGTH,
   vesselFilterSummary,
+  vesselReportedSpeedLabels,
   withMinimumVesselLength,
   type VesselCategoryFilter,
   type VesselFilterState,
@@ -18,6 +18,7 @@ import {
   type VesselNavigationFilter,
   type VesselReportedSpeedFilter,
 } from '../domain/vesselFilters'
+import type { UnitSystem } from '../domain/units'
 
 interface VesselDiscoveryProps {
   filters: VesselFilterState
@@ -25,6 +26,7 @@ interface VesselDiscoveryProps {
   totalVessels: number
   vesselsVisible: boolean
   emptyMessage: string
+  units: UnitSystem
   onFiltersChange: (filters: VesselFilterState) => void
   onSelect: (id: string) => void
 }
@@ -50,6 +52,7 @@ export function VesselDiscovery({
   totalVessels,
   vesselsVisible,
   emptyMessage,
+  units,
   onFiltersChange,
   onSelect,
 }: VesselDiscoveryProps) {
@@ -141,7 +144,7 @@ export function VesselDiscovery({
               })
             }
           >
-            {Object.entries(VESSEL_REPORTED_SPEED_LABELS).map(
+            {Object.entries(vesselReportedSpeedLabels(units)).map(
               ([value, label]) => (
                 <option key={value} value={value}>
                   {label}
@@ -221,7 +224,7 @@ export function VesselDiscovery({
 
       <div className="vessel-discovery__summary">
         <p role="status">{status}</p>
-        <p>{vesselFilterSummary(filters)}</p>
+        <p>{vesselFilterSummary(filters, units)}</p>
         <button
           type="button"
           disabled={isDefaultVesselFilters(filters)}

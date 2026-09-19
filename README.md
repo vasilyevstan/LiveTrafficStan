@@ -24,6 +24,14 @@ single React application, without accounts, a database, or persistent tracking.
 - Explicit Auto, Light, and Dark theme preferences. Auto follows the browser
   color-scheme signal, while Light and Dark remain persistent overrides; all
   three switch the base map without recreating MapLibre or resetting traffic.
+- One versioned device-local preference schema remembers theme, metric or
+  aviation/nautical presentation units, layers, structured vessel filters, and
+  selected-trail controls. It never stores camera, Home/location, search text,
+  selection, provider state, playback, or private-history consent.
+- An explicit **Share view** action creates a fragment-only link containing a
+  three-decimal camera plus validated presentation state. Opening it does not
+  save those overrides, and its camera wins over a later automatic geolocation
+  result.
 - Viewport-driven traffic after settled pan, zoom, rotation, pitch, Home, and
   resize changes.
 - A truthful 100 km enclosing-query limit: wider or unsafe views pause traffic
@@ -47,7 +55,7 @@ single React application, without accounts, a database, or persistent tracking.
   medium airport reference points, static details, and a bounded keyboard
   list for the current view. It does not imply operational status, routes,
   arrivals, or departures.
-- Optional session-only aircraft and vessel clustering, kept in separate
+- Optional remembered aircraft and vessel clustering, kept in separate
   MapLibre sources with distinct counts and expansion behavior. Clustering
   starts off and never changes provider request cadence or entity identity.
 - An optional METAR/SPECI observation layer from the NOAA/NWS Aviation Weather
@@ -56,8 +64,29 @@ single React application, without accounts, a database, or persistent tracking.
   independent of traffic providers and static airport context.
 - Honest detail cards, provider-specific health, stale/expired handling, and
   partial operation when one provider fails.
-- Short interpolation only between observed positions and a bounded 15-minute
-  in-memory trail for the selected object.
+- Short interpolation only between observed positions and a selected-object
+  in-memory trail configurable to 5, 15, 30, or 60 minutes. Trail visibility
+  and duration are remembered, while the provider observations remain
+  session-only unless private local history is explicitly enabled.
+- Always-on bounded session observation history plus optional private
+  origin-local IndexedDB history. Durable recording is off by default, uses
+  1/6/24-hour retention choices, and can be cleared or disabled and deleted.
+- Explicit historical playback with a frozen range, scrub, play/pause,
+  0.5×/1×/2×/4× speed, gap-aware selected trails, and one-action return to
+  live. Playback changes display time only; eligible live acquisition
+  continues in the background.
+- An installable dependency-free application shell. The generated service
+  worker caches only the exact HTML, hashed application assets, manifest,
+  favicon, and versioned icons; it never caches live APIs, MQTT, map resources,
+  search, weather, static context datasets, or private history.
+- Truthful cold-offline startup after installation. Live acquisition is marked
+  unavailable, external basemap tiles are not promised, and a bundled
+  source-free background lets retained IndexedDB traffic and trails render in
+  explicit HISTORY mode.
+- Non-blocking application updates with an explicit **Refresh app** action,
+  bounded current/predecessor shell caches, and a tested retirement build that
+  removes only application-shell caches without deleting preferences or private
+  history.
 - Responsive floating controls, keyboard focus states, non-color status labels,
   and a small provider-reported set of original aircraft and vessel
   silhouettes with generic fallbacks.
@@ -110,8 +139,10 @@ or MapLibre sees them:
 
 ```text
 ADSB.lol polling ───────┐
-                       ├─> normalized traffic -> freshness/history -> map + UI
-Digitraffic REST/MQTT ──┘
+                       ├─> normalized traffic -> live display + bounded session history
+Digitraffic REST/MQTT ──┘                         |
+                                                  ├─> optional private IndexedDB
+                                                  └─> historical index/playback -> map + UI
 
 selected aircraft -> static metadata index + one prefix shard -> details only
 
@@ -170,6 +201,39 @@ settled station-set changes, explicit refresh, and retry share one session
 request-start gate of at least 60 seconds. Reports become stale after 75
 minutes and expire after 120 minutes. Hiding the layer preserves a fulfilled
 same-view result without persisting it.
+
+Presentation preferences are stored under
+`livetrafficstan.preferences.v1`. The legacy theme key is imported only when
+the unified key is absent and remains a rollback compatibility mirror. Shared
+state uses a validated `#v=1&...` fragment with explicit user action; it is not
+sent in HTTP requests, but users should still treat browser history and the
+clipboard as places where a copied rounded view can remain visible. Metric
+values remain canonical for providers, filters, history, and viewport logic;
+aviation/nautical units are formatting only.
+
+Traffic history stores only allowlisted normalized provider observations.
+Session history is always volatile and bounded. Private IndexedDB recording is
+explicit opt-in and bounded by retention time, record count, and logical bytes.
+Clear and Disable use an authorization epoch so queued or stale-tab writes
+cannot restore deleted observations. Pending batches retain their enqueue
+epoch, destructive cross-tab invalidations clear the affected volatile queue,
+and failed writes remain queued behind an explicit visible suspension rather
+than being reported as saved. Historical mode reuses the normal search, filter,
+selection, clustering, and details paths, but disables interpolation and hides
+current-only aircraft metadata and METAR context.
+
+`npm run build` generates `/sw.js` from the exact Vite output and worker policy,
+and rejects an application shell above 4 MiB uncompressed. Root navigation is
+network-first with cached `index.html` only as the offline fallback. Exact shell
+assets are cache-first across the current and immediate predecessor generations
+so an older controlled tab can finish a deferred hashed import during an
+update. Every other request keeps ordinary network behavior and receives no
+generic HTML fallback.
+
+The local source-free MapLibre fallback contains only a theme-aware background.
+It is installed into the existing map when the configured external style cannot
+load and is replaced in that same map after reconnect. It does not imitate or
+cache OpenFreeMap land, water, labels, tiles, glyphs, or sprites.
 
 See [Architecture](docs/architecture.md) for component boundaries, data flow,
 failure isolation, rendering, and deployment details.
@@ -266,10 +330,14 @@ monitoring, privacy, and rollback procedure.
 - Views whose conservative enclosing radius exceeds 100 km pause live traffic
   until the user zooms in or reduces tilt. Partial coverage is never presented
   as complete.
-- Trails disappear on refresh and are intentionally limited to the selected
-  object.
+- Selected trails remain intentionally limited to one object. Volatile session
+  history disappears on refresh; explicitly enabled private local history may
+  survive within its configured bounds.
 - Browser location is one-shot, rounded, and session-only; it is not continuous
   tracking and exact coordinates are not persisted.
+- Preferences are origin-local browser storage. Shared links are deliberate
+  snapshots, not live synchronization, and include a rounded camera that can
+  remain in browser history or the clipboard.
 - Named place text is sent to Photon only after explicit submission. Photon is
   a fair-use public service with no availability guarantee; direct coordinate
   entry remains local and available during search failure or throttling.
@@ -294,8 +362,11 @@ monitoring, privacy, and rollback procedure.
   airport board, operational status, or global coverage guarantee. Enabling it
   sends visible qualifying ICAO station IDs through the application host to
   AWC.
-- There is no reverse geocoding, route enrichment, playback, radar,
-  precipitation forecast, account, saved center preference, or offline mode.
+- There is no reverse geocoding, route enrichment, radar, precipitation
+  forecast, account, saved center preference, or offline basemap guarantee.
+  An installed shell can start cold offline and replay retained private local
+  history over a plain local background; no cached provider response or map
+  resource is presented as current.
 
 Planned work is tracked in
 [GitHub Issues](https://github.com/vasilyevstan/LiveTrafficStan/issues), not

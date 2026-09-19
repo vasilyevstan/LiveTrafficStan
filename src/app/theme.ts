@@ -27,10 +27,15 @@ export type ThemeMatchMedia = (
   query: string,
 ) => ThemeMediaQueryList
 
+export const isThemePreference = (
+  value: unknown,
+): value is ThemePreference =>
+  value === 'auto' || value === 'light' || value === 'dark'
+
 export const resolveThemePreference = (
   value: unknown,
 ): ThemePreference =>
-  value === 'auto' || value === 'dark' ? value : 'light'
+  isThemePreference(value) ? value : 'light'
 
 export const readStoredThemePreference = (
   storage: ThemeStorage | undefined,

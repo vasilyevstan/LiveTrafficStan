@@ -18,6 +18,7 @@ const renderControls = (
       vesselResults={[]}
       totalVessels={0}
       vesselEmptyMessage="No current ships are shown in this view."
+      units="metric"
       onVesselFiltersChange={() => undefined}
       onVesselSelect={() => undefined}
       aircraftVisible
@@ -52,6 +53,25 @@ const renderControls = (
       onRefreshWeather={() => undefined}
       clusteringEnabled={false}
       onClusteringEnabledChange={() => undefined}
+      trailPreferences={{ visible: true, durationMinutes: 15 }}
+      onTrailPreferencesChange={() => undefined}
+      historySettings={{ version: 1, enabled: false, retentionHours: 1 }}
+      historyStatus={{
+        phase: 'disabled',
+        recordCount: 0,
+        logicalBytes: 0,
+      }}
+      historyRecordCount={0}
+      playback={{ mode: 'live' }}
+      onHistoryEnabledChange={() => undefined}
+      onHistoryRetentionChange={() => undefined}
+      onClearHistory={() => undefined}
+      onRetryHistory={() => undefined}
+      onEnterHistory={() => undefined}
+      onPlayHistory={() => undefined}
+      onPauseHistory={() => undefined}
+      onScrubHistory={() => undefined}
+      onPlaybackSpeedChange={() => undefined}
       centerDisabled={false}
       onCenter={() => undefined}
       locationAvailable
@@ -59,6 +79,13 @@ const renderControls = (
       onUseLocation={() => undefined}
       themePreference="light"
       onThemePreferenceChange={() => undefined}
+      onUnitsChange={() => undefined}
+      shareDisabled={false}
+      onShare={() => undefined}
+      onResetPreferences={() => undefined}
+      appUpdateAvailable={false}
+      appUpdateActivating={false}
+      onRefreshApp={() => undefined}
       locationNavigationDisabled={false}
       activeLocationLabel="Home: Tallinn, Estonia"
       coordinatePrecision={3}
@@ -81,9 +108,43 @@ describe('TrafficControls', () => {
     expect(html).toContain('aria-pressed="true">AUTO')
   })
 
+  it('exposes remembered units, explicit sharing, reset, and copy fallback', () => {
+    const html = renderControls({
+      units: 'aviation-nautical',
+      preferenceStatus: 'The share link could not be copied.',
+      manualShareUrl: 'https://example.test/#v=1',
+    })
+    expect(html).toContain('AVIATION / NAUTICAL')
+    expect(html).toContain('aria-pressed="true">AVIATION / NAUTICAL')
+    expect(html).toContain('SHARE VIEW')
+    expect(html).toContain('RESET PREFERENCES')
+    expect(html).toContain('role="status"')
+    expect(html).toContain('https://example.test/#v=1')
+  })
+
+  it('exposes a non-blocking waiting application update', () => {
+    const html = renderControls({
+      appShellStatus: 'An application update is ready.',
+      appUpdateAvailable: true,
+    })
+    expect(html).toContain('REFRESH APP')
+    expect(html).toContain('An application update is ready.')
+    expect(html).toContain('role="status"')
+  })
+
   it('keeps clustering as a provider-neutral optional layer preference', () => {
     const html = renderControls({ clusteringEnabled: true })
     expect(html).toContain('aria-pressed="true">CLUSTERS')
+  })
+
+  it('keeps selected-object trail visibility and duration explicit', () => {
+    const html = renderControls({
+      trailPreferences: { visible: false, durationMinutes: 30 },
+    })
+
+    expect(html).toContain('<legend>Trail</legend>')
+    expect(html).toContain('aria-pressed="true">HIDE')
+    expect(html).toContain('<option value="30" selected="">30 MIN</option>')
   })
 
   it('keeps optional port loading, failure, retry, and source limits local', () => {

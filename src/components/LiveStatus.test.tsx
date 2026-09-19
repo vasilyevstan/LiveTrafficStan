@@ -13,6 +13,7 @@ describe('LiveStatus', () => {
         marineStatus={{ phase: 'live', paused: false }}
         marineCapabilities={DIGITRAFFIC_MARINE_CAPABILITIES}
         now={1_800_000_000_000}
+        online
       />,
     )
 
@@ -37,10 +38,49 @@ describe('LiveStatus', () => {
         }}
         marineCapabilities={DIGITRAFFIC_MARINE_CAPABILITIES}
         now={1_800_000_000_000}
+        online
       />,
     )
 
     expect(html).toContain('Marine stream unavailable')
     expect(html).not.toContain('Marine stream connected')
+  })
+
+  it('labels historical and offline display without live cursor announcements', () => {
+    const html = renderToStaticMarkup(
+      <LiveStatus
+        aircraftCount={1}
+        vesselCount={2}
+        aircraftStatus={{ phase: 'live', paused: true }}
+        marineStatus={{ phase: 'live', paused: true }}
+        marineCapabilities={DIGITRAFFIC_MARINE_CAPABILITIES}
+        now={1_800_000_000_000}
+        online={false}
+        historicalAt={1_700_000_000_000}
+      />,
+    )
+
+    expect(html).toContain('<strong>HISTORY</strong>')
+    expect(html).toContain('Browser offline; local playback remains available')
+    expect(html).not.toContain('aria-live')
+  })
+
+  it('states that live traffic is unavailable while offline', () => {
+    const html = renderToStaticMarkup(
+      <LiveStatus
+        aircraftCount={0}
+        vesselCount={0}
+        aircraftStatus={{ phase: 'live', paused: true }}
+        marineStatus={{ phase: 'live', paused: true }}
+        marineCapabilities={DIGITRAFFIC_MARINE_CAPABILITIES}
+        now={1_800_000_000_000}
+        online={false}
+      />,
+    )
+
+    expect(html).toContain('<strong>OFFLINE</strong>')
+    expect(html).toContain(
+      'Live traffic is unavailable while the browser is offline',
+    )
   })
 })

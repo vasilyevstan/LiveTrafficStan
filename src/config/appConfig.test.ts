@@ -71,7 +71,25 @@ describe('createAppConfig', () => {
     )
     expect(config.marine.mqttReconnectPeriodMs).toBe(15_000)
     expect(config.marine.queryRestRefreshIntervalMs).toBe(5 * 60_000)
-    expect(config.trail.durationMs).toBe(15 * 60_000)
+    expect(config.trail).toEqual({
+      durationOptionsMinutes: [5, 15, 30, 60],
+      defaultDurationMinutes: 15,
+      pointsPerMinute: 12,
+      maxTotalPoints: 50_000,
+    })
+    expect(config.history).toMatchObject({
+      sessionRetentionMs: 60 * 60_000,
+      sessionMaxRecords: 50_000,
+      sessionMaxLogicalBytes: 16 * 1_024 * 1_024,
+      sampleIntervalMs: 10_000,
+      durableMaxRecords: 100_000,
+      durableMaxLogicalBytes: 32 * 1_024 * 1_024,
+      pendingWriteMaxRecords: 5_000,
+      pendingWriteMaxLogicalBytes: 4 * 1_024 * 1_024,
+      playbackPublishIntervalMs: 100,
+      aircraftTrailGapMs: 120_000,
+      vesselTrailGapMs: 600_000,
+    })
   })
 
   it('accepts explicit center and endpoint configuration', () => {

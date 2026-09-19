@@ -1,18 +1,23 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
+import { useAppPreferences } from './app/useAppPreferences'
+import { useAppShell } from './app/useAppShell'
 import { useAircraftTraffic } from './app/useAircraftTraffic'
 import { useAircraftMetadata } from './app/useAircraftMetadata'
 import { useAirports } from './app/useAirports'
 import { LocationCameraIntent } from './app/locationCameraIntent'
 import { useMarineTraffic } from './app/useMarineTraffic'
 import { useNow } from './app/useNow'
+import { useOnlineStatus } from './app/useOnlineStatus'
 import { usePlaceSearch } from './app/usePlaceSearch'
 import { usePorts } from './app/usePorts'
 import { useSessionLocation } from './app/useSessionLocation'
 import { useTheme } from './app/useTheme'
+import { useTrafficHistory } from './app/useTrafficHistory'
 import { useTrailHistory } from './app/useTrailHistory'
 import { useWeatherObservations } from './app/useWeatherObservations'
 import { AirportDetails } from './components/AirportDetails'
+import { HistoryModeNotice } from './components/HistoryModeNotice'
 import { LiveStatus } from './components/LiveStatus'
 import { PortDetails } from './components/PortDetails'
 import { TrafficControls } from './components/TrafficControls'
@@ -23,13 +28,19 @@ import type { AppCenter } from './config/appConfig'
 import { orderAircraftSearchResults } from './domain/aircraftSearch'
 import { airportsInViewport } from './domain/airports'
 import {
-  DEFAULT_LAYER_PREFERENCES,
   updateLayerPreference,
   type LayerPreferences,
 } from './domain/layerPreferences'
+import type { MapCameraState } from './domain/mapCamera'
+import {
+  createShareUrl,
+  readBrowserShareState,
+} from './domain/shareState'
 import type { DisplayTrafficEntity, TrafficEntity } from './domain/traffic'
 import {
-  DEFAULT_VESSEL_FILTERS,
+  trailHistoryConfig,
+} from './domain/trailPreferences'
+import {
   filterVessels,
   orderVesselSearchResults,
 } from './domain/vesselFilters'
@@ -55,15 +66,41 @@ import { displayTraffic } from './traffic/freshness'
 interface ViewRequest {
   id: number
   center: AppCenter
+  camera?: MapCameraState
 }
 
 function App() {
-  const [aircraftQuery, setAircraftQuery] = useState('')
-  const [vesselFilters, setVesselFilters] = useState(
-    DEFAULT_VESSEL_FILTERS,
+  const [sharedState] = useState(() =>
+    readBrowserShareState(APP_CONFIG.navigation.coordinatePrecision),
   )
-  const [layerPreferences, setLayerPreferences] = useState(
-    DEFAULT_LAYER_PREFERENCES,
+  const [locationCameraIntent] = useState(() => {
+    const intent = new LocationCameraIntent()
+    if (sharedState?.camera) {
+      intent.beginExplicitViewIntent()
+    }
+    return intent
+  })
+  const {
+    preferences,
+    updatePreferences,
+    resetPreferences,
+    status: preferenceStatus,
+  } = useAppPreferences(sharedState?.preferences)
+  const {
+    layers: layerPreferences,
+    trail: trailPreferences,
+    theme: themePreference,
+    units,
+  } = preferences
+  const theme = useTheme(themePreference)
+  const [aircraftQuery, setAircraftQuery] = useState('')
+  const [vesselQuery, setVesselQuery] = useState('')
+  const vesselFilters = useMemo(
+    () => ({
+      query: vesselQuery,
+      ...preferences.vesselFilters,
+    }),
+    [preferences.vesselFilters, vesselQuery],
   )
   const {
     aircraftVisible,
@@ -86,23 +123,35 @@ function App() {
     assessment: ViewportAssessment
     viewRequestId: number
   } | null>(null)
-  const [viewRequest, setViewRequest] = useState<ViewRequest>({
-    id: 0,
-    center: APP_CONFIG.center,
+  const [viewRequest, setViewRequest] = useState<ViewRequest>(() => {
+    const camera = sharedState?.camera
+    return {
+      id: 0,
+      center: camera
+        ? {
+            latitude: camera.latitude,
+            longitude: camera.longitude,
+            label: 'Shared view',
+          }
+        : APP_CONFIG.center,
+      camera,
+    }
   })
-  const [viewReady, setViewReady] = useState(false)
-  const [activeLocationLabel, setActiveLocationLabel] = useState(
-    `Home: ${APP_CONFIG.center.label}`,
+  const [viewReady, setViewReady] = useState(Boolean(sharedState?.camera))
+  const [activeLocationLabel, setActiveLocationLabel] = useState(() =>
+    sharedState?.camera
+      ? 'Shared view'
+      : `Home: ${APP_CONFIG.center.label}`,
   )
+  const [mapCamera, setMapCamera] = useState<MapCameraState>()
+  const [shareFeedback, setShareFeedback] = useState<{
+    message: string
+    manualUrl?: string
+  }>()
   const [historyResetRevision, setHistoryResetRevision] = useState(0)
+  const returnToLiveRef = useRef<() => void>(() => undefined)
   const appliedLocationRevisionRef = useRef(0)
   const airportSelectionGraceUntilRef = useRef(0)
-  const locationCameraIntentRef = useRef(new LocationCameraIntent())
-  const {
-    theme,
-    themePreference,
-    setThemePreference,
-  } = useTheme()
   const location = useSessionLocation(
     APP_CONFIG.center,
     APP_CONFIG.navigation,
@@ -117,13 +166,16 @@ function App() {
     APP_CONFIG.navigation.coordinatePrecision,
   )
   const now = useNow()
+  const online = useOnlineStatus()
+  const appShell = useAppShell()
   const setLayerPreference = useCallback(
     (key: keyof LayerPreferences, value: boolean) => {
-      setLayerPreferences((current) =>
-        updateLayerPreference(current, key, value),
-      )
+      updatePreferences((current) => ({
+        ...current,
+        layers: updateLayerPreference(current.layers, key, value),
+      }))
     },
-    [],
+    [updatePreferences],
   )
   const setAircraftVisible = useCallback(
     (visible: boolean) =>
@@ -153,6 +205,58 @@ function App() {
     (visible: boolean) => setLayerPreference('weatherVisible', visible),
     [setLayerPreference],
   )
+  const setTrailPreferences = useCallback(
+    (trail: typeof trailPreferences) => {
+      updatePreferences((current) => ({ ...current, trail }))
+    },
+    [updatePreferences],
+  )
+  const setThemePreference = useCallback(
+    (nextTheme: typeof themePreference) => {
+      updatePreferences((current) => ({
+        ...current,
+        theme: nextTheme,
+      }))
+    },
+    [updatePreferences],
+  )
+  const setUnits = useCallback(
+    (nextUnits: typeof units) => {
+      updatePreferences((current) => ({
+        ...current,
+        units: nextUnits,
+      }))
+    },
+    [updatePreferences],
+  )
+  const setVesselFilters = useCallback(
+    (nextFilters: typeof vesselFilters) => {
+      setVesselQuery(nextFilters.query)
+      const {
+        query: _query,
+        ...nextStructuredFilters
+      } = nextFilters
+      const current = preferences.vesselFilters
+      if (
+        nextStructuredFilters.category === current.category &&
+        nextStructuredFilters.navigation === current.navigation &&
+        nextStructuredFilters.reportedSpeed === current.reportedSpeed &&
+        nextStructuredFilters.minimumLengthMeters ===
+          current.minimumLengthMeters &&
+        nextStructuredFilters.maximumLengthMeters ===
+          current.maximumLengthMeters &&
+        nextStructuredFilters.includeUnknownLength ===
+          current.includeUnknownLength
+      ) {
+        return
+      }
+      updatePreferences((currentPreferences) => ({
+        ...currentPreferences,
+        vesselFilters: nextStructuredFilters,
+      }))
+    },
+    [preferences.vesselFilters, updatePreferences],
+  )
   const aircraftMetadataProvider = useMemo(
     () => new StaticAircraftMetadataProvider(APP_CONFIG.aircraftMetadata),
     [],
@@ -181,9 +285,10 @@ function App() {
       label: string,
       options: { explicit?: boolean } = {},
     ) => {
+      returnToLiveRef.current()
       cancelPlaceSearch()
       if (options.explicit !== false) {
-        locationCameraIntentRef.current.beginExplicitViewIntent()
+        locationCameraIntent.beginExplicitViewIntent()
       }
       setSelectedId(null)
       setSelectedPortId(null)
@@ -198,7 +303,7 @@ function App() {
         center: { ...center, label },
       }))
     },
-    [cancelPlaceSearch],
+    [cancelPlaceSearch, locationCameraIntent],
   )
 
   useEffect(() => {
@@ -211,8 +316,7 @@ function App() {
 
     appliedLocationRevisionRef.current = location.revision
     setViewReady(true)
-    const shouldNavigate =
-      locationCameraIntentRef.current.consumeLocationResult()
+    const shouldNavigate = locationCameraIntent.consumeLocationResult()
     if (shouldNavigate) {
       commitNavigation(
         location.homeCenter,
@@ -225,6 +329,7 @@ function App() {
     location.initialReady,
     location.homeCenter,
     location.revision,
+    locationCameraIntent,
   ])
 
   useEffect(() => {
@@ -232,9 +337,9 @@ function App() {
       !location.locating &&
       location.phase === 'error'
     ) {
-      locationCameraIntentRef.current.cancelRequestedLocationNavigation()
+      locationCameraIntent.cancelRequestedLocationNavigation()
     }
-  }, [location.locating, location.phase])
+  }, [location.locating, location.phase, locationCameraIntent])
 
   const currentAssessment =
     viewportReport?.viewRequestId === viewRequest.id
@@ -262,32 +367,77 @@ function App() {
   )
   const aircraftResult = useAircraftTraffic(trafficQuery, APP_CONFIG.aircraft)
   const marineResult = useMarineTraffic(trafficQuery, APP_CONFIG.marine)
-  const viewportAircraft = useMemo(
+  const liveViewportAircraft = useMemo(
     () =>
       activeViewport
         ? filterTrafficByViewport(aircraftResult.entities, activeViewport)
         : [],
     [activeViewport, aircraftResult.entities],
   )
-  const viewportVessels = useMemo(
+  const liveViewportVessels = useMemo(
     () =>
       activeViewport
         ? filterTrafficByViewport(marineResult.entities, activeViewport)
         : [],
     [activeViewport, marineResult.entities],
   )
+  const sourceEntities = useMemo<TrafficEntity[]>(
+    () => [...liveViewportAircraft, ...liveViewportVessels],
+    [liveViewportAircraft, liveViewportVessels],
+  )
+  const history = useTrafficHistory(
+    sourceEntities,
+    historyResetRevision,
+    APP_CONFIG.history,
+  )
+  useEffect(() => {
+    returnToLiveRef.current = history.returnToLive
+  }, [history.returnToLive])
+  const historyActive = history.playback.mode !== 'live'
+  const historicalViewportEntities = useMemo(
+    () =>
+      activeViewport
+        ? filterTrafficByViewport(
+            history.historicalEntities,
+            activeViewport,
+          )
+        : [],
+    [activeViewport, history.historicalEntities],
+  )
+  const viewportAircraft = useMemo(
+    () =>
+      historyActive
+        ? historicalViewportEntities.filter(
+            (entity): entity is Extract<TrafficEntity, { kind: 'aircraft' }> =>
+              entity.kind === 'aircraft',
+          )
+        : liveViewportAircraft,
+    [historicalViewportEntities, historyActive, liveViewportAircraft],
+  )
+  const viewportVessels = useMemo(
+    () =>
+      historyActive
+        ? historicalViewportEntities.filter(
+            (entity): entity is Extract<TrafficEntity, { kind: 'vessel' }> =>
+              entity.kind === 'vessel',
+          )
+        : liveViewportVessels,
+    [historicalViewportEntities, historyActive, liveViewportVessels],
+  )
+  const displayNow =
+    history.playback.mode === 'live' ? now : history.playback.cursor
 
   const aircraft = useMemo(
-    () => displayTraffic(viewportAircraft, now, APP_CONFIG.aircraft),
-    [viewportAircraft, now],
+    () => displayTraffic(viewportAircraft, displayNow, APP_CONFIG.aircraft),
+    [displayNow, viewportAircraft],
   )
   const aircraftResults = useMemo(
     () => orderAircraftSearchResults(aircraft, aircraftQuery),
     [aircraft, aircraftQuery],
   )
   const currentVessels = useMemo(
-    () => displayTraffic(viewportVessels, now, APP_CONFIG.marine),
-    [now, viewportVessels],
+    () => displayTraffic(viewportVessels, displayNow, APP_CONFIG.marine),
+    [displayNow, viewportVessels],
   )
   const vessels = useMemo(
     () => filterVessels(currentVessels, vesselFilters),
@@ -339,6 +489,7 @@ function App() {
       : []
   const weatherStationKey = weatherStationIds.join(',')
   const weatherQueryEnabled =
+    !historyActive &&
     weatherVisible &&
     Boolean(activeViewport) &&
     airportsResult.state.phase === 'ready' &&
@@ -358,7 +509,7 @@ function App() {
       : undefined
   const weatherObservations = useMemo(
     () =>
-      weatherDataset
+      !historyActive && weatherDataset
         ? displayWeatherObservations(
             weatherDataset.observations,
             now,
@@ -367,13 +518,10 @@ function App() {
           )
         : [],
     [
+      historyActive,
       now,
       weatherDataset,
     ],
-  )
-  const sourceEntities = useMemo<TrafficEntity[]>(
-    () => [...viewportAircraft, ...viewportVessels],
-    [viewportAircraft, viewportVessels],
   )
   const displayEntities = useMemo<DisplayTrafficEntity[]>(
     () => [...aircraft, ...vessels],
@@ -399,16 +547,54 @@ function App() {
     [selectedWeatherId, weatherObservations],
   )
   const aircraftMetadata = useAircraftMetadata(
-    selectedEntity?.kind === 'aircraft' ? selectedEntity : undefined,
+    !historyActive && selectedEntity?.kind === 'aircraft'
+      ? selectedEntity
+      : undefined,
     aircraftMetadataProvider,
-    now,
+    displayNow,
   )
-  const trail = useTrailHistory(
+  const trailDurationMinutes = trailPreferences.durationMinutes
+  const activeTrailConfig = useMemo(
+    () =>
+      trailHistoryConfig(
+        { durationMinutes: trailDurationMinutes },
+        APP_CONFIG.trail,
+      ),
+    [trailDurationMinutes],
+  )
+  const liveTrail = useTrailHistory(
     sourceEntities,
     selectedId,
     now,
-    APP_CONFIG.trail,
+    activeTrailConfig,
     historyResetRevision,
+  )
+  const buildHistoricalTrailSegments = history.trailSegments
+  const historicalTrailSegments = useMemo(
+    () =>
+      buildHistoricalTrailSegments(
+        selectedId,
+        activeTrailConfig.durationMs,
+      ),
+    [
+      activeTrailConfig.durationMs,
+      buildHistoricalTrailSegments,
+      selectedId,
+    ],
+  )
+  const trailSegments = useMemo(
+    () => {
+      if (!activeViewport || !trailPreferences.visible) return []
+      if (historyActive) return historicalTrailSegments
+      return liveTrail.length > 0 ? [liveTrail] : []
+    },
+    [
+      activeViewport,
+      historicalTrailSegments,
+      historyActive,
+      liveTrail,
+      trailPreferences.visible,
+    ],
   )
 
   useEffect(() => {
@@ -496,18 +682,18 @@ function App() {
   }, [commitNavigation, location.homeCenter])
 
   const handleUseLocation = useCallback(() => {
-    locationCameraIntentRef.current.requestLocationNavigation()
+    locationCameraIntent.requestLocationNavigation()
     cancelPlaceSearch()
     requestLocation()
-  }, [cancelPlaceSearch, requestLocation])
+  }, [cancelPlaceSearch, locationCameraIntent, requestLocation])
 
   const handlePlaceSearch = useCallback(
     (query: string) => {
-      locationCameraIntentRef.current.beginExplicitViewIntent()
+      locationCameraIntent.beginExplicitViewIntent()
       setViewReady(true)
       searchPlaces(query)
     },
-    [searchPlaces],
+    [locationCameraIntent, searchPlaces],
   )
 
   const handleLocationNavigate = useCallback(
@@ -525,11 +711,53 @@ function App() {
   )
 
   const handleManualViewChange = useCallback(() => {
-    locationCameraIntentRef.current.beginExplicitViewIntent()
+    locationCameraIntent.beginExplicitViewIntent()
     cancelPlaceSearch()
     setViewReady(true)
     setActiveLocationLabel('Custom view')
-  }, [cancelPlaceSearch])
+  }, [cancelPlaceSearch, locationCameraIntent])
+
+  const handleShare = useCallback(() => {
+    if (!mapCamera) return
+    const url = createShareUrl(
+      window.location,
+      mapCamera,
+      preferences,
+      APP_CONFIG.navigation.coordinatePrecision,
+    )
+    const clipboard = window.navigator.clipboard
+    if (!clipboard?.writeText) {
+      setShareFeedback({
+        message: 'Clipboard access is unavailable. Copy the link below.',
+        manualUrl: url,
+      })
+      return
+    }
+    void clipboard.writeText(url).then(
+      () => {
+        setShareFeedback({ message: 'Share link copied.' })
+      },
+      () => {
+        setShareFeedback({
+          message: 'The share link could not be copied. Copy it below.',
+          manualUrl: url,
+        })
+      },
+    )
+  }, [mapCamera, preferences])
+
+  const handleResetPreferences = useCallback(() => {
+    resetPreferences()
+    setShareFeedback(undefined)
+    const url = new URL(window.location.href)
+    if (!url.hash) return
+    url.hash = ''
+    window.history.replaceState(
+      window.history.state,
+      '',
+      `${url.pathname}${url.search}`,
+    )
+  }, [resetPreferences])
 
   const handleTrafficSelect = useCallback((id: string | null) => {
     setSelectedPortId(null)
@@ -589,15 +817,19 @@ function App() {
   }, [selectedWeatherId])
 
   const mapErrorContent = mapError ? mapErrorPresentation(mapError) : null
-  const mapSubtitle = !viewReady
-    ? 'Preparing map view'
-    : currentAssessment?.kind === 'eligible'
-      ? 'Visible traffic area'
-      : currentAssessment
-        ? 'Traffic paused'
-        : 'Updating map view'
+  const mapSubtitle = historyActive
+    ? 'Historical traffic area'
+    : !viewReady
+      ? 'Preparing map view'
+      : currentAssessment?.kind === 'eligible'
+        ? 'Visible traffic area'
+        : currentAssessment
+          ? 'Traffic paused'
+          : 'Updating map view'
   const vesselEmptyMessage =
-    currentAssessment?.kind === 'ineligible'
+    historyActive
+      ? 'No recorded ships are shown at this historical cursor.'
+      : currentAssessment?.kind === 'ineligible'
       ? 'Live traffic is paused for this view.'
       : marineResult.status.phase === 'error'
         ? 'The marine source is unavailable.'
@@ -606,7 +838,9 @@ function App() {
           ? 'The marine source is connecting.'
           : 'No current ships are shown in this view.'
   const aircraftEmptyMessage =
-    currentAssessment?.kind === 'ineligible'
+    historyActive
+      ? 'No recorded aircraft are shown at this historical cursor.'
+      : currentAssessment?.kind === 'ineligible'
       ? 'Live traffic is paused for this view.'
       : aircraftResult.status.phase === 'error'
         ? 'The aircraft source is unavailable.'
@@ -631,7 +865,7 @@ function App() {
     weatherStateMatches &&
     weatherResult.state.phase === 'waiting'
   const weatherError =
-    !weatherVisible
+    !weatherVisible || historyActive
       ? undefined
       : airportsResult.state.phase === 'error'
         ? `Airport station context unavailable: ${airportsResult.state.message}`
@@ -641,6 +875,8 @@ function App() {
   const weatherStatusMessage =
     !weatherVisible
       ? undefined
+      : historyActive
+        ? 'Current METAR observations are hidden during historical playback.'
       : !activeViewport
         ? 'METAR observations are paused until the map shows an eligible live-traffic view.'
         : airportsResult.state.phase === 'loading'
@@ -668,6 +904,7 @@ function App() {
     <main className="app-shell">
       <TrafficMap
         viewCenter={viewRequest.center}
+        viewCamera={viewRequest.camera}
         viewLabel={activeLocationLabel}
         viewRadiusKm={APP_CONFIG.map.homeViewRadiusKm}
         maximumViewportRadiusKm={APP_CONFIG.map.maximumViewportRadiusKm}
@@ -681,13 +918,14 @@ function App() {
             ? APP_CONFIG.map.darkStyleUrl
             : APP_CONFIG.map.lightStyleUrl
         }
+        online={online}
         theme={theme}
         aircraft={aircraft}
         vessels={vessels}
         ports={ports}
         airports={airports}
         weatherObservations={weatherObservations}
-        trail={activeViewport ? trail : []}
+        trailSegments={trailSegments}
         selectedId={selectedId}
         selectedPortId={selectedPortId}
         selectedAirportId={selectedAirportId}
@@ -698,6 +936,7 @@ function App() {
         airportsVisible={airportsVisible}
         weatherVisible={weatherVisible}
         clusteringEnabled={clusteringEnabled}
+        interpolateTraffic={!historyActive}
         interpolationDurationMs={APP_CONFIG.interpolationDurationMs}
         viewRequestId={viewRequest.id}
         viewportSettleMs={APP_CONFIG.navigation.viewportSettleMs}
@@ -706,6 +945,7 @@ function App() {
         onSelectAirport={handleAirportSelect}
         onSelectWeather={handleWeatherSelect}
         onViewportChange={handleViewportChange}
+        onCameraChange={setMapCamera}
         onManualViewChange={handleManualViewChange}
         onMapError={setMapError}
       />
@@ -729,6 +969,12 @@ function App() {
             marineStatus={marineResult.status}
             marineCapabilities={marineResult.capabilities}
             now={now}
+            online={online}
+            historicalAt={
+              history.playback.mode === 'live'
+                ? undefined
+                : history.playback.cursor
+            }
           />
         </header>
 
@@ -743,6 +989,7 @@ function App() {
           vesselResults={vesselResults}
           totalVessels={currentVessels.length}
           vesselEmptyMessage={vesselEmptyMessage}
+          units={units}
           onVesselFiltersChange={setVesselFilters}
           onVesselSelect={handleTrafficSelect}
           aircraftVisible={aircraftVisible}
@@ -793,6 +1040,28 @@ function App() {
           onRefreshWeather={weatherResult.refresh}
           clusteringEnabled={clusteringEnabled}
           onClusteringEnabledChange={setClusteringEnabled}
+          trailPreferences={trailPreferences}
+          onTrailPreferencesChange={setTrailPreferences}
+          historySettings={history.settings}
+          historyStatus={history.status}
+          historyRange={history.range}
+          historyRecordCount={history.observationCount}
+          playback={history.playback}
+          onHistoryEnabledChange={(enabled) => {
+            void history.setPersistenceEnabled(enabled)
+          }}
+          onHistoryRetentionChange={(hours) => {
+            void history.setRetentionHours(hours)
+          }}
+          onClearHistory={() => {
+            void history.clearHistory()
+          }}
+          onRetryHistory={history.retryPersistence}
+          onEnterHistory={history.enterHistory}
+          onPlayHistory={history.play}
+          onPauseHistory={history.pause}
+          onScrubHistory={history.scrub}
+          onPlaybackSpeedChange={history.setSpeed}
           centerDisabled={
             !location.initialReady || mapError?.kind === 'initialization'
           }
@@ -803,6 +1072,18 @@ function App() {
           onUseLocation={handleUseLocation}
           themePreference={themePreference}
           onThemePreferenceChange={setThemePreference}
+          onUnitsChange={setUnits}
+          shareDisabled={!mapCamera}
+          onShare={handleShare}
+          onResetPreferences={handleResetPreferences}
+          preferenceStatus={
+            shareFeedback?.message ?? preferenceStatus?.message
+          }
+          manualShareUrl={shareFeedback?.manualUrl}
+          appShellStatus={appShell.message}
+          appUpdateAvailable={appShell.updateAvailable}
+          appUpdateActivating={appShell.phase === 'activating'}
+          onRefreshApp={appShell.activateUpdate}
           locationNavigationDisabled={mapError?.kind === 'initialization'}
           activeLocationLabel={activeLocationLabel}
           coordinatePrecision={APP_CONFIG.navigation.coordinatePrecision}
@@ -816,18 +1097,28 @@ function App() {
           onPlaceSearchCancel={cancelPlaceSearch}
         />
 
-        {currentAssessment?.kind === 'ineligible' && (
+        {!historyActive && currentAssessment?.kind === 'ineligible' && (
           <div className="viewport-notice" role="status">
             <strong>Live traffic paused</strong>
             <span>{currentAssessment.message}</span>
           </div>
         )}
 
+        {history.playback.mode !== 'live' && (
+          <HistoryModeNotice
+            playback={history.playback}
+            entityCount={displayEntities.length}
+            onReturnToLive={history.returnToLive}
+          />
+        )}
+
         {selectedEntity && (
           <TrafficDetails
             entity={selectedEntity}
             aircraftMetadata={aircraftMetadata}
-            now={now}
+            now={displayNow}
+            units={units}
+            historical={historyActive}
             onClose={() => setSelectedId(null)}
           />
         )}
@@ -857,6 +1148,7 @@ function App() {
               source={weatherResult.state.dataset.source}
               retrievedAt={weatherResult.state.dataset.retrievedAt}
               now={now}
+              units={units}
               onClose={handleCloseWeather}
             />
           )}
