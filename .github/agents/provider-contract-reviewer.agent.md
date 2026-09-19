@@ -23,6 +23,9 @@ Check these project invariants:
 - Intentional pause reasons compose. Disabling and resuming a view, provider, or
   page must not reconstruct session timing state or reset aircraft cadence,
   `Retry-After`, MQTT reconnect, marine REST, or metadata gates.
+- Selection, details, disclosure open/close, focus restoration, themes, and
+  compact-control changes are presentation work. They must not start another
+  provider, reconnect MQTT, bypass request gates, or alter cadence/backoff.
 - Late fetch, timer, MQTT acknowledgement/message, and dynamic-import callbacks
   cannot publish data, create a client, clear a newer error, or revive a paused
   or unmounted generation.
@@ -108,6 +111,9 @@ Check these project invariants:
   additional provider starts. Offline, hidden, unmounted, and ineligible-view
   pause reasons compose without resetting cadence, `Retry-After`, MQTT
   reconnect, REST, or metadata deadlines.
+- Prove lifecycle and interaction changes with deterministic fixtures first.
+  A milestone uses one bounded live-provider smoke; repeated UI test loops must
+  not become provider load.
 - Optional static port data makes zero startup requests and uses one pinned,
   immutable same-origin asset with a total deadline, stream byte cap, SHA-256,
   strict UTF-8/JSON/schema/count/rank validation, and fulfilled-only session

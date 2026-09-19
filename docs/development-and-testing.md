@@ -79,6 +79,10 @@ was unblocked later. Partial pull requests use non-closing references, and an
 evidence-backed external blocker remains visibly linked until its criteria are
 complete.
 
+Create a separate Issue for an unrelated defect found during implementation,
+review, or release acceptance. Fold it into the active work only when it is
+tightly coupled or blocks a documented acceptance criterion.
+
 ## Automated test coverage
 
 The V1 suite uses sanitized, local values and does not call live providers. It
@@ -127,6 +131,8 @@ Map-experience tests also cover:
 
 - synchronous MapLibre construction failure without map-resource cleanup or
   application teardown;
+- source-diff property updates that retain complete marker identity and styling
+  fields; never treat `removeAllProperties` plus additions as a replacement;
 - latest-query coalescing and a minimum 20-second aircraft request-start gap;
 - obsolete request cancellation/result rejection and rate-limit backoff;
 - antimeridian, rotated, tilted, invalid, exact-100-km, and
@@ -359,11 +365,19 @@ Use `npm run dev` and verify:
 4. Pan, zoom, rotate, pitch, Home, and resize update the visible traffic area
    after settling.
 5. Aircraft and ship layer toggles work independently.
-6. Selecting an object opens the correct detail card and a trail appears only
-   after multiple observations are available.
-7. Closing the card, hiding a selected layer, or allowing the object to expire
-   clears selection safely.
-8. A narrow mobile viewport keeps controls readable and the map usable.
+6. Selecting an aircraft or vessel opens the correct detail card and leaves the
+   same marker rendered and pickable after the immediate source update and
+   ordinary refreshes. Record unchanged latitude, longitude, zoom, bearing, and
+   pitch; a trail appears only after multiple observations are available.
+7. Closing the card, an empty-map hit, committed navigation, choosing mutually
+   exclusive context, hiding/filtering the selected entity, or allowing it to
+   expire clears selection safely. Failed navigation and ordinary same-entity
+   refreshes do not.
+8. The default primary controls remain compact, require no scroll, and hide
+   secondary tools and explanatory links behind one keyboard-operable
+   disclosure. Measure collapsed and expanded bounds at desktop, 390x844, and
+   390x568; verify focus returns to a visible control and perform a real touch
+   drag on an unobscured map region.
 9. Map and provider attribution remains visible.
 10. Strict coordinates navigate with no Photon request; named text makes one
     explicit bounded request and renders Photon/OpenStreetMap attribution.

@@ -684,12 +684,38 @@ or when an external prerequisite is resolved later. Partial work uses
 non-closing references and does not close the parent until all non-blocked
 criteria are complete.
 
+An unrelated defect discovered during implementation, review, or release
+acceptance receives its own Issue. It joins the active work only when it is
+tightly coupled to the change or blocks a documented acceptance criterion;
+otherwise it remains separately prioritized instead of broadening the current
+delivery.
+
 Provider access, credentials, account roles, data rights, or licensing become a
 separate blocker only after concrete evidence identifies the missing
 prerequisite. The blocker records affected criteria and measurable completion
 evidence while unrelated ready work continues. Placeholder adapters, inferred
 data, client-side secrets, and success-shaped fallbacks are not acceptable
 substitutes.
+
+## Compact controls and rendered interaction evidence
+
+The primary map controls remain intentionally small. Status, Center, theme, and
+one native progressive disclosure form the default surface; secondary search,
+layers, history setup, discovery, preferences, and long explanatory/source text
+belong behind that disclosure. Active historical controls and urgent actionable
+recovery remain visible, and mandatory map or selected-item attribution is never
+hidden.
+
+Selection updates must retain the complete MapLibre feature-property contract.
+In particular, `removeAllProperties` is terminal in the installed source-diff
+implementation and cannot be combined with properties expected to survive or be
+re-added.
+
+Pure tests, server-rendered markup, and HTTP smoke cannot establish that a
+marker remains painted, focus returns to a visible control, or a mobile map
+strip is touchable. Those claims require a real-browser check with measured
+camera, source properties, overlay bounds, attribution, and an actual input
+gesture.
 
 ## Deterministic checks before live probes
 
