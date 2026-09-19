@@ -103,7 +103,9 @@ Map-experience tests also cover:
 - theme storage validation and unavailable-storage behavior;
 - idempotent MapLibre style installation and restoration of custom state;
 - theme-keyed traffic image replacement, including identical style URLs and
-  stale/live opacity updates.
+  stale/live opacity updates;
+- all ten bounded silhouette IDs, ADS-B/AIS category boundaries, generic
+  fallbacks, and stable identity when provider metadata changes an icon.
 
 Geolocation tests must distinguish permission from acquisition. A granted
 permission can still produce delayed success, timeout, unavailable, or obsolete
@@ -152,10 +154,15 @@ For the viewport-driven map experience, additionally verify:
 10. Aircraft, helicopter, and vessel artwork retains its identity over land,
    water, and busy detail at actual marker scale; stale markers remain
    recognizable and distinct from live markers.
-11. A direct touch hit selects normally, an isolated near miss inside the
+11. Light/small, generic, heavy, rotorcraft, cargo, tanker, passenger, fishing,
+    tug, and generic-vessel shapes remain distinguishable in Light and Dark
+    themes without changing cyan/amber traffic-kind identity.
+12. Rapid theme changes restore all ten image IDs once per style generation,
+    preserve one map, and do not reconnect or query either provider.
+13. A direct touch hit selects normally, an isolated near miss inside the
     8 CSS-pixel box selects the sole eligible ID, and an outside or ambiguous
     tap clears/retains selection according to the normal empty-hit path.
-12. Mouse, touch-followed-by-mouse, drag, and pinch interactions do not receive
+14. Mouse, touch-followed-by-mouse, drag, and pinch interactions do not receive
     the touch fallback, and device pixel ratio does not change the threshold.
 
 Repeat the core check with `npm run build && npm run preview`. Confirm that

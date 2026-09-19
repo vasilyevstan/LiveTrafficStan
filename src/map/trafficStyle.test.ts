@@ -5,6 +5,7 @@ import type {
 } from 'geojson'
 import type { Map as MapLibreMap } from 'maplibre-gl'
 import { describe, expect, it, vi } from 'vitest'
+import { TRAFFIC_MARKER_ICONS } from '../domain/traffic'
 import {
   LAYER_AIRCRAFT,
   LAYER_VESSELS,
@@ -22,16 +23,12 @@ const trail: FeatureCollection<LineString> = {
   type: 'FeatureCollection',
   features: [],
 }
-const lightImages = {
-  aircraft: {},
-  helicopter: {},
-  vessel: {},
-} as TrafficStyleImages
-const darkImages = {
-  aircraft: { theme: 'dark-aircraft' },
-  helicopter: { theme: 'dark-helicopter' },
-  vessel: { theme: 'dark-vessel' },
-} as unknown as TrafficStyleImages
+const imageSet = (theme: string) =>
+  Object.fromEntries(
+    TRAFFIC_MARKER_ICONS.map((id) => [id, { theme: `${theme}-${id}` }]),
+  ) as unknown as TrafficStyleImages
+const lightImages = imageSet('light')
+const darkImages = imageSet('dark')
 
 const snapshot = (
   theme: 'light' | 'dark',
@@ -77,26 +74,31 @@ describe('installTrafficStyle', () => {
 
     installTrafficStyle(map, snapshot('light'), lightImages)
     installTrafficStyle(map, snapshot('dark'), darkImages)
+    installTrafficStyle(map, snapshot('light'), lightImages)
 
-    expect(addImage).toHaveBeenCalledTimes(3)
-    expect(updateImage).toHaveBeenCalledTimes(3)
-    expect(updateImage).toHaveBeenCalledWith(
-      'aircraft',
-      darkImages.aircraft,
+    expect(addImage).toHaveBeenCalledTimes(TRAFFIC_MARKER_ICONS.length)
+    expect(updateImage).toHaveBeenCalledTimes(
+      TRAFFIC_MARKER_ICONS.length * 2,
     )
-    expect(updateImage).toHaveBeenCalledWith(
-      'helicopter',
-      darkImages.helicopter,
-    )
-    expect(updateImage).toHaveBeenCalledWith('vessel', darkImages.vessel)
+    expect(imageIds).toEqual(new Set(TRAFFIC_MARKER_ICONS))
+    for (const imageId of TRAFFIC_MARKER_ICONS) {
+      expect(updateImage).toHaveBeenCalledWith(
+        imageId,
+        darkImages[imageId],
+      )
+      expect(updateImage).toHaveBeenCalledWith(
+        imageId,
+        lightImages[imageId],
+      )
+    }
     expect(addSource).toHaveBeenCalledTimes(3)
     expect(addLayer).toHaveBeenCalledTimes(5)
-    expect(sources.get(SOURCE_AIRCRAFT)?.setData).toHaveBeenCalledTimes(1)
-    expect(paint.get('traffic-selected-trail:line-color')).toBe('#7ce5ff')
+    expect(sources.get(SOURCE_AIRCRAFT)?.setData).toHaveBeenCalledTimes(2)
+    expect(paint.get('traffic-selected-trail:line-color')).toBe('#138daf')
     expect(paint.get(`${LAYER_AIRCRAFT}:icon-opacity`)).toEqual([
       'case',
       ['get', 'stale'],
-      0.52,
+      0.54,
       0.98,
     ])
     expect(visibility.get(`${LAYER_AIRCRAFT}:visibility`)).toBe('visible')

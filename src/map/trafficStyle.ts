@@ -9,6 +9,10 @@ import {
   type Map as MapLibreMap,
 } from 'maplibre-gl'
 import type { Theme } from '../app/theme'
+import {
+  TRAFFIC_MARKER_ICONS,
+  type TrafficMarkerIcon,
+} from '../domain/traffic'
 
 export const SOURCE_AIRCRAFT = 'traffic-aircraft'
 export const SOURCE_VESSELS = 'traffic-vessels'
@@ -22,11 +26,7 @@ type TrafficGeoJson =
   | FeatureCollection<Point>
   | FeatureCollection<LineString>
 
-export interface TrafficStyleImages {
-  aircraft: ImageData
-  helicopter: ImageData
-  vessel: ImageData
-}
+export type TrafficStyleImages = Record<TrafficMarkerIcon, ImageData>
 
 export interface TrafficStyleSnapshot {
   theme: Theme
@@ -77,7 +77,7 @@ export const setTrafficLayerVisibility = (
 
 const ensureImage = (
   map: MapLibreMap,
-  id: keyof TrafficStyleImages,
+  id: TrafficMarkerIcon,
   image: ImageData,
 ) => {
   if (map.hasImage(id)) {
@@ -113,9 +113,9 @@ export const installTrafficStyle = (
 ) => {
   const paint = themePaint(snapshot.theme)
 
-  ensureImage(map, 'aircraft', images.aircraft)
-  ensureImage(map, 'helicopter', images.helicopter)
-  ensureImage(map, 'vessel', images.vessel)
+  for (const imageId of TRAFFIC_MARKER_ICONS) {
+    ensureImage(map, imageId, images[imageId])
+  }
 
   ensureSource(map, SOURCE_TRAIL, snapshot.trail)
   ensureSource(map, SOURCE_AIRCRAFT, snapshot.aircraft)

@@ -32,7 +32,8 @@ single React application, without accounts, a database, or persistent tracking.
 - Short interpolation only between observed positions and a bounded 15-minute
   in-memory trail for the selected object.
 - Responsive floating controls, keyboard focus states, non-color status labels,
-  and original programmatically drawn marker silhouettes.
+  and a small provider-reported set of original aircraft and vessel
+  silhouettes with generic fallbacks.
 - Touch-specific selection tolerance for isolated markers; exact mouse hits stay
   unchanged and ambiguous nearby traffic is never guessed.
 

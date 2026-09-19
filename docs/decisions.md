@@ -39,6 +39,25 @@ Provider payloads are decoded and normalized at the provider boundary. Map and U
 
 Aircraft, vessels, and the selected trail are represented as GeoJSON sources. MapLibre symbol and line layers are updated in place, avoiding a React component or DOM marker for every traffic object.
 
+## Bounded provider-reported silhouette vocabulary
+
+The map uses ten original canvas images: light/small fixed-wing, generic
+fixed-wing, heavy fixed-wing, helicopter, cargo, tanker, passenger, fishing,
+tug, and generic vessel. Cyan still means aircraft and amber still means marine
+traffic; category is conveyed by shape rather than a new color system.
+
+Normalization maps only trusted provider fields to application-owned icon keys.
+ADS-B A1/A2 use light fixed-wing, A5 heavy fixed-wing, and A7 helicopter.
+A3/A4/A6 retain their existing labels and scales but use generic fixed-wing
+art. AIS type 30 uses fishing, type 52 tug, 60-69 passenger, 70-79 cargo, and
+80-89 tanker. Every unsupported or missing category uses the corresponding
+generic fallback.
+
+No model/type string, speed, name, route, operator, position, or movement is
+used to infer a category. This keeps the vocabulary truthful and avoids a
+classification service or dataset. The ten images are generated once per theme
+and reinstalled through the existing single-map style lifecycle.
+
 ## Explicit MapLibre worker bundling
 
 MapLibre 6 loads vector tiles through a separate module worker. Vite prebundles the main dependency, which makes MapLibre's inferred adjacent worker URL point at a file Vite did not emit. The result is a loaded style with vector tiles stuck indefinitely in a loading state.
