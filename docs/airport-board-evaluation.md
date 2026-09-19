@@ -1,7 +1,9 @@
 # Airport Arrival and Departure Board Evaluation
 
-**Decision date:** 2026-09-19  
-**Issue:** [#5](https://github.com/vasilyevstan/LiveTrafficStan/issues/5)  
+**Decision date:** 2026-09-19
+
+**Issue:** [#5](https://github.com/vasilyevstan/LiveTrafficStan/issues/5)
+
 **Authorization blocker:** [#46](https://github.com/vasilyevstan/LiveTrafficStan/issues/46)
 
 ## Decision
