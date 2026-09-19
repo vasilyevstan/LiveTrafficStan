@@ -34,6 +34,9 @@ Check these project invariants:
   type fields at the provider boundary. Unknown values stay generic; speed,
   altitude, model, name, route, operator, position, and movement never infer a
   silhouette.
+- Static aircraft metadata never changes a live traffic entity, provider
+  health, freshness, history, selection, or marker. Model, configuration, and
+  wake category are selected-object context only.
 - Viewport eligibility is decided against 100 km before ADSB.lol's outward
   nautical-mile rounding. A 100 km eligible request therefore uses 54 NM
   (100.008 km transport coverage) without widening display eligibility.
@@ -60,6 +63,25 @@ Check these project invariants:
 - Enrichment and persisted observations retain source, age, identity confidence,
   licensing, attribution, retention, and cache limits. Do not infer routes,
   operators, destinations, coverage, or port calls from incomplete data.
+- The aircraft metadata source is pinned by commit, publication instant,
+  internal version, archive checksum, license checksum, schema, and immutable
+  output URL. Apache-2.0 applies to code; the derivative database remains under
+  ODC-By with its full co-located license, visible attribution, contents-rights
+  caveat, and no-warranty boundary.
+- Aircraft metadata makes zero startup requests. One five-second deadline
+  covers the index and selected prefix-shard requests/body reads. Both streams
+  have byte caps, the complete index/shard is validated before caching, and
+  aborted, rejected, partial, malformed, oversized, or checksum-failing work is
+  never cached. Keep one fulfilled index and the configured bounded shard LRU.
+- Metadata matching uses exact six-character ICAO24. Present live registration
+  and type must agree after case and outer-whitespace normalization only;
+  globally duplicated registrations are unavailable. Missing live registration
+  may produce only an explicit ICAO24-only result. Never add registration-only,
+  punctuation-stripped, fuzzy, callsign, owner, operator, or airline fallback.
+- Metadata state is tagged with the full selected identity and a monotonic
+  revision. Aircraft changes, vessel/empty selection, and unmount abort old
+  work; late A callbacks cannot appear after A to B to A. Snapshot staleness
+  and future-clock rules reevaluate while open without refetch.
 - Credentials stay server-side behind allowlisted routes. A missing authorized
   provider or account becomes an explicit blocker rather than client-side
   secrets, scraping, or success-shaped placeholder data.

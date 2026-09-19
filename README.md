@@ -10,6 +10,9 @@ single React application, without accounts, a database, or persistent tracking.
 
 - Live aircraft from [ADSB.lol](https://www.adsb.lol/) with approximately
   20-second refreshes.
+- Lazily loaded selected-aircraft model, configuration, and wake-category
+  context from a pinned ODC-By aircraft database, with exact identity checks,
+  source age, confidence, and local failure isolation.
 - Live marine traffic from
   [Fintraffic Digitraffic](https://www.digitraffic.fi/en/marine-traffic/) using
   REST initialization and MQTT over secure WebSockets.
@@ -59,6 +62,7 @@ Run all local quality checks with:
 npm run lint
 npm run typecheck
 npm test -- --run
+npm run check:aircraft-metadata
 npm run build
 ```
 
@@ -86,6 +90,8 @@ ADSB.lol polling ───────┐
                        ├─> normalized traffic -> freshness/history -> map + UI
 Digitraffic REST/MQTT ──┘
 
+selected aircraft -> static metadata index + one prefix shard -> details only
+
 coordinate input ── local validation ─┐
 Photon forward search ─> place results ├─> explicit camera navigation
 session Home / location ──────────────┘
@@ -107,6 +113,11 @@ Light/Dark changes use `map.setStyle` on that same MapLibre instance. An
 idempotent installer restores traffic images, sources, layers, current data,
 visibility, and trail after each style load while preserving camera,
 selection, provider state, and connections.
+
+Aircraft metadata is a separate selected-object boundary. It makes no startup
+request, loads one immutable index and one ICAO24-prefix shard on first use,
+validates the complete assets before bounded caching, and never mutates live
+traffic or marker categories.
 
 See [Architecture](docs/architecture.md) for component boundaries, data flow,
 failure isolation, rendering, and deployment details.
@@ -140,16 +151,19 @@ operational thresholds, and examples.
 | Map | OpenFreeMap / OpenMapTiles / OpenStreetMap | Provider and OSM attribution applies | Direct browser access |
 | Place search | Photon / OpenStreetMap | OSM ODbL attribution applies | Direct browser access on explicit submit |
 | Aircraft | ADSB.lol | ODbL 1.0 | Same-origin Vite or Cloudflare Worker proxy |
+| Aircraft metadata | Mictronics aircraft-database derivative | ODC-By 1.0 | Immutable same-origin static assets, loaded only after selection |
 | Marine | Fintraffic Digitraffic | CC BY 4.0 | Direct regional REST and MQTT |
 
-The repository's Apache License 2.0 applies to source code only. Distributed
-derivative works must preserve the attribution in [`NOTICE`](NOTICE) as
-described by the license. The source license does not relicense map, aircraft,
-marine, or place-search data, whose required attribution remains visible in the
-application. See
+The repository's Apache License 2.0 applies to source code only. The bundled
+aircraft metadata is a derivative database conveyed under ODC-By 1.0 with its
+full license alongside the generated files. Distributed derivative works must
+preserve the applicable [`NOTICE`](NOTICE) and data-license attribution. The
+source license does not relicense map, search, live aircraft, aircraft
+metadata, or marine data. See
 [Data Sources and Licensing](docs/data-sources-and-licensing.md), the dated
 [Aircraft Provider Evaluation](docs/aircraft-provider-evaluation.md), and the
-dated [Marine Provider Evaluation](docs/marine-provider-evaluation.md) for the
+dated [Aircraft Metadata Evaluation](docs/aircraft-metadata-evaluation.md), and
+the dated [Marine Provider Evaluation](docs/marine-provider-evaluation.md) for the
 verified contracts, official links, measured/request-volume evidence, and the
 decisions to retain ADSB.lol and Fintraffic Digitraffic.
 
@@ -193,6 +207,10 @@ monitoring, privacy, and rollback procedure.
 - Named place text is sent to Photon only after explicit submission. Photon is
   a fair-use public service with no availability guarantee; direct coordinate
   entry remains local and available during search failure or throttling.
+- Aircraft metadata is available only for an exact, non-conflicting selected
+  ICAO24 record in the pinned snapshot. The snapshot becomes intentionally
+  unavailable after its 45-day publication-age boundary until a reviewed new
+  immutable version is deployed.
 - Theme preference is limited to explicit Light/Dark selection; there is no
   automatic system-theme mode.
 - There is no reverse geocoding, route enrichment, playback, weather overlay,
@@ -208,6 +226,7 @@ silently expanded into V1.
 - [Configuration](docs/configuration.md)
 - [Data Sources and Licensing](docs/data-sources-and-licensing.md)
 - [Aircraft Provider Evaluation](docs/aircraft-provider-evaluation.md)
+- [Aircraft Metadata Evaluation](docs/aircraft-metadata-evaluation.md)
 - [Marine Provider Evaluation](docs/marine-provider-evaluation.md)
 - [Hosting and Deployment](docs/hosting-and-deployment.md)
 - [Development and Testing](docs/development-and-testing.md)

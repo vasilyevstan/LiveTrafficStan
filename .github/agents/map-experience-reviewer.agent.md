@@ -63,6 +63,16 @@ Check these project invariants:
   layouts without hiding attribution.
 - Theme changes and ordinary manual camera movement do not clear
   selection/history or reconnect providers.
+- Selected-aircraft metadata renders only when its identity tag matches the
+  current aircraft. Switching aircraft, selecting a vessel, clearing
+  selection, or an obsolete callback cannot show another object's metadata.
+- Metadata loading, unavailable, conflict, stale/future, and error states stay
+  inside the detail panel without changing the marker, trail, selection,
+  provider health, or map. Model/type text never creates another silhouette
+  taxonomy.
+- Metadata source date, ICAO24-only confidence, Mictronics/ODC-By attribution,
+  and the distinction from live report age remain readable in Light/Dark and
+  both supported narrow layouts.
 - Committed coordinate, result, Center, or successful Use Location navigation
   clears selection and pre-navigation trail points, but invalid input, empty
   results, and search failure do not.

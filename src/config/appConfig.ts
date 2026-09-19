@@ -1,3 +1,6 @@
+import type { StaticAircraftMetadataProviderConfig } from '../providers/aircraftMetadata/staticAircraftMetadataProvider'
+import aircraftMetadataSource from './aircraftMetadataSource.json'
+
 export interface AppCenter {
   latitude: number
   longitude: number
@@ -41,6 +44,7 @@ export interface AppConfig {
     refreshIntervalMs: number
     rateLimitBackoffMaxMs: number
   }
+  aircraftMetadata: StaticAircraftMetadataProviderConfig
   marine: FreshnessThresholds & {
     restBaseUrl: string
     mqttUrl: string
@@ -207,6 +211,27 @@ export const createAppConfig = (
       rateLimitBackoffMaxMs: 5 * 60_000,
       staleAfterMs: 45_000,
       expireAfterMs: 120_000,
+    },
+    aircraftMetadata: {
+      baseUrl: `/aircraft-metadata/${aircraftMetadataSource.projection.outputVersion}`,
+      timeoutMs: 5_000,
+      indexMaximumBytes: 512 * 1_024,
+      shardMaximumBytes: 512 * 1_024,
+      shardCacheEntries: 8,
+      schemaVersion: aircraftMetadataSource.projection.schemaVersion,
+      outputVersion: aircraftMetadataSource.projection.outputVersion,
+      sourceName: aircraftMetadataSource.source.name,
+      sourceRepositoryUrl: aircraftMetadataSource.source.repositoryUrl,
+      sourceCommit: aircraftMetadataSource.source.commit,
+      sourcePublishedAt: aircraftMetadataSource.source.publishedAt,
+      sourceDatabaseVersion: aircraftMetadataSource.source.databaseVersion,
+      sourceLicenseName: aircraftMetadataSource.source.licenseName,
+      sourceLicenseUrl: aircraftMetadataSource.source.licenseCanonicalUrl,
+      sourceArchiveSha256: aircraftMetadataSource.source.archiveSha256,
+      staleAfterDays: aircraftMetadataSource.projection.staleAfterDays,
+      futureToleranceHours:
+        aircraftMetadataSource.projection.futureToleranceHours,
+      expectedCounts: aircraftMetadataSource.projection.expected,
     },
     marine: {
       restBaseUrl: readEndpoint(

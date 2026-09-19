@@ -21,6 +21,8 @@ the `/api/aircraft` proxy required by the default ADSB.lol integration.
 | `npm run typecheck` | Run strict TypeScript project checks without output |
 | `npm test -- --run` | Run the deterministic Vitest suite once |
 | `npm run test:watch` | Run Vitest in watch mode |
+| `npm run check:aircraft-metadata` | Offline validation of the committed pinned metadata database |
+| `npm run update:aircraft-metadata` | Explicit maintainer regeneration from the pinned upstream archive and license |
 | `npm run build` | Type-check and create the production bundle in `dist/` |
 | `npm run preview` | Serve the production bundle with the local aircraft proxy |
 | `npm run check:deploy` | Bundle the Worker and Static Assets without credentials or deployment |
@@ -32,6 +34,7 @@ Before publishing a change, run:
 npm run lint
 npm run typecheck
 npm test -- --run
+npm run check:aircraft-metadata
 npm run build
 npm run check:deploy
 ```
@@ -119,6 +122,21 @@ Map-experience tests also cover:
   `Retry-After` fallback, and bounded success/empty caching;
 - explicit-navigation precedence over late geolocation and trail reset after a
   committed view change.
+- deterministic aircraft-metadata projection, checksum failure, exact and
+  ICAO24-only matching, conflicts, ambiguity, malformed/partial assets,
+  streamed byte caps, one total deadline, fulfilled-only caches, A to B to A
+  callback races, vessel/empty cancellation, and exact age boundaries.
+
+`npm run check:aircraft-metadata` makes no upstream request. It validates the
+pinned source and license identity, configured immutable version, co-located
+ODC-By license, exact file inventory, every shard hash and byte count, complete
+TSV grammar, type references, aggregate counts, and publication-age policy.
+
+`npm run update:aircraft-metadata` is an explicit maintainer operation and
+requires network access plus the system `unzip` executable. It verifies both
+downloaded SHA-256 values before reading the archive. Review the generated diff
+and measured counts; a source, schema, generator, or byte change requires a new
+output version rather than replacement under an old immutable URL.
 
 Geolocation tests must distinguish permission from acquisition. A granted
 permission can still produce delayed success, timeout, unavailable, or obsolete
@@ -149,6 +167,13 @@ Use `npm run dev` and verify:
     closes results and restores input focus.
 12. Blocking Photon produces a non-blocking search error while coordinate
     navigation, Center, and live traffic remain usable.
+13. No `/aircraft-metadata/` request occurs before aircraft selection. First
+    selection requests one index and one prefix shard; a same-prefix selection
+    reuses both.
+14. Selected-aircraft metadata shows model/configuration/wake, exact confidence,
+    snapshot age, Mictronics attribution, and ODC-By. Conflicts and blocked
+    metadata requests stay local while live ADS-B, selection, trail, marker,
+    and provider status remain unchanged.
 
 For the viewport-driven map experience, additionally verify:
 
@@ -195,8 +220,9 @@ For the viewport-driven map experience, additionally verify:
 
 Repeat the core check with `npm run build && npm run preview`. Confirm that
 `dist/assets/` contains a `maplibre-gl-worker-*.js` file and that the preview
-page renders vector tiles. This catches an easy-to-miss MapLibre/Vite worker
-regression.
+page renders vector tiles. Also confirm the immutable metadata index and one
+shard are present in `dist/aircraft-metadata/`. This catches easy-to-miss
+MapLibre/Vite worker or static-dataset packaging regressions.
 
 For the production edge boundary, run `npm run preview:worker`. Confirm:
 
