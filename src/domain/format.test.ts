@@ -3,6 +3,7 @@ import {
   formatAltitude,
   formatSpeed,
   formatVerticalSpeed,
+  formatVesselSpeed,
   formatWeatherVisibility,
 } from './format'
 
@@ -19,6 +20,10 @@ describe('measurement formatting', () => {
     expect(formatVerticalSpeed(1, 'aviation-nautical')).toBe(
       '+197 ft/min',
     )
+  })
+
+  it('shows vessel speed in metric and nautical units together', () => {
+    expect(formatVesselSpeed(18.52)).toBe('19 km/h · 10 kn')
   })
 
   it('preserves source visibility qualifiers in aviation presentation', () => {

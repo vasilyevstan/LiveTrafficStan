@@ -249,4 +249,40 @@ describe('TrafficDetails aircraft metadata', () => {
     expect(html).toContain('Estonia (EE)')
     expect(html).not.toContain('Registration allocation')
   })
+
+  it.each(['metric', 'aviation-nautical'] as const)(
+    'shows vessel speed in km/h and knots with %s preferences',
+    (units) => {
+      const vessel: DisplayVessel = {
+        id: 'vessel:276123456',
+        kind: 'vessel',
+        provider: 'Digitraffic',
+        mmsi: 276_123_456,
+        vesselCategory: 'cargo',
+        navigationCategory: 'underway',
+        speedKph: 18.52,
+        position: {
+          latitude: 59.4,
+          longitude: 24.7,
+          observedAt: 1_800_000_000_000,
+        },
+        receivedAt: 1_800_000_000_000,
+        markerIcon: 'vessel-cargo',
+        markerScale: 1,
+        freshness: 'live',
+      }
+      const html = renderToStaticMarkup(
+        <TrafficDetails
+          entity={vessel}
+          aircraftMetadata={{ phase: 'idle' }}
+          now={1_800_000_001_000}
+          units={units}
+          onClose={() => undefined}
+        />,
+      )
+
+      expect(html).toContain('Speed over ground')
+      expect(html).toContain('19 km/h · 10 kn')
+    },
+  )
 })

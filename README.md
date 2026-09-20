@@ -50,7 +50,8 @@ single React application, without accounts, a database, or persistent tracking.
 - Independent aircraft and ship layers plus local vessel search by name,
   callsign, MMSI, or IMO; typed category, navigation, reported-speed, and
   inclusive length filters; explicit unknown-value handling; and a reset to
-  the released 50 metre minimum.
+  the released 50 metre minimum. Selected ship speed is shown in both km/h and
+  knots.
 - An optional, lazily loaded, zoom-aware Natural Earth port context layer with
   separate selection, failure, and attribution. Port points are generalized
   and incomplete and are never treated as operational harbour or vessel-call
