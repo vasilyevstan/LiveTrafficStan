@@ -181,10 +181,7 @@ export const handleMetarProxy = async (
         'User-Agent': AWC_USER_AGENT,
       },
     })
-    if (
-      upstream.type === 'opaqueredirect' ||
-      (upstream.status >= 300 && upstream.status < 400)
-    ) {
+    if (upstream.status >= 300 && upstream.status < 400) {
       return textResponse('METAR upstream redirect rejected', 502)
     }
 

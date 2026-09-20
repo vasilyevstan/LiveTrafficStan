@@ -166,16 +166,18 @@ The complete dated comparison, request-volume calculation, rights analysis,
 proxy handoff, and re-evaluation conditions are in
 [Aircraft Provider Evaluation](aircraft-provider-evaluation.md).
 
-## Selected-flight routes: no active source
+## Selected-flight routes: disabled aviationstack evaluation
 
-LiveTrafficStan does not currently display aircraft origin, destination,
-schedule, delay, cancellation, or diversion data.
+LiveTrafficStan contains a disabled-by-default aviationstack evaluation path
+for origin and destination on one selected live aircraft. It is not enabled in
+the checked default build and does not claim schedule, delay, cancellation, or
+diversion support.
 
 The dated
 [Aircraft Route Enrichment Evaluation](aircraft-route-enrichment-evaluation.md)
-found no source that is both authorized for this project and able to associate
-route data with the selected flight occurrence using a provider-issued
-flight/leg identity plus bounded date/time context.
+records the owner's decision to test aviationstack within the Free plan's
+current 100-request monthly allowance while keeping public use blocked on
+exact account terms and real samples.
 
 - ADSB.lol and ADSBDB/VRS-style route lookups are callsign-based standing
   tables. ADSB.lol can additionally test geographic plausibility. Neither
@@ -189,21 +191,27 @@ flight/leg identity plus bounded date/time context.
   candidates, but LiveTrafficStan has no applicable account, credential,
   accepted plan, approved budget, provider-specific identity contract, or
   authorized Tallinn sample.
+- aviationstack exposes active flight, route, and aircraft identity fields but
+  no opaque occurrence ID. The evaluation accepts only one active
+  non-codeshare row with exact operating callsign and ICAO24, and fails closed
+  for conflicting registration, ambiguity, or incomplete pagination.
 - Public airport boards, airline sites, trackers, and widgets are not
   integration or republication licenses and will not be scraped.
 
 [Issue #44](https://github.com/vasilyevstan/LiveTrafficStan/issues/44)
-records the exact source, rights, identity, sample, cost, retention,
-attribution, and credential evidence required before implementation. Issue #39
-remains the separate public Cloudflare deployment gate.
+records the exact rights, identity, sample, cost, retention, attribution, and
+credential evidence required before public enablement. Issue #39 remains the
+separate public Cloudflare deployment gate.
 
-Callsign and registration may later corroborate a provider occurrence match;
-they can never establish a route alone. Heading, track, current position,
-geographic plausibility, nearby airports, and Mictronics static metadata remain
-prohibited route inferences.
+Selection alone does not call aviationstack. Each accepted **Find route**
+action reserves one of 90 global rolling-31-day attempts before one fixed
+provider call; no retry, pagination request, response cache, or refund exists.
+The key remains server-side, and only validated route fields reach the browser.
 
-No route-provider key, Worker route, cache, domain field, placeholder panel, or
-mock production response is added while the source gate is open.
+Heading, track, current position, geographic plausibility, nearby airports, and
+Mictronics static metadata remain prohibited route inferences. No
+aviationstack key or provider-derived fixture is committed while the source
+gate is open.
 
 ## Airport arrival/departure boards: no active source
 

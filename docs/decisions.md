@@ -43,42 +43,43 @@ licensing, credential, and operational complexity without a demonstrated
 requirement. The existing application-owned provider interface is sufficient
 for a future deliberate replacement.
 
-## Aircraft route enrichment remains blocked
+## Disabled aviationstack route evaluation
 
-The dated
+The owner authorized a smallest evaluation slice for aviationstack's Free plan
+after the dated
 [aircraft route enrichment evaluation](aircraft-route-enrichment-evaluation.md)
-found no authorized source that can associate origin and destination with the
-selected flight occurrence using provider identity plus bounded temporal
-context.
+confirmed a current 100-request monthly allowance. The client and Worker remain
+disabled by default, and Issue #44 still blocks public enablement until the
+exact account terms, display/attribution rights, dedicated key, and bounded
+real-provider evidence are recorded.
 
-Keyless standing-route sources are callsign-only, and ADSB.lol's optional
-route path adds only geographic plausibility. OpenSky supplies historical
-track-derived estimated airports and requires a written agreement for
-operational REST use. FlightAware AeroAPI and AeroDataBox have credible
-operational fields but require unconfigured accounts, server-held credentials,
-approved budgets, applicable display/combination/retention terms, and
-provider-specific occurrence matching.
+aviationstack does not expose a durable opaque flight-occurrence ID. The first
+slice therefore makes a narrower claim: after an explicit **Find route**
+action, it requests active rows for the exact ICAO flight callsign and accepts
+only one non-codeshare row whose returned aircraft ICAO24 also matches exactly.
+A conflicting live/provider registration, zero matches, multiple matches, or
+incomplete first-page pagination produces unavailable rather than an inferred
+route. Movement, heading, position, nearest airports, geographic plausibility,
+and static Mictronics metadata never establish a route.
 
-Issue #44 is therefore the explicit source-authorization blocker. No provider
-interface, route fields, unavailable-only UI, Worker endpoint, secret name,
-cache, or placeholder response is added before that gate is complete.
+The access key stays in the Worker. One globally named SQLite-backed Durable
+Object reserves every accepted attempt before the provider call and admits at
+most 90 attempts in any rolling 31-day window. Attempts are not refunded after
+cancellation, timeout, malformed data, or provider failure. This deliberately
+leaves ten calls outside the application budget, but a public unauthenticated
+caller could still exhaust the 90-call application allowance; the feature is
+therefore an optional availability surface, not a guaranteed service.
 
-A future route association must use a provider-issued occurrence/leg identity
-plus bounded temporal context. Callsign and registration are corroborating
-evidence only. Movement, heading, position, nearest airports, geographic
-plausibility, and static Mictronics metadata never infer a route.
-
-Route enrichment starts only after explicit aircraft selection. Live ADSB.lol
-polling, camera movement, trails, map updates, metadata refreshes, and provider
-retry never start or refresh it. Failure, expiry, throttle, cancellation, or
-ambiguity cannot alter the live marker, position age, freshness, aircraft
+Selection alone, ADSB.lol polling, camera movement, trails, map updates,
+metadata refreshes, and automatic retries never spend route quota. Route
+failure cannot alter the live marker, position age, freshness, aircraft
 cadence/backoff, trails, static metadata, selection, map health, or another
 provider.
 
-The source blocker and Issue #39 remain separate: source authorization can be
-proved before a public deployment exists, but credentialed route enrichment
-cannot ship until the selected secret-holding production path is deployed and
-validated.
+Issue #39 remains the separate Cloudflare deployment blocker. The disabled
+implementation can be reviewed and merged without a key or public
+deployment; enabling it requires both matching client/Worker flags and the
+protected Worker secret.
 
 ## Airport arrival and departure boards remain blocked
 
@@ -105,10 +106,10 @@ independent of ADS-B, marine traffic, static airport context, and the map.
 ## Cloudflare Worker plus Static Assets
 
 Cloudflare Workers with Static Assets is the smallest production boundary for
-the Vite client and required ADSB.lol/AWC proxies. Static files bypass Worker
-execution; only `/api` and `/api/*` invoke code. The fixed aircraft and METAR
-routes construct hard-coded upstream destinations and cannot act as general
-forwarders.
+the Vite client and required ADSB.lol/AWC proxies plus the optional
+aviationstack route. Static files bypass Worker execution; only `/api` and
+`/api/*` invoke code. All three routes construct hard-coded upstream
+destinations and cannot act as general forwarders.
 
 The free plan's 100,000 dynamic requests/day covers about 23 continuously
 active browser sessions at the application's nominal 4,320 request/day upper
@@ -120,12 +121,13 @@ requests, and function compute in one 300-credit monthly budget without
 providing a capability this two-route application needs. GitHub Pages plus a
 separate Worker would add a second deployment unit or split-origin CORS.
 
-Fingerprint-named assets use immutable browser caching. Aircraft responses use
-upstream and downstream `no-store`; successful METAR responses use the
-source-aligned 60-second guidance. No shared application cache or rate-control
-service is added without measurements and provider-policy evidence. Worker
-observability is disabled because routes contain rounded camera coordinates or
-visible station IDs.
+Fingerprint-named assets use immutable browser caching. Aircraft and
+aviationstack route responses use `no-store`; successful METAR responses use
+the source-aligned 60-second guidance. The route's single justified persistent
+server mechanism is its SQLite-backed global budget guard; it stores only
+attempt timestamps and no aircraft identity, provider body, route, or user
+data. Worker observability is disabled because request paths can otherwise
+retain rounded camera coordinates or visible station IDs.
 
 Deployments require an exact current `main` SHA, rerun the complete validation
 suite, serialize production operations, deploy code and assets atomically, and
@@ -539,10 +541,10 @@ ineligible-view reasons compose through the existing pause boundary without
 resetting aircraft cadence, `Retry-After`, MQTT reconnect, REST, or metadata
 gates.
 
-Current-only METAR and third-party aircraft metadata are absent in history.
-Destination, ETA, interpolation frames, browser location, export, sharing,
-synchronization, service-worker live caching, and backend history remain
-outside the decision.
+Current-only METAR, third-party aircraft metadata, and selected-flight route
+lookup are absent in history. Vessel destination/ETA, interpolation frames,
+browser location, export, sharing, synchronization, service-worker live
+caching, and backend history remain outside the decision.
 
 ## Explicit Auto, Light, and Dark theme preference
 

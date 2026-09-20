@@ -1,0 +1,3 @@
+# Copy to .dev.vars for local `wrangler dev` evaluation only.
+AVIATIONSTACK_ENABLED="true"
+AVIATIONSTACK_ACCESS_KEY="replace-with-an-authorized-key"

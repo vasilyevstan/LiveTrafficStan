@@ -18,6 +18,8 @@ cp .env.example .env.local
 | `VITE_MAP_DARK_STYLE_URL` | `https://tiles.openfreemap.org/styles/dark` | HTTPS URL or root-relative path |
 | `VITE_GEOCODER_ENDPOINT` | `https://photon.komoot.io/api` | HTTPS Photon-compatible forward-search endpoint or root-relative deployment path; protocol-relative and credential-bearing URLs are rejected |
 | `VITE_AIRCRAFT_ENDPOINT` | `/api/aircraft` | HTTPS URL or root-relative path |
+| `VITE_FLIGHT_ROUTE_ENABLED` | `false` | Exact `true` or `false`; controls only whether the browser presents selected-flight lookup |
+| `VITE_FLIGHT_ROUTE_ENDPOINT` | `/api/flight-route` | Root-relative same-origin route with no query or fragment; protocol-relative and absolute URLs are rejected |
 | `VITE_WEATHER_ENDPOINT` | `/api/weather/metar` | Root-relative same-origin METAR route with no query or fragment; protocol-relative and absolute URLs are rejected |
 | `VITE_MARINE_REST_ENDPOINT` | `https://meri.digitraffic.fi` | HTTPS URL or root-relative path |
 | `VITE_MARINE_MQTT_ENDPOINT` | `wss://meri.digitraffic.fi:443/mqtt` | Secure WebSocket URL or root-relative path |
@@ -54,6 +56,10 @@ spread through components:
 | Aircraft metadata response caps | 512 KiB index / 512 KiB shard |
 | Aircraft metadata shard cache | 8 validated prefix shards |
 | Aircraft metadata snapshot age | Valid through 45 days; 24-hour future-clock tolerance |
+| Selected-flight route lookup | Disabled by default; explicit action only |
+| Route client / Worker deadline | 10 seconds |
+| Route client / Worker response cap | 16 KiB validated response / 512 KiB provider response |
+| Route global budget | 90 reserved attempts in a rolling 31-day window |
 | Port asset request deadline / cap | 5 seconds / 512 KiB |
 | Port records / rendered zoom range | 1,081 / zoom 5 through 13 |
 | Airport asset request deadline / cap | 5 seconds / 1.5 MiB |
@@ -207,6 +213,52 @@ authorization, or arbitrary header is forwarded.
 Live aircraft responses are never placed in a shared deployment cache.
 Fingerprint-named application assets are cached immutably instead. See
 [Hosting and Deployment](hosting-and-deployment.md).
+
+## Selected-flight route evaluation
+
+The browser route section is omitted unless:
+
+```dotenv
+VITE_FLIGHT_ROUTE_ENABLED=true
+VITE_FLIGHT_ROUTE_ENDPOINT=/api/flight-route
+```
+
+These browser-visible values contain no credential and cannot enable the
+Worker by themselves. The Worker separately requires
+`AVIATIONSTACK_ENABLED=true`, the `AVIATIONSTACK_ACCESS_KEY` secret, and the
+`FLIGHT_ROUTE_QUOTA` Durable Object binding. A caller that bypasses the UI
+therefore cannot activate a disabled route.
+
+Selecting an aircraft does not make a route request. The user must activate
+**Find route** for each attempt. The selected live aircraft must have a
+six-character ICAO24 address and an ICAO-like callsign with three leading
+letters and at least one digit. Selection, callsign, ICAO24, registration,
+history-mode, or unmount changes abort and clear obsolete work. Ordinary
+ADSB.lol position updates, map movement, theme changes, and provider refreshes
+do not start or repeat a lookup.
+
+The same-origin Worker reserves one of 90 global attempts in a rolling 31-day
+window before making exactly one fixed aviationstack `/v1/flights` request. It
+does not retry, paginate, follow redirects, cache results, or refund attempts
+after provider failure or cancellation. A result is displayed only for one
+active non-codeshare row whose flight ICAO and aircraft ICAO24 match exactly;
+conflicting registrations, multiple matches, and incomplete pagination remain
+unavailable.
+
+Vite has no aviationstack proxy. Credentialed local evaluation must use the
+actual Worker runtime:
+
+```bash
+cp .dev.vars.example .dev.vars
+# Replace the placeholder with an authorized evaluation key.
+VITE_FLIGHT_ROUTE_ENABLED=true npm run preview:worker
+```
+
+`.dev.vars` is ignored by Git. Never place the access key in `.env.local`, a
+`VITE_*` value, source code, test fixture, issue, screenshot, or browser log.
+Issue #44 limits initial live evaluation to ten calls and still blocks public
+enablement until the exact account terms, display/attribution rights, and
+sample behavior are recorded.
 
 ## Weather observations and proxy
 

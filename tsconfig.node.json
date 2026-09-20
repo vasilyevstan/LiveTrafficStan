@@ -8,6 +8,9 @@
 
     /* Bundler mode */
     "module": "nodenext",
+    "paths": {
+      "cloudflare:workers": ["./worker/test/cloudflareWorkers.ts"]
+    },
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
@@ -23,6 +26,7 @@
   "include": [
     "vite.config.ts",
     "vitest.config.ts",
-    "worker/**/*.test.ts"
+    "worker/**/*.test.ts",
+    "worker/test/**/*.ts"
   ]
 }

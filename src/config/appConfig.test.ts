@@ -51,6 +51,14 @@ describe('createAppConfig', () => {
       futureToleranceHours: 24,
       sourceDatabaseVersion: 522,
     })
+    expect(config.flightRoute).toEqual({
+      enabled: false,
+      endpointUrl: '/api/flight-route',
+      timeoutMs: 10_000,
+      maximumBytes: 16 * 1_024,
+      sourceName: 'aviationstack',
+      sourceWebsiteUrl: 'https://aviationstack.com/',
+    })
     expect(config.airports).toMatchObject({
       assetUrl:
         '/airports/ourairports-2026-09-19-v1/airports.geojson',
@@ -100,6 +108,8 @@ describe('createAppConfig', () => {
       VITE_AIRCRAFT_ENDPOINT: 'https://example.test/aircraft/',
       VITE_GEOCODER_ENDPOINT: 'https://example.test/search/',
       VITE_MAP_DARK_STYLE_URL: 'https://example.test/dark/',
+      VITE_FLIGHT_ROUTE_ENABLED: 'true',
+      VITE_FLIGHT_ROUTE_ENDPOINT: '/edge/flight-route/',
     })
 
     expect(config.center).toEqual({
@@ -114,6 +124,10 @@ describe('createAppConfig', () => {
     expect(config.geocoder.endpointBaseUrl).toBe(
       'https://example.test/search',
     )
+    expect(config.flightRoute).toMatchObject({
+      enabled: true,
+      endpointUrl: '/edge/flight-route',
+    })
 
     expect(
       createAppConfig({
@@ -164,6 +178,16 @@ describe('createAppConfig', () => {
         VITE_WEATHER_ENDPOINT: '/api/weather/metar?format=json',
       }),
     ).toThrow(/without a query/)
+    expect(() =>
+      createAppConfig({
+        VITE_FLIGHT_ROUTE_ENABLED: 'yes',
+      }),
+    ).toThrow(/VITE_FLIGHT_ROUTE_ENABLED/)
+    expect(() =>
+      createAppConfig({
+        VITE_FLIGHT_ROUTE_ENDPOINT: 'https://collector.example/route',
+      }),
+    ).toThrow(/same-origin/)
     expect(() =>
       createAppConfig({
         VITE_GEOCODER_ENDPOINT: 'https://user:secret@example.test/search',

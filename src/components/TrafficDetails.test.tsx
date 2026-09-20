@@ -137,6 +137,118 @@ describe('TrafficDetails aircraft metadata', () => {
     expect(errorHtml).toContain('TST123')
   })
 
+  it('shows route lookup only after explicit enablement and renders a matched route', () => {
+    const disabledHtml = renderToStaticMarkup(
+      <TrafficDetails
+        entity={aircraft}
+        aircraftMetadata={availableMetadata}
+        now={1_800_000_001_000}
+        units="metric"
+        onClose={() => undefined}
+      />,
+    )
+    const enabledHtml = renderToStaticMarkup(
+      <TrafficDetails
+        entity={aircraft}
+        aircraftMetadata={availableMetadata}
+        flightRouteEnabled
+        flightRoute={{
+          phase: 'available',
+          identityKey: 'TST123|511123|ES-ABC',
+          route: {
+            flightIcao: 'TST123',
+            flightIata: 'TS123',
+            flightStatus: 'active',
+            departure: {
+              name: 'Tallinn Airport',
+              code: 'TLL',
+            },
+            arrival: {
+              name: 'Helsinki Airport',
+              code: 'HEL',
+            },
+            providerUpdatedAt: 1_800_000_000_000,
+            source: {
+              name: 'aviationstack',
+              websiteUrl: 'https://aviationstack.com/',
+            },
+          },
+        }}
+        now={1_800_000_001_000}
+        units="metric"
+        onRequestFlightRoute={() => undefined}
+        onClose={() => undefined}
+      />,
+    )
+
+    expect(disabledHtml).not.toContain('Flight route')
+    expect(enabledHtml).toContain('Flight route')
+    expect(enabledHtml).toContain('Tallinn Airport (TLL)')
+    expect(enabledHtml).toContain('Helsinki Airport (HEL)')
+    expect(enabledHtml).toContain('TS123 · TST123')
+    expect(enabledHtml).toContain('Provider update')
+    expect(enabledHtml).toContain('Find route again')
+    expect(enabledHtml).toContain('aviationstack')
+  })
+
+  it('keeps invalid identity and provider failures local to route lookup', () => {
+    const invalidHtml = renderToStaticMarkup(
+      <TrafficDetails
+        entity={aircraft}
+        aircraftMetadata={availableMetadata}
+        flightRouteEnabled
+        flightRoute={{
+          phase: 'unavailable',
+          reason: 'invalid-identity',
+        }}
+        now={1_800_000_001_000}
+        units="metric"
+        onRequestFlightRoute={() => undefined}
+        onClose={() => undefined}
+      />,
+    )
+    const errorHtml = renderToStaticMarkup(
+      <TrafficDetails
+        entity={aircraft}
+        aircraftMetadata={availableMetadata}
+        flightRouteEnabled
+        flightRoute={{
+          phase: 'error',
+          identityKey: 'TST123|511123|ES-ABC',
+          reason: 'provider-error',
+        }}
+        now={1_800_000_001_000}
+        units="metric"
+        onRequestFlightRoute={() => undefined}
+        onClose={() => undefined}
+      />,
+    )
+
+    expect(invalidHtml).toContain('valid ICAO flight callsign')
+    expect(invalidHtml).toContain('disabled=""')
+    expect(errorHtml).toContain('The route provider is unavailable')
+    expect(errorHtml).toContain('Live ADS-B remains active')
+  })
+
+  it('omits current route lookup from historical aircraft details', () => {
+    const html = renderToStaticMarkup(
+      <TrafficDetails
+        entity={aircraft}
+        aircraftMetadata={{ phase: 'idle' }}
+        flightRouteEnabled
+        flightRoute={{ phase: 'idle' }}
+        now={1_800_000_001_000}
+        units="metric"
+        historical
+        onRequestFlightRoute={() => undefined}
+        onClose={() => undefined}
+      />,
+    )
+
+    expect(html).not.toContain('Flight route')
+    expect(html).not.toContain('Find route')
+  })
+
   it('does not render aircraft metadata for a vessel selection', () => {
     const vessel: DisplayVessel = {
       id: 'vessel:123456789',
@@ -160,6 +272,8 @@ describe('TrafficDetails aircraft metadata', () => {
       <TrafficDetails
         entity={vessel}
         aircraftMetadata={availableMetadata}
+        flightRouteEnabled
+        flightRoute={{ phase: 'idle' }}
         now={1_800_000_001_000}
         units="metric"
         onClose={() => undefined}
@@ -168,6 +282,7 @@ describe('TrafficDetails aircraft metadata', () => {
 
     expect(html).not.toContain('Aircraft metadata')
     expect(html).not.toContain('AIRBUS A-320')
+    expect(html).not.toContain('Flight route')
     expect(html).toContain('Position report')
     expect(html).toContain('Metadata report')
     expect(html).toContain('Unavailable')
