@@ -589,7 +589,9 @@ Center action.
 
 Metric values remain canonical. Aviation/nautical presentation converts metres
 to feet, km/h to knots, and m/s to ft/min. Vessel dimensions and filter
-thresholds remain metres. AWC wind and visibility are normalized to metric at
+thresholds remain metres. Selected vessel speed over ground always shows both
+km/h and knots so marine users do not need to switch the global presentation
+preference for that value. AWC wind and visibility are normalized to metric at
 the provider boundary while retaining bounded visibility relation/source tokens
 for truthful aviation formatting. Unit changes never alter provider queries,
 viewport eligibility, filter membership, history, selection, or map lifecycle.

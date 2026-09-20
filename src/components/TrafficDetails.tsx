@@ -6,6 +6,7 @@ import {
   formatSpeed,
   formatTimestamp,
   formatVerticalSpeed,
+  formatVesselSpeed,
 } from '../domain/format'
 import {
   countryForAircraftHex,
@@ -309,7 +310,7 @@ export function TrafficDetails({
               value={
                 entity.speedKph === undefined
                   ? undefined
-                  : formatSpeed(entity.speedKph, units)
+                  : formatVesselSpeed(entity.speedKph)
               }
             />
             <DetailRow
