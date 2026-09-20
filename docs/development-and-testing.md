@@ -11,13 +11,14 @@ npm run dev
 
 The development server normally runs at <http://localhost:5173>. It supplies
 the fixed `/api/aircraft` and `/api/weather/metar` proxies required by the
-default ADSB.lol and AWC integrations.
+default ADSB.lol and AWC integrations. It deliberately does not proxy the
+credentialed aviationstack route; use the local Worker runtime for that path.
 
 ## Commands
 
 | Command | Purpose |
 | --- | --- |
-| `npm run dev` | Start Vite with hot module replacement and the fixed aircraft/METAR proxies |
+| `npm run dev` | Start Vite with hot module replacement and the fixed aircraft/METAR proxies; flight routes remain unavailable |
 | `npm run lint` | Run Oxlint across the repository |
 | `npm run typecheck` | Run strict TypeScript project checks without output |
 | `npm test -- --run` | Run the deterministic Vitest suite once |
@@ -52,6 +53,19 @@ npm run check:deploy
 The same commands run in `.github/workflows/validate.yml` for pull requests and
 pushes targeting `dev` or `main`. The Wrangler dry run is credential-free and
 does not call a live provider.
+
+For an explicitly authorized aviationstack evaluation, copy
+`.dev.vars.example` to ignored `.dev.vars`, replace its placeholder key, and
+run:
+
+```bash
+VITE_FLIGHT_ROUTE_ENABLED=true npm run preview:worker
+```
+
+Do not use or commit a provider-derived response as a fixture unless the exact
+account terms permit it. The initial evaluation is capped at ten live calls;
+ordinary deterministic tests use synthetic records and spend no provider
+quota.
 
 ## Branch and pull request flow
 
@@ -92,6 +106,10 @@ The V1 suite uses sanitized, local values and does not call live providers. It
 covers:
 
 - configuration defaults and invalid overrides;
+- selected-flight identity validation, no-request-before-action lifecycle,
+  cancellation/stale callback handling, strict Worker matching, complete-page
+  enforcement, global rolling quota, sanitized provider failures, and
+  vessel/history isolation;
 - ADSB.lol request construction, abort forwarding, response/error validation,
   retry guidance, enclosing-circle transport, and metric conversion;
 - Digitraffic REST/MQTT normalization, capabilities, provenance, dimensions,

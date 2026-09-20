@@ -67,6 +67,10 @@ single React application, without accounts, a database, or persistent tracking.
   Center. It uses explicit ICAO codes from the pinned airport projection,
   shows observation and retrieval age, expires old reports, and remains
   independent of traffic providers and static airport context.
+- A disabled-by-default aviationstack route-evaluation path for a selected live
+  aircraft. It runs only after **Find route**, requires an exact active
+  callsign/ICAO24 match, and fails closed on ambiguity, pagination, quota, or
+  provider errors without changing ADS-B positions or polling.
 - Honest detail cards, provider-specific health, stale/expired handling, and
   partial operation when one provider fails.
 - Short interpolation only between observed positions and a selected-object
@@ -259,6 +263,8 @@ available for:
 | `VITE_MAP_DARK_STYLE_URL` | `https://tiles.openfreemap.org/styles/dark` |
 | `VITE_GEOCODER_ENDPOINT` | `https://photon.komoot.io/api` |
 | `VITE_AIRCRAFT_ENDPOINT` | `/api/aircraft` |
+| `VITE_FLIGHT_ROUTE_ENABLED` | `false` |
+| `VITE_FLIGHT_ROUTE_ENDPOINT` | `/api/flight-route` |
 | `VITE_WEATHER_ENDPOINT` | `/api/weather/metar` |
 | `VITE_MARINE_REST_ENDPOINT` | `https://meri.digitraffic.fi` |
 | `VITE_MARINE_MQTT_ENDPOINT` | `wss://meri.digitraffic.fi:443/mqtt` |
@@ -280,6 +286,7 @@ operational thresholds, and examples.
 | Port context | Natural Earth Ports | Public domain | Immutable same-origin static asset, loaded only when enabled |
 | Airport context | OurAirports | Public domain | Immutable same-origin static asset, loaded only when enabled |
 | Weather observations | NOAA/NWS Aviation Weather Center | U.S. public domain unless marked otherwise | Strict same-origin Worker/Vite route, loaded only when METAR is enabled |
+| Selected-flight route evaluation | aviationstack | Account terms and plan apply; not yet approved for public enablement | Explicit same-origin Worker request; disabled by default |
 
 The repository's Apache License 2.0 applies to source code only. The bundled
 aircraft metadata is a derivative database conveyed under ODC-By 1.0 with its
@@ -299,9 +306,11 @@ authorization gates.
 ## Deployment
 
 Cloudflare Workers with Static Assets is the selected production boundary. It
-deploys the Vite client with strict same-origin ADSB.lol point and AWC METAR
-routes as one atomic unit. Hashed assets, including the MapLibre worker, use
-immutable browser caching; live aircraft responses use no shared cache and
+deploys the Vite client with strict same-origin ADSB.lol point, AWC METAR, and
+disabled-by-default aviationstack route paths as one atomic unit. A
+SQLite-backed Durable Object enforces the route path's global rolling
+90-attempt ceiling. Hashed assets, including the MapLibre worker, use immutable
+browser caching; live aircraft and route responses use no shared cache and
 successful METAR responses receive only the source-aligned 60-second cache
 guidance.
 
@@ -317,6 +326,14 @@ The weather route accepts only
 four-letter IDs and no other parameters. It constructs one fixed AWC JSON
 request, follows no redirects, forwards no browser credentials, uses an
 eight-second deadline and 256 KiB response cap, and preserves `Retry-After`.
+
+The optional route path accepts only `POST /api/flight-route` with one bounded
+JSON aircraft identity. It is hidden unless both client and Worker flags are
+enabled, keeps the aviationstack key server-side, reserves quota before one
+fixed upstream call, never retries or follows redirects, and returns only a
+small validated route or truthful unavailable/error state. The implementation
+does not authorize public use: Issue #44 still owns exact account terms,
+dedicated-key setup, and at most ten real evaluation calls before enablement.
 
 The deploy-ready code is not yet a claimed public deployment. Permanent
 Cloudflare account authorization and environment credentials are tracked in
@@ -369,11 +386,15 @@ monitoring, privacy, and rollback procedure.
   airport board, operational status, or global coverage guarantee. Enabling it
   sends visible qualifying ICAO station IDs through the application host to
   AWC.
-- There is no reverse geocoding, route enrichment, radar, precipitation
-  forecast, account, saved center preference, or offline basemap guarantee.
-  An installed shell can start cold offline and replay retained private local
-  history over a plain local background; no cached provider response or map
-  resource is presented as current.
+- Flight-route lookup remains disabled until the aviationstack account terms,
+  dedicated key, and bounded real-sample evidence in Issue #44 are approved.
+  Even when enabled, it reports only an exact, unique active match and is not a
+  general schedule, airport-board, or route-history service.
+- There is no reverse geocoding, radar, precipitation forecast, account, saved
+  center preference, or offline basemap guarantee. An installed shell can
+  start cold offline and replay retained private local history over a plain
+  local background; no cached provider response or map resource is presented
+  as current.
 
 Planned work is tracked in
 [GitHub Issues](https://github.com/vasilyevstan/LiveTrafficStan/issues), not
@@ -386,6 +407,7 @@ silently expanded into V1.
 - [Data Sources and Licensing](docs/data-sources-and-licensing.md)
 - [Aircraft Provider Evaluation](docs/aircraft-provider-evaluation.md)
 - [Aircraft Metadata Evaluation](docs/aircraft-metadata-evaluation.md)
+- [Aircraft Route Enrichment Evaluation](docs/aircraft-route-enrichment-evaluation.md)
 - [Airport Board Evaluation](docs/airport-board-evaluation.md)
 - [Marine Provider Evaluation](docs/marine-provider-evaluation.md)
 - [Hosting and Deployment](docs/hosting-and-deployment.md)

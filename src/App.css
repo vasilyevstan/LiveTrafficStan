@@ -837,6 +837,12 @@
   color: var(--accent-line);
 }
 
+.flight-route__action {
+  min-height: 32px;
+  margin-top: 9px;
+  padding: 0 11px;
+}
+
 .map-error {
   position: absolute;
   right: 16px;

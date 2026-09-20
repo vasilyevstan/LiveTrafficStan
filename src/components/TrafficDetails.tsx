@@ -17,6 +17,10 @@ import type {
   AircraftMetadataUnavailableReason,
   AircraftMetadataViewState,
 } from '../domain/aircraftMetadata'
+import type {
+  FlightRouteUnavailableReason,
+  FlightRouteViewState,
+} from '../domain/flightRoute'
 import type { DisplayTrafficEntity } from '../domain/traffic'
 import type { UnitSystem } from '../domain/units'
 
@@ -39,9 +43,12 @@ function DetailRow({ label, value }: DetailRowProps) {
 interface TrafficDetailsProps {
   entity: DisplayTrafficEntity
   aircraftMetadata: AircraftMetadataViewState
+  flightRouteEnabled?: boolean
+  flightRoute?: FlightRouteViewState
   now: number
   units: UnitSystem
   historical?: boolean
+  onRequestFlightRoute?: () => void
   onClose: () => void
 }
 
@@ -172,12 +179,130 @@ function AircraftMetadataDetails({
   )
 }
 
+const unavailableRouteMessage = (reason: FlightRouteUnavailableReason) => {
+  switch (reason) {
+    case 'invalid-identity':
+      return 'A valid ICAO flight callsign and ICAO24 address are required.'
+    case 'not-found':
+      return 'No matching active route is available for this aircraft.'
+    case 'ambiguous':
+      return 'Several active flights matched, so no route was shown.'
+    case 'incomplete':
+      return 'The provider returned more results than one safe page, so no route was shown.'
+  }
+}
+
+const airportLabel = ({ name, code }: { name: string; code?: string }) =>
+  code ? `${name} (${code})` : name
+
+function FlightRouteDetails({
+  state,
+  now,
+  onRequest,
+}: {
+  state: FlightRouteViewState
+  now: number
+  onRequest: () => void
+}) {
+  const invalidIdentity =
+    state.phase === 'unavailable' &&
+    state.reason === 'invalid-identity'
+  const loading = state.phase === 'loading'
+  const source =
+    state.phase === 'available'
+      ? state.route.source
+      : {
+          name: 'aviationstack',
+          websiteUrl: 'https://aviationstack.com/',
+        }
+
+  return (
+    <section
+      className="aircraft-metadata flight-route"
+      aria-labelledby="flight-route-heading"
+    >
+      <h3 id="flight-route-heading">Flight route</h3>
+      {state.phase === 'idle' && (
+        <p className="metadata-status">
+          Request one current active-route check for this aircraft.
+        </p>
+      )}
+      {loading && (
+        <p className="metadata-status" role="status">
+          Finding a strictly matched active route…
+        </p>
+      )}
+      {state.phase === 'available' && (
+        <dl className="details-grid aircraft-metadata__grid">
+          <DetailRow
+            label="Origin"
+            value={airportLabel(state.route.departure)}
+          />
+          <DetailRow
+            label="Destination"
+            value={airportLabel(state.route.arrival)}
+          />
+          <DetailRow
+            label="Flight"
+            value={
+              state.route.flightIata
+                ? `${state.route.flightIata} · ${state.route.flightIcao}`
+                : state.route.flightIcao
+            }
+          />
+          <DetailRow label="Route status" value="Active" />
+          {state.route.providerUpdatedAt !== undefined && (
+            <DetailRow
+              label="Provider update"
+              value={formatAge(state.route.providerUpdatedAt, now)}
+            />
+          )}
+        </dl>
+      )}
+      {state.phase === 'unavailable' && (
+        <p className="metadata-status">
+          Route unavailable: {unavailableRouteMessage(state.reason)}
+        </p>
+      )}
+      {state.phase === 'error' && (
+        <p className="metadata-status metadata-status--error" role="alert">
+          {state.reason === 'quota-exhausted'
+            ? 'The protected route lookup allowance is temporarily exhausted.'
+            : state.reason === 'configuration'
+              ? 'Route lookup is temporarily unavailable.'
+              : 'The route provider is unavailable.'}{' '}
+          Live ADS-B remains active.
+        </p>
+      )}
+      <button
+        type="button"
+        className="flight-route__action"
+        disabled={loading || invalidIdentity}
+        onClick={onRequest}
+      >
+        {loading
+          ? 'Finding route…'
+          : state.phase === 'idle'
+            ? 'Find route'
+            : 'Find route again'}
+      </button>
+      <p className="metadata-attribution">
+        Route data by <a href={source.websiteUrl}>{source.name}</a>. Map
+        positions continue to come from ADSB.lol.
+      </p>
+    </section>
+  )
+}
+
 export function TrafficDetails({
   entity,
   aircraftMetadata,
+  flightRouteEnabled = false,
+  flightRoute = { phase: 'idle' },
   now,
   units,
   historical = false,
+  onRequestFlightRoute = () => undefined,
   onClose,
 }: TrafficDetailsProps) {
   const title =
@@ -358,6 +483,15 @@ export function TrafficDetails({
       {entity.kind === 'aircraft' && (
         <AircraftMetadataDetails state={aircraftMetadata} />
       )}
+      {entity.kind === 'aircraft' &&
+        flightRouteEnabled &&
+        !historical && (
+          <FlightRouteDetails
+            state={flightRoute}
+            now={now}
+            onRequest={onRequestFlightRoute}
+          />
+        )}
       {historical && (
         <p className="metadata-attribution">
           Historical provider observation. Current weather and third-party

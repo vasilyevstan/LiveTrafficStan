@@ -231,10 +231,7 @@ export const handleAircraftProxy = async (
       },
     })
 
-    if (
-      upstream.type === 'opaqueredirect' ||
-      (upstream.status >= 300 && upstream.status < 400)
-    ) {
+    if (upstream.status >= 300 && upstream.status < 400) {
       return textResponse('Aircraft upstream redirect rejected', 502)
     }
 

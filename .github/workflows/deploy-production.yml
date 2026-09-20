@@ -15,6 +15,11 @@ on:
         options:
           - application
           - pwa-retirement
+      flight_route_enabled:
+        description: Enable the aviationstack route lookup in client and Worker
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -91,14 +96,20 @@ jobs:
 
       - name: Build application
         if: inputs.artifact == 'application'
+        env:
+          VITE_FLIGHT_ROUTE_ENABLED: ${{ inputs.flight_route_enabled }}
         run: npm run build
 
       - name: Build PWA retirement artifact
         if: inputs.artifact == 'pwa-retirement'
+        env:
+          VITE_FLIGHT_ROUTE_ENABLED: ${{ inputs.flight_route_enabled }}
         run: npm run build:pwa-retire
 
       - name: Check exact deployment bundle
-        run: npm run check:deploy
+        run: >-
+          npm run check:deploy --
+          --var AVIATIONSTACK_ENABLED:${{ inputs.flight_route_enabled }}
 
       - name: Deploy exact source
         id: deploy
@@ -110,7 +121,16 @@ jobs:
             git fetch --no-tags origin main
             test "$(git rev-parse HEAD)" = "${{ inputs.sha }}"
             test "$(git rev-parse origin/main)" = "${{ inputs.sha }}"
-          command: deploy --var RELEASE_SHA:${{ inputs.sha }}
+            if [[ "${{ inputs.flight_route_enabled }}" == "true" ]]; then
+              test -n "$AVIATIONSTACK_ACCESS_KEY"
+            fi
+          command: >-
+            deploy
+            --var RELEASE_SHA:${{ inputs.sha }}
+            --var AVIATIONSTACK_ENABLED:${{ inputs.flight_route_enabled }}
+          secrets: ${{ inputs.flight_route_enabled && 'AVIATIONSTACK_ACCESS_KEY' || '' }}
+        env:
+          AVIATIONSTACK_ACCESS_KEY: ${{ inputs.flight_route_enabled && secrets.AVIATIONSTACK_ACCESS_KEY || '' }}
 
       - name: Smoke deployed application
         run: >-
@@ -128,6 +148,7 @@ jobs:
             echo
             echo "- SHA: \`$RELEASE_SHA\`"
             echo "- Artifact: \`${{ inputs.artifact }}\`"
+            echo "- Flight route lookup enabled: \`${{ inputs.flight_route_enabled }}\`"
             echo "- URL: $DEPLOYMENT_URL"
             echo "- Smoke: passed"
           } >> "$GITHUB_STEP_SUMMARY"
