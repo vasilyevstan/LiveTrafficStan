@@ -13,6 +13,8 @@ The development server normally runs at <http://localhost:5173>. It supplies
 the fixed `/api/aircraft` and `/api/weather/metar` proxies required by the
 default ADSB.lol and AWC integrations. It deliberately does not proxy the
 credentialed aviationstack route; use the local Worker runtime for that path.
+It also does not proxy Planespotters: the disabled aircraft-photo evaluation
+must preserve its direct-browser provider contract.
 
 ## Commands
 
@@ -111,6 +113,11 @@ covers:
   reuse, expiry and 32-entry eviction, strict Worker matching, complete-page
   enforcement, global rolling quota, sanitized provider failures, and
   vessel/history isolation;
+- selected-aircraft photo identity validation, no request on selection or in
+  HISTORY, explicit-action lifecycle, A to B to A revision guards, timeout/
+  abort/throttling, exact returned-origin checks, unchanged URLs, visible
+  attribution/link semantics, one-hour 32-entry LRU behavior, and vessel/
+  storage/service-worker isolation;
 - ADSB.lol request construction, abort forwarding, response/error validation,
   retry guidance, enclosing-circle transport, and metric conversion;
 - Digitraffic REST/MQTT normalization, capabilities, provenance, dimensions,
@@ -668,6 +675,30 @@ Photon/OpenStreetMap attribution, and that a repeated normalized query is
 served from memory. Simulate timeout, `429`, invalid GeoJSON, oversized bodies,
 and outage locally. A synthetic `Origin` request can inspect headers but does
 not replace a real browser CORS check.
+
+Aircraft-photo changes use synthetic Planespotters responses for every repeated
+case. Run an evaluated build only when a new bounded live check is explicitly
+authorized:
+
+```bash
+VITE_AIRCRAFT_PHOTO_ENABLED=true npm run dev -- --host 127.0.0.1 --port 5174
+```
+
+Before any live request, prove with deterministic browser fixtures that
+selection and HISTORY make zero photo requests, explicit action makes one,
+A to B to A cannot publish a stale result, direct thumbnail/link/credit
+semantics pass, errors remain local, and no provider content reaches Web
+Storage, IndexedDB, Cache API, or service-worker caches.
+
+One live browser-origin request is the whole acceptance budget unless a later
+Issue explicitly authorizes another. Record the application origin, ICAO24,
+request count, CORS result, response shape, exact returned origins, image load,
+credit, and source-page link without committing the provider payload or image.
+On 2026-09-21 the authorized request for `4CADF9` from
+`http://127.0.0.1:5174` failed before a readable CORS response; Resource Timing
+reported status `0` and zero transferred bytes. It was not repeated, and
+production remains disabled. Do not substitute a Worker proxy because the
+selected provider terms prohibit proxying and re-exposure.
 
 Use local fixtures, fake clocks, fake maps, mocked fetch, and mocked MQTT for
 repeated lifecycle checks. A milestone needs one bounded real-provider browser

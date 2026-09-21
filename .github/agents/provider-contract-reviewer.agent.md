@@ -148,6 +148,26 @@ Check these project invariants:
   revision. Aircraft changes, vessel/empty selection, and unmount abort old
   work; late A callbacks cannot appear after A to B to A. Snapshot staleness
   and future-clock rules reevaluate while open without refetch.
+- Aircraft photos remain disabled by default until dated API terms and one
+  exact-production-origin browser check both pass. The only eligible dynamic
+  path is explicit action on a selected live aircraft's exact six-character
+  ICAO24; selection, HISTORY, vessels, callsign, registration, model, airline,
+  and fuzzy text make no request.
+- Planespotters JSON is fetched directly from the fixed hex endpoint with one
+  active cancellable request, bounded timeout/body, no credentials, no-store,
+  manual redirect rejection, typed failures, `Retry-After`, no automatic
+  retry, and A to B to A revision guards. Successful and no-photo results use
+  only the configured one-hour/32-entry current-tab LRU.
+- Returned photo URLs remain unchanged and are accepted only from the exact
+  API-approved CDN and `/photo/` page origins. The regular thumbnail loads
+  directly, is the plain new-tab source-page link with
+  `rel="noopener noreferrer"` and no `nofollow`, and has visible photographer
+  credit. No JSON, URL, credit, or image byte enters Web Storage, IndexedDB,
+  Cache API, service-worker/Worker cache, KV/R2, a proxy, feed, or export.
+- Aircraft-photo failure stays local to details and cannot alter ADS-B
+  polling, marker selection, map/canvas identity, route lookup, history, or
+  another provider. Vessel UI must not imply photo support without the reviewed
+  exact-IMO/file-revision rights manifest.
 - Credentials stay server-side behind allowlisted routes. A missing authorized
   provider or account becomes an explicit blocker rather than client-side
   secrets, scraping, or success-shaped placeholder data.

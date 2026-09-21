@@ -1,4 +1,5 @@
 import type { StaticAircraftMetadataProviderConfig } from '../providers/aircraftMetadata/staticAircraftMetadataProvider'
+import type { PlanespottersPhotoProviderConfig } from '../providers/aircraftPhoto/planespottersPhotoProvider'
 import type { StaticAirportsProviderConfig } from '../providers/airports/staticAirportsProvider'
 import type { StaticPortsProviderConfig } from '../providers/ports/staticPortsProvider'
 import type { AwcMetarProviderConfig } from '../providers/weather/awcMetarProvider'
@@ -60,6 +61,12 @@ export interface AppConfig {
     rateLimitBackoffMaxMs: number
   }
   aircraftMetadata: StaticAircraftMetadataProviderConfig
+  aircraftPhoto: PlanespottersPhotoProviderConfig & {
+    enabled: boolean
+    cacheMaxEntries: number
+    cacheTtlMs: number
+    rateLimitFallbackMs: number
+  }
   flightRoute: AviationstackFlightRouteProviderConfig & {
     enabled: boolean
   }
@@ -110,6 +117,8 @@ const DEFAULTS = {
   darkMapStyleUrl: 'https://tiles.openfreemap.org/styles/dark',
   geocoderEndpoint: 'https://photon.komoot.io/api',
   aircraftEndpoint: '/api/aircraft',
+  aircraftPhotoEndpoint:
+    'https://api.planespotters.net/pub/photos/hex',
   flightRouteEndpoint: '/api/flight-route',
   weatherEndpoint: '/api/weather/metar',
   marineRestEndpoint: 'https://meri.digitraffic.fi',
@@ -320,6 +329,20 @@ export const createAppConfig = (
       futureToleranceHours:
         aircraftMetadataSource.projection.futureToleranceHours,
       expectedCounts: aircraftMetadataSource.projection.expected,
+    },
+    aircraftPhoto: {
+      enabled: readBoolean(env, 'VITE_AIRCRAFT_PHOTO_ENABLED', false),
+      endpointBaseUrl: DEFAULTS.aircraftPhotoEndpoint,
+      timeoutMs: 8_000,
+      maximumBytes: 32 * 1_024,
+      thumbnailOrigin: 'https://cdn.planespotters.net',
+      photoPageOrigin: 'https://www.planespotters.net',
+      sourceName: 'Planespotters.net',
+      sourceWebsiteUrl: 'https://www.planespotters.net/',
+      sourceTermsUrl: 'https://www.planespotters.net/photo/api',
+      cacheMaxEntries: 32,
+      cacheTtlMs: 60 * 60_000,
+      rateLimitFallbackMs: 60_000,
     },
     flightRoute: {
       enabled: readBoolean(env, 'VITE_FLIGHT_ROUTE_ENABLED', false),

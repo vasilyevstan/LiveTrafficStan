@@ -920,10 +920,60 @@
   color: var(--accent-line);
 }
 
-.flight-route__action {
+.flight-route__action,
+.aircraft-photo__action {
   min-height: 32px;
   margin-top: 9px;
   padding: 0 11px;
+  border: 1px solid var(--button-border);
+  border-radius: 8px;
+  color: var(--button-text);
+  background: var(--button-background);
+  font-size: 0.68rem;
+  cursor: pointer;
+}
+
+.flight-route__action:hover,
+.flight-route__action:focus-visible,
+.aircraft-photo__action:hover,
+.aircraft-photo__action:focus-visible {
+  color: var(--button-hover-text);
+  border-color: var(--button-hover-border);
+  outline: none;
+}
+
+.flight-route__action:disabled,
+.aircraft-photo__action:disabled {
+  color: var(--button-disabled-text);
+  border-color: var(--button-disabled-border);
+  background: var(--button-disabled-background);
+  cursor: not-allowed;
+}
+
+.aircraft-photo__link {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 9px;
+  border: 1px solid var(--detail-divider);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.aircraft-photo__link:focus-visible {
+  border-color: var(--button-hover-border);
+  outline: 2px solid var(--accent-line);
+  outline-offset: 2px;
+}
+
+.aircraft-photo__image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.aircraft-photo__credit {
+  max-width: 240px;
 }
 
 .map-error {

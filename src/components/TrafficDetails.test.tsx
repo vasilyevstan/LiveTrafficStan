@@ -137,6 +137,130 @@ describe('TrafficDetails aircraft metadata', () => {
     expect(errorHtml).toContain('TST123')
   })
 
+  it('loads no aircraft photo until the explicit enabled-build action', () => {
+    const disabledHtml = renderToStaticMarkup(
+      <TrafficDetails
+        entity={aircraft}
+        aircraftMetadata={availableMetadata}
+        now={1_800_000_001_000}
+        units="metric"
+        onClose={() => undefined}
+      />,
+    )
+    const enabledHtml = renderToStaticMarkup(
+      <TrafficDetails
+        entity={aircraft}
+        aircraftMetadata={availableMetadata}
+        aircraftPhotoEnabled
+        aircraftPhoto={{ phase: 'idle', identityKey: '511123' }}
+        aircraftPhotoTermsUrl="https://www.planespotters.net/photo/api"
+        now={1_800_000_001_000}
+        units="metric"
+        onRequestAircraftPhoto={() => undefined}
+        onClose={() => undefined}
+      />,
+    )
+
+    expect(disabledHtml).not.toContain('Aircraft photo')
+    expect(disabledHtml).not.toContain('api.planespotters.net')
+    expect(enabledHtml).toContain('Aircraft photo')
+    expect(enabledHtml).toContain('Load aircraft photo')
+    expect(enabledHtml).toContain(
+      'Loading sends ICAO24 511123 and normal browser network metadata directly to Planespotters',
+    )
+    expect(enabledHtml).toContain('Photo API terms')
+    expect(enabledHtml).not.toContain('<img')
+  })
+
+  it('renders the unchanged Planespotters thumbnail as a credited source-page link', () => {
+    const html = renderToStaticMarkup(
+      <TrafficDetails
+        entity={aircraft}
+        aircraftMetadata={availableMetadata}
+        aircraftPhotoEnabled
+        aircraftPhoto={{
+          phase: 'available',
+          identityKey: '511123',
+          photo: {
+            icao24: '511123',
+            thumbnailUrl:
+              'https://cdn.planespotters.net/example/photo_t.jpg',
+            thumbnailWidth: 200,
+            thumbnailHeight: 133,
+            photoPageUrl:
+              'https://www.planespotters.net/photo/000001/example',
+            photographer: 'Test Photographer',
+            source: {
+              name: 'Planespotters.net',
+              websiteUrl: 'https://www.planespotters.net/',
+              termsUrl: 'https://www.planespotters.net/photo/api',
+            },
+          },
+        }}
+        now={1_800_000_001_000}
+        units="metric"
+        onClose={() => undefined}
+      />,
+    )
+
+    expect(html).toContain(
+      'Photo returned by Planespotters for ICAO24 511123',
+    )
+    expect(html).toContain(
+      'src="https://cdn.planespotters.net/example/photo_t.jpg"',
+    )
+    expect(html).toContain(
+      'href="https://www.planespotters.net/photo/000001/example"',
+    )
+    expect(html).toContain('target="_blank"')
+    expect(html).toContain('rel="noopener noreferrer"')
+    expect(html).not.toContain('nofollow')
+    expect(html).toContain('Photo © Test Photographer')
+    expect(html).toContain('Open the image for its unchanged original')
+    expect(html).not.toContain('Load aircraft photo')
+  })
+
+  it('keeps photo failures local and never substitutes another image', () => {
+    const notFoundHtml = renderToStaticMarkup(
+      <TrafficDetails
+        entity={aircraft}
+        aircraftMetadata={availableMetadata}
+        aircraftPhotoEnabled
+        aircraftPhoto={{
+          phase: 'unavailable',
+          identityKey: '511123',
+          reason: 'not-found',
+        }}
+        now={1_800_000_001_000}
+        units="metric"
+        onClose={() => undefined}
+      />,
+    )
+    const errorHtml = renderToStaticMarkup(
+      <TrafficDetails
+        entity={aircraft}
+        aircraftMetadata={availableMetadata}
+        aircraftPhotoEnabled
+        aircraftPhoto={{
+          phase: 'error',
+          identityKey: '511123',
+          reason: 'network',
+        }}
+        now={1_800_000_001_000}
+        units="metric"
+        onClose={() => undefined}
+      />,
+    )
+
+    expect(notFoundHtml).toContain(
+      'No generic or model-level substitute is shown',
+    )
+    expect(notFoundHtml).not.toContain('<img')
+    expect(errorHtml).toContain('could not reach Planespotters')
+    expect(errorHtml).toContain('Live ADS-B remains active')
+    expect(errorHtml).toContain('Try again')
+  })
+
   it('shows route lookup only after explicit enablement and renders a matched route', () => {
     const disabledHtml = renderToStaticMarkup(
       <TrafficDetails
@@ -252,6 +376,24 @@ describe('TrafficDetails aircraft metadata', () => {
     expect(html).not.toContain('Find route')
   })
 
+  it('omits aircraft photos from history playback', () => {
+    const html = renderToStaticMarkup(
+      <TrafficDetails
+        entity={aircraft}
+        aircraftMetadata={{ phase: 'idle' }}
+        aircraftPhotoEnabled
+        aircraftPhoto={{ phase: 'idle', identityKey: '511123' }}
+        now={1_800_000_001_000}
+        units="metric"
+        historical
+        onClose={() => undefined}
+      />,
+    )
+
+    expect(html).not.toContain('Aircraft photo')
+    expect(html).not.toContain('Load aircraft photo')
+  })
+
   it('describes aircraft altitude and vertical trend without inferring ground', () => {
     const html = renderToStaticMarkup(
       <TrafficDetails
@@ -298,6 +440,26 @@ describe('TrafficDetails aircraft metadata', () => {
       <TrafficDetails
         entity={vessel}
         aircraftMetadata={availableMetadata}
+        aircraftPhotoEnabled
+        aircraftPhoto={{
+          phase: 'available',
+          identityKey: '511123',
+          photo: {
+            icao24: '511123',
+            thumbnailUrl:
+              'https://cdn.planespotters.net/example/photo_t.jpg',
+            thumbnailWidth: 200,
+            thumbnailHeight: 133,
+            photoPageUrl:
+              'https://www.planespotters.net/photo/000001/example',
+            photographer: 'Test Photographer',
+            source: {
+              name: 'Planespotters.net',
+              websiteUrl: 'https://www.planespotters.net/',
+              termsUrl: 'https://www.planespotters.net/photo/api',
+            },
+          },
+        }}
         flightRouteEnabled
         flightRoute={{ phase: 'idle' }}
         now={1_800_000_001_000}
@@ -309,6 +471,7 @@ describe('TrafficDetails aircraft metadata', () => {
     expect(html).not.toContain('Aircraft metadata')
     expect(html).not.toContain('AIRBUS A-320')
     expect(html).not.toContain('Flight route')
+    expect(html).not.toContain('Aircraft photo')
     expect(html).toContain('Position report')
     expect(html).toContain('Metadata report')
     expect(html).toContain('Unavailable')
