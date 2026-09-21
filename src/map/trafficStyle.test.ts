@@ -37,6 +37,19 @@ const imageSet = (theme: string) =>
   ) as unknown as TrafficStyleImages
 const lightImages = imageSet('light')
 const darkImages = imageSet('dark')
+const baseStyle = () => ({
+  version: 8 as const,
+  glyphs: 'https://tiles.example.test/{fontstack}/{range}.pbf',
+  sources: {},
+  layers: [
+    {
+      id: 'base-label',
+      type: 'symbol' as const,
+      source: 'base',
+      layout: { 'text-font': ['Noto Sans Regular'] },
+    },
+  ],
+})
 
 const snapshot = (
   theme: 'light' | 'dark',
@@ -71,6 +84,7 @@ describe('installTrafficStyle', () => {
       layers.set(layer.id, layer)
     })
     const map = {
+      getStyle: baseStyle,
       hasImage: (id: string) => imageIds.has(id),
       addImage,
       updateImage,
@@ -151,6 +165,7 @@ describe('installTrafficStyle', () => {
     })
     expect(layers.get(LAYER_AIRCRAFT_CLUSTER_COUNT)).toMatchObject({
       layout: {
+        'text-font': ['Noto Sans Regular'],
         'text-field': [
           'concat',
           'AIR ',

@@ -11,6 +11,7 @@ import {
   LAYER_SELECTED_TRAIL,
   setTrafficLayerVisibility,
 } from './trafficStyle'
+import { mapTextFont } from './textFont'
 
 export const SOURCE_WEATHER = 'context-weather'
 export const LAYER_WEATHER_HALO = 'context-weather-halo'
@@ -112,6 +113,7 @@ export const installWeatherStyle = (
 ) => {
   const paint = themePaint(theme)
   const fill = categoryColor(theme)
+  const textFont = mapTextFont(map)
   ensureSource(map, data)
 
   ensureLayer(map, {
@@ -140,32 +142,42 @@ export const installWeatherStyle = (
       'circle-stroke-width': 1.5,
     },
   })
-  ensureLayer(map, {
-    id: LAYER_WEATHER_LABELS,
-    type: 'symbol',
-    source: SOURCE_WEATHER,
-    layout: {
-      'text-field': [
-        'case',
-        ['get', 'stale'],
-        [
-          'concat',
+  if (textFont) {
+    ensureLayer(map, {
+      id: LAYER_WEATHER_LABELS,
+      type: 'symbol',
+      source: SOURCE_WEATHER,
+      layout: {
+        'text-field': [
+          'case',
+          ['get', 'stale'],
+          [
+            'concat',
+            ['coalesce', ['get', 'category'], 'METAR'],
+            ' STALE',
+          ],
           ['coalesce', ['get', 'category'], 'METAR'],
-          ' STALE',
         ],
-        ['coalesce', ['get', 'category'], 'METAR'],
-      ],
-      'text-size': 9,
-      'text-allow-overlap': true,
-      'text-ignore-placement': true,
-    },
-    paint: {
-      'text-color': paint.text,
-      'text-halo-color': paint.textHalo,
-      'text-halo-width': 1,
-      'text-opacity': ['case', ['get', 'stale'], 0.62, 1],
-    },
-  })
+        'text-font': textFont,
+        'text-size': 9,
+        'text-allow-overlap': true,
+        'text-ignore-placement': true,
+      },
+      paint: {
+        'text-color': paint.text,
+        'text-halo-color': paint.textHalo,
+        'text-halo-width': 1,
+        'text-opacity': ['case', ['get', 'stale'], 0.62, 1],
+      },
+    })
+    if (map.getLayer(LAYER_WEATHER_LABELS)) {
+      map.setLayoutProperty(
+        LAYER_WEATHER_LABELS,
+        'text-font',
+        textFont,
+      )
+    }
+  }
 
   if (map.getLayer(LAYER_WEATHER_HALO)) {
     map.setPaintProperty(LAYER_WEATHER_HALO, 'circle-color', paint.halo)

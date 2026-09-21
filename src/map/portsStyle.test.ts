@@ -16,6 +16,20 @@ import {
 import { LAYER_AIRPORTS_MEDIUM } from './airportsStyle'
 import { LAYER_SELECTED_TRAIL } from './trafficStyle'
 
+const baseStyle = () => ({
+  version: 8 as const,
+  glyphs: 'https://tiles.example.test/{fontstack}/{range}.pbf',
+  sources: {},
+  layers: [
+    {
+      id: 'base-label',
+      type: 'symbol' as const,
+      source: 'base',
+      layout: { 'text-font': ['Noto Sans Regular'] },
+    },
+  ],
+})
+
 const ports: Port[] = [
   {
     id: '10',
@@ -69,6 +83,7 @@ describe('port map style', () => {
       },
     )
     const map = {
+      getStyle: baseStyle,
       getSource: (id: string) => sources.get(id),
       addSource: (id: string) => {
         sources.set(id, { setData: vi.fn() })
@@ -104,6 +119,9 @@ describe('port map style', () => {
       minzoom: 5,
       maxzoom: 13,
     })
+    expect(layers.get(LAYER_PORT_LABELS_MAJOR)).toMatchObject({
+      layout: { 'text-font': ['Noto Sans Regular'] },
+    })
     expect(paint.get(`${LAYER_PORTS_MAJOR}:circle-color`)).toEqual([
       'case',
       ['get', 'selected'],
@@ -127,6 +145,7 @@ describe('port map style', () => {
       },
     )
     const map = {
+      getStyle: baseStyle,
       getSource: (id: string) => sources.get(id),
       addSource: (id: string) => {
         sources.set(id, { setData: vi.fn() })

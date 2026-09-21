@@ -11,6 +11,20 @@ import {
   weatherFeatures,
 } from './weatherStyle'
 
+const baseStyle = () => ({
+  version: 8 as const,
+  glyphs: 'https://tiles.example.test/{fontstack}/{range}.pbf',
+  sources: {},
+  layers: [
+    {
+      id: 'base-label',
+      type: 'symbol' as const,
+      source: 'base',
+      layout: { 'text-font': ['Noto Sans Regular'] },
+    },
+  ],
+})
+
 const observation: DisplayWeatherObservation = {
   id: 'weather:EETN',
   stationId: 'EETN',
@@ -60,6 +74,7 @@ describe('weather style', () => {
       },
     )
     const map = {
+      getStyle: baseStyle,
       getSource: (id: string) => sources.get(id),
       addSource,
       getLayer: (id: string) => layers.get(id),
@@ -89,6 +104,7 @@ describe('weather style', () => {
     ).toBe(true)
     expect(layers.get(LAYER_WEATHER_LABELS)).toMatchObject({
       layout: {
+        'text-font': ['Noto Sans Regular'],
         'text-field': expect.arrayContaining(['case']),
       },
     })

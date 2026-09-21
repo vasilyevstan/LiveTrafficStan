@@ -14,6 +14,7 @@ import {
   TRAFFIC_STYLE_IMAGE_IDS,
   type TrafficStyleImageId,
 } from '../domain/trafficPresentation'
+import { mapTextFont } from './textFont'
 
 export const SOURCE_AIRCRAFT = 'traffic-aircraft'
 export const SOURCE_VESSELS = 'traffic-vessels'
@@ -186,6 +187,7 @@ export const installTrafficStyle = (
   images: TrafficStyleImages,
 ) => {
   const paint = themePaint(snapshot.theme)
+  const textFont = mapTextFont(map)
 
   for (const imageId of TRAFFIC_STYLE_IMAGE_IDS) {
     ensureImage(map, imageId, images[imageId])
@@ -390,31 +392,37 @@ export const installTrafficStyle = (
     })
   }
 
-  for (const [id, source, prefix] of [
-    [LAYER_AIRCRAFT_CLUSTER_COUNT, SOURCE_AIRCRAFT, 'AIR '],
-    [LAYER_VESSEL_CLUSTER_COUNT, SOURCE_VESSELS, 'SEA '],
-  ] as const) {
-    ensureLayer(map, {
-      id,
-      type: 'symbol',
-      source,
-      filter: ['has', 'point_count'],
-      layout: {
-        'text-field': [
-          'concat',
-          prefix,
-          ['to-string', ['get', 'point_count_abbreviated']],
-        ],
-        'text-size': 10,
-        'text-allow-overlap': true,
-        'text-ignore-placement': true,
-      },
-      paint: {
-        'text-color': paint.clusterText,
-        'text-halo-color': paint.clusterTextHalo,
-        'text-halo-width': 1.2,
-      },
-    })
+  if (textFont) {
+    for (const [id, source, prefix] of [
+      [LAYER_AIRCRAFT_CLUSTER_COUNT, SOURCE_AIRCRAFT, 'AIR '],
+      [LAYER_VESSEL_CLUSTER_COUNT, SOURCE_VESSELS, 'SEA '],
+    ] as const) {
+      ensureLayer(map, {
+        id,
+        type: 'symbol',
+        source,
+        filter: ['has', 'point_count'],
+        layout: {
+          'text-field': [
+            'concat',
+            prefix,
+            ['to-string', ['get', 'point_count_abbreviated']],
+          ],
+          'text-font': textFont,
+          'text-size': 10,
+          'text-allow-overlap': true,
+          'text-ignore-placement': true,
+        },
+        paint: {
+          'text-color': paint.clusterText,
+          'text-halo-color': paint.clusterTextHalo,
+          'text-halo-width': 1.2,
+        },
+      })
+      if (map.getLayer(id)) {
+        map.setLayoutProperty(id, 'text-font', textFont)
+      }
+    }
   }
 
   if (map.getLayer(LAYER_SELECTED_TRAIL)) {

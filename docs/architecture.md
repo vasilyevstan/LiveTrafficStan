@@ -300,6 +300,12 @@ fallback, exact weather, airport, and port, then weather, airport, and port
 touch fallbacks. Selecting traffic, weather, airport, or port clears the other
 selection kinds; an empty map click clears all.
 
+App-owned cluster, port, airport, and weather text reuses a font stack already
+declared by the active base style instead of MapLibre's unsupported default
+stack. A glyph-free local fallback style uses browser system fonts. A
+server-glyph style that declares no usable font stack fails closed by omitting
+app-owned text while retaining its points, circles, and picking surfaces.
+
 Aircraft and vessel clustering is an optional remembered display preference.
 Each traffic kind keeps its own clustered GeoJSON source, count label, and
 expansion behavior. Cluster features never become application entity IDs and
