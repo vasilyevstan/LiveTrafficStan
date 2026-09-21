@@ -97,9 +97,10 @@ single React application, without accounts, a database, or persistent tracking.
   bounded current/predecessor shell caches, and a tested retirement build that
   removes only application-shell caches without deleting preferences or private
   history.
-- Responsive floating controls, keyboard focus states, non-color status labels,
-  and a small provider-reported set of original aircraft and vessel
-  silhouettes with generic fallbacks.
+- Responsive Operations and Location & Settings controls, keyboard focus
+  states, non-color status labels, a shared threshold-driven traffic legend,
+  and a small provider-reported set of original aircraft and vessel silhouettes
+  with generic fallbacks.
 - Touch-specific selection tolerance for isolated markers; exact mouse hits stay
   unchanged and ambiguous nearby traffic is never guessed.
 

@@ -246,7 +246,7 @@ export const aircraftVerticalTrendLabel = (
     case 'descent':
       return 'Descending · reported rate is at least 200 ft/min downward'
     case 'small':
-      return 'Small reported vertical rate'
+      return 'Small reported vertical rate · less than 200 ft/min either way'
     case 'unknown':
       return 'Vertical trend unreported'
   }
