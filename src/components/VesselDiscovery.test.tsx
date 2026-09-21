@@ -52,10 +52,16 @@ describe('VesselDiscovery', () => {
 
     expect(html).toContain('Vessel discovery')
     expect(html).toContain('Name, callsign, MMSI, or IMO')
-    expect(html).toContain('50 m or longer · unknown length hidden')
+    expect(html).toContain(
+      'non-yachts 50 m or longer · non-yachts with unknown length hidden',
+    )
     expect(html).toContain('1 of 3 ships shown')
     expect(html).toContain('Reported speed')
-    expect(html).toContain('Include unknown length')
+    expect(html).toContain('Non-yacht minimum length')
+    expect(html).toContain('Maximum length (all vessels)')
+    expect(html).toContain('Include non-yachts with unknown length')
+    expect(html).toContain('Sailing and pleasure craft')
+    expect(html).toContain('Class B yacht coverage is incomplete')
     expect(html).toContain('RESET FILTERS')
   })
 

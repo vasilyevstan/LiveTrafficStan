@@ -436,84 +436,93 @@ Use `npm run dev` and verify:
     and provider status remain unchanged.
 15. Vessel search matches normalized name, callsign, MMSI, and IMO without any
     provider request. Combined category, navigation, speed, and inclusive
-    length filters keep matching/shown counts truthful, preserve the 50 m
-    reset state, and clear a selection only when the selected vessel no longer
-    passes.
+    length filters keep matching/shown counts truthful. Exact sailing and
+    pleasure types render only with known length at least 8 m, finite age from
+    0 through 120 seconds at the live clock or historical cursor, and reported
+    speed at least one knot. Future, stale, stopped, speed-unknown, and
+    length-unknown yachts stay hidden at every size; non-yachts preserve the
+    50 m reset state. A selected yacht becoming ineligible clears cleanly.
 16. With SHIPS hidden, matching results remain counted but cannot be selected.
     Re-enabling SHIPS restores map visibility without reconnecting MQTT or
     starting REST work.
-17. No `/ports/` request occurs while PORTS is disabled. First enable makes one
+17. Aircraft altitude rings and state badges, vessel movement badges, and
+    sailing/pleasure/high-speed shapes exclude clusters and click/touch
+    picking, preserve selected halos, follow stale opacity and layer
+    visibility, and reinstall after Light/Dark and fallback-style changes.
+    Exact boundaries are tested at 1,000/3,000/10,000 m, +/-1.016 m/s, and one
+    knot. Zero or negative finite altitude never claims on-ground status.
+18. No `/ports/` request occurs while PORTS is disabled. First enable makes one
     bounded request; hiding and re-enabling uses the fulfilled session cache.
     A blocked/corrupt asset reports a local error and Retry works without
     changing map, aircraft, marine, or traffic-provider status.
-18. Port rank groups appear only at their configured zooms, disappear above
+19. Port rank groups appear only at their configured zooms, disappear above
     zoom 13, survive Light/Dark style rehydration, remain visually distinct
     from ships, and keep Natural Earth public-domain/generalization wording
     visible.
-19. Exact and touch-fallback traffic picking retains priority over ports.
+20. Exact and touch-fallback traffic picking retains priority over ports.
     Port selection is separate from traffic selection, explicit navigation or
     hiding PORTS clears it, and port details never claim facilities, calls,
     nearby vessels, destination, or ETA.
-20. Aircraft search matches current callsign, registration, ICAO24, and type
+21. Aircraft search matches current callsign, registration, ICAO24, and type
     with literal exact/prefix/substring ranking. Typing, clearing, and a
     no-match result create no aircraft, marine, metadata, Photon, or Worker
     request and do not filter map markers or move the camera.
-21. No `/airports/` request occurs while AIRPORTS is disabled. First enable
+22. No `/airports/` request occurs while AIRPORTS is disabled. First enable
     makes one bounded request; hiding and re-enabling uses the fulfilled
     session cache. A blocked or corrupt asset reports a local retryable error
     without changing map or traffic-provider health.
-22. Large airport points/labels appear from zoom 4/5 and medium points/labels
+23. Large airport points/labels appear from zoom 4/5 and medium points/labels
     from zoom 7/8, remain visible at high zoom, survive Light/Dark style
     rehydration, render above ports and below traffic, and retain visible
     OurAirports/Public Domain attribution.
-23. Tallinn airport details show EETN/TLL, persistent OurAirports ID, ident,
+24. Tallinn airport details show EETN/TLL, persistent OurAirports ID, ident,
     municipality/country, coordinates, source commit/date/output version, and
     explicit non-operational/no-inference wording.
-24. The bounded airport list is reachable by keyboard. Closing airport details
+25. The bounded airport list is reachable by keyboard. Closing airport details
     restores focus to the originating result when present or AIRPORTS otherwise.
     Airport, port, and traffic selection clearing and exact-before-near-miss
     precedence remain deterministic.
-25. No `/api/weather/metar` request occurs at startup. First METAR enable loads
+26. No `/api/weather/metar` request occurs at startup. First METAR enable loads
     the airport asset if needed and makes at most one canonical request for the
     sorted visible ICAO set. Hiding/re-enabling, Light/Dark/Auto changes, and
     style rehydration reuse a fulfilled same-view result without refetching.
-26. METAR loading, one-minute waiting, empty, stale, expired, error, retry, and
+27. METAR loading, one-minute waiting, empty, stale, expired, error, retry, and
     refresh states are truthful. Switching A to B to A inside the gate recovers
     at the next allowed boundary rather than permanently suppressing A. A
     blocked weather route leaves map, traffic, ports, airports, search, camera,
     and provider health usable.
-27. The weather list is keyboard reachable; EETN details show report/source
+28. The weather list is keyboard reachable; EETN details show report/source
     time, retrieval time, normalized fields, raw report, AWC terms, and
     observation-not-forecast wording. Closing restores focus to the originating
     result or METAR toggle.
-28. Wide/ineligible or over-50-station views issue no weather request and hide
+29. Wide/ineligible or over-50-station views issue no weather request and hide
     obsolete observations. Traffic exact/touch selection precedes weather;
     weather precedes airport and port within exact and touch context hits.
-29. AIR and SEA clusters remain separate, expand to the reported zoom, never
+30. AIR and SEA clusters remain separate, expand to the reported zoom, never
     open entity details, and do not increase aircraft, marine, metadata, Photon,
     airport, port, or METAR requests.
-30. Durable history starts disabled and empty. Enabling it is explicit, and
+31. Durable history starts disabled and empty. Enabling it is explicit, and
     the status distinguishes durable from total currently available records.
-31. New provider observations persist after opt-in and survive reload. The
+32. New provider observations persist after opt-in and survive reload. The
     actual oldest/newest retained range is shown rather than the requested
     maximum.
-32. Entering history freezes the range. Scrub pauses, 0.5×/1×/2×/4× playback
+33. Entering history freezes the range. Scrub pauses, 0.5×/1×/2×/4× playback
     advances without creating an additional provider start, the endpoint
     pauses, and Return to Live is explicit.
-33. Historical display remains unmistakable, disables interpolation, hides
+34. Historical display remains unmistakable, disables interpolation, hides
     current METAR and third-party aircraft metadata, and gates vessel metadata
     to the cursor.
-34. Clear removes session and durable observations without disabling consent.
+35. Clear removes session and durable observations without disabling consent.
     Disable turns recording off and deletes rows. Neither action allows queued
     writes to repopulate the database.
-35. A second same-origin tab observes clear/disable invalidation. Blocked or
+36. A second same-origin tab observes clear/disable invalidation. Blocked or
     stale tabs report recovery guidance rather than continuing to write. Clear
     removes both durable and volatile history in the peer, and queued records
     cannot be retagged under the new epoch.
-36. Offline historical playback remains usable while live aircraft and marine
+37. Offline historical playback remains usable while live aircraft and marine
     acquisition pause through existing controllers. Returning online preserves
     their cadence, backoff, reconnect, REST, and metadata gates.
-37. At 390x844 and 390x568 the control panel remains at or below 58vh, Return
+38. At 390x844 and 390x568 the control panel remains at or below 58vh, Return
     to Live is not covered by attribution, and a real touch drag can begin on an
     unobstructed map region.
 

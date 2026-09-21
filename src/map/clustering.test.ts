@@ -56,6 +56,17 @@ const trafficPoint = (
       retainedFalse: false,
       retainedZero: 0,
       retainedNull: null,
+      ...(kind === 'aircraft'
+        ? {
+            altitudeBand: 'medium',
+            verticalTrend: 'climb',
+            stateBadgeIcon: 'aircraft-state-medium-climb',
+          }
+        : {
+            motionState: 'moving',
+            motionBadgeIcon: 'vessel-motion-moving',
+            navigationConflict: false,
+          }),
       ...properties,
     },
     geometry: { type: 'Point', coordinates },

@@ -24,7 +24,6 @@ import {
 import type { Port } from '../domain/ports'
 import type {
   DisplayAircraft,
-  DisplayTrafficEntity,
   DisplayVessel,
   TrafficEntity,
   TrailPoint,
@@ -37,7 +36,6 @@ import {
 import {
   hasActiveMotion,
   reconcileMotionStates,
-  sampleMotion,
   type MotionStates,
 } from '../traffic/interpolation'
 import {
@@ -102,6 +100,7 @@ import {
   type TrafficStyleImages,
   VESSEL_TRAFFIC_LAYER_IDS,
 } from './trafficStyle'
+import { trafficFeatures } from './trafficFeatures'
 
 setWorkerUrl(maplibreWorkerUrl)
 
@@ -186,39 +185,6 @@ interface ViewState {
   weatherVisible: boolean
   trailSegments: readonly (readonly TrailPoint[])[]
 }
-
-const trafficFeatures = (
-  entities: readonly DisplayTrafficEntity[],
-  motion: MotionStates,
-  now: number,
-  selectedId: string | null,
-  interpolate: boolean,
-): FeatureCollection<Point> => ({
-  type: 'FeatureCollection',
-  features: entities.map((entity) => {
-    const sampled = interpolate && motion.get(entity.id)
-      ? sampleMotion(motion.get(entity.id)!, now)
-      : entity.position
-
-    return {
-      type: 'Feature',
-      id: entity.id,
-      properties: {
-        id: entity.id,
-        heading:
-          entity.courseDegrees ?? entity.headingDegrees ?? 0,
-        markerIcon: entity.markerIcon,
-        markerScale: entity.markerScale,
-        selected: entity.id === selectedId,
-        stale: entity.freshness === 'stale',
-      },
-      geometry: {
-        type: 'Point',
-        coordinates: [sampled.longitude, sampled.latitude],
-      },
-    }
-  }),
-})
 
 const prefersReducedMotion = () => {
   try {

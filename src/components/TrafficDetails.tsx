@@ -22,6 +22,12 @@ import type {
   FlightRouteViewState,
 } from '../domain/flightRoute'
 import type { DisplayTrafficEntity } from '../domain/traffic'
+import {
+  aircraftAltitudeBandLabel,
+  aircraftVerticalTrendLabel,
+  trafficPresentation,
+  vesselMotionLabel,
+} from '../domain/trafficPresentation'
 import type { UnitSystem } from '../domain/units'
 
 interface DetailRowProps {
@@ -322,6 +328,7 @@ export function TrafficDetails({
     entity.kind === 'aircraft'
       ? countryForAircraftHex(entity.hex)
       : flagStateForMmsi(entity.mmsi)
+  const presentation = trafficPresentation(entity)
 
   return (
     <aside
@@ -376,6 +383,17 @@ export function TrafficDetails({
               }
             />
             <DetailRow
+              label="Reported altitude band"
+              value={
+                presentation.kind === 'aircraft'
+                  ? aircraftAltitudeBandLabel(
+                      presentation.altitudeBand,
+                      units,
+                    )
+                  : undefined
+              }
+            />
+            <DetailRow
               label="Ground speed"
               value={
                 entity.speedKph === undefined
@@ -395,6 +413,16 @@ export function TrafficDetails({
                 entity.verticalSpeedMps === undefined
                   ? undefined
                   : formatVerticalSpeed(entity.verticalSpeedMps, units)
+              }
+            />
+            <DetailRow
+              label="Vertical trend"
+              value={
+                presentation.kind === 'aircraft'
+                  ? aircraftVerticalTrendLabel(
+                      presentation.verticalTrend,
+                    )
+                  : undefined
               }
             />
             <DetailRow label="Squawk" value={entity.squawk} />
@@ -447,6 +475,14 @@ export function TrafficDetails({
               }
             />
             <DetailRow
+              label="Reported movement"
+              value={
+                presentation.kind === 'vessel'
+                  ? vesselMotionLabel(presentation.motionState)
+                  : undefined
+              }
+            />
+            <DetailRow
               label="Course / heading"
               value={
                 direction === undefined ? undefined : formatHeading(direction)
@@ -488,6 +524,13 @@ export function TrafficDetails({
         />
         <DetailRow label="Source" value={entity.provider} />
       </dl>
+      {presentation.kind === 'vessel' &&
+        presentation.navigationConflict && (
+          <p className="metadata-status metadata-status--error">
+            Reported speed and navigation status disagree; both values are
+            shown without reclassification.
+          </p>
+        )}
       {entity.kind === 'aircraft' && (
         <AircraftMetadataDetails state={aircraftMetadata} />
       )}
