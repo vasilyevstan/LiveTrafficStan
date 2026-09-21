@@ -108,13 +108,19 @@ Check these project invariants:
 - Added controls must not let the mobile overlay consume the entire map.
   Verify a real touch drag starts on an unobscured map region at both 390x844
   and 390x568 while the control panel remains scrollable and reachable.
-- Keep the primary controls compact and task-based. Navigate and Explore keeps
-  search, Center, Aircraft, and Ships visible; Settings keeps theme and Trails
-  visible. Secondary controls belong behind two stable native disclosures that
-  are mutually exclusive. Active historical controls and one urgent actionable
-  recovery remain visible. A collapsed disclosure removes descendants from the
-  tab order, survives normal rerenders, preserves search state, and restores
-  focus to a visible control.
+- Keep the primary controls compact and task-based. Operations keeps Center,
+  Aircraft, and Ships visible. Location & Settings keeps the one mounted search
+  input, theme, and Trails visible. Secondary controls belong behind two stable
+  native disclosures that are mutually exclusive. Operational and
+  app/storage/history recovery may each be promoted only above their owning
+  disclosure without duplication. Active historical playback remains outside
+  both panels. A collapsed disclosure removes descendants from the tab order,
+  survives normal rerenders, preserves search state, and restores focus to a
+  visible owning control.
+- Keep one shared traffic legend under Operations More. Reuse application-owned
+  altitude, trend, movement, exact AIS-shape, yacht-length, one-knot, and
+  freshness semantics; pair every visual cue with text and never rely on color
+  alone.
 - Measure each collapsed panel, the combined expanded-stack bound, overlay
   obstruction, and attribution visibility in a real browser. The 58vh bound
   applies to the whole stack; it alone does not prove that the default surfaces

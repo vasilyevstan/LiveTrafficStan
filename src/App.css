@@ -327,6 +327,13 @@
   max-height: max(60px, calc(var(--control-stack-height) - 231px));
 }
 
+.control-stack:has(.control-panel--operations.control-panel--urgent):has(
+    .control-panel--settings.control-panel--urgent
+  )
+  .control-panel__more-body {
+  max-height: max(60px, calc(var(--control-stack-height) - 262px));
+}
+
 .control-group {
   min-width: 0;
   margin: 0;
@@ -561,6 +568,82 @@
 
 .control-panel a {
   color: var(--accent-line);
+}
+
+.traffic-legend__section {
+  margin-top: 8px;
+}
+
+.traffic-legend__section h3 {
+  margin: 0 0 5px;
+  color: var(--summary-strong);
+  font-size: 0.64rem;
+  letter-spacing: 0.04em;
+}
+
+.traffic-legend__list {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  color: var(--summary-text);
+  font-size: 0.61rem;
+  line-height: 1.35;
+  list-style: none;
+}
+
+.traffic-legend__list li {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 6px;
+  align-items: center;
+}
+
+.traffic-legend__ring,
+.traffic-legend__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--accent-line);
+  border-radius: 50%;
+  color: var(--summary-strong);
+  background: var(--accent-soft);
+  font-size: 0.5rem;
+  font-weight: 800;
+}
+
+.traffic-legend__ring--low {
+  width: 17px;
+  height: 17px;
+}
+
+.traffic-legend__ring--medium {
+  width: 19px;
+  height: 19px;
+}
+
+.traffic-legend__ring--high {
+  width: 21px;
+  height: 21px;
+}
+
+.traffic-legend__ring--cruise {
+  width: 23px;
+  height: 23px;
+}
+
+.traffic-legend__ring--unknown {
+  border-style: dashed;
+}
+
+.traffic-legend__badge {
+  width: 27px;
+  height: 18px;
+  border-width: 1px;
+  border-radius: 9px;
 }
 
 .ports-status {

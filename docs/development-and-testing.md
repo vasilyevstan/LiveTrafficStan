@@ -412,14 +412,17 @@ Use `npm run dev` and verify:
    exclusive context, hiding/filtering the selected entity, or allowing it to
    expire clears selection safely. Failed navigation and ordinary same-entity
    refreshes do not.
-8. The default Navigate and Explore and Settings panels remain compact and
-   require no scroll. Search, Center, Aircraft, and Ships stay visible above;
-   theme and Trails stay visible below. Secondary tools and explanatory links
-   live behind the panels' mutually exclusive native disclosures. Measure each
-   collapsed panel and the combined expanded stack at desktop, 390x844, and
-   390x568; verify search state and disclosure identity survive rerenders,
-   focus returns to a visible control, and a real touch drag works on an
-   unobscured map region.
+8. The default Operations and Location & Settings panels remain compact and
+   require no scroll. Center, Aircraft, and Ships stay visible above; the one
+   mounted location input, theme, and Trails stay visible below. Operational
+   layers, discovery, context, and the traffic legend live behind Operations
+   More. Location feedback, browser location, history setup, preferences,
+   sharing, reset, and app detail live behind Location & Settings More. Verify
+   each panel promotes recovery only from its own domain with no duplicated
+   action or alert. Measure each collapsed panel and the combined expanded
+   stack at desktop, 390x844, and 390x568; verify search state and disclosure
+   identity survive rerenders, focus returns to a visible owner, and a real
+   touch drag works on an unobscured map region.
 9. Map and provider attribution remains visible.
 10. Strict coordinates navigate with no Photon request; named text makes one
     explicit bounded request and renders Photon/OpenStreetMap attribution.
@@ -452,8 +455,10 @@ Use `npm run dev` and verify:
     Exact boundaries are tested at 1,000/3,000/10,000 m, +/-1.016 m/s, and one
     knot. Zero or negative finite altitude never claims on-ground status.
     Cluster counts and port, airport, and weather labels reuse the active
-    style's declared font stack; glyph-free fallback uses local system fonts,
-    with no unsupported Open Sans request or browser diagnostic.
+    style's declared font stack; glyph-free fallback uses local system fonts
+    with no unsupported Open Sans request or browser diagnostic. Operations
+    More exposes the same exact altitude, vertical-rate, one-knot,
+    yacht-length, and freshness thresholds with textual equivalents.
 18. No `/ports/` request occurs while PORTS is disabled. First enable makes one
     bounded request; hiding and re-enabling uses the fulfilled session cache.
     A blocked/corrupt asset reports a local error and Retry works without

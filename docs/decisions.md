@@ -769,19 +769,27 @@ substitutes.
 ## Compact controls and rendered interaction evidence
 
 The primary map controls remain intentionally small and split by task. The
-upper Navigate and Explore panel keeps one location input plus Center, Aircraft,
-and Ships visible; its native disclosure contains search feedback, location,
-secondary layers, discovery, context, and source detail. The lower Settings
-panel keeps Auto, Light, Dark, and Trails visible; its native disclosure
-contains trail duration, local-history setup, units, sharing, reset, and
-application detail. The two disclosures share one native `name`, so at most one
-is open.
+upper Operations panel keeps Center, Aircraft, and Ships visible; its native
+disclosure contains secondary layers, operational recovery, discovery,
+context, source detail, and the shared traffic legend. The lower Location &
+Settings panel keeps the one location input plus Auto, Light, Dark, and Trails
+visible; its native disclosure contains search feedback, browser location,
+trail duration, local-history setup, units, sharing, reset, and application
+detail. The two disclosures share one native `name`, so at most one is open.
 
 The location input stays mounted while its feedback is collapsed, preserving
-entered text and in-flight state. Active historical controls and one urgent
-actionable recovery remain visible outside both disclosures, and mandatory map
-or selected-item attribution is never hidden. The combined expanded stack,
-rather than each panel independently, owns the 58vh budget.
+entered text and in-flight state. Active historical controls remain outside
+both disclosures. Each panel may promote one action from its own recovery
+domain without duplicating that action inside More: operational recovery
+belongs above Operations More, while application, storage, update, and history
+recovery belongs above Location & Settings More. Mandatory map or selected-item
+attribution is never hidden. The combined expanded stack, rather than each
+panel independently, owns the 58vh budget.
+
+The traffic legend reuses the application-owned #77 labels and thresholds for
+aircraft altitude/trend and vessel movement. It pairs visible shapes or badges
+with text, explains exact AIS-type shapes and the 8 m / 1 kn / freshness yacht
+exception, and never relies on color alone.
 
 Selection updates must retain the complete MapLibre feature-property contract.
 In particular, `removeAllProperties` is terminal in the installed source-diff

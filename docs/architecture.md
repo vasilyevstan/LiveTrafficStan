@@ -68,6 +68,21 @@ state, and both remain inert while its client and Worker flags are false.
 | `scripts/pwa-shell.mjs` | Deterministic shell allowlist/versioning, request classification, two-generation cleanup, and normal/retirement worker source |
 | `public/manifest.webmanifest` | Root-scoped standalone install metadata and versioned maskable icons |
 
+## Control composition
+
+`TrafficControls` owns one location-search model and two stable native
+disclosures with the same `name`. The upper Operations panel keeps only Center,
+Aircraft, and Ships visible; its disclosure owns operational layers, recovery,
+discovery, context, provenance, and the shared traffic legend. The lower
+Location & Settings panel keeps the single mounted location input, theme, and
+Trails visible; its disclosure owns search feedback, browser location, history
+setup, preferences, sharing, reset, and application state.
+
+Opening either disclosure closes the other without remounting the search model.
+Operational recovery and app/storage/history recovery have separate promotion
+slots in their owning panels. Active HISTORY playback remains outside both
+disclosures. The expanded pair shares one 58vh layout budget.
+
 ## Provider boundaries
 
 UI and map code never consume raw provider payloads. Each adapter:
