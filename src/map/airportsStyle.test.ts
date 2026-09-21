@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { Airport } from '../domain/airports'
 import {
   AIRPORT_LAYER_IDS,
+  LAYER_AIRPORT_LABELS_LARGE,
   LAYER_AIRPORTS_LARGE,
   LAYER_AIRPORTS_MEDIUM,
   SOURCE_AIRPORTS,
@@ -10,6 +11,20 @@ import {
   installAirportsStyle,
 } from './airportsStyle'
 import { LAYER_SELECTED_TRAIL } from './trafficStyle'
+
+const baseStyle = () => ({
+  version: 8 as const,
+  glyphs: 'https://tiles.example.test/{fontstack}/{range}.pbf',
+  sources: {},
+  layers: [
+    {
+      id: 'base-label',
+      type: 'symbol' as const,
+      source: 'base',
+      layout: { 'text-font': ['Noto Sans Regular'] },
+    },
+  ],
+})
 
 const airports: Airport[] = [
   {
@@ -68,6 +83,7 @@ describe('airport map style', () => {
       },
     )
     const map = {
+      getStyle: baseStyle,
       getSource: (id: string) => sources.get(id),
       addSource: (id: string) => {
         sources.set(id, { setData: vi.fn() })
@@ -107,6 +123,9 @@ describe('airport map style', () => {
     expect(layers.get(LAYER_AIRPORTS_LARGE)).not.toHaveProperty('maxzoom')
     expect(layers.get(LAYER_AIRPORTS_MEDIUM)).toMatchObject({
       minzoom: 7,
+    })
+    expect(layers.get(LAYER_AIRPORT_LABELS_LARGE)).toMatchObject({
+      layout: { 'text-font': ['Noto Sans Regular'] },
     })
     expect(paint.get(`${LAYER_AIRPORTS_LARGE}:circle-color`)).toEqual([
       'case',

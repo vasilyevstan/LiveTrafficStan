@@ -451,6 +451,9 @@ Use `npm run dev` and verify:
     visibility, and reinstall after Light/Dark and fallback-style changes.
     Exact boundaries are tested at 1,000/3,000/10,000 m, +/-1.016 m/s, and one
     knot. Zero or negative finite altitude never claims on-ground status.
+    Cluster counts and port, airport, and weather labels reuse the active
+    style's declared font stack; glyph-free fallback uses local system fonts,
+    with no unsupported Open Sans request or browser diagnostic.
 18. No `/ports/` request occurs while PORTS is disabled. First enable makes one
     bounded request; hiding and re-enabling uses the fulfilled session cache.
     A blocked/corrupt asset reports a local error and Retry works without

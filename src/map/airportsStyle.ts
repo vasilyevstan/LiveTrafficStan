@@ -7,6 +7,7 @@ import {
 } from 'maplibre-gl'
 import type { Theme } from '../app/theme'
 import type { Airport } from '../domain/airports'
+import { mapTextFont, type MapTextFont } from './textFont'
 import { LAYER_SELECTED_TRAIL } from './trafficStyle'
 import { LAYER_WEATHER_HALO } from './weatherStyle'
 
@@ -131,6 +132,7 @@ const labelLayer = (
   kind: Airport['kind'],
   minzoom: number,
   paint: ReturnType<typeof themePaint>,
+  textFont: MapTextFont,
 ): LayerSpecification => ({
   id,
   type: 'symbol',
@@ -139,6 +141,7 @@ const labelLayer = (
   filter: kindFilter(kind),
   layout: {
     'text-field': ['get', 'name'],
+    'text-font': textFont,
     'text-size': 11,
     'text-offset': [0, 1],
     'text-anchor': 'top',
@@ -173,15 +176,42 @@ export const installAirportsStyle = (
   visible: boolean,
 ) => {
   const paint = themePaint(theme)
+  const textFont = mapTextFont(map)
   setSourceData(map, data)
 
   for (const layer of [
     circleLayer(LAYER_AIRPORTS_MEDIUM, 'medium', 7, 3.5, paint),
     circleLayer(LAYER_AIRPORTS_LARGE, 'large', 4, 4.5, paint),
-    labelLayer(LAYER_AIRPORT_LABELS_MEDIUM, 'medium', 8, paint),
-    labelLayer(LAYER_AIRPORT_LABELS_LARGE, 'large', 5, paint),
+    ...(textFont
+      ? [
+          labelLayer(
+            LAYER_AIRPORT_LABELS_MEDIUM,
+            'medium',
+            8,
+            paint,
+            textFont,
+          ),
+          labelLayer(
+            LAYER_AIRPORT_LABELS_LARGE,
+            'large',
+            5,
+            paint,
+            textFont,
+          ),
+        ]
+      : []),
   ]) {
     ensureLayer(map, layer)
+  }
+  if (textFont) {
+    for (const layerId of [
+      LAYER_AIRPORT_LABELS_LARGE,
+      LAYER_AIRPORT_LABELS_MEDIUM,
+    ]) {
+      if (map.getLayer(layerId)) {
+        map.setLayoutProperty(layerId, 'text-font', textFont)
+      }
+    }
   }
 
   for (const layerId of [

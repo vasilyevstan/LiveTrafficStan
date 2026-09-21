@@ -39,6 +39,19 @@ const createMap = () => {
   const sources = new Map<string, { setData: ReturnType<typeof vi.fn> }>()
   const layers: string[] = [LAYER_SELECTED_TRAIL]
   const map = {
+    getStyle: () => ({
+      version: 8 as const,
+      glyphs: 'https://tiles.example.test/{fontstack}/{range}.pbf',
+      sources: {},
+      layers: [
+        {
+          id: 'base-label',
+          type: 'symbol' as const,
+          source: 'base',
+          layout: { 'text-font': ['Noto Sans Regular'] },
+        },
+      ],
+    }),
     getSource: (id: string) => sources.get(id),
     addSource: (id: string) => {
       sources.set(id, { setData: vi.fn() })
