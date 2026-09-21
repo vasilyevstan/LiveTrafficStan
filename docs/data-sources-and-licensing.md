@@ -205,8 +205,11 @@ separate public Cloudflare deployment gate.
 
 Selection alone does not call aviationstack. Each accepted **Find route**
 action reserves one of 90 global rolling-31-day attempts before one fixed
-provider call; no retry, pagination request, response cache, or refund exists.
-The key remains server-side, and only validated route fields reach the browser.
+provider call; no retry, pagination request, shared response cache, or refund
+exists. The key remains server-side, and only validated route fields reach the
+browser. The current tab may reuse up to 32 successful exact-identity results
+for up to six hours; failures are not cached and no route is persisted or
+shared.
 
 Heading, track, current position, geographic plausibility, nearby airports, and
 Mictronics static metadata remain prohibited route inferences. No

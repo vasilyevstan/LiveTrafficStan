@@ -34,7 +34,7 @@ const identities: Record<string, FlightRouteIdentity> = {
 
 const available = (
   flightIcao: string,
-): FlightRouteLookupResult => ({
+): Extract<FlightRouteLookupResult, { kind: 'available' }> => ({
   kind: 'available',
   route: {
     flightIcao,
@@ -153,5 +153,142 @@ describe('FlightRouteController', () => {
       identities.second,
       expect.any(AbortSignal),
     )
+  })
+
+  it('reuses a successful exact-identity route when the flight is revisited', async () => {
+    const provider: FlightRouteProvider = {
+      lookup: vi.fn(async (identity) => available(identity.callsign)),
+    }
+    const controller = new FlightRouteController(provider)
+    const states: unknown[] = []
+    controller.subscribe((state) => states.push(state))
+
+    controller.select(identities.first)
+    controller.request(identities.first)
+    await Promise.resolve()
+    controller.select(identities.second)
+    controller.select(identities.first)
+
+    expect(provider.lookup).toHaveBeenCalledTimes(1)
+    expect(states.at(-1)).toEqual({
+      phase: 'available',
+      identityKey: 'TST123|ABC123|ES-ABC',
+      route: available('TST123').route,
+    })
+
+    controller.request(identities.first)
+    await Promise.resolve()
+    expect(provider.lookup).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not reuse unavailable results or a route for a different exact identity', async () => {
+    const provider: FlightRouteProvider = {
+      lookup: vi
+        .fn<FlightRouteProvider['lookup']>()
+        .mockResolvedValueOnce({
+          kind: 'unavailable',
+          reason: 'not-found',
+        })
+        .mockResolvedValue(available('TST123')),
+    }
+    const controller = new FlightRouteController(provider)
+    const states: unknown[] = []
+    controller.subscribe((state) => states.push(state))
+
+    controller.select(identities.first)
+    controller.request(identities.first)
+    await Promise.resolve()
+    controller.select(undefined)
+    controller.select(identities.first)
+    expect(states.at(-1)).toEqual({
+      phase: 'idle',
+      identityKey: 'TST123|ABC123|ES-ABC',
+    })
+
+    controller.request(identities.first)
+    await Promise.resolve()
+    controller.select(undefined)
+    controller.select({
+      ...identities.first,
+      registration: 'ES-OTHER',
+    })
+
+    expect(provider.lookup).toHaveBeenCalledTimes(2)
+    expect(states.at(-1)).toEqual({
+      phase: 'idle',
+      identityKey: 'TST123|ABC123|ES-OTHER',
+    })
+  })
+
+  it('expires cached routes after six hours', async () => {
+    let now = 1_000
+    const provider: FlightRouteProvider = {
+      lookup: vi.fn(async () => available('TST123')),
+    }
+    const controller = new FlightRouteController(provider, {
+      now: () => now,
+    })
+    const states: unknown[] = []
+    controller.subscribe((state) => states.push(state))
+
+    controller.select(identities.first)
+    controller.request(identities.first)
+    await Promise.resolve()
+    controller.select(undefined)
+    now += 6 * 60 * 60_000
+    controller.select(identities.first)
+
+    expect(states.at(-1)).toEqual({
+      phase: 'idle',
+      identityKey: 'TST123|ABC123|ES-ABC',
+    })
+    expect(provider.lookup).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps 32 successful routes with least-recently-used eviction', async () => {
+    const provider: FlightRouteProvider = {
+      lookup: vi.fn(async (identity) => available(identity.callsign)),
+    }
+    const controller = new FlightRouteController(provider)
+    const states: unknown[] = []
+    controller.subscribe((state) => states.push(state))
+    const sessionIdentities = Array.from(
+      { length: 33 },
+      (_, index): FlightRouteIdentity => ({
+        callsign: `TST${String(index + 100).padStart(3, '0')}`,
+        icao24: (0xabc000 + index).toString(16).toUpperCase(),
+      }),
+    )
+
+    for (const identity of sessionIdentities.slice(0, 32)) {
+      controller.select(identity)
+      controller.request(identity)
+      await Promise.resolve()
+    }
+
+    controller.select(undefined)
+    controller.select(sessionIdentities[0])
+    expect(states.at(-1)).toMatchObject({
+      phase: 'available',
+      identityKey: 'TST100|ABC000|',
+    })
+
+    controller.select(sessionIdentities[32])
+    controller.request(sessionIdentities[32])
+    await Promise.resolve()
+    controller.select(undefined)
+    controller.select(sessionIdentities[1])
+    expect(states.at(-1)).toEqual({
+      phase: 'idle',
+      identityKey: 'TST101|ABC001|',
+    })
+
+    controller.select(undefined)
+    controller.select(sessionIdentities[0])
+    expect(states.at(-1)).toMatchObject({
+      phase: 'available',
+      identityKey: 'TST100|ABC000|',
+    })
+    expect(provider.lookup).toHaveBeenCalledTimes(33)
   })
 })

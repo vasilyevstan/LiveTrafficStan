@@ -76,6 +76,16 @@ failure cannot alter the live marker, position age, freshness, aircraft
 cadence/backoff, trails, static metadata, selection, map health, or another
 provider.
 
+Successful validated routes use one bounded client-only optimization: an exact
+callsign/ICAO24/optional-registration result is eligible for reuse in the
+current tab for six hours, with least-recently-used eviction above 32 entries.
+Reselecting that exact flight restores the route without another provider
+attempt; an explicit **Refresh route** still makes a new attempt. Failures and
+unavailable results are never cached, and no route is written to Web Storage,
+IndexedDB, history, the service worker, the Worker Cache API, or Durable Object
+storage. This reduces accidental Free-plan use without creating a shared route
+database or claiming that an old route is current indefinitely.
+
 Issue #39 remains the separate Cloudflare deployment blocker. The disabled
 implementation can be reviewed and merged without a key or public
 deployment; enabling it requires both matching client/Worker flags and the
@@ -123,11 +133,13 @@ separate Worker would add a second deployment unit or split-origin CORS.
 
 Fingerprint-named assets use immutable browser caching. Aircraft and
 aviationstack route responses use `no-store`; successful METAR responses use
-the source-aligned 60-second guidance. The route's single justified persistent
-server mechanism is its SQLite-backed global budget guard; it stores only
-attempt timestamps and no aircraft identity, provider body, route, or user
-data. Worker observability is disabled because request paths can otherwise
-retain rounded camera coordinates or visible station IDs.
+the source-aligned 60-second guidance. A validated route may be eligible for
+reuse only through the bounded in-memory tab cache described above. The
+route's single justified persistent server mechanism is its SQLite-backed
+global budget guard; it stores only attempt timestamps and no aircraft
+identity, provider body, route, or user data. Worker observability is disabled
+because request paths can otherwise retain rounded camera coordinates or
+visible station IDs.
 
 Deployments require an exact current `main` SHA, rerun the complete validation
 suite, serialize production operations, deploy code and assets atomically, and

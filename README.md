@@ -70,7 +70,8 @@ single React application, without accounts, a database, or persistent tracking.
 - A disabled-by-default aviationstack route-evaluation path for a selected live
   aircraft. It runs only after **Find route**, requires an exact active
   callsign/ICAO24 match, and fails closed on ambiguity, pagination, quota, or
-  provider errors without changing ADS-B positions or polling.
+  provider errors without changing ADS-B positions or polling. Successful
+  exact-identity routes are reused from a bounded six-hour in-memory tab cache.
 - Honest detail cards, provider-specific health, stale/expired handling, and
   partial operation when one provider fails.
 - Short interpolation only between observed positions and a selected-object
@@ -333,7 +334,10 @@ enabled, keeps the aviationstack key server-side, reserves quota before one
 fixed upstream call, never retries or follows redirects, and returns only a
 small validated route or truthful unavailable/error state. The implementation
 does not authorize public use: Issue #44 still owns exact account terms,
-dedicated-key setup, and at most ten real evaluation calls before enablement.
+retention/display rights, and the remaining bounded real evaluation evidence
+before enablement. Successful validated routes are eligible for reuse from the
+current tab's 32-entry cache for up to six hours; Worker responses remain
+`no-store` and there is no shared or persistent route cache.
 
 The deploy-ready code is not yet a claimed public deployment. Permanent
 Cloudflare account authorization and environment credentials are tracked in
@@ -387,7 +391,8 @@ monitoring, privacy, and rollback procedure.
   sends visible qualifying ICAO station IDs through the application host to
   AWC.
 - Flight-route lookup remains disabled until the aviationstack account terms,
-  dedicated key, and bounded real-sample evidence in Issue #44 are approved.
+  retention/display rights, and bounded real-sample evidence in Issue #44 are
+  approved.
   Even when enabled, it reports only an exact, unique active match and is not a
   general schedule, airport-board, or route-history service.
 - There is no reverse geocoding, radar, precipitation forecast, account, saved

@@ -233,31 +233,37 @@ function FlightRouteDetails({
         </p>
       )}
       {state.phase === 'available' && (
-        <dl className="details-grid aircraft-metadata__grid">
-          <DetailRow
-            label="Origin"
-            value={airportLabel(state.route.departure)}
-          />
-          <DetailRow
-            label="Destination"
-            value={airportLabel(state.route.arrival)}
-          />
-          <DetailRow
-            label="Flight"
-            value={
-              state.route.flightIata
-                ? `${state.route.flightIata} · ${state.route.flightIcao}`
-                : state.route.flightIcao
-            }
-          />
-          <DetailRow label="Route status" value="Active" />
-          {state.route.providerUpdatedAt !== undefined && (
+        <>
+          <dl className="details-grid aircraft-metadata__grid">
             <DetailRow
-              label="Provider update"
-              value={formatAge(state.route.providerUpdatedAt, now)}
+              label="Origin"
+              value={airportLabel(state.route.departure)}
             />
-          )}
-        </dl>
+            <DetailRow
+              label="Destination"
+              value={airportLabel(state.route.arrival)}
+            />
+            <DetailRow
+              label="Flight"
+              value={
+                state.route.flightIata
+                  ? `${state.route.flightIata} · ${state.route.flightIcao}`
+                  : state.route.flightIcao
+              }
+            />
+            <DetailRow label="Route status" value="Active" />
+            {state.route.providerUpdatedAt !== undefined && (
+              <DetailRow
+                label="Provider update"
+                value={formatAge(state.route.providerUpdatedAt, now)}
+              />
+            )}
+          </dl>
+          <p className="metadata-status">
+            Reopening this exact flight reuses the route in this tab for up
+            to 6 hours. Refreshing makes a new provider request.
+          </p>
+        </>
       )}
       {state.phase === 'unavailable' && (
         <p className="metadata-status">
@@ -284,7 +290,9 @@ function FlightRouteDetails({
           ? 'Finding route…'
           : state.phase === 'idle'
             ? 'Find route'
-            : 'Find route again'}
+            : state.phase === 'available'
+              ? 'Refresh route'
+              : 'Try again'}
       </button>
       <p className="metadata-attribution">
         Route data by <a href={source.websiteUrl}>{source.name}</a>. Map

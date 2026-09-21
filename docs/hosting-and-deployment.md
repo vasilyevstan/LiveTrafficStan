@@ -368,6 +368,13 @@ No Worker Cache API, shared response cache, `stale-while-revalidate`, or
   provider update time. Raw provider bodies, pagination metadata, request URLs,
   access keys, status text, and exception detail are never returned or logged.
 
+  The client may reuse up to 32 successful validated exact-identity routes
+  from memory for six hours. This cache disappears with the tab, never
+  contains failures, and is not a Worker Cache API, Durable Object,
+  service-worker, Web Storage, IndexedDB, or cross-user cache. Reselecting a
+  cached flight does not invoke the Worker; **Refresh route** deliberately
+  does.
+
 The strict ADS-B route, 54 NM ceiling, ten-second deadline, 4 MiB body bound,
 no proxy retry, existing client schedule, and Cloudflare daily allowance
 reduce accidental load. They are not a global ADS-B abuse-control system.

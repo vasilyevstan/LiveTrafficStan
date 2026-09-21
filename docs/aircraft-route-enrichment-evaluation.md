@@ -2,7 +2,7 @@
 
 ## Decision
 
-Evaluation updated: **2026-09-20**
+Evaluation updated: **2026-09-21**
 
 The owner authorized a disabled-by-default aviationstack evaluation slice under
 the Free plan's current 100-request monthly allowance. The repository may
@@ -17,14 +17,15 @@ The evaluation path:
 - accepts only one exact active callsign/ICAO24 operating-flight match;
 - reserves at most 90 attempts in any rolling 31-day window;
 - makes one provider request per accepted action, with no retry or pagination;
+- reuses successful exact-identity routes from a bounded six-hour tab cache;
 - returns unavailable on no match, ambiguity, or incomplete pagination;
 - remains disabled independently in both browser and Worker configuration.
 
 [Issue #44](https://github.com/vasilyevstan/LiveTrafficStan/issues/44)
-remains open for the exact account terms, public-display and attribution
-rights, dedicated key, and no-more-than-ten-call real evaluation. Issue #3 can
-receive this guarded implementation, but public enablement and route claims
-remain blocked until that evidence exists.
+remains open for the exact accepted account terms, public-display,
+attribution, cache/retention rights, and the remainder of the no-more-than-ten
+call real evaluation. Issue #3 can receive this guarded implementation, but
+public enablement and route claims remain blocked until that evidence exists.
 
 This is an engineering record, not legal advice. Provider terms, pricing,
 schemas, and access can change and must be rechecked before a source decision.
@@ -41,14 +42,15 @@ This evaluation uses:
 
 Unknown does not mean permitted.
 
-No provider account was created, no paid terms were accepted, no credential
-was requested, no operator was contacted, and no credentialed route call was
-made while implementing this deterministic slice.
+A Free-plan account and dedicated key were supplied on 2026-09-21. The key is
+stored only in ignored local Worker configuration and the protected GitHub
+production environment; it is not committed or browser-visible. One
+credentialed route call has been made through the local Worker runtime.
 
 ## Current project state
 
-The implementation branch is based on protected `dev` SHA
-`080698332d4b451834426465f0efb9049be7a99a`:
+The cache branch is based on protected `dev` SHA
+`2a2cdd73cbee618c25767cdfcb8da8d7c032d449`:
 
 - ADSB.lol is the only live aircraft provider.
 - A normalized aircraft may contain ICAO24, callsign, registration, type,
@@ -58,15 +60,18 @@ The implementation branch is based on protected `dev` SHA
 - The Cloudflare Worker owns a fixed `/api/flight-route` boundary and a
   SQLite-backed global attempt quota.
 - `VITE_FLIGHT_ROUTE_ENABLED` and `AVIATIONSTACK_ENABLED` default to `false`.
-- No aviationstack account or applicable key is configured.
+- One dedicated aviationstack key is configured outside Git.
+- Successful validated exact-identity routes are eligible for reuse only
+  through a bounded six-hour in-memory tab cache.
 - `.env.example` states that every `VITE_*` value is browser-visible and must
   never contain a secret.
 - Issue #39 separately tracks permanent Cloudflare deployment authorization.
 
-This evidence does not claim that the repository owner has no unrelated
-personal provider account. It establishes that no applicable route source,
-agreement, plan, or credential is supplied or verified through the checked
-project path.
+The exact accepted Free-plan Order/terms, public display rights, attribution,
+and cache/retention grant still have not been recorded. A configured
+credential and successful private evaluation do not authorize public use.
+Because the evaluation key was supplied through a chat message, it must be
+rotated before any public deployment.
 
 ## Initial identity and truthfulness contract
 
@@ -356,6 +361,8 @@ these are proven:
 - coverage for reused, missing, and changed identifiers, codeshares, and date
   boundaries;
 - the checked global 90-attempt rolling quota using one dedicated key;
+- a rotated dedicated key that was not disclosed through chat or another
+  retained conversation channel;
 - authorized server-side credential verification;
 - one successful selected-flight lookup and one valid unavailable or ambiguous
   result retained under provider terms;
@@ -368,6 +375,17 @@ A naturally occurring real diversion is not required during source evaluation.
 An official documented example or permitted fixture can prove a rare
 diversion/ambiguity path. Authentication failure and provider outage do not
 count as a valid unavailable-flight result.
+
+## Bounded live evaluation evidence
+
+One of the ten authorized evaluation calls has been used:
+
+| Retrieved | Selected ADS-B identity | Result | Notes |
+| --- | --- | --- | --- |
+| 2026-09-21 | `SAS1748`, ICAO24 `4AB566`, registration `SE-MKF` | Arlanda (`ARN`) to Ulemiste (`TLL`), active | Local Worker returned one sanitized exact-match route with `200`, `Cache-Control: no-store`, and `X-Content-Type-Options: nosniff` |
+
+No raw provider body, key, quota state, or user data was retained. The
+remaining evaluation allowance is nine calls.
 
 ## Separate production gate
 
@@ -397,7 +415,10 @@ not complete the other.
   provider error, or client cancellation.
 - Every response is `no-store` and sanitized; raw provider bodies, pagination,
   URLs, status text, secrets, and exception details never reach the browser.
-- No route result is cached or persisted in the browser.
+- Up to 32 successful validated exact-identity routes are eligible for reuse
+  from tab memory for six hours with least-recently-used eviction. Failures are
+  not cached, and no route is persisted in Web Storage, IndexedDB, history, the
+  service worker, Worker Cache API, or Durable Object storage.
 - Route failure never alters ADSB position time, freshness, cadence/backoff,
   marker existence, trails, static metadata, selection, map health, or another
   provider.
