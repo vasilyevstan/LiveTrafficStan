@@ -107,7 +107,8 @@ covers:
 
 - configuration defaults and invalid overrides;
 - selected-flight identity validation, no-request-before-action lifecycle,
-  cancellation/stale callback handling, strict Worker matching, complete-page
+  cancellation/stale callback handling, exact-identity six-hour session-cache
+  reuse, expiry and 32-entry eviction, strict Worker matching, complete-page
   enforcement, global rolling quota, sanitized provider failures, and
   vessel/history isolation;
 - ADSB.lol request construction, abort forwarding, response/error validation,

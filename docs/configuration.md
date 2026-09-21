@@ -239,11 +239,21 @@ do not start or repeat a lookup.
 
 The same-origin Worker reserves one of 90 global attempts in a rolling 31-day
 window before making exactly one fixed aviationstack `/v1/flights` request. It
-does not retry, paginate, follow redirects, cache results, or refund attempts
-after provider failure or cancellation. A result is displayed only for one
-active non-codeshare row whose flight ICAO and aircraft ICAO24 match exactly;
-conflicting registrations, multiple matches, and incomplete pagination remain
-unavailable.
+does not retry, paginate, follow redirects, place responses in a shared cache,
+or refund attempts after provider failure or cancellation. A result is
+displayed only for one active non-codeshare row whose flight ICAO and aircraft
+ICAO24 match exactly; conflicting registrations, multiple matches, and
+incomplete pagination remain unavailable.
+
+The browser keeps only successful validated routes in a 32-entry in-memory
+least-recently-used cache keyed by the exact normalized callsign, ICAO24, and
+optional registration. Each entry remains eligible for reuse for six hours;
+closing or reloading the tab clears it sooner. Reopening the same exact flight
+reuses the route without a provider request; **Refresh route** deliberately
+makes a new request. Unavailable, ambiguous, incomplete, configuration, quota,
+provider, aborted, and expired results are never cached. No route enters
+`localStorage`, `sessionStorage`, IndexedDB, traffic history, or the
+service-worker cache.
 
 Vite has no aviationstack proxy. Credentialed local evaluation must use the
 actual Worker runtime:

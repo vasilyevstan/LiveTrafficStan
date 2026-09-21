@@ -187,7 +187,10 @@ describe('TrafficDetails aircraft metadata', () => {
     expect(enabledHtml).toContain('Helsinki Airport (HEL)')
     expect(enabledHtml).toContain('TS123 · TST123')
     expect(enabledHtml).toContain('Provider update')
-    expect(enabledHtml).toContain('Find route again')
+    expect(enabledHtml).toContain(
+      'Reopening this exact flight reuses the route',
+    )
+    expect(enabledHtml).toContain('Refresh route')
     expect(enabledHtml).toContain('aviationstack')
   })
 

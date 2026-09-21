@@ -24,7 +24,8 @@ Digitraffic REST + MQTT -> marine adapter -> normalized Vessel[]
 selected Aircraft -> static metadata index + prefix shard -> details panel only
 selected live Aircraft + explicit Find route
              -> same-origin Worker -> global attempt quota -> aviationstack
-             -> strictly matched origin/destination -> details panel only
+             -> strictly matched origin/destination
+             -> bounded six-hour tab cache -> details panel only
 selected ICAO24/MMSI -> bundled validated allocation tables -> details only
 PORTS toggle -> validated static Natural Earth projection -> port map/details
 AIRPORTS toggle -> validated static OurAirports projection -> airport map/details
@@ -58,7 +59,7 @@ state, and both remain inert while its client and Worker flags are false.
 | `src/providers/airports/` | Bounded lazy same-origin airport loading plus checksum, schema, and source-provenance validation |
 | `src/providers/weather/` | Canonical same-origin AWC requests, bounded JSON validation, METAR/SPECI normalization, newest-report selection, and source provenance |
 | `src/providers/geocoding/` | Photon request construction, response bounds, runtime GeoJSON validation, result normalization, and attribution identity |
-| `src/app/` | React hooks/controllers for provider lifecycle, unified preference persistence, place-search cancellation/cache, navigation intent, time ticks, offline state, and traffic-history orchestration |
+| `src/app/` | React hooks/controllers for provider lifecycle, unified preference persistence, place-search cancellation/cache, bounded selected-route session cache, navigation intent, time ticks, offline state, and traffic-history orchestration |
 | `src/history/` | Provider-qualified observation projection, bounded session history, IndexedDB transactions, settings, indexes, playback, and gap-aware historical trails |
 | `src/traffic/` | Filtering, freshness/expiry, interpolation, and selected-trail history |
 | `src/map/` | MapLibre lifecycle, external/local-fallback styles, GeoJSON sources/layers, feature selection, and marker images |
