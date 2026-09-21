@@ -17,6 +17,7 @@ import type {
   AircraftMetadataUnavailableReason,
   AircraftMetadataViewState,
 } from '../domain/aircraftMetadata'
+import type { AircraftPhotoViewState } from '../domain/aircraftPhoto'
 import type {
   FlightRouteUnavailableReason,
   FlightRouteViewState,
@@ -49,11 +50,15 @@ function DetailRow({ label, value }: DetailRowProps) {
 interface TrafficDetailsProps {
   entity: DisplayTrafficEntity
   aircraftMetadata: AircraftMetadataViewState
+  aircraftPhotoEnabled?: boolean
+  aircraftPhoto?: AircraftPhotoViewState
+  aircraftPhotoTermsUrl?: string
   flightRouteEnabled?: boolean
   flightRoute?: FlightRouteViewState
   now: number
   units: UnitSystem
   historical?: boolean
+  onRequestAircraftPhoto?: () => void
   onRequestFlightRoute?: () => void
   onClose: () => void
 }
@@ -308,14 +313,153 @@ function FlightRouteDetails({
   )
 }
 
+const aircraftPhotoErrorMessage = (
+  state: Extract<AircraftPhotoViewState, { phase: 'error' }>,
+  now: number,
+) => {
+  switch (state.reason) {
+    case 'timeout':
+      return 'The Planespotters photo request timed out.'
+    case 'throttled':
+      return state.retryAt !== undefined && state.retryAt > now
+        ? `Planespotters is temporarily limiting requests. Try again after ${formatTimestamp(state.retryAt)}.`
+        : 'Planespotters is temporarily limiting requests. Try again later.'
+    case 'forbidden':
+      return 'Planespotters rejected this browser request.'
+    case 'invalid-response':
+      return 'Planespotters returned an unsupported photo response.'
+    case 'network':
+      return 'The browser could not reach Planespotters.'
+    case 'provider-error':
+      return 'Planespotters could not provide a photo response.'
+  }
+}
+
+function AircraftPhotoDetails({
+  icao24,
+  state,
+  termsUrl,
+  now,
+  onRequest,
+}: {
+  icao24: string
+  state: AircraftPhotoViewState
+  termsUrl: string
+  now: number
+  onRequest: () => void
+}) {
+  const identity = state.identityKey ?? icao24.trim().toUpperCase()
+  const loading = state.phase === 'loading'
+  const invalidIdentity =
+    state.phase === 'unavailable' &&
+    state.reason === 'invalid-identity'
+  const throttled =
+    state.phase === 'error' &&
+    state.reason === 'throttled' &&
+    state.retryAt !== undefined &&
+    state.retryAt > now
+
+  return (
+    <section
+      className="aircraft-metadata aircraft-photo"
+      aria-labelledby="aircraft-photo-heading"
+    >
+      <h3 id="aircraft-photo-heading">Aircraft photo</h3>
+
+      {state.phase === 'available' ? (
+        <>
+          <p className="metadata-status">
+            Photo returned by Planespotters for ICAO24 {state.photo.icao24}.
+          </p>
+          <a
+            className="aircraft-photo__link"
+            href={state.photo.photoPageUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <img
+              className="aircraft-photo__image"
+              src={state.photo.thumbnailUrl}
+              width={state.photo.thumbnailWidth}
+              height={state.photo.thumbnailHeight}
+              alt={`Aircraft photo returned by Planespotters for ICAO24 ${state.photo.icao24}`}
+              loading="lazy"
+              decoding="async"
+            />
+          </a>
+          <p className="metadata-attribution aircraft-photo__credit">
+            Photo © {state.photo.photographer} via{' '}
+            <a href={state.photo.source.websiteUrl}>
+              {state.photo.source.name}
+            </a>
+            . Open the image for its unchanged original photo page.
+          </p>
+        </>
+      ) : (
+        <>
+          <p className="metadata-status">
+            Loading sends ICAO24 {identity || 'unavailable'} and normal
+            browser network metadata directly to Planespotters. Its returned
+            thumbnail loads directly from the provider CDN. LiveTrafficStan
+            keeps API JSON only in this tab for at most one hour and does not
+            store image bytes. <a href={termsUrl}>Photo API terms</a>.
+          </p>
+          {loading && (
+            <p className="metadata-status" role="status">
+              Loading the selected-aircraft photo…
+            </p>
+          )}
+          {state.phase === 'unavailable' && (
+            <p className="metadata-status">
+              {invalidIdentity
+                ? 'Photo lookup requires a valid six-character ICAO24 address.'
+                : `Planespotters returned no photo for ICAO24 ${identity}. No generic or model-level substitute is shown.`}
+            </p>
+          )}
+          {state.phase === 'error' && (
+            <p
+              className="metadata-status metadata-status--error"
+              role="alert"
+            >
+              {aircraftPhotoErrorMessage(state, now)} Live ADS-B remains
+              active.
+            </p>
+          )}
+          <button
+            type="button"
+            className="aircraft-photo__action"
+            disabled={loading || invalidIdentity || throttled}
+            onClick={onRequest}
+          >
+            {loading
+              ? 'Loading aircraft photo…'
+              : invalidIdentity
+                ? 'Aircraft photo unavailable'
+                : throttled
+                  ? 'Try again later'
+                  : state.phase === 'idle'
+                    ? 'Load aircraft photo'
+                    : 'Try again'}
+          </button>
+        </>
+      )}
+    </section>
+  )
+}
+
 export function TrafficDetails({
   entity,
   aircraftMetadata,
+  aircraftPhotoEnabled = false,
+  aircraftPhoto = { phase: 'idle' },
+  aircraftPhotoTermsUrl =
+    'https://www.planespotters.net/photo/api',
   flightRouteEnabled = false,
   flightRoute = { phase: 'idle' },
   now,
   units,
   historical = false,
+  onRequestAircraftPhoto = () => undefined,
   onRequestFlightRoute = () => undefined,
   onClose,
 }: TrafficDetailsProps) {
@@ -530,6 +674,17 @@ export function TrafficDetails({
             Reported speed and navigation status disagree; both values are
             shown without reclassification.
           </p>
+        )}
+      {entity.kind === 'aircraft' &&
+        aircraftPhotoEnabled &&
+        !historical && (
+          <AircraftPhotoDetails
+            icao24={entity.hex}
+            state={aircraftPhoto}
+            termsUrl={aircraftPhotoTermsUrl}
+            now={now}
+            onRequest={onRequestAircraftPhoto}
+          />
         )}
       {entity.kind === 'aircraft' && (
         <AircraftMetadataDetails state={aircraftMetadata} />

@@ -91,6 +91,42 @@ implementation can be reviewed and merged without a key or public
 deployment; enabling it requires both matching client/Worker flags and the
 protected Worker secret.
 
+## Disabled direct Planespotters aircraft-photo evaluation
+
+The only reviewed dynamic photo path with an explicit public display contract
+is the Planespotters Photo API. The accepted slice is intentionally narrower
+than general aircraft imagery: exact live ICAO24 only, one explicit **Load
+aircraft photo** action, one direct browser request, the unchanged regular
+thumbnail, visible photographer credit, and the unchanged photo page as the
+image link.
+
+Selection, map movement, provider refreshes, HISTORY, vessels, callsign,
+registration, airline, model, and fuzzy text never start or broaden a lookup.
+One cancellable request is revision-guarded across A to B to A selection
+changes. Only successful and no-photo JSON results may use a 32-entry,
+one-hour current-tab LRU. There is no automatic retry or persistent storage.
+The image and API response never pass through the Worker, service worker,
+Cache API, IndexedDB, Web Storage, KV, or R2.
+
+This direct boundary is required by the provider's API-specific terms: image
+bytes must load from the returned URL, returned URLs must remain unchanged,
+proxying and re-exposure are prohibited, and visible credit plus a followable
+source-page link are mandatory. A Worker proxy is therefore not an acceptable
+CORS workaround.
+
+Production remains disabled. The API-specific terms page currently has no
+visible dated revision, and the one bounded browser-origin request on
+2026-09-21 failed before a readable CORS response, status, or body reached the
+application. Deterministic fixtures prove application behavior but cannot
+replace that external gate. Enablement requires dated terms evidence and one
+successful bounded check from the exact approved production origin.
+
+Automatic vessel photos remain rejected. A future path requires a manually
+reviewed exact-IMO manifest to one verified Commons file revision with author,
+source, selected license, license URL, and exact credit. MMSI/name/fuzzy
+matching, arbitrary runtime Wikidata P18, and generic/class/sister-ship
+substitutes do not satisfy identity or rights requirements.
+
 ## Airport arrival and departure boards remain blocked
 
 Airport/time-window boards are independent of selected-flight route lookup.

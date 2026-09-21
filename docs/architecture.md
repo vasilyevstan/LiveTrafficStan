@@ -26,6 +26,9 @@ selected live Aircraft + explicit Find route
              -> same-origin Worker -> global attempt quota -> aviationstack
              -> strictly matched origin/destination
              -> bounded six-hour tab cache -> details panel only
+selected live Aircraft + explicit Load aircraft photo
+             -> direct Planespotters hex API -> validated unchanged thumbnail
+             -> bounded one-hour tab cache -> credited source-page link
 selected ICAO24/MMSI -> bundled validated allocation tables -> details only
 PORTS toggle -> validated static Natural Earth projection -> port map/details
 AIRPORTS toggle -> validated static OurAirports projection -> airport map/details
@@ -53,13 +56,14 @@ state, and both remain inert while its client and Worker flags are false.
 | `src/domain/` | Application-owned traffic/port/airport/weather/flight-route types, local discovery and filters, pure country-allocation lookup, geographic helpers, location-input parsing, versioned preferences/share state, unit conversion, and formatting |
 | `src/providers/aircraft/` | ADSB.lol request, runtime payload checks, normalization, and unit conversion |
 | `src/providers/aircraftMetadata/` | Bounded same-origin static metadata loading, provenance/schema/hash validation, exact identity matching, and shard LRU |
+| `src/providers/aircraftPhoto/` | Disabled-by-default direct Planespotters hex lookup, bounded response validation, exact returned-origin enforcement, and typed local failures |
 | `src/providers/flightRoute/` | Explicit same-origin route requests, bounded response validation, typed unavailable/error results, and aviationstack attribution |
 | `src/providers/marine/` | Digitraffic capabilities, REST/MQTT lifecycle, metadata merging, normalization, and opt-in development diagnostics |
 | `src/providers/ports/` | Bounded lazy same-origin port loading plus checksum, schema, and source-provenance validation |
 | `src/providers/airports/` | Bounded lazy same-origin airport loading plus checksum, schema, and source-provenance validation |
 | `src/providers/weather/` | Canonical same-origin AWC requests, bounded JSON validation, METAR/SPECI normalization, newest-report selection, and source provenance |
 | `src/providers/geocoding/` | Photon request construction, response bounds, runtime GeoJSON validation, result normalization, and attribution identity |
-| `src/app/` | React hooks/controllers for provider lifecycle, unified preference persistence, place-search cancellation/cache, bounded selected-route session cache, navigation intent, time ticks, offline state, and traffic-history orchestration |
+| `src/app/` | React hooks/controllers for provider lifecycle, unified preference persistence, place-search cancellation/cache, bounded selected-photo and selected-route tab caches, navigation intent, time ticks, offline state, and traffic-history orchestration |
 | `src/history/` | Provider-qualified observation projection, bounded session history, IndexedDB transactions, settings, indexes, playback, and gap-aware historical trails |
 | `src/traffic/` | Filtering, freshness/expiry, interpolation, and selected-trail history |
 | `src/map/` | MapLibre lifecycle, external/local-fallback styles, GeoJSON sources/layers, feature selection, and marker images |
@@ -133,6 +137,25 @@ present live registration and type must agree, duplicated registrations are
 unavailable, and missing live registration produces an explicit ICAO24-only
 confidence label. Metadata remains separate from the live `Aircraft` object and
 never changes provider health, freshness, history, or marker artwork.
+
+Selected-aircraft photos form a separate disabled-by-default direct-browser
+boundary. They accept only the normalized live ICAO24 and make no request until
+the user activates **Load aircraft photo**. One cancellable lookup targets only
+the fixed Planespotters hex endpoint. Runtime validation accepts an empty photo
+array or exactly one regular thumbnail from
+`https://cdn.planespotters.net` plus a source page under
+`https://www.planespotters.net/photo/`; returned URL strings are not rewritten.
+The image loads directly from the provider CDN and is the plain credited
+source-page link.
+
+Successful and no-photo JSON results may remain in a 32-entry, one-hour
+current-tab LRU. Selection change, close, HISTORY entry, and unmount abort and
+revision-invalidate obsolete work. Errors are not cached, and `429` blocks
+another manual attempt without scheduling a retry. No photo JSON, URL, credit,
+or image byte enters traffic models, history, Web Storage, IndexedDB, Cache API,
+the service worker, or a Worker route. Production stays disabled until the
+dated-terms and exact-origin live-CORS gates in the aircraft-photo evaluation
+both pass.
 
 Country allocation is a smaller bundled boundary. Pure synchronous helpers
 derive an optional country name and ISO code from the selected entity's
@@ -215,6 +238,11 @@ continues to render.
   identity key plus a monotonic revision, so late A callbacks cannot render
   after A to B to A selection changes. Only complete valid assets enter one
   index cache and an eight-shard LRU; failure remains local to the detail card.
+- Aircraft photos have an independent selected-identity controller. Selection
+  does not request. One explicit request is aborted and revision-guarded across
+  A to B to A changes, close, HISTORY, and unmount. Provider, timeout,
+  throttling, forbidden, invalid-response, and network failures remain local
+  and never alter ADS-B selection, polling, map state, or route lookup.
 - Port loading has its own lazy state and retry. Failure remains inside the
   layer control, leaves MapLibre and both traffic providers usable, and never
   creates a success-shaped empty port dataset.
@@ -263,8 +291,8 @@ Both store only versioned normalized ADSB.lol or Fintraffic Digitraffic
 observations with provider, license-decision, source-time, receipt-time,
 session, and navigation-segment identity. Interpolation frames, route data,
 destination/ETA, browser location, current METAR, and third-party aircraft
-metadata are not persisted. Vessel metadata is visible in history only after
-its own observation time.
+metadata or photos are not persisted. Vessel metadata is visible in history
+only after its own observation time.
 
 IndexedDB writes recheck opt-in authorization and a monotonic recording epoch
 inside the transaction. Clear and Disable increment that epoch atomically with
@@ -598,8 +626,9 @@ The precache allowlist contains only:
 - `manifest.webmanifest`, `favicon.svg`, and the versioned 192/512 icons.
 
 It excludes `/api/*`, Digitraffic REST/MQTT, OpenFreeMap styles/tiles/glyphs/
-sprites, Photon, AWC, aircraft metadata, airports, ports, and IndexedDB
-history. Root/index navigations are network-first with cached `index.html`
+sprites, Photon, AWC, Planespotters API/CDN requests, aircraft metadata,
+airports, ports, and IndexedDB history. Root/index navigations are
+network-first with cached `index.html`
 fallback. Exact shell assets are cache-first; any other request is not handled
 by the service worker and receives no SPA fallback.
 

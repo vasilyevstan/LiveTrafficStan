@@ -72,6 +72,12 @@ single React application, without accounts, a database, or persistent tracking.
   callsign/ICAO24 match, and fails closed on ambiguity, pagination, quota, or
   provider errors without changing ADS-B positions or polling. Successful
   exact-identity routes are reused from a bounded six-hour in-memory tab cache.
+- A disabled-by-default Planespotters aircraft-photo evaluation path. It makes
+  no request until **Load aircraft photo**, accepts only an exact ICAO24 hex
+  lookup, preserves the returned thumbnail and photo-page URLs, shows visible
+  photographer credit, and keeps bounded JSON only in current-tab memory. It
+  remains unavailable in production because the required dated-terms and live
+  browser-CORS gates have not passed.
 - Honest detail cards, provider-specific health, stale/expired handling, and
   partial operation when one provider fails.
 - Short interpolation only between observed positions and a selected-object
@@ -265,6 +271,7 @@ available for:
 | `VITE_MAP_DARK_STYLE_URL` | `https://tiles.openfreemap.org/styles/dark` |
 | `VITE_GEOCODER_ENDPOINT` | `https://photon.komoot.io/api` |
 | `VITE_AIRCRAFT_ENDPOINT` | `/api/aircraft` |
+| `VITE_AIRCRAFT_PHOTO_ENABLED` | `false` |
 | `VITE_FLIGHT_ROUTE_ENABLED` | `false` |
 | `VITE_FLIGHT_ROUTE_ENDPOINT` | `/api/flight-route` |
 | `VITE_WEATHER_ENDPOINT` | `/api/weather/metar` |
@@ -283,6 +290,7 @@ operational thresholds, and examples.
 | Place search | Photon / OpenStreetMap | OSM ODbL attribution applies | Direct browser access on explicit submit |
 | Aircraft | ADSB.lol | ODbL 1.0 | Same-origin Vite or Cloudflare Worker proxy |
 | Aircraft metadata | Mictronics aircraft-database derivative | ODC-By 1.0 | Immutable same-origin static assets, loaded only after selection |
+| Selected-aircraft photo evaluation | Planespotters Photo API | API-specific and general terms apply; not approved for production enablement | Explicit direct browser request and direct returned thumbnail; disabled by default |
 | Country allocations | michaeljfazio/MIDs, ibosoftnet ICAO24 transcription, Wikidata cross-check | Apache-2.0 and CC0 1.0 | Bundled deterministic local lookup |
 | Marine | Fintraffic Digitraffic | CC BY 4.0 | Direct regional REST and MQTT |
 | Port context | Natural Earth Ports | Public domain | Immutable same-origin static asset, loaded only when enabled |
@@ -300,6 +308,7 @@ identified public-domain Natural Earth port and OurAirports projections. See
 [Data Sources and Licensing](docs/data-sources-and-licensing.md), the dated
 [Aircraft Provider Evaluation](docs/aircraft-provider-evaluation.md), and the
 dated [Aircraft Metadata Evaluation](docs/aircraft-metadata-evaluation.md), the
+dated [Aircraft Photo Evaluation](docs/aircraft-photo-evaluation.md), the
 dated [Marine Provider Evaluation](docs/marine-provider-evaluation.md), and the
 [Airport Board Evaluation](docs/airport-board-evaluation.md) for verified
 contracts, official links, measured/request-volume evidence, and unresolved
@@ -396,6 +405,12 @@ monitoring, privacy, and rollback procedure.
   approved.
   Even when enabled, it reports only an exact, unique active match and is not a
   general schedule, airport-board, or route-history service.
+- Aircraft photos remain disabled. The one bounded browser-origin
+  Planespotters probe made exactly one API request but exposed no readable CORS
+  response, and the API-specific terms page has no visible revision date.
+  There is no Worker/proxy fallback because the reviewed provider contract
+  requires direct browser JSON and image loading. Vessel photos remain absent
+  until an exact-IMO, file-specific rights manifest exists.
 - There is no reverse geocoding, radar, precipitation forecast, account, saved
   center preference, or offline basemap guarantee. An installed shell can
   start cold offline and replay retained private local history over a plain
@@ -413,6 +428,7 @@ silently expanded into V1.
 - [Data Sources and Licensing](docs/data-sources-and-licensing.md)
 - [Aircraft Provider Evaluation](docs/aircraft-provider-evaluation.md)
 - [Aircraft Metadata Evaluation](docs/aircraft-metadata-evaluation.md)
+- [Aircraft Photo Evaluation](docs/aircraft-photo-evaluation.md)
 - [Aircraft Route Enrichment Evaluation](docs/aircraft-route-enrichment-evaluation.md)
 - [Airport Board Evaluation](docs/airport-board-evaluation.md)
 - [Marine Provider Evaluation](docs/marine-provider-evaluation.md)

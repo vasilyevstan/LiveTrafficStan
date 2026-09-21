@@ -166,6 +166,46 @@ The complete dated comparison, request-volume calculation, rights analysis,
 proxy handoff, and re-evaluation conditions are in
 [Aircraft Provider Evaluation](aircraft-provider-evaluation.md).
 
+## Selected-aircraft photos: disabled Planespotters evaluation
+
+- Photo API documentation and API-specific terms:
+  <https://www.planespotters.net/photo/api>
+- General terms:
+  <https://www.planespotters.net/legal/termsofuse>
+- Public endpoint:
+  `https://api.planespotters.net/pub/photos/hex/{ICAO24}`
+- Authentication: none
+- Production enablement: disabled
+
+The API-specific terms permit public/free display when the browser requests
+JSON with a valid `Origin` or `Referer`, image bytes load directly from the
+returned unchanged thumbnail URL, visible photographer credit appears beside
+the image, and the thumbnail is an obvious plain link to the unchanged
+Planespotters photo page without `nofollow`. API JSON may be cached for up to
+24 hours; image bytes may not be stored, rehosted, proxied, or passed to another
+client. Returned data may not be re-exposed through another API, feed, export,
+or dataset.
+
+LiveTrafficStan tightens the JSON cache to one hour and 32 current-tab entries.
+It uses only an exact six-character ICAO24 after **Load aircraft photo**,
+accepts only the documented API/CDN/photo-page origins, shows the photographer
+credit and source link, and writes no response, URL, credit, or image byte to
+application-managed storage. HISTORY and vessels never use the path.
+
+The API-specific terms page has no visible dated revision. The separate general
+terms state "As of: December 22nd, 2012", but that date does not prove when the
+current API-specific obligations took effect. One bounded browser-origin probe
+on 2026-09-21 made exactly one hex request and received no readable CORS
+response; the browser reported a fetch failure and Resource Timing status `0`.
+No JSON or image was exposed, and the probe was not repeated.
+
+The feature therefore remains disabled. A Worker proxy is not an authorized
+workaround because it would conflict with the direct-loading and no-proxy/
+no-re-exposure terms. See
+[Aircraft Photo Evaluation](aircraft-photo-evaluation.md) for the exact
+boundary, deterministic evidence, live result, vessel-image blocker, and
+enablement requirements.
+
 ## Selected-flight routes: disabled aviationstack evaluation
 
 LiveTrafficStan contains a disabled-by-default aviationstack evaluation path
