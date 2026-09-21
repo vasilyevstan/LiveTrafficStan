@@ -1,5 +1,14 @@
 import type { Theme } from '../app/theme'
-import type { TrafficMarkerIcon } from '../domain/traffic'
+import {
+  AIRCRAFT_ALTITUDE_BANDS,
+  AIRCRAFT_VERTICAL_TRENDS,
+  TRAFFIC_STYLE_IMAGE_IDS,
+  aircraftAltitudeBandCode,
+  type AircraftAltitudeBand,
+  type AircraftVerticalTrend,
+  type TrafficStyleImageId,
+  type VesselMotionState,
+} from '../domain/trafficPresentation'
 
 type IconPainter = (context: CanvasRenderingContext2D) => void
 
@@ -352,17 +361,228 @@ export const createTugVesselIcon = (theme: Theme) =>
     })
   })
 
+export const createSailingVesselIcon = (theme: Theme) =>
+  createIcon((context) => {
+    const treatment = trafficIconTreatment(theme)
+    fillShape(context, treatment, treatment.vesselFill, () => {
+      context.moveTo(32, 4)
+      context.lineTo(43, 48)
+      context.lineTo(39, 59)
+      context.lineTo(25, 59)
+      context.lineTo(21, 48)
+    })
+
+    strokeDetail(context, treatment, treatment.vesselDetail, () => {
+      context.moveTo(32, 10)
+      context.lineTo(32, 48)
+      context.moveTo(31, 14)
+      context.lineTo(17, 43)
+      context.lineTo(31, 43)
+      context.moveTo(33, 18)
+      context.lineTo(46, 43)
+      context.lineTo(33, 43)
+    })
+  })
+
+export const createPleasureVesselIcon = (theme: Theme) =>
+  createIcon((context) => {
+    const treatment = trafficIconTreatment(theme)
+    fillShape(context, treatment, treatment.vesselFill, () => {
+      context.moveTo(32, 4)
+      context.lineTo(47, 26)
+      context.lineTo(45, 53)
+      context.lineTo(38, 60)
+      context.lineTo(26, 60)
+      context.lineTo(19, 53)
+      context.lineTo(17, 26)
+    })
+
+    strokeDetail(context, treatment, treatment.vesselDetail, () => {
+      context.moveTo(23, 34)
+      context.lineTo(41, 34)
+      context.lineTo(38, 45)
+      context.lineTo(26, 45)
+      context.closePath()
+      context.moveTo(28, 27)
+      context.lineTo(36, 27)
+    })
+  })
+
+export const createHighSpeedVesselIcon = (theme: Theme) =>
+  createIcon((context) => {
+    const treatment = trafficIconTreatment(theme)
+    fillShape(context, treatment, treatment.vesselFill, () => {
+      context.moveTo(32, 3)
+      context.lineTo(46, 24)
+      context.lineTo(47, 56)
+      context.lineTo(39, 61)
+      context.lineTo(34, 50)
+      context.lineTo(30, 50)
+      context.lineTo(25, 61)
+      context.lineTo(17, 56)
+      context.lineTo(18, 24)
+    })
+
+    strokeDetail(context, treatment, treatment.vesselDetail, () => {
+      context.moveTo(24, 30)
+      context.lineTo(40, 30)
+      context.moveTo(27, 39)
+      context.lineTo(37, 39)
+    })
+  })
+
+const createBadgeBackground = (
+  context: CanvasRenderingContext2D,
+  treatment: TrafficIconTreatment,
+  fill: string,
+) => {
+  context.save()
+  context.shadowColor = treatment.shadow
+  context.shadowBlur = 4
+  context.fillStyle = fill
+  context.strokeStyle = treatment.outerEdge
+  context.lineWidth = 4
+  context.beginPath()
+  context.arc(32, 32, 21, 0, Math.PI * 2)
+  context.fill()
+  context.stroke()
+  context.strokeStyle = treatment.innerEdge
+  context.lineWidth = 1.75
+  context.stroke()
+  context.restore()
+}
+
+export const createVesselMotionBadgeIcon = (
+  theme: Theme,
+  state: VesselMotionState,
+) =>
+  createIcon((context) => {
+    const treatment = trafficIconTreatment(theme)
+    const ink =
+      theme === 'dark' ? treatment.outerEdge : treatment.innerEdge
+    createBadgeBackground(context, treatment, treatment.vesselFill)
+
+    context.save()
+    context.fillStyle = ink
+    context.strokeStyle = ink
+    context.lineWidth = 6
+    context.lineCap = 'round'
+    if (state === 'moving') {
+      context.beginPath()
+      context.moveTo(24, 19)
+      context.lineTo(46, 32)
+      context.lineTo(24, 45)
+      context.closePath()
+      context.fill()
+    } else if (state === 'slow-stopped') {
+      context.beginPath()
+      context.moveTo(21, 32)
+      context.lineTo(43, 32)
+      context.stroke()
+    } else {
+      context.font = '700 31px system-ui, sans-serif'
+      context.textAlign = 'center'
+      context.textBaseline = 'middle'
+      context.fillText('?', 32, 33)
+    }
+    context.restore()
+  })
+
+const drawTrend = (
+  context: CanvasRenderingContext2D,
+  trend: AircraftVerticalTrend,
+  color: string,
+) => {
+  context.save()
+  context.strokeStyle = color
+  context.fillStyle = color
+  context.lineWidth = 4
+  context.lineCap = 'round'
+  if (trend === 'climb' || trend === 'descent') {
+    const tipY = trend === 'climb' ? 21 : 43
+    const tailY = trend === 'climb' ? 43 : 21
+    context.beginPath()
+    context.moveTo(43, tailY)
+    context.lineTo(43, tipY)
+    context.stroke()
+    context.beginPath()
+    context.moveTo(35, trend === 'climb' ? 29 : 35)
+    context.lineTo(43, tipY)
+    context.lineTo(51, trend === 'climb' ? 29 : 35)
+    context.stroke()
+  } else if (trend === 'small') {
+    context.beginPath()
+    context.moveTo(35, 32)
+    context.lineTo(51, 32)
+    context.stroke()
+  } else {
+    context.font = '700 26px system-ui, sans-serif'
+    context.textAlign = 'center'
+    context.textBaseline = 'middle'
+    context.fillText('?', 43, 33)
+  }
+  context.restore()
+}
+
+export const createAircraftStateBadgeIcon = (
+  theme: Theme,
+  band: AircraftAltitudeBand,
+  trend: AircraftVerticalTrend,
+) =>
+  createIcon((context) => {
+    const treatment = trafficIconTreatment(theme)
+    const ink =
+      theme === 'dark' ? treatment.outerEdge : treatment.innerEdge
+    createBadgeBackground(context, treatment, treatment.aircraftFill)
+    context.save()
+    context.fillStyle = ink
+    context.font = '700 26px system-ui, sans-serif'
+    context.textAlign = 'center'
+    context.textBaseline = 'middle'
+    context.fillText(aircraftAltitudeBandCode(band), 23, 33)
+    context.restore()
+    drawTrend(context, trend, ink)
+  })
+
 export const createTrafficIcons = (
   theme: Theme,
-): Record<TrafficMarkerIcon, ImageData> => ({
-  aircraft: createAircraftIcon(theme),
-  'aircraft-light': createLightAircraftIcon(theme),
-  'aircraft-heavy': createHeavyAircraftIcon(theme),
-  helicopter: createHelicopterIcon(theme),
-  vessel: createVesselIcon(theme),
-  'vessel-cargo': createCargoVesselIcon(theme),
-  'vessel-tanker': createTankerVesselIcon(theme),
-  'vessel-passenger': createPassengerVesselIcon(theme),
-  'vessel-fishing': createFishingVesselIcon(theme),
-  'vessel-tug': createTugVesselIcon(theme),
-})
+): Record<TrafficStyleImageId, ImageData> => {
+  const images = {
+    aircraft: createAircraftIcon(theme),
+    'aircraft-light': createLightAircraftIcon(theme),
+    'aircraft-heavy': createHeavyAircraftIcon(theme),
+    helicopter: createHelicopterIcon(theme),
+    vessel: createVesselIcon(theme),
+    'vessel-cargo': createCargoVesselIcon(theme),
+    'vessel-tanker': createTankerVesselIcon(theme),
+    'vessel-passenger': createPassengerVesselIcon(theme),
+    'vessel-fishing': createFishingVesselIcon(theme),
+    'vessel-tug': createTugVesselIcon(theme),
+    'vessel-sailing': createSailingVesselIcon(theme),
+    'vessel-pleasure': createPleasureVesselIcon(theme),
+    'vessel-highspeed': createHighSpeedVesselIcon(theme),
+    'vessel-motion-moving': createVesselMotionBadgeIcon(theme, 'moving'),
+    'vessel-motion-slow-stopped': createVesselMotionBadgeIcon(
+      theme,
+      'slow-stopped',
+    ),
+    'vessel-motion-unknown': createVesselMotionBadgeIcon(
+      theme,
+      'unknown',
+    ),
+  } as Partial<Record<TrafficStyleImageId, ImageData>>
+
+  for (const band of AIRCRAFT_ALTITUDE_BANDS) {
+    for (const trend of AIRCRAFT_VERTICAL_TRENDS) {
+      images[`aircraft-state-${band}-${trend}`] =
+        createAircraftStateBadgeIcon(theme, band, trend)
+    }
+  }
+
+  for (const imageId of TRAFFIC_STYLE_IMAGE_IDS) {
+    if (!images[imageId]) {
+      throw new Error(`Traffic image ${imageId} was not generated`)
+    }
+  }
+  return images as Record<TrafficStyleImageId, ImageData>
+}

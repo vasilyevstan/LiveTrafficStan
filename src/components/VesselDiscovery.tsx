@@ -1,5 +1,9 @@
 import type { DisplayVessel } from '../domain/traffic'
 import {
+  trafficPresentation,
+  vesselMotionLabel,
+} from '../domain/trafficPresentation'
+import {
   DEFAULT_VESSEL_FILTERS,
   isDefaultVesselFilters,
   normalizeVesselSearchQuery,
@@ -37,14 +41,22 @@ const maximumLengthLabel = (value: VesselMaximumLength) =>
 const resultLabel = (vessel: DisplayVessel) =>
   vessel.name ?? vessel.callSign ?? `MMSI ${vessel.mmsi}`
 
-const resultContext = (vessel: DisplayVessel) =>
-  [
+const resultContext = (vessel: DisplayVessel) => {
+  const presentation = trafficPresentation(vessel)
+  return [
     `MMSI ${vessel.mmsi}`,
     vessel.imo === undefined ? undefined : `IMO ${vessel.imo}`,
     vessel.callSign,
+    vessel.vesselType,
+    vesselMotionLabel(
+      presentation.kind === 'vessel'
+        ? presentation.motionState
+        : 'unknown',
+    ),
   ]
     .filter(Boolean)
     .join(' · ')
+}
 
 export function VesselDiscovery({
   filters,
@@ -155,7 +167,7 @@ export function VesselDiscovery({
         </label>
 
         <label>
-          <span>Minimum length</span>
+          <span>Non-yacht minimum length</span>
           <select
             value={filters.minimumLengthMeters}
             onChange={(event) =>
@@ -177,7 +189,7 @@ export function VesselDiscovery({
         </label>
 
         <label>
-          <span>Maximum length</span>
+          <span>Maximum length (all vessels)</span>
           <select
             value={filters.maximumLengthMeters ?? ''}
             onChange={(event) =>
@@ -197,9 +209,6 @@ export function VesselDiscovery({
               <option
                 key={value ?? 'none'}
                 value={value ?? ''}
-                disabled={
-                  value !== null && value < filters.minimumLengthMeters
-                }
               >
                 {maximumLengthLabel(value)}
               </option>
@@ -218,7 +227,7 @@ export function VesselDiscovery({
               })
             }
           />
-          <span>Include unknown length</span>
+          <span>Include non-yachts with unknown length</span>
         </label>
       </div>
 
@@ -233,6 +242,12 @@ export function VesselDiscovery({
           RESET FILTERS
         </button>
       </div>
+      <p className="control-note control-note--muted">
+        Sailing and pleasure craft are shown only when at least 8 m long,
+        reporting at least 1 kn, and no older than 120 seconds. Maximum
+        length still applies. Digitraffic publishes Class A AIS only; Class
+        B yacht coverage is incomplete.
+      </p>
 
       {totalVessels === 0 && (
         <p className="control-note" role="status">

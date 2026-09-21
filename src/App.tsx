@@ -462,8 +462,12 @@ function App() {
     [displayNow, viewportVessels],
   )
   const vessels = useMemo(
-    () => filterVessels(currentVessels, vesselFilters),
-    [currentVessels, vesselFilters],
+    () =>
+      filterVessels(currentVessels, vesselFilters, {
+        displayTime: displayNow,
+        staleAfterMs: APP_CONFIG.marine.staleAfterMs,
+      }),
+    [currentVessels, displayNow, vesselFilters],
   )
   const vesselResults = useMemo(
     () => orderVesselSearchResults(vessels, vesselFilters.query),

@@ -285,7 +285,7 @@ Provider payloads are decoded and normalized at the provider boundary. Map and U
 
 Aircraft, vessels, and the selected trail are represented as GeoJSON sources. MapLibre symbol and line layers are updated in place, avoiding a React component or DOM marker for every traffic object.
 
-## Bounded provider-reported silhouette vocabulary
+## Persisted provider silhouettes and render-only traffic semantics
 
 The map uses ten original canvas images: light/small fixed-wing, generic
 fixed-wing, heavy fixed-wing, helicopter, cargo, tanker, passenger, fishing,
@@ -303,6 +303,34 @@ No model/type string, speed, name, route, operator, position, or movement is
 used to infer a category. This keeps the vocabulary truthful and avoids a
 classification service or dataset. The ten images are generated once per theme
 and reinstalled through the existing single-map style lifecycle.
+
+Provider-owned icon keys stay in normalized entities and bounded historical
+records. Visual-only state is derived later by one pure presentation module and
+projected into MapLibre properties. This avoids a history migration and keeps
+rollback compatible with observations written by the previous release.
+
+The render vocabulary adds exact sailing, pleasure-craft, and high-speed-craft
+shapes without changing persisted marker keys. Speed-over-ground also produces
+a screen-upright moving, slow/stopped, or unknown badge. Exactly one knot is
+moving; missing, invalid, or negative speed is unknown. Vessel rotation is
+directional only while moving. Navigation status remains separate and
+conflicting reports are disclosed.
+
+Sailing and pleasure craft form a strict branch rather than a generic length
+exception. They display only with exact normalized type, known length at least
+8 m, a finite position age between zero and the configured 120-second stale
+threshold, and finite speed at least one knot. The live clock or historical
+cursor supplies display time. They never fall through to the ordinary length
+rule; non-yachts retain the 50 m default and unknown-length preference.
+Digitraffic's Class A-only scope means small-yacht coverage is expected to be
+incomplete.
+
+Aircraft retain cyan kind identity. Altitude is added through a separate
+sequential-color and stepped-radius ring, with boundaries below 1,000 m,
+1,000-3,000 m, 3,000-10,000 m, and 10,000 m or higher. A compact badge adds
+the band number and vertical trend at the exact +/-200 ft/min boundary. Text in
+details and the control legend remains the authoritative channel, so neither
+altitude nor movement relies on color alone.
 
 ## Pinned static selected-aircraft metadata
 

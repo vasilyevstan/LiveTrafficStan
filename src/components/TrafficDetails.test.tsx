@@ -252,6 +252,29 @@ describe('TrafficDetails aircraft metadata', () => {
     expect(html).not.toContain('Find route')
   })
 
+  it('describes aircraft altitude and vertical trend without inferring ground', () => {
+    const html = renderToStaticMarkup(
+      <TrafficDetails
+        entity={{
+          ...aircraft,
+          altitudeMeters: 0,
+          verticalSpeedMps: 1.016,
+        }}
+        aircraftMetadata={{ phase: 'idle' }}
+        now={1_800_000_001_000}
+        units="metric"
+        onClose={() => undefined}
+      />,
+    )
+
+    expect(html).toContain('Reported altitude band')
+    expect(html).toContain('Band 1 · below 1,000 m')
+    expect(html).not.toContain('On ground')
+    expect(html).toContain(
+      'Climbing · reported rate is at least 200 ft/min upward',
+    )
+  })
+
   it('does not render aircraft metadata for a vessel selection', () => {
     const vessel: DisplayVessel = {
       id: 'vessel:123456789',
@@ -331,6 +354,45 @@ describe('TrafficDetails aircraft metadata', () => {
     expect(html).toContain('10 min ago')
     expect(html).toContain('Position report')
     expect(html).toContain('just now')
+  })
+
+  it('keeps speed-derived movement separate from conflicting navigation status', () => {
+    const vessel: DisplayVessel = {
+      id: 'vessel:123456789',
+      kind: 'vessel',
+      provider: 'Digitraffic',
+      mmsi: 123456789,
+      vesselCategory: 'other',
+      navigationCategory: 'moored',
+      vesselType: 'Sailing vessel',
+      navigationStatus: 'Moored',
+      speedKph: 1.852,
+      lengthMeters: 20,
+      position: {
+        latitude: 59.4,
+        longitude: 24.7,
+        observedAt: 1_800_000_000_000,
+      },
+      receivedAt: 1_800_000_000_000,
+      markerIcon: 'vessel',
+      markerScale: 1,
+      freshness: 'live',
+    }
+    const html = renderToStaticMarkup(
+      <TrafficDetails
+        entity={vessel}
+        aircraftMetadata={{ phase: 'idle' }}
+        now={1_800_000_001_000}
+        units="metric"
+        onClose={() => undefined}
+      />,
+    )
+
+    expect(html).toContain('Moving · reported speed at least 1 kn')
+    expect(html).toContain(
+      'Reported speed and navigation status disagree',
+    )
+    expect(html).toContain('Moored')
   })
 
   it('shows flag state only for an ordinary assigned ship-station MMSI', () => {

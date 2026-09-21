@@ -157,6 +157,8 @@ describe('Digitraffic normalization', () => {
       [
         30,
         31,
+        36,
+        37,
         52,
         53,
         60,
@@ -174,6 +176,8 @@ describe('Digitraffic normalization', () => {
       ].map(vesselMarkerIcon),
     ).toEqual([
       'vessel-fishing',
+      'vessel',
+      'vessel',
       'vessel',
       'vessel-tug',
       'vessel',
