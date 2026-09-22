@@ -10,10 +10,15 @@ import type { Aircraft } from '../domain/traffic'
 import type { AircraftPhotoProvider } from '../providers/aircraftPhoto/planespottersPhotoProvider'
 import { AircraftPhotoController } from './AircraftPhotoController'
 
+interface UseAircraftPhotoOptions {
+  automaticRequestDelayMs?: number
+}
+
 export const useAircraftPhoto = (
   aircraft: Pick<Aircraft, 'hex'> | undefined,
   provider: AircraftPhotoProvider,
   config: AppConfig['aircraftPhoto'],
+  options: UseAircraftPhotoOptions = {},
 ) => {
   const [state, setState] = useState<AircraftPhotoViewState>({
     phase: 'idle',
@@ -49,6 +54,20 @@ export const useAircraftPhoto = (
   useEffect(() => {
     controller.select(identity)
   }, [controller, identity])
+
+  useEffect(() => {
+    if (
+      !identity ||
+      options.automaticRequestDelayMs === undefined
+    ) {
+      return
+    }
+    const timeout = window.setTimeout(
+      () => controller.requestIfMissing(identity),
+      options.automaticRequestDelayMs,
+    )
+    return () => window.clearTimeout(timeout)
+  }, [controller, identity, options.automaticRequestDelayMs])
 
   const request = useCallback(() => {
     if (identity) controller.request(identity)

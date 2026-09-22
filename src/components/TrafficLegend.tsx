@@ -77,16 +77,20 @@ export function TrafficLegend({
         selection halo is not a traffic state.
       </p>
       <p className="control-note control-note--muted">
-        Sailing, pleasure, and high-speed silhouettes require those exact
-        reported AIS types. Other ships retain their reported category shape.
-        A red dot marks valid reported speed below 1 kn for either traffic
-        kind. Unknown speed stays neutral; only moving ship silhouettes follow
-        course. Navigation status stays separate from measured movement.
+        Generic, cargo, tanker, passenger, fishing, exact AIS type-52 tug,
+        sailing, pleasure, and high-speed vessels use distinct silhouettes.
+        Sailing, pleasure, and high-speed shapes also require their exact
+        reported AIS types. Other service codes remain generic. A red dot marks
+        valid reported speed below 1 kn for either traffic kind. Unknown speed
+        stays neutral; only moving ship silhouettes follow course. Navigation
+        status stays separate from measured movement.
       </p>
       <p className="control-note control-note--muted">
-        Mouse hover uses already-loaded data: aircraft callsign and reported
-        type, or vessel name, MMSI-derived flag, and AIS destination. It does
-        not perform a route, metadata, photo, or provider lookup.
+        Mouse hover uses already-loaded callsign, reported aircraft type,
+        vessel name, MMSI-derived flag, and AIS destination. When aircraft
+        photos are enabled, a stable aircraft hover can make one direct
+        Planespotters lookup after a brief delay; vessel hover and route or
+        metadata details make no additional request.
       </p>
       <p className="control-note control-note--muted">
         Moving sailing and pleasure craft are eligible from 8 m at 1 kn or

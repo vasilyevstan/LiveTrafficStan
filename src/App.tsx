@@ -122,6 +122,9 @@ function App() {
     weatherVisible,
   } = layerPreferences
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [hoveredAircraftId, setHoveredAircraftId] = useState<string | null>(
+    null,
+  )
   const [selectedPortId, setSelectedPortId] = useState<string | null>(null)
   const [selectedAirportId, setSelectedAirportId] = useState<string | null>(
     null,
@@ -563,6 +566,10 @@ function App() {
     () => displayEntities.find((entity) => entity.id === selectedId),
     [displayEntities, selectedId],
   )
+  const hoveredAircraft = useMemo(
+    () => aircraft.find((entity) => entity.id === hoveredAircraftId),
+    [aircraft, hoveredAircraftId],
+  )
   const selectedPort = useMemo(
     () => ports.find((port) => port.id === selectedPortId),
     [ports, selectedPortId],
@@ -585,14 +592,22 @@ function App() {
     aircraftMetadataProvider,
     displayNow,
   )
+  const aircraftPhotoFeatureEnabled =
+    APP_CONFIG.aircraftPhoto.enabled && !historyActive
   const aircraftPhotoEnabled =
-    APP_CONFIG.aircraftPhoto.enabled &&
-    !historyActive &&
-    selectedEntity?.kind === 'aircraft'
+    aircraftPhotoFeatureEnabled && selectedEntity?.kind === 'aircraft'
   const aircraftPhoto = useAircraftPhoto(
     aircraftPhotoEnabled ? selectedEntity : undefined,
     aircraftPhotoProvider,
     APP_CONFIG.aircraftPhoto,
+  )
+  const hoveredAircraftPhoto = useAircraftPhoto(
+    aircraftPhotoFeatureEnabled ? hoveredAircraft : undefined,
+    aircraftPhotoProvider,
+    APP_CONFIG.aircraftPhoto,
+    {
+      automaticRequestDelayMs: 0,
+    },
   )
   const flightRouteEnabled =
     APP_CONFIG.flightRoute.enabled &&
@@ -1070,8 +1085,14 @@ function App() {
         clusteringEnabled={clusteringEnabled}
         interpolateTraffic={!historyActive}
         interpolationDurationMs={APP_CONFIG.interpolationDurationMs}
+        aircraftPhotoEnabled={aircraftPhotoFeatureEnabled}
+        aircraftPhoto={hoveredAircraftPhoto.state}
+        aircraftPhotoHoverDelayMs={
+          APP_CONFIG.aircraftPhoto.hoverDelayMs
+        }
         viewRequestId={viewRequest.id}
         viewportSettleMs={APP_CONFIG.navigation.viewportSettleMs}
+        onHoverAircraftChange={setHoveredAircraftId}
         onSelect={handleMapTrafficSelect}
         onSelectPort={handleMapPortSelect}
         onSelectAirport={handleMapAirportSelect}

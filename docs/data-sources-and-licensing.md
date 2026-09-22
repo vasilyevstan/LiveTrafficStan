@@ -166,7 +166,7 @@ The complete dated comparison, request-volume calculation, rights analysis,
 proxy handoff, and re-evaluation conditions are in
 [Aircraft Provider Evaluation](aircraft-provider-evaluation.md).
 
-## Selected-aircraft photos: disabled Planespotters evaluation
+## Aircraft photos: disabled Planespotters evaluation
 
 - Photo API documentation and API-specific terms:
   <https://www.planespotters.net/photo/api>
@@ -186,11 +186,12 @@ Planespotters photo page without `nofollow`. API JSON may be cached for up to
 client. Returned data may not be re-exposed through another API, feed, export,
 or dataset.
 
-LiveTrafficStan tightens the JSON cache to one hour and 32 current-tab entries.
-It uses only an exact six-character ICAO24 after **Load aircraft photo**,
-accepts only the documented API/CDN/photo-page origins, shows the photographer
-credit and source link, and writes no response, URL, credit, or image byte to
-application-managed storage. HISTORY and vessels never use the path.
+LiveTrafficStan tightens the JSON cache to one shared hour and 32 current-tab
+entries. It uses only an exact six-character ICAO24 after **Load aircraft
+photo** or a stable 500 ms fine-pointer hover, accepts only the documented
+API/CDN/photo-page origins, shows the photographer credit and source link, and
+writes no response, URL, credit, or image byte to application-managed storage.
+Selection alone, HISTORY, and vessels never use the path.
 
 The API-specific terms page has no visible dated revision. The separate general
 terms state "As of: December 22nd, 2012", but that date does not prove when the

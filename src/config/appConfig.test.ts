@@ -64,6 +64,7 @@ describe('createAppConfig', () => {
       sourceTermsUrl: 'https://www.planespotters.net/photo/api',
       cacheMaxEntries: 32,
       cacheTtlMs: 60 * 60_000,
+      hoverDelayMs: 500,
       rateLimitFallbackMs: 60_000,
     })
     expect(config.flightRoute).toEqual({
