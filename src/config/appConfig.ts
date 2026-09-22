@@ -65,6 +65,7 @@ export interface AppConfig {
     enabled: boolean
     cacheMaxEntries: number
     cacheTtlMs: number
+    hoverDelayMs: number
     rateLimitFallbackMs: number
   }
   flightRoute: AviationstackFlightRouteProviderConfig & {
@@ -342,6 +343,7 @@ export const createAppConfig = (
       sourceTermsUrl: 'https://www.planespotters.net/photo/api',
       cacheMaxEntries: 32,
       cacheTtlMs: 60 * 60_000,
+      hoverDelayMs: 500,
       rateLimitFallbackMs: 60_000,
     },
     flightRoute: {

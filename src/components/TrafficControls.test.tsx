@@ -199,7 +199,10 @@ describe('TrafficControls', () => {
     )
     expect(html).toContain('AIS destination')
     expect(html).toContain(
-      'does not perform a route, metadata, photo, or provider lookup',
+      'Generic, cargo, tanker, passenger, fishing, exact AIS type-52 tug',
+    )
+    expect(html).toContain(
+      'a stable aircraft hover can make one direct Planespotters lookup',
     )
     expect(html).toContain('eligible from 8 m at 1 kn or faster')
     expect(html).toContain('no more than 120 seconds old')

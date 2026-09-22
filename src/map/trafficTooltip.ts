@@ -2,11 +2,17 @@ import {
   flagStateForMmsi,
   formatCountryAllocation,
 } from '../domain/countryAllocations'
+import type { AircraftPhotoViewState } from '../domain/aircraftPhoto'
 import type { TrafficEntity } from '../domain/traffic'
 
 export interface TrafficTooltipSummary {
   title: string
   details: readonly string[]
+}
+
+export interface TrafficTooltipOptions {
+  aircraftPhoto?: AircraftPhotoViewState
+  aircraftPhotoEnabled?: boolean
 }
 
 const reportedText = (value: string | undefined) => {
@@ -53,6 +59,7 @@ export const trafficTooltipSummary = (
 export const createTrafficTooltipElement = (
   entity: TrafficEntity,
   ownerDocument: Document,
+  options: TrafficTooltipOptions = {},
 ) => {
   const summary = trafficTooltipSummary(entity)
   const root = ownerDocument.createElement('div')
@@ -69,6 +76,52 @@ export const createTrafficTooltipElement = (
     line.className = 'traffic-tooltip__detail'
     line.textContent = detail
     root.append(line)
+  }
+
+  if (entity.kind === 'aircraft' && options.aircraftPhotoEnabled) {
+    const identityKey = entity.hex.trim().toUpperCase()
+    const photoState =
+      options.aircraftPhoto?.identityKey === identityKey
+        ? options.aircraftPhoto
+        : undefined
+
+    if (photoState?.phase === 'available') {
+      const link = ownerDocument.createElement('a')
+      link.className = 'traffic-tooltip__photo-link'
+      link.href = photoState.photo.photoPageUrl
+      link.target = '_blank'
+      link.rel = 'noreferrer noopener'
+      link.title = `Open this exact aircraft photo on ${photoState.photo.source.name}`
+
+      const image = ownerDocument.createElement('img')
+      image.className = 'traffic-tooltip__photo'
+      image.src = photoState.photo.thumbnailUrl
+      image.width = photoState.photo.thumbnailWidth
+      image.height = photoState.photo.thumbnailHeight
+      image.alt = `Aircraft ${identityKey}`
+      image.loading = 'eager'
+      image.referrerPolicy = 'strict-origin-when-cross-origin'
+
+      const credit = ownerDocument.createElement('span')
+      credit.className = 'traffic-tooltip__photo-credit'
+      credit.textContent = `Photo © ${photoState.photo.photographer} via ${photoState.photo.source.name}`
+
+      link.append(image, credit)
+      root.append(link)
+    } else if (photoState?.phase === 'loading') {
+      const status = ownerDocument.createElement('p')
+      status.className = 'traffic-tooltip__photo-status'
+      status.textContent = 'Loading exact aircraft photo…'
+      root.append(status)
+    } else if (
+      photoState?.phase === 'error' ||
+      photoState?.phase === 'unavailable'
+    ) {
+      const status = ownerDocument.createElement('p')
+      status.className = 'traffic-tooltip__photo-status'
+      status.textContent = 'Exact aircraft photo unavailable.'
+      root.append(status)
+    }
   }
 
   return root
