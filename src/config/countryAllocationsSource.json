@@ -1,0 +1,121 @@
+{
+  "sources": {
+    "mids": {
+      "name": "michaeljfazio/MIDs",
+      "repositoryUrl": "https://github.com/michaeljfazio/MIDs",
+      "commit": "ebcc3c8fbb7ada9df11f857e78db2400f1e08155",
+      "publishedAt": "2025-09-09T08:58:53Z",
+      "sourcePath": "mids.json",
+      "sourceUrl": "https://raw.githubusercontent.com/michaeljfazio/MIDs/ebcc3c8fbb7ada9df11f857e78db2400f1e08155/mids.json",
+      "sourceBytes": 24000,
+      "sourceSha256": "94d4be029c1174af41b56426f9310155cf52d2ff331dd98ab0d19dd0c65ff58c",
+      "licenseName": "Apache License 2.0",
+      "licenseUrl": "https://raw.githubusercontent.com/michaeljfazio/MIDs/ebcc3c8fbb7ada9df11f857e78db2400f1e08155/LICENSE"
+    },
+    "icao24": {
+      "name": "ibosoftnet/icao-aircraft-addresses",
+      "repositoryUrl": "https://github.com/ibosoftnet/icao-aircraft-addresses",
+      "commit": "2ac0f294274beddb57212eb7531ff87dfd869de5",
+      "publishedAt": "2025-11-10T01:29:05Z",
+      "sourceRevision": "ICAO Annex 10 Volume III Amendment 92, effective 2024-07-22",
+      "sourcePath": "Hexadecimal Addresses (Amendment 92).csv",
+      "sourceUrl": "https://raw.githubusercontent.com/ibosoftnet/icao-aircraft-addresses/2ac0f294274beddb57212eb7531ff87dfd869de5/Hexadecimal%20Addresses%20(Amendment%2092%29.csv",
+      "sourceBytes": 6236,
+      "sourceSha256": "2a7bf997fee6ba7edaa83687a2179b903632a817f45172b4a6f531b872474166",
+      "licenseName": "CC0 1.0 Universal",
+      "licenseUrl": "https://raw.githubusercontent.com/ibosoftnet/icao-aircraft-addresses/2ac0f294274beddb57212eb7531ff87dfd869de5/LICENSE"
+    },
+    "wikidataMidCrosscheck": {
+      "name": "Wikidata MID and ISO cross-check",
+      "endpoint": "https://query.wikidata.org/sparql",
+      "query": "SELECT ?item ?itemLabel ?mid ?iso2 WHERE { ?item wdt:P2979 ?mid. OPTIONAL { ?item wdt:P297 ?iso2. } SERVICE wikibase:label { bd:serviceParam wikibase:language \"en\". } } ORDER BY ?mid ?item",
+      "retrievedAt": "2026-09-19T21:22:25Z",
+      "canonicalRows": 297,
+      "canonicalSha256": "ba83216afa73d6b6d0daec91b553a63968455a57b560c5902b7c5487f47fc53b",
+      "licenseName": "CC0 1.0 Universal",
+      "licenseUrl": "https://www.wikidata.org/wiki/Wikidata:Licensing"
+    },
+    "wikidataIsoCrosswalk": {
+      "name": "Wikidata ISO 3166-1 alpha-2 crosswalk",
+      "endpoint": "https://query.wikidata.org/sparql",
+      "query": "SELECT ?item ?itemLabel ?iso2 WHERE { ?item wdt:P297 ?iso2. SERVICE wikibase:label { bd:serviceParam wikibase:language \"en\". } } ORDER BY ?iso2 ?item",
+      "retrievedAt": "2026-09-19T21:22:25Z",
+      "canonicalRows": 262,
+      "canonicalSha256": "dca67d4d0f8ad71e1d068f146f50c51f2ebbd68e5e7c01cb2d205e2e0b18e264",
+      "licenseName": "CC0 1.0 Universal",
+      "licenseUrl": "https://www.wikidata.org/wiki/Wikidata:Licensing"
+    }
+  },
+  "projection": {
+    "schemaVersion": 1,
+    "outputVersion": "2026-09-19-v1",
+    "stateIsoAliases": {
+      "Bahamas": "BS",
+      "Bolivia (Plurinational State of)": "BO",
+      "Brunei Darussalam": "BN",
+      "Cabo Verde": "CV",
+      "China": "CN",
+      "Congo": "CG",
+      "Côte d’Ivoire": "CI",
+      "Czechia": "CZ",
+      "Democratic People’s Republic of Korea": "KP",
+      "Gambia": "GM",
+      "Iran (Islamic Republic of)": "IR",
+      "Lao People’s Democratic Republic": "LA",
+      "Micronesia (Federated States of)": "FM",
+      "Republic of Korea": "KR",
+      "Republic of Moldova": "MD",
+      "Russian Federation": "RU",
+      "Sao Tome and Principe": "ST",
+      "Syrian Arab Republic": "SY",
+      "Türkiye": "TR",
+      "United Republic of Tanzania": "TZ",
+      "Venezuela (Bolivarian Republic of)": "VE",
+      "Viet Nam": "VN"
+    },
+    "expected": {
+      "midSourceRecords": 292,
+      "midCrosscheckRows": 297,
+      "projectedMids": 282,
+      "excludedMids": [
+        204,
+        255,
+        303,
+        306,
+        501,
+        607,
+        608,
+        618,
+        635,
+        665
+      ],
+      "aircraftSourceRecords": 196,
+      "projectedAircraftRanges": 192,
+      "excludedAircraftRows": [
+        {
+          "state": "Comoros",
+          "startAddr": "035000",
+          "reason": "count-mismatch"
+        },
+        {
+          "state": "ICAO(2)",
+          "startAddr": "899000",
+          "reason": "special-use"
+        },
+        {
+          "state": "ICAO(1)",
+          "startAddr": "F00000",
+          "reason": "special-use"
+        },
+        {
+          "state": "ICAO(2)",
+          "startAddr": "F09000",
+          "reason": "special-use"
+        }
+      ],
+      "rawBytes": 14148,
+      "gzipBytes": 5394,
+      "sha256": "f621390e58660f42a4c5351b7a93b0b4b1464c98e5add78f498fc6ecc918f7a9"
+    }
+  }
+}

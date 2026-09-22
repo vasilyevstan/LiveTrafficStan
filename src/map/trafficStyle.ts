@@ -4,15 +4,17 @@ import type {
   Point,
 } from 'geojson'
 import {
+  type ExpressionSpecification,
   type GeoJSONSource,
   type LayerSpecification,
   type Map as MapLibreMap,
 } from 'maplibre-gl'
 import type { Theme } from '../app/theme'
 import {
-  TRAFFIC_MARKER_ICONS,
-  type TrafficMarkerIcon,
-} from '../domain/traffic'
+  TRAFFIC_STYLE_IMAGE_IDS,
+  type TrafficStyleImageId,
+} from '../domain/trafficPresentation'
+import { mapTextFont } from './textFont'
 
 export const SOURCE_AIRCRAFT = 'traffic-aircraft'
 export const SOURCE_VESSELS = 'traffic-vessels'
@@ -20,6 +22,8 @@ export const SOURCE_TRAIL = 'traffic-trail'
 export const LAYER_SELECTED_TRAIL = 'traffic-selected-trail'
 export const LAYER_AIRCRAFT = 'traffic-aircraft-symbols'
 export const LAYER_VESSELS = 'traffic-vessel-symbols'
+export const LAYER_AIRCRAFT_STOPPED = 'traffic-aircraft-stopped'
+export const LAYER_VESSEL_STOPPED = 'traffic-vessel-stopped'
 export const LAYER_AIRCRAFT_HALO = 'traffic-aircraft-halo'
 export const LAYER_VESSEL_HALO = 'traffic-vessel-halo'
 export const LAYER_AIRCRAFT_CLUSTERS = 'traffic-aircraft-clusters'
@@ -31,6 +35,7 @@ export const LAYER_VESSEL_CLUSTER_COUNT =
 
 export const AIRCRAFT_TRAFFIC_LAYER_IDS = [
   LAYER_AIRCRAFT,
+  LAYER_AIRCRAFT_STOPPED,
   LAYER_AIRCRAFT_HALO,
   LAYER_AIRCRAFT_CLUSTERS,
   LAYER_AIRCRAFT_CLUSTER_COUNT,
@@ -38,6 +43,7 @@ export const AIRCRAFT_TRAFFIC_LAYER_IDS = [
 
 export const VESSEL_TRAFFIC_LAYER_IDS = [
   LAYER_VESSELS,
+  LAYER_VESSEL_STOPPED,
   LAYER_VESSEL_HALO,
   LAYER_VESSEL_CLUSTERS,
   LAYER_VESSEL_CLUSTER_COUNT,
@@ -47,7 +53,7 @@ type TrafficGeoJson =
   | FeatureCollection<Point>
   | FeatureCollection<LineString>
 
-export type TrafficStyleImages = Record<TrafficMarkerIcon, ImageData>
+export type TrafficStyleImages = Record<TrafficStyleImageId, ImageData>
 
 export interface TrafficStyleSnapshot {
   theme: Theme
@@ -67,8 +73,9 @@ const themePaint = (theme: Theme) =>
     ? {
         trail: '#7ce5ff',
         trailOpacity: 0.82,
-        aircraftHalo: '#5ce2ff',
-        vesselHalo: '#ffc06d',
+        selectionHalo: '#f8fdff',
+        stopped: '#ff4655',
+        stoppedStroke: '#fff5f6',
         aircraftCluster: '#087c9d',
         aircraftClusterStroke: '#8cecff',
         vesselCluster: '#a85c18',
@@ -81,8 +88,9 @@ const themePaint = (theme: Theme) =>
     : {
         trail: '#138daf',
         trailOpacity: 0.72,
-        aircraftHalo: '#35c8ef',
-        vesselHalo: '#f1a246',
+        selectionHalo: '#0f2938',
+        stopped: '#c1121f',
+        stoppedStroke: '#ffffff',
         aircraftCluster: '#0f7894',
         aircraftClusterStroke: '#d4f7ff',
         vesselCluster: '#b76720',
@@ -114,7 +122,7 @@ export const setTrafficLayerVisibility = (
 
 const ensureImage = (
   map: MapLibreMap,
-  id: TrafficMarkerIcon,
+  id: TrafficStyleImageId,
   image: ImageData,
 ) => {
   if (map.hasImage(id)) {
@@ -169,8 +177,9 @@ export const installTrafficStyle = (
   images: TrafficStyleImages,
 ) => {
   const paint = themePaint(snapshot.theme)
+  const textFont = mapTextFont(map)
 
-  for (const imageId of TRAFFIC_MARKER_ICONS) {
+  for (const imageId of TRAFFIC_STYLE_IMAGE_IDS) {
     ensureImage(map, imageId, images[imageId])
   }
 
@@ -190,9 +199,16 @@ export const installTrafficStyle = (
     },
   })
 
-  for (const [id, source, color] of [
-    [LAYER_AIRCRAFT_HALO, SOURCE_AIRCRAFT, paint.aircraftHalo],
-    [LAYER_VESSEL_HALO, SOURCE_VESSELS, paint.vesselHalo],
+  const trafficOpacity: ExpressionSpecification = [
+    'case',
+    ['get', 'stale'],
+    paint.staleIconOpacity,
+    paint.liveIconOpacity,
+  ]
+
+  for (const [id, source] of [
+    [LAYER_AIRCRAFT_HALO, SOURCE_AIRCRAFT],
+    [LAYER_VESSEL_HALO, SOURCE_VESSELS],
   ] as const) {
     ensureLayer(map, {
       id,
@@ -205,10 +221,10 @@ export const installTrafficStyle = (
       ],
       paint: {
         'circle-radius': 16,
-        'circle-color': color,
-        'circle-opacity': 0.18,
-        'circle-stroke-color': color,
-        'circle-stroke-opacity': 0.75,
+        'circle-color': paint.selectionHalo,
+        'circle-opacity': 0.12,
+        'circle-stroke-color': paint.selectionHalo,
+        'circle-stroke-opacity': 0.9,
         'circle-stroke-width': 2,
       },
     })
@@ -221,7 +237,7 @@ export const installTrafficStyle = (
     filter: ['!', ['has', 'point_count']],
     layout: {
       'icon-image': ['get', 'markerIcon'],
-      'icon-size': ['get', 'markerScale'],
+      'icon-size': ['*', ['get', 'markerScale'], 1.08],
       'icon-rotate': ['get', 'heading'],
       'icon-rotation-alignment': 'map',
       'icon-pitch-alignment': 'map',
@@ -229,12 +245,7 @@ export const installTrafficStyle = (
       'icon-ignore-placement': true,
     },
     paint: {
-      'icon-opacity': [
-        'case',
-        ['get', 'stale'],
-        paint.staleIconOpacity,
-        paint.liveIconOpacity,
-      ],
+      'icon-opacity': trafficOpacity,
     },
   })
   ensureLayer(map, {
@@ -244,7 +255,7 @@ export const installTrafficStyle = (
     filter: ['!', ['has', 'point_count']],
     layout: {
       'icon-image': ['get', 'markerIcon'],
-      'icon-size': ['get', 'markerScale'],
+      'icon-size': ['*', ['get', 'markerScale'], 1.04],
       'icon-rotate': ['get', 'heading'],
       'icon-rotation-alignment': 'map',
       'icon-pitch-alignment': 'map',
@@ -252,14 +263,35 @@ export const installTrafficStyle = (
       'icon-ignore-placement': true,
     },
     paint: {
-      'icon-opacity': [
-        'case',
-        ['get', 'stale'],
-        paint.staleIconOpacity,
-        paint.liveIconOpacity,
-      ],
+      'icon-opacity': trafficOpacity,
     },
   })
+
+  for (const [id, source] of [
+    [LAYER_AIRCRAFT_STOPPED, SOURCE_AIRCRAFT],
+    [LAYER_VESSEL_STOPPED, SOURCE_VESSELS],
+  ] as const) {
+    ensureLayer(map, {
+      id,
+      type: 'circle',
+      source,
+      filter: [
+        'all',
+        ['!', ['has', 'point_count']],
+        ['==', ['get', 'motionState'], 'slow-stopped'],
+      ],
+      paint: {
+        'circle-radius': 5.5,
+        'circle-color': paint.stopped,
+        'circle-opacity': trafficOpacity,
+        'circle-stroke-color': paint.stoppedStroke,
+        'circle-stroke-opacity': trafficOpacity,
+        'circle-stroke-width': 2,
+        'circle-translate': [11, -11],
+        'circle-translate-anchor': 'viewport',
+      },
+    })
+  }
 
   for (const [id, source, color, stroke] of [
     [
@@ -298,31 +330,37 @@ export const installTrafficStyle = (
     })
   }
 
-  for (const [id, source, prefix] of [
-    [LAYER_AIRCRAFT_CLUSTER_COUNT, SOURCE_AIRCRAFT, 'AIR '],
-    [LAYER_VESSEL_CLUSTER_COUNT, SOURCE_VESSELS, 'SEA '],
-  ] as const) {
-    ensureLayer(map, {
-      id,
-      type: 'symbol',
-      source,
-      filter: ['has', 'point_count'],
-      layout: {
-        'text-field': [
-          'concat',
-          prefix,
-          ['to-string', ['get', 'point_count_abbreviated']],
-        ],
-        'text-size': 10,
-        'text-allow-overlap': true,
-        'text-ignore-placement': true,
-      },
-      paint: {
-        'text-color': paint.clusterText,
-        'text-halo-color': paint.clusterTextHalo,
-        'text-halo-width': 1.2,
-      },
-    })
+  if (textFont) {
+    for (const [id, source, prefix] of [
+      [LAYER_AIRCRAFT_CLUSTER_COUNT, SOURCE_AIRCRAFT, 'AIR '],
+      [LAYER_VESSEL_CLUSTER_COUNT, SOURCE_VESSELS, 'SEA '],
+    ] as const) {
+      ensureLayer(map, {
+        id,
+        type: 'symbol',
+        source,
+        filter: ['has', 'point_count'],
+        layout: {
+          'text-field': [
+            'concat',
+            prefix,
+            ['to-string', ['get', 'point_count_abbreviated']],
+          ],
+          'text-font': textFont,
+          'text-size': 10,
+          'text-allow-overlap': true,
+          'text-ignore-placement': true,
+        },
+        paint: {
+          'text-color': paint.clusterText,
+          'text-halo-color': paint.clusterTextHalo,
+          'text-halo-width': 1.2,
+        },
+      })
+      if (map.getLayer(id)) {
+        map.setLayoutProperty(id, 'text-font', textFont)
+      }
+    }
   }
 
   if (map.getLayer(LAYER_SELECTED_TRAIL)) {
@@ -337,29 +375,42 @@ export const installTrafficStyle = (
       paint.trailOpacity,
     )
   }
-  if (map.getLayer(LAYER_AIRCRAFT_HALO)) {
-    map.setPaintProperty(
-      LAYER_AIRCRAFT_HALO,
-      'circle-color',
-      paint.aircraftHalo,
-    )
-    map.setPaintProperty(
-      LAYER_AIRCRAFT_HALO,
-      'circle-stroke-color',
-      paint.aircraftHalo,
-    )
+  for (const layerId of [LAYER_AIRCRAFT_HALO, LAYER_VESSEL_HALO]) {
+    if (map.getLayer(layerId)) {
+      map.setPaintProperty(
+        layerId,
+        'circle-color',
+        paint.selectionHalo,
+      )
+      map.setPaintProperty(
+        layerId,
+        'circle-stroke-color',
+        paint.selectionHalo,
+      )
+    }
   }
-  if (map.getLayer(LAYER_VESSEL_HALO)) {
-    map.setPaintProperty(
-      LAYER_VESSEL_HALO,
-      'circle-color',
-      paint.vesselHalo,
-    )
-    map.setPaintProperty(
-      LAYER_VESSEL_HALO,
-      'circle-stroke-color',
-      paint.vesselHalo,
-    )
+  for (const layerId of [
+    LAYER_AIRCRAFT_STOPPED,
+    LAYER_VESSEL_STOPPED,
+  ]) {
+    if (map.getLayer(layerId)) {
+      map.setPaintProperty(layerId, 'circle-color', paint.stopped)
+      map.setPaintProperty(
+        layerId,
+        'circle-stroke-color',
+        paint.stoppedStroke,
+      )
+      map.setPaintProperty(
+        layerId,
+        'circle-opacity',
+        trafficOpacity,
+      )
+      map.setPaintProperty(
+        layerId,
+        'circle-stroke-opacity',
+        trafficOpacity,
+      )
+    }
   }
   for (const [layerId, color, stroke] of [
     [
@@ -393,12 +444,7 @@ export const installTrafficStyle = (
   }
   for (const layerId of [LAYER_AIRCRAFT, LAYER_VESSELS]) {
     if (map.getLayer(layerId)) {
-      map.setPaintProperty(layerId, 'icon-opacity', [
-        'case',
-        ['get', 'stale'],
-        paint.staleIconOpacity,
-        paint.liveIconOpacity,
-      ])
+      map.setPaintProperty(layerId, 'icon-opacity', trafficOpacity)
     }
   }
 

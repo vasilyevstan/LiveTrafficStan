@@ -39,3 +39,28 @@ OurAirports releases its data to the Public Domain and requests, but does not
 require, credit. It provides no guarantee of accuracy or fitness for use. The
 projected airport points are static reference context and are not navigation or
 operational flight information.
+
+Bundled maritime flag-state allocation data is derived from
+michaeljfazio/MIDs:
+https://github.com/michaeljfazio/MIDs
+
+That source is licensed under the Apache License 2.0. The projection retains
+only MID, country name, and ISO 3166-1 alpha-2 code where a separate CC0
+Wikidata cross-check agrees without ambiguity.
+
+Bundled aircraft address-allocation data is derived from
+ibosoftnet/icao-aircraft-addresses:
+https://github.com/ibosoftnet/icao-aircraft-addresses
+
+That source applies CC0 1.0 Universal to its machine-readable transcription of
+ICAO 24-bit allocation ranges. LiveTrafficStan excludes invalid, temporary,
+special-use, and unresolved rows and does not reproduce ICAO publication text
+or layout.
+
+The MID cross-check and aircraft state-to-ISO crosswalk use Wikidata structured
+data under CC0 1.0 Universal:
+https://www.wikidata.org/wiki/Wikidata:Licensing
+
+Country allocation rows are identifier-derived reference context only. They do
+not establish operator, owner, crew, route, location, current jurisdiction, or
+a live registry check.

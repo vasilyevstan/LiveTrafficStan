@@ -17,17 +17,27 @@ export type VesselNavigationCategory =
   | 'fishing'
   | 'other'
   | 'unknown'
-export const TRAFFIC_MARKER_ICONS = [
+export const AIRCRAFT_MARKER_ICONS = [
   'aircraft',
   'aircraft-light',
   'aircraft-heavy',
   'helicopter',
+] as const
+export type AircraftMarkerIcon = (typeof AIRCRAFT_MARKER_ICONS)[number]
+
+export const VESSEL_MARKER_ICONS = [
   'vessel',
   'vessel-cargo',
   'vessel-tanker',
   'vessel-passenger',
   'vessel-fishing',
   'vessel-tug',
+] as const
+export type VesselMarkerIcon = (typeof VESSEL_MARKER_ICONS)[number]
+
+export const TRAFFIC_MARKER_ICONS = [
+  ...AIRCRAFT_MARKER_ICONS,
+  ...VESSEL_MARKER_ICONS,
 ] as const
 export type TrafficMarkerIcon = (typeof TRAFFIC_MARKER_ICONS)[number]
 

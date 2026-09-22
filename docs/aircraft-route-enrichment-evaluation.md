@@ -2,27 +2,30 @@
 
 ## Decision
 
-Evaluation date: **2026-09-19**
+Evaluation updated: **2026-09-21**
 
-LiveTrafficStan will not add aircraft origin or destination enrichment yet.
+The owner authorized a disabled-by-default aviationstack evaluation slice under
+the Free plan's current 100-request monthly allowance. The repository may
+contain the complete deterministic client, Worker, quota, and UI path without
+claiming that public use is authorized or enabling it in a release.
 
-No reviewed source is both:
+The evaluation path:
 
-- authorized for this public application; and
-- capable of associating origin and destination with the selected flight
-  occurrence using a provider-issued flight/leg identity plus bounded date/time
-  context.
-
-The current keyless route-like sources are callsign-based standing tables or
-track-derived airport estimates. They cannot establish current operational
-intent. The credible operational APIs require an account, accepted terms, a
-server-held credential, an approved budget, and provider-specific identity
-rules that are not supplied or verified through the project.
+- starts only from an explicit **Find route** action for a selected live
+  aircraft;
+- keeps the aviationstack key in the Cloudflare Worker;
+- accepts only one exact active callsign/ICAO24 operating-flight match;
+- reserves at most 90 attempts in any rolling 31-day window;
+- makes one provider request per accepted action, with no retry or pagination;
+- reuses successful exact-identity routes from a bounded six-hour tab cache;
+- returns unavailable on no match, ambiguity, or incomplete pagination;
+- remains disabled independently in both browser and Worker configuration.
 
 [Issue #44](https://github.com/vasilyevstan/LiveTrafficStan/issues/44)
-records the exact authorization evidence required before implementation.
-Issue #3 remains open and receives no adapter, route field, Worker endpoint,
-placeholder panel, or mock production response.
+remains open for the exact accepted account terms, public-display,
+attribution, cache/retention rights, and the remainder of the no-more-than-ten
+call real evaluation. Issue #3 can receive this guarded implementation, but
+public enablement and route claims remain blocked until that evidence exists.
 
 This is an engineering record, not legal advice. Provider terms, pricing,
 schemas, and access can change and must be rechecked before a source decision.
@@ -39,52 +42,61 @@ This evaluation uses:
 
 Unknown does not mean permitted.
 
-No provider account was created, no paid terms were accepted, no credential
-was requested, no operator was contacted, and no credentialed route call was
-made.
+A Free-plan account and dedicated key were supplied on 2026-09-21. The key is
+stored only in ignored local Worker configuration and the protected GitHub
+production environment; it is not committed or browser-visible. One
+credentialed route call has been made through the local Worker runtime.
 
 ## Current project state
 
-Verified against protected `dev` SHA
-`dc6ef9208643116662c3e9138b84a0097e85548d`:
+The cache branch is based on protected `dev` SHA
+`2a2cdd73cbee618c25767cdfcb8da8d7c032d449`:
 
 - ADSB.lol is the only live aircraft provider.
 - A normalized aircraft may contain ICAO24, callsign, registration, type,
   observation time, and current position.
-- No provider flight-occurrence identity or route field exists.
-- The Cloudflare Worker constructs only the fixed ADSB.lol point URL.
-- Repository Actions secrets and variables are empty.
-- GitHub `production` environment secrets and variables are empty.
+- aviationstack exposes no opaque provider flight-occurrence identity.
+- The guarded client route state remains separate from live traffic entities.
+- The Cloudflare Worker owns a fixed `/api/flight-route` boundary and a
+  SQLite-backed global attempt quota.
+- `VITE_FLIGHT_ROUTE_ENABLED` and `AVIATIONSTACK_ENABLED` default to `false`.
+- One dedicated aviationstack key is configured outside Git.
+- Successful validated exact-identity routes are eligible for reuse only
+  through a bounded six-hour in-memory tab cache.
 - `.env.example` states that every `VITE_*` value is browser-visible and must
   never contain a secret.
 - Issue #39 separately tracks permanent Cloudflare deployment authorization.
 
-This evidence does not claim that the repository owner has no unrelated
-personal provider account. It establishes that no applicable route source,
-agreement, plan, or credential is supplied or verified through the checked
-project path.
+The exact accepted Free-plan Order/terms, public display rights, attribution,
+and cache/retention grant still have not been recorded. A configured
+credential and successful private evaluation do not authorize public use.
+Because the evaluation key was supplied through a chat message, it must be
+rotated before any public deployment.
 
-## Required identity and truthfulness contract
+## Initial identity and truthfulness contract
 
-A source is compatible only if it can support all of these rules:
+aviationstack's current flight response has no opaque occurrence identity, so
+the evaluation deliberately avoids claiming a durable leg association. It can
+display a current route only when all of these conditions hold in one complete
+response page:
 
-- A provider-issued flight-occurrence or leg identity is the primary
-  association.
-- Bounded temporal context is part of the association.
-- Callsign and registration may corroborate a result but cannot establish it
-  alone.
-- Operating and marketing flights, codeshares, repeated legs, UTC/local date
-  boundaries, schedule changes, cancellations, and diversions have explicit
-  semantics.
-- Missing, reused, changed, or conflicting identifiers produce unavailable or
-  ambiguous outcomes.
-- Scheduled, estimated, revised, actual, canceled, diverted, approximate, and
-  unknown values remain distinct.
-- Source, source age, retrieval age, attribution, and identity confidence stay
-  visible with every displayed route.
+- the live aircraft has a canonical six-character ICAO24 address;
+- the live callsign resembles an ICAO flight designator with three leading
+  letters, one to five trailing alphanumeric characters, and at least one
+  digit;
+- the returned operating `flight.icao` equals that callsign;
+- `flight_status` is `active`;
+- `flight.codeshared` is null;
+- returned `aircraft.icao24` exists and equals the selected ICAO24;
+- when both registrations exist, trim/uppercase values match exactly;
+- both departure and arrival have usable airport identity;
+- exactly one row satisfies every condition.
 
-Movement, heading, current position, nearest airports, geographic plausibility,
-static aircraft metadata, and callsign parsing are not route evidence.
+There is no registration-only, callsign-only, fuzzy, codeshare-collapse,
+date-guessing, or proximity fallback. Scheduled, landed, canceled, incident,
+and diverted rows are not displayed in this first slice. Movement, heading,
+current position, nearest airports, geographic plausibility, and static
+aircraft metadata are not route evidence.
 
 ## Candidate matrix
 
@@ -96,7 +108,7 @@ static aircraft metadata, and callsign parsing are not route evidence.
 | OpenSky flights | ICAO24 plus time window, but previous-day-or-earlier batch output with estimated airports and times | OAuth for authenticated access; flight credits; live operational use requires a previous written agreement | Reject |
 | FlightAware AeroAPI | Provider flight ID, schedule/estimate/actual times, codeshares, cancellation, and diversion fields | Account and API key; per-result-set pricing; Standard currently has a monthly minimum; written permission required for conjunction/backfill with another real-time provider | Credible only after authorization |
 | AeroDataBox | Number, callsign, registration, or ICAO24 plus local date; schedule/status/quality fields; no opaque occurrence ID in the inspected contract | Account, key, and plan; paid retrieval required for commercial use unless separately agreed; bounded retention terms | Credible only after authorization and approved identity contract |
-| aviationstack | Flight/status and route surfaces, but no verified project-specific occurrence contract | Account and key; Free has 100 requests/month and non-commercial use; paid plan required for this public product | Not selected |
+| aviationstack | Active-flight filters plus route and aircraft identity fields; no opaque occurrence ID | Account and key; Free currently has 100 requests/month and non-commercial use; exact order terms remain unreviewed | Selected only for a disabled, fail-closed evaluation slice |
 | EUROCONTROL NM B2B | Operational European flight data | Eligibility, agreements, certificates, and specific data rights not held by this project | Not accessible now |
 | Public airport/airline/tracker pages | Human-readable schedules or status | A webpage is not an API/publication license and cannot prove the selected ADS-B occurrence | Reject scraping |
 
@@ -285,15 +297,28 @@ The official pricing page currently describes:
 - Free: 100 requests/month, HTTPS, real-time flights, non-commercial use;
 - paid tiers: commercial use and larger allowances.
 
+The current official `/v1/flights` specification is available on all plans and
+supports `flight_icao`, `flight_status`, and `limit`. Responses include route,
+operating flight, codeshare, aircraft registration/ICAO24, pagination, and
+optional live-update fields. Historical `flight_date` filtering is documented
+for Basic and higher, so the Free evaluation does not use it.
+
 Official sources:
 
 - <https://aviationstack.com/documentation>
 - <https://aviationstack.com/pricing>
 
-The project has no account, access key, paid plan, accepted terms, verified
-occurrence identity contract, cache grant, or authorized Tallinn sample.
-aviationstack offers no established advantage over the stronger documented
-FlightAware and AeroDataBox authorization paths.
+The project still has no account, access key, paid plan, accepted order terms,
+cache grant, or authorized Tallinn sample. Generic public material does not
+settle whether the exact intended display, attribution, fixtures, screenshots,
+or combination with ADSB.lol is permitted.
+
+The owner nevertheless selected aviationstack as the first bounded evaluation
+because the Free plan can support a manually triggered proof without user
+charges. The application reserves no more than 90 attempts in a rolling
+31-day window and the first live evaluation may use no more than ten calls.
+That implementation budget is stricter than the advertised allowance and does
+not replace provider-side account monitoring.
 
 ### EUROCONTROL and public flight boards
 
@@ -311,9 +336,10 @@ machine-readable integration or republication license, and it does not bind a
 row to the selected ADS-B occurrence. Do not scrape it or another airline,
 airport, tracker, or widget.
 
-## Blocker completion evidence
+## Public-enablement evidence
 
-Issue #44 may close when all of these are proven:
+Issue #44 may close and the feature may be enabled publicly only when all of
+these are proven:
 
 - a named source, account owner, plan/Order, and approved recurring or usage
   budget;
@@ -324,8 +350,8 @@ Issue #44 may close when all of these are proven:
   records;
 - exact cache, negative-cache, logging, fixture, screenshot, retention,
   deletion, and attribution terms;
-- a provider-issued occurrence/leg identity or provider-approved composite
-  identity;
+- provider acceptance of the exact callsign-plus-ICAO24 matching contract and
+  its limits, or a stronger supported occurrence identity;
 - explicit UTC/local-date, operating/marketing, repeated-leg, codeshare,
   midnight, schedule-change, cancellation, and diversion rules;
 - an auditable table containing authorized dated Tallinn arrival and departure
@@ -334,8 +360,9 @@ Issue #44 may close when all of these are proven:
   states, and expected association or unavailable/ambiguous outcome;
 - coverage for reused, missing, and changed identifiers, codeshares, and date
   boundaries;
-- a provider-enforced hard allowance or separately approved aggregate
-  fail-closed request/spend control;
+- the checked global 90-attempt rolling quota using one dedicated key;
+- a rotated dedicated key that was not disclosed through chat or another
+  retained conversation channel;
 - authorized server-side credential verification;
 - one successful selected-flight lookup and one valid unavailable or ambiguous
   result retained under provider terms;
@@ -349,6 +376,17 @@ An official documented example or permitted fixture can prove a rare
 diversion/ambiguity path. Authentication failure and provider outage do not
 count as a valid unavailable-flight result.
 
+## Bounded live evaluation evidence
+
+One of the ten authorized evaluation calls has been used:
+
+| Retrieved | Selected ADS-B identity | Result | Notes |
+| --- | --- | --- | --- |
+| 2026-09-21 | `SAS1748`, ICAO24 `4AB566`, registration `SE-MKF` | Arlanda (`ARN`) to Ulemiste (`TLL`), active | Local Worker returned one sanitized exact-match route with `200`, `Cache-Control: no-store`, and `X-Content-Type-Options: nosniff` |
+
+No raw provider body, key, quota state, or user data was retained. The
+remaining evaluation allowance is nine calls.
+
 ## Separate production gate
 
 Issue #39 remains the permanent Cloudflare account/deployment blocker.
@@ -358,49 +396,34 @@ before #39 closes. Public route enrichment still requires the selected
 secret-holding boundary to be deployed and validated. Closing either gate does
 not complete the other.
 
-## Later implementation invariants
+## Implemented evaluation invariants
 
-These requirements do not authorize runtime code before Issue #44 closes:
-
-- Start enrichment only after explicit aircraft selection.
-- Never start or refresh it from ADSB position polling, camera movement, map
-  updates, trails, metadata refresh, or provider retry.
-- Deduplicate and cache by occurrence/leg identity plus temporal context, never
-  callsign alone.
-- Use provider-permitted bounded positive and negative lifetimes. Retention
-  ceilings are not freshness TTLs.
-- Reevaluate expiry while details remain open through an explicitly permitted
-  refresh path.
-- Abort on deselection, selection change, identity change, and unmount.
-- Reject late callbacks by monotonic generation.
-- Never alter ADSB position time, freshness, cadence/backoff, marker existence,
-  trails, selection eligibility, static metadata, map health, or another
+- Selection alone never starts a request; each attempt requires **Find route**.
+- ADSB position polling, camera movement, map updates, trails, metadata
+  refreshes, and provider retries never start or refresh route lookup.
+- Deselect, identity change, history mode, feature disable, and unmount abort
+  and clear obsolete work; monotonic revisions reject late callbacks.
+- The client sends only canonical callsign, ICAO24, and optional registration
+  to one root-relative route.
+- The Worker accepts only a bounded JSON `POST`, constructs one fixed
+  aviationstack URL, adds the key server-side, rejects redirects, and performs
+  no retry or pagination request.
+- One globally named SQLite-backed Durable Object atomically reserves accepted
+  attempts before the provider call. It stores only timestamps, never selected
+  identifiers, routes, provider bodies, or user data.
+- Reservations are never refunded after timeout, redirect, malformed response,
+  provider error, or client cancellation.
+- Every response is `no-store` and sanitized; raw provider bodies, pagination,
+  URLs, status text, secrets, and exception details never reach the browser.
+- Up to 32 successful validated exact-identity routes are eligible for reuse
+  from tab memory for six hours with least-recently-used eviction. Failures are
+  not cached, and no route is persisted in Web Storage, IndexedDB, history, the
+  service worker, Worker Cache API, or Durable Object storage.
+- Route failure never alters ADSB position time, freshness, cadence/backoff,
+  marker existence, trails, static metadata, selection, map health, or another
   provider.
-- Preserve field-level provenance and source/retrieval time.
-- Keep scheduled, estimated, revised, actual, canceled, diverted, approximate,
-  ambiguous, and unknown states distinct.
-- Reject FlightAware `position_only` records as operational route evidence;
-  do not treat its `cancelled` flag as proof of airline cancellation; resolve
-  diverted legs explicitly.
-- Do not label AeroDataBox `revisedTime` or `Approximate` quality as confirmed
-  actual data.
-- Never use Mictronics metadata to infer the current operator, flight, origin,
-  or destination.
-- Always show visible provider attribution and source age.
-- Keep future credentials server-side behind one same-origin fixed-upstream
-  route with no wildcard CORS, cookies, browser authorization, arbitrary
-  headers, client-selected upstream, or general-forwarder behavior.
-- Do not routinely log selected identifiers, lookup URLs, or raw requests and
-  responses. Any explicitly permitted diagnostics must be minimized, redacted,
-  bounded, and expired.
-- Do not add a persistent database, queue, cache service, or rate-control
-  service without separate measured justification and approval.
-
-Deterministic tests must cover occurrence identity, missing/reused/changed
-identifiers, operating and marketing numbers, codeshares, UTC/local midnight,
-repeated legs, schedule changes, cancellation, diversion, ambiguity,
-positive/negative cache expiry, expiry while open, outage, throttle,
-cancellation, stale callbacks, and complete live-marker/provider isolation.
+- Visible attribution identifies aviationstack and makes clear that map
+  positions continue to come from ADSB.lol.
 
 ## Issue boundaries
 

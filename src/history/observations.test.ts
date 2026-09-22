@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import type { Aircraft, Vessel } from '../domain/traffic'
 import {
+  DEFAULT_VESSEL_FILTERS,
+  filterVessels,
+  ONE_KNOT_KPH,
+} from '../domain/vesselFilters'
+import {
   ADSB_HISTORY_LICENSE_DECISION,
   DIGITRAFFIC_HISTORY_LICENSE_DECISION,
   historicalObservationToEntity,
@@ -75,6 +80,7 @@ describe('historical observation projection', () => {
       kind: 'vessel',
       licenseDecisionId: DIGITRAFFIC_HISTORY_LICENSE_DECISION,
     })
+
     expect(projected).not.toHaveProperty('destination')
     expect(projected).not.toHaveProperty('eta')
     if (!projected || projected.kind !== 'vessel') {
@@ -99,6 +105,65 @@ describe('historical observation projection', () => {
     expect(projected.logicalBytes).toBe(
       new TextEncoder().encode(JSON.stringify(projected)).byteLength,
     )
+  })
+
+  it('preserves every input needed to recompute yacht eligibility at the cursor', () => {
+    const projected = projectHistoricalObservation(
+      {
+        ...vessel,
+        vesselCategory: 'other',
+        vesselType: 'Sailing vessel',
+        lengthMeters: 20,
+        speedKph: ONE_KNOT_KPH,
+        markerIcon: 'vessel',
+      },
+      context,
+    )
+    if (!projected || projected.kind !== 'vessel') {
+      throw new Error('Expected a vessel observation')
+    }
+
+    expect(projected).toMatchObject({
+      observedAt: 20_000,
+      speedKph: ONE_KNOT_KPH,
+      vesselType: 'Sailing vessel',
+      lengthMeters: 20,
+      markerIcon: 'vessel',
+    })
+
+    const beforeMetadata = historicalObservationToEntity(
+      projected,
+      18_000,
+    )
+    const atObservation = historicalObservationToEntity(
+      projected,
+      20_000,
+    )
+    if (
+      beforeMetadata.kind !== 'vessel' ||
+      atObservation.kind !== 'vessel'
+    ) {
+      throw new Error('Expected historical vessels')
+    }
+
+    expect(
+      filterVessels([beforeMetadata], DEFAULT_VESSEL_FILTERS, {
+        displayTime: 18_000,
+        staleAfterMs: 120_000,
+      }),
+    ).toEqual([])
+    expect(
+      filterVessels([atObservation], DEFAULT_VESSEL_FILTERS, {
+        displayTime: 20_000,
+        staleAfterMs: 120_000,
+      }),
+    ).toHaveLength(1)
+    expect(
+      filterVessels([atObservation], DEFAULT_VESSEL_FILTERS, {
+        displayTime: 140_001,
+        staleAfterMs: 120_000,
+      }),
+    ).toEqual([])
   })
 
   it('rejects unapproved providers and malformed stored rows', () => {

@@ -48,6 +48,9 @@ jobs:
       - name: Check aircraft metadata
         run: npm run check:aircraft-metadata
 
+      - name: Check country allocations
+        run: npm run check:country-allocations
+
       - name: Check ports
         run: npm run check:ports
 

@@ -8,6 +8,7 @@ import {
 import type { Theme } from '../app/theme'
 import type { Port } from '../domain/ports'
 import { LAYER_AIRPORTS_MEDIUM } from './airportsStyle'
+import { mapTextFont, type MapTextFont } from './textFont'
 import { LAYER_SELECTED_TRAIL } from './trafficStyle'
 import { LAYER_WEATHER_HALO } from './weatherStyle'
 
@@ -153,6 +154,7 @@ const labelLayer = (
   filter: FilterSpecification,
   minzoom: number,
   paint: ReturnType<typeof themePaint>,
+  textFont: MapTextFont,
 ): LayerSpecification => ({
   id,
   type: 'symbol',
@@ -162,6 +164,7 @@ const labelLayer = (
   filter,
   layout: {
     'text-field': ['get', 'name'],
+    'text-font': textFont,
     'text-size': 11,
     'text-offset': [0, 0.9],
     'text-anchor': 'top',
@@ -197,17 +200,51 @@ export const installPortsStyle = (
   visible: boolean,
 ) => {
   const paint = themePaint(theme)
+  const textFont = mapTextFont(map)
   setSourceData(map, data)
 
   for (const layer of [
     circleLayer(LAYER_PORTS_MINOR, rankFilters.minor, 9, paint),
     circleLayer(LAYER_PORTS_MEDIUM, rankFilters.medium, 7, paint),
     circleLayer(LAYER_PORTS_MAJOR, rankFilters.major, 5, paint),
-    labelLayer(LAYER_PORT_LABELS_MINOR, rankFilters.minor, 10, paint),
-    labelLayer(LAYER_PORT_LABELS_MEDIUM, rankFilters.medium, 8, paint),
-    labelLayer(LAYER_PORT_LABELS_MAJOR, rankFilters.major, 6, paint),
+    ...(textFont
+      ? [
+          labelLayer(
+            LAYER_PORT_LABELS_MINOR,
+            rankFilters.minor,
+            10,
+            paint,
+            textFont,
+          ),
+          labelLayer(
+            LAYER_PORT_LABELS_MEDIUM,
+            rankFilters.medium,
+            8,
+            paint,
+            textFont,
+          ),
+          labelLayer(
+            LAYER_PORT_LABELS_MAJOR,
+            rankFilters.major,
+            6,
+            paint,
+            textFont,
+          ),
+        ]
+      : []),
   ]) {
     ensureLayer(map, layer)
+  }
+  if (textFont) {
+    for (const layerId of [
+      LAYER_PORT_LABELS_MAJOR,
+      LAYER_PORT_LABELS_MEDIUM,
+      LAYER_PORT_LABELS_MINOR,
+    ]) {
+      if (map.getLayer(layerId)) {
+        map.setLayoutProperty(layerId, 'text-font', textFont)
+      }
+    }
   }
 
   for (const layerId of [

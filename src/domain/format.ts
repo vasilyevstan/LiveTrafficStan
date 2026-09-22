@@ -47,6 +47,12 @@ export const formatSpeed = (
       )} kn`
     : `${wholeNumber.format(kilometersPerHour)} km/h`
 
+export const formatVesselSpeed = (kilometersPerHour: number) =>
+  `${formatSpeed(kilometersPerHour)} · ${formatSpeed(
+    kilometersPerHour,
+    'aviation-nautical',
+  )}`
+
 export const formatVerticalSpeed = (
   metersPerSecond: number,
   units: UnitSystem = 'metric',

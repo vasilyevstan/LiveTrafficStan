@@ -51,6 +51,29 @@ describe('createAppConfig', () => {
       futureToleranceHours: 24,
       sourceDatabaseVersion: 522,
     })
+    expect(config.aircraftPhoto).toEqual({
+      enabled: false,
+      endpointBaseUrl:
+        'https://api.planespotters.net/pub/photos/hex',
+      timeoutMs: 8_000,
+      maximumBytes: 32 * 1_024,
+      thumbnailOrigin: 'https://cdn.planespotters.net',
+      photoPageOrigin: 'https://www.planespotters.net',
+      sourceName: 'Planespotters.net',
+      sourceWebsiteUrl: 'https://www.planespotters.net/',
+      sourceTermsUrl: 'https://www.planespotters.net/photo/api',
+      cacheMaxEntries: 32,
+      cacheTtlMs: 60 * 60_000,
+      rateLimitFallbackMs: 60_000,
+    })
+    expect(config.flightRoute).toEqual({
+      enabled: false,
+      endpointUrl: '/api/flight-route',
+      timeoutMs: 10_000,
+      maximumBytes: 16 * 1_024,
+      sourceName: 'aviationstack',
+      sourceWebsiteUrl: 'https://aviationstack.com/',
+    })
     expect(config.airports).toMatchObject({
       assetUrl:
         '/airports/ourairports-2026-09-19-v1/airports.geojson',
@@ -100,6 +123,9 @@ describe('createAppConfig', () => {
       VITE_AIRCRAFT_ENDPOINT: 'https://example.test/aircraft/',
       VITE_GEOCODER_ENDPOINT: 'https://example.test/search/',
       VITE_MAP_DARK_STYLE_URL: 'https://example.test/dark/',
+      VITE_AIRCRAFT_PHOTO_ENABLED: 'true',
+      VITE_FLIGHT_ROUTE_ENABLED: 'true',
+      VITE_FLIGHT_ROUTE_ENDPOINT: '/edge/flight-route/',
     })
 
     expect(config.center).toEqual({
@@ -114,6 +140,11 @@ describe('createAppConfig', () => {
     expect(config.geocoder.endpointBaseUrl).toBe(
       'https://example.test/search',
     )
+    expect(config.flightRoute).toMatchObject({
+      enabled: true,
+      endpointUrl: '/edge/flight-route',
+    })
+    expect(config.aircraftPhoto.enabled).toBe(true)
 
     expect(
       createAppConfig({
@@ -164,6 +195,21 @@ describe('createAppConfig', () => {
         VITE_WEATHER_ENDPOINT: '/api/weather/metar?format=json',
       }),
     ).toThrow(/without a query/)
+    expect(() =>
+      createAppConfig({
+        VITE_AIRCRAFT_PHOTO_ENABLED: 'yes',
+      }),
+    ).toThrow(/VITE_AIRCRAFT_PHOTO_ENABLED/)
+    expect(() =>
+      createAppConfig({
+        VITE_FLIGHT_ROUTE_ENABLED: 'yes',
+      }),
+    ).toThrow(/VITE_FLIGHT_ROUTE_ENABLED/)
+    expect(() =>
+      createAppConfig({
+        VITE_FLIGHT_ROUTE_ENDPOINT: 'https://collector.example/route',
+      }),
+    ).toThrow(/same-origin/)
     expect(() =>
       createAppConfig({
         VITE_GEOCODER_ENDPOINT: 'https://user:secret@example.test/search',

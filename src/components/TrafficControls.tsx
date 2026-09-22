@@ -31,6 +31,7 @@ import {
   LocationSearchDetails,
   LocationSearchInput,
 } from './LocationSearch'
+import { TrafficLegend } from './TrafficLegend'
 import { useLocationSearchModel } from './useLocationSearchModel'
 import { VesselDiscovery } from './VesselDiscovery'
 import { WeatherContext } from './WeatherContext'
@@ -47,6 +48,7 @@ interface TrafficControlsProps {
   totalVessels: number
   vesselEmptyMessage: string
   units: UnitSystem
+  marineStaleAfterMs: number
   onVesselFiltersChange: (filters: VesselFilterState) => void
   onVesselSelect: (id: string) => void
   aircraftVisible: boolean
@@ -195,6 +197,7 @@ export function TrafficControls({
   totalVessels,
   vesselEmptyMessage,
   units,
+  marineStaleAfterMs,
   onVesselFiltersChange,
   onVesselSelect,
   aircraftVisible,
@@ -277,6 +280,7 @@ export function TrafficControls({
   settingsSummaryRef,
 }: TrafficControlsProps) {
   const mapToolsDetailsRef = useRef<HTMLDetailsElement>(null)
+  const settingsDetailsRef = useRef<HTMLDetailsElement>(null)
   const focusedWithinMapToolsRef = useRef(false)
   const focusedWithinSettingsRef = useRef(false)
   const historyNeedsRecovery = [
@@ -285,11 +289,11 @@ export function TrafficControls({
     'error',
     'deletion-failed',
   ].includes(historyStatus.phase)
-  const promotedAction: PromotedAction | undefined =
+  const settingsPromotedAction: PromotedAction | undefined =
     appUpdateAvailable || appUpdateActivating
       ? {
           kind: 'app-update',
-          label: 'APP UPDATE',
+          label: 'App update',
           message:
             appShellStatus ??
             (appUpdateActivating
@@ -304,43 +308,42 @@ export function TrafficControls({
       : historyNeedsRecovery
         ? {
             kind: 'history',
-            label: 'HISTORY',
+            label: 'History unavailable',
             message:
               historyStatus.message ??
               'Private local history needs attention.',
             buttonLabel: 'RETRY HISTORY',
             run: onRetryHistory,
           }
-        : weatherVisible && weatherError
+        : undefined
+  const operationalPromotedAction: PromotedAction | undefined =
+    weatherVisible && weatherError
+      ? {
+          kind: 'weather',
+          label: 'METAR unavailable',
+          message: weatherError,
+          buttonLabel: weatherRetryUsesAirports
+            ? 'RETRY AIRPORTS'
+            : 'RETRY METAR',
+          run: onRetryWeather,
+        }
+      : airportsVisible && airportsError
+        ? {
+            kind: 'airports',
+            label: 'Airports unavailable',
+            message: airportsError,
+            buttonLabel: 'RETRY AIRPORTS',
+            run: onRetryAirports,
+          }
+        : portsVisible && portsError
           ? {
-              kind: 'weather',
-              label: 'METAR',
-              message: weatherError,
-              buttonLabel: weatherRetryUsesAirports
-                ? 'RETRY AIRPORTS'
-                : 'RETRY METAR',
-              run: onRetryWeather,
+              kind: 'ports',
+              label: 'Ports unavailable',
+              message: portsError,
+              buttonLabel: 'RETRY PORTS',
+              run: onRetryPorts,
             }
-          : airportsVisible && airportsError
-            ? {
-                kind: 'airports',
-                label: 'AIRPORTS',
-                message: airportsError,
-                buttonLabel: 'RETRY AIRPORTS',
-                run: onRetryAirports,
-              }
-            : portsVisible && portsError
-              ? {
-                  kind: 'ports',
-                  label: 'PORTS',
-                  message: portsError,
-                  buttonLabel: 'RETRY PORTS',
-                  run: onRetryPorts,
-                }
-              : undefined
-  const suppressAirportRetry =
-    promotedAction?.kind === 'airports' ||
-    (promotedAction?.kind === 'weather' && weatherRetryUsesAirports)
+          : undefined
   const [locationSearch, locationSearchInputRef] = useLocationSearchModel({
     coordinatePrecision,
     maximumQueryLength: maximumLocationQueryLength,
@@ -350,8 +353,8 @@ export function TrafficControls({
     onSelectResult: onPlaceResultSelect,
     onCancel: onPlaceSearchCancel,
     onRevealDetails: () => {
-      if (mapToolsDetailsRef.current) {
-        mapToolsDetailsRef.current.open = true
+      if (settingsDetailsRef.current) {
+        settingsDetailsRef.current.open = true
       }
     },
   })
@@ -359,20 +362,15 @@ export function TrafficControls({
   return (
     <div className="control-stack" aria-label="Map controls">
       <aside
-        className="control-panel control-panel--operations"
-        aria-label="Navigate and explore"
+        className={`control-panel control-panel--operations${
+          operationalPromotedAction ? ' control-panel--urgent' : ''
+        }`}
+        aria-label="Operations"
       >
-      <LocationSearchInput
-        model={locationSearch}
-        inputRef={locationSearchInputRef}
-        maximumQueryLength={maximumLocationQueryLength}
-        searchState={placeSearchState}
-        disabled={locationNavigationDisabled}
-      />
       <div
         className="control-options control-options--three control-panel__primary"
         role="group"
-        aria-label="Map navigation and traffic layers"
+        aria-label="Map operations"
       >
         <button type="button" disabled={centerDisabled} onClick={onCenter}>
           CENTER
@@ -393,6 +391,30 @@ export function TrafficControls({
         >
           SHIPS
         </button>
+      </div>
+
+      <div
+        className="control-panel__urgent"
+        hidden={!operationalPromotedAction}
+        role={operationalPromotedAction ? 'status' : undefined}
+        aria-live={operationalPromotedAction ? 'polite' : undefined}
+        aria-atomic={operationalPromotedAction ? 'true' : undefined}
+      >
+        {operationalPromotedAction && (
+          <>
+            <span>
+              {operationalPromotedAction.label}:{' '}
+              {operationalPromotedAction.message}
+            </span>
+            <button
+              type="button"
+              disabled={operationalPromotedAction.disabled}
+              onClick={operationalPromotedAction.run}
+            >
+              {operationalPromotedAction.buttonLabel}
+            </button>
+          </>
+        )}
       </div>
 
       <details
@@ -417,12 +439,6 @@ export function TrafficControls({
           MORE
         </summary>
         <div className="control-panel__more-body">
-          <LocationSearchDetails
-            model={locationSearch}
-            activeLabel={activeLocationLabel}
-            searchState={placeSearchState}
-          />
-
           <fieldset className="control-group">
             <legend>Layers</legend>
             <div className="control-options control-options--two">
@@ -470,34 +486,38 @@ export function TrafficControls({
                 {weatherVisible && weatherLoading ? 'METAR...' : 'METAR'}
               </button>
             </div>
-            {portsVisible && portsError && (
+            {portsVisible &&
+              portsError &&
+              operationalPromotedAction?.kind !== 'ports' && (
               <div className="control-note ports-status" role="status">
                 <span>Ports unavailable: {portsError}</span>
-                {promotedAction?.kind !== 'ports' && (
-                  <button type="button" onClick={onRetryPorts}>
-                    RETRY PORTS
-                  </button>
-                )}
+                <button type="button" onClick={onRetryPorts}>
+                  RETRY PORTS
+                </button>
               </div>
             )}
-            {airportsVisible && airportsError && (
+            {airportsVisible &&
+              airportsError &&
+              operationalPromotedAction?.kind !== 'airports' &&
+              !(
+                operationalPromotedAction?.kind === 'weather' &&
+                weatherRetryUsesAirports
+              ) && (
               <div className="control-note ports-status" role="status">
                 <span>Airports unavailable: {airportsError}</span>
-                {!suppressAirportRetry && (
-                  <button type="button" onClick={onRetryAirports}>
-                    RETRY AIRPORTS
-                  </button>
-                )}
+                <button type="button" onClick={onRetryAirports}>
+                  RETRY AIRPORTS
+                </button>
               </div>
             )}
-            {weatherVisible && weatherError && (
+            {weatherVisible &&
+              weatherError &&
+              operationalPromotedAction?.kind !== 'weather' && (
               <div className="control-note ports-status" role="status">
                 <span>METAR unavailable: {weatherError}</span>
-                {promotedAction?.kind !== 'weather' && (
-                  <button type="button" onClick={onRetryWeather}>
-                    RETRY METAR
-                  </button>
-                )}
+                <button type="button" onClick={onRetryWeather}>
+                  RETRY METAR
+                </button>
               </div>
             )}
             {weatherVisible && !weatherError && weatherStatusMessage && (
@@ -546,6 +566,11 @@ export function TrafficControls({
             </p>
           </fieldset>
 
+          <TrafficLegend
+            units={units}
+            marineStaleAfterMs={marineStaleAfterMs}
+          />
+
           <AircraftDiscovery
             query={aircraftQuery}
             aircraft={aircraftResults}
@@ -586,41 +611,24 @@ export function TrafficControls({
             />
           )}
 
-          <fieldset className="control-group">
-            <legend>View</legend>
-            <div className="control-options control-options--one">
-              <button
-                type="button"
-                disabled={!locationAvailable || locationLoading}
-                aria-busy={locationLoading}
-                aria-describedby={
-                  locationMessage ? 'location-status' : undefined
-                }
-                onClick={onUseLocation}
-              >
-                {locationLoading ? 'LOCATING...' : 'USE LOCATION'}
-              </button>
-            </div>
-            {locationMessage && (
-              <p
-                id="location-status"
-                className="control-note"
-                role="status"
-              >
-                {locationMessage}
-              </p>
-            )}
-          </fieldset>
         </div>
       </details>
       </aside>
 
       <aside
         className={`control-panel control-panel--settings${
-          promotedAction ? ' control-panel--urgent' : ''
+          settingsPromotedAction ? ' control-panel--urgent' : ''
         }`}
-        aria-label="Settings"
+        aria-label="Location and settings"
       >
+        <LocationSearchInput
+          model={locationSearch}
+          inputRef={locationSearchInputRef}
+          maximumQueryLength={maximumLocationQueryLength}
+          searchState={placeSearchState}
+          disabled={locationNavigationDisabled}
+        />
+
         <div
           className="control-options control-options--four control-panel__primary"
           role="group"
@@ -656,28 +664,30 @@ export function TrafficControls({
 
         <div
           className="control-panel__urgent"
-          hidden={!promotedAction}
-          role={promotedAction ? 'status' : undefined}
-          aria-live={promotedAction ? 'polite' : undefined}
-          aria-atomic={promotedAction ? 'true' : undefined}
+          hidden={!settingsPromotedAction}
+          role={settingsPromotedAction ? 'status' : undefined}
+          aria-live={settingsPromotedAction ? 'polite' : undefined}
+          aria-atomic={settingsPromotedAction ? 'true' : undefined}
         >
-          {promotedAction && (
-            <>
-              <span title={promotedAction.message}>
-                {promotedAction.label}
+          {settingsPromotedAction && (
+              <>
+                <span>
+                  {settingsPromotedAction.label}:{' '}
+                  {settingsPromotedAction.message}
               </span>
               <button
                 type="button"
-                disabled={promotedAction.disabled}
-                onClick={promotedAction.run}
+                disabled={settingsPromotedAction.disabled}
+                onClick={settingsPromotedAction.run}
               >
-                {promotedAction.buttonLabel}
+                {settingsPromotedAction.buttonLabel}
               </button>
             </>
           )}
         </div>
 
         <details
+          ref={settingsDetailsRef}
           id="traffic-controls-settings"
           name="traffic-control-panels"
           className="control-panel__more"
@@ -698,6 +708,38 @@ export function TrafficControls({
             MORE
           </summary>
           <div className="control-panel__more-body">
+            <LocationSearchDetails
+              model={locationSearch}
+              activeLabel={activeLocationLabel}
+              searchState={placeSearchState}
+            />
+
+            <fieldset className="control-group">
+              <legend>View</legend>
+              <div className="control-options control-options--one">
+                <button
+                  type="button"
+                  disabled={!locationAvailable || locationLoading}
+                  aria-busy={locationLoading}
+                  aria-describedby={
+                    locationMessage ? 'location-status' : undefined
+                  }
+                  onClick={onUseLocation}
+                >
+                  {locationLoading ? 'LOCATING...' : 'USE LOCATION'}
+                </button>
+              </div>
+              {locationMessage && (
+                <p
+                  id="location-status"
+                  className="control-note"
+                  role="status"
+                >
+                  {locationMessage}
+                </p>
+              )}
+            </fieldset>
+
             <HistoryControls
               trailPreferences={trailPreferences}
               onTrailPreferencesChange={onTrailPreferencesChange}
@@ -711,7 +753,7 @@ export function TrafficControls({
               onClearHistory={onClearHistory}
               onRetryHistory={onRetryHistory}
               onEnterHistory={onEnterHistory}
-              retryPromoted={promotedAction?.kind === 'history'}
+              retryPromoted={settingsPromotedAction?.kind === 'history'}
               trailVisibilityPromoted
             />
 
@@ -749,7 +791,7 @@ export function TrafficControls({
                   RESET PREFERENCES
                 </button>
                 {appUpdateAvailable &&
-                  promotedAction?.kind !== 'app-update' && (
+                  settingsPromotedAction?.kind !== 'app-update' && (
                     <button
                       type="button"
                       disabled={appUpdateActivating}
@@ -777,7 +819,8 @@ export function TrafficControls({
                   />
                 </label>
               )}
-              {appShellStatus && (
+              {appShellStatus &&
+                settingsPromotedAction?.kind !== 'app-update' && (
                 <p className="control-note" role="status">
                   {appShellStatus}
                 </p>

@@ -1,7 +1,9 @@
 import type { StaticAircraftMetadataProviderConfig } from '../providers/aircraftMetadata/staticAircraftMetadataProvider'
+import type { PlanespottersPhotoProviderConfig } from '../providers/aircraftPhoto/planespottersPhotoProvider'
 import type { StaticAirportsProviderConfig } from '../providers/airports/staticAirportsProvider'
 import type { StaticPortsProviderConfig } from '../providers/ports/staticPortsProvider'
 import type { AwcMetarProviderConfig } from '../providers/weather/awcMetarProvider'
+import type { AviationstackFlightRouteProviderConfig } from '../providers/flightRoute/aviationstackFlightRouteProvider'
 import {
   DEFAULT_TRAIL_PREFERENCES,
   TRAIL_DURATION_OPTIONS_MINUTES,
@@ -59,6 +61,15 @@ export interface AppConfig {
     rateLimitBackoffMaxMs: number
   }
   aircraftMetadata: StaticAircraftMetadataProviderConfig
+  aircraftPhoto: PlanespottersPhotoProviderConfig & {
+    enabled: boolean
+    cacheMaxEntries: number
+    cacheTtlMs: number
+    rateLimitFallbackMs: number
+  }
+  flightRoute: AviationstackFlightRouteProviderConfig & {
+    enabled: boolean
+  }
   airports: StaticAirportsProviderConfig
   ports: StaticPortsProviderConfig
   weather: FreshnessThresholds &
@@ -106,10 +117,25 @@ const DEFAULTS = {
   darkMapStyleUrl: 'https://tiles.openfreemap.org/styles/dark',
   geocoderEndpoint: 'https://photon.komoot.io/api',
   aircraftEndpoint: '/api/aircraft',
+  aircraftPhotoEndpoint:
+    'https://api.planespotters.net/pub/photos/hex',
+  flightRouteEndpoint: '/api/flight-route',
   weatherEndpoint: '/api/weather/metar',
   marineRestEndpoint: 'https://meri.digitraffic.fi',
   marineMqttEndpoint: 'wss://meri.digitraffic.fi:443/mqtt',
 } as const
+
+const readBoolean = (
+  env: Record<string, string | undefined>,
+  name: string,
+  fallback: boolean,
+) => {
+  const value = env[name]?.trim()
+  if (!value) return fallback
+  if (value === 'true') return true
+  if (value === 'false') return false
+  throw new Error(`${name} must be "true" or "false"`)
+}
 
 const readNumber = (
   env: Record<string, string | undefined>,
@@ -303,6 +329,32 @@ export const createAppConfig = (
       futureToleranceHours:
         aircraftMetadataSource.projection.futureToleranceHours,
       expectedCounts: aircraftMetadataSource.projection.expected,
+    },
+    aircraftPhoto: {
+      enabled: readBoolean(env, 'VITE_AIRCRAFT_PHOTO_ENABLED', false),
+      endpointBaseUrl: DEFAULTS.aircraftPhotoEndpoint,
+      timeoutMs: 8_000,
+      maximumBytes: 32 * 1_024,
+      thumbnailOrigin: 'https://cdn.planespotters.net',
+      photoPageOrigin: 'https://www.planespotters.net',
+      sourceName: 'Planespotters.net',
+      sourceWebsiteUrl: 'https://www.planespotters.net/',
+      sourceTermsUrl: 'https://www.planespotters.net/photo/api',
+      cacheMaxEntries: 32,
+      cacheTtlMs: 60 * 60_000,
+      rateLimitFallbackMs: 60_000,
+    },
+    flightRoute: {
+      enabled: readBoolean(env, 'VITE_FLIGHT_ROUTE_ENABLED', false),
+      endpointUrl: readSameOriginEndpoint(
+        env,
+        'VITE_FLIGHT_ROUTE_ENDPOINT',
+        DEFAULTS.flightRouteEndpoint,
+      ),
+      timeoutMs: 10_000,
+      maximumBytes: 16 * 1_024,
+      sourceName: 'aviationstack',
+      sourceWebsiteUrl: 'https://aviationstack.com/',
     },
     airports: {
       assetUrl: `/airports/${airportsSource.projection.outputVersion}/airports.geojson`,

@@ -27,6 +27,15 @@ fishing vessels are filtered upstream. No authoritative exact coverage polygon
 or completeness guarantee was found, so LiveTrafficStan does not infer
 coverage from coordinates or from an empty result.
 
+The application may display exact AIS sailing and pleasure types from 8 m only
+while their position timestamp is finite and no more than 120 seconds old and
+their finite reported speed is at least one knot. This is a strict visibility
+rule, not a coverage expansion: recognized yachts do not fall through to the
+ordinary 50 m non-yacht length filter. Because Digitraffic publishes Class A
+AIS only, Class B yachts are not covered and the eligible population may be
+small or empty. Names, dimensions, speed, or broad `other` classification never
+create a yacht identity.
+
 AISstream.io offers genuine server-side geographic streaming, but direct
 browser connections are prohibited, an API key and relay are required, and no
 public data-use license establishing display, screenshots, caching, history,

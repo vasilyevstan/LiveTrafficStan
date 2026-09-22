@@ -19,6 +19,7 @@ const renderControls = (
       totalVessels={0}
       vesselEmptyMessage="No current ships are shown in this view."
       units="metric"
+      marineStaleAfterMs={120_000}
       onVesselFiltersChange={() => undefined}
       onVesselSelect={() => undefined}
       aircraftVisible
@@ -97,7 +98,7 @@ const renderControls = (
   )
 
 describe('TrafficControls', () => {
-  it('separates compact navigation and settings panels without duplicating controls', () => {
+  it('separates operations and location/settings without duplicating controls', () => {
     const html = renderControls()
     const mapDetailsIndex = html.indexOf(
       '<details id="traffic-controls-map-tools"',
@@ -116,7 +117,9 @@ describe('TrafficControls', () => {
     )
     const settingsMore = html.slice(settingsDetailsIndex)
 
-    expect(navigationPrimary).toContain('id="location-search-input"')
+    expect(html).toContain('aria-label="Operations"')
+    expect(html).toContain('aria-label="Location and settings"')
+    expect(navigationPrimary).not.toContain('id="location-search-input"')
     expect(navigationPrimary).toContain('>CENTER<')
     expect(navigationPrimary).toContain('>AIRCRAFT<')
     expect(navigationPrimary).toContain('>SHIPS<')
@@ -125,12 +128,20 @@ describe('TrafficControls', () => {
     expect(navigationMore).toContain(
       '<summary id="traffic-controls-map-tools-summary">MORE</summary>',
     )
-    expect(navigationMore).toContain('aria-label="Location search details"')
     expect(navigationMore).toContain('<legend>Layers</legend>')
+    expect(navigationMore).toContain('Traffic legend')
+    expect(navigationMore).toContain('Band 1 · below 1,000 m')
+    expect(navigationMore).toContain(
+      'Slow or stopped · reported speed below 1 kn',
+    )
     expect(navigationMore).toContain('Aircraft discovery')
     expect(navigationMore).toContain('Vessel discovery')
-    expect(navigationMore).toContain('USE LOCATION')
+    expect(navigationMore).not.toContain(
+      'aria-label="Location search details"',
+    )
+    expect(navigationMore).not.toContain('USE LOCATION')
     expect(navigationMore).not.toContain('<legend>History</legend>')
+    expect(settingsPrimary).toContain('id="location-search-input"')
     expect(settingsPrimary).toContain('>AUTO<')
     expect(settingsPrimary).toContain('>LIGHT<')
     expect(settingsPrimary).toContain('>DARK<')
@@ -138,6 +149,8 @@ describe('TrafficControls', () => {
     expect(settingsMore).toContain(
       '<summary id="traffic-controls-settings-summary">MORE</summary>',
     )
+    expect(settingsMore).toContain('aria-label="Location search details"')
+    expect(settingsMore).toContain('USE LOCATION')
     expect(settingsMore).toContain('<legend>History</legend>')
     expect(settingsMore).toContain('<legend>Preferences</legend>')
     expect(settingsMore).not.toContain('<legend>Layers</legend>')
@@ -170,6 +183,29 @@ describe('TrafficControls', () => {
     expect(html).toContain('https://example.test/#v=1')
   })
 
+  it('uses the shared traffic vocabulary and exact thresholds in the legend', () => {
+    const html = renderControls({
+      units: 'aviation-nautical',
+      marineStaleAfterMs: 120_000,
+    })
+
+    expect(html).toContain('Band 1 · below 3,281 ft')
+    expect(html).toContain('Band 4 · 32,808 ft or higher')
+    expect(html).toContain('Aircraft altitude colors')
+    expect(html).toContain('Winged silhouettes are aircraft.')
+    expect(html).toContain('Long hull silhouettes are vessels.')
+    expect(html).toContain(
+      'Slow or stopped · reported speed below 1 kn',
+    )
+    expect(html).toContain('AIS destination')
+    expect(html).toContain(
+      'does not perform a route, metadata, photo, or provider lookup',
+    )
+    expect(html).toContain('eligible from 8 m at 1 kn or faster')
+    expect(html).toContain('no more than 120 seconds old')
+    expect(html).toContain('AIR and SEA count circles')
+  })
+
   it('exposes a non-blocking waiting application update', () => {
     const html = renderControls({
       appShellStatus: 'An application update is ready.',
@@ -179,9 +215,12 @@ describe('TrafficControls', () => {
     expect(html).toContain('An application update is ready.')
     expect(html).toContain('role="status"')
     expect(html.match(/REFRESH APP/g)).toHaveLength(1)
+    expect(
+      html.match(/An application update is ready\./g),
+    ).toHaveLength(1)
   })
 
-  it('promotes one recovery operation without duplicating shared airport retry', () => {
+  it('promotes operational recovery without duplicating shared airport retry', () => {
     const html = renderControls({
       airportsVisible: true,
       airportsError: 'Airport data timed out',
@@ -192,11 +231,12 @@ describe('TrafficControls', () => {
 
     expect(html.match(/RETRY AIRPORTS/g)).toHaveLength(1)
     expect(html).not.toContain('RETRY METAR')
-    expect(html).toContain('Airports unavailable')
     expect(html).toContain('METAR unavailable')
+    expect(html).toContain('Airport station context unavailable')
+    expect(html).not.toContain('Airport data timed out')
   })
 
-  it('keeps lower-priority independent recovery actions inside More', () => {
+  it('promotes independent operations and settings recovery in their panels', () => {
     const html = renderControls({
       historyStatus: {
         phase: 'error',

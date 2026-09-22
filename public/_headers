@@ -1,4 +1,5 @@
 /*
+  Content-Security-Policy: connect-src 'self' https://tiles.openfreemap.org https://photon.komoot.io https://meri.digitraffic.fi wss://meri.digitraffic.fi https://api.planespotters.net; img-src 'self' data: blob: https://cdn.planespotters.net
   Referrer-Policy: strict-origin-when-cross-origin
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY

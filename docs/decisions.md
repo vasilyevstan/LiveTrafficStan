@@ -43,42 +43,89 @@ licensing, credential, and operational complexity without a demonstrated
 requirement. The existing application-owned provider interface is sufficient
 for a future deliberate replacement.
 
-## Aircraft route enrichment remains blocked
+## Disabled aviationstack route evaluation
 
-The dated
+The owner authorized a smallest evaluation slice for aviationstack's Free plan
+after the dated
 [aircraft route enrichment evaluation](aircraft-route-enrichment-evaluation.md)
-found no authorized source that can associate origin and destination with the
-selected flight occurrence using provider identity plus bounded temporal
-context.
+confirmed a current 100-request monthly allowance. The client and Worker remain
+disabled by default, and Issue #44 still blocks public enablement until the
+exact account terms, display/attribution rights, dedicated key, and bounded
+real-provider evidence are recorded.
 
-Keyless standing-route sources are callsign-only, and ADSB.lol's optional
-route path adds only geographic plausibility. OpenSky supplies historical
-track-derived estimated airports and requires a written agreement for
-operational REST use. FlightAware AeroAPI and AeroDataBox have credible
-operational fields but require unconfigured accounts, server-held credentials,
-approved budgets, applicable display/combination/retention terms, and
-provider-specific occurrence matching.
+aviationstack does not expose a durable opaque flight-occurrence ID. The first
+slice therefore makes a narrower claim: after an explicit **Find route**
+action, it requests active rows for the exact ICAO flight callsign and accepts
+only one non-codeshare row whose returned aircraft ICAO24 also matches exactly.
+A conflicting live/provider registration, zero matches, multiple matches, or
+incomplete first-page pagination produces unavailable rather than an inferred
+route. Movement, heading, position, nearest airports, geographic plausibility,
+and static Mictronics metadata never establish a route.
 
-Issue #44 is therefore the explicit source-authorization blocker. No provider
-interface, route fields, unavailable-only UI, Worker endpoint, secret name,
-cache, or placeholder response is added before that gate is complete.
+The access key stays in the Worker. One globally named SQLite-backed Durable
+Object reserves every accepted attempt before the provider call and admits at
+most 90 attempts in any rolling 31-day window. Attempts are not refunded after
+cancellation, timeout, malformed data, or provider failure. This deliberately
+leaves ten calls outside the application budget, but a public unauthenticated
+caller could still exhaust the 90-call application allowance; the feature is
+therefore an optional availability surface, not a guaranteed service.
 
-A future route association must use a provider-issued occurrence/leg identity
-plus bounded temporal context. Callsign and registration are corroborating
-evidence only. Movement, heading, position, nearest airports, geographic
-plausibility, and static Mictronics metadata never infer a route.
-
-Route enrichment starts only after explicit aircraft selection. Live ADSB.lol
-polling, camera movement, trails, map updates, metadata refreshes, and provider
-retry never start or refresh it. Failure, expiry, throttle, cancellation, or
-ambiguity cannot alter the live marker, position age, freshness, aircraft
+Selection alone, ADSB.lol polling, camera movement, trails, map updates,
+metadata refreshes, and automatic retries never spend route quota. Route
+failure cannot alter the live marker, position age, freshness, aircraft
 cadence/backoff, trails, static metadata, selection, map health, or another
 provider.
 
-The source blocker and Issue #39 remain separate: source authorization can be
-proved before a public deployment exists, but credentialed route enrichment
-cannot ship until the selected secret-holding production path is deployed and
-validated.
+Successful validated routes use one bounded client-only optimization: an exact
+callsign/ICAO24/optional-registration result is eligible for reuse in the
+current tab for six hours, with least-recently-used eviction above 32 entries.
+Reselecting that exact flight restores the route without another provider
+attempt; an explicit **Refresh route** still makes a new attempt. Failures and
+unavailable results are never cached, and no route is written to Web Storage,
+IndexedDB, history, the service worker, the Worker Cache API, or Durable Object
+storage. This reduces accidental Free-plan use without creating a shared route
+database or claiming that an old route is current indefinitely.
+
+Issue #39 remains the separate Cloudflare deployment blocker. The disabled
+implementation can be reviewed and merged without a key or public
+deployment; enabling it requires both matching client/Worker flags and the
+protected Worker secret.
+
+## Disabled direct Planespotters aircraft-photo evaluation
+
+The only reviewed dynamic photo path with an explicit public display contract
+is the Planespotters Photo API. The accepted slice is intentionally narrower
+than general aircraft imagery: exact live ICAO24 only, one explicit **Load
+aircraft photo** action, one direct browser request, the unchanged regular
+thumbnail, visible photographer credit, and the unchanged photo page as the
+image link.
+
+Selection, map movement, provider refreshes, HISTORY, vessels, callsign,
+registration, airline, model, and fuzzy text never start or broaden a lookup.
+One cancellable request is revision-guarded across A to B to A selection
+changes. Only successful and no-photo JSON results may use a 32-entry,
+one-hour current-tab LRU. There is no automatic retry or persistent storage.
+The image and API response never pass through the Worker, service worker,
+Cache API, IndexedDB, Web Storage, KV, or R2.
+
+This direct boundary is required by the provider's API-specific terms: image
+bytes must load from the returned URL, returned URLs must remain unchanged,
+proxying and re-exposure are prohibited, and visible credit plus a followable
+source-page link are mandatory. A Worker proxy is therefore not an acceptable
+CORS workaround.
+
+Production remains disabled. The API-specific terms page currently has no
+visible dated revision, and the one bounded browser-origin request on
+2026-09-21 failed before a readable CORS response, status, or body reached the
+application. Deterministic fixtures prove application behavior but cannot
+replace that external gate. Enablement requires dated terms evidence and one
+successful bounded check from the exact approved production origin.
+
+Automatic vessel photos remain rejected. A future path requires a manually
+reviewed exact-IMO manifest to one verified Commons file revision with author,
+source, selected license, license URL, and exact credit. MMSI/name/fuzzy
+matching, arbitrary runtime Wikidata P18, and generic/class/sister-ship
+substitutes do not satisfy identity or rights requirements.
 
 ## Airport arrival and departure boards remain blocked
 
@@ -105,10 +152,10 @@ independent of ADS-B, marine traffic, static airport context, and the map.
 ## Cloudflare Worker plus Static Assets
 
 Cloudflare Workers with Static Assets is the smallest production boundary for
-the Vite client and required ADSB.lol/AWC proxies. Static files bypass Worker
-execution; only `/api` and `/api/*` invoke code. The fixed aircraft and METAR
-routes construct hard-coded upstream destinations and cannot act as general
-forwarders.
+the Vite client and required ADSB.lol/AWC proxies plus the optional
+aviationstack route. Static files bypass Worker execution; only `/api` and
+`/api/*` invoke code. All three routes construct hard-coded upstream
+destinations and cannot act as general forwarders.
 
 The free plan's 100,000 dynamic requests/day covers about 23 continuously
 active browser sessions at the application's nominal 4,320 request/day upper
@@ -120,11 +167,14 @@ requests, and function compute in one 300-credit monthly budget without
 providing a capability this two-route application needs. GitHub Pages plus a
 separate Worker would add a second deployment unit or split-origin CORS.
 
-Fingerprint-named assets use immutable browser caching. Aircraft responses use
-upstream and downstream `no-store`; successful METAR responses use the
-source-aligned 60-second guidance. No shared application cache or rate-control
-service is added without measurements and provider-policy evidence. Worker
-observability is disabled because routes contain rounded camera coordinates or
+Fingerprint-named assets use immutable browser caching. Aircraft and
+aviationstack route responses use `no-store`; successful METAR responses use
+the source-aligned 60-second guidance. A validated route may be eligible for
+reuse only through the bounded in-memory tab cache described above. The
+route's single justified persistent server mechanism is its SQLite-backed
+global budget guard; it stores only attempt timestamps and no aircraft
+identity, provider body, route, or user data. Worker observability is disabled
+because request paths can otherwise retain rounded camera coordinates or
 visible station IDs.
 
 Deployments require an exact current `main` SHA, rerun the complete validation
@@ -271,12 +321,13 @@ Provider payloads are decoded and normalized at the provider boundary. Map and U
 
 Aircraft, vessels, and the selected trail are represented as GeoJSON sources. MapLibre symbol and line layers are updated in place, avoiding a React component or DOM marker for every traffic object.
 
-## Bounded provider-reported silhouette vocabulary
+## Persisted provider silhouettes and render-only traffic semantics
 
-The map uses ten original canvas images: light/small fixed-wing, generic
+The map persists ten original canvas icon keys: light/small fixed-wing, generic
 fixed-wing, heavy fixed-wing, helicopter, cargo, tanker, passenger, fishing,
-tug, and generic vessel. Cyan still means aircraft and amber still means marine
-traffic; category is conveyed by shape rather than a new color system.
+tug, and generic vessel. Marine traffic remains amber. Aircraft category stays
+shape-based while the aircraft silhouette color carries the bounded altitude
+band.
 
 Normalization maps only trusted provider fields to application-owned icon keys.
 ADS-B A1/A2 use light fixed-wing, A5 heavy fixed-wing, and A7 helicopter.
@@ -287,8 +338,49 @@ use the corresponding generic fallback.
 
 No model/type string, speed, name, route, operator, position, or movement is
 used to infer a category. This keeps the vocabulary truthful and avoids a
-classification service or dataset. The ten images are generated once per theme
-and reinstalled through the existing single-map style lifecycle.
+classification service or dataset. The 10 persisted images, 3 exact
+render-only vessel shapes, and 20 aircraft altitude-color variants are
+generated once per theme and reinstalled through the existing single-map style
+lifecycle.
+
+Provider-owned icon keys stay in normalized entities and bounded historical
+records. Visual-only state is derived later by one pure presentation module and
+projected into MapLibre properties. This avoids a history migration and keeps
+rollback compatible with observations written by the previous release.
+
+The render vocabulary adds exact sailing, pleasure-craft, and high-speed-craft
+shapes without changing persisted marker keys. Speed-over-ground produces
+moving, slow/stopped, or unknown render state. Exactly one knot is moving;
+missing, invalid, or negative speed is unknown. Only slow/stopped traffic
+receives a small red screen-upright dot; moving and unknown traffic do not add
+a circle over the silhouette. Vessel rotation is directional only while
+moving. Aircraft use the same red slow/stopped treatment but retain reported
+heading when speed is unknown. Navigation status remains separate and
+conflicting reports are disclosed.
+
+Sailing and pleasure craft form a strict branch rather than a generic length
+exception. They display only with exact normalized type, known length at least
+8 m, a finite position age between zero and the configured 120-second stale
+threshold, and finite speed at least one knot. The live clock or historical
+cursor supplies display time. They never fall through to the ordinary length
+rule; non-yachts retain the 50 m default and unknown-length preference.
+Digitraffic's Class A-only scope means small-yacht coverage is expected to be
+incomplete.
+
+Aircraft use the silhouette fill itself for sequential altitude colors, with
+boundaries below 1,000 m, 1,000-3,000 m, 3,000-10,000 m, and 10,000 m or
+higher plus neutral unknown. Ordinary per-aircraft altitude rings and
+vertical-trend badges are removed so the category shape remains visible.
+Vertical trend at the exact +/-200 ft/min boundary remains in selected details,
+and the control legend pairs every color and red stopped dot with text, so
+neither altitude nor movement relies on color alone.
+
+Mouse hover is a map-local presentation path over normalized entities already
+in memory. Aircraft show flight/callsign plus reported type and identity
+fallback; vessels show name/MMSI, locally derived flag state, and explicitly
+labeled AIS destination. DOM content is assigned through `textContent`, and
+hover cannot start metadata, route, photo, provider, reconnect, polling, or
+cache work. AIS destination is not presented as a complete route.
 
 ## Pinned static selected-aircraft metadata
 
@@ -326,6 +418,31 @@ immutable output URL.
 
 This metadata never changes the provider-reported marker vocabulary. Model,
 configuration, and wake category are selected-object context only.
+
+## Bundled identifier-allocation country context
+
+Selected details derive optional country context locally rather than adding an
+enrichment provider. Aircraft use only exact six-character ICAO24 addresses
+against validated inclusive state-allocation ranges. Vessels use only valid
+nine-digit ordinary ship-station MMSIs beginning with 2 through 7 and an
+unambiguous assigned MID.
+
+The result is display-only `Country name (ISO)` text labelled **Registration
+allocation** for aircraft or **Flag state** for vessels. It is not operator,
+owner, crew, citizenship, route, location, operating area, current
+jurisdiction, or live-registry evidence. Unknown, special-purpose, unassigned,
+conflicting, malformed, and excluded values omit the row.
+
+The projection uses pinned open-licensed third-party source data plus a
+canonical hash-pinned CC0 Wikidata cross-check. It copies no ITU/ICAO
+publication layout or text, excludes every known ambiguous or invalid source
+row, and is checked offline in CI. Registration-prefix fallback and decorative
+flags are intentionally deferred.
+
+Keeping this as a pure domain lookup avoids changes to provider normalization,
+map/source properties, history records, persistence, loading, cache, or
+networking. Live and historical details therefore use the same deterministic
+derivation.
 
 ## Explicit MapLibre worker bundling
 
@@ -514,10 +631,10 @@ ineligible-view reasons compose through the existing pause boundary without
 resetting aircraft cadence, `Retry-After`, MQTT reconnect, REST, or metadata
 gates.
 
-Current-only METAR and third-party aircraft metadata are absent in history.
-Destination, ETA, interpolation frames, browser location, export, sharing,
-synchronization, service-worker live caching, and backend history remain
-outside the decision.
+Current-only METAR, third-party aircraft metadata, and selected-flight route
+lookup are absent in history. Vessel destination/ETA, interpolation frames,
+browser location, export, sharing, synchronization, service-worker live
+caching, and backend history remain outside the decision.
 
 ## Explicit Auto, Light, and Dark theme preference
 
@@ -539,12 +656,13 @@ style-owned state, the map layer installer restores traffic images,
 sources, layers, data, visibility, and trail after every `style.load`
 without changing camera, selection, provider state, or connections.
 
-Traffic artwork keeps cyan aircraft and amber vessels in both themes. The
-theme-specific canvas treatment changes fill luminance, detail color, shadow,
-and two-tone edge contrast while retaining silhouettes and heading/course
-rotation. Image IDs are replaced through MapLibre when the theme changes,
-including when both theme options reference the same style URL. The image cache
-contains only the bounded light and dark sets.
+Traffic artwork keeps amber vessels and uses a bounded altitude palette on each
+aircraft silhouette in both themes. The theme-specific canvas treatment changes
+fill luminance, detail color, shadow, and two-tone edge contrast while
+retaining silhouettes and heading/course rotation. Image IDs are replaced
+through MapLibre when the theme changes, including when both theme options
+reference the same style URL. The image cache contains only the bounded light
+and dark sets.
 
 ## Versioned preferences, fragment sharing, and presentation units
 
@@ -564,7 +682,9 @@ Center action.
 
 Metric values remain canonical. Aviation/nautical presentation converts metres
 to feet, km/h to knots, and m/s to ft/min. Vessel dimensions and filter
-thresholds remain metres. AWC wind and visibility are normalized to metric at
+thresholds remain metres. Selected vessel speed over ground always shows both
+km/h and knots so marine users do not need to switch the global presentation
+preference for that value. AWC wind and visibility are normalized to metric at
 the provider boundary while retaining bounded visibility relation/source tokens
 for truthful aviation formatting. Unit changes never alter provider queries,
 viewport eligibility, filter membership, history, selection, or map lifecycle.
@@ -700,19 +820,29 @@ substitutes.
 ## Compact controls and rendered interaction evidence
 
 The primary map controls remain intentionally small and split by task. The
-upper Navigate and Explore panel keeps one location input plus Center, Aircraft,
-and Ships visible; its native disclosure contains search feedback, location,
-secondary layers, discovery, context, and source detail. The lower Settings
-panel keeps Auto, Light, Dark, and Trails visible; its native disclosure
-contains trail duration, local-history setup, units, sharing, reset, and
-application detail. The two disclosures share one native `name`, so at most one
-is open.
+upper Operations panel keeps Center, Aircraft, and Ships visible; its native
+disclosure contains secondary layers, operational recovery, discovery,
+context, source detail, and the shared traffic legend. The lower Location &
+Settings panel keeps the one location input plus Auto, Light, Dark, and Trails
+visible; its native disclosure contains search feedback, browser location,
+trail duration, local-history setup, units, sharing, reset, and application
+detail. The two disclosures share one native `name`, so at most one is open.
 
 The location input stays mounted while its feedback is collapsed, preserving
-entered text and in-flight state. Active historical controls and one urgent
-actionable recovery remain visible outside both disclosures, and mandatory map
-or selected-item attribution is never hidden. The combined expanded stack,
-rather than each panel independently, owns the 58vh budget.
+entered text and in-flight state. Active historical controls remain outside
+both disclosures. Each panel may promote one action from its own recovery
+domain without duplicating that action inside More: operational recovery
+belongs above Operations More, while application, storage, update, and history
+recovery belongs above Location & Settings More. Mandatory map or selected-item
+attribution is never hidden. The combined expanded stack, rather than each
+panel independently, owns the 58vh budget.
+
+The traffic legend reuses the application-owned labels and thresholds for
+aircraft altitude, traffic movement, and the exact AIS-type shapes. It pairs
+every aircraft color and the red slow/stopped dot with text, explains the
+8 m / 1 kn / freshness yacht exception, documents request-free hover fields,
+and never relies on color alone. Vertical trend remains in selected details
+rather than a marker badge.
 
 Selection updates must retain the complete MapLibre feature-property contract.
 In particular, `removeAllProperties` is terminal in the installed source-diff

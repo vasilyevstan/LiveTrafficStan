@@ -6,12 +6,29 @@ import {
   formatSpeed,
   formatTimestamp,
   formatVerticalSpeed,
+  formatVesselSpeed,
 } from '../domain/format'
+import {
+  countryForAircraftHex,
+  flagStateForMmsi,
+  formatCountryAllocation,
+} from '../domain/countryAllocations'
 import type {
   AircraftMetadataUnavailableReason,
   AircraftMetadataViewState,
 } from '../domain/aircraftMetadata'
+import type { AircraftPhotoViewState } from '../domain/aircraftPhoto'
+import type {
+  FlightRouteUnavailableReason,
+  FlightRouteViewState,
+} from '../domain/flightRoute'
 import type { DisplayTrafficEntity } from '../domain/traffic'
+import {
+  aircraftAltitudeBandLabel,
+  aircraftVerticalTrendLabel,
+  trafficPresentation,
+  vesselMotionLabel,
+} from '../domain/trafficPresentation'
 import type { UnitSystem } from '../domain/units'
 
 interface DetailRowProps {
@@ -33,9 +50,16 @@ function DetailRow({ label, value }: DetailRowProps) {
 interface TrafficDetailsProps {
   entity: DisplayTrafficEntity
   aircraftMetadata: AircraftMetadataViewState
+  aircraftPhotoEnabled?: boolean
+  aircraftPhoto?: AircraftPhotoViewState
+  aircraftPhotoTermsUrl?: string
+  flightRouteEnabled?: boolean
+  flightRoute?: FlightRouteViewState
   now: number
   units: UnitSystem
   historical?: boolean
+  onRequestAircraftPhoto?: () => void
+  onRequestFlightRoute?: () => void
   onClose: () => void
 }
 
@@ -166,12 +190,277 @@ function AircraftMetadataDetails({
   )
 }
 
+const unavailableRouteMessage = (reason: FlightRouteUnavailableReason) => {
+  switch (reason) {
+    case 'invalid-identity':
+      return 'A valid ICAO flight callsign and ICAO24 address are required.'
+    case 'not-found':
+      return 'No matching active route is available for this aircraft.'
+    case 'ambiguous':
+      return 'Several active flights matched, so no route was shown.'
+    case 'incomplete':
+      return 'The provider returned more results than one safe page, so no route was shown.'
+  }
+}
+
+const airportLabel = ({ name, code }: { name: string; code?: string }) =>
+  code ? `${name} (${code})` : name
+
+function FlightRouteDetails({
+  state,
+  now,
+  onRequest,
+}: {
+  state: FlightRouteViewState
+  now: number
+  onRequest: () => void
+}) {
+  const invalidIdentity =
+    state.phase === 'unavailable' &&
+    state.reason === 'invalid-identity'
+  const loading = state.phase === 'loading'
+  const source =
+    state.phase === 'available'
+      ? state.route.source
+      : {
+          name: 'aviationstack',
+          websiteUrl: 'https://aviationstack.com/',
+        }
+
+  return (
+    <section
+      className="aircraft-metadata flight-route"
+      aria-labelledby="flight-route-heading"
+    >
+      <h3 id="flight-route-heading">Flight route</h3>
+      {state.phase === 'idle' && (
+        <p className="metadata-status">
+          Request one current active-route check for this aircraft.
+        </p>
+      )}
+      {loading && (
+        <p className="metadata-status" role="status">
+          Finding a strictly matched active route…
+        </p>
+      )}
+      {state.phase === 'available' && (
+        <>
+          <dl className="details-grid aircraft-metadata__grid">
+            <DetailRow
+              label="Origin"
+              value={airportLabel(state.route.departure)}
+            />
+            <DetailRow
+              label="Destination"
+              value={airportLabel(state.route.arrival)}
+            />
+            <DetailRow
+              label="Flight"
+              value={
+                state.route.flightIata
+                  ? `${state.route.flightIata} · ${state.route.flightIcao}`
+                  : state.route.flightIcao
+              }
+            />
+            <DetailRow label="Route status" value="Active" />
+            {state.route.providerUpdatedAt !== undefined && (
+              <DetailRow
+                label="Provider update"
+                value={formatAge(state.route.providerUpdatedAt, now)}
+              />
+            )}
+          </dl>
+          <p className="metadata-status">
+            Reopening this exact flight reuses the route in this tab for up
+            to 6 hours. Refreshing makes a new provider request.
+          </p>
+        </>
+      )}
+      {state.phase === 'unavailable' && (
+        <p className="metadata-status">
+          Route unavailable: {unavailableRouteMessage(state.reason)}
+        </p>
+      )}
+      {state.phase === 'error' && (
+        <p className="metadata-status metadata-status--error" role="alert">
+          {state.reason === 'quota-exhausted'
+            ? 'The protected route lookup allowance is temporarily exhausted.'
+            : state.reason === 'configuration'
+              ? 'Route lookup is temporarily unavailable.'
+              : 'The route provider is unavailable.'}{' '}
+          Live ADS-B remains active.
+        </p>
+      )}
+      <button
+        type="button"
+        className="flight-route__action"
+        disabled={loading || invalidIdentity}
+        onClick={onRequest}
+      >
+        {loading
+          ? 'Finding route…'
+          : state.phase === 'idle'
+            ? 'Find route'
+            : state.phase === 'available'
+              ? 'Refresh route'
+              : 'Try again'}
+      </button>
+      <p className="metadata-attribution">
+        Route data by <a href={source.websiteUrl}>{source.name}</a>. Map
+        positions continue to come from ADSB.lol.
+      </p>
+    </section>
+  )
+}
+
+const aircraftPhotoErrorMessage = (
+  state: Extract<AircraftPhotoViewState, { phase: 'error' }>,
+  now: number,
+) => {
+  switch (state.reason) {
+    case 'timeout':
+      return 'The Planespotters photo request timed out.'
+    case 'throttled':
+      return state.retryAt !== undefined && state.retryAt > now
+        ? `Planespotters is temporarily limiting requests. Try again after ${formatTimestamp(state.retryAt)}.`
+        : 'Planespotters is temporarily limiting requests. Try again later.'
+    case 'forbidden':
+      return 'Planespotters rejected this browser request.'
+    case 'invalid-response':
+      return 'Planespotters returned an unsupported photo response.'
+    case 'network':
+      return 'The browser could not reach Planespotters.'
+    case 'provider-error':
+      return 'Planespotters could not provide a photo response.'
+  }
+}
+
+function AircraftPhotoDetails({
+  icao24,
+  state,
+  termsUrl,
+  now,
+  onRequest,
+}: {
+  icao24: string
+  state: AircraftPhotoViewState
+  termsUrl: string
+  now: number
+  onRequest: () => void
+}) {
+  const identity = state.identityKey ?? icao24.trim().toUpperCase()
+  const loading = state.phase === 'loading'
+  const invalidIdentity =
+    state.phase === 'unavailable' &&
+    state.reason === 'invalid-identity'
+  const throttled =
+    state.phase === 'error' &&
+    state.reason === 'throttled' &&
+    state.retryAt !== undefined &&
+    state.retryAt > now
+
+  return (
+    <section
+      className="aircraft-metadata aircraft-photo"
+      aria-labelledby="aircraft-photo-heading"
+    >
+      <h3 id="aircraft-photo-heading">Aircraft photo</h3>
+
+      {state.phase === 'available' ? (
+        <>
+          <p className="metadata-status">
+            Photo returned by Planespotters for ICAO24 {state.photo.icao24}.
+          </p>
+          <a
+            className="aircraft-photo__link"
+            href={state.photo.photoPageUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <img
+              className="aircraft-photo__image"
+              src={state.photo.thumbnailUrl}
+              width={state.photo.thumbnailWidth}
+              height={state.photo.thumbnailHeight}
+              alt={`Aircraft photo returned by Planespotters for ICAO24 ${state.photo.icao24}`}
+              loading="lazy"
+              decoding="async"
+            />
+          </a>
+          <p className="metadata-attribution aircraft-photo__credit">
+            Photo © {state.photo.photographer} via{' '}
+            <a href={state.photo.source.websiteUrl}>
+              {state.photo.source.name}
+            </a>
+            . Open the image for its unchanged original photo page.
+          </p>
+        </>
+      ) : (
+        <>
+          <p className="metadata-status">
+            Loading sends ICAO24 {identity || 'unavailable'} and normal
+            browser network metadata directly to Planespotters. Its returned
+            thumbnail loads directly from the provider CDN. LiveTrafficStan
+            keeps API JSON only in this tab for at most one hour and does not
+            store image bytes. <a href={termsUrl}>Photo API terms</a>.
+          </p>
+          {loading && (
+            <p className="metadata-status" role="status">
+              Loading the selected-aircraft photo…
+            </p>
+          )}
+          {state.phase === 'unavailable' && (
+            <p className="metadata-status">
+              {invalidIdentity
+                ? 'Photo lookup requires a valid six-character ICAO24 address.'
+                : `Planespotters returned no photo for ICAO24 ${identity}. No generic or model-level substitute is shown.`}
+            </p>
+          )}
+          {state.phase === 'error' && (
+            <p
+              className="metadata-status metadata-status--error"
+              role="alert"
+            >
+              {aircraftPhotoErrorMessage(state, now)} Live ADS-B remains
+              active.
+            </p>
+          )}
+          <button
+            type="button"
+            className="aircraft-photo__action"
+            disabled={loading || invalidIdentity || throttled}
+            onClick={onRequest}
+          >
+            {loading
+              ? 'Loading aircraft photo…'
+              : invalidIdentity
+                ? 'Aircraft photo unavailable'
+                : throttled
+                  ? 'Try again later'
+                  : state.phase === 'idle'
+                    ? 'Load aircraft photo'
+                    : 'Try again'}
+          </button>
+        </>
+      )}
+    </section>
+  )
+}
+
 export function TrafficDetails({
   entity,
   aircraftMetadata,
+  aircraftPhotoEnabled = false,
+  aircraftPhoto = { phase: 'idle' },
+  aircraftPhotoTermsUrl =
+    'https://www.planespotters.net/photo/api',
+  flightRouteEnabled = false,
+  flightRoute = { phase: 'idle' },
   now,
   units,
   historical = false,
+  onRequestAircraftPhoto = () => undefined,
+  onRequestFlightRoute = () => undefined,
   onClose,
 }: TrafficDetailsProps) {
   const title =
@@ -179,6 +468,11 @@ export function TrafficDetails({
       ? (entity.callsign ?? entity.registration ?? entity.hex)
       : (entity.name ?? `MMSI ${entity.mmsi}`)
   const direction = entity.courseDegrees ?? entity.headingDegrees
+  const countryAllocation =
+    entity.kind === 'aircraft'
+      ? countryForAircraftHex(entity.hex)
+      : flagStateForMmsi(entity.mmsi)
+  const presentation = trafficPresentation(entity)
 
   return (
     <aside
@@ -214,6 +508,14 @@ export function TrafficDetails({
             <DetailRow label="Callsign" value={entity.callsign} />
             <DetailRow label="Registration" value={entity.registration} />
             <DetailRow label="ICAO hex" value={entity.hex} />
+            <DetailRow
+              label="Registration allocation"
+              value={
+                countryAllocation === undefined
+                  ? undefined
+                  : formatCountryAllocation(countryAllocation)
+              }
+            />
             <DetailRow label="Aircraft type" value={entity.aircraftType} />
             <DetailRow label="Category" value={entity.category} />
             <DetailRow
@@ -222,6 +524,17 @@ export function TrafficDetails({
                 entity.altitudeMeters === undefined
                   ? undefined
                   : formatAltitude(entity.altitudeMeters, units)
+              }
+            />
+            <DetailRow
+              label="Reported altitude band"
+              value={
+                presentation.kind === 'aircraft'
+                  ? aircraftAltitudeBandLabel(
+                      presentation.altitudeBand,
+                      units,
+                    )
+                  : undefined
               }
             />
             <DetailRow
@@ -246,6 +559,16 @@ export function TrafficDetails({
                   : formatVerticalSpeed(entity.verticalSpeedMps, units)
               }
             />
+            <DetailRow
+              label="Vertical trend"
+              value={
+                presentation.kind === 'aircraft'
+                  ? aircraftVerticalTrendLabel(
+                      presentation.verticalTrend,
+                    )
+                  : undefined
+              }
+            />
             <DetailRow label="Squawk" value={entity.squawk} />
           </>
         ) : (
@@ -253,6 +576,14 @@ export function TrafficDetails({
             <DetailRow label="Vessel name" value={entity.name} />
             <DetailRow label="Vessel type" value={entity.vesselType} />
             <DetailRow label="MMSI" value={entity.mmsi} />
+            <DetailRow
+              label="Flag state"
+              value={
+                countryAllocation === undefined
+                  ? undefined
+                  : formatCountryAllocation(countryAllocation)
+              }
+            />
             <DetailRow label="IMO" value={entity.imo} />
             <DetailRow label="Call sign" value={entity.callSign} />
             <DetailRow
@@ -284,7 +615,15 @@ export function TrafficDetails({
               value={
                 entity.speedKph === undefined
                   ? undefined
-                  : formatSpeed(entity.speedKph, units)
+                  : formatVesselSpeed(entity.speedKph)
+              }
+            />
+            <DetailRow
+              label="Reported movement"
+              value={
+                presentation.kind === 'vessel'
+                  ? vesselMotionLabel(presentation.motionState)
+                  : undefined
               }
             />
             <DetailRow
@@ -329,9 +668,36 @@ export function TrafficDetails({
         />
         <DetailRow label="Source" value={entity.provider} />
       </dl>
+      {presentation.kind === 'vessel' &&
+        presentation.navigationConflict && (
+          <p className="metadata-status metadata-status--error">
+            Reported speed and navigation status disagree; both values are
+            shown without reclassification.
+          </p>
+        )}
+      {entity.kind === 'aircraft' &&
+        aircraftPhotoEnabled &&
+        !historical && (
+          <AircraftPhotoDetails
+            icao24={entity.hex}
+            state={aircraftPhoto}
+            termsUrl={aircraftPhotoTermsUrl}
+            now={now}
+            onRequest={onRequestAircraftPhoto}
+          />
+        )}
       {entity.kind === 'aircraft' && (
         <AircraftMetadataDetails state={aircraftMetadata} />
       )}
+      {entity.kind === 'aircraft' &&
+        flightRouteEnabled &&
+        !historical && (
+          <FlightRouteDetails
+            state={flightRoute}
+            now={now}
+            onRequest={onRequestFlightRoute}
+          />
+        )}
       {historical && (
         <p className="metadata-attribution">
           Historical provider observation. Current weather and third-party

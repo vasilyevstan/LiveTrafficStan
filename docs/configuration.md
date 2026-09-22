@@ -18,6 +18,9 @@ cp .env.example .env.local
 | `VITE_MAP_DARK_STYLE_URL` | `https://tiles.openfreemap.org/styles/dark` | HTTPS URL or root-relative path |
 | `VITE_GEOCODER_ENDPOINT` | `https://photon.komoot.io/api` | HTTPS Photon-compatible forward-search endpoint or root-relative deployment path; protocol-relative and credential-bearing URLs are rejected |
 | `VITE_AIRCRAFT_ENDPOINT` | `/api/aircraft` | HTTPS URL or root-relative path |
+| `VITE_AIRCRAFT_PHOTO_ENABLED` | `false` | Exact `true` or `false`; exposes only the direct-browser Planespotters evaluation UI and does not add a proxy |
+| `VITE_FLIGHT_ROUTE_ENABLED` | `false` | Exact `true` or `false`; controls only whether the browser presents selected-flight lookup |
+| `VITE_FLIGHT_ROUTE_ENDPOINT` | `/api/flight-route` | Root-relative same-origin route with no query or fragment; protocol-relative and absolute URLs are rejected |
 | `VITE_WEATHER_ENDPOINT` | `/api/weather/metar` | Root-relative same-origin METAR route with no query or fragment; protocol-relative and absolute URLs are rejected |
 | `VITE_MARINE_REST_ENDPOINT` | `https://meri.digitraffic.fi` | HTTPS URL or root-relative path |
 | `VITE_MARINE_MQTT_ENDPOINT` | `wss://meri.digitraffic.fi:443/mqtt` | Secure WebSocket URL or root-relative path |
@@ -54,6 +57,13 @@ spread through components:
 | Aircraft metadata response caps | 512 KiB index / 512 KiB shard |
 | Aircraft metadata shard cache | 8 validated prefix shards |
 | Aircraft metadata snapshot age | Valid through 45 days; 24-hour future-clock tolerance |
+| Selected-aircraft photo lookup | Disabled by default; explicit action and exact ICAO24 only |
+| Photo request deadline / response cap | 8 seconds / 32 KiB |
+| Photo JSON tab cache | 32 successful or no-photo entries / 1 hour |
+| Selected-flight route lookup | Disabled by default; explicit action only |
+| Route client / Worker deadline | 10 seconds |
+| Route client / Worker response cap | 16 KiB validated response / 512 KiB provider response |
+| Route global budget | 90 reserved attempts in a rolling 31-day window |
 | Port asset request deadline / cap | 5 seconds / 512 KiB |
 | Port records / rendered zoom range | 1,081 / zoom 5 through 13 |
 | Airport asset request deadline / cap | 5 seconds / 1.5 MiB |
@@ -207,6 +217,100 @@ authorization, or arbitrary header is forwarded.
 Live aircraft responses are never placed in a shared deployment cache.
 Fingerprint-named application assets are cached immutably instead. See
 [Hosting and Deployment](hosting-and-deployment.md).
+
+## Selected-aircraft photo evaluation
+
+The browser photo section is omitted unless:
+
+```dotenv
+VITE_AIRCRAFT_PHOTO_ENABLED=true
+```
+
+This flag contains no credential and does not enable a Worker route. The
+production default must remain `false`: the one bounded evaluation from the
+local application origin did not expose a readable Planespotters CORS response,
+and the API-specific terms page has no visible revision date.
+
+When enabled for deterministic evaluation, selecting an aircraft still makes
+no photo request. The user must activate **Load aircraft photo**. Only a valid
+six-character ICAO24 is sent directly from the browser to the fixed
+Planespotters hex endpoint. Requests omit credentials, reject redirects, use
+`cache: no-store`, enforce an eight-second deadline and 32 KiB response cap,
+and never use the Worker.
+
+Accepted responses contain zero or one photo. The regular thumbnail must use
+the exact configured Planespotters CDN origin, and the returned source link
+must use the exact Planespotters `/photo/` origin/path. Both URL strings remain
+unchanged. The image loads directly from the provider CDN, links to the source
+page in a new tab, and shows visible photographer credit.
+
+Successful and no-photo JSON results may remain in a 32-entry least-recently-
+used current-tab cache for at most one hour. Errors are not cached. A `429`
+blocks another manual attempt until its readable `Retry-After`, or for one
+minute when that header is unavailable. There is no automatic retry or
+selection-time prefetch.
+
+No JSON, returned URL, credit, or image byte is written to Web Storage,
+IndexedDB, Cache API, service-worker cache, Worker cache, KV, or R2. HISTORY
+and vessel details never expose the section. See
+[Aircraft Photo Evaluation](aircraft-photo-evaluation.md) for the exact terms,
+deterministic evidence, failed live-CORS gate, and enablement requirements.
+
+## Selected-flight route evaluation
+
+The browser route section is omitted unless:
+
+```dotenv
+VITE_FLIGHT_ROUTE_ENABLED=true
+VITE_FLIGHT_ROUTE_ENDPOINT=/api/flight-route
+```
+
+These browser-visible values contain no credential and cannot enable the
+Worker by themselves. The Worker separately requires
+`AVIATIONSTACK_ENABLED=true`, the `AVIATIONSTACK_ACCESS_KEY` secret, and the
+`FLIGHT_ROUTE_QUOTA` Durable Object binding. A caller that bypasses the UI
+therefore cannot activate a disabled route.
+
+Selecting an aircraft does not make a route request. The user must activate
+**Find route** for each attempt. The selected live aircraft must have a
+six-character ICAO24 address and an ICAO-like callsign with three leading
+letters and at least one digit. Selection, callsign, ICAO24, registration,
+history-mode, or unmount changes abort and clear obsolete work. Ordinary
+ADSB.lol position updates, map movement, theme changes, and provider refreshes
+do not start or repeat a lookup.
+
+The same-origin Worker reserves one of 90 global attempts in a rolling 31-day
+window before making exactly one fixed aviationstack `/v1/flights` request. It
+does not retry, paginate, follow redirects, place responses in a shared cache,
+or refund attempts after provider failure or cancellation. A result is
+displayed only for one active non-codeshare row whose flight ICAO and aircraft
+ICAO24 match exactly; conflicting registrations, multiple matches, and
+incomplete pagination remain unavailable.
+
+The browser keeps only successful validated routes in a 32-entry in-memory
+least-recently-used cache keyed by the exact normalized callsign, ICAO24, and
+optional registration. Each entry remains eligible for reuse for six hours;
+closing or reloading the tab clears it sooner. Reopening the same exact flight
+reuses the route without a provider request; **Refresh route** deliberately
+makes a new request. Unavailable, ambiguous, incomplete, configuration, quota,
+provider, aborted, and expired results are never cached. No route enters
+`localStorage`, `sessionStorage`, IndexedDB, traffic history, or the
+service-worker cache.
+
+Vite has no aviationstack proxy. Credentialed local evaluation must use the
+actual Worker runtime:
+
+```bash
+cp .dev.vars.example .dev.vars
+# Replace the placeholder with an authorized evaluation key.
+VITE_FLIGHT_ROUTE_ENABLED=true npm run preview:worker
+```
+
+`.dev.vars` is ignored by Git. Never place the access key in `.env.local`, a
+`VITE_*` value, source code, test fixture, issue, screenshot, or browser log.
+Issue #44 limits initial live evaluation to ten calls and still blocks public
+enablement until the exact account terms, display/attribution rights, and
+sample behavior are recorded.
 
 ## Weather observations and proxy
 

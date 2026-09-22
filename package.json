@@ -1,7 +1,7 @@
 {
   "name": "livetrafficstan",
   "private": true,
-  "version": "1.4.1",
+  "version": "1.5.0",
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {
@@ -10,6 +10,7 @@
     "build:pwa-retire": "tsc -b && vite build --mode pwa-retire && node scripts/generate-service-worker.mjs --retire",
     "check:aircraft-metadata": "node scripts/check-aircraft-metadata.mjs",
     "check:airports": "node scripts/check-airports.mjs",
+    "check:country-allocations": "node scripts/check-country-allocations.mjs",
     "check:ports": "node scripts/check-ports.mjs",
     "check:deploy": "wrangler deploy --dry-run",
     "typecheck": "tsc -b --pretty false",
@@ -19,6 +20,7 @@
     "test:watch": "vitest",
     "update:aircraft-metadata": "node scripts/update-aircraft-metadata.mjs",
     "update:airports": "node scripts/update-airports.mjs",
+    "update:country-allocations": "node scripts/update-country-allocations.mjs",
     "update:ports": "node scripts/update-ports.mjs",
     "preview": "vite preview"
   },
@@ -29,6 +31,7 @@
     "react-dom": "^19.2.8"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260920.1",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",

@@ -4,6 +4,8 @@ import { useAppPreferences } from './app/useAppPreferences'
 import { useAppShell } from './app/useAppShell'
 import { useAircraftTraffic } from './app/useAircraftTraffic'
 import { useAircraftMetadata } from './app/useAircraftMetadata'
+import { useAircraftPhoto } from './app/useAircraftPhoto'
+import { useFlightRoute } from './app/useFlightRoute'
 import { useAirports } from './app/useAirports'
 import { LocationCameraIntent } from './app/locationCameraIntent'
 import { useMarineTraffic } from './app/useMarineTraffic'
@@ -57,7 +59,9 @@ import {
 import { TrafficMap } from './map/TrafficMap'
 import type { PlaceSearchResult } from './providers/geocoding/photonProvider'
 import { StaticAircraftMetadataProvider } from './providers/aircraftMetadata/staticAircraftMetadataProvider'
+import { PlanespottersPhotoProvider } from './providers/aircraftPhoto/planespottersPhotoProvider'
 import { StaticAirportsProvider } from './providers/airports/staticAirportsProvider'
+import { AviationstackFlightRouteProvider } from './providers/flightRoute/aviationstackFlightRouteProvider'
 import { StaticPortsProvider } from './providers/ports/staticPortsProvider'
 import { AwcMetarProvider } from './providers/weather/awcMetarProvider'
 import { filterTrafficByViewport } from './traffic/filter'
@@ -272,6 +276,14 @@ function App() {
     () => new StaticAircraftMetadataProvider(APP_CONFIG.aircraftMetadata),
     [],
   )
+  const aircraftPhotoProvider = useMemo(
+    () => new PlanespottersPhotoProvider(APP_CONFIG.aircraftPhoto),
+    [],
+  )
+  const flightRouteProvider = useMemo(
+    () => new AviationstackFlightRouteProvider(APP_CONFIG.flightRoute),
+    [],
+  )
   const portsProvider = useMemo(
     () => new StaticPortsProvider(APP_CONFIG.ports),
     [],
@@ -456,8 +468,12 @@ function App() {
     [displayNow, viewportVessels],
   )
   const vessels = useMemo(
-    () => filterVessels(currentVessels, vesselFilters),
-    [currentVessels, vesselFilters],
+    () =>
+      filterVessels(currentVessels, vesselFilters, {
+        displayTime: displayNow,
+        staleAfterMs: APP_CONFIG.marine.staleAfterMs,
+      }),
+    [currentVessels, displayNow, vesselFilters],
   )
   const vesselResults = useMemo(
     () => orderVesselSearchResults(vessels, vesselFilters.query),
@@ -568,6 +584,23 @@ function App() {
       : undefined,
     aircraftMetadataProvider,
     displayNow,
+  )
+  const aircraftPhotoEnabled =
+    APP_CONFIG.aircraftPhoto.enabled &&
+    !historyActive &&
+    selectedEntity?.kind === 'aircraft'
+  const aircraftPhoto = useAircraftPhoto(
+    aircraftPhotoEnabled ? selectedEntity : undefined,
+    aircraftPhotoProvider,
+    APP_CONFIG.aircraftPhoto,
+  )
+  const flightRouteEnabled =
+    APP_CONFIG.flightRoute.enabled &&
+    !historyActive &&
+    selectedEntity?.kind === 'aircraft'
+  const flightRoute = useFlightRoute(
+    flightRouteEnabled ? selectedEntity : undefined,
+    flightRouteProvider,
   )
   const trailDurationMinutes = trailPreferences.durationMinutes
   const activeTrailConfig = useMemo(
@@ -1089,6 +1122,7 @@ function App() {
           totalVessels={currentVessels.length}
           vesselEmptyMessage={vesselEmptyMessage}
           units={units}
+          marineStaleAfterMs={APP_CONFIG.marine.staleAfterMs}
           onVesselFiltersChange={setVesselFilters}
           onVesselSelect={handleVesselDiscoverySelect}
           aircraftVisible={aircraftVisible}
@@ -1221,9 +1255,18 @@ function App() {
           <TrafficDetails
             entity={selectedEntity}
             aircraftMetadata={aircraftMetadata}
+            aircraftPhotoEnabled={aircraftPhotoEnabled}
+            aircraftPhoto={aircraftPhoto.state}
+            aircraftPhotoTermsUrl={
+              APP_CONFIG.aircraftPhoto.sourceTermsUrl
+            }
+            flightRouteEnabled={flightRouteEnabled}
+            flightRoute={flightRoute.state}
             now={displayNow}
             units={units}
             historical={historyActive}
+            onRequestAircraftPhoto={aircraftPhoto.request}
+            onRequestFlightRoute={flightRoute.request}
             onClose={handleCloseTraffic}
           />
         )}

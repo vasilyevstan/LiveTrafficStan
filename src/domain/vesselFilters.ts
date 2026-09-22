@@ -3,9 +3,11 @@ import type {
   VesselCategory,
   VesselNavigationCategory,
 } from './traffic'
+import { isReportedYacht } from './trafficPresentation'
+import { ONE_KNOT_KPH } from './trafficThresholds'
 import type { UnitSystem } from './units'
 
-export const ONE_KNOT_KPH = 1.852
+export { ONE_KNOT_KPH } from './trafficThresholds'
 export const VESSEL_SEARCH_MAX_LENGTH = 64
 export const VESSEL_RESULT_LIMIT = 20
 export const VESSEL_MINIMUM_LENGTH_OPTIONS = [0, 25, 50, 100, 150] as const
@@ -31,6 +33,11 @@ export interface VesselFilterState {
   minimumLengthMeters: VesselMinimumLength
   maximumLengthMeters: VesselMaximumLength
   includeUnknownLength: boolean
+}
+
+export interface VesselFilterContext {
+  displayTime: number
+  staleAfterMs: number
 }
 
 export const DEFAULT_VESSEL_FILTERS: VesselFilterState = {
@@ -187,9 +194,41 @@ const matchesLength = (
   )
 }
 
+const finiteNumber = (value: number | undefined): value is number =>
+  value !== undefined && Number.isFinite(value)
+
+export const matchesMovingYachtEligibility = (
+  vessel: Vessel,
+  filters: Pick<VesselFilterState, 'maximumLengthMeters'>,
+  context: VesselFilterContext,
+) => {
+  if (!isReportedYacht(vessel)) return false
+  if (
+    !finiteNumber(vessel.lengthMeters) ||
+    vessel.lengthMeters < 8 ||
+    !finiteNumber(vessel.speedKph) ||
+    vessel.speedKph < ONE_KNOT_KPH ||
+    !Number.isFinite(vessel.position.observedAt) ||
+    !Number.isFinite(context.displayTime) ||
+    !Number.isFinite(context.staleAfterMs) ||
+    context.staleAfterMs < 0
+  ) {
+    return false
+  }
+
+  const age = context.displayTime - vessel.position.observedAt
+  if (age < 0 || age > context.staleAfterMs) return false
+
+  return (
+    filters.maximumLengthMeters === null ||
+    vessel.lengthMeters <= filters.maximumLengthMeters
+  )
+}
+
 export const matchesVesselFilters = (
   vessel: Vessel,
   filters: VesselFilterState,
+  context: VesselFilterContext,
 ) => {
   const normalizedQuery = normalizeVesselSearchQuery(filters.query)
   return (
@@ -199,14 +238,20 @@ export const matchesVesselFilters = (
     (filters.navigation === 'all' ||
       vessel.navigationCategory === filters.navigation) &&
     matchesReportedSpeed(vessel, filters.reportedSpeed) &&
-    matchesLength(vessel, filters)
+    (isReportedYacht(vessel)
+      ? matchesMovingYachtEligibility(vessel, filters, context)
+      : matchesLength(vessel, filters))
   )
 }
 
 export const filterVessels = <T extends Vessel>(
   vessels: readonly T[],
   filters: VesselFilterState,
-) => vessels.filter((vessel) => matchesVesselFilters(vessel, filters))
+  context: VesselFilterContext,
+) =>
+  vessels.filter((vessel) =>
+    matchesVesselFilters(vessel, filters, context),
+  )
 
 export const orderVesselSearchResults = <T extends Vessel>(
   vessels: readonly T[],
@@ -234,11 +279,6 @@ export const withMinimumVesselLength = (
 ): VesselFilterState => ({
   ...filters,
   minimumLengthMeters,
-  maximumLengthMeters:
-    filters.maximumLengthMeters !== null &&
-    filters.maximumLengthMeters < minimumLengthMeters
-      ? null
-      : filters.maximumLengthMeters,
 })
 
 export const isDefaultVesselFilters = (filters: VesselFilterState) =>
@@ -259,16 +299,16 @@ export const vesselFilterSummary = (
 ) => {
   const criteria = [
     filters.minimumLengthMeters === 0
-      ? 'no minimum length'
-      : `${filters.minimumLengthMeters} m or longer`,
+      ? 'no non-yacht minimum length'
+      : `non-yachts ${filters.minimumLengthMeters} m or longer`,
   ]
   if (filters.maximumLengthMeters !== null) {
     criteria.push(`${filters.maximumLengthMeters} m maximum`)
   }
   criteria.push(
     filters.includeUnknownLength
-      ? 'unknown length included'
-      : 'unknown length hidden',
+      ? 'non-yachts with unknown length included'
+      : 'non-yachts with unknown length hidden',
   )
   if (filters.category !== 'all') {
     criteria.push(VESSEL_CATEGORY_LABELS[filters.category].toLowerCase())

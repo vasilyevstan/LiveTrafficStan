@@ -53,9 +53,18 @@ const trafficPoint = (
       markerScale: 1,
       selected: false,
       stale: false,
+      motionState: 'moving',
       retainedFalse: false,
       retainedZero: 0,
       retainedNull: null,
+      ...(kind === 'aircraft'
+        ? {
+            altitudeBand: 'medium',
+            verticalTrend: 'climb',
+          }
+        : {
+            navigationConflict: false,
+          }),
       ...properties,
     },
     geometry: { type: 'Point', coordinates },
