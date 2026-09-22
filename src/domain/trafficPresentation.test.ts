@@ -1,14 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import type { Aircraft, Vessel } from './traffic'
 import {
-  AIRCRAFT_BADGE_ICONS,
+  AIRCRAFT_ALTITUDE_MARKER_ICONS,
   TRAFFIC_STYLE_IMAGE_IDS,
   aircraftAltitudeBand,
   aircraftAltitudeBandLabel,
+  aircraftRenderIcon,
   aircraftVerticalTrend,
   isReportedYacht,
   trafficPresentation,
-  vesselMotionState,
+  trafficMotionState,
   vesselNavigationMotionConflict,
   vesselRenderIcon,
 } from './trafficPresentation'
@@ -53,15 +54,15 @@ const vessel = (
 })
 
 describe('traffic presentation', () => {
-  it('uses the exact one-knot vessel motion boundary', () => {
-    expect(vesselMotionState(undefined)).toBe('unknown')
-    expect(vesselMotionState(Number.NaN)).toBe('unknown')
-    expect(vesselMotionState(-0.001)).toBe('unknown')
-    expect(vesselMotionState(0)).toBe('slow-stopped')
-    expect(vesselMotionState(0.999 * ONE_KNOT_KPH)).toBe(
+  it('uses the exact one-knot traffic motion boundary', () => {
+    expect(trafficMotionState(undefined)).toBe('unknown')
+    expect(trafficMotionState(Number.NaN)).toBe('unknown')
+    expect(trafficMotionState(-0.001)).toBe('unknown')
+    expect(trafficMotionState(0)).toBe('slow-stopped')
+    expect(trafficMotionState(0.999 * ONE_KNOT_KPH)).toBe(
       'slow-stopped',
     )
-    expect(vesselMotionState(ONE_KNOT_KPH)).toBe('moving')
+    expect(trafficMotionState(ONE_KNOT_KPH)).toBe('moving')
   })
 
   it('uses only exact reported vessel types for render-only shapes', () => {
@@ -135,6 +136,9 @@ describe('traffic presentation', () => {
     expect(aircraftAltitudeBand(9_999.999)).toBe('high')
     expect(aircraftAltitudeBand(10_000)).toBe('cruise')
     expect(aircraftAltitudeBandLabel('low')).not.toContain('ground')
+    expect(aircraftRenderIcon('aircraft-heavy', 'high')).toBe(
+      'aircraft-heavy-high',
+    )
   })
 
   it('uses the exact 200 ft/min vertical trend boundary', () => {
@@ -150,18 +154,22 @@ describe('traffic presentation', () => {
     expect(new Set(TRAFFIC_STYLE_IMAGE_IDS).size).toBe(
       TRAFFIC_STYLE_IMAGE_IDS.length,
     )
-    expect(AIRCRAFT_BADGE_ICONS).toHaveLength(20)
+    expect(AIRCRAFT_ALTITUDE_MARKER_ICONS).toHaveLength(20)
     expect(
       trafficPresentation(
         aircraft({
           altitudeMeters: 10_000,
           verticalSpeedMps: -1.016,
+          speedKph: 0,
+          courseDegrees: 120,
         }),
       ),
     ).toMatchObject({
+      markerIcon: 'aircraft-cruise',
+      headingDegrees: 0,
       altitudeBand: 'cruise',
       verticalTrend: 'descent',
-      badgeIcon: 'aircraft-state-cruise-descent',
+      motionState: 'slow-stopped',
     })
   })
 })

@@ -132,7 +132,7 @@ describe('TrafficControls', () => {
     expect(navigationMore).toContain('Traffic legend')
     expect(navigationMore).toContain('Band 1 · below 1,000 m')
     expect(navigationMore).toContain(
-      'Moving · reported speed at least 1 kn',
+      'Slow or stopped · reported speed below 1 kn',
     )
     expect(navigationMore).toContain('Aircraft discovery')
     expect(navigationMore).toContain('Vessel discovery')
@@ -191,14 +191,15 @@ describe('TrafficControls', () => {
 
     expect(html).toContain('Band 1 · below 3,281 ft')
     expect(html).toContain('Band 4 · 32,808 ft or higher')
-    expect(html).toContain(
-      'Climbing · reported rate is at least 200 ft/min upward',
-    )
-    expect(html).toContain(
-      'Small reported vertical rate · less than 200 ft/min either way',
-    )
+    expect(html).toContain('Aircraft altitude colors')
+    expect(html).toContain('Winged silhouettes are aircraft.')
+    expect(html).toContain('Long hull silhouettes are vessels.')
     expect(html).toContain(
       'Slow or stopped · reported speed below 1 kn',
+    )
+    expect(html).toContain('AIS destination')
+    expect(html).toContain(
+      'does not perform a route, metadata, photo, or provider lookup',
     )
     expect(html).toContain('eligible from 8 m at 1 kn or faster')
     expect(html).toContain('no more than 120 seconds old')

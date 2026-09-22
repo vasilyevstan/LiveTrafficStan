@@ -195,8 +195,10 @@ Map-experience tests also cover:
 - idempotent MapLibre style installation and restoration of custom state;
 - theme-keyed traffic image replacement, including identical style URLs and
   stale/live opacity updates;
-- all ten bounded silhouette IDs, ADS-B/AIS category boundaries, generic
-  fallbacks, and stable identity when provider metadata changes an icon.
+- all 10 persisted silhouette IDs, 3 exact render-only vessel shapes, 20
+  bounded aircraft altitude-color variants, ADS-B/AIS category boundaries,
+  generic fallbacks, and stable identity when provider metadata changes an
+  icon.
 - strict coordinate/query classification, including malformed numeric pairs,
   comma-containing place names, range checks, and configured rounding;
 - Photon URL/header construction, bounded response reads, GeoJSON Point
@@ -455,17 +457,24 @@ Use `npm run dev` and verify:
 16. With SHIPS hidden, matching results remain counted but cannot be selected.
     Re-enabling SHIPS restores map visibility without reconnecting MQTT or
     starting REST work.
-17. Aircraft altitude rings and state badges, vessel movement badges, and
-    sailing/pleasure/high-speed shapes exclude clusters and click/touch
-    picking, preserve selected halos, follow stale opacity and layer
-    visibility, and reinstall after Light/Dark and fallback-style changes.
-    Exact boundaries are tested at 1,000/3,000/10,000 m, +/-1.016 m/s, and one
-    knot. Zero or negative finite altitude never claims on-ground status.
-    Cluster counts and port, airport, and weather labels reuse the active
-    style's declared font stack; glyph-free fallback uses local system fonts
-    with no unsupported Open Sans request or browser diagnostic. Operations
-    More exposes the same exact altitude, vertical-rate, one-knot,
-    yacht-length, and freshness thresholds with textual equivalents.
+17. Aircraft altitude-colored silhouettes, red slow/stopped dots for either
+    traffic kind, and sailing/pleasure/high-speed vessel shapes exclude
+    clusters and click/touch picking, preserve neutral selected halos, follow
+    stale opacity and layer visibility, and reinstall after Light/Dark and
+    fallback-style changes. No ordinary aircraft altitude ring or moving/
+    unknown state bubble remains. Exact boundaries are tested at
+    1,000/3,000/10,000 m, +/-1.016 m/s, and one knot. Zero or negative finite
+    altitude never claims on-ground status; missing or invalid speed never
+    receives the red stopped treatment. Mouse hover shows aircraft
+    flight/callsign and reported type or vessel name, MMSI-derived flag, and
+    explicitly labeled AIS destination using text-only DOM construction.
+    Hover, leave, drag, style replacement, and entity expiry add no metadata,
+    route, photo, provider, reconnect, or polling request. Cluster counts and
+    port, airport, and weather labels reuse the active style's declared font
+    stack; glyph-free fallback uses local system fonts with no unsupported Open
+    Sans request or browser diagnostic. Operations More exposes the same exact
+    altitude, vertical-rate, one-knot, yacht-length, and freshness thresholds
+    with textual equivalents.
 18. No `/ports/` request occurs while PORTS is disabled. First enable makes one
     bounded request; hiding and re-enabling uses the fulfilled session cache.
     A blocked/corrupt asset reports a local error and Retry works without
@@ -567,10 +576,11 @@ For the viewport-driven map experience, additionally verify:
    recognizable and distinct from live markers.
 11. Light/small, generic, heavy, rotorcraft, cargo, tanker, passenger, fishing,
     tug, and generic-vessel shapes remain distinguishable in Light and Dark
-    themes without changing cyan/amber traffic-kind identity.
-12. Rapid theme changes restore all ten image IDs and loaded static/weather
-    layers once per style generation, preserve one map, and do not reconnect or
-    query any provider.
+    themes while aircraft altitude colors remain distinct from amber marine
+    traffic and the red stopped dot.
+12. Rapid theme changes restore all 33 bounded image IDs and loaded
+    static/weather layers once per style generation, preserve one map, and do
+    not reconnect or query any provider.
 13. A direct touch hit selects normally, an isolated near miss inside the
     8 CSS-pixel box selects the sole eligible ID, and an outside or ambiguous
     tap clears/retains selection according to the normal empty-hit path.

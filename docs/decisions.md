@@ -323,10 +323,11 @@ Aircraft, vessels, and the selected trail are represented as GeoJSON sources. Ma
 
 ## Persisted provider silhouettes and render-only traffic semantics
 
-The map uses ten original canvas images: light/small fixed-wing, generic
+The map persists ten original canvas icon keys: light/small fixed-wing, generic
 fixed-wing, heavy fixed-wing, helicopter, cargo, tanker, passenger, fishing,
-tug, and generic vessel. Cyan still means aircraft and amber still means marine
-traffic; category is conveyed by shape rather than a new color system.
+tug, and generic vessel. Marine traffic remains amber. Aircraft category stays
+shape-based while the aircraft silhouette color carries the bounded altitude
+band.
 
 Normalization maps only trusted provider fields to application-owned icon keys.
 ADS-B A1/A2 use light fixed-wing, A5 heavy fixed-wing, and A7 helicopter.
@@ -337,8 +338,10 @@ use the corresponding generic fallback.
 
 No model/type string, speed, name, route, operator, position, or movement is
 used to infer a category. This keeps the vocabulary truthful and avoids a
-classification service or dataset. The ten images are generated once per theme
-and reinstalled through the existing single-map style lifecycle.
+classification service or dataset. The 10 persisted images, 3 exact
+render-only vessel shapes, and 20 aircraft altitude-color variants are
+generated once per theme and reinstalled through the existing single-map style
+lifecycle.
 
 Provider-owned icon keys stay in normalized entities and bounded historical
 records. Visual-only state is derived later by one pure presentation module and
@@ -346,10 +349,13 @@ projected into MapLibre properties. This avoids a history migration and keeps
 rollback compatible with observations written by the previous release.
 
 The render vocabulary adds exact sailing, pleasure-craft, and high-speed-craft
-shapes without changing persisted marker keys. Speed-over-ground also produces
-a screen-upright moving, slow/stopped, or unknown badge. Exactly one knot is
-moving; missing, invalid, or negative speed is unknown. Vessel rotation is
-directional only while moving. Navigation status remains separate and
+shapes without changing persisted marker keys. Speed-over-ground produces
+moving, slow/stopped, or unknown render state. Exactly one knot is moving;
+missing, invalid, or negative speed is unknown. Only slow/stopped traffic
+receives a small red screen-upright dot; moving and unknown traffic do not add
+a circle over the silhouette. Vessel rotation is directional only while
+moving. Aircraft use the same red slow/stopped treatment but retain reported
+heading when speed is unknown. Navigation status remains separate and
 conflicting reports are disclosed.
 
 Sailing and pleasure craft form a strict branch rather than a generic length
@@ -361,12 +367,20 @@ rule; non-yachts retain the 50 m default and unknown-length preference.
 Digitraffic's Class A-only scope means small-yacht coverage is expected to be
 incomplete.
 
-Aircraft retain cyan kind identity. Altitude is added through a separate
-sequential-color and stepped-radius ring, with boundaries below 1,000 m,
-1,000-3,000 m, 3,000-10,000 m, and 10,000 m or higher. A compact badge adds
-the band number and vertical trend at the exact +/-200 ft/min boundary. Text in
-details and the control legend remains the authoritative channel, so neither
-altitude nor movement relies on color alone.
+Aircraft use the silhouette fill itself for sequential altitude colors, with
+boundaries below 1,000 m, 1,000-3,000 m, 3,000-10,000 m, and 10,000 m or
+higher plus neutral unknown. Ordinary per-aircraft altitude rings and
+vertical-trend badges are removed so the category shape remains visible.
+Vertical trend at the exact +/-200 ft/min boundary remains in selected details,
+and the control legend pairs every color and red stopped dot with text, so
+neither altitude nor movement relies on color alone.
+
+Mouse hover is a map-local presentation path over normalized entities already
+in memory. Aircraft show flight/callsign plus reported type and identity
+fallback; vessels show name/MMSI, locally derived flag state, and explicitly
+labeled AIS destination. DOM content is assigned through `textContent`, and
+hover cannot start metadata, route, photo, provider, reconnect, polling, or
+cache work. AIS destination is not presented as a complete route.
 
 ## Pinned static selected-aircraft metadata
 
@@ -642,12 +656,13 @@ style-owned state, the map layer installer restores traffic images,
 sources, layers, data, visibility, and trail after every `style.load`
 without changing camera, selection, provider state, or connections.
 
-Traffic artwork keeps cyan aircraft and amber vessels in both themes. The
-theme-specific canvas treatment changes fill luminance, detail color, shadow,
-and two-tone edge contrast while retaining silhouettes and heading/course
-rotation. Image IDs are replaced through MapLibre when the theme changes,
-including when both theme options reference the same style URL. The image cache
-contains only the bounded light and dark sets.
+Traffic artwork keeps amber vessels and uses a bounded altitude palette on each
+aircraft silhouette in both themes. The theme-specific canvas treatment changes
+fill luminance, detail color, shadow, and two-tone edge contrast while
+retaining silhouettes and heading/course rotation. Image IDs are replaced
+through MapLibre when the theme changes, including when both theme options
+reference the same style URL. The image cache contains only the bounded light
+and dark sets.
 
 ## Versioned preferences, fragment sharing, and presentation units
 
@@ -822,10 +837,12 @@ recovery belongs above Location & Settings More. Mandatory map or selected-item
 attribution is never hidden. The combined expanded stack, rather than each
 panel independently, owns the 58vh budget.
 
-The traffic legend reuses the application-owned #77 labels and thresholds for
-aircraft altitude/trend and vessel movement. It pairs visible shapes or badges
-with text, explains exact AIS-type shapes and the 8 m / 1 kn / freshness yacht
-exception, and never relies on color alone.
+The traffic legend reuses the application-owned labels and thresholds for
+aircraft altitude, traffic movement, and the exact AIS-type shapes. It pairs
+every aircraft color and the red slow/stopped dot with text, explains the
+8 m / 1 kn / freshness yacht exception, documents request-free hover fields,
+and never relies on color alone. Vertical trend remains in selected details
+rather than a marker badge.
 
 Selection updates must retain the complete MapLibre feature-property contract.
 In particular, `removeAllProperties` is terminal in the installed source-diff

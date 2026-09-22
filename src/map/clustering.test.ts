@@ -53,6 +53,7 @@ const trafficPoint = (
       markerScale: 1,
       selected: false,
       stale: false,
+      motionState: 'moving',
       retainedFalse: false,
       retainedZero: 0,
       retainedNull: null,
@@ -60,11 +61,8 @@ const trafficPoint = (
         ? {
             altitudeBand: 'medium',
             verticalTrend: 'climb',
-            stateBadgeIcon: 'aircraft-state-medium-climb',
           }
         : {
-            motionState: 'moving',
-            motionBadgeIcon: 'vessel-motion-moving',
             navigationConflict: false,
           }),
       ...properties,

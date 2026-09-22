@@ -30,15 +30,13 @@ export const trafficFeatures = (
         markerScale: entity.markerScale,
         selected: entity.id === selectedId,
         stale: entity.freshness === 'stale',
+        motionState: presentation.motionState,
         ...(presentation.kind === 'aircraft'
           ? {
               altitudeBand: presentation.altitudeBand,
               verticalTrend: presentation.verticalTrend,
-              stateBadgeIcon: presentation.badgeIcon,
             }
           : {
-              motionState: presentation.motionState,
-              motionBadgeIcon: presentation.badgeIcon,
               navigationConflict: presentation.navigationConflict,
             }),
       },
