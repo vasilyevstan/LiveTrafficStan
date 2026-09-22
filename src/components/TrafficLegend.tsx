@@ -2,43 +2,13 @@ import type { UnitSystem } from '../domain/units'
 import {
   AIRCRAFT_ALTITUDE_BANDS,
   aircraftAltitudeBandLabel,
-  aircraftAltitudeBandCode,
-  aircraftVerticalTrendLabel,
   vesselMotionLabel,
-  type AircraftVerticalTrend,
-  type VesselMotionState,
 } from '../domain/trafficPresentation'
 
 interface TrafficLegendProps {
   units: UnitSystem
   marineStaleAfterMs: number
 }
-
-const verticalTrendCode: Record<AircraftVerticalTrend, string> = {
-  climb: 'UP',
-  descent: 'DN',
-  small: 'BAR',
-  unknown: '?',
-}
-
-const verticalTrendOrder: AircraftVerticalTrend[] = [
-  'climb',
-  'descent',
-  'small',
-  'unknown',
-]
-
-const vesselMotionCode: Record<VesselMotionState, string> = {
-  moving: 'GO',
-  'slow-stopped': 'BAR',
-  unknown: '?',
-}
-
-const vesselMotionOrder: VesselMotionState[] = [
-  'moving',
-  'slow-stopped',
-  'unknown',
-]
 
 export function TrafficLegend({
   units,
@@ -56,15 +26,15 @@ export function TrafficLegend({
       </p>
 
       <div className="traffic-legend__section">
-        <h3>Aircraft altitude rings</h3>
+        <h3>Aircraft altitude colors</h3>
         <ul className="traffic-legend__list">
           {AIRCRAFT_ALTITUDE_BANDS.map((band) => (
             <li key={band}>
               <span
-                className={`traffic-legend__ring traffic-legend__ring--${band}`}
+                className={`traffic-legend__aircraft traffic-legend__aircraft--${band}`}
                 aria-hidden="true"
               >
-                {aircraftAltitudeBandCode(band)}
+                AIR
               </span>
               <span>{aircraftAltitudeBandLabel(band, units)}</span>
             </li>
@@ -73,43 +43,50 @@ export function TrafficLegend({
       </div>
 
       <div className="traffic-legend__section">
-        <h3>Aircraft trend badges</h3>
+        <h3>Shapes and movement</h3>
         <ul className="traffic-legend__list">
-          {verticalTrendOrder.map((trend) => (
-            <li key={trend}>
-              <span className="traffic-legend__badge" aria-hidden="true">
-                {verticalTrendCode[trend]}
-              </span>
-              <span>{aircraftVerticalTrendLabel(trend)}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="traffic-legend__section">
-        <h3>Ship movement badges</h3>
-        <ul className="traffic-legend__list">
-          {vesselMotionOrder.map((state) => (
-            <li key={state}>
-              <span className="traffic-legend__badge" aria-hidden="true">
-                {vesselMotionCode[state]}
-              </span>
-              <span>{vesselMotionLabel(state)}</span>
-            </li>
-          ))}
+          <li>
+            <span
+              className="traffic-legend__shape traffic-legend__shape--aircraft"
+              aria-hidden="true"
+            >
+              AIR
+            </span>
+            <span>Winged silhouettes are aircraft.</span>
+          </li>
+          <li>
+            <span
+              className="traffic-legend__shape traffic-legend__shape--vessel"
+              aria-hidden="true"
+            >
+              SHIP
+            </span>
+            <span>Long hull silhouettes are vessels.</span>
+          </li>
+          <li>
+            <span className="traffic-legend__stopped" aria-hidden="true" />
+            <span>{vesselMotionLabel('slow-stopped')}</span>
+          </li>
         </ul>
       </div>
 
       <p className="control-note control-note--muted">
-        Aircraft silhouettes reflect reported type metadata. Rings encode
-        reported barometric altitude; badges encode reported vertical trend.
-        Stale markers fade, while the selection halo is not a traffic state.
+        Aircraft silhouettes reflect reported type metadata, and their color
+        encodes reported barometric altitude. Selected details retain the
+        reported vertical trend. Stale markers fade, while the neutral
+        selection halo is not a traffic state.
       </p>
       <p className="control-note control-note--muted">
         Sailing, pleasure, and high-speed silhouettes require those exact
         reported AIS types. Other ships retain their reported category shape.
-        Only moving silhouettes follow course. Navigation status stays
-        separate from measured movement.
+        A red dot marks valid reported speed below 1 kn for either traffic
+        kind. Unknown speed stays neutral; only moving ship silhouettes follow
+        course. Navigation status stays separate from measured movement.
+      </p>
+      <p className="control-note control-note--muted">
+        Mouse hover uses already-loaded data: aircraft callsign and reported
+        type, or vessel name, MMSI-derived flag, and AIS destination. It does
+        not perform a route, metadata, photo, or provider lookup.
       </p>
       <p className="control-note control-note--muted">
         Moving sailing and pleasure craft are eligible from 8 m at 1 kn or
@@ -119,7 +96,7 @@ export function TrafficLegend({
       </p>
       <p className="control-note control-note--muted">
         AIR and SEA count circles group eligible traffic; expand them to see
-        individual shapes and badges.
+        individual shapes and stopped markers.
       </p>
     </section>
   )

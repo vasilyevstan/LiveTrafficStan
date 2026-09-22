@@ -61,10 +61,10 @@ describe('trafficFeatures presentation projection', () => {
       properties: {
         id: aircraft.id,
         heading: 120,
-        markerIcon: 'aircraft',
+        markerIcon: 'aircraft-high',
         altitudeBand: 'high',
         verticalTrend: 'descent',
-        stateBadgeIcon: 'aircraft-state-high-descent',
+        motionState: 'unknown',
         selected: true,
         stale: false,
       },
@@ -87,7 +87,6 @@ describe('trafficFeatures presentation projection', () => {
         heading: 210,
         markerIcon: 'vessel-sailing',
         motionState: 'moving',
-        motionBadgeIcon: 'vessel-motion-moving',
         navigationConflict: false,
       },
     })
@@ -106,7 +105,22 @@ describe('trafficFeatures presentation projection', () => {
       heading: 0,
       markerIcon: 'vessel-sailing',
       motionState: 'slow-stopped',
-      motionBadgeIcon: 'vessel-motion-slow-stopped',
+    })
+  })
+
+  it('projects stopped aircraft as north-up without changing altitude color', () => {
+    const collection = trafficFeatures(
+      [{ ...aircraft, speedKph: 0, courseDegrees: 220 }],
+      new Map(),
+      1,
+      null,
+      false,
+    )
+
+    expect(collection.features[0]?.properties).toMatchObject({
+      heading: 0,
+      markerIcon: 'aircraft-high',
+      motionState: 'slow-stopped',
     })
   })
 })

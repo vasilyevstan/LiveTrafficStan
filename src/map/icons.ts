@@ -1,13 +1,9 @@
 import type { Theme } from '../app/theme'
 import {
   AIRCRAFT_ALTITUDE_BANDS,
-  AIRCRAFT_VERTICAL_TRENDS,
   TRAFFIC_STYLE_IMAGE_IDS,
-  aircraftAltitudeBandCode,
   type AircraftAltitudeBand,
-  type AircraftVerticalTrend,
   type TrafficStyleImageId,
-  type VesselMotionState,
 } from '../domain/trafficPresentation'
 
 type IconPainter = (context: CanvasRenderingContext2D) => void
@@ -44,6 +40,51 @@ export const trafficIconTreatment = (
         innerEdge: '#06243a',
         shadow: 'rgba(1, 14, 25, 0.38)',
       }
+
+export interface AircraftAltitudeColors {
+  fill: string
+  detail: string
+}
+
+export const aircraftAltitudeColors = (
+  theme: Theme,
+  band: AircraftAltitudeBand,
+): AircraftAltitudeColors => {
+  const fill =
+    theme === 'dark'
+      ? {
+          low: '#38bdf8',
+          medium: '#2dd4bf',
+          high: '#a78bfa',
+          cruise: '#f0abfc',
+          unknown: '#94a3b8',
+        }[band]
+      : {
+          low: '#0369a1',
+          medium: '#0f766e',
+          high: '#6d28d9',
+          cruise: '#a21caf',
+          unknown: '#64748b',
+        }[band]
+
+  return {
+    fill,
+    detail: theme === 'dark' ? '#f8fdff' : '#ffffff',
+  }
+}
+
+const aircraftColors = (
+  theme: Theme,
+  band: AircraftAltitudeBand | undefined,
+) => {
+  const treatment = trafficIconTreatment(theme)
+  return band === undefined
+    ? {
+        fill: treatment.aircraftFill,
+        detail: treatment.aircraftDetail,
+      }
+    : aircraftAltitudeColors(theme, band)
+}
 
 const createIcon = (paint: IconPainter) => {
   const canvas = document.createElement('canvas')
@@ -101,10 +142,14 @@ const strokeDetail = (
   context.restore()
 }
 
-export const createAircraftIcon = (theme: Theme) =>
+export const createAircraftIcon = (
+  theme: Theme,
+  band?: AircraftAltitudeBand,
+) =>
   createIcon((context) => {
     const treatment = trafficIconTreatment(theme)
-    fillShape(context, treatment, treatment.aircraftFill, () => {
+    const colors = aircraftColors(theme, band)
+    fillShape(context, treatment, colors.fill, () => {
       context.moveTo(32, 3)
       context.lineTo(38, 24)
       context.lineTo(59, 34)
@@ -124,10 +169,14 @@ export const createAircraftIcon = (theme: Theme) =>
     })
   })
 
-export const createLightAircraftIcon = (theme: Theme) =>
+export const createLightAircraftIcon = (
+  theme: Theme,
+  band?: AircraftAltitudeBand,
+) =>
   createIcon((context) => {
     const treatment = trafficIconTreatment(theme)
-    fillShape(context, treatment, treatment.aircraftFill, () => {
+    const colors = aircraftColors(theme, band)
+    fillShape(context, treatment, colors.fill, () => {
       context.moveTo(32, 4)
       context.lineTo(36, 25)
       context.lineTo(50, 34)
@@ -147,10 +196,14 @@ export const createLightAircraftIcon = (theme: Theme) =>
     })
   })
 
-export const createHeavyAircraftIcon = (theme: Theme) =>
+export const createHeavyAircraftIcon = (
+  theme: Theme,
+  band?: AircraftAltitudeBand,
+) =>
   createIcon((context) => {
     const treatment = trafficIconTreatment(theme)
-    fillShape(context, treatment, treatment.aircraftFill, () => {
+    const colors = aircraftColors(theme, band)
+    fillShape(context, treatment, colors.fill, () => {
       context.moveTo(32, 2)
       context.lineTo(39, 21)
       context.lineTo(61, 33)
@@ -172,7 +225,7 @@ export const createHeavyAircraftIcon = (theme: Theme) =>
     strokeDetail(
       context,
       treatment,
-      treatment.aircraftDetail,
+      colors.detail,
       () => {
         context.ellipse(17, 37, 3.5, 6, 0, 0, Math.PI * 2)
         context.moveTo(50.5, 37)
@@ -181,13 +234,17 @@ export const createHeavyAircraftIcon = (theme: Theme) =>
     )
   })
 
-export const createHelicopterIcon = (theme: Theme) =>
+export const createHelicopterIcon = (
+  theme: Theme,
+  band?: AircraftAltitudeBand,
+) =>
   createIcon((context) => {
     const treatment = trafficIconTreatment(theme)
+    const colors = aircraftColors(theme, band)
     strokeDetail(
       context,
       treatment,
-      treatment.aircraftDetail,
+      colors.detail,
       () => {
         context.moveTo(7, 25)
         context.lineTo(57, 25)
@@ -196,7 +253,7 @@ export const createHelicopterIcon = (theme: Theme) =>
       },
     )
 
-    fillShape(context, treatment, treatment.aircraftFill, () => {
+    fillShape(context, treatment, colors.fill, () => {
       context.moveTo(32, 12)
       context.quadraticCurveTo(44, 18, 43, 33)
       context.lineTo(37, 45)
@@ -431,119 +488,6 @@ export const createHighSpeedVesselIcon = (theme: Theme) =>
     })
   })
 
-const createBadgeBackground = (
-  context: CanvasRenderingContext2D,
-  treatment: TrafficIconTreatment,
-  fill: string,
-) => {
-  context.save()
-  context.shadowColor = treatment.shadow
-  context.shadowBlur = 4
-  context.fillStyle = fill
-  context.strokeStyle = treatment.outerEdge
-  context.lineWidth = 4
-  context.beginPath()
-  context.arc(32, 32, 21, 0, Math.PI * 2)
-  context.fill()
-  context.stroke()
-  context.strokeStyle = treatment.innerEdge
-  context.lineWidth = 1.75
-  context.stroke()
-  context.restore()
-}
-
-export const createVesselMotionBadgeIcon = (
-  theme: Theme,
-  state: VesselMotionState,
-) =>
-  createIcon((context) => {
-    const treatment = trafficIconTreatment(theme)
-    const ink =
-      theme === 'dark' ? treatment.outerEdge : treatment.innerEdge
-    createBadgeBackground(context, treatment, treatment.vesselFill)
-
-    context.save()
-    context.fillStyle = ink
-    context.strokeStyle = ink
-    context.lineWidth = 6
-    context.lineCap = 'round'
-    if (state === 'moving') {
-      context.beginPath()
-      context.moveTo(24, 19)
-      context.lineTo(46, 32)
-      context.lineTo(24, 45)
-      context.closePath()
-      context.fill()
-    } else if (state === 'slow-stopped') {
-      context.beginPath()
-      context.moveTo(21, 32)
-      context.lineTo(43, 32)
-      context.stroke()
-    } else {
-      context.font = '700 31px system-ui, sans-serif'
-      context.textAlign = 'center'
-      context.textBaseline = 'middle'
-      context.fillText('?', 32, 33)
-    }
-    context.restore()
-  })
-
-const drawTrend = (
-  context: CanvasRenderingContext2D,
-  trend: AircraftVerticalTrend,
-  color: string,
-) => {
-  context.save()
-  context.strokeStyle = color
-  context.fillStyle = color
-  context.lineWidth = 4
-  context.lineCap = 'round'
-  if (trend === 'climb' || trend === 'descent') {
-    const tipY = trend === 'climb' ? 21 : 43
-    const tailY = trend === 'climb' ? 43 : 21
-    context.beginPath()
-    context.moveTo(43, tailY)
-    context.lineTo(43, tipY)
-    context.stroke()
-    context.beginPath()
-    context.moveTo(35, trend === 'climb' ? 29 : 35)
-    context.lineTo(43, tipY)
-    context.lineTo(51, trend === 'climb' ? 29 : 35)
-    context.stroke()
-  } else if (trend === 'small') {
-    context.beginPath()
-    context.moveTo(35, 32)
-    context.lineTo(51, 32)
-    context.stroke()
-  } else {
-    context.font = '700 26px system-ui, sans-serif'
-    context.textAlign = 'center'
-    context.textBaseline = 'middle'
-    context.fillText('?', 43, 33)
-  }
-  context.restore()
-}
-
-export const createAircraftStateBadgeIcon = (
-  theme: Theme,
-  band: AircraftAltitudeBand,
-  trend: AircraftVerticalTrend,
-) =>
-  createIcon((context) => {
-    const treatment = trafficIconTreatment(theme)
-    const ink =
-      theme === 'dark' ? treatment.outerEdge : treatment.innerEdge
-    createBadgeBackground(context, treatment, treatment.aircraftFill)
-    context.save()
-    context.fillStyle = ink
-    context.font = '700 26px system-ui, sans-serif'
-    context.textAlign = 'center'
-    context.textBaseline = 'middle'
-    context.fillText(aircraftAltitudeBandCode(band), 23, 33)
-    context.restore()
-    drawTrend(context, trend, ink)
-  })
-
 export const createTrafficIcons = (
   theme: Theme,
 ): Record<TrafficStyleImageId, ImageData> => {
@@ -561,21 +505,26 @@ export const createTrafficIcons = (
     'vessel-sailing': createSailingVesselIcon(theme),
     'vessel-pleasure': createPleasureVesselIcon(theme),
     'vessel-highspeed': createHighSpeedVesselIcon(theme),
-    'vessel-motion-moving': createVesselMotionBadgeIcon(theme, 'moving'),
-    'vessel-motion-slow-stopped': createVesselMotionBadgeIcon(
-      theme,
-      'slow-stopped',
-    ),
-    'vessel-motion-unknown': createVesselMotionBadgeIcon(
-      theme,
-      'unknown',
-    ),
   } as Partial<Record<TrafficStyleImageId, ImageData>>
 
-  for (const band of AIRCRAFT_ALTITUDE_BANDS) {
-    for (const trend of AIRCRAFT_VERTICAL_TRENDS) {
-      images[`aircraft-state-${band}-${trend}`] =
-        createAircraftStateBadgeIcon(theme, band, trend)
+  const aircraftFactories = {
+    aircraft: createAircraftIcon,
+    'aircraft-light': createLightAircraftIcon,
+    'aircraft-heavy': createHeavyAircraftIcon,
+    helicopter: createHelicopterIcon,
+  } as const
+
+  for (const [markerIcon, factory] of Object.entries(
+    aircraftFactories,
+  )) {
+    const aircraftFactory = factory as (
+      activeTheme: Theme,
+      band: AircraftAltitudeBand,
+    ) => ImageData
+    for (const band of AIRCRAFT_ALTITUDE_BANDS) {
+      const imageId =
+        `${markerIcon}-${band}` as TrafficStyleImageId
+      images[imageId] = aircraftFactory(theme, band)
     }
   }
 

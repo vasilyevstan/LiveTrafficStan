@@ -22,9 +22,8 @@ export const SOURCE_TRAIL = 'traffic-trail'
 export const LAYER_SELECTED_TRAIL = 'traffic-selected-trail'
 export const LAYER_AIRCRAFT = 'traffic-aircraft-symbols'
 export const LAYER_VESSELS = 'traffic-vessel-symbols'
-export const LAYER_AIRCRAFT_ALTITUDE = 'traffic-aircraft-altitude'
-export const LAYER_AIRCRAFT_BADGE = 'traffic-aircraft-state-badges'
-export const LAYER_VESSEL_BADGE = 'traffic-vessel-motion-badges'
+export const LAYER_AIRCRAFT_STOPPED = 'traffic-aircraft-stopped'
+export const LAYER_VESSEL_STOPPED = 'traffic-vessel-stopped'
 export const LAYER_AIRCRAFT_HALO = 'traffic-aircraft-halo'
 export const LAYER_VESSEL_HALO = 'traffic-vessel-halo'
 export const LAYER_AIRCRAFT_CLUSTERS = 'traffic-aircraft-clusters'
@@ -35,9 +34,8 @@ export const LAYER_VESSEL_CLUSTER_COUNT =
   'traffic-vessel-cluster-count'
 
 export const AIRCRAFT_TRAFFIC_LAYER_IDS = [
-  LAYER_AIRCRAFT_ALTITUDE,
   LAYER_AIRCRAFT,
-  LAYER_AIRCRAFT_BADGE,
+  LAYER_AIRCRAFT_STOPPED,
   LAYER_AIRCRAFT_HALO,
   LAYER_AIRCRAFT_CLUSTERS,
   LAYER_AIRCRAFT_CLUSTER_COUNT,
@@ -45,7 +43,7 @@ export const AIRCRAFT_TRAFFIC_LAYER_IDS = [
 
 export const VESSEL_TRAFFIC_LAYER_IDS = [
   LAYER_VESSELS,
-  LAYER_VESSEL_BADGE,
+  LAYER_VESSEL_STOPPED,
   LAYER_VESSEL_HALO,
   LAYER_VESSEL_CLUSTERS,
   LAYER_VESSEL_CLUSTER_COUNT,
@@ -75,13 +73,9 @@ const themePaint = (theme: Theme) =>
     ? {
         trail: '#7ce5ff',
         trailOpacity: 0.82,
-        aircraftHalo: '#5ce2ff',
-        vesselHalo: '#ffc06d',
-        aircraftAltitudeLow: '#38bdf8',
-        aircraftAltitudeMedium: '#2dd4bf',
-        aircraftAltitudeHigh: '#8b5cf6',
-        aircraftAltitudeCruise: '#e879f9',
-        aircraftAltitudeUnknown: '#94a3b8',
+        selectionHalo: '#f8fdff',
+        stopped: '#ff4655',
+        stoppedStroke: '#fff5f6',
         aircraftCluster: '#087c9d',
         aircraftClusterStroke: '#8cecff',
         vesselCluster: '#a85c18',
@@ -94,13 +88,9 @@ const themePaint = (theme: Theme) =>
     : {
         trail: '#138daf',
         trailOpacity: 0.72,
-        aircraftHalo: '#35c8ef',
-        vesselHalo: '#f1a246',
-        aircraftAltitudeLow: '#0369a1',
-        aircraftAltitudeMedium: '#0f766e',
-        aircraftAltitudeHigh: '#6d28d9',
-        aircraftAltitudeCruise: '#a21caf',
-        aircraftAltitudeUnknown: '#64748b',
+        selectionHalo: '#0f2938',
+        stopped: '#c1121f',
+        stoppedStroke: '#ffffff',
         aircraftCluster: '#0f7894',
         aircraftClusterStroke: '#d4f7ff',
         vesselCluster: '#b76720',
@@ -209,32 +199,6 @@ export const installTrafficStyle = (
     },
   })
 
-  const altitudeColor: ExpressionSpecification = [
-    'match',
-    ['get', 'altitudeBand'],
-    'low',
-    paint.aircraftAltitudeLow,
-    'medium',
-    paint.aircraftAltitudeMedium,
-    'high',
-    paint.aircraftAltitudeHigh,
-    'cruise',
-    paint.aircraftAltitudeCruise,
-    paint.aircraftAltitudeUnknown,
-  ]
-  const altitudeRadius: ExpressionSpecification = [
-    'match',
-    ['get', 'altitudeBand'],
-    'low',
-    10,
-    'medium',
-    11.5,
-    'high',
-    13,
-    'cruise',
-    14.5,
-    10,
-  ]
   const trafficOpacity: ExpressionSpecification = [
     'case',
     ['get', 'stale'],
@@ -242,29 +206,9 @@ export const installTrafficStyle = (
     paint.liveIconOpacity,
   ]
 
-  ensureLayer(map, {
-    id: LAYER_AIRCRAFT_ALTITUDE,
-    type: 'circle',
-    source: SOURCE_AIRCRAFT,
-    filter: ['!', ['has', 'point_count']],
-    paint: {
-      'circle-radius': altitudeRadius,
-      'circle-color': altitudeColor,
-      'circle-opacity': [
-        'case',
-        ['get', 'stale'],
-        0.12,
-        0.22,
-      ],
-      'circle-stroke-color': altitudeColor,
-      'circle-stroke-opacity': trafficOpacity,
-      'circle-stroke-width': 2.4,
-    },
-  })
-
-  for (const [id, source, color] of [
-    [LAYER_AIRCRAFT_HALO, SOURCE_AIRCRAFT, paint.aircraftHalo],
-    [LAYER_VESSEL_HALO, SOURCE_VESSELS, paint.vesselHalo],
+  for (const [id, source] of [
+    [LAYER_AIRCRAFT_HALO, SOURCE_AIRCRAFT],
+    [LAYER_VESSEL_HALO, SOURCE_VESSELS],
   ] as const) {
     ensureLayer(map, {
       id,
@@ -277,10 +221,10 @@ export const installTrafficStyle = (
       ],
       paint: {
         'circle-radius': 16,
-        'circle-color': color,
-        'circle-opacity': 0.18,
-        'circle-stroke-color': color,
-        'circle-stroke-opacity': 0.75,
+        'circle-color': paint.selectionHalo,
+        'circle-opacity': 0.12,
+        'circle-stroke-color': paint.selectionHalo,
+        'circle-stroke-opacity': 0.9,
         'circle-stroke-width': 2,
       },
     })
@@ -293,7 +237,7 @@ export const installTrafficStyle = (
     filter: ['!', ['has', 'point_count']],
     layout: {
       'icon-image': ['get', 'markerIcon'],
-      'icon-size': ['get', 'markerScale'],
+      'icon-size': ['*', ['get', 'markerScale'], 1.08],
       'icon-rotate': ['get', 'heading'],
       'icon-rotation-alignment': 'map',
       'icon-pitch-alignment': 'map',
@@ -311,7 +255,7 @@ export const installTrafficStyle = (
     filter: ['!', ['has', 'point_count']],
     layout: {
       'icon-image': ['get', 'markerIcon'],
-      'icon-size': ['get', 'markerScale'],
+      'icon-size': ['*', ['get', 'markerScale'], 1.04],
       'icon-rotate': ['get', 'heading'],
       'icon-rotation-alignment': 'map',
       'icon-pitch-alignment': 'map',
@@ -323,34 +267,28 @@ export const installTrafficStyle = (
     },
   })
 
-  for (const [id, source, property] of [
-    [
-      LAYER_AIRCRAFT_BADGE,
-      SOURCE_AIRCRAFT,
-      'stateBadgeIcon',
-    ],
-    [
-      LAYER_VESSEL_BADGE,
-      SOURCE_VESSELS,
-      'motionBadgeIcon',
-    ],
+  for (const [id, source] of [
+    [LAYER_AIRCRAFT_STOPPED, SOURCE_AIRCRAFT],
+    [LAYER_VESSEL_STOPPED, SOURCE_VESSELS],
   ] as const) {
     ensureLayer(map, {
       id,
-      type: 'symbol',
+      type: 'circle',
       source,
-      filter: ['!', ['has', 'point_count']],
-      layout: {
-        'icon-image': ['get', property],
-        'icon-size': 0.42,
-        'icon-offset': [19, -19],
-        'icon-rotation-alignment': 'viewport',
-        'icon-pitch-alignment': 'viewport',
-        'icon-allow-overlap': true,
-        'icon-ignore-placement': true,
-      },
+      filter: [
+        'all',
+        ['!', ['has', 'point_count']],
+        ['==', ['get', 'motionState'], 'slow-stopped'],
+      ],
       paint: {
-        'icon-opacity': trafficOpacity,
+        'circle-radius': 5.5,
+        'circle-color': paint.stopped,
+        'circle-opacity': trafficOpacity,
+        'circle-stroke-color': paint.stoppedStroke,
+        'circle-stroke-opacity': trafficOpacity,
+        'circle-stroke-width': 2,
+        'circle-translate': [11, -11],
+        'circle-translate-anchor': 'viewport',
       },
     })
   }
@@ -437,46 +375,42 @@ export const installTrafficStyle = (
       paint.trailOpacity,
     )
   }
-  if (map.getLayer(LAYER_AIRCRAFT_HALO)) {
-    map.setPaintProperty(
-      LAYER_AIRCRAFT_HALO,
-      'circle-color',
-      paint.aircraftHalo,
-    )
-    map.setPaintProperty(
-      LAYER_AIRCRAFT_HALO,
-      'circle-stroke-color',
-      paint.aircraftHalo,
-    )
+  for (const layerId of [LAYER_AIRCRAFT_HALO, LAYER_VESSEL_HALO]) {
+    if (map.getLayer(layerId)) {
+      map.setPaintProperty(
+        layerId,
+        'circle-color',
+        paint.selectionHalo,
+      )
+      map.setPaintProperty(
+        layerId,
+        'circle-stroke-color',
+        paint.selectionHalo,
+      )
+    }
   }
-  if (map.getLayer(LAYER_AIRCRAFT_ALTITUDE)) {
-    map.setPaintProperty(
-      LAYER_AIRCRAFT_ALTITUDE,
-      'circle-color',
-      altitudeColor,
-    )
-    map.setPaintProperty(
-      LAYER_AIRCRAFT_ALTITUDE,
-      'circle-stroke-color',
-      altitudeColor,
-    )
-    map.setPaintProperty(
-      LAYER_AIRCRAFT_ALTITUDE,
-      'circle-stroke-opacity',
-      trafficOpacity,
-    )
-  }
-  if (map.getLayer(LAYER_VESSEL_HALO)) {
-    map.setPaintProperty(
-      LAYER_VESSEL_HALO,
-      'circle-color',
-      paint.vesselHalo,
-    )
-    map.setPaintProperty(
-      LAYER_VESSEL_HALO,
-      'circle-stroke-color',
-      paint.vesselHalo,
-    )
+  for (const layerId of [
+    LAYER_AIRCRAFT_STOPPED,
+    LAYER_VESSEL_STOPPED,
+  ]) {
+    if (map.getLayer(layerId)) {
+      map.setPaintProperty(layerId, 'circle-color', paint.stopped)
+      map.setPaintProperty(
+        layerId,
+        'circle-stroke-color',
+        paint.stoppedStroke,
+      )
+      map.setPaintProperty(
+        layerId,
+        'circle-opacity',
+        trafficOpacity,
+      )
+      map.setPaintProperty(
+        layerId,
+        'circle-stroke-opacity',
+        trafficOpacity,
+      )
+    }
   }
   for (const [layerId, color, stroke] of [
     [
@@ -509,11 +443,6 @@ export const installTrafficStyle = (
     }
   }
   for (const layerId of [LAYER_AIRCRAFT, LAYER_VESSELS]) {
-    if (map.getLayer(layerId)) {
-      map.setPaintProperty(layerId, 'icon-opacity', trafficOpacity)
-    }
-  }
-  for (const layerId of [LAYER_AIRCRAFT_BADGE, LAYER_VESSEL_BADGE]) {
     if (map.getLayer(layerId)) {
       map.setPaintProperty(layerId, 'icon-opacity', trafficOpacity)
     }

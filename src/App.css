@@ -599,51 +599,84 @@
   align-items: center;
 }
 
-.traffic-legend__ring,
-.traffic-legend__badge {
+.traffic-legend__aircraft,
+.traffic-legend__shape {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   justify-self: center;
-  width: 22px;
-  height: 22px;
-  border: 2px solid var(--accent-line);
-  border-radius: 50%;
-  color: var(--summary-strong);
-  background: var(--accent-soft);
-  font-size: 0.5rem;
-  font-weight: 800;
-}
-
-.traffic-legend__ring--low {
-  width: 17px;
-  height: 17px;
-}
-
-.traffic-legend__ring--medium {
-  width: 19px;
-  height: 19px;
-}
-
-.traffic-legend__ring--high {
-  width: 21px;
-  height: 21px;
-}
-
-.traffic-legend__ring--cruise {
-  width: 23px;
-  height: 23px;
-}
-
-.traffic-legend__ring--unknown {
-  border-style: dashed;
-}
-
-.traffic-legend__badge {
-  width: 27px;
+  min-width: 28px;
   height: 18px;
-  border-width: 1px;
-  border-radius: 9px;
+  padding: 0 4px;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: 4px;
+  color: #ffffff;
+  font-size: 0.46rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.traffic-legend__aircraft--low {
+  background: #0369a1;
+}
+
+.traffic-legend__aircraft--medium {
+  background: #0f766e;
+}
+
+.traffic-legend__aircraft--high {
+  background: #6d28d9;
+}
+
+.traffic-legend__aircraft--cruise {
+  background: #a21caf;
+}
+
+.traffic-legend__aircraft--unknown {
+  background: #64748b;
+}
+
+.traffic-legend__shape--aircraft {
+  background: #0f766e;
+}
+
+.traffic-legend__shape--vessel {
+  color: #1f1308;
+  background: #ed9d3f;
+}
+
+.traffic-legend__stopped {
+  justify-self: center;
+  width: 12px;
+  height: 12px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  background: #c1121f;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.28);
+}
+
+:root[data-theme='dark'] .traffic-legend__aircraft--low {
+  background: #38bdf8;
+}
+
+:root[data-theme='dark'] .traffic-legend__aircraft--medium {
+  background: #2dd4bf;
+}
+
+:root[data-theme='dark'] .traffic-legend__aircraft--high {
+  background: #a78bfa;
+}
+
+:root[data-theme='dark'] .traffic-legend__aircraft--cruise {
+  background: #f0abfc;
+}
+
+:root[data-theme='dark'] .traffic-legend__aircraft--unknown {
+  background: #94a3b8;
+}
+
+:root[data-theme='dark'] .traffic-legend__stopped {
+  background: #ff4655;
 }
 
 .ports-status {
@@ -1069,6 +1102,66 @@
 
 .details-panel--historical {
   bottom: 126px;
+}
+
+.traffic-hover-popup {
+  pointer-events: none;
+}
+
+.traffic-hover-popup .maplibregl-popup-content {
+  min-width: 180px;
+  padding: 9px 11px;
+  color: var(--panel-text);
+  background: var(--panel-background);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  box-shadow: 0 10px 28px var(--panel-shadow);
+  backdrop-filter: blur(12px);
+}
+
+.traffic-tooltip {
+  display: grid;
+  gap: 3px;
+}
+
+.traffic-tooltip__title {
+  color: var(--heading-text);
+  font-size: 0.72rem;
+  line-height: 1.25;
+}
+
+.traffic-tooltip__detail {
+  color: var(--summary-text);
+  font-size: 0.64rem;
+  line-height: 1.3;
+}
+
+.traffic-hover-popup.maplibregl-popup-anchor-top
+  .maplibregl-popup-tip,
+.traffic-hover-popup.maplibregl-popup-anchor-top-left
+  .maplibregl-popup-tip,
+.traffic-hover-popup.maplibregl-popup-anchor-top-right
+  .maplibregl-popup-tip {
+  border-bottom-color: var(--panel-background);
+}
+
+.traffic-hover-popup.maplibregl-popup-anchor-bottom
+  .maplibregl-popup-tip,
+.traffic-hover-popup.maplibregl-popup-anchor-bottom-left
+  .maplibregl-popup-tip,
+.traffic-hover-popup.maplibregl-popup-anchor-bottom-right
+  .maplibregl-popup-tip {
+  border-top-color: var(--panel-background);
+}
+
+.traffic-hover-popup.maplibregl-popup-anchor-left
+  .maplibregl-popup-tip {
+  border-right-color: var(--panel-background);
+}
+
+.traffic-hover-popup.maplibregl-popup-anchor-right
+  .maplibregl-popup-tip {
+  border-left-color: var(--panel-background);
 }
 
 .maplibregl-ctrl-attrib {

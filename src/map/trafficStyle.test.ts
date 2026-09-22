@@ -7,12 +7,13 @@ import type { Map as MapLibreMap } from 'maplibre-gl'
 import { describe, expect, it, vi } from 'vitest'
 import { TRAFFIC_STYLE_IMAGE_IDS } from '../domain/trafficPresentation'
 import {
-  LAYER_AIRCRAFT_ALTITUDE,
-  LAYER_AIRCRAFT_BADGE,
   LAYER_AIRCRAFT_CLUSTER_COUNT,
   LAYER_AIRCRAFT_CLUSTERS,
   LAYER_AIRCRAFT,
-  LAYER_VESSEL_BADGE,
+  LAYER_AIRCRAFT_HALO,
+  LAYER_AIRCRAFT_STOPPED,
+  LAYER_VESSEL_HALO,
+  LAYER_VESSEL_STOPPED,
   LAYER_VESSELS,
   SOURCE_AIRCRAFT,
   installTrafficStyle,
@@ -122,7 +123,7 @@ describe('installTrafficStyle', () => {
       )
     }
     expect(addSource).toHaveBeenCalledTimes(3)
-    expect(addLayer).toHaveBeenCalledTimes(12)
+    expect(addLayer).toHaveBeenCalledTimes(11)
     expect(sources.get(SOURCE_AIRCRAFT)?.setData).toHaveBeenCalledTimes(2)
     expect(sourceOptions.get(SOURCE_AIRCRAFT)).toMatchObject({
       cluster: false,
@@ -132,33 +133,41 @@ describe('installTrafficStyle', () => {
     })
     expect(layers.get(LAYER_AIRCRAFT)).toMatchObject({
       filter: ['!', ['has', 'point_count']],
-    })
-    expect(layers.get(LAYER_AIRCRAFT_ALTITUDE)).toMatchObject({
-      filter: ['!', ['has', 'point_count']],
-    })
-    expect(layers.get(LAYER_AIRCRAFT_BADGE)).toMatchObject({
-      filter: ['!', ['has', 'point_count']],
       layout: {
-        'icon-image': ['get', 'stateBadgeIcon'],
-        'icon-rotation-alignment': 'viewport',
+        'icon-image': ['get', 'markerIcon'],
+        'icon-size': ['*', ['get', 'markerScale'], 1.08],
       },
     })
-    expect(layers.get(LAYER_VESSEL_BADGE)).toMatchObject({
-      filter: ['!', ['has', 'point_count']],
+    expect(layers.get(LAYER_VESSELS)).toMatchObject({
       layout: {
-        'icon-image': ['get', 'motionBadgeIcon'],
-        'icon-rotation-alignment': 'viewport',
+        'icon-size': ['*', ['get', 'markerScale'], 1.04],
       },
+    })
+    expect(layers.get(LAYER_AIRCRAFT_STOPPED)).toMatchObject({
+      filter: [
+        'all',
+        ['!', ['has', 'point_count']],
+        ['==', ['get', 'motionState'], 'slow-stopped'],
+      ],
+      paint: {
+        'circle-color': '#c1121f',
+        'circle-translate': [11, -11],
+      },
+    })
+    expect(layers.get(LAYER_VESSEL_STOPPED)).toMatchObject({
+      filter: [
+        'all',
+        ['!', ['has', 'point_count']],
+        ['==', ['get', 'motionState'], 'slow-stopped'],
+      ],
     })
     const layerOrder = [...layers.keys()]
-    expect(layerOrder.indexOf(LAYER_AIRCRAFT_ALTITUDE)).toBeLessThan(
-      layerOrder.indexOf(LAYER_AIRCRAFT),
-    )
+    expect(layerOrder).not.toContain('traffic-aircraft-altitude')
     expect(layerOrder.indexOf(LAYER_AIRCRAFT)).toBeLessThan(
-      layerOrder.indexOf(LAYER_AIRCRAFT_BADGE),
+      layerOrder.indexOf(LAYER_AIRCRAFT_STOPPED),
     )
     expect(layerOrder.indexOf(LAYER_VESSELS)).toBeLessThan(
-      layerOrder.indexOf(LAYER_VESSEL_BADGE),
+      layerOrder.indexOf(LAYER_VESSEL_STOPPED),
     )
     expect(layers.get(LAYER_AIRCRAFT_CLUSTERS)).toMatchObject({
       filter: ['has', 'point_count'],
@@ -180,32 +189,25 @@ describe('installTrafficStyle', () => {
       0.54,
       0.98,
     ])
+    expect(paint.get(`${LAYER_AIRCRAFT_HALO}:circle-color`)).toBe(
+      '#0f2938',
+    )
+    expect(paint.get(`${LAYER_VESSEL_HALO}:circle-color`)).toBe(
+      '#0f2938',
+    )
     expect(
-      paint.get(`${LAYER_AIRCRAFT_ALTITUDE}:circle-color`),
-    ).toEqual([
-      'match',
-      ['get', 'altitudeBand'],
-      'low',
-      '#0369a1',
-      'medium',
-      '#0f766e',
-      'high',
-      '#6d28d9',
-      'cruise',
-      '#a21caf',
-      '#64748b',
-    ])
+      paint.get(`${LAYER_AIRCRAFT_STOPPED}:circle-color`),
+    ).toBe('#c1121f')
     expect(visibility.get(`${LAYER_AIRCRAFT}:visibility`)).toBe('visible')
     expect(
       visibility.get(`${LAYER_AIRCRAFT_CLUSTERS}:visibility`),
     ).toBe('visible')
     expect(
-      visibility.get(`${LAYER_AIRCRAFT_ALTITUDE}:visibility`),
-    ).toBe('visible')
-    expect(
-      visibility.get(`${LAYER_AIRCRAFT_BADGE}:visibility`),
+      visibility.get(`${LAYER_AIRCRAFT_STOPPED}:visibility`),
     ).toBe('visible')
     expect(visibility.get(`${LAYER_VESSELS}:visibility`)).toBe('none')
-    expect(visibility.get(`${LAYER_VESSEL_BADGE}:visibility`)).toBe('none')
+    expect(visibility.get(`${LAYER_VESSEL_STOPPED}:visibility`)).toBe(
+      'none',
+    )
   })
 })

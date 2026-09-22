@@ -1,6 +1,7 @@
 import {
+  AIRCRAFT_MARKER_ICONS,
   TRAFFIC_MARKER_ICONS,
-  type Aircraft,
+  type AircraftMarkerIcon,
   type TrafficEntity,
   type TrafficMarkerIcon,
   type Vessel,
@@ -14,16 +15,13 @@ export const RENDER_ONLY_MARKER_ICONS = [
   'vessel-highspeed',
 ] as const
 
-export type RenderTrafficMarkerIcon =
-  | TrafficMarkerIcon
-  | (typeof RENDER_ONLY_MARKER_ICONS)[number]
-
-export const VESSEL_MOTION_STATES = [
+export const TRAFFIC_MOTION_STATES = [
   'moving',
   'slow-stopped',
   'unknown',
 ] as const
-export type VesselMotionState = (typeof VESSEL_MOTION_STATES)[number]
+export type TrafficMotionState = (typeof TRAFFIC_MOTION_STATES)[number]
+export type VesselMotionState = TrafficMotionState
 
 export const AIRCRAFT_ALTITUDE_BANDS = [
   'low',
@@ -44,29 +42,27 @@ export const AIRCRAFT_VERTICAL_TRENDS = [
 export type AircraftVerticalTrend =
   (typeof AIRCRAFT_VERTICAL_TRENDS)[number]
 
-export type VesselMotionBadgeIcon =
-  `vessel-motion-${VesselMotionState}`
-export type AircraftBadgeIcon =
-  `aircraft-state-${AircraftAltitudeBand}-${AircraftVerticalTrend}`
+export type AircraftAltitudeMarkerIcon =
+  `${AircraftMarkerIcon}-${AircraftAltitudeBand}`
 
-export const VESSEL_MOTION_BADGE_ICONS =
-  VESSEL_MOTION_STATES.map(
-    (state) => `vessel-motion-${state}` as VesselMotionBadgeIcon,
+export const AIRCRAFT_ALTITUDE_MARKER_ICONS =
+  AIRCRAFT_MARKER_ICONS.flatMap(
+    (markerIcon) =>
+      AIRCRAFT_ALTITUDE_BANDS.map(
+        (band) =>
+          `${markerIcon}-${band}` as AircraftAltitudeMarkerIcon,
+      ),
   )
 
-export const AIRCRAFT_BADGE_ICONS = AIRCRAFT_ALTITUDE_BANDS.flatMap(
-  (band) =>
-    AIRCRAFT_VERTICAL_TRENDS.map(
-      (trend) =>
-        `aircraft-state-${band}-${trend}` as AircraftBadgeIcon,
-    ),
-)
+export type RenderTrafficMarkerIcon =
+  | (typeof TRAFFIC_MARKER_ICONS)[number]
+  | (typeof RENDER_ONLY_MARKER_ICONS)[number]
+  | AircraftAltitudeMarkerIcon
 
 export const TRAFFIC_STYLE_IMAGE_IDS = [
   ...TRAFFIC_MARKER_ICONS,
   ...RENDER_ONLY_MARKER_ICONS,
-  ...VESSEL_MOTION_BADGE_ICONS,
-  ...AIRCRAFT_BADGE_ICONS,
+  ...AIRCRAFT_ALTITUDE_MARKER_ICONS,
 ] as const
 
 export type TrafficStyleImageId =
@@ -74,19 +70,18 @@ export type TrafficStyleImageId =
 
 export interface AircraftPresentation {
   kind: 'aircraft'
-  markerIcon: TrafficMarkerIcon
+  markerIcon: AircraftAltitudeMarkerIcon
   headingDegrees: number
   altitudeBand: AircraftAltitudeBand
   verticalTrend: AircraftVerticalTrend
-  badgeIcon: AircraftBadgeIcon
+  motionState: TrafficMotionState
 }
 
 export interface VesselPresentation {
   kind: 'vessel'
   markerIcon: RenderTrafficMarkerIcon
   headingDegrees: number
-  motionState: VesselMotionState
-  badgeIcon: VesselMotionBadgeIcon
+  motionState: TrafficMotionState
   navigationConflict: boolean
 }
 
@@ -102,11 +97,25 @@ const reportedHeading = (entity: TrafficEntity) => {
   return finiteNumber(heading) ? heading : 0
 }
 
-export const vesselMotionState = (
+export const trafficMotionState = (
   speedKph: number | undefined,
-): VesselMotionState => {
+): TrafficMotionState => {
   if (!finiteNumber(speedKph) || speedKph < 0) return 'unknown'
   return speedKph >= ONE_KNOT_KPH ? 'moving' : 'slow-stopped'
+}
+
+export const vesselMotionState = trafficMotionState
+
+export const aircraftRenderIcon = (
+  markerIcon: TrafficMarkerIcon,
+  band: AircraftAltitudeBand,
+): AircraftAltitudeMarkerIcon => {
+  const aircraftMarkerIcon = (
+    AIRCRAFT_MARKER_ICONS as readonly TrafficMarkerIcon[]
+  ).includes(markerIcon)
+    ? (markerIcon as AircraftMarkerIcon)
+    : 'aircraft'
+  return `${aircraftMarkerIcon}-${band}`
 }
 
 export const isReportedYacht = (
@@ -129,7 +138,7 @@ export const vesselRenderIcon = (
 export const vesselNavigationMotionConflict = (
   vessel: Pick<Vessel, 'navigationCategory' | 'speedKph'>,
 ) =>
-  vesselMotionState(vessel.speedKph) === 'moving' &&
+  trafficMotionState(vessel.speedKph) === 'moving' &&
   ['anchored', 'moored', 'aground'].includes(
     vessel.navigationCategory,
   )
@@ -153,40 +162,35 @@ export const aircraftVerticalTrend = (
   return 'small'
 }
 
-export const aircraftBadgeIcon = (
-  band: AircraftAltitudeBand,
-  trend: AircraftVerticalTrend,
-): AircraftBadgeIcon => `aircraft-state-${band}-${trend}`
-
 export const trafficPresentation = (
   entity: TrafficEntity,
 ): TrafficPresentation => {
+  const motionState = trafficMotionState(entity.speedKph)
   if (entity.kind === 'aircraft') {
     const altitudeBand = aircraftAltitudeBand(entity.altitudeMeters)
     const verticalTrend = aircraftVerticalTrend(entity.verticalSpeedMps)
     return {
       kind: 'aircraft',
-      markerIcon: entity.markerIcon,
-      headingDegrees: reportedHeading(entity),
+      markerIcon: aircraftRenderIcon(entity.markerIcon, altitudeBand),
+      headingDegrees:
+        motionState === 'slow-stopped' ? 0 : reportedHeading(entity),
       altitudeBand,
       verticalTrend,
-      badgeIcon: aircraftBadgeIcon(altitudeBand, verticalTrend),
+      motionState,
     }
   }
 
-  const motionState = vesselMotionState(entity.speedKph)
   return {
     kind: 'vessel',
     markerIcon: vesselRenderIcon(entity),
     headingDegrees:
       motionState === 'moving' ? reportedHeading(entity) : 0,
     motionState,
-    badgeIcon: `vessel-motion-${motionState}`,
     navigationConflict: vesselNavigationMotionConflict(entity),
   }
 }
 
-export const vesselMotionLabel = (state: VesselMotionState) => {
+export const vesselMotionLabel = (state: TrafficMotionState) => {
   switch (state) {
     case 'moving':
       return 'Moving · reported speed at least 1 kn'
@@ -249,17 +253,5 @@ export const aircraftVerticalTrendLabel = (
       return 'Small reported vertical rate · less than 200 ft/min either way'
     case 'unknown':
       return 'Vertical trend unreported'
-  }
-}
-
-export const aircraftStatePresentation = (
-  aircraft: Pick<Aircraft, 'altitudeMeters' | 'verticalSpeedMps'>,
-) => {
-  const altitudeBand = aircraftAltitudeBand(aircraft.altitudeMeters)
-  const verticalTrend = aircraftVerticalTrend(aircraft.verticalSpeedMps)
-  return {
-    altitudeBand,
-    verticalTrend,
-    badgeIcon: aircraftBadgeIcon(altitudeBand, verticalTrend),
   }
 }

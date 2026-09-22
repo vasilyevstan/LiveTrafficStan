@@ -9,6 +9,7 @@ import {
   AttributionControl,
   type GeoJSONSource,
   Map as MapLibreMap,
+  Popup,
   setWorkerUrl,
   type StyleSpecification,
 } from 'maplibre-gl'
@@ -101,6 +102,9 @@ import {
   VESSEL_TRAFFIC_LAYER_IDS,
 } from './trafficStyle'
 import { trafficFeatures } from './trafficFeatures'
+import {
+  createTrafficTooltipElement,
+} from './trafficTooltip'
 
 setWorkerUrl(maplibreWorkerUrl)
 
@@ -191,6 +195,14 @@ const prefersReducedMotion = () => {
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches
   } catch {
     return false
+  }
+}
+
+const supportsMouseHover = () => {
+  try {
+    return window.matchMedia('(hover: hover) and (pointer: fine)').matches
+  } catch {
+    return true
   }
 }
 
@@ -397,6 +409,8 @@ export function TrafficMap({
   const cameraChangeRef = useRef(onCameraChange)
   const manualViewChangeRef = useRef(onManualViewChange)
   const errorRef = useRef(onMapError)
+  const hoveredTrafficIdRef = useRef<string | null>(null)
+  const hideTrafficTooltipRef = useRef<() => void>(() => undefined)
 
   useEffect(() => {
     desiredStyleUrlRef.current = mapStyleUrl
@@ -896,9 +910,23 @@ export function TrafficMap({
     mapRef.current = map
     const touchTracker = new TouchInteractionTracker()
     const canvas = map.getCanvas()
+    const hoverPopup = new Popup({
+      closeButton: false,
+      closeOnClick: false,
+      className: 'traffic-hover-popup',
+      maxWidth: '280px',
+      offset: 14,
+    })
+    const hoverEnabled = supportsMouseHover()
+    const hideTrafficTooltip = () => {
+      hoveredTrafficIdRef.current = null
+      hoverPopup.remove()
+    }
+    hideTrafficTooltipRef.current = hideTrafficTooltip
     const pointerOrigins = new Map<number, { x: number; y: number }>()
     let manualPointerMovement = false
     const handlePointerDown = (event: PointerEvent) => {
+      hideTrafficTooltip()
       interactionGenerationRef.current += 1
       clusterExpansionGenerationRef.current += 1
       touchTracker.pointerDown(event)
@@ -933,11 +961,13 @@ export function TrafficMap({
       if (pointerOrigins.size === 0) manualPointerMovement = false
     }
     const handleWheel = () => {
+      hideTrafficTooltip()
       interactionGenerationRef.current += 1
       clusterExpansionGenerationRef.current += 1
       manualViewChangeRef.current()
     }
     const handleDoubleClick = () => {
+      hideTrafficTooltip()
       interactionGenerationRef.current += 1
       clusterExpansionGenerationRef.current += 1
       manualViewChangeRef.current()
@@ -954,6 +984,7 @@ export function TrafficMap({
           '=',
         ].includes(event.key)
       ) {
+        hideTrafficTooltip()
         interactionGenerationRef.current += 1
         clusterExpansionGenerationRef.current += 1
         manualViewChangeRef.current()
@@ -968,6 +999,7 @@ export function TrafficMap({
     canvas.addEventListener('wheel', handleWheel, { passive: true })
     canvas.addEventListener('dblclick', handleDoubleClick, { passive: true })
     canvas.addEventListener('keydown', handleKeyDown)
+    canvas.addEventListener('mouseleave', hideTrafficTooltip)
 
     const activeTrafficLayers = () => {
       const layers: string[] = []
@@ -1026,6 +1058,14 @@ export function TrafficMap({
         for (const entity of renderState.vessels) ids.add(entity.id)
       }
       return ids
+    }
+
+    const trafficEntity = (id: string) => {
+      const renderState = renderStateRef.current
+      return (
+        renderState.aircraft.find((entity) => entity.id === id) ??
+        renderState.vessels.find((entity) => entity.id === id)
+      )
     }
 
     const selectablePortIds = () =>
@@ -1118,6 +1158,9 @@ export function TrafficMap({
         })
     }
 
+    map.on('movestart', hideTrafficTooltip)
+    map.on('style.load', hideTrafficTooltip)
+
     map.on('moveend', () => {
       scheduleViewportReport(map)
     })
@@ -1141,6 +1184,7 @@ export function TrafficMap({
     )
 
     map.on('click', (event) => {
+      hideTrafficTooltip()
       const touchFallbackAllowed = touchTracker.consumeClick(
         event.originalEvent,
       )
@@ -1289,8 +1333,9 @@ export function TrafficMap({
     })
 
     map.on('mousemove', (event) => {
+      const trafficLayers = activeTrafficLayers()
       const layers = [
-        ...activeTrafficLayers(),
+        ...trafficLayers,
         ...activeClusterLayers(),
         ...activeWeatherLayers(),
         ...activeAirportLayers(),
@@ -1301,6 +1346,32 @@ export function TrafficMap({
           ? map.queryRenderedFeatures(event.point, { layers })
           : []
       map.getCanvas().style.cursor = features.length > 0 ? 'pointer' : ''
+
+      const hoveredId =
+        hoverEnabled &&
+        pointerOrigins.size === 0 &&
+        trafficLayers.length > 0
+          ? exactEligibleFeatureId(features, selectableTrafficIds())
+          : null
+      if (!hoveredId) {
+        hideTrafficTooltip()
+        return
+      }
+
+      const entity = trafficEntity(hoveredId)
+      if (!entity) {
+        hideTrafficTooltip()
+        return
+      }
+
+      if (hoveredTrafficIdRef.current !== hoveredId) {
+        hoveredTrafficIdRef.current = hoveredId
+        hoverPopup.setDOMContent(
+          createTrafficTooltipElement(entity, document),
+        )
+      }
+      hoverPopup.setLngLat(event.lngLat)
+      if (!hoverPopup.isOpen()) hoverPopup.addTo(map)
     })
 
     map.on('load', () => {
@@ -1357,6 +1428,9 @@ export function TrafficMap({
       canvas.removeEventListener('wheel', handleWheel)
       canvas.removeEventListener('dblclick', handleDoubleClick)
       canvas.removeEventListener('keydown', handleKeyDown)
+      canvas.removeEventListener('mouseleave', hideTrafficTooltip)
+      hideTrafficTooltip()
+      hideTrafficTooltipRef.current = () => undefined
       if (frameRef.current !== null) {
         window.cancelAnimationFrame(frameRef.current)
         frameRef.current = null
@@ -1429,6 +1503,7 @@ export function TrafficMap({
   ])
 
   useEffect(() => {
+    hideTrafficTooltipRef.current()
     const generation = ++clusterOptionsGenerationRef.current
     const styleGeneration = styleGenerationRef.current
     clusterExpansionGenerationRef.current += 1
@@ -1483,6 +1558,14 @@ export function TrafficMap({
 
   useEffect(() => {
     renderStateRef.current = { aircraft, vessels, selectedId }
+    const hoveredTrafficId = hoveredTrafficIdRef.current
+    if (
+      hoveredTrafficId &&
+      !aircraft.some((entity) => entity.id === hoveredTrafficId) &&
+      !vessels.some((entity) => entity.id === hoveredTrafficId)
+    ) {
+      hideTrafficTooltipRef.current()
+    }
     const now = performance.now()
     aircraftMotionRef.current = reconcileMotionStates(
       aircraftMotionRef.current,
@@ -1505,6 +1588,23 @@ export function TrafficMap({
     interpolationDurationMs,
     scheduleRender,
   ])
+
+  useEffect(() => {
+    const hoveredTrafficId = hoveredTrafficIdRef.current
+    if (!hoveredTrafficId) return
+    const hoveredAircraft = aircraft.some(
+      (entity) => entity.id === hoveredTrafficId,
+    )
+    const hoveredVessel = vessels.some(
+      (entity) => entity.id === hoveredTrafficId,
+    )
+    if (
+      (hoveredAircraft && !aircraftVisible) ||
+      (hoveredVessel && !vesselsVisible)
+    ) {
+      hideTrafficTooltipRef.current()
+    }
+  }, [aircraft, aircraftVisible, vessels, vesselsVisible])
 
   useEffect(() => {
     portRenderStateRef.current = { ports, selectedPortId }
