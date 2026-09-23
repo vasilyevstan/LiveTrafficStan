@@ -198,6 +198,8 @@ describe('TrafficControls', () => {
       'Slow or stopped · reported speed below 1 kn',
     )
     expect(html).toContain('AIS destination')
+    expect(html).toContain('reported aircraft type and altitude')
+    expect(html).toContain('speed over ground in km/h and knots')
     expect(html).toContain(
       'Generic, cargo, tanker, passenger, fishing, exact AIS type-52 tug',
     )

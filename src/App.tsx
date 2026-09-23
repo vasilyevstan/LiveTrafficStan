@@ -1067,6 +1067,7 @@ function App() {
         }
         online={online}
         theme={theme}
+        units={units}
         aircraft={aircraft}
         vessels={vessels}
         ports={ports}

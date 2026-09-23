@@ -3,7 +3,12 @@ import {
   formatCountryAllocation,
 } from '../domain/countryAllocations'
 import type { AircraftPhotoViewState } from '../domain/aircraftPhoto'
+import {
+  formatAltitude,
+  formatVesselSpeed,
+} from '../domain/format'
 import type { TrafficEntity } from '../domain/traffic'
+import type { UnitSystem } from '../domain/units'
 
 export interface TrafficTooltipSummary {
   title: string
@@ -13,6 +18,7 @@ export interface TrafficTooltipSummary {
 export interface TrafficTooltipOptions {
   aircraftPhoto?: AircraftPhotoViewState
   aircraftPhotoEnabled?: boolean
+  units?: UnitSystem
 }
 
 const reportedText = (value: string | undefined) => {
@@ -22,6 +28,7 @@ const reportedText = (value: string | undefined) => {
 
 export const trafficTooltipSummary = (
   entity: TrafficEntity,
+  units: UnitSystem = 'metric',
 ): TrafficTooltipSummary => {
   if (entity.kind === 'aircraft') {
     const callsign = reportedText(entity.callsign)
@@ -33,6 +40,11 @@ export const trafficTooltipSummary = (
         : `Aircraft: ${registration ?? entity.hex.toUpperCase()}`,
       details: [
         `Reported aircraft type: ${aircraftType ?? 'unreported'}`,
+        `Reported altitude: ${
+          entity.altitudeMeters === undefined
+            ? 'unreported'
+            : formatAltitude(entity.altitudeMeters, units)
+        }`,
         registration
           ? `Registration: ${registration}`
           : `ICAO24: ${entity.hex.toUpperCase()}`,
@@ -51,6 +63,11 @@ export const trafficTooltipSummary = (
           ? 'unreported'
           : formatCountryAllocation(flagState)
       }`,
+      `Speed over ground: ${
+        entity.speedKph === undefined
+          ? 'unreported'
+          : formatVesselSpeed(entity.speedKph)
+      }`,
       `AIS destination: ${destination ?? 'unreported'}`,
     ],
   }
@@ -61,7 +78,7 @@ export const createTrafficTooltipElement = (
   ownerDocument: Document,
   options: TrafficTooltipOptions = {},
 ) => {
-  const summary = trafficTooltipSummary(entity)
+  const summary = trafficTooltipSummary(entity, options.units)
   const root = ownerDocument.createElement('div')
   root.className = 'traffic-tooltip'
   root.dataset.trafficId = entity.id

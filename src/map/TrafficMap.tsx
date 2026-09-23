@@ -30,6 +30,7 @@ import type {
   TrafficEntity,
   TrailPoint,
 } from '../domain/traffic'
+import type { UnitSystem } from '../domain/units'
 import type { DisplayWeatherObservation } from '../domain/weatherObservations'
 import {
   assessTrafficViewport,
@@ -128,6 +129,7 @@ interface TrafficMapProps {
   mapStyleUrl: string
   online: boolean
   theme: Theme
+  units: UnitSystem
   aircraft: readonly DisplayAircraft[]
   vessels: readonly DisplayVessel[]
   ports: readonly Port[]
@@ -297,6 +299,7 @@ export function TrafficMap({
   mapStyleUrl,
   online,
   theme,
+  units,
   aircraft,
   vessels,
   ports,
@@ -418,6 +421,7 @@ export function TrafficMap({
   const cameraChangeRef = useRef(onCameraChange)
   const manualViewChangeRef = useRef(onManualViewChange)
   const errorRef = useRef(onMapError)
+  const unitsRef = useRef(units)
   const aircraftPhotoEnabledRef = useRef(aircraftPhotoEnabled)
   const previousAircraftPhotoEnabledRef = useRef(
     aircraftPhotoEnabled,
@@ -887,6 +891,11 @@ export function TrafficMap({
   }, [onHoverAircraftChange])
 
   useEffect(() => {
+    unitsRef.current = units
+    refreshTrafficTooltipRef.current()
+  }, [units])
+
+  useEffect(() => {
     const wasEnabled = previousAircraftPhotoEnabledRef.current
     previousAircraftPhotoEnabledRef.current = aircraftPhotoEnabled
     aircraftPhotoEnabledRef.current = aircraftPhotoEnabled
@@ -1187,6 +1196,7 @@ export function TrafficMap({
       const element = createTrafficTooltipElement(entity, document, {
         aircraftPhotoEnabled: aircraftPhotoEnabledRef.current,
         aircraftPhoto: aircraftPhotoRef.current,
+        units: unitsRef.current,
       })
       element.addEventListener('pointerenter', () => {
         tooltipPointerInside = true
