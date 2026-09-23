@@ -26,9 +26,9 @@ selected live Aircraft + explicit Find route
              -> same-origin Worker -> global attempt quota -> aviationstack
              -> strictly matched origin/destination
              -> bounded six-hour tab cache -> details panel only
-selected live Aircraft + explicit Load aircraft photo
+live Aircraft + explicit details action or 500 ms fine-pointer hover
              -> direct Planespotters hex API -> validated unchanged thumbnail
-             -> bounded one-hour tab cache -> credited source-page link
+             -> shared bounded one-hour tab cache -> credited source-page link
 selected ICAO24/MMSI -> bundled validated allocation tables -> details only
 PORTS toggle -> validated static Natural Earth projection -> port map/details
 AIRPORTS toggle -> validated static OurAirports projection -> airport map/details
@@ -138,24 +138,27 @@ unavailable, and missing live registration produces an explicit ICAO24-only
 confidence label. Metadata remains separate from the live `Aircraft` object and
 never changes provider health, freshness, history, or marker artwork.
 
-Selected-aircraft photos form a separate disabled-by-default direct-browser
-boundary. They accept only the normalized live ICAO24 and make no request until
-the user activates **Load aircraft photo**. One cancellable lookup targets only
-the fixed Planespotters hex endpoint. Runtime validation accepts an empty photo
-array or exactly one regular thumbnail from
+Aircraft photos form a separate disabled-by-default direct-browser boundary.
+They accept only the normalized live ICAO24. Selected details retain the
+explicit **Load aircraft photo** action; a fine pointer can also start one
+automatic lookup only after remaining on the same live aircraft for 500 ms.
+One cancellable lookup targets only the fixed Planespotters hex endpoint.
+Runtime validation accepts an empty photo array or exactly one regular
+thumbnail from
 `https://cdn.planespotters.net` plus a source page under
 `https://www.planespotters.net/photo/`; returned URL strings are not rewritten.
 The image loads directly from the provider CDN and is the plain credited
 source-page link.
 
 Successful and no-photo JSON results may remain in a 32-entry, one-hour
-current-tab LRU. Selection change, close, HISTORY entry, and unmount abort and
-revision-invalidate obsolete work. Errors are not cached, and `429` blocks
-another manual attempt without scheduling a retry. No photo JSON, URL, credit,
-or image byte enters traffic models, history, Web Storage, IndexedDB, Cache API,
-the service worker, or a Worker route. Production stays disabled until the
-dated-terms and exact-origin live-CORS gates in the aircraft-photo evaluation
-both pass.
+current-tab LRU shared by hover and selected details. Hover change, pointer
+leave, selection change, close, HISTORY entry, and unmount abort and
+revision-invalidate obsolete work. Errors are not cached, an automatic hover
+does not loop or retry, and `429` blocks another manual attempt without
+scheduling a retry. No photo JSON, URL, credit, or image byte enters traffic
+models, history, Web Storage, IndexedDB, Cache API, the service worker, or a
+Worker route. Production stays disabled until the dated-terms and exact-origin
+live-CORS gates in the aircraft-photo evaluation both pass.
 
 Country allocation is a smaller bundled boundary. Pure synchronous helpers
 derive an optional country name and ISO code from the selected entity's
@@ -443,10 +446,14 @@ One reusable mouse-hover popup resolves the rendered entity against the
 already-loaded application model. Aircraft show flight/callsign, reported type,
 and registration/ICAO24 fallback. Vessels show name/MMSI fallback, flag state
 derived locally from the MMSI allocation table, and the reported AIS
-destination. Provider strings are inserted through `textContent`. Hover never
-starts metadata, route, photo, traffic-provider, cache, polling, or reconnect
-work and never describes AIS destination as a complete route. Click/touch
-selection and the concise details panel remain the non-hover path.
+destination. Provider strings are inserted through `textContent`. When the
+disabled-by-default photo evaluation is enabled, a fine pointer that remains on
+one live aircraft for 500 ms can start one direct photo lookup and add the
+validated thumbnail, visible credit, and exact source-page link. Hover never
+starts metadata, route, traffic-provider, polling, or reconnect work; vessel
+hover remains request-free and AIS destination is never described as a
+complete route. Click/touch selection and the concise details panel remain the
+accessible full-information path.
 
 Marker selection always queries the exact rendered point first. A map-local
 pointer tracker permits an 8 CSS-pixel box only after an exact miss from one

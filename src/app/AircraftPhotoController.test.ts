@@ -167,6 +167,50 @@ describe('AircraftPhotoController', () => {
     expect(provider.lookup).toHaveBeenCalledTimes(2)
   })
 
+  it('shares bounded tab-memory results between hover and details controllers', async () => {
+    const provider: AircraftPhotoProvider = {
+      lookup: vi.fn(async () => available('ABC123')),
+    }
+    const hoverController = new AircraftPhotoController(provider, config)
+    const detailsController = new AircraftPhotoController(provider, config)
+    const detailsStates: unknown[] = []
+    hoverController.subscribe(() => undefined)
+    detailsController.subscribe((state) => detailsStates.push(state))
+
+    hoverController.select(identities.first)
+    hoverController.requestIfMissing(identities.first)
+    await Promise.resolve()
+
+    detailsController.select(identities.first)
+    expect(detailsStates.at(-1)).toMatchObject({
+      phase: 'available',
+      identityKey: 'ABC123',
+    })
+    expect(provider.lookup).toHaveBeenCalledTimes(1)
+  })
+
+  it('rechecks shared cache before an already-selected details request', async () => {
+    const provider: AircraftPhotoProvider = {
+      lookup: vi.fn(async () => available('ABC123')),
+    }
+    const hoverController = new AircraftPhotoController(provider, config)
+    const detailsController = new AircraftPhotoController(provider, config)
+    const detailsStates: unknown[] = []
+    hoverController.subscribe(() => undefined)
+    detailsController.subscribe((state) => detailsStates.push(state))
+    detailsController.select(identities.first)
+
+    hoverController.requestIfMissing(identities.first)
+    await Promise.resolve()
+    detailsController.request(identities.first)
+
+    expect(detailsStates.at(-1)).toMatchObject({
+      phase: 'available',
+      identityKey: 'ABC123',
+    })
+    expect(provider.lookup).toHaveBeenCalledTimes(1)
+  })
+
   it('expires entries at one hour and evicts least-recently-used beyond 32', async () => {
     let now = 1_000
     const provider: AircraftPhotoProvider = {
@@ -287,7 +331,54 @@ describe('AircraftPhotoController', () => {
     expect(states.at(-1)).toMatchObject({ phase: 'available' })
   })
 
-  it('aborts active work and clears memory on disposal', () => {
+  it('does not automatically retry the same identity within the cache window', async () => {
+    let now = 1_000
+    const provider: AircraftPhotoProvider = {
+      lookup: vi
+        .fn<AircraftPhotoProvider['lookup']>()
+        .mockRejectedValueOnce(
+          new AircraftPhotoProviderError('network'),
+        )
+        .mockResolvedValueOnce(available('ABC123')),
+    }
+    const controller = new AircraftPhotoController(
+      provider,
+      config,
+      { now: () => now },
+    )
+    controller.subscribe(() => undefined)
+
+    controller.requestIfMissing(identities.first)
+    await Promise.resolve()
+    controller.select(undefined)
+    controller.requestIfMissing(identities.first)
+    await Promise.resolve()
+    expect(provider.lookup).toHaveBeenCalledTimes(1)
+
+    now += config.cacheTtlMs
+    controller.select(undefined)
+    controller.requestIfMissing(identities.first)
+    await Promise.resolve()
+    expect(provider.lookup).toHaveBeenCalledTimes(2)
+  })
+
+  it('allows a later automatic lookup after an obsolete request is aborted', () => {
+    const provider: AircraftPhotoProvider = {
+      lookup: vi.fn(
+        () => new Promise<AircraftPhotoLookupResult>(() => undefined),
+      ),
+    }
+    const controller = new AircraftPhotoController(provider, config)
+    controller.subscribe(() => undefined)
+
+    controller.requestIfMissing(identities.first)
+    controller.select(undefined)
+    controller.requestIfMissing(identities.first)
+
+    expect(provider.lookup).toHaveBeenCalledTimes(2)
+  })
+
+  it('aborts active work on disposal', () => {
     let signal: AbortSignal | undefined
     const provider: AircraftPhotoProvider = {
       lookup: vi.fn((_identity, requestSignal) => {

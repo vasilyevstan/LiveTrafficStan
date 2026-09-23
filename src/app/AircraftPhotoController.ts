@@ -26,8 +26,30 @@ interface CacheEntry {
   result: AircraftPhotoLookupResult
 }
 
+interface SharedAircraftPhotoSession {
+  blockedUntil: number
+  cache: Map<string, CacheEntry>
+}
+
 const browserRuntime: AircraftPhotoControllerRuntime = {
   now: () => Date.now(),
+}
+
+const sharedSessions = new WeakMap<
+  AircraftPhotoProvider,
+  SharedAircraftPhotoSession
+>()
+
+const sharedSessionFor = (provider: AircraftPhotoProvider) => {
+  const existing = sharedSessions.get(provider)
+  if (existing) return existing
+
+  const session: SharedAircraftPhotoSession = {
+    blockedUntil: 0,
+    cache: new Map(),
+  }
+  sharedSessions.set(provider, session)
+  return session
 }
 
 const isAbortError = (error: unknown) =>
@@ -38,14 +60,15 @@ export class AircraftPhotoController {
   private readonly provider: AircraftPhotoProvider
   private readonly config: AircraftPhotoControllerConfig
   private readonly runtime: AircraftPhotoControllerRuntime
-  private readonly cache = new Map<string, CacheEntry>()
+  private readonly session: SharedAircraftPhotoSession
+  private readonly automaticAttempts = new Map<string, number>()
   private state: AircraftPhotoViewState = { phase: 'idle' }
   private listener?: Listener
   private requestController?: AbortController
+  private activeAutomaticIdentityKey?: string
   private revision = 0
   private selectedIdentity?: AircraftPhotoIdentity
   private selectedIdentityKey?: string
-  private blockedUntil = 0
 
   constructor(
     provider: AircraftPhotoProvider,
@@ -55,6 +78,7 @@ export class AircraftPhotoController {
     this.provider = provider
     this.config = config
     this.runtime = runtime
+    this.session = sharedSessionFor(provider)
   }
 
   subscribe(listener: Listener) {
@@ -72,6 +96,10 @@ export class AircraftPhotoController {
     if (identityKey === this.selectedIdentityKey) return
 
     this.revision += 1
+    if (this.activeAutomaticIdentityKey) {
+      this.automaticAttempts.delete(this.activeAutomaticIdentityKey)
+      this.activeAutomaticIdentityKey = undefined
+    }
     this.requestController?.abort()
     this.requestController = undefined
     this.selectedIdentity = identity
@@ -92,6 +120,34 @@ export class AircraftPhotoController {
   request(requestedIdentity: AircraftPhotoIdentity) {
     this.select(requestedIdentity)
     if (
+      this.selectedIdentityKey &&
+      (this.state.phase === 'idle' ||
+        this.state.phase === 'error')
+    ) {
+      const cached = this.readCache(this.selectedIdentityKey)
+      if (cached) {
+        this.publishResult(this.selectedIdentityKey, cached)
+        return
+      }
+    }
+    this.startRequest()
+  }
+
+  requestIfMissing(requestedIdentity: AircraftPhotoIdentity) {
+    this.select(requestedIdentity)
+    if (
+      !this.selectedIdentityKey ||
+      this.state.phase !== 'idle' ||
+      this.hasRecentAutomaticAttempt(this.selectedIdentityKey)
+    ) {
+      return
+    }
+    this.recordAutomaticAttempt(this.selectedIdentityKey)
+    this.startRequest(true)
+  }
+
+  private startRequest(automatic = false) {
+    if (
       !this.selectedIdentity ||
       !this.selectedIdentityKey ||
       this.state.phase === 'loading'
@@ -100,12 +156,12 @@ export class AircraftPhotoController {
     }
 
     const now = this.runtime.now()
-    if (this.blockedUntil > now) {
+    if (this.session.blockedUntil > now) {
       this.publish({
         phase: 'error',
         identityKey: this.selectedIdentityKey,
         reason: 'throttled',
-        retryAt: this.blockedUntil,
+        retryAt: this.session.blockedUntil,
       })
       return
     }
@@ -117,6 +173,9 @@ export class AircraftPhotoController {
     const requestController = new AbortController()
     this.requestController?.abort()
     this.requestController = requestController
+    this.activeAutomaticIdentityKey = automatic
+      ? identityKey
+      : undefined
     this.publish({ phase: 'loading', identityKey })
 
     void this.provider.lookup(identity, requestController.signal).then(
@@ -129,6 +188,7 @@ export class AircraftPhotoController {
           return
         }
         this.requestController = undefined
+        this.activeAutomaticIdentityKey = undefined
         if (
           result.kind === 'available' ||
           result.reason === 'not-found'
@@ -147,6 +207,7 @@ export class AircraftPhotoController {
           return
         }
         this.requestController = undefined
+        this.activeAutomaticIdentityKey = undefined
         if (error instanceof AircraftPhotoProviderError) {
           const retryAt =
             error.reason === 'throttled'
@@ -155,7 +216,10 @@ export class AircraftPhotoController {
                   this.config.rateLimitFallbackMs)
               : undefined
           if (retryAt !== undefined) {
-            this.blockedUntil = Math.max(this.blockedUntil, retryAt)
+            this.session.blockedUntil = Math.max(
+              this.session.blockedUntil,
+              retryAt,
+            )
           }
           this.publish({
             phase: 'error',
@@ -176,12 +240,16 @@ export class AircraftPhotoController {
 
   dispose() {
     this.revision += 1
+    if (this.activeAutomaticIdentityKey) {
+      this.automaticAttempts.delete(this.activeAutomaticIdentityKey)
+      this.activeAutomaticIdentityKey = undefined
+    }
     this.selectedIdentity = undefined
     this.selectedIdentityKey = undefined
     this.requestController?.abort()
     this.requestController = undefined
     this.listener = undefined
-    this.cache.clear()
+    this.automaticAttempts.clear()
   }
 
   private publishResult(
@@ -209,14 +277,14 @@ export class AircraftPhotoController {
   }
 
   private readCache(identityKey: string) {
-    const entry = this.cache.get(identityKey)
+    const entry = this.session.cache.get(identityKey)
     if (!entry) return undefined
     if (entry.expiresAt <= this.runtime.now()) {
-      this.cache.delete(identityKey)
+      this.session.cache.delete(identityKey)
       return undefined
     }
-    this.cache.delete(identityKey)
-    this.cache.set(identityKey, entry)
+    this.session.cache.delete(identityKey)
+    this.session.cache.set(identityKey, entry)
     return entry.result
   }
 
@@ -224,15 +292,40 @@ export class AircraftPhotoController {
     identityKey: string,
     result: AircraftPhotoLookupResult,
   ) {
-    this.cache.delete(identityKey)
-    this.cache.set(identityKey, {
+    this.session.cache.delete(identityKey)
+    this.session.cache.set(identityKey, {
       expiresAt: this.runtime.now() + this.config.cacheTtlMs,
       result,
     })
-    while (this.cache.size > this.config.cacheMaxEntries) {
-      const oldestKey = this.cache.keys().next().value
+    while (this.session.cache.size > this.config.cacheMaxEntries) {
+      const oldestKey = this.session.cache.keys().next().value
       if (typeof oldestKey !== 'string') break
-      this.cache.delete(oldestKey)
+      this.session.cache.delete(oldestKey)
+    }
+  }
+
+  private hasRecentAutomaticAttempt(identityKey: string) {
+    const expiresAt = this.automaticAttempts.get(identityKey)
+    if (expiresAt === undefined) return false
+    if (expiresAt <= this.runtime.now()) {
+      this.automaticAttempts.delete(identityKey)
+      return false
+    }
+    this.automaticAttempts.delete(identityKey)
+    this.automaticAttempts.set(identityKey, expiresAt)
+    return true
+  }
+
+  private recordAutomaticAttempt(identityKey: string) {
+    this.automaticAttempts.delete(identityKey)
+    this.automaticAttempts.set(
+      identityKey,
+      this.runtime.now() + this.config.cacheTtlMs,
+    )
+    while (this.automaticAttempts.size > this.config.cacheMaxEntries) {
+      const oldestKey = this.automaticAttempts.keys().next().value
+      if (typeof oldestKey !== 'string') break
+      this.automaticAttempts.delete(oldestKey)
     }
   }
 }

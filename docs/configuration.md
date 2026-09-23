@@ -18,7 +18,7 @@ cp .env.example .env.local
 | `VITE_MAP_DARK_STYLE_URL` | `https://tiles.openfreemap.org/styles/dark` | HTTPS URL or root-relative path |
 | `VITE_GEOCODER_ENDPOINT` | `https://photon.komoot.io/api` | HTTPS Photon-compatible forward-search endpoint or root-relative deployment path; protocol-relative and credential-bearing URLs are rejected |
 | `VITE_AIRCRAFT_ENDPOINT` | `/api/aircraft` | HTTPS URL or root-relative path |
-| `VITE_AIRCRAFT_PHOTO_ENABLED` | `false` | Exact `true` or `false`; exposes only the direct-browser Planespotters evaluation UI and does not add a proxy |
+| `VITE_AIRCRAFT_PHOTO_ENABLED` | `false` | Exact `true` or `false`; exposes the direct-browser selected-details and fine-pointer hover evaluation paths and does not add a proxy |
 | `VITE_FLIGHT_ROUTE_ENABLED` | `false` | Exact `true` or `false`; controls only whether the browser presents selected-flight lookup |
 | `VITE_FLIGHT_ROUTE_ENDPOINT` | `/api/flight-route` | Root-relative same-origin route with no query or fragment; protocol-relative and absolute URLs are rejected |
 | `VITE_WEATHER_ENDPOINT` | `/api/weather/metar` | Root-relative same-origin METAR route with no query or fragment; protocol-relative and absolute URLs are rejected |
@@ -57,7 +57,7 @@ spread through components:
 | Aircraft metadata response caps | 512 KiB index / 512 KiB shard |
 | Aircraft metadata shard cache | 8 validated prefix shards |
 | Aircraft metadata snapshot age | Valid through 45 days; 24-hour future-clock tolerance |
-| Selected-aircraft photo lookup | Disabled by default; explicit action and exact ICAO24 only |
+| Aircraft photo lookup | Disabled by default; explicit selected-details action or 500 ms fine-pointer dwell, exact live ICAO24 only |
 | Photo request deadline / response cap | 8 seconds / 32 KiB |
 | Photo JSON tab cache | 32 successful or no-photo entries / 1 hour |
 | Selected-flight route lookup | Disabled by default; explicit action only |
@@ -218,7 +218,7 @@ Live aircraft responses are never placed in a shared deployment cache.
 Fingerprint-named application assets are cached immutably instead. See
 [Hosting and Deployment](hosting-and-deployment.md).
 
-## Selected-aircraft photo evaluation
+## Aircraft photo evaluation
 
 The browser photo section is omitted unless:
 
@@ -231,10 +231,18 @@ production default must remain `false`: the one bounded evaluation from the
 local application origin did not expose a readable Planespotters CORS response,
 and the API-specific terms page has no visible revision date.
 
+The protected production workflow exposes the same value as the required
+`aircraft_photo_enabled` dispatch input. That makes activation explicit and
+allows the same accepted `main` SHA to be redeployed with `false` if the
+post-deployment exact-origin browser check fails. It does not relax the direct
+browser, unchanged-URL, attribution, storage, or provider-origin rules.
+
 When enabled for deterministic evaluation, selecting an aircraft still makes
-no photo request. The user must activate **Load aircraft photo**. Only a valid
+no request by itself. The user can activate **Load aircraft photo**, or a fine
+pointer can remain on one live aircraft for 500 ms. Only a valid
 six-character ICAO24 is sent directly from the browser to the fixed
-Planespotters hex endpoint. Requests omit credentials, reject redirects, use
+Planespotters hex endpoint. Moving away before the hover dwell cancels that
+automatic attempt. Requests omit credentials, reject redirects, use
 `cache: no-store`, enforce an eight-second deadline and 32 KiB response cap,
 and never use the Worker.
 
@@ -244,15 +252,16 @@ must use the exact Planespotters `/photo/` origin/path. Both URL strings remain
 unchanged. The image loads directly from the provider CDN, links to the source
 page in a new tab, and shows visible photographer credit.
 
-Successful and no-photo JSON results may remain in a 32-entry least-recently-
-used current-tab cache for at most one hour. Errors are not cached. A `429`
+Successful and no-photo JSON results may remain in one shared 32-entry
+least-recently-used current-tab cache for at most one hour, so hover followed by
+selected details does not spend another lookup. Errors are not cached. A `429`
 blocks another manual attempt until its readable `Retry-After`, or for one
-minute when that header is unavailable. There is no automatic retry or
-selection-time prefetch.
+minute when that header is unavailable. Hover errors do not automatically
+retry, and there is no selection-time prefetch.
 
 No JSON, returned URL, credit, or image byte is written to Web Storage,
 IndexedDB, Cache API, service-worker cache, Worker cache, KV, or R2. HISTORY
-and vessel details never expose the section. See
+and vessel hover/details never start or expose the photo path. See
 [Aircraft Photo Evaluation](aircraft-photo-evaluation.md) for the exact terms,
 deterministic evidence, failed live-CORS gate, and enablement requirements.
 

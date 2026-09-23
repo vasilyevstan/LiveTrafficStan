@@ -15,6 +15,11 @@ on:
         options:
           - application
           - pwa-retirement
+      aircraft_photo_enabled:
+        description: Enable direct Planespotters aircraft photos in the client
+        required: true
+        default: false
+        type: boolean
       flight_route_enabled:
         description: Enable the aviationstack route lookup in client and Worker
         required: true
@@ -97,12 +102,14 @@ jobs:
       - name: Build application
         if: inputs.artifact == 'application'
         env:
+          VITE_AIRCRAFT_PHOTO_ENABLED: ${{ inputs.aircraft_photo_enabled }}
           VITE_FLIGHT_ROUTE_ENABLED: ${{ inputs.flight_route_enabled }}
         run: npm run build
 
       - name: Build PWA retirement artifact
         if: inputs.artifact == 'pwa-retirement'
         env:
+          VITE_AIRCRAFT_PHOTO_ENABLED: ${{ inputs.aircraft_photo_enabled }}
           VITE_FLIGHT_ROUTE_ENABLED: ${{ inputs.flight_route_enabled }}
         run: npm run build:pwa-retire
 
@@ -148,6 +155,7 @@ jobs:
             echo
             echo "- SHA: \`$RELEASE_SHA\`"
             echo "- Artifact: \`${{ inputs.artifact }}\`"
+            echo "- Aircraft photos enabled: \`${{ inputs.aircraft_photo_enabled }}\`"
             echo "- Flight route lookup enabled: \`${{ inputs.flight_route_enabled }}\`"
             echo "- URL: $DEPLOYMENT_URL"
             echo "- Smoke: passed"

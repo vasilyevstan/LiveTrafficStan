@@ -113,11 +113,11 @@ covers:
   reuse, expiry and 32-entry eviction, strict Worker matching, complete-page
   enforcement, global rolling quota, sanitized provider failures, and
   vessel/history isolation;
-- selected-aircraft photo identity validation, no request on selection or in
-  HISTORY, explicit-action lifecycle, A to B to A revision guards, timeout/
-  abort/throttling, exact returned-origin checks, unchanged URLs, visible
-  attribution/link semantics, one-hour 32-entry LRU behavior, and vessel/
-  storage/service-worker isolation;
+- aircraft-photo identity validation, explicit and automatic controller
+  request guards, A to B to A revision guards, shared hover/details cache
+  reuse, abort/throttling behavior, exact returned-origin checks, unchanged
+  URLs, visible attribution/link DOM semantics, one-hour 32-entry LRU behavior,
+  and storage/service-worker isolation;
 - ADSB.lol request construction, abort forwarding, response/error validation,
   retry guidance, enclosing-circle transport, and metric conversion;
 - Digitraffic REST/MQTT normalization, capabilities, provenance, dimensions,
@@ -467,14 +467,18 @@ Use `npm run dev` and verify:
     altitude never claims on-ground status; missing or invalid speed never
     receives the red stopped treatment. Mouse hover shows aircraft
     flight/callsign and reported type or vessel name, MMSI-derived flag, and
-    explicitly labeled AIS destination using text-only DOM construction.
-    Hover, leave, drag, style replacement, and entity expiry add no metadata,
-    route, photo, provider, reconnect, or polling request. Cluster counts and
-    port, airport, and weather labels reuse the active style's declared font
-    stack; glyph-free fallback uses local system fonts with no unsupported Open
-    Sans request or browser diagnostic. Operations More exposes the same exact
-    altitude, vertical-rate, one-knot, yacht-length, and freshness thresholds
-    with textual equivalents.
+    explicitly labeled AIS destination using text-safe DOM construction. With
+    photos disabled, hover, leave, drag, style replacement, and entity expiry
+    add no request. With the evaluation enabled, a sub-500 ms aircraft hover
+    and every vessel hover add no request; one stable aircraft hover may add
+    one direct photo request, and leaving, replacement, expiry, or HISTORY
+    aborts obsolete work. Metadata, route, traffic-provider, reconnect, and
+    polling behavior remains unchanged. Cluster counts and port, airport, and
+    weather labels reuse the active style's declared font stack; glyph-free
+    fallback uses local system fonts with no unsupported Open Sans request or
+    browser diagnostic. Operations More exposes the same exact altitude,
+    vertical-rate, one-knot, yacht-length, and freshness thresholds with
+    textual equivalents.
 18. No `/ports/` request occurs while PORTS is disabled. First enable makes one
     bounded request; hiding and re-enabling uses the fulfilled session cache.
     A blocked/corrupt asset reports a local error and Retry works without
@@ -694,11 +698,16 @@ authorized:
 VITE_AIRCRAFT_PHOTO_ENABLED=true npm run dev -- --host 127.0.0.1 --port 5174
 ```
 
-Before any live request, prove with deterministic browser fixtures that
-selection and HISTORY make zero photo requests, explicit action makes one,
-A to B to A cannot publish a stale result, direct thumbnail/link/credit
-semantics pass, errors remain local, and no provider content reaches Web
-Storage, IndexedDB, Cache API, or service-worker caches.
+The Node/Vitest suite does not mount MapLibre or prove pointer timing and popup
+reachability. Before any live request, use the milestone CDP browser fixture to
+prove that
+selection, HISTORY, sub-dwell aircraft hover, and vessel hover make zero photo
+requests; explicit action or one stable 500 ms aircraft hover makes one; hover
+and selected details share a successful/no-photo tab-cache entry; A to B to A
+cannot publish a stale result; the popup remains reachable for its exact
+thumbnail link; direct thumbnail/link/credit semantics pass; errors remain
+local; and no provider content reaches Web Storage, IndexedDB, Cache API, or
+service-worker caches.
 
 One live browser-origin request is the whole acceptance budget unless a later
 Issue explicitly authorizes another. Record the application origin, ICAO24,

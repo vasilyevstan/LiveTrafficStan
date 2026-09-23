@@ -96,17 +96,18 @@ protected Worker secret.
 The only reviewed dynamic photo path with an explicit public display contract
 is the Planespotters Photo API. The accepted slice is intentionally narrower
 than general aircraft imagery: exact live ICAO24 only, one explicit **Load
-aircraft photo** action, one direct browser request, the unchanged regular
-thumbnail, visible photographer credit, and the unchanged photo page as the
-image link.
+aircraft photo** action or one 500 ms fine-pointer dwell, one cancellable direct
+browser request, the unchanged regular thumbnail, visible photographer credit,
+and the unchanged photo page as the image link.
 
-Selection, map movement, provider refreshes, HISTORY, vessels, callsign,
-registration, airline, model, and fuzzy text never start or broaden a lookup.
-One cancellable request is revision-guarded across A to B to A selection
-changes. Only successful and no-photo JSON results may use a 32-entry,
-one-hour current-tab LRU. There is no automatic retry or persistent storage.
-The image and API response never pass through the Worker, service worker,
-Cache API, IndexedDB, Web Storage, KV, or R2.
+Selection, map movement outside a stable hover, provider refreshes, HISTORY,
+vessels, callsign, registration, airline, model, and fuzzy text never start or
+broaden a lookup. Requests are revision-guarded across A to B to A selection or
+hover changes. Only successful and no-photo JSON results may use one shared
+32-entry, one-hour current-tab LRU. Hover errors do not automatically retry,
+and no photo state uses persistent storage. The image and API response never
+pass through the Worker, service worker, Cache API, IndexedDB, Web Storage, KV,
+or R2.
 
 This direct boundary is required by the provider's API-specific terms: image
 bytes must load from the returned URL, returned URLs must remain unchanged,
@@ -378,9 +379,13 @@ neither altitude nor movement relies on color alone.
 Mouse hover is a map-local presentation path over normalized entities already
 in memory. Aircraft show flight/callsign plus reported type and identity
 fallback; vessels show name/MMSI, locally derived flag state, and explicitly
-labeled AIS destination. DOM content is assigned through `textContent`, and
-hover cannot start metadata, route, photo, provider, reconnect, polling, or
-cache work. AIS destination is not presented as a complete route.
+labeled AIS destination. DOM text is assigned through `textContent`. If the
+disabled-by-default aircraft-photo evaluation is enabled, one stable
+fine-pointer aircraft hover may use the reviewed direct provider boundary after
+500 ms; the resulting image remains a credited exact source-page link.
+Metadata, route, traffic-provider, reconnect, and polling work remain
+unaffected, vessel hover remains request-free, and AIS destination is not
+presented as a complete route.
 
 ## Pinned static selected-aircraft metadata
 
@@ -840,9 +845,10 @@ panel independently, owns the 58vh budget.
 The traffic legend reuses the application-owned labels and thresholds for
 aircraft altitude, traffic movement, and the exact AIS-type shapes. It pairs
 every aircraft color and the red slow/stopped dot with text, explains the
-8 m / 1 kn / freshness yacht exception, documents request-free hover fields,
-and never relies on color alone. Vertical trend remains in selected details
-rather than a marker badge.
+8 m / 1 kn / freshness yacht exception, documents the optional dwell-triggered
+aircraft-photo request and request-free vessel hover fields, and never relies
+on color alone. Vertical trend remains in selected details rather than a
+marker badge.
 
 Selection updates must retain the complete MapLibre feature-property contract.
 In particular, `removeAllProperties` is terminal in the installed source-diff

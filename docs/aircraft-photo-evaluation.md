@@ -24,6 +24,12 @@ Production remains disabled for two independent reasons:
 This is an engineering record, not legal advice. Provider terms and behavior
 can change and must be rechecked before any enablement.
 
+The protected production workflow has a required
+`aircraft_photo_enabled` dispatch input. It defaults to `false`; an authorized
+activation dispatch must explicitly pass `true`, then run one bounded browser
+check from the exact deployed origin. A failed CORS/provider contract check
+requires redeploying the same accepted SHA with the flag set back to `false`.
+
 ## Official sources
 
 - Photo API, documentation, and API-specific terms:
@@ -54,9 +60,11 @@ The application deliberately tightens the permitted JSON cache to one hour.
 
 ## Accepted application boundary
 
-Only a selected live aircraft with a syntactically valid six-character ICAO24
-is eligible. Selection itself never starts a lookup. The user must activate
-**Load aircraft photo**.
+Only a live aircraft with a syntactically valid six-character ICAO24 is
+eligible. Selection itself never starts a lookup. The user can activate
+**Load aircraft photo** in selected details, or a fine pointer can remain over
+one aircraft marker for 500 ms. Leaving before that dwell cancels the automatic
+attempt, and vessels and HISTORY never start one.
 
 The browser then makes one direct request to the exact hex endpoint with
 credentials omitted, redirects rejected, `cache: no-store`, an eight-second
@@ -73,11 +81,13 @@ The regular thumbnail is a plain new-tab link to the returned photo page with
 `rel="noopener noreferrer"` and no `nofollow`. Photographer credit is visible
 beside it.
 
-At most one request remains active. Selection change, close, HISTORY entry, and
-unmount abort and revision-invalidate obsolete work. Successful and no-photo
-JSON results may use a current-tab least-recently-used cache of at most 32
-entries for at most one hour. Errors are not cached, throttling honors
-`Retry-After`, and there is no automatic retry.
+The selected-details and hover controllers each keep at most one request
+active. Selection or hover identity change, pointer leave, close, HISTORY
+entry, and unmount abort and revision-invalidate obsolete work. Successful and
+no-photo JSON results use one shared current-tab least-recently-used cache of at
+most 32 entries for at most one hour, so a completed hover lookup is reused by
+selected details. Errors are not cached, throttling is shared and honors
+`Retry-After`, and hover failures do not automatically retry.
 
 No photo JSON, URL, credit, or image byte is written to Web Storage, IndexedDB,
 the Cache API, the service worker, Worker cache, KV, R2, or a LiveTrafficStan
@@ -96,11 +106,14 @@ substitutes a model, airline, or generic photo.
 
 Synthetic browser and unit fixtures prove:
 
-- zero photo requests on selection and during HISTORY;
-- one request only after explicit action;
-- A to B to A stale-result rejection;
+- zero photo requests on selection, sub-500 ms aircraft hover, vessel hover,
+  and during HISTORY;
+- one request only after explicit action or one stable 500 ms aircraft hover;
+- A to B to A stale-result rejection and cancellation on leave/unmount;
+- shared hover/details cache reuse with no duplicate provider request;
 - unchanged API, CDN, and photo-page URLs;
-- direct image loading, visible credit, exact target/rel, and no `nofollow`;
+- direct image loading, visible credit, an interactive popup, exact target/rel,
+  and no `nofollow`;
 - truthful not-found, throttled, timeout, invalid-response, network, forbidden,
   and provider-error states;
 - successful and no-photo cache reuse, one-hour expiration, and 32-entry LRU

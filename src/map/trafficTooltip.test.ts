@@ -1,6 +1,35 @@
 import { describe, expect, it } from 'vitest'
+import type { AircraftPhotoViewState } from '../domain/aircraftPhoto'
 import type { Aircraft, Vessel } from '../domain/traffic'
-import { trafficTooltipSummary } from './trafficTooltip'
+import {
+  createTrafficTooltipElement,
+  trafficTooltipSummary,
+} from './trafficTooltip'
+
+class FakeElement {
+  readonly children: FakeElement[] = []
+  readonly dataset: Record<string, string> = {}
+  className = ''
+  textContent = ''
+  href = ''
+  target = ''
+  rel = ''
+  title = ''
+  src = ''
+  width = 0
+  height = 0
+  alt = ''
+  loading = ''
+  referrerPolicy = ''
+
+  append(...children: FakeElement[]) {
+    this.children.push(...children)
+  }
+}
+
+const fakeDocument = {
+  createElement: () => new FakeElement(),
+} as unknown as Document
 
 const aircraft = (
   overrides: Partial<Aircraft> = {},
@@ -56,6 +85,78 @@ describe('trafficTooltipSummary', () => {
         'Reported aircraft type: A320',
         'Registration: N123TS',
       ],
+    })
+  })
+
+  describe('createTrafficTooltipElement', () => {
+    const photoState: AircraftPhotoViewState = {
+      phase: 'available',
+      identityKey: 'ABC123',
+      photo: {
+        icao24: 'ABC123',
+        thumbnailUrl:
+          'https://cdn.planespotters.net/example.jpg',
+        thumbnailWidth: 200,
+        thumbnailHeight: 133,
+        photoPageUrl:
+          'https://www.planespotters.net/photo/123/example',
+        photographer: 'Test Photographer',
+        source: {
+          name: 'Planespotters.net',
+          websiteUrl: 'https://www.planespotters.net/',
+          termsUrl: 'https://www.planespotters.net/photo/api',
+        },
+      },
+    }
+
+    it('keeps the validated thumbnail and exact source page linked with credit', () => {
+      const root = createTrafficTooltipElement(
+        aircraft(),
+        fakeDocument,
+        {
+          aircraftPhotoEnabled: true,
+          aircraftPhoto: photoState,
+        },
+      ) as unknown as FakeElement
+      const link = root.children.find(
+        (child) => child.className === 'traffic-tooltip__photo-link',
+      )
+
+      expect(link).toMatchObject({
+        href: 'https://www.planespotters.net/photo/123/example',
+        target: '_blank',
+        rel: 'noreferrer noopener',
+      })
+      expect(link?.children[0]).toMatchObject({
+        className: 'traffic-tooltip__photo',
+        src: 'https://cdn.planespotters.net/example.jpg',
+        width: 200,
+        height: 133,
+        alt: 'Aircraft ABC123',
+      })
+      expect(link?.children[1]).toMatchObject({
+        className: 'traffic-tooltip__photo-credit',
+        textContent:
+          'Photo © Test Photographer via Planespotters.net',
+      })
+    })
+
+    it('does not show a photo from a different aircraft identity', () => {
+      const root = createTrafficTooltipElement(
+        aircraft({ hex: 'def456' }),
+        fakeDocument,
+        {
+          aircraftPhotoEnabled: true,
+          aircraftPhoto: photoState,
+        },
+      ) as unknown as FakeElement
+
+      expect(
+        root.children.some(
+          (child) =>
+            child.className === 'traffic-tooltip__photo-link',
+        ),
+      ).toBe(false)
     })
   })
 
