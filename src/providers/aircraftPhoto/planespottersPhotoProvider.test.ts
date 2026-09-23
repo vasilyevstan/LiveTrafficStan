@@ -10,7 +10,10 @@ const config: PlanespottersPhotoProviderConfig = {
   endpointBaseUrl: 'https://api.planespotters.net/pub/photos/hex',
   timeoutMs: 100,
   maximumBytes: 32 * 1_024,
-  thumbnailOrigin: 'https://cdn.planespotters.net',
+  thumbnailOrigins: [
+    'https://cdn.planespotters.net',
+    'https://t.plnspttrs.net',
+  ],
   photoPageOrigin: 'https://www.planespotters.net',
   sourceName: 'Planespotters.net',
   sourceWebsiteUrl: 'https://www.planespotters.net/',
@@ -102,6 +105,31 @@ describe('PlanespottersPhotoProvider', () => {
     ).resolves.toEqual({
       kind: 'unavailable',
       reason: 'not-found',
+    })
+  })
+
+  it('accepts the current provider thumbnail origin unchanged', async () => {
+    const provider = new PlanespottersPhotoProvider(
+      config,
+      async () =>
+        jsonResponse(
+          photoResponse({
+            thumbnail: {
+              src: 'https://t.plnspttrs.net/example/photo_t.jpg',
+              size: { width: 200, height: 133 },
+            },
+          }),
+        ),
+    )
+
+    await expect(
+      provider.lookup(identity, new AbortController().signal),
+    ).resolves.toMatchObject({
+      kind: 'available',
+      photo: {
+        thumbnailUrl:
+          'https://t.plnspttrs.net/example/photo_t.jpg',
+      },
     })
   })
 

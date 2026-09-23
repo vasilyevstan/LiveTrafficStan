@@ -57,7 +57,10 @@ describe('createAppConfig', () => {
         'https://api.planespotters.net/pub/photos/hex',
       timeoutMs: 8_000,
       maximumBytes: 32 * 1_024,
-      thumbnailOrigin: 'https://cdn.planespotters.net',
+      thumbnailOrigins: [
+        'https://cdn.planespotters.net',
+        'https://t.plnspttrs.net',
+      ],
       photoPageOrigin: 'https://www.planespotters.net',
       sourceName: 'Planespotters.net',
       sourceWebsiteUrl: 'https://www.planespotters.net/',

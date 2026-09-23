@@ -233,6 +233,7 @@ describe('PWA shell generation', () => {
     expect(source).not.toContain('/ports/')
     expect(source).not.toContain('api.planespotters.net')
     expect(source).not.toContain('cdn.planespotters.net')
+    expect(source).not.toContain('t.plnspttrs.net')
   })
 
   it('routes only the root document and exact shell assets', () => {
@@ -294,6 +295,14 @@ describe('PWA shell generation', () => {
         ...input,
         requestUrl:
           'https://cdn.planespotters.net/example/photo.jpg',
+        mode: 'no-cors',
+      }),
+    ).toBe('bypass')
+    expect(
+      classifyShellRequest({
+        ...input,
+        requestUrl:
+          'https://t.plnspttrs.net/example/photo.jpg',
         mode: 'no-cors',
       }),
     ).toBe('bypass')

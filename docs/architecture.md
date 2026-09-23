@@ -144,11 +144,12 @@ explicit **Load aircraft photo** action; a fine pointer can also start one
 automatic lookup only after remaining on the same live aircraft for 500 ms.
 One cancellable lookup targets only the fixed Planespotters hex endpoint.
 Runtime validation accepts an empty photo array or exactly one regular
-thumbnail from
-`https://cdn.planespotters.net` plus a source page under
-`https://www.planespotters.net/photo/`; returned URL strings are not rewritten.
-The image loads directly from the provider CDN and is the plain credited
-source-page link.
+thumbnail from the exact provider origins
+`https://cdn.planespotters.net` or `https://t.plnspttrs.net`, plus a source
+page under `https://www.planespotters.net/photo/`; returned URL strings are
+not rewritten. The second thumbnail origin was observed in the live browser
+API response during the 2026-09-23 production check. The image loads directly
+from the returned provider origin and is the plain credited source-page link.
 
 Successful and no-photo JSON results may remain in a 32-entry, one-hour
 current-tab LRU shared by hover and selected details. Hover change, pointer

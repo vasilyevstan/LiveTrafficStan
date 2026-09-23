@@ -237,3 +237,27 @@ Reopen the provider decision only with concrete new evidence:
 The current Airplanes.live restriction is a completed evaluation conclusion,
 not a blocker to retaining ADSB.lol. Create a blocker Issue only if a later
 approved feature specifically requires activating that provider.
+
+## Cloudflare production observation
+
+On 2026-09-23 the first real Workers Free deployment proved that ADSB.lol
+returns `429` to Cloudflare Workers shared egress while the same bounded
+request returns `200` from a normal residential connection. A bounded
+cross-provider check found no immediately activatable replacement:
+
+- ADSB.fi returned `403` from Workers egress and has a custom
+  personal/non-commercial policy rather than the current ODbL contract;
+- Airplanes.live remained contact-gated;
+- OpenSky still requires operational licensing and insufficient anonymous
+  quota remains;
+- AvioADSB was reachable but had no Tallinn coverage and only 100 anonymous
+  requests per day.
+
+The official ADSB.lol API description asks production users to contact the
+operator so integrations are not broken accidentally. The minimum external
+action is therefore a production-access request for the existing bounded
+ODbL integration, preferably using the platform-set `Cf-Worker` identity as
+an allowlist key. Until access is resolved, the application must expose
+provider throttling honestly; it must not add a public proxy, spoof client
+addresses, rotate identities, cache live positions, or silently substitute a
+provider with unresolved rights.
