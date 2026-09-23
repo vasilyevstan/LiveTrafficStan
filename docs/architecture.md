@@ -444,11 +444,12 @@ never imply on-ground status.
 
 One reusable mouse-hover popup resolves the rendered entity against the
 already-loaded application model. Aircraft show flight/callsign, reported type,
-and registration/ICAO24 fallback. Vessels show name/MMSI fallback, flag state
-derived locally from the MMSI allocation table, and the reported AIS
-destination. Provider strings are inserted through `textContent`. When the
-disabled-by-default photo evaluation is enabled, a fine pointer that remains on
-one live aircraft for 500 ms can start one direct photo lookup and add the
+reported altitude in the active unit system, and registration/ICAO24 fallback.
+Vessels show name/MMSI fallback, flag state derived locally from the MMSI
+allocation table, speed over ground in both km/h and knots, and the reported
+AIS destination. Provider strings are inserted through `textContent`. When the
+disabled-by-default photo evaluation is enabled, a fine pointer that remains
+on one live aircraft for 500 ms can start one direct photo lookup and add the
 validated thumbnail, visible credit, and exact source-page link. Hover never
 starts metadata, route, traffic-provider, polling, or reconnect work; vessel
 hover remains request-free and AIS destination is never described as a

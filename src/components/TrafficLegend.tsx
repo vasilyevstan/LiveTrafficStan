@@ -86,11 +86,12 @@ export function TrafficLegend({
         status stays separate from measured movement.
       </p>
       <p className="control-note control-note--muted">
-        Mouse hover uses already-loaded callsign, reported aircraft type,
-        vessel name, MMSI-derived flag, and AIS destination. When aircraft
-        photos are enabled, a stable aircraft hover can make one direct
-        Planespotters lookup after a brief delay; vessel hover and route or
-        metadata details make no additional request.
+        Mouse hover uses already-loaded callsign, reported aircraft type and
+        altitude, vessel name, MMSI-derived flag, speed over ground in km/h and
+        knots, and AIS destination. When aircraft photos are enabled, a stable
+        aircraft hover can make one direct Planespotters lookup after a brief
+        delay; vessel hover and route or metadata details make no additional
+        request.
       </p>
       <p className="control-note control-note--muted">
         Moving sailing and pleasure craft are eligible from 8 m at 1 kn or

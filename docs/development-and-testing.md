@@ -466,15 +466,16 @@ Use `npm run dev` and verify:
     1,000/3,000/10,000 m, +/-1.016 m/s, and one knot. Zero or negative finite
     altitude never claims on-ground status; missing or invalid speed never
     receives the red stopped treatment. Mouse hover shows aircraft
-    flight/callsign and reported type or vessel name, MMSI-derived flag, and
-    explicitly labeled AIS destination using text-safe DOM construction. With
-    photos disabled, hover, leave, drag, style replacement, and entity expiry
-    add no request. With the evaluation enabled, a sub-500 ms aircraft hover
-    and every vessel hover add no request; one stable aircraft hover may add
-    one direct photo request, and leaving, replacement, expiry, or HISTORY
-    aborts obsolete work. Metadata, route, traffic-provider, reconnect, and
-    polling behavior remains unchanged. Cluster counts and port, airport, and
-    weather labels reuse the active style's declared font stack; glyph-free
+    flight/callsign, reported type, reported altitude in the selected unit
+    system, or vessel name, MMSI-derived flag, speed over ground in both km/h
+    and knots, and explicitly labeled AIS destination using text-safe DOM
+    construction. With photos disabled, hover, leave, drag, style replacement,
+    and entity expiry add no request. With the evaluation enabled, a sub-500 ms
+    aircraft hover and every vessel hover add no request; one stable aircraft
+    hover may add one direct photo request, and leaving, replacement, expiry, or
+    HISTORY aborts obsolete work. Metadata, route, traffic-provider, reconnect,
+    and polling behavior remains unchanged. Cluster counts and port, airport,
+    and weather labels reuse the active style's declared font stack; glyph-free
     fallback uses local system fonts with no unsupported Open Sans request or
     browser diagnostic. Operations More exposes the same exact altitude,
     vertical-rate, one-knot, yacht-length, and freshness thresholds with
