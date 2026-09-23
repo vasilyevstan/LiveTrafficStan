@@ -12,7 +12,7 @@ export interface PlanespottersPhotoProviderConfig {
   endpointBaseUrl: string
   timeoutMs: number
   maximumBytes: number
-  thumbnailOrigin: string
+  thumbnailOrigins: readonly string[]
   photoPageOrigin: string
   sourceName: string
   sourceWebsiteUrl: string
@@ -63,7 +63,7 @@ const validText = (value: unknown, maximumLength: number) =>
 
 const exactHttpsUrl = (
   value: unknown,
-  expectedOrigin: string,
+  expectedOrigins: readonly string[],
   pathPrefix?: string,
 ) => {
   const text = validText(value, MAX_URL_CHARACTERS)
@@ -77,7 +77,7 @@ const exactHttpsUrl = (
   }
   if (
     parsed.protocol !== 'https:' ||
-    parsed.origin !== expectedOrigin ||
+    !expectedOrigins.includes(parsed.origin) ||
     parsed.username ||
     parsed.password ||
     (pathPrefix !== undefined && !parsed.pathname.startsWith(pathPrefix))
@@ -102,11 +102,11 @@ const parsePhoto = (
 
   const thumbnailUrl = exactHttpsUrl(
     value.thumbnail.src,
-    config.thumbnailOrigin,
+    config.thumbnailOrigins,
   )
   const photoPageUrl = exactHttpsUrl(
     value.link,
-    config.photoPageOrigin,
+    [config.photoPageOrigin],
     '/photo/',
   )
   const photographer = validText(

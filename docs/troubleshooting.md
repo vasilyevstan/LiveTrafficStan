@@ -84,6 +84,13 @@ For the Cloudflare boundary:
 - `504` means the ten-second total upstream deadline expired;
 - upstream `403`, `429`, and `5xx` remain their original status and body.
 
+Workers Free uses shared outbound network identity. The 2026-09-23 production
+check confirmed that ADSB.lol can return `429` to that shared egress even when
+the same bounded request succeeds from a normal residential connection. This
+is provider throttling, not an empty traffic snapshot or a reason to spoof
+client IP headers. The deployment smoke accepts only this explicit `429` as a
+degraded provider state; other unexpected upstream statuses still fail.
+
 ADSB.lol rejects generic Worker identification. The proxy must send the stable
 public LiveTrafficStan User-Agent. Do not work around a `403` by forwarding
 browser headers, cookies, authorization, or a client-controlled destination.

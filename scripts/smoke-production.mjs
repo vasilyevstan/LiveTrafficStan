@@ -4,6 +4,11 @@ import { connect } from 'mqtt'
 import portsSource from '../src/config/portsSource.json' with {
   type: 'json',
 }
+import {
+  STATIC_ASSET_RETRY_DELAYS_MS,
+  classifyAircraftProxyStatus,
+  isRetryableStaticAssetStatus,
+} from './smoke-policy.mjs'
 
 const [deploymentUrl, expectedReleaseSha] = process.argv.slice(2)
 
@@ -46,7 +51,21 @@ const fetchWithTimeout = async (url, init = {}, timeoutMs = 15_000) => {
 }
 
 const remoteBytes = async (pathname) => {
-  const response = await fetchWithTimeout(new URL(pathname, baseUrl))
+  let response
+  for (const delayMs of STATIC_ASSET_RETRY_DELAYS_MS) {
+    if (delayMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs))
+    }
+    response = await fetchWithTimeout(new URL(pathname, baseUrl))
+    if (
+      response.ok ||
+      !isRetryableStaticAssetStatus(response.status)
+    ) {
+      break
+    }
+    void response.body?.cancel().catch(() => undefined)
+  }
+
   assert(response.ok, `${pathname} returned HTTP ${response.status}`)
   return {
     bytes: new Uint8Array(await response.arrayBuffer()),
@@ -164,7 +183,8 @@ const verifyStaticAssets = async () => {
 const verifyAircraftProxy = async () => {
   const validPath = '/api/aircraft/v2/point/59.437/24.754/11'
   const response = await fetchWithTimeout(new URL(validPath, baseUrl))
-  assert(response.status === 200, `Aircraft proxy returned ${response.status}`)
+  const status = classifyAircraftProxyStatus(response.status)
+  assert(status !== 'failure', `Aircraft proxy returned ${response.status}`)
   assert(
     response.headers.get('x-livetrafficstan-release') === expectedReleaseSha,
     'Aircraft proxy release SHA does not match the deployed source',
@@ -174,19 +194,26 @@ const verifyAircraftProxy = async () => {
     'Aircraft proxy response is cacheable',
   )
   assert(
-    response.headers.get('content-type')?.includes('application/json'),
-    'Aircraft proxy did not preserve the JSON content type',
-  )
-  assert(
     !response.headers.has('access-control-allow-origin'),
     'Aircraft proxy unexpectedly allows cross-origin browser access',
   )
 
-  const payload = await response.json()
-  assert(
-    payload && typeof payload === 'object' && Array.isArray(payload.ac),
-    'Aircraft proxy returned an unexpected payload',
-  )
+  if (status === 'available') {
+    assert(
+      response.headers.get('content-type')?.includes('application/json'),
+      'Aircraft proxy did not preserve the JSON content type',
+    )
+    const payload = await response.json()
+    assert(
+      payload && typeof payload === 'object' && Array.isArray(payload.ac),
+      'Aircraft proxy returned an unexpected payload',
+    )
+  } else {
+    void response.body?.cancel().catch(() => undefined)
+    console.warn(
+      'Aircraft provider throttled the verified proxy request with HTTP 429',
+    )
+  }
 
   const invalid = await fetchWithTimeout(
     new URL('/api/aircraft/v2/point/91/24.754/11', baseUrl),
