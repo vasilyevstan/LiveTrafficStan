@@ -76,8 +76,8 @@ single React application, without accounts, a database, or persistent tracking.
   no request until **Load aircraft photo**, accepts only an exact ICAO24 hex
   lookup, preserves the returned thumbnail and photo-page URLs, shows visible
   photographer credit, and keeps bounded JSON only in current-tab memory. It
-  remains unavailable in production because the required dated-terms and live
-  browser-CORS gates have not passed.
+  remains unavailable in production because the authorized exact-origin live
+  browser-CORS gate has not passed.
 - Honest detail cards, provider-specific health, stale/expired handling, and
   partial operation when one provider fails.
 - Short interpolation only between observed positions and a selected-object
@@ -407,10 +407,12 @@ monitoring, privacy, and rollback procedure.
   general schedule, airport-board, or route-history service.
 - Aircraft photos remain disabled. The one bounded browser-origin
   Planespotters probe made exactly one API request but exposed no readable CORS
-  response, and the API-specific terms page has no visible revision date.
-  There is no Worker/proxy fallback because the reviewed provider contract
-  requires direct browser JSON and image loading. Vessel photos remain absent
-  until an exact-IMO, file-specific rights manifest exists.
+  response. The published low-volume browser path requires no API key, email,
+  membership account, or prior provider contact, but it does require the photo
+  surface to remain public and free. There is no Worker/proxy fallback because
+  the reviewed provider contract requires direct browser JSON and image
+  loading. Vessel photos remain absent until an exact-IMO, file-specific rights
+  manifest exists.
 - There is no reverse geocoding, radar, precipitation forecast, account, saved
   center preference, or offline basemap guarantee. An installed shell can
   start cold offline and replay retained private local history over a plain

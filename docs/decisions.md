@@ -115,12 +115,13 @@ proxying and re-exposure are prohibited, and visible credit plus a followable
 source-page link are mandatory. A Worker proxy is therefore not an acceptable
 CORS workaround.
 
-Production remains disabled. The API-specific terms page currently has no
-visible dated revision, and the one bounded browser-origin request on
-2026-09-21 failed before a readable CORS response, status, or body reached the
-application. Deterministic fixtures prove application behavior but cannot
-replace that external gate. Enablement requires dated terms evidence and one
-successful bounded check from the exact approved production origin.
+Production remains disabled. The published API-specific terms permit this
+low-volume, keyless browser path without prior email or provider approval, but
+the one bounded browser-origin request on 2026-09-21 failed before a readable
+CORS response, status, or body reached the application. Deterministic fixtures
+prove application behavior but cannot replace that external gate. Enablement
+requires the photo surface to remain public and free plus one successful
+bounded check from the exact approved production origin.
 
 Automatic vessel photos remain rejected. A future path requires a manually
 reviewed exact-IMO manifest to one verified Commons file revision with author,
