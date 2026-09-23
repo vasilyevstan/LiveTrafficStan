@@ -231,6 +231,12 @@ production default must remain `false`: the one bounded evaluation from the
 local application origin did not expose a readable Planespotters CORS response,
 and the API-specific terms page has no visible revision date.
 
+The protected production workflow exposes the same value as the required
+`aircraft_photo_enabled` dispatch input. That makes activation explicit and
+allows the same accepted `main` SHA to be redeployed with `false` if the
+post-deployment exact-origin browser check fails. It does not relax the direct
+browser, unchanged-URL, attribution, storage, or provider-origin rules.
+
 When enabled for deterministic evaluation, selecting an aircraft still makes
 no request by itself. The user can activate **Load aircraft photo**, or a fine
 pointer can remain on one live aircraft for 500 ms. Only a valid
