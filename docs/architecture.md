@@ -157,8 +157,10 @@ revision-invalidate obsolete work. Errors are not cached, an automatic hover
 does not loop or retry, and `429` blocks another manual attempt without
 scheduling a retry. No photo JSON, URL, credit, or image byte enters traffic
 models, history, Web Storage, IndexedDB, Cache API, the service worker, or a
-Worker route. Production stays disabled until the dated-terms and exact-origin
-live-CORS gates in the aircraft-photo evaluation both pass.
+Worker route. The published terms require no prior email or account-side API
+setup for this low-volume browser path. Production stays disabled until the
+authorized exact production origin passes the live-CORS and rendering gate in
+the aircraft-photo evaluation.
 
 Country allocation is a smaller bundled boundary. Pure synchronous helpers
 derive an optional country name and ISO code from the selected entity's

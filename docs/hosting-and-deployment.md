@@ -513,10 +513,13 @@ gh workflow run deploy-production.yml \
 
 This flag contains no credential and changes only the browser bundle. Use
 `true` only after reviewing the current Planespotters terms and with a bounded
-exact-origin browser check ready for the deployed URL. If that check cannot
-read the API response or render the direct thumbnail/link/credit contract,
-immediately redeploy the same accepted SHA with
-`aircraft_photo_enabled=false`; do not add a proxy or rewrite provider URLs.
+exact-origin browser check ready for the deployed URL. The published
+low-volume browser path requires no API key, email, membership account, or
+prior provider contact. The photo surface must remain public and free. If the
+check cannot read the API response or render the direct
+thumbnail/link/credit contract, immediately redeploy the same accepted SHA
+with `aircraft_photo_enabled=false`; do not add a proxy or rewrite provider
+URLs.
 
 If a newer pull request reaches `main` while an older manual deployment is
 validating, the second equality check fails rather than silently promoting the

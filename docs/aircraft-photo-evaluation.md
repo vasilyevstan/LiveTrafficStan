@@ -14,12 +14,18 @@ only `TypeError: Failed to fetch`. Resource Timing recorded status `0`, zero
 transferred bytes, and no readable response. No JSON, thumbnail, photographer
 credit, or photo-page URL became available. The probe was not repeated.
 
-Production remains disabled for two independent reasons:
+The published Photo API terms were rechecked on 2026-09-23. They permit this
+low-volume, direct-browser use without an API key, membership account, email,
+or prior provider contact. They require a valid browser `Origin` or `Referer`,
+public and free access to the photo surface, direct unchanged provider URLs,
+visible credit and source-page navigation, bounded JSON caching, and no image
+persistence, proxying, rehosting, or API re-exposure. Contact is described for
+higher-volume or guaranteed service, not as a prerequisite for this path.
 
-1. the evaluated browser origin did not complete the documented CORS path;
-2. the Photo API terms page does not expose a dated revision, so it does not
-   satisfy the deployment-evidence gate even though the separate general terms
-   are dated December 22, 2012.
+Production remains disabled because the evaluated local browser origin did not
+complete the documented CORS path and #39 has not yet supplied an authorized
+production origin. The exact deployed origin must pass one bounded browser
+check before the feature remains enabled.
 
 This is an engineering record, not legal advice. Provider terms and behavior
 can change and must be rechecked before any enablement.
@@ -41,6 +47,7 @@ requires redeploying the same accepted SHA with the flag set back to `false`.
 
 The Photo API page currently documents that:
 
+- the public API is free and requires no access key;
 - browser requests must carry a valid `Origin` or `Referer`;
 - the public API is intended to be CORS-enabled, while failed access checks
   receive `403`;
