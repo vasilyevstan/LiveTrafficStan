@@ -128,9 +128,7 @@ jobs:
             git fetch --no-tags origin main
             test "$(git rev-parse HEAD)" = "${{ inputs.sha }}"
             test "$(git rev-parse origin/main)" = "${{ inputs.sha }}"
-            if [[ "${{ inputs.flight_route_enabled }}" == "true" ]]; then
-              test -n "$AVIATIONSTACK_ACCESS_KEY"
-            fi
+            test "${{ inputs.flight_route_enabled }}" != "true" || test -n "$AVIATIONSTACK_ACCESS_KEY"
           command: >-
             deploy
             --var RELEASE_SHA:${{ inputs.sha }}
