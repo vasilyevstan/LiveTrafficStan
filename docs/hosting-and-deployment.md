@@ -473,6 +473,7 @@ gh workflow run deploy-production.yml \
   --ref main \
   -f sha=<40-character-current-main-sha> \
   -f artifact=application \
+  -f aircraft_photo_enabled=false \
   -f flight_route_enabled=false
 ```
 
@@ -483,8 +484,8 @@ The workflow:
 3. checks out exactly that SHA;
 4. fetches `origin/main` and requires exact equality;
 5. fails closed if either Cloudflare environment secret is absent;
-6. builds the browser with the requested route flag and dry-runs the Worker
-   with the identical server flag;
+6. builds the browser with the requested aircraft-photo and route flags and
+   dry-runs the Worker with the identical route server flag;
 7. exposes the aviationstack key only to the final deployment action and fails
    there before deployment when route enablement was requested without it;
 8. reruns install, lint, type-check, all tests, build, and Wrangler dry run;
@@ -497,6 +498,25 @@ The workflow:
 14. records the URL, SHA, route-enabled state, and result in the workflow
     summary and GitHub
     deployment.
+
+Aircraft-photo activation is an explicit per-deployment choice:
+
+```bash
+gh workflow run deploy-production.yml \
+  --repo vasilyevstan/LiveTrafficStan \
+  --ref main \
+  -f sha=<40-character-current-main-sha> \
+  -f artifact=application \
+  -f aircraft_photo_enabled=true \
+  -f flight_route_enabled=false
+```
+
+This flag contains no credential and changes only the browser bundle. Use
+`true` only after reviewing the current Planespotters terms and with a bounded
+exact-origin browser check ready for the deployed URL. If that check cannot
+read the API response or render the direct thumbnail/link/credit contract,
+immediately redeploy the same accepted SHA with
+`aircraft_photo_enabled=false`; do not add a proxy or rewrite provider URLs.
 
 If a newer pull request reaches `main` while an older manual deployment is
 validating, the second equality check fails rather than silently promoting the

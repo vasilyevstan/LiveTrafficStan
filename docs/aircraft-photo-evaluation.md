@@ -24,6 +24,12 @@ Production remains disabled for two independent reasons:
 This is an engineering record, not legal advice. Provider terms and behavior
 can change and must be rechecked before any enablement.
 
+The protected production workflow has a required
+`aircraft_photo_enabled` dispatch input. It defaults to `false`; an authorized
+activation dispatch must explicitly pass `true`, then run one bounded browser
+check from the exact deployed origin. A failed CORS/provider contract check
+requires redeploying the same accepted SHA with the flag set back to `false`.
+
 ## Official sources
 
 - Photo API, documentation, and API-specific terms:
