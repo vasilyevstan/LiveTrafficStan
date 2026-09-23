@@ -79,11 +79,15 @@ deadline, and a 32 KiB response cap. The response is accepted only when it
 contains either:
 
 - an empty `photos` array; or
-- exactly one photo whose regular thumbnail uses
-  `https://cdn.planespotters.net` and whose source page uses
+- exactly one photo whose regular thumbnail uses the exact returned provider
+  origin `https://cdn.planespotters.net` or
+  `https://t.plnspttrs.net`, and whose source page uses
   `https://www.planespotters.net/photo/`.
 
 Returned thumbnail and photo-page strings are validated but not rewritten.
+The second thumbnail origin was observed in the live API response from the
+exact production browser origin on 2026-09-23; wildcard image origins remain
+disallowed.
 The regular thumbnail is a plain new-tab link to the returned photo page with
 `rel="noopener noreferrer"` and no `nofollow`. Photographer credit is visible
 beside it.

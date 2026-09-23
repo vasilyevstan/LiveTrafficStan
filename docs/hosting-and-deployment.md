@@ -535,7 +535,9 @@ older SHA.
   validated local build;
 - Static Asset security headers;
 - the immutable Natural Earth port asset path and caching policy;
-- one successful same-origin ADSB point request;
+- one same-origin ADSB point request that either returns valid aircraft JSON
+  or truthfully preserves an upstream `429` with the exact release and
+  `no-store` headers;
 - one bounded canonical same-origin AWC METAR request or valid 204;
 - the exact `X-LiveTrafficStan-Release` value;
 - `no-store` aircraft behavior;
@@ -549,6 +551,12 @@ The production smoke does not make an aviationstack call while the route is
 disabled. A future authorized enablement must add separately bounded
 credentialed evidence without turning deployment smoke into recurring quota
 consumption.
+
+Static Asset checks use a bounded 15-second retry schedule because a newly
+published Cloudflare version can report deployment success before every edge
+serves every immutable asset. The smoke does not retry live provider requests.
+An ADSB.lol `429` is recorded as provider throttling rather than a release
+regression; other non-`200` statuses still fail the deployment check.
 
 The MQTT check has a 15-second outer deadline, disables reconnect, and force
 closes the client. The script never prints provider payloads, METAR reports,
