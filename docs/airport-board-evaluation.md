@@ -14,7 +14,7 @@ project with a verified airport/time-window listing contract, source-age
 semantics, display and combination rights, retention rules, budget, and secure
 server-held credentials.
 
-The independent local/static part of Issue #5 can proceed:
+The independent local/static part of Issue #5 is complete:
 
 - search current non-expired aircraft already held by the application;
 - display a pinned public-domain OurAirports large/medium-airport layer;
@@ -150,6 +150,7 @@ LiveTrafficStan will not:
 ## Re-evaluation gate
 
 Issue #46 may be completed only when every item in the required board contract
-is evidenced, including permitted Tallinn samples. Public deployment remains a
-separate gate under Issue #39. Until then, board UI, domain fields, Worker
-routes, secrets, caches, and production mocks stay absent.
+is evidenced, including permitted Tallinn samples. Public deployment is
+complete and does not grant board-data rights. Until the independent Issue #46
+gate passes, board UI, domain fields, Worker routes, secrets, caches, and
+production mocks stay absent.

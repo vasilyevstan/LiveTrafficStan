@@ -98,7 +98,8 @@ route.
 The production proxy identifies the public project to ADSB.lol, forwards no
 browser credentials or arbitrary headers, follows no redirect, and applies no
 shared live-response cache. Fingerprinted application assets are cached
-separately. Permanent production activation remains tracked by Issue #39.
+separately. Production is active; intermittent ADSB.lol throttling of
+Cloudflare's shared outbound identity remains tracked in Issue #11.
 
 Visible attribution must identify ADSB.lol and link ODbL 1.0. An interactive
 map or screenshot is an ODbL Produced Work; a publicly used derivative
@@ -166,7 +167,7 @@ The complete dated comparison, request-volume calculation, rights analysis,
 proxy handoff, and re-evaluation conditions are in
 [Aircraft Provider Evaluation](aircraft-provider-evaluation.md).
 
-## Aircraft photos: disabled Planespotters evaluation
+## Aircraft photos: production Planespotters integration
 
 - Photo API documentation and API-specific terms:
   <https://www.planespotters.net/photo/api>
@@ -175,7 +176,7 @@ proxy handoff, and re-evaluation conditions are in
 - Public endpoint:
   `https://api.planespotters.net/pub/photos/hex/{ICAO24}`
 - Authentication: none
-- Production enablement: disabled
+- Production enablement: explicit protected-build flag, currently enabled
 
 The API-specific terms permit public/free display when the browser requests
 JSON with a valid `Origin` or `Referer`, image bytes load directly from the
@@ -186,8 +187,9 @@ Planespotters photo page without `nofollow`. API JSON may be cached for up to
 client. Returned data may not be re-exposed through another API, feed, export,
 or dataset.
 
-LiveTrafficStan tightens the JSON cache to one shared hour and 32 current-tab
-entries. It uses only an exact six-character ICAO24 after **Load aircraft
+LiveTrafficStan tightens the JSON cache to one hour and 32 current-tab entries,
+shared only between its hover and selected-details controllers. It uses only
+an exact six-character ICAO24 after **Load aircraft
 photo** or a stable 500 ms fine-pointer hover, accepts only the documented
 API/CDN/photo-page origins, shows the photographer credit and source link, and
 writes no response, URL, credit, or image byte to application-managed storage.
@@ -195,12 +197,12 @@ Selection alone, HISTORY, and vessels never use the path.
 
 The API-specific terms page has no visible dated revision. The separate general
 terms state "As of: December 22nd, 2012", but that date does not prove when the
-current API-specific obligations took effect. One bounded browser-origin probe
-on 2026-09-21 made exactly one hex request and received no readable CORS
-response; the browser reported a fetch failure and Resource Timing status `0`.
-No JSON or image was exposed, and the probe was not repeated.
+current API-specific obligations took effect. Exact-production-origin
+acceptance on 2026-09-23 returned readable HTTP 200 JSON for `4CADF9`, loaded
+the unchanged `https://t.plnspttrs.net` thumbnail directly, and preserved
+visible photographer/source metadata and the exact photo-page URL.
 
-The feature therefore remains disabled. A Worker proxy is not an authorized
+The feature is enabled in production. A Worker proxy is not an authorized
 workaround because it would conflict with the direct-loading and no-proxy/
 no-re-exposure terms. See
 [Aircraft Photo Evaluation](aircraft-photo-evaluation.md) for the exact
@@ -241,8 +243,8 @@ exact account terms and real samples.
 
 [Issue #44](https://github.com/vasilyevstan/LiveTrafficStan/issues/44)
 records the exact rights, identity, sample, cost, retention, attribution, and
-credential evidence required before public enablement. Issue #39 remains the
-separate public Cloudflare deployment gate.
+credential evidence required before public enablement. The Cloudflare
+secret-holding boundary is deployed; both route flags remain `false`.
 
 Selection alone does not call aviationstack. Each accepted **Find route**
 action reserves one of 90 global rolling-31-day attempts before one fixed
