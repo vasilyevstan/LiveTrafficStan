@@ -229,7 +229,9 @@ VITE_AIRCRAFT_PHOTO_ENABLED=true
 This flag contains no credential and does not enable a Worker route. The
 production default must remain `false`: the one bounded evaluation from the
 local application origin did not expose a readable Planespotters CORS response,
-and the API-specific terms page has no visible revision date.
+and #39 has not yet supplied the authorized production origin needed for the
+exact-origin check. The published low-volume browser terms do not require an
+API key, email, membership account, or prior provider contact.
 
 The protected production workflow exposes the same value as the required
 `aircraft_photo_enabled` dispatch input. That makes activation explicit and
