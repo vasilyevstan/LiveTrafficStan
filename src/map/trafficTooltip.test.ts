@@ -77,13 +77,31 @@ describe('trafficTooltipSummary', () => {
           callsign: '  TST123  ',
           aircraftType: 'A320',
           registration: 'N123TS',
+          altitudeMeters: 3_048,
         }),
       ),
     ).toEqual({
       title: 'Flight / callsign: TST123',
       details: [
         'Reported aircraft type: A320',
+        'Reported altitude: 3,048 m',
         'Registration: N123TS',
+      ],
+    })
+  })
+
+  it('uses the selected unit system for reported aircraft altitude', () => {
+    expect(
+      trafficTooltipSummary(
+        aircraft({ altitudeMeters: 3_048 }),
+        'aviation-nautical',
+      ),
+    ).toEqual({
+      title: 'Aircraft: ABC123',
+      details: [
+        'Reported aircraft type: unreported',
+        'Reported altitude: 10,000 ft',
+        'ICAO24: ABC123',
       ],
     })
   })
@@ -165,6 +183,7 @@ describe('trafficTooltipSummary', () => {
       title: 'Aircraft: ABC123',
       details: [
         'Reported aircraft type: unreported',
+        'Reported altitude: unreported',
         'ICAO24: ABC123',
       ],
     })
@@ -176,12 +195,14 @@ describe('trafficTooltipSummary', () => {
         vessel({
           name: 'Test Vessel',
           destination: 'Helsinki',
+          speedKph: 18.52,
         }),
       ),
     ).toEqual({
       title: 'Test Vessel',
       details: [
         'Flag: Finland (FI)',
+        'Speed over ground: 19 km/h · 10 kn',
         'AIS destination: Helsinki',
       ],
     })
@@ -199,6 +220,7 @@ describe('trafficTooltipSummary', () => {
       title: '<img src=x onerror=alert(1)>',
       details: [
         'Flag: Finland (FI)',
+        'Speed over ground: unreported',
         'AIS destination: <script>alert(1)</script>',
       ],
     })

@@ -377,8 +377,9 @@ and the control legend pairs every color and red stopped dot with text, so
 neither altitude nor movement relies on color alone.
 
 Mouse hover is a map-local presentation path over normalized entities already
-in memory. Aircraft show flight/callsign plus reported type and identity
-fallback; vessels show name/MMSI, locally derived flag state, and explicitly
+in memory. Aircraft show flight/callsign, reported type, reported altitude in
+the active unit system, and identity fallback; vessels show name/MMSI, locally
+derived flag state, speed over ground in both km/h and knots, and explicitly
 labeled AIS destination. DOM text is assigned through `textContent`. If the
 disabled-by-default aircraft-photo evaluation is enabled, one stable
 fine-pointer aircraft hover may use the reviewed direct provider boundary after
