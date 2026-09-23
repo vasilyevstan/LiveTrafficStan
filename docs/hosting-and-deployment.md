@@ -619,11 +619,24 @@ For the first deployment:
 After a subsequent version exists:
 
 1. record the prior known-good version before promotion;
-2. if smoke or browser acceptance fails, use `wrangler rollback <version-id>` or
-   the Cloudflare deployment dashboard;
+2. dispatch `.github/workflows/rollback-production.yml` from `main` with the
+   exact current `main` SHA, target source SHA, recorded Cloudflare version ID,
+   public origin, artifact kind, and the target version's two build flags;
 3. rerun the same automated smoke and browser checks;
 4. keep production operations serialized;
 5. record the restored version and evidence.
+
+The rollback workflow shares the `production-deployment` concurrency group and
+protected `production` environment with the deployment workflow. It rejects a
+stale current-main SHA, a target source commit that is not an ancestor of the
+current `main`, malformed version IDs or URLs, and missing Cloudflare
+credentials. It checks out and builds the exact target source, restores the
+current smoke policy so current provider-throttling semantics are applied
+consistently, calls `wrangler rollback <version-id>`, and requires the same
+production smoke to pass with the target release SHA. Restoring the latest
+known-good version uses the same workflow as a second serialized operation;
+production must never be left on the older version merely to preserve rollback
+evidence.
 
 Cloudflare supports rollback among the 100 most recent versions. Older recovery
 uses the exact repository SHA and locked dependency/build inputs. Disabling or
