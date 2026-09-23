@@ -5,7 +5,7 @@ import portsSource from '../src/config/portsSource.json' with {
   type: 'json',
 }
 import {
-  STATIC_ASSET_RETRY_DELAYS_MS,
+  DEPLOYMENT_PROPAGATION_RETRY_DELAYS_MS,
   classifyAircraftProxyStatus,
   isRetryableStaticAssetStatus,
 } from './smoke-policy.mjs'
@@ -52,7 +52,7 @@ const fetchWithTimeout = async (url, init = {}, timeoutMs = 15_000) => {
 
 const remoteBytes = async (pathname) => {
   let response
-  for (const delayMs of STATIC_ASSET_RETRY_DELAYS_MS) {
+  for (const delayMs of DEPLOYMENT_PROPAGATION_RETRY_DELAYS_MS) {
     if (delayMs > 0) {
       await new Promise((resolve) => setTimeout(resolve, delayMs))
     }
@@ -180,7 +180,43 @@ const verifyStaticAssets = async () => {
   )
 }
 
+const waitForWorkerRelease = async () => {
+  const releaseProbePath = '/api/aircraft/v2/point/91/24.754/11'
+  let response
+
+  for (const delayMs of DEPLOYMENT_PROPAGATION_RETRY_DELAYS_MS) {
+    if (delayMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs))
+    }
+    response = await fetchWithTimeout(new URL(releaseProbePath, baseUrl))
+    if (
+      response.headers.get('x-livetrafficstan-release') === expectedReleaseSha
+    ) {
+      break
+    }
+    void response.body?.cancel().catch(() => undefined)
+  }
+
+  assert(response, 'Worker release probe did not return a response')
+  assert(
+    response.headers.get('x-livetrafficstan-release') === expectedReleaseSha,
+    'Worker release SHA does not match the deployed source',
+  )
+  assert(response.status === 400, 'Invalid aircraft coordinates were not rejected')
+  assert(
+    response.headers.get('cache-control') === 'no-store',
+    'Aircraft proxy validation response is cacheable',
+  )
+  assert(
+    !response.headers.has('access-control-allow-origin'),
+    'Aircraft proxy validation unexpectedly allows cross-origin browser access',
+  )
+  void response.body?.cancel().catch(() => undefined)
+}
+
 const verifyAircraftProxy = async () => {
+  await waitForWorkerRelease()
+
   const validPath = '/api/aircraft/v2/point/59.437/24.754/11'
   const response = await fetchWithTimeout(new URL(validPath, baseUrl))
   const status = classifyAircraftProxyStatus(response.status)
@@ -214,11 +250,6 @@ const verifyAircraftProxy = async () => {
       'Aircraft provider throttled the verified proxy request with HTTP 429',
     )
   }
-
-  const invalid = await fetchWithTimeout(
-    new URL('/api/aircraft/v2/point/91/24.754/11', baseUrl),
-  )
-  assert(invalid.status === 400, 'Invalid aircraft coordinates were not rejected')
 
   const unsupported = await fetchWithTimeout(
     new URL('/api/aircraft/v2/all', baseUrl),

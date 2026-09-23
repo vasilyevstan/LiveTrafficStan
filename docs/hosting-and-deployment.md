@@ -552,11 +552,14 @@ disabled. A future authorized enablement must add separately bounded
 credentialed evidence without turning deployment smoke into recurring quota
 consumption.
 
-Static Asset checks use a bounded 15-second retry schedule because a newly
-published Cloudflare version can report deployment success before every edge
-serves every immutable asset. The smoke does not retry live provider requests.
-An ADSB.lol `429` is recorded as provider throttling rather than a release
-regression; other non-`200` statuses still fail the deployment check.
+Static Asset checks and a locally rejected Worker request use a bounded
+15-second retry schedule because a newly published Cloudflare version can
+report deployment success before every edge serves every immutable asset or
+the new Worker release. The local Worker probe cannot reach an upstream
+provider. After its release header matches, the smoke makes exactly one live
+aircraft-provider request. An ADSB.lol `429` is recorded as provider throttling
+rather than a release regression; other non-`200` statuses still fail the
+deployment check.
 
 The MQTT check has a 15-second outer deadline, disables reconnect, and force
 closes the client. The script never prints provider payloads, METAR reports,
