@@ -17,11 +17,21 @@ production platform:
 - no route result database, queue, authentication service, or general backend
   is added.
 
-The repository is deploy-ready but does not yet claim a public production
-deployment. Permanent Cloudflare account selection and credentials are tracked
-by [Issue #39](https://github.com/vasilyevstan/LiveTrafficStan/issues/39).
-Everything that does not require those credentials is implemented and
-testable locally.
+Public production is live at
+<https://livetrafficstan.syntal.workers.dev> on Cloudflare Workers Free with
+Static Assets. The protected `production` environment contains the deployment
+credentials, observability remains disabled, and no paid add-on, KV, or R2
+service is used.
+
+The accepted V1.5.3 application source is
+`6d132907525f4f1479ae2b4f94485d76c151b86a`. Deployment run
+`35922373328` published Cloudflare version
+`5b17eeb9-e6ad-4720-8a8e-c52725b18aba`. Rollback run `35922516989`
+temporarily restored prior version `479159aa-20a6-4cb7-adc6-26dd95a1f7f7`,
+and restoration run `35922782775` returned production to the current version
+with matching smoke. Repository documentation commits may advance after that
+application release; the public `X-LiveTrafficStan-Release` header identifies
+the running application source.
 
 This is an engineering record, not legal advice. Provider and platform terms,
 limits, and behavior can change and must be rechecked before a material
@@ -35,8 +45,8 @@ The platform comparison uses:
   Photon, and Digitraffic material;
 - **Observed** bounded local or provider checks;
 - **Calculated** request volume from the checked-in 20-second aircraft cadence;
-- **Unknown** for account-specific entitlement, production egress behavior, and
-  unverified provider capacity.
+- **Unknown** for future provider capacity and long-term rate behavior of
+  Cloudflare's shared outbound identity.
 
 Unknown does not mean permitted or unavailable.
 
@@ -273,8 +283,9 @@ bounded plain text with `nosniff`.
 The browser provider adds its own eight-second deadline and 256 KiB cap,
 accepts only requested METAR/SPECI stations, and observes one session request
 start at least 60 seconds after the previous start. That local pacing cannot
-prove public aggregate request/egress safety. Issue #39 therefore still owns
-public-account usage measurement and deployed exact-SHA evidence.
+prove public aggregate request/egress safety. Production exact-SHA smoke proves
+the deployed boundary, while provider capacity remains an external operational
+dependency rather than an application guarantee.
 
 ## Bounded implementation observations
 
@@ -441,7 +452,7 @@ The GitHub `production` environment is restricted to the `main` branch and has
 no personal approval gate for CLI-owned deployments. Exact technical checks
 remain mandatory.
 
-Issue #39 must supply these environment secrets:
+The protected environment supplies these secrets:
 
 | Secret | Purpose |
 | --- | --- |
@@ -449,8 +460,9 @@ Issue #39 must supply these environment secrets:
 | `CLOUDFLARE_API_TOKEN` | Least-privilege token allowed to deploy this Worker |
 | `AVIATIONSTACK_ACCESS_KEY` | Dedicated route-evaluation key; required only when the route input is enabled |
 
-The token should be scoped to the selected account and the Worker-edit
-permission required by Wrangler. Neither value belongs in Git, issue text,
+The token is scoped to the selected account and Worker deployment. The
+repository-level duplicate token was removed; deployment credentials remain
+only in the protected environment. No value belongs in Git, issue text,
 `VITE_*`, client JavaScript, or pull-request workflows.
 
 There is deliberately no local production-deploy package script. Permanent
@@ -566,8 +578,8 @@ closes the client. The script never prints provider payloads, METAR reports,
 MMSIs, browser coordinates beyond the documented fixed Tallinn fixture,
 station IDs beyond the documented EETN fixture, or a secret.
 
-An HTTP/Node smoke is not browser acceptance. Before Issue #11 closes, record a
-real browser check of:
+An HTTP/Node smoke is not browser acceptance. V1.5.3 recorded a real browser
+check of:
 
 - rendered vector tiles and actual MapLibre worker execution;
 - one MapLibre instance through Auto/Light/Dark changes;
@@ -582,6 +594,9 @@ real browser check of:
 - visible attribution;
 - desktop and narrow mobile layouts.
 
+That browser acceptance passed after restoration. Issue #11 remains open only
+for reliable ADSB.lol access from Cloudflare's shared outbound identity; a
+truthful `429`/partial state is accepted degradation, not proof of reliability.
 No browser-automation framework is added solely for this Issue.
 
 ## Monitoring

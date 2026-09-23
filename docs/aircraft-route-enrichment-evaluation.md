@@ -24,8 +24,9 @@ The evaluation path:
 [Issue #44](https://github.com/vasilyevstan/LiveTrafficStan/issues/44)
 remains open for the exact accepted account terms, public-display,
 attribution, cache/retention rights, and the remainder of the no-more-than-ten
-call real evaluation. Issue #3 can receive this guarded implementation, but
-public enablement and route claims remain blocked until that evidence exists.
+call real evaluation. Issue #3 is closed after receiving the guarded
+implementation, but public enablement and route claims remain blocked until
+that evidence exists.
 
 This is an engineering record, not legal advice. Provider terms, pricing,
 schemas, and access can change and must be rechecked before a source decision.
@@ -65,13 +66,15 @@ The cache branch is based on protected `dev` SHA
   through a bounded six-hour in-memory tab cache.
 - `.env.example` states that every `VITE_*` value is browser-visible and must
   never contain a secret.
-- Issue #39 separately tracks permanent Cloudflare deployment authorization.
+- The Cloudflare secret-holding boundary is deployed, but both route flags
+  remain `false`.
 
 The exact accepted Free-plan Order/terms, public display rights, attribution,
 and cache/retention grant still have not been recorded. A configured
 credential and successful private evaluation do not authorize public use.
-Because the evaluation key was supplied through a chat message, it must be
-rotated before any public deployment.
+The owner explicitly accepted retaining the existing dedicated key. It remains
+only in protected secret paths and is not browser-visible; that no-rotation
+decision does not authorize production route display.
 
 ## Initial identity and truthfulness contract
 
@@ -361,8 +364,8 @@ these are proven:
 - coverage for reused, missing, and changed identifiers, codeshares, and date
   boundaries;
 - the checked global 90-attempt rolling quota using one dedicated key;
-- a rotated dedicated key that was not disclosed through chat or another
-  retained conversation channel;
+- a dedicated key held only in protected secret paths and excluded from
+  browser-visible configuration;
 - authorized server-side credential verification;
 - one successful selected-flight lookup and one valid unavailable or ambiguous
   result retained under provider terms;
@@ -378,23 +381,21 @@ count as a valid unavailable-flight result.
 
 ## Bounded live evaluation evidence
 
-One of the ten authorized evaluation calls has been used:
+Two of the ten authorized evaluation calls have been used:
 
 | Retrieved | Selected ADS-B identity | Result | Notes |
 | --- | --- | --- | --- |
 | 2026-09-21 | `SAS1748`, ICAO24 `4AB566`, registration `SE-MKF` | Arlanda (`ARN`) to Ulemiste (`TLL`), active | Local Worker returned one sanitized exact-match route with `200`, `Cache-Control: no-store`, and `X-Content-Type-Options: nosniff` |
+| 2026-09-22 | `SAS1748`, ICAO24 `4AB56F`, registration `SE-MKO` | Arlanda (`ARN`) to Ulemiste (`TLL`), active | One additional authorized local-Worker request returned the strict exact match with the same sanitized response contract |
 
 No raw provider body, key, quota state, or user data was retained. The
-remaining evaluation allowance is nine calls.
+remaining evaluation allowance is eight calls.
 
-## Separate production gate
+## Production boundary
 
-Issue #39 remains the permanent Cloudflare account/deployment blocker.
-
-Route-source authorization can be established in an approved non-public path
-before #39 closes. Public route enrichment still requires the selected
-secret-holding boundary to be deployed and validated. Closing either gate does
-not complete the other.
+The selected Cloudflare secret-holding boundary is deployed and validated.
+Public route enrichment remains disabled because deployment does not satisfy
+the separate Issue #44 Vendor Terms/public-display authorization gate.
 
 ## Implemented evaluation invariants
 
@@ -427,15 +428,15 @@ not complete the other.
 
 ## Issue boundaries
 
-- Issue #3 remains open and blocked by #44.
-- Issue #5 local current-aircraft search and a licensed static airport layer can
-  proceed without a route source.
-- Issue #5 operational boards need their own airport/time-window enumeration
-  capability evaluation.
+- Issue #3 is closed after delivering the guarded default-off implementation;
+  public authorization remains in #44.
+- Issue #5 is closed after delivering local current-aircraft search and a
+  licensed static airport layer.
+- Operational boards remain isolated in #46 and need their own
+  airport/time-window enumeration capability evaluation.
 - Even if a board source is authorized, an aircraft-to-airport relationship
   remains gated by Issue #3's selected-flight occurrence match.
-- Issue #39 remains a separate shipping prerequisite for a credentialed
-  Cloudflare production path.
+- The deployed Cloudflare boundary does not grant route-provider rights.
 
 ## Re-evaluation conditions
 

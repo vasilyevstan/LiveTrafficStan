@@ -2,17 +2,18 @@
 
 ## Status
 
-LiveTrafficStan contains a disabled-by-default Planespotters aircraft-photo
-evaluation path. It is not enabled in the checked production configuration and
-must not be described as a released photo feature.
+LiveTrafficStan contains a fail-closed Planespotters aircraft-photo path that is
+explicitly enabled in the protected V1.5.3 production build. The public feature
+uses direct browser JSON and unchanged provider image URLs; the Worker never
+proxies or stores photo data.
 
-The implementation is complete enough to preserve the reviewed provider
-contract, but the required live browser acceptance did not pass on
-2026-09-21. One request from the evaluated application origin reached
-`https://api.planespotters.net/pub/photos/hex/4CADF9`, then the browser exposed
-only `TypeError: Failed to fetch`. Resource Timing recorded status `0`, zero
-transferred bytes, and no readable response. No JSON, thumbnail, photographer
-credit, or photo-page URL became available. The probe was not repeated.
+An earlier local-origin probe on 2026-09-21 failed before readable CORS data
+reached the browser. That result was superseded by exact-production-origin
+acceptance on 2026-09-23 from
+<https://livetrafficstan.syntal.workers.dev>: the hex lookup returned readable
+HTTP 200 JSON, the unchanged `https://t.plnspttrs.net` thumbnail rendered at
+200 by 137 pixels, and photographer/source metadata plus the exact photo-page
+URL remained intact.
 
 The published Photo API terms were rechecked on 2026-09-23. They permit this
 low-volume, direct-browser use without an API key, membership account, email,
@@ -22,19 +23,19 @@ visible credit and source-page navigation, bounded JSON caching, and no image
 persistence, proxying, rehosting, or API re-exposure. Contact is described for
 higher-volume or guaranteed service, not as a prerequisite for this path.
 
-Production remains disabled because the evaluated local browser origin did not
-complete the documented CORS path and #39 has not yet supplied an authorized
-production origin. The exact deployed origin must pass one bounded browser
-check before the feature remains enabled.
+Production remains enabled only while the exact-origin, direct-loading,
+unchanged-URL, attribution, bounded-memory, and no-persistence contract
+continues to pass. A material provider-policy or origin change requires a new
+bounded check and a fail-closed redeployment if acceptance fails.
 
 This is an engineering record, not legal advice. Provider terms and behavior
 can change and must be rechecked before any enablement.
 
 The protected production workflow has a required
-`aircraft_photo_enabled` dispatch input. It defaults to `false`; an authorized
-activation dispatch must explicitly pass `true`, then run one bounded browser
-check from the exact deployed origin. A failed CORS/provider contract check
-requires redeploying the same accepted SHA with the flag set back to `false`.
+`aircraft_photo_enabled` dispatch input. Source configuration remains `false`;
+the accepted production dispatch explicitly passes `true`. A failed
+CORS/provider-contract check requires redeploying an accepted application
+source with the flag set back to `false`.
 
 ## Official sources
 
@@ -135,37 +136,27 @@ Synthetic browser and unit fixtures prove:
   service-worker source;
 - no aircraft-photo section for vessels or historical traffic.
 
-Synthetic success proves application behavior, not current provider CORS or
-rights authorization.
+Synthetic success proves application behavior; the dated production check
+separately proves the current exact-origin provider boundary.
 
 ## Live acceptance result
 
-The one bounded browser-origin probe used:
+The accepted 2026-09-23 production check used:
 
-- application origin: `http://127.0.0.1:5174`;
+- application origin: `https://livetrafficstan.syntal.workers.dev`;
 - ICAO24: `4CADF9`;
-- API requests: exactly one;
+- API result: readable HTTP 200 JSON;
 - request mode: ordinary browser `fetch`, credentials omitted, no-store,
   redirects rejected;
-- result: browser fetch failure before readable status, headers, or JSON;
-- Resource Timing: response status `0`, transfer size `0`;
-- thumbnail requests: zero.
+- thumbnail origin: exact returned `https://t.plnspttrs.net`;
+- thumbnail result: directly rendered at 200 by 137 pixels;
+- attribution: visible photographer/source metadata;
+- navigation: exact unchanged Planespotters photo-page URL.
 
-Because the response was not readable, this probe cannot establish current
-response shape, returned origins, thumbnail rendering, photographer credit, or
-source-page navigation. A Worker proxy is not a workaround: it would violate
+No API response, thumbnail, URL, or credit entered application-managed
+persistent storage. A Worker proxy remains prohibited because it would violate
 the selected direct-browser contract and the API prohibition on proxying and
 re-exposing provider data.
-
-Enablement requires all of the following:
-
-1. dated API-terms evidence covering the actual public/free deployment model;
-2. provider confirmation that the actual LiveTrafficStan production origin is
-   accepted for browser CORS, if origin approval is required;
-3. one new bounded check from that exact approved origin proving readable JSON,
-   documented hosts, thumbnail rendering, credit, and source-page link;
-4. unchanged direct loading, attribution, cache, storage, and service-worker
-   behavior.
 
 ## Vessel images remain blocked
 
@@ -173,7 +164,10 @@ No automatic vessel-photo source met both exact hull identity and
 machine-reliable display-rights requirements. The application therefore shows
 no vessel photo section or placeholder.
 
-Future vessel support requires a manually reviewed manifest:
+Issue
+[#114](https://github.com/vasilyevstan/LiveTrafficStan/issues/114) tracks the
+remaining authorization. Future vessel support requires either an official
+exact-IMO provider contract or a manually reviewed manifest:
 
 ```text
 IMO -> Wikidata QID -> Commons file revision -> verified hull photograph

@@ -101,8 +101,9 @@ broader convenience proxy. A missing asset must remain a real 404. On a public
 deployment, compare the `X-LiveTrafficStan-Release` header with the exact
 deployed SHA.
 
-Production activation credentials are intentionally absent until Issue #39 is
-resolved. Do not place them in `.env.local` or any `VITE_*` variable.
+Production deployment credentials exist only in the protected GitHub
+`production` environment. Do not duplicate them in repository secrets, place
+them in `.env.local`, or expose them through any `VITE_*` variable.
 
 ## METAR shows unavailable, waiting, or empty
 
