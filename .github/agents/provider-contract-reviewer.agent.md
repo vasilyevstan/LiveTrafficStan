@@ -148,11 +148,12 @@ Check these project invariants:
   revision. Aircraft changes, vessel/empty selection, and unmount abort old
   work; late A callbacks cannot appear after A to B to A. Snapshot staleness
   and future-clock rules reevaluate while open without refetch.
-- Aircraft photos remain disabled by default until dated API terms and one
-  exact-production-origin browser check both pass. The only eligible dynamic
-  path is explicit action on a selected live aircraft's exact six-character
-  ICAO24; selection, HISTORY, vessels, callsign, registration, model, airline,
-  and fuzzy text make no request.
+- Aircraft photos remain fail-closed in source configuration and may be enabled
+  only after dated API terms and one exact-production-origin browser check pass.
+  The production-enabled path is an explicit selected-details action or one
+  stable 500 ms fine-pointer hover on a live aircraft's exact six-character
+  ICAO24; selection alone, HISTORY, vessels, callsign, registration, model,
+  airline, and fuzzy text make no request.
 - Planespotters JSON is fetched directly from the fixed hex endpoint with one
   active cancellable request, bounded timeout/body, no credentials, no-store,
   manual redirect rejection, typed failures, `Retry-After`, no automatic

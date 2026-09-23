@@ -226,17 +226,17 @@ The browser photo section is omitted unless:
 VITE_AIRCRAFT_PHOTO_ENABLED=true
 ```
 
-This flag contains no credential and does not enable a Worker route. The
-production default must remain `false`: the one bounded evaluation from the
-local application origin did not expose a readable Planespotters CORS response,
-and #39 has not yet supplied the authorized production origin needed for the
-exact-origin check. The published low-volume browser terms do not require an
-API key, email, membership account, or prior provider contact.
+This flag contains no credential and does not enable a Worker route. Source
+configuration remains fail-closed at `false`; the protected V1.5.3 production
+dispatch explicitly sets it to `true` after exact-origin acceptance from
+<https://livetrafficstan.syntal.workers.dev>. The published low-volume browser
+terms do not require an API key, email, membership account, or prior provider
+contact.
 
 The protected production workflow exposes the same value as the required
-`aircraft_photo_enabled` dispatch input. That makes activation explicit and
-allows the same accepted `main` SHA to be redeployed with `false` if the
-post-deployment exact-origin browser check fails. It does not relax the direct
+`aircraft_photo_enabled` dispatch input. That keeps activation explicit and
+allows an accepted application source to be redeployed with `false` if a later
+provider-contract or exact-origin check fails. It does not relax the direct
 browser, unchanged-URL, attribution, storage, or provider-origin rules.
 
 When enabled for deterministic evaluation, selecting an aircraft still makes

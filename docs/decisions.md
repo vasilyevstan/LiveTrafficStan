@@ -86,12 +86,13 @@ IndexedDB, history, the service worker, the Worker Cache API, or Durable Object
 storage. This reduces accidental Free-plan use without creating a shared route
 database or claiming that an old route is current indefinitely.
 
-Issue #39 remains the separate Cloudflare deployment blocker. The disabled
-implementation can be reviewed and merged without a key or public
-deployment; enabling it requires both matching client/Worker flags and the
-protected Worker secret.
+The Cloudflare secret-holding boundary is deployed. Route lookup remains
+disabled because Issue #44 still requires the exact accepted Vendor
+Terms/order and public-display, attribution, caching, retention, fixture, and
+deletion evidence; enabling it also requires matching client/Worker flags and
+the protected Worker secret.
 
-## Disabled direct Planespotters aircraft-photo evaluation
+## Direct Planespotters aircraft photos
 
 The only reviewed dynamic photo path with an explicit public display contract
 is the Planespotters Photo API. The accepted slice is intentionally narrower
@@ -115,13 +116,11 @@ proxying and re-exposure are prohibited, and visible credit plus a followable
 source-page link are mandatory. A Worker proxy is therefore not an acceptable
 CORS workaround.
 
-Production remains disabled. The published API-specific terms permit this
-low-volume, keyless browser path without prior email or provider approval, but
-the one bounded browser-origin request on 2026-09-21 failed before a readable
-CORS response, status, or body reached the application. Deterministic fixtures
-prove application behavior but cannot replace that external gate. Enablement
-requires the photo surface to remain public and free plus one successful
-bounded check from the exact approved production origin.
+Production is enabled. The published API-specific terms permit this low-volume,
+keyless browser path without prior email or provider approval. The exact
+production origin passed a bounded 2026-09-23 browser check with readable JSON,
+an unchanged direct thumbnail from `t.plnspttrs.net`, visible credit, and exact
+source-page navigation. The photo surface remains public and free.
 
 Automatic vessel photos remain rejected. A future path requires a manually
 reviewed exact-IMO manifest to one verified Commons file revision with author,
@@ -136,7 +135,7 @@ The dated
 [airport board evaluation](airport-board-evaluation.md)
 found no currently configured and authorized source with the complete
 account/plan, rights, retention, source-age, Tallinn-sample, quota, cost, and
-server-held credential contract required by Issue #5.
+server-held credential contract required by Issue #46.
 
 OpenSky's airport flights are previous-day-or-earlier overnight
 reconstructions with estimated airports/times, not current operational rows.
@@ -182,8 +181,8 @@ visible station IDs.
 Deployments require an exact current `main` SHA, rerun the complete validation
 suite, serialize production operations, deploy code and assets atomically, and
 verify matching client/MapLibre-worker bytes plus bounded provider smoke.
-Account selection and credentials remain the explicit external blocker in
-Issue #39 rather than a client-side secret or temporary-account workaround.
+Account selection and protected credentials are configured. Client-side
+secrets and temporary-account workarounds remain prohibited.
 
 ## Digitraffic MQTT plus REST metadata
 
@@ -381,9 +380,9 @@ Mouse hover is a map-local presentation path over normalized entities already
 in memory. Aircraft show flight/callsign, reported type, reported altitude in
 the active unit system, and identity fallback; vessels show name/MMSI, locally
 derived flag state, speed over ground in both km/h and knots, and explicitly
-labeled AIS destination. DOM text is assigned through `textContent`. If the
-disabled-by-default aircraft-photo evaluation is enabled, one stable
-fine-pointer aircraft hover may use the reviewed direct provider boundary after
+labeled AIS destination. DOM text is assigned through `textContent`. When the
+aircraft-photo path is enabled, one stable fine-pointer aircraft hover may use
+the reviewed direct provider boundary after
 500 ms; the resulting image remains a credited exact source-page link.
 Metadata, route, traffic-provider, reconnect, and polling work remain
 unaffected, vessel hover remains request-free, and AIS destination is not

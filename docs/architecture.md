@@ -138,8 +138,9 @@ unavailable, and missing live registration produces an explicit ICAO24-only
 confidence label. Metadata remains separate from the live `Aircraft` object and
 never changes provider health, freshness, history, or marker artwork.
 
-Aircraft photos form a separate disabled-by-default direct-browser boundary.
-They accept only the normalized live ICAO24. Selected details retain the
+Aircraft photos form a separate fail-closed direct-browser boundary, explicitly
+enabled in the protected production build. They accept only the normalized
+live ICAO24. Selected details retain the
 explicit **Load aircraft photo** action; a fine pointer can also start one
 automatic lookup only after remaining on the same live aircraft for 500 ms.
 One cancellable lookup targets only the fixed Planespotters hex endpoint.
@@ -450,9 +451,9 @@ already-loaded application model. Aircraft show flight/callsign, reported type,
 reported altitude in the active unit system, and registration/ICAO24 fallback.
 Vessels show name/MMSI fallback, flag state derived locally from the MMSI
 allocation table, speed over ground in both km/h and knots, and the reported
-AIS destination. Provider strings are inserted through `textContent`. When the
-disabled-by-default photo evaluation is enabled, a fine pointer that remains
-on one live aircraft for 500 ms can start one direct photo lookup and add the
+AIS destination. Provider strings are inserted through `textContent`. When the photo path is
+enabled, a fine pointer that remains on one live aircraft for 500 ms can start
+one direct photo lookup and add the
 validated thumbnail, visible credit, and exact source-page link. Hover never
 starts metadata, route, traffic-provider, polling, or reconnect work; vessel
 hover remains request-free and AIS destination is never described as a
@@ -533,9 +534,10 @@ observability is disabled because request URLs contain rounded camera
 coordinates or visible station IDs. Cloudflare and upstream network
 intermediaries still process ordinary request metadata.
 
-Production activation, public browser smoke, and rollback against a prior
-version wait only on the permanent account/credential prerequisite in Issue
-#39. See [Hosting and Deployment](hosting-and-deployment.md).
+Production activation, exact-origin browser smoke, prior-version rollback, and
+exact restoration are complete. See
+[Hosting and Deployment](hosting-and-deployment.md) for the recorded release,
+version, and workflow evidence.
 
 ## Navigation and viewport boundaries
 

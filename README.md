@@ -4,6 +4,8 @@ LiveTrafficStan is a lightweight live map of aircraft and significant vessels
 around Tallinn, Estonia. It combines open traffic data with MapLibre GL JS in a
 single React application, without accounts, a database, or persistent tracking.
 
+Public production: <https://livetrafficstan.syntal.workers.dev>
+
 ![LiveTrafficStan showing live aircraft and vessels around Tallinn](docs/images/live-traffic-map.png)
 
 ## Current features
@@ -72,12 +74,11 @@ single React application, without accounts, a database, or persistent tracking.
   callsign/ICAO24 match, and fails closed on ambiguity, pagination, quota, or
   provider errors without changing ADS-B positions or polling. Successful
   exact-identity routes are reused from a bounded six-hour in-memory tab cache.
-- A disabled-by-default Planespotters aircraft-photo evaluation path. It makes
-  no request until **Load aircraft photo**, accepts only an exact ICAO24 hex
-  lookup, preserves the returned thumbnail and photo-page URLs, shows visible
-  photographer credit, and keeps bounded JSON only in current-tab memory. It
-  remains unavailable in production because the authorized exact-origin live
-  browser-CORS gate has not passed.
+- A production-enabled Planespotters aircraft-photo path. It accepts only an
+  exact ICAO24 hex lookup after **Load aircraft photo** or one stable 500 ms
+  fine-pointer hover, preserves the returned thumbnail and photo-page URLs,
+  shows visible photographer credit, and keeps bounded JSON only in current-tab
+  memory.
 - Honest detail cards, provider-specific health, stale/expired handling, and
   partial operation when one provider fails.
 - Short interpolation only between observed positions and a selected-object
@@ -290,7 +291,7 @@ operational thresholds, and examples.
 | Place search | Photon / OpenStreetMap | OSM ODbL attribution applies | Direct browser access on explicit submit |
 | Aircraft | ADSB.lol | ODbL 1.0 | Same-origin Vite or Cloudflare Worker proxy |
 | Aircraft metadata | Mictronics aircraft-database derivative | ODC-By 1.0 | Immutable same-origin static assets, loaded only after selection |
-| Selected-aircraft photo evaluation | Planespotters Photo API | API-specific and general terms apply; not approved for production enablement | Explicit direct browser request and direct returned thumbnail; disabled by default |
+| Selected-aircraft photos | Planespotters Photo API | API-specific and general terms apply | Explicit direct browser request and direct unchanged returned thumbnail; enabled in production |
 | Country allocations | michaeljfazio/MIDs, ibosoftnet ICAO24 transcription, Wikidata cross-check | Apache-2.0 and CC0 1.0 | Bundled deterministic local lookup |
 | Marine | Fintraffic Digitraffic | CC BY 4.0 | Direct regional REST and MQTT |
 | Port context | Natural Earth Ports | Public domain | Immutable same-origin static asset, loaded only when enabled |
@@ -349,9 +350,14 @@ before enablement. Successful validated routes are eligible for reuse from the
 current tab's 32-entry cache for up to six hours; Worker responses remain
 `no-store` and there is no shared or persistent route cache.
 
-The deploy-ready code is not yet a claimed public deployment. Permanent
-Cloudflare account authorization and environment credentials are tracked in
-[Issue #39](https://github.com/vasilyevstan/LiveTrafficStan/issues/39).
+Public production is live at
+<https://livetrafficstan.syntal.workers.dev> on Cloudflare Workers Free with
+Static Assets. The accepted V1.5.3 application source is
+`6d132907525f4f1479ae2b4f94485d76c151b86a`; deployment run
+`35922373328` published Cloudflare version
+`5b17eeb9-e6ad-4720-8a8e-c52725b18aba`. Protected rollback run
+`35922516989` and restoration run `35922782775` proved recovery to a prior
+accepted version and exact restoration without leaving production rolled back.
 See [Hosting and Deployment](docs/hosting-and-deployment.md) for the dated
 platform matrix, request budget, proxy contract, exact-SHA workflow, smoke,
 monitoring, privacy, and rollback procedure.
@@ -360,8 +366,11 @@ monitoring, privacy, and rollback procedure.
 
 - Public providers offer no application SLA, and live traffic coverage varies
   by receiver availability and time.
-- The default aircraft endpoint works through Vite development and preview;
-  public Cloudflare activation remains blocked on Issue #39.
+- ADSB.lol intermittently returns `429` to Cloudflare Workers' shared outbound
+  identity. The application reports this truthfully as partial/unavailable
+  aircraft data while marine traffic remains usable; reliable production
+  access is tracked in
+  [Issue #11](https://github.com/vasilyevstan/LiveTrafficStan/issues/11).
 - Digitraffic is a regional source with an unknown exact coverage boundary.
   Its all-published-vessels MQTT stream is filtered in the browser; this local
   filtering does not reduce incoming MQTT bandwidth.
@@ -405,14 +414,15 @@ monitoring, privacy, and rollback procedure.
   approved.
   Even when enabled, it reports only an exact, unique active match and is not a
   general schedule, airport-board, or route-history service.
-- Aircraft photos remain disabled. The one bounded browser-origin
-  Planespotters probe made exactly one API request but exposed no readable CORS
-  response. The published low-volume browser path requires no API key, email,
-  membership account, or prior provider contact, but it does require the photo
-  surface to remain public and free. There is no Worker/proxy fallback because
-  the reviewed provider contract requires direct browser JSON and image
-  loading. Vessel photos remain absent until an exact-IMO, file-specific rights
-  manifest exists.
+- Aircraft photos are enabled through direct browser JSON and unchanged image
+  URLs. The published low-volume browser path requires no API key, email,
+  membership account, or prior provider contact, but the photo surface must
+  remain public and free. Provider JSON stays in a bounded one-hour,
+  32-entry current-tab cache, and no URL, credit, or image byte is persisted or
+  proxied. Vessel photos remain absent until the exact-IMO, file-specific
+  rights gate in
+  [Issue #114](https://github.com/vasilyevstan/LiveTrafficStan/issues/114)
+  is satisfied.
 - There is no reverse geocoding, radar, precipitation forecast, account, saved
   center preference, or offline basemap guarantee. An installed shell can
   start cold offline and replay retained private local history over a plain

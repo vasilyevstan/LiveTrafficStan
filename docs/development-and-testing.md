@@ -13,8 +13,8 @@ The development server normally runs at <http://localhost:5173>. It supplies
 the fixed `/api/aircraft` and `/api/weather/metar` proxies required by the
 default ADSB.lol and AWC integrations. It deliberately does not proxy the
 credentialed aviationstack route; use the local Worker runtime for that path.
-It also does not proxy Planespotters: the disabled aircraft-photo evaluation
-must preserve its direct-browser provider contract.
+It also does not proxy Planespotters: the optional aircraft-photo path must
+preserve its direct-browser provider contract.
 
 ## Commands
 
@@ -644,8 +644,9 @@ subscription. The MQTT client disables reconnect and is force-closed.
 
 This automated check does not replace a real browser acceptance pass for vector
 tile rendering, Web Worker execution, browser WSS, themes, attribution,
-provider isolation, and mobile layout. Public deployment remains blocked on
-Issue #39 until permanent Cloudflare credentials exist.
+provider isolation, and mobile layout. V1.5.3 passed that acceptance at
+<https://livetrafficstan.syntal.workers.dev>; later behavior changes still
+require fresh browser evidence.
 
 ## Failure and lifecycle checks
 
@@ -710,15 +711,15 @@ thumbnail link; direct thumbnail/link/credit semantics pass; errors remain
 local; and no provider content reaches Web Storage, IndexedDB, Cache API, or
 service-worker caches.
 
-One live browser-origin request is the whole acceptance budget unless a later
-Issue explicitly authorizes another. Record the application origin, ICAO24,
-request count, CORS result, response shape, exact returned origins, image load,
-credit, and source-page link without committing the provider payload or image.
-On 2026-09-21 the authorized request for `4CADF9` from
-`http://127.0.0.1:5174` failed before a readable CORS response; Resource Timing
-reported status `0` and zero transferred bytes. It was not repeated, and
-production remains disabled. Do not substitute a Worker proxy because the
-selected provider terms prohibit proxying and re-exposure.
+One bounded browser-origin request is the ordinary acceptance budget unless a
+later Issue explicitly authorizes another. Record the application origin,
+ICAO24, request count, CORS result, response shape, exact returned origins,
+image load, credit, and source-page link without committing the provider
+payload or image. The earlier 2026-09-21 local-origin failure was superseded by
+the 2026-09-23 production-origin acceptance for `4CADF9`: readable HTTP 200
+JSON, one unchanged `t.plnspttrs.net` thumbnail rendered at 200 by 137 pixels,
+and exact credit/source navigation. Do not substitute a Worker proxy because
+the selected provider terms prohibit proxying and re-exposure.
 
 Use local fixtures, fake clocks, fake maps, mocked fetch, and mocked MQTT for
 repeated lifecycle checks. A milestone needs one bounded real-provider browser
