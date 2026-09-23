@@ -1,13 +1,22 @@
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import {
-  STATIC_ASSET_RETRY_DELAYS_MS,
+  DEPLOYMENT_PROPAGATION_RETRY_DELAYS_MS,
   classifyAircraftProxyStatus,
   isRetryableStaticAssetStatus,
 } from './smoke-policy.mjs'
 
+const repositoryRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
+const smokeScript = readFileSync(
+  join(repositoryRoot, 'scripts/smoke-production.mjs'),
+  'utf8',
+)
+
 describe('production smoke policy', () => {
-  it('bounds static-asset propagation retries', () => {
-    expect(STATIC_ASSET_RETRY_DELAYS_MS).toEqual([
+  it('bounds deployment propagation retries', () => {
+    expect(DEPLOYMENT_PROPAGATION_RETRY_DELAYS_MS).toEqual([
       0,
       1_000,
       2_000,
@@ -17,6 +26,22 @@ describe('production smoke policy', () => {
     expect(isRetryableStaticAssetStatus(404)).toBe(true)
     expect(isRetryableStaticAssetStatus(503)).toBe(true)
     expect(isRetryableStaticAssetStatus(403)).toBe(false)
+  })
+
+  it('waits on a local Worker response before the single provider request', () => {
+    const releaseProbeIndex = smokeScript.indexOf(
+      "const releaseProbePath = '/api/aircraft/v2/point/91/24.754/11'",
+    )
+    const providerRequestIndex = smokeScript.indexOf(
+      "const validPath = '/api/aircraft/v2/point/59.437/24.754/11'",
+    )
+
+    expect(releaseProbeIndex).toBeGreaterThan(-1)
+    expect(providerRequestIndex).toBeGreaterThan(releaseProbeIndex)
+    expect(smokeScript).toContain(
+      "response.headers.get('x-livetrafficstan-release') === expectedReleaseSha",
+    )
+    expect(smokeScript).toContain('await waitForWorkerRelease()')
   })
 
   it('distinguishes provider throttling from proxy regressions', () => {

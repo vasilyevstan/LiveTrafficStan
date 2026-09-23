@@ -1,4 +1,4 @@
-export const STATIC_ASSET_RETRY_DELAYS_MS = [
+export const DEPLOYMENT_PROPAGATION_RETRY_DELAYS_MS = [
   0,
   1_000,
   2_000,
