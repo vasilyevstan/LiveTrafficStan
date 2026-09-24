@@ -12,6 +12,14 @@ Check these project invariants:
 
 - ADSB.lol requests remain non-overlapping and no more frequent than the
   configured polling cadence, including rapid viewport and Home changes.
+- The protected aircraft-delivery value is one fixed build-time choice:
+  `worker-proxy` or `adsb-lol-direct`. It must not become a browser-controlled
+  URL, runtime failover, provider rotation, or second scheduler.
+- Direct aircraft delivery may activate only after the provider approves it
+  and successful plus throttled responses expose browser-readable CORS. It
+  remains credential-free and `no-store`, and it must preserve exact point
+  construction, cancellation, cadence, normalization, attribution, and
+  `Retry-After` backoff.
 - Latest-query revisions win; obsolete requests are aborted and obsolete
   responses cannot replace current-area data.
 - Dynamic rate limits are surfaced. `429` and `Retry-After` cause explicit,
@@ -191,10 +199,12 @@ Check these project invariants:
   observation times, qualified visibility, numeric/`VRB` wind, and nullable
   category; malformed nonempty payloads are errors, 204 is empty success, and
   the newest valid report per station wins.
-- Proxy and deployment changes never forward browser cookies, authorization,
-  forwarding headers, or client destinations; never add wildcard CORS, shared
-  live caching, or coordinate-bearing logs; and never expose Cloudflare
-  credentials outside the `main`-restricted production environment.
+- Same-origin proxy and deployment changes never forward browser cookies,
+  authorization, forwarding headers, or client destinations; never add
+  wildcard CORS to LiveTrafficStan's Worker, shared live caching, or
+  coordinate-bearing logs; and never expose Cloudflare credentials outside
+  the `main`-restricted production environment. Provider-owned CORS for a
+  reviewed direct-browser endpoint is a separate explicit contract.
 
 For each finding, include severity, file and line, the concrete request/state
 sequence, provider or privacy impact, and the smallest safe correction. Ignore

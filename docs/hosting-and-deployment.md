@@ -146,7 +146,7 @@ browser
   |
   +-- /, /assets/*, /aircraft-metadata/* -> Cloudflare Static Assets
   |
-  +-- /api/aircraft/v2/point/... --+
+  +-- /api/aircraft/v2/point/... --+  current `worker-proxy` mode
   |                                |
   +-- /api/weather/metar?ids=... --+--> Cloudflare Worker
   |                                |       |             |
@@ -159,6 +159,8 @@ browser
 browser --------------------------------> OpenFreeMap HTTPS
 browser --------------------------------> Photon HTTPS on explicit search
 browser --------------------------------> Digitraffic HTTPS + WSS
+browser --------------------------------> api.adsb.lol only in the protected,
+                                          provider-approved direct mode
 ```
 
 `wrangler.jsonc`:
@@ -485,6 +487,7 @@ gh workflow run deploy-production.yml \
   --ref main \
   -f sha=<40-character-current-main-sha> \
   -f artifact=application \
+  -f aircraft_delivery=worker-proxy \
   -f aircraft_photo_enabled=false \
   -f flight_route_enabled=false
 ```
@@ -496,8 +499,9 @@ The workflow:
 3. checks out exactly that SHA;
 4. fetches `origin/main` and requires exact equality;
 5. fails closed if either Cloudflare environment secret is absent;
-6. builds the browser with the requested aircraft-photo and route flags and
-   dry-runs the Worker with the identical route server flag;
+6. builds the browser with the fixed aircraft-delivery choice plus the
+   requested aircraft-photo and route flags, and dry-runs the Worker with the
+   identical route server flag;
 7. exposes the aviationstack key only to the final deployment action and fails
    there before deployment when route enablement was requested without it;
 8. reruns install, lint, type-check, all tests, build, and Wrangler dry run;
@@ -507,9 +511,31 @@ The workflow:
     atomically;
 12. passes the source SHA as `RELEASE_SHA`;
 13. runs the bounded production smoke;
-14. records the URL, SHA, route-enabled state, and result in the workflow
-    summary and GitHub
+14. records the URL, SHA, aircraft-delivery mode, route-enabled state, and
+    result in the workflow summary and GitHub
     deployment.
+
+Aircraft delivery is an explicit per-deployment choice:
+
+```bash
+gh workflow run deploy-production.yml \
+  --repo vasilyevstan/LiveTrafficStan \
+  --ref main \
+  -f sha=<40-character-current-main-sha> \
+  -f artifact=application \
+  -f aircraft_delivery=adsb-lol-direct \
+  -f aircraft_photo_enabled=true \
+  -f flight_route_enabled=false
+```
+
+`worker-proxy` is the default and current production mode.
+`adsb-lol-direct` sets the fixed browser endpoint to
+`https://api.adsb.lol`; it does not accept a caller-supplied URL. Do not
+dispatch direct mode until the provider has approved it and a bounded check
+proves that successful and throttled responses permit the production origin.
+If the direct CORS smoke fails after deployment, restore the recorded prior
+Cloudflare version or redeploy the accepted SHA with `worker-proxy`; do not add
+a public relay.
 
 Aircraft-photo activation is an explicit per-deployment choice:
 
@@ -519,6 +545,7 @@ gh workflow run deploy-production.yml \
   --ref main \
   -f sha=<40-character-current-main-sha> \
   -f artifact=application \
+  -f aircraft_delivery=worker-proxy \
   -f aircraft_photo_enabled=true \
   -f flight_route_enabled=false
 ```
@@ -547,9 +574,12 @@ older SHA.
   validated local build;
 - Static Asset security headers;
 - the immutable Natural Earth port asset path and caching policy;
-- one same-origin ADSB point request that either returns valid aircraft JSON
-  or truthfully preserves an upstream `429` with the exact release and
-  `no-store` headers;
+- in `worker-proxy` mode, one same-origin ADSB point request that either
+  returns valid aircraft JSON or truthfully preserves an upstream `429` with
+  the exact release and `no-store` headers;
+- in `adsb-lol-direct` mode, one browser-origin ADSB point request that returns
+  valid aircraft JSON or an explicit `429` and permits the deployed origin
+  through CORS;
 - one bounded canonical same-origin AWC METAR request or valid 204;
 - the exact `X-LiveTrafficStan-Release` value;
 - `no-store` aircraft behavior;
@@ -569,9 +599,10 @@ Static Asset checks and a locally rejected Worker request use a bounded
 report deployment success before every edge serves every immutable asset or
 the new Worker release. The local Worker probe cannot reach an upstream
 provider. After its release header matches, the smoke makes exactly one live
-aircraft-provider request. An ADSB.lol `429` is recorded as provider throttling
-rather than a release regression; other non-`200` statuses still fail the
-deployment check.
+aircraft-provider request through the selected delivery path. An ADSB.lol
+`429` is recorded as provider throttling rather than a release regression;
+direct mode additionally requires that throttling response to be
+browser-readable. Other non-`200` statuses still fail the deployment check.
 
 The MQTT check has a 15-second outer deadline, disables reconnect, and force
 closes the client. The script never prints provider payloads, METAR reports,
@@ -639,7 +670,8 @@ After a subsequent version exists:
 1. record the prior known-good version before promotion;
 2. dispatch `.github/workflows/rollback-production.yml` from `main` with the
    exact current `main` SHA, target source SHA, recorded Cloudflare version ID,
-   public origin, artifact kind, and the target version's two build flags;
+   public origin, artifact kind, aircraft-delivery mode, and the target
+   version's two feature flags;
 3. rerun the same automated smoke and browser checks;
 4. keep production operations serialized;
 5. record the restored version and evidence.

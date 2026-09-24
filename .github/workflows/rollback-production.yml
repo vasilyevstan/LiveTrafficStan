@@ -32,6 +32,14 @@ on:
         required: true
         default: false
         type: boolean
+      aircraft_delivery:
+        description: Aircraft delivery path used by the target version
+        required: true
+        default: worker-proxy
+        type: choice
+        options:
+          - worker-proxy
+          - adsb-lol-direct
       flight_route_enabled:
         description: Flight-route build flag used by the target version
         required: true
@@ -132,6 +140,7 @@ jobs:
       - name: Build target application
         if: inputs.artifact == 'application'
         env:
+          VITE_AIRCRAFT_ENDPOINT: ${{ inputs.aircraft_delivery == 'adsb-lol-direct' && 'https://api.adsb.lol' || '/api/aircraft' }}
           VITE_AIRCRAFT_PHOTO_ENABLED: ${{ inputs.aircraft_photo_enabled }}
           VITE_FLIGHT_ROUTE_ENABLED: ${{ inputs.flight_route_enabled }}
         run: npm run build
@@ -139,6 +148,7 @@ jobs:
       - name: Build target PWA retirement artifact
         if: inputs.artifact == 'pwa-retirement'
         env:
+          VITE_AIRCRAFT_ENDPOINT: ${{ inputs.aircraft_delivery == 'adsb-lol-direct' && 'https://api.adsb.lol' || '/api/aircraft' }}
           VITE_AIRCRAFT_PHOTO_ENABLED: ${{ inputs.aircraft_photo_enabled }}
           VITE_FLIGHT_ROUTE_ENABLED: ${{ inputs.flight_route_enabled }}
         run: npm run build:pwa-retire
@@ -170,6 +180,7 @@ jobs:
           node scripts/smoke-production.mjs
           "${{ inputs.deployment_url }}"
           "${{ inputs.target_sha }}"
+          "${{ inputs.aircraft_delivery }}"
 
       - name: Record rollback
         env:
@@ -183,6 +194,7 @@ jobs:
             echo "- Target SHA: \`$TARGET_SHA\`"
             echo "- Target Cloudflare version: \`$TARGET_VERSION_ID\`"
             echo "- Artifact: \`${{ inputs.artifact }}\`"
+            echo "- Aircraft delivery: \`${{ inputs.aircraft_delivery }}\`"
             echo "- Aircraft photos enabled: \`${{ inputs.aircraft_photo_enabled }}\`"
             echo "- Flight route lookup enabled: \`${{ inputs.flight_route_enabled }}\`"
             echo "- URL: $DEPLOYMENT_URL"

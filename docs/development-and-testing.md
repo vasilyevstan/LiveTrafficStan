@@ -56,6 +56,19 @@ The same commands run in `.github/workflows/validate.yml` for pull requests and
 pushes targeting `dev` or `main`. The Wrangler dry run is credential-free and
 does not call a live provider.
 
+To build the protected direct-aircraft variant without changing defaults:
+
+```bash
+VITE_AIRCRAFT_ENDPOINT=https://api.adsb.lol npm run build
+```
+
+This proves only bundle configuration. Real acceptance additionally requires
+provider approval and a browser-origin response whose success and throttling
+states expose usable CORS. The production and rollback workflows pass
+`worker-proxy` or `adsb-lol-direct` as the third argument to
+`scripts/smoke-production.mjs`; arbitrary endpoint strings are never workflow
+inputs.
+
 For an explicitly authorized aviationstack evaluation, copy
 `.dev.vars.example` to ignored `.dev.vars`, replace its placeholder key, and
 run:

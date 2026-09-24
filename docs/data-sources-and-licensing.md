@@ -81,7 +81,8 @@ choice; no geocoder proxy or credential was added.
 - Geographic query: `/v2/point/{latitude}/{longitude}/{radius}`
 - Radius unit: nautical miles, maximum 250
 - Rate limits: dynamic according to service load
-- Browser access: the live endpoint did not return CORS headers during V1 verification
+- Browser access: direct mode requires provider-approved CORS; current
+  production remains on the same-origin Worker path
 
 The deployed API documentation says the API is currently free to use, asks
 production users to make contact so integrations are not broken accidentally,
@@ -90,16 +91,23 @@ separately announces future feeder-linked API keys. Neither statement is a
 capacity guarantee or current SLA.
 
 LiveTrafficStan polls one small geographic query approximately every 20
-seconds while the page and viewport are eligible. Because direct browser
-requests are blocked by CORS, Vite proxies local development and preview while
-the selected production Cloudflare Worker provides the strict same-origin
-route.
+seconds while the page and viewport are eligible. Vite proxies local
+development and preview while current production uses the strict same-origin
+Cloudflare route. The protected source also contains a fixed
+`adsb-lol-direct` build mode, but that mode remains undeployed until ADSB.lol
+approves browser production use and successful plus throttled responses expose
+usable CORS.
 
 The production proxy identifies the public project to ADSB.lol, forwards no
 browser credentials or arbitrary headers, follows no redirect, and applies no
 shared live-response cache. Fingerprinted application assets are cached
 separately. Production is active; intermittent ADSB.lol throttling of
 Cloudflare's shared outbound identity remains tracked in Issue #11.
+The production-access request is
+[adsblol/website#272](https://github.com/adsblol/website/issues/272), and the
+scoped upstream CORS proposal is
+[adsblol/api#63](https://github.com/adsblol/api/pull/63). Neither an open issue
+nor source support is an access grant.
 
 Visible attribution must identify ADSB.lol and link ODbL 1.0. An interactive
 map or screenshot is an ODbL Produced Work; a publicly used derivative

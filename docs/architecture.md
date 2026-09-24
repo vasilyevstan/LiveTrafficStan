@@ -104,6 +104,15 @@ convert that radius to an outward-rounded integer nautical-mile query for
 ADSB.lol. Eligibility is decided first, so an exact 100 km viewport uses 54 NM
 (100.008 km) for transport without widening the display boundary.
 
+The same adapter can use either the root-relative checked Worker route or the
+fixed public ADSB.lol origin selected at protected build time. Current
+production uses the Worker route. The direct-browser mode changes only
+transport: it preserves the controller, query construction, normalization,
+viewport filtering, cancellation, cadence, and backoff. Browser reads retain a
+12-second timeout and the Worker's 4 MiB response-size ceiling. It may be
+activated only after provider-approved CORS is live; there is no runtime
+failover, aggregation, or client-selected destination.
+
 Digitraffic REST supplies an initial location snapshot for the same enclosing
 circle and the current vessel metadata set. MQTT then updates location and
 metadata records. The adapter retains only the latest record per MMSI, removes
