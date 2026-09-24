@@ -35,6 +35,21 @@ const guardPasses = (enabled, accessKey) => {
 }
 
 describe('production deployment workflow', () => {
+  it('uses a fixed aircraft delivery choice and records it in smoke', () => {
+    expect(workflow).toContain('aircraft_delivery:')
+    expect(workflow).toContain('          - worker-proxy')
+    expect(workflow).toContain('          - adsb-lol-direct')
+    expect(workflow).toContain(
+      "VITE_AIRCRAFT_ENDPOINT: ${{ inputs.aircraft_delivery == 'adsb-lol-direct' && 'https://api.adsb.lol' || '/api/aircraft' }}",
+    )
+    expect(workflow).toContain(
+      '"${{ inputs.sha }}"\n          "${{ inputs.aircraft_delivery }}"',
+    )
+    expect(workflow).toContain(
+      'echo "- Aircraft delivery: \\`${{ inputs.aircraft_delivery }}\\`"',
+    )
+  })
+
   it('keeps the route credential guard in one pre-command', () => {
     expect(workflow).toContain(`            ${credentialGuard}`)
     expect(workflow).not.toContain(

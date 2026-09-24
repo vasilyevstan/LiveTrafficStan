@@ -69,6 +69,19 @@ ADSB.lol. Common causes are:
 - replacing the endpoint with a server that does not allow browser CORS;
 - network filtering of `api.adsb.lol`.
 
+Production records one protected `aircraft_delivery` value:
+
+- `worker-proxy` uses `/api/aircraft` and the Cloudflare Worker;
+- `adsb-lol-direct` uses `https://api.adsb.lol` from the browser.
+
+For direct mode, inspect the provider response rather than the Worker route.
+The response must be `200` or an explicit throttling response and must allow
+the deployed origin through `Access-Control-Allow-Origin`. A JavaScript
+`TypeError: Failed to fetch` with an HTTP response visible only in DevTools
+usually means CORS is absent. Do not replace it with `mode: no-cors`: that
+produces an unreadable opaque response and cannot supply aircraft JSON or
+`Retry-After`.
+
 The provider retries on its normal polling cadence. A temporary failure can
 therefore show `PARTIAL` before recovering. Inspect the warning in the browser
 console and the HTTP response rather than treating zero aircraft as an error:

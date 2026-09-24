@@ -198,6 +198,20 @@ Vite development and preview rewrite `/api/aircraft` to
 Setting `VITE_AIRCRAFT_ENDPOINT` to an absolute URL bypasses those same-origin
 routes, but it works only if the target explicitly allows browser CORS.
 
+The protected deployment and rollback workflows expose only two fixed
+aircraft-delivery values:
+
+- `worker-proxy` builds with `/api/aircraft` and is the current production
+  mode;
+- `adsb-lol-direct` builds with `https://api.adsb.lol`.
+
+The direct mode is source-ready but not authorization: deploy it only after
+ADSB.lol confirms the browser path and the live API returns an accepted
+`Access-Control-Allow-Origin` value for both successful and throttled
+responses. The client request remains credential-free and `no-store`, times
+out after 12 seconds, and rejects responses larger than 4 MiB. Arbitrary
+workflow endpoint URLs are not accepted.
+
 For an eligible viewport, the rounded camera center and conservative enclosing
 radius are sent to ADSB.lol. The application decides eligibility against the
 100 km limit before rounding outward to the provider's integer nautical miles.

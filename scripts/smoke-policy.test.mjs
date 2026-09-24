@@ -44,6 +44,27 @@ describe('production smoke policy', () => {
     expect(smokeScript).toContain('await waitForWorkerRelease()')
   })
 
+  it('supports a browser-origin ADSB.lol delivery smoke', () => {
+    expect(smokeScript).toContain(
+      "aircraftDelivery = 'worker-proxy'",
+    )
+    expect(smokeScript).toContain(
+      "aircraftDelivery === 'adsb-lol-direct'",
+    )
+    expect(smokeScript).toContain(
+      "new URL(\n      '/v2/point/59.437/24.754/11',\n      'https://api.adsb.lol',",
+    )
+    expect(smokeScript).toContain(
+      "'Direct aircraft provider did not allow the deployed origin'",
+    )
+    expect(smokeScript).toContain("redirect: 'error'")
+    expect(smokeScript).toContain("cache: 'no-store'")
+    expect(smokeScript).toContain("credentials: 'omit'")
+    expect(smokeScript).toContain(
+      'body.byteLength <= MAX_AIRCRAFT_RESPONSE_BYTES',
+    )
+  })
+
   it('distinguishes provider throttling from proxy regressions', () => {
     expect(classifyAircraftProxyStatus(200)).toBe('available')
     expect(classifyAircraftProxyStatus(429)).toBe(

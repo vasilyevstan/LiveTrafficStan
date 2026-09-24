@@ -1,6 +1,6 @@
 import { distanceKm, isValidCoordinate } from '../../domain/geo'
 import type { Aircraft } from '../../domain/traffic'
-import { ProviderError, responseError } from '../errors'
+import { ProviderError, parseRetryAfterMs } from '../errors'
 import {
   finiteNumber,
   isRecord,
@@ -12,6 +12,67 @@ import type { AircraftDataProvider, TrafficQuery } from '../types'
 const KNOTS_TO_KPH = 1.852
 const FEET_TO_METERS = 0.3048
 const FEET_PER_MINUTE_TO_METERS_PER_SECOND = 0.00508
+export const ADSB_LOL_REQUEST_TIMEOUT_MS = 12_000
+export const MAX_ADSB_LOL_RESPONSE_BYTES = 4 * 1_024 * 1_024
+
+interface AdsbLolAircraftProviderOptions {
+  timeoutMs?: number
+  maximumBytes?: number
+}
+
+const readBoundedText = async (
+  response: Response,
+  maximumBytes: number,
+) => {
+  const contentLength = Number(response.headers.get('Content-Length'))
+  if (Number.isFinite(contentLength) && contentLength > maximumBytes) {
+    void response.body?.cancel().catch(() => undefined)
+    throw new ProviderError(
+      `ADSB.lol response exceeded the ${maximumBytes}-byte limit`,
+    )
+  }
+
+  if (!response.body) return ''
+
+  const reader = response.body.getReader()
+  const chunks: Uint8Array[] = []
+  let totalBytes = 0
+
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    if (!value) continue
+
+    totalBytes += value.byteLength
+    if (totalBytes > maximumBytes) {
+      void reader.cancel().catch(() => undefined)
+      throw new ProviderError(
+        `ADSB.lol response exceeded the ${maximumBytes}-byte limit`,
+      )
+    }
+    chunks.push(value)
+  }
+
+  const bytes = new Uint8Array(totalBytes)
+  let offset = 0
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset)
+    offset += chunk.byteLength
+  }
+  return new TextDecoder().decode(bytes)
+}
+
+const responseError = (
+  response: Response,
+  body: string,
+) => {
+  const detail = body.trim().slice(0, 180)
+  return new ProviderError(
+    `ADSB.lol returned HTTP ${response.status}${detail ? `: ${detail}` : ''}`,
+    response.status,
+    parseRetryAfterMs(response.headers.get('retry-after')),
+  )
+}
 
 const aircraftCategory = (category: string | undefined) => {
   switch (category) {
@@ -146,9 +207,17 @@ export const normalizeAdsbLolResponse = (
 
 export class AdsbLolAircraftProvider implements AircraftDataProvider {
   private readonly endpointBaseUrl: string
+  private readonly maximumBytes: number
+  private readonly timeoutMs: number
 
-  constructor(endpointBaseUrl: string) {
+  constructor(
+    endpointBaseUrl: string,
+    options: AdsbLolAircraftProviderOptions = {},
+  ) {
     this.endpointBaseUrl = endpointBaseUrl
+    this.maximumBytes =
+      options.maximumBytes ?? MAX_ADSB_LOL_RESPONSE_BYTES
+    this.timeoutMs = options.timeoutMs ?? ADSB_LOL_REQUEST_TIMEOUT_MS
   }
 
   async fetchSnapshot(query: TrafficQuery, signal: AbortSignal) {
@@ -156,25 +225,51 @@ export class AdsbLolAircraftProvider implements AircraftDataProvider {
     const url =
       `${this.endpointBaseUrl}/v2/point/` +
       `${query.center.latitude}/${query.center.longitude}/${radiusNauticalMiles}`
-    const response = await fetch(url, {
-      signal,
-      headers: {
-        Accept: 'application/json',
-      },
-    })
+    const requestController = new AbortController()
+    let timedOut = false
+    const abortRequest = () => requestController.abort(signal.reason)
+    if (signal.aborted) abortRequest()
+    else signal.addEventListener('abort', abortRequest, { once: true })
+    const timeout = setTimeout(() => {
+      timedOut = true
+      requestController.abort()
+    }, this.timeoutMs)
 
-    if (!response.ok) {
-      throw await responseError('ADSB.lol', response)
-    }
-
-    let payload: unknown
     try {
-      payload = await response.json()
-    } catch {
-      throw new ProviderError('ADSB.lol returned invalid JSON')
-    }
+      const response = await fetch(url, {
+        method: 'GET',
+        signal: requestController.signal,
+        redirect: 'error',
+        cache: 'no-store',
+        credentials: 'omit',
+        headers: {
+          Accept: 'application/json',
+        },
+      })
+      const body = await readBoundedText(response, this.maximumBytes)
 
-    return normalizeAdsbLolResponse(payload, query, Date.now())
+      if (!response.ok) {
+        throw responseError(response, body)
+      }
+
+      let payload: unknown
+      try {
+        payload = JSON.parse(body)
+      } catch {
+        throw new ProviderError('ADSB.lol returned invalid JSON')
+      }
+
+      return normalizeAdsbLolResponse(payload, query, Date.now())
+    } catch (error) {
+      if (signal.aborted) throw error
+      if (timedOut) {
+        throw new ProviderError('ADSB.lol request timed out')
+      }
+      throw error
+    } finally {
+      clearTimeout(timeout)
+      signal.removeEventListener('abort', abortRequest)
+    }
   }
 }
 

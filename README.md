@@ -289,7 +289,7 @@ operational thresholds, and examples.
 | --- | --- | --- | --- |
 | Map | OpenFreeMap / OpenMapTiles / OpenStreetMap | Provider and OSM attribution applies | Direct browser access |
 | Place search | Photon / OpenStreetMap | OSM ODbL attribution applies | Direct browser access on explicit submit |
-| Aircraft | ADSB.lol | ODbL 1.0 | Same-origin Vite or Cloudflare Worker proxy |
+| Aircraft | ADSB.lol | ODbL 1.0 | Same-origin Vite/Cloudflare proxy by default; protected direct-browser build only after provider-approved CORS |
 | Aircraft metadata | Mictronics aircraft-database derivative | ODC-By 1.0 | Immutable same-origin static assets, loaded only after selection |
 | Selected-aircraft photos | Planespotters Photo API | API-specific and general terms apply | Explicit direct browser request and direct unchanged returned thumbnail; enabled in production |
 | Country allocations | michaeljfazio/MIDs, ibosoftnet ICAO24 transcription, Wikidata cross-check | Apache-2.0 and CC0 1.0 | Bundled deterministic local lookup |
@@ -325,6 +325,13 @@ SQLite-backed Durable Object enforces the route path's global rolling
 browser caching; live aircraft and route responses use no shared cache and
 successful METAR responses receive only the source-aligned 60-second cache
 guidance.
+
+The protected workflow records one fixed `aircraft_delivery` choice. Current
+production uses `worker-proxy`. Source also supports `adsb-lol-direct`, which
+builds the browser with `VITE_AIRCRAFT_ENDPOINT=https://api.adsb.lol`; that mode
+must not be deployed until ADSB.lol explicitly approves browser production use
+and the deployed API returns browser-readable CORS on both success and
+throttling responses. It is not an automatic fallback or a provider selector.
 
 The proxy accepts only
 `GET /api/aircraft/v2/point/{latitude}/{longitude}/{radiusNm}`, validates the
