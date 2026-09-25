@@ -559,14 +559,16 @@ one explicit known live callsign when route behavior itself changes. This
 avoids turning deployment smoke into recurring third-party route traffic.
 
 Static Asset checks and a locally rejected Worker request use a bounded
-15-second retry schedule because a newly published Cloudflare version can
+60-second retry schedule because a newly published Cloudflare version can
 report deployment success before every edge serves every immutable asset or
-the new Worker release. The local Worker probe cannot reach an upstream
-provider. After its release header matches, the smoke makes exactly one live
-aircraft-provider request through the selected delivery path. An ADSB.lol
-`429` is recorded as provider throttling rather than a release regression;
-direct mode additionally requires that throttling response to be
-browser-readable. Other non-`200` statuses still fail the deployment check.
+the new Worker release. This bound covers the more-than-15-second Static Asset
+switch observed during the V1.5.3 rollback proof without weakening exact-byte
+validation. The local Worker probe cannot reach an upstream provider. After
+its release header matches, the smoke makes exactly one live aircraft-provider
+request through the selected delivery path. An ADSB.lol `429` is recorded as
+provider throttling rather than a release regression; direct mode additionally
+requires that throttling response to be browser-readable. Other non-`200`
+statuses still fail the deployment check.
 
 The MQTT check has a 15-second outer deadline, disables reconnect, and force
 closes the client. The script never prints provider payloads, METAR reports,
