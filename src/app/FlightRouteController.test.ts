@@ -6,7 +6,7 @@ import type {
 import {
   FlightRouteProviderError,
   type FlightRouteProvider,
-} from '../providers/flightRoute/aviationstackFlightRouteProvider'
+} from '../providers/flightRoute/adsbLolFlightRouteProvider'
 import { FlightRouteController } from './FlightRouteController'
 
 const deferred = <T,>() => {
@@ -24,11 +24,15 @@ const identities: Record<string, FlightRouteIdentity> = {
     callsign: 'TST123',
     icao24: 'ABC123',
     registration: 'ES-ABC',
+    latitude: 59.437,
+    longitude: 24.7536,
   },
   second: {
     callsign: 'TST456',
     icao24: 'DEF456',
     registration: 'ES-DEF',
+    latitude: 59.437,
+    longitude: 24.7536,
   },
 }
 
@@ -38,12 +42,12 @@ const available = (
   kind: 'available',
   route: {
     flightIcao,
-    flightStatus: 'active',
+    confidence: 'plausible',
     departure: { name: 'Tallinn Airport', code: 'TLL' },
     arrival: { name: 'Helsinki Airport', code: 'HEL' },
     source: {
-      name: 'aviationstack',
-      websiteUrl: 'https://aviationstack.com/',
+      name: 'ADSB.lol',
+      websiteUrl: 'https://www.adsb.lol/',
     },
   },
 })
@@ -60,6 +64,29 @@ describe('FlightRouteController', () => {
     controller.select({ ...identities.first })
 
     expect(provider.lookup).not.toHaveBeenCalled()
+  })
+
+  it('uses the latest position for an unchanged selected identity', () => {
+    const provider: FlightRouteProvider = {
+      lookup: vi.fn(
+        () => new Promise<FlightRouteLookupResult>(() => undefined),
+      ),
+    }
+    const controller = new FlightRouteController(provider)
+    const movedIdentity = {
+      ...identities.first,
+      latitude: 60.1699,
+      longitude: 24.9384,
+    }
+    controller.subscribe(() => undefined)
+    controller.select(identities.first)
+
+    controller.request(movedIdentity)
+
+    expect(provider.lookup).toHaveBeenCalledWith(
+      movedIdentity,
+      expect.any(AbortSignal),
+    )
   })
 
   it('runs one request only after the explicit action', async () => {
@@ -257,6 +284,8 @@ describe('FlightRouteController', () => {
       (_, index): FlightRouteIdentity => ({
         callsign: `TST${String(index + 100).padStart(3, '0')}`,
         icao24: (0xabc000 + index).toString(16).toUpperCase(),
+        latitude: 59.437,
+        longitude: 24.7536,
       }),
     )
 

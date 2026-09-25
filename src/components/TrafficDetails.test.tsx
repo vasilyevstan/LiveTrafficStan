@@ -281,8 +281,7 @@ describe('TrafficDetails aircraft metadata', () => {
           identityKey: 'TST123|511123|ES-ABC',
           route: {
             flightIcao: 'TST123',
-            flightIata: 'TS123',
-            flightStatus: 'active',
+            confidence: 'plausible',
             departure: {
               name: 'Tallinn Airport',
               code: 'TLL',
@@ -293,8 +292,8 @@ describe('TrafficDetails aircraft metadata', () => {
             },
             providerUpdatedAt: 1_800_000_000_000,
             source: {
-              name: 'aviationstack',
-              websiteUrl: 'https://aviationstack.com/',
+              name: 'ADSB.lol',
+              websiteUrl: 'https://www.adsb.lol/',
             },
           },
         }}
@@ -305,17 +304,20 @@ describe('TrafficDetails aircraft metadata', () => {
       />,
     )
 
-    expect(disabledHtml).not.toContain('Flight route')
-    expect(enabledHtml).toContain('Flight route')
+    expect(disabledHtml).not.toContain('Plausible route')
+    expect(enabledHtml).toContain('Plausible route')
     expect(enabledHtml).toContain('Tallinn Airport (TLL)')
     expect(enabledHtml).toContain('Helsinki Airport (HEL)')
-    expect(enabledHtml).toContain('TS123 · TST123')
+    expect(enabledHtml).toContain('TST123')
+    expect(enabledHtml).toContain('Route status')
+    expect(enabledHtml).toContain('Plausible')
     expect(enabledHtml).toContain('Provider update')
     expect(enabledHtml).toContain(
-      'Reopening this exact flight reuses the route',
+      'not a filed flight plan',
     )
-    expect(enabledHtml).toContain('Refresh route')
-    expect(enabledHtml).toContain('aviationstack')
+    expect(enabledHtml).toContain('Refresh plausible route')
+    expect(enabledHtml).toContain('ADSB.lol')
+    expect(enabledHtml).toContain('VRS Standing Data')
   })
 
   it('keeps invalid identity and provider failures local to route lookup', () => {
@@ -372,8 +374,8 @@ describe('TrafficDetails aircraft metadata', () => {
       />,
     )
 
-    expect(html).not.toContain('Flight route')
-    expect(html).not.toContain('Find route')
+    expect(html).not.toContain('Plausible route')
+    expect(html).not.toContain('Find plausible route')
   })
 
   it('omits aircraft photos from history playback', () => {

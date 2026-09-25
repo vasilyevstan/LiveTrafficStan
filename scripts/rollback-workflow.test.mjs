@@ -51,9 +51,7 @@ describe('production rollback workflow', () => {
     expect(workflow).toContain(
       'VITE_FLIGHT_ROUTE_ENABLED: ${{ inputs.flight_route_enabled }}',
     )
-    expect(workflow).toContain(
-      '--var AVIATIONSTACK_ENABLED:${{ inputs.flight_route_enabled }}',
-    )
+    expect(workflow).not.toContain('AVIATIONSTACK')
     expect(workflow).toContain(
       'echo "- Aircraft delivery: \\`${{ inputs.aircraft_delivery }}\\`"',
     )

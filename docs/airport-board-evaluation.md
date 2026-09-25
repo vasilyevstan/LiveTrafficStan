@@ -21,9 +21,9 @@ The independent local/static part of Issue #5 is complete:
 - show static airport facts and provenance.
 
 Those capabilities do not create an operational board and do not associate a
-visible aircraft with an airport. Issue #44 separately governs selected-flight
-origin/destination identity. A board source and a selected-flight route source
-may be different providers.
+visible aircraft with an airport. The ADSB.lol plausible-route feature is a
+callsign-based selected-aircraft hint, not an airport/time-window enumeration
+source. A board source remains a separate provider decision.
 
 ## Required board contract
 

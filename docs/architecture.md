@@ -4,11 +4,11 @@
 
 LiveTrafficStan V1 is a browser application with no authentication, account
 database, or general backend. Production adds one fixed-route Cloudflare Worker
-for browser-incompatible aircraft and weather access plus a
-disabled-by-default aviationstack route. One SQLite-backed Durable Object stores
-only global route-attempt timestamps. React owns controls and selected-object
-UI state. Provider adapters own external protocols and normalization. MapLibre
-owns high-frequency geographic rendering.
+for browser-incompatible aircraft and weather access. Plausible route lookup,
+marine traffic, place search, map data, and aircraft photos use reviewed direct
+browser paths. React owns controls and selected-object UI state. Provider
+adapters own external protocols and normalization. MapLibre owns
+high-frequency geographic rendering.
 
 ```text
                        visibility lifecycle
@@ -22,9 +22,9 @@ Digitraffic REST + MQTT -> marine adapter -> normalized Vessel[]
                            React overlays <-> persistent MapLibre map
 
 selected Aircraft -> static metadata index + prefix shard -> details panel only
-selected live Aircraft + explicit Find route
-             -> same-origin Worker -> global attempt quota -> aviationstack
-             -> strictly matched origin/destination
+selected live Aircraft + explicit Find plausible route
+             -> direct ADSB.lol standing-route JSON
+             -> exact callsign + local route-position plausibility check
              -> bounded six-hour tab cache -> details panel only
 live Aircraft + explicit details action or 500 ms fine-pointer hover
              -> direct Planespotters hex API -> validated unchanged thumbnail
@@ -41,12 +41,10 @@ named text -> Photon adapter -> PlaceSearchResult[] ----+-> view navigation
 session Home / one-shot location -----------------------+
 ```
 
-Local development and preview use fixed Vite same-origin proxies. Production
-uses a strict Cloudflare Worker that accepts only the validated ADSB.lol point
-route, canonical AWC METAR route, and exact aviationstack route request. Vite
-does not proxy aviationstack; credentialed local testing uses `wrangler dev`.
-Only the aviationstack path holds a provider credential or creates server-side
-state, and both remain inert while its client and Worker flags are false.
+Local development and preview use fixed Vite same-origin proxies for aircraft
+and weather. Production uses a strict Cloudflare Worker that accepts only the
+validated ADSB.lol point route and canonical AWC METAR route. Plausible route
+lookup is a credential-free direct GET with no Worker state.
 
 ## Source responsibilities
 
@@ -57,7 +55,7 @@ state, and both remain inert while its client and Worker flags are false.
 | `src/providers/aircraft/` | ADSB.lol request, runtime payload checks, normalization, and unit conversion |
 | `src/providers/aircraftMetadata/` | Bounded same-origin static metadata loading, provenance/schema/hash validation, exact identity matching, and shard LRU |
 | `src/providers/aircraftPhoto/` | Disabled-by-default direct Planespotters hex lookup, bounded response validation, exact returned-origin enforcement, and typed local failures |
-| `src/providers/flightRoute/` | Explicit same-origin route requests, bounded response validation, typed unavailable/error results, and aviationstack attribution |
+| `src/providers/flightRoute/` | Explicit direct ADSB.lol standing-route requests, bounded response validation, geographic plausibility checks, typed unavailable/error results, and attribution |
 | `src/providers/marine/` | Digitraffic capabilities, REST/MQTT lifecycle, metadata merging, normalization, and opt-in development diagnostics |
 | `src/providers/ports/` | Bounded lazy same-origin port loading plus checksum, schema, and source-provenance validation |
 | `src/providers/airports/` | Bounded lazy same-origin airport loading plus checksum, schema, and source-provenance validation |
@@ -68,7 +66,7 @@ state, and both remain inert while its client and Worker flags are false.
 | `src/traffic/` | Filtering, freshness/expiry, interpolation, and selected-trail history |
 | `src/map/` | MapLibre lifecycle, external/local-fallback styles, GeoJSON sources/layers, feature selection, and marker images |
 | `src/components/` | Status, controls, and selected-object details |
-| `worker/` | Fixed upstream proxies, sanitized route matching, and the timestamp-only global route quota |
+| `worker/` | Fixed aircraft and weather upstream proxies with sanitized route matching |
 | `scripts/pwa-shell.mjs` | Deterministic shell allowlist/versioning, request classification, two-generation cleanup, and normal/retirement worker source |
 | `public/manifest.webmanifest` | Root-scoped standalone install metadata and versioned maskable icons |
 

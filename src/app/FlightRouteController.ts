@@ -7,7 +7,7 @@ import { flightRouteIdentityKey } from '../domain/flightRoute'
 import {
   FlightRouteProviderError,
   type FlightRouteProvider,
-} from '../providers/flightRoute/aviationstackFlightRouteProvider'
+} from '../providers/flightRoute/adsbLolFlightRouteProvider'
 
 type Listener = (state: FlightRouteViewState) => void
 
@@ -62,7 +62,10 @@ export class FlightRouteController {
     const identityKey = identity
       ? flightRouteIdentityKey(identity)
       : undefined
-    if (identityKey === this.selectedIdentityKey) return
+    if (identityKey === this.selectedIdentityKey) {
+      this.selectedIdentity = identity
+      return
+    }
 
     this.revision += 1
     this.requestController?.abort()

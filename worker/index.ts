@@ -1,20 +1,14 @@
 import { handleAircraftProxy } from './aircraftProxy.js'
 import {
-  FLIGHT_ROUTE_PATH,
-  handleFlightRoute,
-  type FlightRouteWorkerEnv,
-} from './flightRoute.js'
-import {
   handleMetarProxy,
   METAR_PROXY_PATH,
 } from './metarProxy.js'
-export { FlightRouteQuota } from './flightRouteQuota.js'
 
 interface AssetsBinding {
   fetch(request: Request): Promise<Response>
 }
 
-export interface WorkerEnv extends FlightRouteWorkerEnv {
+export interface WorkerEnv {
   ASSETS: AssetsBinding
   RELEASE_SHA?: string
 }
@@ -32,12 +26,6 @@ const withReleaseSha = (response: Response, releaseSha: string | undefined) => {
 const worker = {
   async fetch(request: Request, env: WorkerEnv) {
     const pathname = new URL(request.url).pathname
-    if (pathname === FLIGHT_ROUTE_PATH) {
-      return withReleaseSha(
-        await handleFlightRoute(request, env),
-        env.RELEASE_SHA,
-      )
-    }
     if (pathname === METAR_PROXY_PATH) {
       return withReleaseSha(
         await handleMetarProxy(request),
