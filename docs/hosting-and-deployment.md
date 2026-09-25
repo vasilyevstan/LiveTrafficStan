@@ -16,6 +16,12 @@ production platform:
 - no route secret, quota store, result database, queue, authentication
   service, or general backend is added.
 
+`wrangler.jsonc` temporarily retains a declarative deleted-state tombstone for
+the former `FlightRouteQuota` class so Cloudflare can retire the already
+provisioned namespace and its obsolete attempt-counter data. It is not a
+runtime export or binding and can be removed only after Cloudflare reports the
+tombstone as stale.
+
 Public production is live at
 <https://livetrafficstan.syntal.workers.dev> on Cloudflare Workers Free with
 Static Assets. The protected `production` environment contains the deployment
