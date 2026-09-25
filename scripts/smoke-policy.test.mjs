@@ -26,6 +26,12 @@ describe('production smoke policy', () => {
     expect(isRetryableStaticAssetStatus(404)).toBe(true)
     expect(isRetryableStaticAssetStatus(503)).toBe(true)
     expect(isRetryableStaticAssetStatus(403)).toBe(false)
+    expect(smokeScript).toContain(
+      "const remoteIndex = await remoteBytes('/', localIndex)",
+    )
+    expect(smokeScript).toContain(
+      'if (sha256(bytes) === expectedHash)',
+    )
   })
 
   it('waits on a local Worker response before the single provider request', () => {
