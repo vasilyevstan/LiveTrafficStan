@@ -40,6 +40,11 @@ on:
         options:
           - worker-proxy
           - adsb-lol-direct
+      aircraft_endpoint_explicit:
+        description: Whether the target build explicitly set VITE_AIRCRAFT_ENDPOINT
+        required: true
+        default: true
+        type: boolean
       flight_route_enabled:
         description: Flight-route build flag used by the target version
         required: true
@@ -70,6 +75,8 @@ jobs:
         env:
           CURRENT_MAIN_SHA: ${{ inputs.current_main_sha }}
           DEPLOYMENT_URL: ${{ inputs.deployment_url }}
+          AIRCRAFT_DELIVERY: ${{ inputs.aircraft_delivery }}
+          AIRCRAFT_ENDPOINT_EXPLICIT: ${{ inputs.aircraft_endpoint_explicit }}
           TARGET_SHA: ${{ inputs.target_sha }}
           TARGET_VERSION_ID: ${{ inputs.target_version_id }}
         run: |
@@ -91,6 +98,10 @@ jobs:
           fi
           if [[ ! "$DEPLOYMENT_URL" =~ ^https://[A-Za-z0-9.-]+/?$ ]]; then
             echo "The deployment URL must be an HTTPS origin without a path." >&2
+            exit 1
+          fi
+          if [[ "$AIRCRAFT_ENDPOINT_EXPLICIT" != "true" && "$AIRCRAFT_DELIVERY" != "worker-proxy" ]]; then
+            echo "An implicit aircraft endpoint is valid only for worker-proxy targets." >&2
             exit 1
           fi
 
@@ -140,18 +151,28 @@ jobs:
       - name: Build target application
         if: inputs.artifact == 'application'
         env:
-          VITE_AIRCRAFT_ENDPOINT: ${{ inputs.aircraft_delivery == 'adsb-lol-direct' && 'https://api.adsb.lol' || '/api/aircraft' }}
+          AIRCRAFT_ENDPOINT: ${{ inputs.aircraft_delivery == 'adsb-lol-direct' && 'https://api.adsb.lol' || '/api/aircraft' }}
+          AIRCRAFT_ENDPOINT_EXPLICIT: ${{ inputs.aircraft_endpoint_explicit }}
           VITE_AIRCRAFT_PHOTO_ENABLED: ${{ inputs.aircraft_photo_enabled }}
           VITE_FLIGHT_ROUTE_ENABLED: ${{ inputs.flight_route_enabled }}
-        run: npm run build
+        run: |
+          if [[ "$AIRCRAFT_ENDPOINT_EXPLICIT" == "true" ]]; then
+            export VITE_AIRCRAFT_ENDPOINT="$AIRCRAFT_ENDPOINT"
+          fi
+          npm run build
 
       - name: Build target PWA retirement artifact
         if: inputs.artifact == 'pwa-retirement'
         env:
-          VITE_AIRCRAFT_ENDPOINT: ${{ inputs.aircraft_delivery == 'adsb-lol-direct' && 'https://api.adsb.lol' || '/api/aircraft' }}
+          AIRCRAFT_ENDPOINT: ${{ inputs.aircraft_delivery == 'adsb-lol-direct' && 'https://api.adsb.lol' || '/api/aircraft' }}
+          AIRCRAFT_ENDPOINT_EXPLICIT: ${{ inputs.aircraft_endpoint_explicit }}
           VITE_AIRCRAFT_PHOTO_ENABLED: ${{ inputs.aircraft_photo_enabled }}
           VITE_FLIGHT_ROUTE_ENABLED: ${{ inputs.flight_route_enabled }}
-        run: npm run build:pwa-retire
+        run: |
+          if [[ "$AIRCRAFT_ENDPOINT_EXPLICIT" == "true" ]]; then
+            export VITE_AIRCRAFT_ENDPOINT="$AIRCRAFT_ENDPOINT"
+          fi
+          npm run build:pwa-retire
 
       - name: Check exact rollback bundle
         run: npm run check:deploy
@@ -193,6 +214,7 @@ jobs:
             echo "- Target Cloudflare version: \`$TARGET_VERSION_ID\`"
             echo "- Artifact: \`${{ inputs.artifact }}\`"
             echo "- Aircraft delivery: \`${{ inputs.aircraft_delivery }}\`"
+            echo "- Aircraft endpoint explicitly set: \`${{ inputs.aircraft_endpoint_explicit }}\`"
             echo "- Aircraft photos enabled: \`${{ inputs.aircraft_photo_enabled }}\`"
             echo "- Flight route lookup enabled: \`${{ inputs.flight_route_enabled }}\`"
             echo "- URL: $DEPLOYMENT_URL"
