@@ -652,9 +652,11 @@ subscription. The MQTT client disables reconnect and is force-closed.
 
 This automated check does not replace a real browser acceptance pass for vector
 tile rendering, Web Worker execution, browser WSS, themes, attribution,
-provider isolation, and mobile layout. V1.5.3 passed that acceptance at
-<https://livetrafficstan.syntal.workers.dev>; later behavior changes still
-require fresh browser evidence.
+provider isolation, and mobile layout. V1.5.3 passed that production
+acceptance at <https://livetrafficstan.syntal.workers.dev>. V1.6.0 additionally
+passed rendered acceptance for explicit plausible-route request, refresh,
+wording, and attribution behavior before its exact deployment, rollback, and
+restoration smoke. Later behavior changes still require fresh browser evidence.
 
 ## Failure and lifecycle checks
 

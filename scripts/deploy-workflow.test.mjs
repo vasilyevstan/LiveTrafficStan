@@ -8,6 +8,10 @@ const workflow = readFileSync(
   join(repositoryRoot, '.github/workflows/deploy-production.yml'),
   'utf8',
 )
+const wrangler = JSON.parse(
+  readFileSync(join(repositoryRoot, 'wrangler.jsonc'), 'utf8'),
+)
+
 describe('production deployment workflow', () => {
   it('uses a fixed aircraft delivery choice and records it in smoke', () => {
     expect(workflow).toContain('aircraft_delivery:')
@@ -33,5 +37,15 @@ describe('production deployment workflow', () => {
     )
     expect(workflow).not.toContain('AVIATIONSTACK')
     expect(workflow).not.toContain('FLIGHT_ROUTE_QUOTA')
+  })
+
+  it('retires the obsolete route quota namespace without a runtime binding', () => {
+    expect(wrangler.durable_objects).toBeUndefined()
+    expect(wrangler.exports).toEqual({
+      FlightRouteQuota: {
+        type: 'durable-object',
+        state: 'deleted',
+      },
+    })
   })
 })

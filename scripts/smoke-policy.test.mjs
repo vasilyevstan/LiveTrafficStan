@@ -22,10 +22,24 @@ describe('production smoke policy', () => {
       2_000,
       4_000,
       8_000,
+      15_000,
+      30_000,
     ])
+    expect(
+      DEPLOYMENT_PROPAGATION_RETRY_DELAYS_MS.reduce(
+        (total, delayMs) => total + delayMs,
+        0,
+      ),
+    ).toBe(60_000)
     expect(isRetryableStaticAssetStatus(404)).toBe(true)
     expect(isRetryableStaticAssetStatus(503)).toBe(true)
     expect(isRetryableStaticAssetStatus(403)).toBe(false)
+    expect(smokeScript).toContain(
+      "const remoteIndex = await remoteBytes('/', localIndex)",
+    )
+    expect(smokeScript).toContain(
+      'if (sha256(bytes) === expectedHash)',
+    )
   })
 
   it('waits on a local Worker response before the single provider request', () => {

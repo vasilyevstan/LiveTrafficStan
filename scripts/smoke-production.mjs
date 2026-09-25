@@ -65,32 +65,38 @@ const fetchWithTimeout = async (url, init = {}, timeoutMs = 15_000) => {
   }
 }
 
-const remoteBytes = async (pathname) => {
+const remoteBytes = async (pathname, expectedBytes) => {
+  const expectedHash = sha256(expectedBytes)
   let response
+  let result
   for (const delayMs of DEPLOYMENT_PROPAGATION_RETRY_DELAYS_MS) {
     if (delayMs > 0) {
       await new Promise((resolve) => setTimeout(resolve, delayMs))
     }
     response = await fetchWithTimeout(new URL(pathname, baseUrl))
-    if (
-      response.ok ||
-      !isRetryableStaticAssetStatus(response.status)
-    ) {
+
+    if (!response.ok) {
+      if (!isRetryableStaticAssetStatus(response.status)) {
+        break
+      }
+      void response.body?.cancel().catch(() => undefined)
+      continue
+    }
+
+    const bytes = new Uint8Array(await response.arrayBuffer())
+    result = { bytes, headers: response.headers }
+    if (sha256(bytes) === expectedHash) {
       break
     }
-    void response.body?.cancel().catch(() => undefined)
   }
 
   assert(response.ok, `${pathname} returned HTTP ${response.status}`)
-  return {
-    bytes: new Uint8Array(await response.arrayBuffer()),
-    headers: response.headers,
-  }
+  return result
 }
 
 const verifyStaticAssets = async () => {
   const localIndex = await readFile('dist/index.html')
-  const remoteIndex = await remoteBytes('/')
+  const remoteIndex = await remoteBytes('/', localIndex)
   assert(
     sha256(remoteIndex.bytes) === sha256(localIndex),
     'Deployed index.html does not match the validated build',
@@ -101,7 +107,7 @@ const verifyStaticAssets = async () => {
   )
 
   const localServiceWorker = await readFile('dist/sw.js')
-  const remoteServiceWorker = await remoteBytes('/sw.js')
+  const remoteServiceWorker = await remoteBytes('/sw.js', localServiceWorker)
   assert(
     sha256(remoteServiceWorker.bytes) === sha256(localServiceWorker),
     'Deployed service worker does not match the validated build',
@@ -124,7 +130,10 @@ const verifyStaticAssets = async () => {
   )
 
   const localManifest = await readFile('dist/manifest.webmanifest')
-  const remoteManifest = await remoteBytes('/manifest.webmanifest')
+  const remoteManifest = await remoteBytes(
+    '/manifest.webmanifest',
+    localManifest,
+  )
   assert(
     sha256(remoteManifest.bytes) === sha256(localManifest),
     'Deployed manifest does not match the validated build',
@@ -145,7 +154,7 @@ const verifyStaticAssets = async () => {
   for (const size of [192, 512]) {
     const iconPath = `/icons/livetrafficstan-${size}-v1.png`
     const localIcon = await readFile(`dist${iconPath}`)
-    const remoteIcon = await remoteBytes(iconPath)
+    const remoteIcon = await remoteBytes(iconPath, localIcon)
     assert(
       sha256(remoteIcon.bytes) === sha256(localIcon),
       `Deployed ${size}px icon does not match the validated build`,
@@ -167,7 +176,10 @@ const verifyStaticAssets = async () => {
 
   const workerName = workerFiles[0]
   const localWorker = await readFile(`dist/assets/${workerName}`)
-  const remoteWorker = await remoteBytes(`/assets/${workerName}`)
+  const remoteWorker = await remoteBytes(
+    `/assets/${workerName}`,
+    localWorker,
+  )
   assert(
     sha256(remoteWorker.bytes) === sha256(localWorker),
     'Deployed MapLibre worker does not match the validated build',
@@ -184,7 +196,7 @@ const verifyStaticAssets = async () => {
   const portPath =
     `/ports/${portsSource.projection.outputVersion}/ports.geojson`
   const localPorts = await readFile(`dist${portPath}`)
-  const remotePorts = await remoteBytes(portPath)
+  const remotePorts = await remoteBytes(portPath, localPorts)
   assert(
     sha256(remotePorts.bytes) === sha256(localPorts),
     'Deployed port projection does not match the validated build',

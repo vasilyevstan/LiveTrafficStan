@@ -145,6 +145,13 @@ flight association. The production environment may retain an unused legacy
 secret until it is removed administratively, but no checked code or workflow
 reads it.
 
+Cloudflare requires the previously provisioned Durable Object namespace to be
+retired explicitly. `wrangler.jsonc` therefore keeps a declarative
+`FlightRouteQuota` deletion tombstone until Cloudflare reports that it is
+stale and removable. The tombstone exports no runtime class, creates no
+binding, and permanently deletes only the obsolete route-attempt quota data;
+no route result was stored there.
+
 Issue
 [#44](https://github.com/vasilyevstan/LiveTrafficStan/issues/44)
 must be reconciled with this decision: its date-specific provider-authorization

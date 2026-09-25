@@ -239,7 +239,7 @@ VITE_AIRCRAFT_PHOTO_ENABLED=true
 ```
 
 This flag contains no credential and does not enable a Worker route. Source
-configuration remains fail-closed at `false`; the protected V1.5.3 production
+configuration remains fail-closed at `false`; the protected V1.6.0 production
 dispatch explicitly sets it to `true` after exact-origin acceptance from
 <https://livetrafficstan.syntal.workers.dev>. The published low-volume browser
 terms do not require an API key, email, membership account, or prior provider

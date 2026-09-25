@@ -16,21 +16,35 @@ production platform:
 - no route secret, quota store, result database, queue, authentication
   service, or general backend is added.
 
+`wrangler.jsonc` temporarily retains a declarative deleted-state tombstone for
+the former `FlightRouteQuota` class so Cloudflare can retire the already
+provisioned namespace and its obsolete attempt-counter data. It is not a
+runtime export or binding and can be removed only after Cloudflare reports the
+tombstone as stale.
+
 Public production is live at
 <https://livetrafficstan.syntal.workers.dev> on Cloudflare Workers Free with
 Static Assets. The protected `production` environment contains the deployment
 credentials, observability remains disabled, and no paid add-on, KV, or R2
 service is used.
 
-The accepted V1.5.3 application source is
-`6d132907525f4f1479ae2b4f94485d76c151b86a`. Deployment run
-`35922373328` published Cloudflare version
-`5b17eeb9-e6ad-4720-8a8e-c52725b18aba`. Rollback run `35922516989`
-temporarily restored prior version `479159aa-20a6-4cb7-adc6-26dd95a1f7f7`,
-and restoration run `35922782775` returned production to the current version
-with matching smoke. Repository documentation commits may advance after that
-application release; the public `X-LiveTrafficStan-Release` header identifies
-the running application source.
+The accepted V1.6.0 application source is
+`05bb39a0620f8ef2304c8bc96d1988ecded5325d`. Exact-main validation run
+`36188141347` passed, and deployment run `36188232329` published Cloudflare
+version `8fc9005c-b47a-4bcb-98bd-2c3b6e9cc9ad` with aircraft delivery through
+`worker-proxy`, aircraft photos enabled, and plausible routes enabled. The
+validated and deployed `index.html` SHA-256 is
+`e82b17dbd95a2b5c30cc705f8197c73307ba857a2af63c08eec5dde4514ebac9`.
+
+Protected rollback run `36188474191` restored accepted V1.5.3 source
+`6d132907525f4f1479ae2b4f94485d76c151b86a` and Cloudflare version
+`5b17eeb9-e6ad-4720-8a8e-c52725b18aba` with matching exact-byte smoke.
+Restoration run `36188545228` returned production to the V1.6.0 version and
+again passed smoke. Both operations preserved the expected explicit ADSB.lol
+`429` degradation from Cloudflare egress instead of treating unavailable
+aircraft data as release success. Repository documentation commits may advance
+after that application release; the public `X-LiveTrafficStan-Release` header
+identifies the running application source.
 
 This is an engineering record, not legal advice. Provider and platform terms,
 limits, and behavior can change and must be rechecked before a material
@@ -553,14 +567,16 @@ one explicit known live callsign when route behavior itself changes. This
 avoids turning deployment smoke into recurring third-party route traffic.
 
 Static Asset checks and a locally rejected Worker request use a bounded
-15-second retry schedule because a newly published Cloudflare version can
+60-second retry schedule because a newly published Cloudflare version can
 report deployment success before every edge serves every immutable asset or
-the new Worker release. The local Worker probe cannot reach an upstream
-provider. After its release header matches, the smoke makes exactly one live
-aircraft-provider request through the selected delivery path. An ADSB.lol
-`429` is recorded as provider throttling rather than a release regression;
-direct mode additionally requires that throttling response to be
-browser-readable. Other non-`200` statuses still fail the deployment check.
+the new Worker release. This bound covers the more-than-15-second Static Asset
+switch observed during the V1.5.3 rollback proof without weakening exact-byte
+validation. The local Worker probe cannot reach an upstream provider. After
+its release header matches, the smoke makes exactly one live aircraft-provider
+request through the selected delivery path. An ADSB.lol `429` is recorded as
+provider throttling rather than a release regression; direct mode additionally
+requires that throttling response to be browser-readable. Other non-`200`
+statuses still fail the deployment check.
 
 The MQTT check has a 15-second outer deadline, disables reconnect, and force
 closes the client. The script never prints provider payloads, METAR reports,
@@ -583,10 +599,17 @@ check of:
 - visible attribution;
 - desktop and narrow mobile layouts.
 
-That browser acceptance passed after restoration. Issue #11 remains open only
-for reliable ADSB.lol access from Cloudflare's shared outbound identity; a
-truthful `429`/partial state is accepted degradation, not proof of reliability.
-No browser-automation framework is added solely for this Issue.
+V1.6.0 additionally recorded a rendered browser check of the changed
+plausible-route behavior before release: selecting `FIN949` made no route
+request, **Find plausible route** made exactly one fixed-origin standing-data
+request, the UI rendered HEL to TRD as **Plausible** with the non-authoritative
+disclaimer and both attributions, and explicit refresh made one additional
+request. Final exact-byte deployment, rollback, and restoration smoke then
+proved the accepted production artifact and release identity. Issue #11
+remains open only for reliable ADSB.lol access from Cloudflare's shared
+outbound identity; a truthful `429`/partial state is accepted degradation, not
+proof of reliability. No browser-automation framework is added solely for
+this Issue.
 
 ## Monitoring
 
@@ -627,8 +650,9 @@ After a subsequent version exists:
 1. record the prior known-good version before promotion;
 2. dispatch `.github/workflows/rollback-production.yml` from `main` with the
    exact current `main` SHA, target source SHA, recorded Cloudflare version ID,
-   public origin, artifact kind, aircraft-delivery mode, and the target
-   version's two feature flags;
+   public origin, artifact kind, aircraft-delivery mode, whether that target
+   build explicitly set `VITE_AIRCRAFT_ENDPOINT`, and the target version's two
+   feature flags;
 3. rerun the same automated smoke and browser checks;
 4. keep production operations serialized;
 5. record the restored version and evidence.
@@ -644,6 +668,14 @@ production smoke to pass with the target release SHA. Restoring the latest
 known-good version uses the same workflow as a second serialized operation;
 production must never be left on the older version merely to preserve rollback
 evidence.
+
+Build-time environment presence is part of the recorded artifact identity.
+Versions deployed before the selectable aircraft-delivery mode did not set
+`VITE_AIRCRAFT_ENDPOINT`; their rollback input must therefore set
+`aircraft_endpoint_explicit=false` while retaining
+`aircraft_delivery=worker-proxy` for live smoke. Later versions set the
+endpoint explicitly and use `aircraft_endpoint_explicit=true`. The workflow
+rejects an implicit direct-provider target.
 
 Cloudflare supports rollback among the 100 most recent versions. Older recovery
 uses the exact repository SHA and locked dependency/build inputs. The target
