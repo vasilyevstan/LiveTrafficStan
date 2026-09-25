@@ -46,6 +46,11 @@ and weather. Production uses a strict Cloudflare Worker that accepts only the
 validated ADSB.lol point route and canonical AWC METAR route. Plausible route
 lookup is a credential-free direct GET with no Worker state.
 
+The deployment configuration retains a deleted-state `FlightRouteQuota`
+tombstone solely to retire the namespace provisioned by the removed
+aviationstack design. No route class or binding exists at runtime, and the
+tombstone can be removed after Cloudflare confirms that deletion has applied.
+
 ## Source responsibilities
 
 | Area | Responsibility |
