@@ -635,8 +635,9 @@ After a subsequent version exists:
 1. record the prior known-good version before promotion;
 2. dispatch `.github/workflows/rollback-production.yml` from `main` with the
    exact current `main` SHA, target source SHA, recorded Cloudflare version ID,
-   public origin, artifact kind, aircraft-delivery mode, and the target
-   version's two feature flags;
+   public origin, artifact kind, aircraft-delivery mode, whether that target
+   build explicitly set `VITE_AIRCRAFT_ENDPOINT`, and the target version's two
+   feature flags;
 3. rerun the same automated smoke and browser checks;
 4. keep production operations serialized;
 5. record the restored version and evidence.
@@ -652,6 +653,14 @@ production smoke to pass with the target release SHA. Restoring the latest
 known-good version uses the same workflow as a second serialized operation;
 production must never be left on the older version merely to preserve rollback
 evidence.
+
+Build-time environment presence is part of the recorded artifact identity.
+Versions deployed before the selectable aircraft-delivery mode did not set
+`VITE_AIRCRAFT_ENDPOINT`; their rollback input must therefore set
+`aircraft_endpoint_explicit=false` while retaining
+`aircraft_delivery=worker-proxy` for live smoke. Later versions set the
+endpoint explicitly and use `aircraft_endpoint_explicit=true`. The workflow
+rejects an implicit direct-provider target.
 
 Cloudflare supports rollback among the 100 most recent versions. Older recovery
 uses the exact repository SHA and locked dependency/build inputs. The target
