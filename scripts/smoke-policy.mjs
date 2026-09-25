@@ -4,6 +4,8 @@ export const DEPLOYMENT_PROPAGATION_RETRY_DELAYS_MS = [
   2_000,
   4_000,
   8_000,
+  15_000,
+  30_000,
 ]
 
 export const isRetryableStaticAssetStatus = (status) =>
