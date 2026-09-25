@@ -3,7 +3,7 @@
 ## Status
 
 LiveTrafficStan contains a fail-closed Planespotters aircraft-photo path that is
-explicitly enabled in the protected V1.5.3 production build. The public feature
+explicitly enabled in the protected V1.6.0 production build. The public feature
 uses direct browser JSON and unchanged provider image URLs; the Worker never
 proxies or stores photo data.
 

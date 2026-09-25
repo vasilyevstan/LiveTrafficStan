@@ -28,15 +28,23 @@ Static Assets. The protected `production` environment contains the deployment
 credentials, observability remains disabled, and no paid add-on, KV, or R2
 service is used.
 
-The accepted V1.5.3 application source is
-`6d132907525f4f1479ae2b4f94485d76c151b86a`. Deployment run
-`35922373328` published Cloudflare version
-`5b17eeb9-e6ad-4720-8a8e-c52725b18aba`. Rollback run `35922516989`
-temporarily restored prior version `479159aa-20a6-4cb7-adc6-26dd95a1f7f7`,
-and restoration run `35922782775` returned production to the current version
-with matching smoke. Repository documentation commits may advance after that
-application release; the public `X-LiveTrafficStan-Release` header identifies
-the running application source.
+The accepted V1.6.0 application source is
+`05bb39a0620f8ef2304c8bc96d1988ecded5325d`. Exact-main validation run
+`36188141347` passed, and deployment run `36188232329` published Cloudflare
+version `8fc9005c-b47a-4bcb-98bd-2c3b6e9cc9ad` with aircraft delivery through
+`worker-proxy`, aircraft photos enabled, and plausible routes enabled. The
+validated and deployed `index.html` SHA-256 is
+`e82b17dbd95a2b5c30cc705f8197c73307ba857a2af63c08eec5dde4514ebac9`.
+
+Protected rollback run `36188474191` restored accepted V1.5.3 source
+`6d132907525f4f1479ae2b4f94485d76c151b86a` and Cloudflare version
+`5b17eeb9-e6ad-4720-8a8e-c52725b18aba` with matching exact-byte smoke.
+Restoration run `36188545228` returned production to the V1.6.0 version and
+again passed smoke. Both operations preserved the expected explicit ADSB.lol
+`429` degradation from Cloudflare egress instead of treating unavailable
+aircraft data as release success. Repository documentation commits may advance
+after that application release; the public `X-LiveTrafficStan-Release` header
+identifies the running application source.
 
 This is an engineering record, not legal advice. Provider and platform terms,
 limits, and behavior can change and must be rechecked before a material
@@ -591,10 +599,17 @@ check of:
 - visible attribution;
 - desktop and narrow mobile layouts.
 
-That browser acceptance passed after restoration. Issue #11 remains open only
-for reliable ADSB.lol access from Cloudflare's shared outbound identity; a
-truthful `429`/partial state is accepted degradation, not proof of reliability.
-No browser-automation framework is added solely for this Issue.
+V1.6.0 additionally recorded a rendered browser check of the changed
+plausible-route behavior before release: selecting `FIN949` made no route
+request, **Find plausible route** made exactly one fixed-origin standing-data
+request, the UI rendered HEL to TRD as **Plausible** with the non-authoritative
+disclaimer and both attributions, and explicit refresh made one additional
+request. Final exact-byte deployment, rollback, and restoration smoke then
+proved the accepted production artifact and release identity. Issue #11
+remains open only for reliable ADSB.lol access from Cloudflare's shared
+outbound identity; a truthful `429`/partial state is accepted degradation, not
+proof of reliability. No browser-automation framework is added solely for
+this Issue.
 
 ## Monitoring
 
