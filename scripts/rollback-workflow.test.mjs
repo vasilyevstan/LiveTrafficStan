@@ -31,7 +31,7 @@ describe('production rollback workflow', () => {
       'cp "$RUNNER_TEMP/smoke-production.mjs" scripts/smoke-production.mjs',
     )
     expect(workflow).toContain(
-      '"${{ inputs.deployment_url }}"\n          "${{ inputs.target_sha }}"',
+      '"${{ inputs.deployment_url }}"\n          "${{ inputs.target_sha }}"\n          "${{ inputs.aircraft_delivery }}"',
     )
   })
 
@@ -42,11 +42,18 @@ describe('production rollback workflow', () => {
     expect(workflow).toContain(
       'VITE_AIRCRAFT_PHOTO_ENABLED: ${{ inputs.aircraft_photo_enabled }}',
     )
+    expect(workflow).toContain('aircraft_delivery:')
+    expect(workflow).toContain('          - worker-proxy')
+    expect(workflow).toContain('          - adsb-lol-direct')
+    expect(workflow).toContain(
+      "VITE_AIRCRAFT_ENDPOINT: ${{ inputs.aircraft_delivery == 'adsb-lol-direct' && 'https://api.adsb.lol' || '/api/aircraft' }}",
+    )
     expect(workflow).toContain(
       'VITE_FLIGHT_ROUTE_ENABLED: ${{ inputs.flight_route_enabled }}',
     )
+    expect(workflow).not.toContain('AVIATIONSTACK')
     expect(workflow).toContain(
-      '--var AVIATIONSTACK_ENABLED:${{ inputs.flight_route_enabled }}',
+      'echo "- Aircraft delivery: \\`${{ inputs.aircraft_delivery }}\\`"',
     )
   })
 })

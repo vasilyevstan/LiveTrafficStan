@@ -10,16 +10,31 @@ import {
   isRetryableStaticAssetStatus,
 } from './smoke-policy.mjs'
 
-const [deploymentUrl, expectedReleaseSha] = process.argv.slice(2)
+const MAX_AIRCRAFT_RESPONSE_BYTES = 4 * 1_024 * 1_024
+
+const [
+  deploymentUrl,
+  expectedReleaseSha,
+  aircraftDelivery = 'worker-proxy',
+] = process.argv.slice(2)
 
 if (!deploymentUrl || !expectedReleaseSha) {
   throw new Error(
-    'Usage: node scripts/smoke-production.mjs <deployment-url> <release-sha>',
+    'Usage: node scripts/smoke-production.mjs <deployment-url> <release-sha> [aircraft-delivery]',
   )
 }
 
 if (!/^[0-9a-f]{40}$/.test(expectedReleaseSha)) {
   throw new Error('The expected release SHA must be 40 lowercase hex characters')
+}
+
+if (
+  aircraftDelivery !== 'worker-proxy' &&
+  aircraftDelivery !== 'adsb-lol-direct'
+) {
+  throw new Error(
+    'The aircraft delivery must be "worker-proxy" or "adsb-lol-direct"',
+  )
 }
 
 const baseUrl = new URL(deploymentUrl)
@@ -216,6 +231,73 @@ const waitForWorkerRelease = async () => {
 
 const verifyAircraftProxy = async () => {
   await waitForWorkerRelease()
+
+  if (aircraftDelivery === 'adsb-lol-direct') {
+    const endpoint = new URL(
+      '/v2/point/59.437/24.754/11',
+      'https://api.adsb.lol',
+    )
+    const response = await fetchWithTimeout(endpoint, {
+      method: 'GET',
+      redirect: 'error',
+      cache: 'no-store',
+      credentials: 'omit',
+      headers: {
+        Accept: 'application/json',
+        Origin: baseUrl.origin,
+        'User-Agent':
+          'Mozilla/5.0 AppleWebKit/537.36 Chrome/140.0.0.0 Safari/537.36',
+      },
+    })
+    const status = classifyAircraftProxyStatus(response.status)
+    assert(
+      status !== 'failure',
+      `Direct aircraft provider returned ${response.status}`,
+    )
+    const allowedOrigin = response.headers.get(
+      'access-control-allow-origin',
+    )
+    assert(
+      allowedOrigin === '*' || allowedOrigin === baseUrl.origin,
+      'Direct aircraft provider did not allow the deployed origin',
+    )
+
+    if (status === 'available') {
+      assert(
+        response.headers.get('content-type')?.includes('application/json'),
+        'Direct aircraft provider did not return JSON',
+      )
+      const declaredBytes = Number(
+        response.headers.get('content-length'),
+      )
+      assert(
+        !Number.isFinite(declaredBytes) ||
+          declaredBytes <= MAX_AIRCRAFT_RESPONSE_BYTES,
+        'Direct aircraft provider declared an oversized response',
+      )
+      const body = new Uint8Array(await response.arrayBuffer())
+      assert(
+        body.byteLength <= MAX_AIRCRAFT_RESPONSE_BYTES,
+        'Direct aircraft provider returned an oversized response',
+      )
+      let payload
+      try {
+        payload = JSON.parse(new TextDecoder().decode(body))
+      } catch {
+        throw new Error('Direct aircraft provider returned invalid JSON')
+      }
+      assert(
+        payload && typeof payload === 'object' && Array.isArray(payload.ac),
+        'Direct aircraft provider returned an unexpected payload',
+      )
+    } else {
+      void response.body?.cancel().catch(() => undefined)
+      console.warn(
+        'Direct aircraft provider throttled the verified browser-origin request with HTTP 429',
+      )
+    }
+    return
+  }
 
   const validPath = '/api/aircraft/v2/point/59.437/24.754/11'
   const response = await fetchWithTimeout(new URL(validPath, baseUrl))

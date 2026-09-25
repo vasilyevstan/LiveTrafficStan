@@ -46,7 +46,7 @@ describe('PWA manifest and deployment headers', () => {
   it('revalidates mutable shell entry points and isolates immutable icons', async () => {
     const headers = await readFile(headersPath, 'utf8')
     expect(headers).toContain(
-      "connect-src 'self' https://tiles.openfreemap.org https://photon.komoot.io https://meri.digitraffic.fi wss://meri.digitraffic.fi https://api.planespotters.net",
+      "connect-src 'self' https://tiles.openfreemap.org https://photon.komoot.io https://meri.digitraffic.fi wss://meri.digitraffic.fi https://api.adsb.lol https://vrs-standing-data.adsb.lol https://api.planespotters.net",
     )
     expect(headers).toContain(
       "img-src 'self' data: blob: https://cdn.planespotters.net https://t.plnspttrs.net",

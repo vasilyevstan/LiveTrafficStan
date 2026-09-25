@@ -1,6 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
+  AIRCRAFT_PROXY_TIMEOUT_MS,
+  MAX_AIRCRAFT_RESPONSE_BYTES,
+} from '../../../worker/aircraftProxy'
+import {
+  ADSB_LOL_REQUEST_TIMEOUT_MS,
   AdsbLolAircraftProvider,
+  MAX_ADSB_LOL_RESPONSE_BYTES,
   aircraftQueryRadiusNauticalMiles,
   normalizeAdsbLolResponse,
 } from './adsbLolProvider'
@@ -198,10 +204,18 @@ describe('aircraftQueryRadiusNauticalMiles', () => {
 
 describe('AdsbLolAircraftProvider', () => {
   afterEach(() => {
+    vi.useRealTimers()
     vi.unstubAllGlobals()
   })
 
-  it('requests the exact bounded point endpoint and forwards cancellation', async () => {
+  it('retains the Worker response limit and allows its timeout to complete', () => {
+    expect(MAX_ADSB_LOL_RESPONSE_BYTES).toBe(MAX_AIRCRAFT_RESPONSE_BYTES)
+    expect(ADSB_LOL_REQUEST_TIMEOUT_MS).toBeGreaterThan(
+      AIRCRAFT_PROXY_TIMEOUT_MS,
+    )
+  })
+
+  it('requests the exact bounded point endpoint without cache or credentials', async () => {
     const fetchMock = vi.fn(async () =>
       new Response(
         JSON.stringify({
@@ -221,12 +235,78 @@ describe('AdsbLolAircraftProvider', () => {
     expect(fetchMock).toHaveBeenCalledWith(
       'https://aircraft.example.test/v2/point/59.437/24.7536/11',
       {
-        signal,
+        signal: expect.any(AbortSignal),
+        method: 'GET',
+        redirect: 'error',
+        cache: 'no-store',
+        credentials: 'omit',
         headers: {
           Accept: 'application/json',
         },
       },
     )
+  })
+
+  it('forwards caller cancellation to the provider request', async () => {
+    const fetchMock = vi.fn(
+      (_url: string | URL | Request, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener(
+            'abort',
+            () => reject(init.signal?.reason),
+            { once: true },
+          )
+        }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    const controller = new AbortController()
+    const provider = new AdsbLolAircraftProvider('/api/aircraft')
+    const request = provider.fetchSnapshot(query, controller.signal)
+
+    controller.abort()
+
+    await expect(request).rejects.toMatchObject({ name: 'AbortError' })
+    expect(fetchMock.mock.calls[0]?.[1]?.signal?.aborted).toBe(true)
+  })
+
+  it('rejects oversized provider responses before parsing them', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('123456789', { status: 200 })),
+    )
+    const provider = new AdsbLolAircraftProvider('/api/aircraft', {
+      maximumBytes: 8,
+    })
+
+    await expect(
+      provider.fetchSnapshot(query, new AbortController().signal),
+    ).rejects.toThrow('ADSB.lol response exceeded the 8-byte limit')
+  })
+
+  it('times out a provider request that does not complete', async () => {
+    vi.useFakeTimers()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        (_url: string | URL | Request, init?: RequestInit) =>
+          new Promise<Response>((_resolve, reject) => {
+            init?.signal?.addEventListener(
+              'abort',
+              () => reject(init.signal?.reason),
+              { once: true },
+            )
+          }),
+      ),
+    )
+    const provider = new AdsbLolAircraftProvider('/api/aircraft', {
+      timeoutMs: 100,
+    })
+    const request = expect(
+      provider.fetchSnapshot(query, new AbortController().signal),
+    ).rejects.toThrow('ADSB.lol request timed out')
+
+    await vi.advanceTimersByTimeAsync(100)
+    await request
   })
 
   it('reports invalid JSON without publishing an empty success', async () => {

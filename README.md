@@ -53,7 +53,8 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   callsign, MMSI, or IMO; typed category, navigation, reported-speed, and
   inclusive length filters; explicit unknown-value handling; and a reset to
   the released 50 metre minimum. Selected ship speed is shown in both km/h and
-  knots.
+  knots. Fresh sailing vessels and pleasure craft at least 8 metres long and
+  moving at least 1 knot receive dedicated yacht icons.
 - An optional, lazily loaded, zoom-aware Natural Earth port context layer with
   separate selection, failure, and attribution. Port points are generalized
   and incomplete and are never treated as operational harbour or vessel-call
@@ -69,11 +70,12 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   Center. It uses explicit ICAO codes from the pinned airport projection,
   shows observation and retrieval age, expires old reports, and remains
   independent of traffic providers and static airport context.
-- A disabled-by-default aviationstack route-evaluation path for a selected live
-  aircraft. It runs only after **Find route**, requires an exact active
-  callsign/ICAO24 match, and fails closed on ambiguity, pagination, quota, or
-  provider errors without changing ADS-B positions or polling. Successful
-  exact-identity routes are reused from a bounded six-hour in-memory tab cache.
+- A default-enabled ADSB.lol plausible-route lookup for a selected live
+  aircraft. It runs only after **Find plausible route**, validates one exact
+  normalized callsign plus current position against standing-data route
+  segments, and never claims a filed plan, schedule, or operational status.
+  Successful exact-identity results are reused from a bounded six-hour
+  in-memory tab cache.
 - A production-enabled Planespotters aircraft-photo path. It accepts only an
   exact ICAO24 hex lookup after **Load aircraft photo** or one stable 500 ms
   fine-pointer hover, preserves the returned thumbnail and photo-page URLs,
@@ -273,8 +275,7 @@ available for:
 | `VITE_GEOCODER_ENDPOINT` | `https://photon.komoot.io/api` |
 | `VITE_AIRCRAFT_ENDPOINT` | `/api/aircraft` |
 | `VITE_AIRCRAFT_PHOTO_ENABLED` | `false` |
-| `VITE_FLIGHT_ROUTE_ENABLED` | `false` |
-| `VITE_FLIGHT_ROUTE_ENDPOINT` | `/api/flight-route` |
+| `VITE_FLIGHT_ROUTE_ENABLED` | `true` |
 | `VITE_WEATHER_ENDPOINT` | `/api/weather/metar` |
 | `VITE_MARINE_REST_ENDPOINT` | `https://meri.digitraffic.fi` |
 | `VITE_MARINE_MQTT_ENDPOINT` | `wss://meri.digitraffic.fi:443/mqtt` |
@@ -289,7 +290,7 @@ operational thresholds, and examples.
 | --- | --- | --- | --- |
 | Map | OpenFreeMap / OpenMapTiles / OpenStreetMap | Provider and OSM attribution applies | Direct browser access |
 | Place search | Photon / OpenStreetMap | OSM ODbL attribution applies | Direct browser access on explicit submit |
-| Aircraft | ADSB.lol | ODbL 1.0 | Same-origin Vite or Cloudflare Worker proxy |
+| Aircraft | ADSB.lol | ODbL 1.0 | Same-origin Vite/Cloudflare proxy by default; protected direct-browser build only after provider-approved CORS |
 | Aircraft metadata | Mictronics aircraft-database derivative | ODC-By 1.0 | Immutable same-origin static assets, loaded only after selection |
 | Selected-aircraft photos | Planespotters Photo API | API-specific and general terms apply | Explicit direct browser request and direct unchanged returned thumbnail; enabled in production |
 | Country allocations | michaeljfazio/MIDs, ibosoftnet ICAO24 transcription, Wikidata cross-check | Apache-2.0 and CC0 1.0 | Bundled deterministic local lookup |
@@ -297,7 +298,7 @@ operational thresholds, and examples.
 | Port context | Natural Earth Ports | Public domain | Immutable same-origin static asset, loaded only when enabled |
 | Airport context | OurAirports | Public domain | Immutable same-origin static asset, loaded only when enabled |
 | Weather observations | NOAA/NWS Aviation Weather Center | U.S. public domain unless marked otherwise | Strict same-origin Worker/Vite route, loaded only when METAR is enabled |
-| Selected-flight route evaluation | aviationstack | Account terms and plan apply; not yet approved for public enablement | Explicit same-origin Worker request; disabled by default |
+| Selected-aircraft plausible route | ADSB.lol / VRS Standing Data | ADSB.lol ODbL 1.0; underlying standing data CC0 1.0 | Explicit direct browser request; enabled by default |
 
 The repository's Apache License 2.0 applies to source code only. The bundled
 aircraft metadata is a derivative database conveyed under ODC-By 1.0 with its
@@ -318,13 +319,20 @@ authorization gates.
 ## Deployment
 
 Cloudflare Workers with Static Assets is the selected production boundary. It
-deploys the Vite client with strict same-origin ADSB.lol point, AWC METAR, and
-disabled-by-default aviationstack route paths as one atomic unit. A
-SQLite-backed Durable Object enforces the route path's global rolling
-90-attempt ceiling. Hashed assets, including the MapLibre worker, use immutable
-browser caching; live aircraft and route responses use no shared cache and
+deploys the Vite client with strict same-origin ADSB.lol point and AWC METAR
+paths as one atomic unit. Plausible route lookup is a credential-free direct
+browser request to ADSB.lol standing data, so it needs no Worker route, secret,
+quota service, or Durable Object. Hashed assets, including the MapLibre worker,
+use immutable browser caching; live aircraft responses use no shared cache and
 successful METAR responses receive only the source-aligned 60-second cache
 guidance.
+
+The protected workflow records one fixed `aircraft_delivery` choice. Current
+production uses `worker-proxy`. Source also supports `adsb-lol-direct`, which
+builds the browser with `VITE_AIRCRAFT_ENDPOINT=https://api.adsb.lol`; that mode
+must not be deployed until ADSB.lol explicitly approves browser production use
+and the deployed API returns browser-readable CORS on both success and
+throttling responses. It is not an automatic fallback or a provider selector.
 
 The proxy accepts only
 `GET /api/aircraft/v2/point/{latitude}/{longitude}/{radiusNm}`, validates the
@@ -339,16 +347,13 @@ four-letter IDs and no other parameters. It constructs one fixed AWC JSON
 request, follows no redirects, forwards no browser credentials, uses an
 eight-second deadline and 256 KiB response cap, and preserves `Retry-After`.
 
-The optional route path accepts only `POST /api/flight-route` with one bounded
-JSON aircraft identity. It is hidden unless both client and Worker flags are
-enabled, keeps the aviationstack key server-side, reserves quota before one
-fixed upstream call, never retries or follows redirects, and returns only a
-small validated route or truthful unavailable/error state. The implementation
-does not authorize public use: Issue #44 still owns exact account terms,
-retention/display rights, and the remaining bounded real evaluation evidence
-before enablement. Successful validated routes are eligible for reuse from the
-current tab's 32-entry cache for up to six hours; Worker responses remain
-`no-store` and there is no shared or persistent route cache.
+The plausible-route path starts only after an explicit selected-aircraft
+action. It constructs one validated ADSB.lol standing-data URL from the
+normalized callsign, omits credentials, rejects redirects, enforces a
+ten-second deadline and 32 KiB response cap, and accepts only a route whose
+airport segments fit the aircraft's current position. Successful routes may be
+reused from the current tab's 32-entry cache for up to six hours; there is no
+shared or persistent route cache.
 
 Public production is live at
 <https://livetrafficstan.syntal.workers.dev> on Cloudflare Workers Free with
@@ -373,7 +378,9 @@ monitoring, privacy, and rollback procedure.
   [Issue #11](https://github.com/vasilyevstan/LiveTrafficStan/issues/11).
 - Digitraffic is a regional source with an unknown exact coverage boundary.
   Its all-published-vessels MQTT stream is filtered in the browser; this local
-  filtering does not reduce incoming MQTT bandwidth.
+  filtering does not reduce incoming MQTT bandwidth. Digitraffic exposes
+  Class A AIS only, so Class B yachts are unavailable and the eligible yacht
+  population can be small or empty.
 - Views whose conservative enclosing radius exceeds 100 km pause live traffic
   until the user zooms in or reduces tilt. Partial coverage is never presented
   as complete.
@@ -409,11 +416,10 @@ monitoring, privacy, and rollback procedure.
   airport board, operational status, or global coverage guarantee. Enabling it
   sends visible qualifying ICAO station IDs through the application host to
   AWC.
-- Flight-route lookup remains disabled until the aviationstack account terms,
-  retention/display rights, and bounded real-sample evidence in Issue #44 are
-  approved.
-  Even when enabled, it reports only an exact, unique active match and is not a
-  general schedule, airport-board, or route-history service.
+- Plausible route lookup is callsign-based standing data checked against the
+  current aircraft position. It can be stale, absent, or wrong and is not a
+  date-specific schedule, filed flight plan, airport board, diversion signal,
+  or route-history service.
 - Aircraft photos are enabled through direct browser JSON and unchanged image
   URLs. The published low-volume browser path requires no API key, email,
   membership account, or prior provider contact, but the photo surface must

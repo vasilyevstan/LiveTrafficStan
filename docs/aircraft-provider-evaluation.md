@@ -4,6 +4,8 @@
 
 Evaluation date: **2026-09-19**
 
+Cloud-delivery re-evaluation: **2026-09-24**
+
 LiveTrafficStan will retain **ADSB.lol as its only active aircraft provider**.
 It remains the smallest compatible option for the current no-credential,
 bounded point-query architecture:
@@ -13,6 +15,12 @@ bounded point-query architecture:
 - public ADSB.lol data is offered under ODbL 1.0;
 - no current API credential is required;
 - the existing same-origin proxy isolates the lack of browser CORS.
+
+Current production remains on that checked Worker proxy. Source also contains
+a protected `adsb-lol-direct` build mode so the browser can use the same
+provider and adapter after ADSB.lol explicitly approves and deploys CORS.
+Source readiness is not provider authorization, and there is no runtime
+fallback between the two delivery paths.
 
 Airplanes.live documents a closely compatible point/radius response, but a
 single current Tallinn request returned `403` with instructions to contact the
@@ -26,9 +34,9 @@ entity. It also uses a different bounding-box/state-vector contract, requires
 server-side OAuth credentials for authenticated access, and its standard daily
 credit budget cannot sustain one uninterrupted 20-second session.
 
-No provider selector, automatic failover, aggregation, cross-provider
-deduplication, alternative adapter, credential flow, or backend is justified
-by this evaluation.
+No automatic failover, aggregation, cross-provider deduplication, alternative
+adapter, credential flow, or additional backend is justified by this
+evaluation.
 
 This is an engineering record, not legal advice. Provider terms and behavior
 can change and must be rechecked before a deployment or provider change.
@@ -256,8 +264,12 @@ cross-provider check found no immediately activatable replacement:
 The official ADSB.lol API description asks production users to contact the
 operator so integrations are not broken accidentally. The minimum external
 action is therefore a production-access request for the existing bounded
-ODbL integration, preferably using the platform-set `Cf-Worker` identity as
-an allowlist key. Until access is resolved, the application must expose
+ODbL integration. That request is tracked in
+[adsblol/website#272](https://github.com/adsblol/website/issues/272).
+[adsblol/api#63](https://github.com/adsblol/api/pull/63) proposes scoped CORS
+for public `/v2` application responses; the provider edge must separately make
+any nginx-generated `429` browser-readable for direct mode to preserve
+explicit backoff. Until access is resolved, the application must expose
 provider throttling honestly; it must not add a public proxy, spoof client
 addresses, rotate identities, cache live positions, or silently substitute a
 provider with unresolved rights.

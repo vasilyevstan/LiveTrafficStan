@@ -19,8 +19,7 @@ cp .env.example .env.local
 | `VITE_GEOCODER_ENDPOINT` | `https://photon.komoot.io/api` | HTTPS Photon-compatible forward-search endpoint or root-relative deployment path; protocol-relative and credential-bearing URLs are rejected |
 | `VITE_AIRCRAFT_ENDPOINT` | `/api/aircraft` | HTTPS URL or root-relative path |
 | `VITE_AIRCRAFT_PHOTO_ENABLED` | `false` | Exact `true` or `false`; exposes the direct-browser selected-details and fine-pointer hover evaluation paths and does not add a proxy |
-| `VITE_FLIGHT_ROUTE_ENABLED` | `false` | Exact `true` or `false`; controls only whether the browser presents selected-flight lookup |
-| `VITE_FLIGHT_ROUTE_ENDPOINT` | `/api/flight-route` | Root-relative same-origin route with no query or fragment; protocol-relative and absolute URLs are rejected |
+| `VITE_FLIGHT_ROUTE_ENABLED` | `true` | Exact `true` or `false`; controls whether the browser presents explicit ADSB.lol plausible-route lookup |
 | `VITE_WEATHER_ENDPOINT` | `/api/weather/metar` | Root-relative same-origin METAR route with no query or fragment; protocol-relative and absolute URLs are rejected |
 | `VITE_MARINE_REST_ENDPOINT` | `https://meri.digitraffic.fi` | HTTPS URL or root-relative path |
 | `VITE_MARINE_MQTT_ENDPOINT` | `wss://meri.digitraffic.fi:443/mqtt` | Secure WebSocket URL or root-relative path |
@@ -60,10 +59,9 @@ spread through components:
 | Aircraft photo lookup | Disabled by default; explicit selected-details action or 500 ms fine-pointer dwell, exact live ICAO24 only |
 | Photo request deadline / response cap | 8 seconds / 32 KiB |
 | Photo JSON tab cache | 32 successful or no-photo entries / 1 hour |
-| Selected-flight route lookup | Disabled by default; explicit action only |
-| Route client / Worker deadline | 10 seconds |
-| Route client / Worker response cap | 16 KiB validated response / 512 KiB provider response |
-| Route global budget | 90 reserved attempts in a rolling 31-day window |
+| Plausible route lookup | Enabled by default; explicit selected-aircraft action only |
+| Route request deadline / response cap | 10 seconds / 32 KiB |
+| Route tab cache | 32 successful exact-identity entries / 6 hours |
 | Port asset request deadline / cap | 5 seconds / 512 KiB |
 | Port records / rendered zoom range | 1,081 / zoom 5 through 13 |
 | Airport asset request deadline / cap | 5 seconds / 1.5 MiB |
@@ -198,6 +196,20 @@ Vite development and preview rewrite `/api/aircraft` to
 Setting `VITE_AIRCRAFT_ENDPOINT` to an absolute URL bypasses those same-origin
 routes, but it works only if the target explicitly allows browser CORS.
 
+The protected deployment and rollback workflows expose only two fixed
+aircraft-delivery values:
+
+- `worker-proxy` builds with `/api/aircraft` and is the current production
+  mode;
+- `adsb-lol-direct` builds with `https://api.adsb.lol`.
+
+The direct mode is source-ready but not authorization: deploy it only after
+ADSB.lol confirms the browser path and the live API returns an accepted
+`Access-Control-Allow-Origin` value for both successful and throttled
+responses. The client request remains credential-free and `no-store`, times
+out after 12 seconds, and rejects responses larger than 4 MiB. Arbitrary
+workflow endpoint URLs are not accepted.
+
 For an eligible viewport, the rounded camera center and conservative enclosing
 radius are sent to ADSB.lol. The application decides eligibility against the
 100 km limit before rounding outward to the provider's integer nautical miles.
@@ -267,61 +279,50 @@ and vessel hover/details never start or expose the photo path. See
 [Aircraft Photo Evaluation](aircraft-photo-evaluation.md) for the exact terms,
 deterministic evidence, failed live-CORS gate, and enablement requirements.
 
-## Selected-flight route evaluation
+## Selected-aircraft plausible route
 
-The browser route section is omitted unless:
+The browser route section is enabled by default and can be hidden with:
 
 ```dotenv
-VITE_FLIGHT_ROUTE_ENABLED=true
-VITE_FLIGHT_ROUTE_ENDPOINT=/api/flight-route
+VITE_FLIGHT_ROUTE_ENABLED=false
 ```
 
-These browser-visible values contain no credential and cannot enable the
-Worker by themselves. The Worker separately requires
-`AVIATIONSTACK_ENABLED=true`, the `AVIATIONSTACK_ACCESS_KEY` secret, and the
-`FLIGHT_ROUTE_QUOTA` Durable Object binding. A caller that bypasses the UI
-therefore cannot activate a disabled route.
+The source is fixed in checked configuration:
+
+```text
+https://vrs-standing-data.adsb.lol/routes
+```
+
+It is not an environment-selectable provider URL and contains no credential.
+The Cloudflare Worker is not involved.
 
 Selecting an aircraft does not make a route request. The user must activate
-**Find route** for each attempt. The selected live aircraft must have a
-six-character ICAO24 address and an ICAO-like callsign with three leading
-letters and at least one digit. Selection, callsign, ICAO24, registration,
-history-mode, or unmount changes abort and clear obsolete work. Ordinary
-ADSB.lol position updates, map movement, theme changes, and provider refreshes
-do not start or repeat a lookup.
+**Find plausible route** for each attempt. The selected live aircraft must
+have a six-character ICAO24 address, a normalizable ICAO airline callsign, and
+a finite current position. Selection, identity, history-mode, or unmount
+changes abort obsolete work. Ordinary ADSB.lol refreshes, map movement, theme
+changes, and provider refreshes do not start or repeat a lookup.
 
-The same-origin Worker reserves one of 90 global attempts in a rolling 31-day
-window before making exactly one fixed aviationstack `/v1/flights` request. It
-does not retry, paginate, follow redirects, place responses in a shared cache,
-or refund attempts after provider failure or cancellation. A result is
-displayed only for one active non-codeshare row whose flight ICAO and aircraft
-ICAO24 match exactly; conflicting registrations, multiple matches, and
-incomplete pagination remain unavailable.
+The browser makes one direct credential-free GET, rejects redirects, disables
+browser caching for the request, applies a ten-second deadline, and rejects
+responses above 32 KiB. It validates exact callsign identity, airport fields,
+coordinates, and route length before checking the current position against
+each consecutive great-circle route segment. A result outside the larger of
+50 NM or 20 percent of the segment distance remains unavailable.
 
 The browser keeps only successful validated routes in a 32-entry in-memory
 least-recently-used cache keyed by the exact normalized callsign, ICAO24, and
 optional registration. Each entry remains eligible for reuse for six hours;
 closing or reloading the tab clears it sooner. Reopening the same exact flight
-reuses the route without a provider request; **Refresh route** deliberately
-makes a new request. Unavailable, ambiguous, incomplete, configuration, quota,
-provider, aborted, and expired results are never cached. No route enters
-`localStorage`, `sessionStorage`, IndexedDB, traffic history, or the
+reuses the route without a provider request; **Refresh plausible route**
+deliberately makes a new request. Unavailable, implausible, incomplete,
+throttled, provider, aborted, and expired results are never cached. No route
+enters `localStorage`, `sessionStorage`, IndexedDB, traffic history, or the
 service-worker cache.
 
-Vite has no aviationstack proxy. Credentialed local evaluation must use the
-actual Worker runtime:
-
-```bash
-cp .dev.vars.example .dev.vars
-# Replace the placeholder with an authorized evaluation key.
-VITE_FLIGHT_ROUTE_ENABLED=true npm run preview:worker
-```
-
-`.dev.vars` is ignored by Git. Never place the access key in `.env.local`, a
-`VITE_*` value, source code, test fixture, issue, screenshot, or browser log.
-Issue #44 limits initial live evaluation to ten calls and still blocks public
-enablement until the exact account terms, display/attribution rights, and
-sample behavior are recorded.
+The UI labels the result **Plausible** and states that it is not a filed flight
+plan, schedule, date-specific occurrence, or operational status. See
+[Aircraft Plausible Route Enrichment](aircraft-route-enrichment-evaluation.md).
 
 ## Weather observations and proxy
 

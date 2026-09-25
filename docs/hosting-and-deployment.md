@@ -8,14 +8,13 @@ LiveTrafficStan selects **Cloudflare Workers with Static Assets** as its
 production platform:
 
 - Vite's `dist/` output is served as immutable static assets;
-- one Worker handles the same-origin ADSB.lol point, AWC METAR, and
-  disabled-by-default aviationstack route paths;
-- one SQLite-backed Durable Object stores only aviationstack attempt
-  timestamps when that route is enabled;
+- one Worker handles the same-origin ADSB.lol point and AWC METAR paths;
+- plausible route lookup calls ADSB.lol standing data directly from the
+  browser after an explicit selected-aircraft action;
 - OpenFreeMap, Photon, and Digitraffic REST/MQTT remain direct browser
   connections;
-- no route result database, queue, authentication service, or general backend
-  is added.
+- no route secret, quota store, result database, queue, authentication
+  service, or general backend is added.
 
 Public production is live at
 <https://livetrafficstan.syntal.workers.dev> on Cloudflare Workers Free with
@@ -57,8 +56,7 @@ The smallest complete deployment must preserve:
 - one checked Vite build and its hashed MapLibre module worker;
 - same-origin browser aircraft requests under `/api/aircraft`;
 - same-origin browser weather requests under `/api/weather/metar`;
-- when explicitly enabled, one user-triggered selected-flight request under
-  `/api/flight-route`;
+- one explicit direct plausible-route request for a selected aircraft;
 - the exact ADSB.lol `/v2/point/{latitude}/{longitude}/{radiusNm}` mapping;
 - the 100 km client eligibility decision before outward rounding to 54 NM;
 - upstream status, body, `Content-Type`, and `Retry-After`;
@@ -146,19 +144,20 @@ browser
   |
   +-- /, /assets/*, /aircraft-metadata/* -> Cloudflare Static Assets
   |
-  +-- /api/aircraft/v2/point/... --+
+  +-- /api/aircraft/v2/point/... --+  current `worker-proxy` mode
   |                                |
   +-- /api/weather/metar?ids=... --+--> Cloudflare Worker
-  |                                |       |             |
-  +-- /api/flight-route ----------+       |             +--> aviationweather.gov
-                                           +----------------> api.adsb.lol
-                                           |
-                                           +--> global quota Durable Object
-                                           +--> api.aviationstack.com
+                                           |             |
+                                           +------------> aviationweather.gov
+                                           +------------> api.adsb.lol
 
 browser --------------------------------> OpenFreeMap HTTPS
 browser --------------------------------> Photon HTTPS on explicit search
 browser --------------------------------> Digitraffic HTTPS + WSS
+browser --------------------------------> vrs-standing-data.adsb.lol
+                                          on explicit plausible-route lookup
+browser --------------------------------> api.adsb.lol only in the protected,
+                                          provider-approved direct mode
 ```
 
 `wrangler.jsonc`:
@@ -169,9 +168,6 @@ browser --------------------------------> Digitraffic HTTPS + WSS
 - disables public version preview URLs;
 - enables incoming `Request.signal` cancellation so deselection and identity
   changes can abort obsolete upstream work;
-- declares one SQLite-backed `FlightRouteQuota` Durable Object namespace and
-  binds it as `FLIGHT_ROUTE_QUOTA`;
-- keeps `AVIATIONSTACK_ENABLED` false unless an exact deployment overrides it;
 - explicitly disables Worker observability so invocation URLs containing
   rounded camera coordinates and weather station IDs are not retained in
   application logs.
@@ -190,9 +186,9 @@ real 404 responses rather than `index.html`.
 - all asset paths use `nosniff`, clickjacking protection, and a conservative
   referrer policy.
 
-Those rules do not apply to Worker responses. The aircraft and flight-route
-proxies set their own `no-store` and `nosniff` headers; successful METAR
-responses use `public, max-age=60`, JSON content type, and `nosniff`.
+Those rules do not apply to Worker responses. The aircraft proxy sets its own
+`no-store` and `nosniff` headers; successful METAR responses use
+`public, max-age=60`, JSON content type, and `nosniff`.
 
 ## Aircraft proxy contract
 
@@ -329,75 +325,48 @@ No Worker Cache API, shared response cache, `stale-while-revalidate`, or
   aggregate station-query volume and cache behavior must be measured after
   authorized deployment rather than inferred from one browser's session gate.
 
-  ## Selected-flight route contract
+  ## Plausible route contract
 
-  The optional route is exactly:
+  The browser constructs exactly one validated static-data request:
 
   ```text
-  POST /api/flight-route
-  Content-Type: application/json
-
-  {"callsign":"TST123","icao24":"ABC123","registration":"ES-ABC"}
+  GET https://vrs-standing-data.adsb.lol/routes/{prefix}/{callsign}.json
+  Accept: application/json
   ```
 
-  It returns `404` before parsing or quota work unless
-  `AVIATIONSTACK_ENABLED=true`. When enabled, a missing
-  `AVIATIONSTACK_ACCESS_KEY` or `FLIGHT_ROUTE_QUOTA` binding fails closed with
-  `503`.
+  The callsign is normalized before URL construction, and only validated
+  uppercase route characters can enter the path. The request omits
+  credentials, rejects redirects, bypasses browser cache, has a ten-second
+  deadline, and rejects responses above 32 KiB.
 
   | Input or behavior | Result |
   | --- | --- |
-  | Wrong path | `404 Not Found` |
-  | Method other than POST | `405 Method Not Allowed`, `Allow: POST` |
-  | Query string, malformed JSON, extra/missing properties, invalid callsign, or invalid ICAO24 | `400 Bad Request` |
-  | Non-JSON content type or any content encoding | `415 Unsupported Media Type` |
-  | Request over 1 KiB | `413 Payload Too Large` |
-  | Rolling 31-day 90-attempt limit reached | `429 Too Many Requests` with numeric `Retry-After` |
-  | Missing secret/binding or quota storage failure/corruption | `503 Service Unavailable` |
-  | Upstream redirect, HTTP/API error, schema error, or unsafe content type | Sanitized `502 Bad Gateway` |
-  | Ten-second upstream deadline exceeded | Sanitized `504 Gateway Timeout` |
-  | Upstream response over 512 KiB | Sanitized `502 Bad Gateway` |
-  | Client cancellation | Upstream abort and `499` when a response is still possible |
+  | Missing or invalid ICAO callsign, ICAO24, or current position | Lookup unavailable in the UI |
+  | Static route `404` | No standing route available |
+  | Provider `429` | Typed temporary throttling error |
+  | Redirect, non-JSON, malformed schema, mismatched callsign, invalid airport, or oversized body | Typed provider error |
+  | Fewer than two airports | Incomplete route |
+  | Current position outside every accepted segment corridor | Implausible route |
+  | Valid exact route and plausible position | Origin and destination displayed as plausible |
 
-  The request body permits only canonicalized callsign, ICAO24, and optional
-  registration. The Worker reserves quota atomically before constructing one
-  fixed `https://api.aviationstack.com/v1/flights` request with server-added
-  `access_key`, exact `flight_icao`, `flight_status=active`, and `limit=100`. It
-  never sends `flight_date`, retries, follows a redirect, or requests another
-  page.
-
-  The response page must be complete. A displayed route requires exactly one
-  active non-codeshare row with exact operating ICAO callsign and exact aircraft
-  ICAO24; when both live and provider registrations exist, their trim/uppercase
-  values must also match. Departure and arrival require usable airport identity.
-  Zero valid rows, multiple valid rows, and incomplete pagination are distinct
-  unavailable states. Provider position data is never used for map placement,
-  freshness, trails, or matching.
-
-  All route responses are `no-store` JSON with `nosniff`. They contain only the
-  validated flight identifier, active status, origin, destination, and optional
-  provider update time. Raw provider bodies, pagination metadata, request URLs,
-  access keys, status text, and exception detail are never returned or logged.
+  The route may contain multiple airports. The first and last are displayed,
+  while every consecutive pair participates in the geographic check. A
+  segment accepts the current position only within the larger of 50 NM or
+  20 percent of that segment's great-circle distance.
 
   The client may reuse up to 32 successful validated exact-identity routes
   from memory for six hours. This cache disappears with the tab, never
   contains failures, and is not a Worker Cache API, Durable Object,
   service-worker, Web Storage, IndexedDB, or cross-user cache. Reselecting a
-  cached flight does not invoke the Worker; **Refresh route** deliberately
-  does.
+  cached flight makes no provider request; **Refresh plausible route**
+  deliberately does.
 
 The strict ADS-B route, 54 NM ceiling, ten-second deadline, 4 MiB body bound,
 no proxy retry, existing client schedule, and Cloudflare daily allowance
 reduce accidental load. They are not a global ADS-B abuse-control system.
 
-The aviationstack route is the narrow exception: one globally named
-SQLite-backed Durable Object stores at most 90 attempt timestamps, prunes at a
-rolling 31-day boundary, and reserves before every provider call. Attempts are
-never refunded. Storage failure or corrupt state fails closed. One dedicated
-production key is required because manual or other application calls using the
-same key would bypass this count. The public unauthenticated route can still be
-deliberately exhausted within its 90-call allowance; no identity or IP tracking
-is added to prevent that availability-only risk.
+Plausible routes add no Worker invocation, server-side secret, persistent
+quota, shared cache, or cross-user state.
 
 ## Local commands
 
@@ -431,16 +400,12 @@ npm run preview:worker
 - `preview:worker` builds the client and runs the actual local `workerd`
   runtime.
 
-Vite deliberately has no aviationstack proxy. For an authorized local
-evaluation, copy `.dev.vars.example` to ignored `.dev.vars`, install the key
-there, and run:
+Plausible route lookup is enabled by default and uses the same direct static
+data path in development and production. To exercise the disabled state:
 
 ```bash
-VITE_FLIGHT_ROUTE_ENABLED=true npm run preview:worker
+VITE_FLIGHT_ROUTE_ENABLED=false npm run dev
 ```
-
-Do not use `npm run dev` for credentialed route testing. Keep the first live
-evaluation within Issue #44's ten-call ceiling.
 
 The normal `validate` check runs lint, strict TypeScript, deterministic tests,
 the Vite production build, and the Wrangler dry run. It makes no live provider
@@ -458,7 +423,6 @@ The protected environment supplies these secrets:
 | --- | --- |
 | `CLOUDFLARE_ACCOUNT_ID` | Selects the permanent Cloudflare account |
 | `CLOUDFLARE_API_TOKEN` | Least-privilege token allowed to deploy this Worker |
-| `AVIATIONSTACK_ACCESS_KEY` | Dedicated route-evaluation key; required only when the route input is enabled |
 
 The token is scoped to the selected account and Worker deployment. The
 repository-level duplicate token was removed; deployment credentials remain
@@ -485,8 +449,9 @@ gh workflow run deploy-production.yml \
   --ref main \
   -f sha=<40-character-current-main-sha> \
   -f artifact=application \
+  -f aircraft_delivery=worker-proxy \
   -f aircraft_photo_enabled=false \
-  -f flight_route_enabled=false
+  -f flight_route_enabled=true
 ```
 
 The workflow:
@@ -496,20 +461,39 @@ The workflow:
 3. checks out exactly that SHA;
 4. fetches `origin/main` and requires exact equality;
 5. fails closed if either Cloudflare environment secret is absent;
-6. builds the browser with the requested aircraft-photo and route flags and
-   dry-runs the Worker with the identical route server flag;
-7. exposes the aviationstack key only to the final deployment action and fails
-   there before deployment when route enablement was requested without it;
-8. reruns install, lint, type-check, all tests, build, and Wrangler dry run;
-9. re-fetches and rechecks current `main` immediately before deployment;
-10. serializes production operations without canceling an in-progress deploy;
-11. deploys Worker code, Durable Object declaration, and Static Assets
-    atomically;
-12. passes the source SHA as `RELEASE_SHA`;
-13. runs the bounded production smoke;
-14. records the URL, SHA, route-enabled state, and result in the workflow
-    summary and GitHub
+6. builds the browser with the fixed aircraft-delivery choice plus the
+   requested aircraft-photo and plausible-route flags;
+7. reruns install, lint, type-check, all tests, build, and Wrangler dry run;
+8. re-fetches and rechecks current `main` immediately before deployment;
+9. serializes production operations without canceling an in-progress deploy;
+10. deploys Worker code and Static Assets atomically;
+11. passes the source SHA as `RELEASE_SHA`;
+12. runs the bounded production smoke;
+13. records the URL, SHA, aircraft-delivery mode, route-enabled state, and
+    result in the workflow summary and GitHub
     deployment.
+
+Aircraft delivery is an explicit per-deployment choice:
+
+```bash
+gh workflow run deploy-production.yml \
+  --repo vasilyevstan/LiveTrafficStan \
+  --ref main \
+  -f sha=<40-character-current-main-sha> \
+  -f artifact=application \
+  -f aircraft_delivery=adsb-lol-direct \
+  -f aircraft_photo_enabled=true \
+  -f flight_route_enabled=true
+```
+
+`worker-proxy` is the default and current production mode.
+`adsb-lol-direct` sets the fixed browser endpoint to
+`https://api.adsb.lol`; it does not accept a caller-supplied URL. Do not
+dispatch direct mode until the provider has approved it and a bounded check
+proves that successful and throttled responses permit the production origin.
+If the direct CORS smoke fails after deployment, restore the recorded prior
+Cloudflare version or redeploy the accepted SHA with `worker-proxy`; do not add
+a public relay.
 
 Aircraft-photo activation is an explicit per-deployment choice:
 
@@ -519,8 +503,9 @@ gh workflow run deploy-production.yml \
   --ref main \
   -f sha=<40-character-current-main-sha> \
   -f artifact=application \
+  -f aircraft_delivery=worker-proxy \
   -f aircraft_photo_enabled=true \
-  -f flight_route_enabled=false
+  -f flight_route_enabled=true
 ```
 
 This flag contains no credential and changes only the browser bundle. Use
@@ -547,9 +532,12 @@ older SHA.
   validated local build;
 - Static Asset security headers;
 - the immutable Natural Earth port asset path and caching policy;
-- one same-origin ADSB point request that either returns valid aircraft JSON
-  or truthfully preserves an upstream `429` with the exact release and
-  `no-store` headers;
+- in `worker-proxy` mode, one same-origin ADSB point request that either
+  returns valid aircraft JSON or truthfully preserves an upstream `429` with
+  the exact release and `no-store` headers;
+- in `adsb-lol-direct` mode, one browser-origin ADSB point request that returns
+  valid aircraft JSON or an explicit `429` and permits the deployed origin
+  through CORS;
 - one bounded canonical same-origin AWC METAR request or valid 204;
 - the exact `X-LiveTrafficStan-Release` value;
 - `no-store` aircraft behavior;
@@ -559,19 +547,20 @@ older SHA.
 - one Digitraffic MQTT connection, subscription, JSON message, and explicit
   disconnect.
 
-The production smoke does not make an aviationstack call while the route is
-disabled. A future authorized enablement must add separately bounded
-credentialed evidence without turning deployment smoke into recurring quota
-consumption.
+The production smoke does not make a plausible-route request on every deploy.
+The exact bundle and CSP are checked deterministically; browser acceptance uses
+one explicit known live callsign when route behavior itself changes. This
+avoids turning deployment smoke into recurring third-party route traffic.
 
 Static Asset checks and a locally rejected Worker request use a bounded
 15-second retry schedule because a newly published Cloudflare version can
 report deployment success before every edge serves every immutable asset or
 the new Worker release. The local Worker probe cannot reach an upstream
 provider. After its release header matches, the smoke makes exactly one live
-aircraft-provider request. An ADSB.lol `429` is recorded as provider throttling
-rather than a release regression; other non-`200` statuses still fail the
-deployment check.
+aircraft-provider request through the selected delivery path. An ADSB.lol
+`429` is recorded as provider throttling rather than a release regression;
+direct mode additionally requires that throttling response to be
+browser-readable. Other non-`200` statuses still fail the deployment check.
 
 The MQTT check has a 15-second outer deadline, disables reconnect, and force
 closes the client. The script never prints provider payloads, METAR reports,
@@ -605,7 +594,7 @@ Use Cloudflare's aggregate Worker analytics and the application UI to monitor:
 
 - dynamic request count and free-allowance headroom;
 - response status, especially provider 403/429/5xx versus local 502/504;
-- route `429` exhaustion and application/provider quota agreement;
+- direct plausible-route availability and provider throttling shown in the UI;
 - CPU/resource failures;
 - missing static assets;
 - last successful deployment SHA and version.
@@ -624,9 +613,8 @@ or continuous health service is added.
 
 ## Rollback
 
-Cloudflare versions contain Worker code, configuration, and Static Assets. The
-route quota namespace persists independently across compatible Worker
-versions.
+Cloudflare versions contain Worker code, configuration, and Static Assets.
+Plausible routes add no separately persisted server resource.
 
 For the first deployment:
 
@@ -639,7 +627,8 @@ After a subsequent version exists:
 1. record the prior known-good version before promotion;
 2. dispatch `.github/workflows/rollback-production.yml` from `main` with the
    exact current `main` SHA, target source SHA, recorded Cloudflare version ID,
-   public origin, artifact kind, and the target version's two build flags;
+   public origin, artifact kind, aircraft-delivery mode, and the target
+   version's two feature flags;
 3. rerun the same automated smoke and browser checks;
 4. keep production operations serialized;
 5. record the restored version and evidence.
@@ -657,10 +646,9 @@ production must never be left on the older version merely to preserve rollback
 evidence.
 
 Cloudflare supports rollback among the 100 most recent versions. Older recovery
-uses the exact repository SHA and locked dependency/build inputs. Disabling or
-rolling back the route does not delete its timestamp-only quota namespace; no
-rollback may remove the Durable Object export or erase its data as an
-availability workaround.
+uses the exact repository SHA and locked dependency/build inputs. The target
+version's recorded plausible-route flag is rebuilt explicitly, but no route
+database, secret, or quota namespace needs restoration.
 
 Versioned aircraft-metadata and port files already retained in browser or edge
 immutable caches do not need destructive invalidation. A forward update or
@@ -698,8 +686,6 @@ Cloudflare:
 - [Rollbacks](https://developers.cloudflare.com/workers/versions-and-deployments/rollbacks/)
 - [`workers.dev`](https://developers.cloudflare.com/workers/configuration/routing/workers-dev/)
 - [Temporary account claims](https://developers.cloudflare.com/workers/platform/claim-deployments/)
-- [Durable Object class exports](https://developers.cloudflare.com/durable-objects/reference/durable-objects-migrations/)
-- [SQLite-backed Durable Object storage](https://developers.cloudflare.com/durable-objects/api/sqlite-storage-api/)
 
 Alternative and repository workflow:
 
@@ -712,9 +698,8 @@ Provider context:
 
 - [ADSB.lol API](https://www.adsb.lol/docs/open-data/api/)
 - [ADSB.lol API source](https://github.com/adsblol/api)
+- [VRS Standing Data](https://github.com/vradarserver/standing-data)
 - [Photon public endpoint terms](https://photon.komoot.io/)
 - [Photon API documentation](https://github.com/komoot/photon/blob/master/docs/api-v1.md)
 - [Digitraffic marine traffic](https://www.digitraffic.fi/en/marine-traffic/)
 - [Digitraffic terms](https://www.digitraffic.fi/en/terms-of-service/)
-- [aviationstack documentation](https://aviationstack.com/documentation)
-- [aviationstack pricing](https://aviationstack.com/pricing)

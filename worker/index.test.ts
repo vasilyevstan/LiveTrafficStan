@@ -62,63 +62,6 @@ describe('Cloudflare worker routing', () => {
     expect(assetsFetch).not.toHaveBeenCalled()
   })
 
-  it('routes enabled flight requests before the generic aircraft proxy', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () =>
-        new Response(
-          JSON.stringify({
-            pagination: {
-              limit: 100,
-              offset: 0,
-              count: 0,
-              total: 0,
-            },
-            data: [],
-          }),
-          { headers: { 'Content-Type': 'application/json' } },
-        ),
-      ),
-    )
-    const quotaFetch = vi.fn(async () =>
-      new Response(JSON.stringify({ allowed: true, remaining: 89 }), {
-        headers: { 'Content-Type': 'application/json' },
-      }),
-    )
-    const assetsFetch = vi.fn()
-    const response = await worker.fetch(
-      new Request('https://app.example/api/flight-route', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          callsign: 'TST123',
-          icao24: 'ABC123',
-        }),
-      }),
-      {
-        ASSETS: { fetch: assetsFetch },
-        RELEASE_SHA: releaseSha,
-        AVIATIONSTACK_ENABLED: 'true',
-        AVIATIONSTACK_ACCESS_KEY: 'secret',
-        FLIGHT_ROUTE_QUOTA: {
-          idFromName: () => 'quota-id',
-          get: () => ({ fetch: quotaFetch }),
-        },
-      },
-    )
-
-    expect(response.status).toBe(200)
-    expect(await response.json()).toEqual({
-      status: 'unavailable',
-      reason: 'not-found',
-    })
-    expect(response.headers.get('x-livetrafficstan-release')).toBe(
-      releaseSha,
-    )
-    expect(quotaFetch).toHaveBeenCalledTimes(1)
-    expect(assetsFetch).not.toHaveBeenCalled()
-  })
-
   it('rejects the API root without consulting Static Assets', async () => {
     const assetsFetch = vi.fn()
 

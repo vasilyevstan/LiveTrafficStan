@@ -6,23 +6,6 @@
   "compatibility_flags": ["enable_request_signal"],
   "workers_dev": true,
   "preview_urls": false,
-  "vars": {
-    "AVIATIONSTACK_ENABLED": "false"
-  },
-  "durable_objects": {
-    "bindings": [
-      {
-        "name": "FLIGHT_ROUTE_QUOTA",
-        "class_name": "FlightRouteQuota"
-      }
-    ]
-  },
-  "exports": {
-    "FlightRouteQuota": {
-      "type": "durable-object",
-      "storage": "sqlite"
-    }
-  },
   "observability": {
     "enabled": false
   },

@@ -71,12 +71,13 @@ describe('createAppConfig', () => {
       rateLimitFallbackMs: 60_000,
     })
     expect(config.flightRoute).toEqual({
-      enabled: false,
-      endpointUrl: '/api/flight-route',
+      enabled: true,
+      endpointBaseUrl:
+        'https://vrs-standing-data.adsb.lol/routes',
       timeoutMs: 10_000,
-      maximumBytes: 16 * 1_024,
-      sourceName: 'aviationstack',
-      sourceWebsiteUrl: 'https://aviationstack.com/',
+      maximumBytes: 32 * 1_024,
+      sourceName: 'ADSB.lol',
+      sourceWebsiteUrl: 'https://www.adsb.lol/',
     })
     expect(config.airports).toMatchObject({
       assetUrl:
@@ -128,8 +129,7 @@ describe('createAppConfig', () => {
       VITE_GEOCODER_ENDPOINT: 'https://example.test/search/',
       VITE_MAP_DARK_STYLE_URL: 'https://example.test/dark/',
       VITE_AIRCRAFT_PHOTO_ENABLED: 'true',
-      VITE_FLIGHT_ROUTE_ENABLED: 'true',
-      VITE_FLIGHT_ROUTE_ENDPOINT: '/edge/flight-route/',
+      VITE_FLIGHT_ROUTE_ENABLED: 'false',
     })
 
     expect(config.center).toEqual({
@@ -145,8 +145,9 @@ describe('createAppConfig', () => {
       'https://example.test/search',
     )
     expect(config.flightRoute).toMatchObject({
-      enabled: true,
-      endpointUrl: '/edge/flight-route',
+      enabled: false,
+      endpointBaseUrl:
+        'https://vrs-standing-data.adsb.lol/routes',
     })
     expect(config.aircraftPhoto.enabled).toBe(true)
 
@@ -209,11 +210,6 @@ describe('createAppConfig', () => {
         VITE_FLIGHT_ROUTE_ENABLED: 'yes',
       }),
     ).toThrow(/VITE_FLIGHT_ROUTE_ENABLED/)
-    expect(() =>
-      createAppConfig({
-        VITE_FLIGHT_ROUTE_ENDPOINT: 'https://collector.example/route',
-      }),
-    ).toThrow(/same-origin/)
     expect(() =>
       createAppConfig({
         VITE_GEOCODER_ENDPOINT: 'https://user:secret@example.test/search',

@@ -11,16 +11,14 @@ npm run dev
 
 The development server normally runs at <http://localhost:5173>. It supplies
 the fixed `/api/aircraft` and `/api/weather/metar` proxies required by the
-default ADSB.lol and AWC integrations. It deliberately does not proxy the
-credentialed aviationstack route; use the local Worker runtime for that path.
-It also does not proxy Planespotters: the optional aircraft-photo path must
-preserve its direct-browser provider contract.
+default ADSB.lol and AWC integrations. Plausible routes and Planespotters
+aircraft photos remain direct browser requests and are not proxied.
 
 ## Commands
 
 | Command | Purpose |
 | --- | --- |
-| `npm run dev` | Start Vite with hot module replacement and the fixed aircraft/METAR proxies; flight routes remain unavailable |
+| `npm run dev` | Start Vite with hot module replacement, fixed aircraft/METAR proxies, and direct plausible-route support |
 | `npm run lint` | Run Oxlint across the repository |
 | `npm run typecheck` | Run strict TypeScript project checks without output |
 | `npm test -- --run` | Run the deterministic Vitest suite once |
@@ -56,18 +54,28 @@ The same commands run in `.github/workflows/validate.yml` for pull requests and
 pushes targeting `dev` or `main`. The Wrangler dry run is credential-free and
 does not call a live provider.
 
-For an explicitly authorized aviationstack evaluation, copy
-`.dev.vars.example` to ignored `.dev.vars`, replace its placeholder key, and
-run:
+To build the protected direct-aircraft variant without changing defaults:
 
 ```bash
-VITE_FLIGHT_ROUTE_ENABLED=true npm run preview:worker
+VITE_AIRCRAFT_ENDPOINT=https://api.adsb.lol npm run build
 ```
 
-Do not use or commit a provider-derived response as a fixture unless the exact
-account terms permit it. The initial evaluation is capped at ten live calls;
-ordinary deterministic tests use synthetic records and spend no provider
-quota.
+This proves only bundle configuration. Real acceptance additionally requires
+provider approval and a browser-origin response whose success and throttling
+states expose usable CORS. The production and rollback workflows pass
+`worker-proxy` or `adsb-lol-direct` as the third argument to
+`scripts/smoke-production.mjs`; arbitrary endpoint strings are never workflow
+inputs.
+
+Plausible route lookup is enabled by default. To exercise the disabled state:
+
+```bash
+VITE_FLIGHT_ROUTE_ENABLED=false npm run dev
+```
+
+Ordinary deterministic tests use synthetic standing-route records. A bounded
+manual acceptance may use one live callsign, but provider responses are not
+committed as fixtures.
 
 ## Branch and pull request flow
 
@@ -108,10 +116,10 @@ The V1 suite uses sanitized, local values and does not call live providers. It
 covers:
 
 - configuration defaults and invalid overrides;
-- selected-flight identity validation, no-request-before-action lifecycle,
-  cancellation/stale callback handling, exact-identity six-hour session-cache
-  reuse, expiry and 32-entry eviction, strict Worker matching, complete-page
-  enforcement, global rolling quota, sanitized provider failures, and
+- plausible-route callsign/position validation, no-request-before-action
+  lifecycle, cancellation/stale callback handling, exact-identity six-hour
+  session-cache reuse, expiry and 32-entry eviction, fixed URL construction,
+  response bounds, geographic plausibility, sanitized provider failures, and
   vessel/history isolation;
 - aircraft-photo identity validation, explicit and automatic controller
   request guards, A to B to A revision guards, shared hover/details cache
