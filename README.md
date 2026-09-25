@@ -357,12 +357,13 @@ shared or persistent route cache.
 
 Public production is live at
 <https://livetrafficstan.syntal.workers.dev> on Cloudflare Workers Free with
-Static Assets. The accepted V1.5.3 application source is
-`6d132907525f4f1479ae2b4f94485d76c151b86a`; deployment run
-`35922373328` published Cloudflare version
-`5b17eeb9-e6ad-4720-8a8e-c52725b18aba`. Protected rollback run
-`35922516989` and restoration run `35922782775` proved recovery to a prior
-accepted version and exact restoration without leaving production rolled back.
+Static Assets. The accepted V1.6.0 application source is
+`05bb39a0620f8ef2304c8bc96d1988ecded5325d`; exact-main validation run
+`36188141347` passed, and deployment run `36188232329` published Cloudflare
+version `8fc9005c-b47a-4bcb-98bd-2c3b6e9cc9ad`. Protected rollback run
+`36188474191` restored accepted V1.5.3 source
+`6d132907525f4f1479ae2b4f94485d76c151b86a`, and restoration run
+`36188545228` returned production to V1.6.0 with matching exact-byte smoke.
 See [Hosting and Deployment](docs/hosting-and-deployment.md) for the dated
 platform matrix, request budget, proxy contract, exact-SHA workflow, smoke,
 monitoring, privacy, and rollback procedure.

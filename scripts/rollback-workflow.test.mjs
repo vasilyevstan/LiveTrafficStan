@@ -38,7 +38,7 @@ describe('production rollback workflow', () => {
   it('keeps the target build flags explicit', () => {
     expect(workflow).toContain("if: inputs.artifact == 'application'")
     expect(workflow).toContain("if: inputs.artifact == 'pwa-retirement'")
-    expect(workflow).toContain('run: npm run build:pwa-retire')
+    expect(workflow).toContain('npm run build:pwa-retire')
     expect(workflow).toContain(
       'VITE_AIRCRAFT_PHOTO_ENABLED: ${{ inputs.aircraft_photo_enabled }}',
     )
@@ -46,7 +46,16 @@ describe('production rollback workflow', () => {
     expect(workflow).toContain('          - worker-proxy')
     expect(workflow).toContain('          - adsb-lol-direct')
     expect(workflow).toContain(
-      "VITE_AIRCRAFT_ENDPOINT: ${{ inputs.aircraft_delivery == 'adsb-lol-direct' && 'https://api.adsb.lol' || '/api/aircraft' }}",
+      'aircraft_endpoint_explicit:',
+    )
+    expect(workflow).toContain(
+      'AIRCRAFT_ENDPOINT_EXPLICIT: ${{ inputs.aircraft_endpoint_explicit }}',
+    )
+    expect(workflow).toContain(
+      'export VITE_AIRCRAFT_ENDPOINT="$AIRCRAFT_ENDPOINT"',
+    )
+    expect(workflow).toContain(
+      'An implicit aircraft endpoint is valid only for worker-proxy targets.',
     )
     expect(workflow).toContain(
       'VITE_FLIGHT_ROUTE_ENABLED: ${{ inputs.flight_route_enabled }}',
@@ -54,6 +63,9 @@ describe('production rollback workflow', () => {
     expect(workflow).not.toContain('AVIATIONSTACK')
     expect(workflow).toContain(
       'echo "- Aircraft delivery: \\`${{ inputs.aircraft_delivery }}\\`"',
+    )
+    expect(workflow).toContain(
+      'echo "- Aircraft endpoint explicitly set: \\`${{ inputs.aircraft_endpoint_explicit }}\\`"',
     )
   })
 })
