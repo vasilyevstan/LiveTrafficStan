@@ -6,12 +6,12 @@ import {
   type FlightRouteViewState,
 } from '../domain/flightRoute'
 import type { Aircraft } from '../domain/traffic'
-import type { FlightRouteProvider } from '../providers/flightRoute/aviationstackFlightRouteProvider'
+import type { FlightRouteProvider } from '../providers/flightRoute/adsbLolFlightRouteProvider'
 import { FlightRouteController } from './FlightRouteController'
 
 export const useFlightRoute = (
   aircraft:
-    | Pick<Aircraft, 'hex' | 'callsign' | 'registration'>
+    | Pick<Aircraft, 'hex' | 'callsign' | 'registration' | 'position'>
     | undefined,
   provider: FlightRouteProvider,
 ) => {
@@ -25,16 +25,30 @@ export const useFlightRoute = (
   const aircraftHex = aircraft?.hex
   const aircraftCallsign = aircraft?.callsign
   const aircraftRegistration = aircraft?.registration
+  const aircraftLatitude = aircraft?.position.latitude
+  const aircraftLongitude = aircraft?.position.longitude
   const identity = useMemo<FlightRouteIdentity | undefined>(
     () =>
-      aircraftHex
+      aircraftHex &&
+      aircraftLatitude !== undefined &&
+      aircraftLongitude !== undefined
         ? flightRouteIdentity({
             hex: aircraftHex,
             callsign: aircraftCallsign,
             registration: aircraftRegistration,
+            position: {
+              latitude: aircraftLatitude,
+              longitude: aircraftLongitude,
+            },
           })
         : undefined,
-    [aircraftCallsign, aircraftHex, aircraftRegistration],
+    [
+      aircraftCallsign,
+      aircraftHex,
+      aircraftLatitude,
+      aircraftLongitude,
+      aircraftRegistration,
+    ],
   )
 
   useEffect(() => {

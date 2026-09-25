@@ -3,7 +3,7 @@ import type { PlanespottersPhotoProviderConfig } from '../providers/aircraftPhot
 import type { StaticAirportsProviderConfig } from '../providers/airports/staticAirportsProvider'
 import type { StaticPortsProviderConfig } from '../providers/ports/staticPortsProvider'
 import type { AwcMetarProviderConfig } from '../providers/weather/awcMetarProvider'
-import type { AviationstackFlightRouteProviderConfig } from '../providers/flightRoute/aviationstackFlightRouteProvider'
+import type { AdsbLolFlightRouteProviderConfig } from '../providers/flightRoute/adsbLolFlightRouteProvider'
 import {
   DEFAULT_TRAIL_PREFERENCES,
   TRAIL_DURATION_OPTIONS_MINUTES,
@@ -68,7 +68,7 @@ export interface AppConfig {
     hoverDelayMs: number
     rateLimitFallbackMs: number
   }
-  flightRoute: AviationstackFlightRouteProviderConfig & {
+  flightRoute: AdsbLolFlightRouteProviderConfig & {
     enabled: boolean
   }
   airports: StaticAirportsProviderConfig
@@ -120,7 +120,8 @@ const DEFAULTS = {
   aircraftEndpoint: '/api/aircraft',
   aircraftPhotoEndpoint:
     'https://api.planespotters.net/pub/photos/hex',
-  flightRouteEndpoint: '/api/flight-route',
+  flightRouteEndpoint:
+    'https://vrs-standing-data.adsb.lol/routes',
   weatherEndpoint: '/api/weather/metar',
   marineRestEndpoint: 'https://meri.digitraffic.fi',
   marineMqttEndpoint: 'wss://meri.digitraffic.fi:443/mqtt',
@@ -350,16 +351,12 @@ export const createAppConfig = (
       rateLimitFallbackMs: 60_000,
     },
     flightRoute: {
-      enabled: readBoolean(env, 'VITE_FLIGHT_ROUTE_ENABLED', false),
-      endpointUrl: readSameOriginEndpoint(
-        env,
-        'VITE_FLIGHT_ROUTE_ENDPOINT',
-        DEFAULTS.flightRouteEndpoint,
-      ),
+      enabled: readBoolean(env, 'VITE_FLIGHT_ROUTE_ENABLED', true),
+      endpointBaseUrl: DEFAULTS.flightRouteEndpoint,
       timeoutMs: 10_000,
-      maximumBytes: 16 * 1_024,
-      sourceName: 'aviationstack',
-      sourceWebsiteUrl: 'https://aviationstack.com/',
+      maximumBytes: 32 * 1_024,
+      sourceName: 'ADSB.lol',
+      sourceWebsiteUrl: 'https://www.adsb.lol/',
     },
     airports: {
       assetUrl: `/airports/${airportsSource.projection.outputVersion}/airports.geojson`,

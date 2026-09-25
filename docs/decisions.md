@@ -43,54 +43,31 @@ licensing, credential, and operational complexity without a demonstrated
 requirement. The existing application-owned provider interface is sufficient
 for a future deliberate replacement.
 
-## Disabled aviationstack route evaluation
+## Direct ADSB.lol plausible routes
 
-The owner authorized a smallest evaluation slice for aviationstack's Free plan
-after the dated
-[aircraft route enrichment evaluation](aircraft-route-enrichment-evaluation.md)
-confirmed a current 100-request monthly allowance. The client and Worker remain
-disabled by default, and Issue #44 still blocks public enablement until the
-exact account terms, display/attribution rights, dedicated key, and bounded
-real-provider evidence are recorded.
+The owner chose a truthfully labeled callsign-based plausible route instead of
+adding a second aviation provider. The client requests one static ADSB.lol
+standing-route record only after **Find plausible route**, validates the exact
+normalized callsign, and checks the current position against every consecutive
+airport segment before displaying origin and destination.
 
-aviationstack does not expose a durable opaque flight-occurrence ID. The first
-slice therefore makes a narrower claim: after an explicit **Find route**
-action, it requests active rows for the exact ICAO flight callsign and accepts
-only one non-codeshare row whose returned aircraft ICAO24 also matches exactly.
-A conflicting live/provider registration, zero matches, multiple matches, or
-incomplete first-page pagination produces unavailable rather than an inferred
-route. Movement, heading, position, nearest airports, geographic plausibility,
-and static Mictronics metadata never establish a route.
+The UI never calls the result scheduled, filed, active, or date-specific.
+Selection alone, aircraft polling, camera movement, trails, metadata refreshes,
+and automatic retries make no route request. Route failure cannot alter live
+markers, freshness, cadence/backoff, trails, selection, history, or provider
+health.
 
-The access key stays in the Worker. One globally named SQLite-backed Durable
-Object reserves every accepted attempt before the provider call and admits at
-most 90 attempts in any rolling 31-day window. Attempts are not refunded after
-cancellation, timeout, malformed data, or provider failure. This deliberately
-leaves ten calls outside the application budget, but a public unauthenticated
-caller could still exhaust the 90-call application allowance; the feature is
-therefore an optional availability surface, not a guaranteed service.
+The request is a direct credential-free GET with redirect rejection, a
+ten-second deadline, and a 32 KiB response ceiling. Successful exact-identity
+routes may remain in a 32-entry six-hour current-tab LRU. Failures and
+unavailable results are never cached, and no route enters Web Storage,
+IndexedDB, traffic history, service-worker cache, Worker cache, KV, R2, or a
+Durable Object.
 
-Selection alone, ADSB.lol polling, camera movement, trails, map updates,
-metadata refreshes, and automatic retries never spend route quota. Route
-failure cannot alter the live marker, position age, freshness, aircraft
-cadence/backoff, trails, static metadata, selection, map health, or another
-provider.
-
-Successful validated routes use one bounded client-only optimization: an exact
-callsign/ICAO24/optional-registration result is eligible for reuse in the
-current tab for six hours, with least-recently-used eviction above 32 entries.
-Reselecting that exact flight restores the route without another provider
-attempt; an explicit **Refresh route** still makes a new attempt. Failures and
-unavailable results are never cached, and no route is written to Web Storage,
-IndexedDB, history, the service worker, the Worker Cache API, or Durable Object
-storage. This reduces accidental Free-plan use without creating a shared route
-database or claiming that an old route is current indefinitely.
-
-The Cloudflare secret-holding boundary is deployed. Route lookup remains
-disabled because Issue #44 still requires the exact accepted Vendor
-Terms/order and public-display, attribution, caching, retention, fixture, and
-deletion evidence; enabling it also requires matching client/Worker flags and
-the protected Worker secret.
+The dormant aviationstack client, Worker route, secret dependency, rolling
+quota, and SQLite-backed Durable Object were removed. The detailed decision is
+recorded in
+[Aircraft Plausible Route Enrichment](aircraft-route-enrichment-evaluation.md).
 
 ## Direct Planespotters aircraft photos
 
@@ -130,7 +107,8 @@ substitutes do not satisfy identity or rights requirements.
 
 ## Airport arrival and departure boards remain blocked
 
-Airport/time-window boards are independent of selected-flight route lookup.
+Airport/time-window boards are independent of selected-aircraft plausible-route
+lookup.
 The dated
 [airport board evaluation](airport-board-evaluation.md)
 found no currently configured and authorized source with the complete
@@ -153,10 +131,10 @@ independent of ADS-B, marine traffic, static airport context, and the map.
 ## Cloudflare Worker plus Static Assets
 
 Cloudflare Workers with Static Assets is the smallest production boundary for
-the Vite client and required ADSB.lol/AWC proxies plus the optional
-aviationstack route. Static files bypass Worker execution; only `/api` and
-`/api/*` invoke code. All three routes construct hard-coded upstream
-destinations and cannot act as general forwarders.
+the Vite client and required ADSB.lol/AWC proxies. Static files bypass Worker
+execution; only `/api` and `/api/*` invoke code. Both Worker routes construct
+hard-coded upstream destinations and cannot act as general forwarders.
+Plausible routes use a direct credential-free static-data request.
 
 The free plan's 100,000 dynamic requests/day covers about 23 continuously
 active browser sessions at the application's nominal 4,320 request/day upper
@@ -168,15 +146,12 @@ requests, and function compute in one 300-credit monthly budget without
 providing a capability this two-route application needs. GitHub Pages plus a
 separate Worker would add a second deployment unit or split-origin CORS.
 
-Fingerprint-named assets use immutable browser caching. Aircraft and
-aviationstack route responses use `no-store`; successful METAR responses use
-the source-aligned 60-second guidance. A validated route may be eligible for
-reuse only through the bounded in-memory tab cache described above. The
-route's single justified persistent server mechanism is its SQLite-backed
-global budget guard; it stores only attempt timestamps and no aircraft
-identity, provider body, route, or user data. Worker observability is disabled
-because request paths can otherwise retain rounded camera coordinates or
-visible station IDs.
+Fingerprint-named assets use immutable browser caching. Aircraft responses use
+`no-store`; successful METAR responses use the source-aligned 60-second
+guidance. A validated plausible route may be eligible for reuse only through
+the bounded in-memory tab cache described above. No server-side route state is
+created. Worker observability is disabled because request paths can otherwise
+retain rounded camera coordinates or visible station IDs.
 
 Deployments require an exact current `main` SHA, rerun the complete validation
 suite, serialize production operations, deploy code and assets atomically, and
@@ -637,8 +612,8 @@ ineligible-view reasons compose through the existing pause boundary without
 resetting aircraft cadence, `Retry-After`, MQTT reconnect, REST, or metadata
 gates.
 
-Current-only METAR, third-party aircraft metadata, and selected-flight route
-lookup are absent in history. Vessel destination/ETA, interpolation frames,
+Current-only METAR, third-party aircraft metadata, and plausible-route lookup
+are absent in history. Vessel destination/ETA, interpolation frames,
 browser location, export, sharing, synchronization, service-worker live
 caching, and backend history remain outside the decision.
 

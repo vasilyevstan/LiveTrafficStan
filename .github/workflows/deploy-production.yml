@@ -29,9 +29,9 @@ on:
           - worker-proxy
           - adsb-lol-direct
       flight_route_enabled:
-        description: Enable the aviationstack route lookup in client and Worker
+        description: Enable direct ADSB.lol plausible-route lookup
         required: true
-        default: false
+        default: true
         type: boolean
 
 permissions:
@@ -124,9 +124,7 @@ jobs:
         run: npm run build:pwa-retire
 
       - name: Check exact deployment bundle
-        run: >-
-          npm run check:deploy --
-          --var AVIATIONSTACK_ENABLED:${{ inputs.flight_route_enabled }}
+        run: npm run check:deploy
 
       - name: Deploy exact source
         id: deploy
@@ -138,14 +136,9 @@ jobs:
             git fetch --no-tags origin main
             test "$(git rev-parse HEAD)" = "${{ inputs.sha }}"
             test "$(git rev-parse origin/main)" = "${{ inputs.sha }}"
-            test "${{ inputs.flight_route_enabled }}" != "true" || test -n "$AVIATIONSTACK_ACCESS_KEY"
           command: >-
             deploy
             --var RELEASE_SHA:${{ inputs.sha }}
-            --var AVIATIONSTACK_ENABLED:${{ inputs.flight_route_enabled }}
-          secrets: ${{ inputs.flight_route_enabled && 'AVIATIONSTACK_ACCESS_KEY' || '' }}
-        env:
-          AVIATIONSTACK_ACCESS_KEY: ${{ inputs.flight_route_enabled && secrets.AVIATIONSTACK_ACCESS_KEY || '' }}
 
       - name: Smoke deployed application
         run: >-

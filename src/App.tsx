@@ -61,7 +61,7 @@ import type { PlaceSearchResult } from './providers/geocoding/photonProvider'
 import { StaticAircraftMetadataProvider } from './providers/aircraftMetadata/staticAircraftMetadataProvider'
 import { PlanespottersPhotoProvider } from './providers/aircraftPhoto/planespottersPhotoProvider'
 import { StaticAirportsProvider } from './providers/airports/staticAirportsProvider'
-import { AviationstackFlightRouteProvider } from './providers/flightRoute/aviationstackFlightRouteProvider'
+import { AdsbLolFlightRouteProvider } from './providers/flightRoute/adsbLolFlightRouteProvider'
 import { StaticPortsProvider } from './providers/ports/staticPortsProvider'
 import { AwcMetarProvider } from './providers/weather/awcMetarProvider'
 import { filterTrafficByViewport } from './traffic/filter'
@@ -284,7 +284,7 @@ function App() {
     [],
   )
   const flightRouteProvider = useMemo(
-    () => new AviationstackFlightRouteProvider(APP_CONFIG.flightRoute),
+    () => new AdsbLolFlightRouteProvider(APP_CONFIG.flightRoute),
     [],
   )
   const portsProvider = useMemo(

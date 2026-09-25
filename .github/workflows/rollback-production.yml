@@ -43,7 +43,7 @@ on:
       flight_route_enabled:
         description: Flight-route build flag used by the target version
         required: true
-        default: false
+        default: true
         type: boolean
 
 permissions:
@@ -154,9 +154,7 @@ jobs:
         run: npm run build:pwa-retire
 
       - name: Check exact rollback bundle
-        run: >-
-          npm run check:deploy --
-          --var AVIATIONSTACK_ENABLED:${{ inputs.flight_route_enabled }}
+        run: npm run check:deploy
 
       - name: Restore current smoke policy
         run: |

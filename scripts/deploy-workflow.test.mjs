@@ -1,4 +1,3 @@
-import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -9,31 +8,6 @@ const workflow = readFileSync(
   join(repositoryRoot, '.github/workflows/deploy-production.yml'),
   'utf8',
 )
-const credentialGuard =
-  'test "${{ inputs.flight_route_enabled }}" != "true" || test -n "$AVIATIONSTACK_ACCESS_KEY"'
-
-const guardPasses = (enabled, accessKey) => {
-  try {
-    execFileSync(
-      '/bin/sh',
-      [
-        '-c',
-        'test "$FLIGHT_ROUTE_ENABLED" != "true" || test -n "$AVIATIONSTACK_ACCESS_KEY"',
-      ],
-      {
-        env: {
-          FLIGHT_ROUTE_ENABLED: enabled,
-          AVIATIONSTACK_ACCESS_KEY: accessKey,
-        },
-        stdio: 'ignore',
-      },
-    )
-    return true
-  } catch {
-    return false
-  }
-}
-
 describe('production deployment workflow', () => {
   it('uses a fixed aircraft delivery choice and records it in smoke', () => {
     expect(workflow).toContain('aircraft_delivery:')
@@ -50,16 +24,14 @@ describe('production deployment workflow', () => {
     )
   })
 
-  it('keeps the route credential guard in one pre-command', () => {
-    expect(workflow).toContain(`            ${credentialGuard}`)
-    expect(workflow).not.toContain(
-      '            if [[ "${{ inputs.flight_route_enabled }}" == "true" ]]; then',
+  it('keeps plausible-route activation build-only and credential-free', () => {
+    expect(workflow).toContain(
+      'description: Enable direct ADSB.lol plausible-route lookup',
     )
-  })
-
-  it('requires the route credential only when route lookup is enabled', () => {
-    expect(guardPasses('false', '')).toBe(true)
-    expect(guardPasses('true', '')).toBe(false)
-    expect(guardPasses('true', 'configured')).toBe(true)
+    expect(workflow).toContain(
+      'VITE_FLIGHT_ROUTE_ENABLED: ${{ inputs.flight_route_enabled }}',
+    )
+    expect(workflow).not.toContain('AVIATIONSTACK')
+    expect(workflow).not.toContain('FLIGHT_ROUTE_QUOTA')
   })
 })

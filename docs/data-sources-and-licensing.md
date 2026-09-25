@@ -217,61 +217,40 @@ no-re-exposure terms. See
 boundary, deterministic evidence, live result, vessel-image blocker, and
 enablement requirements.
 
-## Selected-flight routes: disabled aviationstack evaluation
+## Selected-aircraft plausible routes: ADSB.lol standing data
 
-LiveTrafficStan contains a disabled-by-default aviationstack evaluation path
-for origin and destination on one selected live aircraft. It is not enabled in
-the checked default build and does not claim schedule, delay, cancellation, or
-diversion support.
+LiveTrafficStan can show a callsign-based plausible origin and destination for
+one selected live aircraft after an explicit user action.
 
-The dated
-[Aircraft Route Enrichment Evaluation](aircraft-route-enrichment-evaluation.md)
-records the owner's decision to test aviationstack within the Free plan's
-current 100-request monthly allowance while keeping public use blocked on
-exact account terms and real samples.
+- ADSB.lol public data is identified as ODbL 1.0.
+- The underlying
+  [VRS Standing Data](https://github.com/vradarserver/standing-data)
+  repository applies CC0 1.0.
+- The browser requests one exact static JSON route from
+  `https://vrs-standing-data.adsb.lol`.
+- Visible attribution identifies both ADSB.lol and VRS Standing Data.
+- Successful results may remain only in a bounded six-hour current-tab cache.
 
-- ADSB.lol and ADSBDB/VRS-style route lookups are callsign-based standing
-  tables. ADSB.lol can additionally test geographic plausibility. Neither
-  supplies date-specific operational intent.
-- Airplanes.live publishes no dated operational route-association endpoint in
-  the inspected schema.
-- OpenSky flight endpoints provide previous-day-or-earlier track-derived
-  estimated airports and require a written agreement for operational REST use
-  in a live product.
-- FlightAware AeroAPI and AeroDataBox are technically credible future
-  candidates, but LiveTrafficStan has no applicable account, credential,
-  accepted plan, approved budget, provider-specific identity contract, or
-  authorized Tallinn sample.
-- aviationstack exposes active flight, route, and aircraft identity fields but
-  no opaque occurrence ID. The evaluation accepts only one active
-  non-codeshare row with exact operating callsign and ICAO24, and fails closed
-  for conflicting registration, ambiguity, or incomplete pagination.
-- Public airport boards, airline sites, trackers, and widgets are not
-  integration or republication licenses and will not be scraped.
+The route is accepted only when the exact normalized callsign matches and the
+aircraft's current position is geographically compatible with at least one
+returned airport segment. This is a local validation of standing data, not
+evidence of a filed flight plan, schedule, date-specific occurrence, status,
+diversion, arrival, or departure.
 
-[Issue #44](https://github.com/vasilyevstan/LiveTrafficStan/issues/44)
-records the exact rights, identity, sample, cost, retention, attribution, and
-credential evidence required before public enablement. The Cloudflare
-secret-holding boundary is deployed; both route flags remain `false`.
+The previous disabled aviationstack evaluation, key, Worker route, global
+attempt quota, and Durable Object were removed when the product requirement
+changed from date-specific operational association to a truthfully labeled
+plausible route. Issue #44 must be reconciled as superseded rather than marked
+technically satisfied.
 
-Selection alone does not call aviationstack. Each accepted **Find route**
-action reserves one of 90 global rolling-31-day attempts before one fixed
-provider call; no retry, pagination request, shared response cache, or refund
-exists. The key remains server-side, and only validated route fields reach the
-browser. The current tab may reuse up to 32 successful exact-identity results
-for up to six hours; failures are not cached and no route is persisted or
-shared.
-
-Heading, track, current position, geographic plausibility, nearby airports, and
-Mictronics static metadata remain prohibited route inferences. No
-aviationstack key or provider-derived fixture is committed while the source
-gate is open.
+Public airport boards, airline sites, trackers, and widgets remain outside this
+contract and are not scraped.
 
 ## Airport arrival/departure boards: no active source
 
 LiveTrafficStan does not currently display airport arrivals or departures.
-Airport/time-window enumeration is a separate capability from selected-flight
-origin/destination association.
+Airport/time-window enumeration is a separate capability from selected-aircraft
+plausible-route enrichment.
 
 The dated
 [Airport Arrival and Departure Board Evaluation](airport-board-evaluation.md)
@@ -299,7 +278,7 @@ and permitted Tallinn samples required for implementation.
 [Issue #46](https://github.com/vasilyevstan/LiveTrafficStan/issues/46)
 records the exact authorization and sample evidence required. No board is
 constructed from visible aircraft, heading, proximity, callsign, static airport
-points, or cached selected-flight lookups.
+points, or cached plausible-route lookups.
 
 ## Aircraft metadata: Mictronics aircraft-database
 
