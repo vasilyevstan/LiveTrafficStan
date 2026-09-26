@@ -9,6 +9,7 @@ import {
 } from '../domain/format'
 import type { TrafficEntity } from '../domain/traffic'
 import type { UnitSystem } from '../domain/units'
+import type { VesselReferencePhoto } from '../domain/vesselPhoto'
 
 export interface TrafficTooltipSummary {
   title: string
@@ -19,11 +20,58 @@ export interface TrafficTooltipOptions {
   aircraftPhoto?: AircraftPhotoViewState
   aircraftPhotoEnabled?: boolean
   units?: UnitSystem
+  vesselPhoto?: VesselReferencePhoto
 }
 
 const reportedText = (value: string | undefined) => {
   const normalized = value?.trim()
   return normalized ? normalized : undefined
+}
+
+const appendTooltipPhoto = (
+  root: HTMLElement,
+  ownerDocument: Document,
+  photo: {
+    alt: string
+    context?: string
+    credit: string
+    height: number
+    href: string
+    referrerPolicy?: ReferrerPolicy
+    src: string
+    title: string
+    width: number
+  },
+) => {
+  const link = ownerDocument.createElement('a')
+  link.className = 'traffic-tooltip__photo-link'
+  link.href = photo.href
+  link.target = '_blank'
+  link.rel = 'noreferrer noopener'
+  link.title = photo.title
+
+  const image = ownerDocument.createElement('img')
+  image.className = 'traffic-tooltip__photo'
+  image.src = photo.src
+  image.width = photo.width
+  image.height = photo.height
+  image.alt = photo.alt
+  image.loading = 'eager'
+  image.decoding = 'async'
+  if (photo.referrerPolicy) image.referrerPolicy = photo.referrerPolicy
+
+  const credit = ownerDocument.createElement('span')
+  credit.className = 'traffic-tooltip__photo-credit'
+  credit.textContent = photo.credit
+
+  link.append(image, credit)
+  if (photo.context) {
+    const context = ownerDocument.createElement('span')
+    context.className = 'traffic-tooltip__photo-status'
+    context.textContent = photo.context
+    link.append(context)
+  }
+  root.append(link)
 }
 
 export const trafficTooltipSummary = (
@@ -103,28 +151,16 @@ export const createTrafficTooltipElement = (
         : undefined
 
     if (photoState?.phase === 'available') {
-      const link = ownerDocument.createElement('a')
-      link.className = 'traffic-tooltip__photo-link'
-      link.href = photoState.photo.photoPageUrl
-      link.target = '_blank'
-      link.rel = 'noreferrer noopener'
-      link.title = `Open this exact aircraft photo on ${photoState.photo.source.name}`
-
-      const image = ownerDocument.createElement('img')
-      image.className = 'traffic-tooltip__photo'
-      image.src = photoState.photo.thumbnailUrl
-      image.width = photoState.photo.thumbnailWidth
-      image.height = photoState.photo.thumbnailHeight
-      image.alt = `Aircraft ${identityKey}`
-      image.loading = 'eager'
-      image.referrerPolicy = 'strict-origin-when-cross-origin'
-
-      const credit = ownerDocument.createElement('span')
-      credit.className = 'traffic-tooltip__photo-credit'
-      credit.textContent = `Photo © ${photoState.photo.photographer} via ${photoState.photo.source.name}`
-
-      link.append(image, credit)
-      root.append(link)
+      appendTooltipPhoto(root, ownerDocument, {
+        alt: `Aircraft ${identityKey}`,
+        credit: `Photo © ${photoState.photo.photographer} via ${photoState.photo.source.name}`,
+        height: photoState.photo.thumbnailHeight,
+        href: photoState.photo.photoPageUrl,
+        referrerPolicy: 'strict-origin-when-cross-origin',
+        src: photoState.photo.thumbnailUrl,
+        title: `Open this exact aircraft photo on ${photoState.photo.source.name}`,
+        width: photoState.photo.thumbnailWidth,
+      })
     } else if (photoState?.phase === 'loading') {
       const status = ownerDocument.createElement('p')
       status.className = 'traffic-tooltip__photo-status'
@@ -138,6 +174,26 @@ export const createTrafficTooltipElement = (
       status.className = 'traffic-tooltip__photo-status'
       status.textContent = 'Exact aircraft photo unavailable.'
       root.append(status)
+    }
+  }
+
+  if (entity.kind === 'vessel' && options.vesselPhoto) {
+    const photo = options.vesselPhoto
+    const expectedIdentityKey = `${entity.id}|${photo.imo}|${photo.manifestVersion}`
+    if (
+      String(entity.imo) === photo.imo &&
+      photo.identityKey === expectedIdentityKey
+    ) {
+      appendTooltipPhoto(root, ownerDocument, {
+        alt: photo.alt,
+        context: `Historical reference matched to AIS-reported IMO ${photo.imo}`,
+        credit: `Photo by ${photo.rights.author} via ${photo.rights.sourceName} · ${photo.rights.licenseName}`,
+        height: photo.asset.height,
+        href: photo.identityEvidence.commonsRevisionUrl,
+        src: photo.asset.path,
+        title: `Open the fixed ${photo.rights.sourceName} source revision`,
+        width: photo.asset.width,
+      })
     }
   }
 

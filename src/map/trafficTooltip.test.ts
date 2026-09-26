@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { AircraftPhotoViewState } from '../domain/aircraftPhoto'
 import type { Aircraft, Vessel } from '../domain/traffic'
+import { vesselReferencePhotoForSelection } from '../domain/vesselPhoto'
 import {
   createTrafficTooltipElement,
   trafficTooltipSummary,
@@ -20,6 +21,7 @@ class FakeElement {
   height = 0
   alt = ''
   loading = ''
+  decoding = ''
   referrerPolicy = ''
 
   append(...children: FakeElement[]) {
@@ -175,6 +177,81 @@ describe('trafficTooltipSummary', () => {
             child.className === 'traffic-tooltip__photo-link',
         ),
       ).toBe(false)
+    })
+
+    it('shows a credited bundled vessel photo for the exact hovered identity', () => {
+      const matchedVessel = vessel({
+        id: 'vessel:230628000',
+        imo: 9214379,
+        name: 'Finlandia',
+      })
+      const vesselPhoto =
+        vesselReferencePhotoForSelection(matchedVessel)
+      expect(vesselPhoto).toBeDefined()
+
+      const root = createTrafficTooltipElement(
+        matchedVessel,
+        fakeDocument,
+        { vesselPhoto },
+      ) as unknown as FakeElement
+      const link = root.children.find(
+        (child) => child.className === 'traffic-tooltip__photo-link',
+      )
+
+      expect(link).toMatchObject({
+        href: vesselPhoto?.identityEvidence.commonsRevisionUrl,
+        target: '_blank',
+        rel: 'noreferrer noopener',
+      })
+      expect(link?.children[0]).toMatchObject({
+        className: 'traffic-tooltip__photo',
+        src: '/vessel-photos/2026-09-26-v1/imo-9214379.jpg',
+        width: 640,
+        height: 472,
+        alt: 'Eckerö Line ferry Finlandia seen broadside at sea',
+        loading: 'eager',
+        decoding: 'async',
+      })
+      expect(link?.children[1]).toMatchObject({
+        className: 'traffic-tooltip__photo-credit',
+        textContent:
+          'Photo by Pjotr Mahhonin via Wikimedia Commons · CC BY-SA 3.0',
+      })
+      expect(link?.children[2]).toMatchObject({
+        className: 'traffic-tooltip__photo-status',
+        textContent:
+          'Historical reference matched to AIS-reported IMO 9214379',
+      })
+    })
+
+    it('keeps vessel photos absent before dwell and for a stale identity', () => {
+      const matchedVessel = vessel({
+        id: 'vessel:230628000',
+        imo: 9214379,
+      })
+      const vesselPhoto =
+        vesselReferencePhotoForSelection(matchedVessel)
+      const beforeDwell = createTrafficTooltipElement(
+        matchedVessel,
+        fakeDocument,
+      ) as unknown as FakeElement
+      const staleIdentity = createTrafficTooltipElement(
+        vessel({
+          id: 'vessel:230628001',
+          imo: 9214379,
+        }),
+        fakeDocument,
+        { vesselPhoto },
+      ) as unknown as FakeElement
+
+      for (const root of [beforeDwell, staleIdentity]) {
+        expect(
+          root.children.some(
+            (child) =>
+              child.className === 'traffic-tooltip__photo-link',
+          ),
+        ).toBe(false)
+      }
     })
   })
 
