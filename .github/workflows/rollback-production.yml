@@ -39,6 +39,7 @@ on:
         type: choice
         options:
           - worker-proxy
+          - oci-private-relay
           - adsb-lol-direct
       aircraft_endpoint_explicit:
         description: Whether the target build explicitly set VITE_AIRCRAFT_ENDPOINT

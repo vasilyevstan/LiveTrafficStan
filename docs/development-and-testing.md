@@ -79,10 +79,13 @@ VITE_AIRCRAFT_ENDPOINT=https://api.adsb.lol npm run build
 
 This proves only bundle configuration. Real acceptance additionally requires
 provider approval and a browser-origin response whose success and throttling
-states expose usable CORS. The production and rollback workflows pass
-`worker-proxy` or `adsb-lol-direct` as the third argument to
+states expose usable CORS. The production and rollback workflows pass `worker-proxy`,
+`oci-private-relay`, or `adsb-lol-direct` as the third argument to
 `scripts/smoke-production.mjs`; arbitrary endpoint strings are never workflow
-inputs.
+inputs. Private-relay smoke honors only a numeric, bounded local
+`503 Retry-After`, retries at most three times, and still requires a real
+`200` aircraft payload before accepting the release. Local admission retries
+do not create additional ADSB.lol requests.
 
 Plausible route lookup is enabled by default. To exercise the disabled state:
 

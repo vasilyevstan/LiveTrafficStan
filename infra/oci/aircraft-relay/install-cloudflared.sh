@@ -19,7 +19,7 @@ fail() {
 [[ "$2" =~ ^[0-9a-f]{64}$ ]] || fail 'invalid_service_unit_sha256'
 printf '%s  %s\n' "$2" "$1" | sha256sum -c -
 
-IFS= read -r tunnel_token
+IFS= read -r tunnel_token || [[ -n "$tunnel_token" ]]
 [[ "${#tunnel_token}" -ge 32 ]] || fail 'invalid_tunnel_token'
 
 temporary_rpm="$(mktemp)"

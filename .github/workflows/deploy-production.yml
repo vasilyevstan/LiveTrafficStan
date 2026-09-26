@@ -27,6 +27,7 @@ on:
         type: choice
         options:
           - worker-proxy
+          - oci-private-relay
           - adsb-lol-direct
       flight_route_enabled:
         description: Enable direct ADSB.lol plausible-route lookup
@@ -83,11 +84,16 @@ jobs:
 
       - name: Verify deployment credentials
         env:
+          AIRCRAFT_DELIVERY: ${{ inputs.aircraft_delivery }}
+          AIRCRAFT_RELAY_AUTH_TOKEN: ${{ secrets.AIRCRAFT_RELAY_AUTH_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
           test -n "$CLOUDFLARE_ACCOUNT_ID"
           test -n "$CLOUDFLARE_API_TOKEN"
+          if [[ "$AIRCRAFT_DELIVERY" == "oci-private-relay" ]]; then
+            test "${#AIRCRAFT_RELAY_AUTH_TOKEN}" -ge 32
+          fi
 
       - name: Use Node.js
         uses: actions/setup-node@v6
@@ -129,6 +135,17 @@ jobs:
       - name: Check exact deployment bundle
         run: npm run check:deploy
 
+      - name: Configure private relay secret
+        if: inputs.aircraft_delivery == 'oci-private-relay'
+        env:
+          AIRCRAFT_RELAY_AUTH_TOKEN: ${{ secrets.AIRCRAFT_RELAY_AUTH_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: >-
+          printf '%s' "$AIRCRAFT_RELAY_AUTH_TOKEN" |
+          npx wrangler secret put AIRCRAFT_RELAY_AUTH_TOKEN
+          --name livetrafficstan
+
       - name: Deploy exact source
         id: deploy
         uses: cloudflare/wrangler-action@v4
@@ -142,6 +159,7 @@ jobs:
           command: >-
             deploy
             --var RELEASE_SHA:${{ inputs.sha }}
+            --var AIRCRAFT_DELIVERY:${{ inputs.aircraft_delivery }}
 
       - name: Smoke deployed application
         run: >-

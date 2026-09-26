@@ -72,6 +72,8 @@ ADSB.lol. Common causes are:
 Production records one protected `aircraft_delivery` value:
 
 - `worker-proxy` uses `/api/aircraft` and the Cloudflare Worker;
+- `oci-private-relay` uses the same browser route, then the fixed Workers VPC
+  Service, private Tunnel, and loopback OCI relay;
 - `adsb-lol-direct` uses `https://api.adsb.lol` from the browser.
 
 For direct mode, inspect the provider response rather than the Worker route.
@@ -104,10 +106,12 @@ is provider throttling, not an empty traffic snapshot or a reason to spoof
 client IP headers. The deployment smoke accepts only this explicit `429` as a
 degraded provider state; other unexpected upstream statuses still fail.
 
-The private OCI recovery path is documented in
-[OCI Aircraft Relay](oci-aircraft-relay.md). Once its Worker mode is active,
+The private OCI path is documented in
+[OCI Aircraft Relay](oci-aircraft-relay.md). In `oci-private-relay` mode,
 interpret a relay-local `503` with `Retry-After` as aggregate admission or
-persisted provider backoff: that request did not reach ADSB.lol. A VPC
+persisted provider backoff: that request did not reach ADSB.lol. The existing
+aircraft scheduler waits for that guidance without adding another scheduler or
+resetting its normal cadence. A VPC
 `fetch()` exception indicates VPC Service, Tunnel, connector, or loopback
 origin failure; `401` indicates a Worker/relay secret mismatch. Do not respond
 by rotating the OCI address, falling back to shared Cloudflare egress, exposing
@@ -132,8 +136,9 @@ the same exact source and inputs. Do not change the source or bypass the
 exact-current-`main` guard. #134 tracks the bounded Worker-header retry.
 
 Production deployment credentials exist only in the protected GitHub
-`production` environment. Do not duplicate them in repository secrets, place
-them in `.env.local`, or expose them through any `VITE_*` variable.
+`production` environment. This includes `AIRCRAFT_RELAY_AUTH_TOKEN` when
+private mode is used. Do not duplicate them in repository secrets, place them
+in `.env.local`, or expose them through any `VITE_*` variable.
 
 ## METAR shows unavailable, waiting, or empty
 

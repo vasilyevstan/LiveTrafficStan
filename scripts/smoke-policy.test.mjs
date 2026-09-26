@@ -68,6 +68,9 @@ describe('production smoke policy', () => {
       "aircraftDelivery === 'adsb-lol-direct'",
     )
     expect(smokeScript).toContain(
+      "aircraftDelivery === 'oci-private-relay'",
+    )
+    expect(smokeScript).toContain(
       "new URL(\n      '/v2/point/59.437/24.754/11',\n      'https://api.adsb.lol',",
     )
     expect(smokeScript).toContain(
@@ -88,6 +91,16 @@ describe('production smoke policy', () => {
     )
     expect(classifyAircraftProxyStatus(403)).toBe('failure')
     expect(classifyAircraftProxyStatus(502)).toBe('failure')
+  })
+
+  it('bounds private relay admission retries', () => {
+    expect(smokeScript).toContain('const PRIVATE_RELAY_MAX_ATTEMPTS = 3')
+    expect(smokeScript).toContain(
+      'const PRIVATE_RELAY_MAX_RETRY_AFTER_SECONDS = 30',
+    )
+    expect(smokeScript).toContain(
+      "'Private aircraft relay remained unavailable after bounded retries'",
+    )
   })
 
   it('requires a non-contradictory one-year immutable cache policy', () => {

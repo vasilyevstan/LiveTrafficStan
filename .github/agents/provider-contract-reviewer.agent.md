@@ -13,8 +13,15 @@ Check these project invariants:
 - ADSB.lol requests remain non-overlapping and no more frequent than the
   configured polling cadence, including rapid viewport and Home changes.
 - The protected aircraft-delivery value is one fixed build-time choice:
-  `worker-proxy` or `adsb-lol-direct`. It must not become a browser-controlled
-  URL, runtime failover, provider rotation, or second scheduler.
+  `worker-proxy`, `oci-private-relay`, or `adsb-lol-direct`. It must not become
+  a browser-controlled URL, runtime failover, provider rotation, or second
+  scheduler.
+- Private relay mode uses only the exact VPC Service binding and a protected
+  Worker secret added to the newly constructed relay request. It must not
+  forward browser credentials or client IP, expose public relay ingress, cache
+  live responses, log coordinates, or fall back to shared Cloudflare egress.
+  Relay-local `503 Retry-After` must pause the existing aircraft lifecycle
+  without reporting an empty sky or adding another scheduler.
 - Direct aircraft delivery may activate only after the provider approves it
   and successful plus throttled responses expose browser-readable CORS. It
   remains credential-free and `no-store`, and it must preserve exact point

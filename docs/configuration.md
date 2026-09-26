@@ -207,12 +207,21 @@ Vite development and preview rewrite `/api/aircraft` to
 Setting `VITE_AIRCRAFT_ENDPOINT` to an absolute URL bypasses those same-origin
 routes, but it works only if the target explicitly allows browser CORS.
 
-The protected deployment and rollback workflows expose only two fixed
+The protected deployment and rollback workflows expose only three fixed
 aircraft-delivery values:
 
-- `worker-proxy` builds with `/api/aircraft` and is the current production
-  mode;
+- `worker-proxy` builds with `/api/aircraft` and uses shared Cloudflare
+  outbound identity;
+- `oci-private-relay` also builds with `/api/aircraft`, but the Worker sends
+  only the validated fixed path through the checked `AIRCRAFT_RELAY` VPC
+  Service binding with the protected `AIRCRAFT_RELAY_AUTH_TOKEN`;
 - `adsb-lol-direct` builds with `https://api.adsb.lol`.
+
+Private mode never changes the browser endpoint and never falls back to
+`worker-proxy`. Missing binding, missing/short secret, VPC failure, Tunnel
+failure, or relay failure remains an explicit unavailable response. A
+relay-local `503 Retry-After` pauses the existing aircraft scheduler without
+resetting cadence or presenting an empty sky.
 
 The direct mode is source-ready but not authorization: deploy it only after
 ADSB.lol confirms the browser path and the live API returns an accepted

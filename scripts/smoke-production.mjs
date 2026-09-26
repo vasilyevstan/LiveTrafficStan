@@ -13,6 +13,8 @@ import {
 } from './smoke-policy.mjs'
 
 const MAX_AIRCRAFT_RESPONSE_BYTES = 4 * 1_024 * 1_024
+const PRIVATE_RELAY_MAX_ATTEMPTS = 3
+const PRIVATE_RELAY_MAX_RETRY_AFTER_SECONDS = 30
 
 const [
   deploymentUrl,
@@ -32,10 +34,11 @@ if (!/^[0-9a-f]{40}$/.test(expectedReleaseSha)) {
 
 if (
   aircraftDelivery !== 'worker-proxy' &&
+  aircraftDelivery !== 'oci-private-relay' &&
   aircraftDelivery !== 'adsb-lol-direct'
 ) {
   throw new Error(
-    'The aircraft delivery must be "worker-proxy" or "adsb-lol-direct"',
+    'The aircraft delivery must be "worker-proxy", "oci-private-relay", or "adsb-lol-direct"',
   )
 }
 
@@ -277,6 +280,35 @@ const waitForWorkerRelease = async () => {
   void response.body?.cancel().catch(() => undefined)
 }
 
+const fetchPrivateRelayAircraft = async (url) => {
+  for (let attempt = 1; attempt <= PRIVATE_RELAY_MAX_ATTEMPTS; attempt += 1) {
+    const response = await fetchWithTimeout(url)
+    if (response.status !== 503) return response
+
+    const retryAfter = response.headers.get('retry-after')
+    assert(
+      retryAfter !== null && /^\d+$/.test(retryAfter),
+      'Private aircraft relay returned 503 without numeric Retry-After',
+    )
+    const retryAfterSeconds = Number(retryAfter)
+    assert(
+      retryAfterSeconds >= 1 &&
+        retryAfterSeconds <= PRIVATE_RELAY_MAX_RETRY_AFTER_SECONDS,
+      'Private aircraft relay returned an unsafe Retry-After',
+    )
+    void response.body?.cancel().catch(() => undefined)
+    assert(
+      attempt < PRIVATE_RELAY_MAX_ATTEMPTS,
+      'Private aircraft relay remained unavailable after bounded retries',
+    )
+    await new Promise((resolve) =>
+      setTimeout(resolve, retryAfterSeconds * 1_000),
+    )
+  }
+
+  throw new Error('Private aircraft relay retry loop exhausted')
+}
+
 const verifyAircraftProxy = async () => {
   await waitForWorkerRelease()
 
@@ -348,9 +380,25 @@ const verifyAircraftProxy = async () => {
   }
 
   const validPath = '/api/aircraft/v2/point/59.437/24.754/11'
-  const response = await fetchWithTimeout(new URL(validPath, baseUrl))
-  const status = classifyAircraftProxyStatus(response.status)
-  assert(status !== 'failure', `Aircraft proxy returned ${response.status}`)
+  const validUrl = new URL(validPath, baseUrl)
+  const response =
+    aircraftDelivery === 'oci-private-relay'
+      ? await fetchPrivateRelayAircraft(validUrl)
+      : await fetchWithTimeout(validUrl)
+  const status =
+    aircraftDelivery === 'oci-private-relay'
+      ? response.status === 200
+        ? 'available'
+        : 'failure'
+      : classifyAircraftProxyStatus(response.status)
+  assert(
+    status !== 'failure',
+    `${
+      aircraftDelivery === 'oci-private-relay'
+        ? 'Private aircraft relay'
+        : 'Aircraft proxy'
+    } returned ${response.status}`,
+  )
   assert(
     response.headers.get('x-livetrafficstan-release') === expectedReleaseSha,
     'Aircraft proxy release SHA does not match the deployed source',
