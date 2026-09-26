@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type {
   AircraftPhotoIdentity,
   AircraftPhotoLookupResult,
+  AircraftPhotoViewState,
 } from '../domain/aircraftPhoto'
 import {
   AircraftPhotoProviderError,
@@ -182,6 +183,65 @@ describe('AircraftPhotoController', () => {
     await Promise.resolve()
 
     detailsController.select(identities.first)
+    expect(detailsStates.at(-1)).toMatchObject({
+      phase: 'available',
+      identityKey: 'ABC123',
+    })
+    expect(provider.lookup).toHaveBeenCalledTimes(1)
+  })
+
+  it('publishes a hover result to already-selected matching details only', async () => {
+    const provider: AircraftPhotoProvider = {
+      lookup: vi.fn(async () => available('ABC123')),
+    }
+    const hoverController = new AircraftPhotoController(provider, config)
+    const matchingDetailsController = new AircraftPhotoController(
+      provider,
+      config,
+    )
+    const otherDetailsController = new AircraftPhotoController(provider, config)
+    const matchingStates: AircraftPhotoViewState[] = []
+    const otherStates: AircraftPhotoViewState[] = []
+    hoverController.subscribe(() => undefined)
+    matchingDetailsController.subscribe((state) => matchingStates.push(state))
+    otherDetailsController.subscribe((state) => otherStates.push(state))
+    matchingDetailsController.select(identities.first)
+    otherDetailsController.select(identities.second)
+
+    hoverController.select(identities.first)
+    hoverController.requestIfMissing(identities.first)
+    await Promise.resolve()
+
+    expect(matchingStates.at(-1)).toMatchObject({
+      phase: 'available',
+      identityKey: 'ABC123',
+    })
+    expect(otherStates.at(-1)).toEqual({
+      phase: 'idle',
+      identityKey: 'DEF456',
+    })
+    expect(provider.lookup).toHaveBeenCalledTimes(1)
+  })
+
+  it('restores shared result updates after disposal and resubscription', async () => {
+    const provider: AircraftPhotoProvider = {
+      lookup: vi.fn(async () => available('ABC123')),
+    }
+    const hoverController = new AircraftPhotoController(provider, config)
+    const detailsController = new AircraftPhotoController(provider, config)
+    hoverController.subscribe(() => undefined)
+    const unsubscribe = detailsController.subscribe(() => undefined)
+    detailsController.select(identities.first)
+    unsubscribe()
+    detailsController.dispose()
+
+    const detailsStates: AircraftPhotoViewState[] = []
+    detailsController.subscribe((state) => detailsStates.push(state))
+    detailsController.select(identities.first)
+    hoverController.select(identities.first)
+    hoverController.requestIfMissing(identities.first)
+    await Promise.resolve()
+
     expect(detailsStates.at(-1)).toMatchObject({
       phase: 'available',
       identityKey: 'ABC123',

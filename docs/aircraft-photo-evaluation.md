@@ -97,9 +97,17 @@ The selected-details and hover controllers each keep at most one request
 active. Selection or hover identity change, pointer leave, close, HISTORY
 entry, and unmount abort and revision-invalidate obsolete work. Successful and
 no-photo JSON results use one shared current-tab least-recently-used cache of at
-most 32 entries for at most one hour, so a completed hover lookup is reused by
-selected details. Errors are not cached, throttling is shared and honors
-`Retry-After`, and hover failures do not automatically retry.
+most 32 entries for at most one hour. A cacheable result is published to an
+already-open selected-details controller only when its exact ICAO24 identity
+matches, so a completed hover lookup appears there immediately without a
+second provider request. Subscription setup restores this shared notification
+after React development Strict Mode cleanup/replay. Errors are not cached,
+throttling is shared and honors `Retry-After`, and hover failures do not
+automatically retry.
+
+The prominent plausible-route section remains first. When available, the
+aircraft photo follows it before telemetry so the resolved image is visible in
+the open details panel rather than being hidden below the full field list.
 
 No photo JSON, URL, credit, or image byte is written to Web Storage, IndexedDB,
 the Cache API, the service worker, Worker cache, KV, R2, or a LiveTrafficStan
@@ -122,7 +130,9 @@ Synthetic browser and unit fixtures prove:
   and during HISTORY;
 - one request only after explicit action or one stable 500 ms aircraft hover;
 - A to B to A stale-result rejection and cancellation on leave/unmount;
-- shared hover/details cache reuse with no duplicate provider request;
+- select-first/hover-second shared cache publication to the exact open details
+  panel with no duplicate provider request, including Strict Mode
+  cleanup/re-subscribe;
 - unchanged API, CDN, and photo-page URLs;
 - direct image loading, visible credit, an interactive popup, exact target/rel,
   and no `nofollow`;

@@ -107,7 +107,10 @@ Selection, map movement outside a stable hover, provider refreshes, HISTORY,
 vessels, callsign, registration, airline, model, and fuzzy text never start or
 broaden a lookup. Requests are revision-guarded across A to B to A selection or
 hover changes. Only successful and no-photo JSON results may use one shared
-32-entry, one-hour current-tab LRU. Hover errors do not automatically retry,
+32-entry, one-hour current-tab LRU. A cacheable hover result publishes only to
+already-open selected details with the same exact ICAO24 and does not make a
+second request. The photo follows the prominent route section before telemetry
+so the resolved result is visible. Hover errors do not automatically retry,
 and no photo state uses persistent storage. The image and API response never
 pass through the Worker, service worker, Cache API, IndexedDB, Web Storage, KV,
 or R2.

@@ -29,6 +29,9 @@ interface CacheEntry {
 interface SharedAircraftPhotoSession {
   blockedUntil: number
   cache: Map<string, CacheEntry>
+  listeners: Set<
+    (identityKey: string, result: AircraftPhotoLookupResult) => void
+  >
 }
 
 const browserRuntime: AircraftPhotoControllerRuntime = {
@@ -47,6 +50,7 @@ const sharedSessionFor = (provider: AircraftPhotoProvider) => {
   const session: SharedAircraftPhotoSession = {
     blockedUntil: 0,
     cache: new Map(),
+    listeners: new Set(),
   }
   sharedSessions.set(provider, session)
   return session
@@ -69,6 +73,18 @@ export class AircraftPhotoController {
   private revision = 0
   private selectedIdentity?: AircraftPhotoIdentity
   private selectedIdentityKey?: string
+  private readonly sharedResultListener = (
+    identityKey: string,
+    result: AircraftPhotoLookupResult,
+  ) => {
+    if (
+      identityKey !== this.selectedIdentityKey ||
+      this.state.phase === 'loading'
+    ) {
+      return
+    }
+    this.publishResult(identityKey, result)
+  }
 
   constructor(
     provider: AircraftPhotoProvider,
@@ -83,9 +99,13 @@ export class AircraftPhotoController {
 
   subscribe(listener: Listener) {
     this.listener = listener
+    this.session.listeners.add(this.sharedResultListener)
     listener(this.state)
     return () => {
-      if (this.listener === listener) this.listener = undefined
+      if (this.listener === listener) {
+        this.listener = undefined
+        this.session.listeners.delete(this.sharedResultListener)
+      }
     }
   }
 
@@ -119,6 +139,7 @@ export class AircraftPhotoController {
 
   request(requestedIdentity: AircraftPhotoIdentity) {
     this.select(requestedIdentity)
+    if (this.state.phase === 'available') return
     if (
       this.selectedIdentityKey &&
       (this.state.phase === 'idle' ||
@@ -250,6 +271,7 @@ export class AircraftPhotoController {
     this.requestController = undefined
     this.listener = undefined
     this.automaticAttempts.clear()
+    this.session.listeners.delete(this.sharedResultListener)
   }
 
   private publishResult(
@@ -301,6 +323,9 @@ export class AircraftPhotoController {
       const oldestKey = this.session.cache.keys().next().value
       if (typeof oldestKey !== 'string') break
       this.session.cache.delete(oldestKey)
+    }
+    for (const listener of this.session.listeners) {
+      listener(identityKey, result)
     }
   }
 

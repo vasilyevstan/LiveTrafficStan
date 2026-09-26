@@ -773,11 +773,13 @@ The Node/Vitest suite does not mount MapLibre or prove pointer timing and popup
 reachability. Before any live aircraft-photo request, use the milestone CDP
 browser fixture to prove that aircraft selection, HISTORY, and sub-dwell
 aircraft hover make zero aircraft-photo requests; explicit action or one
-stable 500 ms aircraft hover makes one; hover and selected details share a
-successful/no-photo tab-cache entry; A to B to A cannot publish a stale result;
-the popup remains reachable for its exact thumbnail link; direct
-thumbnail/link/credit semantics pass; errors remain local; and no provider
-content reaches Web Storage, IndexedDB, Cache API, or service-worker caches.
+stable 500 ms aircraft hover makes one; selecting first and then resolving the
+same exact aircraft through hover publishes the successful/no-photo cache entry
+into the already-open details panel without another request, including after
+Strict Mode cleanup/re-subscribe; A to B to A cannot publish a stale result;
+the popup remains reachable for its exact thumbnail link; direct thumbnail/
+link/credit semantics pass; errors remain local; and no provider content
+reaches Web Storage, IndexedDB, Cache API, or service-worker caches.
 
 One bounded browser-origin request is the ordinary acceptance budget unless a
 later Issue explicitly authorizes another. Record the application origin,

@@ -208,6 +208,20 @@ identity/staleness checks. A refreshed source, schema, generator, or byte set
 requires a new output version followed by
 `npm run update:aircraft-metadata`.
 
+## Aircraft photo appears in hover but not selected details
+
+For the same exact selected ICAO24, a successful 500 ms hover lookup should
+populate the already-open selected-details photo without a second
+Planespotters request. The photo appears after the prominent plausible-route
+section and before telemetry. Different aircraft identities must remain
+isolated.
+
+If the tooltip has the photo but matching details still show **Load aircraft
+photo**, confirm the application includes the shared-cache subscription fix,
+then record the selected ICAO24, tooltip ICAO24, request count, and whether the
+page is a development Strict Mode build. Do not click repeatedly or add a
+second request path as a workaround.
+
 ## Marine shows unavailable or reconnecting
 
 Digitraffic requires both HTTPS REST and secure WebSocket access. Check:
