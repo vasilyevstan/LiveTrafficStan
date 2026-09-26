@@ -133,11 +133,12 @@ binds one valid exact IMO to one Wikidata item, one fixed Commons file-page
 revision, the reviewed source bytes, author, selected license and URL, exact
 credit, bounded derivative dimensions, and SHA-256.
 
-Only a selected live vessel with that exact AIS-reported IMO renders the
-versioned same-origin image. Missing, invalid, or unmatched IMO renders no
-photo. MMSI/name/callsign/fuzzy matching, arbitrary runtime Wikidata P18,
-generic/class/sister-ship substitutes, and runtime Commons/tracker requests
-remain rejected.
+Only a selected live vessel or a vessel held under a fine pointer for the
+existing 500 ms dwell with that exact AIS-reported IMO renders the versioned
+same-origin image. Missing, invalid, unmatched, or sub-dwell hover states
+render no photo. MMSI/name/callsign/fuzzy matching, arbitrary runtime Wikidata
+P18, generic/class/sister-ship substitutes, and runtime Commons/tracker
+requests remain rejected.
 
 The bundled image is labeled historical reference context rather than a live
 view or independent confirmation of the current AIS transmitter. It appears

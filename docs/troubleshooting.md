@@ -123,6 +123,14 @@ broader convenience proxy. A missing asset must remain a real 404. On a public
 deployment, compare the `X-LiveTrafficStan-Release` header with the exact
 deployed SHA.
 
+Cloudflare can briefly serve the predecessor Worker from one edge after
+Wrangler reports a successful upload. Static-asset smoke has a bounded
+propagation retry, but the Worker release-header check is currently
+single-attempt. If the only failure is a known predecessor
+`X-LiveTrafficStan-Release`, wait for the public header to converge and rerun
+the same exact source and inputs. Do not change the source or bypass the
+exact-current-`main` guard. #134 tracks the bounded Worker-header retry.
+
 Production deployment credentials exist only in the protected GitHub
 `production` environment. Do not duplicate them in repository secrets, place
 them in `.env.local`, or expose them through any `VITE_*` variable.
@@ -215,11 +223,11 @@ initialization may still provide a recent snapshot when streaming is
 temporarily unavailable, but the status remains honest about a disconnected
 live stream.
 
-## A selected ship has no reference photo
+## A ship has no reference photo
 
 This is normally expected. The first bundled manifest contains only five
-reviewed ferries and requires the selected live vessel to report a valid exact
-IMO:
+reviewed ferries and requires the selected or stably hovered live vessel to
+report a valid exact IMO:
 
 - Finlandia `9214379`;
 - Victoria I `9281281`;

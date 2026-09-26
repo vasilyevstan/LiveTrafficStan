@@ -103,11 +103,12 @@ targeted tests where the value affects filtering, freshness, history, or motion.
 
 Vessel reference photos are versioned static data rather than an environment
 override. `src/config/vesselPhotoManifest.json` is the complete identity,
-source, rights, checksum, and presentation contract. A selected live vessel
-must report a valid exact IMO in that manifest. Changed source evidence,
-metadata, transformation, or image bytes require a new manifest version and
-new `/vessel-photos/<version>/` path; an existing immutable version is never
-edited in place.
+source, rights, checksum, and presentation contract. A selected live vessel or
+a vessel held under a fine pointer for the existing 500 ms dwell must report a
+valid exact IMO in that manifest. Changed source evidence, metadata,
+transformation, or image bytes require a new manifest version and new
+`/vessel-photos/<version>/` path; an existing immutable version is never edited
+in place.
 
 Trail duration and visibility are fields in the versioned preference schema.
 The released
