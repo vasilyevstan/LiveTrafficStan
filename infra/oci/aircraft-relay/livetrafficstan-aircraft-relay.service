@@ -1,0 +1,27 @@
+[Unit]
+Description=LiveTrafficStan aircraft relay
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=livetrafficstan-relay
+Group=livetrafficstan-relay
+EnvironmentFile=/etc/livetrafficstan-aircraft-relay.env
+ExecStart=/usr/local/bin/node /opt/livetrafficstan-aircraft-relay/current/server.mjs
+Restart=on-failure
+RestartSec=5s
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+ReadWritePaths=/var/lib/livetrafficstan-aircraft-relay
+
+[Install]
+WantedBy=multi-user.target
