@@ -498,7 +498,9 @@ Use `npm run dev` and verify:
     fixed Commons revision, selected license, modification notice, and the
     historical/not-live caveat visible. An invalid or unmatched IMO shows no
     image. Switching matched A to matched B to A never flashes the wrong hull;
-    HISTORY, hover, and search results show no vessel photo and make no
+    HISTORY and search results show no vessel photo. A sub-500 ms hover adds no
+    image request; one stable matched-vessel hover loads only the correct
+    same-origin asset with fixed-source and rights context. No hover makes a
     Wikimedia, Wikidata, tracker, or image-provider request. Verify all five
     same-origin assets return `200` with immutable caching.
 17. With SHIPS hidden, matching results remain counted but cannot be selected.
@@ -516,12 +518,13 @@ Use `npm run dev` and verify:
     flight/callsign, reported type, reported altitude in the selected unit
     system, or vessel name, MMSI-derived flag, speed over ground in both km/h
     and knots, and explicitly labeled AIS destination using text-safe DOM
-    construction. With photos disabled, hover, leave, drag, style replacement,
-    and entity expiry add no request. With the evaluation enabled, a sub-500 ms
-    aircraft hover and every vessel hover add no request; one stable aircraft
-    hover may add one direct photo request, and leaving, replacement, expiry, or
-    HISTORY aborts obsolete work. Metadata, route, traffic-provider, reconnect,
-    and polling behavior remains unchanged. Cluster counts and port, airport,
+    construction. With aircraft photos disabled, hover, leave, drag, style
+    replacement, and entity expiry add no aircraft-photo request. A sub-500 ms
+    aircraft or vessel hover adds no image request. One stable aircraft hover
+    may add one direct provider request; one stable exact-IMO vessel hover may
+    load one bundled same-origin image. Leaving, replacement, expiry, or
+    HISTORY aborts or omits obsolete work. Metadata, route, traffic-provider,
+    reconnect, and polling behavior remains unchanged. Cluster counts and port, airport,
     and weather labels reuse the active style's declared font stack; glyph-free
     fallback uses local system fonts with no unsupported Open Sans request or
     browser diagnostic. Operations More exposes the same exact altitude,
@@ -763,15 +766,14 @@ VITE_AIRCRAFT_PHOTO_ENABLED=true npm run dev -- --host 127.0.0.1 --port 5174
 ```
 
 The Node/Vitest suite does not mount MapLibre or prove pointer timing and popup
-reachability. Before any live request, use the milestone CDP browser fixture to
-prove that
-selection, HISTORY, sub-dwell aircraft hover, and vessel hover make zero photo
-requests; explicit action or one stable 500 ms aircraft hover makes one; hover
-and selected details share a successful/no-photo tab-cache entry; A to B to A
-cannot publish a stale result; the popup remains reachable for its exact
-thumbnail link; direct thumbnail/link/credit semantics pass; errors remain
-local; and no provider content reaches Web Storage, IndexedDB, Cache API, or
-service-worker caches.
+reachability. Before any live aircraft-photo request, use the milestone CDP
+browser fixture to prove that aircraft selection, HISTORY, and sub-dwell
+aircraft hover make zero aircraft-photo requests; explicit action or one
+stable 500 ms aircraft hover makes one; hover and selected details share a
+successful/no-photo tab-cache entry; A to B to A cannot publish a stale result;
+the popup remains reachable for its exact thumbnail link; direct
+thumbnail/link/credit semantics pass; errors remain local; and no provider
+content reaches Web Storage, IndexedDB, Cache API, or service-worker caches.
 
 One bounded browser-origin request is the ordinary acceptance budget unless a
 later Issue explicitly authorizes another. Record the application origin,
@@ -788,9 +790,12 @@ Vessel-photo acceptance requires no live image-provider request. Run
 deterministic live-vessel fixtures for all five reviewed IMOs plus one valid
 unmatched and one invalid IMO. Confirm exact image bytes, immutable headers,
 source/license navigation, no horizontal overflow, and no stale hull across A
-to B to A selection at desktop 1280x900 and mobile 390x844 and 390x568. The
-Network panel must show only the selected same-origin `/vessel-photos/` asset;
-HISTORY, hover, search, and unmatched selections must add no image request.
+to B to A selection at desktop 1280x900 and mobile 390x844 and 390x568. At
+desktop width, prove a sub-500 ms hover adds no image request, a stable matched
+hover loads only its same-origin `/vessel-photos/` asset and presents the
+fixed-source/rights context, and unmatched or stale identity hover stays
+photo-free. HISTORY, search, and unmatched selections must add no image
+request, and no scenario may contact Wikimedia, Wikidata, or a tracker.
 
 Use local fixtures, fake clocks, fake maps, mocked fetch, and mocked MQTT for
 repeated lifecycle checks. A milestone needs one bounded real-provider browser

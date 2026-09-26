@@ -31,6 +31,7 @@ import type {
   TrailPoint,
 } from '../domain/traffic'
 import type { UnitSystem } from '../domain/units'
+import { vesselReferencePhotoForSelection } from '../domain/vesselPhoto'
 import type { DisplayWeatherObservation } from '../domain/weatherObservations'
 import {
   assessTrafficViewport,
@@ -151,6 +152,7 @@ interface TrafficMapProps {
   aircraftPhotoEnabled: boolean
   aircraftPhoto: AircraftPhotoViewState
   aircraftPhotoHoverDelayMs: number
+  vesselPhotoEnabled: boolean
   viewRequestId: number
   viewportSettleMs: number
   onHoverAircraftChange: (id: string | null) => void
@@ -212,6 +214,11 @@ const supportsMouseHover = () => {
     return true
   }
 }
+
+const trafficTooltipIdentity = (entity: TrafficEntity) =>
+  entity.kind === 'aircraft'
+    ? `${entity.id}|${entity.hex.trim().toUpperCase()}`
+    : `${entity.id}|${entity.imo ?? ''}`
 
 const trailData = (
   segments: readonly (readonly TrailPoint[])[],
@@ -321,6 +328,7 @@ export function TrafficMap({
   aircraftPhotoEnabled,
   aircraftPhoto,
   aircraftPhotoHoverDelayMs,
+  vesselPhotoEnabled,
   viewRequestId,
   viewportSettleMs,
   onHoverAircraftChange,
@@ -427,8 +435,11 @@ export function TrafficMap({
     aircraftPhotoEnabled,
   )
   const aircraftPhotoRef = useRef(aircraftPhoto)
+  const vesselPhotoEnabledRef = useRef(vesselPhotoEnabled)
+  const previousVesselPhotoEnabledRef = useRef(vesselPhotoEnabled)
   const hoverAircraftChangeRef = useRef(onHoverAircraftChange)
   const hoveredTrafficIdRef = useRef<string | null>(null)
+  const hoveredTrafficIdentityRef = useRef<string | null>(null)
   const hideTrafficTooltipRef = useRef<() => void>(() => undefined)
   const refreshTrafficTooltipRef = useRef<() => void>(() => undefined)
 
@@ -897,15 +908,24 @@ export function TrafficMap({
 
   useEffect(() => {
     const wasEnabled = previousAircraftPhotoEnabledRef.current
+    const wasVesselPhotoEnabled =
+      previousVesselPhotoEnabledRef.current
     previousAircraftPhotoEnabledRef.current = aircraftPhotoEnabled
+    previousVesselPhotoEnabledRef.current = vesselPhotoEnabled
     aircraftPhotoEnabledRef.current = aircraftPhotoEnabled
     aircraftPhotoRef.current = aircraftPhoto
-    if (wasEnabled && !aircraftPhotoEnabled) {
+    vesselPhotoEnabledRef.current = vesselPhotoEnabled
+    if (
+      (wasEnabled && !aircraftPhotoEnabled) ||
+      (wasVesselPhotoEnabled && !vesselPhotoEnabled)
+    ) {
       hideTrafficTooltipRef.current()
       return
     }
-    if (aircraftPhotoEnabled) refreshTrafficTooltipRef.current()
-  }, [aircraftPhoto, aircraftPhotoEnabled])
+    if (aircraftPhotoEnabled || vesselPhotoEnabled) {
+      refreshTrafficTooltipRef.current()
+    }
+  }, [aircraftPhoto, aircraftPhotoEnabled, vesselPhotoEnabled])
 
   useEffect(() => {
     viewStateRef.current = {
@@ -954,15 +974,19 @@ export function TrafficMap({
     const hoverPopup = new Popup({
       closeButton: false,
       closeOnClick: false,
+      focusAfterOpen: false,
       className: 'traffic-hover-popup',
       maxWidth: '280px',
       offset: 14,
     })
     const hoverEnabled = supportsMouseHover()
     let tooltipPointerInside = false
+    let tooltipFocusInside = false
     let tooltipHideTimer: number | undefined
-    let aircraftPhotoDwellTimer: number | undefined
-    let pendingAircraftPhotoId: string | null = null
+    let hoverPopupElement: HTMLElement | null = null
+    let trafficPhotoDwellTimer: number | undefined
+    let pendingTrafficPhotoId: string | null = null
+    let activeTrafficPhotoId: string | null = null
     let activeAircraftPhotoId: string | null = null
     let lastTrafficHoverPoint: [number, number] | null = null
     const cancelTrafficTooltipHide = () => {
@@ -970,47 +994,49 @@ export function TrafficMap({
       window.clearTimeout(tooltipHideTimer)
       tooltipHideTimer = undefined
     }
-    const cancelAircraftPhotoDwell = () => {
-      if (aircraftPhotoDwellTimer !== undefined) {
-        window.clearTimeout(aircraftPhotoDwellTimer)
-        aircraftPhotoDwellTimer = undefined
+    const cancelTrafficPhotoDwell = () => {
+      if (trafficPhotoDwellTimer !== undefined) {
+        window.clearTimeout(trafficPhotoDwellTimer)
+        trafficPhotoDwellTimer = undefined
       }
-      pendingAircraftPhotoId = null
+      pendingTrafficPhotoId = null
     }
-    const clearAircraftPhotoHover = () => {
-      cancelAircraftPhotoDwell()
+    const clearTrafficPhotoHover = () => {
+      cancelTrafficPhotoDwell()
+      activeTrafficPhotoId = null
       if (activeAircraftPhotoId !== null) {
         activeAircraftPhotoId = null
         hoverAircraftChangeRef.current(null)
       }
     }
-    const scheduleAircraftPhotoHover = (
+    const trafficPhotoEligible = (entity: TrafficEntity) =>
+      entity.kind === 'aircraft'
+        ? aircraftPhotoEnabledRef.current
+        : vesselPhotoEnabledRef.current &&
+          vesselReferencePhotoForSelection(entity) !== undefined
+    const scheduleTrafficPhotoHover = (
       entity: TrafficEntity,
       point: { x: number; y: number },
     ) => {
       lastTrafficHoverPoint = [point.x, point.y]
-      if (
-        entity.kind !== 'aircraft' ||
-        !aircraftPhotoEnabledRef.current
-      ) {
-        clearAircraftPhotoHover()
+      if (!trafficPhotoEligible(entity)) {
+        clearTrafficPhotoHover()
         return
       }
       if (
-        activeAircraftPhotoId === entity.id ||
-        pendingAircraftPhotoId === entity.id
+        activeTrafficPhotoId === entity.id ||
+        pendingTrafficPhotoId === entity.id
       ) {
         return
       }
 
-      clearAircraftPhotoHover()
-      pendingAircraftPhotoId = entity.id
-      aircraftPhotoDwellTimer = window.setTimeout(() => {
-        aircraftPhotoDwellTimer = undefined
-        pendingAircraftPhotoId = null
+      clearTrafficPhotoHover()
+      pendingTrafficPhotoId = entity.id
+      trafficPhotoDwellTimer = window.setTimeout(() => {
+        trafficPhotoDwellTimer = undefined
+        pendingTrafficPhotoId = null
         if (
           hoveredTrafficIdRef.current !== entity.id ||
-          !aircraftPhotoEnabledRef.current ||
           !lastTrafficHoverPoint
         ) {
           return
@@ -1026,25 +1052,73 @@ export function TrafficMap({
               )
             : null
         if (hoveredId !== entity.id) return
-        activeAircraftPhotoId = entity.id
-        hoverAircraftChangeRef.current(entity.id)
+        const currentEntity = trafficEntity(entity.id)
+        if (!currentEntity || !trafficPhotoEligible(currentEntity)) return
+        activeTrafficPhotoId = entity.id
+        if (currentEntity.kind === 'aircraft') {
+          activeAircraftPhotoId = entity.id
+          hoverAircraftChangeRef.current(entity.id)
+        } else {
+          refreshTrafficTooltipRef.current()
+        }
       }, aircraftPhotoHoverDelayMs)
     }
     const hideTrafficTooltip = () => {
       cancelTrafficTooltipHide()
-      clearAircraftPhotoHover()
+      clearTrafficPhotoHover()
       hoveredTrafficIdRef.current = null
+      hoveredTrafficIdentityRef.current = null
       lastTrafficHoverPoint = null
       tooltipPointerInside = false
+      tooltipFocusInside = false
       hoverPopup.remove()
     }
     const scheduleTrafficTooltipHide = () => {
-      cancelAircraftPhotoDwell()
+      cancelTrafficPhotoDwell()
       cancelTrafficTooltipHide()
       tooltipHideTimer = window.setTimeout(() => {
         tooltipHideTimer = undefined
-        if (!tooltipPointerInside) hideTrafficTooltip()
+        if (!tooltipPointerInside && !tooltipFocusInside) {
+          hideTrafficTooltip()
+        }
       }, 120)
+    }
+    const bindHoverPopupInteractions = () => {
+      const element = hoverPopup.getElement()
+      if (element === hoverPopupElement) return
+      hoverPopupElement = element
+      element.addEventListener('pointerenter', () => {
+        tooltipPointerInside = true
+        cancelTrafficTooltipHide()
+      })
+      element.addEventListener('pointerleave', () => {
+        tooltipPointerInside = false
+        scheduleTrafficTooltipHide()
+      })
+      element.addEventListener('focusin', () => {
+        tooltipFocusInside = true
+        cancelTrafficTooltipHide()
+      })
+      element.addEventListener('focusout', (event) => {
+        if (
+          event.relatedTarget instanceof Node &&
+          element.contains(event.relatedTarget)
+        ) {
+          return
+        }
+        tooltipFocusInside = false
+        scheduleTrafficTooltipHide()
+      })
+      element.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape') return
+        event.preventDefault()
+        event.stopPropagation()
+        hideTrafficTooltip()
+        canvas.focus()
+      })
+      for (const eventName of ['click', 'dblclick', 'pointerdown'] as const) {
+        element.addEventListener(eventName, (event) => event.stopPropagation())
+      }
     }
     hideTrafficTooltipRef.current = hideTrafficTooltip
     const pointerOrigins = new Map<number, { x: number; y: number }>()
@@ -1193,22 +1267,18 @@ export function TrafficMap({
     }
 
     const renderTrafficTooltip = (entity: TrafficEntity) => {
+      hoveredTrafficIdentityRef.current = trafficTooltipIdentity(entity)
       const element = createTrafficTooltipElement(entity, document, {
         aircraftPhotoEnabled: aircraftPhotoEnabledRef.current,
         aircraftPhoto: aircraftPhotoRef.current,
         units: unitsRef.current,
+        vesselPhoto:
+          entity.kind === 'vessel' &&
+          vesselPhotoEnabledRef.current &&
+          activeTrafficPhotoId === entity.id
+            ? vesselReferencePhotoForSelection(entity)
+            : undefined,
       })
-      element.addEventListener('pointerenter', () => {
-        tooltipPointerInside = true
-        cancelTrafficTooltipHide()
-      })
-      element.addEventListener('pointerleave', () => {
-        tooltipPointerInside = false
-        scheduleTrafficTooltipHide()
-      })
-      for (const eventName of ['click', 'dblclick', 'pointerdown'] as const) {
-        element.addEventListener(eventName, (event) => event.stopPropagation())
-      }
       hoverPopup.setDOMContent(element)
     }
     refreshTrafficTooltipRef.current = () => {
@@ -1220,6 +1290,29 @@ export function TrafficMap({
         return
       }
       renderTrafficTooltip(entity)
+    }
+    const revalidateTrafficTooltip = () => {
+      const hoveredId = hoveredTrafficIdRef.current
+      if (
+        !hoveredId ||
+        !hoverPopup.isOpen() ||
+        tooltipPointerInside ||
+        tooltipFocusInside ||
+        !lastTrafficHoverPoint
+      ) {
+        return
+      }
+      const layers = activeTrafficLayers()
+      const renderedId =
+        layers.length > 0
+          ? exactEligibleFeatureId(
+              map.queryRenderedFeatures(lastTrafficHoverPoint, {
+                layers,
+              }),
+              selectableTrafficIds(),
+            )
+          : null
+      if (renderedId !== hoveredId) hideTrafficTooltip()
     }
 
     const selectablePortIds = () =>
@@ -1314,6 +1407,7 @@ export function TrafficMap({
 
     map.on('movestart', hideTrafficTooltip)
     map.on('style.load', hideTrafficTooltip)
+    map.on('render', revalidateTrafficTooltip)
 
     map.on('moveend', () => {
       scheduleViewportReport(map)
@@ -1523,9 +1617,12 @@ export function TrafficMap({
         hoveredTrafficIdRef.current = hoveredId
         renderTrafficTooltip(entity)
       }
-      scheduleAircraftPhotoHover(entity, event.point)
+      scheduleTrafficPhotoHover(entity, event.point)
       hoverPopup.setLngLat(event.lngLat)
-      if (!hoverPopup.isOpen()) hoverPopup.addTo(map)
+      if (!hoverPopup.isOpen()) {
+        hoverPopup.addTo(map)
+        bindHoverPopupInteractions()
+      }
     })
 
     map.on('load', () => {
@@ -1718,12 +1815,17 @@ export function TrafficMap({
   useEffect(() => {
     renderStateRef.current = { aircraft, vessels, selectedId }
     const hoveredTrafficId = hoveredTrafficIdRef.current
-    if (
-      hoveredTrafficId &&
-      !aircraft.some((entity) => entity.id === hoveredTrafficId) &&
-      !vessels.some((entity) => entity.id === hoveredTrafficId)
-    ) {
-      hideTrafficTooltipRef.current()
+    if (hoveredTrafficId) {
+      const hoveredEntity =
+        aircraft.find((entity) => entity.id === hoveredTrafficId) ??
+        vessels.find((entity) => entity.id === hoveredTrafficId)
+      if (
+        !hoveredEntity ||
+        hoveredTrafficIdentityRef.current !==
+          trafficTooltipIdentity(hoveredEntity)
+      ) {
+        hideTrafficTooltipRef.current()
+      }
     }
     const now = performance.now()
     aircraftMotionRef.current = reconcileMotionStates(

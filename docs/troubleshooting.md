@@ -229,8 +229,10 @@ IMO:
 
 Missing, malformed, or unmatched IMO intentionally produces no image. The
 application never falls back to MMSI, name, call sign, vessel type, class,
-sister ship, or a generic real photograph. HISTORY and hover also omit vessel
-photos by design.
+sister ship, or a generic real photograph. HISTORY always omits vessel photos.
+On a fine-pointer desktop, only a listed vessel held under the pointer for at
+least 500 ms adds the compact tooltip photo; sub-dwell, invalid, and unmatched
+hover remains photo-free. Touch users open selected details instead.
 
 For a listed vessel, inspect the exact
 `/vessel-photos/2026-09-26-v1/imo-{IMO}.jpg` or `.png` request. A missing or

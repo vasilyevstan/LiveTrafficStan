@@ -508,10 +508,12 @@ Vessels show name/MMSI fallback, flag state derived locally from the MMSI
 allocation table, speed over ground in both km/h and knots, and the reported
 AIS destination. Provider strings are inserted through `textContent`. When the photo path is
 enabled, a fine pointer that remains on one live aircraft for 500 ms can start
-one direct photo lookup and add the
-validated thumbnail, visible credit, and exact source-page link. Hover never
-starts metadata, route, traffic-provider, polling, or reconnect work; vessel
-hover remains request-free and AIS destination is never described as a
+one direct photo lookup and add the validated thumbnail, visible credit, and
+exact source-page link. A stable 500 ms vessel hover may instead resolve the
+already-committed exact-IMO manifest and load one same-origin image with fixed
+Commons revision, author, license, and historical-reference context. Hover
+never starts metadata, route, traffic-provider, polling, reconnect, Wikimedia,
+Wikidata, or tracker work, and AIS destination is never described as a
 complete route. Click/touch selection and the concise details panel remain the
 accessible full-information path.
 

@@ -212,11 +212,12 @@ request, loads one immutable index and one ICAO24-prefix shard on first use,
 validates the complete assets before bounded caching, and never mutates live
 traffic or marker categories.
 
-Vessel reference photos are a smaller synchronous selected-object boundary.
-They use only a valid exact AIS-reported IMO and a committed file-by-file
-manifest. The image bytes are versioned same-origin assets, excluded from the
-service-worker shell, and never fetched for hover, search, unmatched vessels,
-or HISTORY.
+Vessel reference photos are a smaller synchronous presentation boundary. They
+use only a valid exact AIS-reported IMO and a committed file-by-file manifest.
+The image bytes are versioned same-origin assets, excluded from the
+service-worker shell, and may load only for selected details or after the
+existing 500 ms stable fine-pointer hover. Sub-dwell hover, search, unmatched
+vessels, and HISTORY remain photo-free.
 
 Vessel discovery is local display filtering after provider freshness and exact
 viewport filtering. It does not alter Digitraffic subscriptions, REST gates,

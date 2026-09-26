@@ -1206,8 +1206,9 @@
 .traffic-tooltip__photo {
   display: block;
   width: 124px;
-  height: 82px;
-  object-fit: cover;
+  height: auto;
+  max-height: 96px;
+  object-fit: contain;
   border: 1px solid var(--panel-border);
   border-radius: 5px;
   background: var(--button-background);

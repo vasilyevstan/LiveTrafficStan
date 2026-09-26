@@ -263,10 +263,13 @@ checksums. The co-located
 credits and licenses.
 
 Images are versioned same-origin static assets. The browser requests one only
-when a matching live vessel details card renders. No Wikimedia, Wikidata,
-tracker, gallery, image API, Worker proxy, KV, R2, Web Storage, IndexedDB, or
-service-worker cache is involved. Missing, invalid, unmatched, historical, and
-hover-only vessels receive no photo. See
+when a matching live vessel details card renders or after a stable 500 ms
+fine-pointer hover over that exact live vessel. The compact hover image links
+the fixed Commons revision and shows author, source, license, exact-IMO, and
+historical-reference context. No Wikimedia, Wikidata, tracker, gallery, image
+API, Worker proxy, KV, R2, Web Storage, IndexedDB, or service-worker cache is
+involved. Missing, invalid, unmatched, historical, and sub-dwell hover vessels
+receive no photo. See
 [Vessel Reference Photo Evaluation](vessel-photo-evaluation.md) for the
 complete reviewed inventory, validation, takedown, and yacht limitations.
 
