@@ -608,6 +608,18 @@ export function TrafficDetails({
           />
         )}
 
+      {entity.kind === 'aircraft' &&
+        aircraftPhotoEnabled &&
+        !historical && (
+          <AircraftPhotoDetails
+            icao24={entity.hex}
+            state={aircraftPhoto}
+            termsUrl={aircraftPhotoTermsUrl}
+            now={now}
+            onRequest={onRequestAircraftPhoto}
+          />
+        )}
+
       {entity.freshness === 'stale' && (
         <p className="stale-notice">
           {historical
@@ -788,17 +800,6 @@ export function TrafficDetails({
             Reported speed and navigation status disagree; both values are
             shown without reclassification.
           </p>
-        )}
-      {entity.kind === 'aircraft' &&
-        aircraftPhotoEnabled &&
-        !historical && (
-          <AircraftPhotoDetails
-            icao24={entity.hex}
-            state={aircraftPhoto}
-            termsUrl={aircraftPhotoTermsUrl}
-            now={now}
-            onRequest={onRequestAircraftPhoto}
-          />
         )}
       {entity.kind === 'aircraft' && (
         <AircraftMetadataDetails state={aircraftMetadata} />

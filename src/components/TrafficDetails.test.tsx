@@ -218,6 +218,9 @@ describe('TrafficDetails aircraft metadata', () => {
     expect(html).toContain('Photo © Test Photographer')
     expect(html).toContain('Open the image for its unchanged original')
     expect(html).not.toContain('Load aircraft photo')
+    expect(html.indexOf('Aircraft photo')).toBeLessThan(
+      html.indexOf('Callsign'),
+    )
   })
 
   it('keeps photo failures local and never substitutes another image', () => {
@@ -275,6 +278,8 @@ describe('TrafficDetails aircraft metadata', () => {
       <TrafficDetails
         entity={aircraft}
         aircraftMetadata={availableMetadata}
+        aircraftPhotoEnabled
+        aircraftPhoto={{ phase: 'idle', identityKey: '511123' }}
         flightRouteEnabled
         flightRoute={{
           phase: 'available',
@@ -299,6 +304,7 @@ describe('TrafficDetails aircraft metadata', () => {
         }}
         now={1_800_000_001_000}
         units="metric"
+        onRequestAircraftPhoto={() => undefined}
         onRequestFlightRoute={() => undefined}
         onClose={() => undefined}
       />,
@@ -322,6 +328,9 @@ describe('TrafficDetails aircraft metadata', () => {
     expect(enabledHtml).toContain('may be stale or wrong')
     expect(enabledHtml).toContain('Refresh plausible route')
     expect(enabledHtml.indexOf('Refresh plausible route')).toBeLessThan(
+      enabledHtml.indexOf('Aircraft photo'),
+    )
+    expect(enabledHtml.indexOf('Aircraft photo')).toBeLessThan(
       enabledHtml.indexOf('Callsign'),
     )
     expect(enabledHtml).toContain('ADSB.lol')

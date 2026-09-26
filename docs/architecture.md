@@ -180,8 +180,12 @@ API response during the 2026-09-23 production check. The image loads directly
 from the returned provider origin and is the plain credited source-page link.
 
 Successful and no-photo JSON results may remain in a 32-entry, one-hour
-current-tab LRU shared by hover and selected details. Hover change, pointer
-leave, selection change, close, HISTORY entry, and unmount abort and
+current-tab LRU shared by hover and selected details. A cache write publishes
+to another active controller only when its selected ICAO24 matches, so
+select-first/hover-second displays the result in the already-open details panel
+without a second provider request. Subscription lifetime, including React
+development Strict Mode cleanup/replay, owns that notification. Hover change,
+pointer leave, selection change, close, HISTORY entry, and unmount abort and
 revision-invalidate obsolete work. Errors are not cached, an automatic hover
 does not loop or retry, and `429` blocks another manual attempt without
 scheduling a retry. No photo JSON, URL, credit, or image byte enters traffic

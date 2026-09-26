@@ -81,14 +81,15 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
 - A production-enabled Planespotters aircraft-photo path. It accepts only an
   exact ICAO24 hex lookup after **Load aircraft photo** or one stable 500 ms
   fine-pointer hover, preserves the returned thumbnail and photo-page URLs,
-  shows visible photographer credit, and keeps bounded JSON only in current-tab
-  memory.
+  shows visible photographer credit, keeps bounded JSON only in current-tab
+  memory, and publishes a completed hover result into already-open matching
+  selected details without a second provider request.
 - Five bundled historical vessel reference photos for Finlandia, Victoria I,
   Viking XPRS, Megastar, and MyStar. A photo appears only in selected live
-  ship details when the AIS-reported IMO is valid and exactly matches the
-  reviewed manifest; visible author, fixed Commons revision, license, and
-  modification attribution are retained without any runtime image-provider
-  request.
+  ship details or after a stable fine-pointer hover when the AIS-reported IMO
+  is valid and exactly matches the reviewed manifest; visible author, fixed
+  Commons revision, license, and modification attribution are retained without
+  any runtime image-provider request.
 - Honest detail cards, provider-specific health, stale/expired handling, and
   partial operation when one provider fails.
 - Short interpolation only between observed positions and a selected-object
