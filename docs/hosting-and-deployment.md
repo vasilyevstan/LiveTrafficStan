@@ -15,8 +15,9 @@ production platform:
   and require no runtime Wikimedia, Wikidata, tracker, or image API;
 - OpenFreeMap, Photon, and Digitraffic REST/MQTT remain direct browser
   connections;
-- no route secret, quota store, result database, queue, authentication
-  service, or general backend is added.
+- no plausible-route secret, quota store, result database, queue, or general
+  backend is added. Private aircraft delivery uses one protected
+  Worker-to-relay bearer secret and one fixed VPC Service binding.
 
 The accepted recovery design keeps that public Cloudflare boundary and routes
 only aircraft through a private Workers VPC Service and Tunnel to an isolated
@@ -38,13 +39,15 @@ credentials, observability remains disabled, and no paid add-on, KV, or R2
 service is used.
 
 The accepted V1.6.0 application source is
-`d56f8900d25bd57338c459487df6b992edab62f4`. Exact-main validation run
-`36265842006` passed, and deployment run `36266052761` published Cloudflare
-version `0c84f9de-8a5e-443c-9fc5-b539b7464fec` with aircraft delivery through
-`worker-proxy`, aircraft photos enabled, plausible routes enabled, and the
-five-file exact-IMO vessel-photo manifest active. The
+`1f9a2fd322f141fe761d3bf00113e1ab60526e6c`. Exact-main validation run
+`36268497210` passed, and deployment run `36268576908` published Cloudflare
+version `2a8af0fb-fab5-42ce-a37b-5ea2053c3c37` with aircraft delivery through
+`oci-private-relay`, aircraft photos enabled, plausible routes enabled, and
+the five-file exact-IMO vessel-photo manifest active. The relay runs the same
+exact source and retains
+`76540a21291878b44e7f92ceecb37d03a366c0c7` as the prior release. The
 validated and deployed `index.html` SHA-256 is
-`f9999fd6abd43ff1f780796292eaa26a6a9ed0800747d1a33010a26ca880b7c8`.
+`18d70a60fc56c9aae86bb704ea9745cc3094658b06890702c5e5b86a96214117`.
 
 Rendered production acceptance used deterministic marine fixtures against the
 real deployed application and asset bytes. All five reviewed IMO matches
@@ -59,7 +62,18 @@ before 500 ms, the exact Finlandia 640x472 JPEG and fixed rights context,
 preserved keyboard focus, popup pointer/focus traversal, Escape dismissal,
 stale-marker cleanup, unmatched omission, one MapLibre canvas, and no external
 photo-provider request or browser diagnostic. The public Wiki was synchronized
-at `17bb011a1b5a9a035126c772f6fd48f367e9bbc1`.
+at `dad38eed654ce6e8cdc121a92deca28547fc531a`.
+
+Current-release aircraft acceptance observed a relay-local
+`503 Retry-After: 19` followed by exact-release `200 application/json`,
+rendered four real aircraft, retained one MapLibre canvas, and had no
+horizontal overflow at 1280x900 or 390x844. Aircraft-photo acceptance made
+zero selection and sub-dwell requests, exactly one stable-hover request, and
+published the same matching image/source into the already-open details panel
+without another request. A 70-second host canary measured 0.2374% combined
+relay/cloudflared CPU, approximately 65 MB combined service memory, zero
+restarts, zero swap, no OOM evidence, and approximately 460 MB available
+memory.
 
 The first deployment attempt, run `36265893317`, uploaded Cloudflare version
 `a17be7e0-9340-49eb-8689-e8db4b63565c` but its immediate smoke reached an edge
@@ -72,11 +86,13 @@ Protected rollback run `36188474191` restored accepted V1.5.3 source
 `6d132907525f4f1479ae2b4f94485d76c151b86a` and Cloudflare version
 `5b17eeb9-e6ad-4720-8a8e-c52725b18aba` with matching exact-byte smoke.
 Restoration run `36188545228` returned production to the V1.6.0 version and
-again passed smoke. Both operations preserved the expected explicit ADSB.lol
-`429` degradation from Cloudflare egress instead of treating unavailable
-aircraft data as release success. Repository documentation commits may advance
-after that application release; the public `X-LiveTrafficStan-Release` header
-identifies the running application source.
+again passed smoke. Those historical operations predated private-relay
+activation and preserved the expected explicit ADSB.lol `429` degradation from
+Cloudflare egress instead of treating unavailable aircraft data as release
+success. Current private production instead requires eventual real aircraft
+JSON. Repository documentation commits may advance after an application
+release; the public `X-LiveTrafficStan-Release` header identifies the running
+application source.
 
 This is an engineering record, not legal advice. Provider and platform terms,
 limits, and behavior can change and must be rechecked before a material
@@ -663,11 +679,13 @@ Asset switch observed during the V1.5.3 rollback proof without weakening
 exact-byte validation. The locally rejected Worker release-header probe cannot
 reach an upstream provider, but it is currently single-attempt; #134 tracks
 giving only an otherwise accepted known-predecessor header the same bounded
-propagation policy. After its release header matches, the smoke makes exactly
-one live aircraft-provider request through the selected delivery path. An
-ADSB.lol `429` is recorded as provider throttling rather than a release
-regression; direct mode additionally requires that throttling response to be
-browser-readable. Other non-`200` statuses still fail the deployment check.
+propagation policy. After its release header matches, the smoke makes exactly one live
+aircraft-provider request through the selected delivery path. In
+`worker-proxy`, an ADSB.lol `429` is recorded as provider throttling rather
+than a release regression. Direct mode additionally requires that response to
+be browser-readable. In `oci-private-relay`, bounded local `503` guidance may
+delay the probe, but provider `429` and any failure to reach an eventual valid
+`200` fail activation.
 
 The MQTT check has a 15-second outer deadline, disables reconnect, and force
 closes the client. The script never prints provider payloads, METAR reports,
@@ -697,10 +715,13 @@ request, the UI rendered HEL to TRD as **Plausible** with the non-authoritative
 disclaimer and both attributions, and explicit refresh made one additional
 request. The vessel-photo release then added the exact production acceptance
 recorded above. Final exact-byte deployment smoke proved the accepted
-application artifact and release identity. Issue #11 tracks final private-path activation and production evidence. A
-truthful shared-egress `429` remains accepted only in `worker-proxy`
-rollback/diagnostic mode and is not proof of reliable aircraft delivery. No
-browser-automation framework is added solely for this Issue.
+application artifact and release identity. Private-relay source
+`1f9a2fd322f141fe761d3bf00113e1ab60526e6c` completed #11 with exact-byte
+deployment smoke, eventual real aircraft JSON, rendered desktop/mobile
+acceptance, and the measured E2 Micro canary. A truthful shared-egress `429`
+remains accepted only in `worker-proxy` rollback/diagnostic mode and is not
+proof of reliable aircraft delivery. No browser-automation framework is added
+solely for this Issue.
 
 ## Monitoring
 

@@ -27,6 +27,12 @@ active on the relay VM with four IPv6 QUIC connections and a dedicated
 `0400` token file. The Worker binding is checked into `wrangler.jsonc` and is
 used only when a protected deployment selects `oci-private-relay`.
 
+Production is active at application and relay source
+`1f9a2fd322f141fe761d3bf00113e1ab60526e6c`; the initial relay release remains
+the retained rollback target. Exact-main validation run `36268497210` and
+production run `36268576908` published Cloudflare version
+`2a8af0fb-fab5-42ce-a37b-5ea2053c3c37`.
+
 This component does not move the application to OCI. An OCI, Tunnel, or relay
 failure must affect aircraft only; Static Assets, the map, vessels, weather,
 search, history, and PWA behavior remain on their existing boundaries.
@@ -269,14 +275,20 @@ The first Tunnel connector canary proved:
 - relay health remained exact and available throughout;
 - no public relay route.
 
-Complete production acceptance additionally requires:
+Production activation and the final canary additionally proved:
 
-- bounded representative-rate CPU below 70 percent;
-- no OOM, swap storm, or service restart;
-- sufficient memory headroom for relay plus cloudflared;
-- one Worker-to-relay health and authenticated aircraft request;
-- no public relay route or sensitive logging;
-- zero incremental OCI and Cloudflare cost.
+- exact-release Worker requests reached the authenticated private relay and
+  returned real `200 application/json` aircraft payloads;
+- one relay-local `503 Retry-After: 19` recovered to later `200` responses
+  through the existing aircraft scheduler;
+- four real aircraft rendered with one MapLibre canvas at desktop and mobile;
+- a 70-second sample measured 0.0322% relay CPU, 0.2052% cloudflared CPU, and
+  0.2374% combined CPU;
+- relay memory was approximately 39 MB and cloudflared approximately 26 MB,
+  with approximately 460 MB still available;
+- zero service restarts, swap use, or OOM-killer evidence;
+- no public relay route or sensitive application logging;
+- projected incremental OCI and Cloudflare cost remained zero.
 
 ## Failure interpretation
 
