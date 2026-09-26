@@ -17,6 +17,9 @@ Tunnel, and fixed-purpose OCI relay only behind the aircraft route. The relay,
 remote-managed Tunnel, VPC Service, and QUIC connector are operational. The
 Worker selects that path only through the protected `oci-private-relay`
 deployment mode and fails closed rather than reverting to shared egress.
+Production source `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` and the relay
+run the same release; deployment run `36268576908` published Cloudflare version
+`2a8af0fb-fab5-42ce-a37b-5ea2053c3c37`.
 
 ```text
                        visibility lifecycle

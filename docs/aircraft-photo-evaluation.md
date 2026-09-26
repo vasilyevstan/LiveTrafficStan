@@ -28,6 +28,13 @@ unchanged-URL, attribution, bounded-memory, and no-persistence contract
 continues to pass. A material provider-policy or origin change requires a new
 bounded check and a fail-closed redeployment if acceptance fails.
 
+Production source `1f9a2fd322f141fe761d3bf00113e1ab60526e6c`
+also passed select-first/hover-second synchronization acceptance. Selecting an
+aircraft made no photo request, sub-dwell hover made no request, stable hover
+made exactly one request, and the matching already-open details panel displayed
+the same validated image and source without a second request. Another vessel,
+HISTORY, and persisted storage remained photo-free.
+
 This is an engineering record, not legal advice. Provider terms and behavior
 can change and must be rechecked before any enablement.
 
