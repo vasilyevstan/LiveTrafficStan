@@ -713,12 +713,23 @@ MapLibre canvas, and no external image-provider request or browser diagnostic.
 Exact-main validation run `36265842006` and deployment/smoke run `36266052761`
 passed. Later behavior changes still require fresh browser evidence.
 
-Private aircraft-relay activation additionally requires the canary in
-[OCI Aircraft Relay](oci-aircraft-relay.md): exact relay health, authenticated
-Worker-to-relay transport, one bounded provider response, QUIC reconnection,
-CPU/memory headroom, no service restart or swap storm, no public listener,
-no sensitive application logging, aircraft-only failure isolation, and zero
-incremental OCI/Cloudflare cost.
+Production source `1f9a2fd322f141fe761d3bf00113e1ab60526e6c`
+then passed exact-main validation run `36268497210` and private-relay
+deployment/smoke run `36268576908`. Browser acceptance observed
+`503 Retry-After: 19` followed by exact-release `200` responses, four real
+aircraft, one MapLibre canvas, and no horizontal overflow at 1280x900 or
+390x844. It also proved select-first/hover-second aircraft-photo publication:
+zero selection/sub-dwell requests, exactly one stable-hover request, and the
+same image/source in the already-open details panel without a duplicate
+request.
+
+The [OCI Aircraft Relay](oci-aircraft-relay.md) canary passed exact relay
+health, authenticated Worker-to-relay transport, real provider JSON, service
+and VM restart recovery, four QUIC connections, no public listener or sensitive
+application logging, and zero projected incremental cost. A 70-second resource
+sample measured 0.2374% combined relay/cloudflared CPU, approximately 65 MB
+combined service memory, zero service restarts, zero swap, no OOM evidence,
+and approximately 460 MB available memory.
 
 ## Failure and lifecycle checks
 

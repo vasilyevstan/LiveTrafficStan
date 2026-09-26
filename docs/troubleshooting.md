@@ -101,10 +101,12 @@ For the Cloudflare boundary:
 
 Workers Free uses shared outbound network identity. The 2026-09-23 production
 check confirmed that ADSB.lol can return `429` to that shared egress even when
-the same bounded request succeeds from a normal residential connection. This
-is provider throttling, not an empty traffic snapshot or a reason to spoof
-client IP headers. The deployment smoke accepts only this explicit `429` as a
-degraded provider state; other unexpected upstream statuses still fail.
+the same bounded request succeeds from another stable identity. This remains
+relevant to `worker-proxy` rollback/diagnostic mode only. Current production
+uses `oci-private-relay`; its deployment smoke may wait through bounded local
+`503 Retry-After` guidance but requires an eventual valid `200` aircraft
+payload. Provider `429`, authentication failure, VPC failure, and other
+unexpected statuses fail activation.
 
 The private OCI path is documented in
 [OCI Aircraft Relay](oci-aircraft-relay.md). In `oci-private-relay` mode,

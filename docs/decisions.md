@@ -65,6 +65,13 @@ is explicit unavailability; the Worker never falls back to shared Cloudflare
 egress. The browser provider already preserves relay-local `503 Retry-After`,
 so the existing aircraft scheduler pauses without creating another lifecycle.
 
+Production activated this decision at source
+`1f9a2fd322f141fe761d3bf00113e1ab60526e6c` in deployment run
+`36268576908`. Exact-release browser acceptance observed relay admission
+recovering to real aircraft JSON, while a 70-second host canary measured
+0.2374% combined relay/cloudflared CPU with zero restarts, swap, or OOM
+evidence.
+
 Moving the full application to OCI was rejected because it would make a
 reclaimable no-SLA VM responsible for static assets, maps, vessels, weather,
 search, and PWA behavior. A public relay was rejected because it would enlarge

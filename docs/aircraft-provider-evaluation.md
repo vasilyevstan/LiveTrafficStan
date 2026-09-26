@@ -86,7 +86,7 @@ The current aircraft integration requires:
 | Rate limits | **Documented:** dynamic with environment load; no fixed project quota is promised. | A current numeric API quota is **unknown**. Historical or archived rate statements are not treated as a current grant. | **Documented:** `/states/all` uses credits. Anonymous users receive 400/day, standard users 4,000/day, active feeders 8,000/day, and licensed users 14,400/hour. A bounding box up to 25 square degrees costs one credit. |
 | Cost | **Documented:** currently free. Proxy hosting and egress remain project costs. | API price and approved free allowance are **unknown**. A free public map is not evidence of a free production API grant. | Public prices for the required operational license are **unknown**. Free technical tiers do not authorize operational product use. |
 | Outage and throttle behavior | Data is provided as-is. Keep provider failures distinct from empty traffic and preserve standard HTTP status and `Retry-After` guidance. | The OpenAPI document describes `502` when its upstream cannot be reached; the current access gate is a distinct `403`. Other recovery terms are **unknown**. | Credit exhaustion returns `429` plus `X-Rate-Limit-Retry-After-Seconds`; expired OAuth tokens return `401`. Supporting this would require provider-specific error handling. |
-| Production implication | Issue #11 must provide a fixed-upstream, allowlisted same-origin route with validated inputs and a bounded upstream timeout. No client secret is currently needed. | Activation first requires written access and terms. A proxy cannot turn denied access into authorized use. | Activation requires a written operational license, server-side OAuth credentials/token refresh, quota accounting, and validation in the approved hosting environment. |
+| Production implication | Issue #11 provides a fixed-upstream, allowlisted same-origin route through a private OCI relay, with validated inputs, bounded upstream work, and no provider secret. | Activation first requires written access and terms. A proxy cannot turn denied access into authorized use. | Activation requires a written operational license, server-side OAuth credentials/token refresh, quota accounting, and validation in the approved hosting environment. |
 | Operator-change risk | Current production-contact guidance is informal. Future API keys are explicitly tied to feeding ADSB.lol, with no announced enforcement date. | Access is discretionary today and the published terms can change. Approved rate, cost, caching, attribution, and egress rules are unknown. | Terms, access, and quotas are centrally controlled. Official client documentation also warns that hyperscaler IP ranges may be blocked because of abuse. |
 
 Official technical sources:
@@ -174,8 +174,8 @@ implementation design.
 - Treat dynamic limits and the announced feeder-linked key requirement as
   upstream risks, not as approved production capacity.
 - Keep the current one-provider provenance and ODbL attribution.
-- Hand the fixed-route proxy, input validation, upstream timeout, status/header
-  preservation, and safe logging requirements to Issue #11.
+- Issue #11 delivers the fixed-route proxy, private relay, input validation,
+  upstream timeout, status/header preservation, and safe logging requirements.
 
 ### Airplanes.live
 
@@ -226,7 +226,7 @@ future deliberate replacement. No additional abstraction is needed now.
 - The existing controller fixtures cover non-overlap, 20-second request-start
   spacing, query revision, cancellation, pause/resume, rate-limit backoff, and
   stale-result rejection.
-- Production proxy implications remain explicitly assigned to Issue #11.
+- Production proxy implications are delivered and recorded in Issue #11.
 - No alternative-provider placeholder, secret, failover, or live CI request is
   introduced.
 
@@ -269,7 +269,10 @@ ODbL integration. That request is tracked in
 [adsblol/api#63](https://github.com/adsblol/api/pull/63) proposes scoped CORS
 for public `/v2` application responses; the provider edge must separately make
 any nginx-generated `429` browser-readable for direct mode to preserve
-explicit backoff. Until access is resolved, the application must expose
-provider throttling honestly; it must not add a public proxy, spoof client
-addresses, rotate identities, cache live positions, or silently substitute a
-provider with unresolved rights.
+explicit backoff. Current production did not wait for provider-side CORS or
+shared-egress allowlisting: source
+`1f9a2fd322f141fe761d3bf00113e1ab60526e6c` uses one stable isolated OCI
+identity behind a private Worker VPC Service and Tunnel. This does not enlarge
+the provider allowance; the application still exposes throttling honestly and
+must not add a public proxy, spoof client addresses, rotate identities, cache
+live positions, or silently substitute a provider with unresolved rights.

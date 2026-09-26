@@ -399,23 +399,31 @@ shared or persistent route cache.
 Public production is live at
 <https://livetrafficstan.syntal.workers.dev> on Cloudflare Workers Free with
 Static Assets. The accepted V1.6.0 application source is
-`d56f8900d25bd57338c459487df6b992edab62f4`; exact-main validation run
-`36265842006` passed, and deployment run `36266052761` published Cloudflare
-version `0c84f9de-8a5e-443c-9fc5-b539b7464fec` with vessel photos, aircraft
-photos, and plausible routes enabled. The deployed `index.html` SHA-256 is
-`f9999fd6abd43ff1f780796292eaa26a6a9ed0800747d1a33010a26ca880b7c8`.
-Rendered production acceptance verified the selected-details photos plus
-sub-dwell omission, the exact Finlandia stable-hover image and rights context,
-focus-safe popup interaction, Escape dismissal, stale-marker cleanup,
-unmatched omission, one MapLibre canvas, and zero external photo-provider
-requests.
+`1f9a2fd322f141fe761d3bf00113e1ab60526e6c`; exact-main validation run
+`36268497210` passed, and deployment run `36268576908` published Cloudflare
+version `2a8af0fb-fab5-42ce-a37b-5ea2053c3c37` with
+`oci-private-relay`, aircraft photos, and plausible routes enabled. The
+deployed `index.html` SHA-256 is
+`18d70a60fc56c9aae86bb704ea9745cc3094658b06890702c5e5b86a96214117`.
+The relay runs the same exact source and retains
+`76540a21291878b44e7f92ceecb37d03a366c0c7` as its prior rollback release.
+
+Rendered production acceptance observed a bounded relay-local
+`503 Retry-After: 19` followed by exact-release `200 application/json`,
+rendered four real aircraft, retained one MapLibre canvas, and had no
+horizontal overflow at 1280x900 or 390x844. Aircraft-photo acceptance made
+zero requests on selection and before stable dwell, exactly one request after
+dwell, and updated the matching already-open details panel with the same image
+and source without a second request. Existing exact-IMO vessel details/hover,
+rights context, focus, Escape, stale-marker cleanup, HISTORY omission, and
+external-request isolation remained accepted.
 
 Protected rollback run
 `36188474191` restored accepted V1.5.3 source
 `6d132907525f4f1479ae2b4f94485d76c151b86a`, and restoration run
 `36188545228` returned production to V1.6.0 with matching exact-byte smoke.
 The synchronized public Wiki records this release at commit
-`17bb011a1b5a9a035126c772f6fd48f367e9bbc1`.
+`dad38eed654ce6e8cdc121a92deca28547fc531a`.
 See [Hosting and Deployment](docs/hosting-and-deployment.md) for the dated
 platform matrix, request budget, proxy contract, exact-SHA workflow, smoke,
 monitoring, privacy, and rollback procedure.
@@ -424,12 +432,11 @@ monitoring, privacy, and rollback procedure.
 
 - Public providers offer no application SLA, and live traffic coverage varies
   by receiver availability and time.
-- ADSB.lol intermittently returns `429` to Cloudflare Workers' shared outbound
-  identity. The application reports this truthfully as partial/unavailable
-  aircraft data while marine traffic remains usable. The isolated OCI relay
-  recovery path is proven but not yet connected to production; completion is
-  tracked in
-  [Issue #11](https://github.com/vasilyevstan/LiveTrafficStan/issues/11).
+- Aircraft production depends on one no-SLA OCI Always Free VM, Cloudflare
+  Tunnel, and Workers VPC beta. Relay admission, Tunnel/OCI failure, and
+  provider failure remain truthful aircraft-only states; local `503`
+  `Retry-After` guidance delays the existing scheduler, and production never
+  falls back to shared Cloudflare egress.
 - Digitraffic is a regional source with an unknown exact coverage boundary.
   Its all-published-vessels MQTT stream is filtered in the browser; this local
   filtering does not reduce incoming MQTT bandwidth. Digitraffic exposes

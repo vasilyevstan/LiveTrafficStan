@@ -103,14 +103,18 @@ aircraft provider. A private, non-caching OCI relay uses one stable network
 identity, the same fixed point route and User-Agent, one aggregate upstream
 start per 20 seconds, and provider `Retry-After` backoff. It does not rotate
 addresses, add a provider, alter attribution, or claim additional capacity
-permission. The relay is proven but not yet connected to the public Worker;
-see [OCI Aircraft Relay](oci-aircraft-relay.md).
+permission. Production source
+`1f9a2fd322f141fe761d3bf00113e1ab60526e6c` uses the relay through the fixed
+Workers VPC Service and private Tunnel; see
+[OCI Aircraft Relay](oci-aircraft-relay.md).
 
 The production proxy identifies the public project to ADSB.lol, forwards no
 browser credentials or arbitrary headers, follows no redirect, and applies no
 shared live-response cache. Fingerprinted application assets are cached
-separately. Production is active; intermittent ADSB.lol throttling of
-Cloudflare's shared outbound identity remains tracked in Issue #11.
+separately. The former shared-egress `429` remains relevant only to the
+`worker-proxy` rollback/diagnostic mode. Current `oci-private-relay`
+production requires an eventual real aircraft payload and treats provider
+`429` as a failed activation rather than evidence of reliable delivery.
 The production-access request is
 [adsblol/website#272](https://github.com/adsblol/website/issues/272), and the
 scoped upstream CORS proposal is
