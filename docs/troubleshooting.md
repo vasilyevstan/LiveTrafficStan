@@ -104,6 +104,15 @@ is provider throttling, not an empty traffic snapshot or a reason to spoof
 client IP headers. The deployment smoke accepts only this explicit `429` as a
 degraded provider state; other unexpected upstream statuses still fail.
 
+The private OCI recovery path is documented in
+[OCI Aircraft Relay](oci-aircraft-relay.md). Once its Worker mode is active,
+interpret a relay-local `503` with `Retry-After` as aggregate admission or
+persisted provider backoff: that request did not reach ADSB.lol. A VPC
+`fetch()` exception indicates VPC Service, Tunnel, connector, or loopback
+origin failure; `401` indicates a Worker/relay secret mismatch. Do not respond
+by rotating the OCI address, falling back to shared Cloudflare egress, exposing
+a public relay, or accelerating browser polling.
+
 ADSB.lol rejects generic Worker identification. The proxy must send the stable
 public LiveTrafficStan User-Agent. Do not work around a `403` by forwarding
 browser headers, cookies, authorization, or a client-controlled destination.

@@ -98,6 +98,14 @@ Cloudflare route. The protected source also contains a fixed
 approves browser production use and successful plus throttled responses expose
 usable CORS.
 
+The selected production-recovery transport keeps ADSB.lol as the sole
+aircraft provider. A private, non-caching OCI relay uses one stable network
+identity, the same fixed point route and User-Agent, one aggregate upstream
+start per 20 seconds, and provider `Retry-After` backoff. It does not rotate
+addresses, add a provider, alter attribution, or claim additional capacity
+permission. The relay is proven but not yet connected to the public Worker;
+see [OCI Aircraft Relay](oci-aircraft-relay.md).
+
 The production proxy identifies the public project to ADSB.lol, forwards no
 browser credentials or arbitrary headers, follows no redirect, and applies no
 shared live-response cache. Fingerprinted application assets are cached

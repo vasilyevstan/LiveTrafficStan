@@ -341,6 +341,15 @@ limit, rejects redirects, and preserves provider status, body, and
 `Retry-After`. It forwards no browser credentials or arbitrary headers and
 keeps request URL logging disabled.
 
+Reliable aircraft recovery is being staged through a private
+Cloudflare Worker -> Workers VPC Service -> Cloudflare Tunnel -> isolated OCI
+E2 Micro relay path. The relay is fixed to ADSB.lol, globally limits upstream
+starts to one per 20 seconds, persists only provider admission state, and has
+no cache, generic proxy surface, public ingress, or sensitive application
+logging. The relay itself is proven; current production remains on
+`worker-proxy` until the Tunnel/VPC binding and compatible Worker release pass
+production acceptance. See [OCI Aircraft Relay](docs/oci-aircraft-relay.md).
+
 The weather route accepts only
 `GET /api/weather/metar?ids=EETN%2CEFHK`, with 1-50 sorted unique uppercase
 four-letter IDs and no other parameters. It constructs one fixed AWC JSON
@@ -374,8 +383,9 @@ monitoring, privacy, and rollback procedure.
   by receiver availability and time.
 - ADSB.lol intermittently returns `429` to Cloudflare Workers' shared outbound
   identity. The application reports this truthfully as partial/unavailable
-  aircraft data while marine traffic remains usable; reliable production
-  access is tracked in
+  aircraft data while marine traffic remains usable. The isolated OCI relay
+  recovery path is proven but not yet connected to production; completion is
+  tracked in
   [Issue #11](https://github.com/vasilyevstan/LiveTrafficStan/issues/11).
 - Digitraffic is a regional source with an unknown exact coverage boundary.
   Its all-published-vessels MQTT stream is filtered in the browser; this local

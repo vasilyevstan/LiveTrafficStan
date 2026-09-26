@@ -36,6 +36,19 @@ aircraft photos remain direct browser requests and are not proxied.
 | `npm run check:deploy` | Bundle the Worker and Static Assets without credentials or deployment |
 | `npm run preview:worker` | Build and run the actual local Cloudflare `workerd` boundary |
 
+The dependency-free OCI relay tests live beside the implementation under
+`infra/oci/aircraft-relay/`. The normal Vitest suite covers its HTTP boundary,
+authentication, canonical path, concurrency/cadence admission, persisted
+backoff, timeout, body limit, redirect behavior, symlinked release entry point,
+and static deployment/Tunnel invariants. Shell syntax is additionally checked
+with:
+
+```bash
+bash -n \
+  infra/oci/aircraft-relay/deploy-release.sh \
+  infra/oci/aircraft-relay/install-cloudflared.sh
+```
+
 Before publishing a change, run:
 
 ```bash
@@ -657,6 +670,13 @@ acceptance at <https://livetrafficstan.syntal.workers.dev>. V1.6.0 additionally
 passed rendered acceptance for explicit plausible-route request, refresh,
 wording, and attribution behavior before its exact deployment, rollback, and
 restoration smoke. Later behavior changes still require fresh browser evidence.
+
+Private aircraft-relay activation additionally requires the canary in
+[OCI Aircraft Relay](oci-aircraft-relay.md): exact relay health, authenticated
+Worker-to-relay transport, one bounded provider response, QUIC reconnection,
+CPU/memory headroom, no service restart or swap storm, no public listener,
+no sensitive application logging, aircraft-only failure isolation, and zero
+incremental OCI/Cloudflare cost.
 
 ## Failure and lifecycle checks
 
