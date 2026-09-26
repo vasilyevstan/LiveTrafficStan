@@ -43,6 +43,29 @@ licensing, credential, and operational complexity without a demonstrated
 requirement. The existing application-owned provider interface is sufficient
 for a future deliberate replacement.
 
+## Private OCI aircraft relay without moving the application
+
+Cloudflare's shared Worker egress can receive an immediate ADSB.lol `429`,
+while four bounded requests from one stable OCI IPv6 identity succeeded at the
+application's exact 20-second cadence. Successful ADSB.lol responses still do
+not provide browser-readable production CORS. The selected recovery therefore
+keeps Cloudflare as the public host and adds one private
+Worker -> Workers VPC Service -> Cloudflare Tunnel -> OCI relay transport.
+
+The relay is isolated in a sibling OCI compartment on one Always Free E2
+Micro, has no public IPv4 or inbound route, binds to loopback, and can reach
+only the fixed ADSB.lol point path through its application logic. It enforces
+one global in-flight request, one start per 20 seconds, persisted provider
+backoff, no response cache, and no coordinate/payload logging.
+
+Moving the full application to OCI was rejected because it would make a
+reclaimable no-SLA VM responsible for static assets, maps, vessels, weather,
+search, and PWA behavior. A public relay was rejected because it would enlarge
+the attack and abuse surface. Provider/IP/region rotation and direct
+Cloudflare fallback were rejected because they evade rather than respect the
+provider boundary. The detailed operating contract and activation status are
+in [OCI Aircraft Relay](oci-aircraft-relay.md).
+
 ## Direct ADSB.lol plausible routes
 
 The owner chose a truthfully labeled callsign-based plausible route instead of

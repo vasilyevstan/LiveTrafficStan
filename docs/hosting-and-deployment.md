@@ -16,6 +16,13 @@ production platform:
 - no route secret, quota store, result database, queue, authentication
   service, or general backend is added.
 
+The accepted recovery design keeps that public Cloudflare boundary and routes
+only aircraft through a private Workers VPC Service and Tunnel to an isolated
+OCI E2 Micro relay. The relay is running and provider/cadence behavior is
+proven; the Tunnel, VPC binding, and public Worker integration are not active
+until their compatible exact releases pass production acceptance. See
+[OCI Aircraft Relay](oci-aircraft-relay.md).
+
 `wrangler.jsonc` temporarily retains a declarative deleted-state tombstone for
 the former `FlightRouteQuota` class so Cloudflare can retire the already
 provisioned namespace and its obsolete attempt-counter data. It is not a
@@ -172,6 +179,11 @@ browser --------------------------------> vrs-standing-data.adsb.lol
                                           on explicit plausible-route lookup
 browser --------------------------------> api.adsb.lol only in the protected,
                                           provider-approved direct mode
+
+planned private aircraft transport:
+
+Cloudflare Worker -> Workers VPC Service -> Cloudflare Tunnel
+                  -> OCI loopback relay -> api.adsb.lol
 ```
 
 `wrangler.jsonc`:
@@ -438,6 +450,11 @@ The protected environment supplies these secrets:
 | `CLOUDFLARE_ACCOUNT_ID` | Selects the permanent Cloudflare account |
 | `CLOUDFLARE_API_TOKEN` | Least-privilege token allowed to deploy this Worker |
 
+Private relay bootstrap additionally requires Cloudflare Tunnel Write,
+Connectivity Directory Admin, and Connectivity Directory Bind. The existing
+token's effective permissions are verified by the protected bootstrap
+workflow; a permission failure is reported rather than worked around.
+
 The token is scoped to the selected account and Worker deployment. The
 repository-level duplicate token was removed; deployment credentials remain
 only in the protected environment. No value belongs in Git, issue text,
@@ -451,6 +468,23 @@ Cloudflare documents an unauthenticated temporary-account path for agents, but
 it requires user acceptance of Cloudflare's Terms of Service and Privacy
 Policy, must be claimed, and is not the permanent production/CI account model.
 LiveTrafficStan does not use that workaround.
+
+## Private aircraft transport bootstrap
+
+`.github/workflows/bootstrap-aircraft-relay.yml` creates or verifies exactly
+one remote-managed Tunnel and one HTTP VPC Service fixed to
+`127.0.0.1:8788`. It is serialized, runs only from exact current `main`, uses
+the protected `production` environment, and fails if a same-named resource has
+different configuration.
+
+The workflow never publishes the Tunnel token. A caller supplies an ephemeral
+RSA public key; the workflow encrypts the token with RSA-OAEP/SHA-256 and
+uploads only ciphertext in a one-day artifact. The private key and decrypted
+token remain outside GitHub. The repository-owned cloudflared installer reads
+the token from standard input and stores it in a root-created `0400` file owned
+by the dedicated tunnel user. Full key preparation, installation, canary,
+failure interpretation, and cleanup are documented in
+[OCI Aircraft Relay](oci-aircraft-relay.md).
 
 ## Exact-SHA deployment
 
