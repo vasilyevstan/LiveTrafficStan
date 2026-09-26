@@ -8,16 +8,17 @@ observed through Digitraffic in the Tallinn-Helsinki operating area on
 2026-09-26.
 
 The feature is accepted in production at application source
-`86d8395c61c1348d3de8e11a9d7b36ad4f6271cc`. Exact-main validation run
-`36248212097` and deployment/smoke run `36248272060` passed; Cloudflare
-version `d527f34f-29f8-446a-9499-bb0135c7d361` serves the reviewed assets.
+`d56f8900d25bd57338c459487df6b992edab62f4`. Exact-main validation run
+`36265842006` and deployment/smoke run `36266052761` passed; Cloudflare
+version `0c84f9de-8a5e-443c-9fc5-b539b7464fec` serves the reviewed assets.
 The synchronized public Wiki commit is
-`204d4770c94b827834751f0b7335fb105683ae70`.
+`17bb011a1b5a9a035126c772f6fd48f367e9bbc1`.
 
 The feature is not a general vessel-image lookup. It makes no runtime request
 to Wikimedia, Wikidata, a ship tracker, an image API, or a LiveTrafficStan
-proxy. A photo is eligible only when the selected live vessel reports a valid
-seven-digit IMO that exactly matches one reviewed manifest entry.
+proxy. A photo is eligible only when the selected or stably hovered live vessel
+reports a valid seven-digit IMO that exactly matches one reviewed manifest
+entry.
 
 This is an engineering and attribution record, not legal advice. Source and
 license evidence must be re-reviewed before adding or replacing an entry.
@@ -47,7 +48,7 @@ live AIS vessel
   -> Wikidata item with the same IMO and selected Commons file
   -> fixed Commons file-page revision
   -> bundled, hashed, versioned derivative
-  -> selected live vessel details only
+  -> selected live vessel details or stable fine-pointer tooltip
 ```
 
 ## Reviewed V1 manifest
@@ -195,7 +196,12 @@ fixtures against the deployed application and actual static assets. It
 verified all five 640-pixel images, valid-unmatched IMO `8917601`, invalid IMO
 `8917602`, A-to-B-to-A transitions, exact MIME/cache headers, zero external
 photo-provider requests, one MapLibre canvas, no horizontal overflow, and no
-browser diagnostics at 1280x900, 390x844, and 390x568.
+browser diagnostics at 1280x900, 390x844, and 390x568. The tooltip release
+additionally proved zero image request before 500 ms, the exact Finlandia
+640x472 JPEG afterward, fixed source/rights context, preserved keyboard focus,
+pointer/focus traversal, Escape dismissal back to the map, stale-marker
+cleanup, unmatched omission, and no external image-provider request or browser
+diagnostic against the production origin.
 
 ## Adding or removing an entry
 

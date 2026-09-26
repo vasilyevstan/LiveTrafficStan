@@ -107,7 +107,10 @@ Selection, map movement outside a stable hover, provider refreshes, HISTORY,
 vessels, callsign, registration, airline, model, and fuzzy text never start or
 broaden a lookup. Requests are revision-guarded across A to B to A selection or
 hover changes. Only successful and no-photo JSON results may use one shared
-32-entry, one-hour current-tab LRU. Hover errors do not automatically retry,
+32-entry, one-hour current-tab LRU. A cacheable hover result publishes only to
+already-open selected details with the same exact ICAO24 and does not make a
+second request. The photo follows the prominent route section before telemetry
+so the resolved result is visible. Hover errors do not automatically retry,
 and no photo state uses persistent storage. The image and API response never
 pass through the Worker, service worker, Cache API, IndexedDB, Web Storage, KV,
 or R2.
@@ -133,11 +136,12 @@ binds one valid exact IMO to one Wikidata item, one fixed Commons file-page
 revision, the reviewed source bytes, author, selected license and URL, exact
 credit, bounded derivative dimensions, and SHA-256.
 
-Only a selected live vessel with that exact AIS-reported IMO renders the
-versioned same-origin image. Missing, invalid, or unmatched IMO renders no
-photo. MMSI/name/callsign/fuzzy matching, arbitrary runtime Wikidata P18,
-generic/class/sister-ship substitutes, and runtime Commons/tracker requests
-remain rejected.
+Only a selected live vessel or a vessel held under a fine pointer for the
+existing 500 ms dwell with that exact AIS-reported IMO renders the versioned
+same-origin image. Missing, invalid, unmatched, or sub-dwell hover states
+render no photo. MMSI/name/callsign/fuzzy matching, arbitrary runtime Wikidata
+P18, generic/class/sister-ship substitutes, and runtime Commons/tracker
+requests remain rejected.
 
 The bundled image is labeled historical reference context rather than a live
 view or independent confirmation of the current AIS transmitter. It appears

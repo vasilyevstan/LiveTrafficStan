@@ -698,13 +698,17 @@ provider isolation, and mobile layout. V1.5.3 passed that production
 acceptance at <https://livetrafficstan.syntal.workers.dev>. V1.6.0 additionally
 passed rendered acceptance for explicit plausible-route request, refresh,
 wording, and attribution behavior. Application source
-`86d8395c61c1348d3de8e11a9d7b36ad4f6271cc` also passed exact production
+`86d8395c61c1348d3de8e11a9d7b36ad4f6271cc` passed selected-details
 vessel-photo acceptance for all five matches, unmatched/invalid omission,
 A-to-B-to-A identity, immutable headers, no external photo-provider requests,
 one MapLibre canvas, and reachable desktop/390-pixel controls and attribution.
-Exact-main validation run `36248212097` and deployment/smoke run
-`36248272060` passed. Later behavior changes still require fresh browser
-evidence.
+Application source `d56f8900d25bd57338c459487df6b992edab62f4`
+additionally passed exact production stable-hover acceptance: zero image
+request before 500 ms, exact Finlandia image/source/rights afterward,
+focus/pointer/Escape behavior, stale-marker cleanup, unmatched omission, one
+MapLibre canvas, and no external image-provider request or browser diagnostic.
+Exact-main validation run `36265842006` and deployment/smoke run `36266052761`
+passed. Later behavior changes still require fresh browser evidence.
 
 Private aircraft-relay activation additionally requires the canary in
 [OCI Aircraft Relay](oci-aircraft-relay.md): exact relay health, authenticated
@@ -769,11 +773,13 @@ The Node/Vitest suite does not mount MapLibre or prove pointer timing and popup
 reachability. Before any live aircraft-photo request, use the milestone CDP
 browser fixture to prove that aircraft selection, HISTORY, and sub-dwell
 aircraft hover make zero aircraft-photo requests; explicit action or one
-stable 500 ms aircraft hover makes one; hover and selected details share a
-successful/no-photo tab-cache entry; A to B to A cannot publish a stale result;
-the popup remains reachable for its exact thumbnail link; direct
-thumbnail/link/credit semantics pass; errors remain local; and no provider
-content reaches Web Storage, IndexedDB, Cache API, or service-worker caches.
+stable 500 ms aircraft hover makes one; selecting first and then resolving the
+same exact aircraft through hover publishes the successful/no-photo cache entry
+into the already-open details panel without another request, including after
+Strict Mode cleanup/re-subscribe; A to B to A cannot publish a stale result;
+the popup remains reachable for its exact thumbnail link; direct thumbnail/
+link/credit semantics pass; errors remain local; and no provider content
+reaches Web Storage, IndexedDB, Cache API, or service-worker caches.
 
 One bounded browser-origin request is the ordinary acceptance budget unless a
 later Issue explicitly authorizes another. Record the application origin,

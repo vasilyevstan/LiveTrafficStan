@@ -39,9 +39,9 @@ selected live Aircraft + explicit Find plausible route
 live Aircraft + explicit details action or 500 ms fine-pointer hover
              -> direct Planespotters hex API -> validated unchanged thumbnail
              -> shared bounded one-hour tab cache -> credited source-page link
-selected live Vessel -> valid exact AIS-reported IMO
+selected live Vessel or 500 ms fine-pointer hover -> valid exact AIS-reported IMO
              -> reviewed bundled manifest + immutable same-origin image
-             -> credited historical reference in details only
+             -> credited historical reference in details or compact tooltip
 selected ICAO24/MMSI -> bundled validated allocation tables -> details only
 PORTS toggle -> validated static Natural Earth projection -> port map/details
 AIRPORTS toggle -> validated static OurAirports projection -> airport map/details
@@ -180,8 +180,12 @@ API response during the 2026-09-23 production check. The image loads directly
 from the returned provider origin and is the plain credited source-page link.
 
 Successful and no-photo JSON results may remain in a 32-entry, one-hour
-current-tab LRU shared by hover and selected details. Hover change, pointer
-leave, selection change, close, HISTORY entry, and unmount abort and
+current-tab LRU shared by hover and selected details. A cache write publishes
+to another active controller only when its selected ICAO24 matches, so
+select-first/hover-second displays the result in the already-open details panel
+without a second provider request. Subscription lifetime, including React
+development Strict Mode cleanup/replay, owns that notification. Hover change,
+pointer leave, selection change, close, HISTORY entry, and unmount abort and
 revision-invalidate obsolete work. Errors are not cached, an automatic hover
 does not loop or retry, and `429` blocks another manual attempt without
 scheduling a retry. No photo JSON, URL, credit, or image byte enters traffic
@@ -191,26 +195,29 @@ setup for this low-volume browser path. Production remains enabled only while
 the authorized exact production origin continues to satisfy the live-CORS and
 rendering gate in the aircraft-photo evaluation.
 
-Vessel reference photos use no provider lifecycle. The selected normalized
-vessel's existing `imo` is accepted only as a safe seven-digit integer with a
-valid IMO check digit. A synchronous application-owned lookup then requires an
-exact entry in the committed reviewed manifest. MMSI, name, call sign, vessel
-type, class, route, and visual similarity are never fallback keys.
+Vessel reference photos use no provider lifecycle. The selected or stably
+hovered normalized vessel's existing `imo` is accepted only as a safe
+seven-digit integer with a valid IMO check digit. A synchronous
+application-owned lookup then requires an exact entry in the committed
+reviewed manifest. MMSI, name, call sign, vessel type, class, route, and visual
+similarity are never fallback keys.
 
-Each result is tagged with selected entity ID, exact IMO, and manifest version
-and is derived directly during rendering, so A to B to A selection cannot
-retain another hull. The historical image appears only near the top of live
-selected-ship details with author, fixed Commons revision, selected license,
-and modification notice. Missing, invalid, or unmatched IMO produces no
-image. Hover, search results, map markers, trails, and HISTORY never render or
-request one.
+Each result is tagged with entity ID, exact IMO, and manifest version, so A to
+B to A selection or hover cannot retain another hull. The full historical
+image appears near the top of live selected-ship details with author, fixed
+Commons revision, selected license, and modification notice. After the
+existing 500 ms fine-pointer dwell, the compact map tooltip may load the same
+asset with fixed source, author, license, exact-IMO, and historical-reference
+context. Missing, invalid, unmatched, sub-dwell, search, marker, trail, and
+HISTORY states produce no image.
 
 The image is a versioned same-origin file under `/vessel-photos/`, loaded only
-when a matching details card renders. It is excluded from the service-worker
-shell and all application persistence. There is no runtime Wikimedia,
-Wikidata, gallery, tracker, proxy, Worker, or provider request. The complete
-identity, source, transformation, checksum, rights, and takedown record is in
-the vessel-photo evaluation and machine-readable manifest.
+when a matching details card renders or the exact rendered hover remains
+stable. It is excluded from the service-worker shell and all application
+persistence. There is no runtime Wikimedia, Wikidata, gallery, tracker, proxy,
+Worker, or provider request. The complete identity, source, transformation,
+checksum, rights, and takedown record is in the vessel-photo evaluation and
+machine-readable manifest.
 
 Country allocation is a smaller bundled boundary. Pure synchronous helpers
 derive an optional country name and ISO code from the selected entity's
