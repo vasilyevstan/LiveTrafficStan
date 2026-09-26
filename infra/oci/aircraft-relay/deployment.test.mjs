@@ -68,6 +68,9 @@ describe('OCI relay deployment', () => {
     expect(cloudflaredUnit).toContain(
       '--token-file /etc/livetrafficstan-cloudflared-token',
     )
+    expect(cloudflaredScript).toContain(
+      'IFS= read -r tunnel_token || [[ -n "$tunnel_token" ]]',
+    )
     expect(cloudflaredUnit).not.toContain('http://')
     expect(cloudflaredUnit).not.toContain('https://')
   })

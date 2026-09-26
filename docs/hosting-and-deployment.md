@@ -21,9 +21,9 @@ production platform:
 The accepted recovery design keeps that public Cloudflare boundary and routes
 only aircraft through a private Workers VPC Service and Tunnel to an isolated
 OCI E2 Micro relay. The relay is running and provider/cadence behavior is
-proven; the Tunnel, VPC binding, and public Worker integration are not active
-until their compatible exact releases pass production acceptance. See
-[OCI Aircraft Relay](oci-aircraft-relay.md).
+proven. The Tunnel, VPC Service, and QUIC connector are active; the checked
+Worker binding is used only by a protected `oci-private-relay` deployment.
+See [OCI Aircraft Relay](oci-aircraft-relay.md).
 
 `wrangler.jsonc` temporarily retains a declarative deleted-state tombstone for
 the former `FlightRouteQuota` class so Cloudflare can retire the already
@@ -191,12 +191,19 @@ browser
   +-- /, /assets/*, /aircraft-metadata/*,
   |   /vessel-photos/* --------------------> Cloudflare Static Assets
   |
-  +-- /api/aircraft/v2/point/... --+  current `worker-proxy` mode
+  +-- /api/aircraft/v2/point/... --+
   |                                |
   +-- /api/weather/metar?ids=... --+--> Cloudflare Worker
                                            |             |
-                                           +------------> aviationweather.gov
-                                           +------------> api.adsb.lol
+                                           |             +--> aviationweather.gov
+                                           |
+                                           +--> `worker-proxy`: api.adsb.lol
+                                           |
+                                           +--> `oci-private-relay`
+                                                -> Workers VPC Service
+                                                -> Cloudflare Tunnel
+                                                -> OCI loopback relay
+                                                -> api.adsb.lol
 
 browser --------------------------------> OpenFreeMap HTTPS
 browser --------------------------------> Photon HTTPS on explicit search
@@ -205,11 +212,6 @@ browser --------------------------------> vrs-standing-data.adsb.lol
                                           on explicit plausible-route lookup
 browser --------------------------------> api.adsb.lol only in the protected,
                                           provider-approved direct mode
-
-planned private aircraft transport:
-
-Cloudflare Worker -> Workers VPC Service -> Cloudflare Tunnel
-                  -> OCI loopback relay -> api.adsb.lol
 ```
 
 `wrangler.jsonc`:
@@ -530,8 +532,8 @@ gh workflow run deploy-production.yml \
   --ref main \
   -f sha=<40-character-current-main-sha> \
   -f artifact=application \
-  -f aircraft_delivery=worker-proxy \
-  -f aircraft_photo_enabled=false \
+  -f aircraft_delivery=oci-private-relay \
+  -f aircraft_photo_enabled=true \
   -f flight_route_enabled=true
 ```
 
@@ -541,16 +543,21 @@ The workflow:
 2. validates the SHA format without evaluating it as shell code;
 3. checks out exactly that SHA;
 4. fetches `origin/main` and requires exact equality;
-5. fails closed if either Cloudflare environment secret is absent;
+5. fails closed if either Cloudflare credential is absent and, for private
+   relay mode, if the protected relay authentication secret is absent or too
+   short;
 6. builds the browser with the fixed aircraft-delivery choice plus the
    requested aircraft-photo and plausible-route flags;
 7. reruns install, lint, type-check, all tests, build, and Wrangler dry run;
 8. re-fetches and rechecks current `main` immediately before deployment;
 9. serializes production operations without canceling an in-progress deploy;
-10. deploys Worker code and Static Assets atomically;
-11. passes the source SHA as `RELEASE_SHA`;
-12. runs the bounded production smoke;
-13. records the URL, SHA, aircraft-delivery mode, route-enabled state, and
+10. updates the private Worker secret only when
+    `aircraft_delivery=oci-private-relay`;
+11. deploys Worker code, the exact VPC Service binding, delivery mode, and
+    Static Assets;
+12. passes the source SHA as `RELEASE_SHA`;
+13. runs the bounded production smoke;
+14. records the URL, SHA, aircraft-delivery mode, route-enabled state, and
     result in the workflow summary and GitHub
     deployment.
 
@@ -562,12 +569,22 @@ gh workflow run deploy-production.yml \
   --ref main \
   -f sha=<40-character-current-main-sha> \
   -f artifact=application \
-  -f aircraft_delivery=adsb-lol-direct \
+  -f aircraft_delivery=worker-proxy \
   -f aircraft_photo_enabled=true \
   -f flight_route_enabled=true
 ```
 
-`worker-proxy` is the default and current production mode.
+`worker-proxy` is the rollback/diagnostic mode that uses shared Cloudflare
+egress. `oci-private-relay` keeps the same browser URL and uses the exact
+checked VPC Service ID in `wrangler.jsonc`. It requires
+`AIRCRAFT_RELAY_AUTH_TOKEN` only in the protected `production` environment;
+the workflow installs it as a Worker secret and never exposes it through a
+`VITE_*` value, repository variable, command argument, or log. The Worker adds
+that bearer credential only to its newly constructed relay request. Browser
+cookies, authorization, forwarding headers, and client IP are not copied.
+Missing private configuration returns local `503 Retry-After` and cannot fall
+back to shared egress.
+
 `adsb-lol-direct` sets the fixed browser endpoint to
 `https://api.adsb.lol`; it does not accept a caller-supplied URL. Do not
 dispatch direct mode until the provider has approved it and a bounded check
@@ -618,6 +635,10 @@ older SHA.
 - in `worker-proxy` mode, one same-origin ADSB point request that either
   returns valid aircraft JSON or truthfully preserves an upstream `429` with
   the exact release and `no-store` headers;
+- in `oci-private-relay` mode, one successful same-origin aircraft payload
+  through the bound private path; a numeric local `503 Retry-After` may delay
+  the check at most three times, while `429`, authentication failure, VPC
+  failure, malformed data, or any other status fails activation;
 - in `adsb-lol-direct` mode, one browser-origin ADSB point request that returns
   valid aircraft JSON or an explicit `429` and permits the deployed origin
   through CORS;
@@ -676,10 +697,10 @@ request, the UI rendered HEL to TRD as **Plausible** with the non-authoritative
 disclaimer and both attributions, and explicit refresh made one additional
 request. The vessel-photo release then added the exact production acceptance
 recorded above. Final exact-byte deployment smoke proved the accepted
-application artifact and release identity. Issue #11 remains open only for
-reliable ADSB.lol access from Cloudflare's shared outbound identity; a
-truthful `429`/partial state is accepted degradation, not proof of
-reliability. No browser-automation framework is added solely for this Issue.
+application artifact and release identity. Issue #11 tracks final private-path activation and production evidence. A
+truthful shared-egress `429` remains accepted only in `worker-proxy`
+rollback/diagnostic mode and is not proof of reliable aircraft delivery. No
+browser-automation framework is added solely for this Issue.
 
 ## Monitoring
 

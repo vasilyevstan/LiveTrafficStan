@@ -44,6 +44,7 @@ describe('production rollback workflow', () => {
     )
     expect(workflow).toContain('aircraft_delivery:')
     expect(workflow).toContain('          - worker-proxy')
+    expect(workflow).toContain('          - oci-private-relay')
     expect(workflow).toContain('          - adsb-lol-direct')
     expect(workflow).toContain(
       'aircraft_endpoint_explicit:',

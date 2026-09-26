@@ -19,5 +19,11 @@
     "directory": "./dist",
     "binding": "ASSETS",
     "run_worker_first": ["/api", "/api/*"]
-  }
+  },
+  "vpc_services": [
+    {
+      "binding": "AIRCRAFT_RELAY",
+      "service_id": "01a0df44-6600-79a2-a14f-88b6606869fb"
+    }
+  ]
 }

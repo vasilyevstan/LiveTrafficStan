@@ -343,4 +343,27 @@ describe('AdsbLolAircraftProvider', () => {
       message: 'ADSB.lol returned HTTP 429: slow down',
     })
   })
+
+  it('preserves relay-local admission delay without reporting an empty sky', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        new Response('Relay admission delayed', {
+          status: 503,
+          headers: {
+            'Retry-After': '20',
+          },
+        }),
+      ),
+    )
+    const provider = new AdsbLolAircraftProvider('/api/aircraft')
+
+    await expect(
+      provider.fetchSnapshot(query, new AbortController().signal),
+    ).rejects.toMatchObject({
+      status: 503,
+      retryAfterMs: 20_000,
+      message: 'ADSB.lol returned HTTP 503: Relay admission delayed',
+    })
+  })
 })

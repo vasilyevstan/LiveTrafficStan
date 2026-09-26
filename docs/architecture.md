@@ -13,9 +13,10 @@ normalization. MapLibre owns high-frequency geographic rendering.
 
 The recovery architecture for Cloudflare-shared-egress throttling preserves
 that public boundary and inserts a private Workers VPC Service, Cloudflare
-Tunnel, and fixed-purpose OCI relay only behind the aircraft route. The relay
-is operational, while production activation remains pending until the Worker
-binding and complete private-path acceptance are released.
+Tunnel, and fixed-purpose OCI relay only behind the aircraft route. The relay,
+remote-managed Tunnel, VPC Service, and QUIC connector are operational. The
+Worker selects that path only through the protected `oci-private-relay`
+deployment mode and fails closed rather than reverting to shared egress.
 
 ```text
                        visibility lifecycle
@@ -84,7 +85,7 @@ tombstone can be removed after Cloudflare confirms that deletion has applied.
 | `src/traffic/` | Filtering, freshness/expiry, interpolation, and selected-trail history |
 | `src/map/` | MapLibre lifecycle, external/local-fallback styles, GeoJSON sources/layers, feature selection, and marker images |
 | `src/components/` | Status, controls, and selected-object details |
-| `worker/` | Fixed aircraft and weather proxies with sanitized route matching; the protected aircraft private-relay transport remains pending |
+| `worker/` | Fixed aircraft and weather proxies with sanitized route matching, explicit protected aircraft delivery mode, VPC binding injection, and fail-closed relay authentication |
 | `infra/oci/aircraft-relay/` | Dependency-free fixed ADSB.lol relay, persistent global admission, loopback HTTP adapter, hardened systemd units, exact-SHA deployment, and Tunnel installation |
 | `scripts/pwa-shell.mjs` | Deterministic shell allowlist/versioning, request classification, two-generation cleanup, and normal/retirement worker source |
 | `public/manifest.webmanifest` | Root-scoped standalone install metadata and versioned maskable icons |
