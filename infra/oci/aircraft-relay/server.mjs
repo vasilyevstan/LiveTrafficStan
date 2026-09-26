@@ -1,3 +1,4 @@
+import { realpathSync } from 'node:fs'
 import { setDefaultResultOrder } from 'node:dns'
 import { createServer } from 'node:http'
 import { fileURLToPath } from 'node:url'
@@ -127,7 +128,20 @@ const textResponse = (message, status) =>
     },
   })
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+export const isMainModule = (
+  entryPath = process.argv[1],
+  moduleUrl = import.meta.url,
+) => {
+  if (entryPath === undefined) return false
+
+  try {
+    return realpathSync(entryPath) === realpathSync(fileURLToPath(moduleUrl))
+  } catch {
+    return false
+  }
+}
+
+if (isMainModule()) {
   startRelayServer().catch(() => {
     process.stderr.write('relay_startup_failed\n')
     process.exitCode = 1

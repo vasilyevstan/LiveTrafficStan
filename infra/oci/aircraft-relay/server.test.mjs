@@ -1,8 +1,9 @@
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp, rm, symlink } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
+  isMainModule,
   readRelayConfiguration,
   startRelayServer,
 } from './server.mjs'
@@ -51,6 +52,17 @@ afterEach(async () => {
 })
 
 describe('relay HTTP server', () => {
+  it('recognizes a symlinked release entry point', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'lts-relay-entry-'))
+    directories.push(directory)
+    const entryPath = join(directory, 'server.mjs')
+    await symlink(new URL('./server.mjs', import.meta.url), entryPath)
+
+    expect(
+      isMainModule(entryPath, new URL('./server.mjs', import.meta.url).href),
+    ).toBe(true)
+  })
+
   it('accepts only loopback host configuration', () => {
     expect(() =>
       readRelayConfiguration({
