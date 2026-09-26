@@ -1,3 +1,4 @@
+import { setDefaultResultOrder } from 'node:dns'
 import { createServer } from 'node:http'
 import { fileURLToPath } from 'node:url'
 import {
@@ -9,6 +10,8 @@ const DEFAULT_HOST = '127.0.0.1'
 const DEFAULT_PORT = 8788
 const DEFAULT_STATE_PATH =
   '/var/lib/livetrafficstan-aircraft-relay/admission-state.json'
+
+setDefaultResultOrder('ipv6first')
 
 const readPort = (value) => {
   if (value === undefined) return DEFAULT_PORT
