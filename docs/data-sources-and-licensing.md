@@ -222,8 +222,53 @@ The feature is enabled in production. A Worker proxy is not an authorized
 workaround because it would conflict with the direct-loading and no-proxy/
 no-re-exposure terms. See
 [Aircraft Photo Evaluation](aircraft-photo-evaluation.md) for the exact
-boundary, deterministic evidence, live result, vessel-image blocker, and
-enablement requirements.
+boundary, deterministic evidence, live result, and enablement requirements.
+
+## Vessel reference photos: reviewed Wikimedia Commons derivatives
+
+LiveTrafficStan includes five bundled historical reference photographs selected
+through a file-by-file review:
+
+- Finlandia, IMO `9214379`;
+- Victoria I, IMO `9281281`;
+- Viking XPRS, IMO `9375654`;
+- Megastar, IMO `9773064`;
+- MyStar, IMO `9892690`.
+
+Each vessel was observed through Digitraffic in the Tallinn-Helsinki operating
+area during the 2026-09-26 review. Identity evidence binds the valid exact IMO
+to one Wikidata item and one Commons image, then pins the reviewed Commons
+file-page revision. Runtime matching uses only the selected live vessel's
+exact AIS-reported IMO. It never uses MMSI, name, call sign, class, sister ship,
+or fuzzy matching and never performs a runtime Wikimedia/Wikidata search.
+
+The selected file licenses are:
+
+- CC BY-SA 3.0 for Finlandia and Victoria I;
+- CC BY-SA 4.0 for Viking XPRS and Megastar;
+- CC0 1.0 for MyStar.
+
+The four ShareAlike derivatives remain under their listed file-specific
+license versions. Every source thumbnail was resized to a 640-pixel maximum
+dimension and stripped of embedded metadata without cropping or retouching.
+Visible selected-details credit includes author, fixed Commons revision,
+license link, and modification notice even for the CC0 file, where attribution
+is not required.
+
+The repository's Apache-2.0 license does not relicense the image files.
+`src/config/vesselPhotoManifest.json` records the complete identity, source,
+revision, original/thumbnail measurements, rights, bundled measurements, and
+checksums. The co-located
+`public/vessel-photos/2026-09-26-v1/LICENSES.md` conveys the file-specific
+credits and licenses.
+
+Images are versioned same-origin static assets. The browser requests one only
+when a matching live vessel details card renders. No Wikimedia, Wikidata,
+tracker, gallery, image API, Worker proxy, KV, R2, Web Storage, IndexedDB, or
+service-worker cache is involved. Missing, invalid, unmatched, historical, and
+hover-only vessels receive no photo. See
+[Vessel Reference Photo Evaluation](vessel-photo-evaluation.md) for the
+complete reviewed inventory, validation, takedown, and yacht limitations.
 
 ## Selected-aircraft plausible routes: ADSB.lol standing data
 

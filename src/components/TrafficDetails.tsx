@@ -31,6 +31,10 @@ import {
   vesselMotionLabel,
 } from '../domain/trafficPresentation'
 import type { UnitSystem } from '../domain/units'
+import {
+  vesselReferencePhotoForSelection,
+  type VesselReferencePhoto,
+} from '../domain/vesselPhoto'
 
 interface DetailRowProps {
   label: string
@@ -471,6 +475,65 @@ function AircraftPhotoDetails({
   )
 }
 
+function VesselPhotoDetails({
+  photo,
+}: {
+  photo: VesselReferencePhoto
+}) {
+  return (
+    <section
+      className="vessel-photo"
+      aria-labelledby={`vessel-photo-heading-${photo.imo}`}
+    >
+      <h3 id={`vessel-photo-heading-${photo.imo}`}>
+        Vessel reference photo
+      </h3>
+      <p className="metadata-status">
+        Reference photo matched to AIS-reported IMO {photo.imo}.
+      </p>
+      <a
+        className="vessel-photo__link"
+        href={photo.identityEvidence.commonsRevisionUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <img
+          className="vessel-photo__image"
+          src={photo.asset.path}
+          width={photo.asset.width}
+          height={photo.asset.height}
+          alt={photo.alt}
+          loading="lazy"
+          decoding="async"
+        />
+      </a>
+      <p className="metadata-attribution vessel-photo__credit">
+        Photo by {photo.rights.author} via{' '}
+        <a
+          href={photo.identityEvidence.commonsRevisionUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {photo.rights.sourceName}
+        </a>
+        , licensed under{' '}
+        <a
+          href={photo.rights.licenseUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {photo.rights.licenseName}
+        </a>
+        . {photo.asset.modificationNotice}
+      </p>
+      <p className="metadata-status">
+        Historical reference image only; not a live view or independent
+        confirmation of the vessel currently reporting this AIS identity.
+      </p>
+    </section>
+  )
+}
+
 export function TrafficDetails({
   entity,
   aircraftMetadata,
@@ -502,6 +565,10 @@ export function TrafficDetails({
       ? countryForAircraftHex(entity.hex)
       : flagStateForMmsi(entity.mmsi)
   const presentation = trafficPresentation(entity)
+  const vesselPhoto =
+    entity.kind === 'vessel' && !historical
+      ? vesselReferencePhotoForSelection(entity)
+      : undefined
 
   return (
     <aside
@@ -523,6 +590,13 @@ export function TrafficDetails({
           Close
         </button>
       </div>
+
+      {vesselPhoto && (
+        <VesselPhotoDetails
+          key={vesselPhoto.identityKey}
+          photo={vesselPhoto}
+        />
+      )}
 
       {entity.kind === 'aircraft' &&
         flightRouteEnabled &&

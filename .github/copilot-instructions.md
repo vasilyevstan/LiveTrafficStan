@@ -33,7 +33,8 @@ preserve truthful partial operation when one provider fails.
   or hold unrelated ready work behind the blocker.
 - Before merge, run `npm run lint`, `npm run typecheck`,
   `npm test -- --run`, `npm run check:aircraft-metadata`,
-  `npm run check:country-allocations`, and `npm run build`.
+  `npm run check:country-allocations`, `npm run check:vessel-photos`, and
+  `npm run build`.
 - Static markup, pure unit tests, and HTTP smoke do not prove rendered MapLibre
   selection, focus, touch, or responsive layout. Use a real-browser acceptance
   check for those claims and record measured evidence.

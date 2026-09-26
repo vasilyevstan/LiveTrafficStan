@@ -215,6 +215,36 @@ initialization may still provide a recent snapshot when streaming is
 temporarily unavailable, but the status remains honest about a disconnected
 live stream.
 
+## A selected ship has no reference photo
+
+This is normally expected. The first bundled manifest contains only five
+reviewed ferries and requires the selected live vessel to report a valid exact
+IMO:
+
+- Finlandia `9214379`;
+- Victoria I `9281281`;
+- Viking XPRS `9375654`;
+- Megastar `9773064`;
+- MyStar `9892690`.
+
+Missing, malformed, or unmatched IMO intentionally produces no image. The
+application never falls back to MMSI, name, call sign, vessel type, class,
+sister ship, or a generic real photograph. HISTORY and hover also omit vessel
+photos by design.
+
+For a listed vessel, inspect the exact
+`/vessel-photos/2026-09-26-v1/imo-{IMO}.jpg` or `.png` request. A missing or
+damaged file is a deployment defect, not permission to substitute another
+image. Run `npm run check:vessel-photos` to verify the committed directory,
+license record, dimensions, byte counts, and SHA-256 without any upstream
+request.
+
+The browser should make no request to Wikimedia, Wikidata, or a ship-tracking
+site. Versioned vessel-photo files use immutable browser caching but are
+excluded from the service-worker shell. If identity or rights evidence is
+disputed, remove that exact manifest entry and asset in a new version and
+deploy or roll back; do not replace bytes under the existing immutable path.
+
 ## Ports show unavailable
 
 The optional Natural Earth layer is independent of live traffic. No port

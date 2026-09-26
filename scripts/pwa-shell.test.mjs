@@ -186,6 +186,9 @@ const createFixture = async () => {
   const root = await mkdtemp(join(tmpdir(), 'livetrafficstan-pwa-'))
   await mkdir(join(root, 'assets'), { recursive: true })
   await mkdir(join(root, 'icons'), { recursive: true })
+  await mkdir(join(root, 'vessel-photos', 'test-v1'), {
+    recursive: true,
+  })
   await Promise.all([
     writeFile(join(root, 'index.html'), '<main>shell</main>'),
     writeFile(join(root, 'manifest.webmanifest'), '{}'),
@@ -194,6 +197,10 @@ const createFixture = async () => {
     writeFile(join(root, 'icons/livetrafficstan-512-v1.png'), '512'),
     writeFile(join(root, 'assets/app-ABC.js'), 'app'),
     writeFile(join(root, 'assets/map-worker-XYZ.js'), 'worker'),
+    writeFile(
+      join(root, 'vessel-photos/test-v1/imo-1234567.jpg'),
+      'photo',
+    ),
   ])
   return root
 }
@@ -231,6 +238,7 @@ describe('PWA shell generation', () => {
     expect(source).not.toContain('/aircraft-metadata/')
     expect(source).not.toContain('/airports/')
     expect(source).not.toContain('/ports/')
+    expect(source).not.toContain('/vessel-photos/')
     expect(source).not.toContain('api.planespotters.net')
     expect(source).not.toContain('cdn.planespotters.net')
     expect(source).not.toContain('t.plnspttrs.net')

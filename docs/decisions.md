@@ -124,11 +124,32 @@ production origin passed a bounded 2026-09-23 browser check with readable JSON,
 an unchanged direct thumbnail from `t.plnspttrs.net`, visible credit, and exact
 source-page navigation. The photo surface remains public and free.
 
-Automatic vessel photos remain rejected. A future path requires a manually
-reviewed exact-IMO manifest to one verified Commons file revision with author,
-source, selected license, license URL, and exact credit. MMSI/name/fuzzy
-matching, arbitrary runtime Wikidata P18, and generic/class/sister-ship
-substitutes do not satisfy identity or rights requirements.
+## Bundled exact-IMO vessel reference photos
+
+The accepted vessel-image path is a manually reviewed bundled manifest rather
+than an automatic provider or runtime search. The first version contains five
+ferries observed through Digitraffic in the Tallinn-Helsinki area. Every entry
+binds one valid exact IMO to one Wikidata item, one fixed Commons file-page
+revision, the reviewed source bytes, author, selected license and URL, exact
+credit, bounded derivative dimensions, and SHA-256.
+
+Only a selected live vessel with that exact AIS-reported IMO renders the
+versioned same-origin image. Missing, invalid, or unmatched IMO renders no
+photo. MMSI/name/callsign/fuzzy matching, arbitrary runtime Wikidata P18,
+generic/class/sister-ship substitutes, and runtime Commons/tracker requests
+remain rejected.
+
+The bundled image is labeled historical reference context rather than a live
+view or independent confirmation of the current AIS transmitter. It appears
+only in selected details, never hover, search results, markers, or HISTORY.
+Visible attribution links the fixed Commons revision and selected license and
+states that the derivative was resized and had metadata removed.
+
+Versioned photo assets receive immutable browser caching but are excluded from
+the service-worker shell. A changed source, rights record, transformation, or
+byte set requires a new manifest version. A rights or identity dispute removes
+that exact entry and asset; it never authorizes a substitute. See
+[Vessel Reference Photo Evaluation](vessel-photo-evaluation.md).
 
 ## Airport arrival and departure boards remain blocked
 
