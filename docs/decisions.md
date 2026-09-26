@@ -141,9 +141,11 @@ remain rejected.
 
 The bundled image is labeled historical reference context rather than a live
 view or independent confirmation of the current AIS transmitter. It appears
-only in selected details, never hover, search results, markers, or HISTORY.
-Visible attribution links the fixed Commons revision and selected license and
-states that the derivative was resized and had metadata removed.
+in selected details and, after the existing 500 ms fine-pointer dwell, the
+map's compact hover card. It never appears in search results, markers, or
+HISTORY. Selected details retain fixed-revision and license links plus the
+modification notice; hover retains the fixed-revision link and visible author,
+source, license, exact-IMO, and historical-reference context.
 
 Versioned photo assets receive immutable browser caching but are excluded from
 the service-worker shell. A changed source, rights record, transformation, or
@@ -404,10 +406,11 @@ derived flag state, speed over ground in both km/h and knots, and explicitly
 labeled AIS destination. DOM text is assigned through `textContent`. When the
 aircraft-photo path is enabled, one stable fine-pointer aircraft hover may use
 the reviewed direct provider boundary after
-500 ms; the resulting image remains a credited exact source-page link.
-Metadata, route, traffic-provider, reconnect, and polling work remain
-unaffected, vessel hover remains request-free, and AIS destination is not
-presented as a complete route.
+500 ms; the resulting image remains a credited exact source-page link. The
+same dwell may resolve a vessel's already-bundled exact-IMO image and display
+it with fixed Commons revision and rights context, without contacting an image
+provider. Metadata, route, traffic-provider, reconnect, and polling work remain
+unaffected, and AIS destination is not presented as a complete route.
 
 ## Pinned static selected-aircraft metadata
 

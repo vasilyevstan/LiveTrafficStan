@@ -1092,6 +1092,7 @@ function App() {
         aircraftPhotoHoverDelayMs={
           APP_CONFIG.aircraftPhoto.hoverDelayMs
         }
+        vesselPhotoEnabled={!historyActive}
         viewRequestId={viewRequest.id}
         viewportSettleMs={APP_CONFIG.navigation.viewportSettleMs}
         onHoverAircraftChange={setHoveredAircraftId}

@@ -111,24 +111,31 @@ normalized vessel's existing `imo` field:
 - MMSI, name, call sign, vessel type, class, route, or visual similarity are
   never fallback keys.
 
-The result identity includes selected entity ID, exact IMO, and manifest
-version. React derives the result directly on every render and keys the photo
-component by that complete identity, so an A to B to A selection sequence
+The result identity includes entity ID, exact IMO, and manifest version. React
+derives the selected-details result directly on every render, while the map
+resolves the same complete identity only after its existing 500 ms
+fine-pointer dwell. An A to B to A selection or hover sequence therefore
 cannot retain another hull's presentation.
 
-The photo appears directly below the selected live ship heading. The UI says
-**Reference photo matched to AIS-reported IMO {IMO}** and explicitly describes
-it as a historical reference image, not a live view or independent
-confirmation of the vessel currently reporting that AIS identity.
+The full photo card appears directly below the selected live ship heading. The
+UI says **Reference photo matched to AIS-reported IMO {IMO}** and explicitly
+describes it as a historical reference image, not a live view or independent
+confirmation of the vessel currently reporting that AIS identity. On devices
+with a fine hover-capable pointer, remaining over the exact rendered vessel
+for 500 ms may add a compact version to the existing map tooltip. That image
+links the fixed Commons revision and retains visible author, source, license,
+historical-reference, and exact-IMO context. Touch and keyboard users continue
+to use selected details for the full record.
 
 Missing, invalid, or unmatched IMO produces no real image and no placeholder.
-Photos do not appear in hover, search results, map markers, trails, or HISTORY.
-They do not mutate normalized traffic, provider health, freshness, selection,
-camera, filters, or MQTT/REST lifecycle.
+Sub-dwell hover, search results, map markers, trails, and HISTORY produce no
+photo. The tooltip path does not mutate normalized traffic, provider health,
+freshness, selection, camera, filters, or MQTT/REST lifecycle.
 
 ## Network, cache, privacy, and failure behavior
 
-The browser loads only the selected same-origin versioned asset. There is:
+The browser loads only the selected or stable-hover same-origin versioned
+asset. There is:
 
 - no Wikimedia or Wikidata runtime request;
 - no tracker, gallery, image API, proxy, Worker route, credential, cookie, or
@@ -174,13 +181,14 @@ required human review of the pictured hull and the fixed upstream rights
 evidence.
 
 Unit and component tests prove exact-match, invalid/unmatched omission,
-selection-identity tagging, visible attribution, top-of-details placement,
-HISTORY exclusion, and no service-worker shell inclusion. Real-browser
-acceptance must additionally verify the five bundled assets return `200` with
-immutable cache headers, the matched/unmatched transitions do not flash a
-stale hull, and the desktop plus 390-pixel layouts keep the photo, source,
-license, Close action, attribution, and map reachable without horizontal
-overflow.
+selection and tooltip identity guards, visible attribution, top-of-details
+placement, sub-dwell/HISTORY exclusion, and no service-worker shell inclusion.
+Real-browser acceptance must additionally verify the five bundled assets
+return `200` with immutable cache headers, a stable desktop hover renders the
+correct linked image without an external provider request, matched/unmatched
+transitions do not flash a stale hull, and the desktop plus 390-pixel layouts
+keep the selected-details photo, source, license, Close action, attribution,
+and map reachable without horizontal overflow.
 
 The production acceptance passed those checks with deterministic marine
 fixtures against the deployed application and actual static assets. It
