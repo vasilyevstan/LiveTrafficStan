@@ -36,6 +36,13 @@ const identities: Record<string, FlightRouteIdentity> = {
   },
 }
 
+const config = {
+  cacheMaxEntries: 32,
+  cacheTtlMs: 6 * 60 * 60_000,
+  rateLimitFallbackMs: 60_000,
+  rateLimitBackoffMaxMs: 5 * 60_000,
+}
+
 const available = (
   flightIcao: string,
 ): Extract<FlightRouteLookupResult, { kind: 'available' }> => ({
@@ -57,7 +64,7 @@ describe('FlightRouteController', () => {
     const provider: FlightRouteProvider = {
       lookup: vi.fn(),
     }
-    const controller = new FlightRouteController(provider)
+    const controller = new FlightRouteController(provider, config)
     controller.subscribe(() => undefined)
 
     controller.select(identities.first)
@@ -72,7 +79,7 @@ describe('FlightRouteController', () => {
         () => new Promise<FlightRouteLookupResult>(() => undefined),
       ),
     }
-    const controller = new FlightRouteController(provider)
+    const controller = new FlightRouteController(provider, config)
     const movedIdentity = {
       ...identities.first,
       latitude: 60.1699,
@@ -93,7 +100,7 @@ describe('FlightRouteController', () => {
     const provider: FlightRouteProvider = {
       lookup: vi.fn(async () => available('TST123')),
     }
-    const controller = new FlightRouteController(provider)
+    const controller = new FlightRouteController(provider, config)
     const states: string[] = []
     controller.subscribe((state) => states.push(state.phase))
     controller.select(identities.first)
@@ -122,7 +129,7 @@ describe('FlightRouteController', () => {
         return requests[signals.length - 1]!.promise
       }),
     }
-    const controller = new FlightRouteController(provider)
+    const controller = new FlightRouteController(provider, config)
     const states: string[] = []
     controller.subscribe((state) => states.push(state.phase))
 
@@ -142,13 +149,24 @@ describe('FlightRouteController', () => {
     expect(states.at(-1)).toBe('available')
   })
 
-  it('preserves typed quota failures without exposing provider text', async () => {
+  it('blocks repeated requests for the bounded provider Retry-After', async () => {
+    let now = 10_000
     const provider: FlightRouteProvider = {
-      lookup: vi.fn(async () => {
-        throw new FlightRouteProviderError('quota-exhausted')
-      }),
+      lookup: vi
+        .fn<FlightRouteProvider['lookup']>()
+        .mockRejectedValueOnce(
+          new FlightRouteProviderError(
+            'quota-exhausted',
+            30_000,
+          ),
+        )
+        .mockResolvedValue(available('TST456')),
     }
-    const controller = new FlightRouteController(provider)
+    const controller = new FlightRouteController(
+      provider,
+      config,
+      { now: () => now },
+    )
     const states: unknown[] = []
     controller.subscribe((state) => states.push(state))
     controller.select(identities.first)
@@ -160,7 +178,114 @@ describe('FlightRouteController', () => {
       phase: 'error',
       identityKey: 'TST123|ABC123|ES-ABC',
       reason: 'quota-exhausted',
+      retryAt: 40_000,
     })
+
+    controller.request(identities.first)
+    expect(provider.lookup).toHaveBeenCalledTimes(1)
+
+    controller.select(identities.second)
+    expect(states.at(-1)).toEqual({
+      phase: 'error',
+      identityKey: 'TST456|DEF456|ES-DEF',
+      reason: 'quota-exhausted',
+      retryAt: 40_000,
+    })
+
+    now = 40_000
+    controller.request(identities.second)
+    await Promise.resolve()
+    expect(provider.lookup).toHaveBeenCalledTimes(2)
+    expect(states.at(-1)).toMatchObject({ phase: 'available' })
+  })
+
+  it('uses a configured fallback and caps excessive retry guidance', async () => {
+    let now = 10_000
+    const provider: FlightRouteProvider = {
+      lookup: vi
+        .fn<FlightRouteProvider['lookup']>()
+        .mockRejectedValueOnce(new Error('network detail'))
+        .mockRejectedValueOnce(
+          new FlightRouteProviderError(
+            'provider-error',
+            10 * 60_000,
+          ),
+        ),
+    }
+    const controller = new FlightRouteController(
+      provider,
+      config,
+      { now: () => now },
+    )
+    const states: unknown[] = []
+    controller.subscribe((state) => states.push(state))
+    controller.select(identities.first)
+
+    controller.request(identities.first)
+    await Promise.resolve()
+    expect(states.at(-1)).toEqual({
+      phase: 'error',
+      identityKey: 'TST123|ABC123|ES-ABC',
+      reason: 'provider-error',
+      retryAt: 70_000,
+    })
+
+    now = 70_000
+    controller.request(identities.first)
+    await Promise.resolve()
+    expect(states.at(-1)).toEqual({
+      phase: 'error',
+      identityKey: 'TST123|ABC123|ES-ABC',
+      reason: 'provider-error',
+      retryAt: 370_000,
+    })
+  })
+
+  it('shows a cached route without a request while refresh is cooling down', async () => {
+    let now = 10_000
+    const provider: FlightRouteProvider = {
+      lookup: vi
+        .fn<FlightRouteProvider['lookup']>()
+        .mockResolvedValueOnce(available('TST123'))
+        .mockRejectedValueOnce(
+          new FlightRouteProviderError(
+            'quota-exhausted',
+            30_000,
+          ),
+        )
+        .mockResolvedValue(available('TST123')),
+    }
+    const controller = new FlightRouteController(
+      provider,
+      config,
+      { now: () => now },
+    )
+    const states: unknown[] = []
+    controller.subscribe((state) => states.push(state))
+
+    controller.select(identities.first)
+    controller.request(identities.first)
+    await Promise.resolve()
+    controller.select(identities.second)
+    controller.request(identities.second)
+    await Promise.resolve()
+    controller.select(identities.first)
+
+    expect(provider.lookup).toHaveBeenCalledTimes(2)
+    expect(states.at(-1)).toEqual({
+      phase: 'available',
+      identityKey: 'TST123|ABC123|ES-ABC',
+      route: available('TST123').route,
+      retryAt: 40_000,
+    })
+
+    controller.request(identities.first)
+    expect(provider.lookup).toHaveBeenCalledTimes(2)
+
+    now = 40_000
+    controller.request(identities.first)
+    await Promise.resolve()
+    expect(provider.lookup).toHaveBeenCalledTimes(3)
   })
 
   it('binds an action to its current identity before passive selection sync', async () => {
@@ -169,7 +294,7 @@ describe('FlightRouteController', () => {
         available(requestedIdentity.callsign),
       ),
     }
-    const controller = new FlightRouteController(provider)
+    const controller = new FlightRouteController(provider, config)
     controller.subscribe(() => undefined)
     controller.select(identities.first)
 
@@ -186,7 +311,7 @@ describe('FlightRouteController', () => {
     const provider: FlightRouteProvider = {
       lookup: vi.fn(async (identity) => available(identity.callsign)),
     }
-    const controller = new FlightRouteController(provider)
+    const controller = new FlightRouteController(provider, config)
     const states: unknown[] = []
     controller.subscribe((state) => states.push(state))
 
@@ -218,7 +343,7 @@ describe('FlightRouteController', () => {
         })
         .mockResolvedValue(available('TST123')),
     }
-    const controller = new FlightRouteController(provider)
+    const controller = new FlightRouteController(provider, config)
     const states: unknown[] = []
     controller.subscribe((state) => states.push(state))
 
@@ -252,7 +377,7 @@ describe('FlightRouteController', () => {
     const provider: FlightRouteProvider = {
       lookup: vi.fn(async () => available('TST123')),
     }
-    const controller = new FlightRouteController(provider, {
+    const controller = new FlightRouteController(provider, config, {
       now: () => now,
     })
     const states: unknown[] = []
@@ -276,7 +401,7 @@ describe('FlightRouteController', () => {
     const provider: FlightRouteProvider = {
       lookup: vi.fn(async (identity) => available(identity.callsign)),
     }
-    const controller = new FlightRouteController(provider)
+    const controller = new FlightRouteController(provider, config)
     const states: unknown[] = []
     controller.subscribe((state) => states.push(state))
     const sessionIdentities = Array.from(

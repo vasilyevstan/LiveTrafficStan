@@ -21,7 +21,11 @@ The feature:
   segments before displaying the result;
 - labels the result as plausible rather than scheduled, filed, active, or
   authoritative;
-- keeps successful results only in a bounded six-hour current-tab cache.
+- keeps successful results only in a bounded six-hour current-tab cache;
+- keeps the action directly below the selected-aircraft heading and resets
+  details scroll when selection changes;
+- honors bounded `Retry-After` guidance or a local fallback cooldown without
+  scheduling a retry.
 
 This is an engineering record, not legal advice. Provider terms, schemas,
 hosting, and data can change and must be rechecked before a material contract
@@ -70,7 +74,9 @@ The browser:
 - accepts only JSON with the exact requested normalized callsign;
 - validates every returned airport name, ICAO code, optional IATA code, and
   coordinate;
-- treats `404` as no route and `429` as temporary provider throttling.
+- treats `404` as no route and `429` as temporary provider throttling;
+- preserves readable `Retry-After` seconds or HTTP dates for throttled and
+  other error responses.
 
 The source returned browser-readable wildcard CORS on bounded `200` and `404`
 checks on 2026-09-25. The route request is a simple credential-free GET and
@@ -117,6 +123,12 @@ is not:
 No route data changes ADS-B marker position, freshness, polling, trails,
 selection, metadata, aircraft history, or provider health.
 
+The compact action appears directly below the selected-aircraft heading so it
+is visible before telemetry, photo, and metadata sections. Results use
+**Plausible origin**, **Plausible destination**, and
+**Standing-data file last modified**. Changing selection resets the details
+panel scroll position to the top.
+
 ## Request and cache behavior
 
 Selection alone, aircraft refreshes, map movement, metadata updates, theme
@@ -132,6 +144,11 @@ makes a new provider request.
 Unavailable and failed results are not cached. No route response, URL, airport,
 or attribution data enters Web Storage, IndexedDB, traffic history, the
 service-worker cache, the Worker Cache API, KV, R2, or a Durable Object.
+
+A readable provider `Retry-After` is honored and capped at five minutes. When
+it is absent or malformed, provider failure applies a 60-second route-local
+cooldown. The action is disabled until the deadline; no timeout callback starts
+a request automatically.
 
 ## Removed aviationstack path
 

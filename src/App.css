@@ -921,6 +921,29 @@
   border-top: 1px solid var(--detail-divider);
 }
 
+.flight-route {
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid var(--detail-divider);
+  border-radius: 10px;
+  background: var(--button-background);
+}
+
+.flight-route__heading {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.flight-route__heading h3 {
+  margin: 0;
+  color: var(--detail-heading);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 .aircraft-metadata h3 {
   margin: 0;
   color: var(--detail-heading);
@@ -964,6 +987,11 @@
   background: var(--button-background);
   font-size: 0.68rem;
   cursor: pointer;
+}
+
+.flight-route__action {
+  flex: 0 0 auto;
+  margin-top: 0;
 }
 
 .flight-route__action:hover,

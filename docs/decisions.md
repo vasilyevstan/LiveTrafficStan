@@ -82,10 +82,12 @@ health.
 
 The request is a direct credential-free GET with redirect rejection, a
 ten-second deadline, and a 32 KiB response ceiling. Successful exact-identity
-routes may remain in a 32-entry six-hour current-tab LRU. Failures and
-unavailable results are never cached, and no route enters Web Storage,
-IndexedDB, traffic history, service-worker cache, Worker cache, KV, R2, or a
-Durable Object.
+routes may remain in a 32-entry six-hour current-tab LRU. Readable
+`Retry-After` guidance is honored up to five minutes; otherwise a failed
+lookup applies a 60-second local cooldown. The action remains disabled until
+that boundary, and no automatic retry is scheduled. Failures and unavailable
+results are never cached, and no route enters Web Storage, IndexedDB, traffic
+history, service-worker cache, Worker cache, KV, R2, or a Durable Object.
 
 The dormant aviationstack client, Worker route, secret dependency, rolling
 quota, and SQLite-backed Durable Object were removed. The detailed decision is

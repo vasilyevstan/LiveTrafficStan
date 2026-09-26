@@ -71,11 +71,13 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   shows observation and retrieval age, expires old reports, and remains
   independent of traffic providers and static airport context.
 - A default-enabled ADSB.lol plausible-route lookup for a selected live
-  aircraft. It runs only after **Find plausible route**, validates one exact
-  normalized callsign plus current position against standing-data route
-  segments, and never claims a filed plan, schedule, or operational status.
+  aircraft. A compact **Find plausible route** action sits directly below the
+  selected-aircraft heading, but runs only when activated. It validates one
+  exact normalized callsign plus current position against standing-data route
+  segments and never claims a filed plan, schedule, or operational status.
   Successful exact-identity results are reused from a bounded six-hour
-  in-memory tab cache.
+  in-memory tab cache; provider `Retry-After` or a bounded local cooldown
+  prevents immediate repeated failures without automatic retry.
 - A production-enabled Planespotters aircraft-photo path. It accepts only an
   exact ICAO24 hex lookup after **Load aircraft photo** or one stable 500 ms
   fine-pointer hover, preserves the returned thumbnail and photo-page URLs,

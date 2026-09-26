@@ -1,4 +1,5 @@
 import type {
+  FlightRouteErrorReason,
   FlightRouteIdentity,
   FlightRouteRecord,
   FlightRouteViewState,
@@ -11,6 +12,13 @@ import {
 
 type Listener = (state: FlightRouteViewState) => void
 
+export interface FlightRouteControllerConfig {
+  cacheMaxEntries: number
+  cacheTtlMs: number
+  rateLimitFallbackMs: number
+  rateLimitBackoffMaxMs: number
+}
+
 interface FlightRouteControllerRuntime {
   now: () => number
 }
@@ -19,9 +27,6 @@ interface FlightRouteCacheEntry {
   expiresAt: number
   route: FlightRouteRecord
 }
-
-const FLIGHT_ROUTE_CACHE_TTL_MS = 6 * 60 * 60_000
-const FLIGHT_ROUTE_CACHE_MAX_ENTRIES = 32
 
 const browserRuntime: FlightRouteControllerRuntime = {
   now: () => Date.now(),
@@ -33,6 +38,7 @@ const isAbortError = (error: unknown) =>
 
 export class FlightRouteController {
   private readonly provider: FlightRouteProvider
+  private readonly config: FlightRouteControllerConfig
   private readonly runtime: FlightRouteControllerRuntime
   private readonly cache = new Map<string, FlightRouteCacheEntry>()
   private state: FlightRouteViewState = { phase: 'idle' }
@@ -41,12 +47,16 @@ export class FlightRouteController {
   private revision = 0
   private selectedIdentity?: FlightRouteIdentity
   private selectedIdentityKey?: string
+  private blockedUntil = 0
+  private blockedReason: FlightRouteErrorReason = 'provider-error'
 
   constructor(
     provider: FlightRouteProvider,
+    config: FlightRouteControllerConfig,
     runtime: FlightRouteControllerRuntime = browserRuntime,
   ) {
     this.provider = provider
+    this.config = config
     this.runtime = runtime
   }
 
@@ -75,16 +85,28 @@ export class FlightRouteController {
     const cachedRoute = identityKey
       ? this.readCachedRoute(identityKey)
       : undefined
+    const retryAt =
+      identityKey && this.blockedUntil > this.runtime.now()
+        ? this.blockedUntil
+        : undefined
     this.publish(
       cachedRoute && identityKey
         ? {
             phase: 'available',
             identityKey,
             route: cachedRoute,
+            ...(retryAt === undefined ? {} : { retryAt }),
           }
-        : identityKey
-          ? { phase: 'idle', identityKey }
-          : { phase: 'idle' },
+        : retryAt && identityKey
+          ? {
+              phase: 'error',
+              identityKey,
+              reason: this.blockedReason,
+              retryAt,
+            }
+          : identityKey
+            ? { phase: 'idle', identityKey }
+            : { phase: 'idle' },
     )
   }
 
@@ -97,6 +119,22 @@ export class FlightRouteController {
     ) {
       return
     }
+
+    const now = this.runtime.now()
+    if (this.blockedUntil > now) {
+      this.publish(
+        this.state.phase === 'available'
+          ? { ...this.state, retryAt: this.blockedUntil }
+          : {
+              phase: 'error',
+              identityKey: this.selectedIdentityKey,
+              reason: this.blockedReason,
+              retryAt: this.blockedUntil,
+            },
+      )
+      return
+    }
+    this.blockedUntil = 0
 
     this.revision += 1
     const revision = this.revision
@@ -142,14 +180,18 @@ export class FlightRouteController {
           return
         }
         this.requestController = undefined
-        this.publish({
-          phase: 'error',
+        if (error instanceof FlightRouteProviderError) {
+          this.publishBlockedError(
+            identityKey,
+            error.reason,
+            error.retryAfterMs,
+          )
+          return
+        }
+        this.publishBlockedError(
           identityKey,
-          reason:
-            error instanceof FlightRouteProviderError
-              ? error.reason
-              : 'provider-error',
-        })
+          'provider-error',
+        )
       },
     )
   }
@@ -162,6 +204,7 @@ export class FlightRouteController {
     this.requestController = undefined
     this.listener = undefined
     this.cache.clear()
+    this.blockedUntil = 0
   }
 
   private publish(state: FlightRouteViewState) {
@@ -188,13 +231,36 @@ export class FlightRouteController {
   ) {
     this.cache.delete(identityKey)
     this.cache.set(identityKey, {
-      expiresAt: this.runtime.now() + FLIGHT_ROUTE_CACHE_TTL_MS,
+      expiresAt: this.runtime.now() + this.config.cacheTtlMs,
       route,
     })
-    while (this.cache.size > FLIGHT_ROUTE_CACHE_MAX_ENTRIES) {
+    while (this.cache.size > this.config.cacheMaxEntries) {
       const oldestKey = this.cache.keys().next().value
       if (typeof oldestKey !== 'string') break
       this.cache.delete(oldestKey)
     }
+  }
+
+  private publishBlockedError(
+    identityKey: string,
+    reason: FlightRouteErrorReason,
+    requestedRetryAfterMs?: number,
+  ) {
+    const retryAfterMs = Math.min(
+      this.config.rateLimitBackoffMaxMs,
+      Math.max(
+        0,
+        requestedRetryAfterMs ??
+          this.config.rateLimitFallbackMs,
+      ),
+    )
+    this.blockedUntil = this.runtime.now() + retryAfterMs
+    this.blockedReason = reason
+    this.publish({
+      phase: 'error',
+      identityKey,
+      reason,
+      retryAt: this.blockedUntil,
+    })
   }
 }

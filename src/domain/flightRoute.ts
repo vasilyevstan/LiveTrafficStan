@@ -53,6 +53,7 @@ export type FlightRouteViewState =
       phase: 'available'
       identityKey: string
       route: FlightRouteRecord
+      retryAt?: number
     }
   | {
       phase: 'unavailable'
@@ -63,6 +64,7 @@ export type FlightRouteViewState =
       phase: 'error'
       identityKey: string
       reason: FlightRouteErrorReason
+      retryAt?: number
     }
 
 const ICAO24 = /^[0-9A-F]{6}$/
