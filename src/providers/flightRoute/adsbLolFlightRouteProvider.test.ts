@@ -153,19 +153,54 @@ describe('AdsbLolFlightRouteProvider', () => {
     ).resolves.toEqual({ kind: 'unavailable', reason: 'implausible' })
   })
 
-  it.each([
-    [429, 'quota-exhausted'],
-    [500, 'provider-error'],
-  ] as const)('maps HTTP %i to %s', async (status, reason) => {
+  it('preserves numeric and HTTP-date Retry-After without retrying automatically', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-09-26T12:00:00Z'))
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => jsonResponse({ error: 'ignored' }, status)),
+      vi
+        .fn()
+        .mockResolvedValueOnce(
+          jsonResponse({ error: 'ignored' }, 429, {
+            'Retry-After': '30',
+          }),
+        )
+        .mockResolvedValueOnce(
+          jsonResponse({ error: 'ignored' }, 503, {
+            'Retry-After': 'Sat, 26 Sep 2026 12:02:00 GMT',
+          }),
+        ),
     )
     const provider = new AdsbLolFlightRouteProvider(config)
 
     await expect(
       provider.lookup(identity, new AbortController().signal),
-    ).rejects.toMatchObject<Partial<FlightRouteProviderError>>({ reason })
+    ).rejects.toMatchObject<Partial<FlightRouteProviderError>>({
+      reason: 'quota-exhausted',
+      retryAfterMs: 30_000,
+    })
+    await expect(
+      provider.lookup(identity, new AbortController().signal),
+    ).rejects.toMatchObject<Partial<FlightRouteProviderError>>({
+      reason: 'provider-error',
+      retryAfterMs: 120_000,
+    })
+    expect(fetch).toHaveBeenCalledTimes(2)
+  })
+
+  it('maps provider failures without retry guidance', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => jsonResponse({ error: 'ignored' }, 500)),
+    )
+    const provider = new AdsbLolFlightRouteProvider(config)
+
+    await expect(
+      provider.lookup(identity, new AbortController().signal),
+    ).rejects.toMatchObject<Partial<FlightRouteProviderError>>({
+      reason: 'provider-error',
+      retryAfterMs: undefined,
+    })
   })
 
   it('rejects malformed, mismatched, unsafe, and oversized route responses', async () => {

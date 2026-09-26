@@ -70,6 +70,10 @@ export interface AppConfig {
   }
   flightRoute: AdsbLolFlightRouteProviderConfig & {
     enabled: boolean
+    cacheMaxEntries: number
+    cacheTtlMs: number
+    rateLimitFallbackMs: number
+    rateLimitBackoffMaxMs: number
   }
   airports: StaticAirportsProviderConfig
   ports: StaticPortsProviderConfig
@@ -357,6 +361,10 @@ export const createAppConfig = (
       maximumBytes: 32 * 1_024,
       sourceName: 'ADSB.lol',
       sourceWebsiteUrl: 'https://www.adsb.lol/',
+      cacheMaxEntries: 32,
+      cacheTtlMs: 6 * 60 * 60_000,
+      rateLimitFallbackMs: 60_000,
+      rateLimitBackoffMaxMs: 5 * 60_000,
     },
     airports: {
       assetUrl: `/airports/${airportsSource.projection.outputVersion}/airports.geojson`,

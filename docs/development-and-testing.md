@@ -131,9 +131,10 @@ covers:
 - configuration defaults and invalid overrides;
 - plausible-route callsign/position validation, no-request-before-action
   lifecycle, cancellation/stale callback handling, exact-identity six-hour
-  session-cache reuse, expiry and 32-entry eviction, fixed URL construction,
-  response bounds, geographic plausibility, sanitized provider failures, and
-  vessel/history isolation;
+  session-cache reuse, expiry and 32-entry eviction, provider-wide
+  `Retry-After`/fallback cooldown, cached-route display during cooldown, fixed
+  URL construction, response bounds, geographic plausibility, sanitized
+  provider failures, and vessel/history isolation;
 - aircraft-photo identity validation, explicit and automatic controller
   request guards, A to B to A revision guards, shared hover/details cache
   reuse, abort/throttling behavior, exact returned-origin checks, unchanged

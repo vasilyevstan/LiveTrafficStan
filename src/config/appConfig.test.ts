@@ -78,6 +78,10 @@ describe('createAppConfig', () => {
       maximumBytes: 32 * 1_024,
       sourceName: 'ADSB.lol',
       sourceWebsiteUrl: 'https://www.adsb.lol/',
+      cacheMaxEntries: 32,
+      cacheTtlMs: 6 * 60 * 60_000,
+      rateLimitFallbackMs: 60_000,
+      rateLimitBackoffMaxMs: 5 * 60_000,
     })
     expect(config.airports).toMatchObject({
       assetUrl:
