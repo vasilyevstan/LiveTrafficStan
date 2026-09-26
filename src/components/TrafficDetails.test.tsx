@@ -311,11 +311,19 @@ describe('TrafficDetails aircraft metadata', () => {
     expect(enabledHtml).toContain('TST123')
     expect(enabledHtml).toContain('Route status')
     expect(enabledHtml).toContain('Plausible')
-    expect(enabledHtml).toContain('Provider update')
+    expect(enabledHtml).toContain('Plausible origin')
+    expect(enabledHtml).toContain('Plausible destination')
+    expect(enabledHtml).toContain(
+      'Standing-data file last modified',
+    )
     expect(enabledHtml).toContain(
       'not a filed flight plan',
     )
+    expect(enabledHtml).toContain('may be stale or wrong')
     expect(enabledHtml).toContain('Refresh plausible route')
+    expect(enabledHtml.indexOf('Refresh plausible route')).toBeLessThan(
+      enabledHtml.indexOf('Callsign'),
+    )
     expect(enabledHtml).toContain('ADSB.lol')
     expect(enabledHtml).toContain('VRS Standing Data')
   })
@@ -357,6 +365,33 @@ describe('TrafficDetails aircraft metadata', () => {
     expect(invalidHtml).toContain('disabled=""')
     expect(errorHtml).toContain('The route provider is unavailable')
     expect(errorHtml).toContain('Live ADS-B remains active')
+  })
+
+  it('keeps the route action before aircraft telemetry and disables it during cooldown', () => {
+    const html = renderToStaticMarkup(
+      <TrafficDetails
+        entity={aircraft}
+        aircraftMetadata={availableMetadata}
+        flightRouteEnabled
+        flightRoute={{
+          phase: 'error',
+          identityKey: 'TST123|511123|ES-ABC',
+          reason: 'quota-exhausted',
+          retryAt: 1_800_000_031_000,
+        }}
+        now={1_800_000_001_000}
+        units="metric"
+        onRequestFlightRoute={() => undefined}
+        onClose={() => undefined}
+      />,
+    )
+
+    expect(html.indexOf('Find plausible route')).toBe(-1)
+    expect(html.indexOf('Try again later')).toBeLessThan(
+      html.indexOf('Callsign'),
+    )
+    expect(html).toContain('disabled=""')
+    expect(html).toContain('Try again after')
   })
 
   it('omits current route lookup from historical aircraft details', () => {

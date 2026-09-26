@@ -7,20 +7,24 @@ import {
 } from '../domain/flightRoute'
 import type { Aircraft } from '../domain/traffic'
 import type { FlightRouteProvider } from '../providers/flightRoute/adsbLolFlightRouteProvider'
-import { FlightRouteController } from './FlightRouteController'
+import {
+  FlightRouteController,
+  type FlightRouteControllerConfig,
+} from './FlightRouteController'
 
 export const useFlightRoute = (
   aircraft:
     | Pick<Aircraft, 'hex' | 'callsign' | 'registration' | 'position'>
     | undefined,
   provider: FlightRouteProvider,
+  config: FlightRouteControllerConfig,
 ) => {
   const [state, setState] = useState<FlightRouteViewState>({
     phase: 'idle',
   })
   const controller = useMemo(
-    () => new FlightRouteController(provider),
-    [provider],
+    () => new FlightRouteController(provider, config),
+    [config, provider],
   )
   const aircraftHex = aircraft?.hex
   const aircraftCallsign = aircraft?.callsign

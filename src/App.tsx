@@ -616,6 +616,7 @@ function App() {
   const flightRoute = useFlightRoute(
     flightRouteEnabled ? selectedEntity : undefined,
     flightRouteProvider,
+    APP_CONFIG.flightRoute,
   )
   const trailDurationMinutes = trailPreferences.durationMinutes
   const activeTrailConfig = useMemo(

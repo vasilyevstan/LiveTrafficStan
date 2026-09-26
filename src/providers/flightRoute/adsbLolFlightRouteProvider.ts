@@ -6,6 +6,7 @@ import type {
 } from '../../domain/flightRoute'
 import { normalizeFlightRouteCallsign } from '../../domain/flightRoute'
 import { distanceKm, isValidCoordinate } from '../../domain/geo'
+import { parseRetryAfterMs } from '../errors'
 import { isRecord } from '../guards'
 
 export interface AdsbLolFlightRouteProviderConfig {
@@ -25,11 +26,16 @@ export interface FlightRouteProvider {
 
 export class FlightRouteProviderError extends Error {
   readonly reason: FlightRouteErrorReason
+  readonly retryAfterMs?: number
 
-  constructor(reason: FlightRouteErrorReason) {
+  constructor(
+    reason: FlightRouteErrorReason,
+    retryAfterMs?: number,
+  ) {
     super(reason)
     this.name = 'FlightRouteProviderError'
     this.reason = reason
+    this.retryAfterMs = retryAfterMs
   }
 }
 
@@ -334,16 +340,28 @@ export class AdsbLolFlightRouteProvider
         },
       )
       if (response.status === 429) {
+        const retryAfterMs = parseRetryAfterMs(
+          response.headers.get('Retry-After'),
+        )
         await response.body?.cancel()
-        throw new FlightRouteProviderError('quota-exhausted')
+        throw new FlightRouteProviderError(
+          'quota-exhausted',
+          retryAfterMs,
+        )
       }
       if (response.status === 404) {
         await response.body?.cancel()
         return { kind: 'unavailable', reason: 'not-found' }
       }
       if (!response.ok) {
+        const retryAfterMs = parseRetryAfterMs(
+          response.headers.get('Retry-After'),
+        )
         await response.body?.cancel()
-        throw new FlightRouteProviderError('provider-error')
+        throw new FlightRouteProviderError(
+          'provider-error',
+          retryAfterMs,
+        )
       }
 
       return parseLookupResult(

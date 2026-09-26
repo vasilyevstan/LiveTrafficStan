@@ -62,6 +62,7 @@ spread through components:
 | Plausible route lookup | Enabled by default; explicit selected-aircraft action only |
 | Route request deadline / response cap | 10 seconds / 32 KiB |
 | Route tab cache | 32 successful exact-identity entries / 6 hours |
+| Route failure cooldown / maximum `Retry-After` | 60 seconds / 5 minutes |
 | Port asset request deadline / cap | 5 seconds / 512 KiB |
 | Port records / rendered zoom range | 1,081 / zoom 5 through 13 |
 | Airport asset request deadline / cap | 5 seconds / 1.5 MiB |
@@ -320,8 +321,16 @@ throttled, provider, aborted, and expired results are never cached. No route
 enters `localStorage`, `sessionStorage`, IndexedDB, traffic history, or the
 service-worker cache.
 
-The UI labels the result **Plausible** and states that it is not a filed flight
-plan, schedule, date-specific occurrence, or operational status. See
+Readable `Retry-After` seconds or HTTP dates are honored up to five minutes.
+Other route-provider failures apply a 60-second local fallback. The action is
+disabled until that time, and no timer triggers an automatic retry.
+
+The action and any cached result are presented directly below the selected
+aircraft heading. The UI labels **Plausible origin** and
+**Plausible destination**, calls the source timestamp
+**Standing-data file last modified**, and states that the result may be stale
+or wrong and is not a filed flight plan, schedule, date-specific occurrence,
+diversion, or operational status. See
 [Aircraft Plausible Route Enrichment](aircraft-route-enrichment-evaluation.md).
 
 ## Weather observations and proxy

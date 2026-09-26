@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import {
   formatAge,
   formatAltitude,
@@ -219,6 +220,12 @@ function FlightRouteDetails({
     state.phase === 'unavailable' &&
     state.reason === 'invalid-identity'
   const loading = state.phase === 'loading'
+  const retryAt =
+    state.phase === 'error' || state.phase === 'available'
+      ? state.retryAt
+      : undefined
+  const coolingDown =
+    retryAt !== undefined && retryAt > now
   const source =
     state.phase === 'available'
       ? state.route.source
@@ -229,10 +236,28 @@ function FlightRouteDetails({
 
   return (
     <section
-      className="aircraft-metadata flight-route"
+      className="flight-route"
       aria-labelledby="flight-route-heading"
     >
-      <h3 id="flight-route-heading">Plausible route</h3>
+      <div className="flight-route__heading">
+        <h3 id="flight-route-heading">Plausible route</h3>
+        <button
+          type="button"
+          className="flight-route__action"
+          disabled={loading || invalidIdentity || coolingDown}
+          onClick={onRequest}
+        >
+          {loading
+            ? 'Checking route…'
+            : invalidIdentity
+              ? 'Route lookup unavailable'
+              : coolingDown
+                ? 'Try again later'
+                : state.phase === 'available'
+                  ? 'Refresh plausible route'
+                  : 'Find plausible route'}
+        </button>
+      </div>
       {state.phase === 'idle' && (
         <p className="metadata-status">
           Check one callsign-based standing route against the aircraft’s
@@ -248,11 +273,11 @@ function FlightRouteDetails({
         <>
           <dl className="details-grid aircraft-metadata__grid">
             <DetailRow
-              label="Origin"
+              label="Plausible origin"
               value={airportLabel(state.route.departure)}
             />
             <DetailRow
-              label="Destination"
+              label="Plausible destination"
               value={airportLabel(state.route.arrival)}
             />
             <DetailRow
@@ -262,16 +287,24 @@ function FlightRouteDetails({
             <DetailRow label="Route status" value="Plausible" />
             {state.route.providerUpdatedAt !== undefined && (
               <DetailRow
-                label="Provider update"
+                label="Standing-data file last modified"
                 value={formatAge(state.route.providerUpdatedAt, now)}
               />
             )}
           </dl>
           <p className="metadata-status">
-            This is a callsign-based standing-data match, not a filed
-            flight plan, schedule, or operational status. Reopening this
-            exact flight reuses it in this tab for up to 6 hours.
+            This callsign standing-data route was checked against the
+            aircraft’s current position. It may be stale or wrong and is not
+            a filed flight plan, schedule, date-specific departure or arrival,
+            diversion, or operational status. Reopening this exact flight
+            reuses it in this tab for up to 6 hours.
           </p>
+          {coolingDown && (
+            <p className="metadata-status">
+              Refresh is available after{' '}
+              {formatTimestamp(retryAt)}.
+            </p>
+          )}
         </>
       )}
       {state.phase === 'unavailable' && (
@@ -286,23 +319,12 @@ function FlightRouteDetails({
             : state.reason === 'configuration'
               ? 'Route lookup is temporarily unavailable.'
               : 'The route provider is unavailable.'}{' '}
+          {coolingDown
+            ? `Try again after ${formatTimestamp(retryAt)}. `
+            : ''}
           Live ADS-B remains active.
         </p>
       )}
-      <button
-        type="button"
-        className="flight-route__action"
-        disabled={loading || invalidIdentity}
-        onClick={onRequest}
-      >
-        {loading
-          ? 'Checking route…'
-          : state.phase === 'idle'
-            ? 'Find plausible route'
-            : state.phase === 'available'
-              ? 'Refresh plausible route'
-              : 'Try again'}
-      </button>
       <p className="metadata-attribution">
         Plausible route data by{' '}
         <a href={source.websiteUrl}>{source.name}</a> using{' '}
@@ -465,6 +487,11 @@ export function TrafficDetails({
   onRequestFlightRoute = () => undefined,
   onClose,
 }: TrafficDetailsProps) {
+  const panelRef = useRef<HTMLElement>(null)
+  useEffect(() => {
+    if (panelRef.current) panelRef.current.scrollTop = 0
+  }, [entity.id])
+
   const title =
     entity.kind === 'aircraft'
       ? (entity.callsign ?? entity.registration ?? entity.hex)
@@ -478,6 +505,7 @@ export function TrafficDetails({
 
   return (
     <aside
+      ref={panelRef}
       className={`details-panel${
         historical ? ' details-panel--historical' : ''
       }`}
@@ -495,6 +523,16 @@ export function TrafficDetails({
           Close
         </button>
       </div>
+
+      {entity.kind === 'aircraft' &&
+        flightRouteEnabled &&
+        !historical && (
+          <FlightRouteDetails
+            state={flightRoute}
+            now={now}
+            onRequest={onRequestFlightRoute}
+          />
+        )}
 
       {entity.freshness === 'stale' && (
         <p className="stale-notice">
@@ -691,15 +729,6 @@ export function TrafficDetails({
       {entity.kind === 'aircraft' && (
         <AircraftMetadataDetails state={aircraftMetadata} />
       )}
-      {entity.kind === 'aircraft' &&
-        flightRouteEnabled &&
-        !historical && (
-          <FlightRouteDetails
-            state={flightRoute}
-            now={now}
-            onRequest={onRequestFlightRoute}
-          />
-        )}
       {historical && (
         <p className="metadata-attribution">
           Historical provider observation. Current weather and third-party

@@ -33,7 +33,8 @@ selected Aircraft -> static metadata index + prefix shard -> details panel only
 selected live Aircraft + explicit Find plausible route
              -> direct ADSB.lol standing-route JSON
              -> exact callsign + local route-position plausibility check
-             -> bounded six-hour tab cache -> details panel only
+             -> bounded six-hour tab cache + failure cooldown
+             -> prominent details action/result only
 live Aircraft + explicit details action or 500 ms fine-pointer hover
              -> direct Planespotters hex API -> validated unchanged thumbnail
              -> shared bounded one-hour tab cache -> credited source-page link
