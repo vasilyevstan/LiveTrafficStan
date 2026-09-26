@@ -10,10 +10,18 @@ browser paths. React owns controls and selected-object UI state. Provider
 adapters own external protocols and normalization. MapLibre owns
 high-frequency geographic rendering.
 
+The recovery architecture for Cloudflare-shared-egress throttling preserves
+that public boundary and inserts a private Workers VPC Service, Cloudflare
+Tunnel, and fixed-purpose OCI relay only behind the aircraft route. The relay
+is operational, while production activation remains pending until the Worker
+binding and complete private-path acceptance are released.
+
 ```text
                        visibility lifecycle
                                |
-ADSB.lol -> same-origin aircraft proxy -> aircraft adapter -> normalized Aircraft[]
+ADSB.lol <- private OCI relay <- Tunnel/VPC <- same-origin aircraft proxy
+                                                    |
+                                     aircraft adapter -> normalized Aircraft[]
                                                         |
 Digitraffic REST + MQTT -> marine adapter -> normalized Vessel[]
                                                         |
@@ -71,7 +79,8 @@ tombstone can be removed after Cloudflare confirms that deletion has applied.
 | `src/traffic/` | Filtering, freshness/expiry, interpolation, and selected-trail history |
 | `src/map/` | MapLibre lifecycle, external/local-fallback styles, GeoJSON sources/layers, feature selection, and marker images |
 | `src/components/` | Status, controls, and selected-object details |
-| `worker/` | Fixed aircraft and weather upstream proxies with sanitized route matching |
+| `worker/` | Fixed aircraft and weather proxies with sanitized route matching; the protected aircraft private-relay transport remains pending |
+| `infra/oci/aircraft-relay/` | Dependency-free fixed ADSB.lol relay, persistent global admission, loopback HTTP adapter, hardened systemd units, exact-SHA deployment, and Tunnel installation |
 | `scripts/pwa-shell.mjs` | Deterministic shell allowlist/versioning, request classification, two-generation cleanup, and normal/retirement worker source |
 | `public/manifest.webmanifest` | Root-scoped standalone install metadata and versioned maskable icons |
 
@@ -518,7 +527,8 @@ vector tiles will remain in a loading state.
 ## Deployment boundary
 
 Cloudflare Workers with Static Assets is the selected one-unit production
-boundary:
+boundary. The selected aircraft recovery path keeps it as the public boundary
+and gives only the aircraft proxy one private outbound dependency:
 
 1. `dist/` is served as Static Assets;
 2. fingerprinted `/assets/*`, versioned `/aircraft-metadata/*`, versioned
@@ -526,7 +536,9 @@ boundary:
    caching;
 3. Worker code runs first only for `/api` and `/api/*`;
 4. the only forwarded routes are the fixed aircraft point route and canonical
-   `GET /api/weather/metar?ids=...`;
+   `GET /api/weather/metar?ids=...`; after private-relay activation, the
+   aircraft route may use only its configured fixed transport and never fail
+   over within a request;
 5. OpenFreeMap, Photon, and Digitraffic HTTPS/WSS remain direct browser
    connections;
 6. map, search, aircraft, marine, optional-port, optional-airport, and weather
@@ -539,6 +551,15 @@ total deadline. It constructs a fixed ADSB.lol destination, forwards only a
 JSON accept header and stable public project User-Agent, preserves upstream
 status/body/content type/`Retry-After`, and sets no-store behavior in both
 directions.
+
+In private-relay mode, the Worker keeps that public validation contract but
+replaces only the upstream transport. The VPC Service is fixed to HTTP
+`127.0.0.1:8788` through one named Tunnel. The relay repeats canonical
+validation, authenticates the Worker, enforces one in-flight request and one
+upstream start per 20 seconds across all clients, and persists only bounded
+backoff state. It has no public hostname, cache, queue, provider fallback, or
+coordinate-bearing application log. See
+[OCI Aircraft Relay](oci-aircraft-relay.md).
 
 No application database, general backend, provider scheduler, shared live
 cache, preview deployment, or server-side marine relay is added. Worker
