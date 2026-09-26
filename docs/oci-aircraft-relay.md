@@ -18,12 +18,14 @@ browser
   -> https://api.adsb.lol/v2/point/...
 ```
 
-The OCI relay service was proven on **2026-09-26** and is running release
-`76540a21291878b44e7f92ceecb37d03a366c0c7`. The Cloudflare Tunnel, Workers VPC
-Service, Worker binding, and public application integration are not active
-until their exact releases and production evidence are recorded. Current
-production therefore continues to report aircraft unavailable when ADSB.lol
-throttles Cloudflare's shared egress.
+The OCI relay service was proven on **2026-09-26** and initially ran release
+`76540a21291878b44e7f92ceecb37d03a366c0c7`. Protected bootstrap run
+`36267393879` then created remote-managed Tunnel
+`361ff78a-2cba-4558-aba9-6990c9be12e2` and HTTP VPC Service
+`01a0df44-6600-79a2-a14f-88b6606869fb`. Pinned `cloudflared` `2026.9.3` is
+active on the relay VM with four IPv6 QUIC connections and a dedicated
+`0400` token file. The Worker binding is checked into `wrangler.jsonc` and is
+used only when a protected deployment selects `oci-private-relay`.
 
 This component does not move the application to OCI. An OCI, Tunnel, or relay
 failure must affect aircraft only; Static Assets, the map, vessels, weather,
@@ -222,7 +224,9 @@ after installation.
 `install-cloudflared.sh` reads the tunnel token from standard input, verifies
 the supplied systemd unit SHA-256, downloads the pinned Cloudflare RPM over
 IPv6, verifies its checksum, writes a `0400` token file owned by the dedicated
-service account, and starts `livetrafficstan-cloudflared.service`.
+service account, and starts `livetrafficstan-cloudflared.service`. It accepts
+both newline-terminated input and the bootstrap artifact's no-trailing-newline
+plaintext after decryption.
 
 The cloudflared unit:
 
@@ -254,9 +258,19 @@ The deployed relay then passed:
 - unchanged inventory for the 32 pre-existing tenancy resources;
 - unchanged projected monthly OCI cost of `0.0 EUR`.
 
-Cloudflare Tunnel/VPC canary acceptance still requires:
+The first Tunnel connector canary proved:
 
-- active QUIC connections after controlled cloudflared and VM restart;
+- four active IPv6 QUIC connections;
+- automatic reconnection after controlled cloudflared service and complete VM
+  restarts;
+- approximately 24 MB connector memory after service restart and 66 MB during
+  the immediate post-boot check;
+- no connector service restart;
+- relay health remained exact and available throughout;
+- no public relay route.
+
+Complete production acceptance additionally requires:
+
 - bounded representative-rate CPU below 70 percent;
 - no OOM, swap storm, or service restart;
 - sufficient memory headroom for relay plus cloudflared;
@@ -271,6 +285,7 @@ Cloudflare Tunnel/VPC canary acceptance still requires:
 | `/healthz` unavailable locally | Relay process, unit, listener, or VM failure |
 | Tunnel inactive, relay healthy | cloudflared token, QUIC egress, DNS, clock, or Cloudflare control-plane issue |
 | VPC `fetch()` throws | VPC Service, Tunnel association, connector, or private origin unreachable |
+| Worker local `503` with `Retry-After: 20` before VPC fetch | Missing/short secret, absent binding, or invalid deployment mode; no shared-egress fallback |
 | Relay `401` | Missing or mismatched Worker-to-relay secret |
 | Relay local `503` with `Retry-After` | Global cadence/concurrency/backoff admission; no provider request started |
 | Relay-preserved `429` | ADSB.lol throttled the stable OCI identity |

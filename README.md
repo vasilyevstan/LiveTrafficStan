@@ -349,12 +349,22 @@ use immutable browser caching; live aircraft responses use no shared cache and
 successful METAR responses receive only the source-aligned 60-second cache
 guidance.
 
-The protected workflow records one fixed `aircraft_delivery` choice. Current
-production uses `worker-proxy`. Source also supports `adsb-lol-direct`, which
-builds the browser with `VITE_AIRCRAFT_ENDPOINT=https://api.adsb.lol`; that mode
-must not be deployed until ADSB.lol explicitly approves browser production use
-and the deployed API returns browser-readable CORS on both success and
-throttling responses. It is not an automatic fallback or a provider selector.
+The protected workflow records one fixed `aircraft_delivery` choice:
+
+- `worker-proxy` uses the same-origin Worker with shared Cloudflare egress;
+- `oci-private-relay` uses the same browser route but sends only its validated
+  request through the bound VPC Service, private Tunnel, and loopback OCI
+  relay;
+- `adsb-lol-direct` builds the browser with
+  `VITE_AIRCRAFT_ENDPOINT=https://api.adsb.lol`.
+
+The private mode requires the fixed checked VPC Service and a protected
+Worker-to-relay bearer secret. Missing or invalid private configuration fails
+closed with `503 Retry-After`; it never falls back to shared Cloudflare egress.
+Direct mode must not be deployed until ADSB.lol explicitly approves browser
+production use and the deployed API returns browser-readable CORS on both
+success and throttling responses. None of these modes is a browser-controlled
+provider selector.
 
 The proxy accepts only
 `GET /api/aircraft/v2/point/{latitude}/{longitude}/{radiusNm}`, validates the
@@ -363,14 +373,14 @@ limit, rejects redirects, and preserves provider status, body, and
 `Retry-After`. It forwards no browser credentials or arbitrary headers and
 keeps request URL logging disabled.
 
-Reliable aircraft recovery is being staged through a private
+Reliable aircraft recovery uses a private
 Cloudflare Worker -> Workers VPC Service -> Cloudflare Tunnel -> isolated OCI
 E2 Micro relay path. The relay is fixed to ADSB.lol, globally limits upstream
 starts to one per 20 seconds, persists only provider admission state, and has
 no cache, generic proxy surface, public ingress, or sensitive application
-logging. The relay itself is proven; current production remains on
-`worker-proxy` until the Tunnel/VPC binding and compatible Worker release pass
-production acceptance. See [OCI Aircraft Relay](docs/oci-aircraft-relay.md).
+logging. The Tunnel connector uses pinned `cloudflared`, IPv6 QUIC, and a
+token file readable only by its dedicated service account. See
+[OCI Aircraft Relay](docs/oci-aircraft-relay.md).
 
 The weather route accepts only
 `GET /api/weather/metar?ids=EETN%2CEFHK`, with 1-50 sorted unique uppercase

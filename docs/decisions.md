@@ -58,6 +58,13 @@ only the fixed ADSB.lol point path through its application logic. It enforces
 one global in-flight request, one start per 20 seconds, persisted provider
 backoff, no response cache, and no coordinate/payload logging.
 
+The public Worker exposes one protected `oci-private-relay` mode. It uses an
+exact VPC Service binding and a Worker secret that is added only to the
+newly-constructed relay request. Missing binding/authentication or VPC failure
+is explicit unavailability; the Worker never falls back to shared Cloudflare
+egress. The browser provider already preserves relay-local `503 Retry-After`,
+so the existing aircraft scheduler pauses without creating another lifecycle.
+
 Moving the full application to OCI was rejected because it would make a
 reclaimable no-SLA VM responsible for static assets, maps, vessels, weather,
 search, and PWA behavior. A public relay was rejected because it would enlarge

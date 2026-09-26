@@ -16,6 +16,7 @@ describe('production deployment workflow', () => {
   it('uses a fixed aircraft delivery choice and records it in smoke', () => {
     expect(workflow).toContain('aircraft_delivery:')
     expect(workflow).toContain('          - worker-proxy')
+    expect(workflow).toContain('          - oci-private-relay')
     expect(workflow).toContain('          - adsb-lol-direct')
     expect(workflow).toContain(
       "VITE_AIRCRAFT_ENDPOINT: ${{ inputs.aircraft_delivery == 'adsb-lol-direct' && 'https://api.adsb.lol' || '/api/aircraft' }}",
@@ -26,6 +27,18 @@ describe('production deployment workflow', () => {
     expect(workflow).toContain(
       'echo "- Aircraft delivery: \\`${{ inputs.aircraft_delivery }}\\`"',
     )
+    expect(workflow).toContain(
+      'npx wrangler secret put AIRCRAFT_RELAY_AUTH_TOKEN',
+    )
+    expect(workflow).toContain(
+      '--var AIRCRAFT_DELIVERY:${{ inputs.aircraft_delivery }}',
+    )
+    expect(wrangler.vpc_services).toEqual([
+      {
+        binding: 'AIRCRAFT_RELAY',
+        service_id: '01a0df44-6600-79a2-a14f-88b6606869fb',
+      },
+    ])
   })
 
   it('keeps plausible-route activation build-only and credential-free', () => {

@@ -137,6 +137,38 @@ describe('AircraftTrafficController', () => {
     controller.stop()
   })
 
+  it('honors relay-local Retry-After without adding rate-limit backoff', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+    const provider: AircraftDataProvider = {
+      fetchSnapshot: vi
+        .fn()
+        .mockRejectedValueOnce(
+          new ProviderError('relay admission delayed', 503, 25_000),
+        )
+        .mockResolvedValueOnce([]),
+    }
+    const controller = new AircraftTrafficController({
+      provider,
+      initialQuery: query(59.437, 24.754),
+      refreshIntervalMs: 20_000,
+      rateLimitBackoffMaxMs: 300_000,
+      onResult: vi.fn(),
+      runtime,
+      onWarning: vi.fn(),
+    })
+
+    controller.start()
+    await flush()
+    expect(provider.fetchSnapshot).toHaveBeenCalledTimes(1)
+
+    await vi.advanceTimersByTimeAsync(24_999)
+    expect(provider.fetchSnapshot).toHaveBeenCalledTimes(1)
+    await vi.advanceTimersByTimeAsync(1)
+    expect(provider.fetchSnapshot).toHaveBeenCalledTimes(2)
+    controller.stop()
+  })
+
   it('preserves cadence and the latest query across repeated pauses', async () => {
     vi.useFakeTimers()
     vi.setSystemTime(0)
