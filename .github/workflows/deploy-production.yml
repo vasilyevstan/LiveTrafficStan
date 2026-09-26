@@ -107,6 +107,9 @@ jobs:
       - name: Test
         run: npm test -- --run
 
+      - name: Check vessel photos
+        run: npm run check:vessel-photos
+
       - name: Build application
         if: inputs.artifact == 'application'
         env:

@@ -1,0 +1,267 @@
+{
+  "schemaVersion": 1,
+  "manifestVersion": "2026-09-26-v1",
+  "reviewedAt": "2026-09-26",
+  "sourcePolicy": {
+    "name": "Manual exact-IMO Wikimedia Commons review",
+    "identityRule": "Match only the live vessel's valid AIS-reported IMO.",
+    "takedownProcedure": "Remove the manifest entry and bundled asset, run npm run check:vessel-photos, and deploy the resulting exact source revision. Never substitute another hull."
+  },
+  "photos": [
+    {
+      "imo": "9214379",
+      "vesselNameAtReview": "Finlandia",
+      "alt": "Eckerö Line ferry Finlandia seen broadside at sea",
+      "digitrafficEvidence": {
+        "mmsiAtReview": "230628000",
+        "metadataObservedAt": "2026-09-26T13:37:21.904Z",
+        "destinationAtReview": "EETLL<>FIHEL",
+        "operatingAreaAtReview": "Tallinn-Helsinki"
+      },
+      "identityEvidence": {
+        "wikidataQid": "Q3022529",
+        "wikidataItemUrl": "https://www.wikidata.org/wiki/Q3022529",
+        "commonsFileTitle": "File:Finlandia Starboard Side Tallinn 24 April 2014.JPG",
+        "commonsPageUrl": "https://commons.wikimedia.org/wiki/File:Finlandia_Starboard_Side_Tallinn_24_April_2014.JPG",
+        "commonsRevisionId": 1253024543,
+        "commonsRevisionUrl": "https://commons.wikimedia.org/w/index.php?title=File%3AFinlandia_Starboard_Side_Tallinn_24_April_2014.JPG&oldid=1253024543",
+        "reviewNote": "Wikidata identifies the vessel by IMO 9214379 and uses this Commons file as its image; Commons categorizes the file as Finlandia (ship, 2001) in Tallinn."
+      },
+      "source": {
+        "photoTakenAt": "2014-04-24",
+        "originalUrl": "https://upload.wikimedia.org/wikipedia/commons/e/e8/Finlandia_Starboard_Side_Tallinn_24_April_2014.JPG",
+        "originalMediaType": "image/jpeg",
+        "originalBytes": 705069,
+        "originalWidth": 1266,
+        "originalHeight": 934,
+        "originalSha1": "2dd994de736f85048b70e86dbd4999063b44ee9b",
+        "reviewedThumbnailUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e8/Finlandia_Starboard_Side_Tallinn_24_April_2014.JPG/960px-Finlandia_Starboard_Side_Tallinn_24_April_2014.JPG",
+        "reviewedThumbnailBytes": 149233,
+        "reviewedThumbnailWidth": 960,
+        "reviewedThumbnailHeight": 708,
+        "reviewedThumbnailSha256": "14bc8651cd21cc94625d85defbe34c3351b8aa9c99d5644bcd4d851d36a018d9"
+      },
+      "rights": {
+        "author": "Pjotr Mahhonin",
+        "sourceName": "Wikimedia Commons",
+        "licenseName": "CC BY-SA 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+        "creditLine": "Pjotr Mahhonin / Wikimedia Commons / CC BY-SA 3.0",
+        "attributionRequired": true
+      },
+      "asset": {
+        "path": "/vessel-photos/2026-09-26-v1/imo-9214379.jpg",
+        "mediaType": "image/jpeg",
+        "bytes": 86200,
+        "width": 640,
+        "height": 472,
+        "sha256": "3c985873116117de641805d301a8dcc6c9b748e3b742693adad8772a52af0c83",
+        "modificationNotice": "Resized from the reviewed Wikimedia Commons thumbnail to a 640-pixel maximum dimension and removed embedded metadata; not cropped or retouched."
+      }
+    },
+    {
+      "imo": "9281281",
+      "vesselNameAtReview": "Victoria I",
+      "alt": "Tallink ferry Victoria I entering Tallinn harbour",
+      "digitrafficEvidence": {
+        "mmsiAtReview": "276519000",
+        "metadataObservedAt": "2026-09-26T13:36:50.836Z",
+        "destinationAtReview": "EEVAN<>FIHEL",
+        "operatingAreaAtReview": "Tallinn-Helsinki"
+      },
+      "identityEvidence": {
+        "wikidataQid": "Q115464",
+        "wikidataItemUrl": "https://www.wikidata.org/wiki/Q115464",
+        "commonsFileTitle": "File:Victoria I Tallinn.jpg",
+        "commonsPageUrl": "https://commons.wikimedia.org/wiki/File:Victoria_I_Tallinn.jpg",
+        "commonsRevisionId": 1248176797,
+        "commonsRevisionUrl": "https://commons.wikimedia.org/w/index.php?title=File%3AVictoria_I_Tallinn.jpg&oldid=1248176797",
+        "reviewNote": "Wikidata identifies Victoria I by IMO 9281281 and uses this Commons file as its image; the file description also states IMO 9281281 and MMSI 276519000."
+      },
+      "source": {
+        "photoTakenAt": "2007-05-31",
+        "originalUrl": "https://upload.wikimedia.org/wikipedia/commons/f/ff/Victoria_I_Tallinn.jpg",
+        "originalMediaType": "image/jpeg",
+        "originalBytes": 1055273,
+        "originalWidth": 2048,
+        "originalHeight": 1536,
+        "originalSha1": "3616e0ab6bd58372a477402dec84e541c643d1ad",
+        "reviewedThumbnailUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/ff/Victoria_I_Tallinn.jpg/960px-Victoria_I_Tallinn.jpg",
+        "reviewedThumbnailBytes": 155592,
+        "reviewedThumbnailWidth": 960,
+        "reviewedThumbnailHeight": 720,
+        "reviewedThumbnailSha256": "90e98b8238cc3431f5a724ad7f6d5b105193e0a433500080569b5168005a9966"
+      },
+      "rights": {
+        "author": "Kjet",
+        "sourceName": "Wikimedia Commons",
+        "licenseName": "CC BY-SA 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+        "creditLine": "Kjet / Wikimedia Commons / CC BY-SA 3.0",
+        "attributionRequired": true
+      },
+      "asset": {
+        "path": "/vessel-photos/2026-09-26-v1/imo-9281281.jpg",
+        "mediaType": "image/jpeg",
+        "bytes": 86211,
+        "width": 640,
+        "height": 480,
+        "sha256": "0852b59fba6a2a91a8e305445e4b7618db7db819a52ce9bf5189d8e71c4a952b",
+        "modificationNotice": "Resized from the reviewed Wikimedia Commons thumbnail to a 640-pixel maximum dimension and removed embedded metadata; not cropped or retouched."
+      }
+    },
+    {
+      "imo": "9375654",
+      "vesselNameAtReview": "Viking XPRS",
+      "alt": "Viking Line ferry Viking XPRS seen broadside near Tallinn",
+      "digitrafficEvidence": {
+        "mmsiAtReview": "230705000",
+        "metadataObservedAt": "2026-09-26T13:35:24.167Z",
+        "destinationAtReview": "FIHEL <> EEVAN",
+        "operatingAreaAtReview": "Tallinn-Helsinki"
+      },
+      "identityEvidence": {
+        "wikidataQid": "Q2301456",
+        "wikidataItemUrl": "https://www.wikidata.org/wiki/Q2301456",
+        "commonsFileTitle": "File:Viking XPRS arriving at Tallinn 2 July 2015.JPG",
+        "commonsPageUrl": "https://commons.wikimedia.org/wiki/File:Viking_XPRS_arriving_at_Tallinn_2_July_2015.JPG",
+        "commonsRevisionId": 790437743,
+        "commonsRevisionUrl": "https://commons.wikimedia.org/w/index.php?title=File%3AViking_XPRS_arriving_at_Tallinn_2_July_2015.JPG&oldid=790437743",
+        "reviewNote": "Wikidata identifies the vessel by IMO 9375654 and uses this Commons file as its image; Commons categorizes the file as Viking XPRS (ship, 2008) in Tallinn."
+      },
+      "source": {
+        "photoTakenAt": "2015-07-02",
+        "originalUrl": "https://upload.wikimedia.org/wikipedia/commons/d/d9/Viking_XPRS_arriving_at_Tallinn_2_July_2015.JPG",
+        "originalMediaType": "image/jpeg",
+        "originalBytes": 1186239,
+        "originalWidth": 2560,
+        "originalHeight": 1920,
+        "originalSha1": "c6fe0924038ab323c09a6d9d1fa679ef24ca8993",
+        "reviewedThumbnailUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d9/Viking_XPRS_arriving_at_Tallinn_2_July_2015.JPG/960px-Viking_XPRS_arriving_at_Tallinn_2_July_2015.JPG",
+        "reviewedThumbnailBytes": 138596,
+        "reviewedThumbnailWidth": 960,
+        "reviewedThumbnailHeight": 720,
+        "reviewedThumbnailSha256": "55f382deeaac14795818b91b2d596c9e0fd3e6128a4fbc147f23efd6fdadb4f1"
+      },
+      "rights": {
+        "author": "Pjotr Mahhonin",
+        "sourceName": "Wikimedia Commons",
+        "licenseName": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "creditLine": "Pjotr Mahhonin / Wikimedia Commons / CC BY-SA 4.0",
+        "attributionRequired": true
+      },
+      "asset": {
+        "path": "/vessel-photos/2026-09-26-v1/imo-9375654.jpg",
+        "mediaType": "image/jpeg",
+        "bytes": 80015,
+        "width": 640,
+        "height": 480,
+        "sha256": "da55686ca50685f10f53c7cca1b14743ff3dba18061f7ccdea6cd4490126b4bf",
+        "modificationNotice": "Resized from the reviewed Wikimedia Commons thumbnail to a 640-pixel maximum dimension and removed embedded metadata; not cropped or retouched."
+      }
+    },
+    {
+      "imo": "9773064",
+      "vesselNameAtReview": "Megastar",
+      "alt": "Tallink ferry Megastar at Tallinn harbour",
+      "digitrafficEvidence": {
+        "mmsiAtReview": "276829000",
+        "metadataObservedAt": "2026-09-26T13:34:11.002Z",
+        "destinationAtReview": "EEVAN-FIHEL",
+        "operatingAreaAtReview": "Tallinn-Helsinki"
+      },
+      "identityEvidence": {
+        "wikidataQid": "Q23137888",
+        "wikidataItemUrl": "https://www.wikidata.org/wiki/Q23137888",
+        "commonsFileTitle": "File:Megastar departing Tallinn 1 February 2017.jpg",
+        "commonsPageUrl": "https://commons.wikimedia.org/wiki/File:Megastar_departing_Tallinn_1_February_2017.jpg",
+        "commonsRevisionId": 1215134198,
+        "commonsRevisionUrl": "https://commons.wikimedia.org/w/index.php?title=File%3AMegastar_departing_Tallinn_1_February_2017.jpg&oldid=1215134198",
+        "reviewNote": "Wikidata identifies the vessel by IMO 9773064 and uses this Commons file as its image; Commons categorizes the file as Megastar (ship, 2017) in Tallinn."
+      },
+      "source": {
+        "photoTakenAt": "2017-02-01",
+        "originalUrl": "https://upload.wikimedia.org/wikipedia/commons/1/12/Megastar_departing_Tallinn_1_February_2017.jpg",
+        "originalMediaType": "image/jpeg",
+        "originalBytes": 535318,
+        "originalWidth": 1469,
+        "originalHeight": 1102,
+        "originalSha1": "3d00c4a4f4c164d67672afb69f60d37758c656bd",
+        "reviewedThumbnailUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/12/Megastar_departing_Tallinn_1_February_2017.jpg/960px-Megastar_departing_Tallinn_1_February_2017.jpg",
+        "reviewedThumbnailBytes": 132197,
+        "reviewedThumbnailWidth": 960,
+        "reviewedThumbnailHeight": 720,
+        "reviewedThumbnailSha256": "00c6aac77348e461f3068774be55e4f2f28230e399c0c658293c6e1a2efd9779"
+      },
+      "rights": {
+        "author": "Pjotr Mahhonin",
+        "sourceName": "Wikimedia Commons",
+        "licenseName": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "creditLine": "Pjotr Mahhonin / Wikimedia Commons / CC BY-SA 4.0",
+        "attributionRequired": true
+      },
+      "asset": {
+        "path": "/vessel-photos/2026-09-26-v1/imo-9773064.jpg",
+        "mediaType": "image/jpeg",
+        "bytes": 75630,
+        "width": 640,
+        "height": 480,
+        "sha256": "f404f7d9291a5245769f9d64b3f1d4b52058171d8c8774c094f6890e2633720e",
+        "modificationNotice": "Resized from the reviewed Wikimedia Commons thumbnail to a 640-pixel maximum dimension and removed embedded metadata; not cropped or retouched."
+      }
+    },
+    {
+      "imo": "9892690",
+      "vesselNameAtReview": "MyStar",
+      "alt": "Tallink ferry MyStar underway near Tallinn",
+      "digitrafficEvidence": {
+        "mmsiAtReview": "276859000",
+        "metadataObservedAt": "2026-09-26T13:35:32.240Z",
+        "destinationAtReview": "EEVAN<->FIHEL",
+        "operatingAreaAtReview": "Tallinn-Helsinki"
+      },
+      "identityEvidence": {
+        "wikidataQid": "Q97203939",
+        "wikidataItemUrl": "https://www.wikidata.org/wiki/Q97203939",
+        "commonsFileTitle": "File:Tallink MyStar arriving to Port of Tallinn.png",
+        "commonsPageUrl": "https://commons.wikimedia.org/wiki/File:Tallink_MyStar_arriving_to_Port_of_Tallinn.png",
+        "commonsRevisionId": 1258843739,
+        "commonsRevisionUrl": "https://commons.wikimedia.org/w/index.php?title=File%3ATallink_MyStar_arriving_to_Port_of_Tallinn.png&oldid=1258843739",
+        "reviewNote": "Wikidata identifies the vessel by IMO 9892690 and uses this Commons file as its image; Commons categorizes the file as MyStar (ship, 2022) in Tallinn."
+      },
+      "source": {
+        "photoTakenAt": "2023-09-17",
+        "originalUrl": "https://upload.wikimedia.org/wikipedia/commons/8/88/Tallink_MyStar_arriving_to_Port_of_Tallinn.png",
+        "originalMediaType": "image/png",
+        "originalBytes": 25197857,
+        "originalWidth": 5977,
+        "originalHeight": 3985,
+        "originalSha1": "2ca199804a5e2672e7834143e9ea7d0c03232886",
+        "reviewedThumbnailUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/88/Tallink_MyStar_arriving_to_Port_of_Tallinn.png/960px-Tallink_MyStar_arriving_to_Port_of_Tallinn.png",
+        "reviewedThumbnailBytes": 779384,
+        "reviewedThumbnailWidth": 960,
+        "reviewedThumbnailHeight": 640,
+        "reviewedThumbnailSha256": "a2e865531eb8f0085e52aa4edb96628bac46b06632bd43f59a9c90e1254766ae"
+      },
+      "rights": {
+        "author": "KarlShipSpotting",
+        "sourceName": "Wikimedia Commons",
+        "licenseName": "CC0 1.0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "creditLine": "KarlShipSpotting / Wikimedia Commons / CC0 1.0",
+        "attributionRequired": false
+      },
+      "asset": {
+        "path": "/vessel-photos/2026-09-26-v1/imo-9892690.png",
+        "mediaType": "image/png",
+        "bytes": 453380,
+        "width": 640,
+        "height": 426,
+        "sha256": "b9570db89b83502fd7f8e1b5c8c9574ac366870774a8b9b33e8f2a8c47a127d9",
+        "modificationNotice": "Resized from the reviewed Wikimedia Commons thumbnail to a 640-pixel maximum dimension and removed embedded metadata; not cropped or retouched."
+      }
+    }
+  ]
+}

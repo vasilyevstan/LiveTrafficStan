@@ -59,6 +59,7 @@ spread through components:
 | Aircraft photo lookup | Disabled by default; explicit selected-details action or 500 ms fine-pointer dwell, exact live ICAO24 only |
 | Photo request deadline / response cap | 8 seconds / 32 KiB |
 | Photo JSON tab cache | 32 successful or no-photo entries / 1 hour |
+| Vessel reference photos | 5 reviewed exact-IMO entries; 640 px maximum dimension; 512 KiB per image / 1 MiB total |
 | Plausible route lookup | Enabled by default; explicit selected-aircraft action only |
 | Route request deadline / response cap | 10 seconds / 32 KiB |
 | Route tab cache | 32 successful exact-identity entries / 6 hours |
@@ -99,6 +100,14 @@ spread through components:
 
 Changing these constants changes application behavior and should include
 targeted tests where the value affects filtering, freshness, history, or motion.
+
+Vessel reference photos are versioned static data rather than an environment
+override. `src/config/vesselPhotoManifest.json` is the complete identity,
+source, rights, checksum, and presentation contract. A selected live vessel
+must report a valid exact IMO in that manifest. Changed source evidence,
+metadata, transformation, or image bytes require a new manifest version and
+new `/vessel-photos/<version>/` path; an existing immutable version is never
+edited in place.
 
 Trail duration and visibility are fields in the versioned preference schema.
 The released

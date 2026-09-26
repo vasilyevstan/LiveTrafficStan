@@ -12,6 +12,7 @@
     "check:airports": "node scripts/check-airports.mjs",
     "check:country-allocations": "node scripts/check-country-allocations.mjs",
     "check:ports": "node scripts/check-ports.mjs",
+    "check:vessel-photos": "node scripts/check-vessel-photos.mjs",
     "check:deploy": "wrangler deploy --dry-run",
     "typecheck": "tsc -b --pretty false",
     "lint": "oxlint .",

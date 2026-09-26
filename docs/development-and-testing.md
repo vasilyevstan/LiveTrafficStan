@@ -12,7 +12,9 @@ npm run dev
 The development server normally runs at <http://localhost:5173>. It supplies
 the fixed `/api/aircraft` and `/api/weather/metar` proxies required by the
 default ADSB.lol and AWC integrations. Plausible routes and Planespotters
-aircraft photos remain direct browser requests and are not proxied.
+aircraft photos remain direct browser requests and are not proxied. Vessel
+reference photos are committed same-origin assets and create no Wikimedia,
+Wikidata, tracker, or image-provider request.
 
 ## Commands
 
@@ -27,6 +29,7 @@ aircraft photos remain direct browser requests and are not proxied.
 | `npm run update:aircraft-metadata` | Explicit maintainer regeneration from the pinned upstream archive and license |
 | `npm run check:country-allocations` | Network-free validation of bundled MID and ICAO24 country allocations |
 | `npm run update:country-allocations` | Explicit maintainer regeneration from pinned open-licensed sources and canonical cross-checks |
+| `npm run check:vessel-photos` | Network-free validation of exact IMO, source revision, rights, license notice, asset inventory, dimensions, size, and SHA-256 |
 | `npm run check:ports` | Network-free validation of the committed Natural Earth port projection |
 | `npm run update:ports` | Explicit maintainer regeneration from the pinned Natural Earth source |
 | `npm run check:airports` | Network-free validation of the committed OurAirports projection |
@@ -57,6 +60,7 @@ npm run typecheck
 npm test -- --run
 npm run check:aircraft-metadata
 npm run check:country-allocations
+npm run check:vessel-photos
 npm run check:ports
 npm run check:airports
 npm run build
@@ -140,6 +144,10 @@ covers:
   reuse, abort/throttling behavior, exact returned-origin checks, unchanged
   URLs, visible attribution/link DOM semantics, one-hour 32-entry LRU behavior,
   and storage/service-worker isolation;
+- vessel-photo IMO checksum and exact-match behavior, invalid/unmatched
+  omission, selected-identity tagging, prominent live-details rendering,
+  author/source/license/modification attribution, HISTORY omission, immutable
+  asset integrity, and service-worker exclusion;
 - ADSB.lol request construction, abort forwarding, response/error validation,
   retry guidance, enclosing-circle transport, and metric conversion;
 - Digitraffic REST/MQTT normalization, capabilities, provenance, dimensions,
@@ -281,6 +289,15 @@ canonically sorted and serialized, then verified against configured SHA-256
 values before use. The projection includes only exact unambiguous MID
 agreement, rejects invalid/special ICAO rows, verifies the reviewed state-to-ISO
 crosswalk, and refuses changed bytes under an existing output version.
+
+`npm run check:vessel-photos` makes no upstream request. It validates at least
+five unique exact IMO entries, IMO check digits, review-time Digitraffic
+evidence, pinned Wikidata/Commons URL structure, supported file-specific
+licenses, complete credit and modification text, safe immutable asset paths,
+JPEG/PNG signatures, dimensions, byte counts, SHA-256, per-file and aggregate
+budgets, the co-located license record, and exact directory inventory. Adding
+or changing a photo requires a new manifest/version directory; never replace
+bytes under an existing immutable path.
 
 `npm run check:ports` makes no upstream request. It validates the immutable
 directory inventory, raw bytes, SHA-256, deterministic gzip-9 size, complete
@@ -476,10 +493,18 @@ Use `npm run dev` and verify:
     speed at least one knot. Future, stale, stopped, speed-unknown, and
     length-unknown yachts stay hidden at every size; non-yachts preserve the
     50 m reset state. A selected yacht becoming ineligible clears cleanly.
-16. With SHIPS hidden, matching results remain counted but cannot be selected.
+16. Selecting each reviewed ferry by its exact live IMO shows the correct
+    bundled reference photo directly below the ship heading, with author,
+    fixed Commons revision, selected license, modification notice, and the
+    historical/not-live caveat visible. An invalid or unmatched IMO shows no
+    image. Switching matched A to matched B to A never flashes the wrong hull;
+    HISTORY, hover, and search results show no vessel photo and make no
+    Wikimedia, Wikidata, tracker, or image-provider request. Verify all five
+    same-origin assets return `200` with immutable caching.
+17. With SHIPS hidden, matching results remain counted but cannot be selected.
     Re-enabling SHIPS restores map visibility without reconnecting MQTT or
     starting REST work.
-17. Aircraft altitude-colored silhouettes, red slow/stopped dots for either
+18. Aircraft altitude-colored silhouettes, red slow/stopped dots for either
     traffic kind, and sailing/pleasure/high-speed vessel shapes exclude
     clusters and click/touch picking, preserve neutral selected halos, follow
     stale opacity and layer visibility, and reinstall after Light/Dark and
@@ -502,78 +527,78 @@ Use `npm run dev` and verify:
     browser diagnostic. Operations More exposes the same exact altitude,
     vertical-rate, one-knot, yacht-length, and freshness thresholds with
     textual equivalents.
-18. No `/ports/` request occurs while PORTS is disabled. First enable makes one
+19. No `/ports/` request occurs while PORTS is disabled. First enable makes one
     bounded request; hiding and re-enabling uses the fulfilled session cache.
     A blocked/corrupt asset reports a local error and Retry works without
     changing map, aircraft, marine, or traffic-provider status.
-19. Port rank groups appear only at their configured zooms, disappear above
+20. Port rank groups appear only at their configured zooms, disappear above
     zoom 13, survive Light/Dark style rehydration, remain visually distinct
     from ships, and keep Natural Earth public-domain/generalization wording
     visible.
-20. Exact and touch-fallback traffic picking retains priority over ports.
+21. Exact and touch-fallback traffic picking retains priority over ports.
     Port selection is separate from traffic selection, explicit navigation or
     hiding PORTS clears it, and port details never claim facilities, calls,
     nearby vessels, destination, or ETA.
-21. Aircraft search matches current callsign, registration, ICAO24, and type
+22. Aircraft search matches current callsign, registration, ICAO24, and type
     with literal exact/prefix/substring ranking. Typing, clearing, and a
     no-match result create no aircraft, marine, metadata, Photon, or Worker
     request and do not filter map markers or move the camera.
-22. No `/airports/` request occurs while AIRPORTS is disabled. First enable
+23. No `/airports/` request occurs while AIRPORTS is disabled. First enable
     makes one bounded request; hiding and re-enabling uses the fulfilled
     session cache. A blocked or corrupt asset reports a local retryable error
     without changing map or traffic-provider health.
-23. Large airport points/labels appear from zoom 4/5 and medium points/labels
+24. Large airport points/labels appear from zoom 4/5 and medium points/labels
     from zoom 7/8, remain visible at high zoom, survive Light/Dark style
     rehydration, render above ports and below traffic, and retain visible
     OurAirports/Public Domain attribution.
-24. Tallinn airport details show EETN/TLL, persistent OurAirports ID, ident,
+25. Tallinn airport details show EETN/TLL, persistent OurAirports ID, ident,
     municipality/country, coordinates, source commit/date/output version, and
     explicit non-operational/no-inference wording.
-25. The bounded airport list is reachable by keyboard. Closing airport details
+26. The bounded airport list is reachable by keyboard. Closing airport details
     restores focus to the originating result when present or AIRPORTS otherwise.
     Airport, port, and traffic selection clearing and exact-before-near-miss
     precedence remain deterministic.
-26. No `/api/weather/metar` request occurs at startup. First METAR enable loads
+27. No `/api/weather/metar` request occurs at startup. First METAR enable loads
     the airport asset if needed and makes at most one canonical request for the
     sorted visible ICAO set. Hiding/re-enabling, Light/Dark/Auto changes, and
     style rehydration reuse a fulfilled same-view result without refetching.
-27. METAR loading, one-minute waiting, empty, stale, expired, error, retry, and
+28. METAR loading, one-minute waiting, empty, stale, expired, error, retry, and
     refresh states are truthful. Switching A to B to A inside the gate recovers
     at the next allowed boundary rather than permanently suppressing A. A
     blocked weather route leaves map, traffic, ports, airports, search, camera,
     and provider health usable.
-28. The weather list is keyboard reachable; EETN details show report/source
+29. The weather list is keyboard reachable; EETN details show report/source
     time, retrieval time, normalized fields, raw report, AWC terms, and
     observation-not-forecast wording. Closing restores focus to the originating
     result or METAR toggle.
-29. Wide/ineligible or over-50-station views issue no weather request and hide
+30. Wide/ineligible or over-50-station views issue no weather request and hide
     obsolete observations. Traffic exact/touch selection precedes weather;
     weather precedes airport and port within exact and touch context hits.
-30. AIR and SEA clusters remain separate, expand to the reported zoom, never
+31. AIR and SEA clusters remain separate, expand to the reported zoom, never
     open entity details, and do not increase aircraft, marine, metadata, Photon,
     airport, port, or METAR requests.
-31. Durable history starts disabled and empty. Enabling it is explicit, and
+32. Durable history starts disabled and empty. Enabling it is explicit, and
     the status distinguishes durable from total currently available records.
-32. New provider observations persist after opt-in and survive reload. The
+33. New provider observations persist after opt-in and survive reload. The
     actual oldest/newest retained range is shown rather than the requested
     maximum.
-33. Entering history freezes the range. Scrub pauses, 0.5×/1×/2×/4× playback
+34. Entering history freezes the range. Scrub pauses, 0.5×/1×/2×/4× playback
     advances without creating an additional provider start, the endpoint
     pauses, and Return to Live is explicit.
-34. Historical display remains unmistakable, disables interpolation, hides
+35. Historical display remains unmistakable, disables interpolation, hides
     current METAR and third-party aircraft metadata, and gates vessel metadata
     to the cursor.
-35. Clear removes session and durable observations without disabling consent.
+36. Clear removes session and durable observations without disabling consent.
     Disable turns recording off and deletes rows. Neither action allows queued
     writes to repopulate the database.
-36. A second same-origin tab observes clear/disable invalidation. Blocked or
+37. A second same-origin tab observes clear/disable invalidation. Blocked or
     stale tabs report recovery guidance rather than continuing to write. Clear
     removes both durable and volatile history in the peer, and queued records
     cannot be retagged under the new epoch.
-37. Offline historical playback remains usable while live aircraft and marine
+38. Offline historical playback remains usable while live aircraft and marine
     acquisition pause through existing controllers. Returning online preserves
     their cadence, backoff, reconnect, REST, and metadata gates.
-38. At 390x844 and 390x568 the control panel remains at or below 58vh, Return
+39. At 390x844 and 390x568 the control panel remains at or below 58vh, Return
     to Live is not covered by attribution, and a real touch drag can begin on an
     unobstructed map region.
 
@@ -751,6 +776,15 @@ the 2026-09-23 production-origin acceptance for `4CADF9`: readable HTTP 200
 JSON, one unchanged `t.plnspttrs.net` thumbnail rendered at 200 by 137 pixels,
 and exact credit/source navigation. Do not substitute a Worker proxy because
 the selected provider terms prohibit proxying and re-exposure.
+
+Vessel-photo acceptance requires no live image-provider request. Run
+`npm run check:vessel-photos`, build the exact application, and use
+deterministic live-vessel fixtures for all five reviewed IMOs plus one valid
+unmatched and one invalid IMO. Confirm exact image bytes, immutable headers,
+source/license navigation, no horizontal overflow, and no stale hull across A
+to B to A selection at desktop 1280x900 and mobile 390x844 and 390x568. The
+Network panel must show only the selected same-origin `/vessel-photos/` asset;
+HISTORY, hover, search, and unmatched selections must add no image request.
 
 Use local fixtures, fake clocks, fake maps, mocked fetch, and mocked MQTT for
 repeated lifecycle checks. A milestone needs one bounded real-provider browser

@@ -516,6 +516,135 @@ describe('TrafficDetails aircraft metadata', () => {
     expect(html).not.toContain('Flag state')
   })
 
+  it('shows a bundled reference photo only for an exact live IMO match', () => {
+    const vessel: DisplayVessel = {
+      id: 'vessel:230628000',
+      kind: 'vessel',
+      provider: 'Digitraffic',
+      mmsi: 230628000,
+      vesselCategory: 'passenger',
+      navigationCategory: 'underway',
+      name: 'FINLANDIA',
+      imo: 9214379,
+      position: {
+        latitude: 59.6,
+        longitude: 24.7,
+        observedAt: 1_800_000_000_000,
+      },
+      receivedAt: 1_800_000_000_000,
+      markerIcon: 'vessel-passenger',
+      markerScale: 1,
+      freshness: 'live',
+    }
+    const html = renderToStaticMarkup(
+      <TrafficDetails
+        entity={vessel}
+        aircraftMetadata={{ phase: 'idle' }}
+        now={1_800_000_001_000}
+        units="metric"
+        onClose={() => undefined}
+      />,
+    )
+
+    expect(html.indexOf('Vessel reference photo')).toBeLessThan(
+      html.indexOf('MMSI'),
+    )
+    expect(html).toContain(
+      'Reference photo matched to AIS-reported IMO 9214379',
+    )
+    expect(html).toContain(
+      'src="/vessel-photos/2026-09-26-v1/imo-9214379.jpg"',
+    )
+    expect(html).toContain('width="640"')
+    expect(html).toContain('height="472"')
+    expect(html).toContain('Pjotr Mahhonin')
+    expect(html).toContain('Wikimedia Commons')
+    expect(html).toContain('CC BY-SA 3.0')
+    expect(html).toContain('oldid=1253024543')
+    expect(html).toContain('not a live view')
+    expect(html).toContain('not cropped or retouched')
+  })
+
+  it('shows no real-photo substitute for an invalid or unmatched IMO', () => {
+    const vessel: DisplayVessel = {
+      id: 'vessel:230361000',
+      kind: 'vessel',
+      provider: 'Digitraffic',
+      mmsi: 230361000,
+      vesselCategory: 'passenger',
+      navigationCategory: 'underway',
+      name: 'GABRIELLA',
+      imo: 8917601,
+      position: {
+        latitude: 60.1,
+        longitude: 24.9,
+        observedAt: 1_800_000_000_000,
+      },
+      receivedAt: 1_800_000_000_000,
+      markerIcon: 'vessel-passenger',
+      markerScale: 1,
+      freshness: 'live',
+    }
+    const unmatchedHtml = renderToStaticMarkup(
+      <TrafficDetails
+        entity={vessel}
+        aircraftMetadata={{ phase: 'idle' }}
+        now={1_800_000_001_000}
+        units="metric"
+        onClose={() => undefined}
+      />,
+    )
+    const invalidHtml = renderToStaticMarkup(
+      <TrafficDetails
+        entity={{ ...vessel, imo: 8917602 }}
+        aircraftMetadata={{ phase: 'idle' }}
+        now={1_800_000_001_000}
+        units="metric"
+        onClose={() => undefined}
+      />,
+    )
+
+    expect(unmatchedHtml).not.toContain('Vessel reference photo')
+    expect(unmatchedHtml).not.toContain('/vessel-photos/')
+    expect(invalidHtml).not.toContain('Vessel reference photo')
+    expect(invalidHtml).not.toContain('/vessel-photos/')
+  })
+
+  it('omits vessel photos from history playback', () => {
+    const vessel: DisplayVessel = {
+      id: 'vessel:276829000',
+      kind: 'vessel',
+      provider: 'Digitraffic',
+      mmsi: 276829000,
+      vesselCategory: 'passenger',
+      navigationCategory: 'underway',
+      name: 'MEGASTAR',
+      imo: 9773064,
+      position: {
+        latitude: 59.5,
+        longitude: 24.7,
+        observedAt: 1_800_000_000_000,
+      },
+      receivedAt: 1_800_000_000_000,
+      markerIcon: 'vessel-passenger',
+      markerScale: 1,
+      freshness: 'live',
+    }
+    const html = renderToStaticMarkup(
+      <TrafficDetails
+        entity={vessel}
+        aircraftMetadata={{ phase: 'idle' }}
+        now={1_800_000_001_000}
+        units="metric"
+        historical
+        onClose={() => undefined}
+      />,
+    )
+
+    expect(html).not.toContain('Vessel reference photo')
+    expect(html).not.toContain('/vessel-photos/')
+  })
+
   it('keeps vessel metadata age separate from position age', () => {
     const vessel: DisplayVessel = {
       id: 'vessel:123456789',

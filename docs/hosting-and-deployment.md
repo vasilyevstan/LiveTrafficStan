@@ -11,6 +11,8 @@ production platform:
 - one Worker handles the same-origin ADSB.lol point and AWC METAR paths;
 - plausible route lookup calls ADSB.lol standing data directly from the
   browser after an explicit selected-aircraft action;
+- exact-IMO vessel reference photos are versioned same-origin Static Assets
+  and require no runtime Wikimedia, Wikidata, tracker, or image API;
 - OpenFreeMap, Photon, and Digitraffic REST/MQTT remain direct browser
   connections;
 - no route secret, quota store, result database, queue, authentication
@@ -163,7 +165,8 @@ cache, or any rate-control change.
 ```text
 browser
   |
-  +-- /, /assets/*, /aircraft-metadata/* -> Cloudflare Static Assets
+  +-- /, /assets/*, /aircraft-metadata/*,
+  |   /vessel-photos/* --------------------> Cloudflare Static Assets
   |
   +-- /api/aircraft/v2/point/... --+  current `worker-proxy` mode
   |                                |
@@ -208,6 +211,9 @@ real 404 responses rather than `index.html`.
   those filenames;
 - `/aircraft-metadata/*` uses one-year immutable browser caching because every
   source, schema, generator, or byte change receives a new versioned path;
+- `/vessel-photos/*` uses one-year immutable browser caching because every
+  identity, source, rights, transformation, or byte change receives a new
+  manifest/version path;
 - `/` and `/index.html` revalidate;
 - all asset paths use `nosniff`, clickjacking protection, and a conservative
   referrer policy.
@@ -423,6 +429,10 @@ npm run preview:worker
 - `check:country-allocations` validates the bundled MID and ICAO24 projection,
   hashes, exclusions, ranges, counts, and representative fixtures without
   upstream network access.
+- `check:vessel-photos` validates exact IMO identities, pinned source
+  revisions, file-specific rights, the co-located license record, image
+  dimensions, byte budgets, hashes, and directory inventory without upstream
+  network access.
 - `preview:worker` builds the client and runs the actual local `workerd`
   runtime.
 
@@ -580,6 +590,8 @@ older SHA.
   validated local build;
 - Static Asset security headers;
 - the immutable Natural Earth port asset path and caching policy;
+- every reviewed immutable vessel-photo byte set, media type, and caching
+  policy;
 - in `worker-proxy` mode, one same-origin ADSB point request that either
   returns valid aircraft JSON or truthfully preserves an upstream `429` with
   the exact release and `no-store` headers;
@@ -671,7 +683,9 @@ or continuous health service is added.
 ## Rollback
 
 Cloudflare versions contain Worker code, configuration, and Static Assets.
-Plausible routes add no separately persisted server resource.
+Plausible routes add no separately persisted server resource. Vessel reference
+photos are part of the same exact Static Asset version and add no provider,
+database, Worker route, or deployment credential.
 
 For the first deployment:
 
@@ -716,10 +730,10 @@ uses the exact repository SHA and locked dependency/build inputs. The target
 version's recorded plausible-route flag is rebuilt explicitly, but no route
 database, secret, or quota namespace needs restoration.
 
-Versioned aircraft-metadata and port files already retained in browser or edge
-immutable caches do not need destructive invalidation. A forward update or
-rollback points application code at the corresponding immutable version path;
-unreferenced old files are inert.
+Versioned aircraft-metadata, vessel-photo, and port files already retained in
+browser or edge immutable caches do not need destructive invalidation. A
+forward update or rollback points application code at the corresponding
+immutable version path; unreferenced old files are inert.
 
 ## Re-evaluation conditions
 
