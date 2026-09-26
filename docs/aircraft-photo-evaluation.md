@@ -158,23 +158,26 @@ persistent storage. A Worker proxy remains prohibited because it would violate
 the selected direct-browser contract and the API prohibition on proxying and
 re-exposing provider data.
 
-## Vessel images remain blocked
-
-No automatic vessel-photo source met both exact hull identity and
-machine-reliable display-rights requirements. The application therefore shows
-no vessel photo section or placeholder.
+## Vessel photos use a separate bundled contract
 
 Issue
-[#114](https://github.com/vasilyevstan/LiveTrafficStan/issues/114) tracks the
-remaining authorization. Future vessel support requires either an official
-exact-IMO provider contract or a manually reviewed manifest:
+[#114](https://github.com/vasilyevstan/LiveTrafficStan/issues/114) selected the
+manual exact-IMO path rather than broadening the Planespotters integration or
+adding another runtime provider:
 
 ```text
-IMO -> Wikidata QID -> Commons file revision -> verified hull photograph
+IMO -> Wikidata QID -> fixed Commons file revision -> verified hull photograph
     -> author -> source -> selected license -> license URL -> exact credit
 ```
 
+Five reviewed ferry photos are bundled as versioned same-origin assets.
 MMSI-only, vessel-name, fuzzy, arbitrary runtime P18, sister-ship, class, and
 model substitutions remain prohibited. Public pages from MarineTraffic,
 VesselFinder, ShipSpotting, JetPhotos, Airliners.net, or similar services are
 not integration or display-rights evidence.
+
+The vessel path makes no Planespotters, Commons, Wikidata, tracker, or Worker
+request at runtime and never appears in hover or HISTORY. See
+[Vessel Reference Photo Evaluation](vessel-photo-evaluation.md) for its
+file-specific identity, rights, checksum, attribution, cache, and takedown
+contract.

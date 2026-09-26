@@ -6,9 +6,10 @@ LiveTrafficStan V1 is a browser application with no authentication, account
 database, or general backend. Production adds one fixed-route Cloudflare Worker
 for browser-incompatible aircraft and weather access. Plausible route lookup,
 marine traffic, place search, map data, and aircraft photos use reviewed direct
-browser paths. React owns controls and selected-object UI state. Provider
-adapters own external protocols and normalization. MapLibre owns
-high-frequency geographic rendering.
+browser paths. Vessel reference photos are reviewed versioned same-origin
+assets with no runtime third-party lookup. React owns controls and
+selected-object UI state. Provider adapters own external protocols and
+normalization. MapLibre owns high-frequency geographic rendering.
 
 The recovery architecture for Cloudflare-shared-egress throttling preserves
 that public boundary and inserts a private Workers VPC Service, Cloudflare
@@ -38,6 +39,9 @@ selected live Aircraft + explicit Find plausible route
 live Aircraft + explicit details action or 500 ms fine-pointer hover
              -> direct Planespotters hex API -> validated unchanged thumbnail
              -> shared bounded one-hour tab cache -> credited source-page link
+selected live Vessel -> valid exact AIS-reported IMO
+             -> reviewed bundled manifest + immutable same-origin image
+             -> credited historical reference in details only
 selected ICAO24/MMSI -> bundled validated allocation tables -> details only
 PORTS toggle -> validated static Natural Earth projection -> port map/details
 AIRPORTS toggle -> validated static OurAirports projection -> airport map/details
@@ -65,7 +69,7 @@ tombstone can be removed after Cloudflare confirms that deletion has applied.
 | Area | Responsibility |
 | --- | --- |
 | `src/config/` | Typed defaults and validation of browser-safe environment overrides |
-| `src/domain/` | Application-owned traffic/port/airport/weather/flight-route types, local discovery and filters, pure country-allocation lookup, geographic helpers, location-input parsing, versioned preferences/share state, unit conversion, and formatting |
+| `src/domain/` | Application-owned traffic/port/airport/weather/flight-route types, local discovery and filters, pure country-allocation and exact-IMO vessel-photo lookup, geographic helpers, location-input parsing, versioned preferences/share state, unit conversion, and formatting |
 | `src/providers/aircraft/` | ADSB.lol request, runtime payload checks, normalization, and unit conversion |
 | `src/providers/aircraftMetadata/` | Bounded same-origin static metadata loading, provenance/schema/hash validation, exact identity matching, and shard LRU |
 | `src/providers/aircraftPhoto/` | Disabled-by-default direct Planespotters hex lookup, bounded response validation, exact returned-origin enforcement, and typed local failures |
@@ -84,6 +88,7 @@ tombstone can be removed after Cloudflare confirms that deletion has applied.
 | `infra/oci/aircraft-relay/` | Dependency-free fixed ADSB.lol relay, persistent global admission, loopback HTTP adapter, hardened systemd units, exact-SHA deployment, and Tunnel installation |
 | `scripts/pwa-shell.mjs` | Deterministic shell allowlist/versioning, request classification, two-generation cleanup, and normal/retirement worker source |
 | `public/manifest.webmanifest` | Root-scoped standalone install metadata and versioned maskable icons |
+| `public/vessel-photos/` | Immutable reviewed vessel-photo derivatives plus co-located file-specific license records; excluded from the application-shell cache |
 
 ## Control composition
 
@@ -182,9 +187,30 @@ does not loop or retry, and `429` blocks another manual attempt without
 scheduling a retry. No photo JSON, URL, credit, or image byte enters traffic
 models, history, Web Storage, IndexedDB, Cache API, the service worker, or a
 Worker route. The published terms require no prior email or account-side API
-setup for this low-volume browser path. Production stays disabled until the
-authorized exact production origin passes the live-CORS and rendering gate in
-the aircraft-photo evaluation.
+setup for this low-volume browser path. Production remains enabled only while
+the authorized exact production origin continues to satisfy the live-CORS and
+rendering gate in the aircraft-photo evaluation.
+
+Vessel reference photos use no provider lifecycle. The selected normalized
+vessel's existing `imo` is accepted only as a safe seven-digit integer with a
+valid IMO check digit. A synchronous application-owned lookup then requires an
+exact entry in the committed reviewed manifest. MMSI, name, call sign, vessel
+type, class, route, and visual similarity are never fallback keys.
+
+Each result is tagged with selected entity ID, exact IMO, and manifest version
+and is derived directly during rendering, so A to B to A selection cannot
+retain another hull. The historical image appears only near the top of live
+selected-ship details with author, fixed Commons revision, selected license,
+and modification notice. Missing, invalid, or unmatched IMO produces no
+image. Hover, search results, map markers, trails, and HISTORY never render or
+request one.
+
+The image is a versioned same-origin file under `/vessel-photos/`, loaded only
+when a matching details card renders. It is excluded from the service-worker
+shell and all application persistence. There is no runtime Wikimedia,
+Wikidata, gallery, tracker, proxy, Worker, or provider request. The complete
+identity, source, transformation, checksum, rights, and takedown record is in
+the vessel-photo evaluation and machine-readable manifest.
 
 Country allocation is a smaller bundled boundary. Pure synchronous helpers
 derive an optional country name and ISO code from the selected entity's
@@ -272,6 +298,11 @@ continues to render.
   A to B to A changes, close, HISTORY, and unmount. Provider, timeout,
   throttling, forbidden, invalid-response, and network failures remain local
   and never alter ADS-B selection, polling, map state, or route lookup.
+- Vessel reference photos have no asynchronous controller or provider state.
+  The render path derives one exact manifest result from selected entity ID,
+  valid IMO, and manifest version. Selection replacement or HISTORY entry
+  removes the image synchronously; a missing asset cannot trigger a substitute
+  or affect Digitraffic.
 - Port loading has its own lazy state and retry. Failure remains inside the
   layer control, leaves MapLibre and both traffic providers usable, and never
   creates a success-shaped empty port dataset.
@@ -320,8 +351,10 @@ Both store only versioned normalized ADSB.lol or Fintraffic Digitraffic
 observations with provider, license-decision, source-time, receipt-time,
 session, and navigation-segment identity. Interpolation frames, route data,
 destination/ETA, browser location, current METAR, and third-party aircraft
-metadata or photos are not persisted. Vessel metadata is visible in history
-only after its own observation time.
+metadata or photos are not persisted. Bundled vessel reference photos and
+their manifest are static application assets, not history records, and are
+never rendered in HISTORY. Vessel metadata is visible in history only after
+its own observation time.
 
 IndexedDB writes recheck opt-in authorization and a monotonic recording epoch
 inside the transaction. Clear and Disable increment that epoch atomically with

@@ -33,3 +33,6 @@
 
 /airports/*
   Cache-Control: public, max-age=31536000, immutable
+
+/vessel-photos/*
+  Cache-Control: public, max-age=31536000, immutable

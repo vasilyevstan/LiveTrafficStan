@@ -5,7 +5,9 @@ import { fileURLToPath } from 'node:url'
 import {
   DEPLOYMENT_PROPAGATION_RETRY_DELAYS_MS,
   classifyAircraftProxyStatus,
+  hasOneYearImmutableCacheControl,
   isRetryableStaticAssetStatus,
+  readOptionalJson,
 } from './smoke-policy.mjs'
 
 const repositoryRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -86,5 +88,41 @@ describe('production smoke policy', () => {
     )
     expect(classifyAircraftProxyStatus(403)).toBe('failure')
     expect(classifyAircraftProxyStatus(502)).toBe('failure')
+  })
+
+  it('requires a non-contradictory one-year immutable cache policy', () => {
+    expect(
+      hasOneYearImmutableCacheControl(
+        'public, max-age=31536000, immutable',
+      ),
+    ).toBe(true)
+    expect(
+      hasOneYearImmutableCacheControl(
+        'public, max-age=0, immutable',
+      ),
+    ).toBe(false)
+    expect(
+      hasOneYearImmutableCacheControl(
+        'public, max-age=31536000, no-cache, immutable',
+      ),
+    ).toBe(false)
+    expect(
+      hasOneYearImmutableCacheControl(
+        'public, max-age=31536000, s-maxage=0, immutable',
+      ),
+    ).toBe(false)
+  })
+
+  it('allows current smoke policy to inspect a target without new manifests', async () => {
+    const manifest = await readOptionalJson(
+      join(repositoryRoot, 'src/config/vesselPhotoManifest.json'),
+    )
+    const absentManifest = await readOptionalJson(
+      join(repositoryRoot, 'src/config/does-not-exist.json'),
+    )
+
+    expect(manifest?.photos).toHaveLength(5)
+    expect(absentManifest).toBeUndefined()
+    expect(smokeScript).not.toContain('import vesselPhotoManifest')
   })
 })

@@ -7,7 +7,9 @@ import portsSource from '../src/config/portsSource.json' with {
 import {
   DEPLOYMENT_PROPAGATION_RETRY_DELAYS_MS,
   classifyAircraftProxyStatus,
+  hasOneYearImmutableCacheControl,
   isRetryableStaticAssetStatus,
+  readOptionalJson,
 } from './smoke-policy.mjs'
 
 const MAX_AIRCRAFT_RESPONSE_BYTES = 4 * 1_024 * 1_024
@@ -45,6 +47,15 @@ if (baseUrl.protocol !== 'https:') {
 const assert = (condition, message) => {
   if (!condition) throw new Error(message)
 }
+
+const vesselPhotoManifest =
+  (await readOptionalJson(
+    new URL('../src/config/vesselPhotoManifest.json', import.meta.url),
+  )) ?? { photos: [] }
+assert(
+  Array.isArray(vesselPhotoManifest.photos),
+  'Vessel photo manifest photos must be an array',
+)
 
 const sha256 = (value) => createHash('sha256').update(value).digest('hex')
 
@@ -189,7 +200,9 @@ const verifyStaticAssets = async () => {
     'Static security headers are missing',
   )
   assert(
-    remoteWorker.headers.get('cache-control')?.includes('immutable'),
+    hasOneYearImmutableCacheControl(
+      remoteWorker.headers.get('cache-control'),
+    ),
     'Fingerprinted assets are not configured for immutable caching',
   )
 
@@ -202,9 +215,32 @@ const verifyStaticAssets = async () => {
     'Deployed port projection does not match the validated build',
   )
   assert(
-    remotePorts.headers.get('cache-control')?.includes('immutable'),
+    hasOneYearImmutableCacheControl(
+      remotePorts.headers.get('cache-control'),
+    ),
     'Versioned port data is not configured for immutable caching',
   )
+
+  for (const photo of vesselPhotoManifest.photos) {
+    const localPhoto = await readFile(`dist${photo.asset.path}`)
+    const remotePhoto = await remoteBytes(photo.asset.path, localPhoto)
+    assert(
+      sha256(remotePhoto.bytes) === sha256(localPhoto),
+      `Deployed vessel photo ${photo.imo} does not match the validated build`,
+    )
+    assert(
+      remotePhoto.headers
+        .get('content-type')
+        ?.includes(photo.asset.mediaType),
+      `Deployed vessel photo ${photo.imo} has the wrong content type`,
+    )
+    assert(
+      hasOneYearImmutableCacheControl(
+        remotePhoto.headers.get('cache-control'),
+      ),
+      `Deployed vessel photo ${photo.imo} does not have one-year immutable caching`,
+    )
+  }
 }
 
 const waitForWorkerRelease = async () => {

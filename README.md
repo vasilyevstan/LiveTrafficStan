@@ -83,6 +83,12 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   fine-pointer hover, preserves the returned thumbnail and photo-page URLs,
   shows visible photographer credit, and keeps bounded JSON only in current-tab
   memory.
+- Five bundled historical vessel reference photos for Finlandia, Victoria I,
+  Viking XPRS, Megastar, and MyStar. A photo appears only in selected live
+  ship details when the AIS-reported IMO is valid and exactly matches the
+  reviewed manifest; visible author, fixed Commons revision, license, and
+  modification attribution are retained without any runtime image-provider
+  request.
 - Honest detail cards, provider-specific health, stale/expired handling, and
   partial operation when one provider fails.
 - Short interpolation only between observed positions and a selected-object
@@ -136,6 +142,7 @@ npm run typecheck
 npm test -- --run
 npm run check:aircraft-metadata
 npm run check:country-allocations
+npm run check:vessel-photos
 npm run check:ports
 npm run check:airports
 npm run build
@@ -168,6 +175,7 @@ Digitraffic REST/MQTT ──┘                         |
                                                   └─> historical index/playback -> map + UI
 
 selected aircraft -> static metadata index + one prefix shard -> details only
+selected live vessel -> exact valid IMO -> bundled reviewed photo -> details only
 
 PORTS toggle -> pinned same-origin Natural Earth projection -> map + port details
 AIRPORTS toggle -> pinned same-origin OurAirports projection -> map + airport details
@@ -203,6 +211,12 @@ Aircraft metadata is a separate selected-object boundary. It makes no startup
 request, loads one immutable index and one ICAO24-prefix shard on first use,
 validates the complete assets before bounded caching, and never mutates live
 traffic or marker categories.
+
+Vessel reference photos are a smaller synchronous selected-object boundary.
+They use only a valid exact AIS-reported IMO and a committed file-by-file
+manifest. The image bytes are versioned same-origin assets, excluded from the
+service-worker shell, and never fetched for hover, search, unmatched vessels,
+or HISTORY.
 
 Vessel discovery is local display filtering after provider freshness and exact
 viewport filtering. It does not alter Digitraffic subscriptions, REST gates,
@@ -295,6 +309,7 @@ operational thresholds, and examples.
 | Aircraft | ADSB.lol | ODbL 1.0 | Same-origin Vite/Cloudflare proxy by default; protected direct-browser build only after provider-approved CORS |
 | Aircraft metadata | Mictronics aircraft-database derivative | ODC-By 1.0 | Immutable same-origin static assets, loaded only after selection |
 | Selected-aircraft photos | Planespotters Photo API | API-specific and general terms apply | Explicit direct browser request and direct unchanged returned thumbnail; enabled in production |
+| Selected-vessel reference photos | Reviewed Wikimedia Commons files | File-specific CC BY-SA 3.0, CC BY-SA 4.0, or CC0 1.0 | Bundled immutable same-origin assets selected only by exact valid IMO |
 | Country allocations | michaeljfazio/MIDs, ibosoftnet ICAO24 transcription, Wikidata cross-check | Apache-2.0 and CC0 1.0 | Bundled deterministic local lookup |
 | Marine | Fintraffic Digitraffic | CC BY 4.0 | Direct regional REST and MQTT |
 | Port context | Natural Earth Ports | Public domain | Immutable same-origin static asset, loaded only when enabled |
@@ -307,12 +322,14 @@ aircraft metadata is a derivative database conveyed under ODC-By 1.0 with its
 full license alongside the generated files. Distributed derivative works must
 preserve the applicable [`NOTICE`](NOTICE) and data-license attribution. The
 source license does not relicense map, search, live aircraft, aircraft
-metadata, marine data, country-allocation projections, or the separately
-identified public-domain Natural Earth port and OurAirports projections. See
+metadata, marine data, vessel photographs, country-allocation projections, or
+the separately identified public-domain Natural Earth port and OurAirports
+projections. See
 [Data Sources and Licensing](docs/data-sources-and-licensing.md), the dated
 [Aircraft Provider Evaluation](docs/aircraft-provider-evaluation.md), and the
 dated [Aircraft Metadata Evaluation](docs/aircraft-metadata-evaluation.md), the
 dated [Aircraft Photo Evaluation](docs/aircraft-photo-evaluation.md), the
+dated [Vessel Reference Photo Evaluation](docs/vessel-photo-evaluation.md), the
 dated [Marine Provider Evaluation](docs/marine-provider-evaluation.md), and the
 [Airport Board Evaluation](docs/airport-board-evaluation.md) for verified
 contracts, official links, measured/request-volume evidence, and unresolved
@@ -438,10 +455,12 @@ monitoring, privacy, and rollback procedure.
   membership account, or prior provider contact, but the photo surface must
   remain public and free. Provider JSON stays in a bounded one-hour,
   32-entry current-tab cache, and no URL, credit, or image byte is persisted or
-  proxied. Vessel photos remain absent until the exact-IMO, file-specific
-  rights gate in
-  [Issue #114](https://github.com/vasilyevstan/LiveTrafficStan/issues/114)
-  is satisfied.
+  proxied.
+- Vessel photos cover only five manually reviewed ferries. They are historical
+  reference images matched solely by valid exact AIS-reported IMO, not live
+  views or independent confirmation of the transmitting hull. Missing,
+  invalid, or unmatched IMO shows no real-image substitute. No general yacht
+  photo coverage is promised.
 - There is no reverse geocoding, radar, precipitation forecast, account, saved
   center preference, or offline basemap guarantee. An installed shell can
   start cold offline and replay retained private local history over a plain
@@ -460,6 +479,7 @@ silently expanded into V1.
 - [Aircraft Provider Evaluation](docs/aircraft-provider-evaluation.md)
 - [Aircraft Metadata Evaluation](docs/aircraft-metadata-evaluation.md)
 - [Aircraft Photo Evaluation](docs/aircraft-photo-evaluation.md)
+- [Vessel Reference Photo Evaluation](docs/vessel-photo-evaluation.md)
 - [Aircraft Route Enrichment Evaluation](docs/aircraft-route-enrichment-evaluation.md)
 - [Airport Board Evaluation](docs/airport-board-evaluation.md)
 - [Marine Provider Evaluation](docs/marine-provider-evaluation.md)
