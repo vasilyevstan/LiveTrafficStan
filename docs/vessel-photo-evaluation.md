@@ -7,6 +7,13 @@ manifest. It contains five historical reference photographs for ferries
 observed through Digitraffic in the Tallinn-Helsinki operating area on
 2026-09-26.
 
+The feature is accepted in production at application source
+`86d8395c61c1348d3de8e11a9d7b36ad4f6271cc`. Exact-main validation run
+`36248212097` and deployment/smoke run `36248272060` passed; Cloudflare
+version `d527f34f-29f8-446a-9499-bb0135c7d361` serves the reviewed assets.
+The synchronized public Wiki commit is
+`204d4770c94b827834751f0b7335fb105683ae70`.
+
 The feature is not a general vessel-image lookup. It makes no runtime request
 to Wikimedia, Wikidata, a ship tracker, an image API, or a LiveTrafficStan
 proxy. A photo is eligible only when the selected live vessel reports a valid
@@ -174,6 +181,13 @@ immutable cache headers, the matched/unmatched transitions do not flash a
 stale hull, and the desktop plus 390-pixel layouts keep the photo, source,
 license, Close action, attribution, and map reachable without horizontal
 overflow.
+
+The production acceptance passed those checks with deterministic marine
+fixtures against the deployed application and actual static assets. It
+verified all five 640-pixel images, valid-unmatched IMO `8917601`, invalid IMO
+`8917602`, A-to-B-to-A transitions, exact MIME/cache headers, zero external
+photo-provider requests, one MapLibre canvas, no horizontal overflow, and no
+browser diagnostics at 1280x900, 390x844, and 390x568.
 
 ## Adding or removing an entry
 

@@ -386,12 +386,20 @@ shared or persistent route cache.
 Public production is live at
 <https://livetrafficstan.syntal.workers.dev> on Cloudflare Workers Free with
 Static Assets. The accepted V1.6.0 application source is
-`05bb39a0620f8ef2304c8bc96d1988ecded5325d`; exact-main validation run
-`36188141347` passed, and deployment run `36188232329` published Cloudflare
-version `8fc9005c-b47a-4bcb-98bd-2c3b6e9cc9ad`. Protected rollback run
+`86d8395c61c1348d3de8e11a9d7b36ad4f6271cc`; exact-main validation run
+`36248212097` passed, and deployment run `36248272060` published Cloudflare
+version `d527f34f-29f8-446a-9499-bb0135c7d361` with vessel photos, aircraft
+photos, and plausible routes enabled. Rendered production acceptance verified
+all five exact-IMO vessel-photo matches, valid-unmatched and invalid omission,
+A-to-B-to-A identity safety, immutable asset headers, responsive attribution,
+and zero external photo-provider requests.
+
+Protected rollback run
 `36188474191` restored accepted V1.5.3 source
 `6d132907525f4f1479ae2b4f94485d76c151b86a`, and restoration run
 `36188545228` returned production to V1.6.0 with matching exact-byte smoke.
+The synchronized public Wiki records this release at commit
+`204d4770c94b827834751f0b7335fb105683ae70`.
 See [Hosting and Deployment](docs/hosting-and-deployment.md) for the dated
 platform matrix, request budget, proxy contract, exact-SHA workflow, smoke,
 monitoring, privacy, and rollback procedure.

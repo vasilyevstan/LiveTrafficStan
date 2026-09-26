@@ -38,12 +38,24 @@ credentials, observability remains disabled, and no paid add-on, KV, or R2
 service is used.
 
 The accepted V1.6.0 application source is
-`05bb39a0620f8ef2304c8bc96d1988ecded5325d`. Exact-main validation run
-`36188141347` passed, and deployment run `36188232329` published Cloudflare
-version `8fc9005c-b47a-4bcb-98bd-2c3b6e9cc9ad` with aircraft delivery through
-`worker-proxy`, aircraft photos enabled, and plausible routes enabled. The
+`86d8395c61c1348d3de8e11a9d7b36ad4f6271cc`. Exact-main validation run
+`36248212097` passed, and deployment run `36248272060` published Cloudflare
+version `d527f34f-29f8-446a-9499-bb0135c7d361` with aircraft delivery through
+`worker-proxy`, aircraft photos enabled, plausible routes enabled, and the
+five-file exact-IMO vessel-photo manifest active. The
 validated and deployed `index.html` SHA-256 is
-`e82b17dbd95a2b5c30cc705f8197c73307ba857a2af63c08eec5dde4514ebac9`.
+`39f3b11bd4ccbc42fde2238a40c177f069d2aaaf360d73d2e8b3843150aadecd`.
+
+Rendered production acceptance used deterministic marine fixtures against the
+real deployed application and asset bytes. All five reviewed IMO matches
+loaded their correct 640-pixel images; valid-unmatched IMO `8917601` and
+invalid IMO `8917602` showed no photo; A-to-B-to-A selection never paired a
+title with the wrong hull; all assets returned the declared image MIME and
+`public, max-age=31536000, immutable`; no Wikimedia, Wikidata, tracker, or
+image-provider request occurred; one MapLibre canvas and reachable
+Close/source/license/map attribution were preserved at 1280x900, 390x844, and
+390x568. The public Wiki was synchronized at
+`204d4770c94b827834751f0b7335fb105683ae70`.
 
 Protected rollback run `36188474191` restored accepted V1.5.3 source
 `6d132907525f4f1479ae2b4f94485d76c151b86a` and Cloudflare version
@@ -650,12 +662,12 @@ plausible-route behavior before release: selecting `FIN949` made no route
 request, **Find plausible route** made exactly one fixed-origin standing-data
 request, the UI rendered HEL to TRD as **Plausible** with the non-authoritative
 disclaimer and both attributions, and explicit refresh made one additional
-request. Final exact-byte deployment, rollback, and restoration smoke then
-proved the accepted production artifact and release identity. Issue #11
-remains open only for reliable ADSB.lol access from Cloudflare's shared
-outbound identity; a truthful `429`/partial state is accepted degradation, not
-proof of reliability. No browser-automation framework is added solely for
-this Issue.
+request. The vessel-photo release then added the exact production acceptance
+recorded above. Final exact-byte deployment smoke proved the accepted
+application artifact and release identity. Issue #11 remains open only for
+reliable ADSB.lol access from Cloudflare's shared outbound identity; a
+truthful `429`/partial state is accepted degradation, not proof of
+reliability. No browser-automation framework is added solely for this Issue.
 
 ## Monitoring
 
