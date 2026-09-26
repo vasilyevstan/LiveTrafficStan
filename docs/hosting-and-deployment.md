@@ -38,13 +38,13 @@ credentials, observability remains disabled, and no paid add-on, KV, or R2
 service is used.
 
 The accepted V1.6.0 application source is
-`86d8395c61c1348d3de8e11a9d7b36ad4f6271cc`. Exact-main validation run
-`36248212097` passed, and deployment run `36248272060` published Cloudflare
-version `d527f34f-29f8-446a-9499-bb0135c7d361` with aircraft delivery through
+`d56f8900d25bd57338c459487df6b992edab62f4`. Exact-main validation run
+`36265842006` passed, and deployment run `36266052761` published Cloudflare
+version `0c84f9de-8a5e-443c-9fc5-b539b7464fec` with aircraft delivery through
 `worker-proxy`, aircraft photos enabled, plausible routes enabled, and the
 five-file exact-IMO vessel-photo manifest active. The
 validated and deployed `index.html` SHA-256 is
-`39f3b11bd4ccbc42fde2238a40c177f069d2aaaf360d73d2e8b3843150aadecd`.
+`f9999fd6abd43ff1f780796292eaa26a6a9ed0800747d1a33010a26ca880b7c8`.
 
 Rendered production acceptance used deterministic marine fixtures against the
 real deployed application and asset bytes. All five reviewed IMO matches
@@ -54,8 +54,19 @@ title with the wrong hull; all assets returned the declared image MIME and
 `public, max-age=31536000, immutable`; no Wikimedia, Wikidata, tracker, or
 image-provider request occurred; one MapLibre canvas and reachable
 Close/source/license/map attribution were preserved at 1280x900, 390x844, and
-390x568. The public Wiki was synchronized at
-`204d4770c94b827834751f0b7335fb105683ae70`.
+390x568. The subsequent stable-hover acceptance verified zero image request
+before 500 ms, the exact Finlandia 640x472 JPEG and fixed rights context,
+preserved keyboard focus, popup pointer/focus traversal, Escape dismissal,
+stale-marker cleanup, unmatched omission, one MapLibre canvas, and no external
+photo-provider request or browser diagnostic. The public Wiki was synchronized
+at `17bb011a1b5a9a035126c772f6fd48f367e9bbc1`.
+
+The first deployment attempt, run `36265893317`, uploaded Cloudflare version
+`a17be7e0-9340-49eb-8689-e8db4b63565c` but its immediate smoke reached an edge
+still serving the predecessor Worker release header. The expected release
+header appeared shortly afterward, and the exact-source rerun
+`36266052761` passed without changing application bytes. #134 tracks the
+bounded Worker-header propagation retry.
 
 Protected rollback run `36188474191` restored accepted V1.5.3 source
 `6d132907525f4f1479ae2b4f94485d76c151b86a` and Cloudflare version
@@ -624,17 +635,18 @@ The exact bundle and CSP are checked deterministically; browser acceptance uses
 one explicit known live callsign when route behavior itself changes. This
 avoids turning deployment smoke into recurring third-party route traffic.
 
-Static Asset checks and a locally rejected Worker request use a bounded
-60-second retry schedule because a newly published Cloudflare version can
-report deployment success before every edge serves every immutable asset or
-the new Worker release. This bound covers the more-than-15-second Static Asset
-switch observed during the V1.5.3 rollback proof without weakening exact-byte
-validation. The local Worker probe cannot reach an upstream provider. After
-its release header matches, the smoke makes exactly one live aircraft-provider
-request through the selected delivery path. An ADSB.lol `429` is recorded as
-provider throttling rather than a release regression; direct mode additionally
-requires that throttling response to be browser-readable. Other non-`200`
-statuses still fail the deployment check.
+Static Asset checks use a bounded 60-second retry schedule because a newly
+published Cloudflare version can report deployment success before every edge
+serves every immutable asset. This bound covers the more-than-15-second Static
+Asset switch observed during the V1.5.3 rollback proof without weakening
+exact-byte validation. The locally rejected Worker release-header probe cannot
+reach an upstream provider, but it is currently single-attempt; #134 tracks
+giving only an otherwise accepted known-predecessor header the same bounded
+propagation policy. After its release header matches, the smoke makes exactly
+one live aircraft-provider request through the selected delivery path. An
+ADSB.lol `429` is recorded as provider throttling rather than a release
+regression; direct mode additionally requires that throttling response to be
+browser-readable. Other non-`200` statuses still fail the deployment check.
 
 The MQTT check has a 15-second outer deadline, disables reconnect, and force
 closes the client. The script never prints provider payloads, METAR reports,

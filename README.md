@@ -175,7 +175,8 @@ Digitraffic REST/MQTT ──┘                         |
                                                   └─> historical index/playback -> map + UI
 
 selected aircraft -> static metadata index + one prefix shard -> details only
-selected live vessel -> exact valid IMO -> bundled reviewed photo -> details only
+selected/hovered live vessel -> exact valid IMO -> bundled reviewed photo
+                              -> details or stable-hover tooltip
 
 PORTS toggle -> pinned same-origin Natural Earth projection -> map + port details
 AIRPORTS toggle -> pinned same-origin OurAirports projection -> map + airport details
@@ -387,20 +388,23 @@ shared or persistent route cache.
 Public production is live at
 <https://livetrafficstan.syntal.workers.dev> on Cloudflare Workers Free with
 Static Assets. The accepted V1.6.0 application source is
-`86d8395c61c1348d3de8e11a9d7b36ad4f6271cc`; exact-main validation run
-`36248212097` passed, and deployment run `36248272060` published Cloudflare
-version `d527f34f-29f8-446a-9499-bb0135c7d361` with vessel photos, aircraft
-photos, and plausible routes enabled. Rendered production acceptance verified
-all five exact-IMO vessel-photo matches, valid-unmatched and invalid omission,
-A-to-B-to-A identity safety, immutable asset headers, responsive attribution,
-and zero external photo-provider requests.
+`d56f8900d25bd57338c459487df6b992edab62f4`; exact-main validation run
+`36265842006` passed, and deployment run `36266052761` published Cloudflare
+version `0c84f9de-8a5e-443c-9fc5-b539b7464fec` with vessel photos, aircraft
+photos, and plausible routes enabled. The deployed `index.html` SHA-256 is
+`f9999fd6abd43ff1f780796292eaa26a6a9ed0800747d1a33010a26ca880b7c8`.
+Rendered production acceptance verified the selected-details photos plus
+sub-dwell omission, the exact Finlandia stable-hover image and rights context,
+focus-safe popup interaction, Escape dismissal, stale-marker cleanup,
+unmatched omission, one MapLibre canvas, and zero external photo-provider
+requests.
 
 Protected rollback run
 `36188474191` restored accepted V1.5.3 source
 `6d132907525f4f1479ae2b4f94485d76c151b86a`, and restoration run
 `36188545228` returned production to V1.6.0 with matching exact-byte smoke.
 The synchronized public Wiki records this release at commit
-`204d4770c94b827834751f0b7335fb105683ae70`.
+`17bb011a1b5a9a035126c772f6fd48f367e9bbc1`.
 See [Hosting and Deployment](docs/hosting-and-deployment.md) for the dated
 platform matrix, request budget, proxy contract, exact-SHA workflow, smoke,
 monitoring, privacy, and rollback procedure.

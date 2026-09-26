@@ -238,9 +238,10 @@ through a file-by-file review:
 Each vessel was observed through Digitraffic in the Tallinn-Helsinki operating
 area during the 2026-09-26 review. Identity evidence binds the valid exact IMO
 to one Wikidata item and one Commons image, then pins the reviewed Commons
-file-page revision. Runtime matching uses only the selected live vessel's
-exact AIS-reported IMO. It never uses MMSI, name, call sign, class, sister ship,
-or fuzzy matching and never performs a runtime Wikimedia/Wikidata search.
+file-page revision. Runtime matching uses only the exact AIS-reported IMO of
+the selected or stably hovered live vessel. It never uses MMSI, name, call
+sign, class, sister ship, or fuzzy matching and never performs a runtime
+Wikimedia/Wikidata search.
 
 The selected file licenses are:
 
