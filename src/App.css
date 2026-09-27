@@ -923,7 +923,7 @@
 
 .flight-route {
   margin-top: 10px;
-  padding: 10px;
+  padding: 9px 10px;
   border: 1px solid var(--detail-divider);
   border-radius: 10px;
   background: var(--button-background);
@@ -931,7 +931,7 @@
 
 .flight-route__heading {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
   justify-content: space-between;
 }
@@ -1008,6 +1008,7 @@
 .flight-route__action {
   flex: 0 0 auto;
   margin-top: 0;
+  min-height: 28px;
 }
 
 .flight-route__action:hover,

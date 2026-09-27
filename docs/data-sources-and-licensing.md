@@ -281,7 +281,8 @@ complete reviewed inventory, validation, takedown, and yacht limitations.
 ## Selected-aircraft plausible routes: ADSB.lol standing data
 
 LiveTrafficStan can show a callsign-based plausible origin and destination for
-one selected live aircraft after an explicit user action.
+one selected live aircraft. A committed eligible selection starts one lookup;
+hover, HISTORY, and same-flight position updates do not.
 
 - ADSB.lol public data is identified as ODbL 1.0.
 - The underlying

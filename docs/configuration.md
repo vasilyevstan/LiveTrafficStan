@@ -19,7 +19,7 @@ cp .env.example .env.local
 | `VITE_GEOCODER_ENDPOINT` | `https://photon.komoot.io/api` | HTTPS Photon-compatible forward-search endpoint or root-relative deployment path; protocol-relative and credential-bearing URLs are rejected |
 | `VITE_AIRCRAFT_ENDPOINT` | `/api/aircraft` | HTTPS URL or root-relative path |
 | `VITE_AIRCRAFT_PHOTO_ENABLED` | `false` | Exact `true` or `false`; exposes the direct-browser selected-details and fine-pointer hover evaluation paths and does not add a proxy |
-| `VITE_FLIGHT_ROUTE_ENABLED` | `true` | Exact `true` or `false`; controls whether the browser presents explicit ADSB.lol plausible-route lookup |
+| `VITE_FLIGHT_ROUTE_ENABLED` | `true` | Exact `true` or `false`; controls automatic selected-aircraft ADSB.lol plausible-route lookup |
 | `VITE_WEATHER_ENDPOINT` | `/api/weather/metar` | Root-relative same-origin METAR route with no query or fragment; protocol-relative and absolute URLs are rejected |
 | `VITE_MARINE_REST_ENDPOINT` | `https://meri.digitraffic.fi` | HTTPS URL or root-relative path |
 | `VITE_MARINE_MQTT_ENDPOINT` | `wss://meri.digitraffic.fi:443/mqtt` | Secure WebSocket URL or root-relative path |
@@ -60,7 +60,7 @@ spread through components:
 | Photo request deadline / response cap | 8 seconds / 32 KiB |
 | Photo JSON tab cache | 32 successful or no-photo entries / 1 hour |
 | Vessel reference photos | 5 reviewed exact-IMO entries; 640 px maximum dimension; 512 KiB per image / 1 MiB total |
-| Plausible route lookup | Enabled by default; explicit selected-aircraft action only |
+| Plausible route lookup | Enabled by default; one request for each newly selected eligible live aircraft |
 | Route request deadline / response cap | 10 seconds / 32 KiB |
 | Route tab cache | 32 successful exact-identity entries / 6 hours |
 | Route failure cooldown / maximum `Retry-After` | 60 seconds / 5 minutes |
@@ -316,12 +316,14 @@ https://vrs-standing-data.adsb.lol/routes
 It is not an environment-selectable provider URL and contains no credential.
 The Cloudflare Worker is not involved.
 
-Selecting an aircraft does not make a route request. The user must activate
-**Find plausible route** for each attempt. The selected live aircraft must
-have a six-character ICAO24 address, a normalizable ICAO airline callsign, and
-a finite current position. Selection, identity, history-mode, or unmount
-changes abort obsolete work. Ordinary ADSB.lol refreshes, map movement, theme
-changes, and provider refreshes do not start or repeat a lookup.
+Selecting a new eligible live aircraft starts one route request. The aircraft
+must have a six-character ICAO24 address, a normalizable ICAO airline callsign,
+and a finite current position. The stable request identity is callsign,
+ICAO24, and optional registration; moving coordinates update the identity
+snapshot used by a later manual refresh but do not start another request.
+Selection, identity, history-mode, or unmount changes abort obsolete work.
+Hover, ordinary ADSB.lol refreshes, map movement, theme changes, and provider
+refreshes do not start or repeat a lookup.
 
 The browser makes one direct credential-free GET, rejects redirects, disables
 browser caching for the request, applies a ten-second deadline, and rejects
@@ -334,22 +336,21 @@ The browser keeps only successful validated routes in a 32-entry in-memory
 least-recently-used cache keyed by the exact normalized callsign, ICAO24, and
 optional registration. Each entry remains eligible for reuse for six hours;
 closing or reloading the tab clears it sooner. Reopening the same exact flight
-reuses the route without a provider request; **Refresh plausible route**
-deliberately makes a new request. Unavailable, implausible, incomplete,
+reuses the route without a provider request; **Refresh** deliberately makes a
+new request. Unavailable, implausible, incomplete,
 throttled, provider, aborted, and expired results are never cached. No route
 enters `localStorage`, `sessionStorage`, IndexedDB, traffic history, or the
 service-worker cache.
 
 Readable `Retry-After` seconds or HTTP dates are honored up to five minutes.
-Other route-provider failures apply a 60-second local fallback. The action is
-disabled until that time, and no timer triggers an automatic retry.
+Other route-provider failures apply a 60-second local fallback. Retry or
+refresh is disabled until that time, and no timer triggers an automatic retry.
 
-The action and any cached result are presented directly below the selected
-aircraft heading. The UI labels **Plausible origin** and
-**Plausible destination**, calls the source timestamp
-**Standing-data file last modified**, and states that the result may be stale
-or wrong and is not a filed flight plan, schedule, date-specific occurrence,
-diversion, or operational status. See
+The compact status or result is presented directly below the selected aircraft
+heading. The UI labels **Plausible origin**, **Plausible destination**, and
+optional **Standing data age**, and states that the result may be stale or
+wrong and is not a filed flight plan. Concise visible attribution identifies
+ADSB.lol and VRS Standing Data. See
 [Aircraft Plausible Route Enrichment](aircraft-route-enrichment-evaluation.md).
 
 ## Weather observations and proxy
