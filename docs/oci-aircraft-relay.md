@@ -27,11 +27,12 @@ active on the relay VM with four IPv6 QUIC connections and a dedicated
 `0400` token file. The Worker binding is checked into `wrangler.jsonc` and is
 used only when a protected deployment selects `oci-private-relay`.
 
-Production is active at application and relay source
-`1f9a2fd322f141fe761d3bf00113e1ab60526e6c`; the initial relay release remains
-the retained rollback target. Exact-main validation run `36268497210` and
-production run `36268576908` published Cloudflare version
-`2a8af0fb-fab5-42ce-a37b-5ea2053c3c37`.
+The current application source is
+`3370dfe3f1cc2614feff894643ed865978ec7edc`; compatible relay source
+`1f9a2fd322f141fe761d3bf00113e1ab60526e6c` remains active and the initial
+relay release remains the retained rollback target. Exact-main validation run
+`36299844911` and production run `36299895010` published Cloudflare version
+`0cbc0b5d-2e7b-49f0-b649-a2d22ac3a83c`.
 
 This component does not move the application to OCI. An OCI, Tunnel, or relay
 failure must affect aircraft only; Static Assets, the map, vessels, weather,

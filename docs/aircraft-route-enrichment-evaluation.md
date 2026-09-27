@@ -181,6 +181,31 @@ Issue
 must be reconciled with this decision: its date-specific provider-authorization
 goal is intentionally superseded, not silently claimed as satisfied.
 
+## Production evidence
+
+Automatic lookup and the compact card shipped through Issue #155, feature PR
+#156, ancestry PR #157, and release PR #158.
+
+- Application source:
+  `3370dfe3f1cc2614feff894643ed865978ec7edc`
+- Exact-main validation:
+  `36299844911`
+- Production deployment and smoke:
+  `36299895010`
+- Cloudflare version:
+  `0cbc0b5d-2e7b-49f0-b649-a2d22ac3a83c`
+- Deployed `index.html` SHA-256:
+  `79cf1da10b42fccef71d5523f4076612c489912fc4a64967f8bead555e745574`
+- Public Wiki:
+  `108f6bfb334f115890a32ec259b23c64643394d2`
+
+Rendered production acceptance selected live `BTI877`, observed exactly one
+request to the fixed standing-data origin, and rendered TLL to BCN. A later
+aircraft polling refresh made no second route request. Selecting live `FIN7DE`
+rendered HEL to TLL. The compact card retained the non-filed-plan caveat and
+both attributions with one MapLibre canvas and zero horizontal overflow at
+desktop and 390x844.
+
 ## Boundaries
 
 - This feature does not solve ADSB.lol live-position `429` responses from

@@ -724,6 +724,14 @@ zero selection/sub-dwell requests, exactly one stable-hover request, and the
 same image/source in the already-open details panel without a duplicate
 request.
 
+Application source `3370dfe3f1cc2614feff894643ed865978ec7edc`
+then passed exact-main validation run `36299844911` and deployment/smoke run
+`36299895010`. Rendered acceptance selected live `BTI877`, observed exactly
+one standing-route request and TLL to BCN, then observed no second route request
+after an aircraft polling refresh. Selecting live `FIN7DE` rendered HEL to TLL.
+Desktop and 390x844 retained one MapLibre canvas, zero horizontal overflow, the
+compact non-filed-plan caveat, and both route attributions.
+
 The [OCI Aircraft Relay](oci-aircraft-relay.md) canary passed exact relay
 health, authenticated Worker-to-relay transport, real provider JSON, service
 and VM restart recovery, four QUIC connections, no public listener or sensitive
