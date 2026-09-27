@@ -400,31 +400,30 @@ persistent route cache.
 Public production is live at
 <https://livetrafficstan.syntal.workers.dev> on Cloudflare Workers Free with
 Static Assets. The accepted V1.6.0 application source is
-`1f9a2fd322f141fe761d3bf00113e1ab60526e6c`; exact-main validation run
-`36268497210` passed, and deployment run `36268576908` published Cloudflare
-version `2a8af0fb-fab5-42ce-a37b-5ea2053c3c37` with
+`3370dfe3f1cc2614feff894643ed865978ec7edc`; exact-main validation run
+`36299844911` passed, and deployment run `36299895010` published Cloudflare
+version `0cbc0b5d-2e7b-49f0-b649-a2d22ac3a83c` with
 `oci-private-relay`, aircraft photos, and plausible routes enabled. The
 deployed `index.html` SHA-256 is
-`18d70a60fc56c9aae86bb704ea9745cc3094658b06890702c5e5b86a96214117`.
-The relay runs the same exact source and retains
+`79cf1da10b42fccef71d5523f4076612c489912fc4a64967f8bead555e745574`.
+The compatible relay remains at
+`1f9a2fd322f141fe761d3bf00113e1ab60526e6c` and retains
 `76540a21291878b44e7f92ceecb37d03a366c0c7` as its prior rollback release.
 
-Rendered production acceptance observed a bounded relay-local
-`503 Retry-After: 19` followed by exact-release `200 application/json`,
-rendered four real aircraft, retained one MapLibre canvas, and had no
-horizontal overflow at 1280x900 or 390x844. Aircraft-photo acceptance made
-zero requests on selection and before stable dwell, exactly one request after
-dwell, and updated the matching already-open details panel with the same image
-and source without a second request. Existing exact-IMO vessel details/hover,
-rights context, focus, Escape, stale-marker cleanup, HISTORY omission, and
-external-request isolation remained accepted.
+Rendered production acceptance selected live `BTI877`, made exactly one route
+request, rendered TLL to BCN, and made no second route request after an
+aircraft polling refresh. Selecting live `FIN7DE` rendered HEL to TLL. The
+compact caveat and both route attributions remained visible with one MapLibre
+canvas and zero horizontal overflow at desktop and 390x844. Earlier
+private-relay, aircraft-photo, and exact-IMO vessel details/hover acceptance
+remain the compatible baseline.
 
 Protected rollback run
 `36188474191` restored accepted V1.5.3 source
 `6d132907525f4f1479ae2b4f94485d76c151b86a`, and restoration run
 `36188545228` returned production to V1.6.0 with matching exact-byte smoke.
 The synchronized public Wiki records this release at commit
-`dad38eed654ce6e8cdc121a92deca28547fc531a`.
+`108f6bfb334f115890a32ec259b23c64643394d2`.
 See [Hosting and Deployment](docs/hosting-and-deployment.md) for the dated
 platform matrix, request budget, proxy contract, exact-SHA workflow, smoke,
 monitoring, privacy, and rollback procedure.

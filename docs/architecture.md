@@ -18,8 +18,11 @@ remote-managed Tunnel, VPC Service, and QUIC connector are operational. The
 Worker selects that path only through the protected `oci-private-relay`
 deployment mode and fails closed rather than reverting to shared egress.
 Production source `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` and the relay
-run the same release; deployment run `36268576908` published Cloudflare version
-`2a8af0fb-fab5-42ce-a37b-5ea2053c3c37`.
+originally activated the private path together. The current browser application
+is source `3370dfe3f1cc2614feff894643ed865978ec7edc`, deployed in run
+`36299895010` as Cloudflare version
+`0cbc0b5d-2e7b-49f0-b649-a2d22ac3a83c`; the compatible relay remains at
+`1f9a2fd322f141fe761d3bf00113e1ab60526e6c`.
 
 ```text
                        visibility lifecycle
