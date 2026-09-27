@@ -39,18 +39,24 @@ credentials, observability remains disabled, and no paid add-on, KV, or R2
 service is used.
 
 The accepted V1.6.0 application source is
-`1f9a2fd322f141fe761d3bf00113e1ab60526e6c`. Exact-main validation run
-`36268497210` passed, and deployment run `36268576908` published Cloudflare
-version `2a8af0fb-fab5-42ce-a37b-5ea2053c3c37` with aircraft delivery through
+`3370dfe3f1cc2614feff894643ed865978ec7edc`. Exact-main validation run
+`36299844911` passed, and deployment run `36299895010` published Cloudflare
+version `0cbc0b5d-2e7b-49f0-b649-a2d22ac3a83c` with aircraft delivery through
 `oci-private-relay`, aircraft photos enabled, plausible routes enabled, and
-the five-file exact-IMO vessel-photo manifest active. The relay runs the same
-exact source and retains
+the five-file exact-IMO vessel-photo manifest active. The compatible relay
+remains at `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` and retains
 `76540a21291878b44e7f92ceecb37d03a366c0c7` as the prior release. The
 validated and deployed `index.html` SHA-256 is
-`18d70a60fc56c9aae86bb704ea9745cc3094658b06890702c5e5b86a96214117`.
+`79cf1da10b42fccef71d5523f4076612c489912fc4a64967f8bead555e745574`.
 
-Rendered production acceptance used deterministic marine fixtures against the
-real deployed application and asset bytes. All five reviewed IMO matches
+Current rendered route acceptance selected live `BTI877`, made exactly one
+route request, rendered TLL to BCN, and made no second route request after an
+aircraft polling refresh. Selecting live `FIN7DE` rendered HEL to TLL. The
+compact caveat and ADSB.lol/VRS attributions remained visible with one
+MapLibre canvas and zero horizontal overflow at desktop and 390x844.
+
+Earlier rendered production acceptance used deterministic marine fixtures
+against the real deployed application and asset bytes. All five reviewed IMO matches
 loaded their correct 640-pixel images; valid-unmatched IMO `8917601` and
 invalid IMO `8917602` showed no photo; A-to-B-to-A selection never paired a
 title with the wrong hull; all assets returned the declared image MIME and
@@ -722,6 +728,15 @@ acceptance, and the measured E2 Micro canary. A truthful shared-egress `429`
 remains accepted only in `worker-proxy` rollback/diagnostic mode and is not
 proof of reliable aircraft delivery. No browser-automation framework is added
 solely for this Issue.
+
+Automatic-route source `3370dfe3f1cc2614feff894643ed865978ec7edc`
+then passed exact-main validation `36299844911` and deployment/smoke
+`36299895010`, publishing Cloudflare version
+`0cbc0b5d-2e7b-49f0-b649-a2d22ac3a83c`. Production selection of live
+`BTI877` made exactly one standing-route request and rendered TLL to BCN; a
+later aircraft polling refresh made no second route request. Live `FIN7DE`
+rendered HEL to TLL. Desktop and 390x844 retained one MapLibre canvas, zero
+horizontal overflow, the compact caveat, and both route attributions.
 
 ## Monitoring
 
