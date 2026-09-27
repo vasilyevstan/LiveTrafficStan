@@ -71,13 +71,13 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   shows observation and retrieval age, expires old reports, and remains
   independent of traffic providers and static airport context.
 - A default-enabled ADSB.lol plausible-route lookup for a selected live
-  aircraft. A compact **Find plausible route** action sits directly below the
-  selected-aircraft heading, but runs only when activated. It validates one
-  exact normalized callsign plus current position against standing-data route
-  segments and never claims a filed plan, schedule, or operational status.
-  Successful exact-identity results are reused from a bounded six-hour
-  in-memory tab cache; provider `Retry-After` or a bounded local cooldown
-  prevents immediate repeated failures without automatic retry.
+  aircraft. A committed selection starts one lookup and shows a compact result
+  directly below the aircraft heading. Hover, HISTORY, and same-flight position
+  updates stay passive. It validates one exact normalized callsign plus current
+  position against standing-data route segments and never claims a filed plan,
+  schedule, or operational status. Successful exact-identity results are
+  reused from a bounded six-hour in-memory tab cache; provider `Retry-After` or
+  a bounded local cooldown prevents repeated failures without automatic retry.
 - A production-enabled Planespotters aircraft-photo path. It accepts only an
   exact ICAO24 hex lookup after **Load aircraft photo** or one stable 500 ms
   fine-pointer hover, preserves the returned thumbnail and photo-page URLs,
@@ -318,7 +318,7 @@ operational thresholds, and examples.
 | Port context | Natural Earth Ports | Public domain | Immutable same-origin static asset, loaded only when enabled |
 | Airport context | OurAirports | Public domain | Immutable same-origin static asset, loaded only when enabled |
 | Weather observations | NOAA/NWS Aviation Weather Center | U.S. public domain unless marked otherwise | Strict same-origin Worker/Vite route, loaded only when METAR is enabled |
-| Selected-aircraft plausible route | ADSB.lol / VRS Standing Data | ADSB.lol ODbL 1.0; underlying standing data CC0 1.0 | Explicit direct browser request; enabled by default |
+| Selected-aircraft plausible route | ADSB.lol / VRS Standing Data | ADSB.lol ODbL 1.0; underlying standing data CC0 1.0 | One direct browser request on committed live selection; enabled by default |
 
 The repository's Apache License 2.0 applies to source code only. The bundled
 aircraft metadata is a derivative database conveyed under ODC-By 1.0 with its
@@ -388,13 +388,14 @@ four-letter IDs and no other parameters. It constructs one fixed AWC JSON
 request, follows no redirects, forwards no browser credentials, uses an
 eight-second deadline and 256 KiB response cap, and preserves `Retry-After`.
 
-The plausible-route path starts only after an explicit selected-aircraft
-action. It constructs one validated ADSB.lol standing-data URL from the
+The plausible-route path starts once when a new eligible live aircraft is
+selected. It constructs one validated ADSB.lol standing-data URL from the
 normalized callsign, omits credentials, rejects redirects, enforces a
 ten-second deadline and 32 KiB response cap, and accepts only a route whose
-airport segments fit the aircraft's current position. Successful routes may be
-reused from the current tab's 32-entry cache for up to six hours; there is no
-shared or persistent route cache.
+airport segments fit the aircraft's current position. Same-flight position
+updates do not repeat the request. Successful routes may be reused from the
+current tab's 32-entry cache for up to six hours; there is no shared or
+persistent route cache.
 
 Public production is live at
 <https://livetrafficstan.syntal.workers.dev> on Cloudflare Workers Free with

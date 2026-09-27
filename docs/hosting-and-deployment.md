@@ -10,7 +10,7 @@ production platform:
 - Vite's `dist/` output is served as immutable static assets;
 - one Worker handles the same-origin ADSB.lol point and AWC METAR paths;
 - plausible route lookup calls ADSB.lol standing data directly from the
-  browser after an explicit selected-aircraft action;
+  browser once for a newly selected eligible live aircraft;
 - exact-IMO vessel reference photos are versioned same-origin Static Assets
   and require no runtime Wikimedia, Wikidata, tracker, or image API;
 - OpenFreeMap, Photon, and Digitraffic REST/MQTT remain direct browser
@@ -118,7 +118,7 @@ The smallest complete deployment must preserve:
 - one checked Vite build and its hashed MapLibre module worker;
 - same-origin browser aircraft requests under `/api/aircraft`;
 - same-origin browser weather requests under `/api/weather/metar`;
-- one explicit direct plausible-route request for a selected aircraft;
+- one direct plausible-route request for a newly selected eligible aircraft;
 - the exact ADSB.lol `/v2/point/{latitude}/{longitude}/{radiusNm}` mapping;
 - the 100 km client eligibility decision before outward rounding to 54 NM;
 - upstream status, body, `Content-Type`, and `Retry-After`;
@@ -225,7 +225,7 @@ browser --------------------------------> OpenFreeMap HTTPS
 browser --------------------------------> Photon HTTPS on explicit search
 browser --------------------------------> Digitraffic HTTPS + WSS
 browser --------------------------------> vrs-standing-data.adsb.lol
-                                          on explicit plausible-route lookup
+                                          on committed live-aircraft selection
 browser --------------------------------> api.adsb.lol only in the protected,
                                           provider-approved direct mode
 ```
@@ -431,8 +431,8 @@ No Worker Cache API, shared response cache, `stale-while-revalidate`, or
   from memory for six hours. This cache disappears with the tab, never
   contains failures, and is not a Worker Cache API, Durable Object,
   service-worker, Web Storage, IndexedDB, or cross-user cache. Reselecting a
-  cached flight makes no provider request; **Refresh plausible route**
-  deliberately does.
+  cached flight makes no provider request; manual **Refresh** deliberately
+  does.
 
 The strict ADS-B route, 54 NM ceiling, ten-second deadline, 4 MiB body bound,
 no proxy retry, existing client schedule, and Cloudflare daily allowance
@@ -668,9 +668,9 @@ older SHA.
   disconnect.
 
 The production smoke does not make a plausible-route request on every deploy.
-The exact bundle and CSP are checked deterministically; browser acceptance uses
-one explicit known live callsign when route behavior itself changes. This
-avoids turning deployment smoke into recurring third-party route traffic.
+The exact bundle and CSP are checked deterministically; browser acceptance
+selects one known live callsign when route behavior itself changes. This avoids
+turning deployment smoke into recurring third-party route traffic.
 
 Static Asset checks use a bounded 60-second retry schedule because a newly
 published Cloudflare version can report deployment success before every edge

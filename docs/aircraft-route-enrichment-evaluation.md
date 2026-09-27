@@ -2,7 +2,7 @@
 
 ## Decision
 
-Decision updated: **2026-09-25**
+Decision updated: **2026-09-27**
 
 LiveTrafficStan uses ADSB.lol standing-route data for an optional
 callsign-based **plausible route** on one selected live aircraft. This replaces
@@ -11,8 +11,9 @@ route, global quota, and Durable Object.
 
 The feature:
 
-- is enabled by default but starts no request on selection;
-- makes one direct browser request only after **Find plausible route**;
+- is enabled by default and starts one request for a newly selected eligible
+  live aircraft;
+- keeps hover, HISTORY, and same-flight position updates passive;
 - uses the same ADSB.lol ecosystem as live aircraft positions;
 - requests one static route record from
   `https://vrs-standing-data.adsb.lol`;
@@ -22,8 +23,9 @@ The feature:
 - labels the result as plausible rather than scheduled, filed, active, or
   authoritative;
 - keeps successful results only in a bounded six-hour current-tab cache;
-- keeps the action directly below the selected-aircraft heading and resets
-  details scroll when selection changes;
+- keeps a compact status/result directly below the selected-aircraft heading,
+  with manual refresh or retry only after the first automatic lookup, and
+  resets details scroll when selection changes;
 - honors bounded `Retry-After` guidance or a local fallback cooldown without
   scheduling a retry.
 
@@ -123,23 +125,27 @@ is not:
 No route data changes ADS-B marker position, freshness, polling, trails,
 selection, metadata, aircraft history, or provider health.
 
-The compact action appears directly below the selected-aircraft heading so it
-is visible before telemetry, photo, and metadata sections. Results use
-**Plausible origin**, **Plausible destination**, and
-**Standing-data file last modified**. Changing selection resets the details
-panel scroll position to the top.
+The compact status or result appears directly below the selected-aircraft
+heading so it is visible before telemetry, photo, and metadata sections.
+Results use **Plausible origin**, **Plausible destination**, and optional
+**Standing data age**. The card keeps one short “not a filed flight plan”
+caveat and concise ADSB.lol/VRS Standing Data attribution. Changing selection
+resets the details panel scroll position to the top.
 
 ## Request and cache behavior
 
-Selection alone, aircraft refreshes, map movement, metadata updates, theme
-changes, and history playback make no route request. Each user action starts at
-most one cancellable request.
+A newly committed eligible live-aircraft identity starts at most one
+cancellable request. The stable identity key contains callsign, ICAO24, and
+optional registration, so ordinary position updates update the stored identity
+for a later refresh without repeating the automatic request. Hover, map
+movement, metadata updates, theme changes, and history playback make no route
+request.
 
 Successful exact-identity results may remain in a 32-entry least-recently-used
-cache for six hours. The cache key contains normalized callsign, ICAO24, and
-optional registration; current position is used for the initial plausibility
-check but does not churn the cache as the aircraft moves. Explicit refresh
-makes a new provider request.
+cache for six hours. Revisiting a cached exact identity renders it immediately
+without a provider request. Current position is used for the initial
+plausibility check but does not churn the cache as the aircraft moves. Manual
+**Refresh** makes a new provider request.
 
 Unavailable and failed results are not cached. No route response, URL, airport,
 or attribution data enters Web Storage, IndexedDB, traffic history, the
@@ -147,8 +153,9 @@ service-worker cache, the Worker Cache API, KV, R2, or a Durable Object.
 
 A readable provider `Retry-After` is honored and capped at five minutes. When
 it is absent or malformed, provider failure applies a 60-second route-local
-cooldown. The action is disabled until the deadline; no timeout callback starts
-a request automatically.
+cooldown. Manual retry or refresh is disabled until the deadline; no timeout
+callback starts a request automatically, including when the deadline elapses
+while the aircraft remains selected.
 
 ## Removed aviationstack path
 

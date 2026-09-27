@@ -264,7 +264,7 @@ describe('TrafficDetails aircraft metadata', () => {
     expect(errorHtml).toContain('Try again')
   })
 
-  it('shows route lookup only after explicit enablement and renders a matched route', () => {
+  it('shows a compact automatic route result only after enablement', () => {
     const disabledHtml = renderToStaticMarkup(
       <TrafficDetails
         entity={aircraft}
@@ -314,20 +314,13 @@ describe('TrafficDetails aircraft metadata', () => {
     expect(enabledHtml).toContain('Plausible route')
     expect(enabledHtml).toContain('Tallinn Airport (TLL)')
     expect(enabledHtml).toContain('Helsinki Airport (HEL)')
-    expect(enabledHtml).toContain('TST123')
-    expect(enabledHtml).toContain('Route status')
-    expect(enabledHtml).toContain('Plausible')
     expect(enabledHtml).toContain('Plausible origin')
     expect(enabledHtml).toContain('Plausible destination')
-    expect(enabledHtml).toContain(
-      'Standing-data file last modified',
-    )
-    expect(enabledHtml).toContain(
-      'not a filed flight plan',
-    )
+    expect(enabledHtml).toContain('Standing data age')
+    expect(enabledHtml).toContain('not a filed flight plan')
     expect(enabledHtml).toContain('may be stale or wrong')
-    expect(enabledHtml).toContain('Refresh plausible route')
-    expect(enabledHtml.indexOf('Refresh plausible route')).toBeLessThan(
+    expect(enabledHtml).toContain('>Refresh<')
+    expect(enabledHtml.indexOf('>Refresh<')).toBeLessThan(
       enabledHtml.indexOf('Aircraft photo'),
     )
     expect(enabledHtml.indexOf('Aircraft photo')).toBeLessThan(
@@ -335,6 +328,11 @@ describe('TrafficDetails aircraft metadata', () => {
     )
     expect(enabledHtml).toContain('ADSB.lol')
     expect(enabledHtml).toContain('VRS Standing Data')
+    expect(enabledHtml).not.toContain('Route status')
+    expect(enabledHtml).not.toContain('Reopening this exact flight')
+    expect(enabledHtml).not.toContain(
+      'Map positions continue to come from ADSB.lol',
+    )
   })
 
   it('keeps invalid identity and provider failures local to route lookup', () => {
@@ -371,12 +369,13 @@ describe('TrafficDetails aircraft metadata', () => {
     )
 
     expect(invalidHtml).toContain('valid ICAO flight callsign')
-    expect(invalidHtml).toContain('disabled=""')
-    expect(errorHtml).toContain('The route provider is unavailable')
-    expect(errorHtml).toContain('Live ADS-B remains active')
+    expect(invalidHtml).not.toContain('flight-route__action')
+    expect(errorHtml).toContain('Route lookup is temporarily unavailable')
+    expect(errorHtml).toContain('Live traffic is unaffected')
+    expect(errorHtml).toContain('>Try again<')
   })
 
-  it('keeps the route action before aircraft telemetry and disables it during cooldown', () => {
+  it('keeps route retry before aircraft telemetry and disables it during cooldown', () => {
     const html = renderToStaticMarkup(
       <TrafficDetails
         entity={aircraft}
@@ -396,11 +395,33 @@ describe('TrafficDetails aircraft metadata', () => {
     )
 
     expect(html.indexOf('Find plausible route')).toBe(-1)
-    expect(html.indexOf('Try again later')).toBeLessThan(
+    expect(html.indexOf('Retry later')).toBeLessThan(
       html.indexOf('Callsign'),
     )
     expect(html).toContain('disabled=""')
-    expect(html).toContain('Try again after')
+    expect(html).toContain('Retry after')
+  })
+
+  it('shows a compact loading state without an initial action', () => {
+    const html = renderToStaticMarkup(
+      <TrafficDetails
+        entity={aircraft}
+        aircraftMetadata={availableMetadata}
+        flightRouteEnabled
+        flightRoute={{
+          phase: 'loading',
+          identityKey: 'TST123|511123|ES-ABC',
+        }}
+        now={1_800_000_001_000}
+        units="metric"
+        onRequestFlightRoute={() => undefined}
+        onClose={() => undefined}
+      />,
+    )
+
+    expect(html).toContain('Checking route')
+    expect(html).not.toContain('Find plausible route')
+    expect(html).not.toContain('flight-route__action')
   })
 
   it('omits current route lookup from historical aircraft details', () => {

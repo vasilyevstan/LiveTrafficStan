@@ -64,7 +64,7 @@ export const useFlightRoute = (
   }, [controller])
 
   useEffect(() => {
-    controller.select(identity)
+    controller.select(identity, { requestIfMissing: true })
   }, [controller, identity])
 
   const request = useCallback(() => {
