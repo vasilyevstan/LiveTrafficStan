@@ -84,24 +84,26 @@ in [OCI Aircraft Relay](oci-aircraft-relay.md).
 
 The owner chose a truthfully labeled callsign-based plausible route instead of
 adding a second aviation provider. The client requests one static ADSB.lol
-standing-route record only after **Find plausible route**, validates the exact
-normalized callsign, and checks the current position against every consecutive
-airport segment before displaying origin and destination.
+standing-route record when a new eligible live aircraft is deliberately
+selected, validates the exact normalized callsign, and checks the current
+position against every consecutive airport segment before displaying origin
+and destination.
 
 The UI never calls the result scheduled, filed, active, or date-specific.
-Selection alone, aircraft polling, camera movement, trails, metadata refreshes,
-and automatic retries make no route request. Route failure cannot alter live
-markers, freshness, cadence/backoff, trails, selection, history, or provider
-health.
+Hover, HISTORY, same-flight position updates, camera movement, trails, metadata
+refreshes, and automatic retries make no route request. Route failure cannot
+alter live markers, freshness, cadence/backoff, trails, selection, history, or
+provider health.
 
 The request is a direct credential-free GET with redirect rejection, a
 ten-second deadline, and a 32 KiB response ceiling. Successful exact-identity
 routes may remain in a 32-entry six-hour current-tab LRU. Readable
 `Retry-After` guidance is honored up to five minutes; otherwise a failed
-lookup applies a 60-second local cooldown. The action remains disabled until
-that boundary, and no automatic retry is scheduled. Failures and unavailable
-results are never cached, and no route enters Web Storage, IndexedDB, traffic
-history, service-worker cache, Worker cache, KV, R2, or a Durable Object.
+lookup applies a 60-second local cooldown. Manual retry or refresh remains
+disabled until that boundary, and no automatic retry is scheduled. Failures
+and unavailable results are never cached, and no route enters Web Storage,
+IndexedDB, traffic history, service-worker cache, Worker cache, KV, R2, or a
+Durable Object.
 
 The dormant aviationstack client, Worker route, secret dependency, rolling
 quota, and SQLite-backed Durable Object were removed. The detailed decision is

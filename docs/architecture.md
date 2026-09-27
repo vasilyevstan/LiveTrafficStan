@@ -35,11 +35,11 @@ Digitraffic REST + MQTT -> marine adapter -> normalized Vessel[]
                            React overlays <-> persistent MapLibre map
 
 selected Aircraft -> static metadata index + prefix shard -> details panel only
-selected live Aircraft + explicit Find plausible route
+committed selected live Aircraft
              -> direct ADSB.lol standing-route JSON
              -> exact callsign + local route-position plausibility check
              -> bounded six-hour tab cache + failure cooldown
-             -> prominent details action/result only
+             -> compact details result + explicit refresh/retry only
 live Aircraft + explicit details action or 500 ms fine-pointer hover
              -> direct Planespotters hex API -> validated unchanged thumbnail
              -> shared bounded one-hour tab cache -> credited source-page link
@@ -77,7 +77,7 @@ tombstone can be removed after Cloudflare confirms that deletion has applied.
 | `src/providers/aircraft/` | ADSB.lol request, runtime payload checks, normalization, and unit conversion |
 | `src/providers/aircraftMetadata/` | Bounded same-origin static metadata loading, provenance/schema/hash validation, exact identity matching, and shard LRU |
 | `src/providers/aircraftPhoto/` | Disabled-by-default direct Planespotters hex lookup, bounded response validation, exact returned-origin enforcement, and typed local failures |
-| `src/providers/flightRoute/` | Explicit direct ADSB.lol standing-route requests, bounded response validation, geographic plausibility checks, typed unavailable/error results, and attribution |
+| `src/providers/flightRoute/` | Direct ADSB.lol standing-route requests, bounded response validation, geographic plausibility checks, typed unavailable/error results, and attribution |
 | `src/providers/marine/` | Digitraffic capabilities, REST/MQTT lifecycle, metadata merging, normalization, and opt-in development diagnostics |
 | `src/providers/ports/` | Bounded lazy same-origin port loading plus checksum, schema, and source-provenance validation |
 | `src/providers/airports/` | Bounded lazy same-origin airport loading plus checksum, schema, and source-provenance validation |
@@ -309,6 +309,11 @@ continues to render.
   A to B to A changes, close, HISTORY, and unmount. Provider, timeout,
   throttling, forbidden, invalid-response, and network failures remain local
   and never alter ADS-B selection, polling, map state, or route lookup.
+- Plausible routes have an independent selected-identity controller. A new
+  eligible committed aircraft identity starts one lookup; same-key position
+  updates only refresh the coordinates available to a later manual refresh.
+  Cached routes render without a request. A to B changes abort obsolete work,
+  and unavailable/error results never schedule a retry after cooldown.
 - Vessel reference photos have no asynchronous controller or provider state.
   The render path derives one exact manifest result from selected entity ID,
   valid IMO, and manifest version. Selection replacement or HISTORY entry

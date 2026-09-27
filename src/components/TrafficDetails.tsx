@@ -237,6 +237,18 @@ function FlightRouteDetails({
           name: 'ADSB.lol',
           websiteUrl: 'https://www.adsb.lol/',
         }
+  const actionLabel =
+    state.phase === 'available'
+      ? coolingDown
+        ? 'Refresh later'
+        : 'Refresh'
+      : state.phase === 'unavailable' && !invalidIdentity
+        ? 'Try again'
+        : state.phase === 'error'
+          ? coolingDown
+            ? 'Retry later'
+            : 'Try again'
+          : undefined
 
   return (
     <section
@@ -245,32 +257,20 @@ function FlightRouteDetails({
     >
       <div className="flight-route__heading">
         <h3 id="flight-route-heading">Plausible route</h3>
-        <button
-          type="button"
-          className="flight-route__action"
-          disabled={loading || invalidIdentity || coolingDown}
-          onClick={onRequest}
-        >
-          {loading
-            ? 'Checking route…'
-            : invalidIdentity
-              ? 'Route lookup unavailable'
-              : coolingDown
-                ? 'Try again later'
-                : state.phase === 'available'
-                  ? 'Refresh plausible route'
-                  : 'Find plausible route'}
-        </button>
+        {actionLabel && (
+          <button
+            type="button"
+            className="flight-route__action"
+            disabled={coolingDown}
+            onClick={onRequest}
+          >
+            {actionLabel}
+          </button>
+        )}
       </div>
-      {state.phase === 'idle' && (
-        <p className="metadata-status">
-          Check one callsign-based standing route against the aircraft’s
-          current position.
-        </p>
-      )}
-      {loading && (
+      {(state.phase === 'idle' || loading) && (
         <p className="metadata-status" role="status">
-          Checking a plausible route…
+          Checking route…
         </p>
       )}
       {state.phase === 'available' && (
@@ -284,29 +284,20 @@ function FlightRouteDetails({
               label="Plausible destination"
               value={airportLabel(state.route.arrival)}
             />
-            <DetailRow
-              label="Flight"
-              value={state.route.flightIcao}
-            />
-            <DetailRow label="Route status" value="Plausible" />
             {state.route.providerUpdatedAt !== undefined && (
               <DetailRow
-                label="Standing-data file last modified"
+                label="Standing data age"
                 value={formatAge(state.route.providerUpdatedAt, now)}
               />
             )}
           </dl>
           <p className="metadata-status">
-            This callsign standing-data route was checked against the
-            aircraft’s current position. It may be stale or wrong and is not
-            a filed flight plan, schedule, date-specific departure or arrival,
-            diversion, or operational status. Reopening this exact flight
-            reuses it in this tab for up to 6 hours.
+            Standing-data match, not a filed flight plan; it may be stale or
+            wrong.
           </p>
           {coolingDown && (
             <p className="metadata-status">
-              Refresh is available after{' '}
-              {formatTimestamp(retryAt)}.
+              Refresh after {formatTimestamp(retryAt)}.
             </p>
           )}
         </>
@@ -319,23 +310,21 @@ function FlightRouteDetails({
       {state.phase === 'error' && (
         <p className="metadata-status metadata-status--error" role="alert">
           {state.reason === 'quota-exhausted'
-            ? 'ADSB.lol is temporarily limiting route lookups.'
+            ? 'Route lookups are temporarily limited.'
             : state.reason === 'configuration'
               ? 'Route lookup is temporarily unavailable.'
-              : 'The route provider is unavailable.'}{' '}
+              : 'Route lookup is temporarily unavailable.'}{' '}
           {coolingDown
-            ? `Try again after ${formatTimestamp(retryAt)}. `
+            ? `Retry after ${formatTimestamp(retryAt)}. `
             : ''}
-          Live ADS-B remains active.
+          Live traffic is unaffected.
         </p>
       )}
       <p className="metadata-attribution">
-        Plausible route data by{' '}
-        <a href={source.websiteUrl}>{source.name}</a> using{' '}
+        Data: <a href={source.websiteUrl}>{source.name}</a> ·{' '}
         <a href="https://github.com/vradarserver/standing-data">
           VRS Standing Data
         </a>
-        . Map positions continue to come from ADSB.lol.
       </p>
     </section>
   )

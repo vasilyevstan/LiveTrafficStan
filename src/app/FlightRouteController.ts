@@ -28,6 +28,10 @@ interface FlightRouteCacheEntry {
   route: FlightRouteRecord
 }
 
+interface FlightRouteSelectionOptions {
+  requestIfMissing?: boolean
+}
+
 const browserRuntime: FlightRouteControllerRuntime = {
   now: () => Date.now(),
 }
@@ -68,7 +72,10 @@ export class FlightRouteController {
     }
   }
 
-  select(identity: FlightRouteIdentity | undefined) {
+  select(
+    identity: FlightRouteIdentity | undefined,
+    options: FlightRouteSelectionOptions = {},
+  ) {
     const identityKey = identity
       ? flightRouteIdentityKey(identity)
       : undefined
@@ -89,6 +96,11 @@ export class FlightRouteController {
       identityKey && this.blockedUntil > this.runtime.now()
         ? this.blockedUntil
         : undefined
+    const shouldRequest =
+      options.requestIfMissing === true &&
+      identity !== undefined &&
+      cachedRoute === undefined &&
+      retryAt === undefined
     this.publish(
       cachedRoute && identityKey
         ? {
@@ -108,6 +120,7 @@ export class FlightRouteController {
             ? { phase: 'idle', identityKey }
             : { phase: 'idle' },
     )
+    if (shouldRequest) this.request(identity)
   }
 
   request(requestedIdentity: FlightRouteIdentity) {

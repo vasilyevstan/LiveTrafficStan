@@ -60,17 +60,30 @@ const available = (
 })
 
 describe('FlightRouteController', () => {
-  it('does not spend a request on selection or unchanged live refreshes', () => {
+  it('requests once for a new selection and ignores same-flight position updates', () => {
     const provider: FlightRouteProvider = {
-      lookup: vi.fn(),
+      lookup: vi.fn(
+        () => new Promise<FlightRouteLookupResult>(() => undefined),
+      ),
     }
     const controller = new FlightRouteController(provider, config)
     controller.subscribe(() => undefined)
 
-    controller.select(identities.first)
-    controller.select({ ...identities.first })
+    controller.select(identities.first, { requestIfMissing: true })
+    controller.select(
+      {
+        ...identities.first,
+        latitude: 60.1699,
+        longitude: 24.9384,
+      },
+      { requestIfMissing: true },
+    )
 
-    expect(provider.lookup).not.toHaveBeenCalled()
+    expect(provider.lookup).toHaveBeenCalledTimes(1)
+    expect(provider.lookup).toHaveBeenCalledWith(
+      identities.first,
+      expect.any(AbortSignal),
+    )
   })
 
   it('uses the latest position for an unchanged selected identity', () => {
@@ -96,7 +109,7 @@ describe('FlightRouteController', () => {
     )
   })
 
-  it('runs one request only after the explicit action', async () => {
+  it('coalesces duplicate manual requests for the selected identity', async () => {
     const provider: FlightRouteProvider = {
       lookup: vi.fn(async () => available('TST123')),
     }
@@ -133,13 +146,11 @@ describe('FlightRouteController', () => {
     const states: string[] = []
     controller.subscribe((state) => states.push(state.phase))
 
-    controller.select(identities.first)
-    controller.request(identities.first)
-    controller.select(identities.second)
+    controller.select(identities.first, { requestIfMissing: true })
+    controller.select(identities.second, { requestIfMissing: true })
     expect(signals[0]?.aborted).toBe(true)
-    expect(states.at(-1)).toBe('idle')
+    expect(states.at(-1)).toBe('loading')
 
-    controller.request(identities.second)
     requests[0].resolve(available('OBSOLETE'))
     await Promise.resolve()
     expect(states).not.toContain('available')
@@ -184,7 +195,7 @@ describe('FlightRouteController', () => {
     controller.request(identities.first)
     expect(provider.lookup).toHaveBeenCalledTimes(1)
 
-    controller.select(identities.second)
+    controller.select(identities.second, { requestIfMissing: true })
     expect(states.at(-1)).toEqual({
       phase: 'error',
       identityKey: 'TST456|DEF456|ES-DEF',
@@ -269,7 +280,7 @@ describe('FlightRouteController', () => {
     controller.select(identities.second)
     controller.request(identities.second)
     await Promise.resolve()
-    controller.select(identities.first)
+    controller.select(identities.first, { requestIfMissing: true })
 
     expect(provider.lookup).toHaveBeenCalledTimes(2)
     expect(states.at(-1)).toEqual({
@@ -315,11 +326,10 @@ describe('FlightRouteController', () => {
     const states: unknown[] = []
     controller.subscribe((state) => states.push(state))
 
-    controller.select(identities.first)
-    controller.request(identities.first)
+    controller.select(identities.first, { requestIfMissing: true })
     await Promise.resolve()
     controller.select(identities.second)
-    controller.select(identities.first)
+    controller.select(identities.first, { requestIfMissing: true })
 
     expect(provider.lookup).toHaveBeenCalledTimes(1)
     expect(states.at(-1)).toEqual({
@@ -372,7 +382,50 @@ describe('FlightRouteController', () => {
     })
   })
 
-  it('expires cached routes after six hours', async () => {
+  it('does not automatically retry an unavailable route or an expired cooldown', async () => {
+    let now = 10_000
+    const provider: FlightRouteProvider = {
+      lookup: vi
+        .fn<FlightRouteProvider['lookup']>()
+        .mockResolvedValueOnce({
+          kind: 'unavailable',
+          reason: 'not-found',
+        })
+        .mockRejectedValueOnce(
+          new FlightRouteProviderError(
+            'quota-exhausted',
+            30_000,
+          ),
+        ),
+    }
+    const controller = new FlightRouteController(
+      provider,
+      config,
+      { now: () => now },
+    )
+    controller.subscribe(() => undefined)
+
+    controller.select(identities.first, { requestIfMissing: true })
+    await Promise.resolve()
+    controller.select(
+      { ...identities.first, latitude: 60 },
+      { requestIfMissing: true },
+    )
+    expect(provider.lookup).toHaveBeenCalledTimes(1)
+
+    controller.select(undefined)
+    controller.select(identities.second, { requestIfMissing: true })
+    await Promise.resolve()
+    now = 40_000
+    controller.select(
+      { ...identities.second, latitude: 60 },
+      { requestIfMissing: true },
+    )
+
+    expect(provider.lookup).toHaveBeenCalledTimes(2)
+  })
+
+  it('requests again when a revisited route has expired', async () => {
     let now = 1_000
     const provider: FlightRouteProvider = {
       lookup: vi.fn(async () => available('TST123')),
@@ -383,18 +436,18 @@ describe('FlightRouteController', () => {
     const states: unknown[] = []
     controller.subscribe((state) => states.push(state))
 
-    controller.select(identities.first)
-    controller.request(identities.first)
+    controller.select(identities.first, { requestIfMissing: true })
     await Promise.resolve()
     controller.select(undefined)
     now += 6 * 60 * 60_000
-    controller.select(identities.first)
+    controller.select(identities.first, { requestIfMissing: true })
+    await Promise.resolve()
 
-    expect(states.at(-1)).toEqual({
-      phase: 'idle',
+    expect(states.at(-1)).toMatchObject({
+      phase: 'available',
       identityKey: 'TST123|ABC123|ES-ABC',
     })
-    expect(provider.lookup).toHaveBeenCalledTimes(1)
+    expect(provider.lookup).toHaveBeenCalledTimes(2)
   })
 
   it('keeps 32 successful routes with least-recently-used eviction', async () => {
