@@ -285,8 +285,10 @@ real 404 responses rather than `index.html`.
 Those rules do not apply to Worker responses. The aircraft proxy sets its own
 `no-store` and `nosniff` headers; successful METAR responses use
 `public, max-age=60`, JSON content type, and `nosniff`. A successful orbital
-snapshot response uses `public, max-age=300, must-revalidate`, a snapshot
-digest ETag, JSON content type, and `nosniff`.
+snapshot response uses `public, max-age=300, must-revalidate`, a stable weak
+snapshot-digest ETag, JSON content type, and `nosniff`. The weak validator is
+intentional because Cloudflare may change content encoding at the edge; the
+digest header and canonical decoded payload still require exact agreement.
 
 ## Aircraft proxy contract
 
@@ -954,12 +956,18 @@ credentials. It checks out and builds the exact target source, restores the
 current smoke policy so current provider-throttling semantics are applied
 consistently, reads the target Cloudflare version metadata, and derives its
 orbital flag from the version's exact plain-text binding. An enabled target
-must also contain exactly one orbital KV and one Durable Object binding. The
-workflow then calls `wrangler rollback <version-id>` and requires the same
-production smoke to pass with the target release SHA. It never trusts a
-separately remembered orbital checkbox. Restoring the latest known-good
-version uses the same workflow as a second serialized operation; production
-must never be left on the older version merely to preserve rollback evidence.
+must also contain exactly one orbital KV and one Durable Object binding. For an orbital-enabled target, the workflow then calls
+`wrangler rollback <version-id>`. For a disabled or pre-orbital target after
+the coordinator namespace has been provisioned, Cloudflare cannot activate the
+old version directly because that would orphan the SQLite Durable Object
+class. The workflow instead rebuilds the exact target source and assets behind
+an unreachable compatibility export: the coordinator class remains declared
+without a binding or Cron, preserving its namespace while target runtime
+behavior stays disabled. Both paths require the same production smoke with the
+target release SHA. The workflow never trusts a separately remembered orbital
+checkbox. Restoring the latest known-good version uses the same workflow as a
+second serialized operation; production must never be left on the older
+version merely to preserve rollback evidence.
 
 Cron triggers are deployment-level state rather than safely assumed to follow
 a version rollback. After `wrangler rollback`, the workflow explicitly applies

@@ -630,7 +630,7 @@ const verifyOrbitalCatalog = async () => {
     'Orbital catalog digest header does not match the payload',
   )
   assert(
-    response.headers.get('etag') === `"${payload.sha256}"`,
+    response.headers.get('etag') === `W/"${payload.sha256}"`,
     'Orbital catalog ETag does not match the payload digest',
   )
 

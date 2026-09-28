@@ -514,7 +514,7 @@ export class OrbitalCatalogProvider {
       ensureActive()
       const etag = response.headers.get('ETag')
       if (
-        etag !== `"${snapshot.sha256}"` ||
+        etag !== `W/"${snapshot.sha256}"` ||
         responseDigest !== snapshot.sha256 ||
         responseSchema !== snapshot.schemaVersion ||
         responseRetrievedAt !== snapshot.retrievedAt

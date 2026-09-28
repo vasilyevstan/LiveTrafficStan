@@ -25,6 +25,21 @@ describe('production rollback workflow', () => {
     expect(workflow).toContain('--message "GitHub rollback to $TARGET_SHA"')
     expect(workflow).toContain('--yes')
     expect(workflow).toContain(
+      "if: steps.target-orbital.outputs.enabled == 'true'",
+    )
+    expect(workflow).toContain(
+      "if: steps.target-orbital.outputs.enabled == 'false'",
+    )
+    expect(workflow).toContain(
+      'prepare-orbital-rollback-config.mjs',
+    )
+    expect(workflow).toContain(
+      '--config "$RUNNER_TEMP/wrangler-rollback.jsonc"',
+    )
+    expect(workflow).toContain(
+      '--message "GitHub compatible rollback to $TARGET_SHA"',
+    )
+    expect(workflow).toContain(
       'cp scripts/smoke-production.mjs "$RUNNER_TEMP/smoke-production.mjs"',
     )
     expect(workflow).toContain(

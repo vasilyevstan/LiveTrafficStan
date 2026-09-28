@@ -23,7 +23,7 @@ const config: OrbitalCatalogProviderConfig = {
 
 const headers = () => ({
   'Content-Type': 'application/json; charset=utf-8',
-  ETag: `"${snapshot.sha256}"`,
+  ETag: `W/"${snapshot.sha256}"`,
   'X-LiveTrafficStan-Orbital-Source': 'bootstrap',
   'X-LiveTrafficStan-Orbital-Retrieved-At': snapshot.retrievedAt,
   'X-LiveTrafficStan-Orbital-Schema': String(snapshot.schemaVersion),
@@ -91,7 +91,7 @@ describe('OrbitalCatalogProvider', () => {
       fetchMock.mock.calls[1][1]?.headers,
     )
     expect(secondHeaders.get('If-None-Match')).toBe(
-      `"${snapshot.sha256}"`,
+      `W/"${snapshot.sha256}"`,
     )
   })
 
