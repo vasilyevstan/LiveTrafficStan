@@ -18,6 +18,7 @@ import { useTheme } from './app/useTheme'
 import { useTrafficHistory } from './app/useTrafficHistory'
 import { useTrailHistory } from './app/useTrailHistory'
 import { useWeatherObservations } from './app/useWeatherObservations'
+import { useOrbitalObjects } from './app/useOrbitalObjects'
 import { AirportDetails } from './components/AirportDetails'
 import { HistoryModeNotice } from './components/HistoryModeNotice'
 import { LiveStatus } from './components/LiveStatus'
@@ -25,6 +26,7 @@ import { PortDetails } from './components/PortDetails'
 import { TrafficControls } from './components/TrafficControls'
 import { TrafficDetails } from './components/TrafficDetails'
 import { WeatherObservationDetails } from './components/WeatherObservationDetails'
+import { OrbitalDetails } from './components/OrbitalDetails'
 import { APP_CONFIG } from './config/appConfig'
 import type { AppCenter } from './config/appConfig'
 import { orderAircraftSearchResults } from './domain/aircraftSearch'
@@ -47,6 +49,7 @@ import {
   orderVesselSearchResults,
 } from './domain/vesselFilters'
 import type { ViewportAssessment } from './domain/viewport'
+import type { OrbitalViewport } from './domain/orbitalViewport'
 import { formatTimestamp } from './domain/format'
 import {
   displayWeatherObservations,
@@ -120,8 +123,12 @@ function App() {
     airportsVisible,
     clusteringEnabled,
     weatherVisible,
+    orbitalObjectsVisible,
   } = layerPreferences
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedOrbitalId, setSelectedOrbitalId] = useState<string | null>(
+    null,
+  )
   const [hoveredAircraftId, setHoveredAircraftId] = useState<string | null>(
     null,
   )
@@ -135,6 +142,7 @@ function App() {
   const [mapError, setMapError] = useState<TrafficMapError | null>(null)
   const [viewportReport, setViewportReport] = useState<{
     assessment: ViewportAssessment
+    orbitalViewport: OrbitalViewport
     viewRequestId: number
   } | null>(null)
   const [viewRequest, setViewRequest] = useState<ViewRequest>(() => {
@@ -221,6 +229,11 @@ function App() {
   )
   const setWeatherVisible = useCallback(
     (visible: boolean) => setLayerPreference('weatherVisible', visible),
+    [setLayerPreference],
+  )
+  const setOrbitalObjectsVisible = useCallback(
+    (visible: boolean) =>
+      setLayerPreference('orbitalObjectsVisible', visible),
     [setLayerPreference],
   )
   const setTrailPreferences = useCallback(
@@ -318,6 +331,7 @@ function App() {
       }
       detailFocusOriginIdRef.current = null
       setSelectedId(null)
+      setSelectedOrbitalId(null)
       setSelectedPortId(null)
       setSelectedAirportId(null)
       setSelectedWeatherId(null)
@@ -372,6 +386,10 @@ function App() {
     viewportReport?.viewRequestId === viewRequest.id
       ? viewportReport.assessment
       : null
+  const currentOrbitalViewport =
+    viewReady && viewportReport?.viewRequestId === viewRequest.id
+      ? viewportReport.orbitalViewport
+      : undefined
   const activeViewport =
     viewReady && currentAssessment?.kind === 'eligible'
       ? currentAssessment.viewport
@@ -425,6 +443,15 @@ function App() {
     returnToLiveRef.current = returnToLive
   }, [returnToLive])
   const historyActive = history.playback.mode !== 'live'
+  const orbitalResult = useOrbitalObjects(
+    orbitalObjectsVisible,
+    historyActive,
+    online,
+    currentOrbitalViewport,
+    selectedOrbitalId,
+    APP_CONFIG.orbital,
+  )
+  const orbitalState = orbitalResult.state
   const historicalViewportEntities = useMemo(
     () =>
       activeViewport
@@ -585,6 +612,20 @@ function App() {
       ),
     [selectedWeatherId, weatherObservations],
   )
+  const selectedOrbitalPosition = useMemo(
+    () =>
+      orbitalState.positions.find(
+        (position) => position.id === selectedOrbitalId,
+      ),
+    [orbitalState.positions, selectedOrbitalId],
+  )
+  const selectedOrbitalCrossing = useMemo(
+    () =>
+      orbitalState.prediction.results.find(
+        (crossing) => crossing.id === selectedOrbitalId,
+      ),
+    [orbitalState.prediction.results, selectedOrbitalId],
+  )
   const aircraftMetadata = useAircraftMetadata(
     !historyActive && selectedEntity?.kind === 'aircraft'
       ? selectedEntity
@@ -686,6 +727,28 @@ function App() {
   }, [selectedWeatherId, weatherVisible])
 
   useEffect(() => {
+    if (!selectedOrbitalId) return
+    if (
+      !orbitalObjectsVisible ||
+      historyActive ||
+      orbitalState.phase === 'unavailable' ||
+      orbitalState.phase === 'clock-invalid' ||
+      (!selectedOrbitalPosition &&
+        orbitalState.phase !== 'paused-hidden' &&
+        orbitalState.phase !== 'loading' &&
+        orbitalState.phase !== 'refreshing')
+    ) {
+      setSelectedOrbitalId(null)
+    }
+  }, [
+    historyActive,
+    orbitalObjectsVisible,
+    orbitalState.phase,
+    selectedOrbitalId,
+    selectedOrbitalPosition,
+  ])
+
+  useEffect(() => {
     if (selectedPortId && !selectedPort) setSelectedPortId(null)
   }, [selectedPort, selectedPortId])
 
@@ -730,9 +793,14 @@ function App() {
   }, [selectedWeather, selectedWeatherId])
 
   const handleViewportChange = useCallback(
-    (assessment: ViewportAssessment, reportViewRequestId: number) => {
+    (
+      assessment: ViewportAssessment,
+      orbitalViewport: OrbitalViewport,
+      reportViewRequestId: number,
+    ) => {
       setViewportReport({
         assessment,
+        orbitalViewport,
         viewRequestId: reportViewRequestId,
       })
     },
@@ -847,6 +915,7 @@ function App() {
   const selectTraffic = useCallback(
     (id: string | null, originId: string | null) => {
       detailFocusOriginIdRef.current = id ? originId : null
+      setSelectedOrbitalId(null)
       setSelectedPortId(null)
       setSelectedAirportId(null)
       setSelectedWeatherId(null)
@@ -873,6 +942,7 @@ function App() {
   const handleMapPortSelect = useCallback((id: string | null) => {
     detailFocusOriginIdRef.current = null
     setSelectedId(null)
+    setSelectedOrbitalId(null)
     setSelectedAirportId(null)
     setSelectedWeatherId(null)
     setSelectedPortId(id)
@@ -885,6 +955,7 @@ function App() {
         ? Date.now() + APP_CONFIG.navigation.viewportSettleMs + 100
         : 0
       setSelectedId(null)
+      setSelectedOrbitalId(null)
       setSelectedPortId(null)
       setSelectedWeatherId(null)
       setSelectedAirportId(id)
@@ -905,6 +976,7 @@ function App() {
     (id: string | null, originId: string | null) => {
       detailFocusOriginIdRef.current = id ? originId : null
       setSelectedId(null)
+      setSelectedOrbitalId(null)
       setSelectedPortId(null)
       setSelectedAirportId(null)
       setSelectedWeatherId(id)
@@ -919,6 +991,30 @@ function App() {
     (id: string) =>
       selectWeather(id, `weather-context-result-${id}`),
     [selectWeather],
+  )
+
+  const selectOrbital = useCallback(
+    (id: string | null, originId: string | null) => {
+      detailFocusOriginIdRef.current = id ? originId : null
+      setSelectedId(null)
+      setSelectedPortId(null)
+      setSelectedAirportId(null)
+      setSelectedWeatherId(null)
+      setSelectedOrbitalId(id)
+    },
+    [],
+  )
+  const handleMapOrbitalSelect = useCallback(
+    (id: string | null) => selectOrbital(id, null),
+    [selectOrbital],
+  )
+  const handleOrbitalContextSelect = useCallback(
+    (id: string) =>
+      selectOrbital(
+        id,
+        `orbital-context-result-${id.replace(/^orbital:/, '')}`,
+      ),
+    [selectOrbital],
   )
 
   const restoreDetailFocus = useCallback(() => {
@@ -948,7 +1044,13 @@ function App() {
     restoreDetailFocus()
   }, [restoreDetailFocus])
 
+  const handleCloseOrbital = useCallback(() => {
+    setSelectedOrbitalId(null)
+    restoreDetailFocus()
+  }, [restoreDetailFocus])
+
   const handleEnterHistory = useCallback(() => {
+    setSelectedOrbitalId(null)
     enterHistory()
     globalThis.requestAnimationFrame(() => {
       if (canRestoreFocus(historyPlaybackControlRef.current)) {
@@ -970,13 +1072,13 @@ function App() {
       : currentAssessment?.kind === 'eligible'
         ? 'Visible traffic area'
         : currentAssessment
-          ? 'Traffic paused'
+          ? 'Aircraft and ships paused'
           : 'Updating map view'
   const vesselEmptyMessage =
     historyActive
       ? 'No recorded ships are shown at this historical cursor.'
       : currentAssessment?.kind === 'ineligible'
-      ? 'Live traffic is paused for this view.'
+      ? 'Aircraft and ships are paused for this view.'
       : marineResult.status.phase === 'error'
         ? 'The marine source is unavailable.'
         : marineResult.status.phase === 'idle' ||
@@ -987,7 +1089,7 @@ function App() {
     historyActive
       ? 'No recorded aircraft are shown at this historical cursor.'
       : currentAssessment?.kind === 'ineligible'
-      ? 'Live traffic is paused for this view.'
+      ? 'Aircraft and ships are paused for this view.'
       : aircraftResult.status.phase === 'error'
         ? 'The aircraft source is unavailable.'
         : aircraftResult.status.phase === 'idle' ||
@@ -1074,8 +1176,11 @@ function App() {
         ports={ports}
         airports={airports}
         weatherObservations={weatherObservations}
+        orbitalPositions={orbitalState.positions}
+        orbitalTrackSegments={orbitalState.prediction.trackSegments}
         trailSegments={trailSegments}
         selectedId={selectedId}
+        selectedOrbitalId={selectedOrbitalId}
         selectedPortId={selectedPortId}
         selectedAirportId={selectedAirportId}
         selectedWeatherId={selectedWeatherId}
@@ -1084,6 +1189,7 @@ function App() {
         portsVisible={portsVisible}
         airportsVisible={airportsVisible}
         weatherVisible={weatherVisible}
+        orbitalVisible={orbitalObjectsVisible && !historyActive}
         clusteringEnabled={clusteringEnabled}
         interpolateTraffic={!historyActive}
         interpolationDurationMs={APP_CONFIG.interpolationDurationMs}
@@ -1097,6 +1203,7 @@ function App() {
         viewportSettleMs={APP_CONFIG.navigation.viewportSettleMs}
         onHoverAircraftChange={setHoveredAircraftId}
         onSelect={handleMapTrafficSelect}
+        onSelectOrbital={handleMapOrbitalSelect}
         onSelectPort={handleMapPortSelect}
         onSelectAirport={handleMapAirportSelect}
         onSelectWeather={handleMapWeatherSelect}
@@ -1198,6 +1305,15 @@ function App() {
           onWeatherSelect={handleWeatherContextSelect}
           onRetryWeather={handleRetryWeather}
           onRefreshWeather={weatherResult.refresh}
+          orbitalVisible={orbitalObjectsVisible}
+          orbitalState={orbitalState}
+          selectedOrbitalId={selectedOrbitalId}
+          orbitalPredictionHorizonMs={
+            APP_CONFIG.orbital.predictionHorizonMs
+          }
+          onOrbitalVisibleChange={setOrbitalObjectsVisible}
+          onOrbitalSelect={handleOrbitalContextSelect}
+          onRetryOrbital={orbitalResult.retry}
           clusteringEnabled={clusteringEnabled}
           onClusteringEnabledChange={setClusteringEnabled}
           trailPreferences={trailPreferences}
@@ -1257,7 +1373,7 @@ function App() {
 
         {!historyActive && currentAssessment?.kind === 'ineligible' && (
           <div className="viewport-notice" role="status">
-            <strong>Live traffic paused</strong>
+            <strong>Aircraft and ships paused</strong>
             <span>{currentAssessment.message}</span>
           </div>
         )}
@@ -1292,6 +1408,24 @@ function App() {
             onRequestAircraftPhoto={aircraftPhoto.request}
             onRequestFlightRoute={flightRoute.request}
             onClose={handleCloseTraffic}
+          />
+        )}
+
+        {!historyActive &&
+          selectedOrbitalPosition &&
+          orbitalState.snapshot && (
+          <OrbitalDetails
+            position={selectedOrbitalPosition}
+            crossing={selectedOrbitalCrossing}
+            snapshot={orbitalState.snapshot}
+            sourceName={APP_CONFIG.orbital.sourceName}
+            sourceWebsiteUrl={APP_CONFIG.orbital.sourceWebsiteUrl}
+            sourceUsagePolicyUrl={
+              APP_CONFIG.orbital.sourceUsagePolicyUrl
+            }
+            now={now}
+            units={units}
+            onClose={handleCloseOrbital}
           />
         )}
 

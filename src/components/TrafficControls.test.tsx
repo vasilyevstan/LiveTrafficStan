@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_VESSEL_FILTERS } from '../domain/vesselFilters'
+import { EMPTY_ORBITAL_PREDICTION } from '../domain/orbital'
 import { TrafficControls } from './TrafficControls'
 
 const renderControls = (
@@ -53,6 +54,17 @@ const renderControls = (
       onWeatherSelect={() => undefined}
       onRetryWeather={() => undefined}
       onRefreshWeather={() => undefined}
+      orbitalVisible={false}
+      orbitalState={{
+        phase: 'disabled',
+        positions: [],
+        prediction: EMPTY_ORBITAL_PREDICTION,
+      }}
+      selectedOrbitalId={null}
+      orbitalPredictionHorizonMs={90 * 60_000}
+      onOrbitalVisibleChange={() => undefined}
+      onOrbitalSelect={() => undefined}
+      onRetryOrbital={() => undefined}
       clusteringEnabled={false}
       onClusteringEnabledChange={() => undefined}
       trailPreferences={{ visible: true, durationMinutes: 15 }}
@@ -129,6 +141,7 @@ describe('TrafficControls', () => {
       '<summary id="traffic-controls-map-tools-summary">MORE</summary>',
     )
     expect(navigationMore).toContain('<legend>Layers</legend>')
+    expect(navigationMore).toContain('>ORBITS<')
     expect(navigationMore).toContain('Traffic legend')
     expect(navigationMore).toContain('Band 1 · below 1,000 m')
     expect(navigationMore).toContain(
@@ -159,6 +172,88 @@ describe('TrafficControls', () => {
     expect(html.match(/>AIRCRAFT</g)).toHaveLength(1)
     expect(html.match(/>SHIPS</g)).toHaveLength(1)
     expect(html.match(/>TRAILS</g)).toHaveLength(1)
+    expect(html.match(/>ORBITS</g)).toHaveLength(1)
+  })
+
+  it('shows modeled orbital status and selection only after explicit enable', () => {
+    const html = renderControls({
+      orbitalVisible: true,
+      orbitalState: {
+        phase: 'ready',
+        positions: [],
+        prediction: {
+          mode: 'local',
+          totalResults: 1,
+          inViewCount: 1,
+          futureCrossingCount: 0,
+          trackSegments: [],
+          results: [
+            {
+              id: 'orbital:694',
+              noradCatalogId: '694',
+              name: 'ATLAS CENTAUR 2',
+              objectType: 'PAY',
+              currentlyInView: true,
+              firstCrossingAt: Date.UTC(2026, 2, 12, 12),
+            },
+          ],
+        },
+        snapshot: {
+          schemaVersion: 1,
+          sourceContractVersion: 1,
+          group: 'visual',
+          gpSourceUrl: 'https://example.test/gp',
+          satcatSourceUrl: 'https://example.test/satcat',
+          retrievedAt: '2026-03-12T12:00:00.000Z',
+          recordCount: 1,
+          records: [],
+          sha256: 'a'.repeat(64),
+        },
+      },
+    })
+
+    expect(html).toContain(
+      'aria-pressed="true" aria-busy="false">ORBITS',
+    )
+    expect(html).toContain('Modeled orbital objects')
+    expect(html).toContain('ATLAS CENTAUR 2')
+    expect(html).toContain('not live telemetry')
+    expect(html).toContain('CelesTrak')
+  })
+
+  it('explains HISTORY suppression without rendering current orbital context', () => {
+    const html = renderControls({
+      orbitalVisible: true,
+      orbitalState: {
+        phase: 'paused-history',
+        positions: [],
+        prediction: EMPTY_ORBITAL_PREDICTION,
+        snapshot: {
+          schemaVersion: 1,
+          sourceContractVersion: 1,
+          group: 'visual',
+          gpSourceUrl: 'https://example.test/gp',
+          satcatSourceUrl: 'https://example.test/satcat',
+          retrievedAt: '2026-03-12T12:00:00.000Z',
+          recordCount: 0,
+          records: [],
+          sha256: 'a'.repeat(64),
+        },
+        message:
+          'Modeled orbital objects are hidden during historical playback.',
+      },
+      playback: {
+        mode: 'history-paused',
+        cursor: 1,
+        range: { oldest: 0, newest: 1 },
+        speed: 1,
+      },
+    })
+
+    expect(html).toContain(
+      'Modeled orbital objects are hidden during historical playback.',
+    )
+    expect(html).not.toContain('class="control-group vessel-discovery orbital-context"')
   })
 
   it('renders Auto, Light, and Dark as explicit theme preferences', () => {

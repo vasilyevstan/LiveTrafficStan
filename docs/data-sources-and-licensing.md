@@ -744,7 +744,16 @@ prohibition on the planned caching or public display stops the feature.
 
 The full evidence, alternatives, observed group sizes/composition, cadence,
 object-type contract, privacy boundary, and stop conditions are in
-[Orbital Data Source Evaluation](orbital-data-source-evaluation.md).
+[Orbital Data Source Evaluation](orbital-data-source-evaluation.md). Browser
+propagation, clock, viewport, lifecycle, and limitation semantics are in
+[Orbital Tracking](orbital-tracking.md).
+
+The SGP4 implementation is `satellite.js` 7.1.0, distributed under the MIT
+License. That software license covers the propagation library, not CelesTrak
+data. The exact package version is pinned because the browser worker imports
+its JavaScript-only modules directly to avoid bundling optional Node/WASM
+runtimes exposed by the package root. The distributed notice is
+[`/licenses/satellite-js-7.1.0-MIT.txt`](../public/licenses/satellite-js-7.1.0-MIT.txt).
 
 ## Source-code license versus data licenses
 
@@ -773,6 +782,7 @@ separate licenses and attribution requirements:
 - optional airport context: OurAirports, public domain
 - modeled orbital elements and catalog type: CelesTrak GP/OMM and SATCAT,
   provider attribution and use-policy review required
+- orbital propagation software: `satellite.js` 7.1.0, MIT
 
 The application does not persist or redistribute a live traffic database. It
 does distribute the separately identified static aircraft metadata derivative

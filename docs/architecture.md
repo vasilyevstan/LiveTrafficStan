@@ -3,13 +3,14 @@
 ## System shape
 
 LiveTrafficStan V1 is a browser application with no authentication, account
-database, or general backend. Production adds one fixed-route Cloudflare Worker
-for browser-incompatible aircraft and weather access. Plausible route lookup,
-marine traffic, place search, map data, and aircraft photos use reviewed direct
-browser paths. Vessel reference photos are reviewed versioned same-origin
-assets with no runtime third-party lookup. React owns controls and
-selected-object UI state. Provider adapters own external protocols and
-normalization. MapLibre owns high-frequency geographic rendering.
+database, or general backend. Production adds one fixed-purpose Cloudflare
+Worker for browser-incompatible aircraft/weather access and the feature-gated
+shared CelesTrak snapshot. Plausible route lookup, marine traffic, place
+search, map data, and aircraft photos use reviewed direct browser paths.
+Vessel reference photos are reviewed versioned same-origin assets with no
+runtime third-party lookup. React owns controls and selected-object UI state.
+Provider adapters own external protocols and normalization. MapLibre owns
+high-frequency geographic rendering.
 
 The recovery architecture for Cloudflare-shared-egress throttling preserves
 that public boundary and inserts a private Workers VPC Service, Cloudflare
@@ -54,6 +55,8 @@ PORTS toggle -> validated static Natural Earth projection -> port map/details
 AIRPORTS toggle -> validated static OurAirports projection -> airport map/details
 METAR toggle -> explicit airport ICAO codes -> same-origin AWC route
              -> normalized observations -> weather map/details
+ORBITS toggle -> same-origin complete CelesTrak snapshot
+              -> dedicated SGP4 worker -> modeled point/crossing/track state
 current Aircraft[] -> local literal search -> existing traffic selection
 
 coordinate text -> local parser ------------------------+
@@ -64,7 +67,10 @@ session Home / one-shot location -----------------------+
 Local development and preview use fixed Vite same-origin proxies for aircraft
 and weather. Production uses a strict Cloudflare Worker that accepts only the
 validated ADSB.lol point route and canonical AWC METAR route. Plausible route
-lookup is a credential-free direct GET with no Worker state.
+lookup is a credential-free direct GET with no Worker state. Ordinary Vite
+development leaves the orbital route disabled; local enabled acceptance runs
+the built client through `wrangler dev --local` so it exercises the actual
+storage/bootstrap-only Worker route.
 
 The deployment configuration retains a deleted-state `FlightRouteQuota`
 tombstone solely to retire the namespace provisioned by the removed
@@ -76,7 +82,7 @@ tombstone can be removed after Cloudflare confirms that deletion has applied.
 | Area | Responsibility |
 | --- | --- |
 | `src/config/` | Typed defaults and validation of browser-safe environment overrides |
-| `src/domain/` | Application-owned traffic/port/airport/weather/flight-route types, local discovery and filters, pure country-allocation and exact-IMO vessel-photo lookup, geographic helpers, location-input parsing, versioned preferences/share state, unit conversion, and formatting |
+| `src/domain/` | Application-owned traffic/port/airport/weather/flight-route/orbital types, independent traffic and orbital viewport geometry, local discovery and filters, pure country-allocation and exact-IMO vessel-photo lookup, location-input parsing, versioned preferences/share state, unit conversion, and formatting |
 | `src/providers/aircraft/` | ADSB.lol request, runtime payload checks, normalization, and unit conversion |
 | `src/providers/aircraftMetadata/` | Bounded same-origin static metadata loading, provenance/schema/hash validation, exact identity matching, and shard LRU |
 | `src/providers/aircraftPhoto/` | Disabled-by-default direct Planespotters hex lookup, bounded response validation, exact returned-origin enforcement, and typed local failures |
@@ -85,11 +91,13 @@ tombstone can be removed after Cloudflare confirms that deletion has applied.
 | `src/providers/ports/` | Bounded lazy same-origin port loading plus checksum, schema, and source-provenance validation |
 | `src/providers/airports/` | Bounded lazy same-origin airport loading plus checksum, schema, and source-provenance validation |
 | `src/providers/weather/` | Canonical same-origin AWC requests, bounded JSON validation, METAR/SPECI normalization, newest-report selection, and source provenance |
+| `src/providers/orbital/` | Strict same-origin snapshot reads, streamed byte bounds, exact schema/header/digest validation, ETag revalidation, and fulfilled current-tab caching |
 | `src/providers/geocoding/` | Photon request construction, response bounds, runtime GeoJSON validation, result normalization, and attribution identity |
-| `src/app/` | React hooks/controllers for provider lifecycle, unified preference persistence, place-search cancellation/cache, bounded selected-photo and selected-route tab caches, navigation intent, time ticks, offline state, and traffic-history orchestration |
+| `src/app/` | React hooks/controllers for provider and orbital lifecycle, unified preference persistence, place-search cancellation/cache, bounded selected-photo and selected-route tab caches, navigation intent, time ticks, offline state, and traffic-history orchestration |
 | `src/history/` | Provider-qualified observation projection, bounded session history, IndexedDB transactions, settings, indexes, playback, and gap-aware historical trails |
 | `src/traffic/` | Filtering, freshness/expiry, interpolation, and selected-trail history |
-| `src/map/` | MapLibre lifecycle, external/local-fallback styles, GeoJSON sources/layers, feature selection, and marker images |
+| `src/map/` | MapLibre lifecycle, external/local-fallback styles, persistent traffic/context/orbital GeoJSON sources and layers, feature selection, and marker images |
+| `src/workers/` | Dedicated orbital protocol, validated pure SGP4 propagation, local crossing prediction, selected-track splitting, and revision fencing |
 | `src/components/` | Status, controls, and selected-object details |
 | `worker/` | Fixed aircraft and weather proxies plus the feature-gated CelesTrak orbital snapshot scheduler/reader, with sanitized route matching, explicit protected aircraft delivery mode, VPC/KV/Durable Object binding injection, atomic orbital cadence admission, and fail-closed relay authentication |
 | `infra/oci/aircraft-relay/` | Dependency-free fixed ADSB.lol relay, persistent global admission, loopback HTTP adapter, hardened systemd units, exact-SHA deployment, and Tunnel installation |
@@ -278,6 +286,21 @@ airport `ident`/IATA values as ICAO codes. The adapter accepts only requested
 METAR/SPECI records, validates Unix-second observation time and bounded fields,
 and keeps the newest valid report per station.
 
+Orbital objects are a separate modeled-data boundary. ORBITS starts off and
+loads one complete same-origin schema-v1 snapshot only after explicit enable.
+The provider performs streamed byte, fatal UTF-8, exact-field, source,
+ordering, header, ETag, and SHA-256 checks before a fulfilled current-tab cache
+is created. It sends no camera, Home, geolocation, selection, cookie, or
+credential data and cannot select another catalog or provider.
+
+A dedicated module worker prepares `satellite.js` SGP4 records and emits only
+application-owned modeled positions, local crossing results, and one selected
+track. The orbital controller anchors time to the response clock plus
+`performance.now()`, guards initial skew and later wall-clock jumps, and
+revalidates no more often than every two hours. Orbital IDs and timestamps
+never enter traffic normalization, freshness, clustering, trails, metadata,
+photos, route lookup, session history, or IndexedDB.
+
 ## Lifecycle and failure isolation
 
 Aircraft and marine providers have separate state, cancellation, and error
@@ -336,6 +359,14 @@ continues to render.
   unmounted work aborts; a fulfilled same-view result survives hide/show and
   theme/style changes. Weather failure does not alter map health, traffic,
   airport/port context, camera, or provider schedules.
+- Orbital loading, propagation, and prediction have independent revisions.
+  Layer-off, hidden, HISTORY, and unmount states terminate the worker and
+  cancel unfinished reads without discarding a complete accepted snapshot or
+  resetting its two-hour revalidation boundary. Resume before that boundary
+  recreates only the worker. Camera, selection, style, and theme changes never
+  fetch a catalog. Stale, offline, clock-invalid, expired, unavailable, and
+  successful-empty states remain distinct, and no orbital failure changes
+  another provider or map lifecycle.
 
 ## Freshness, motion, and history
 
@@ -412,18 +443,22 @@ object. Stable feature IDs use incremental `GeoJSONSource.updateData` diffs for
 ordinary traffic movement; style replacement and forced recovery still install
 complete source snapshots.
 
-The optional port, airport, and weather sources are separate from traffic.
-Port rank groups
+The optional port, airport, weather, and orbital sources are separate from
+traffic. Port rank groups
 appear progressively from zoom 5 through 10, all port rendering stops at zoom
 13 because the coordinates are generalized, and neutral theme-aware styling
 stays below airport and traffic layers. Large airport points start at zoom 4
 and labels at zoom 5; medium points and labels start at zoom 7 and 8, with no
 upper zoom cutoff. METAR circles and labels render above ports/airports and
-below traffic; stale reports include text as well as reduced opacity. Picking
-is deterministic: exact traffic, cluster expansion, validated traffic touch
-fallback, exact weather, airport, and port, then weather, airport, and port
-touch fallbacks. Selecting traffic, weather, airport, or port clears the other
-selection kinds; an empty map click clears all.
+below orbital points and traffic; stale reports include text as well as reduced
+opacity. Orbital circles and the selected line/highlight render above static
+context and below the selected traffic trail/live traffic.
+
+Picking is deterministic: exact traffic, cluster expansion, validated traffic
+touch fallback, exact orbital, validated orbital touch fallback, then exact
+weather, airport, and port followed by their touch fallbacks. Selecting
+traffic, orbital, weather, airport, or port clears the other selection kinds;
+an empty map click clears all. Orbital selection never moves the camera.
 
 App-owned cluster, port, airport, and weather text reuses a font stack already
 declared by the active base style instead of MapLibre's unsupported default
@@ -579,6 +614,12 @@ vector tiles will remain in a loading state.
   request is bounded to 256 KiB and starts no more frequently than once per
   minute per session. Theme changes, style rehydration, clustering, and
   hide/show of a fulfilled same-view result do not refetch.
+- ORBITS has zero startup requests. The strict catalog is loaded on explicit
+  enable, while SGP4 position/crossing work runs in a dedicated module worker.
+  Current points update at most once per second; crossing work is bounded to
+  256 objects, a 90-minute horizon, 30-second samples, and 20 detailed
+  results. Stable feature IDs update persistent sources without rebuilding the
+  map. The worker chunk is about 26 KiB in the current production build.
 
 ## Deployment boundary
 
@@ -633,10 +674,12 @@ observability is disabled because ordinary request URLs can contain rounded
 camera coordinates or visible station IDs. Cloudflare and upstream network
 intermediaries still process ordinary request metadata.
 
-Production activation, exact-origin browser smoke, prior-version rollback, and
-exact restoration are complete. See
-[Hosting and Deployment](hosting-and-deployment.md) for the recorded release,
-version, and workflow evidence.
+Existing production activation, exact-origin browser smoke, prior-version
+rollback, and exact restoration are complete for released features. The
+orbital bindings, Cron, browser layer, and production evidence remain
+feature-gated until #162 is accepted. See
+[Hosting and Deployment](hosting-and-deployment.md) for release, version, and
+workflow evidence.
 
 ## Navigation and viewport boundaries
 
@@ -663,6 +706,15 @@ settled pan / zoom / rotate / pitch / resize
                     |                         traffic hidden
           exact-polygon display filter       zoom/tilt prompt
 ```
+
+          The same settled map event derives a second, independent orbital footprint.
+          A safely unwrapped local polygon drives only 90-minute crossing prediction. A
+          raw span of at least 359.5 degrees is whole-world only when the sampled canvas
+          also covers both Mercator latitude limits; it then lists all valid current
+          subpoints without a crossing rank. Partial spans at least 180 degrees and
+          invalid polygons suppress crossing prediction while retaining valid current
+          points. This classification cannot authorize or resize an aircraft/marine
+          query.
 
 `TrafficMap` mounts before any provider query and reports a viewport only after
 MapLibre has usable geometry. `App` owns the latest assessment, session Home,
@@ -734,7 +786,7 @@ the same fragment/unified/legacy/default precedence.
 Theme changes call `map.setStyle` on the existing instance. An idempotent
 installer runs after `style.load` to restore repository-owned images, GeoJSON
 sources, layers, current data, clustering options, visibility, selected trail,
-and any loaded port, airport, or weather source/selection.
+and any loaded port, airport, weather, or orbital source/selection/track.
 Interaction listeners remain registered once, and a style revision prevents a
 late obsolete load from winning. Provider hooks, React selection/history, and
 camera state do not restart.

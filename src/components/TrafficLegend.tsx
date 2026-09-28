@@ -70,6 +70,40 @@ export function TrafficLegend({
         </ul>
       </div>
 
+      <div className="traffic-legend__section">
+        <h3>Modeled orbital objects</h3>
+        <ul className="traffic-legend__list">
+          <li>
+            <span
+              className="traffic-legend__orbital traffic-legend__orbital--payload"
+              aria-hidden="true"
+            />
+            <span>Payload</span>
+          </li>
+          <li>
+            <span
+              className="traffic-legend__orbital traffic-legend__orbital--rocket"
+              aria-hidden="true"
+            />
+            <span>Cataloged rocket body</span>
+          </li>
+          <li>
+            <span
+              className="traffic-legend__orbital traffic-legend__orbital--debris"
+              aria-hidden="true"
+            />
+            <span>Debris</span>
+          </li>
+          <li>
+            <span
+              className="traffic-legend__orbital traffic-legend__orbital--unknown"
+              aria-hidden="true"
+            />
+            <span>Unknown catalog type</span>
+          </li>
+        </ul>
+      </div>
+
       <p className="control-note control-note--muted">
         Aircraft silhouettes reflect reported type metadata, and their color
         encodes reported barometric altitude. Selected details retain the
@@ -102,6 +136,10 @@ export function TrafficLegend({
       <p className="control-note control-note--muted">
         AIR and SEA count circles group eligible traffic; expand them to see
         individual shapes and stopped markers.
+      </p>
+      <p className="control-note control-note--muted">
+        Orbital points and dashed tracks are SGP4 models from CelesTrak
+        elements, not live observations or proof of naked-eye visibility.
       </p>
     </section>
   )

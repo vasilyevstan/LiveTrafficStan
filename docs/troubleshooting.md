@@ -542,6 +542,56 @@ The browser feature is implemented separately from this storage boundary.
 Aircraft, vessels, weather, search, map, and PWA behavior must remain usable
 when the orbital catalog is unavailable.
 
+## ORBITS is empty, paused, or clock invalid
+
+ORBITS starts off and should make no catalog request before explicit enable.
+After enable, inspect only the same-origin `/api/orbits/catalog` request; a
+browser request to `celestrak.org` is a defect.
+
+Interpret the control state before retrying:
+
+- **Loading** — the first strict same-origin read is unfinished.
+- **Refreshing** — a complete current snapshot is still displayed while an
+  ETag revalidation runs.
+- **Stale** — the complete snapshot is older than six hours but below its
+  24-hour hard age.
+- **Offline** — a fulfilled current-tab snapshot may remain modeled; a cold
+  tab has nothing safe to use.
+- **Clock unavailable** — the device wall clock differs from the same-origin
+  response clock by more than two minutes or later jumped more than 30 seconds.
+  Correct the operating-system time and use Retry to obtain a new response
+  clock. Do not bypass this guard with the device time.
+- **No modeled positions** — the catalog succeeded, but every record was
+  outside element-age or physical propagation bounds at the anchored time.
+  This is distinct from a network failure.
+- **Crossing estimate unavailable for this view** — the current footprint is
+  partial world-spanning or otherwise unsafe. Current points can remain; use a
+  local view for the 90-minute crossing list.
+- **Whole world is visible** — all valid current subpoints are already in
+  view, so no future crossing rank is claimed.
+- **Paused while page hidden** or **Paused during HISTORY** — the dedicated
+  propagation worker is intentionally absent. Returning to the visible Live
+  view reuses a still-valid tab snapshot without another request before its
+  revalidation boundary.
+
+If the catalog returns `200` but no worker starts, verify that the response
+headers, schema, digest, ETag, source URLs, and canonical record order all
+match. A partial `206`, HTML response, missing header, digest mismatch,
+oversize body, redirect, or invalid UTF-8 is rejected rather than rendered.
+
+If an installed app reports a missing `orbital.worker-*.js`, use the existing
+**Refresh app** flow and verify that `/sw.js`, `index.html`, and the current
+hashed assets were deployed atomically. Do not cache `/api/orbits/catalog` or
+`/orbital-data/*` in the application shell. The worker asset may be present in
+the shell before ORBITS enable, but it must not execute or make a catalog
+request until enable.
+
+Hiding ORBITS, committed navigation, or HISTORY clears selection and the
+predicted track. Ordinary pan, rotate, pitch, resize, theme, and style changes
+should retain selection and make no catalog request. If they do not, record the
+same-canvas, source, request, and console evidence before changing provider
+configuration.
+
 ## Configuration fails at startup
 
 Review `.env.local` for:

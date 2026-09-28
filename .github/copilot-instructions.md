@@ -33,8 +33,8 @@ preserve truthful partial operation when one provider fails.
   or hold unrelated ready work behind the blocker.
 - Before merge, run `npm run lint`, `npm run typecheck`,
   `npm test -- --run`, `npm run check:aircraft-metadata`,
-  `npm run check:country-allocations`, `npm run check:vessel-photos`, and
-  `npm run build`.
+  `npm run check:country-allocations`, `npm run check:vessel-photos`,
+  `npm run check:orbital-catalog`, and `npm run build`.
 - Static markup, pure unit tests, and HTTP smoke do not prove rendered MapLibre
   selection, focus, touch, or responsive layout. Use a real-browser acceptance
   check for those claims and record measured evidence.
@@ -136,6 +136,27 @@ preserve truthful partial operation when one provider fails.
   changes, vessel/empty selection, and unmount abort old work; stale callbacks
   cannot display A after A to B to A. Reevaluate publication-age and future
   clock rules while details remain open without refetching.
+- Orbital objects are modeled context, never aircraft/marine observations.
+  Keep catalog, clock, positions, crossings, selected track, selection,
+  statuses, and errors out of traffic freshness, clustering, trails, metadata,
+  photos, and history.
+- The browser orbital route is the literal same-origin
+  `GET /api/orbits/catalog`. It makes zero startup requests, has no endpoint
+  override, omits credentials and referrer, accepts only a complete validated
+  `200` or matching cached-ETag `304`, and cannot initiate CelesTrak work.
+- Anchor modeled time to the response clock plus a monotonic clock. Initial
+  skew, wall-clock jumps, stale state, and 24-hour hard expiry fail closed.
+  Changed snapshots clear prior-generation output; camera, selection, theme,
+  style, and ordinary hide/show never refetch or reset the two-hour boundary.
+- Run SGP4 and crossing prediction in the dedicated worker. Keep one in-flight
+  prediction plus the latest desired view/selection, fence obsolete success
+  and errors, and terminate the worker for layer-off, hidden, HISTORY, hard
+  expiry, or unmount.
+- Keep orbital viewport geometry independent from the traffic 100 km contract.
+  Local safe geometry drives crossings; whole-world requires full longitude
+  and both Mercator latitude limits; invalid geometry reports crossing counts
+  unavailable while valid current points may remain. Theme rehydration restores
+  orbital points, highlight, track, visibility, selection, and paint.
 - Production aircraft proxy changes must keep the fixed ADSB.lol origin, exact
   `/api/aircraft/v2/point/{lat}/{lon}/{radiusNm}` allowlist, canonical
   coordinate validation, 1-54 NM bound, total deadline, response-size cap,
@@ -163,11 +184,13 @@ preserve truthful partial operation when one provider fails.
 - Keep `docs/` canonical and update the README and Wiki when released behavior
   changes.
 - Preserve visible OpenFreeMap/OpenStreetMap, ADSB.lol, Digitraffic,
-  OurAirports, Natural Earth, and NOAA/NWS AWC attribution and provider
-  licensing records. Weather presentation must retain source/retrieval time,
-  public-domain caveat, and observation-not-forecast wording. When static
-  aircraft metadata is displayed, also preserve Mictronics and ODC-By
-  attribution plus the snapshot publication date.
+  OurAirports, Natural Earth, NOAA/NWS AWC, and CelesTrak attribution and
+  provider licensing/use-policy records. Weather presentation must retain
+  source/retrieval time, public-domain caveat, and
+  observation-not-forecast wording. Orbital presentation must retain element
+  epoch, modeled/retrieval time, exact SATCAT type, and not-live/not-optical
+  caveats. When static aircraft metadata is displayed, also preserve
+  Mictronics and ODC-By attribution plus the snapshot publication date.
 - Do not expand a focused change into reverse geocoding, search autocomplete,
   continuous location, persistent tracking, PWA, weather, clustering, or
   backend work unless the request explicitly includes it.

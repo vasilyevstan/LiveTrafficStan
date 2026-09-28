@@ -82,6 +82,25 @@ Check these project invariants:
   ports below airports below weather below live traffic. Picking after traffic
   and clusters is weather, airport, then port for both exact and validated-touch
   hits.
+- Orbital points, selected highlight, and predicted track use persistent
+  GeoJSON sources on the same map. Deterministic order is ports, airports,
+  weather, orbital, selected traffic trail/live traffic. Theme-only
+  reinstallation must update existing orbital paint even when both themes use
+  one style URL.
+- Orbital viewport geometry is independent from traffic eligibility. A local
+  safe polygon drives crossings; whole-world requires both a full longitude
+  span and both Mercator latitude limits; partial world-spanning or invalid
+  geometry reports crossing counts unavailable without hiding valid current
+  points or authorizing aircraft/marine work.
+- Picking remains exact traffic, cluster, unique traffic touch, exact orbital,
+  unique orbital touch, then weather/airport/port. The visible selected
+  orbital halo is part of the orbital pick surface but must deduplicate to the
+  same stable ID.
+- Orbital selection never moves the camera or enters traffic clusters, trails,
+  counts, metadata, photos, or history. Style/theme/ordinary camera changes
+  retain it; layer hide, committed navigation, HISTORY, expiry, or another
+  mutually exclusive selection clears it synchronously. Current orbital
+  context/details cannot flash during the first HISTORY render.
 - Generalized port points remain zoom-ranked, visually neutral, below traffic,
   and absent above their documented maximum zoom. Selection does not imply a
   facility, port call, destination, ETA, nearby vessel, or operational status.

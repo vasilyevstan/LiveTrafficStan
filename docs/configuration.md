@@ -97,6 +97,14 @@ spread through components:
 | METAR station bound / request start gate | 50 explicit ICAO stations / at least 60 seconds |
 | METAR client and Worker deadline / response cap | 8 seconds / 256 KiB |
 | METAR stale / expiry | 75 minutes / 120 minutes |
+| Orbital layer | Off by default; explicit enable only |
+| Orbital catalog request | Fixed same-origin route; 5-second deadline; 256 KiB / 256-record limit |
+| Orbital revalidation / stale / expiry | 2 hours / 6 hours / 24 hours |
+| Orbital element age / future tolerance | 14 days / 10 minutes |
+| Orbital clock initial skew / later jump | 2 minutes / 30 seconds |
+| Orbital current-position cadence | At most once per second |
+| Orbital prediction | Refresh every 30 seconds; 90-minute horizon; 30-second samples; 20 detailed results |
+| Orbital selected track | 15 minutes; at most 31 points before gap/dateline splitting |
 | Marine metadata refresh | 5 minutes |
 | Marine query REST refresh gate | 5 minutes |
 | Marine MQTT connect timeout / reconnect | 10 seconds / 15 seconds |
@@ -521,8 +529,9 @@ Navigation timing and privacy values are centralized in
 `src/config/appConfig.ts`.
 
 Layer preferences use one plain serializable boolean shape for aircraft,
-vessels, ports, airports, clustering, and METAR. It deliberately excludes
-provider state, loading/error state, observations, cluster IDs, MapLibre
+vessels, ports, airports, clustering, METAR, and the default-off orbital
+layer. It deliberately excludes provider state, loading/error state,
+observations, orbital catalog/clock/prediction state, cluster IDs, MapLibre
 objects, and selections. The shape is stored inside
 `livetrafficstan.preferences.v1`.
 
@@ -548,7 +557,9 @@ The camera is all-or-nothing, coordinates use the configured three-decimal
 privacy precision, and duplicate/unknown/out-of-range fields reject the share.
 Valid fragment fields override saved preferences for that page without being
 saved automatically. Browser Home/location, queries, selection, history, and
-provider state are never serialized.
+provider state are never serialized. The orbital field is only `orbits=0|1`;
+it never serializes catalog identity, modeled time, selected NORAD ID, or
+track.
 
 ## Installable application shell
 
@@ -563,6 +574,14 @@ It emits stable `/sw.js` with a content-versioned cache containing only root/
 `index.html`, built `/assets/*`, the manifest, favicon, and versioned icons.
 Do not add provider responses, map resources, Photon, weather, aircraft
 metadata, airport/port datasets, or history rows to that allowlist.
+
+All hashed build assets include dynamically referenced worker chunks. The
+approximately 26 KiB orbital worker can therefore be downloaded during an
+installed-shell update, like the existing dynamic MQTT chunk, but it is not
+constructed or executed until ORBITS is active and a catalog is accepted.
+This is execution-lazy rather than PWA-network-lazy. Excluding one worker would
+add a second shell policy and remove installed offline reuse without reducing
+provider traffic; the existing bounded shell contract is retained.
 
 Deployment headers must keep `/sw.js`, `/index.html`, and
 `/manifest.webmanifest` revalidated. Hashed assets and versioned icons are

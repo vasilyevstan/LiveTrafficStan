@@ -70,6 +70,13 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   Center. It uses explicit ICAO codes from the pinned airport projection,
   shows observation and retrieval age, expires old reports, and remains
   independent of traffic providers and static airport context.
+- A default-off modeled orbital layer for CelesTrak's bounded `visual`
+  catalog. It propagates current satellite and cataloged rocket-body
+  subpoints locally with SGP4, identifies ground tracks that cross a safe local
+  map view within 90 minutes, and draws one bounded selected-object track.
+  Exact SATCAT type, element epoch, snapshot age, and limitations remain
+  visible; these are modeled positions, not live telemetry or optical
+  visibility predictions.
 - A default-enabled ADSB.lol plausible-route lookup for a selected live
   aircraft. A committed selection starts one lookup and shows a compact result
   directly below the aircraft heading. Hover, HISTORY, and same-flight position
@@ -164,6 +171,14 @@ npm run check:deploy
 npm run preview:worker
 ```
 
+To enable the feature-gated orbital bootstrap route for local rendered
+acceptance:
+
+```bash
+npm run build
+npx wrangler dev --local --var ORBITAL_CATALOG_ENABLED:true
+```
+
 ## Architecture
 
 Provider-specific code validates and normalizes external payloads before React
@@ -184,6 +199,9 @@ PORTS toggle -> pinned same-origin Natural Earth projection -> map + port detail
 AIRPORTS toggle -> pinned same-origin OurAirports projection -> map + airport details
 METAR toggle -> qualifying airport ICAO codes -> same-origin AWC proxy
              -> current observations -> map + weather details
+
+ORBITS toggle -> same-origin complete CelesTrak snapshot -> dedicated SGP4 worker
+              -> modeled points + local crossing results + selected track
 
 current aircraft -> local literal search -> existing traffic selection
 
@@ -209,6 +227,15 @@ on that same MapLibre instance. An
 idempotent installer restores traffic images, sources, layers, current data,
 visibility, and trail after each style load while preserving camera,
 selection, provider state, and connections.
+
+Orbital tracking is a separate modeled-data boundary. Explicit enable loads
+one strictly validated same-origin snapshot, anchors modeled time to the
+response clock, and creates a dedicated propagation worker. Camera and
+selection changes run only local prediction work. Orbital points, crossing
+results, and selected tracks remain outside traffic models, clustering,
+freshness, trails, metadata, photos, and history. Wide views can therefore
+show orbital objects while aircraft and ships pause under their unchanged
+100 km eligibility contract.
 
 Aircraft metadata is a separate selected-object boundary. It makes no startup
 request, loads one immutable index and one ICAO24-prefix shard on first use,
@@ -493,6 +520,10 @@ monitoring, privacy, and rollback procedure.
   views or independent confirmation of the transmitting hull. Missing,
   invalid, or unmatched IMO shows no real-image substitute. No general yacht
   photo coverage is promised.
+- Orbital positions and map crossings are SGP4 models from a bounded
+  CelesTrak bright-object catalog. They are not observations, launch or reentry
+  telemetry, hazard predictions, or proof that an object is illuminated or
+  visible to a person at the map location.
 - There is no reverse geocoding, radar, precipitation forecast, account, saved
   center preference, or offline basemap guarantee. An installed shell can
   start cold offline and replay retained private local history over a plain
@@ -508,6 +539,8 @@ silently expanded into V1.
 - [Architecture](docs/architecture.md)
 - [Configuration](docs/configuration.md)
 - [Data Sources and Licensing](docs/data-sources-and-licensing.md)
+- [Orbital Tracking](docs/orbital-tracking.md)
+- [Orbital Data Source Evaluation](docs/orbital-data-source-evaluation.md)
 - [Aircraft Provider Evaluation](docs/aircraft-provider-evaluation.md)
 - [Aircraft Metadata Evaluation](docs/aircraft-metadata-evaluation.md)
 - [Aircraft Photo Evaluation](docs/aircraft-photo-evaluation.md)
@@ -527,4 +560,6 @@ LiveTrafficStan source code is available under the
 [Apache License 2.0](LICENSE). Redistributions and derivative works must retain
 the applicable license, copyright, and [`NOTICE`](NOTICE) attribution. This
 keeps the project open for permissive personal and commercial use while
-preserving credit to the original project and author.
+preserving credit to the original project and author. The bundled orbital
+propagator retains its
+[`satellite.js` 7.1.0 MIT notice](public/licenses/satellite-js-7.1.0-MIT.txt).
