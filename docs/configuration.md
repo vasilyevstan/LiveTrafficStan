@@ -51,6 +51,13 @@ coordinator and one offset two-hour Cron, and records the KV namespace
 identity. A disabled deployment removes the Cron and omits both orbital
 bindings.
 
+Current production source
+`46cb2007bc0cc27d1905fab32db6149a91d17576` sets the flag to `true`, uses KV
+namespace `59178d55418247c4bab473b52a5dc07d`, and runs Cron
+`17 */2 * * *`. This Worker setting does not change the user-facing default:
+the remembered ORBITS layer still starts off until explicitly enabled or
+included in a share fragment.
+
 The committed `wrangler.jsonc` remains credential-free. Cloudflare account ID
 and API token stay in the protected `production` environment; the namespace ID
 is a non-secret deployment identifier discovered only through the authenticated

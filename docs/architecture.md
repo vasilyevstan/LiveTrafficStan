@@ -4,8 +4,8 @@
 
 LiveTrafficStan V1 is a browser application with no authentication, account
 database, or general backend. Production adds one fixed-purpose Cloudflare
-Worker for browser-incompatible aircraft/weather access and the feature-gated
-shared CelesTrak snapshot. Plausible route lookup, marine traffic, place
+Worker for browser-incompatible aircraft/weather access and the protected
+scheduled CelesTrak snapshot. Plausible route lookup, marine traffic, place
 search, map data, and aircraft photos use reviewed direct browser paths.
 Vessel reference photos are reviewed versioned same-origin assets with no
 runtime third-party lookup. React owns controls and selected-object UI state.
@@ -19,10 +19,10 @@ remote-managed Tunnel, VPC Service, and QUIC connector are operational. The
 Worker selects that path only through the protected `oci-private-relay`
 deployment mode and fails closed rather than reverting to shared egress.
 Production source `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` and the relay
-originally activated the private path together. The current browser application
-is source `3370dfe3f1cc2614feff894643ed865978ec7edc`, deployed in run
-`36299895010` as Cloudflare version
-`0cbc0b5d-2e7b-49f0-b649-a2d22ac3a83c`; the compatible relay remains at
+originally activated the private path together. The current browser/Worker
+application is source `46cb2007bc0cc27d1905fab32db6149a91d17576`,
+restored in run `36488245592` as Cloudflare version
+`0138d581-2162-491a-bcb5-619a97cf31fb`; the compatible relay remains at
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c`.
 
 ```text
@@ -636,7 +636,7 @@ and gives only the aircraft proxy one private outbound dependency:
    canonical `GET /api/weather/metar?ids=...`; the fixed
    `GET /api/orbits/catalog` route reads only KV or the exact-release bootstrap
    and never performs an upstream request;
-5. a feature-gated two-hour Cron, independent of browser requests, may fetch
+5. a protected two-hour Cron, independent of browser requests, may fetch
    only after one named SQLite Durable Object atomically admits the start; it
    may then fetch only the fixed CelesTrak `visual` GP and SATCAT URLs, persist
    the provider outcome, and publish one complete schema-versioned KV snapshot
@@ -667,17 +667,17 @@ coordinate-bearing application log. See
 
 No application database, general backend, shared live traffic cache, preview
 deployment, or server-side marine relay is added. The only provider scheduler
-is the fixed, feature-gated CelesTrak catalog Cron plus its single named
+is the fixed CelesTrak catalog Cron plus its single named
 SQLite coordinator; it accepts no browser input, stores no user data, and
 cannot fetch another provider/group/path. Worker
 observability is disabled because ordinary request URLs can contain rounded
 camera coordinates or visible station IDs. Cloudflare and upstream network
 intermediaries still process ordinary request metadata.
 
-Existing production activation, exact-origin browser smoke, prior-version
-rollback, and exact restoration are complete for released features. The
-orbital bindings, Cron, browser layer, and production evidence remain
-feature-gated until #162 is accepted. See
+Orbital production activation, exact-origin browser acceptance,
+namespace-preserving pre-orbital rollback, Cron removal, and exact restoration
+are complete. The layer remains a default-off user preference and a protected
+deployment flag, not an always-visible map surface. See
 [Hosting and Deployment](hosting-and-deployment.md) for release, version, and
 workflow evidence.
 
