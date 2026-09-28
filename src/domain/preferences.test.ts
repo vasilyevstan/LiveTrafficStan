@@ -43,6 +43,7 @@ describe('application preferences', () => {
         airportsVisible: false,
         clusteringEnabled: false,
         weatherVisible: false,
+        orbitalObjectsVisible: false,
       },
       vesselFilters: {
         category: 'cargo',

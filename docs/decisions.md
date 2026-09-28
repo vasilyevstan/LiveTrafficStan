@@ -257,6 +257,36 @@ This infrastructure does not make propagated coordinates live observations.
 The separate map work keeps orbital models out of aircraft/marine traffic,
 freshness, trails, and history.
 
+## Mercator-first local orbital modeling
+
+Issue #162 adds orbital context to the existing single Mercator map before any
+globe projection work. The flat map already supports whole-world and
+street-level zooms, while the separate aircraft/marine 100 km contract remains
+well understood. A globe would also change horizon geometry, off-Earth canvas
+samples, poles, style projection restoration, front/back picking, camera/share
+state, and the zoom 11-12 projection transition. Those risks belong to
+dependent Issue #163 and do not block useful modeled objects.
+
+The browser uses the complete same-origin snapshot and propagates OMM locally
+with pinned `satellite.js` 7.1.0 in a dedicated worker. Sending viewport,
+selection, or browser clock state to another position service was rejected:
+it would add user-derived network disclosure, another provider lifecycle, and
+per-view request load without improving the authoritative element source.
+
+Current points, 90-minute crossings, and the selected 15-minute ground track
+are separate application-owned models, not traffic observations. Whole-world
+views list current modeled points without inventing a crossing rank. Partial
+world-spanning or invalid footprints retain current points but suppress
+crossing results. Aircraft and ships independently pause whenever the unchanged
+traffic viewport is ineligible.
+
+The worker is execution-lazy: it is not constructed until ORBITS is enabled
+and a catalog is accepted. The generated PWA shell already contains all hashed
+build assets, so it may prefetch the small worker chunk during installation.
+Changing that global shell contract for one optional feature was rejected
+because it would add new cache machinery while provider requests, CPU work,
+and worker execution remain absent before enable.
+
 ## Digitraffic MQTT plus REST metadata
 
 Digitraffic explicitly recommends five-minute REST polling, which is too infrequent for smoothly updated live vessel positions. V1 uses the provider's MQTT-over-WebSocket feed for live location and metadata messages.

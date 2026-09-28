@@ -4,6 +4,8 @@ import type { StaticAirportsProviderConfig } from '../providers/airports/staticA
 import type { StaticPortsProviderConfig } from '../providers/ports/staticPortsProvider'
 import type { AwcMetarProviderConfig } from '../providers/weather/awcMetarProvider'
 import type { AdsbLolFlightRouteProviderConfig } from '../providers/flightRoute/adsbLolFlightRouteProvider'
+import type { OrbitalCatalogProviderConfig } from '../providers/orbital/orbitalCatalogProvider'
+import type { OrbitalPropagationLimits } from '../workers/orbitalProtocol'
 import {
   DEFAULT_TRAIL_PREFERENCES,
   TRAIL_DURATION_OPTIONS_MINUTES,
@@ -80,6 +82,19 @@ export interface AppConfig {
   weather: FreshnessThresholds &
     AwcMetarProviderConfig & {
       requestCooldownMs: number
+    }
+  orbital: OrbitalCatalogProviderConfig &
+    OrbitalPropagationLimits & {
+      revalidationIntervalMs: number
+      staleAfterMs: number
+      expireAfterMs: number
+      positionIntervalMs: number
+      predictionRefreshIntervalMs: number
+      maximumClockSkewMs: number
+      maximumWallClockJumpMs: number
+      sourceName: string
+      sourceWebsiteUrl: string
+      sourceUsagePolicyUrl: string
     }
   marine: FreshnessThresholds & {
     restBaseUrl: string
@@ -420,6 +435,37 @@ export const createAppConfig = (
       sourceDocumentationUrl: 'https://aviationweather.gov/data/api/',
       sourceTermsUrl: 'https://www.weather.gov/disclaimer',
       sourceLicenseName: 'U.S. public domain unless marked otherwise',
+    },
+    orbital: {
+      endpointPath: '/api/orbits/catalog',
+      schemaVersion: 1,
+      sourceContractVersion: 1,
+      group: 'visual',
+      gpSourceUrl:
+        'https://celestrak.org/NORAD/elements/gp.php?GROUP=visual&FORMAT=json',
+      satcatSourceUrl:
+        'https://celestrak.org/satcat/records.php?GROUP=visual&FORMAT=json',
+      maximumBytes: 256 * 1_024,
+      maximumRecords: 256,
+      timeoutMs: 5_000,
+      revalidationIntervalMs: 2 * 60 * 60_000,
+      staleAfterMs: 6 * 60 * 60_000,
+      expireAfterMs: 24 * 60 * 60_000,
+      positionIntervalMs: 1_000,
+      predictionRefreshIntervalMs: 30_000,
+      maximumClockSkewMs: 2 * 60_000,
+      maximumWallClockJumpMs: 30_000,
+      maximumElementAgeMs: 14 * 24 * 60 * 60_000,
+      maximumFutureElementMs: 10 * 60_000,
+      maximumAltitudeKm: 100_000,
+      predictionHorizonMs: 90 * 60_000,
+      predictionStepMs: 30_000,
+      maximumDetailedResults: 20,
+      trackDurationMs: 15 * 60_000,
+      maximumTrackPoints: 31,
+      sourceName: 'CelesTrak',
+      sourceWebsiteUrl: 'https://celestrak.org/',
+      sourceUsagePolicyUrl: 'https://celestrak.org/usage-policy.php',
     },
     marine: {
       restBaseUrl: readEndpoint(

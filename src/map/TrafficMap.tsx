@@ -25,6 +25,15 @@ import {
 } from '../domain/mapCamera'
 import type { Port } from '../domain/ports'
 import type {
+  ModeledOrbitalPosition,
+  OrbitalTrackSegment,
+} from '../domain/orbital'
+import {
+  assessOrbitalViewport,
+  orbitalViewportSignature,
+  type OrbitalViewport,
+} from '../domain/orbitalViewport'
+import type {
   DisplayAircraft,
   DisplayVessel,
   TrafficEntity,
@@ -61,6 +70,7 @@ import { pickContextFeature } from './contextPicking'
 import {
   clusterExpansionZoom,
   firstTrafficClusterTarget,
+  pointSourceDiff,
   setTrafficClustering,
   shouldAnimateTrafficSources,
   trafficSourceDiff,
@@ -89,6 +99,19 @@ import {
   setWeatherVisibility,
   weatherFeatures,
 } from './weatherStyle'
+import {
+  installOrbitalStyle,
+  LAYER_ORBITAL_HIGHLIGHT,
+  LAYER_ORBITAL_POINTS,
+  orbitalHighlightFeatures,
+  orbitalPositionFeatures,
+  orbitalTrackFeatures,
+  setOrbitalSourceData,
+  setOrbitalVisibility,
+  SOURCE_ORBITAL_HIGHLIGHT,
+  SOURCE_ORBITAL_POINTS,
+  SOURCE_ORBITAL_TRACK,
+} from './orbitalStyle'
 import {
   installTrafficStyle,
   AIRCRAFT_TRAFFIC_LAYER_IDS,
@@ -136,8 +159,11 @@ interface TrafficMapProps {
   ports: readonly Port[]
   airports: readonly Airport[]
   weatherObservations: readonly DisplayWeatherObservation[]
+  orbitalPositions: readonly ModeledOrbitalPosition[]
+  orbitalTrackSegments: readonly OrbitalTrackSegment[]
   trailSegments: readonly (readonly TrailPoint[])[]
   selectedId: string | null
+  selectedOrbitalId: string | null
   selectedPortId: string | null
   selectedAirportId: string | null
   selectedWeatherId: string | null
@@ -146,6 +172,7 @@ interface TrafficMapProps {
   portsVisible: boolean
   airportsVisible: boolean
   weatherVisible: boolean
+  orbitalVisible: boolean
   clusteringEnabled: boolean
   interpolateTraffic: boolean
   interpolationDurationMs: number
@@ -157,11 +184,13 @@ interface TrafficMapProps {
   viewportSettleMs: number
   onHoverAircraftChange: (id: string | null) => void
   onSelect: (id: string | null) => void
+  onSelectOrbital: (id: string | null) => void
   onSelectPort: (id: string | null) => void
   onSelectAirport: (id: string | null) => void
   onSelectWeather: (id: string | null) => void
   onViewportChange: (
     assessment: ViewportAssessment,
+    orbitalViewport: OrbitalViewport,
     viewRequestId: number,
   ) => void
   onCameraChange: (camera: MapCameraState) => void
@@ -190,12 +219,19 @@ interface WeatherRenderState {
   selectedWeatherId: string | null
 }
 
+interface OrbitalRenderState {
+  positions: readonly ModeledOrbitalPosition[]
+  trackSegments: readonly OrbitalTrackSegment[]
+  selectedOrbitalId: string | null
+}
+
 interface ViewState {
   aircraftVisible: boolean
   vesselsVisible: boolean
   portsVisible: boolean
   airportsVisible: boolean
   weatherVisible: boolean
+  orbitalVisible: boolean
   trailSegments: readonly (readonly TrailPoint[])[]
 }
 
@@ -312,8 +348,11 @@ export function TrafficMap({
   ports,
   airports,
   weatherObservations,
+  orbitalPositions,
+  orbitalTrackSegments,
   trailSegments,
   selectedId,
+  selectedOrbitalId,
   selectedPortId,
   selectedAirportId,
   selectedWeatherId,
@@ -322,6 +361,7 @@ export function TrafficMap({
   portsVisible,
   airportsVisible,
   weatherVisible,
+  orbitalVisible,
   clusteringEnabled,
   interpolateTraffic,
   interpolationDurationMs,
@@ -333,6 +373,7 @@ export function TrafficMap({
   viewportSettleMs,
   onHoverAircraftChange,
   onSelect,
+  onSelectOrbital,
   onSelectPort,
   onSelectAirport,
   onSelectWeather,
@@ -377,6 +418,8 @@ export function TrafficMap({
     aircraft?: readonly Feature<Point>[]
     vessels?: readonly Feature<Point>[]
   }>({})
+  const lastOrbitalFeaturesRef = useRef<readonly Feature<Point>[]>([])
+  const orbitalUpdateGenerationRef = useRef(0)
   const trafficUpdateGenerationRef = useRef({
     aircraft: 0,
     vessels: 0,
@@ -413,15 +456,22 @@ export function TrafficMap({
     observations: weatherObservations,
     selectedWeatherId,
   })
+  const orbitalRenderStateRef = useRef<OrbitalRenderState>({
+    positions: orbitalPositions,
+    trackSegments: orbitalTrackSegments,
+    selectedOrbitalId,
+  })
   const viewStateRef = useRef<ViewState>({
     aircraftVisible,
     vesselsVisible,
     portsVisible,
     airportsVisible,
     weatherVisible,
+    orbitalVisible,
     trailSegments,
   })
   const selectRef = useRef(onSelect)
+  const selectOrbitalRef = useRef(onSelectOrbital)
   const selectPortRef = useRef(onSelectPort)
   const selectAirportRef = useRef(onSelectAirport)
   const selectWeatherRef = useRef(onSelectWeather)
@@ -543,6 +593,54 @@ export function TrafficMap({
     if (updated) sourceDataGenerationRef.current += 1
   }, [])
 
+  const renderOrbitalSources = useCallback(() => {
+    const map = mapRef.current
+    if (!map || !loadedRef.current) return
+    const state = orbitalRenderStateRef.current
+    const points = orbitalPositionFeatures(state.positions)
+    const source = map.getSource(SOURCE_ORBITAL_POINTS) as
+      | GeoJSONSource
+      | undefined
+    const previous = lastOrbitalFeaturesRef.current
+    if (source && previous.length > 0) {
+      const styleGeneration = styleGenerationRef.current
+      const updateGeneration = ++orbitalUpdateGenerationRef.current
+      const diff = pointSourceDiff(previous, points.features)
+      void source.updateData(diff).catch((error: unknown) => {
+        if (
+          styleGeneration !== styleGenerationRef.current ||
+          updateGeneration !== orbitalUpdateGenerationRef.current
+        ) {
+          return
+        }
+        errorRef.current({
+          kind: 'runtime',
+          message:
+            error instanceof Error
+              ? error.message
+              : 'Orbital source update failed',
+        })
+      })
+    } else {
+      orbitalUpdateGenerationRef.current += 1
+      setOrbitalSourceData(map, SOURCE_ORBITAL_POINTS, points)
+    }
+    lastOrbitalFeaturesRef.current = points.features
+    setOrbitalSourceData(
+      map,
+      SOURCE_ORBITAL_HIGHLIGHT,
+      orbitalHighlightFeatures(
+        state.positions,
+        state.selectedOrbitalId,
+      ),
+    )
+    setOrbitalSourceData(
+      map,
+      SOURCE_ORBITAL_TRACK,
+      orbitalTrackFeatures(state.trackSegments),
+    )
+  }, [])
+
   const scheduleRender = useCallback(() => {
     if (frameRef.current !== null) return
 
@@ -580,6 +678,7 @@ export function TrafficMap({
     if (!loadedRef.current) return
 
     let assessment: ViewportAssessment
+    let orbitalViewport: OrbitalViewport
     try {
       const canvas = map.getCanvas()
       const width = canvas.clientWidth
@@ -615,6 +714,20 @@ export function TrafficMap({
         },
         viewportLimitsRef.current,
       )
+      const bounds = map.getBounds()
+      orbitalViewport = assessOrbitalViewport(
+        {
+          center: {
+            latitude: center.lat,
+            longitude: center.lng,
+          },
+          perimeter,
+          longitudeSpanDegrees: Math.abs(
+            bounds.getEast() - bounds.getWest(),
+          ),
+        },
+        viewportLimitsRef.current.coordinatePrecision,
+      )
     } catch {
       assessment = assessTrafficViewport(
         {
@@ -627,12 +740,29 @@ export function TrafficMap({
         },
         viewportLimitsRef.current,
       )
+      orbitalViewport = assessOrbitalViewport(
+        {
+          center: {
+            latitude: Number.NaN,
+            longitude: Number.NaN,
+          },
+          perimeter: [],
+          longitudeSpanDegrees: Number.NaN,
+        },
+        viewportLimitsRef.current.coordinatePrecision,
+      )
     }
 
-    const signature = viewportSignature(assessment)
+    const signature = `${viewportSignature(assessment)}|${orbitalViewportSignature(
+      orbitalViewport,
+    )}`
     if (signature === lastViewportSignatureRef.current) return
     lastViewportSignatureRef.current = signature
-    viewportChangeRef.current(assessment, viewRequestRef.current)
+    viewportChangeRef.current(
+      assessment,
+      orbitalViewport,
+      viewRequestRef.current,
+    )
   }, [])
 
   const scheduleViewportReport = useCallback(
@@ -754,6 +884,26 @@ export function TrafficMap({
           viewState.weatherVisible,
         )
       }
+      const orbitalState = orbitalRenderStateRef.current
+      if (
+        viewState.orbitalVisible ||
+        orbitalState.positions.length > 0 ||
+        orbitalState.trackSegments.length > 0
+      ) {
+        const points = orbitalPositionFeatures(orbitalState.positions)
+        installOrbitalStyle(
+          map,
+          points,
+          orbitalHighlightFeatures(
+            orbitalState.positions,
+            orbitalState.selectedOrbitalId,
+          ),
+          orbitalTrackFeatures(orbitalState.trackSegments),
+          activeTheme,
+          viewState.orbitalVisible,
+        )
+        lastOrbitalFeaturesRef.current = points.features
+      }
       loadedRef.current = true
       errorRef.current(
         fallbackActiveRef.current
@@ -870,6 +1020,10 @@ export function TrafficMap({
   }, [onSelect])
 
   useEffect(() => {
+    selectOrbitalRef.current = onSelectOrbital
+  }, [onSelectOrbital])
+
+  useEffect(() => {
     selectPortRef.current = onSelectPort
   }, [onSelectPort])
 
@@ -934,12 +1088,14 @@ export function TrafficMap({
       portsVisible,
       airportsVisible,
       weatherVisible,
+      orbitalVisible,
       trailSegments,
     }
   }, [
     aircraftVisible,
     airportsVisible,
     weatherVisible,
+    orbitalVisible,
     portsVisible,
     trailSegments,
     vesselsVisible,
@@ -1245,6 +1401,14 @@ export function TrafficMap({
         ? WEATHER_LAYER_IDS.filter((layerId) => map.getLayer(layerId))
         : []
 
+    const activeOrbitalLayers = () =>
+      viewStateRef.current.orbitalVisible
+        ? [
+            LAYER_ORBITAL_HIGHLIGHT,
+            LAYER_ORBITAL_POINTS,
+          ].filter((layerId) => map.getLayer(layerId))
+        : []
+
     const selectableTrafficIds = () => {
       const ids = new Set<string>()
       const renderState = renderStateRef.current
@@ -1324,6 +1488,11 @@ export function TrafficMap({
     const selectableWeatherIds = () =>
       new Set(
         weatherRenderStateRef.current.observations.map(({ id }) => id),
+      )
+
+    const selectableOrbitalIds = () =>
+      new Set(
+        orbitalRenderStateRef.current.positions.map(({ id }) => id),
       )
 
     const expandCluster = (
@@ -1426,6 +1595,7 @@ export function TrafficMap({
           'Marine: <a href="https://www.digitraffic.fi/en/marine-traffic/" target="_blank" rel="noreferrer">Fintraffic Digitraffic</a> (<a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">CC BY 4.0</a>; filtered and normalized)',
           'Optional ports: <a href="https://www.naturalearthdata.com/downloads/10m-cultural-vectors/ports/" target="_blank" rel="noreferrer">Natural Earth</a> (<a href="https://www.naturalearthdata.com/about/terms-of-use/" target="_blank" rel="noreferrer">public domain</a>; generalized and incomplete)',
           'Optional airports: <a href="https://ourairports.com/data/" target="_blank" rel="noreferrer">OurAirports</a> (<a href="https://ourairports.com/data/" target="_blank" rel="noreferrer">public domain</a>; static large and medium airport context)',
+          'Optional orbital objects: <a href="https://celestrak.org/" target="_blank" rel="noreferrer">CelesTrak</a> (modeled locally with SGP4; not live telemetry)',
         ],
       }),
       'bottom-right',
@@ -1446,6 +1616,7 @@ export function TrafficMap({
           trafficIds,
         )
         if (exactTraffic) {
+          selectOrbitalRef.current(null)
           selectPortRef.current(null)
           selectAirportRef.current(null)
           selectWeatherRef.current(null)
@@ -1476,10 +1647,47 @@ export function TrafficMap({
           trafficIds,
         )
         if (nearbyTraffic) {
+          selectOrbitalRef.current(null)
           selectPortRef.current(null)
           selectAirportRef.current(null)
           selectWeatherRef.current(null)
           selectRef.current(nearbyTraffic)
+          return
+        }
+      }
+
+      const orbitalLayers = activeOrbitalLayers()
+      const orbitalIds = selectableOrbitalIds()
+      if (orbitalLayers.length > 0) {
+        const exactOrbital = exactEligibleFeatureId(
+          map.queryRenderedFeatures(event.point, {
+            layers: orbitalLayers,
+          }),
+          orbitalIds,
+        )
+        if (exactOrbital) {
+          selectRef.current(null)
+          selectPortRef.current(null)
+          selectAirportRef.current(null)
+          selectWeatherRef.current(null)
+          selectOrbitalRef.current(exactOrbital)
+          return
+        }
+      }
+      if (touchFallbackAllowed && orbitalLayers.length > 0) {
+        const nearbyOrbital = uniqueEligibleFeatureId(
+          map.queryRenderedFeatures(
+            expandedHitBox(event.point, touchHitTolerancePx),
+            { layers: orbitalLayers },
+          ),
+          orbitalIds,
+        )
+        if (nearbyOrbital) {
+          selectRef.current(null)
+          selectPortRef.current(null)
+          selectAirportRef.current(null)
+          selectWeatherRef.current(null)
+          selectOrbitalRef.current(nearbyOrbital)
           return
         }
       }
@@ -1554,6 +1762,7 @@ export function TrafficMap({
       )
       if (contextPick?.kind === 'weather') {
         selectRef.current(null)
+        selectOrbitalRef.current(null)
         selectPortRef.current(null)
         selectAirportRef.current(null)
         selectWeatherRef.current(contextPick.id)
@@ -1561,6 +1770,7 @@ export function TrafficMap({
       }
       if (contextPick?.kind === 'airport') {
         selectRef.current(null)
+        selectOrbitalRef.current(null)
         selectPortRef.current(null)
         selectWeatherRef.current(null)
         selectAirportRef.current(contextPick.id)
@@ -1568,6 +1778,7 @@ export function TrafficMap({
       }
       if (contextPick?.kind === 'port') {
         selectRef.current(null)
+        selectOrbitalRef.current(null)
         selectAirportRef.current(null)
         selectWeatherRef.current(null)
         selectPortRef.current(contextPick.id)
@@ -1575,6 +1786,7 @@ export function TrafficMap({
       }
 
       selectRef.current(null)
+      selectOrbitalRef.current(null)
       selectPortRef.current(null)
       selectAirportRef.current(null)
       selectWeatherRef.current(null)
@@ -1585,6 +1797,7 @@ export function TrafficMap({
       const layers = [
         ...trafficLayers,
         ...activeClusterLayers(),
+        ...activeOrbitalLayers(),
         ...activeWeatherLayers(),
         ...activeAirportLayers(),
         ...activePortLayers(),
@@ -1917,6 +2130,37 @@ export function TrafficMap({
   ])
 
   useEffect(() => {
+    orbitalRenderStateRef.current = {
+      positions: orbitalPositions,
+      trackSegments: orbitalTrackSegments,
+      selectedOrbitalId,
+    }
+    const map = mapRef.current
+    if (!map || !loadedRef.current) return
+    if (!map.getSource(SOURCE_ORBITAL_POINTS)) {
+      if (!orbitalVisible) return
+      const points = orbitalPositionFeatures(orbitalPositions)
+      installOrbitalStyle(
+        map,
+        points,
+        orbitalHighlightFeatures(orbitalPositions, selectedOrbitalId),
+        orbitalTrackFeatures(orbitalTrackSegments),
+        themeRef.current,
+        true,
+      )
+      lastOrbitalFeaturesRef.current = points.features
+      return
+    }
+    renderOrbitalSources()
+  }, [
+    orbitalPositions,
+    orbitalTrackSegments,
+    orbitalVisible,
+    renderOrbitalSources,
+    selectedOrbitalId,
+  ])
+
+  useEffect(() => {
     const map = mapRef.current
     if (!map || !loadedRef.current) return
     for (const layerId of AIRCRAFT_TRAFFIC_LAYER_IDS) {
@@ -1949,6 +2193,29 @@ export function TrafficMap({
     if (!map || !loadedRef.current) return
     setWeatherVisibility(map, weatherVisible)
   }, [weatherVisible])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !loadedRef.current) return
+    if (!map.getSource(SOURCE_ORBITAL_POINTS) && orbitalVisible) {
+      const state = orbitalRenderStateRef.current
+      const points = orbitalPositionFeatures(state.positions)
+      installOrbitalStyle(
+        map,
+        points,
+        orbitalHighlightFeatures(
+          state.positions,
+          state.selectedOrbitalId,
+        ),
+        orbitalTrackFeatures(state.trackSegments),
+        themeRef.current,
+        true,
+      )
+      lastOrbitalFeaturesRef.current = points.features
+      return
+    }
+    setOrbitalVisibility(map, orbitalVisible)
+  }, [orbitalVisible])
 
   useEffect(() => {
     const map = mapRef.current

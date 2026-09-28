@@ -35,7 +35,8 @@
     "maplibre-gl": "^6.10.0",
     "mqtt": "^5.16.0",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "satellite.js": "7.1.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260920.1",

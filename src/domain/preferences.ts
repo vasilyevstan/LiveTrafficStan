@@ -121,6 +121,10 @@ const resolveLayers = (value: unknown): LayerPreferences => {
       value.weatherVisible,
       defaults.weatherVisible,
     ),
+    orbitalObjectsVisible: booleanOr(
+      value.orbitalObjectsVisible,
+      defaults.orbitalObjectsVisible,
+    ),
   }
 }
 

@@ -465,8 +465,28 @@ valid it returns `503` with bounded retry guidance. Every response identifies
 the release SHA, schema, digest, retrieval time, serve time, and whether KV or
 bootstrap supplied the bytes.
 
+The browser route and scheduled updater remain independent. Explicit ORBITS
+enable makes one strict same-origin read, then local SGP4 propagation runs in a
+dedicated worker. Camera, selection, theme, style, and ordinary hide/show
+changes cannot invoke CelesTrak or reset the two-hour schedule. The browser
+revalidates with ETag no more often than every two hours and stops using a
+snapshot after its 24-hour hard age.
+
+For local rendered acceptance without production credentials:
+
+```bash
+npm run build
+npx wrangler dev --local --var ORBITAL_CATALOG_ENABLED:true
+```
+
+This serves the exact-release bootstrap through the real Worker route. It does
+not create the production KV namespace, Durable Object, or Cron and must not be
+used as a provider probe.
+
 The current source and provider assessment is
-[Orbital Data Source Evaluation](orbital-data-source-evaluation.md).
+[Orbital Data Source Evaluation](orbital-data-source-evaluation.md). Browser
+modeling and acceptance are documented in
+[Orbital Tracking](orbital-tracking.md).
 
 At twelve scheduled events per day, the coordinator uses approximately twelve
 Durable Object requests and a few row reads/writes per day, while successful

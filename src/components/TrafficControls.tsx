@@ -14,6 +14,7 @@ import type { TrailPreferences } from '../domain/trailPreferences'
 import type { UnitSystem } from '../domain/units'
 import type { VesselFilterState } from '../domain/vesselFilters'
 import type { DisplayWeatherObservation } from '../domain/weatherObservations'
+import type { OrbitalControllerState } from '../domain/orbital'
 import type {
   PlaybackRange,
   PlaybackState,
@@ -35,6 +36,7 @@ import { TrafficLegend } from './TrafficLegend'
 import { useLocationSearchModel } from './useLocationSearchModel'
 import { VesselDiscovery } from './VesselDiscovery'
 import { WeatherContext } from './WeatherContext'
+import { OrbitalContext } from './OrbitalContext'
 
 interface TrafficControlsProps {
   aircraftQuery: string
@@ -86,6 +88,13 @@ interface TrafficControlsProps {
   onWeatherSelect: (id: string) => void
   onRetryWeather: () => void
   onRefreshWeather: () => void
+  orbitalVisible: boolean
+  orbitalState: OrbitalControllerState
+  selectedOrbitalId: string | null
+  orbitalPredictionHorizonMs: number
+  onOrbitalVisibleChange: (visible: boolean) => void
+  onOrbitalSelect: (id: string) => void
+  onRetryOrbital: () => void
   clusteringEnabled: boolean
   onClusteringEnabledChange: (enabled: boolean) => void
   trailPreferences: TrailPreferences
@@ -235,6 +244,13 @@ export function TrafficControls({
   onWeatherSelect,
   onRetryWeather,
   onRefreshWeather,
+  orbitalVisible,
+  orbitalState,
+  selectedOrbitalId,
+  orbitalPredictionHorizonMs,
+  onOrbitalVisibleChange,
+  onOrbitalSelect,
+  onRetryOrbital,
   clusteringEnabled,
   onClusteringEnabledChange,
   trailPreferences,
@@ -358,6 +374,40 @@ export function TrafficControls({
       }
     },
   })
+  const orbitalLoading =
+    orbitalState.phase === 'loading' ||
+    orbitalState.phase === 'refreshing'
+  const orbitalRetryAvailable =
+    orbitalState.phase === 'unavailable' ||
+    orbitalState.phase === 'clock-invalid'
+  const orbitalStatusMessage = (() => {
+    switch (orbitalState.phase) {
+      case 'disabled':
+        return undefined
+      case 'loading':
+        return 'Loading the same-origin orbital catalog.'
+      case 'refreshing':
+        return 'Refreshing the catalog while retaining modeled positions.'
+      case 'stale':
+        return (
+          orbitalState.message ??
+          'The retained orbital catalog is stale; modeled positions remain labeled accordingly.'
+        )
+      case 'unavailable':
+      case 'clock-invalid':
+      case 'offline':
+      case 'paused-hidden':
+      case 'paused-history':
+        return orbitalState.message
+      case 'empty':
+        return (
+          orbitalState.message ??
+          'The catalog loaded, but no current positions can be modeled safely.'
+        )
+      case 'ready':
+        return orbitalState.message
+    }
+  })()
 
   return (
     <div className="control-stack" aria-label="Map controls">
@@ -485,6 +535,18 @@ export function TrafficControls({
               >
                 {weatherVisible && weatherLoading ? 'METAR...' : 'METAR'}
               </button>
+              <button
+                id="orbital-layer-toggle"
+                type="button"
+                className={orbitalVisible ? 'is-active' : undefined}
+                aria-pressed={orbitalVisible}
+                aria-busy={orbitalVisible && orbitalLoading}
+                onClick={() => onOrbitalVisibleChange(!orbitalVisible)}
+              >
+                {orbitalVisible && orbitalLoading
+                  ? 'ORBITS...'
+                  : 'ORBITS'}
+              </button>
             </div>
             {portsVisible &&
               portsError &&
@@ -534,6 +596,16 @@ export function TrafficControls({
                 )}
               </div>
             )}
+            {orbitalVisible && orbitalStatusMessage && (
+              <div className="control-note ports-status" role="status">
+                <span>{orbitalStatusMessage}</span>
+                {orbitalRetryAvailable && (
+                  <button type="button" onClick={onRetryOrbital}>
+                    RETRY ORBITS
+                  </button>
+                )}
+              </div>
+            )}
             <p className="control-note control-note--muted">
               Ports:{' '}
               <a href="https://www.naturalearthdata.com/downloads/10m-cultural-vectors/ports/">
@@ -563,6 +635,12 @@ export function TrafficControls({
               times are shown; this modified presentation is not an official
               forecast, operational flight status, airport board, or
               endorsement.
+            </p>
+            <p className="control-note control-note--muted">
+              Orbital objects:{' '}
+              <a href="https://celestrak.org/">CelesTrak</a> GP/OMM and
+              SATCAT. Positions and ground tracks are modeled locally with
+              SGP4, not live telemetry or proof of optical visibility.
             </p>
           </fieldset>
 
@@ -610,6 +688,25 @@ export function TrafficControls({
               onSelect={onWeatherSelect}
             />
           )}
+
+          {orbitalVisible &&
+            playback.mode === 'live' &&
+            orbitalState.snapshot &&
+            ![
+              'loading',
+              'unavailable',
+              'clock-invalid',
+              'paused-hidden',
+              'paused-history',
+            ].includes(orbitalState.phase) && (
+              <OrbitalContext
+                state={orbitalState}
+                selectedId={selectedOrbitalId}
+                horizonMs={orbitalPredictionHorizonMs}
+                now={now}
+                onSelect={onOrbitalSelect}
+              />
+            )}
 
         </div>
       </details>

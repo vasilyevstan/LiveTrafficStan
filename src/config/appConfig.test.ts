@@ -43,6 +43,22 @@ describe('createAppConfig', () => {
       expireAfterMs: 120 * 60_000,
       sourceName: 'NOAA/NWS Aviation Weather Center',
     })
+    expect(config.orbital).toMatchObject({
+      endpointPath: '/api/orbits/catalog',
+      schemaVersion: 1,
+      sourceContractVersion: 1,
+      group: 'visual',
+      maximumBytes: 256 * 1_024,
+      maximumRecords: 256,
+      revalidationIntervalMs: 2 * 60 * 60_000,
+      positionIntervalMs: 1_000,
+      predictionHorizonMs: 90 * 60_000,
+      predictionStepMs: 30_000,
+      maximumDetailedResults: 20,
+      trackDurationMs: 15 * 60_000,
+      maximumTrackPoints: 31,
+      sourceName: 'CelesTrak',
+    })
     expect(config.aircraftMetadata).toMatchObject({
       baseUrl: '/aircraft-metadata/2026-09-13-v1',
       timeoutMs: 5_000,
@@ -165,6 +181,11 @@ describe('createAppConfig', () => {
         VITE_WEATHER_ENDPOINT: '/edge/metar/',
       }).weather.endpointBaseUrl,
     ).toBe('/edge/metar')
+    expect(
+      createAppConfig({
+        VITE_ORBITAL_ENDPOINT: '/edge/orbits/',
+      }).orbital.endpointPath,
+    ).toBe('/api/orbits/catalog')
   })
 
   it('rejects invalid supplied configuration instead of silently masking it', () => {
