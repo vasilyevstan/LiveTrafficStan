@@ -8,7 +8,8 @@ LiveTrafficStan selects **Cloudflare Workers with Static Assets** as its
 production platform:
 
 - Vite's `dist/` output is served as immutable static assets;
-- one Worker handles the same-origin ADSB.lol point and AWC METAR paths;
+- one Worker handles the same-origin ADSB.lol point and AWC METAR paths plus a
+  feature-gated storage-only orbital catalog route and scheduler;
 - plausible route lookup calls ADSB.lol standing data directly from the
   browser once for a newly selected eligible live aircraft;
 - exact-IMO vessel reference photos are versioned same-origin Static Assets
@@ -17,7 +18,9 @@ production platform:
   connections;
 - no plausible-route secret, quota store, result database, queue, or general
   backend is added. Private aircraft delivery uses one protected
-  Worker-to-relay bearer secret and one fixed VPC Service binding.
+  Worker-to-relay bearer secret and one fixed VPC Service binding. Orbital
+  activation adds one dedicated bounded KV namespace, one SQLite-backed
+  Durable Object coordinator, and one two-hour Cron.
 
 The accepted recovery design keeps that public Cloudflare boundary and routes
 only aircraft through a private Workers VPC Service and Tunnel to an isolated
@@ -35,8 +38,10 @@ tombstone as stale.
 Public production is live at
 <https://livetrafficstan.syntal.workers.dev> on Cloudflare Workers Free with
 Static Assets. The protected `production` environment contains the deployment
-credentials, observability remains disabled, and no paid add-on, KV, or R2
-service is used.
+credentials, observability remains disabled, and no paid add-on, KV, Durable
+Object, or R2 service is used by the currently accepted V1.6.0 release. The
+orbital KV/coordinator/Cron path remains feature-gated until #162 reaches
+production acceptance.
 
 The accepted V1.6.0 application source is
 `3370dfe3f1cc2614feff894643ed865978ec7edc`. Exact-main validation run
@@ -211,11 +216,14 @@ cache, or any rate-control change.
 browser
   |
   +-- /, /assets/*, /aircraft-metadata/*,
-  |   /vessel-photos/* --------------------> Cloudflare Static Assets
+  |   /vessel-photos/*, /orbital-data/* ---> Cloudflare Static Assets
   |
   +-- /api/aircraft/v2/point/... --+
   |                                |
   +-- /api/weather/metar?ids=... --+--> Cloudflare Worker
+  |                                |
+  +-- /api/orbits/catalog ---------+       +--> Workers KV or
+                                           |    exact-release bootstrap
                                            |             |
                                            |             +--> aviationweather.gov
                                            |
@@ -226,6 +234,13 @@ browser
                                                 -> Cloudflare Tunnel
                                                 -> OCI loopback relay
                                                 -> api.adsb.lol
+
+Cloudflare Cron, at most once per two hours
+  -> one named SQLite Durable Object
+  -> atomic cadence admission and fail-closed outcome state
+  -> fixed CelesTrak visual GP JSON
+  -> fixed CelesTrak visual SATCAT JSON
+  -> validated single-write Workers KV snapshot
 
 browser --------------------------------> OpenFreeMap HTTPS
 browser --------------------------------> Photon HTTPS on explicit search
@@ -261,13 +276,17 @@ real 404 responses rather than `index.html`.
 - `/vessel-photos/*` uses one-year immutable browser caching because every
   identity, source, rights, transformation, or byte change receives a new
   manifest/version path;
+- `/orbital-data/*` uses one-year immutable browser caching because the
+  normalized bootstrap path is schema/versioned and its digest is checked;
 - `/` and `/index.html` revalidate;
 - all asset paths use `nosniff`, clickjacking protection, and a conservative
   referrer policy.
 
 Those rules do not apply to Worker responses. The aircraft proxy sets its own
 `no-store` and `nosniff` headers; successful METAR responses use
-`public, max-age=60`, JSON content type, and `nosniff`.
+`public, max-age=60`, JSON content type, and `nosniff`. A successful orbital
+snapshot response uses `public, max-age=300, must-revalidate`, a snapshot
+digest ETag, JSON content type, and `nosniff`.
 
 ## Aircraft proxy contract
 
@@ -361,6 +380,102 @@ start at least 60 seconds after the previous start. That local pacing cannot
 prove public aggregate request/egress safety. Production exact-SHA smoke proves
 the deployed boundary, while provider capacity remains an external operational
 dependency rather than an application guarantee.
+
+## Scheduled orbital catalog contract
+
+The orbital infrastructure is disabled unless the protected deployment sets:
+
+```text
+ORBITAL_CATALOG_ENABLED=true
+```
+
+When enabled, the workflow:
+
+1. finds exactly one Workers KV namespace titled
+   `livetrafficstan-orbital-catalog`, or creates it once;
+2. generates an exact temporary Wrangler configuration with only the
+   `ORBITAL_CATALOG` KV binding, one
+   `ORBITAL_CATALOG_COORDINATOR` SQLite Durable Object binding, and the offset
+   `17 */2 * * *` UTC Cron;
+3. dry-runs that exact configuration before deployment;
+4. deploys the Worker, allowing Cloudflare to provision the named SQLite
+   Durable Object class, and records the KV namespace ID;
+5. smokes the catalog route and immutable bootstrap.
+
+The namespace ID is a resource identifier, not a credential. Account ID and API
+token remain protected environment secrets. The token must have only the
+Worker/KV permissions required by this deployment. A permission failure stops
+activation rather than falling back to a browser fetch or another store.
+
+The Cron handler calls `controller.noRetry()` and invokes one named Durable
+Object. A synchronous SQLite transaction admits at most one refresh, stores a
+fail-closed in-progress gate before any provider request, and rejects duplicate
+or early events. Workers KV is intentionally not used as a lock because it has
+no compare-and-set contract and is eventually consistent. The coordinator
+never accepts browser input. One admitted event may request:
+
+```text
+https://celestrak.org/NORAD/elements/gp.php?GROUP=visual&FORMAT=json
+https://celestrak.org/satcat/records.php?GROUP=visual&FORMAT=json
+```
+
+Both responses must satisfy:
+
+- exact HTTP `200`; other successful 2xx statuses, including `206`, are
+  rejected;
+- exact `application/json` media type with at most an optional UTF-8 charset;
+- ten-second deadline per response;
+- at most 256 KiB and 256 records per response;
+- valid UTF-8 and strict required fields;
+- unique canonical NORAD IDs;
+- complete GP-to-SATCAT metadata join;
+- normalized output at most 256 KiB.
+
+After both responses validate and normalize, the Durable Object durably
+records the next allowed start before one final KV write replaces
+`orbital:catalog:v1`. That KV write is the sole publication commit. If
+publication fails, the prior snapshot remains and the next ordinary event may
+try again. The coordinator stores only schema/source-contract versions,
+attempt sequence, cadence, and blocked status. It contains no coordinates,
+user data, raw payload, digest, or provider body.
+
+`429` and readable `Retry-After` guidance on `5xx` extend the next-allowed
+time. Guidance is bounded to seven days; a longer value enters an
+operator-reviewed blocked state rather than creating an unsafe or
+non-representable deadline. Redirects, `403`, and `404` also block subsequent
+scheduled acquisition until explicit review. Timeout, `5xx` without readable
+guidance, malformed data, oversize, invalid fields, or incomplete joins
+preserve the prior snapshot and wait for the next normal event. If the
+coordinator cannot persist any provider outcome, the initial fail-closed gate
+remains at `Number.MAX_SAFE_INTEGER`; the event reports unavailable and no
+later Cron can contact CelesTrak until a reviewed coordinator reset. There is
+no immediate retry, alternate group, provider fallback, or on-demand browser
+fetch.
+
+The public route is exactly:
+
+```text
+GET /api/orbits/catalog
+```
+
+It rejects queries and other methods. It validates a schema-v1 KV value before
+serving; if KV is absent or incompatible it validates and serves the
+exact-release `/orbital-data/v1/visual-catalog.json` bootstrap. If neither is
+valid it returns `503` with bounded retry guidance. Every response identifies
+the release SHA, schema, digest, retrieval time, serve time, and whether KV or
+bootstrap supplied the bytes.
+
+The current source and provider assessment is
+[Orbital Data Source Evaluation](orbital-data-source-evaluation.md).
+
+At twelve scheduled events per day, the coordinator uses approximately twelve
+Durable Object requests and a few row reads/writes per day, while successful
+refreshes add about twelve KV writes per day. Cloudflare currently includes
+SQLite-backed Durable Objects on Workers Free with 100,000 requests, five
+million rows read, and 100,000 rows written per day; Workers KV includes
+100,000 key reads and 1,000 key writes per day. These are current limits, not a
+permanent entitlement. Activation must confirm the account remains on the
+free plan and that failed over-limit operations do not trigger paid fallback.
 
 ## Bounded implementation observations
 
@@ -505,7 +620,7 @@ The protected environment supplies these secrets:
 | Secret | Purpose |
 | --- | --- |
 | `CLOUDFLARE_ACCOUNT_ID` | Selects the permanent Cloudflare account |
-| `CLOUDFLARE_API_TOKEN` | Least-privilege token allowed to deploy this Worker |
+| `CLOUDFLARE_API_TOKEN` | Least-privilege token allowed to deploy this Worker, provision its SQLite Durable Object binding, and resolve/create its one dedicated orbital KV namespace when that feature is enabled |
 
 Private relay bootstrap additionally requires Cloudflare Tunnel Write,
 Connectivity Directory Admin, and Connectivity Directory Bind. The existing
@@ -516,6 +631,12 @@ The token is scoped to the selected account and Worker deployment. The
 repository-level duplicate token was removed; deployment credentials remain
 only in the protected environment. No value belongs in Git, issue text,
 `VITE_*`, client JavaScript, or pull-request workflows.
+
+The orbital namespace resolver uses the exact reserved title and fails if more
+than one namespace matches. It never deletes or renames a namespace, lists or
+mutates KV values, or adopts another titled resource. If the current token
+lacks Workers KV Storage permission, activation stops and reports the
+technical blocker.
 
 There is deliberately no local production-deploy package script. Permanent
 deployments must use the serialized checked workflow so exact-SHA, current-main,
@@ -556,7 +677,8 @@ gh workflow run deploy-production.yml \
   -f artifact=application \
   -f aircraft_delivery=oci-private-relay \
   -f aircraft_photo_enabled=true \
-  -f flight_route_enabled=true
+  -f flight_route_enabled=true \
+  -f orbital_catalog_enabled=false
 ```
 
 The workflow:
@@ -568,19 +690,26 @@ The workflow:
 5. fails closed if either Cloudflare credential is absent and, for private
    relay mode, if the protected relay authentication secret is absent or too
    short;
-6. builds the browser with the fixed aircraft-delivery choice plus the
+6. validates the committed orbital bootstrap without network access;
+7. builds the browser with the fixed aircraft-delivery choice plus the
    requested aircraft-photo and plausible-route flags;
-7. reruns install, lint, type-check, all tests, build, and Wrangler dry run;
-8. re-fetches and rechecks current `main` immediately before deployment;
-9. serializes production operations without canceling an in-progress deploy;
-10. updates the private Worker secret only when
+8. reruns install, lint, type-check, all tests, build, and the normal
+   credential-free Wrangler dry run;
+9. when orbital acquisition is enabled, resolves or creates exactly one
+   reserved KV namespace;
+10. generates and dry-runs the exact Wrangler configuration with either one KV
+    binding, one SQLite Durable Object coordinator, and one Cron, or none of
+    those orbital resources;
+11. re-fetches and rechecks current `main` immediately before deployment;
+12. serializes production operations without canceling an in-progress deploy;
+13. updates the private Worker secret only when
     `aircraft_delivery=oci-private-relay`;
-11. deploys Worker code, the exact VPC Service binding, delivery mode, and
-    Static Assets;
-12. passes the source SHA as `RELEASE_SHA`;
-13. runs the bounded production smoke;
-14. records the URL, SHA, aircraft-delivery mode, route-enabled state, and
-    result in the workflow summary and GitHub
+14. deploys Worker code, exact VPC/KV/Durable Object bindings, trigger state,
+    delivery mode, and Static Assets;
+15. passes the source SHA as `RELEASE_SHA`;
+16. runs the bounded production smoke;
+17. records the URL, SHA, aircraft-delivery mode, orbital state/KV namespace,
+    route-enabled state, and result in the workflow summary and GitHub
     deployment.
 
 Aircraft delivery is an explicit per-deployment choice:
@@ -654,6 +783,8 @@ older SHA.
 - the immutable Natural Earth port asset path and caching policy;
 - every reviewed immutable vessel-photo byte set, media type, and caching
   policy;
+- when enabled, the immutable normalized orbital bootstrap bytes and caching
+  policy;
 - in `worker-proxy` mode, one same-origin ADSB point request that either
   returns valid aircraft JSON or truthfully preserves an upstream `429` with
   the exact release and `no-store` headers;
@@ -665,6 +796,10 @@ older SHA.
   valid aircraft JSON or an explicit `429` and permits the deployed origin
   through CORS;
 - one bounded canonical same-origin AWC METAR request or valid 204;
+- disabled orbital deployments return `404` from the fixed route; enabled
+  deployments return one bounded validated schema-v1 catalog from KV or the
+  exact-release bootstrap, with matching digest/ETag/source/retrieval headers,
+  reject queries and non-GET methods, and make no upstream provider request;
 - the exact `X-LiveTrafficStan-Release` value;
 - `no-store` aircraft behavior;
 - malformed-coordinate and unsupported-path rejection;
@@ -673,10 +808,12 @@ older SHA.
 - one Digitraffic MQTT connection, subscription, JSON message, and explicit
   disconnect.
 
-The production smoke does not make a plausible-route request on every deploy.
-The exact bundle and CSP are checked deterministically; browser acceptance
-selects one known live callsign when route behavior itself changes. This avoids
-turning deployment smoke into recurring third-party route traffic.
+The production smoke does not make a plausible-route or CelesTrak request on
+every deploy. The orbital route is storage/bootstrap-only; the first live
+CelesTrak refresh is a separately observed Cron event. The exact bundle and
+CSP are checked deterministically; browser acceptance selects one known live
+callsign when route behavior itself changes. This avoids turning deployment
+smoke into recurring third-party traffic.
 
 Static Asset checks use a bounded 60-second retry schedule because a newly
 published Cloudflare version can report deployment success before every edge
@@ -766,7 +903,10 @@ or continuous health service is added.
 Cloudflare versions contain Worker code, configuration, and Static Assets.
 Plausible routes add no separately persisted server resource. Vessel reference
 photos are part of the same exact Static Asset version and add no provider,
-database, Worker route, or deployment credential.
+database, Worker route, or deployment credential. The orbital KV namespace is
+retained across versions, as is the dormant Durable Object namespace; each
+Worker accepts only its supported schema and can fall back to its exact-release
+bootstrap.
 
 For the first deployment:
 
@@ -781,7 +921,7 @@ After a subsequent version exists:
    exact current `main` SHA, target source SHA, recorded Cloudflare version ID,
    public origin, artifact kind, aircraft-delivery mode, whether that target
    build explicitly set `VITE_AIRCRAFT_ENDPOINT`, and the target version's two
-   feature flags;
+   existing browser feature flags;
 3. rerun the same automated smoke and browser checks;
 4. keep production operations serialized;
 5. record the restored version and evidence.
@@ -792,11 +932,26 @@ stale current-main SHA, a target source commit that is not an ancestor of the
 current `main`, malformed version IDs or URLs, and missing Cloudflare
 credentials. It checks out and builds the exact target source, restores the
 current smoke policy so current provider-throttling semantics are applied
-consistently, calls `wrangler rollback <version-id>`, and requires the same
-production smoke to pass with the target release SHA. Restoring the latest
-known-good version uses the same workflow as a second serialized operation;
-production must never be left on the older version merely to preserve rollback
-evidence.
+consistently, reads the target Cloudflare version metadata, and derives its
+orbital flag from the version's exact plain-text binding. An enabled target
+must also contain exactly one orbital KV and one Durable Object binding. The
+workflow then calls `wrangler rollback <version-id>` and requires the same
+production smoke to pass with the target release SHA. It never trusts a
+separately remembered orbital checkbox. Restoring the latest known-good
+version uses the same workflow as a second serialized operation; production
+must never be left on the older version merely to preserve rollback evidence.
+
+Cron triggers are deployment-level state rather than safely assumed to follow
+a version rollback. After `wrangler rollback`, the workflow explicitly applies
+one of two checked trigger configs:
+
+- orbital target enabled: restore `17 */2 * * *`;
+- orbital target disabled or pre-orbital: remove all Cron triggers.
+
+This prevents a pre-orbital Worker from retaining a scheduled invocation that
+it cannot handle and prevents an enabled target from being restored with its
+scheduler accidentally disabled. The KV and Durable Object namespaces are
+never deleted during rollback.
 
 Build-time environment presence is part of the recorded artifact identity.
 Versions deployed before the selectable aircraft-delivery mode did not set
@@ -825,6 +980,10 @@ Revisit the platform or proxy design only when evidence shows:
 - ADSB.lol changes CORS, authentication, licensing, fields, or access terms;
 - measured abuse requires a supported edge rate-control policy;
 - a custom domain becomes a concrete product requirement;
+- Workers KV, SQLite Durable Object, or Cron pricing, limits, consistency, or
+  trigger behavior no longer fits the bounded orbital snapshot contract;
+- CelesTrak blocks Cloudflare egress or changes the selected endpoint, cadence,
+  schema, or caching/public-display basis;
 - a different provider removes the proxy while remaining legally and
   operationally compatible;
 - a new client route genuinely needs SPA fallback.
@@ -842,6 +1001,10 @@ Cloudflare:
 - [Static Asset billing and limitations](https://developers.cloudflare.com/workers/static-assets/billing-and-limitations/)
 - [Workers pricing](https://developers.cloudflare.com/workers/platform/pricing/)
 - [Workers limits](https://developers.cloudflare.com/workers/platform/limits/)
+- [Workers KV pricing](https://developers.cloudflare.com/kv/platform/pricing/)
+- [Cron Triggers](https://developers.cloudflare.com/workers/configuration/cron-triggers/)
+- [Durable Objects pricing](https://developers.cloudflare.com/durable-objects/platform/pricing/)
+- [Workers KV pricing](https://developers.cloudflare.com/kv/platform/pricing/)
 - [GitHub Actions deployment](https://developers.cloudflare.com/workers/ci-cd/external-cicd/github-actions/)
 - [Versions and deployments](https://developers.cloudflare.com/workers/versions-and-deployments/)
 - [Rollbacks](https://developers.cloudflare.com/workers/versions-and-deployments/rollbacks/)
@@ -860,6 +1023,9 @@ Provider context:
 - [ADSB.lol API](https://www.adsb.lol/docs/open-data/api/)
 - [ADSB.lol API source](https://github.com/adsblol/api)
 - [VRS Standing Data](https://github.com/vradarserver/standing-data)
+- [CelesTrak GP data formats](https://celestrak.org/NORAD/documentation/gp-data-formats.php)
+- [CelesTrak usage policy](https://celestrak.org/usage-policy.php)
+- [CelesTrak SATCAT format](https://celestrak.org/satcat/satcat-format.php)
 - [Photon public endpoint terms](https://photon.komoot.io/)
 - [Photon API documentation](https://github.com/komoot/photon/blob/master/docs/api-v1.md)
 - [Digitraffic marine traffic](https://www.digitraffic.fi/en/marine-traffic/)

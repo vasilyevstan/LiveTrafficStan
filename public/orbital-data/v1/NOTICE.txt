@@ -1,0 +1,35 @@
+LiveTrafficStan orbital catalog bootstrap
+
+Source:
+  CelesTrak GP/OMM visual group
+  https://celestrak.org/NORAD/elements/gp.php?GROUP=visual&FORMAT=json
+
+  CelesTrak SATCAT visual group
+  https://celestrak.org/satcat/records.php?GROUP=visual&FORMAT=json
+
+Retrieved:
+  2026-09-28T18:45:06.958Z
+
+Transformation:
+  The two bounded source responses were joined by exact NORAD catalog ID,
+  reduced to the fields required for local SGP4 propagation and exact public
+  object type, stably sorted, schema-versioned, and protected by SHA-256.
+
+Meaning:
+  The file contains orbital elements and catalog metadata, not live telemetry.
+  Any positions displayed by LiveTrafficStan are modeled locally and do not
+  prove naked-eye visibility, powered flight, reentry, impact, conjunction,
+  or hazard.
+
+Attribution:
+  CelesTrak GP/OMM and SATCAT
+  https://celestrak.org/
+
+Use-policy review:
+  https://celestrak.org/usage-policy.php
+
+CelesTrak does not publish a conventional formal data-license grant covering
+every downstream caching and redistribution question. LiveTrafficStan uses
+this bounded, attributed, noncommercial, value-added snapshot under the
+documented engineering assessment in docs/orbital-data-source-evaluation.md.
+Recheck current provider terms before deployment.

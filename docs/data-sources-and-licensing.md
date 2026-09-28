@@ -703,6 +703,49 @@ the points as static reference context and does not infer current scheduled
 service, operating status, navigation authority, routes, arrivals, departures,
 or relationships to visible aircraft.
 
+## Orbital objects: CelesTrak GP/OMM and SATCAT
+
+Issue #162 selects CelesTrak's bounded `visual` group for modeled satellites
+and cataloged rocket bodies. The fixed GP/OMM JSON feed supplies orbital
+elements; the fixed SATCAT JSON feed supplies exact public catalog type.
+LiveTrafficStan joins only by canonical NORAD catalog ID and never infers
+payload, rocket body, debris, or unknown from a name suffix or orbit.
+
+The browser does not contact CelesTrak. One feature-gated Cloudflare Cron may
+ask one named SQLite Durable Object to atomically admit the two fixed requests
+at most once every two hours, validates both under strict
+status/media-type/byte/record/deadline/schema limits, and publishes one complete
+schema-versioned Workers KV snapshot with one final write. Browser requests
+read only
+`GET /api/orbits/catalog`; they cannot start provider work or submit a group,
+catalog ID, viewport, Home, geolocation, or selection.
+
+The exact-release bootstrap contains the same normalized schema and provides a
+deterministic first deployment and rollback fallback. Failed, blocked,
+malformed, oversized, partial, or mismatched refreshes preserve the prior
+complete snapshot. Provider `301`, other redirects, `403`, and `404` enter a
+reviewed blocked state; `429` and `5xx` honor later readable `Retry-After`
+guidance up to seven days, while longer guidance blocks for review; no
+immediate retry or provider fallback is added.
+
+CelesTrak's `visual` group is a bright-object catalog, not a statement that an
+object is visible now. Propagated positions are modeled locally with SGP4 and
+must retain element epoch, snapshot retrieval time, and source attribution.
+They are not live telemetry, observed positions, naked-eye predictions,
+powered-ascent tracking, reentry alerts, impact predictions, or conjunction
+assessment.
+
+CelesTrak operates this public orbital-data service as part of its nonprofit
+mission but does not publish a conventional formal license covering every
+downstream caching and redistribution question. The selected basis is fixed,
+noncommercial, minimum-necessary, attributed, value-added use with exact
+provenance. Current provider text must be rechecked before activation; a
+prohibition on the planned caching or public display stops the feature.
+
+The full evidence, alternatives, observed group sizes/composition, cadence,
+object-type contract, privacy boundary, and stop conditions are in
+[Orbital Data Source Evaluation](orbital-data-source-evaluation.md).
+
 ## Source-code license versus data licenses
 
 LiveTrafficStan source code is licensed under Apache License 2.0 and includes a
@@ -728,6 +771,8 @@ separate licenses and attribution requirements:
 - marine data: Fintraffic Digitraffic, CC BY 4.0
 - optional port context: Natural Earth Ports, public domain
 - optional airport context: OurAirports, public domain
+- modeled orbital elements and catalog type: CelesTrak GP/OMM and SATCAT,
+  provider attribution and use-policy review required
 
 The application does not persist or redistribute a live traffic database. It
 does distribute the separately identified static aircraft metadata derivative

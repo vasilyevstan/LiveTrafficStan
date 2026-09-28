@@ -124,7 +124,7 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
 
 ## Quick start
 
-Use Node.js 20.19 or newer and npm 10 or newer.
+Use Node.js 24 or newer and npm 10 or newer.
 
 ```bash
 npm install
@@ -144,6 +144,7 @@ npm test -- --run
 npm run check:aircraft-metadata
 npm run check:country-allocations
 npm run check:vessel-photos
+npm run check:orbital-catalog
 npm run check:ports
 npm run check:airports
 npm run build

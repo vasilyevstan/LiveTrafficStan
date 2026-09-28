@@ -211,7 +211,7 @@ This is a budget estimate, not ADSB.lol capacity permission or an SLA.
 
 Netlify is technically viable but places production deploys, bandwidth,
 requests, and function compute in one 300-credit monthly budget without
-providing a capability this two-route application needs. GitHub Pages plus a
+providing a capability this small fixed-route application needs. GitHub Pages plus a
 separate Worker would add a second deployment unit or split-origin CORS.
 
 Fingerprint-named assets use immutable browser caching. Aircraft responses use
@@ -226,6 +226,36 @@ suite, serialize production operations, deploy code and assets atomically, and
 verify matching client/MapLibre-worker bytes plus bounded provider smoke.
 Account selection and protected credentials are configured. Client-side
 secrets and temporary-account workarounds remain prohibited.
+
+## Scheduled CelesTrak snapshot, not direct browser orbital fetches
+
+Issue #162 uses CelesTrak's bounded `visual` GP/OMM group plus its matching
+SATCAT metadata. The GP feed supplies orbital elements; SATCAT supplies exact
+payload, rocket-body, debris, or unknown type. Names and orbit behavior are not
+type evidence.
+
+The browser does not call CelesTrak. One feature-gated Cloudflare Cron invokes
+one named SQLite Durable Object, which atomically admits at most one start per
+two hours before the two fixed requests. A complete normalized result is
+published through one final Workers KV write. `GET /api/orbits/catalog` reads
+only KV or the exact-release bootstrap and cannot perform upstream work.
+
+This adds the smallest shared acquisition boundary that satisfies CelesTrak's
+once-per-update guidance, avoids per-tab provider load and third-party browser
+disclosure, and preserves a deterministic first deployment and rollback. A
+pass-through Worker, eventually consistent KV lock, ordinary edge-cache miss
+fetch, full active catalog, direct browser mode, provider fallback, and
+viewport-driven acquisition were rejected.
+
+The snapshot records exact source URLs, retrieval time, element epoch, schema,
+record count, and digest. A failed refresh retains the prior snapshot; terminal
+provider statuses block further acquisition until review. The provider
+contract and alternatives are recorded in
+[Orbital Data Source Evaluation](orbital-data-source-evaluation.md).
+
+This infrastructure does not make propagated coordinates live observations.
+The separate map work keeps orbital models out of aircraft/marine traffic,
+freshness, trails, and history.
 
 ## Digitraffic MQTT plus REST metadata
 

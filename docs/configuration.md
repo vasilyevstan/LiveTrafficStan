@@ -32,6 +32,30 @@ Every `VITE_*` value is embedded in browser JavaScript. These variables are
 configuration, not a secret store. Never place API tokens, private endpoints,
 credentials, or personal information in them.
 
+## Worker deployment controls
+
+The production workflow passes Worker-only values separately from the browser
+build:
+
+| Variable | Default | Validation and meaning |
+| --- | --- | --- |
+| `AIRCRAFT_DELIVERY` | `worker-proxy` | Protected selection of `worker-proxy`, `oci-private-relay`, or `adsb-lol-direct` |
+| `ORBITAL_CATALOG_ENABLED` | `false` | Exact `true` enables the fixed CelesTrak Cron, KV snapshot binding, SQLite Durable Object cadence coordinator, and same-origin catalog route; every other value leaves the updater and route disabled |
+| `RELEASE_SHA` | unset | Exact 40-character lowercase source SHA added to Worker API responses |
+
+`ORBITAL_CATALOG_ENABLED` is not a browser feature preference and is never
+accepted from an HTTP request. The checked deployment workflow resolves one
+dedicated `livetrafficstan-orbital-catalog` Workers KV namespace, generates the
+exact Wrangler configuration, attaches one named SQLite Durable Object
+coordinator and one offset two-hour Cron, and records the KV namespace
+identity. A disabled deployment removes the Cron and omits both orbital
+bindings.
+
+The committed `wrangler.jsonc` remains credential-free. Cloudflare account ID
+and API token stay in the protected `production` environment; the namespace ID
+is a non-secret deployment identifier discovered only through the authenticated
+Cloudflare API.
+
 ## Operational defaults
 
 The following behavior is centralized in `src/config/appConfig.ts` rather than

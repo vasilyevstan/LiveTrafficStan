@@ -1,0 +1,6 @@
+{
+  "name": "livetrafficstan",
+  "triggers": {
+    "crons": []
+  }
+}

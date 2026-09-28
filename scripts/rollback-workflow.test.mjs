@@ -68,5 +68,28 @@ describe('production rollback workflow', () => {
     expect(workflow).toContain(
       'echo "- Aircraft endpoint explicitly set: \\`${{ inputs.aircraft_endpoint_explicit }}\\`"',
     )
+    expect(workflow).not.toContain('orbital_catalog_enabled:')
+    expect(workflow).toContain(
+      'npx wrangler versions view "$TARGET_VERSION_ID"',
+    )
+    expect(workflow).toContain(
+      'resolve-orbital-version-state.mjs',
+    )
+    expect(workflow).toContain(
+      'cp infra/cloudflare/triggers/orbital-enabled.jsonc "$RUNNER_TEMP/orbital-enabled.jsonc"',
+    )
+    expect(workflow).toContain(
+      'cp infra/cloudflare/triggers/orbital-disabled.jsonc "$RUNNER_TEMP/orbital-disabled.jsonc"',
+    )
+    expect(workflow).toContain('npx wrangler triggers deploy --config "$config"')
+    expect(workflow).not.toContain(
+      '"${{ inputs.aircraft_delivery }}"\n          "${{ inputs.orbital_catalog_enabled }}"',
+    )
+    expect(workflow).toContain(
+      '"${{ inputs.aircraft_delivery }}"\n          "${{ steps.target-orbital.outputs.enabled }}"',
+    )
+    expect(workflow).toContain(
+      'echo "- Orbital catalog enabled: \\`${{ steps.target-orbital.outputs.enabled }}\\`"',
+    )
   })
 })

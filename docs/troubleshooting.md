@@ -489,6 +489,59 @@ layer, leaving the eligible station/view set, or committed navigation clears
 the corresponding details. Closing a weather detail restores focus to its
 bounded list result when present or to the METAR toggle.
 
+## Orbital catalog is unavailable or stale
+
+The scheduled orbital source is feature-gated. A production request to:
+
+```text
+GET /api/orbits/catalog
+```
+
+has these expected states:
+
+- `404` — the deployed orbital catalog flag is off;
+- `200` with `X-LiveTrafficStan-Orbital-Source: bootstrap` — no compatible KV
+  snapshot exists yet, so the exact-release normalized bootstrap is serving;
+- `200` with `X-LiveTrafficStan-Orbital-Source: kv` — a complete scheduled
+  snapshot is serving;
+- `503` — neither KV nor the bootstrap passed schema/digest validation.
+
+Check the release SHA, schema, digest, retrieval time, serve time, ETag, and
+source headers. Do not diagnose freshness from HTTP `Date` alone: each orbital
+record also has its own element epoch.
+
+If the first production Cron does not publish:
+
+1. inspect Cloudflare Cron Events for the expected `17 */2 * * *` trigger;
+2. verify the deployment summary recorded one exact
+   `livetrafficstan-orbital-catalog` namespace ID;
+3. inspect the deployed version and require both `ORBITAL_CATALOG` and
+   `ORBITAL_CATALOG_COORDINATOR` bindings;
+4. verify the protected API token has the required Worker and KV permissions;
+5. inspect only aggregate status/byte/record/digest evidence; never print raw
+   provider bodies;
+6. retain the previous snapshot or bootstrap while investigating.
+
+A persisted `301`, other redirect, `403`, or `404` is an intentional blocked
+state. Recheck CelesTrak's current endpoint and usage policy before clearing the
+coordinator through a reviewed source-contract deployment; do not repeatedly
+invoke the object, delete its storage ad hoc, rotate Cloudflare identity, change
+group, or add a proxy/fallback. `429` and readable `5xx Retry-After` guidance
+must retain the later next-allowed time. Guidance longer than seven days, or an
+outcome-storage failure, intentionally leaves acquisition fail-closed until a
+reviewed coordinator reset.
+
+Rollback to a target with the orbital flag off must also remove the Cron
+through the checked rollback workflow. Do not delete the KV namespace to fix a
+trigger mismatch; compatible versions may still need its last complete
+snapshot. Do not delete the Durable Object namespace; rollback derives the
+target orbital state from Cloudflare version metadata and applies the matching
+checked trigger configuration.
+
+The browser feature is implemented separately from this storage boundary.
+Aircraft, vessels, weather, search, map, and PWA behavior must remain usable
+when the orbital catalog is unavailable.
+
 ## Configuration fails at startup
 
 Review `.env.local` for:
