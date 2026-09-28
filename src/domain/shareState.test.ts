@@ -54,6 +54,7 @@ describe('shared application state', () => {
           airportsVisible: false,
           clusteringEnabled: false,
           weatherVisible: false,
+          orbitalObjectsVisible: false,
         },
         vesselFilters: {
           category: 'cargo',
@@ -72,10 +73,10 @@ describe('shared application state', () => {
   })
 
   it('supports partial known preferences while keeping camera atomic', () => {
-    expect(parseShareFragment('#v=1&theme=auto&ports=1')).toEqual({
+    expect(parseShareFragment('#v=1&theme=auto&ports=1&orbits=1')).toEqual({
       preferences: {
         theme: 'auto',
-        layers: { portsVisible: true },
+        layers: { portsVisible: true, orbitalObjectsVisible: true },
       },
     })
     expect(parseShareFragment('#v=1&lat=59&lon=24')).toBeNull()

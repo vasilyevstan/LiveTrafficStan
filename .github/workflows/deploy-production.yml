@@ -34,6 +34,11 @@ on:
         required: true
         default: true
         type: boolean
+      orbital_catalog_enabled:
+        description: Enable the scheduled CelesTrak orbital catalog
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -116,6 +121,9 @@ jobs:
       - name: Check vessel photos
         run: npm run check:vessel-photos
 
+      - name: Check orbital catalog
+        run: npm run check:orbital-catalog
+
       - name: Build application
         if: inputs.artifact == 'application'
         env:
@@ -134,6 +142,46 @@ jobs:
 
       - name: Check exact deployment bundle
         run: npm run check:deploy
+
+      - name: Resolve orbital KV namespace
+        id: orbital-kv
+        if: inputs.orbital_catalog_enabled
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: node scripts/resolve-orbital-kv.mjs
+
+      - name: Prepare exact Wrangler configuration
+        env:
+          NAMESPACE_ID: ${{ steps.orbital-kv.outputs.namespace-id }}
+          ORBITAL_ENABLED: ${{ inputs.orbital_catalog_enabled }}
+        run: |
+          if [[ "$ORBITAL_ENABLED" == "true" ]]; then
+            node scripts/prepare-wrangler-config.mjs \
+              --input wrangler.jsonc \
+              --output "$RUNNER_TEMP/wrangler-production.jsonc" \
+              --orbital-enabled true \
+              --namespace-id "$NAMESPACE_ID"
+          else
+            node scripts/prepare-wrangler-config.mjs \
+              --input wrangler.jsonc \
+              --output "$RUNNER_TEMP/wrangler-production.jsonc" \
+              --orbital-enabled false
+          fi
+
+      - name: Check exact production Worker configuration
+        env:
+          AIRCRAFT_DELIVERY: ${{ inputs.aircraft_delivery }}
+          ORBITAL_ENABLED: ${{ inputs.orbital_catalog_enabled }}
+          RELEASE_SHA: ${{ inputs.sha }}
+        run: >-
+          npx wrangler deploy
+          --dry-run
+          --config "$RUNNER_TEMP/wrangler-production.jsonc"
+          --var RELEASE_SHA:$RELEASE_SHA
+          --var AIRCRAFT_DELIVERY:$AIRCRAFT_DELIVERY
+          --var ORBITAL_CATALOG_ENABLED:$ORBITAL_ENABLED
+          --outdir "$RUNNER_TEMP/worker-dry-run"
 
       - name: Configure private relay secret
         if: inputs.aircraft_delivery == 'oci-private-relay'
@@ -158,8 +206,10 @@ jobs:
             test "$(git rev-parse origin/main)" = "${{ inputs.sha }}"
           command: >-
             deploy
+            --config ${{ runner.temp }}/wrangler-production.jsonc
             --var RELEASE_SHA:${{ inputs.sha }}
             --var AIRCRAFT_DELIVERY:${{ inputs.aircraft_delivery }}
+            --var ORBITAL_CATALOG_ENABLED:${{ inputs.orbital_catalog_enabled }}
 
       - name: Smoke deployed application
         run: >-
@@ -167,6 +217,7 @@ jobs:
           "${{ steps.deploy.outputs.deployment-url }}"
           "${{ inputs.sha }}"
           "${{ inputs.aircraft_delivery }}"
+          "${{ inputs.orbital_catalog_enabled }}"
 
       - name: Record deployment
         env:
@@ -181,6 +232,9 @@ jobs:
             echo "- Aircraft delivery: \`${{ inputs.aircraft_delivery }}\`"
             echo "- Aircraft photos enabled: \`${{ inputs.aircraft_photo_enabled }}\`"
             echo "- Flight route lookup enabled: \`${{ inputs.flight_route_enabled }}\`"
+            echo "- Orbital catalog enabled: \`${{ inputs.orbital_catalog_enabled }}\`"
+            echo "- Orbital KV namespace: \`${{ steps.orbital-kv.outputs.namespace-id || 'none' }}\`"
+            echo "- Orbital coordinator enabled: \`${{ inputs.orbital_catalog_enabled }}\`"
             echo "- URL: $DEPLOYMENT_URL"
             echo "- Smoke: passed"
           } >> "$GITHUB_STEP_SUMMARY"

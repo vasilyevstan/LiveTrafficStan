@@ -135,6 +135,31 @@ Check these project invariants:
 - Prove lifecycle and interaction changes with deterministic fixtures first.
   A milestone uses one bounded live-provider smoke; repeated UI test loops must
   not become provider load.
+- Orbital acquisition makes zero startup requests. The browser route is the
+  literal same-origin `GET /api/orbits/catalog` with no environment override,
+  query, credentials, referrer, redirect, or browser-selectable provider/group.
+  Only exact `200` or a matching cached-ETag `304` is accepted.
+- Orbital catalog reads enforce streamed bytes, fatal UTF-8, exact fields,
+  fixed source/group, canonical IDs/order, headers, schema, and SHA-256 before
+  fulfilled current-tab caching. Abort, timeout, partial, malformed, oversized,
+  mixed-generation, or digest-failing work cannot seed cache or output.
+- Orbital modeled time is anchored to the same-origin response clock plus a
+  monotonic clock. Initial skew, later wall-clock jumps, six-hour stale state,
+  and 24-hour hard expiry remain distinct; hard expiry destroys modeled output
+  at the deadline even during refresh/offline operation.
+- Orbital refresh guidance cannot be bypassed by Retry. Camera, selection,
+  theme, style, prediction, and ordinary hide/show never refetch or reset the
+  two-hour boundary; changed snapshots clear prior-generation positions and
+  predictions before publishing the new identity.
+- The dedicated SGP4 worker is created only for an active accepted catalog,
+  observes load/runtime/message failures, and is destroyed for layer-off,
+  hidden, HISTORY, expiry, and unmount. Prediction requests coalesce to one
+  in-flight plus the latest desired view/selection; obsolete success or error
+  cannot clear current output or delay an unbounded queue.
+- Orbital objects, modeled timestamps, crossings, and tracks remain outside
+  aircraft/marine normalization, freshness, history, clustering, metadata,
+  photos, and provider health. Wide-view orbital availability cannot weaken
+  or relabel the aircraft/marine 100 km pause.
 - Optional static port data makes zero startup requests and uses one pinned,
   immutable same-origin asset with a total deadline, stream byte cap, SHA-256,
   strict UTF-8/JSON/schema/count/rank validation, and fulfilled-only session

@@ -16,6 +16,15 @@ import {
   installWeatherStyle,
   weatherFeatures,
 } from './weatherStyle'
+import {
+  installOrbitalStyle,
+  LAYER_ORBITAL_HIGHLIGHT,
+  LAYER_ORBITAL_POINTS,
+  LAYER_ORBITAL_TRACK,
+  orbitalHighlightFeatures,
+  orbitalPositionFeatures,
+  orbitalTrackFeatures,
+} from './orbitalStyle'
 
 const installers = {
   ports: (map: MapLibreMap) =>
@@ -24,16 +33,37 @@ const installers = {
     installAirportsStyle(map, airportFeatures([], null), 'light', true),
   weather: (map: MapLibreMap) =>
     installWeatherStyle(map, weatherFeatures([], null), 'light', true),
+  orbital: (map: MapLibreMap) =>
+    installOrbitalStyle(
+      map,
+      orbitalPositionFeatures([]),
+      orbitalHighlightFeatures([], null),
+      orbitalTrackFeatures([]),
+      'light',
+      true,
+    ),
 }
 
-const permutations = [
-  ['ports', 'airports', 'weather'],
-  ['ports', 'weather', 'airports'],
-  ['airports', 'ports', 'weather'],
-  ['airports', 'weather', 'ports'],
-  ['weather', 'ports', 'airports'],
-  ['weather', 'airports', 'ports'],
-] as const
+type InstallerName = keyof typeof installers
+
+const permutations = (
+  values: readonly InstallerName[],
+): InstallerName[][] =>
+  values.length === 0
+    ? [[]]
+    : values.flatMap((value, index) =>
+        permutations(values.filter((_, itemIndex) => itemIndex !== index)).map(
+          (remaining) => [value, ...remaining],
+        ),
+      )
+
+const installationOrders = permutations([
+  'ports',
+  'airports',
+  'weather',
+  'orbital',
+])
+const installationRows = installationOrders.map((order) => [order] as const)
 
 const createMap = () => {
   const sources = new Map<string, { setData: ReturnType<typeof vi.fn> }>()
@@ -78,20 +108,24 @@ const range = (order: readonly string[], ids: readonly string[]) => {
 }
 
 describe('static context layer order', () => {
-  it.each(permutations)(
-    'keeps ports below airports below weather for %s, %s, %s loading',
-    (first, second, third) => {
+  it.each(installationRows)(
+    'keeps static context and orbital layers ordered for %s loading',
+    (order) => {
       const { map, layers } = createMap()
-      installers[first](map)
-      installers[second](map)
-      installers[third](map)
+      for (const installer of order) installers[installer](map)
 
       const ports = range(layers, PORT_LAYER_IDS)
       const airports = range(layers, AIRPORT_LAYER_IDS)
       const weather = range(layers, WEATHER_LAYER_IDS)
+      const orbital = range(layers, [
+        LAYER_ORBITAL_TRACK,
+        LAYER_ORBITAL_POINTS,
+        LAYER_ORBITAL_HIGHLIGHT,
+      ])
       expect(ports.last).toBeLessThan(airports.first)
       expect(airports.last).toBeLessThan(weather.first)
-      expect(weather.last).toBeLessThan(
+      expect(weather.last).toBeLessThan(orbital.first)
+      expect(orbital.last).toBeLessThan(
         layers.indexOf(LAYER_SELECTED_TRAIL),
       )
     },

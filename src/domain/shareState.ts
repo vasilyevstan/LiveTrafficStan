@@ -48,6 +48,7 @@ const SHARE_KEYS = new Set([
   'airports',
   'clusters',
   'weather',
+  'orbits',
   'vesselCategory',
   'vesselNavigation',
   'vesselSpeed',
@@ -201,6 +202,7 @@ export const parseShareFragment = (
     ['airports', 'airportsVisible'],
     ['clusters', 'clusteringEnabled'],
     ['weather', 'weatherVisible'],
+    ['orbits', 'orbitalObjectsVisible'],
   ]
   for (const [parameter, key] of layerParameters) {
     if (!params.has(parameter)) continue
@@ -309,6 +311,10 @@ export const serializeShareFragment = (
     booleanValue(preferences.layers.clusteringEnabled),
   )
   params.set('weather', booleanValue(preferences.layers.weatherVisible))
+  params.set(
+    'orbits',
+    booleanValue(preferences.layers.orbitalObjectsVisible),
+  )
   params.set('vesselCategory', preferences.vesselFilters.category)
   params.set('vesselNavigation', preferences.vesselFilters.navigation)
   params.set('vesselSpeed', preferences.vesselFilters.reportedSpeed)

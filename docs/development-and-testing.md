@@ -2,7 +2,9 @@
 
 ## Prerequisites and install
 
-Use Node.js 20.19 or newer and npm 10 or newer.
+Use Node.js 24 or newer and npm 10 or newer. Node 24 is required because the
+network-free orbital maintenance commands import the same erasable TypeScript
+validator used by the Worker rather than maintaining a second schema.
 
 ```bash
 npm install
@@ -14,7 +16,9 @@ the fixed `/api/aircraft` and `/api/weather/metar` proxies required by the
 default ADSB.lol and AWC integrations. Plausible routes and Planespotters
 aircraft photos remain direct browser requests and are not proxied. Vessel
 reference photos are committed same-origin assets and create no Wikimedia,
-Wikidata, tracker, or image-provider request.
+Wikidata, tracker, or image-provider request. Ordinary Vite development does
+not emulate the feature-gated orbital KV/Durable Object route; use the local
+Worker command below for enabled ORBITS acceptance.
 
 ## Commands
 
@@ -29,6 +33,8 @@ Wikidata, tracker, or image-provider request.
 | `npm run update:aircraft-metadata` | Explicit maintainer regeneration from the pinned upstream archive and license |
 | `npm run check:country-allocations` | Network-free validation of bundled MID and ICAO24 country allocations |
 | `npm run update:country-allocations` | Explicit maintainer regeneration from pinned open-licensed sources and canonical cross-checks |
+| `npm run check:orbital-catalog` | Network-free raw-byte, fatal UTF-8, exact-schema/canonical-serialization, source, type, ordering, count, size, epoch, and SHA-256 validation of the committed CelesTrak bootstrap |
+| `npm run update:orbital-catalog -- --gp <path> --satcat <path> --retrieved-at <iso> --output public/orbital-data/v1/visual-catalog.json` | Explicit maintainer normalization of one already-downloaded GP/SATCAT pair after enforcing the same 256 KiB raw-byte and fatal UTF-8 bounds; never fetches the provider |
 | `npm run check:vessel-photos` | Network-free validation of exact IMO, source revision, rights, license notice, asset inventory, dimensions, size, and SHA-256 |
 | `npm run check:ports` | Network-free validation of the committed Natural Earth port projection |
 | `npm run update:ports` | Explicit maintainer regeneration from the pinned Natural Earth source |
@@ -38,6 +44,16 @@ Wikidata, tracker, or image-provider request.
 | `npm run preview` | Serve the production bundle with the local aircraft/METAR proxies |
 | `npm run check:deploy` | Bundle the Worker and Static Assets without credentials or deployment |
 | `npm run preview:worker` | Build and run the actual local Cloudflare `workerd` boundary |
+
+For a local same-origin orbital bootstrap:
+
+```bash
+npm run build
+npx wrangler dev --local --var ORBITAL_CATALOG_ENABLED:true
+```
+
+This serves the exact Worker route without contacting CelesTrak. Scheduled
+updater tests remain fixture-based; do not invoke live provider loops.
 
 The dependency-free OCI relay tests live beside the implementation under
 `infra/oci/aircraft-relay/`. The normal Vitest suite covers its HTTP boundary,
@@ -60,6 +76,7 @@ npm run typecheck
 npm test -- --run
 npm run check:aircraft-metadata
 npm run check:country-allocations
+npm run check:orbital-catalog
 npm run check:vessel-photos
 npm run check:ports
 npm run check:airports
@@ -70,6 +87,14 @@ npm run check:deploy
 The same commands run in `.github/workflows/validate.yml` for pull requests and
 pushes targeting `dev` or `main`. The Wrangler dry run is credential-free and
 does not call a live provider.
+
+`npm run update:orbital-catalog` consumes local files only. A maintainer first
+makes one bounded GP request and one bounded SATCAT request under the current
+CelesTrak contract, records response evidence, and then runs the normalizer.
+Repeated tests use committed fixtures and the normalized bootstrap; they never
+loop against CelesTrak. `npm run check:orbital-catalog` recomputes the digest
+without network access and rejects unknown padding or any noncanonical file
+serialization.
 
 To build the protected direct-aircraft variant without changing defaults:
 
@@ -269,6 +294,18 @@ Map-experience tests also cover:
   credential forwarding;
 - weather-before-airport-before-port picking and all six asynchronous static
   layer installation orders.
+- strict orbital catalog streamed reads, fatal UTF-8, exact fields/source/
+  ordering, digest/header/ETag agreement, valid cached `304`, fulfilled-only
+  tab caching, and rejected partial/malformed/oversized responses;
+- SGP4 reference propagation, six-digit NORAD IDs, element-age bounds,
+  local/dateline/whole-world/invalid view geometry, 90-minute crossings,
+  20-result cap, bounded selected track, and antimeridian/invalid-gap splitting;
+- orbital lifecycle enable, no-fetch view/selection/hide-show behavior,
+  two-hour revalidation, page/HISTORY/offline pauses, initial clock skew,
+  later wall-clock jumps, stale/expiry truthfulness, and revision fencing;
+- persistent orbital sources/layers, stable feature IDs, style rehydration,
+  all 24 port/airport/weather/orbital installation orders, traffic-first
+  picking, preference/share defaults, controls, details, and attribution.
 
 `npm run check:aircraft-metadata` makes no upstream request. It validates the
 pinned source and license identity, configured immutable version, co-located
@@ -410,15 +447,16 @@ The same pass proves:
 
 ## Issue #12 PWA and offline acceptance
 
-The generated normal shell contains 10 URLs and 2,447,478 uncompressed bytes,
-below the 4 MiB fail-closed budget. Production Chromium reports no
+The generated normal shell contains 11 URLs and 2,606,624 uncompressed bytes,
+including the separate approximately 26 KiB orbital worker and remaining below
+the 4 MiB fail-closed budget. Production Chromium reports no
 installability errors. First install reaches `activated` without claiming the
 page or showing **REFRESH APP**; the next reload is controlled.
 
 Cold-offline acceptance clears the ordinary HTTP cache before reloading. It
 proves:
 
-- CacheStorage contains only root/index, four hashed Vite assets, manifest,
+- CacheStorage contains only root/index, five hashed Vite assets, manifest,
   favicon, and two icons;
 - live traffic is explicitly unavailable and basemap tiles are explicitly not
   cached;
@@ -655,15 +693,118 @@ For the viewport-driven map experience, additionally verify:
     second Photon request. New input, Escape, Center, location, coordinate
     navigation, or manual movement cancels obsolete results.
 
+For Issue #162 orbital acceptance, run the same built client through:
+
+```bash
+npm run build
+npx wrangler dev --local --var ORBITAL_CATALOG_ENABLED:true
+```
+
+Then verify on desktop 1280x900, mobile 390x844 and 390x568, and physical iOS
+Safari/Android Chrome for touch claims:
+
+1. No `/api/orbits/catalog` request occurs before explicit ORBITS enable.
+2. First enable makes one same-origin request. The browser makes no CelesTrak
+   request and sends no viewport, Home, geolocation, selection, or credentials.
+3. The response passes schema/digest/header checks and creates one module
+   worker. Ordinary pan, zoom, rotate, pitch, resize, theme, selection, and
+   hide/show do not make another catalog request.
+4. A whole-world view pauses aircraft and ships under their unchanged 100 km
+   contract while valid orbital points remain visible. The selector explains
+   that all current subpoints are in view and does not claim a useful future
+   crossing rank.
+5. A local view distinguishes current in-view objects from first crossings in
+   the next 90 minutes. Counts, ordering, exact type, modeled time, element
+   epoch, retrieval age, source, and limitations remain truthful.
+6. Payload, rocket body, debris, and unknown colors/labels match exact SATCAT
+   type; no name-derived type appears.
+7. Exact traffic and traffic clusters keep pick priority. An exact orbital hit
+   or one unique touch fallback selects only the orbital object, does not move
+   the camera, and clears mutually exclusive traffic/context details.
+8. The selected track never joins an antimeridian or invalid propagation gap,
+   remains bounded, and survives ordinary pan, pitch, rotate, resize, and
+   Light/Dark/style restoration without fitting the camera.
+9. A to B to A selection and rapid view/style revisions cannot publish a stale
+   result or track. Hiding ORBITS, committed navigation, HISTORY, expiry, or
+   another mutually exclusive selection clears it.
+10. Entering HISTORY hides orbital points/results/details and performs no
+    catalog request. Return to Live restores from the valid current-tab
+    snapshot without resetting the two-hour revalidation boundary.
+11. Cold offline enable is explicit offline/unavailable. Going offline after
+    one fulfilled snapshot retains only that tab's complete data until clock,
+    element, or snapshot hard-age rules suppress it.
+12. One `.maplibregl-canvas` persists through enable/disable, propagation,
+    selection, theme changes, fallback style, HISTORY, and PWA update handling.
+13. CelesTrak attribution stays visible. Controls/details remain keyboard
+    reachable, scrollable, at or below the shared 58vh disclosure budget, and
+    leave one unobstructed real touch-drag area.
+14. The console contains no exception. Worker/timer/listener/source counts and
+    post-GC heap do not grow over a ten-minute enable/disable/theme cycle.
+15. At the 256-record fixture limit, record worker propagation p95 below
+    100 ms, no orbital-attributable main-thread task over 50 ms in a throttled
+    60-second trace, and at least 30 fps while dragging on the supported mobile
+    device.
+
+### Issue #162 development acceptance evidence
+
+On 2026-09-28, the built client was exercised through local `workerd` in
+Chrome 153 at desktop 1280x900 and emulated mobile 390x844:
+
+- zero catalog requests and no orbital propagation worker existed before
+  enable;
+- first enable made one same-origin `200` catalog request, no CelesTrak browser
+  request, and added exactly one worker target;
+- the local Tallinn view truthfully returned one future crossing and no current
+  object at that instant;
+- zooming to the complete Mercator world paused aircraft/ships while listing
+  156 valid current modeled objects without a crossing rank;
+- A to B to A selection ended on A, selected details retained exact type,
+  element/retrieval/modeled times and limitations, and Dark reinstallation
+  preserved the selection with one canvas and no catalog request;
+- hide removed the one orbital worker and selection; re-enable restored 20
+  bounded results from the current-tab snapshot with no second catalog
+  request;
+- the open mobile Operations body measured 289.52 px against a 489.52 px
+  58vh limit, attribution remained visible, one real CDP touch drag changed
+  the shared camera, and one canvas remained;
+- the console reported no error or runtime exception;
+- a 60-second 4x-CPU idle trace while ORBITS remained active recorded no
+  main-thread long task over 50 ms.
+
+A separate real module-worker benchmark used 256 validated records, 4x CPU
+throttling, and 25 samples. Current-position p95 was 1.8 ms; worst-case local
+90-minute prediction p95 was 83.4 ms with a 93.9 ms maximum.
+
+The final ten-minute lifecycle soak ran 20 enable/disable and Light/Dark cycles
+at 30-second intervals. It made zero additional catalog requests and recorded
+no runtime exception or console error. The first warm-up cycle added 20
+listeners and 256 nodes; cycles 1 through 20 then remained exactly flat at two
+documents, two frames, 304 listeners, 1,553 nodes, three worker targets, and
+one canvas. Forced-GC used heap fluctuated non-monotonically between 22,778,508
+and 24,040,232 bytes after warm-up and ended at 23,919,084 bytes.
+
+The exact enabled Wrangler configuration was also generated with a synthetic
+32-hex namespace ID and passed `wrangler deploy --dry-run`, exposing exactly
+one `ORBITAL_CATALOG` KV binding, one SQLite
+`ORBITAL_CATALOG_COORDINATOR`, the fixed VPC/static-asset bindings, release and
+delivery variables, and the checked Cron configuration without credentials or
+deployment.
+
+These are reproducible development checks, not production or physical-device
+evidence. Exact-origin production smoke, physical iOS Safari/Android Chrome
+touch acceptance, and first Cron/KV/rollback evidence remain required before
+production activation.
+
 Repeat the core check with `npm run build && npm run preview`. Confirm that
 `dist/assets/` contains a `maplibre-gl-worker-*.js` file and that the preview
 page renders vector tiles. Also confirm the immutable metadata index and one
 shard are present in `dist/aircraft-metadata/`, and the exact immutable
 `dist/ports/natural-earth-v5.1.2-v1/ports.geojson` and
 `dist/airports/ourairports-2026-09-19-v1/airports.geojson` assets are present.
-This
-catches easy-to-miss MapLibre/Vite worker or static-dataset packaging
-regressions.
+Confirm that a separate `orbital.worker-*.js` asset exists and is listed in
+the bounded generated shell without any `/api/orbits/catalog` or
+`/orbital-data/` response. This catches easy-to-miss MapLibre/Vite worker,
+orbital worker, or static-dataset packaging regressions.
 
 For the production edge boundary, run `npm run preview:worker`. Confirm:
 
@@ -679,6 +820,10 @@ For the production edge boundary, run `npm run preview:worker`. Confirm:
    `nosniff`; malformed IDs, raw commas, extra parameters, unsupported methods,
    redirects, timeouts, oversized responses, unsafe content types, and missing
    API paths are rejected without an open forwarder.
+8. With the committed default flag, `/api/orbits/catalog` returns `404`. With
+   the explicit local enabled command, exact `GET` returns the validated
+   bootstrap, matching ETag returns `304`, and query strings, other methods,
+   missing assets, or invalid stored snapshots cannot trigger CelesTrak work.
 
 Do not repeatedly use the local edge check as a provider load loop. All path,
 timeout, body-size, redirect, status, `Retry-After`, and cancellation cases use

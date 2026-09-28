@@ -655,6 +655,31 @@
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.28);
 }
 
+.traffic-legend__orbital {
+  justify-self: center;
+  width: 11px;
+  height: 11px;
+  border: 1px solid #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
+}
+
+.traffic-legend__orbital--payload {
+  background: #087fa6;
+}
+
+.traffic-legend__orbital--rocket {
+  background: #b85f00;
+}
+
+.traffic-legend__orbital--debris {
+  background: #b62e69;
+}
+
+.traffic-legend__orbital--unknown {
+  background: #65747c;
+}
+
 :root[data-theme='dark'] .traffic-legend__aircraft--low {
   background: #38bdf8;
 }
@@ -677,6 +702,22 @@
 
 :root[data-theme='dark'] .traffic-legend__stopped {
   background: #ff4655;
+}
+
+:root[data-theme='dark'] .traffic-legend__orbital--payload {
+  background: #67d8ff;
+}
+
+:root[data-theme='dark'] .traffic-legend__orbital--rocket {
+  background: #ffb45f;
+}
+
+:root[data-theme='dark'] .traffic-legend__orbital--debris {
+  background: #ff7db8;
+}
+
+:root[data-theme='dark'] .traffic-legend__orbital--unknown {
+  background: #aab8c0;
 }
 
 .ports-status {

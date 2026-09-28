@@ -11,6 +11,7 @@ import { LAYER_AIRPORTS_MEDIUM } from './airportsStyle'
 import { mapTextFont, type MapTextFont } from './textFont'
 import { LAYER_SELECTED_TRAIL } from './trafficStyle'
 import { LAYER_WEATHER_HALO } from './weatherStyle'
+import { LAYER_ORBITAL_TRACK } from './orbitalStyle'
 
 export const SOURCE_PORTS = 'context-ports'
 export const LAYER_PORTS_MAJOR = 'context-ports-major'
@@ -106,6 +107,8 @@ const ensureLayer = (
       ? LAYER_AIRPORTS_MEDIUM
       : map.getLayer(LAYER_WEATHER_HALO)
         ? LAYER_WEATHER_HALO
+        : map.getLayer(LAYER_ORBITAL_TRACK)
+          ? LAYER_ORBITAL_TRACK
         : map.getLayer(LAYER_SELECTED_TRAIL)
           ? LAYER_SELECTED_TRAIL
           : undefined

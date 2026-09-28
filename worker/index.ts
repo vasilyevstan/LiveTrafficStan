@@ -6,6 +6,16 @@ import {
   handleMetarProxy,
   METAR_PROXY_PATH,
 } from './metarProxy.js'
+import {
+  handleOrbitalCatalog,
+  ORBITAL_CATALOG_PATH,
+  type OrbitalKeyValueStore,
+} from './orbitalCatalog.js'
+import {
+  runScheduledOrbitalCatalogRefresh,
+  type OrbitalCatalogCoordinatorNamespace,
+} from './orbitalCatalogCoordinator.js'
+export { OrbitalCatalogCoordinator } from './orbitalCatalogCoordinator.js'
 
 interface FetchBinding {
   fetch(
@@ -14,11 +24,18 @@ interface FetchBinding {
   ): Promise<Response>
 }
 
+interface WorkerScheduledController {
+  noRetry(): void
+}
+
 export interface WorkerEnv {
   ASSETS: FetchBinding
   AIRCRAFT_DELIVERY?: string
   AIRCRAFT_RELAY?: FetchBinding
   AIRCRAFT_RELAY_AUTH_TOKEN?: string
+  ORBITAL_CATALOG?: OrbitalKeyValueStore
+  ORBITAL_CATALOG_COORDINATOR?: OrbitalCatalogCoordinatorNamespace
+  ORBITAL_CATALOG_ENABLED?: string
   RELEASE_SHA?: string
 }
 
@@ -86,6 +103,12 @@ const withReleaseSha = (response: Response, releaseSha: string | undefined) => {
 const worker = {
   async fetch(request: Request, env: WorkerEnv) {
     const pathname = new URL(request.url).pathname
+    if (pathname === ORBITAL_CATALOG_PATH) {
+      return withReleaseSha(
+        await handleOrbitalCatalog(request, env),
+        env.RELEASE_SHA,
+      )
+    }
     if (pathname === METAR_PROXY_PATH) {
       return withReleaseSha(
         await handleMetarProxy(request),
@@ -104,6 +127,10 @@ const worker = {
     }
 
     return env.ASSETS.fetch(request)
+  },
+  async scheduled(controller: WorkerScheduledController, env: WorkerEnv) {
+    controller.noRetry()
+    await runScheduledOrbitalCatalogRefresh(env)
   },
 }
 

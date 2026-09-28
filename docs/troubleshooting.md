@@ -489,6 +489,109 @@ layer, leaving the eligible station/view set, or committed navigation clears
 the corresponding details. Closing a weather detail restores focus to its
 bounded list result when present or to the METAR toggle.
 
+## Orbital catalog is unavailable or stale
+
+The scheduled orbital source is feature-gated. A production request to:
+
+```text
+GET /api/orbits/catalog
+```
+
+has these expected states:
+
+- `404` — the deployed orbital catalog flag is off;
+- `200` with `X-LiveTrafficStan-Orbital-Source: bootstrap` — no compatible KV
+  snapshot exists yet, so the exact-release normalized bootstrap is serving;
+- `200` with `X-LiveTrafficStan-Orbital-Source: kv` — a complete scheduled
+  snapshot is serving;
+- `503` — neither KV nor the bootstrap passed schema/digest validation.
+
+Check the release SHA, schema, digest, retrieval time, serve time, ETag, and
+source headers. Do not diagnose freshness from HTTP `Date` alone: each orbital
+record also has its own element epoch.
+
+If the first production Cron does not publish:
+
+1. inspect Cloudflare Cron Events for the expected `17 */2 * * *` trigger;
+2. verify the deployment summary recorded one exact
+   `livetrafficstan-orbital-catalog` namespace ID;
+3. inspect the deployed version and require both `ORBITAL_CATALOG` and
+   `ORBITAL_CATALOG_COORDINATOR` bindings;
+4. verify the protected API token has the required Worker and KV permissions;
+5. inspect only aggregate status/byte/record/digest evidence; never print raw
+   provider bodies;
+6. retain the previous snapshot or bootstrap while investigating.
+
+A persisted `301`, other redirect, `403`, or `404` is an intentional blocked
+state. Recheck CelesTrak's current endpoint and usage policy before clearing the
+coordinator through a reviewed source-contract deployment; do not repeatedly
+invoke the object, delete its storage ad hoc, rotate Cloudflare identity, change
+group, or add a proxy/fallback. `429` and readable `5xx Retry-After` guidance
+must retain the later next-allowed time. Guidance longer than seven days, or an
+outcome-storage failure, intentionally leaves acquisition fail-closed until a
+reviewed coordinator reset.
+
+Rollback to a target with the orbital flag off must also remove the Cron
+through the checked rollback workflow. Do not delete the KV namespace to fix a
+trigger mismatch; compatible versions may still need its last complete
+snapshot. Do not delete the Durable Object namespace; rollback derives the
+target orbital state from Cloudflare version metadata and applies the matching
+checked trigger configuration.
+
+The browser feature is implemented separately from this storage boundary.
+Aircraft, vessels, weather, search, map, and PWA behavior must remain usable
+when the orbital catalog is unavailable.
+
+## ORBITS is empty, paused, or clock invalid
+
+ORBITS starts off and should make no catalog request before explicit enable.
+After enable, inspect only the same-origin `/api/orbits/catalog` request; a
+browser request to `celestrak.org` is a defect.
+
+Interpret the control state before retrying:
+
+- **Loading** — the first strict same-origin read is unfinished.
+- **Refreshing** — a complete current snapshot is still displayed while an
+  ETag revalidation runs.
+- **Stale** — the complete snapshot is older than six hours but below its
+  24-hour hard age.
+- **Offline** — a fulfilled current-tab snapshot may remain modeled; a cold
+  tab has nothing safe to use.
+- **Clock unavailable** — the device wall clock differs from the same-origin
+  response clock by more than two minutes or later jumped more than 30 seconds.
+  Correct the operating-system time and use Retry to obtain a new response
+  clock. Do not bypass this guard with the device time.
+- **No modeled positions** — the catalog succeeded, but every record was
+  outside element-age or physical propagation bounds at the anchored time.
+  This is distinct from a network failure.
+- **Crossing estimate unavailable for this view** — the current footprint is
+  partial world-spanning or otherwise unsafe. Current points can remain; use a
+  local view for the 90-minute crossing list.
+- **Whole world is visible** — all valid current subpoints are already in
+  view, so no future crossing rank is claimed.
+- **Paused while page hidden** or **Paused during HISTORY** — the dedicated
+  propagation worker is intentionally absent. Returning to the visible Live
+  view reuses a still-valid tab snapshot without another request before its
+  revalidation boundary.
+
+If the catalog returns `200` but no worker starts, verify that the response
+headers, schema, digest, ETag, source URLs, and canonical record order all
+match. A partial `206`, HTML response, missing header, digest mismatch,
+oversize body, redirect, or invalid UTF-8 is rejected rather than rendered.
+
+If an installed app reports a missing `orbital.worker-*.js`, use the existing
+**Refresh app** flow and verify that `/sw.js`, `index.html`, and the current
+hashed assets were deployed atomically. Do not cache `/api/orbits/catalog` or
+`/orbital-data/*` in the application shell. The worker asset may be present in
+the shell before ORBITS enable, but it must not execute or make a catalog
+request until enable.
+
+Hiding ORBITS, committed navigation, or HISTORY clears selection and the
+predicted track. Ordinary pan, rotate, pitch, resize, theme, and style changes
+should retain selection and make no catalog request. If they do not, record the
+same-canvas, source, request, and console evidence before changing provider
+configuration.
+
 ## Configuration fails at startup
 
 Review `.env.local` for:

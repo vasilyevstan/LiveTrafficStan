@@ -63,7 +63,7 @@ const sameFeatureProperties = (
   return true
 }
 
-export const trafficSourceDiff = (
+export const pointSourceDiff = (
   previous: readonly Feature<Point>[],
   next: readonly Feature<Point>[],
 ): GeoJSONSourceDiff => {
@@ -86,6 +86,7 @@ export const trafficSourceDiff = (
       add.push(feature)
       continue
     }
+
     const geometryChanged = !samePointGeometry(existing, feature)
     const propertiesChanged = !sameFeatureProperties(existing, feature)
     if (!geometryChanged && !propertiesChanged) continue
@@ -125,6 +126,8 @@ export const trafficSourceDiff = (
     ...(update.length > 0 ? { update } : {}),
   }
 }
+
+export const trafficSourceDiff = pointSourceDiff
 
 export const setTrafficClustering = async (
   map: MapLibreMap,
