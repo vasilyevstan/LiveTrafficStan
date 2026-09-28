@@ -129,6 +129,9 @@ jobs:
         run: |
           cp scripts/smoke-production.mjs "$RUNNER_TEMP/smoke-production.mjs"
           cp scripts/smoke-policy.mjs "$RUNNER_TEMP/smoke-policy.mjs"
+          cp scripts/resolve-orbital-version-state.mjs "$RUNNER_TEMP/resolve-orbital-version-state.mjs"
+          cp infra/cloudflare/triggers/orbital-enabled.jsonc "$RUNNER_TEMP/orbital-enabled.jsonc"
+          cp infra/cloudflare/triggers/orbital-disabled.jsonc "$RUNNER_TEMP/orbital-disabled.jsonc"
           git checkout --detach "$TARGET_SHA"
           test "$(git rev-parse HEAD)" = "$TARGET_SHA"
 
@@ -148,6 +151,22 @@ jobs:
 
       - name: Install target dependencies
         run: npm ci
+
+      - name: Resolve target orbital state
+        id: target-orbital
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          TARGET_VERSION_ID: ${{ inputs.target_version_id }}
+        run: |
+          npx wrangler versions view "$TARGET_VERSION_ID" \
+            --name livetrafficstan \
+            --json > "$RUNNER_TEMP/target-version.json"
+          enabled="$(
+            node "$RUNNER_TEMP/resolve-orbital-version-state.mjs" \
+              "$RUNNER_TEMP/target-version.json"
+          )"
+          echo "enabled=$enabled" >> "$GITHUB_OUTPUT"
 
       - name: Build target application
         if: inputs.artifact == 'application'
@@ -195,12 +214,26 @@ jobs:
           --message "GitHub rollback to $TARGET_SHA"
           --yes
 
+      - name: Restore target orbital Cron state
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ORBITAL_ENABLED: ${{ steps.target-orbital.outputs.enabled }}
+        run: |
+          if [[ "$ORBITAL_ENABLED" == "true" ]]; then
+            config="$RUNNER_TEMP/orbital-enabled.jsonc"
+          else
+            config="$RUNNER_TEMP/orbital-disabled.jsonc"
+          fi
+          npx wrangler triggers deploy --config "$config"
+
       - name: Smoke rolled-back application
         run: >-
           node scripts/smoke-production.mjs
           "${{ inputs.deployment_url }}"
           "${{ inputs.target_sha }}"
           "${{ inputs.aircraft_delivery }}"
+          "${{ steps.target-orbital.outputs.enabled }}"
 
       - name: Record rollback
         env:
@@ -218,6 +251,7 @@ jobs:
             echo "- Aircraft endpoint explicitly set: \`${{ inputs.aircraft_endpoint_explicit }}\`"
             echo "- Aircraft photos enabled: \`${{ inputs.aircraft_photo_enabled }}\`"
             echo "- Flight route lookup enabled: \`${{ inputs.flight_route_enabled }}\`"
+            echo "- Orbital catalog enabled: \`${{ steps.target-orbital.outputs.enabled }}\`"
             echo "- URL: $DEPLOYMENT_URL"
             echo "- Smoke: passed"
           } >> "$GITHUB_STEP_SUMMARY"

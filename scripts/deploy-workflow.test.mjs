@@ -52,7 +52,7 @@ describe('production deployment workflow', () => {
     expect(workflow).not.toContain('FLIGHT_ROUTE_QUOTA')
   })
 
-  it('retires the obsolete route quota namespace without a runtime binding', () => {
+  it('keeps only the deleted route quota export in the base config', () => {
     expect(wrangler.durable_objects).toBeUndefined()
     expect(wrangler.exports).toEqual({
       FlightRouteQuota: {
@@ -60,5 +60,29 @@ describe('production deployment workflow', () => {
         state: 'deleted',
       },
     })
+  })
+
+  it('gates the orbital catalog behind coordinated scheduled storage', () => {
+    expect(workflow).toContain('orbital_catalog_enabled:')
+    expect(workflow).toContain('npm run check:orbital-catalog')
+    expect(workflow).toContain('node scripts/resolve-orbital-kv.mjs')
+    expect(workflow).toContain(
+      'node scripts/prepare-wrangler-config.mjs',
+    )
+    expect(workflow).toContain(
+      '--config ${{ runner.temp }}/wrangler-production.jsonc',
+    )
+    expect(workflow).toContain(
+      '--var ORBITAL_CATALOG_ENABLED:${{ inputs.orbital_catalog_enabled }}',
+    )
+    expect(workflow).toContain(
+      '"${{ inputs.aircraft_delivery }}"\n          "${{ inputs.orbital_catalog_enabled }}"',
+    )
+    expect(workflow).toContain(
+      'echo "- Orbital catalog enabled: \\`${{ inputs.orbital_catalog_enabled }}\\`"',
+    )
+    expect(workflow).toContain(
+      'echo "- Orbital coordinator enabled: \\`${{ inputs.orbital_catalog_enabled }}\\`"',
+    )
   })
 })

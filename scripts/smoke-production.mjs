@@ -13,6 +13,7 @@ import {
 } from './smoke-policy.mjs'
 
 const MAX_AIRCRAFT_RESPONSE_BYTES = 4 * 1_024 * 1_024
+const MAX_ORBITAL_RESPONSE_BYTES = 256 * 1_024
 const PRIVATE_RELAY_MAX_ATTEMPTS = 3
 const PRIVATE_RELAY_MAX_RETRY_AFTER_SECONDS = 30
 
@@ -20,11 +21,13 @@ const [
   deploymentUrl,
   expectedReleaseSha,
   aircraftDelivery = 'worker-proxy',
+  orbitalCatalogEnabled = 'false',
 ] = process.argv.slice(2)
 
 if (!deploymentUrl || !expectedReleaseSha) {
   throw new Error(
-    'Usage: node scripts/smoke-production.mjs <deployment-url> <release-sha> [aircraft-delivery]',
+    'Usage: node scripts/smoke-production.mjs <deployment-url> <release-sha> ' +
+      '[aircraft-delivery] [orbital-catalog-enabled]',
   )
 }
 
@@ -39,6 +42,14 @@ if (
 ) {
   throw new Error(
     'The aircraft delivery must be "worker-proxy", "oci-private-relay", or "adsb-lol-direct"',
+  )
+}
+if (
+  orbitalCatalogEnabled !== 'true' &&
+  orbitalCatalogEnabled !== 'false'
+) {
+  throw new Error(
+    'The orbital catalog flag must be "true" or "false"',
   )
 }
 
@@ -242,6 +253,46 @@ const verifyStaticAssets = async () => {
         remotePhoto.headers.get('cache-control'),
       ),
       `Deployed vessel photo ${photo.imo} does not have one-year immutable caching`,
+    )
+  }
+
+  if (orbitalCatalogEnabled === 'true') {
+    const orbitalPath = '/orbital-data/v1/visual-catalog.json'
+    const localOrbital = await readFile(`dist${orbitalPath}`)
+    const remoteOrbital = await remoteBytes(orbitalPath, localOrbital)
+    assert(
+      sha256(remoteOrbital.bytes) === sha256(localOrbital),
+      'Deployed orbital bootstrap does not match the validated build',
+    )
+    assert(
+      remoteOrbital.headers
+        .get('content-type')
+        ?.includes('application/json'),
+      'Deployed orbital bootstrap has the wrong content type',
+    )
+    assert(
+      hasOneYearImmutableCacheControl(
+        remoteOrbital.headers.get('cache-control'),
+      ),
+      'Deployed orbital bootstrap is not immutable',
+    )
+
+    const noticePath = '/orbital-data/v1/NOTICE.txt'
+    const localNotice = await readFile(`dist${noticePath}`)
+    const remoteNotice = await remoteBytes(noticePath, localNotice)
+    assert(
+      sha256(remoteNotice.bytes) === sha256(localNotice),
+      'Deployed orbital notice does not match the validated build',
+    )
+    assert(
+      remoteNotice.headers.get('content-type')?.includes('text/plain'),
+      'Deployed orbital notice has the wrong content type',
+    )
+    assert(
+      hasOneYearImmutableCacheControl(
+        remoteNotice.headers.get('cache-control'),
+      ),
+      'Deployed orbital notice is not immutable',
     )
   }
 }
@@ -495,6 +546,102 @@ const verifyMetarProxy = async () => {
   )
 }
 
+const verifyOrbitalCatalog = async () => {
+  const url = new URL('/api/orbits/catalog', baseUrl)
+  const response = await fetchWithTimeout(url)
+  assert(
+    response.headers.get('x-livetrafficstan-release') ===
+      expectedReleaseSha,
+    'Orbital catalog release SHA does not match the deployed source',
+  )
+
+  if (orbitalCatalogEnabled === 'false') {
+    assert(
+      response.status === 404,
+      'Disabled orbital catalog was exposed',
+    )
+    void response.body?.cancel().catch(() => undefined)
+    return
+  }
+
+  assert(
+    response.status === 200,
+    `Orbital catalog returned ${response.status}`,
+  )
+  assert(
+    response.headers.get('content-type')?.includes('application/json'),
+    'Orbital catalog did not return JSON',
+  )
+  assert(
+    response.headers.get('cache-control') ===
+      'public, max-age=300, must-revalidate',
+    'Orbital catalog cache guidance is incorrect',
+  )
+  assert(
+    response.headers.get('x-content-type-options') === 'nosniff',
+    'Orbital catalog nosniff header is missing',
+  )
+  assert(
+    !response.headers.has('access-control-allow-origin'),
+    'Orbital catalog unexpectedly allows cross-origin access',
+  )
+  assert(
+    response.headers.get('x-livetrafficstan-orbital-source') === 'kv' ||
+      response.headers.get('x-livetrafficstan-orbital-source') ===
+        'bootstrap',
+    'Orbital catalog source identity is missing',
+  )
+
+  const body = new Uint8Array(await response.arrayBuffer())
+  assert(
+    body.byteLength <= MAX_ORBITAL_RESPONSE_BYTES,
+    'Orbital catalog response is oversized',
+  )
+  const payload = JSON.parse(new TextDecoder().decode(body))
+  assert(
+    payload &&
+      typeof payload === 'object' &&
+      payload.schemaVersion === 1 &&
+      payload.sourceContractVersion === 1 &&
+      payload.group === 'visual' &&
+      payload.gpSourceUrl ===
+        'https://celestrak.org/NORAD/elements/gp.php?GROUP=visual&FORMAT=json' &&
+      payload.satcatSourceUrl ===
+        'https://celestrak.org/satcat/records.php?GROUP=visual&FORMAT=json' &&
+      Array.isArray(payload.records) &&
+      payload.records.length > 0 &&
+      payload.records.length <= 256 &&
+      payload.recordCount === payload.records.length,
+    'Orbital catalog returned an unexpected payload',
+  )
+  assert(
+    payload.records.every(
+      (record) =>
+        record &&
+        typeof record === 'object' &&
+        /^(?:[1-9]\d{0,8})$/.test(record.noradCatalogId) &&
+        ['PAY', 'R/B', 'DEB', 'UNK'].includes(record.objectType),
+    ),
+    'Orbital catalog contains an invalid object identity or type',
+  )
+  assert(
+    response.headers.get('x-livetrafficstan-orbital-sha256') ===
+      payload.sha256,
+    'Orbital catalog digest header does not match the payload',
+  )
+  assert(
+    response.headers.get('etag') === `"${payload.sha256}"`,
+    'Orbital catalog ETag does not match the payload digest',
+  )
+
+  const query = await fetchWithTimeout(
+    new URL('/api/orbits/catalog?group=active', baseUrl),
+  )
+  assert(query.status === 400, 'Orbital catalog query was not rejected')
+  const method = await fetchWithTimeout(url, { method: 'POST' })
+  assert(method.status === 405, 'Orbital catalog method was not rejected')
+}
+
 const verifyDigitrafficRest = async () => {
   const endpoint = new URL(
     'https://meri.digitraffic.fi/api/ais/v1/locations',
@@ -578,6 +725,7 @@ const verifyDigitrafficMqtt = () =>
 await verifyStaticAssets()
 await verifyAircraftProxy()
 await verifyMetarProxy()
+await verifyOrbitalCatalog()
 await verifyDigitrafficRest()
 await verifyDigitrafficMqtt()
 

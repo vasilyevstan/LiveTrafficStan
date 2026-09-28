@@ -2,7 +2,9 @@
 
 ## Prerequisites and install
 
-Use Node.js 20.19 or newer and npm 10 or newer.
+Use Node.js 24 or newer and npm 10 or newer. Node 24 is required because the
+network-free orbital maintenance commands import the same erasable TypeScript
+validator used by the Worker rather than maintaining a second schema.
 
 ```bash
 npm install
@@ -29,6 +31,8 @@ Wikidata, tracker, or image-provider request.
 | `npm run update:aircraft-metadata` | Explicit maintainer regeneration from the pinned upstream archive and license |
 | `npm run check:country-allocations` | Network-free validation of bundled MID and ICAO24 country allocations |
 | `npm run update:country-allocations` | Explicit maintainer regeneration from pinned open-licensed sources and canonical cross-checks |
+| `npm run check:orbital-catalog` | Network-free raw-byte, fatal UTF-8, exact-schema/canonical-serialization, source, type, ordering, count, size, epoch, and SHA-256 validation of the committed CelesTrak bootstrap |
+| `npm run update:orbital-catalog -- --gp <path> --satcat <path> --retrieved-at <iso> --output public/orbital-data/v1/visual-catalog.json` | Explicit maintainer normalization of one already-downloaded GP/SATCAT pair after enforcing the same 256 KiB raw-byte and fatal UTF-8 bounds; never fetches the provider |
 | `npm run check:vessel-photos` | Network-free validation of exact IMO, source revision, rights, license notice, asset inventory, dimensions, size, and SHA-256 |
 | `npm run check:ports` | Network-free validation of the committed Natural Earth port projection |
 | `npm run update:ports` | Explicit maintainer regeneration from the pinned Natural Earth source |
@@ -60,6 +64,7 @@ npm run typecheck
 npm test -- --run
 npm run check:aircraft-metadata
 npm run check:country-allocations
+npm run check:orbital-catalog
 npm run check:vessel-photos
 npm run check:ports
 npm run check:airports
@@ -70,6 +75,14 @@ npm run check:deploy
 The same commands run in `.github/workflows/validate.yml` for pull requests and
 pushes targeting `dev` or `main`. The Wrangler dry run is credential-free and
 does not call a live provider.
+
+`npm run update:orbital-catalog` consumes local files only. A maintainer first
+makes one bounded GP request and one bounded SATCAT request under the current
+CelesTrak contract, records response evidence, and then runs the normalizer.
+Repeated tests use committed fixtures and the normalized bootstrap; they never
+loop against CelesTrak. `npm run check:orbital-catalog` recomputes the digest
+without network access and rejects unknown padding or any noncanonical file
+serialization.
 
 To build the protected direct-aircraft variant without changing defaults:
 

@@ -36,3 +36,6 @@
 
 /vessel-photos/*
   Cache-Control: public, max-age=31536000, immutable
+
+/orbital-data/*
+  Cache-Control: public, max-age=31536000, immutable

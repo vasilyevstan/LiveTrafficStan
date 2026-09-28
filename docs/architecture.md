@@ -91,11 +91,12 @@ tombstone can be removed after Cloudflare confirms that deletion has applied.
 | `src/traffic/` | Filtering, freshness/expiry, interpolation, and selected-trail history |
 | `src/map/` | MapLibre lifecycle, external/local-fallback styles, GeoJSON sources/layers, feature selection, and marker images |
 | `src/components/` | Status, controls, and selected-object details |
-| `worker/` | Fixed aircraft and weather proxies with sanitized route matching, explicit protected aircraft delivery mode, VPC binding injection, and fail-closed relay authentication |
+| `worker/` | Fixed aircraft and weather proxies plus the feature-gated CelesTrak orbital snapshot scheduler/reader, with sanitized route matching, explicit protected aircraft delivery mode, VPC/KV/Durable Object binding injection, atomic orbital cadence admission, and fail-closed relay authentication |
 | `infra/oci/aircraft-relay/` | Dependency-free fixed ADSB.lol relay, persistent global admission, loopback HTTP adapter, hardened systemd units, exact-SHA deployment, and Tunnel installation |
 | `scripts/pwa-shell.mjs` | Deterministic shell allowlist/versioning, request classification, two-generation cleanup, and normal/retirement worker source |
 | `public/manifest.webmanifest` | Root-scoped standalone install metadata and versioned maskable icons |
 | `public/vessel-photos/` | Immutable reviewed vessel-photo derivatives plus co-located file-specific license records; excluded from the application-shell cache |
+| `public/orbital-data/` | Immutable normalized CelesTrak bootstrap for the schema-compatible first deploy and rollback fallback; excluded from the application-shell cache |
 
 ## Control composition
 
@@ -587,17 +588,24 @@ and gives only the aircraft proxy one private outbound dependency:
 
 1. `dist/` is served as Static Assets;
 2. fingerprinted `/assets/*`, versioned `/aircraft-metadata/*`, versioned
-   `/ports/*`, and versioned `/airports/*` responses use immutable browser
-   caching;
+   `/ports/*`, versioned `/airports/*`, and versioned
+   `/orbital-data/*` responses use immutable browser caching;
 3. Worker code runs first only for `/api` and `/api/*`;
-4. the only forwarded routes are the fixed aircraft point route and canonical
-   `GET /api/weather/metar?ids=...`; after private-relay activation, the
-   aircraft route may use only its configured fixed transport and never fail
-   over within a request;
-5. OpenFreeMap, Photon, and Digitraffic HTTPS/WSS remain direct browser
+4. the only forwarded browser routes are the fixed aircraft point route and
+   canonical `GET /api/weather/metar?ids=...`; the fixed
+   `GET /api/orbits/catalog` route reads only KV or the exact-release bootstrap
+   and never performs an upstream request;
+5. a feature-gated two-hour Cron, independent of browser requests, may fetch
+   only after one named SQLite Durable Object atomically admits the start; it
+   may then fetch only the fixed CelesTrak `visual` GP and SATCAT URLs, persist
+   the provider outcome, and publish one complete schema-versioned KV snapshot
+   with one final write;
+6. after private-relay activation, the aircraft route may use only its
+   configured fixed transport and never fail over within a request;
+7. OpenFreeMap, Photon, and Digitraffic HTTPS/WSS remain direct browser
    connections;
-6. map, search, aircraft, marine, optional-port, optional-airport, and weather
-   attribution remains visible.
+8. map, search, aircraft, marine, optional-port, optional-airport, weather, and
+   orbital attribution remains visible when the corresponding data is shown.
 
 The production proxy accepts canonical finite latitude/longitude values and
 integer radii from 1 through 54 NM. It rejects query strings, other methods,
@@ -616,10 +624,13 @@ backoff state. It has no public hostname, cache, queue, provider fallback, or
 coordinate-bearing application log. See
 [OCI Aircraft Relay](oci-aircraft-relay.md).
 
-No application database, general backend, provider scheduler, shared live
-cache, preview deployment, or server-side marine relay is added. Worker
-observability is disabled because request URLs contain rounded camera
-coordinates or visible station IDs. Cloudflare and upstream network
+No application database, general backend, shared live traffic cache, preview
+deployment, or server-side marine relay is added. The only provider scheduler
+is the fixed, feature-gated CelesTrak catalog Cron plus its single named
+SQLite coordinator; it accepts no browser input, stores no user data, and
+cannot fetch another provider/group/path. Worker
+observability is disabled because ordinary request URLs can contain rounded
+camera coordinates or visible station IDs. Cloudflare and upstream network
 intermediaries still process ordinary request metadata.
 
 Production activation, exact-origin browser smoke, prior-version rollback, and

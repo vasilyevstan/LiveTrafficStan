@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { readFile } from 'node:fs/promises'
 import worker, { type WorkerEnv } from './index.js'
 import { ADSB_LOL_USER_AGENT } from './aircraftProxy.js'
+import { ORBITAL_BOOTSTRAP_PATH } from './orbitalCatalog.js'
 
 const releaseSha = '0123456789abcdef0123456789abcdef01234567'
 
@@ -189,6 +191,61 @@ describe('Cloudflare worker routing', () => {
       releaseSha,
     )
     expect(assetsFetch).not.toHaveBeenCalled()
+  })
+
+  it('routes the orbital catalog before the generic aircraft API path', async () => {
+    const bootstrap = await readFile(
+      `public${ORBITAL_BOOTSTRAP_PATH}`,
+      'utf8',
+    )
+    const assetsFetch = vi.fn(async (request: Request) => {
+      expect(new URL(request.url).pathname).toBe(ORBITAL_BOOTSTRAP_PATH)
+      return new Response(bootstrap, {
+        headers: { 'Content-Type': 'application/json' },
+      })
+    })
+
+    const response = await worker.fetch(
+      new Request('https://app.example/api/orbits/catalog'),
+      {
+        ASSETS: { fetch: assetsFetch },
+        ORBITAL_CATALOG_ENABLED: 'true',
+        RELEASE_SHA: releaseSha,
+      },
+    )
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('x-livetrafficstan-release')).toBe(
+      releaseSha,
+    )
+    expect(response.headers.get('x-livetrafficstan-orbital-source')).toBe(
+      'bootstrap',
+    )
+  })
+
+  it('disables platform retries for scheduled catalog refreshes', async () => {
+    const noRetry = vi.fn()
+    const coordinatorFetch = vi.fn(
+      async (_request: Request) => new Response('{}'),
+    )
+
+    await worker.scheduled(
+      { noRetry },
+      {
+        ASSETS: { fetch: vi.fn() },
+        ORBITAL_CATALOG_ENABLED: 'true',
+        ORBITAL_CATALOG_COORDINATOR: {
+          idFromName: vi.fn(() => 'coordinator-id'),
+          get: vi.fn(() => ({ fetch: coordinatorFetch })),
+        },
+      },
+    )
+
+    expect(noRetry).toHaveBeenCalledTimes(1)
+    expect(coordinatorFetch).toHaveBeenCalledTimes(1)
+    const request = coordinatorFetch.mock.calls[0]?.[0]
+    expect(request?.method).toBe('POST')
+    expect(new URL(request?.url ?? '').pathname).toBe('/refresh')
   })
 
   it('rejects the API root without consulting Static Assets', async () => {

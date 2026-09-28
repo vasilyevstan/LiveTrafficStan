@@ -4,6 +4,10 @@
   "version": "1.6.0",
   "license": "Apache-2.0",
   "type": "module",
+  "engines": {
+    "node": ">=24.0.0",
+    "npm": ">=10.0.0"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build && node scripts/generate-service-worker.mjs",
@@ -11,6 +15,7 @@
     "check:aircraft-metadata": "node scripts/check-aircraft-metadata.mjs",
     "check:airports": "node scripts/check-airports.mjs",
     "check:country-allocations": "node scripts/check-country-allocations.mjs",
+    "check:orbital-catalog": "node scripts/check-orbital-catalog.mjs",
     "check:ports": "node scripts/check-ports.mjs",
     "check:vessel-photos": "node scripts/check-vessel-photos.mjs",
     "check:deploy": "wrangler deploy --dry-run",
@@ -22,6 +27,7 @@
     "update:aircraft-metadata": "node scripts/update-aircraft-metadata.mjs",
     "update:airports": "node scripts/update-airports.mjs",
     "update:country-allocations": "node scripts/update-country-allocations.mjs",
+    "update:orbital-catalog": "node scripts/update-orbital-catalog.mjs",
     "update:ports": "node scripts/update-ports.mjs",
     "preview": "vite preview"
   },
