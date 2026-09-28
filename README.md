@@ -171,8 +171,7 @@ npm run check:deploy
 npm run preview:worker
 ```
 
-To enable the feature-gated orbital bootstrap route for local rendered
-acceptance:
+To exercise the enabled orbital bootstrap route for local rendered acceptance:
 
 ```bash
 npm run build
@@ -427,31 +426,54 @@ persistent route cache.
 
 Public production is live at
 <https://livetrafficstan.syntal.workers.dev> on Cloudflare Workers Free with
-Static Assets. The accepted V1.6.0 application source is
-`3370dfe3f1cc2614feff894643ed865978ec7edc`; exact-main validation run
-`36299844911` passed, and deployment run `36299895010` published Cloudflare
-version `0cbc0b5d-2e7b-49f0-b649-a2d22ac3a83c` with
-`oci-private-relay`, aircraft photos, and plausible routes enabled. The
-deployed `index.html` SHA-256 is
-`79cf1da10b42fccef71d5523f4076612c489912fc4a64967f8bead555e745574`.
-The compatible relay remains at
+Static Assets. The current application source is
+`46cb2007bc0cc27d1905fab32db6149a91d17576`. Final restoration deployment
+run `36488245592` passed every check and production smoke, published
+Cloudflare version `0138d581-2162-491a-bcb5-619a97cf31fb`, and recorded:
+
+- `oci-private-relay`, aircraft photos, and plausible routes enabled;
+- the orbital catalog enabled with Cron `17 */2 * * *`;
+- KV namespace `59178d55418247c4bab473b52a5dc07d`;
+- a validated 156-record schema-v1 catalog with digest
+  `2cbe00a3285c7bdfd80fe07661b6a14b48279d0629e44c026c6306bb20453d5b`;
+- deployed `index.html` SHA-256
+  `396705e26670808d157f5405d636103887d80c053609140719a72c43bcad3f64`.
+
+The restored deployment installed its triggers at `2026-09-28T21:46:41Z`.
+The first eligible `22:17Z` schedule was then observed through the public
+catalog route from `22:19:30Z` through `22:31:54Z`. The route continued to
+serve the validated release bootstrap, so no compatible KV publication is
+claimed for that window. The modeled layer remained available and truthful;
+the first successful scheduled KV publication remains open in #162.
+
+The comprehensive public Wiki synchronization is commit
+`c2f91bdd74f13b78e20cc3ad50f296b5de94a54b`; it adds
+[Orbital Tracking](https://github.com/vasilyevstan/LiveTrafficStan/wiki/Orbital-Tracking)
+and
+[Infrastructure and Hosting](https://github.com/vasilyevstan/LiveTrafficStan/wiki/Infrastructure-and-Hosting)
+and updates the related architecture, configuration, provider, testing,
+release, troubleshooting, accessibility, and roadmap pages.
+
+The compatible aircraft relay remains at
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` and retains
 `76540a21291878b44e7f92ceecb37d03a366c0c7` as its prior rollback release.
 
-Rendered production acceptance selected live `BTI877`, made exactly one route
-request, rendered TLL to BCN, and made no second route request after an
-aircraft polling refresh. Selecting live `FIN7DE` rendered HEL to TLL. The
-compact caveat and both route attributions remained visible with one MapLibre
-canvas and zero horizontal overflow at desktop and 390x844. Earlier
-private-relay, aircraft-photo, and exact-IMO vessel details/hover acceptance
-remain the compatible baseline.
+Fresh-profile rendered orbital acceptance proved zero catalog requests before
+enable, one same-origin request after enable, zero browser requests to
+CelesTrak, one unchanged MapLibre canvas, exact A-to-B-to-A selection,
+theme/hide/show restoration, 156 whole-world modeled objects while aircraft
+and ships paused, a 390x844 panel within the 58vh budget, real touch camera
+movement, and no runtime exception or main-thread task over 50 ms. Use
+<https://livetrafficstan.syntal.workers.dev/#v=1&orbits=1> to open the
+default-off layer directly.
 
-Protected rollback run
-`36188474191` restored accepted V1.5.3 source
-`6d132907525f4f1479ae2b4f94485d76c151b86a`, and restoration run
-`36188545228` returned production to V1.6.0 with matching exact-byte smoke.
-The synchronized public Wiki records this release at commit
-`108f6bfb334f115890a32ec259b23c64643394d2`.
+Protected rollback run `36488117751` rebuilt pre-orbital source
+`3370dfe3f1cc2614feff894643ed865978ec7edc` behind the namespace-preserving
+coordinator compatibility export, removed the Cron, returned `404` from the
+orbital route, and passed target smoke. Restoration run `36488245592` restored
+the current source, KV/coordinator bindings, Cron, catalog route, and full
+smoke. Earlier private-relay, route, aircraft-photo, and exact-IMO vessel
+acceptance remains the compatible baseline.
 See [Hosting and Deployment](docs/hosting-and-deployment.md) for the dated
 platform matrix, request budget, proxy contract, exact-SHA workflow, smoke,
 monitoring, privacy, and rollback procedure.

@@ -491,7 +491,8 @@ bounded list result when present or to the METAR toggle.
 
 ## Orbital catalog is unavailable or stale
 
-The scheduled orbital source is feature-gated. A production request to:
+The scheduled orbital source is controlled by the protected deployment flag.
+Current production enables it. A request to:
 
 ```text
 GET /api/orbits/catalog
