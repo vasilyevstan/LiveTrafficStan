@@ -711,7 +711,7 @@ elements; the fixed SATCAT JSON feed supplies exact public catalog type.
 LiveTrafficStan joins only by canonical NORAD catalog ID and never infers
 payload, rocket body, debris, or unknown from a name suffix or orbit.
 
-The browser does not contact CelesTrak. One feature-gated Cloudflare Cron may
+The browser does not contact CelesTrak. One protected Cloudflare Cron may
 ask one named SQLite Durable Object to atomically admit the two fixed requests
 at most once every two hours, validates both under strict
 status/media-type/byte/record/deadline/schema limits, and publishes one complete
@@ -739,8 +739,10 @@ CelesTrak operates this public orbital-data service as part of its nonprofit
 mission but does not publish a conventional formal license covering every
 downstream caching and redistribution question. The selected basis is fixed,
 noncommercial, minimum-necessary, attributed, value-added use with exact
-provenance. Current provider text must be rechecked before activation; a
-prohibition on the planned caching or public display stops the feature.
+provenance. Provider text was rechecked for the 2026-09-28 production
+activation. It must be rechecked before any material source, group, cadence,
+caching, attribution, or public-display change; a prohibition stops further
+acquisition rather than introducing a fallback.
 
 The full evidence, alternatives, observed group sizes/composition, cadence,
 object-type contract, privacy boundary, and stop conditions are in

@@ -36,8 +36,10 @@ This decision combines:
 - **Inferred** legal or operational conclusions called out explicitly rather
   than presented as provider guarantees.
 
-Provider behavior and terms can change. Recheck every official source
-immediately before production activation and record the review date in #162.
+Provider behavior and terms can change. The official sources were rechecked for
+the 2026-09-28 production activation and recorded in #162. Recheck them again
+before any material source, group, cadence, caching, attribution, or
+public-display change.
 
 ## Selected CelesTrak endpoints
 
@@ -248,9 +250,9 @@ The selected basis is therefore:
 - exact provenance and retrieval identity;
 - immediate re-review if provider policy changes.
 
-This is an engineering assessment, not legal advice. Production activation
-stops if current provider text prohibits the planned caching, public display,
-or attribution model.
+This is an engineering assessment, not legal advice. Production acquisition
+must be disabled if current provider text prohibits the fixed caching, public
+display, or attribution model.
 
 Visible attribution must state, in substance:
 

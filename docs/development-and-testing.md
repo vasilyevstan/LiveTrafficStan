@@ -790,10 +790,30 @@ one `ORBITAL_CATALOG` KV binding, one SQLite
 delivery variables, and the checked Cron configuration without credentials or
 deployment.
 
-These are reproducible development checks, not production or physical-device
-evidence. Exact-origin production smoke, physical iOS Safari/Android Chrome
-touch acceptance, and first Cron/KV/rollback evidence remain required before
-production activation.
+These remain reproducible development checks rather than physical-device
+evidence. Production source
+`46cb2007bc0cc27d1905fab32db6149a91d17576` subsequently passed:
+
+- exact-current-main deployment and full smoke in run `36487869446`;
+- fresh-profile public-browser acceptance with one same-origin request, zero
+  CelesTrak browser requests, one canvas, 156 whole-world modeled objects,
+  style/selection/touch continuity, and no orbital exception or long task over
+  50 ms;
+- namespace-preserving pre-orbital compatibility rollback, Cron removal,
+  target `404`, and target smoke in run `36488117751`;
+- exact-current-main restoration, Cron `17 */2 * * *`, KV namespace
+  `59178d55418247c4bab473b52a5dc07d`, and full smoke in run `36488245592`.
+- bounded observation of the first eligible `22:17Z` Cron window from
+  `22:19:30Z` through `22:31:54Z`; the endpoint remained on the exact validated
+  bootstrap, so no successful KV publication is claimed and #162 stays open
+  for that evidence.
+- comprehensive public Wiki synchronization in commit
+  `c2f91bdd74f13b78e20cc3ad50f296b5de94a54b`, including focused orbital and
+  infrastructure pages plus the related architecture, provider, testing,
+  release, troubleshooting, accessibility, and roadmap updates.
+
+Physical iOS Safari, Android Chrome, and supported-device drag-FPS evidence
+remain outstanding and must not be inferred from CDP emulation.
 
 Repeat the core check with `npm run build && npm run preview`. Confirm that
 `dist/assets/` contains a `maplibre-gl-worker-*.js` file and that the preview

@@ -16,11 +16,12 @@ This is cataloged orbital-object context, not another live-traffic provider:
 - powered ascent, reentry, impact, conjunction, and hazard claims are outside
   this feature.
 
-The browser implementation and the scheduled catalog infrastructure are
-separate release gates. The production Worker continues to return `404` while
-`ORBITAL_CATALOG_ENABLED` is off. Production activation requires the checked
-release workflow, first Cron/KV evidence, rendered browser acceptance, and
-rollback proof.
+The browser implementation and scheduled catalog infrastructure are active in
+production source `46cb2007bc0cc27d1905fab32db6149a91d17576`. The layer
+remains a default-off user preference, while the protected Worker deployment
+sets `ORBITAL_CATALOG_ENABLED=true`, serves the same-origin catalog route, and
+runs the checked two-hour scheduler. A deployment with that Worker flag off
+still returns `404` and removes the Cron.
 
 ## User experience
 
@@ -328,6 +329,58 @@ npx wrangler dev --local --var ORBITAL_CATALOG_ENABLED:true
 
 Ordinary `npm run dev` does not contact CelesTrak and does not emulate the
 scheduled KV/Durable Object boundary.
+
+## Production activation evidence
+
+Production activation completed on 2026-09-28:
+
+- source: `46cb2007bc0cc27d1905fab32db6149a91d17576`;
+- final restoration deployment:
+  [36488245592](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/36488245592);
+- Cloudflare version: `0138d581-2162-491a-bcb5-619a97cf31fb`;
+- KV namespace: `59178d55418247c4bab473b52a5dc07d`;
+- Cron: `17 */2 * * *`;
+- bootstrap schema/count/digest: schema `1`, 156 records,
+  `2cbe00a3285c7bdfd80fe07661b6a14b48279d0629e44c026c6306bb20453d5b`;
+- bootstrap retrieval time: `2026-09-28T18:45:06.958Z`;
+- stable validator:
+  `W/"2cbe00a3285c7bdfd80fe07661b6a14b48279d0629e44c026c6306bb20453d5b"`.
+
+The restoration deployed its triggers at `2026-09-28T21:46:41Z`, before the
+first eligible `22:17Z` schedule. Bounded public observations at `22:19:30Z`
+and every two minutes through `22:31:54Z` still returned
+`X-LiveTrafficStan-Orbital-Source: bootstrap` with the exact activation
+retrieval time and digest. That evidence proves that no compatible KV snapshot
+had become publicly available in that window; it does not claim whether the
+scheduled delivery was delayed or an admitted refresh failed. The bootstrap
+kept the layer operational. The first successful production KV publication
+remains open in #162.
+
+Public Wiki commit `c2f91bdd74f13b78e20cc3ad50f296b5de94a54b`
+adds the comprehensive
+[Orbital Tracking](https://github.com/vasilyevstan/LiveTrafficStan/wiki/Orbital-Tracking)
+and
+[Infrastructure and Hosting](https://github.com/vasilyevstan/LiveTrafficStan/wiki/Infrastructure-and-Hosting)
+pages and synchronizes the related public architecture, configuration,
+provider, testing, release, troubleshooting, accessibility, and roadmap
+content.
+
+A fresh isolated Chromium profile proved zero orbital startup requests, one
+same-origin catalog request after explicit enable, zero CelesTrak browser
+requests, one unchanged canvas, exact selection and style restoration,
+whole-world orbital availability while aircraft and ships paused, a bounded
+390x844 disclosure, real touch camera movement, and no orbital runtime
+exception or long task over 50 ms.
+
+Rollback run
+[36488117751](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/36488117751)
+successfully deployed the exact pre-orbital target with an unreachable live
+coordinator export, no orbital binding, and no Cron. The route returned `404`
+with target release `3370dfe3f1cc2614feff894643ed865978ec7edc`. The final
+restoration run reattached the retained namespace, restored the Cron and
+catalog, and passed full production smoke. The optional globe remains separate
+in #163. Physical iOS Safari, Android Chrome, and supported-device drag-FPS
+evidence remain explicit outstanding acceptance for #162.
 
 ## Related documentation
 

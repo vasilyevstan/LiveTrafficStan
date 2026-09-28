@@ -9,7 +9,7 @@ production platform:
 
 - Vite's `dist/` output is served as immutable static assets;
 - one Worker handles the same-origin ADSB.lol point and AWC METAR paths plus a
-  feature-gated storage-only orbital catalog route and scheduler;
+  protected storage-only orbital catalog route and scheduler;
 - plausible route lookup calls ADSB.lol standing data directly from the
   browser once for a newly selected eligible live aircraft;
 - exact-IMO vessel reference photos are versioned same-origin Static Assets
@@ -38,21 +38,45 @@ tombstone as stale.
 Public production is live at
 <https://livetrafficstan.syntal.workers.dev> on Cloudflare Workers Free with
 Static Assets. The protected `production` environment contains the deployment
-credentials, observability remains disabled, and no paid add-on, KV, Durable
-Object, or R2 service is used by the currently accepted V1.6.0 release. The
-orbital KV/coordinator/Cron path remains feature-gated until #162 reaches
-production acceptance.
+credentials and the private-relay secret. Observability remains disabled and
+no paid fallback is enabled. Orbital activation uses the included free KV and
+SQLite Durable Object allocations; R2 is not used.
 
-The accepted V1.6.0 application source is
-`3370dfe3f1cc2614feff894643ed865978ec7edc`. Exact-main validation run
-`36299844911` passed, and deployment run `36299895010` published Cloudflare
-version `0cbc0b5d-2e7b-49f0-b649-a2d22ac3a83c` with aircraft delivery through
-`oci-private-relay`, aircraft photos enabled, plausible routes enabled, and
-the five-file exact-IMO vessel-photo manifest active. The compatible relay
-remains at `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` and retains
+The current application source is
+`46cb2007bc0cc27d1905fab32db6149a91d17576`. Final restoration deployment
+run `36488245592` published Cloudflare version
+`0138d581-2162-491a-bcb5-619a97cf31fb` with aircraft delivery through
+`oci-private-relay`, aircraft photos, plausible routes, the five-file
+exact-IMO vessel-photo manifest, and the orbital catalog enabled. It recorded
+KV namespace `59178d55418247c4bab473b52a5dc07d`, one SQLite coordinator, and
+Cron `17 */2 * * *`. The compatible relay remains at
+`1f9a2fd322f141fe761d3bf00113e1ab60526e6c` and retains
 `76540a21291878b44e7f92ceecb37d03a366c0c7` as the prior release. The
-validated and deployed `index.html` SHA-256 is
-`79cf1da10b42fccef71d5523f4076612c489912fc4a64967f8bead555e745574`.
+deployed `index.html` SHA-256 is
+`396705e26670808d157f5405d636103887d80c053609140719a72c43bcad3f64`.
+
+The activation catalog contains 156 schema-v1 records with digest
+`2cbe00a3285c7bdfd80fe07661b6a14b48279d0629e44c026c6306bb20453d5b`
+and bootstrap retrieval time `2026-09-28T18:45:06.958Z`. The stable browser
+validator is the semantic weak ETag
+`W/"2cbe00a3285c7bdfd80fe07661b6a14b48279d0629e44c026c6306bb20453d5b"`.
+
+The final restoration installed its triggers at `2026-09-28T21:46:41Z`.
+The first eligible `22:17Z` schedule was observed through the public catalog
+route at `22:19:30Z` and every two minutes through `22:31:54Z`. Every response
+remained the exact validated bootstrap. No compatible KV publication is
+therefore claimed for that bounded window, and the observation alone cannot
+distinguish delayed scheduled delivery from a failed refresh. The bootstrap
+kept the feature available; #162 retains the first successful scheduled KV
+publication as explicit outstanding evidence.
+
+The public Wiki synchronization is commit
+`c2f91bdd74f13b78e20cc3ad50f296b5de94a54b`. It adds focused
+[Orbital Tracking](https://github.com/vasilyevstan/LiveTrafficStan/wiki/Orbital-Tracking)
+and
+[Infrastructure and Hosting](https://github.com/vasilyevstan/LiveTrafficStan/wiki/Infrastructure-and-Hosting)
+pages and updates the surrounding architecture, configuration, provider,
+testing, release, troubleshooting, accessibility, and roadmap documentation.
 
 Current rendered route acceptance selected live `BTI877`, made exactly one
 route request, rendered TLL to BCN, and made no second route request after an
@@ -85,6 +109,13 @@ without another request. A 70-second host canary measured 0.2374% combined
 relay/cloudflared CPU, approximately 65 MB combined service memory, zero
 restarts, zero swap, no OOM evidence, and approximately 460 MB available
 memory.
+
+Fresh-profile orbital acceptance observed zero startup catalog requests, one
+same-origin request after enable, no CelesTrak browser request, one unchanged
+MapLibre canvas, exact A-to-B-to-A selection, selection-preserving theme
+rehydration, 156 modeled objects at whole-world view while aircraft and ships
+paused, real touch camera movement at 390x844, and no runtime exception or
+main-thread task over 50 ms.
 
 The first deployment attempt, run `36265893317`, uploaded Cloudflare version
 `a17be7e0-9340-49eb-8689-e8db4b63565c` but its immediate smoke reached an edge
@@ -700,7 +731,7 @@ gh workflow run deploy-production.yml \
   -f aircraft_delivery=oci-private-relay \
   -f aircraft_photo_enabled=true \
   -f flight_route_enabled=true \
-  -f orbital_catalog_enabled=false
+  -f orbital_catalog_enabled=true
 ```
 
 The workflow:
@@ -930,7 +961,7 @@ retained across versions, as is the dormant Durable Object namespace; each
 Worker accepts only its supported schema and can fall back to its exact-release
 bootstrap.
 
-For the first deployment:
+For an initial deployment:
 
 - record the exact source SHA and first known-good version ID;
 - record the previous version as `none - bootstrap`;
@@ -980,6 +1011,18 @@ This prevents a pre-orbital Worker from retaining a scheduled invocation that
 it cannot handle and prevents an enabled target from being restored with its
 scheduler accidentally disabled. The KV and Durable Object namespaces are
 never deleted during rollback.
+
+The orbital activation completed this proof in production:
+
+- run `36488117751` rebuilt pre-orbital source
+  `3370dfe3f1cc2614feff894643ed865978ec7edc` behind an unreachable live
+  coordinator export, published compatibility version
+  `1cb4a5e2-2f62-4d48-8b6f-9089dbb03e3c`, removed all Cron triggers,
+  returned `404` from `/api/orbits/catalog`, and passed target smoke;
+- run `36488245592` restored exact current source
+  `46cb2007bc0cc27d1905fab32db6149a91d17576`, version
+  `0138d581-2162-491a-bcb5-619a97cf31fb`, the retained KV/coordinator
+  namespaces, Cron `17 */2 * * *`, catalog route, and full production smoke.
 
 Build-time environment presence is part of the recorded artifact identity.
 Versions deployed before the selectable aircraft-delivery mode did not set

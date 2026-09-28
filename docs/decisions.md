@@ -234,7 +234,7 @@ SATCAT metadata. The GP feed supplies orbital elements; SATCAT supplies exact
 payload, rocket-body, debris, or unknown type. Names and orbit behavior are not
 type evidence.
 
-The browser does not call CelesTrak. One feature-gated Cloudflare Cron invokes
+The browser does not call CelesTrak. One protected Cloudflare Cron invokes
 one named SQLite Durable Object, which atomically admits at most one start per
 two hours before the two fixed requests. A complete normalized result is
 published through one final Workers KV write. `GET /api/orbits/catalog` reads
@@ -256,6 +256,12 @@ contract and alternatives are recorded in
 This infrastructure does not make propagated coordinates live observations.
 The separate map work keeps orbital models out of aircraft/marine traffic,
 freshness, trails, and history.
+
+Production activation at source
+`46cb2007bc0cc27d1905fab32db6149a91d17576` retained this design unchanged:
+the layer remains default-off, the Worker scheduler is enabled only by the
+protected exact-SHA deployment, and browsers still receive only the
+same-origin complete snapshot.
 
 ## Mercator-first local orbital modeling
 
