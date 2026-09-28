@@ -510,6 +510,11 @@ Check the release SHA, schema, digest, retrieval time, serve time, ETag, and
 source headers. Do not diagnose freshness from HTTP `Date` alone: each orbital
 record also has its own element epoch.
 
+The expected validator is `W/"<snapshot-sha256>"`. Cloudflare may transform
+content encoding at the edge, so a strong origin validator is not stable
+across browser encodings. A missing validator or a weak validator whose digest
+does not exactly match the payload and digest header is still invalid.
+
 If the first production Cron does not publish:
 
 1. inspect Cloudflare Cron Events for the expected `17 */2 * * *` trigger;

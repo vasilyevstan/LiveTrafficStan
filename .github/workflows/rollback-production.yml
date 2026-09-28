@@ -130,6 +130,7 @@ jobs:
           cp scripts/smoke-production.mjs "$RUNNER_TEMP/smoke-production.mjs"
           cp scripts/smoke-policy.mjs "$RUNNER_TEMP/smoke-policy.mjs"
           cp scripts/resolve-orbital-version-state.mjs "$RUNNER_TEMP/resolve-orbital-version-state.mjs"
+          cp scripts/prepare-orbital-rollback-config.mjs "$RUNNER_TEMP/prepare-orbital-rollback-config.mjs"
           cp infra/cloudflare/triggers/orbital-enabled.jsonc "$RUNNER_TEMP/orbital-enabled.jsonc"
           cp infra/cloudflare/triggers/orbital-disabled.jsonc "$RUNNER_TEMP/orbital-disabled.jsonc"
           git checkout --detach "$TARGET_SHA"
@@ -202,7 +203,16 @@ jobs:
           cp "$RUNNER_TEMP/smoke-production.mjs" scripts/smoke-production.mjs
           cp "$RUNNER_TEMP/smoke-policy.mjs" scripts/smoke-policy.mjs
 
+      - name: Prepare disabled target coordinator compatibility
+        if: steps.target-orbital.outputs.enabled == 'false'
+        run: >-
+          node "$RUNNER_TEMP/prepare-orbital-rollback-config.mjs"
+          --input wrangler.jsonc
+          --output "$RUNNER_TEMP/wrangler-rollback.jsonc"
+          --wrapper "$RUNNER_TEMP/orbital-rollback-worker.ts"
+
       - name: Roll back Cloudflare version
+        if: steps.target-orbital.outputs.enabled == 'true'
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -213,6 +223,21 @@ jobs:
           --name livetrafficstan
           --message "GitHub rollback to $TARGET_SHA"
           --yes
+
+      - name: Deploy disabled target with coordinator compatibility
+        if: steps.target-orbital.outputs.enabled == 'false'
+        env:
+          AIRCRAFT_DELIVERY: ${{ inputs.aircraft_delivery }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          TARGET_SHA: ${{ inputs.target_sha }}
+        run: >-
+          npx wrangler deploy
+          --config "$RUNNER_TEMP/wrangler-rollback.jsonc"
+          --var RELEASE_SHA:$TARGET_SHA
+          --var AIRCRAFT_DELIVERY:$AIRCRAFT_DELIVERY
+          --var ORBITAL_CATALOG_ENABLED:false
+          --message "GitHub compatible rollback to $TARGET_SHA"
 
       - name: Restore target orbital Cron state
         env:
