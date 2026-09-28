@@ -1,5 +1,7 @@
 import { appendFile } from 'node:fs/promises'
 
+import { listCloudflareKvNamespaces } from './cloudflare-kv-pagination.mjs'
+
 const accountId = process.env.CLOUDFLARE_ACCOUNT_ID
 const apiToken = process.env.CLOUDFLARE_API_TOKEN
 const outputPath = process.env.GITHUB_OUTPUT
@@ -38,27 +40,7 @@ const apiRequest = async (url, init = {}) => {
   return result
 }
 
-const namespaces = []
-let page = 1
-let totalPages = 1
-do {
-  const result = await apiRequest(
-    `${apiUrl}?page=${page}&per_page=100&order=title&direction=asc`,
-  )
-  if (!Array.isArray(result.result)) {
-    throw new Error('Cloudflare KV list result is invalid')
-  }
-  namespaces.push(...result.result)
-  const reportedPages = result.result_info?.total_pages
-  if (
-    reportedPages !== undefined &&
-    (!Number.isInteger(reportedPages) || reportedPages < 1)
-  ) {
-    throw new Error('Cloudflare KV pagination is invalid')
-  }
-  totalPages = reportedPages ?? 1
-  page += 1
-} while (page <= totalPages)
+const namespaces = await listCloudflareKvNamespaces(apiUrl, apiRequest)
 
 const matches = namespaces.filter(
   (namespace) => namespace?.title === namespaceTitle,
