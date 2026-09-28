@@ -455,7 +455,7 @@ describe('same-origin orbital catalog route', () => {
     )
 
     expect(response.status).toBe(200)
-    expect(response.headers.get('etag')).toBe(`"${current.sha256}"`)
+    expect(response.headers.get('etag')).toBe(`W/"${current.sha256}"`)
     expect(response.headers.get('x-livetrafficstan-orbital-source')).toBe(
       'kv',
     )
@@ -467,7 +467,7 @@ describe('same-origin orbital catalog route', () => {
 
     const conditional = await handleOrbitalCatalog(
       new Request('https://app.example/api/orbits/catalog', {
-        headers: { 'If-None-Match': `"${current.sha256}"` },
+        headers: { 'If-None-Match': `W/"${current.sha256}"` },
       }),
       environment,
       { nowMs },

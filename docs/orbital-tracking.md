@@ -93,8 +93,10 @@ GET /api/orbits/catalog
 ```
 
 The client sends `Accept: application/json`, omits credentials, rejects
-redirects, and may send only the last accepted ETag. It accepts exact `200` or
-a valid `304`. A complete `200` must pass:
+redirects, and may send only the last accepted stable weak digest ETag. The
+weak validator survives Cloudflare content-encoding changes without changing
+snapshot identity. The client accepts exact `200` or a valid `304`. A complete
+`200` must pass:
 
 - strict JSON media type and fatal UTF-8 decoding;
 - 256 KiB streamed body limit;

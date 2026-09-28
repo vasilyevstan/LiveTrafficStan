@@ -1119,7 +1119,7 @@ export const handleOrbitalCatalog = async (
     })
   }
 
-  const etag = `"${snapshot.sha256}"`
+  const etag = `W/"${snapshot.sha256}"`
   const headers = new Headers({
     'Cache-Control': 'public, max-age=300, must-revalidate',
     'Content-Type': 'application/json; charset=utf-8',
