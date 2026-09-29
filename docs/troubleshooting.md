@@ -127,9 +127,14 @@ check confirmed that ADSB.lol can return `429` to that shared egress even when
 the same bounded request succeeds from another stable identity. This remains
 relevant to `worker-proxy` rollback/diagnostic mode only. Current production
 uses `oci-private-relay`; its deployment smoke may wait through bounded local
-`503 Retry-After` guidance but requires an eventual valid `200` aircraft
-payload. Provider `429`, authentication failure, VPC failure, and other
-unexpected statuses fail activation.
+`503 Retry-After` guidance for at most twelve attempts and 330 seconds of
+admission sleep inside one nine-minute end-to-end deadline, but requires an
+eventual valid `200` aircraft payload. Only the relay's explicit local
+admission marker is retryable; an upstream/provider `503` fails immediately.
+Provider `429`, authentication failure, VPC failure, and other unexpected
+statuses fail activation. This larger bounded window prevents an ordinary
+polling client from repeatedly winning the relay's shared 20-second slot;
+rejected admission attempts still create no provider request.
 
 The private OCI path is documented in
 [OCI Aircraft Relay](oci-aircraft-relay.md). In `oci-private-relay` mode,
@@ -173,12 +178,14 @@ deployment, compare the `X-LiveTrafficStan-Release` header with the exact
 deployed SHA.
 
 Cloudflare can briefly serve the predecessor Worker from one edge after
-Wrangler reports a successful upload. Static-asset smoke has a bounded
-propagation retry, but the Worker release-header check is currently
-single-attempt. If the only failure is a known predecessor
-`X-LiveTrafficStan-Release`, wait for the public header to converge and rerun
-the same exact source and inputs. Do not change the source or bypass the
-exact-current-`main` guard. #134 tracks the bounded Worker-header retry.
+Wrangler reports a successful upload. The Worker probe uses the same bounded
+60-second propagation window as Static Assets only when the response already
+has the required `400`, `no-store`, and no-CORS policy plus a different valid
+lowercase 40-hex `X-LiveTrafficStan-Release`. Missing or malformed release
+headers, unexpected status, cache-policy failure, and CORS regression fail
+immediately rather than being retried. A persistent canonical mismatch still
+fails the release; do not change the source or bypass the exact-current-`main`
+guard.
 
 Production deployment credentials exist only in the protected GitHub
 `production` environment. This includes `AIRCRAFT_RELAY_AUTH_TOKEN` when

@@ -6,16 +6,18 @@ import portsSource from '../src/config/portsSource.json' with {
 }
 import {
   DEPLOYMENT_PROPAGATION_RETRY_DELAYS_MS,
+  PRIVATE_RELAY_SMOKE_TIMEOUT_MS,
+  SAME_ORIGIN_SMOKE_FETCH_INIT,
   classifyAircraftProxyStatus,
+  fetchPrivateRelayWithRetry,
   hasOneYearImmutableCacheControl,
   isRetryableStaticAssetStatus,
   readOptionalJson,
+  waitForExpectedWorkerRelease,
 } from './smoke-policy.mjs'
 
 const MAX_AIRCRAFT_RESPONSE_BYTES = 4 * 1_024 * 1_024
 const MAX_ORBITAL_RESPONSE_BYTES = 256 * 1_024
-const PRIVATE_RELAY_MAX_ATTEMPTS = 3
-const PRIVATE_RELAY_MAX_RETRY_AFTER_SECONDS = 30
 
 const [
   deploymentUrl,
@@ -74,20 +76,14 @@ assert(
 const sha256 = (value) => createHash('sha256').update(value).digest('hex')
 
 const fetchWithTimeout = async (url, init = {}, timeoutMs = 15_000) => {
-  const controller = new AbortController()
-  const timeout = setTimeout(
-    () => controller.abort(new Error(`Timed out fetching ${url}`)),
-    timeoutMs,
-  )
-
-  try {
-    return await fetch(url, {
-      ...init,
-      signal: controller.signal,
-    })
-  } finally {
-    clearTimeout(timeout)
-  }
+  const timeoutSignal = AbortSignal.timeout(timeoutMs)
+  const signal = init.signal
+    ? AbortSignal.any([init.signal, timeoutSignal])
+    : timeoutSignal
+  return fetch(url, {
+    ...init,
+    signal,
+  })
 }
 
 const remoteBytes = async (pathname, expectedBytes) => {
@@ -299,65 +295,14 @@ const verifyStaticAssets = async () => {
 
 const waitForWorkerRelease = async () => {
   const releaseProbePath = '/api/aircraft/v2/point/91/24.754/11'
-  let response
-
-  for (const delayMs of DEPLOYMENT_PROPAGATION_RETRY_DELAYS_MS) {
-    if (delayMs > 0) {
-      await new Promise((resolve) => setTimeout(resolve, delayMs))
-    }
-    response = await fetchWithTimeout(new URL(releaseProbePath, baseUrl))
-    if (
-      response.headers.get('x-livetrafficstan-release') === expectedReleaseSha
-    ) {
-      break
-    }
-    void response.body?.cancel().catch(() => undefined)
-  }
-
-  assert(response, 'Worker release probe did not return a response')
-  assert(
-    response.headers.get('x-livetrafficstan-release') === expectedReleaseSha,
-    'Worker release SHA does not match the deployed source',
-  )
-  assert(response.status === 400, 'Invalid aircraft coordinates were not rejected')
-  assert(
-    response.headers.get('cache-control') === 'no-store',
-    'Aircraft proxy validation response is cacheable',
-  )
-  assert(
-    !response.headers.has('access-control-allow-origin'),
-    'Aircraft proxy validation unexpectedly allows cross-origin browser access',
-  )
-  void response.body?.cancel().catch(() => undefined)
-}
-
-const fetchPrivateRelayAircraft = async (url) => {
-  for (let attempt = 1; attempt <= PRIVATE_RELAY_MAX_ATTEMPTS; attempt += 1) {
-    const response = await fetchWithTimeout(url)
-    if (response.status !== 503) return response
-
-    const retryAfter = response.headers.get('retry-after')
-    assert(
-      retryAfter !== null && /^\d+$/.test(retryAfter),
-      'Private aircraft relay returned 503 without numeric Retry-After',
-    )
-    const retryAfterSeconds = Number(retryAfter)
-    assert(
-      retryAfterSeconds >= 1 &&
-        retryAfterSeconds <= PRIVATE_RELAY_MAX_RETRY_AFTER_SECONDS,
-      'Private aircraft relay returned an unsafe Retry-After',
-    )
-    void response.body?.cancel().catch(() => undefined)
-    assert(
-      attempt < PRIVATE_RELAY_MAX_ATTEMPTS,
-      'Private aircraft relay remained unavailable after bounded retries',
-    )
-    await new Promise((resolve) =>
-      setTimeout(resolve, retryAfterSeconds * 1_000),
-    )
-  }
-
-  throw new Error('Private aircraft relay retry loop exhausted')
+  await waitForExpectedWorkerRelease({
+    fetchProbe: () =>
+      fetchWithTimeout(
+        new URL(releaseProbePath, baseUrl),
+        SAME_ORIGIN_SMOKE_FETCH_INIT,
+      ),
+    expectedReleaseSha,
+  })
 }
 
 const verifyAircraftProxy = async () => {
@@ -432,56 +377,95 @@ const verifyAircraftProxy = async () => {
 
   const validPath = '/api/aircraft/v2/point/59.437/24.754/11'
   const validUrl = new URL(validPath, baseUrl)
-  const response =
+  const privateRelayDeadlineController =
     aircraftDelivery === 'oci-private-relay'
-      ? await fetchPrivateRelayAircraft(validUrl)
-      : await fetchWithTimeout(validUrl)
-  const status =
-    aircraftDelivery === 'oci-private-relay'
-      ? response.status === 200
-        ? 'available'
-        : 'failure'
-      : classifyAircraftProxyStatus(response.status)
-  assert(
-    status !== 'failure',
-    `${
-      aircraftDelivery === 'oci-private-relay'
-        ? 'Private aircraft relay'
-        : 'Aircraft proxy'
-    } returned ${response.status}`,
-  )
-  assert(
-    response.headers.get('x-livetrafficstan-release') === expectedReleaseSha,
-    'Aircraft proxy release SHA does not match the deployed source',
-  )
-  assert(
-    response.headers.get('cache-control') === 'no-store',
-    'Aircraft proxy response is cacheable',
-  )
-  assert(
-    !response.headers.has('access-control-allow-origin'),
-    'Aircraft proxy unexpectedly allows cross-origin browser access',
-  )
+      ? new AbortController()
+      : undefined
+  const privateRelayDeadline = privateRelayDeadlineController
+    ? setTimeout(
+        () =>
+          privateRelayDeadlineController.abort(
+            new Error(
+              'Private aircraft relay smoke exceeded its bounded deadline',
+            ),
+          ),
+        PRIVATE_RELAY_SMOKE_TIMEOUT_MS,
+      )
+    : undefined
 
-  if (status === 'available') {
+  try {
+    const response =
+      aircraftDelivery === 'oci-private-relay'
+        ? await fetchPrivateRelayWithRetry({
+            fetchRelay: (signal) =>
+              fetchWithTimeout(validUrl, {
+                ...SAME_ORIGIN_SMOKE_FETCH_INIT,
+                signal,
+              }),
+            expectedReleaseSha,
+            signal: privateRelayDeadlineController?.signal,
+          })
+        : await fetchWithTimeout(
+            validUrl,
+            SAME_ORIGIN_SMOKE_FETCH_INIT,
+          )
+    const status =
+      aircraftDelivery === 'oci-private-relay'
+        ? response.status === 200
+          ? 'available'
+          : 'failure'
+        : classifyAircraftProxyStatus(response.status)
     assert(
-      response.headers.get('content-type')?.includes('application/json'),
-      'Aircraft proxy did not preserve the JSON content type',
+      status !== 'failure',
+      `${
+        aircraftDelivery === 'oci-private-relay'
+          ? 'Private aircraft relay'
+          : 'Aircraft proxy'
+      } returned ${response.status}`,
     )
-    const payload = await response.json()
     assert(
-      payload && typeof payload === 'object' && Array.isArray(payload.ac),
-      'Aircraft proxy returned an unexpected payload',
+      response.headers.get('x-livetrafficstan-release') === expectedReleaseSha,
+      'Aircraft proxy release SHA does not match the deployed source',
     )
-  } else {
-    void response.body?.cancel().catch(() => undefined)
-    console.warn(
-      'Aircraft provider throttled the verified proxy request with HTTP 429',
+    assert(
+      response.headers.get('cache-control') === 'no-store',
+      'Aircraft proxy response is cacheable',
     )
+    assert(
+      !response.headers.has('access-control-allow-origin'),
+      'Aircraft proxy unexpectedly allows cross-origin browser access',
+    )
+
+    if (status === 'available') {
+      assert(
+        response.headers.get('content-type')?.includes('application/json'),
+        'Aircraft proxy did not preserve the JSON content type',
+      )
+      const payload = await response.json()
+      assert(
+        payload && typeof payload === 'object' && Array.isArray(payload.ac),
+        'Aircraft proxy returned an unexpected payload',
+      )
+    } else {
+      void response.body?.cancel().catch(() => undefined)
+      console.warn(
+        'Aircraft provider throttled the verified proxy request with HTTP 429',
+      )
+    }
+  } catch (error) {
+    if (privateRelayDeadlineController?.signal.aborted) {
+      throw privateRelayDeadlineController.signal.reason
+    }
+    throw error
+  } finally {
+    if (privateRelayDeadline !== undefined) {
+      clearTimeout(privateRelayDeadline)
+    }
   }
 
   const unsupported = await fetchWithTimeout(
     new URL('/api/aircraft/v2/all', baseUrl),
+    SAME_ORIGIN_SMOKE_FETCH_INIT,
   )
   assert(unsupported.status === 404, 'Unsupported aircraft path was not rejected')
 }

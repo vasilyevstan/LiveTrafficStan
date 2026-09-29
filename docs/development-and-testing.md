@@ -126,9 +126,13 @@ states expose usable CORS. The production and rollback workflows pass `worker-pr
 `oci-private-relay`, or `adsb-lol-direct` as the third argument to
 `scripts/smoke-production.mjs`; arbitrary endpoint strings are never workflow
 inputs. Private-relay smoke honors only a numeric, bounded local
-`503 Retry-After`, retries at most three times, and still requires a real
-`200` aircraft payload before accepting the release. Local admission retries
-do not create additional ADSB.lol requests.
+`503 Retry-After`, retries at most twelve times, and still requires a real
+`200` aircraft payload before accepting the release. Each delay is at most
+30 seconds, so the maximum admission sleep is 330 seconds inside one
+nine-minute end-to-end private-relay smoke deadline. Only a marked
+relay-generated admission response is retryable; an upstream/provider `503`
+fails without another provider request. Rejected local admission attempts do
+not create additional ADSB.lol requests.
 
 Plausible route lookup is enabled by default. To exercise the disabled state:
 

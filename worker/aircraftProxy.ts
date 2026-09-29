@@ -111,7 +111,11 @@ const responseHeaders = (upstream: Response) => {
     'X-Content-Type-Options': 'nosniff',
   })
 
-  for (const name of ['Content-Type', 'Retry-After']) {
+  for (const name of [
+    'Content-Type',
+    'Retry-After',
+    'X-LiveTrafficStan-Relay-Status',
+  ]) {
     const value = upstream.headers.get(name)
     if (value) headers.set(name, value)
   }
