@@ -90,7 +90,7 @@ One-second position changes are not placed in an ARIA live region.
 ```text
 Cloudflare Cron
   -> named SQLite Durable Object cadence admission
-  -> fixed CelesTrak visual GP + SATCAT requests
+  -> fixed CelesTrak visual GP + SATCAT requests with project identity
   -> complete normalized schema-v1 snapshot
   -> one final Workers KV publication
 
@@ -104,7 +104,9 @@ explicit ORBITS enable
 
 Browser camera, Home, geolocation, selection, cookies, authorization, and
 arbitrary caller headers never reach CelesTrak. Camera changes start only local
-prediction work and never fetch a catalog.
+prediction work and never fetch a catalog. Scheduled source requests send only
+`Accept: application/json` and the stable public LiveTrafficStan
+`User-Agent`.
 
 The client route is fixed and same-origin:
 

@@ -15,6 +15,8 @@ export const ORBITAL_MAX_UPSTREAM_BYTES = 256 * 1_024
 export const ORBITAL_MAX_SNAPSHOT_BYTES = 256 * 1_024
 export const ORBITAL_MAX_RECORDS = 256
 export const ORBITAL_MAX_RETRY_AFTER_MS = 7 * 24 * 60 * 60 * 1_000
+export const ORBITAL_UPSTREAM_USER_AGENT =
+  'LiveTrafficStan (+https://github.com/vasilyevstan/LiveTrafficStan)'
 
 export type OrbitalObjectType = 'PAY' | 'R/B' | 'DEB' | 'UNK'
 
@@ -803,6 +805,7 @@ const fetchBoundedJson = async (
       signal: controller.signal,
       headers: {
         Accept: 'application/json',
+        'User-Agent': ORBITAL_UPSTREAM_USER_AGENT,
       },
     })
     if (response.status >= 300 && response.status < 400) {
