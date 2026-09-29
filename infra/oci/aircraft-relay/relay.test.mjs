@@ -152,6 +152,9 @@ describe('OCI aircraft relay', () => {
     const concurrent = await handler(authorizedRequest())
     expect(concurrent.status).toBe(503)
     expect(concurrent.headers.get('retry-after')).toBe('20')
+    expect(
+      concurrent.headers.get('x-livetrafficstan-relay-status'),
+    ).toBe('admission')
     finishFirst(new Response('{}'))
     expect((await first).status).toBe(200)
 
@@ -171,12 +174,18 @@ describe('OCI aircraft relay', () => {
       fetchImpl: async () =>
         new Response('slow down', {
           status: 429,
-          headers: { 'Retry-After': '120' },
+          headers: {
+            'Retry-After': '120',
+            'X-LiveTrafficStan-Relay-Status': 'admission',
+          },
         }),
     })
 
     const upstream = await firstHandler(authorizedRequest())
     expect(upstream.status).toBe(429)
+    expect(
+      upstream.headers.has('x-livetrafficstan-relay-status'),
+    ).toBe(false)
     expect(stateStore.snapshot()).toEqual({
       nextAllowedAtMs: 130_000,
       failureCount: 1,
@@ -191,6 +200,9 @@ describe('OCI aircraft relay', () => {
     const denied = await restartedHandler(authorizedRequest())
     expect(denied.status).toBe(503)
     expect(denied.headers.get('retry-after')).toBe('90')
+    expect(
+      denied.headers.get('x-livetrafficstan-relay-status'),
+    ).toBe('admission')
   })
 
   it('uses bounded exponential backoff when Retry-After is absent', async () => {

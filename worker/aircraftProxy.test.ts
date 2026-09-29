@@ -125,6 +125,33 @@ describe('aircraft proxy', () => {
     expect(response.headers.get('content-type')).toBe('text/plain')
   })
 
+  it('preserves only an explicit relay-local admission marker', async () => {
+    const marked = await handleAircraftProxy(proxyRequest(), {
+      fetchImpl: async () =>
+        new Response('wait', {
+          status: 503,
+          headers: {
+            'Retry-After': '20',
+            'X-LiveTrafficStan-Relay-Status': 'admission',
+          },
+        }),
+    })
+    expect(
+      marked.headers.get('x-livetrafficstan-relay-status'),
+    ).toBe('admission')
+
+    const provider = await handleAircraftProxy(proxyRequest(), {
+      fetchImpl: async () =>
+        new Response('provider unavailable', {
+          status: 503,
+          headers: { 'Retry-After': '20' },
+        }),
+    })
+    expect(
+      provider.headers.has('x-livetrafficstan-relay-status'),
+    ).toBe(false)
+  })
+
   it('rejects an upstream redirect without forwarding its location', async () => {
     const response = await handleAircraftProxy(proxyRequest(), {
       fetchImpl: async () =>
