@@ -5,7 +5,6 @@ import type {
   Point,
 } from 'geojson'
 import {
-  type ExpressionSpecification,
   type GeoJSONSource,
   type LayerSpecification,
   type Map as MapLibreMap,
@@ -15,35 +14,29 @@ import type {
   ModeledOrbitalPosition,
   OrbitalTrackSegment,
 } from '../domain/orbital'
+import {
+  ORBITAL_STYLE_IMAGE_IDS,
+  orbitalStyleImageId,
+  type OrbitalStyleImageId,
+  type OrbitalStyleImages,
+} from './orbitalIcons'
 import { LAYER_SELECTED_TRAIL } from './trafficStyle'
 
 export const SOURCE_ORBITAL_POINTS = 'orbital-modeled-points'
 export const SOURCE_ORBITAL_HIGHLIGHT = 'orbital-selected-highlight'
 export const SOURCE_ORBITAL_TRACK = 'orbital-predicted-track'
 export const LAYER_ORBITAL_TRACK = 'orbital-predicted-track-line'
-export const LAYER_ORBITAL_POINTS = 'orbital-modeled-points-circles'
+export const LAYER_ORBITAL_POINTS = 'orbital-modeled-point-symbols'
 export const LAYER_ORBITAL_HIGHLIGHT = 'orbital-selected-highlight-circle'
 
 export const ORBITAL_LAYER_IDS = [
   LAYER_ORBITAL_TRACK,
-  LAYER_ORBITAL_POINTS,
   LAYER_ORBITAL_HIGHLIGHT,
+  LAYER_ORBITAL_POINTS,
 ] as const
 
 const SOURCE_ATTRIBUTION =
   'Orbits <a href="https://celestrak.org/" target="_blank" rel="noreferrer">CelesTrak</a> · SGP4 · not live'
-
-const typeColor = (theme: Theme): ExpressionSpecification => [
-  'match',
-  ['get', 'objectType'],
-  'PAY',
-  theme === 'dark' ? '#67d8ff' : '#087fa6',
-  'R/B',
-  theme === 'dark' ? '#ffb45f' : '#b85f00',
-  'DEB',
-  theme === 'dark' ? '#ff7db8' : '#b62e69',
-  theme === 'dark' ? '#aab8c0' : '#65747c',
-] as ExpressionSpecification
 
 const emptyPoints = (): FeatureCollection<Point> => ({
   type: 'FeatureCollection',
@@ -62,6 +55,7 @@ export const orbitalPositionFeatures = (
         id: position.id,
         noradCatalogId: position.noradCatalogId,
         objectType: position.objectType,
+        markerIcon: orbitalStyleImageId(position.objectType),
       },
       geometry: {
         type: 'Point',
@@ -163,6 +157,18 @@ const ensureLayer = (map: MapLibreMap, layer: LayerSpecification) => {
   }
 }
 
+const ensureImage = (
+  map: MapLibreMap,
+  id: OrbitalStyleImageId,
+  image: ImageData,
+) => {
+  if (map.hasImage(id)) {
+    map.updateImage(id, image)
+  } else {
+    map.addImage(id, image, { pixelRatio: 2 })
+  }
+}
+
 export const setOrbitalVisibility = (
   map: MapLibreMap,
   visible: boolean,
@@ -185,11 +191,14 @@ export const installOrbitalStyle = (
   track: FeatureCollection<LineString>,
   theme: Theme,
   visible: boolean,
+  images: OrbitalStyleImages,
 ) => {
-  const colors = typeColor(theme)
-  const stroke = theme === 'dark' ? '#06131a' : '#ffffff'
   const selection = theme === 'dark' ? '#f7fcff' : '#102d3b'
   const trackColor = theme === 'dark' ? '#8fe7ff' : '#087fa6'
+
+  for (const imageId of ORBITAL_STYLE_IMAGE_IDS) {
+    ensureImage(map, imageId, images[imageId])
+  }
 
   ensureSource(
     map,
@@ -212,18 +221,6 @@ export const installOrbitalStyle = (
     },
   })
   ensureLayer(map, {
-    id: LAYER_ORBITAL_POINTS,
-    type: 'circle',
-    source: SOURCE_ORBITAL_POINTS,
-    paint: {
-      'circle-radius': 5,
-      'circle-color': colors,
-      'circle-opacity': 0.9,
-      'circle-stroke-color': stroke,
-      'circle-stroke-width': 1.2,
-    },
-  })
-  ensureLayer(map, {
     id: LAYER_ORBITAL_HIGHLIGHT,
     type: 'circle',
     source: SOURCE_ORBITAL_HIGHLIGHT,
@@ -236,21 +233,27 @@ export const installOrbitalStyle = (
       'circle-stroke-width': 2,
     },
   })
+  ensureLayer(map, {
+    id: LAYER_ORBITAL_POINTS,
+    type: 'symbol',
+    source: SOURCE_ORBITAL_POINTS,
+    layout: {
+      'icon-image': ['get', 'markerIcon'],
+      'icon-size': 0.72,
+      'icon-rotation-alignment': 'viewport',
+      'icon-pitch-alignment': 'viewport',
+      'icon-allow-overlap': true,
+      'icon-ignore-placement': true,
+    },
+    paint: {
+      'icon-opacity': 0.94,
+    },
+  })
 
   map.setPaintProperty(
     LAYER_ORBITAL_TRACK,
     'line-color',
     trackColor,
-  )
-  map.setPaintProperty(
-    LAYER_ORBITAL_POINTS,
-    'circle-color',
-    colors,
-  )
-  map.setPaintProperty(
-    LAYER_ORBITAL_POINTS,
-    'circle-stroke-color',
-    stroke,
   )
   map.setPaintProperty(
     LAYER_ORBITAL_HIGHLIGHT,

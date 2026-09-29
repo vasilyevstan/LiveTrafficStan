@@ -51,9 +51,7 @@ import {
   reconcileMotionStates,
   type MotionStates,
 } from '../traffic/interpolation'
-import {
-  createTrafficIcons,
-} from './icons'
+import { createTrafficIcons } from './icons'
 import {
   createMapSafely,
   type TrafficMapError,
@@ -112,6 +110,10 @@ import {
   SOURCE_ORBITAL_POINTS,
   SOURCE_ORBITAL_TRACK,
 } from './orbitalStyle'
+import {
+  createOrbitalIcons,
+  type OrbitalStyleImages,
+} from './orbitalIcons'
 import {
   installTrafficStyle,
   AIRCRAFT_TRAFFIC_LAYER_IDS,
@@ -444,6 +446,9 @@ export function TrafficMap({
   const initialFitCompleteRef = useRef(false)
   const trafficImagesRef = useRef<
     Partial<Record<Theme, TrafficStyleImages>>
+  >({})
+  const orbitalImagesRef = useRef<
+    Partial<Record<Theme, OrbitalStyleImages>>
   >({})
   const renderStateRef = useRef<RenderState>({
     aircraft,
@@ -814,6 +819,15 @@ export function TrafficMap({
     return images
   }, [])
 
+  const getOrbitalImages = useCallback((activeTheme: Theme) => {
+    const cachedImages = orbitalImagesRef.current[activeTheme]
+    if (cachedImages) return cachedImages
+
+    const images = createOrbitalIcons(activeTheme)
+    orbitalImagesRef.current[activeTheme] = images
+    return images
+  }, [])
+
   const installCurrentStyle = useCallback(
     (map: MapLibreMap) => {
       const now = performance.now()
@@ -910,6 +924,7 @@ export function TrafficMap({
           orbitalTrackFeatures(orbitalState.trackSegments),
           activeTheme,
           viewState.orbitalVisible,
+          getOrbitalImages(activeTheme),
         )
         lastOrbitalFeaturesRef.current = points.features
       }
@@ -944,6 +959,7 @@ export function TrafficMap({
     },
     [
       fitCurrentView,
+      getOrbitalImages,
       getTrafficImages,
       scheduleRender,
       scheduleViewportReport,
@@ -2249,6 +2265,7 @@ export function TrafficMap({
         orbitalTrackFeatures(orbitalTrackSegments),
         themeRef.current,
         true,
+        getOrbitalImages(themeRef.current),
       )
       lastOrbitalFeaturesRef.current = points.features
       return
@@ -2258,6 +2275,7 @@ export function TrafficMap({
     orbitalPositions,
     orbitalTrackSegments,
     orbitalVisible,
+    getOrbitalImages,
     renderOrbitalSources,
     selectedOrbitalId,
   ])
@@ -2312,12 +2330,13 @@ export function TrafficMap({
         orbitalTrackFeatures(state.trackSegments),
         themeRef.current,
         true,
+        getOrbitalImages(themeRef.current),
       )
       lastOrbitalFeaturesRef.current = points.features
       return
     }
     setOrbitalVisibility(map, orbitalVisible)
-  }, [orbitalVisible])
+  }, [getOrbitalImages, orbitalVisible])
 
   useEffect(() => {
     const map = mapRef.current

@@ -577,11 +577,12 @@ Use `npm run dev` and verify:
     Re-enabling SHIPS restores map visibility without reconnecting MQTT or
     starting REST work.
 18. Aircraft altitude-colored silhouettes, red slow/stopped dots for either
-    traffic kind, and sailing/pleasure/high-speed vessel shapes exclude
-    clusters and click/touch picking, preserve neutral selected halos, follow
-    stale opacity and layer visibility, and reinstall after Light/Dark and
-    fallback-style changes. No ordinary aircraft altitude ring or moving/
-    unknown state bubble remains. Exact boundaries are tested at
+    traffic kind, and all nine vessel category shapes exclude clusters and
+    click/touch picking, preserve neutral selected halos, follow stale opacity
+    and layer visibility, and reinstall after Light/Dark and fallback-style
+    changes. A 16x16 map-scale raster assertion keeps every vessel outer
+    profile distinct. No ordinary aircraft altitude ring or moving/unknown
+    state bubble remains. Exact boundaries are tested at
     1,000/3,000/10,000 m, +/-1.016 m/s, and one knot. Zero or negative finite
     altitude never claims on-ground status; missing or invalid speed never
     receives the red stopped treatment. Mouse hover shows aircraft
@@ -744,8 +745,10 @@ Safari/Android Chrome for touch claims:
 5. A local view distinguishes current in-view objects from first crossings in
    the next 90 minutes. Counts, ordering, exact type, modeled time, element
    epoch, retrieval age, source, and limitations remain truthful.
-6. Payload, rocket body, debris, and unknown colors/labels match exact SATCAT
-   type; no name-derived type appears.
+6. Payload, rocket body, debris, and unknown colors, labels, and generated
+   symbols match exact SATCAT type; no name-derived type appears. Map-scale
+   raster assertions keep the satellite, stage, fragment, and unknown shapes
+   distinct, and Light -> Dark -> Light updates the same four image IDs.
 7. Exact traffic and traffic clusters keep pick priority. An exact orbital hit
    or one unique touch fallback selects only the orbital object, does not move
    the camera, and clears mutually exclusive traffic/context details.
