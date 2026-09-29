@@ -263,6 +263,31 @@ the layer remains default-off, the Worker scheduler is enabled only by the
 protected exact-SHA deployment, and browsers still receive only the
 same-origin complete snapshot.
 
+## Reviewed exact-NORAD manifest, not inferred orbital missions
+
+Issue #193 uses a tiny bundled manifest for purpose and image context rather
+than adding a metadata service, startup request, per-hover request, or
+name/orbit inference. The first version contains only Hubble (`20580`) and ISS
+(`25544`), whose current CelesTrak names, international designators, and exact
+SATCAT payload type match official NASA mission pages and exact NASA image IDs.
+
+The manifest is compiled into the client. Purpose therefore appears with zero
+network work. Photographs are immutable same-origin Static Assets and start
+only after exact selection; a later hover can reuse one only after successful
+validation in the current tab. The loader enforces one bounded request, exact
+status/media type/byte count/SHA-256, aborts obsolete work, caches only a
+fulfilled Blob URL, retains a terminal session failure rather than retrying,
+and revokes URLs on teardown. The tooltip receives only path-to-Blob-URL
+entries, while the enrichment identity includes feature ID, current catalog
+identity, complete snapshot digest, and manifest version.
+
+Rocket bodies, debris, and every unreviewed payload remain explicitly
+unavailable. Transferring the payload mission to a discarded stage, using a
+generic stock image, scraping search results, or introducing a credentialed
+DISCOS/Space-Track boundary was rejected as less truthful and more complex.
+The source and rights evidence is recorded in
+[Orbital Purpose and Image Source Evaluation](orbital-enrichment-source-evaluation.md).
+
 ## Mercator-first local orbital modeling
 
 Issue #162 adds orbital context to the existing single Mercator map before any

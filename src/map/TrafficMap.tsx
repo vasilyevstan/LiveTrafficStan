@@ -131,6 +131,7 @@ import { trafficFeatures } from './trafficFeatures'
 import {
   createTrafficTooltipElement,
 } from './trafficTooltip'
+import { createOrbitalTooltipElement } from './orbitalTooltip'
 
 setWorkerUrl(maplibreWorkerUrl)
 
@@ -161,6 +162,7 @@ interface TrafficMapProps {
   weatherObservations: readonly DisplayWeatherObservation[]
   orbitalPositions: readonly ModeledOrbitalPosition[]
   orbitalTrackSegments: readonly OrbitalTrackSegment[]
+  orbitalImageUrls: ReadonlyMap<string, string>
   trailSegments: readonly (readonly TrailPoint[])[]
   selectedId: string | null
   selectedOrbitalId: string | null
@@ -256,6 +258,9 @@ const trafficTooltipIdentity = (entity: TrafficEntity) =>
     ? `${entity.id}|${entity.hex.trim().toUpperCase()}`
     : `${entity.id}|${entity.imo ?? ''}`
 
+const orbitalTooltipIdentity = (position: ModeledOrbitalPosition) =>
+  `${position.id}|${position.noradCatalogId}|${position.snapshotSha256}`
+
 const trailData = (
   segments: readonly (readonly TrailPoint[])[],
 ): FeatureCollection<LineString> => {
@@ -350,6 +355,7 @@ export function TrafficMap({
   weatherObservations,
   orbitalPositions,
   orbitalTrackSegments,
+  orbitalImageUrls,
   trailSegments,
   selectedId,
   selectedOrbitalId,
@@ -486,10 +492,13 @@ export function TrafficMap({
   )
   const aircraftPhotoRef = useRef(aircraftPhoto)
   const vesselPhotoEnabledRef = useRef(vesselPhotoEnabled)
+  const orbitalImageUrlsRef = useRef(orbitalImageUrls)
   const previousVesselPhotoEnabledRef = useRef(vesselPhotoEnabled)
   const hoverAircraftChangeRef = useRef(onHoverAircraftChange)
   const hoveredTrafficIdRef = useRef<string | null>(null)
   const hoveredTrafficIdentityRef = useRef<string | null>(null)
+  const hoveredOrbitalIdRef = useRef<string | null>(null)
+  const hoveredOrbitalIdentityRef = useRef<string | null>(null)
   const hideTrafficTooltipRef = useRef<() => void>(() => undefined)
   const refreshTrafficTooltipRef = useRef<() => void>(() => undefined)
 
@@ -1061,6 +1070,11 @@ export function TrafficMap({
   }, [units])
 
   useEffect(() => {
+    orbitalImageUrlsRef.current = orbitalImageUrls
+    refreshTrafficTooltipRef.current()
+  }, [orbitalImageUrls])
+
+  useEffect(() => {
     const wasEnabled = previousAircraftPhotoEnabledRef.current
     const wasVesselPhotoEnabled =
       previousVesselPhotoEnabledRef.current
@@ -1144,7 +1158,7 @@ export function TrafficMap({
     let pendingTrafficPhotoId: string | null = null
     let activeTrafficPhotoId: string | null = null
     let activeAircraftPhotoId: string | null = null
-    let lastTrafficHoverPoint: [number, number] | null = null
+    let lastHoverPoint: [number, number] | null = null
     const cancelTrafficTooltipHide = () => {
       if (tooltipHideTimer === undefined) return
       window.clearTimeout(tooltipHideTimer)
@@ -1174,7 +1188,7 @@ export function TrafficMap({
       entity: TrafficEntity,
       point: { x: number; y: number },
     ) => {
-      lastTrafficHoverPoint = [point.x, point.y]
+      lastHoverPoint = [point.x, point.y]
       if (!trafficPhotoEligible(entity)) {
         clearTrafficPhotoHover()
         return
@@ -1193,7 +1207,7 @@ export function TrafficMap({
         pendingTrafficPhotoId = null
         if (
           hoveredTrafficIdRef.current !== entity.id ||
-          !lastTrafficHoverPoint
+          !lastHoverPoint
         ) {
           return
         }
@@ -1201,7 +1215,7 @@ export function TrafficMap({
         const hoveredId =
           layers.length > 0
             ? exactEligibleFeatureId(
-                map.queryRenderedFeatures(lastTrafficHoverPoint, {
+                map.queryRenderedFeatures(lastHoverPoint, {
                   layers,
                 }),
                 selectableTrafficIds(),
@@ -1224,7 +1238,9 @@ export function TrafficMap({
       clearTrafficPhotoHover()
       hoveredTrafficIdRef.current = null
       hoveredTrafficIdentityRef.current = null
-      lastTrafficHoverPoint = null
+      hoveredOrbitalIdRef.current = null
+      hoveredOrbitalIdentityRef.current = null
+      lastHoverPoint = null
       tooltipPointerInside = false
       tooltipFocusInside = false
       hoverPopup.remove()
@@ -1430,6 +1446,11 @@ export function TrafficMap({
       )
     }
 
+    const orbitalPosition = (id: string) =>
+      orbitalRenderStateRef.current.positions.find(
+        (position) => position.id === id,
+      )
+
     const renderTrafficTooltip = (entity: TrafficEntity) => {
       hoveredTrafficIdentityRef.current = trafficTooltipIdentity(entity)
       const element = createTrafficTooltipElement(entity, document, {
@@ -1445,38 +1466,75 @@ export function TrafficMap({
       })
       hoverPopup.setDOMContent(element)
     }
+    const renderOrbitalTooltip = (position: ModeledOrbitalPosition) => {
+      hoveredOrbitalIdentityRef.current =
+        orbitalTooltipIdentity(position)
+      hoverPopup.setDOMContent(
+        createOrbitalTooltipElement(
+          position,
+          document,
+          orbitalImageUrlsRef.current,
+        ),
+      )
+    }
     refreshTrafficTooltipRef.current = () => {
-      const hoveredId = hoveredTrafficIdRef.current
-      if (!hoveredId || !hoverPopup.isOpen()) return
-      const entity = trafficEntity(hoveredId)
-      if (!entity) {
+      if (!hoverPopup.isOpen()) return
+      const hoveredTrafficId = hoveredTrafficIdRef.current
+      if (hoveredTrafficId) {
+        const entity = trafficEntity(hoveredTrafficId)
+        if (!entity) {
+          hideTrafficTooltip()
+          return
+        }
+        renderTrafficTooltip(entity)
+        return
+      }
+      const hoveredOrbitalId = hoveredOrbitalIdRef.current
+      if (!hoveredOrbitalId) return
+      const position = orbitalPosition(hoveredOrbitalId)
+      if (!position) {
         hideTrafficTooltip()
         return
       }
-      renderTrafficTooltip(entity)
+      renderOrbitalTooltip(position)
     }
     const revalidateTrafficTooltip = () => {
-      const hoveredId = hoveredTrafficIdRef.current
       if (
-        !hoveredId ||
         !hoverPopup.isOpen() ||
         tooltipPointerInside ||
         tooltipFocusInside ||
-        !lastTrafficHoverPoint
+        !lastHoverPoint
       ) {
         return
       }
-      const layers = activeTrafficLayers()
+      const hoveredTrafficId = hoveredTrafficIdRef.current
+      if (hoveredTrafficId) {
+        const layers = activeTrafficLayers()
+        const renderedId =
+          layers.length > 0
+            ? exactEligibleFeatureId(
+                map.queryRenderedFeatures(lastHoverPoint, {
+                  layers,
+                }),
+                selectableTrafficIds(),
+              )
+            : null
+        if (renderedId !== hoveredTrafficId) hideTrafficTooltip()
+        return
+      }
+      const hoveredOrbitalId = hoveredOrbitalIdRef.current
+      if (!hoveredOrbitalId) return
+      const layers = activeOrbitalLayers()
       const renderedId =
         layers.length > 0
           ? exactEligibleFeatureId(
-              map.queryRenderedFeatures(lastTrafficHoverPoint, {
+              map.queryRenderedFeatures(lastHoverPoint, {
                 layers,
               }),
-              selectableTrafficIds(),
+              selectableOrbitalIds(),
             )
           : null
-      if (renderedId !== hoveredId) hideTrafficTooltip()
+      if (renderedId !== hoveredOrbitalId) hideTrafficTooltip()
     }
 
     const selectablePortIds = () =>
@@ -1812,23 +1870,55 @@ export function TrafficMap({
         trafficLayers.length > 0
           ? exactEligibleFeatureId(features, selectableTrafficIds())
           : null
-      if (!hoveredId) {
-        scheduleTrafficTooltipHide()
+      if (hoveredId) {
+        const entity = trafficEntity(hoveredId)
+        if (!entity) {
+          scheduleTrafficTooltipHide()
+          return
+        }
+
+        cancelTrafficTooltipHide()
+        hoveredOrbitalIdRef.current = null
+        hoveredOrbitalIdentityRef.current = null
+        if (hoveredTrafficIdRef.current !== hoveredId) {
+          hoveredTrafficIdRef.current = hoveredId
+          renderTrafficTooltip(entity)
+        }
+        scheduleTrafficPhotoHover(entity, event.point)
+        hoverPopup.setLngLat(event.lngLat)
+        if (!hoverPopup.isOpen()) {
+          hoverPopup.addTo(map)
+          bindHoverPopupInteractions()
+        }
         return
       }
 
-      const entity = trafficEntity(hoveredId)
-      if (!entity) {
+      const orbitalLayers = activeOrbitalLayers()
+      const hoveredOrbitalId =
+        hoverEnabled &&
+        pointerOrigins.size === 0 &&
+        orbitalLayers.length > 0
+          ? exactEligibleFeatureId(features, selectableOrbitalIds())
+          : null
+      if (!hoveredOrbitalId) {
+        scheduleTrafficTooltipHide()
+        return
+      }
+      const position = orbitalPosition(hoveredOrbitalId)
+      if (!position) {
         scheduleTrafficTooltipHide()
         return
       }
 
       cancelTrafficTooltipHide()
-      if (hoveredTrafficIdRef.current !== hoveredId) {
-        hoveredTrafficIdRef.current = hoveredId
-        renderTrafficTooltip(entity)
+      clearTrafficPhotoHover()
+      lastHoverPoint = [event.point.x, event.point.y]
+      hoveredTrafficIdRef.current = null
+      hoveredTrafficIdentityRef.current = null
+      if (hoveredOrbitalIdRef.current !== hoveredOrbitalId) {
+        hoveredOrbitalIdRef.current = hoveredOrbitalId
+        renderOrbitalTooltip(position)
       }
-      scheduleTrafficPhotoHover(entity, event.point)
       hoverPopup.setLngLat(event.lngLat)
       if (!hoverPopup.isOpen()) {
         hoverPopup.addTo(map)
@@ -2132,6 +2222,20 @@ export function TrafficMap({
       positions: orbitalPositions,
       trackSegments: orbitalTrackSegments,
       selectedOrbitalId,
+    }
+    const hoveredOrbitalId = hoveredOrbitalIdRef.current
+    if (hoveredOrbitalId) {
+      const hoveredPosition = orbitalPositions.find(
+        (position) => position.id === hoveredOrbitalId,
+      )
+      if (
+        !orbitalVisible ||
+        !hoveredPosition ||
+        hoveredOrbitalIdentityRef.current !==
+          orbitalTooltipIdentity(hoveredPosition)
+      ) {
+        hideTrafficTooltipRef.current()
+      }
     }
     const map = mapRef.current
     if (!map || !loadedRef.current) return

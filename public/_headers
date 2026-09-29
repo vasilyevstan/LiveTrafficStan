@@ -39,3 +39,6 @@
 
 /orbital-data/*
   Cache-Control: public, max-age=31536000, immutable
+
+/orbital-enrichment/*
+  Cache-Control: public, max-age=31536000, immutable

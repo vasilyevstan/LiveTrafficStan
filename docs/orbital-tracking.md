@@ -83,6 +83,28 @@ Selected details show:
 - visible CelesTrak attribution and usage-policy link;
 - explicit modeled-data and visibility limitations.
 
+For exact current identities `HST` / NORAD `20580` and `ISS (ZARYA)` / NORAD
+`25544`, selected details also show a concise NASA-supported purpose,
+source/review dates, immutable manifest version, and one bundled historical
+NASA photograph with source, credit, usage-policy link, capture date, and
+modification statement. The photograph is explicitly not a live view of the
+current modeled position.
+
+Every other object shows **Purpose and image unavailable**. This includes
+rocket bodies and debris: the application does not transfer a payload mission
+to a discarded stage, infer purpose from an object name, or display a generic
+satellite/rocket picture. The full source and rights review is
+[Orbital Purpose and Image Source Evaluation](orbital-enrichment-source-evaluation.md).
+
+Desktop mouse hover gets a compact exact-object tooltip with name, NORAD ID,
+catalog type, reviewed purpose when available, and the modeled/not-live
+caveat. It makes no request. The same result buttons remain
+keyboard-accessible and expose the compact reviewed purpose. A tooltip image
+appears only after selected details have bounded and validated the immutable
+same-origin response and created a session Blob URL. The tooltip reuses that
+URL and cannot initiate an image request. Touch continues to use
+selection/details instead of hover.
+
 One-second position changes are not placed in an ARIA live region.
 
 ## Data and execution flow
@@ -335,6 +357,7 @@ npm run check:aircraft-metadata
 npm run check:country-allocations
 npm run check:vessel-photos
 npm run check:orbital-catalog
+npm run check:orbital-enrichment
 npm run check:ports
 npm run check:airports
 npm run build

@@ -807,6 +807,10 @@
   font-size: 0.6rem;
 }
 
+.vessel-results .orbital-context__purpose {
+  color: var(--summary-text);
+}
+
 .control-note {
   margin: 7px 1px 0;
   color: var(--note-text);
@@ -922,7 +926,8 @@
   text-transform: uppercase;
 }
 
-.vessel-photo {
+.vessel-photo,
+.orbital-enrichment {
   margin-top: 10px;
   padding: 10px;
   border: 1px solid var(--detail-divider);
@@ -930,12 +935,20 @@
   background: var(--button-background);
 }
 
-.vessel-photo h3 {
+.vessel-photo h3,
+.orbital-enrichment h3 {
   margin: 0;
   color: var(--detail-heading);
   font-size: 0.78rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+.orbital-enrichment__purpose {
+  margin: 8px 0 0;
+  color: var(--detail-text);
+  font-size: 0.74rem;
+  line-height: 1.45;
 }
 
 .aircraft-metadata__grid {
@@ -999,7 +1012,8 @@
 }
 
 .aircraft-photo__link,
-.vessel-photo__link {
+.vessel-photo__link,
+.orbital-enrichment__image-link {
   display: block;
   width: fit-content;
   max-width: 100%;
@@ -1010,21 +1024,30 @@
 }
 
 .aircraft-photo__link:focus-visible,
-.vessel-photo__link:focus-visible {
+.vessel-photo__link:focus-visible,
+.orbital-enrichment__image-link:focus-visible {
   border-color: var(--button-hover-border);
   outline: 2px solid var(--accent-line);
   outline-offset: 2px;
 }
 
 .aircraft-photo__image,
-.vessel-photo__image {
+.vessel-photo__image,
+.orbital-enrichment__image {
   display: block;
   max-width: 100%;
   height: auto;
 }
 
+.orbital-enrichment__image {
+  width: auto;
+  max-height: 220px;
+  object-fit: contain;
+}
+
 .aircraft-photo__credit,
-.vessel-photo__credit {
+.vessel-photo__credit,
+.orbital-enrichment__credit {
   max-width: 320px;
 }
 
@@ -1315,6 +1338,10 @@
     padding: 13px 14px;
   }
 
+  .orbital-enrichment__image {
+    max-height: 160px;
+  }
+
   .details-panel--historical {
     bottom: 224px;
   }
@@ -1413,6 +1440,10 @@
 
   .details-panel {
     max-height: 115px;
+  }
+
+  .orbital-enrichment__image {
+    max-height: 88px;
   }
 }
 

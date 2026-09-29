@@ -757,6 +757,44 @@ its JavaScript-only modules directly to avoid bundling optional Node/WASM
 runtimes exposed by the package root. The distributed notice is
 [`/licenses/satellite-js-7.1.0-MIT.txt`](../public/licenses/satellite-js-7.1.0-MIT.txt).
 
+## Orbital purpose and images: reviewed NASA sources
+
+Issue #193 adds no live metadata or image provider. Version
+`2026-09-29-v1` is a two-record application-owned manifest for exact NORAD
+`20580` (Hubble) and `25544` (ISS). Purpose comes from official NASA mission
+pages. Historical photographs come from exact NASA Image and Video Library
+IDs `s125e011615` and `s132e012212`.
+
+The lookup requires the current NORAD ID, CelesTrak name, international
+designator, and exact SATCAT type to match the reviewed record. Every other
+object, including rocket bodies and debris, reports purpose/image unavailable.
+No mission, operator, payload relationship, or image is inferred from a name,
+orbit, owner code, launch family, or catalog group.
+
+NASA's Images and Media Usage Guidelines say NASA content generally is not
+subject to copyright in the United States and permit educational or
+informational web use with requested credit, no endorsement implication, and
+continued protection for NASA identifiers. The visible credit is
+**Photo: NASA**. LiveTrafficStan uses no NASA insignia or logotype as
+application branding.
+
+The exact source pages, retrieval dates, HTML/metadata/image SHA-256 values,
+dimensions, byte counts, identity chain, rejected sources, request boundary,
+and stop conditions are in
+[Orbital Purpose and Image Source Evaluation](orbital-enrichment-source-evaluation.md).
+The media-specific notice is co-located at
+[`public/orbital-enrichment/2026-09-29-v1/LICENSES.md`](../public/orbital-enrichment/2026-09-29-v1/LICENSES.md);
+the photographs are not covered by the repository's Apache-2.0 code license.
+
+The manifest is compiled into the browser, so purpose adds no request. Image
+bytes use immutable same-origin Static Assets only after exact selection. The
+application bounds the load to five seconds and the exact manifest byte count,
+then validates the declared media type and SHA-256 before creating a
+session-only Blob URL. Only that validated URL can enter selected details or a
+later tooltip. Ordinary hover therefore makes no image request and never
+contacts NASA. External NASA requests happen only if a user follows a source
+or policy link.
+
 ## Source-code license versus data licenses
 
 LiveTrafficStan source code is licensed under Apache License 2.0 and includes a
@@ -785,6 +823,9 @@ separate licenses and attribution requirements:
 - modeled orbital elements and catalog type: CelesTrak GP/OMM and SATCAT,
   provider attribution and use-policy review required
 - orbital propagation software: `satellite.js` 7.1.0, MIT
+- exact-NORAD orbital purpose: official NASA mission pages, pinned provenance
+- two historical exact-object photographs: NASA informational media guidance,
+  visible `Photo: NASA` credit, separate co-located notice
 
 The application does not persist or redistribute a live traffic database. It
 does distribute the separately identified static aircraft metadata derivative
