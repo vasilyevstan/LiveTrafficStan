@@ -819,7 +819,8 @@ export function TrafficControls({
                 </li>
                 <li>
                   Orbits: <a href="https://celestrak.org/">CelesTrak</a>{' '}
-                  GP/SATCAT · SGP4 modeled · not live or optical proof.
+                  · SGP4 modeled, not live/optical. Symbols show payload,
+                  stage, debris, or unknown class.
                 </li>
               </ul>
               <p className="control-note control-note--muted">

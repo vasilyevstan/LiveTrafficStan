@@ -550,6 +550,13 @@ with an exact type shape for normalized `Sailing vessel`, `Pleasure craft`, or
 Cargo, unknown, broad `other`, names, dimensions, and movement never imply a
 yacht or unsupported cargo subtype.
 
+Each supported vessel image has a distinct outer profile at the minimum
+rendered map size: container grid, tanker deck, passenger decks, fishing
+outriggers, tug shoulders, sails, pleasure cabin, or twin high-speed hulls.
+These are category symbols, not depictions of the exact vessel. Light/Dark
+changes update the same bounded MapLibre image IDs and preserve the source,
+selection, heading, stale opacity, stopped badge, and one map instance.
+
 The local filter taxonomy is slightly broader than the artwork vocabulary:
 types 31, 32, 50-55, 58, and 59 are `tug-service`; known non-filter categories
 20-24, 29, 33-37, 40-44, 49, 90-94, and 99 are `other`. Reserved subcodes such

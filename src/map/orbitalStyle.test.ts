@@ -2,6 +2,10 @@ import type { Map as MapLibreMap } from 'maplibre-gl'
 import { describe, expect, it, vi } from 'vitest'
 import type { ModeledOrbitalPosition } from '../domain/orbital'
 import {
+  ORBITAL_STYLE_IMAGE_IDS,
+  type OrbitalStyleImages,
+} from './orbitalIcons'
+import {
   installOrbitalStyle,
   LAYER_ORBITAL_HIGHLIGHT,
   LAYER_ORBITAL_POINTS,
@@ -31,15 +35,31 @@ const position: ModeledOrbitalPosition = {
   velocityKmPerSecond: 7.6,
 }
 
+const imageSet = (theme: string) =>
+  Object.fromEntries(
+    ORBITAL_STYLE_IMAGE_IDS.map((id) => [
+      id,
+      { theme: `${theme}-${id}` },
+    ]),
+  ) as unknown as OrbitalStyleImages
+const lightImages = imageSet('light')
+const darkImages = imageSet('dark')
+
 const createMap = () => {
   const sources = new Map<string, { setData: ReturnType<typeof vi.fn> }>()
   const layers = [LAYER_SELECTED_TRAIL]
+  const layerSpecs = new Map<string, unknown>()
+  const imageIds = new Set<string>()
   const addLayer = vi.fn((layer: { id: string }, before?: string) => {
     const beforeIndex = before ? layers.indexOf(before) : -1
     if (beforeIndex >= 0) layers.splice(beforeIndex, 0, layer.id)
     else layers.push(layer.id)
+    layerSpecs.set(layer.id, layer)
   })
   const map = {
+    hasImage: (id: string) => imageIds.has(id),
+    addImage: vi.fn((id: string) => imageIds.add(id)),
+    updateImage: vi.fn(),
     getSource: (id: string) => sources.get(id),
     addSource: (id: string) => {
       sources.set(id, { setData: vi.fn() })
@@ -50,12 +70,26 @@ const createMap = () => {
     setLayoutProperty: vi.fn(),
     setPaintProperty: vi.fn(),
   } as unknown as MapLibreMap
-  return { map, sources, layers, addLayer }
+  return {
+    map,
+    sources,
+    layers,
+    layerSpecs,
+    imageIds,
+    addLayer,
+  }
 }
 
 describe('orbital map style', () => {
   it('installs one persistent source/layer set with stable IDs', () => {
-    const { map, sources, layers, addLayer } = createMap()
+    const {
+      map,
+      sources,
+      layers,
+      layerSpecs,
+      imageIds,
+      addLayer,
+    } = createMap()
     const points = orbitalPositionFeatures([position])
     const highlight = orbitalHighlightFeatures(
       [position],
@@ -70,8 +104,33 @@ describe('orbital map style', () => {
       },
     ])
 
-    installOrbitalStyle(map, points, highlight, track, 'light', true)
-    installOrbitalStyle(map, points, highlight, track, 'dark', true)
+    installOrbitalStyle(
+      map,
+      points,
+      highlight,
+      track,
+      'light',
+      true,
+      lightImages,
+    )
+    installOrbitalStyle(
+      map,
+      points,
+      highlight,
+      track,
+      'dark',
+      true,
+      darkImages,
+    )
+    installOrbitalStyle(
+      map,
+      points,
+      highlight,
+      track,
+      'light',
+      true,
+      lightImages,
+    )
 
     expect([...sources.keys()].sort()).toEqual(
       [
@@ -83,15 +142,42 @@ describe('orbital map style', () => {
     expect(addLayer).toHaveBeenCalledTimes(3)
     expect(layers).toEqual([
       LAYER_ORBITAL_TRACK,
-      LAYER_ORBITAL_POINTS,
       LAYER_ORBITAL_HIGHLIGHT,
+      LAYER_ORBITAL_POINTS,
       LAYER_SELECTED_TRAIL,
     ])
+    expect(imageIds).toEqual(new Set(ORBITAL_STYLE_IMAGE_IDS))
+    expect(map.addImage).toHaveBeenCalledTimes(
+      ORBITAL_STYLE_IMAGE_IDS.length,
+    )
+    expect(map.updateImage).toHaveBeenCalledTimes(
+      ORBITAL_STYLE_IMAGE_IDS.length * 2,
+    )
+    for (const imageId of ORBITAL_STYLE_IMAGE_IDS) {
+      expect(map.updateImage).toHaveBeenCalledWith(
+        imageId,
+        darkImages[imageId],
+      )
+      expect(map.updateImage).toHaveBeenCalledWith(
+        imageId,
+        lightImages[imageId],
+      )
+    }
     expect(points.features[0]).toMatchObject({
       id: 'orbital:694',
       properties: {
         id: 'orbital:694',
         objectType: 'PAY',
+        markerIcon: 'orbital-payload',
+      },
+    })
+    expect(layerSpecs.get(LAYER_ORBITAL_POINTS)).toMatchObject({
+      type: 'symbol',
+      layout: {
+        'icon-image': ['get', 'markerIcon'],
+        'icon-size': 0.72,
+        'icon-rotation-alignment': 'viewport',
+        'icon-pitch-alignment': 'viewport',
       },
     })
     expect(highlight.features).toHaveLength(1)
@@ -102,9 +188,9 @@ describe('orbital map style', () => {
       '#8fe7ff',
     )
     expect(map.setPaintProperty).toHaveBeenCalledWith(
-      LAYER_ORBITAL_POINTS,
-      'circle-stroke-color',
-      '#06131a',
+      LAYER_ORBITAL_TRACK,
+      'line-color',
+      '#087fa6',
     )
     expect(map.setPaintProperty).toHaveBeenCalledWith(
       LAYER_ORBITAL_HIGHLIGHT,
@@ -122,6 +208,7 @@ describe('orbital map style', () => {
       orbitalTrackFeatures([]),
       'light',
       false,
+      lightImages,
     )
 
     expect(map.setLayoutProperty).toHaveBeenCalledTimes(3)

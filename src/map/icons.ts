@@ -4,9 +4,159 @@ import {
   TRAFFIC_STYLE_IMAGE_IDS,
   type AircraftAltitudeBand,
   type TrafficStyleImageId,
+  type VesselStyleImageId,
 } from '../domain/trafficPresentation'
 
 type IconPainter = (context: CanvasRenderingContext2D) => void
+export type IconPoint = readonly [number, number]
+export type IconPolygons = readonly (readonly IconPoint[])[]
+
+export const VESSEL_ICON_SHAPES = {
+  vessel: [
+    [
+      [32, 3],
+      [43, 16],
+      [45, 48],
+      [39, 61],
+      [25, 61],
+      [19, 48],
+      [21, 16],
+    ],
+  ],
+  'vessel-cargo': [
+    [
+      [32, 3],
+      [44, 12],
+      [51, 23],
+      [49, 57],
+      [41, 62],
+      [23, 62],
+      [15, 57],
+      [13, 23],
+      [20, 12],
+    ],
+  ],
+  'vessel-tanker': [
+    [
+      [32, 3],
+      [40, 8],
+      [46, 18],
+      [47, 50],
+      [41, 59],
+      [35, 62],
+      [29, 62],
+      [23, 59],
+      [17, 50],
+      [18, 18],
+      [24, 8],
+    ],
+  ],
+  'vessel-passenger': [
+    [
+      [32, 2],
+      [46, 12],
+      [53, 26],
+      [50, 55],
+      [42, 62],
+      [22, 62],
+      [14, 55],
+      [11, 26],
+      [18, 12],
+    ],
+  ],
+  'vessel-fishing': [
+    [
+      [32, 5],
+      [42, 18],
+      [43, 51],
+      [36, 61],
+      [28, 61],
+      [21, 51],
+      [22, 18],
+    ],
+    [
+      [23, 28],
+      [7, 41],
+      [9, 49],
+      [25, 36],
+    ],
+    [
+      [41, 28],
+      [57, 41],
+      [55, 49],
+      [39, 36],
+    ],
+  ],
+  'vessel-tug': [
+    [
+      [15, 14],
+      [26, 14],
+      [26, 21],
+      [38, 21],
+      [38, 14],
+      [49, 14],
+      [50, 44],
+      [43, 58],
+      [21, 58],
+      [14, 44],
+    ],
+  ],
+  'vessel-sailing': [
+    [
+      [19, 48],
+      [45, 48],
+      [39, 60],
+      [25, 60],
+    ],
+    [
+      [30, 5],
+      [30, 45],
+      [10, 45],
+    ],
+    [
+      [34, 13],
+      [34, 45],
+      [52, 45],
+    ],
+  ],
+  'vessel-pleasure': [
+    [
+      [32, 3],
+      [50, 29],
+      [44, 47],
+      [46, 56],
+      [37, 62],
+      [27, 62],
+      [18, 56],
+      [20, 47],
+      [14, 29],
+    ],
+  ],
+  'vessel-highspeed': [
+    [
+      [20, 4],
+      [29, 20],
+      [28, 54],
+      [23, 62],
+      [14, 56],
+      [16, 22],
+    ],
+    [
+      [44, 4],
+      [48, 22],
+      [50, 56],
+      [41, 62],
+      [36, 54],
+      [35, 20],
+    ],
+    [
+      [24, 23],
+      [40, 23],
+      [43, 34],
+      [21, 34],
+    ],
+  ],
+} as const satisfies Record<VesselStyleImageId, IconPolygons>
 
 export interface TrafficIconTreatment {
   aircraftFill: string
@@ -86,7 +236,7 @@ const aircraftColors = (
     : aircraftAltitudeColors(theme, band)
 }
 
-const createIcon = (paint: IconPainter) => {
+export const createIcon = (paint: IconPainter) => {
   const canvas = document.createElement('canvas')
   canvas.width = 64
   canvas.height = 64
@@ -99,9 +249,12 @@ const createIcon = (paint: IconPainter) => {
   return context.getImageData(0, 0, canvas.width, canvas.height)
 }
 
-const fillShape = (
+export const fillShape = (
   context: CanvasRenderingContext2D,
-  treatment: TrafficIconTreatment,
+  treatment: Pick<
+    TrafficIconTreatment,
+    'outerEdge' | 'innerEdge' | 'shadow'
+  >,
   color: string,
   draw: () => void,
 ) => {
@@ -124,9 +277,9 @@ const fillShape = (
   context.restore()
 }
 
-const strokeDetail = (
+export const strokeDetail = (
   context: CanvasRenderingContext2D,
-  treatment: TrafficIconTreatment,
+  treatment: Pick<TrafficIconTreatment, 'outerEdge'>,
   detailColor: string,
   draw: () => void,
 ) => {
@@ -140,6 +293,31 @@ const strokeDetail = (
   context.lineWidth = 2.5
   context.stroke()
   context.restore()
+}
+
+const tracePolygons = (
+  context: CanvasRenderingContext2D,
+  polygons: IconPolygons,
+) => {
+  for (const polygon of polygons) {
+    const [first, ...remaining] = polygon
+    if (!first) continue
+    context.moveTo(first[0], first[1])
+    for (const point of remaining) {
+      context.lineTo(point[0], point[1])
+    }
+    context.closePath()
+  }
+}
+
+const fillVesselShape = (
+  context: CanvasRenderingContext2D,
+  treatment: TrafficIconTreatment,
+  imageId: VesselStyleImageId,
+) => {
+  fillShape(context, treatment, treatment.vesselFill, () => {
+    tracePolygons(context, VESSEL_ICON_SHAPES[imageId])
+  })
 }
 
 export const createAircraftIcon = (
@@ -271,15 +449,7 @@ export const createHelicopterIcon = (
 export const createVesselIcon = (theme: Theme) =>
   createIcon((context) => {
     const treatment = trafficIconTreatment(theme)
-    fillShape(context, treatment, treatment.vesselFill, () => {
-      context.moveTo(32, 4)
-      context.lineTo(50, 20)
-      context.lineTo(45, 55)
-      context.lineTo(37, 61)
-      context.lineTo(27, 61)
-      context.lineTo(19, 55)
-      context.lineTo(14, 20)
-    })
+    fillVesselShape(context, treatment, 'vessel')
 
     context.save()
     context.strokeStyle = treatment.vesselDetail
@@ -296,40 +466,22 @@ export const createVesselIcon = (theme: Theme) =>
 export const createCargoVesselIcon = (theme: Theme) =>
   createIcon((context) => {
     const treatment = trafficIconTreatment(theme)
-    fillShape(context, treatment, treatment.vesselFill, () => {
-      context.moveTo(32, 4)
-      context.lineTo(45, 16)
-      context.lineTo(48, 55)
-      context.lineTo(40, 61)
-      context.lineTo(24, 61)
-      context.lineTo(16, 55)
-      context.lineTo(19, 16)
-    })
+    fillVesselShape(context, treatment, 'vessel-cargo')
 
     strokeDetail(context, treatment, treatment.vesselDetail, () => {
-      context.moveTo(22, 25)
-      context.lineTo(42, 25)
-      context.moveTo(21, 35)
-      context.lineTo(43, 35)
-      context.moveTo(21, 45)
-      context.lineTo(43, 45)
-      context.moveTo(32, 24)
-      context.lineTo(32, 46)
+      context.rect(21, 22, 10, 10)
+      context.rect(33, 22, 10, 10)
+      context.rect(21, 35, 10, 10)
+      context.rect(33, 35, 10, 10)
+      context.moveTo(20, 48)
+      context.lineTo(44, 48)
     })
   })
 
 export const createTankerVesselIcon = (theme: Theme) =>
   createIcon((context) => {
     const treatment = trafficIconTreatment(theme)
-    fillShape(context, treatment, treatment.vesselFill, () => {
-      context.moveTo(32, 3)
-      context.quadraticCurveTo(45, 11, 47, 22)
-      context.lineTo(46, 54)
-      context.quadraticCurveTo(40, 61, 32, 61)
-      context.quadraticCurveTo(24, 61, 18, 54)
-      context.lineTo(17, 22)
-      context.quadraticCurveTo(19, 11, 32, 3)
-    })
+    fillVesselShape(context, treatment, 'vessel-tanker')
 
     strokeDetail(context, treatment, treatment.vesselDetail, () => {
       context.moveTo(32, 17)
@@ -344,147 +496,90 @@ export const createTankerVesselIcon = (theme: Theme) =>
 export const createPassengerVesselIcon = (theme: Theme) =>
   createIcon((context) => {
     const treatment = trafficIconTreatment(theme)
-    fillShape(context, treatment, treatment.vesselFill, () => {
-      context.moveTo(32, 3)
-      context.lineTo(47, 17)
-      context.lineTo(49, 51)
-      context.lineTo(42, 60)
-      context.lineTo(22, 60)
-      context.lineTo(15, 51)
-      context.lineTo(17, 17)
-    })
+    fillVesselShape(context, treatment, 'vessel-passenger')
 
     strokeDetail(context, treatment, treatment.vesselDetail, () => {
-      context.moveTo(23, 24)
-      context.lineTo(41, 24)
-      context.moveTo(20, 34)
-      context.lineTo(44, 34)
-      context.moveTo(19, 44)
-      context.lineTo(45, 44)
+      context.moveTo(20, 23)
+      context.lineTo(44, 23)
+      context.moveTo(17, 33)
+      context.lineTo(47, 33)
+      context.moveTo(17, 43)
+      context.lineTo(47, 43)
+      context.moveTo(20, 51)
+      context.lineTo(44, 51)
     })
   })
 
 export const createFishingVesselIcon = (theme: Theme) =>
   createIcon((context) => {
     const treatment = trafficIconTreatment(theme)
-    strokeDetail(context, treatment, treatment.vesselDetail, () => {
-      context.moveTo(25, 28)
-      context.lineTo(7, 44)
-      context.lineTo(11, 49)
-      context.moveTo(39, 28)
-      context.lineTo(57, 44)
-      context.lineTo(53, 49)
-    })
-
-    fillShape(context, treatment, treatment.vesselFill, () => {
-      context.moveTo(32, 6)
-      context.lineTo(44, 20)
-      context.lineTo(42, 53)
-      context.lineTo(36, 61)
-      context.lineTo(28, 61)
-      context.lineTo(22, 53)
-      context.lineTo(20, 20)
-    })
+    fillVesselShape(context, treatment, 'vessel-fishing')
 
     strokeDetail(context, treatment, treatment.vesselDetail, () => {
-      context.moveTo(25, 36)
-      context.lineTo(39, 36)
-      context.moveTo(27, 46)
-      context.lineTo(37, 46)
+      context.moveTo(32, 15)
+      context.lineTo(32, 48)
+      context.moveTo(22, 29)
+      context.lineTo(42, 29)
+      context.moveTo(25, 39)
+      context.lineTo(39, 39)
     })
   })
 
 export const createTugVesselIcon = (theme: Theme) =>
   createIcon((context) => {
     const treatment = trafficIconTreatment(theme)
-    fillShape(context, treatment, treatment.vesselFill, () => {
-      context.moveTo(32, 8)
-      context.lineTo(49, 25)
-      context.lineTo(46, 50)
-      context.lineTo(39, 58)
-      context.lineTo(25, 58)
-      context.lineTo(18, 50)
-      context.lineTo(15, 25)
-    })
+    fillVesselShape(context, treatment, 'vessel-tug')
 
     strokeDetail(context, treatment, treatment.vesselDetail, () => {
-      context.moveTo(22, 31)
-      context.lineTo(42, 31)
-      context.lineTo(42, 44)
-      context.lineTo(22, 44)
+      context.moveTo(21, 29)
+      context.lineTo(43, 29)
+      context.lineTo(43, 45)
+      context.lineTo(21, 45)
       context.closePath()
-      context.moveTo(32, 31)
-      context.lineTo(32, 44)
+      context.moveTo(32, 29)
+      context.lineTo(32, 45)
     })
   })
 
 export const createSailingVesselIcon = (theme: Theme) =>
   createIcon((context) => {
     const treatment = trafficIconTreatment(theme)
-    fillShape(context, treatment, treatment.vesselFill, () => {
-      context.moveTo(32, 4)
-      context.lineTo(43, 48)
-      context.lineTo(39, 59)
-      context.lineTo(25, 59)
-      context.lineTo(21, 48)
-    })
+    fillVesselShape(context, treatment, 'vessel-sailing')
 
     strokeDetail(context, treatment, treatment.vesselDetail, () => {
-      context.moveTo(32, 10)
+      context.moveTo(32, 7)
       context.lineTo(32, 48)
-      context.moveTo(31, 14)
-      context.lineTo(17, 43)
-      context.lineTo(31, 43)
-      context.moveTo(33, 18)
-      context.lineTo(46, 43)
-      context.lineTo(33, 43)
+      context.moveTo(17, 48)
+      context.lineTo(47, 48)
     })
   })
 
 export const createPleasureVesselIcon = (theme: Theme) =>
   createIcon((context) => {
     const treatment = trafficIconTreatment(theme)
-    fillShape(context, treatment, treatment.vesselFill, () => {
-      context.moveTo(32, 4)
-      context.lineTo(47, 26)
-      context.lineTo(45, 53)
-      context.lineTo(38, 60)
-      context.lineTo(26, 60)
-      context.lineTo(19, 53)
-      context.lineTo(17, 26)
-    })
+    fillVesselShape(context, treatment, 'vessel-pleasure')
 
     strokeDetail(context, treatment, treatment.vesselDetail, () => {
-      context.moveTo(23, 34)
-      context.lineTo(41, 34)
-      context.lineTo(38, 45)
-      context.lineTo(26, 45)
+      context.moveTo(22, 31)
+      context.lineTo(42, 31)
+      context.lineTo(38, 43)
+      context.lineTo(26, 43)
       context.closePath()
-      context.moveTo(28, 27)
-      context.lineTo(36, 27)
+      context.moveTo(22, 50)
+      context.lineTo(42, 50)
     })
   })
 
 export const createHighSpeedVesselIcon = (theme: Theme) =>
   createIcon((context) => {
     const treatment = trafficIconTreatment(theme)
-    fillShape(context, treatment, treatment.vesselFill, () => {
-      context.moveTo(32, 3)
-      context.lineTo(46, 24)
-      context.lineTo(47, 56)
-      context.lineTo(39, 61)
-      context.lineTo(34, 50)
-      context.lineTo(30, 50)
-      context.lineTo(25, 61)
-      context.lineTo(17, 56)
-      context.lineTo(18, 24)
-    })
+    fillVesselShape(context, treatment, 'vessel-highspeed')
 
     strokeDetail(context, treatment, treatment.vesselDetail, () => {
-      context.moveTo(24, 30)
-      context.lineTo(40, 30)
-      context.moveTo(27, 39)
-      context.lineTo(37, 39)
+      context.moveTo(23, 28)
+      context.lineTo(41, 28)
+      context.moveTo(25, 36)
+      context.lineTo(39, 36)
     })
   })
 

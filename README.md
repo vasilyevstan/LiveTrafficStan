@@ -135,8 +135,10 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   per disclosure, session-only Layers/Find/Context/Orbits/Sources views,
   visual-viewport-aware mobile sizing, keyboard focus states, non-color
   status/detail labels, compact provider/privacy copy, and a small
-  provider-reported set of original aircraft and vessel silhouettes with
-  generic fallbacks. The duplicate traffic legend is intentionally omitted.
+  provider-reported set of map-scale aircraft and category-distinct vessel
+  silhouettes with generic fallbacks. Orbital payload, rocket-body, debris,
+  and unknown classes use exact-SATCAT object symbols instead of colored dots.
+  The duplicate traffic legend is intentionally omitted.
 - Touch-specific selection tolerance for isolated markers; exact mouse hits stay
   unchanged and ambiguous nearby traffic is never guessed.
 
