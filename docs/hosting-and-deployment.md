@@ -43,23 +43,31 @@ no paid fallback is enabled. Orbital activation uses the included free KV and
 SQLite Durable Object allocations; R2 is not used.
 
 The current application source is
-`bb9829bd0bb59c819b936777fe4e2cdfe32239a3`. Real-mobile Operations deployment
-run `36619533493` published Cloudflare version
-`49c704b3-47ec-47b4-b30b-9483dbd35564` with aircraft delivery through
+`96d67b6da3e395be79acff27b47ad6dee34de309`. Canonical orbital-enrichment
+deployment run `36627748051` published Cloudflare version
+`3d6c692e-1a29-4fa4-bbee-2ab5545d9d57` with aircraft delivery through
 `oci-private-relay`, aircraft photos, plausible routes, the five-file exact-IMO
-vessel-photo manifest, and the orbital catalog enabled. It preserved KV
+vessel-photo manifest, the orbital catalog, and exact-NORAD enrichment enabled.
+It preserved KV
 namespace `59178d55418247c4bab473b52a5dc07d`, one SQLite coordinator, and Cron
 `17 */2 * * *`. The compatible relay remains at
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` and retains
 `76540a21291878b44e7f92ceecb37d03a366c0c7` as the prior release. The
-deployed client is `assets/index-On-Ohfl9.js`, and the deployed `index.html`
+deployed client is `assets/index-Cl87tlUV.js`, and the deployed `index.html`
 SHA-256 is
-`2f8f4204640c6f2a05cd316cbf175fd95733ea41dfea5f89ce79e6060f4bdd82`.
+`140921b505e2043ded16a4ebb09c11a30c4a5f7b8f4d4b8f55120c5bb7f9b97d`.
+Exact merged-`main` validation run `36626910897` passed before deployment.
+The generated application shell contains 11 URLs and 2,619,551 bytes; the two
+enrichment images remain excluded.
 
 The exact-release endpoint, full smoke, and fresh-profile desktop/mobile
-browser acceptance passed. The private aircraft relay returned real JSON
-through the unchanged VPC/Tunnel path; orbital, marine, map, and static-context
-behavior remained healthy and isolated throughout.
+browser acceptance passed. First exact-source run `36627068064` had already
+published healthy application, orbital, enrichment, weather, marine, map, and
+static-context surfaces as Cloudflare version
+`7b1233c9-3461-440b-ac5f-1d30b02c0525`, but aircraft smoke exposed the
+recurrent private-relay guest/network `502`. A supported OCI diagnostic reboot
+restored real JSON through the unchanged VPC/Tunnel path. The canonical rerun
+passed without application rollback or provider/privacy change.
 
 The current bootstrap contains 156 schema-v1 records with digest
 `f6183329084286f4fbb5cdfcea16e827e751569e7d5919d9e8222eadf95f017d`
@@ -71,19 +79,22 @@ Publication recovery source
 `7899c99212f01bb56489033fc9cd442178df7ea0` deployed in run `36616140867`
 with the stable project `User-Agent`, an independent coordinator-state schema,
 the reviewed `v2` named coordinator, and the current fresh bootstrap. The
-public route for the real-mobile Operations release still returned
-`X-LiveTrafficStan-Orbital-Source: bootstrap` at `2026-09-29T19:30Z`. #162
+public route for the current exact application release still returned
+`X-LiveTrafficStan-Orbital-Source: bootstrap` at
+`2026-09-29T20:31:40.271Z`, approximately 14 minutes after the `20:17Z`
+schedule. #162
 retains the first successful scheduled KV publication as explicit outstanding
 evidence.
 
 The public Wiki synchronization is commit
-`c67b33036d63c095e3aadc5d19e492d3aeb53665`. It updates focused
+`1cedad08275d9e162aab618bea0af2e0bbf4cb43`. It updates focused
 [Orbital Tracking](https://github.com/vasilyevstan/LiveTrafficStan/wiki/Orbital-Tracking)
 and
 [Infrastructure and Hosting](https://github.com/vasilyevstan/LiveTrafficStan/wiki/Infrastructure-and-Hosting)
 pages plus the surrounding Home, map, release, troubleshooting, and
-accessibility documentation with the visual-viewport correction, task-based
-Operations layout, single-scroll contract, and current production identity.
+accessibility documentation with the exact-NORAD identity/rights/request
+boundary, visual-viewport and single-scroll contracts, relay recovery, and
+current production identity.
 
 Production browser acceptance used a deterministic 24-object fixture to expose
 all 20 bounded orbital results at 390x844, 390x568, and a 315x517-class view.
@@ -93,6 +104,21 @@ viewport run kept the controls at 299.859375 px against the 299.86 px budget.
 Every final result was topmost under hit testing, task labels were unclipped,
 and the checks retained one MapLibre canvas, one catalog request, zero browser
 CelesTrak requests, compact attribution, and zero console/runtime errors.
+
+Cache-disabled public-origin orbital-enrichment acceptance used real current
+Hubble, ISS, and NORAD `733` map features. Before selection there were zero
+image requests. Each reviewed immutable path was fetched exactly once as
+uncached `200 image/jpeg`, outside the Service Worker, with one-year immutable
+caching and exact manifest content length. Hubble decoded at 437x640 and ISS
+at 640x425. Details and the later ISS tooltip used the same validated Blob
+URL; hover, theme, re-selection, and the rocket-body fallback made no image
+request. A forced terminal failure did not retry. The run recorded zero NASA
+requests, same-origin failures, runtime exceptions, or console errors.
+
+Responsive selected details reached their exact scroll limit without
+horizontal overflow: 303.828125 px panel / 159.984375 px image / 931 px scroll
+at 390x844, and 115 px / 87.984375 px / 1,048 px at 390x568. One canvas,
+source/rights text, and map attribution remained visible.
 
 Current rendered route acceptance selected live `BTI877`, made exactly one
 route request, rendered TLL to BCN, and made no second route request after an
@@ -677,6 +703,12 @@ npm run preview:worker
   revisions, file-specific rights, the co-located license record, image
   dimensions, byte budgets, hashes, and directory inventory without upstream
   network access.
+- `check:orbital-catalog` validates the complete normalized bootstrap,
+  source/type identity, bounds, epochs, canonical order, and digest without
+  contacting CelesTrak.
+- `check:orbital-enrichment` validates exact current NORAD/name/designator/type
+  identity, NASA purpose/image provenance, the co-located rights notice,
+  immutable inventory, dimensions, bytes, and SHA-256 without contacting NASA.
 - `preview:worker` builds the client and runs the actual local `workerd`
   runtime.
 

@@ -104,7 +104,7 @@ identity, the same fixed point route and User-Agent, one aggregate upstream
 start per 20 seconds, and provider `Retry-After` backoff. It does not rotate
 addresses, add a provider, alter attribution, or claim additional capacity
 permission. Production application source
-`bb9829bd0bb59c819b936777fe4e2cdfe32239a3` uses compatible relay release
+`96d67b6da3e395be79acff27b47ad6dee34de309` uses compatible relay release
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` through the fixed Workers VPC
 Service and private Tunnel; see
 [OCI Aircraft Relay](oci-aircraft-relay.md).
@@ -794,6 +794,14 @@ session-only Blob URL. Only that validated URL can enter selected details or a
 later tooltip. Ordinary hover therefore makes no image request and never
 contacts NASA. External NASA requests happen only if a user follows a source
 or policy link.
+
+Cache-disabled production acceptance for source
+`96d67b6da3e395be79acff27b47ad6dee34de309` received each exact asset once
+as uncached `200 image/jpeg` with the manifest content length and
+`Cache-Control: public, max-age=31536000, immutable`. It observed no NASA
+runtime request, no Service Worker image response, one shared validated ISS
+Blob URL in details and tooltip, truthful no-image fallback for exact rocket
+body NORAD `733`, and terminal-failure no-retry behavior.
 
 ## Source-code license versus data licenses
 

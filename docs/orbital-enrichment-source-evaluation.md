@@ -258,6 +258,79 @@ Measured results:
 - one MapLibre canvas persisted with no same-origin failure, runtime exception,
   or console error.
 
+## Production release and public-origin acceptance
+
+The exact released application identity is:
+
+- application source:
+  `96d67b6da3e395be79acff27b47ad6dee34de309`;
+- feature, ancestry, and release PRs: #212, #213, and #214;
+- exact merged-`main` validation:
+  [36626910897](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/36626910897);
+- canonical deployment and full smoke:
+  [36627748051](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/36627748051);
+- Cloudflare version: `3d6c692e-1a29-4fa4-bbee-2ab5545d9d57`;
+- client asset: `assets/index-Cl87tlUV.js`;
+- deployed `index.html` SHA-256:
+  `140921b505e2043ded16a4ebb09c11a30c4a5f7b8f4d4b8f55120c5bb7f9b97d`;
+- public Wiki:
+  `1cedad08275d9e162aab618bea0af2e0bbf4cb43`.
+
+Fresh Chrome 154 exercised the public origin with browser HTTP caching disabled
+and real current Hubble, ISS, and NORAD `733` map features. Before selection,
+there were zero enrichment-image requests. Exact selection then produced only:
+
+| Asset | Status/type | Content length | Cache policy | Browser cache / Service Worker |
+| --- | --- | ---: | --- | --- |
+| Hubble `norad-20580.jpg` | `200 image/jpeg` | 46,716 | `public, max-age=31536000, immutable` | neither |
+| ISS `norad-25544.jpg` | `200 image/jpeg` | 48,741 | `public, max-age=31536000, immutable` | neither |
+
+Both were application `Fetch` requests, not raw `Image` requests, because the
+browser validated bytes before rendering Blob URLs. The decoded dimensions
+were exactly 437x640 and 640x425. Production observed:
+
+- one request per reviewed asset and no request before selection;
+- identical ISS Blob URL in selected details and the later compact tooltip;
+- no image request on hover, theme change, re-selection, or rocket-body
+  fallback;
+- exact Hubble-to-ISS-to-Hubble identity fencing;
+- truthful no-purpose/no-image output for exact `R/B` NORAD `733`;
+- a forced terminal image failure that remained unavailable after reselection
+  and did not retry;
+- zero NASA runtime requests, same-origin failures, loading failures, runtime
+  exceptions, or console errors;
+- one unchanged MapLibre canvas throughout.
+
+Responsive acceptance measured:
+
+- desktop Hubble image: 220 px rendered height;
+- desktop ISS image: 207.1875 px rendered height;
+- 390x844: 303.828125 px details panel, 159.984375 px image, exact 931 px
+  maximum scroll;
+- 390x568: 115 px details panel, 87.984375 px image, exact 1,048 px maximum
+  scroll.
+
+Both mobile sizes retained zero horizontal overflow, source/rights text, map
+attribution, and one canvas.
+
+The same acceptance loaded one complete same-origin orbital catalog response
+with exact release header, schema `1`, 156 records, retrieval
+`2026-09-29T18:52:12.000Z`, and digest
+`f6183329084286f4fbb5cdfcea16e827e751569e7d5919d9e8222eadf95f017d`.
+It still reported `X-LiveTrafficStan-Orbital-Source: bootstrap`; #162 retains
+the first successful scheduled KV publication as separate outstanding
+evidence.
+
+The first exact-source deployment
+[36627068064](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/36627068064)
+had already published healthy application, orbital, and enrichment assets as
+Cloudflare version `7b1233c9-3461-440b-ac5f-1d30b02c0525`. It failed only
+because the independent private aircraft relay returned HTTP `502`. A
+supported OCI diagnostic reboot restored real bounded ADSB JSON, and the
+canonical same-source deployment above passed. No enrichment rollback,
+provider change, credential change, cache, fallback, or privacy-boundary change
+was required; #174 records the recovery and is closed.
+
 ## Stop conditions
 
 Leave an object unavailable when any of these conditions holds:

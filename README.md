@@ -439,10 +439,11 @@ persistent route cache.
 Public production is live at
 <https://livetrafficstan.syntal.workers.dev> on Cloudflare Workers Free with
 Static Assets. The current application source is
-`bb9829bd0bb59c819b936777fe4e2cdfe32239a3`. Real-mobile Operations deployment
-run `36619533493` passed exact-source deployment and full production smoke and
-published Cloudflare version `49c704b3-47ec-47b4-b30b-9483dbd35564` with
-client asset `assets/index-On-Ohfl9.js`. The deployment preserves:
+`96d67b6da3e395be79acff27b47ad6dee34de309`. Canonical orbital-enrichment
+deployment run `36627748051` passed exact-source deployment and full production
+smoke and published Cloudflare version
+`3d6c692e-1a29-4fa4-bbee-2ab5545d9d57` with client asset
+`assets/index-Cl87tlUV.js`. The deployment preserves:
 
 - `oci-private-relay`, aircraft photos, and plausible routes enabled;
 - the orbital catalog enabled with Cron `17 */2 * * *`;
@@ -450,8 +451,10 @@ client asset `assets/index-On-Ohfl9.js`. The deployment preserves:
 - a validated 156-record schema-v1 catalog with digest
   `f6183329084286f4fbb5cdfcea16e827e751569e7d5919d9e8222eadf95f017d`
   and retrieval time `2026-09-29T18:52:12.000Z`;
+- orbital-enrichment manifest `2026-09-29-v1`, exact Hubble/ISS identity
+  matching, and two immutable NASA JPEGs totaling 95,457 bytes;
 - deployed `index.html` SHA-256
-  `2f8f4204640c6f2a05cd316cbf175fd95733ea41dfea5f89ce79e6060f4bdd82`.
+  `140921b505e2043ded16a4ebb09c11a30c4a5f7b8f4d4b8f55120c5bb7f9b97d`.
 
 Fresh rendered production acceptance used a deterministic 24-object crossing
 fixture and exposed all 20 bounded results at both 390x844 and 390x568.
@@ -477,22 +480,48 @@ unclipped, and retain one scroll owner, one canvas, one catalog request, and
 zero browser CelesTrak requests or runtime errors. Physical iOS Safari and
 Android Chrome evidence remains separate and must not be inferred from CDP.
 
+Cache-disabled public-origin enrichment acceptance then used real current
+Hubble, ISS, and NORAD `733` map features. It made zero image requests before
+selection and exactly one uncached same-origin `Fetch` for each reviewed JPEG;
+both returned exact `200 image/jpeg`, immutable one-year caching, manifest
+content lengths, and no Service Worker or disk-cache response. Hubble decoded
+at 437x640 and ISS at 640x425. Details and the later ISS tooltip used the same
+validated Blob URL, while hover, theme, re-selection, and the unreviewed
+rocket-body fallback made no image request. A forced terminal image failure
+did not retry. One MapLibre canvas persisted with zero NASA requests,
+same-origin failures, runtime exceptions, or console errors.
+
+At 390x844, ISS details measured 303.828125 px high with a 159.984375 px
+image and reached the exact 931 px maximum scroll. At 390x568, the panel
+measured 115 px with an 87.984375 px image and reached the exact 1,048 px
+maximum scroll. Neither layout overflowed horizontally, and source, rights,
+map attribution, and the single canvas remained reachable.
+
 Orbital publication recovery source
 `7899c99212f01bb56489033fc9cd442178df7ea0` deployed in run `36616140867`
 with the stable project identity, independent coordinator schema, reviewed
 `v2` coordinator, and the current fresh bootstrap. The public route for this
 release still returned `X-LiveTrafficStan-Orbital-Source: bootstrap` at
-`2026-09-29T19:30Z`; the first successful scheduled KV publication remains
-open in #162.
+`2026-09-29T20:31:40.271Z`, approximately 14 minutes after the `20:17Z`
+schedule; the first successful scheduled KV publication remains open in #162.
 
 The comprehensive public Wiki synchronization is commit
-`c67b33036d63c095e3aadc5d19e492d3aeb53665`; it updates
+`1cedad08275d9e162aab618bea0af2e0bbf4cb43`; it updates
 [Orbital Tracking](https://github.com/vasilyevstan/LiveTrafficStan/wiki/Orbital-Tracking)
 and
 [Infrastructure and Hosting](https://github.com/vasilyevstan/LiveTrafficStan/wiki/Infrastructure-and-Hosting)
 plus the related Home, map, release, troubleshooting, and accessibility pages
-with the visual-viewport correction, task-based Operations layout,
-single-scroll contract, rendered evidence, and current production identity.
+with the exact-NORAD source/rights/request boundary, visual-viewport and
+single-scroll contracts, relay recovery, rendered evidence, and current
+production identity.
+
+The first exact-source orbital-enrichment deployment run `36627068064`
+published healthy application/orbital/enrichment assets as Cloudflare version
+`7b1233c9-3461-440b-ac5f-1d30b02c0525` but found the recurrent isolated
+aircraft-relay guest/network outage through HTTP `502`. A supported OCI
+diagnostic reboot restored real bounded ADSB JSON, and the canonical run above
+passed without code, credential, route, provider, cache, privacy, or rollback
+change. Recovery evidence is closed in #174.
 
 The compatible aircraft relay remains at
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` and retains

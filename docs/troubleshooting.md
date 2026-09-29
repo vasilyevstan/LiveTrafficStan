@@ -153,6 +153,15 @@ recovery, use a noninteractive `sudo -n systemctl restart` canary, loopback
 `/healthz`, one cadence-cleared production response, and exact production
 smoke. Do not infer recovery from stale plugin timestamps alone.
 
+The later orbital-enrichment deployment recurrence is recorded in #174:
+exact source `96d67b6da3e395be79acff27b47ad6dee34de309` deployed healthy
+application/orbital/enrichment assets in run `36627068064`, while only the
+aircraft route returned `502`. Diagnostic reboot entered `STOPPING` at
+`20:35:14Z`, `STARTING` at `20:35:57Z`, and `RUNNING` at `20:36:28Z`;
+bounded probes recovered to real ADSB JSON at `20:38:04Z`. Canonical
+same-source run `36627748051` then passed full smoke. Do not roll back a
+healthy independent application release for this isolated relay failure.
+
 ADSB.lol rejects generic Worker identification. The proxy must send the stable
 public LiveTrafficStan User-Agent. Do not work around a `403` by forwarding
 browser headers, cookies, authorization, or a client-controlled destination.
@@ -672,6 +681,12 @@ application verifies SHA-256 before creating a Blob URL and treats a failure
 as terminal for the running tab rather than retrying on reselection. A hover
 must never contact NASA or request the same-origin asset; a tooltip can reuse
 only a validated Blob URL created by selected details earlier in the tab.
+
+Current production source `96d67b6da3e395be79acff27b47ad6dee34de309`
+proved both paths as uncached `200 image/jpeg` Static Assets with exact
+46,716-byte and 48,741-byte lengths plus one-year immutable caching. Any
+different bytes, media type, redirect, repeated request, NASA runtime request,
+or Service Worker response is a release defect.
 
 ## Configuration fails at startup
 

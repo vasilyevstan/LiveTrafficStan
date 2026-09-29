@@ -52,7 +52,7 @@ identity. A disabled deployment removes the Cron and omits both orbital
 bindings.
 
 Current production source
-`bb9829bd0bb59c819b936777fe4e2cdfe32239a3` sets the flag to `true`, uses KV
+`96d67b6da3e395be79acff27b47ad6dee34de309` sets the flag to `true`, uses KV
 namespace `59178d55418247c4bab473b52a5dc07d`, and runs Cron
 `17 */2 * * *`. This Worker setting does not change the user-facing default:
 the remembered ORBITS layer still starts off until explicitly enabled or
@@ -61,7 +61,10 @@ included in a share fragment.
 The exact-NORAD purpose/image manifest adds no environment variable, provider
 endpoint, secret, scheduler, Worker binding, or PWA-shell entry. Purpose is
 compiled into the browser bundle. A reviewed image uses only its immutable
-same-origin `/orbital-enrichment/<version>/` path after exact selection.
+same-origin `/orbital-enrichment/<version>/` path after exact selection. The
+loader omits credentials and referrer, rejects redirects, validates exact
+status/media type/bytes/SHA-256 before creating a Blob URL, and leaves failures
+terminal for the running tab.
 
 The committed `wrangler.jsonc` remains credential-free. Cloudflare account ID
 and API token stay in the protected `production` environment; the namespace ID
