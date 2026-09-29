@@ -554,6 +554,17 @@ ORBITS starts off and should make no catalog request before explicit enable.
 After enable, inspect only the same-origin `/api/orbits/catalog` request; a
 browser request to `celestrak.org` is a defect.
 
+An enabled local view can truthfully have no current orbital marker. Check the
+collapsed Operations summary before diagnosing a failure:
+
+- **ORBITS · 0 IN VIEW · 1 PASS ≤90M** means acquisition and propagation
+  succeeded and one modeled ground track is predicted to cross the view;
+- **VIEW** opens the existing disclosure and focuses the first result without
+  another request, automatic selection, or camera movement;
+- use
+  `#v=1&lat=0&lon=0&zoom=0&bearing=0&pitch=0&orbits=1` for the explicit
+  whole-world view, where all valid current modeled points are in view.
+
 Interpret the control state before retrying:
 
 - **Loading** — the first strict same-origin read is unfinished.

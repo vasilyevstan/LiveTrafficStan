@@ -43,17 +43,26 @@ no paid fallback is enabled. Orbital activation uses the included free KV and
 SQLite Durable Object allocations; R2 is not used.
 
 The current application source is
-`46cb2007bc0cc27d1905fab32db6149a91d17576`. Final restoration deployment
-run `36488245592` published Cloudflare version
-`0138d581-2162-491a-bcb5-619a97cf31fb` with aircraft delivery through
+`94c1d35b3687cd26b4d0445005eaf38edfbf7964`. Visibility release deployment
+run `36554328684` published Cloudflare version
+`50b2a0a0-b09d-4e7d-8851-61c0817c07cc` with aircraft delivery through
 `oci-private-relay`, aircraft photos, plausible routes, the five-file
-exact-IMO vessel-photo manifest, and the orbital catalog enabled. It recorded
+exact-IMO vessel-photo manifest, and the orbital catalog enabled. It preserved
 KV namespace `59178d55418247c4bab473b52a5dc07d`, one SQLite coordinator, and
 Cron `17 */2 * * *`. The compatible relay remains at
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` and retains
 `76540a21291878b44e7f92ceecb37d03a366c0c7` as the prior release. The
-deployed `index.html` SHA-256 is
-`396705e26670808d157f5405d636103887d80c053609140719a72c43bcad3f64`.
+deployed client is `assets/index-BmhBmsdh.js`, and the deployed `index.html`
+SHA-256 is
+`8355a66f740f01d99fc1df83057df4b6f29d913ced9c84d8907f412058e24f62`.
+
+The exact-release orbital endpoint and fresh-profile desktop/mobile browser
+acceptance passed. The workflow's aggregate smoke ended red only because the
+independent private aircraft relay returned `502 Aircraft upstream
+unavailable`, tracked in #174. The deployment remained active because orbital,
+marine, map, and static-context behavior was healthy and the architecture
+requires truthful partial operation rather than rollback of an unrelated
+release.
 
 The activation catalog contains 156 schema-v1 records with digest
 `2cbe00a3285c7bdfd80fe07661b6a14b48279d0629e44c026c6306bb20453d5b`
@@ -71,12 +80,12 @@ kept the feature available; #162 retains the first successful scheduled KV
 publication as explicit outstanding evidence.
 
 The public Wiki synchronization is commit
-`c2f91bdd74f13b78e20cc3ad50f296b5de94a54b`. It adds focused
+`4e56f83c83be0d065051606ae288b5eb13623d7c`. It updates focused
 [Orbital Tracking](https://github.com/vasilyevstan/LiveTrafficStan/wiki/Orbital-Tracking)
 and
 [Infrastructure and Hosting](https://github.com/vasilyevstan/LiveTrafficStan/wiki/Infrastructure-and-Hosting)
-pages and updates the surrounding architecture, configuration, provider,
-testing, release, troubleshooting, accessibility, and roadmap documentation.
+pages plus the surrounding Home, map, release, troubleshooting, and
+accessibility documentation with the visibility release evidence.
 
 Current rendered route acceptance selected live `BTI877`, made exactly one
 route request, rendered TLL to BCN, and made no second route request after an
