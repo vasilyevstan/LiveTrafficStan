@@ -463,9 +463,12 @@ enable, one same-origin request after enable, zero browser requests to
 CelesTrak, one unchanged MapLibre canvas, exact A-to-B-to-A selection,
 theme/hide/show restoration, 156 whole-world modeled objects while aircraft
 and ships paused, a 390x844 panel within the 58vh budget, real touch camera
-movement, and no runtime exception or main-thread task over 50 ms. Use
-<https://livetrafficstan.syntal.workers.dev/#v=1&orbits=1> to open the
-default-off layer directly.
+movement, and no runtime exception or main-thread task over 50 ms. When ORBITS
+is enabled, the collapsed Operations panel keeps its in-view and next-pass
+counts visible; **VIEW** opens and focuses the modeled-object list. Use
+<https://livetrafficstan.syntal.workers.dev/#v=1&lat=0&lon=0&zoom=0&bearing=0&pitch=0&orbits=1>
+to open the default-off layer at the full-world view where all current modeled
+points are visible.
 
 Protected rollback run `36488117751` rebuilt pre-orbital source
 `3370dfe3f1cc2614feff894643ed865978ec7edc` behind the namespace-preserving

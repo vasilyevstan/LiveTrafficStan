@@ -305,7 +305,9 @@ Map-experience tests also cover:
   later wall-clock jumps, stale/expiry truthfulness, and revision fencing;
 - persistent orbital sources/layers, stable feature IDs, style rehydration,
   all 24 port/airport/weather/orbital installation orders, traffic-first
-  picking, preference/share defaults, controls, details, and attribution.
+  picking, preference/share defaults, controls, details, and attribution;
+- the collapsed enabled-state summary for a zero-object local view and the
+  keyboard-focus path from **VIEW** to the first modeled-object result.
 
 `npm run check:aircraft-metadata` makes no upstream request. It validates the
 pinned source and license identity, configured immutable version, co-located

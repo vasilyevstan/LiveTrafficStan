@@ -215,10 +215,64 @@ describe('TrafficControls', () => {
     expect(html).toContain(
       'aria-pressed="true" aria-busy="false">ORBITS',
     )
+    expect(html).toContain(
+      'ORBITS · 1 IN VIEW · 0 PASSES ≤90M',
+    )
+    expect(html).toContain(
+      'aria-label="View modeled orbital objects" aria-controls="traffic-controls-map-tools">VIEW',
+    )
     expect(html).toContain('Modeled orbital objects')
     expect(html).toContain('ATLAS CENTAUR 2')
     expect(html).toContain('not live telemetry')
     expect(html).toContain('CelesTrak')
+  })
+
+  it('surfaces a future orbital pass while the detailed controls are closed', () => {
+    const html = renderControls({
+      orbitalVisible: true,
+      orbitalState: {
+        phase: 'stale',
+        positions: [],
+        prediction: {
+          mode: 'local',
+          totalResults: 1,
+          inViewCount: 0,
+          futureCrossingCount: 1,
+          trackSegments: [],
+          results: [
+            {
+              id: 'orbital:48865',
+              noradCatalogId: '48865',
+              name: 'COSMOS 2550',
+              objectType: 'PAY',
+              currentlyInView: false,
+              firstCrossingAt: Date.UTC(2026, 2, 12, 12, 30),
+            },
+          ],
+        },
+        snapshot: {
+          schemaVersion: 1,
+          sourceContractVersion: 1,
+          group: 'visual',
+          gpSourceUrl: 'https://example.test/gp',
+          satcatSourceUrl: 'https://example.test/satcat',
+          retrievedAt: '2026-03-12T12:00:00.000Z',
+          recordCount: 1,
+          records: [],
+          sha256: 'a'.repeat(64),
+        },
+      },
+    })
+    const mapDetailsIndex = html.indexOf(
+      '<details id="traffic-controls-map-tools"',
+    )
+    const navigationPrimary = html.slice(0, mapDetailsIndex)
+
+    expect(navigationPrimary).toContain(
+      'ORBITS · 0 IN VIEW · 1 PASS ≤90M',
+    )
+    expect(navigationPrimary).toContain('>VIEW</button>')
+    expect(html).toContain('COSMOS 2550')
   })
 
   it('explains HISTORY suppression without rendering current orbital context', () => {
@@ -253,6 +307,7 @@ describe('TrafficControls', () => {
     expect(html).toContain(
       'Modeled orbital objects are hidden during historical playback.',
     )
+    expect(html).toContain('ORBITS · HIDDEN IN HISTORY')
     expect(html).not.toContain('class="control-group vessel-discovery orbital-context"')
   })
 

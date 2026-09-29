@@ -259,6 +259,10 @@
   white-space: nowrap;
 }
 
+.control-panel__orbital-summary span {
+  color: var(--note-text);
+}
+
 .control-panel__urgent button {
   padding: 0 8px;
 }
