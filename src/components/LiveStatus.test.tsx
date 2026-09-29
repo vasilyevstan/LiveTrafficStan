@@ -83,4 +83,32 @@ describe('LiveStatus', () => {
       'Live traffic is unavailable while the browser is offline',
     )
   })
+
+  it('adds modeled orbital context without changing traffic health', () => {
+    const html = renderToStaticMarkup(
+      <LiveStatus
+        aircraftCount={0}
+        vesselCount={36}
+        aircraftStatus={{
+          phase: 'error',
+          paused: false,
+          error: 'Unavailable',
+        }}
+        marineStatus={{ phase: 'live', paused: false }}
+        marineCapabilities={DIGITRAFFIC_MARINE_CAPABILITIES}
+        now={1_800_000_000_000}
+        online
+        orbitalSummary="ORBITS · 0 IN VIEW · 1 PASS ≤90M"
+      />,
+    )
+
+    expect(html).toContain('<strong>PARTIAL</strong>')
+    expect(html).toContain('0 aircraft')
+    expect(html).toContain('36 ships shown · regional source')
+    expect(html).toContain('Aircraft unavailable')
+    expect(html).toContain('Marine stream connected')
+    expect(html).toContain(
+      'class="live-status__orbital" aria-hidden="true">ORBITS · 0 IN VIEW · 1 PASS ≤90M',
+    )
+  })
 })

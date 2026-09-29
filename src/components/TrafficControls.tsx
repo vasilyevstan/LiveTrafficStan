@@ -37,6 +37,7 @@ import { useLocationSearchModel } from './useLocationSearchModel'
 import { VesselDiscovery } from './VesselDiscovery'
 import { WeatherContext } from './WeatherContext'
 import { OrbitalContext } from './OrbitalContext'
+import { formatOrbitalSummary } from './orbitalSummary'
 
 interface TrafficControlsProps {
   aircraftQuery: string
@@ -297,6 +298,7 @@ export function TrafficControls({
 }: TrafficControlsProps) {
   const mapToolsDetailsRef = useRef<HTMLDetailsElement>(null)
   const settingsDetailsRef = useRef<HTMLDetailsElement>(null)
+  const orbitalToggleRef = useRef<HTMLButtonElement>(null)
   const focusedWithinMapToolsRef = useRef(false)
   const focusedWithinSettingsRef = useRef(false)
   const historyNeedsRecovery = [
@@ -408,47 +410,12 @@ export function TrafficControls({
         return orbitalState.message
     }
   })()
-  const orbitalPrimarySummary = (() => {
-    if (!orbitalVisible) return undefined
-    if (
-      playback.mode !== 'live' ||
-      orbitalState.phase === 'paused-history'
-    ) {
-      return 'ORBITS · HIDDEN IN HISTORY'
-    }
-    if (orbitalState.phase === 'disabled') return 'ORBITS · STARTING'
-    if (orbitalState.phase === 'loading') return 'ORBITS · LOADING'
-    if (orbitalState.phase === 'unavailable') {
-      return 'ORBITS · UNAVAILABLE'
-    }
-    if (orbitalState.phase === 'clock-invalid') {
-      return 'ORBITS · CHECK DEVICE CLOCK'
-    }
-    if (orbitalState.phase === 'empty') {
-      return 'ORBITS · NO SAFE POSITIONS'
-    }
-    if (
-      orbitalState.phase === 'offline' &&
-      orbitalState.positions.length === 0
-    ) {
-      return 'ORBITS · OFFLINE'
-    }
-
-    const prediction = orbitalState.prediction
-    if (prediction.mode === 'world') {
-      return `ORBITS · ${prediction.inViewCount} VISIBLE`
-    }
-    if (prediction.mode === 'local') {
-      const crossings = prediction.futureCrossingCount
-      return `ORBITS · ${prediction.inViewCount} IN VIEW · ${crossings} ${
-        crossings === 1 ? 'PASS' : 'PASSES'
-      } ≤${Math.round(orbitalPredictionHorizonMs / 60_000)}M`
-    }
-    if (orbitalState.positions.length > 0) {
-      return `ORBITS · ${orbitalState.positions.length} MODELED`
-    }
-    return 'ORBITS · VIEW UNAVAILABLE'
-  })()
+  const orbitalPrimarySummary = formatOrbitalSummary({
+    visible: orbitalVisible,
+    historyActive: playback.mode !== 'live',
+    state: orbitalState,
+    predictionHorizonMs: orbitalPredictionHorizonMs,
+  })
   const revealOrbitalObjects = () => {
     const details = mapToolsDetailsRef.current
     if (!details) return
@@ -457,8 +424,7 @@ export function TrafficControls({
       const target =
         details.querySelector<HTMLElement>(
           '.orbital-results button',
-        ) ??
-        details.querySelector<HTMLElement>('#orbital-layer-toggle')
+        ) ?? orbitalToggleRef.current
       target?.focus()
     })
   }
@@ -472,7 +438,7 @@ export function TrafficControls({
         aria-label="Operations"
       >
       <div
-        className="control-options control-options--three control-panel__primary"
+        className="control-options control-panel__primary"
         role="group"
         aria-label="Map operations"
       >
@@ -494,6 +460,17 @@ export function TrafficControls({
           onClick={() => onVesselsVisibleChange(!vesselsVisible)}
         >
           SHIPS
+        </button>
+        <button
+          ref={orbitalToggleRef}
+          id="orbital-layer-toggle"
+          type="button"
+          className={orbitalVisible ? 'is-active' : undefined}
+          aria-pressed={orbitalVisible}
+          aria-busy={orbitalVisible && orbitalLoading}
+          onClick={() => onOrbitalVisibleChange(!orbitalVisible)}
+        >
+          {orbitalVisible && orbitalLoading ? 'ORBITS...' : 'ORBITS'}
         </button>
       </div>
 
@@ -604,18 +581,6 @@ export function TrafficControls({
                 onClick={() => onWeatherVisibleChange(!weatherVisible)}
               >
                 {weatherVisible && weatherLoading ? 'METAR...' : 'METAR'}
-              </button>
-              <button
-                id="orbital-layer-toggle"
-                type="button"
-                className={orbitalVisible ? 'is-active' : undefined}
-                aria-pressed={orbitalVisible}
-                aria-busy={orbitalVisible && orbitalLoading}
-                onClick={() => onOrbitalVisibleChange(!orbitalVisible)}
-              >
-                {orbitalVisible && orbitalLoading
-                  ? 'ORBITS...'
-                  : 'ORBITS'}
               </button>
             </div>
             {portsVisible &&

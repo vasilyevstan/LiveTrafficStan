@@ -25,19 +25,26 @@ still returns `404` and removes the Cron.
 
 ## User experience
 
-The remembered **ORBITS** preference starts off. It appears under
-**Operations -> More -> Layers** and adds one fragment field, `orbits=0|1`.
-The preference stores only visibility. Catalog bytes, modeled positions,
-crossings, selected object, track, clock anchor, camera, and Home remain
-session-only.
+The remembered **ORBITS** preference starts off. Its single toggle appears in
+the primary **Operations** row beside **AIRCRAFT** and **SHIPS**, while the
+detailed result list and attribution remain under **Operations -> More**. It
+adds one fragment field, `orbits=0|1`. The preference stores only visibility.
+Catalog bytes, modeled positions, crossings, selected object, track, clock
+anchor, camera, and Home remain session-only.
 
 After enable, the collapsed Operations panel keeps a compact orbital summary
 visible. A local view reports current in-view objects and next-90-minute pass
-count even when both the layer toggle and detailed result list are inside
-**More**. **VIEW** opens the existing disclosure and focuses the first modeled
-object result when one exists, otherwise the ORBITS toggle. This prevents a
-valid zero-object local view from looking like a failed layer and adds no
-request or camera movement.
+count while the detailed result list remains inside **More**. **VIEW** opens
+the existing disclosure and focuses the first modeled object result when one
+exists, otherwise the already-visible primary ORBITS toggle. The upper-left
+status panel mirrors the same compact ORBITS state and labels an eligible view
+**Visible traffic and orbital area**. Its **LIVE**, **PARTIAL**, and **OFFLINE**
+health still describes only aircraft and marine providers, so modeled orbital
+availability cannot mask a traffic outage. Compact mobile layouts retain the
+existing rule that hides provider-detail copy; the primary ORBITS toggle and
+summary remain visible there instead. These surfaces prevent a valid zero-object
+local view from looking like a failed layer and add no request or camera
+movement.
 
 When enabled, the control shows distinct states for:
 
