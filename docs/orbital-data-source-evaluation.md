@@ -146,6 +146,8 @@ The shared updater therefore:
 - starts no more than once every two hours;
 - uses one offset UTC Cron rather than a request driven by users;
 - calls Cloudflare `controller.noRetry()`;
+- sends only `Accept: application/json` and the stable public project
+  `User-Agent`;
 - uses one named SQLite Durable Object transaction for atomic admission rather
   than treating eventually consistent Workers KV as a lock;
 - leaves a fail-closed in-progress gate before provider work and persists the
@@ -173,6 +175,12 @@ If the coordinator cannot persist the outcome, it reports unavailable and
 retains its fail-closed in-progress gate. No later Cron contacts CelesTrak
 until a reviewed source-contract/coordinator reset. A successful KV put is the
 only publication commit; no fallible control write occurs afterward.
+
+The coordinator's durable state schema is versioned independently from the
+published catalog schema. A catalog-shape revision must not silently discard
+provider admission, backoff, or terminal-block state. A reviewed coordinator
+reset uses a new fixed object name rather than mutating or deleting the prior
+Durable Object.
 
 There is no group fallback, direct-browser fallback, alternate provider, edge
 cache miss fetch, or on-demand upstream request.

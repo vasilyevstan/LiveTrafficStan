@@ -6,6 +6,7 @@ import {
   ORBITAL_MAX_RETRY_AFTER_MS,
   ORBITAL_REFRESH_INTERVAL_MS,
   ORBITAL_SATCAT_URL,
+  ORBITAL_UPSTREAM_USER_AGENT,
   createOrbitalCatalogSnapshot,
   handleOrbitalCatalog,
   refreshOrbitalCatalog,
@@ -220,6 +221,23 @@ describe('scheduled orbital catalog refresh', () => {
       recordCount: 1,
     })
     expect(fetchImpl).toHaveBeenCalledTimes(2)
+    for (const [url, callIndex] of [
+      [ORBITAL_GP_URL, 1],
+      [ORBITAL_SATCAT_URL, 2],
+    ] as const) {
+      expect(fetchImpl).toHaveBeenNthCalledWith(
+        callIndex,
+        url,
+        expect.objectContaining({
+          cache: 'no-store',
+          redirect: 'manual',
+          headers: {
+            Accept: 'application/json',
+            'User-Agent': ORBITAL_UPSTREAM_USER_AGENT,
+          },
+        }),
+      )
+    }
     const stored = JSON.parse(
       store.values.get(ORBITAL_CATALOG_KEY) ?? 'null',
     )
