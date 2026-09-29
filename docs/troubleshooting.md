@@ -58,6 +58,23 @@ requests, viewport eligibility, vessel filter membership, selection, or
 history changes at the same time, treat that as a regression rather than an
 expected unit conversion.
 
+## Operations More stops before all orbital results
+
+Operations More is the only vertical scroll owner. On mobile, touch-drag,
+wheel, Page Down, or Tab through the focusable region to reach the final
+orbital result.
+
+If results appear clipped behind a second scroll area, inspect computed styles:
+
+- `.control-panel__more-body` must use `overflow-y: auto`, `touch-action:
+  pan-y`, and the shared 58vh budget;
+- `.orbital-results` must use `max-height: none` and `overflow: visible`;
+- no descendant of the More body should have both scroll overflow and
+  `scrollHeight > clientHeight`.
+
+A private orbital-list height cap is a regression. After an update, use
+**Refresh app** if an older application shell still serves the previous CSS.
+
 ## Aircraft shows unavailable
 
 The default browser endpoint is `/api/aircraft`, which Vite proxies to

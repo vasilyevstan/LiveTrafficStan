@@ -35,7 +35,7 @@ export function AirportDetails({
     <aside className="details-panel" aria-labelledby="selected-airport-title">
       <div className="details-panel__heading">
         <div>
-          <p className="eyebrow">Selected airport context</p>
+          <p className="eyebrow">Selected airport</p>
           <h2 id="selected-airport-title">{airport.name}</h2>
         </div>
         <button type="button" className="close-button" onClick={onClose}>
@@ -58,18 +58,13 @@ export function AirportDetails({
       </dl>
 
       <p className="metadata-status">
-        Static reference context only. Completeness and accuracy are not
-        guaranteed; do not use this layer for navigation or flight operations.
-      </p>
-      <p className="metadata-status">
-        No operational status, arrival, departure, route, or selected-aircraft
-        relationship is inferred.
+        Static, incomplete context; not for navigation. No status, schedule,
+        route, or aircraft link inferred.
       </p>
       <p className="metadata-attribution">
-        <a href={source.repositoryUrl}>{source.name}</a> commit{' '}
-        {source.commit.slice(0, 12)} · published{' '}
-        {source.publishedAt.slice(0, 10)} ·{' '}
-        <a href={source.termsUrl}>{source.licenseName}</a> · output{' '}
+        <a href={source.repositoryUrl}>{source.name}</a> ·{' '}
+        {source.commit.slice(0, 12)} · {source.publishedAt.slice(0, 10)} ·{' '}
+        <a href={source.termsUrl}>{source.licenseName}</a> ·{' '}
         {source.outputVersion}.
       </p>
     </aside>

@@ -31,7 +31,7 @@ export const ORBITAL_LAYER_IDS = [
 ] as const
 
 const SOURCE_ATTRIBUTION =
-  'Orbital elements and catalog types: <a href="https://celestrak.org/" target="_blank" rel="noreferrer">CelesTrak</a>; positions modeled locally with SGP4, not live telemetry'
+  'Orbits <a href="https://celestrak.org/" target="_blank" rel="noreferrer">CelesTrak</a> · SGP4 · not live'
 
 const typeColor = (theme: Theme): ExpressionSpecification => [
   'match',

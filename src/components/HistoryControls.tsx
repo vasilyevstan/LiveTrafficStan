@@ -127,8 +127,7 @@ export function HistoryControls({
           </select>
         </label>
         <p className="control-note control-note--muted">
-          Session provider observations only. Longer settings collect future
-          points; they do not recreate missing history.
+          Session observations only; longer durations do not backfill.
         </p>
       </fieldset>
 
@@ -181,9 +180,8 @@ export function HistoryControls({
         </p>
         {historyRange && (
           <p className="control-note control-note--muted">
-            Available {formatTimestamp(historyRange.oldest)} to{' '}
-            {formatTimestamp(historyRange.newest)}. This is the actual retained
-            range, not the requested maximum.
+            Retained {formatTimestamp(historyRange.oldest)} to{' '}
+            {formatTimestamp(historyRange.newest)}.
           </p>
         )}
         {historyStatus.message &&
@@ -219,9 +217,8 @@ export function HistoryControls({
         )}
 
         <p className="control-note control-note--muted">
-          Session history lasts at most 60 minutes. Local history is optional,
-          private to this browser origin, and may be evicted by the browser.
-          No export, sharing, synchronization, or backend is used.
+          Local history: up to 60 min, origin-private, browser-evictable; no
+          export, sync, or backend.
         </p>
       </fieldset>
     </>

@@ -32,7 +32,6 @@ import {
   LocationSearchDetails,
   LocationSearchInput,
 } from './LocationSearch'
-import { TrafficLegend } from './TrafficLegend'
 import { useLocationSearchModel } from './useLocationSearchModel'
 import { VesselDiscovery } from './VesselDiscovery'
 import { WeatherContext } from './WeatherContext'
@@ -51,7 +50,6 @@ interface TrafficControlsProps {
   totalVessels: number
   vesselEmptyMessage: string
   units: UnitSystem
-  marineStaleAfterMs: number
   onVesselFiltersChange: (filters: VesselFilterState) => void
   onVesselSelect: (id: string) => void
   aircraftVisible: boolean
@@ -207,7 +205,6 @@ export function TrafficControls({
   totalVessels,
   vesselEmptyMessage,
   units,
-  marineStaleAfterMs,
   onVesselFiltersChange,
   onVesselSelect,
   aircraftVisible,
@@ -387,13 +384,13 @@ export function TrafficControls({
       case 'disabled':
         return undefined
       case 'loading':
-        return 'Loading the same-origin orbital catalog.'
+        return 'Loading orbital catalog.'
       case 'refreshing':
-        return 'Refreshing the catalog while retaining modeled positions.'
+        return 'Refreshing catalog; positions retained.'
       case 'stale':
         return (
           orbitalState.message ??
-          'The retained orbital catalog is stale; modeled positions remain labeled accordingly.'
+          'Orbital catalog stale; positions remain labeled.'
         )
       case 'unavailable':
       case 'clock-invalid':
@@ -404,7 +401,7 @@ export function TrafficControls({
       case 'empty':
         return (
           orbitalState.message ??
-          'The catalog loaded, but no current positions can be modeled safely.'
+          'Catalog loaded; positions unavailable.'
         )
       case 'ready':
         return orbitalState.message
@@ -535,7 +532,12 @@ export function TrafficControls({
         >
           MORE
         </summary>
-        <div className="control-panel__more-body">
+        <div
+          className="control-panel__more-body"
+          role="region"
+          aria-label="Map tools"
+          tabIndex={0}
+        >
           <fieldset className="control-group">
             <legend>Layers</legend>
             <div className="control-options control-options--two">
@@ -642,47 +644,31 @@ export function TrafficControls({
               </div>
             )}
             <p className="control-note control-note--muted">
-              Ports:{' '}
+              Data:{' '}
               <a href="https://www.naturalearthdata.com/downloads/10m-cultural-vectors/ports/">
                 Natural Earth
               </a>{' '}
-              (
+              ports (
               <a href="https://www.naturalearthdata.com/about/terms-of-use/">
                 public domain
               </a>
-              ); generalized and incomplete.
-            </p>
-            <p className="control-note control-note--muted">
-              Airports:{' '}
+              ; generalized) ·{' '}
               <a href="https://ourairports.com/data/">OurAirports</a>{' '}
-              (<a href="https://ourairports.com/data/">public domain</a>);
-              static large and medium airport context, not operational data.
-            </p>
-            <p className="control-note control-note--muted">
-              METAR/SPECI observations:{' '}
+              airports (
+              <a href="https://ourairports.com/data/">public domain</a>;
+              not operational) ·{' '}
               <a href="https://aviationweather.gov/data/api/">
-                NOAA/NWS Aviation Weather Center
-              </a>
-              ; generally public-domain observations. Enabling this layer
-              sends visible qualifying ICAO station IDs through the
-              application host to AWC. Coverage is limited by AWC reporting
-              and the pinned large/medium-airport dataset. Source and retrieval
-              times are shown; this modified presentation is not an official
-              forecast, operational flight status, airport board, or
-              endorsement.
+                NOAA/NWS AWC
+              </a>{' '}
+              METAR (public-domain observations; not forecasts or boards) ·{' '}
+              <a href="https://celestrak.org/">CelesTrak</a> GP/SATCAT
+              orbits (SGP4-modeled; not live or optical proof).
             </p>
             <p className="control-note control-note--muted">
-              Orbital objects:{' '}
-              <a href="https://celestrak.org/">CelesTrak</a> GP/OMM and
-              SATCAT. Positions and ground tracks are modeled locally with
-              SGP4, not live telemetry or proof of optical visibility.
+              METAR sends visible ICAO IDs via this app; source/retrieval times
+              appear in details.
             </p>
           </fieldset>
-
-          <TrafficLegend
-            units={units}
-            marineStaleAfterMs={marineStaleAfterMs}
-          />
 
           <AircraftDiscovery
             query={aircraftQuery}
@@ -839,7 +825,12 @@ export function TrafficControls({
           >
             MORE
           </summary>
-          <div className="control-panel__more-body">
+          <div
+            className="control-panel__more-body"
+            role="region"
+            aria-label="Location and settings"
+            tabIndex={0}
+          >
             <LocationSearchDetails
               model={locationSearch}
               activeLabel={activeLocationLabel}

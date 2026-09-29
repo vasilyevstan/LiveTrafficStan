@@ -79,7 +79,7 @@ export function WeatherObservationDetails({
     >
       <div className="details-panel__heading">
         <div>
-          <p className="eyebrow">Selected METAR observation</p>
+          <p className="eyebrow">Selected METAR</p>
           <h2 id="selected-weather-title">
             {observation.stationId} ·{' '}
             {flightCategoryLabel(observation.flightCategory)}
@@ -138,8 +138,8 @@ export function WeatherObservationDetails({
         {observation.rawObservation}
       </p>
       <p className="metadata-status">
-        Observed aviation weather only. Do not infer a forecast, airport
-        operation, route, arrival, departure, or coverage guarantee.
+        Observation only; not a forecast, airport status, route, or coverage
+        guarantee.
       </p>
       <p className="metadata-attribution">
         <a href={source.apiUrl}>{source.name}</a> ·{' '}

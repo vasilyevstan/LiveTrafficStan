@@ -56,9 +56,7 @@ describe('WeatherContext', () => {
     expect((html.match(/<li>/g) ?? [])).toHaveLength(
       WEATHER_OBSERVATION_RESULT_LIMIT,
     )
-    expect(html).toContain(
-      `Showing the first ${WEATHER_OBSERVATION_RESULT_LIMIT}`,
-    )
+    expect(html).toContain(`First ${WEATHER_OBSERVATION_RESULT_LIMIT}`)
 
     const empty = renderToStaticMarkup(
       <WeatherContext

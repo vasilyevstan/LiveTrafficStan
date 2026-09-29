@@ -20,7 +20,6 @@ const renderControls = (
       totalVessels={0}
       vesselEmptyMessage="No current ships are shown in this view."
       units="metric"
-      marineStaleAfterMs={120_000}
       onVesselFiltersChange={() => undefined}
       onVesselSelect={() => undefined}
       aircraftVisible
@@ -144,10 +143,10 @@ describe('TrafficControls', () => {
     )
     expect(navigationMore).toContain('<legend>Layers</legend>')
     expect(navigationMore).not.toContain('>ORBITS<')
-    expect(navigationMore).toContain('Traffic legend')
-    expect(navigationMore).toContain('Band 1 · below 1,000 m')
+    expect(navigationMore).not.toContain('Traffic legend')
+    expect(navigationMore).not.toContain('Band 1 · below 1,000 m')
     expect(navigationMore).toContain(
-      'Slow or stopped · reported speed below 1 kn',
+      'role="region" aria-label="Map tools" tabindex="0"',
     )
     expect(navigationMore).toContain('Aircraft discovery')
     expect(navigationMore).toContain('Vessel discovery')
@@ -168,6 +167,9 @@ describe('TrafficControls', () => {
     expect(settingsMore).toContain('USE LOCATION')
     expect(settingsMore).toContain('<legend>History</legend>')
     expect(settingsMore).toContain('<legend>Preferences</legend>')
+    expect(settingsMore).toContain(
+      'role="region" aria-label="Location and settings" tabindex="0"',
+    )
     expect(settingsMore).not.toContain('<legend>Layers</legend>')
     expect(html.match(/name="traffic-control-panels"/g)).toHaveLength(2)
     expect(html.match(/id="location-search-input"/g)).toHaveLength(1)
@@ -335,32 +337,12 @@ describe('TrafficControls', () => {
     expect(html).toContain('https://example.test/#v=1')
   })
 
-  it('uses the shared traffic vocabulary and exact thresholds in the legend', () => {
-    const html = renderControls({
-      units: 'aviation-nautical',
-      marineStaleAfterMs: 120_000,
-    })
+  it('does not duplicate marker meaning in an expanded traffic legend', () => {
+    const html = renderControls()
 
-    expect(html).toContain('Band 1 · below 3,281 ft')
-    expect(html).toContain('Band 4 · 32,808 ft or higher')
-    expect(html).toContain('Aircraft altitude colors')
-    expect(html).toContain('Winged silhouettes are aircraft.')
-    expect(html).toContain('Long hull silhouettes are vessels.')
-    expect(html).toContain(
-      'Slow or stopped · reported speed below 1 kn',
-    )
-    expect(html).toContain('AIS destination')
-    expect(html).toContain('reported aircraft type and altitude')
-    expect(html).toContain('speed over ground in km/h and knots')
-    expect(html).toContain(
-      'Generic, cargo, tanker, passenger, fishing, exact AIS type-52 tug',
-    )
-    expect(html).toContain(
-      'a stable aircraft hover can make one direct Planespotters lookup',
-    )
-    expect(html).toContain('eligible from 8 m at 1 kn or faster')
-    expect(html).toContain('no more than 120 seconds old')
-    expect(html).toContain('AIR and SEA count circles')
+    expect(html).not.toContain('Traffic legend')
+    expect(html).not.toContain('Aircraft altitude colors')
+    expect(html).not.toContain('Modeled orbital objects</h3>')
   })
 
   it('exposes a non-blocking waiting application update', () => {
@@ -442,7 +424,7 @@ describe('TrafficControls', () => {
     expect(failed).toContain('RETRY PORTS')
     expect(failed).toContain('Natural Earth')
     expect(failed).toContain('public domain')
-    expect(failed).toContain('generalized and incomplete')
+    expect(failed).toContain('generalized')
     expect(failed).not.toContain('Map unavailable')
 
     const disabled = renderControls({
@@ -471,7 +453,7 @@ describe('TrafficControls', () => {
     expect(failed).toContain('RETRY AIRPORTS')
     expect(failed).toContain('OurAirports')
     expect(failed).toContain('public domain')
-    expect(failed).toContain('not operational data')
+    expect(failed).toContain('not operational')
     expect(failed).not.toContain('Map unavailable')
 
     const ready = renderControls({
@@ -526,10 +508,10 @@ describe('TrafficControls', () => {
     })
     expect(failed).toContain('METAR unavailable')
     expect(failed).toContain('RETRY METAR')
-    expect(failed).toContain('NOAA/NWS Aviation Weather Center')
-    expect(failed).toContain('not an official forecast')
-    expect(failed).toContain('airport board')
-    expect(failed).toContain('visible qualifying ICAO station IDs')
+    expect(failed).toContain('NOAA/NWS AWC')
+    expect(failed).toContain('not forecasts or boards')
+    expect(failed).toContain('visible ICAO IDs via this app')
+    expect(failed).toContain('source/retrieval times')
 
     const disabled = renderControls({
       weatherVisible: false,

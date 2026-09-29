@@ -125,10 +125,11 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   bounded current/predecessor shell caches, and a tested retirement build that
   removes only application-shell caches without deleting preferences or private
   history.
-- Responsive Operations and Location & Settings controls, keyboard focus
-  states, non-color status labels, a shared threshold-driven traffic legend,
-  and a small provider-reported set of original aircraft and vessel silhouettes
-  with generic fallbacks.
+- Responsive Operations and Location & Settings controls with one scroll owner
+  per disclosure, keyboard focus states, non-color status/detail labels,
+  compact visible provider/privacy copy, and a small provider-reported set of
+  original aircraft and vessel silhouettes with generic fallbacks. The
+  duplicate traffic legend is intentionally omitted.
 - Touch-specific selection tolerance for isolated markers; exact mouse hits stay
   unchanged and ambiguous nearby traffic is never guessed.
 
