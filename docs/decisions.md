@@ -938,12 +938,15 @@ substitutes.
 
 The primary map controls remain intentionally small and split by task. The
 upper Operations panel keeps Center, Aircraft, Ships, and ORBITS visible; its
-disclosure contains secondary layers, operational recovery, discovery,
-context, and source detail. The lower Location & Settings panel keeps the one
-location input plus Auto, Light, Dark, and Trails visible; its native
-disclosure contains search feedback, browser location, trail duration,
-local-history setup, units, sharing, reset, and application detail. The two
-disclosures share one native `name`, so at most one is open.
+disclosure contains session-only Layers, Find, Context, Orbits, and Sources
+views. Inactive views remain mounted but hidden so controlled search/filter
+state survives task changes. **VIEW** selects Orbits and focuses its first
+result without adding a catalog request or moving the camera. The lower
+Location & Settings panel keeps the one location input plus Auto, Light, Dark,
+and Trails visible; its native disclosure contains search feedback, browser
+location, trail duration, local-history setup, units, sharing, reset, and
+application detail. The two disclosures share one native `name`, so at most
+one is open.
 
 The location input stays mounted while its feedback is collapsed, preserving
 entered text and in-flight state. Active historical controls remain outside
@@ -952,13 +955,17 @@ domain without duplicating that action inside More: operational recovery
 belongs above Operations More, while application, storage, update, and history
 recovery belongs above Location & Settings More. Mandatory map or selected-item
 attribution is never hidden. The combined expanded stack, rather than each
-panel independently, owns the 58vh budget.
+panel independently, owns 58% of the current visual viewport. CSS `dvh`/`vh`
+values provide fallbacks, while `window.visualViewport.height` handles mobile
+browser chrome and keyboard changes that do not match the layout viewport.
 
 Each disclosure body is its single vertical scroll owner. Result lists do not
 create nested scroll regions; in particular, the bounded orbital result list
 uses the Operations body for touch, wheel, Tab, and keyboard scrolling. Thin
 visible scrollbar styling, stable gutter allocation, and a focusable labelled
-region preserve reachability without increasing the 58vh budget.
+region preserve reachability without increasing the visual-viewport budget.
+The task selector is deliberately not sticky: on a short viewport it scrolls
+away so the final result cannot be geometrically present but visually covered.
 
 The duplicate traffic legend is intentionally removed. Application-owned
 labels remain in filters, status summaries, tooltips, and selected details;
@@ -973,8 +980,8 @@ re-added.
 Pure tests, server-rendered markup, and HTTP smoke cannot establish that a
 marker remains painted, focus returns to a visible control, or a mobile map
 strip is touchable. Those claims require a real-browser check with measured
-camera, source properties, overlay bounds, attribution, and an actual input
-gesture.
+camera, source properties, visual and layout viewport sizes, overlay bounds,
+topmost-element hit testing, attribution, and an actual input gesture.
 
 ## Deterministic checks before live probes
 
