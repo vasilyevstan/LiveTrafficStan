@@ -20,15 +20,17 @@ Worker selects that path only through the protected `oci-private-relay`
 deployment mode and fails closed rather than reverting to shared egress.
 Production source `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` and the relay
 originally activated the private path together. The current browser/Worker
-application is source `94c1d35b3687cd26b4d0445005eaf38edfbf7964`,
-deployed in run `36554328684` as Cloudflare version
-`50b2a0a0-b09d-4e7d-8851-61c0817c07cc`; the compatible relay remains at
+application is source `cea3a1f553266a0c4d21e90506904aed6f484887`,
+deployed in run `36589814477` as Cloudflare version
+`2fe26151-d18e-4994-a147-887014d84af0`; the compatible relay remains at
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c`.
 
-The current run's orbital endpoint and fresh-profile desktop/mobile acceptance
-passed. Its aggregate smoke ended red only at the independently failing
-aircraft relay, tracked in #174; marine and orbital partial operation remained
-truthful and no orbital rollback was required.
+The current run's full smoke and fresh-profile desktop/mobile acceptance
+passed. A first same-source deployment exposed recurrent OCI guest/network
+unavailability behind the unchanged VPC/Tunnel path. Diagnostic reboot restored
+real aircraft JSON, and a later controlled relay-service restart plus
+post-restart exact smoke passed; #174 is closed. Marine and orbital partial
+operation remained truthful throughout.
 
 ```text
                        visibility lifecycle
