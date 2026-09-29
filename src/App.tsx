@@ -1263,7 +1263,6 @@ function App() {
           totalVessels={currentVessels.length}
           vesselEmptyMessage={vesselEmptyMessage}
           units={units}
-          marineStaleAfterMs={APP_CONFIG.marine.staleAfterMs}
           onVesselFiltersChange={setVesselFilters}
           onVesselSelect={handleVesselDiscoverySelect}
           aircraftVisible={aircraftVisible}

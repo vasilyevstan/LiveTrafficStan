@@ -132,11 +132,10 @@ export function LocationSearchDetails({
       )}
 
       <p id="location-search-help" className="control-note control-note--muted">
-        Search text is sent in the request URL to Photon, which receives normal
-        network metadata. Coordinate entry does not call Photon.
+        Place text goes in the Photon URL with normal network metadata;
+        coordinates stay local.
       </p>
       <p className="control-note control-note--muted">
-        Search data{' '}
         <a
           href="https://www.openstreetmap.org/copyright"
           target="_blank"
@@ -144,7 +143,7 @@ export function LocationSearchDetails({
         >
           © OpenStreetMap contributors
         </a>
-        , powered by{' '}
+        {' · '}
         <a
           href="https://photon.komoot.io/"
           target="_blank"
@@ -152,7 +151,6 @@ export function LocationSearchDetails({
         >
           Photon
         </a>
-        .
       </p>
     </section>
   )

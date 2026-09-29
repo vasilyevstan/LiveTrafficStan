@@ -42,14 +42,14 @@ describe('WeatherObservationDetails', () => {
       />,
     )
 
-    expect(html).toContain('Selected METAR observation')
+    expect(html).toContain('Selected METAR')
     expect(html).toContain('Observed')
     expect(html).toContain('Retrieved')
     expect(html).toContain('METAR EETN fixture')
     expect(html).toContain('NOAA/NWS Aviation Weather Center')
     expect(html).toContain('11 kn')
     expect(html).toContain('6+ statute mi')
-    expect(html).toContain('Do not infer a forecast')
+    expect(html).toContain('not a forecast')
   })
 
   it('formats normalized weather values in metric units', () => {

@@ -482,8 +482,9 @@ boundaries below 1,000 m, 1,000-3,000 m, 3,000-10,000 m, and 10,000 m or
 higher plus neutral unknown. Ordinary per-aircraft altitude rings and
 vertical-trend badges are removed so the category shape remains visible.
 Vertical trend at the exact +/-200 ft/min boundary remains in selected details,
-and the control legend pairs every color and red stopped dot with text, so
-neither altitude nor movement relies on color alone.
+and selected details plus filter/status labels expose altitude and movement in
+text, so neither relies on color alone. The duplicate control legend is omitted
+to preserve the bounded mobile disclosure.
 
 Mouse hover is a map-local presentation path over normalized entities already
 in memory. Aircraft show flight/callsign, reported type, reported altitude in
@@ -936,13 +937,13 @@ substitutes.
 ## Compact controls and rendered interaction evidence
 
 The primary map controls remain intentionally small and split by task. The
-upper Operations panel keeps Center, Aircraft, and Ships visible; its native
+upper Operations panel keeps Center, Aircraft, Ships, and ORBITS visible; its
 disclosure contains secondary layers, operational recovery, discovery,
-context, source detail, and the shared traffic legend. The lower Location &
-Settings panel keeps the one location input plus Auto, Light, Dark, and Trails
-visible; its native disclosure contains search feedback, browser location,
-trail duration, local-history setup, units, sharing, reset, and application
-detail. The two disclosures share one native `name`, so at most one is open.
+context, and source detail. The lower Location & Settings panel keeps the one
+location input plus Auto, Light, Dark, and Trails visible; its native
+disclosure contains search feedback, browser location, trail duration,
+local-history setup, units, sharing, reset, and application detail. The two
+disclosures share one native `name`, so at most one is open.
 
 The location input stays mounted while its feedback is collapsed, preserving
 entered text and in-flight state. Active historical controls remain outside
@@ -953,13 +954,16 @@ recovery belongs above Location & Settings More. Mandatory map or selected-item
 attribution is never hidden. The combined expanded stack, rather than each
 panel independently, owns the 58vh budget.
 
-The traffic legend reuses the application-owned labels and thresholds for
-aircraft altitude, traffic movement, and the exact AIS-type shapes. It pairs
-every aircraft color and the red slow/stopped dot with text, explains the
-8 m / 1 kn / freshness yacht exception, documents the optional dwell-triggered
-aircraft-photo request and request-free vessel hover fields, and never relies
-on color alone. Vertical trend remains in selected details rather than a
-marker badge.
+Each disclosure body is its single vertical scroll owner. Result lists do not
+create nested scroll regions; in particular, the bounded orbital result list
+uses the Operations body for touch, wheel, Tab, and keyboard scrolling. Thin
+visible scrollbar styling, stable gutter allocation, and a focusable labelled
+region preserve reachability without increasing the 58vh budget.
+
+The duplicate traffic legend is intentionally removed. Application-owned
+labels remain in filters, status summaries, tooltips, and selected details;
+provider-reported silhouettes and non-color text continue to convey the
+relevant altitude, movement, and vessel-type semantics.
 
 Selection updates must retain the complete MapLibre feature-property contract.
 In particular, `removeAllProperties` is terminal in the installed source-diff

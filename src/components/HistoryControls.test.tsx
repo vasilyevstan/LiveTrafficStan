@@ -32,7 +32,7 @@ describe('HistoryControls', () => {
     expect(html).toContain('<option value="5">5 MIN</option>')
     expect(html).toContain('<option value="15" selected="">15 MIN</option>')
     expect(html).toContain('<option value="60">60 MIN</option>')
-    expect(html).toContain('Session provider observations only')
+    expect(html).toContain('Session observations only')
   })
 
   it('keeps hidden state explicit without disabling collection settings', () => {
@@ -82,9 +82,7 @@ describe('HistoryControls', () => {
     expect(html).toContain('<legend>History</legend>')
     expect(html).toContain('DISABLE &amp; DELETE')
     expect(html).toContain('6 HOURS')
-    expect(html).toContain(
-      'This is the actual retained range, not the requested maximum.',
-    )
+    expect(html).toContain('Retained')
     expect(html).not.toContain('type="range"')
     expect(html).not.toContain('>PLAY<')
     expect(html).not.toContain('ENTER HISTORY')

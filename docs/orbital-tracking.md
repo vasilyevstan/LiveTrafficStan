@@ -415,6 +415,15 @@ stable one-pass summary/focus fixture because live crossing counts are
 time-anchored. Earlier exact selection, style rehydration, touch, and long-task
 evidence remains valid because this release does not change those paths.
 
+Issue #194 development acceptance then exercised a deterministic 24-object
+crossing fixture at 390x844 and 390x568. All 20 detailed results shared the
+single Operations More scroll region; the orbital list itself had no height cap
+or nested overflow. Touch drag, wheel, Page Down, and Tab navigation reached the
+final result, while the combined controls stayed exactly within 58vh with no
+horizontal overflow. VIEW, resize, scrolling, and compact attribution retained
+one canvas and one catalog load with no direct CelesTrak request or runtime
+error.
+
 Rollback run
 [36488117751](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/36488117751)
 successfully deployed the exact pre-orbital target with an unreachable live

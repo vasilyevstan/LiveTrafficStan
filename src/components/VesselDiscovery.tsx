@@ -243,10 +243,8 @@ export function VesselDiscovery({
         </button>
       </div>
       <p className="control-note control-note--muted">
-        Sailing and pleasure craft are shown only when at least 8 m long,
-        reporting at least 1 kn, and no older than 120 seconds. Maximum
-        length still applies. Digitraffic publishes Class A AIS only; Class
-        B yacht coverage is incomplete.
+        Yachts: ≥8 m, ≥1 kn, ≤120 s; max length still applies. Digitraffic is
+        Class A only, so Class B coverage is incomplete.
       </p>
 
       {totalVessels === 0 && (
@@ -278,8 +276,7 @@ export function VesselDiscovery({
       )}
       {normalizedQuery && vessels.length > VESSEL_RESULT_LIMIT && (
         <p className="control-note control-note--muted">
-          Showing the first {VESSEL_RESULT_LIMIT} of {vessels.length} matches.
-          All matches remain visible on the map.
+          First {VESSEL_RESULT_LIMIT} of {vessels.length}; all remain on map.
         </p>
       )}
       {normalizedQuery && vessels.length > 0 && !vesselsVisible && (

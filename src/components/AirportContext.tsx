@@ -35,7 +35,7 @@ export function AirportContext({
         <p role="status">
           {airports.length} airport{airports.length === 1 ? '' : 's'} in view
         </p>
-        <p>Static large and medium airport context.</p>
+        <p>Static context only; not operational.</p>
       </div>
 
       {airports.length === 0 ? (
@@ -69,8 +69,7 @@ export function AirportContext({
 
       {airports.length > AIRPORT_RESULT_LIMIT && (
         <p className="control-note control-note--muted">
-          Showing the first {AIRPORT_RESULT_LIMIT} of {airports.length}{' '}
-          airports in this view.
+          First {AIRPORT_RESULT_LIMIT} of {airports.length} shown.
         </p>
       )}
     </fieldset>

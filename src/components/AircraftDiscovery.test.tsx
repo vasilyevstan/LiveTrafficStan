@@ -50,7 +50,7 @@ describe('AircraftDiscovery', () => {
     expect(html).toContain('Callsign, registration, ICAO24, or type')
     expect(html).toContain(`maxLength="${AIRCRAFT_SEARCH_MAX_LENGTH}"`)
     expect(html).toContain('3 aircraft in view')
-    expect(html).toContain('local to the current visible traffic area')
+    expect(html).toContain('Local to this view')
   })
 
   it('bounds result buttons and disables selection while AIRCRAFT is hidden', () => {
@@ -71,7 +71,7 @@ describe('AircraftDiscovery', () => {
     expect(html).toContain('Show the AIRCRAFT layer')
     expect(html).toContain('id="aircraft-discovery-result-aircraft:0"')
     expect(html).toContain(
-      `Showing the first ${AIRCRAFT_RESULT_LIMIT} of ${entities.length}`,
+      `First ${AIRCRAFT_RESULT_LIMIT} of ${entities.length}`,
     )
     expect(html).toContain('STALE')
   })

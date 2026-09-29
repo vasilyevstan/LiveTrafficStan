@@ -507,16 +507,18 @@ Use `npm run dev` and verify:
 8. The default Operations and Location & Settings panels remain compact and
    require no scroll. Center, Aircraft, Ships, and ORBITS stay visible above;
    the one mounted location input, theme, and Trails stay visible below. Other
-   operational layers, discovery, context, and the traffic legend live behind
-   Operations More. Location feedback, browser location, history setup,
-   preferences, sharing, reset, and app detail live behind Location & Settings
-   More. Verify
-   each panel promotes recovery only from its own domain with no duplicated
-   action or alert. Verify the brand/status panel and fixed control column do
-   not overlap at 1024, 900, or 761 CSS pixels. Measure each collapsed panel
-   and the combined expanded stack at desktop, 390x844, and 390x568; verify
-   search state and disclosure identity survive rerenders, focus returns to a
-   visible owner, and a real touch drag works on an unobscured map region.
+   operational layers, discovery, context, and source detail live behind
+   Operations More; the duplicate traffic legend is absent. Location feedback,
+   browser location, history setup, preferences, sharing, reset, and app detail
+   live behind Location & Settings More. Verify each panel promotes recovery
+   only from its own domain with no duplicated action or alert. Verify the
+   brand/status panel and fixed control column do not overlap at 1024, 900, or
+   761 CSS pixels. Measure each collapsed panel and the combined expanded stack
+   at desktop, 390x844, and 390x568. With 20 orbital results, verify the outer
+   Operations body is the only scroll owner, the final result is reachable by
+   touch, wheel, Tab, and keyboard scrolling, search state and disclosure
+   identity survive rerenders, focus returns to a visible owner, and a real
+   touch drag works on an unobscured map region.
 9. Map and provider attribution remains visible.
 10. Strict coordinates navigate with no Photon request; named text makes one
     explicit bounded request and renders Photon/OpenStreetMap attribution.
@@ -866,6 +868,19 @@ did a controlled relay-service restart and post-restart exact smoke. #174 is
 closed. Public Wiki commit
 `abb4e21ae4c6225d9530675ce66cb9f3c4bc443e` records the same release,
 responsive, accessibility, operations, and recovery evidence.
+
+Issue #194 compact-control development acceptance used a deterministic
+24-object crossing fixture in Chrome 153. At both 390x844 and 390x568 it
+rendered the bounded 20 orbital results inside one Operations scroll owner:
+the result list had `overflow-y: visible`, no private height cap, and no
+horizontal overflow. Touch drag, wheel, Page Down, and 38 Tab steps each moved
+the outer region and exposed the final result. The 844 px control stack measured
+489.515625 px against a 489.52 px limit; the 568 px stack measured 329.4375 px
+against a 329.44 px limit. One MapLibre canvas and one catalog load persisted
+through VIEW, resize, scrolling, and attribution expansion, with no browser
+CelesTrak request, runtime exception, or console error. The same run rendered
+the compact unavailable-route and aircraft-photo cards at 96.46875 px and
+125.703125 px respectively and verified the shortened source/privacy copy.
 
 Physical iOS Safari, Android Chrome, and supported-device drag-FPS evidence
 remain outstanding and must not be inferred from CDP emulation.

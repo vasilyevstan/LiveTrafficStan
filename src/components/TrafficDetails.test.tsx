@@ -69,7 +69,7 @@ describe('TrafficDetails aircraft metadata', () => {
     expect(html).toContain('Snapshot 2026-09-13')
     expect(html).toContain('Mictronics aircraft-database')
     expect(html).toContain('ODC-By 1.0')
-    expect(html).toContain('Publication age is not per-aircraft')
+    expect(html).toContain('database age is not aircraft verification')
     expect(html).toContain('ADSB.lol')
     expect(html).toContain('Registration allocation')
     expect(html).toContain('Estonia (EE)')
@@ -129,11 +129,9 @@ describe('TrafficDetails aircraft metadata', () => {
       />,
     )
 
-    expect(conflictHtml).toContain(
-      'does not match the live registration',
-    )
+    expect(conflictHtml).toContain('Database/live registration mismatch')
     expect(conflictHtml).not.toContain('AIRBUS A-320')
-    expect(errorHtml).toContain('Live ADS-B remains active')
+    expect(errorHtml).toContain('ADS-B remains live')
     expect(errorHtml).toContain('TST123')
   })
 
@@ -164,11 +162,13 @@ describe('TrafficDetails aircraft metadata', () => {
     expect(disabledHtml).not.toContain('Aircraft photo')
     expect(disabledHtml).not.toContain('api.planespotters.net')
     expect(enabledHtml).toContain('Aircraft photo')
-    expect(enabledHtml).toContain('Load aircraft photo')
+    expect(enabledHtml).toContain('Load photo')
     expect(enabledHtml).toContain(
-      'Loading sends ICAO24 511123 and normal browser network metadata directly to Planespotters',
+      'Planespotters receives ICAO24 511123 plus normal network metadata',
     )
-    expect(enabledHtml).toContain('Photo API terms')
+    expect(enabledHtml).toContain('JSON cache: this tab, 1 hour')
+    expect(enabledHtml).toContain('image bytes not stored')
+    expect(enabledHtml).toContain('Terms')
     expect(enabledHtml).not.toContain('<img')
   })
 
@@ -204,7 +204,7 @@ describe('TrafficDetails aircraft metadata', () => {
     )
 
     expect(html).toContain(
-      'Photo returned by Planespotters for ICAO24 511123',
+      'Planespotters match for ICAO24 511123',
     )
     expect(html).toContain(
       'src="https://cdn.planespotters.net/example/photo_t.jpg"',
@@ -216,8 +216,8 @@ describe('TrafficDetails aircraft metadata', () => {
     expect(html).toContain('rel="noopener noreferrer"')
     expect(html).not.toContain('nofollow')
     expect(html).toContain('Photo © Test Photographer')
-    expect(html).toContain('Open the image for its unchanged original')
-    expect(html).not.toContain('Load aircraft photo')
+    expect(html).toContain('Open image for original')
+    expect(html).not.toContain('Load photo')
     expect(html.indexOf('Aircraft photo')).toBeLessThan(
       html.indexOf('Callsign'),
     )
@@ -255,9 +255,8 @@ describe('TrafficDetails aircraft metadata', () => {
       />,
     )
 
-    expect(notFoundHtml).toContain(
-      'No generic or model-level substitute is shown',
-    )
+    expect(notFoundHtml).toContain('No exact photo for ICAO24 511123')
+    expect(notFoundHtml).toContain('no substitute shown')
     expect(notFoundHtml).not.toContain('<img')
     expect(errorHtml).toContain('could not reach Planespotters')
     expect(errorHtml).toContain('Live ADS-B remains active')
@@ -317,8 +316,8 @@ describe('TrafficDetails aircraft metadata', () => {
     expect(enabledHtml).toContain('Plausible origin')
     expect(enabledHtml).toContain('Plausible destination')
     expect(enabledHtml).toContain('Standing data age')
-    expect(enabledHtml).toContain('not a filed flight plan')
-    expect(enabledHtml).toContain('may be stale or wrong')
+    expect(enabledHtml).toContain('not a filed plan')
+    expect(enabledHtml).toContain('may be wrong')
     expect(enabledHtml).toContain('>Refresh<')
     expect(enabledHtml.indexOf('>Refresh<')).toBeLessThan(
       enabledHtml.indexOf('Aircraft photo'),
@@ -368,10 +367,10 @@ describe('TrafficDetails aircraft metadata', () => {
       />,
     )
 
-    expect(invalidHtml).toContain('valid ICAO flight callsign')
+    expect(invalidHtml).toContain('Needs callsign, ICAO24')
     expect(invalidHtml).not.toContain('flight-route__action')
-    expect(errorHtml).toContain('Route lookup is temporarily unavailable')
-    expect(errorHtml).toContain('Live traffic is unaffected')
+    expect(errorHtml).toContain('Route lookup unavailable')
+    expect(errorHtml).toContain('Live traffic unaffected')
     expect(errorHtml).toContain('>Try again<')
   })
 
@@ -458,7 +457,7 @@ describe('TrafficDetails aircraft metadata', () => {
     )
 
     expect(html).not.toContain('Aircraft photo')
-    expect(html).not.toContain('Load aircraft photo')
+    expect(html).not.toContain('Load photo')
   })
 
   it('describes aircraft altitude and vertical trend without inferring ground', () => {
@@ -542,7 +541,7 @@ describe('TrafficDetails aircraft metadata', () => {
     expect(html).toContain('Position report')
     expect(html).toContain('Metadata report')
     expect(html).toContain('Unavailable')
-    expect(html).toContain('no ETA year or port relationship is inferred')
+    expect(html).toContain('no ETA year or port link inferred')
     expect(html).not.toContain('Flag state')
   })
 
@@ -576,12 +575,10 @@ describe('TrafficDetails aircraft metadata', () => {
       />,
     )
 
-    expect(html.indexOf('Vessel reference photo')).toBeLessThan(
+    expect(html.indexOf('Vessel photo')).toBeLessThan(
       html.indexOf('MMSI'),
     )
-    expect(html).toContain(
-      'Reference photo matched to AIS-reported IMO 9214379',
-    )
+    expect(html).toContain('Exact AIS-reported IMO 9214379 match')
     expect(html).toContain(
       'src="/vessel-photos/2026-09-26-v1/imo-9214379.jpg"',
     )
@@ -591,7 +588,7 @@ describe('TrafficDetails aircraft metadata', () => {
     expect(html).toContain('Wikimedia Commons')
     expect(html).toContain('CC BY-SA 3.0')
     expect(html).toContain('oldid=1253024543')
-    expect(html).toContain('not a live view')
+    expect(html).toContain('not live confirmation')
     expect(html).toContain('not cropped or retouched')
   })
 
@@ -634,9 +631,9 @@ describe('TrafficDetails aircraft metadata', () => {
       />,
     )
 
-    expect(unmatchedHtml).not.toContain('Vessel reference photo')
+    expect(unmatchedHtml).not.toContain('Vessel photo')
     expect(unmatchedHtml).not.toContain('/vessel-photos/')
-    expect(invalidHtml).not.toContain('Vessel reference photo')
+    expect(invalidHtml).not.toContain('Vessel photo')
     expect(invalidHtml).not.toContain('/vessel-photos/')
   })
 
@@ -671,7 +668,7 @@ describe('TrafficDetails aircraft metadata', () => {
       />,
     )
 
-    expect(html).not.toContain('Vessel reference photo')
+    expect(html).not.toContain('Vessel photo')
     expect(html).not.toContain('/vessel-photos/')
   })
 
@@ -749,7 +746,7 @@ describe('TrafficDetails aircraft metadata', () => {
 
     expect(html).toContain('Moving · reported speed at least 1 kn')
     expect(html).toContain(
-      'Reported speed and navigation status disagree',
+      'Speed and navigation status conflict',
     )
     expect(html).toContain('Moored')
   })
