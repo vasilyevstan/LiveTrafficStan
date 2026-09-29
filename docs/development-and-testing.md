@@ -896,21 +896,24 @@ canvas, one catalog request, zero browser CelesTrak requests, no horizontal
 overflow, and no console or runtime errors. Physical iOS Safari and Android
 Chrome remain explicit outstanding evidence rather than an inference from CDP.
 
-The release source was
-`ddc414e26dd8dacb5a9d4e1f528ccec44dc0bf4f`; exact merged-`main`
-validation run `36598593975` passed. The first deployment run `36598727844`
-published the application but failed only at the recurrent private-relay
-aircraft `502`. After the supported OCI diagnostic reboot restored real JSON,
-canonical deployment run `36599339842` passed full smoke and published
-Cloudflare version `98147f84-68c6-49c0-84a3-bc7dc1481897`.
+The corrective release source is
+`bb9829bd0bb59c819b936777fe4e2cdfe32239a3`; exact merged-`main`
+validation run `36619407782` passed, and canonical deployment run
+`36619533493` passed full smoke and published Cloudflare version
+`49c704b3-47ec-47b4-b30b-9483dbd35564` with client asset
+`assets/index-On-Ohfl9.js`.
 
-The deterministic acceptance was repeated against that deployed production
-bundle. It again exposed all 20 results through the one Operations scroll
-owner at both mobile sizes, retained the exact 58vh bounds, one canvas, one
-catalog request, zero browser CelesTrak requests, compact deduplicated
-attribution, and no console/runtime error. Public Wiki commit
-`5f9cd06b84f4921f146a3f7a73ed64158cae20b8` records the same release and
-evidence.
+The strengthened acceptance was repeated against that deployed production
+bundle. It exposed all 20 results through the one Operations scroll owner at
+390x844, 390x568, a 315x517-class view, and an 844 px layout / 517 px visual
+viewport mismatch. The final result remained topmost under hit testing; task
+labels remained unclipped; and the bundle retained one canvas, one catalog
+request, zero browser CelesTrak requests, compact attribution, and no console
+or runtime error.
+
+Public Wiki commit `c67b33036d63c095e3aadc5d19e492d3aeb53665`
+records the same visual-viewport contract, production identity, rendered
+evidence, and troubleshooting guidance.
 
 Physical iOS Safari, Android Chrome, and supported-device drag-FPS evidence
 remain outstanding and must not be inferred from CDP emulation.
