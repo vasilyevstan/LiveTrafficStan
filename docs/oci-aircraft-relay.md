@@ -114,6 +114,9 @@ All tabs and Worker invocations share one provider admission boundary:
 - upstream requests start no more often than once every 20 seconds;
 - an excess request receives local `503` plus bounded `Retry-After` and does
   not reach ADSB.lol;
+- that local response alone carries
+  `X-LiveTrafficStan-Relay-Status: admission`; upstream responses cannot
+  supply the marker because the relay forwards only reviewed response headers;
 - an upstream `429` with readable `Retry-After` sets relay-wide backoff;
 - an upstream `429` without readable guidance uses bounded exponential backoff
   from 20 seconds through five minutes.
@@ -343,7 +346,8 @@ relay release.
 | VPC `fetch()` throws | VPC Service, Tunnel association, connector, or private origin unreachable |
 | Worker local `503` with `Retry-After: 20` before VPC fetch | Missing/short secret, absent binding, or invalid deployment mode; no shared-egress fallback |
 | Relay `401` | Missing or mismatched Worker-to-relay secret |
-| Relay local `503` with `Retry-After` | Global cadence/concurrency/backoff admission; no provider request started |
+| Relay local `503` with `Retry-After` and `X-LiveTrafficStan-Relay-Status: admission` | Global cadence/concurrency/backoff admission; no provider request started |
+| Unmarked relay-preserved `503` | ADSB.lol returned `503`; fail without an admission retry |
 | Relay-preserved `429` | ADSB.lol throttled the stable OCI identity |
 | Relay `502` | Upstream network/read/redirect/body-limit failure |
 | Relay `504` | Ten-second total upstream deadline exceeded |

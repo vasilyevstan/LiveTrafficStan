@@ -114,6 +114,9 @@ describe('Cloudflare worker routing', () => {
 
     expect(response.status).toBe(503)
     expect(response.headers.get('retry-after')).toBe('20')
+    expect(
+      response.headers.has('x-livetrafficstan-relay-status'),
+    ).toBe(false)
     expect(response.headers.get('cache-control')).toBe('no-store')
     expect(response.headers.get('x-livetrafficstan-release')).toBe(releaseSha)
     expect(await response.text()).toBe('Aircraft relay unavailable')
@@ -136,16 +139,24 @@ describe('Cloudflare worker routing', () => {
               headers: {
                 'Content-Type': 'text/plain',
                 'Retry-After': '17',
+                'X-LiveTrafficStan-Relay-Status': 'admission',
               },
             }),
           ),
         },
         AIRCRAFT_RELAY_AUTH_TOKEN: 'r'.repeat(32),
+        RELEASE_SHA: releaseSha,
       },
     )
 
     expect(response.status).toBe(503)
     expect(response.headers.get('retry-after')).toBe('17')
+    expect(response.headers.get('x-livetrafficstan-release')).toBe(
+      releaseSha,
+    )
+    expect(
+      response.headers.get('x-livetrafficstan-relay-status'),
+    ).toBe('admission')
     expect(await response.text()).toBe('Relay admission delayed')
   })
 

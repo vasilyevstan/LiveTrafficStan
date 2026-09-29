@@ -9,6 +9,8 @@ export const MINIMUM_UPSTREAM_INTERVAL_MS = 20_000
 export const MAXIMUM_FALLBACK_BACKOFF_MS = 5 * 60_000
 export const UPSTREAM_TIMEOUT_MS = 10_000
 export const MAXIMUM_RESPONSE_BYTES = 4 * 1024 * 1024
+export const RELAY_STATUS_HEADER = 'X-LiveTrafficStan-Relay-Status'
+export const RELAY_ADMISSION_STATUS = 'admission'
 
 const coordinatePattern = /^-?(?:0|[1-9]\d*)(?:\.\d{1,7})?$/
 const radiusPattern = /^(?:[1-9]|[1-4]\d|5[0-4])$/
@@ -395,6 +397,7 @@ export const createAircraftRelayHandler = async ({
     if (!lease.accepted) {
       return textResponse('Aircraft relay temporarily unavailable', 503, {
         'Retry-After': String(lease.retryAfterSeconds),
+        [RELAY_STATUS_HEADER]: RELAY_ADMISSION_STATUS,
       })
     }
 

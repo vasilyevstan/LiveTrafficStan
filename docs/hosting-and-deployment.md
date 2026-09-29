@@ -905,7 +905,9 @@ older SHA.
   the exact release and `no-store` headers;
 - in `oci-private-relay` mode, one successful same-origin aircraft payload
   through the bound private path; a numeric local `503 Retry-After` may delay
-  the check at most three times, while `429`, authentication failure, VPC
+  the check for at most twelve attempts and 330 seconds of admission sleep
+  inside one nine-minute deadline. Only the relay's explicit local admission
+  marker is retryable; upstream `503`, `429`, authentication failure, VPC
   failure, malformed data, or any other status fails activation;
 - in `adsb-lol-direct` mode, one browser-origin ADSB point request that returns
   valid aircraft JSON or an explicit `429` and permits the deployed origin
@@ -935,15 +937,17 @@ published Cloudflare version can report deployment success before every edge
 serves every immutable asset. This bound covers the more-than-15-second Static
 Asset switch observed during the V1.5.3 rollback proof without weakening
 exact-byte validation. The locally rejected Worker release-header probe cannot
-reach an upstream provider, but it is currently single-attempt; #134 tracks
-giving only an otherwise accepted known-predecessor header the same bounded
-propagation policy. After its release header matches, the smoke makes exactly one live
-aircraft-provider request through the selected delivery path. In
+reach an upstream provider. Only a response with the required `400`,
+`no-store`, and no-CORS policy plus a different canonical lowercase 40-hex
+release SHA receives the same bounded propagation retry. Missing or malformed
+headers and all other policy failures fail immediately. After its release
+header matches, the smoke makes exactly one accepted live aircraft-provider
+request through the selected delivery path. In
 `worker-proxy`, an ADSB.lol `429` is recorded as provider throttling rather
 than a release regression. Direct mode additionally requires that response to
 be browser-readable. In `oci-private-relay`, bounded local `503` guidance may
-delay the probe, but provider `429` and any failure to reach an eventual valid
-`200` fail activation.
+delay the probe without creating another provider request, but provider `429`
+and any failure to reach an eventual valid `200` fail activation.
 
 The MQTT check has a 15-second outer deadline, disables reconnect, and force
 closes the client. The script never prints provider payloads, METAR reports,
