@@ -15,15 +15,20 @@ high-frequency geographic rendering.
 The recovery architecture for Cloudflare-shared-egress throttling preserves
 that public boundary and inserts a private Workers VPC Service, Cloudflare
 Tunnel, and fixed-purpose OCI relay only behind the aircraft route. The relay,
-remote-managed Tunnel, VPC Service, and QUIC connector are operational. The
+remote-managed Tunnel, VPC Service, and QUIC connector are deployed. The
 Worker selects that path only through the protected `oci-private-relay`
 deployment mode and fails closed rather than reverting to shared egress.
 Production source `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` and the relay
 originally activated the private path together. The current browser/Worker
-application is source `46cb2007bc0cc27d1905fab32db6149a91d17576`,
-restored in run `36488245592` as Cloudflare version
-`0138d581-2162-491a-bcb5-619a97cf31fb`; the compatible relay remains at
+application is source `94c1d35b3687cd26b4d0445005eaf38edfbf7964`,
+deployed in run `36554328684` as Cloudflare version
+`50b2a0a0-b09d-4e7d-8851-61c0817c07cc`; the compatible relay remains at
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c`.
+
+The current run's orbital endpoint and fresh-profile desktop/mobile acceptance
+passed. Its aggregate smoke ended red only at the independently failing
+aircraft relay, tracked in #174; marine and orbital partial operation remained
+truthful and no orbital rollback was required.
 
 ```text
                        visibility lifecycle

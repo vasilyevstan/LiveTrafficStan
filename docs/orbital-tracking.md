@@ -17,7 +17,7 @@ This is cataloged orbital-object context, not another live-traffic provider:
   this feature.
 
 The browser implementation and scheduled catalog infrastructure are active in
-production source `46cb2007bc0cc27d1905fab32db6149a91d17576`. The layer
+production source `94c1d35b3687cd26b4d0445005eaf38edfbf7964`. The layer
 remains a default-off user preference, while the protected Worker deployment
 sets `ORBITAL_CATALOG_ENABLED=true`, serves the same-origin catalog route, and
 runs the checked two-hour scheduler. A deployment with that Worker flag off
@@ -342,7 +342,7 @@ npx wrangler dev --local --var ORBITAL_CATALOG_ENABLED:true
 Ordinary `npm run dev` does not contact CelesTrak and does not emulate the
 scheduled KV/Durable Object boundary.
 
-## Production activation evidence
+## Production activation and visibility evidence
 
 Production activation completed on 2026-09-28:
 
@@ -358,6 +358,21 @@ Production activation completed on 2026-09-28:
 - stable validator:
   `W/"2cbe00a3285c7bdfd80fe07661b6a14b48279d0629e44c026c6306bb20453d5b"`.
 
+The current visible-summary release is:
+
+- source: `94c1d35b3687cd26b4d0445005eaf38edfbf7964`;
+- release PR: #180;
+- deployment:
+  [36554328684](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/36554328684);
+- Cloudflare version: `50b2a0a0-b09d-4e7d-8851-61c0817c07cc`;
+- client asset: `assets/index-BmhBmsdh.js`;
+- deployed `index.html` SHA-256:
+  `8355a66f740f01d99fc1df83057df4b6f29d913ced9c84d8907f412058e24f62`.
+
+The deployment completed and the orbital route/browser acceptance passed.
+Aggregate smoke ended red only because the independent private aircraft relay
+returned a truthful 502, tracked in #174. No orbital rollback was performed.
+
 The restoration deployed its triggers at `2026-09-28T21:46:41Z`, before the
 first eligible `22:17Z` schedule. Bounded public observations at `22:19:30Z`
 and every two minutes through `22:31:54Z` still returned
@@ -368,21 +383,24 @@ scheduled delivery was delayed or an admitted refresh failed. The bootstrap
 kept the layer operational. The first successful production KV publication
 remains open in #162.
 
-Public Wiki commit `c2f91bdd74f13b78e20cc3ad50f296b5de94a54b`
-adds the comprehensive
+Public Wiki commit `4e56f83c83be0d065051606ae288b5eb13623d7c`
+updates the comprehensive
 [Orbital Tracking](https://github.com/vasilyevstan/LiveTrafficStan/wiki/Orbital-Tracking)
 and
 [Infrastructure and Hosting](https://github.com/vasilyevstan/LiveTrafficStan/wiki/Infrastructure-and-Hosting)
 pages and synchronizes the related public architecture, configuration,
-provider, testing, release, troubleshooting, accessibility, and roadmap
+provider, testing, release, troubleshooting, accessibility, Home, and map
 content.
 
-A fresh isolated Chromium profile proved zero orbital startup requests, one
-same-origin catalog request after explicit enable, zero CelesTrak browser
-requests, one unchanged canvas, exact selection and style restoration,
-whole-world orbital availability while aircraft and ships paused, a bounded
-390x844 disclosure, real touch camera movement, and no orbital runtime
-exception or long task over 50 ms.
+A fresh isolated Chromium profile proved zero orbital startup requests in the
+baseline lifecycle and one same-origin request after direct enable, zero
+CelesTrak browser requests, one unchanged canvas, a visible
+`0 IN VIEW · 1 PASS ≤90M` summary, focus transfer from **VIEW** to COSMOS 2550,
+156 visibly rendered whole-world points while aircraft and ships paused,
+bounded 390x844 and 390x568 disclosures with attribution visible, and no
+orbital runtime exception. Earlier exact selection, style rehydration, touch,
+and long-task evidence remains valid because this release does not change
+those paths.
 
 Rollback run
 [36488117751](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/36488117751)

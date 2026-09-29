@@ -814,6 +814,23 @@ evidence. Production source
   infrastructure pages plus the related architecture, provider, testing,
   release, troubleshooting, accessibility, and roadmap updates.
 
+The later enabled-state visibility release is production source
+`94c1d35b3687cd26b4d0445005eaf38edfbf7964`, deployed by run `36554328684`
+as Cloudflare version `50b2a0a0-b09d-4e7d-8851-61c0817c07cc`. Fresh-profile
+acceptance at 1280x900, 390x844, and 390x568 proved:
+
+- `ORBITS · 0 IN VIEW · 1 PASS ≤90M` remains visible before opening More;
+- **VIEW** opens the existing disclosure and focuses COSMOS 2550;
+- exactly one same-origin catalog request and zero browser CelesTrak requests;
+- one MapLibre canvas, no horizontal overflow, and attribution visible;
+- 156 visibly rendered points at explicit whole-world zoom `0`;
+- no orbital runtime exception.
+
+Public Wiki commit `4e56f83c83be0d065051606ae288b5eb13623d7c`
+records the same current release, accessibility, map, troubleshooting, and
+operations evidence. The deployment smoke's independent aircraft-relay 502 is
+tracked separately in #174 and did not invalidate orbital acceptance.
+
 Physical iOS Safari, Android Chrome, and supported-device drag-FPS evidence
 remain outstanding and must not be inferred from CDP emulation.
 
