@@ -31,6 +31,14 @@ The preference stores only visibility. Catalog bytes, modeled positions,
 crossings, selected object, track, clock anchor, camera, and Home remain
 session-only.
 
+After enable, the collapsed Operations panel keeps a compact orbital summary
+visible. A local view reports current in-view objects and next-90-minute pass
+count even when both the layer toggle and detailed result list are inside
+**More**. **VIEW** opens the existing disclosure and focuses the first modeled
+object result when one exists, otherwise the ORBITS toggle. This prevents a
+valid zero-object local view from looking like a failed layer and adds no
+request or camera movement.
+
 When enabled, the control shows distinct states for:
 
 - loading;
@@ -53,6 +61,10 @@ For a whole-world view, every valid current sub-satellite point is in view.
 The UI therefore does not invent a useful "next crossing" ranking. For a
 partial world-spanning or otherwise invalid footprint, current points remain
 available but crossing calculation is explicitly unavailable.
+
+The direct full-world share URL is:
+
+<https://livetrafficstan.syntal.workers.dev/#v=1&lat=0&lon=0&zoom=0&bearing=0&pitch=0&orbits=1>
 
 Selected details show:
 
