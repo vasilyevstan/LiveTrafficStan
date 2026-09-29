@@ -991,6 +991,54 @@ synchronizes the exact identity, source/rights, request boundary, production
 measurements, relay recovery, troubleshooting, accessibility, and release
 evidence.
 
+### Issues #210, #134, and #221 release acceptance evidence
+
+Current exact production source
+`18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8` combines the accepted symbol
+release and fail-closed deployment-smoke fixes. Feature/release PRs #218 and
+#220 delivered the map images; PRs #222 and #224 delivered the smoke policy.
+Exact merged-`main` validation run `36641143297` and canonical deployment run
+`36642794309` passed 116 Vitest files / 694 tests, lint, strict TypeScript,
+all release data checks, production build, Worker dry run, exact deployment,
+smoke, and deployment recording. Cloudflare version
+`fea1642f-8b45-4801-89ae-d2a9dca554a6` serves client asset
+`assets/index-8clesHre.js`; deployed `index.html` SHA-256 is
+`8f7da07d43d096de68adde373597d3f337ff46ec07557e429977cfa114bc16b1`.
+
+Fresh-profile public-origin acceptance proved:
+
+- a live Helsinki source with 11 rendered vessels across generic, cargo,
+  tanker, and passenger classes while all nine generated vessel image IDs
+  remained installed;
+- one persistent vessel symbol layer driven by application-owned
+  `markerIcon`, one canvas through Light -> Dark restoration, no horizontal
+  overflow, and visible attribution at desktop and 390x844;
+- one orbital symbol layer driven by exact SATCAT class, all four generated
+  orbital images installed, 156 whole-world source features, and recognizable
+  payload/rocket-body profiles instead of circles;
+- zero catalog requests before enable, one same-origin request after enable,
+  zero browser CelesTrak requests, A-to-B-to-A selection, theme restoration
+  without refetch, hide/show, touch movement, visible attribution, and bounded
+  Operations controls at 390x844 and 390x568;
+- zero four-times-throttled orbital-idle tasks over 50 ms during 60 seconds;
+- no browser runtime exception. Ordinary aircraft polling encountered a
+  truthful local admission `503`; it did not remove marine or orbital data.
+
+The matching OCI relay runs source `18082a1e...`, retains `1f9a2fd...` as
+rollback, and passed exact provider-free health with active/enabled systemd
+state. A bounded public proof returned real aircraft JSON, then
+`503 Retry-After: 20` with
+`X-LiveTrafficStan-Relay-Status: admission`, then real JSON after the advised
+wait. The Worker propagation helper retries only an otherwise accepted stale
+canonical release SHA on the 0/1/2/4/8/15/30-second schedule. Private-relay
+smoke retries only marked local admission, for at most twelve attempts,
+330 seconds of guided sleep, and nine minutes end to end, while still
+requiring eventual real `200 application/json`.
+
+Public Wiki commit `7bb657c8b90fda6150860f5dcba22010cf9cdf8d`
+synchronizes Home, map experience, architecture, infrastructure, orbital,
+testing, troubleshooting, and release operations with this exact evidence.
+
 Physical iOS Safari, Android Chrome, and supported-device drag-FPS evidence
 remain outstanding and must not be inferred from CDP emulation.
 

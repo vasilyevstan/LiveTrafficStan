@@ -43,25 +43,30 @@ no paid fallback is enabled. Orbital activation uses the included free KV and
 SQLite Durable Object allocations; R2 is not used.
 
 The current application source is
-`96d67b6da3e395be79acff27b47ad6dee34de309`. Canonical orbital-enrichment
-deployment run `36627748051` published Cloudflare version
-`3d6c692e-1a29-4fa4-bbee-2ab5545d9d57` with aircraft delivery through
+`18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8`. Exact merged-`main`
+validation run `36641143297` and canonical deployment run `36642794309`
+published Cloudflare version `fea1642f-8b45-4801-89ae-d2a9dca554a6` with
+aircraft delivery through
 `oci-private-relay`, aircraft photos, plausible routes, the five-file exact-IMO
 vessel-photo manifest, the orbital catalog, and exact-NORAD enrichment enabled.
 It preserved KV
 namespace `59178d55418247c4bab473b52a5dc07d`, one SQLite coordinator, and Cron
-`17 */2 * * *`. The compatible relay remains at
-`1f9a2fd322f141fe761d3bf00113e1ab60526e6c` and retains
-`76540a21291878b44e7f92ceecb37d03a366c0c7` as the prior release. The
-deployed client is `assets/index-Cl87tlUV.js`, and the deployed `index.html`
+`17 */2 * * *`. The matching relay runs
+`18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8` and retains
+`1f9a2fd322f141fe761d3bf00113e1ab60526e6c` as the prior release. The
+deployed client is `assets/index-8clesHre.js`, and the deployed `index.html`
 SHA-256 is
-`140921b505e2043ded16a4ebb09c11a30c4a5f7b8f4d4b8f55120c5bb7f9b97d`.
-Exact merged-`main` validation run `36626910897` passed before deployment.
-The generated application shell contains 11 URLs and 2,619,551 bytes; the two
+`8f7da07d43d096de68adde373597d3f337ff46ec07557e429977cfa114bc16b1`.
+The generated application shell contains 11 URLs and 2,621,531 bytes; the two
 enrichment images remain excluded.
 
 The exact-release endpoint, full smoke, and fresh-profile desktop/mobile
-browser acceptance passed. First exact-source run `36627068064` had already
+browser acceptance passed. Public symbol checks retained one canvas, all nine
+vessel and four orbital image IDs, 11 live Helsinki vessels, 156 whole-world
+orbital source features, one catalog request, zero browser CelesTrak requests,
+theme restoration, touch movement, visible attribution, and bounded 390x844
+and 390x568 layouts. First exact-source orbital-enrichment run `36627068064`
+had already
 published healthy application, orbital, enrichment, weather, marine, map, and
 static-context surfaces as Cloudflare version
 `7b1233c9-3461-440b-ac5f-1d30b02c0525`, but aircraft smoke exposed the
@@ -87,7 +92,7 @@ retains the first successful scheduled KV publication as explicit outstanding
 evidence.
 
 The public Wiki synchronization is commit
-`1cedad08275d9e162aab618bea0af2e0bbf4cb43`. It updates focused
+`7bb657c8b90fda6150860f5dcba22010cf9cdf8d`. It updates focused
 [Orbital Tracking](https://github.com/vasilyevstan/LiveTrafficStan/wiki/Orbital-Tracking)
 and
 [Infrastructure and Hosting](https://github.com/vasilyevstan/LiveTrafficStan/wiki/Infrastructure-and-Hosting)
@@ -159,12 +164,13 @@ rehydration, 156 modeled objects at whole-world view while aircraft and ships
 paused, real touch camera movement at 390x844, and no runtime exception or
 main-thread task over 50 ms.
 
-The first deployment attempt, run `36265893317`, uploaded Cloudflare version
+The earlier deployment attempt, run `36265893317`, uploaded Cloudflare version
 `a17be7e0-9340-49eb-8689-e8db4b63565c` but its immediate smoke reached an edge
 still serving the predecessor Worker release header. The expected release
 header appeared shortly afterward, and the exact-source rerun
-`36266052761` passed without changing application bytes. #134 tracks the
-bounded Worker-header propagation retry.
+`36266052761` passed without changing application bytes. Current source
+`18082a1e...` delivers the bounded Worker-header propagation retry and keeps
+malformed or contradictory policy fail-closed.
 
 Protected rollback run `36188474191` restored accepted V1.5.3 source
 `6d132907525f4f1479ae2b4f94485d76c151b86a` and Cloudflare version
@@ -948,6 +954,13 @@ than a release regression. Direct mode additionally requires that response to
 be browser-readable. In `oci-private-relay`, bounded local `503` guidance may
 delay the probe without creating another provider request, but provider `429`
 and any failure to reach an eventual valid `200` fail activation.
+
+Canonical run `36642794309` passed this policy at exact source `18082a1e...`.
+A separate bounded public proof returned real JSON, then exact-release
+`503 Retry-After: 20` with the `admission` marker, then real JSON after the
+advised wait. The matching relay had already passed exact local health with
+`current` at `18082a1e...`, `previous` at `1f9a2fd...`, and active/enabled
+systemd state.
 
 The MQTT check has a 15-second outer deadline, disables reconnect, and force
 closes the client. The script never prints provider payloads, METAR reports,

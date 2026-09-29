@@ -20,13 +20,18 @@ Worker selects that path only through the protected `oci-private-relay`
 deployment mode and fails closed rather than reverting to shared egress.
 Production source `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` and the relay
 originally activated the private path together. The current browser/Worker
-application is source `96d67b6da3e395be79acff27b47ad6dee34de309`,
-deployed in run `36627748051` as Cloudflare version
-`3d6c692e-1a29-4fa4-bbee-2ab5545d9d57`; the compatible relay remains at
-`1f9a2fd322f141fe761d3bf00113e1ab60526e6c`.
+application and matching relay are source
+`18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8`, deployed in run
+`36642794309` as Cloudflare version
+`fea1642f-8b45-4801-89ae-d2a9dca554a6`; relay source
+`1f9a2fd322f141fe761d3bf00113e1ab60526e6c` is retained as the rollback
+release.
 
 The current run's full smoke and fresh-profile desktop/mobile acceptance
-passed. First exact-source run `36627068064` deployed healthy
+passed. Generated map images preserve nine vessel presentation classes and
+four exact-SATCAT orbital classes across Light -> Dark style restoration on
+the same sources and MapLibre instance. First exact-source orbital-enrichment
+run `36627068064` deployed healthy
 application/orbital/enrichment assets as Cloudflare version
 `7b1233c9-3461-440b-ac5f-1d30b02c0525` but exposed recurrent OCI
 guest/network unavailability behind the unchanged VPC/Tunnel path as aircraft
