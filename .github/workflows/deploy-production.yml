@@ -124,6 +124,9 @@ jobs:
       - name: Check orbital catalog
         run: npm run check:orbital-catalog
 
+      - name: Check orbital enrichment
+        run: npm run check:orbital-enrichment
+
       - name: Build application
         if: inputs.artifact == 'application'
         env:

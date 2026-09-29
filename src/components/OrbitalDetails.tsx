@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   formatAge,
   formatAltitude,
@@ -10,7 +11,12 @@ import {
   type OrbitalCatalogSnapshot,
   type OrbitalCrossing,
 } from '../domain/orbital'
+import {
+  orbitalEnrichmentForPosition,
+  type OrbitalEnrichmentView,
+} from '../domain/orbitalEnrichment'
 import type { UnitSystem } from '../domain/units'
+import type { OrbitalEnrichmentImageState } from '../app/useOrbitalEnrichmentImage'
 
 interface OrbitalDetailsProps {
   position: ModeledOrbitalPosition
@@ -20,7 +26,11 @@ interface OrbitalDetailsProps {
   sourceWebsiteUrl: string
   sourceUsagePolicyUrl: string
   now: number
+  online: boolean
   units: UnitSystem
+  imageState: OrbitalEnrichmentImageState
+  onImageLoaded?: (path: string, url: string) => void
+  onImageFailed?: (path: string) => void
   onClose: () => void
 }
 
@@ -38,6 +48,148 @@ const DetailRow = ({
     </div>
   ) : null
 
+const OrbitalEnrichmentDetails = ({
+  enrichment,
+  imageState,
+  online,
+  onImageLoaded,
+  onImageFailed,
+}: {
+  enrichment: OrbitalEnrichmentView
+  imageState: OrbitalEnrichmentImageState
+  online: boolean
+  onImageLoaded?: (path: string, url: string) => void
+  onImageFailed?: (path: string) => void
+}) => {
+  const image = enrichment.image
+  const [decodeFailed, setDecodeFailed] = useState(false)
+  const matchingImageState =
+    imageState.phase !== 'unavailable' &&
+    imageState.identityKey === enrichment.identityKey
+      ? imageState
+      : undefined
+  const imagePhase = !image
+    ? 'unavailable'
+    : decodeFailed
+      ? 'error'
+      : (matchingImageState?.phase ?? 'loading')
+
+  return (
+    <section
+      className="orbital-enrichment"
+      aria-labelledby={`orbital-enrichment-heading-${enrichment.noradCatalogId}`}
+    >
+      <h3
+        id={`orbital-enrichment-heading-${enrichment.noradCatalogId}`}
+      >
+        Purpose and image
+      </h3>
+      {image && matchingImageState?.phase === 'available' && !decodeFailed && (
+        <a
+          className="orbital-enrichment__image-link"
+          href={image.identityEvidence.sourcePageUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <img
+            className="orbital-enrichment__image"
+            src={matchingImageState.url}
+            width={image.asset.width}
+            height={image.asset.height}
+            alt={image.alt}
+            loading="eager"
+            decoding="async"
+            onLoad={() => {
+              onImageLoaded?.(image.asset.path, matchingImageState.url)
+            }}
+            onError={() => {
+              setDecodeFailed(true)
+              onImageFailed?.(image.asset.path)
+            }}
+          />
+        </a>
+      )}
+
+      {imagePhase === 'loading' && (
+        <p className="metadata-status" role="status">
+          Loading verified{' '}
+          {image?.kind === 'photograph'
+            ? 'historical photograph'
+            : 'object illustration'}
+          …
+        </p>
+      )}
+      <p className="orbital-enrichment__purpose">
+        <strong>{enrichment.purpose.shortLabel}</strong>
+        {' — '}
+        {enrichment.purpose.description}
+      </p>
+      <p className="metadata-attribution">
+        Purpose: {' '}
+        <a
+          href={enrichment.purpose.sourceUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {enrichment.purpose.sourceName}
+        </a>
+        {enrichment.purpose.sourcePublishedAt
+          ? ` · published ${enrichment.purpose.sourcePublishedAt}`
+          : ''}
+        {' · '}source retrieved {enrichment.purpose.sourceRetrievedAt}
+        {' · '}reviewed {enrichment.reviewedAt}
+        {' · '}manifest {enrichment.manifestVersion}
+        {' · '}exact NORAD {enrichment.noradCatalogId}.
+      </p>
+      {image && (
+        <p className="metadata-attribution orbital-enrichment__credit">
+          {image.rights.creditLine}
+          {image.source.capturedAt
+            ? ` · captured ${image.source.capturedAt}`
+            : ''}
+          {` · source retrieved ${image.source.sourceRetrievedAt}`}
+          {' · '}
+          <a
+            href={image.rights.usagePolicyUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {image.rights.usagePolicyName}
+          </a>
+          {' · '}
+          {image.asset.modificationNotice}
+        </p>
+      )}
+      {imagePhase === 'available' && image && (
+        <>
+          <p className="metadata-status">
+            {image.kind === 'photograph'
+              ? 'Historical photograph'
+              : 'Reviewed illustration'}
+            ; not a live view of this modeled position.
+          </p>
+          <p className="metadata-status">
+            {image.rights.restrictions}
+          </p>
+        </>
+      )}
+      {imagePhase === 'unavailable' && (
+        <p className="metadata-status">
+          Verified image unavailable; no substitute shown.
+        </p>
+      )}
+      {imagePhase === 'error' && (
+        <p className="metadata-status metadata-status--error" role="alert">
+          {online
+            ? 'Verified image failed to load.'
+            : 'Verified image is unavailable offline unless already cached.'}{' '}
+          Modeled orbital data remains available.
+        </p>
+      )}
+    </section>
+  )
+}
+
 export function OrbitalDetails({
   position,
   crossing,
@@ -46,9 +198,14 @@ export function OrbitalDetails({
   sourceWebsiteUrl,
   sourceUsagePolicyUrl,
   now,
+  online,
   units,
+  imageState,
+  onImageLoaded,
+  onImageFailed,
   onClose,
 }: OrbitalDetailsProps) {
+  const enrichment = orbitalEnrichmentForPosition(position)
   const crossingValue = crossing?.currentlyInView
     ? 'In the visible map now'
     : crossing?.firstCrossingAt === undefined
@@ -116,6 +273,30 @@ export function OrbitalDetails({
           )}`}
         />
       </dl>
+
+      {enrichment ? (
+        <OrbitalEnrichmentDetails
+          key={enrichment.identityKey}
+          enrichment={enrichment}
+          imageState={imageState}
+          online={online}
+          onImageLoaded={onImageLoaded}
+          onImageFailed={onImageFailed}
+        />
+      ) : (
+        <section
+          className="orbital-enrichment"
+          aria-labelledby="orbital-enrichment-unavailable-heading"
+        >
+          <h3 id="orbital-enrichment-unavailable-heading">
+            Purpose and image
+          </h3>
+          <p className="metadata-status">
+            No reviewed exact-NORAD purpose or image is bundled for this
+            object. No substitute shown.
+          </p>
+        </section>
+      )}
 
       <p className="metadata-status">
         SGP4 model, not live. Crossing does not prove visibility, illumination,

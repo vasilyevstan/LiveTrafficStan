@@ -58,6 +58,11 @@ namespace `59178d55418247c4bab473b52a5dc07d`, and runs Cron
 the remembered ORBITS layer still starts off until explicitly enabled or
 included in a share fragment.
 
+The exact-NORAD purpose/image manifest adds no environment variable, provider
+endpoint, secret, scheduler, Worker binding, or PWA-shell entry. Purpose is
+compiled into the browser bundle. A reviewed image uses only its immutable
+same-origin `/orbital-enrichment/<version>/` path after exact selection.
+
 The committed `wrangler.jsonc` remains credential-free. Cloudflare account ID
 and API token stay in the protected `production` environment; the namespace ID
 is a non-secret deployment identifier discovered only through the authenticated
@@ -112,6 +117,7 @@ spread through components:
 | Orbital current-position cadence | At most once per second |
 | Orbital prediction | Refresh every 30 seconds; 90-minute horizon; 30-second samples; 20 detailed results |
 | Orbital selected track | 15 minutes; at most 31 points before gap/dateline splitting |
+| Orbital reviewed image | 5-second total deadline; exact manifest byte count, media type, and SHA-256; one fulfilled Blob URL or terminal failure per immutable asset in the running tab |
 | Marine metadata refresh | 5 minutes |
 | Marine query REST refresh gate | 5 minutes |
 | Marine MQTT connect timeout / reconnect | 10 seconds / 15 seconds |

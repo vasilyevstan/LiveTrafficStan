@@ -643,6 +643,36 @@ should retain selection and make no catalog request. If they do not, record the
 same-canvas, source, request, and console evidence before changing provider
 configuration.
 
+## Orbital purpose or image is unavailable
+
+Only exact current `HST` / NORAD `20580` and `ISS (ZARYA)` / NORAD `25544`
+identities are reviewed in manifest `2026-09-29-v1`. Every other object,
+including rocket bodies and debris, intentionally reports purpose/image
+unavailable. Do not add a generic satellite/rocket picture or infer a mission
+from the object name, owner, orbit, launch family, or payload.
+
+For a reviewed object, confirm current NORAD ID, name, international
+designator, and exact SATCAT type still match the manifest. A mismatch fails
+closed. Then run:
+
+```bash
+npm run check:orbital-enrichment
+```
+
+This checks immutable paths, NASA provenance, rights notice, file inventory,
+dimensions, limits, and SHA-256 without a network request.
+
+Purpose is bundled and should appear offline. The photograph is deliberately
+not in the PWA shell and starts only after exact selection. If it fails while
+offline, details say so and modeled orbital data remains available. If it
+fails online, inspect the same-origin
+`/orbital-enrichment/2026-09-29-v1/norad-*.jpg` response for exact `200`,
+declared JPEG media type, manifest byte count, and unchanged bytes. The
+application verifies SHA-256 before creating a Blob URL and treats a failure
+as terminal for the running tab rather than retrying on reselection. A hover
+must never contact NASA or request the same-origin asset; a tooltip can reuse
+only a validated Blob URL created by selected details earlier in the tab.
+
 ## Configuration fails at startup
 
 Review `.env.local` for:

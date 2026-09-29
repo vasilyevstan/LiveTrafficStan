@@ -19,6 +19,8 @@ import { useTrafficHistory } from './app/useTrafficHistory'
 import { useTrailHistory } from './app/useTrailHistory'
 import { useWeatherObservations } from './app/useWeatherObservations'
 import { useOrbitalObjects } from './app/useOrbitalObjects'
+import { OrbitalEnrichmentImageLoader } from './app/OrbitalEnrichmentImageLoader'
+import { useOrbitalEnrichmentImage } from './app/useOrbitalEnrichmentImage'
 import { visualViewportCssValues } from './app/visualViewport'
 import { AirportDetails } from './components/AirportDetails'
 import { HistoryModeNotice } from './components/HistoryModeNotice'
@@ -52,6 +54,7 @@ import {
 } from './domain/vesselFilters'
 import type { ViewportAssessment } from './domain/viewport'
 import type { OrbitalViewport } from './domain/orbitalViewport'
+import { orbitalEnrichmentForPosition } from './domain/orbitalEnrichment'
 import { formatTimestamp } from './domain/format'
 import {
   displayWeatherObservations,
@@ -132,6 +135,14 @@ function App() {
   const [selectedOrbitalId, setSelectedOrbitalId] = useState<string | null>(
     null,
   )
+  const orbitalEnrichmentImageLoader = useMemo(
+    () =>
+      new OrbitalEnrichmentImageLoader(APP_CONFIG.orbital.timeoutMs),
+    [],
+  )
+  const [loadedOrbitalImageUrls, setLoadedOrbitalImageUrls] = useState<
+    ReadonlyMap<string, string>
+  >(() => new Map())
   const [hoveredAircraftId, setHoveredAircraftId] = useState<string | null>(
     null,
   )
@@ -629,6 +640,17 @@ function App() {
       ),
     [orbitalState.prediction.results, selectedOrbitalId],
   )
+  const selectedOrbitalEnrichment = useMemo(
+    () =>
+      selectedOrbitalPosition
+        ? orbitalEnrichmentForPosition(selectedOrbitalPosition)
+        : undefined,
+    [selectedOrbitalPosition],
+  )
+  const selectedOrbitalImageState = useOrbitalEnrichmentImage(
+    selectedOrbitalEnrichment,
+    orbitalEnrichmentImageLoader,
+  )
   const aircraftMetadata = useAircraftMetadata(
     !historyActive && selectedEntity?.kind === 'aircraft'
       ? selectedEntity
@@ -1011,6 +1033,39 @@ function App() {
     (id: string | null) => selectOrbital(id, null),
     [selectOrbital],
   )
+  const handleOrbitalImageLoaded = useCallback(
+    (path: string, url: string) => {
+      setLoadedOrbitalImageUrls((current) => {
+        if (current.get(path) === url) return current
+        const next = new Map(current)
+        next.set(path, url)
+        return next
+      })
+    },
+    [],
+  )
+  const handleOrbitalImageFailed = useCallback(
+    (path: string) => {
+      const image = selectedOrbitalEnrichment?.image
+      if (image?.asset.path === path) {
+        orbitalEnrichmentImageLoader.invalidate(image)
+      }
+      setLoadedOrbitalImageUrls((current) => {
+        if (!current.has(path)) return current
+        const next = new Map(current)
+        next.delete(path)
+        return next
+      })
+    },
+    [orbitalEnrichmentImageLoader, selectedOrbitalEnrichment],
+  )
+
+  useEffect(
+    () => () => {
+      orbitalEnrichmentImageLoader.dispose()
+    },
+    [orbitalEnrichmentImageLoader],
+  )
   const handleOrbitalContextSelect = useCallback(
     (id: string) =>
       selectOrbital(
@@ -1227,6 +1282,7 @@ function App() {
         weatherObservations={weatherObservations}
         orbitalPositions={orbitalState.positions}
         orbitalTrackSegments={orbitalState.prediction.trackSegments}
+        orbitalImageUrls={loadedOrbitalImageUrls}
         trailSegments={trailSegments}
         selectedId={selectedId}
         selectedOrbitalId={selectedOrbitalId}
@@ -1464,6 +1520,7 @@ function App() {
           selectedOrbitalPosition &&
           orbitalState.snapshot && (
           <OrbitalDetails
+            key={`${selectedOrbitalPosition.id}|${orbitalState.snapshot.sha256}`}
             position={selectedOrbitalPosition}
             crossing={selectedOrbitalCrossing}
             snapshot={orbitalState.snapshot}
@@ -1473,7 +1530,11 @@ function App() {
               APP_CONFIG.orbital.sourceUsagePolicyUrl
             }
             now={now}
+            online={online}
             units={units}
+            imageState={selectedOrbitalImageState}
+            onImageLoaded={handleOrbitalImageLoaded}
+            onImageFailed={handleOrbitalImageFailed}
             onClose={handleCloseOrbital}
           />
         )}

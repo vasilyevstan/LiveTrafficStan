@@ -1,0 +1,130 @@
+{
+  "schemaVersion": 1,
+  "manifestVersion": "2026-09-29-v1",
+  "reviewedAt": "2026-09-29",
+  "sourcePolicy": {
+    "name": "Manual exact-NORAD official-source review",
+    "identityRule": "Index by canonical NORAD catalog ID, then require the current object name, international designator, and exact SATCAT type to match the reviewed record.",
+    "purposeRule": "Use only purpose text supported by the cited authoritative mission source; never infer purpose from name, type, owner, group, or orbit.",
+    "imageRule": "Bundle only an image reviewed as depicting the exact object, with explicit public-display and transformation rights.",
+    "takedownProcedure": "Remove the manifest record and bundled asset, run npm run check:orbital-enrichment, and deploy the resulting exact source revision. Never substitute a generic object image."
+  },
+  "records": [
+    {
+      "noradCatalogId": "20580",
+      "objectNameAtReview": "HST",
+      "internationalDesignatorAtReview": "1990-037B",
+      "catalogTypeAtReview": "PAY",
+      "purpose": {
+        "shortLabel": "Space-based astronomical observatory",
+        "description": "NASA describes Hubble as a large space-based observatory used to observe the universe and expand understanding of the cosmos.",
+        "sourceName": "NASA Science",
+        "sourceTitle": "About Hubble",
+        "sourceUrl": "https://science.nasa.gov/mission/hubble/overview/about-hubble/",
+        "sourcePublishedAt": "2022-10-06",
+        "sourceRetrievedAt": "2026-09-29",
+        "sourceSha256": "5f1bbc41ffc1234992f53cddeaa3bbbb7c18d920750d885b730932a13cd93493",
+        "identityEvidence": "The reviewed CelesTrak visual snapshot identifies NORAD 20580 as HST, international designator 1990-037B, type PAY. The NASA page explicitly identifies the Hubble Space Telescope and its observatory purpose."
+      },
+      "image": {
+        "kind": "photograph",
+        "alt": "Hubble Space Telescope held by Atlantis's robotic arm immediately before its 2009 release",
+        "identityEvidence": {
+          "sourceId": "NASA ID s125e011615",
+          "sourceTitle": "View of HST during its release from the Shuttle Atlantis",
+          "sourcePageUrl": "https://images.nasa.gov/details/s125e011615",
+          "sourceRevisionUrl": "https://images-api.nasa.gov/search?nasa_id=s125e011615",
+          "sourceRevisionSha256": "b52ec3cbf49c554db3e5085d97b7a51c8e3d60a5641db1d9bdf1dc7a51f1f2d6",
+          "reviewNote": "NASA's exact-ID metadata names HST, describes the telescope being released from Atlantis, dates the photograph to 2009-05-19, and provides the canonical and reviewed JPEG assets."
+        },
+        "source": {
+          "canonicalOriginalUrl": "https://images-assets.nasa.gov/image/s125e011615/s125e011615~orig.jpg",
+          "reviewedUrl": "https://images-assets.nasa.gov/image/s125e011615/s125e011615~small.jpg",
+          "reviewedMediaType": "image/jpeg",
+          "reviewedBytes": 46716,
+          "reviewedWidth": 437,
+          "reviewedHeight": 640,
+          "reviewedSha256": "adcf73f7e244cfa5f2053b4e0e61d5399278b9f1832d030f3fda618d40cee78e",
+          "capturedAt": "2009-05-19",
+          "sourceRetrievedAt": "2026-09-29"
+        },
+        "rights": {
+          "owner": "National Aeronautics and Space Administration",
+          "sourceName": "NASA Image and Video Library",
+          "usagePolicyName": "NASA Images and Media Usage Guidelines",
+          "usagePolicyUrl": "https://www.nasa.gov/nasa-brand-center/images-and-media/",
+          "creditLine": "Photo: NASA",
+          "publicDomain": true,
+          "restrictions": "Informational use only; the credit does not imply NASA endorsement. NASA insignia and logotypes are not used as application branding."
+        },
+        "asset": {
+          "path": "/orbital-enrichment/2026-09-29-v1/norad-20580.jpg",
+          "mediaType": "image/jpeg",
+          "bytes": 46716,
+          "width": 437,
+          "height": 640,
+          "sha256": "adcf73f7e244cfa5f2053b4e0e61d5399278b9f1832d030f3fda618d40cee78e",
+          "modificationNotice": "Copied byte-for-byte from NASA's reviewed small JPEG alternate; no local crop, resize, retouching, or metadata change."
+        }
+      }
+    },
+    {
+      "noradCatalogId": "25544",
+      "objectNameAtReview": "ISS (ZARYA)",
+      "internationalDesignatorAtReview": "1998-067A",
+      "catalogTypeAtReview": "PAY",
+      "purpose": {
+        "shortLabel": "Crewed microgravity science laboratory",
+        "description": "NASA describes the station as an orbiting laboratory for research and technology demonstrations that enable discoveries not possible on Earth and support future exploration.",
+        "sourceName": "NASA",
+        "sourceTitle": "Space Station Research and Technology",
+        "sourceUrl": "https://www.nasa.gov/international-space-station/space-station-research-and-technology/",
+        "sourcePublishedAt": "2023-02-27",
+        "sourceRetrievedAt": "2026-09-29",
+        "sourceSha256": "ff5ff84df1d9ec60d511b6139618165d890ca9d3229ce3236d740e0cfb0d3450",
+        "identityEvidence": "The reviewed CelesTrak visual snapshot identifies NORAD 25544 as ISS (ZARYA), international designator 1998-067A, type PAY. The NASA page explicitly identifies the International Space Station as an orbiting research and technology laboratory."
+      },
+      "image": {
+        "kind": "photograph",
+        "alt": "International Space Station photographed from Atlantis after undocking in 2010",
+        "identityEvidence": {
+          "sourceId": "NASA ID s132e012212",
+          "sourceTitle": "Flyaround view of ISS after undocking",
+          "sourcePageUrl": "https://images.nasa.gov/details/s132e012212",
+          "sourceRevisionUrl": "https://images-api.nasa.gov/search?nasa_id=s132e012212",
+          "sourceRevisionSha256": "00f18b615bab8c6557ca96c66132e9e6ca0cf174f4b98b8086259aabf3717834",
+          "reviewNote": "NASA's exact-ID metadata names the International Space Station, describes an STS-132 crew photograph after undocking, dates it to 2010-05-23, and provides the canonical and reviewed JPEG assets."
+        },
+        "source": {
+          "canonicalOriginalUrl": "https://images-assets.nasa.gov/image/s132e012212/s132e012212~orig.jpg",
+          "reviewedUrl": "https://images-assets.nasa.gov/image/s132e012212/s132e012212~small.jpg",
+          "reviewedMediaType": "image/jpeg",
+          "reviewedBytes": 48741,
+          "reviewedWidth": 640,
+          "reviewedHeight": 425,
+          "reviewedSha256": "19b0fc48542f8c543f01a85aced18aadb2bbc162ac8144741d22dd066a2a40f6",
+          "capturedAt": "2010-05-23",
+          "sourceRetrievedAt": "2026-09-29"
+        },
+        "rights": {
+          "owner": "National Aeronautics and Space Administration",
+          "sourceName": "NASA Image and Video Library",
+          "usagePolicyName": "NASA Images and Media Usage Guidelines",
+          "usagePolicyUrl": "https://www.nasa.gov/nasa-brand-center/images-and-media/",
+          "creditLine": "Photo: NASA",
+          "publicDomain": true,
+          "restrictions": "Informational use only; the credit does not imply NASA endorsement. NASA insignia and logotypes are not used as application branding."
+        },
+        "asset": {
+          "path": "/orbital-enrichment/2026-09-29-v1/norad-25544.jpg",
+          "mediaType": "image/jpeg",
+          "bytes": 48741,
+          "width": 640,
+          "height": 425,
+          "sha256": "19b0fc48542f8c543f01a85aced18aadb2bbc162ac8144741d22dd066a2a40f6",
+          "modificationNotice": "Copied byte-for-byte from NASA's reviewed small JPEG alternate; no local crop, resize, retouching, or metadata change."
+        }
+      }
+    }
+  ]
+}

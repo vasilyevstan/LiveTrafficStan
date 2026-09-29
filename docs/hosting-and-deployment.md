@@ -263,7 +263,8 @@ cache, or any rate-control change.
 browser
   |
   +-- /, /assets/*, /aircraft-metadata/*,
-  |   /vessel-photos/*, /orbital-data/* ---> Cloudflare Static Assets
+  |   /vessel-photos/*, /orbital-data/*,
+  |   /orbital-enrichment/* -------------> Cloudflare Static Assets
   |
   +-- /api/aircraft/v2/point/... --+
   |                                |
@@ -325,6 +326,12 @@ real 404 responses rather than `index.html`.
   manifest/version path;
 - `/orbital-data/*` uses one-year immutable browser caching because the
   normalized bootstrap path is schema/versioned and its digest is checked;
+- `/orbital-enrichment/*` uses one-year immutable browser caching because each
+  exact-NORAD identity, source, rights review, notice, and byte set receives a
+  new manifest/version path. Correctness does not depend on that HTTP cache:
+  the browser application performs one bounded selected-image fetch, validates
+  exact media type, bytes, and SHA-256, and shares only the resulting
+  session-only Blob URL with details and tooltips;
 - `/` and `/index.html` revalidate;
 - all asset paths use `nosniff`, clickjacking protection, and a conservative
   referrer policy.
@@ -765,7 +772,8 @@ The workflow:
 5. fails closed if either Cloudflare credential is absent and, for private
    relay mode, if the protected relay authentication secret is absent or too
    short;
-6. validates the committed orbital bootstrap without network access;
+6. validates the committed orbital bootstrap and exact-NORAD NASA enrichment
+   manifest/assets without network access;
 7. builds the browser with the fixed aircraft-delivery choice plus the
    requested aircraft-photo and plausible-route flags;
 8. reruns install, lint, type-check, all tests, build, and the normal
@@ -977,8 +985,9 @@ or continuous health service is added.
 
 Cloudflare versions contain Worker code, configuration, and Static Assets.
 Plausible routes add no separately persisted server resource. Vessel reference
-photos are part of the same exact Static Asset version and add no provider,
-database, Worker route, or deployment credential. The orbital KV namespace is
+photos and exact-NORAD orbital photographs are part of the same exact Static
+Asset version and add no provider, database, Worker route, scheduler, or
+deployment credential. The orbital KV namespace is
 retained across versions, as is the dormant Durable Object namespace; each
 Worker accepts only its supported schema and can fall back to its exact-release
 bootstrap.

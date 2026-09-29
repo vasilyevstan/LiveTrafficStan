@@ -89,7 +89,7 @@ tombstone can be removed after Cloudflare confirms that deletion has applied.
 | Area | Responsibility |
 | --- | --- |
 | `src/config/` | Typed defaults and validation of browser-safe environment overrides |
-| `src/domain/` | Application-owned traffic/port/airport/weather/flight-route/orbital types, independent traffic and orbital viewport geometry, local discovery and filters, pure country-allocation and exact-IMO vessel-photo lookup, location-input parsing, versioned preferences/share state, unit conversion, and formatting |
+| `src/domain/` | Application-owned traffic/port/airport/weather/flight-route/orbital types, independent traffic and orbital viewport geometry, local discovery and filters, pure country-allocation, exact-IMO vessel-photo, and exact-NORAD orbital-enrichment lookup, location-input parsing, versioned preferences/share state, unit conversion, and formatting |
 | `src/providers/aircraft/` | ADSB.lol request, runtime payload checks, normalization, and unit conversion |
 | `src/providers/aircraftMetadata/` | Bounded same-origin static metadata loading, provenance/schema/hash validation, exact identity matching, and shard LRU |
 | `src/providers/aircraftPhoto/` | Disabled-by-default direct Planespotters hex lookup, bounded response validation, exact returned-origin enforcement, and typed local failures |
@@ -100,7 +100,7 @@ tombstone can be removed after Cloudflare confirms that deletion has applied.
 | `src/providers/weather/` | Canonical same-origin AWC requests, bounded JSON validation, METAR/SPECI normalization, newest-report selection, and source provenance |
 | `src/providers/orbital/` | Strict same-origin snapshot reads, streamed byte bounds, exact schema/header/digest validation, ETag revalidation, and fulfilled current-tab caching |
 | `src/providers/geocoding/` | Photon request construction, response bounds, runtime GeoJSON validation, result normalization, and attribution identity |
-| `src/app/` | React hooks/controllers for provider and orbital lifecycle, unified preference persistence, place-search cancellation/cache, bounded selected-photo and selected-route tab caches, navigation intent, time ticks, offline state, and traffic-history orchestration |
+| `src/app/` | React hooks/controllers for provider and orbital lifecycle, unified preference persistence, place-search cancellation/cache, bounded selected-photo, selected-route, and exact-NORAD image tab caches, navigation intent, time ticks, offline state, and traffic-history orchestration |
 | `src/history/` | Provider-qualified observation projection, bounded session history, IndexedDB transactions, settings, indexes, playback, and gap-aware historical trails |
 | `src/traffic/` | Filtering, freshness/expiry, interpolation, and selected-trail history |
 | `src/map/` | MapLibre lifecycle, external/local-fallback styles, persistent traffic/context/orbital GeoJSON sources and layers, feature selection, and marker images |
@@ -112,6 +112,7 @@ tombstone can be removed after Cloudflare confirms that deletion has applied.
 | `public/manifest.webmanifest` | Root-scoped standalone install metadata and versioned maskable icons |
 | `public/vessel-photos/` | Immutable reviewed vessel-photo derivatives plus co-located file-specific license records; excluded from the application-shell cache |
 | `public/orbital-data/` | Immutable normalized CelesTrak bootstrap for the schema-compatible first deploy and rollback fallback; excluded from the application-shell cache |
+| `public/orbital-enrichment/` | Immutable exact-NORAD NASA photographs plus co-located rights/provenance notices; selected on demand and excluded from the application-shell cache |
 
 ## Control composition
 
@@ -314,6 +315,15 @@ track. The orbital controller anchors time to the response clock plus
 revalidates no more often than every two hours. Orbital IDs and timestamps
 never enter traffic normalization, freshness, clustering, trails, metadata,
 photos, route lookup, session history, or IndexedDB.
+
+Orbital purpose and imagery are a second, static display-only boundary. The
+two-record manifest is compiled into the browser and matches the current
+feature only when NORAD ID, object name, international designator, and exact
+SATCAT type all equal the reviewed identity. Purpose labels therefore require
+no request. A selected image uses one immutable same-origin path; a later map
+tooltip may reuse it only after a successful browser `load` event. Failed,
+aborted, mismatched, or unreviewed entries remain unavailable and cannot
+change propagation, crossings, selection, provider state, or traffic.
 
 ## Lifecycle and failure isolation
 
@@ -643,8 +653,8 @@ and gives only the aircraft proxy one private outbound dependency:
 
 1. `dist/` is served as Static Assets;
 2. fingerprinted `/assets/*`, versioned `/aircraft-metadata/*`, versioned
-   `/ports/*`, versioned `/airports/*`, and versioned
-   `/orbital-data/*` responses use immutable browser caching;
+   `/ports/*`, versioned `/airports/*`, versioned `/orbital-data/*`, and
+   versioned `/orbital-enrichment/*` responses use immutable browser caching;
 3. Worker code runs first only for `/api` and `/api/*`;
 4. the only forwarded browser routes are the fixed aircraft point route and
    canonical `GET /api/weather/metar?ids=...`; the fixed

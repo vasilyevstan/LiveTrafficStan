@@ -35,6 +35,7 @@ Worker command below for enabled ORBITS acceptance.
 | `npm run update:country-allocations` | Explicit maintainer regeneration from pinned open-licensed sources and canonical cross-checks |
 | `npm run check:orbital-catalog` | Network-free raw-byte, fatal UTF-8, exact-schema/canonical-serialization, source, type, ordering, count, size, epoch, and SHA-256 validation of the committed CelesTrak bootstrap |
 | `npm run update:orbital-catalog -- --gp <path> --satcat <path> --retrieved-at <iso> --output public/orbital-data/v1/visual-catalog.json` | Explicit maintainer normalization of one already-downloaded GP/SATCAT pair after enforcing the same 256 KiB raw-byte and fatal UTF-8 bounds; never fetches the provider |
+| `npm run check:orbital-enrichment` | Network-free validation of exact current NORAD/name/designator/type identity, official-source provenance, rights notice, immutable asset inventory, dimensions, size, and SHA-256 |
 | `npm run check:vessel-photos` | Network-free validation of exact IMO, source revision, rights, license notice, asset inventory, dimensions, size, and SHA-256 |
 | `npm run check:ports` | Network-free validation of the committed Natural Earth port projection |
 | `npm run update:ports` | Explicit maintainer regeneration from the pinned Natural Earth source |
@@ -77,6 +78,7 @@ npm test -- --run
 npm run check:aircraft-metadata
 npm run check:country-allocations
 npm run check:orbital-catalog
+npm run check:orbital-enrichment
 npm run check:vessel-photos
 npm run check:ports
 npm run check:airports
@@ -95,6 +97,22 @@ Repeated tests use committed fixtures and the normalized bootstrap; they never
 loop against CelesTrak. `npm run check:orbital-catalog` recomputes the digest
 without network access and rejects unknown padding or any noncanonical file
 serialization.
+
+`npm run check:orbital-enrichment` does not fetch NASA. It verifies the
+committed two-record manifest against the committed visual catalog, requires
+sorted unique canonical NORAD IDs and exact name/designator/type agreement,
+checks the pinned NASA purpose/metadata/image digests and co-located notice,
+and fails if a published version path changes. Image files are excluded from
+the PWA shell, so building or installing the shell cannot create an enrichment
+request.
+
+Deterministic loader tests separately require exact `200`, media type, byte
+count, and SHA-256; one concurrent/session request; abort removal for obsolete
+selection; terminal invalid/timeout failure without retry; and Blob-URL
+revocation. Rendered acceptance disables the browser HTTP cache and proves
+zero image request before selection, exactly one request for each reviewed
+asset, Blob-URL reuse by the tooltip without a hover request, and no retry
+after a terminal image failure.
 
 To build the protected direct-aircraft variant without changing defaults:
 
