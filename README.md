@@ -452,7 +452,7 @@ claimed for that window. The modeled layer remained available and truthful;
 the first successful scheduled KV publication remains open in #162.
 
 The comprehensive public Wiki synchronization is commit
-`4e56f83c83be0d065051606ae288b5eb13623d7c`; it updates
+`bc45563e666d1a5622a9fd29f16771faf1fea2a2`; it updates
 [Orbital Tracking](https://github.com/vasilyevstan/LiveTrafficStan/wiki/Orbital-Tracking)
 and
 [Infrastructure and Hosting](https://github.com/vasilyevstan/LiveTrafficStan/wiki/Infrastructure-and-Hosting)
@@ -464,14 +464,17 @@ The compatible aircraft relay remains at
 `76540a21291878b44e7f92ceecb37d03a366c0c7` as its prior rollback release.
 
 Fresh-profile rendered orbital acceptance proved zero catalog requests before
-enable, one same-origin request after enable, zero browser requests to
-CelesTrak, one unchanged MapLibre canvas, exact A-to-B-to-A selection,
-theme/hide/show restoration, 156 visibly rendered whole-world modeled objects
-while aircraft and ships paused, 390x844 and 390x568 panels within the 58vh
-budget, real touch camera movement, and no orbital runtime exception or
-main-thread task over 50 ms. When ORBITS is enabled, the collapsed Operations
-panel keeps its in-view and next-pass counts visible; **VIEW** opened the
-existing disclosure and focused COSMOS 2550 / NORAD 48865. Use
+enable in the baseline lifecycle, one same-origin request after enable, zero
+browser requests to CelesTrak, one unchanged MapLibre canvas, exact A-to-B-to-A
+selection, theme/hide/show restoration, 156 visibly rendered whole-world
+modeled objects while aircraft and ships paused, 390x844 and 390x568 panels
+within the 58vh budget, real touch camera movement, and no orbital runtime
+exception or main-thread task over 50 ms. A verified isolated post-release run
+after the earlier crossing had passed showed
+**ORBITS · 0 IN VIEW · 0 PASSES ≤90M**; **VIEW** opened the disclosure and
+focused the ORBITS toggle because the current result list was empty.
+Deterministic tests and the clean local production build separately proved the
+one-pass branch and focus on COSMOS 2550 / NORAD 48865. Use
 <https://livetrafficstan.syntal.workers.dev/#v=1&lat=0&lon=0&zoom=0&bearing=0&pitch=0&orbits=1>
 to open the default-off layer at the full-world view where all current modeled
 points are visible.

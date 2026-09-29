@@ -383,7 +383,7 @@ scheduled delivery was delayed or an admitted refresh failed. The bootstrap
 kept the layer operational. The first successful production KV publication
 remains open in #162.
 
-Public Wiki commit `4e56f83c83be0d065051606ae288b5eb13623d7c`
+Public Wiki commit `bc45563e666d1a5622a9fd29f16771faf1fea2a2`
 updates the comprehensive
 [Orbital Tracking](https://github.com/vasilyevstan/LiveTrafficStan/wiki/Orbital-Tracking)
 and
@@ -394,13 +394,16 @@ content.
 
 A fresh isolated Chromium profile proved zero orbital startup requests in the
 baseline lifecycle and one same-origin request after direct enable, zero
-CelesTrak browser requests, one unchanged canvas, a visible
-`0 IN VIEW · 1 PASS ≤90M` summary, focus transfer from **VIEW** to COSMOS 2550,
-156 visibly rendered whole-world points while aircraft and ships paused,
-bounded 390x844 and 390x568 disclosures with attribution visible, and no
-orbital runtime exception. Earlier exact selection, style rehydration, touch,
-and long-task evidence remains valid because this release does not change
-those paths.
+CelesTrak browser requests, one unchanged canvas, 156 visibly rendered
+whole-world points while aircraft and ships paused, bounded 390x844 and
+390x568 disclosures with attribution visible, and no orbital runtime
+exception. At the verified post-release time, the earlier Tallinn crossing had
+passed: the summary showed `0 IN VIEW · 0 PASSES ≤90M`, and **VIEW** focused
+the ORBITS toggle because the result list was empty. Deterministic tests and
+the clean local production build separately proved the one-pass summary and
+focus transfer to COSMOS 2550. Earlier exact selection, style rehydration,
+touch, and long-task evidence remains valid because this release does not
+change those paths.
 
 Rollback run
 [36488117751](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/36488117751)
