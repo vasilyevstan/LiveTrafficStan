@@ -135,13 +135,15 @@ describe('TrafficControls', () => {
     expect(navigationPrimary).toContain('>CENTER<')
     expect(navigationPrimary).toContain('>AIRCRAFT<')
     expect(navigationPrimary).toContain('>SHIPS<')
+    expect(navigationPrimary).toContain('>ORBITS<')
+    expect(navigationPrimary).not.toContain('control-options--three')
     expect(navigationPrimary).not.toContain('>AUTO<')
     expect(navigationPrimary).not.toContain('href=')
     expect(navigationMore).toContain(
       '<summary id="traffic-controls-map-tools-summary">MORE</summary>',
     )
     expect(navigationMore).toContain('<legend>Layers</legend>')
-    expect(navigationMore).toContain('>ORBITS<')
+    expect(navigationMore).not.toContain('>ORBITS<')
     expect(navigationMore).toContain('Traffic legend')
     expect(navigationMore).toContain('Band 1 · below 1,000 m')
     expect(navigationMore).toContain(

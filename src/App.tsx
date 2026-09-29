@@ -27,6 +27,7 @@ import { TrafficControls } from './components/TrafficControls'
 import { TrafficDetails } from './components/TrafficDetails'
 import { WeatherObservationDetails } from './components/WeatherObservationDetails'
 import { OrbitalDetails } from './components/OrbitalDetails'
+import { formatOrbitalSummary } from './components/orbitalSummary'
 import { APP_CONFIG } from './config/appConfig'
 import type { AppCenter } from './config/appConfig'
 import { orderAircraftSearchResults } from './domain/aircraftSearch'
@@ -1065,12 +1066,20 @@ function App() {
   }, [focusAfterRender, returnToLive])
 
   const mapErrorContent = mapError ? mapErrorPresentation(mapError) : null
+  const orbitalSummary = formatOrbitalSummary({
+    visible: orbitalObjectsVisible,
+    historyActive,
+    state: orbitalState,
+    predictionHorizonMs: APP_CONFIG.orbital.predictionHorizonMs,
+  })
   const mapSubtitle = historyActive
     ? 'Historical traffic area'
     : !viewReady
       ? 'Preparing map view'
       : currentAssessment?.kind === 'eligible'
-        ? 'Visible traffic area'
+        ? orbitalObjectsVisible
+          ? 'Visible traffic and orbital area'
+          : 'Visible traffic area'
         : currentAssessment
           ? 'Aircraft and ships paused'
           : 'Updating map view'
@@ -1233,6 +1242,7 @@ function App() {
             marineCapabilities={marineResult.capabilities}
             now={now}
             online={online}
+            orbitalSummary={orbitalSummary}
             historicalAt={
               history.playback.mode === 'live'
                 ? undefined

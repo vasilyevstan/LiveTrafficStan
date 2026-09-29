@@ -11,6 +11,7 @@ interface LiveStatusProps {
   now: number
   online: boolean
   historicalAt?: number
+  orbitalSummary?: string
 }
 
 const providerLabel = (
@@ -36,6 +37,7 @@ export function LiveStatus({
   now,
   online,
   historicalAt,
+  orbitalSummary,
 }: LiveStatusProps) {
   const statuses = [aircraftStatus, marineStatus]
   const allPaused = statuses.every((status) => status.paused)
@@ -105,6 +107,14 @@ export function LiveStatus({
         <span title={marineStatus.error}>
           {providerLabel('Marine stream', marineStatus, 'connected')}
         </span>
+        {orbitalSummary && (
+          <span
+            className="live-status__orbital"
+            aria-hidden="true"
+          >
+            {orbitalSummary}
+          </span>
+        )}
         <span>{marineCapabilities.coverage.label}</span>
       </div>
     </section>

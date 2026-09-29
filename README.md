@@ -74,6 +74,9 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   catalog. It propagates current satellite and cataloged rocket-body
   subpoints locally with SGP4, identifies ground tracks that cross a safe local
   map view within 90 minutes, and draws one bounded selected-object track.
+  **ORBITS** stays beside **AIRCRAFT** and **SHIPS** in the primary Operations
+  row; its compact modeled-state summary is also mirrored in the upper-left
+  status panel without changing aircraft/marine health.
   Exact SATCAT type, element epoch, snapshot age, and limitations remain
   visible; these are modeled positions, not live telemetry or optical
   visibility predictions.
