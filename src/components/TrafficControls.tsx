@@ -1,5 +1,6 @@
 import {
   useRef,
+  useState,
   type FocusEvent,
   type MutableRefObject,
   type Ref,
@@ -155,6 +156,16 @@ interface PromotedAction {
   run: () => void
 }
 
+const MAP_TOOL_TASKS = [
+  ['layers', 'LAYERS'],
+  ['find', 'FIND'],
+  ['context', 'CONTEXT'],
+  ['orbits', 'ORBITS'],
+  ['sources', 'SOURCES'],
+] as const
+
+type MapToolTask = (typeof MAP_TOOL_TASKS)[number][0]
+
 const handleDisclosureFocus = (
   event: FocusEvent<HTMLDetailsElement>,
   focusedWithinRef: MutableRefObject<boolean>,
@@ -294,8 +305,11 @@ export function TrafficControls({
   settingsSummaryRef,
 }: TrafficControlsProps) {
   const mapToolsDetailsRef = useRef<HTMLDetailsElement>(null)
+  const mapToolsBodyRef = useRef<HTMLDivElement>(null)
   const settingsDetailsRef = useRef<HTMLDetailsElement>(null)
   const orbitalToggleRef = useRef<HTMLButtonElement>(null)
+  const [mapToolTask, setMapToolTask] =
+    useState<MapToolTask>('layers')
   const focusedWithinMapToolsRef = useRef(false)
   const focusedWithinSettingsRef = useRef(false)
   const historyNeedsRecovery = [
@@ -416,13 +430,21 @@ export function TrafficControls({
   const revealOrbitalObjects = () => {
     const details = mapToolsDetailsRef.current
     if (!details) return
+    setMapToolTask('orbits')
     details.open = true
     globalThis.requestAnimationFrame(() => {
+      mapToolsBodyRef.current?.scrollTo({ top: 0 })
       const target =
         details.querySelector<HTMLElement>(
           '.orbital-results button',
         ) ?? orbitalToggleRef.current
       target?.focus()
+    })
+  }
+  const selectMapToolTask = (task: MapToolTask) => {
+    setMapToolTask(task)
+    globalThis.requestAnimationFrame(() => {
+      mapToolsBodyRef.current?.scrollTo({ top: 0 })
     })
   }
 
@@ -533,106 +555,205 @@ export function TrafficControls({
           MORE
         </summary>
         <div
+          ref={mapToolsBodyRef}
           className="control-panel__more-body"
           role="region"
           aria-label="Map tools"
           tabIndex={0}
         >
-          <fieldset className="control-group">
-            <legend>Layers</legend>
-            <div className="control-options control-options--two">
+          <div
+            className="control-panel__tasks"
+            role="group"
+            aria-label="Map tools view"
+          >
+            {MAP_TOOL_TASKS.map(([task, label]) => (
               <button
+                key={task}
+                id={`map-tools-task-${task}`}
                 type="button"
-                className={portsVisible ? 'is-active' : undefined}
-                aria-pressed={portsVisible}
-                aria-busy={portsVisible && portsLoading}
-                onClick={() => onPortsVisibleChange(!portsVisible)}
+                className={mapToolTask === task ? 'is-active' : undefined}
+                aria-pressed={mapToolTask === task}
+                aria-controls={`map-tools-panel-${task}`}
+                onClick={() => selectMapToolTask(task)}
               >
-                {portsVisible && portsLoading ? 'PORTS...' : 'PORTS'}
+                {label}
               </button>
-              <button
-                id="airports-layer-toggle"
-                type="button"
-                className={airportsVisible ? 'is-active' : undefined}
-                aria-pressed={airportsVisible}
-                aria-busy={airportsVisible && airportsLoading}
-                onClick={() => onAirportsVisibleChange(!airportsVisible)}
-              >
-                {airportsVisible && airportsLoading
-                  ? 'AIRPORTS...'
-                  : 'AIRPORTS'}
-              </button>
-              <button
-                type="button"
-                className={clusteringEnabled ? 'is-active' : undefined}
-                aria-pressed={clusteringEnabled}
-                onClick={() =>
-                  onClusteringEnabledChange(!clusteringEnabled)
-                }
-              >
-                CLUSTERS
-              </button>
-              <button
-                id="weather-layer-toggle"
-                type="button"
-                className={weatherVisible ? 'is-active' : undefined}
-                aria-pressed={weatherVisible}
-                aria-busy={
-                  weatherVisible && (weatherLoading || weatherWaiting)
-                }
-                onClick={() => onWeatherVisibleChange(!weatherVisible)}
-              >
-                {weatherVisible && weatherLoading ? 'METAR...' : 'METAR'}
-              </button>
-            </div>
-            {portsVisible &&
-              portsError &&
-              operationalPromotedAction?.kind !== 'ports' && (
-              <div className="control-note ports-status" role="status">
-                <span>Ports unavailable: {portsError}</span>
-                <button type="button" onClick={onRetryPorts}>
-                  RETRY PORTS
+            ))}
+          </div>
+
+          <section
+            id="map-tools-panel-layers"
+            className="control-panel__task"
+            aria-labelledby="map-tools-task-layers"
+            hidden={mapToolTask !== 'layers'}
+          >
+            <fieldset className="control-group">
+              <legend>Layers</legend>
+              <div className="control-options control-options--two">
+                <button
+                  type="button"
+                  className={portsVisible ? 'is-active' : undefined}
+                  aria-pressed={portsVisible}
+                  aria-busy={portsVisible && portsLoading}
+                  onClick={() => onPortsVisibleChange(!portsVisible)}
+                >
+                  {portsVisible && portsLoading ? 'PORTS...' : 'PORTS'}
+                </button>
+                <button
+                  id="airports-layer-toggle"
+                  type="button"
+                  className={airportsVisible ? 'is-active' : undefined}
+                  aria-pressed={airportsVisible}
+                  aria-busy={airportsVisible && airportsLoading}
+                  onClick={() => onAirportsVisibleChange(!airportsVisible)}
+                >
+                  {airportsVisible && airportsLoading
+                    ? 'AIRPORTS...'
+                    : 'AIRPORTS'}
+                </button>
+                <button
+                  type="button"
+                  className={clusteringEnabled ? 'is-active' : undefined}
+                  aria-pressed={clusteringEnabled}
+                  onClick={() =>
+                    onClusteringEnabledChange(!clusteringEnabled)
+                  }
+                >
+                  CLUSTERS
+                </button>
+                <button
+                  id="weather-layer-toggle"
+                  type="button"
+                  className={weatherVisible ? 'is-active' : undefined}
+                  aria-pressed={weatherVisible}
+                  aria-busy={
+                    weatherVisible && (weatherLoading || weatherWaiting)
+                  }
+                  onClick={() => onWeatherVisibleChange(!weatherVisible)}
+                >
+                  {weatherVisible && weatherLoading ? 'METAR...' : 'METAR'}
                 </button>
               </div>
-            )}
-            {airportsVisible &&
-              airportsError &&
-              operationalPromotedAction?.kind !== 'airports' &&
-              !(
-                operationalPromotedAction?.kind === 'weather' &&
-                weatherRetryUsesAirports
-              ) && (
-              <div className="control-note ports-status" role="status">
-                <span>Airports unavailable: {airportsError}</span>
-                <button type="button" onClick={onRetryAirports}>
-                  RETRY AIRPORTS
-                </button>
-              </div>
-            )}
-            {weatherVisible &&
-              weatherError &&
-              operationalPromotedAction?.kind !== 'weather' && (
-              <div className="control-note ports-status" role="status">
-                <span>METAR unavailable: {weatherError}</span>
-                <button type="button" onClick={onRetryWeather}>
-                  RETRY METAR
-                </button>
-              </div>
-            )}
-            {weatherVisible && !weatherError && weatherStatusMessage && (
-              <div className="control-note ports-status" role="status">
-                <span>{weatherStatusMessage}</span>
-                {weatherReady && (
-                  <button
-                    type="button"
-                    disabled={!weatherCanRefresh}
-                    onClick={onRefreshWeather}
-                  >
-                    REFRESH METAR
+              {portsVisible &&
+                portsError &&
+                operationalPromotedAction?.kind !== 'ports' && (
+                <div className="control-note ports-status" role="status">
+                  <span>Ports unavailable: {portsError}</span>
+                  <button type="button" onClick={onRetryPorts}>
+                    RETRY PORTS
                   </button>
-                )}
-              </div>
+                </div>
+              )}
+              {airportsVisible &&
+                airportsError &&
+                operationalPromotedAction?.kind !== 'airports' &&
+                !(
+                  operationalPromotedAction?.kind === 'weather' &&
+                  weatherRetryUsesAirports
+                ) && (
+                <div className="control-note ports-status" role="status">
+                  <span>Airports unavailable: {airportsError}</span>
+                  <button type="button" onClick={onRetryAirports}>
+                    RETRY AIRPORTS
+                  </button>
+                </div>
+              )}
+              {weatherVisible &&
+                weatherError &&
+                operationalPromotedAction?.kind !== 'weather' && (
+                <div className="control-note ports-status" role="status">
+                  <span>METAR unavailable: {weatherError}</span>
+                  <button type="button" onClick={onRetryWeather}>
+                    RETRY METAR
+                  </button>
+                </div>
+              )}
+              {weatherVisible && !weatherError && weatherStatusMessage && (
+                <div className="control-note ports-status" role="status">
+                  <span>{weatherStatusMessage}</span>
+                  {weatherReady && (
+                    <button
+                      type="button"
+                      disabled={!weatherCanRefresh}
+                      onClick={onRefreshWeather}
+                    >
+                      REFRESH METAR
+                    </button>
+                  )}
+                </div>
+              )}
+            </fieldset>
+          </section>
+
+          <section
+            id="map-tools-panel-find"
+            className="control-panel__task"
+            aria-labelledby="map-tools-task-find"
+            hidden={mapToolTask !== 'find'}
+          >
+            <AircraftDiscovery
+              query={aircraftQuery}
+              aircraft={aircraftResults}
+              totalAircraft={totalAircraft}
+              aircraftVisible={aircraftVisible}
+              emptyMessage={aircraftEmptyMessage}
+              onQueryChange={onAircraftQueryChange}
+              onSelect={onAircraftSelect}
+            />
+
+            <VesselDiscovery
+              filters={vesselFilters}
+              vessels={vesselResults}
+              totalVessels={totalVessels}
+              vesselsVisible={vesselsVisible}
+              emptyMessage={vesselEmptyMessage}
+              units={units}
+              onFiltersChange={onVesselFiltersChange}
+              onSelect={onVesselSelect}
+            />
+          </section>
+
+          <section
+            id="map-tools-panel-context"
+            className="control-panel__task"
+            aria-labelledby="map-tools-task-context"
+            hidden={mapToolTask !== 'context'}
+          >
+            {airportsVisible && airportsReady && (
+              <AirportContext
+                airports={airportsInView}
+                selectedAirportId={selectedAirportId}
+                emptyMessage={airportsEmptyMessage}
+                onSelect={onAirportSelect}
+              />
             )}
+
+            {weatherVisible && weatherReady && (
+              <WeatherContext
+                observations={weatherObservations}
+                selectedObservationId={selectedWeatherId}
+                emptyMessage={weatherEmptyMessage}
+                now={now}
+                onSelect={onWeatherSelect}
+              />
+            )}
+
+            {!(
+              (airportsVisible && airportsReady) ||
+              (weatherVisible && weatherReady)
+            ) && (
+              <p className="control-note">
+                Enable AIRPORTS or METAR in Layers.
+              </p>
+            )}
+          </section>
+
+          <section
+            id="map-tools-panel-orbits"
+            className="control-panel__task"
+            aria-labelledby="map-tools-task-orbits"
+            hidden={mapToolTask !== 'orbits'}
+          >
             {orbitalVisible && orbitalStatusMessage && (
               <div className="control-note ports-status" role="status">
                 <span>{orbitalStatusMessage}</span>
@@ -643,92 +764,70 @@ export function TrafficControls({
                 )}
               </div>
             )}
-            <p className="control-note control-note--muted">
-              Data:{' '}
-              <a href="https://www.naturalearthdata.com/downloads/10m-cultural-vectors/ports/">
-                Natural Earth
-              </a>{' '}
-              ports (
-              <a href="https://www.naturalearthdata.com/about/terms-of-use/">
-                public domain
-              </a>
-              ; generalized) ·{' '}
-              <a href="https://ourairports.com/data/">OurAirports</a>{' '}
-              airports (
-              <a href="https://ourairports.com/data/">public domain</a>;
-              not operational) ·{' '}
-              <a href="https://aviationweather.gov/data/api/">
-                NOAA/NWS AWC
-              </a>{' '}
-              METAR (public-domain observations; not forecasts or boards) ·{' '}
-              <a href="https://celestrak.org/">CelesTrak</a> GP/SATCAT
-              orbits (SGP4-modeled; not live or optical proof).
-            </p>
-            <p className="control-note control-note--muted">
-              METAR sends visible ICAO IDs via this app; source/retrieval times
-              appear in details.
-            </p>
-          </fieldset>
 
-          <AircraftDiscovery
-            query={aircraftQuery}
-            aircraft={aircraftResults}
-            totalAircraft={totalAircraft}
-            aircraftVisible={aircraftVisible}
-            emptyMessage={aircraftEmptyMessage}
-            onQueryChange={onAircraftQueryChange}
-            onSelect={onAircraftSelect}
-          />
-
-          <VesselDiscovery
-            filters={vesselFilters}
-            vessels={vesselResults}
-            totalVessels={totalVessels}
-            vesselsVisible={vesselsVisible}
-            emptyMessage={vesselEmptyMessage}
-            units={units}
-            onFiltersChange={onVesselFiltersChange}
-            onSelect={onVesselSelect}
-          />
-
-          {airportsVisible && airportsReady && (
-            <AirportContext
-              airports={airportsInView}
-              selectedAirportId={selectedAirportId}
-              emptyMessage={airportsEmptyMessage}
-              onSelect={onAirportSelect}
-            />
-          )}
-
-          {weatherVisible && weatherReady && (
-            <WeatherContext
-              observations={weatherObservations}
-              selectedObservationId={selectedWeatherId}
-              emptyMessage={weatherEmptyMessage}
-              now={now}
-              onSelect={onWeatherSelect}
-            />
-          )}
-
-          {orbitalVisible &&
-            playback.mode === 'live' &&
-            orbitalState.snapshot &&
-            ![
-              'loading',
-              'unavailable',
-              'clock-invalid',
-              'paused-hidden',
-              'paused-history',
-            ].includes(orbitalState.phase) && (
-              <OrbitalContext
-                state={orbitalState}
-                selectedId={selectedOrbitalId}
-                horizonMs={orbitalPredictionHorizonMs}
-                now={now}
-                onSelect={onOrbitalSelect}
-              />
+            {!orbitalVisible && (
+              <p className="control-note">Enable ORBITS above.</p>
             )}
 
+            {orbitalVisible &&
+              playback.mode === 'live' &&
+              orbitalState.snapshot &&
+              ![
+                'loading',
+                'unavailable',
+                'clock-invalid',
+                'paused-hidden',
+                'paused-history',
+              ].includes(orbitalState.phase) && (
+                <OrbitalContext
+                  state={orbitalState}
+                  selectedId={selectedOrbitalId}
+                  horizonMs={orbitalPredictionHorizonMs}
+                  now={now}
+                  onSelect={onOrbitalSelect}
+                />
+              )}
+          </section>
+
+          <section
+            id="map-tools-panel-sources"
+            className="control-panel__task"
+            aria-labelledby="map-tools-task-sources"
+            hidden={mapToolTask !== 'sources'}
+          >
+            <fieldset className="control-group">
+              <legend>Sources</legend>
+              <ul className="control-source-list">
+                <li>
+                  Ports:{' '}
+                  <a href="https://www.naturalearthdata.com/downloads/10m-cultural-vectors/ports/">
+                    Natural Earth
+                  </a>{' '}
+                  · public domain · generalized.
+                </li>
+                <li>
+                  Airports:{' '}
+                  <a href="https://ourairports.com/data/">OurAirports</a>{' '}
+                  · public domain · not operational.
+                </li>
+                <li>
+                  METAR:{' '}
+                  <a href="https://aviationweather.gov/data/api/">
+                    NOAA/NWS AWC
+                  </a>{' '}
+                  · public-domain observations · not forecasts or boards.
+                </li>
+                <li>
+                  Orbits: <a href="https://celestrak.org/">CelesTrak</a>{' '}
+                  GP/SATCAT · SGP4 modeled · not live or optical proof.
+                </li>
+              </ul>
+              <p className="control-note control-note--muted">
+                METAR sends visible ICAO IDs via this app; source/retrieval
+                times are in details.
+              </p>
+            </fieldset>
+          </section>
         </div>
       </details>
       </aside>

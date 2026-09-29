@@ -126,10 +126,11 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   removes only application-shell caches without deleting preferences or private
   history.
 - Responsive Operations and Location & Settings controls with one scroll owner
-  per disclosure, keyboard focus states, non-color status/detail labels,
-  compact visible provider/privacy copy, and a small provider-reported set of
-  original aircraft and vessel silhouettes with generic fallbacks. The
-  duplicate traffic legend is intentionally omitted.
+  per disclosure, session-only Layers/Find/Context/Orbits/Sources views,
+  visual-viewport-aware mobile sizing, keyboard focus states, non-color
+  status/detail labels, compact provider/privacy copy, and a small
+  provider-reported set of original aircraft and vessel silhouettes with
+  generic fallbacks. The duplicate traffic legend is intentionally omitted.
 - Touch-specific selection tolerance for isolated markers; exact mouse hits stay
   unchanged and ambiguous nearby traffic is never guessed.
 
@@ -458,6 +459,18 @@ MapLibre canvas, compact deduplicated attribution, and zero console/runtime
 errors were retained. The compact unavailable-route and aircraft-photo cards
 also retained the required standing-data, provider/privacy, cache, and rights
 wording.
+
+A later real-device report showed that this evidence was incomplete: it varied
+the layout viewport but did not force a shorter visual viewport below mobile
+browser chrome, and its geometry-only final-result check could not detect a
+sticky task selector covering the result. Corrective rendered acceptance now
+tracks a forced 517 px visual viewport beneath an 844 px layout viewport,
+keeps the controls at 299.859375 px against the 299.86 px budget, and verifies
+the final result with hit testing as well as bounds. The normal 390x844,
+390x568, and 315x517-class runs expose all 20 results, keep task labels
+unclipped, and retain one scroll owner, one canvas, one catalog request, and
+zero browser CelesTrak requests or runtime errors. Physical iOS Safari and
+Android Chrome evidence remains separate and must not be inferred from CDP.
 
 The restored deployment installed its triggers at `2026-09-28T21:46:41Z`.
 The first eligible `22:17Z` schedule was then observed through the public

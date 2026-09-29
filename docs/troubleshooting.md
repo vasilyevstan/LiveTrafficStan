@@ -66,14 +66,20 @@ orbital result.
 
 If results appear clipped behind a second scroll area, inspect computed styles:
 
-- `.control-panel__more-body` must use `overflow-y: auto`, `touch-action:
-  pan-y`, and the shared 58vh budget;
+- `.app-shell` must expose `--app-visual-viewport-height` equal to
+  `window.visualViewport.height` when that API is available, and
+  `--app-visual-viewport-58` must be 58% of the same value;
+- `.control-panel__more-body` must fill the space below the fixed disclosure
+  summary, use `overflow-y: auto`, and keep `touch-action: pan-y`;
 - `.orbital-results` must use `max-height: none` and `overflow: visible`;
-- no descendant of the More body should have both scroll overflow and
-  `scrollHeight > clientHeight`.
+- `.control-panel__tasks` must scroll with the More body rather than remain
+  sticky over a short result viewport.
 
-A private orbital-list height cap is a regression. After an update, use
-**Refresh app** if an older application shell still serves the previous CSS.
+A private orbital-list height cap is a regression. A bounds-only check is also
+insufficient: after scrolling to the end, hit-test the center of the final
+result with `document.elementFromPoint()` and confirm the result itself is
+topmost and actionable. After an update, use **Refresh app** if an older
+application shell still serves the previous CSS.
 
 ## Aircraft shows unavailable
 
