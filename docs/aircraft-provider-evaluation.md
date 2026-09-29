@@ -16,11 +16,12 @@ bounded point-query architecture:
 - no current API credential is required;
 - the existing same-origin proxy isolates the lack of browser CORS.
 
-Current production remains on that checked Worker proxy. Source also contains
-a protected `adsb-lol-direct` build mode so the browser can use the same
-provider and adapter after ADSB.lol explicitly approves and deploys CORS.
-Source readiness is not provider authorization, and there is no runtime
-fallback between the two delivery paths.
+Current production remains on that checked same-origin Worker route with the
+protected `oci-private-relay` delivery path behind it. Source also contains a
+protected `adsb-lol-direct` build mode so the browser can use the same provider
+and adapter after ADSB.lol explicitly approves and deploys CORS. Source
+readiness is not provider authorization, and there is no runtime fallback
+between delivery paths.
 
 Airplanes.live documents a closely compatible point/radius response, but a
 single current Tallinn request returned `403` with instructions to contact the
@@ -271,7 +272,7 @@ for public `/v2` application responses; the provider edge must separately make
 any nginx-generated `429` browser-readable for direct mode to preserve
 explicit backoff. Current production did not wait for provider-side CORS or
 shared-egress allowlisting: source
-`3370dfe3f1cc2614feff894643ed865978ec7edc` uses compatible relay release
+`cea3a1f553266a0c4d21e90506904aed6f484887` uses compatible relay release
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` and one stable isolated OCI
 identity behind a private Worker VPC Service and Tunnel. This does not enlarge
 the provider allowance; the application still exposes throttling honestly and

@@ -835,9 +835,37 @@ Deterministic tests and the clean local production build separately proved
 result is time-anchored and had expired before the isolated production rerun.
 
 Public Wiki commit `bc45563e666d1a5622a9fd29f16771faf1fea2a2`
-records the same current release, accessibility, map, troubleshooting, and
-operations evidence. The deployment smoke's independent aircraft-relay 502 is
-tracked separately in #174 and did not invalidate orbital acceptance.
+records that historical visibility release, accessibility, map,
+troubleshooting, and operations evidence. Its deployment smoke's independent
+aircraft-relay 502 did not invalidate orbital acceptance.
+
+The primary-control/status release is production source
+`cea3a1f553266a0c4d21e90506904aed6f484887`, deployed successfully by run
+`36589814477` as Cloudflare version
+`2fe26151-d18e-4994-a147-887014d84af0`. Fresh rendered acceptance proved:
+
+- exactly one primary ORBITS toggle beside AIRCRAFT and SHIPS, with no
+  duplicate under **More**;
+- matching compact Operations and upper-left summaries, while the mirrored
+  visual clause stays out of duplicate ARIA live announcements;
+- zero catalog requests before enable, one same-origin request after enable,
+  and zero browser CelesTrak requests;
+- focus-safe **VIEW** with no second request, selection, or camera movement;
+- one unchanged MapLibre canvas;
+- `LIVE / 4 aircraft / 33 ships shown`, with four visible aircraft markers;
+- a 16 px brand/control gap at 1024, 900, and 761 CSS pixels;
+- 390x844 and 390x568 controls within the exact 58vh bounds, four primary
+  controls on one row, no horizontal overflow, and attribution retained;
+- no runtime exception.
+
+The first same-source deployment exposed recurrent private-relay guest/network
+unavailability and failed only at post-deploy aircraft smoke. After the
+supported diagnostic reboot, production progressed from `502` through bounded
+`503 Retry-After` to real `200` JSON. The canonical deployment rerun passed, as
+did a controlled relay-service restart and post-restart exact smoke. #174 is
+closed. Public Wiki commit
+`abb4e21ae4c6225d9530675ce66cb9f3c4bc443e` records the same release,
+responsive, accessibility, operations, and recovery evidence.
 
 Physical iOS Safari, Android Chrome, and supported-device drag-FPS evidence
 remain outstanding and must not be inferred from CDP emulation.

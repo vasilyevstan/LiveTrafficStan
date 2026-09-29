@@ -28,11 +28,11 @@ active on the relay VM with four IPv6 QUIC connections and a dedicated
 used only when a protected deployment selects `oci-private-relay`.
 
 The current application source is
-`3370dfe3f1cc2614feff894643ed865978ec7edc`; compatible relay source
+`cea3a1f553266a0c4d21e90506904aed6f484887`; compatible relay source
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` remains active and the initial
 relay release remains the retained rollback target. Exact-main validation run
-`36299844911` and production run `36299895010` published Cloudflare version
-`0cbc0b5d-2e7b-49f0-b649-a2d22ac3a83c`.
+`36588520860` and production run `36589814477` published Cloudflare version
+`2fe26151-d18e-4994-a147-887014d84af0`.
 
 This component does not move the application to OCI. An OCI, Tunnel, or relay
 failure must affect aircraft only; Static Assets, the map, vessels, weather,
@@ -290,6 +290,31 @@ Production activation and the final canary additionally proved:
 - zero service restarts, swap use, or OOM-killer evidence;
 - no public relay route or sensitive application logging;
 - projected incremental OCI and Cloudflare cost remained zero.
+
+### Recurrent guest/network recovery
+
+The 2026-09-29 recurrence proved that an OCI instance lifecycle of `RUNNING`
+does not establish guest agent, connector, or VPC reachability. Production VPC
+fetches threw while a bounded Run Command remained `ACCEPTED` without guest
+acknowledgement. An ordinary soft reset did not produce durable recovery, and
+`REBOOTMIGRATE` was correctly rejected because no maintenance event was
+pending.
+
+The supported `DIAGNOSTICREBOOT` showed the explicit lifecycle
+`STOPPING -> STARTING -> RUNNING`. Production then progressed truthfully from
+connector-startup `502`, through relay-local `503 Retry-After: 7`, to real
+`200 application/json`. Exact application source
+`cea3a1f553266a0c4d21e90506904aed6f484887` passed protected deployment run
+`36589814477` and full smoke through the unchanged VPC Service, Tunnel, and
+relay release.
+
+A later controlled relay-service restart used the existing noninteractive sudo
+policy and proved `active`, `enabled`, `NRestarts=0`, loopback
+`status: ok`, exact relay release
+`1f9a2fd322f141fe761d3bf00113e1ab60526e6c`, and a passing post-restart
+production smoke. Guest-plugin timestamps may remain stale while queued
+commands later complete; use command execution state and output, not plugin
+timestamps alone.
 
 ## Failure interpretation
 

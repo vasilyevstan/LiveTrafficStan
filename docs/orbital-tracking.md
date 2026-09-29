@@ -17,7 +17,7 @@ This is cataloged orbital-object context, not another live-traffic provider:
   this feature.
 
 The browser implementation and scheduled catalog infrastructure are active in
-production source `94c1d35b3687cd26b4d0445005eaf38edfbf7964`. The layer
+production source `cea3a1f553266a0c4d21e90506904aed6f484887`. The layer
 remains a default-off user preference, while the protected Worker deployment
 sets `ORBITAL_CATALOG_ENABLED=true`, serves the same-origin catalog route, and
 runs the checked two-hour scheduler. A deployment with that Worker flag off
@@ -365,20 +365,24 @@ Production activation completed on 2026-09-28:
 - stable validator:
   `W/"2cbe00a3285c7bdfd80fe07661b6a14b48279d0629e44c026c6306bb20453d5b"`.
 
-The current visible-summary release is:
+The current primary-control/status release is:
 
-- source: `94c1d35b3687cd26b4d0445005eaf38edfbf7964`;
-- release PR: #180;
+- source: `cea3a1f553266a0c4d21e90506904aed6f484887`;
+- implementation PR: #187;
+- ancestry PR: #188;
+- release PR: #189;
 - deployment:
-  [36554328684](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/36554328684);
-- Cloudflare version: `50b2a0a0-b09d-4e7d-8851-61c0817c07cc`;
-- client asset: `assets/index-BmhBmsdh.js`;
+  [36589814477](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/36589814477);
+- Cloudflare version: `2fe26151-d18e-4994-a147-887014d84af0`;
+- client asset: `assets/index-DZMYhfjJ.js`;
 - deployed `index.html` SHA-256:
-  `8355a66f740f01d99fc1df83057df4b6f29d913ced9c84d8907f412058e24f62`.
+  `3659dd113e455927925249031198690aae082216ae9e348ba45831bcd3f6d566`.
 
-The deployment completed and the orbital route/browser acceptance passed.
-Aggregate smoke ended red only because the independent private aircraft relay
-returned a truthful 502, tracked in #174. No orbital rollback was performed.
+The protected deployment and full smoke passed. The first same-source attempt
+exposed recurrent private-relay guest/network unavailability, but a supported
+OCI diagnostic reboot restored the unchanged VPC/Tunnel path. The canonical
+rerun, fresh rendered acceptance, controlled relay-service restart, and
+post-restart exact smoke all passed; #174 is closed.
 
 The restoration deployed its triggers at `2026-09-28T21:46:41Z`, before the
 first eligible `22:17Z` schedule. Bounded public observations at `22:19:30Z`
@@ -390,27 +394,26 @@ scheduled delivery was delayed or an admitted refresh failed. The bootstrap
 kept the layer operational. The first successful production KV publication
 remains open in #162.
 
-Public Wiki commit `bc45563e666d1a5622a9fd29f16771faf1fea2a2`
+Public Wiki commit `abb4e21ae4c6225d9530675ce66cb9f3c4bc443e`
 updates the comprehensive
 [Orbital Tracking](https://github.com/vasilyevstan/LiveTrafficStan/wiki/Orbital-Tracking)
 and
 [Infrastructure and Hosting](https://github.com/vasilyevstan/LiveTrafficStan/wiki/Infrastructure-and-Hosting)
-pages and synchronizes the related public architecture, configuration,
-provider, testing, release, troubleshooting, accessibility, Home, and map
-content.
+pages and synchronizes the related public testing, release, troubleshooting,
+accessibility, Home, and map content.
 
-A fresh isolated Chromium profile proved zero orbital startup requests in the
-baseline lifecycle and one same-origin request after direct enable, zero
-CelesTrak browser requests, one unchanged canvas, 156 visibly rendered
-whole-world points while aircraft and ships paused, bounded 390x844 and
-390x568 disclosures with attribution visible, and no orbital runtime
-exception. At the verified post-release time, the earlier Tallinn crossing had
-passed: the summary showed `0 IN VIEW · 0 PASSES ≤90M`, and **VIEW** focused
-the ORBITS toggle because the result list was empty. Deterministic tests and
-the clean local production build separately proved the one-pass summary and
-focus transfer to COSMOS 2550. Earlier exact selection, style rehydration,
-touch, and long-task evidence remains valid because this release does not
-change those paths.
+Fresh rendered production acceptance proved exactly one primary ORBITS toggle,
+zero catalog requests before enable, one same-origin request afterward, zero
+browser CelesTrak requests, matching Operations and upper-left summaries,
+focus-safe **VIEW**, and one unchanged canvas. The desktop evidence showed
+`LIVE / 4 aircraft / 33 ships shown` with four visibly rendered aircraft and a
+time-dependent `0 IN VIEW · 3 PASSES ≤90M` orbital summary. A 16 px
+brand/control gap remained at 1024, 900, and 761 CSS pixels. The 390x844 and
+390x568 controls stayed within the exact 58vh bounds with all four primary
+controls on one row and no horizontal overflow. Deterministic tests retain the
+stable one-pass summary/focus fixture because live crossing counts are
+time-anchored. Earlier exact selection, style rehydration, touch, and long-task
+evidence remains valid because this release does not change those paths.
 
 Rollback run
 [36488117751](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/36488117751)
