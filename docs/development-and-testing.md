@@ -819,14 +819,20 @@ The later enabled-state visibility release is production source
 as Cloudflare version `50b2a0a0-b09d-4e7d-8851-61c0817c07cc`. Fresh-profile
 acceptance at 1280x900, 390x844, and 390x568 proved:
 
-- `ORBITS · 0 IN VIEW · 1 PASS ≤90M` remains visible before opening More;
-- **VIEW** opens the existing disclosure and focuses COSMOS 2550;
+- the isolated post-release view showed
+  `ORBITS · 0 IN VIEW · 0 PASSES ≤90M` before opening More;
+- **VIEW** opened the existing disclosure and focused the ORBITS toggle because
+  the current result list was empty;
 - exactly one same-origin catalog request and zero browser CelesTrak requests;
 - one MapLibre canvas, no horizontal overflow, and attribution visible;
 - 156 visibly rendered points at explicit whole-world zoom `0`;
 - no orbital runtime exception.
 
-Public Wiki commit `4e56f83c83be0d065051606ae288b5eb13623d7c`
+Deterministic tests and the clean local production build separately proved
+`0 IN VIEW · 1 PASS ≤90M` and focus transfer to COSMOS 2550. The crossing
+result is time-anchored and had expired before the isolated production rerun.
+
+Public Wiki commit `bc45563e666d1a5622a9fd29f16771faf1fea2a2`
 records the same current release, accessibility, map, troubleshooting, and
 operations evidence. The deployment smoke's independent aircraft-relay 502 is
 tracked separately in #174 and did not invalidate orbital acceptance.
