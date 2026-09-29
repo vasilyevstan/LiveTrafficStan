@@ -103,10 +103,10 @@ aircraft provider. A private, non-caching OCI relay uses one stable network
 identity, the same fixed point route and User-Agent, one aggregate upstream
 start per 20 seconds, and provider `Retry-After` backoff. It does not rotate
 addresses, add a provider, alter attribution, or claim additional capacity
-permission. Production application source
-`96d67b6da3e395be79acff27b47ad6dee34de309` uses compatible relay release
-`1f9a2fd322f141fe761d3bf00113e1ab60526e6c` through the fixed Workers VPC
-Service and private Tunnel; see
+permission. Production application and relay source
+`18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8` use the fixed Workers VPC
+Service and private Tunnel, with
+`1f9a2fd322f141fe761d3bf00113e1ab60526e6c` retained as relay rollback; see
 [OCI Aircraft Relay](oci-aircraft-relay.md).
 
 The production proxy identifies the public project to ADSB.lol, forwards no

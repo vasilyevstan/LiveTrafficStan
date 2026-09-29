@@ -441,11 +441,11 @@ persistent route cache.
 Public production is live at
 <https://livetrafficstan.syntal.workers.dev> on Cloudflare Workers Free with
 Static Assets. The current application source is
-`96d67b6da3e395be79acff27b47ad6dee34de309`. Canonical orbital-enrichment
-deployment run `36627748051` passed exact-source deployment and full production
-smoke and published Cloudflare version
-`3d6c692e-1a29-4fa4-bbee-2ab5545d9d57` with client asset
-`assets/index-Cl87tlUV.js`. The deployment preserves:
+`18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8`. Exact merged-`main`
+validation run `36641143297` and canonical deployment run `36642794309`
+passed the complete gate and published Cloudflare version
+`fea1642f-8b45-4801-89ae-d2a9dca554a6` with client asset
+`assets/index-8clesHre.js`. The deployment preserves:
 
 - `oci-private-relay`, aircraft photos, and plausible routes enabled;
 - the orbital catalog enabled with Cron `17 */2 * * *`;
@@ -456,7 +456,17 @@ smoke and published Cloudflare version
 - orbital-enrichment manifest `2026-09-29-v1`, exact Hubble/ISS identity
   matching, and two immutable NASA JPEGs totaling 95,457 bytes;
 - deployed `index.html` SHA-256
-  `140921b505e2043ded16a4ebb09c11a30c4a5f7b8f4d4b8f55120c5bb7f9b97d`.
+  `8f7da07d43d096de68adde373597d3f337ff46ec07557e429977cfa114bc16b1`.
+
+Public symbol acceptance retained one MapLibre canvas through theme restoration
+and responsive resize. A live Helsinki view rendered 11 vessels across
+generic, cargo, tanker, and passenger source classes while all nine generated
+vessel images remained installed. Whole-world ORBITS rendered all 156 modeled
+source features through a symbol layer with all four exact-SATCAT class images
+installed, one same-origin catalog request, zero browser CelesTrak requests,
+visible attribution, real touch drag, and bounded 390x844/390x568 controls.
+A four-times-throttled 60-second orbital idle interval produced no main-thread
+task over 50 ms.
 
 Fresh rendered production acceptance used a deterministic 24-object crossing
 fixture and exposed all 20 bounded results at both 390x844 and 390x568.
@@ -508,14 +518,14 @@ release still returned `X-LiveTrafficStan-Orbital-Source: bootstrap` at
 schedule; the first successful scheduled KV publication remains open in #162.
 
 The comprehensive public Wiki synchronization is commit
-`1cedad08275d9e162aab618bea0af2e0bbf4cb43`; it updates
+`7bb657c8b90fda6150860f5dcba22010cf9cdf8d`; it updates
 [Orbital Tracking](https://github.com/vasilyevstan/LiveTrafficStan/wiki/Orbital-Tracking)
 and
 [Infrastructure and Hosting](https://github.com/vasilyevstan/LiveTrafficStan/wiki/Infrastructure-and-Hosting)
 plus the related Home, map, release, troubleshooting, and accessibility pages
 with the exact-NORAD source/rights/request boundary, visual-viewport and
-single-scroll contracts, relay recovery, rendered evidence, and current
-production identity.
+single-scroll contracts, generated vessel/orbital symbol semantics, bounded
+Worker/relay smoke policy, rendered evidence, and current production identity.
 
 The first exact-source orbital-enrichment deployment run `36627068064`
 published healthy application/orbital/enrichment assets as Cloudflare version
@@ -525,9 +535,15 @@ diagnostic reboot restored real bounded ADSB JSON, and the canonical run above
 passed without code, credential, route, provider, cache, privacy, or rollback
 change. Recovery evidence is closed in #174.
 
-The compatible aircraft relay remains at
-`1f9a2fd322f141fe761d3bf00113e1ab60526e6c` and retains
-`76540a21291878b44e7f92ceecb37d03a366c0c7` as its prior rollback release.
+The matching aircraft relay now runs
+`18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8` and retains
+`1f9a2fd322f141fe761d3bf00113e1ab60526e6c` as its prior rollback release.
+Exact loopback health is active and enabled. A bounded public proof returned
+real aircraft JSON, then exact-release marked local
+`503 Retry-After: 20` with
+`X-LiveTrafficStan-Relay-Status: admission`, then real JSON after the advised
+wait. Provider `503`, provider `429`, redirects, malformed policy, and failure
+to reach eventual real JSON remain release failures.
 
 Fresh-profile rendered orbital acceptance proved zero catalog requests before
 enable in the baseline lifecycle, one same-origin request after enable, zero

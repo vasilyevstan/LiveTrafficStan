@@ -689,7 +689,7 @@ as terminal for the running tab rather than retrying on reselection. A hover
 must never contact NASA or request the same-origin asset; a tooltip can reuse
 only a validated Blob URL created by selected details earlier in the tab.
 
-Current production source `96d67b6da3e395be79acff27b47ad6dee34de309`
+Current production source `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8`
 proved both paths as uncached `200 image/jpeg` Static Assets with exact
 46,716-byte and 48,741-byte lengths plus one-year immutable caching. Any
 different bytes, media type, redirect, repeated request, NASA runtime request,
