@@ -52,7 +52,7 @@ identity. A disabled deployment removes the Cron and omits both orbital
 bindings.
 
 Current production source
-`96d67b6da3e395be79acff27b47ad6dee34de309` sets the flag to `true`, uses KV
+`18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8` sets the flag to `true`, uses KV
 namespace `59178d55418247c4bab473b52a5dc07d`, and runs Cron
 `17 */2 * * *`. This Worker setting does not change the user-facing default:
 the remembered ORBITS layer still starts off until explicitly enabled or

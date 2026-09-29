@@ -17,7 +17,7 @@ This is cataloged orbital-object context, not another live-traffic provider:
   this feature.
 
 The browser implementation and scheduled catalog infrastructure are active in
-production source `96d67b6da3e395be79acff27b47ad6dee34de309`. The layer
+production source `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8`. The layer
 remains a default-off user preference, while the protected Worker deployment
 sets `ORBITAL_CATALOG_ENABLED=true`, serves the same-origin catalog route, and
 runs the checked two-hour scheduler. A deployment with that Worker flag off
@@ -397,19 +397,18 @@ Production activation completed on 2026-09-28:
 
 The current exact application release is:
 
-- source: `96d67b6da3e395be79acff27b47ad6dee34de309`;
-- orbital-enrichment implementation PR: #212;
-- ancestry PR: #213;
-- release PR: #214;
+- source: `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8`;
+- distinct symbol implementation/release PRs: #218 and #220;
+- smoke implementation/release PRs: #222 and #224;
 - exact merged-`main` validation:
-  [36626910897](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/36626910897);
+  [36641143297](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/36641143297);
 - deployment:
-  [36627748051](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/36627748051);
-- Cloudflare version: `3d6c692e-1a29-4fa4-bbee-2ab5545d9d57`;
-- client asset: `assets/index-Cl87tlUV.js`;
+  [36642794309](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/36642794309);
+- Cloudflare version: `fea1642f-8b45-4801-89ae-d2a9dca554a6`;
+- client asset: `assets/index-8clesHre.js`;
 - deployed `index.html` SHA-256:
-  `140921b505e2043ded16a4ebb09c11a30c4a5f7b8f4d4b8f55120c5bb7f9b97d`.
-- catalog response at `2026-09-29T20:43:08.453Z`: source `bootstrap`, schema `1`,
+  `8f7da07d43d096de68adde373597d3f337ff46ec07557e429977cfa114bc16b1`.
+- catalog response at `2026-09-29T23:01:56.988Z`: source `bootstrap`, schema `1`,
   156 records, retrieval `2026-09-29T18:52:12.000Z`, digest
   `f6183329084286f4fbb5cdfcea16e827e751569e7d5919d9e8222eadf95f017d`.
 
@@ -431,13 +430,14 @@ delivery was delayed or an admitted refresh failed. The bootstrap kept the
 layer operational. The first successful production KV publication remains
 open in #162.
 
-Public Wiki commit `1cedad08275d9e162aab618bea0af2e0bbf4cb43`
+Public Wiki commit `7bb657c8b90fda6150860f5dcba22010cf9cdf8d`
 updates the comprehensive
 [Orbital Tracking](https://github.com/vasilyevstan/LiveTrafficStan/wiki/Orbital-Tracking)
 and
 [Infrastructure and Hosting](https://github.com/vasilyevstan/LiveTrafficStan/wiki/Infrastructure-and-Hosting)
 pages and synchronizes the related public testing, release, troubleshooting,
-accessibility, Home, map, single-scroll, and current-production content.
+accessibility, Home, map, generated class-symbol, single-scroll, smoke, and
+current-production content.
 
 Fresh rendered production acceptance proved exactly one primary ORBITS toggle,
 zero catalog requests before enable, one same-origin request afterward, zero

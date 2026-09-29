@@ -28,11 +28,11 @@ active on the relay VM with four IPv6 QUIC connections and a dedicated
 used only when a protected deployment selects `oci-private-relay`.
 
 The current application source is
-`96d67b6da3e395be79acff27b47ad6dee34de309`; compatible relay source
-`1f9a2fd322f141fe761d3bf00113e1ab60526e6c` remains active and the initial
-relay release remains the retained rollback target. Exact-main validation run
-`36626910897` and canonical production run `36627748051` published Cloudflare
-version `3d6c692e-1a29-4fa4-bbee-2ab5545d9d57`.
+`18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8`; the matching relay source is
+active and `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` is the retained rollback
+target. Exact-main validation run `36641143297` and canonical production run
+`36642794309` published Cloudflare version
+`fea1642f-8b45-4801-89ae-d2a9dca554a6`.
 
 The first same-source run `36627068064` had already deployed healthy
 application, orbital, enrichment, weather, and marine surfaces as version
@@ -319,13 +319,13 @@ connector-startup `502`, through relay-local `503 Retry-After: 7`, to real
 `200 application/json`. That recovery established the supported procedure but
 did not eliminate the underlying no-SLA guest/network recurrence.
 
-A later controlled relay-service restart used the existing noninteractive sudo
-policy and proved `active`, `enabled`, `NRestarts=0`, loopback
-`status: ok`, exact relay release
-`1f9a2fd322f141fe761d3bf00113e1ab60526e6c`, and a passing post-restart
-production smoke. Guest-plugin timestamps may remain stale while queued
-commands later complete; use command execution state and output, not plugin
-timestamps alone.
+A later exact release activation used the checked `deploy-release.sh` through
+the existing noninteractive sudo policy. It verified the deployment script,
+relay, server, and unit hashes; preserved the secret and admission state;
+switched `current` to `18082a1e...`; retained `1f9a2fd...` as `previous`; and
+proved `active`, `enabled`, loopback `status: ok`, and the exact relay release.
+Guest-plugin timestamps may remain stale while queued commands later complete;
+use command execution state and output, not plugin timestamps alone.
 
 During compact-controls deployment run
 `36598727844`, the same isolated path again returned aircraft HTTP `502` while
@@ -336,6 +336,14 @@ real `200 application/json` at `2026-09-29T16:39:35Z`. Exact application
 source `ddc414e26dd8dacb5a9d4e1f528ccec44dc0bf4f` then passed canonical
 deployment run `36599339842` through the unchanged VPC Service, Tunnel, and
 relay release.
+
+After source `18082a1e...` activated the reviewed admission marker and smoke
+policy, canonical run `36642794309` passed. A separate bounded production
+probe returned real `200 application/json`, then exact-release local
+`503 Retry-After: 20` with
+`X-LiveTrafficStan-Relay-Status: admission`, then real JSON after the advised
+wait. That proof created only two provider requests; the rejected admission
+created none.
 
 ## Failure interpretation
 
