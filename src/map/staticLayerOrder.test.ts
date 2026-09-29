@@ -25,6 +25,14 @@ import {
   orbitalPositionFeatures,
   orbitalTrackFeatures,
 } from './orbitalStyle'
+import {
+  ORBITAL_STYLE_IMAGE_IDS,
+  type OrbitalStyleImages,
+} from './orbitalIcons'
+
+const orbitalImages = Object.fromEntries(
+  ORBITAL_STYLE_IMAGE_IDS.map((id) => [id, { id }]),
+) as unknown as OrbitalStyleImages
 
 const installers = {
   ports: (map: MapLibreMap) =>
@@ -41,6 +49,7 @@ const installers = {
       orbitalTrackFeatures([]),
       'light',
       true,
+      orbitalImages,
     ),
 }
 
@@ -68,6 +77,7 @@ const installationRows = installationOrders.map((order) => [order] as const)
 const createMap = () => {
   const sources = new Map<string, { setData: ReturnType<typeof vi.fn> }>()
   const layers: string[] = [LAYER_SELECTED_TRAIL]
+  const images = new Set<string>()
   const map = {
     getStyle: () => ({
       version: 8 as const,
@@ -83,6 +93,11 @@ const createMap = () => {
       ],
     }),
     getSource: (id: string) => sources.get(id),
+    hasImage: (id: string) => images.has(id),
+    addImage: (id: string) => {
+      images.add(id)
+    },
+    updateImage: vi.fn(),
     addSource: (id: string) => {
       sources.set(id, { setData: vi.fn() })
     },

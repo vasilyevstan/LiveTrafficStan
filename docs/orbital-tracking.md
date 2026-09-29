@@ -268,11 +268,16 @@ The orbital map uses three persistent GeoJSON sources:
 - selected highlight;
 - selected predicted track.
 
-It uses circle and line layers only. Payload, rocket body, debris, and unknown
-have distinct colors; no text labels or DOM markers are added.
+The current-point layer uses four repository-generated MapLibre symbol images:
+a satellite-like payload, spent-stage rocket body, irregular debris fragment,
+and neutral unknown object. Shape and the existing type color both come only
+from exact SATCAT type; the symbol represents the catalog class, not the exact
+craft. Selection remains a separate circular halo and the predicted track
+remains a line. No text labels or DOM markers are added.
 
 The idempotent style installer restores current data, visibility, selection,
-track, and theme after `map.setStyle`. Deterministic order is:
+track, theme-specific images, and symbol layout after `map.setStyle`.
+Deterministic order is:
 
 ```text
 ports -> airports -> weather -> orbital track/points -> selected traffic trail/live traffic

@@ -1,6 +1,7 @@
 import {
   AIRCRAFT_MARKER_ICONS,
   TRAFFIC_MARKER_ICONS,
+  VESSEL_MARKER_ICONS,
   type AircraftMarkerIcon,
   type TrafficEntity,
   type TrafficMarkerIcon,
@@ -14,6 +15,13 @@ export const RENDER_ONLY_MARKER_ICONS = [
   'vessel-pleasure',
   'vessel-highspeed',
 ] as const
+
+export const VESSEL_STYLE_IMAGE_IDS = [
+  ...VESSEL_MARKER_ICONS,
+  ...RENDER_ONLY_MARKER_ICONS,
+] as const
+export type VesselStyleImageId =
+  (typeof VESSEL_STYLE_IMAGE_IDS)[number]
 
 export const TRAFFIC_MOTION_STATES = [
   'moving',
