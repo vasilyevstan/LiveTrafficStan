@@ -80,7 +80,7 @@ kept the feature available; #162 retains the first successful scheduled KV
 publication as explicit outstanding evidence.
 
 The public Wiki synchronization is commit
-`4e56f83c83be0d065051606ae288b5eb13623d7c`. It updates focused
+`bc45563e666d1a5622a9fd29f16771faf1fea2a2`. It updates focused
 [Orbital Tracking](https://github.com/vasilyevstan/LiveTrafficStan/wiki/Orbital-Tracking)
 and
 [Infrastructure and Hosting](https://github.com/vasilyevstan/LiveTrafficStan/wiki/Infrastructure-and-Hosting)
