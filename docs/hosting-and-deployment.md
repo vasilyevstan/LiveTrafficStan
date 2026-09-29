@@ -462,7 +462,11 @@ Object. A synchronous SQLite transaction admits at most one refresh, stores a
 fail-closed in-progress gate before any provider request, and rejects duplicate
 or early events. Workers KV is intentionally not used as a lock because it has
 no compare-and-set contract and is eventually consistent. The coordinator
-never accepts browser input. One admitted event may request:
+never accepts browser input. Its cadence-state schema is independent from the
+published catalog schema so a catalog-shape revision cannot discard admission,
+backoff, or terminal-block state. A reviewed state reset changes the fixed
+coordinator object name and leaves the previous object intact. One admitted
+event may request:
 
 ```text
 https://celestrak.org/NORAD/elements/gp.php?GROUP=visual&FORMAT=json
@@ -471,6 +475,8 @@ https://celestrak.org/satcat/records.php?GROUP=visual&FORMAT=json
 
 Both responses must satisfy:
 
+- only `Accept: application/json` and the stable public project `User-Agent`
+  are sent;
 - exact HTTP `200`; other successful 2xx statuses, including `206`, are
   rejected;
 - exact `application/json` media type with at most an optional UTF-8 charset;
