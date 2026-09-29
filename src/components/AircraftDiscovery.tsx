@@ -74,7 +74,7 @@ export function AircraftDiscovery({
 
       <div className="vessel-discovery__summary">
         <p role="status">{status}</p>
-        <p>Search is local to the current visible traffic area.</p>
+        <p>Local to this view.</p>
       </div>
 
       {totalAircraft === 0 && (
@@ -109,8 +109,7 @@ export function AircraftDiscovery({
       )}
       {normalizedQuery && aircraft.length > AIRCRAFT_RESULT_LIMIT && (
         <p className="control-note control-note--muted">
-          Showing the first {AIRCRAFT_RESULT_LIMIT} of {aircraft.length}{' '}
-          matches. All current aircraft remain visible on the map.
+          First {AIRCRAFT_RESULT_LIMIT} of {aircraft.length}; all remain on map.
         </p>
       )}
       {normalizedQuery && aircraft.length > 0 && !aircraftVisible && (

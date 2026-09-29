@@ -41,8 +41,9 @@ describe('AirportContext', () => {
     expect(html).toContain('aria-pressed="true"')
     expect((html.match(/<li>/g) ?? [])).toHaveLength(AIRPORT_RESULT_LIMIT)
     expect(html).toContain(
-      `Showing the first ${AIRPORT_RESULT_LIMIT} of ${airports.length}`,
+      `First ${AIRPORT_RESULT_LIMIT} of ${airports.length}`,
     )
+    expect(html).toContain('Static context only; not operational')
   })
 
   it('keeps an empty current view explicit', () => {

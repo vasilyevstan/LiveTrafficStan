@@ -38,13 +38,13 @@ export function OrbitalContext({
               ? 'Crossing count unavailable for this view'
               : `${prediction.inViewCount} in view · ${prediction.futureCrossingCount} crossing within ${horizonMinutes} min`}
         </p>
-        <p>Modeled from orbital elements; not live telemetry.</p>
+        <p>SGP4 model; not live telemetry.</p>
       </div>
 
       {prediction.results.length === 0 ? (
         <p className="control-note">
           {prediction.message ??
-            'No modeled orbital object crosses this view in the selected window.'}
+            'No crossing in this window.'}
         </p>
       ) : (
         <ul
@@ -77,8 +77,7 @@ export function OrbitalContext({
 
       {prediction.totalResults > prediction.results.length && (
         <p className="control-note control-note--muted">
-          Showing {prediction.results.length} of {prediction.totalResults}{' '}
-          matching modeled objects.
+          First {prediction.results.length} of {prediction.totalResults} shown.
         </p>
       )}
     </fieldset>

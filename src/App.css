@@ -329,9 +329,28 @@
   flex: 1 1 auto;
   overflow-y: auto;
   overscroll-behavior: contain;
+  scrollbar-color: var(--button-border) transparent;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
   margin-top: 7px;
-  padding-right: 4px;
+  padding-right: 6px;
   padding-bottom: 4px;
+}
+
+.control-panel__more-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.control-panel__more-body::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: var(--button-border);
+}
+
+.control-panel__more-body:focus-visible {
+  outline: 1px solid var(--button-hover-border);
+  outline-offset: 2px;
 }
 
 .control-stack:has(.control-panel--urgent) .control-panel__more-body {
@@ -581,156 +600,6 @@
   color: var(--accent-line);
 }
 
-.traffic-legend__section {
-  margin-top: 8px;
-}
-
-.traffic-legend__section h3 {
-  margin: 0 0 5px;
-  color: var(--summary-strong);
-  font-size: 0.64rem;
-  letter-spacing: 0.04em;
-}
-
-.traffic-legend__list {
-  display: grid;
-  gap: 4px;
-  margin: 0;
-  padding: 0;
-  color: var(--summary-text);
-  font-size: 0.61rem;
-  line-height: 1.35;
-  list-style: none;
-}
-
-.traffic-legend__list li {
-  display: grid;
-  grid-template-columns: 30px minmax(0, 1fr);
-  gap: 6px;
-  align-items: center;
-}
-
-.traffic-legend__aircraft,
-.traffic-legend__shape {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  justify-self: center;
-  min-width: 28px;
-  height: 18px;
-  padding: 0 4px;
-  border: 1px solid rgba(255, 255, 255, 0.82);
-  border-radius: 4px;
-  color: #ffffff;
-  font-size: 0.46rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-}
-
-.traffic-legend__aircraft--low {
-  background: #0369a1;
-}
-
-.traffic-legend__aircraft--medium {
-  background: #0f766e;
-}
-
-.traffic-legend__aircraft--high {
-  background: #6d28d9;
-}
-
-.traffic-legend__aircraft--cruise {
-  background: #a21caf;
-}
-
-.traffic-legend__aircraft--unknown {
-  background: #64748b;
-}
-
-.traffic-legend__shape--aircraft {
-  background: #0f766e;
-}
-
-.traffic-legend__shape--vessel {
-  color: #1f1308;
-  background: #ed9d3f;
-}
-
-.traffic-legend__stopped {
-  justify-self: center;
-  width: 12px;
-  height: 12px;
-  border: 2px solid #ffffff;
-  border-radius: 50%;
-  background: #c1121f;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.28);
-}
-
-.traffic-legend__orbital {
-  justify-self: center;
-  width: 11px;
-  height: 11px;
-  border: 1px solid #ffffff;
-  border-radius: 50%;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
-}
-
-.traffic-legend__orbital--payload {
-  background: #087fa6;
-}
-
-.traffic-legend__orbital--rocket {
-  background: #b85f00;
-}
-
-.traffic-legend__orbital--debris {
-  background: #b62e69;
-}
-
-.traffic-legend__orbital--unknown {
-  background: #65747c;
-}
-
-:root[data-theme='dark'] .traffic-legend__aircraft--low {
-  background: #38bdf8;
-}
-
-:root[data-theme='dark'] .traffic-legend__aircraft--medium {
-  background: #2dd4bf;
-}
-
-:root[data-theme='dark'] .traffic-legend__aircraft--high {
-  background: #a78bfa;
-}
-
-:root[data-theme='dark'] .traffic-legend__aircraft--cruise {
-  background: #f0abfc;
-}
-
-:root[data-theme='dark'] .traffic-legend__aircraft--unknown {
-  background: #94a3b8;
-}
-
-:root[data-theme='dark'] .traffic-legend__stopped {
-  background: #ff4655;
-}
-
-:root[data-theme='dark'] .traffic-legend__orbital--payload {
-  background: #67d8ff;
-}
-
-:root[data-theme='dark'] .traffic-legend__orbital--rocket {
-  background: #ffb45f;
-}
-
-:root[data-theme='dark'] .traffic-legend__orbital--debris {
-  background: #ff7db8;
-}
-
-:root[data-theme='dark'] .traffic-legend__orbital--unknown {
-  background: #aab8c0;
-}
-
 .ports-status {
   display: grid;
   gap: 5px;
@@ -867,6 +736,11 @@
   margin: 8px 0 0;
   padding: 0;
   list-style: none;
+}
+
+.orbital-results {
+  max-height: none;
+  overflow: visible;
 }
 
 .vessel-results button {

@@ -59,7 +59,7 @@ export function OrbitalDetails({
     <aside className="details-panel" aria-labelledby="selected-orbital-title">
       <div className="details-panel__heading">
         <div>
-          <p className="eyebrow">Selected modeled orbital object</p>
+          <p className="eyebrow">Selected orbit</p>
           <h2 id="selected-orbital-title">{position.name}</h2>
         </div>
         <button type="button" className="close-button" onClick={onClose}>
@@ -118,14 +118,11 @@ export function OrbitalDetails({
       </dl>
 
       <p className="metadata-status">
-        Modeled from orbital elements — not live telemetry.
-      </p>
-      <p className="metadata-status">
-        A predicted sub-satellite ground-track crossing does not prove
-        naked-eye visibility, illumination, or operational status.
+        SGP4 model, not live. Crossing does not prove visibility, illumination,
+        or status.
       </p>
       <p className="metadata-attribution">
-        <a href={sourceWebsiteUrl}>{sourceName}</a> GP/OMM and SATCAT ·{' '}
+        <a href={sourceWebsiteUrl}>{sourceName}</a> GP/SATCAT ·{' '}
         <a href={sourceUsagePolicyUrl}>usage policy</a> · retrieved{' '}
         {snapshot.retrievedAt}.
       </p>

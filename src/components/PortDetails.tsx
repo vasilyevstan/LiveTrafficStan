@@ -15,7 +15,7 @@ export function PortDetails({
     <aside className="details-panel" aria-labelledby="selected-port-title">
       <div className="details-panel__heading">
         <div>
-          <p className="eyebrow">Selected port context</p>
+          <p className="eyebrow">Selected port</p>
           <h2 id="selected-port-title">{port.name}</h2>
         </div>
         <button type="button" className="close-button" onClick={onClose}>
@@ -24,16 +24,12 @@ export function PortDetails({
       </div>
 
       <p className="metadata-status">
-        Generalized Natural Earth context only. The global layer is incomplete,
-        and some source points can be approximate by as much as 20 miles.
-      </p>
-      <p className="metadata-status">
-        No facility, operational status, berth, vessel call, destination, or ETA
-        relationship is inferred.
+        Generalized, incomplete context; points may be up to 20 miles off. No
+        facilities, status, berth, calls, destination, or ETA inferred.
       </p>
       <p className="metadata-attribution">
         <a href={source.repositoryUrl}>{source.name}</a> {source.tag} ·{' '}
-        <a href={source.termsUrl}>{source.licenseName}</a> · output{' '}
+        <a href={source.termsUrl}>{source.licenseName}</a> ·{' '}
         {source.outputVersion}.
       </p>
     </aside>

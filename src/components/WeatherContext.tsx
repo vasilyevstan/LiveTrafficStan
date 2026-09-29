@@ -30,7 +30,7 @@ export function WeatherContext({
           {observations.length} current observation
           {observations.length === 1 ? '' : 's'}
         </p>
-        <p>Observed aviation weather; not a forecast.</p>
+        <p>Observed weather; not a forecast.</p>
       </div>
 
       {observations.length === 0 ? (
@@ -64,8 +64,8 @@ export function WeatherContext({
 
       {observations.length > WEATHER_OBSERVATION_RESULT_LIMIT && (
         <p className="control-note control-note--muted">
-          Showing the first {WEATHER_OBSERVATION_RESULT_LIMIT} of{' '}
-          {observations.length} observations in this view.
+          First {WEATHER_OBSERVATION_RESULT_LIMIT} of {observations.length}{' '}
+          shown.
         </p>
       )}
     </fieldset>

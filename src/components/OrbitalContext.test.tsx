@@ -48,7 +48,7 @@ describe('OrbitalContext', () => {
     expect(html).toContain('in view now')
     expect(html).toContain('FUTURE BODY')
     expect(html).toContain('in 10 min')
-    expect(html).toContain('not live telemetry')
+    expect(html).toContain('SGP4 model; not live telemetry')
     expect(html).not.toContain('visible satellite')
   })
 

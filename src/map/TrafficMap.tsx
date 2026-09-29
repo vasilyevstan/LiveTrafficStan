@@ -1590,12 +1590,10 @@ export function TrafficMap({
       new AttributionControl({
         compact: true,
         customAttribution: [
-          'Map: <a href="https://openfreemap.org/" target="_blank">OpenFreeMap</a>',
-          'Aircraft: <a href="https://www.adsb.lol/" target="_blank" rel="noreferrer">ADSB.lol</a> (<a href="https://opendatacommons.org/licenses/odbl/1-0/" target="_blank" rel="noreferrer">ODbL 1.0</a>)',
-          'Marine: <a href="https://www.digitraffic.fi/en/marine-traffic/" target="_blank" rel="noreferrer">Fintraffic Digitraffic</a> (<a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">CC BY 4.0</a>; filtered and normalized)',
-          'Optional ports: <a href="https://www.naturalearthdata.com/downloads/10m-cultural-vectors/ports/" target="_blank" rel="noreferrer">Natural Earth</a> (<a href="https://www.naturalearthdata.com/about/terms-of-use/" target="_blank" rel="noreferrer">public domain</a>; generalized and incomplete)',
-          'Optional airports: <a href="https://ourairports.com/data/" target="_blank" rel="noreferrer">OurAirports</a> (<a href="https://ourairports.com/data/" target="_blank" rel="noreferrer">public domain</a>; static large and medium airport context)',
-          'Optional orbital objects: <a href="https://celestrak.org/" target="_blank" rel="noreferrer">CelesTrak</a> (modeled locally with SGP4; not live telemetry)',
+          'Air <a href="https://www.adsb.lol/" target="_blank" rel="noreferrer">ADSB.lol</a> · <a href="https://opendatacommons.org/licenses/odbl/1-0/" target="_blank" rel="noreferrer">ODbL 1.0</a>',
+          'Sea <a href="https://www.digitraffic.fi/en/marine-traffic/" target="_blank" rel="noreferrer">Digitraffic</a> · <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">CC BY 4.0</a> · filtered/normalized',
+          'Ports <a href="https://www.naturalearthdata.com/downloads/10m-cultural-vectors/ports/" target="_blank" rel="noreferrer">Natural Earth</a> · <a href="https://www.naturalearthdata.com/about/terms-of-use/" target="_blank" rel="noreferrer">public domain</a> · generalized',
+          'Airports <a href="https://ourairports.com/data/" target="_blank" rel="noreferrer">OurAirports</a> · <a href="https://ourairports.com/data/" target="_blank" rel="noreferrer">public domain</a> · context only',
         ],
       }),
       'bottom-right',

@@ -60,8 +60,8 @@ describe('VesselDiscovery', () => {
     expect(html).toContain('Non-yacht minimum length')
     expect(html).toContain('Maximum length (all vessels)')
     expect(html).toContain('Include non-yachts with unknown length')
-    expect(html).toContain('Sailing and pleasure craft')
-    expect(html).toContain('Class B yacht coverage is incomplete')
+    expect(html).toContain('Yachts: ≥8 m, ≥1 kn, ≤120 s')
+    expect(html).toContain('Class B coverage is incomplete')
     expect(html).toContain('RESET FILTERS')
   })
 
@@ -83,7 +83,7 @@ describe('VesselDiscovery', () => {
     expect(html).toContain('Show the SHIPS layer')
     expect(html).toContain('id="vessel-discovery-result-vessel:0"')
     expect(html).toContain(
-      `Showing the first ${VESSEL_RESULT_LIMIT} of ${vessels.length} matches`,
+      `First ${VESSEL_RESULT_LIMIT} of ${vessels.length}`,
     )
   })
 

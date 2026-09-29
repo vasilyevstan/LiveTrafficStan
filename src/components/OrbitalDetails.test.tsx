@@ -57,12 +57,12 @@ describe('OrbitalDetails', () => {
       />,
     )
 
-    expect(html).toContain('Selected modeled orbital object')
+    expect(html).toContain('Selected orbit')
     expect(html).toContain('Rocket body')
     expect(html).toContain('NORAD catalog ID')
     expect(html).toContain('In the visible map now')
-    expect(html).toContain('not live telemetry')
-    expect(html).toContain('does not prove naked-eye visibility')
+    expect(html).toContain('not live')
+    expect(html).toContain('does not prove visibility')
     expect(html).toContain('CelesTrak')
     expect(html).not.toContain('observed')
   })

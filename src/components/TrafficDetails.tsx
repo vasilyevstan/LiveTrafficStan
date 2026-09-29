@@ -74,27 +74,27 @@ const unavailableMetadataMessage = (
 ) => {
   switch (reason) {
     case 'not-found':
-      return 'No current database record exists for this ICAO24 address.'
+      return 'No record for this ICAO24.'
     case 'ambiguous':
-      return 'The database registration is duplicated, so this record is not safe to show.'
+      return 'Duplicate registration; record hidden.'
     case 'registration-conflict':
-      return 'The database record does not match the live registration.'
+      return 'Database/live registration mismatch.'
     case 'type-conflict':
-      return 'The database record does not match the live aircraft type.'
+      return 'Database/live type mismatch.'
     case 'invalid-identity':
-      return 'The live ICAO24 identity is not valid for metadata lookup.'
+      return 'Invalid ICAO24 for metadata.'
     case 'stale':
-      return `The database snapshot exceeded its ${
+      return `Snapshot exceeds the ${
         state.phase === 'unavailable'
           ? (state.metadata?.staleAfterDays ?? 'configured')
           : 'configured'
-      }-day publication-age limit.`
+      }-day age limit.`
     case 'future':
-      return `The database snapshot is more than ${
+      return `Snapshot is over ${
         state.phase === 'unavailable'
           ? (state.metadata?.futureToleranceHours ?? 'the configured number of')
           : 'the configured number of'
-      } hours ahead of this device clock.`
+      } hours ahead of this clock.`
   }
 }
 
@@ -134,11 +134,11 @@ function AircraftMetadataDetails({
     >
       <h3 id="aircraft-metadata-heading">Aircraft metadata</h3>
       {state.phase === 'loading' && (
-        <p className="metadata-status">Loading selected-aircraft metadata…</p>
+        <p className="metadata-status">Loading metadata…</p>
       )}
       {state.phase === 'error' && (
         <p className="metadata-status metadata-status--error">
-          Metadata unavailable: {state.message}. Live ADS-B remains active.
+          Metadata unavailable: {state.message}. ADS-B remains live.
         </p>
       )}
       {state.phase === 'unavailable' && (
@@ -187,8 +187,8 @@ function AircraftMetadataDetails({
         <p className="metadata-attribution">
           Snapshot {source.publishedAt.slice(0, 10)} ·{' '}
           <a href={source.repositoryUrl}>Mictronics aircraft-database</a>{' '}
-          derivative under <a href={source.licenseUrl}>ODC-By 1.0</a>.
-          Publication age is not per-aircraft verification age.
+          · <a href={source.licenseUrl}>ODC-By 1.0</a> · database age is not
+          aircraft verification.
         </p>
       )}
     </section>
@@ -198,13 +198,13 @@ function AircraftMetadataDetails({
 const unavailableRouteMessage = (reason: FlightRouteUnavailableReason) => {
   switch (reason) {
     case 'invalid-identity':
-      return 'A valid ICAO flight callsign, ICAO24 address, and current position are required.'
+      return 'Needs callsign, ICAO24, and current position.'
     case 'not-found':
-      return 'No standing route is available for this callsign.'
+      return 'No standing route for this callsign.'
     case 'implausible':
-      return 'The standing route does not fit the aircraft’s current position.'
+      return 'Standing route does not fit the current position.'
     case 'incomplete':
-      return 'The standing route does not contain both an origin and destination.'
+      return 'Standing route lacks an origin or destination.'
   }
 }
 
@@ -292,8 +292,7 @@ function FlightRouteDetails({
             )}
           </dl>
           <p className="metadata-status">
-            Standing-data match, not a filed flight plan; it may be stale or
-            wrong.
+            Standing-data estimate; not a filed plan and may be wrong.
           </p>
           {coolingDown && (
             <p className="metadata-status">
@@ -310,18 +309,16 @@ function FlightRouteDetails({
       {state.phase === 'error' && (
         <p className="metadata-status metadata-status--error" role="alert">
           {state.reason === 'quota-exhausted'
-            ? 'Route lookups are temporarily limited.'
-            : state.reason === 'configuration'
-              ? 'Route lookup is temporarily unavailable.'
-              : 'Route lookup is temporarily unavailable.'}{' '}
+            ? 'Route lookups limited.'
+            : 'Route lookup unavailable.'}{' '}
           {coolingDown
             ? `Retry after ${formatTimestamp(retryAt)}. `
             : ''}
-          Live traffic is unaffected.
+          Live traffic unaffected.
         </p>
       )}
       <p className="metadata-attribution">
-        Data: <a href={source.websiteUrl}>{source.name}</a> ·{' '}
+        <a href={source.websiteUrl}>{source.name}</a> ·{' '}
         <a href="https://github.com/vradarserver/standing-data">
           VRS Standing Data
         </a>
@@ -386,7 +383,7 @@ function AircraftPhotoDetails({
       {state.phase === 'available' ? (
         <>
           <p className="metadata-status">
-            Photo returned by Planespotters for ICAO24 {state.photo.icao24}.
+            Planespotters match for ICAO24 {state.photo.icao24}.
           </p>
           <a
             className="aircraft-photo__link"
@@ -405,32 +402,31 @@ function AircraftPhotoDetails({
             />
           </a>
           <p className="metadata-attribution aircraft-photo__credit">
-            Photo © {state.photo.photographer} via{' '}
+            Photo © {state.photo.photographer} ·{' '}
             <a href={state.photo.source.websiteUrl}>
               {state.photo.source.name}
             </a>
-            . Open the image for its unchanged original photo page.
+            {' · '}Open image for original.
           </p>
         </>
       ) : (
         <>
           <p className="metadata-status">
-            Loading sends ICAO24 {identity || 'unavailable'} and normal
-            browser network metadata directly to Planespotters. Its returned
-            thumbnail loads directly from the provider CDN. LiveTrafficStan
-            keeps API JSON only in this tab for at most one hour and does not
-            store image bytes. <a href={termsUrl}>Photo API terms</a>.
+            Planespotters receives ICAO24 {identity || 'unavailable'} plus
+            normal network metadata; its CDN serves the image. JSON cache:
+            this tab, 1 hour; image bytes not stored.{' '}
+            <a href={termsUrl}>Terms</a>.
           </p>
           {loading && (
             <p className="metadata-status" role="status">
-              Loading the selected-aircraft photo…
+              Loading photo…
             </p>
           )}
           {state.phase === 'unavailable' && (
             <p className="metadata-status">
               {invalidIdentity
-                ? 'Photo lookup requires a valid six-character ICAO24 address.'
-                : `Planespotters returned no photo for ICAO24 ${identity}. No generic or model-level substitute is shown.`}
+                ? 'Photo needs a valid six-character ICAO24.'
+                : `No exact photo for ICAO24 ${identity}; no substitute shown.`}
             </p>
           )}
           {state.phase === 'error' && (
@@ -449,13 +445,13 @@ function AircraftPhotoDetails({
             onClick={onRequest}
           >
             {loading
-              ? 'Loading aircraft photo…'
+              ? 'Loading photo…'
               : invalidIdentity
-                ? 'Aircraft photo unavailable'
+                ? 'Photo unavailable'
                 : throttled
                   ? 'Try again later'
                   : state.phase === 'idle'
-                    ? 'Load aircraft photo'
+                    ? 'Load photo'
                     : 'Try again'}
           </button>
         </>
@@ -475,10 +471,10 @@ function VesselPhotoDetails({
       aria-labelledby={`vessel-photo-heading-${photo.imo}`}
     >
       <h3 id={`vessel-photo-heading-${photo.imo}`}>
-        Vessel reference photo
+        Vessel photo
       </h3>
       <p className="metadata-status">
-        Reference photo matched to AIS-reported IMO {photo.imo}.
+        Exact AIS-reported IMO {photo.imo} match.
       </p>
       <a
         className="vessel-photo__link"
@@ -497,7 +493,7 @@ function VesselPhotoDetails({
         />
       </a>
       <p className="metadata-attribution vessel-photo__credit">
-        Photo by {photo.rights.author} via{' '}
+        {photo.rights.author} ·{' '}
         <a
           href={photo.identityEvidence.commonsRevisionUrl}
           target="_blank"
@@ -505,7 +501,7 @@ function VesselPhotoDetails({
         >
           {photo.rights.sourceName}
         </a>
-        , licensed under{' '}
+        {' · '}
         <a
           href={photo.rights.licenseUrl}
           target="_blank"
@@ -513,11 +509,11 @@ function VesselPhotoDetails({
         >
           {photo.rights.licenseName}
         </a>
-        . {photo.asset.modificationNotice}
+        {' · '}
+        {photo.asset.modificationNotice}
       </p>
       <p className="metadata-status">
-        Historical reference image only; not a live view or independent
-        confirmation of the vessel currently reporting this AIS identity.
+        Historical reference only; not live confirmation of this AIS report.
       </p>
     </section>
   )
@@ -786,8 +782,7 @@ export function TrafficDetails({
       {presentation.kind === 'vessel' &&
         presentation.navigationConflict && (
           <p className="metadata-status metadata-status--error">
-            Reported speed and navigation status disagree; both values are
-            shown without reclassification.
+            Speed and navigation status conflict; shown as reported.
           </p>
         )}
       {entity.kind === 'aircraft' && (
@@ -795,15 +790,13 @@ export function TrafficDetails({
       )}
       {historical && (
         <p className="metadata-attribution">
-          Historical provider observation. Current weather and third-party
-          aircraft metadata are intentionally not joined to this time.
+          Historical provider report; current weather/metadata not joined.
         </p>
       )}
       {entity.kind === 'vessel' && (
         <p className="metadata-attribution">
-          AIS static and voyage fields are reported separately from position
-          updates. Values are shown as supplied; no ETA year or port
-          relationship is inferred.
+          AIS static/voyage data may lag position; no ETA year or port link
+          inferred.
         </p>
       )}
     </aside>
