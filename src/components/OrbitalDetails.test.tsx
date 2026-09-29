@@ -4,13 +4,14 @@ import type {
   ModeledOrbitalPosition,
   OrbitalCatalogSnapshot,
 } from '../domain/orbital'
+import { orbitalEnrichmentForPosition } from '../domain/orbitalEnrichment'
 import { OrbitalDetails } from './OrbitalDetails'
 
 const position: ModeledOrbitalPosition = {
-  id: 'orbital:694',
-  noradCatalogId: '694',
-  name: 'ATLAS CENTAUR 2',
-  internationalDesignator: '1963-047A',
+  id: 'orbital:733',
+  noradCatalogId: '733',
+  name: 'THOR AGENA D R/B',
+  internationalDesignator: '1964-002A',
   objectType: 'R/B',
   elementEpoch: Date.UTC(2026, 8, 28, 0, 48),
   snapshotRetrievedAt: Date.UTC(2026, 8, 28, 18, 45),
@@ -52,7 +53,9 @@ describe('OrbitalDetails', () => {
         sourceWebsiteUrl="https://celestrak.org/"
         sourceUsagePolicyUrl="https://celestrak.org/usage-policy.php"
         now={position.modeledFor}
+        online
         units="metric"
+        imageState={{ phase: 'unavailable' }}
         onClose={() => undefined}
       />,
     )
@@ -64,6 +67,51 @@ describe('OrbitalDetails', () => {
     expect(html).toContain('not live')
     expect(html).toContain('does not prove visibility')
     expect(html).toContain('CelesTrak')
+    expect(html).toContain('No reviewed exact-NORAD purpose or image')
     expect(html).not.toContain('observed')
+  })
+
+  it('shows exact-NORAD purpose, a bundled verified image, and NASA attribution', () => {
+    const issPosition: ModeledOrbitalPosition = {
+      ...position,
+      id: 'orbital:25544',
+      noradCatalogId: '25544',
+      name: 'ISS (ZARYA)',
+      internationalDesignator: '1998-067A',
+      objectType: 'PAY',
+    }
+    const enrichment = orbitalEnrichmentForPosition(issPosition)
+    if (!enrichment) throw new Error('Expected ISS enrichment fixture')
+    const html = renderToStaticMarkup(
+      <OrbitalDetails
+        position={issPosition}
+        snapshot={snapshot}
+        sourceName="CelesTrak"
+        sourceWebsiteUrl="https://celestrak.org/"
+        sourceUsagePolicyUrl="https://celestrak.org/usage-policy.php"
+        now={issPosition.modeledFor}
+        online
+        units="metric"
+        imageState={{
+          phase: 'available',
+          identityKey: enrichment.identityKey,
+          url: 'blob:https://example.test/iss',
+        }}
+        onClose={() => undefined}
+      />,
+    )
+
+    expect(html).toContain('Crewed microgravity science laboratory')
+    expect(html).toContain('exact NORAD 25544')
+    expect(html).toContain(
+      'src="blob:https://example.test/iss"',
+    )
+    expect(html).toContain(
+      'International Space Station photographed from Atlantis',
+    )
+    expect(html).toContain('Photo: NASA')
+    expect(html).toContain('NASA Images and Media Usage Guidelines')
+    expect(html).toContain('no local crop, resize, retouching')
+    expect(html).not.toContain('generic satellite')
   })
 })

@@ -48,6 +48,9 @@ describe('OrbitalContext', () => {
     expect(html).toContain('in view now')
     expect(html).toContain('FUTURE BODY')
     expect(html).toContain('in 10 min')
+    expect(html).toContain(
+      'Purpose: unavailable for this exact NORAD ID',
+    )
     expect(html).toContain('SGP4 model; not live telemetry')
     expect(html).not.toContain('visible satellite')
   })
@@ -77,6 +80,59 @@ describe('OrbitalContext', () => {
     )
     expect(html).toContain('156 modeled objects over the visible world')
     expect(html).toContain('upcoming crossing order is not meaningful')
+  })
+
+  it('adds only a compact reviewed purpose for an exact current identity', () => {
+    const now = Date.UTC(2026, 8, 29, 19)
+    const html = renderToStaticMarkup(
+      <OrbitalContext
+        state={{
+          phase: 'ready',
+          positions: [
+            {
+              id: 'orbital:25544',
+              noradCatalogId: '25544',
+              name: 'ISS (ZARYA)',
+              internationalDesignator: '1998-067A',
+              objectType: 'PAY',
+              elementEpoch: now,
+              snapshotRetrievedAt: now,
+              snapshotSha256: 'a'.repeat(64),
+              modeledFor: now,
+              latitude: 0,
+              longitude: 0,
+              altitudeKm: 420,
+              velocityKmPerSecond: 7.7,
+            },
+          ],
+          prediction: {
+            mode: 'world',
+            totalResults: 1,
+            inViewCount: 1,
+            futureCrossingCount: 0,
+            trackSegments: [],
+            results: [
+              {
+                id: 'orbital:25544',
+                noradCatalogId: '25544',
+                name: 'ISS (ZARYA)',
+                objectType: 'PAY',
+                currentlyInView: true,
+                firstCrossingAt: now,
+              },
+            ],
+          },
+        }}
+        selectedId={null}
+        horizonMs={90 * 60_000}
+        now={now}
+        onSelect={() => undefined}
+      />,
+    )
+
+    expect(html).toContain(
+      'Purpose: Crewed microgravity science laboratory',
+    )
   })
 
   it('does not present invalid-footprint counts as a known zero', () => {

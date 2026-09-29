@@ -3,6 +3,7 @@ import {
   orbitalObjectTypeLabel,
   type OrbitalControllerState,
 } from '../domain/orbital'
+import { orbitalEnrichmentForPosition } from '../domain/orbitalEnrichment'
 
 interface OrbitalContextProps {
   state: OrbitalControllerState
@@ -51,27 +52,40 @@ export function OrbitalContext({
           className="vessel-results orbital-results"
           aria-label="Modeled orbital objects for this view"
         >
-          {prediction.results.map((result) => (
-            <li key={result.id}>
-              <button
-                id={`orbital-context-result-${result.noradCatalogId}`}
-                type="button"
-                aria-pressed={result.id === selectedId}
-                onClick={() => onSelect(result.id)}
-              >
-                <strong>{result.name}</strong>
-                <span>
-                  {orbitalObjectTypeLabel(result.objectType)} · NORAD{' '}
-                  {result.noradCatalogId} ·{' '}
-                  {result.currentlyInView
-                    ? 'in view now'
-                    : result.firstCrossingAt === undefined
-                      ? 'crossing time unavailable'
-                      : futureTime(result.firstCrossingAt, now)}
-                </span>
-              </button>
-            </li>
-          ))}
+          {prediction.results.map((result) => {
+            const position = state.positions.find(
+              ({ id }) => id === result.id,
+            )
+            const enrichment = position
+              ? orbitalEnrichmentForPosition(position)
+              : undefined
+            return (
+              <li key={result.id}>
+                <button
+                  id={`orbital-context-result-${result.noradCatalogId}`}
+                  type="button"
+                  aria-pressed={result.id === selectedId}
+                  onClick={() => onSelect(result.id)}
+                >
+                  <strong>{result.name}</strong>
+                  <span>
+                    {orbitalObjectTypeLabel(result.objectType)} · NORAD{' '}
+                    {result.noradCatalogId} ·{' '}
+                    {result.currentlyInView
+                      ? 'in view now'
+                      : result.firstCrossingAt === undefined
+                        ? 'crossing time unavailable'
+                        : futureTime(result.firstCrossingAt, now)}
+                  </span>
+                  <span className="orbital-context__purpose">
+                    Purpose:{' '}
+                    {enrichment?.purpose.shortLabel ??
+                      'unavailable for this exact NORAD ID'}
+                  </span>
+                </button>
+              </li>
+            )
+          })}
         </ul>
       )}
 

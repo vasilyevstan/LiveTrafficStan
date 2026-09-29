@@ -79,7 +79,13 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   status panel without changing aircraft/marine health.
   Exact SATCAT type, element epoch, snapshot age, and limitations remain
   visible; these are modeled positions, not live telemetry or optical
-  visibility predictions.
+  visibility predictions. Exact NORAD `20580` (Hubble) and `25544` (ISS) also
+  have a reviewed bundled NASA purpose and historical photograph. Other
+  objects state that enrichment is unavailable rather than receiving an
+  inferred mission or generic picture. Hover uses bundled text only; a
+  selected image uses one bounded same-origin load whose media type, byte
+  count, and SHA-256 are validated before a session Blob URL can appear in
+  details or a later tooltip.
 - A default-enabled ADSB.lol plausible-route lookup for a selected live
   aircraft. A committed selection starts one lookup and shows a compact result
   directly below the aircraft heading. Hover, HISTORY, and same-flight position
@@ -157,6 +163,7 @@ npm run check:aircraft-metadata
 npm run check:country-allocations
 npm run check:vessel-photos
 npm run check:orbital-catalog
+npm run check:orbital-enrichment
 npm run check:ports
 npm run check:airports
 npm run build
@@ -585,7 +592,10 @@ monitoring, privacy, and rollback procedure.
 - Orbital positions and map crossings are SGP4 models from a bounded
   CelesTrak bright-object catalog. They are not observations, launch or reentry
   telemetry, hazard predictions, or proof that an object is illuminated or
-  visible to a person at the map location.
+  visible to a person at the map location. The two reviewed NASA photographs
+  are historical references to the exact object, not a view of its current
+  modeled position; every unreviewed payload, rocket body, debris object, or
+  unknown type remains purpose/image unavailable.
 - There is no reverse geocoding, radar, precipitation forecast, account, saved
   center preference, or offline basemap guarantee. An installed shell can
   start cold offline and replay retained private local history over a plain
@@ -603,6 +613,7 @@ silently expanded into V1.
 - [Data Sources and Licensing](docs/data-sources-and-licensing.md)
 - [Orbital Tracking](docs/orbital-tracking.md)
 - [Orbital Data Source Evaluation](docs/orbital-data-source-evaluation.md)
+- [Orbital Purpose and Image Source Evaluation](docs/orbital-enrichment-source-evaluation.md)
 - [Aircraft Provider Evaluation](docs/aircraft-provider-evaluation.md)
 - [Aircraft Metadata Evaluation](docs/aircraft-metadata-evaluation.md)
 - [Aircraft Photo Evaluation](docs/aircraft-photo-evaluation.md)
@@ -625,3 +636,6 @@ keeps the project open for permissive personal and commercial use while
 preserving credit to the original project and author. The bundled orbital
 propagator retains its
 [`satellite.js` 7.1.0 MIT notice](public/licenses/satellite-js-7.1.0-MIT.txt).
+The two bundled NASA photographs are separate informational media, excluded
+from Apache-2.0, and documented in
+[`public/orbital-enrichment/2026-09-29-v1/LICENSES.md`](public/orbital-enrichment/2026-09-29-v1/LICENSES.md).
