@@ -28,11 +28,21 @@ active on the relay VM with four IPv6 QUIC connections and a dedicated
 used only when a protected deployment selects `oci-private-relay`.
 
 The current application source is
-`bb9829bd0bb59c819b936777fe4e2cdfe32239a3`; compatible relay source
+`96d67b6da3e395be79acff27b47ad6dee34de309`; compatible relay source
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` remains active and the initial
 relay release remains the retained rollback target. Exact-main validation run
-`36619407782` and production run `36619533493` published Cloudflare version
-`49c704b3-47ec-47b4-b30b-9483dbd35564`.
+`36626910897` and canonical production run `36627748051` published Cloudflare
+version `3d6c692e-1a29-4fa4-bbee-2ab5545d9d57`.
+
+The first same-source run `36627068064` had already deployed healthy
+application, orbital, enrichment, weather, and marine surfaces as version
+`7b1233c9-3461-440b-ac5f-1d30b02c0525`, but aircraft smoke exposed a recurrent
+guest/network `502`. The supported OCI diagnostic reboot moved the instance
+through `STOPPING` at `20:35:14Z`, `STARTING` at `20:35:57Z`, and `RUNNING`
+at `20:36:28Z`; real bounded ADSB JSON recovered at `20:38:04Z`. No
+application rollback, relay source change, credential rotation, provider
+fallback, firewall change, cache, or privacy-boundary change was used. #174
+records the evidence and is closed.
 
 This component does not move the application to OCI. An OCI, Tunnel, or relay
 failure must affect aircraft only; Static Assets, the map, vessels, weather,
