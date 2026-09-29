@@ -119,6 +119,17 @@ origin failure; `401` indicates a Worker/relay secret mismatch. Do not respond
 by rotating the OCI address, falling back to shared Cloudflare egress, exposing
 a public relay, or accelerating browser polling.
 
+An OCI instance lifecycle of `RUNNING` is not sufficient guest-health
+evidence. During the 2026-09-29 recurrence, VPC fetches threw while a bounded
+Run Command remained unacknowledged. Ordinary soft reset did not provide
+durable recovery, and `REBOOTMIGRATE` was unavailable because no maintenance
+event was pending. A supported `DIAGNOSTICREBOOT` restored the path through
+explicit `STOPPING -> STARTING -> RUNNING`, followed by truthful connector
+startup `502`, bounded relay `503 Retry-After`, and real `200` JSON. After
+recovery, use a noninteractive `sudo -n systemctl restart` canary, loopback
+`/healthz`, one cadence-cleared production response, and exact production
+smoke. Do not infer recovery from stale plugin timestamps alone.
+
 ADSB.lol rejects generic Worker identification. The proxy must send the stable
 public LiveTrafficStan User-Agent. Do not work around a `403` by forwarding
 browser headers, cookies, authorization, or a client-controlled destination.
