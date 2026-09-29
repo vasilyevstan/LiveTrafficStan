@@ -432,22 +432,19 @@ persistent route cache.
 Public production is live at
 <https://livetrafficstan.syntal.workers.dev> on Cloudflare Workers Free with
 Static Assets. The current application source is
-`ddc414e26dd8dacb5a9d4e1f528ccec44dc0bf4f`. Compact-controls deployment run
-`36599339842` passed the exact-source deployment and full production smoke path
-and published Cloudflare version `98147f84-68c6-49c0-84a3-bc7dc1481897`
-with client asset `assets/index-Bm-WP8Xp.js`. The first exact-source deployment
-run `36598727844` exposed the recurrent private-relay guest/network outage as
-aircraft HTTP `502`; a supported OCI diagnostic reboot restored the unchanged
-path to real `200 application/json`, and the canonical rerun passed without a
-source change. The deployment preserves:
+`bb9829bd0bb59c819b936777fe4e2cdfe32239a3`. Real-mobile Operations deployment
+run `36619533493` passed exact-source deployment and full production smoke and
+published Cloudflare version `49c704b3-47ec-47b4-b30b-9483dbd35564` with
+client asset `assets/index-On-Ohfl9.js`. The deployment preserves:
 
 - `oci-private-relay`, aircraft photos, and plausible routes enabled;
 - the orbital catalog enabled with Cron `17 */2 * * *`;
 - KV namespace `59178d55418247c4bab473b52a5dc07d`;
 - a validated 156-record schema-v1 catalog with digest
-  `2cbe00a3285c7bdfd80fe07661b6a14b48279d0629e44c026c6306bb20453d5b`;
+  `f6183329084286f4fbb5cdfcea16e827e751569e7d5919d9e8222eadf95f017d`
+  and retrieval time `2026-09-29T18:52:12.000Z`;
 - deployed `index.html` SHA-256
-  `dc2f367f02764016570915cc3706494c7c0a6dbb0f1891800720a2994ba75e74`.
+  `2f8f4204640c6f2a05cd316cbf175fd95733ea41dfea5f89ce79e6060f4bdd82`.
 
 Fresh rendered production acceptance used a deterministic 24-object crossing
 fixture and exposed all 20 bounded results at both 390x844 and 390x568.
@@ -460,33 +457,35 @@ errors were retained. The compact unavailable-route and aircraft-photo cards
 also retained the required standing-data, provider/privacy, cache, and rights
 wording.
 
-A later real-device report showed that this evidence was incomplete: it varied
-the layout viewport but did not force a shorter visual viewport below mobile
-browser chrome, and its geometry-only final-result check could not detect a
-sticky task selector covering the result. Corrective rendered acceptance now
-tracks a forced 517 px visual viewport beneath an 844 px layout viewport,
-keeps the controls at 299.859375 px against the 299.86 px budget, and verifies
-the final result with hit testing as well as bounds. The normal 390x844,
+A later real-device report showed that the first evidence was incomplete: it
+varied the layout viewport but did not force a shorter visual viewport below
+mobile browser chrome, and its geometry-only final-result check could not
+detect a sticky task selector covering the result. The deployed corrective
+acceptance tracks a forced 517 px visual viewport beneath an 844 px layout
+viewport, keeps the controls at 299.859375 px against the 299.86 px budget,
+and verifies the final result with hit testing as well as bounds. The normal
+390x844,
 390x568, and 315x517-class runs expose all 20 results, keep task labels
 unclipped, and retain one scroll owner, one canvas, one catalog request, and
 zero browser CelesTrak requests or runtime errors. Physical iOS Safari and
 Android Chrome evidence remains separate and must not be inferred from CDP.
 
-The restored deployment installed its triggers at `2026-09-28T21:46:41Z`.
-The first eligible `22:17Z` schedule was then observed through the public
-catalog route from `22:19:30Z` through `22:31:54Z`. The route continued to
-serve the validated release bootstrap, so no compatible KV publication is
-claimed for that window. The modeled layer remained available and truthful;
-the first successful scheduled KV publication remains open in #162.
+Orbital publication recovery source
+`7899c99212f01bb56489033fc9cd442178df7ea0` deployed in run `36616140867`
+with the stable project identity, independent coordinator schema, reviewed
+`v2` coordinator, and the current fresh bootstrap. The public route for this
+release still returned `X-LiveTrafficStan-Orbital-Source: bootstrap` at
+`2026-09-29T19:30Z`; the first successful scheduled KV publication remains
+open in #162.
 
 The comprehensive public Wiki synchronization is commit
-`5f9cd06b84f4921f146a3f7a73ed64158cae20b8`; it updates
+`c67b33036d63c095e3aadc5d19e492d3aeb53665`; it updates
 [Orbital Tracking](https://github.com/vasilyevstan/LiveTrafficStan/wiki/Orbital-Tracking)
 and
 [Infrastructure and Hosting](https://github.com/vasilyevstan/LiveTrafficStan/wiki/Infrastructure-and-Hosting)
 plus the related Home, map, release, troubleshooting, and accessibility pages
-with the compact-control release, single-scroll contract, rendered evidence,
-current production identity, and relay recovery.
+with the visual-viewport correction, task-based Operations layout,
+single-scroll contract, rendered evidence, and current production identity.
 
 The compatible aircraft relay remains at
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` and retains

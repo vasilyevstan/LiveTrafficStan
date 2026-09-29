@@ -43,57 +43,56 @@ no paid fallback is enabled. Orbital activation uses the included free KV and
 SQLite Durable Object allocations; R2 is not used.
 
 The current application source is
-`ddc414e26dd8dacb5a9d4e1f528ccec44dc0bf4f`. Compact-controls deployment run
-`36599339842` published Cloudflare version
-`98147f84-68c6-49c0-84a3-bc7dc1481897` with aircraft delivery through
-`oci-private-relay`, aircraft photos, plausible routes, the five-file
-exact-IMO vessel-photo manifest, and the orbital catalog enabled. It preserved
-KV namespace `59178d55418247c4bab473b52a5dc07d`, one SQLite coordinator, and
-Cron `17 */2 * * *`. The compatible relay remains at
+`bb9829bd0bb59c819b936777fe4e2cdfe32239a3`. Real-mobile Operations deployment
+run `36619533493` published Cloudflare version
+`49c704b3-47ec-47b4-b30b-9483dbd35564` with aircraft delivery through
+`oci-private-relay`, aircraft photos, plausible routes, the five-file exact-IMO
+vessel-photo manifest, and the orbital catalog enabled. It preserved KV
+namespace `59178d55418247c4bab473b52a5dc07d`, one SQLite coordinator, and Cron
+`17 */2 * * *`. The compatible relay remains at
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` and retains
 `76540a21291878b44e7f92ceecb37d03a366c0c7` as the prior release. The
-deployed client is `assets/index-Bm-WP8Xp.js`, and the deployed `index.html`
+deployed client is `assets/index-On-Ohfl9.js`, and the deployed `index.html`
 SHA-256 is
-`dc2f367f02764016570915cc3706494c7c0a6dbb0f1891800720a2994ba75e74`.
+`2f8f4204640c6f2a05cd316cbf175fd95733ea41dfea5f89ce79e6060f4bdd82`.
 
 The exact-release endpoint, full smoke, and fresh-profile desktop/mobile
-browser acceptance passed. The first exact-source deployment run `36598727844`
-exposed recurrent private-relay guest/network unavailability as aircraft HTTP
-`502`. A supported diagnostic reboot restored the unchanged VPC/Tunnel path to
-real `200 application/json`, and the canonical exact-source rerun passed
-without rollback. Orbital, marine, map, and static-context behavior remained
-healthy and isolated throughout.
+browser acceptance passed. The private aircraft relay returned real JSON
+through the unchanged VPC/Tunnel path; orbital, marine, map, and static-context
+behavior remained healthy and isolated throughout.
 
-The activation catalog contains 156 schema-v1 records with digest
-`2cbe00a3285c7bdfd80fe07661b6a14b48279d0629e44c026c6306bb20453d5b`
-and bootstrap retrieval time `2026-09-28T18:45:06.958Z`. The stable browser
+The current bootstrap contains 156 schema-v1 records with digest
+`f6183329084286f4fbb5cdfcea16e827e751569e7d5919d9e8222eadf95f017d`
+and retrieval time `2026-09-29T18:52:12.000Z`. The stable browser
 validator is the semantic weak ETag
-`W/"2cbe00a3285c7bdfd80fe07661b6a14b48279d0629e44c026c6306bb20453d5b"`.
+`W/"f6183329084286f4fbb5cdfcea16e827e751569e7d5919d9e8222eadf95f017d"`.
 
-The final restoration installed its triggers at `2026-09-28T21:46:41Z`.
-The first eligible `22:17Z` schedule was observed through the public catalog
-route at `22:19:30Z` and every two minutes through `22:31:54Z`. Every response
-remained the exact validated bootstrap. No compatible KV publication is
-therefore claimed for that bounded window, and the observation alone cannot
-distinguish delayed scheduled delivery from a failed refresh. The bootstrap
-kept the feature available; #162 retains the first successful scheduled KV
-publication as explicit outstanding evidence.
+Publication recovery source
+`7899c99212f01bb56489033fc9cd442178df7ea0` deployed in run `36616140867`
+with the stable project `User-Agent`, an independent coordinator-state schema,
+the reviewed `v2` named coordinator, and the current fresh bootstrap. The
+public route for the real-mobile Operations release still returned
+`X-LiveTrafficStan-Orbital-Source: bootstrap` at `2026-09-29T19:30Z`. #162
+retains the first successful scheduled KV publication as explicit outstanding
+evidence.
 
 The public Wiki synchronization is commit
-`5f9cd06b84f4921f146a3f7a73ed64158cae20b8`. It updates focused
+`c67b33036d63c095e3aadc5d19e492d3aeb53665`. It updates focused
 [Orbital Tracking](https://github.com/vasilyevstan/LiveTrafficStan/wiki/Orbital-Tracking)
 and
 [Infrastructure and Hosting](https://github.com/vasilyevstan/LiveTrafficStan/wiki/Infrastructure-and-Hosting)
 pages plus the surrounding Home, map, release, troubleshooting, and
-accessibility documentation with the compact-control release, single-scroll
-contract, current production identity, and relay recovery evidence.
+accessibility documentation with the visual-viewport correction, task-based
+Operations layout, single-scroll contract, and current production identity.
 
 Production browser acceptance used a deterministic 24-object fixture to expose
-all 20 bounded orbital results at 390x844 and 390x568. Operations More was the
-single scroll owner; touch, wheel, Page Down, and 38 Tab steps reached the
-final result. The exact 58vh bounds, one MapLibre canvas, one catalog request,
-zero browser CelesTrak requests, compact deduplicated attribution, and zero
-console/runtime errors were retained.
+all 20 bounded orbital results at 390x844, 390x568, and a 315x517-class view.
+Operations More was the single scroll owner; touch, wheel, Page Down, and 25
+Tab steps reached the final result. A separate 844 px layout / 517 px visual
+viewport run kept the controls at 299.859375 px against the 299.86 px budget.
+Every final result was topmost under hit testing, task labels were unclipped,
+and the checks retained one MapLibre canvas, one catalog request, zero browser
+CelesTrak requests, compact attribution, and zero console/runtime errors.
 
 Current rendered route acceptance selected live `BTI877`, made exactly one
 route request, rendered TLL to BCN, and made no second route request after an

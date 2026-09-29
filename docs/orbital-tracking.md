@@ -17,7 +17,7 @@ This is cataloged orbital-object context, not another live-traffic provider:
   this feature.
 
 The browser implementation and scheduled catalog infrastructure are active in
-production source `ddc414e26dd8dacb5a9d4e1f528ccec44dc0bf4f`. The layer
+production source `bb9829bd0bb59c819b936777fe4e2cdfe32239a3`. The layer
 remains a default-off user preference, while the protected Worker deployment
 sets `ORBITAL_CATALOG_ENABLED=true`, serves the same-origin catalog route, and
 runs the checked two-hour scheduler. A deployment with that Worker flag off
@@ -367,22 +367,26 @@ Production activation completed on 2026-09-28:
 - stable validator:
   `W/"2cbe00a3285c7bdfd80fe07661b6a14b48279d0629e44c026c6306bb20453d5b"`.
 
-The current compact-control release is:
+The current real-mobile Operations release is:
 
-- source: `ddc414e26dd8dacb5a9d4e1f528ccec44dc0bf4f`;
-- implementation PR: #195;
-- ancestry PR: #196;
-- release PR: #197;
+- source: `bb9829bd0bb59c819b936777fe4e2cdfe32239a3`;
+- implementation PR: #204;
+- ancestry PR: #205;
+- release PR: #206;
 - exact merged-`main` validation:
-  [36598593975](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/36598593975);
+  [36619407782](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/36619407782);
 - deployment:
-  [36599339842](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/36599339842);
-- Cloudflare version: `98147f84-68c6-49c0-84a3-bc7dc1481897`;
-- client asset: `assets/index-Bm-WP8Xp.js`;
+  [36619533493](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/36619533493);
+- Cloudflare version: `49c704b3-47ec-47b4-b30b-9483dbd35564`;
+- client asset: `assets/index-On-Ohfl9.js`;
 - deployed `index.html` SHA-256:
-  `dc2f367f02764016570915cc3706494c7c0a6dbb0f1891800720a2994ba75e74`.
+  `2f8f4204640c6f2a05cd316cbf175fd95733ea41dfea5f89ce79e6060f4bdd82`.
+- catalog response at `2026-09-29T19:30Z`: source `bootstrap`, schema `1`,
+  156 records, retrieval `2026-09-29T18:52:12.000Z`, digest
+  `f6183329084286f4fbb5cdfcea16e827e751569e7d5919d9e8222eadf95f017d`.
 
-The protected deployment and full smoke passed. The first exact-source attempt
+The protected deployment and full smoke passed. The earlier compact-controls
+release's first exact-source attempt
 [36598727844](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/36598727844)
 exposed recurrent private-relay guest/network unavailability as aircraft HTTP
 `502`, but a supported OCI diagnostic reboot restored the unchanged
@@ -398,7 +402,7 @@ scheduled delivery was delayed or an admitted refresh failed. The bootstrap
 kept the layer operational. The first successful production KV publication
 remains open in #162.
 
-Public Wiki commit `5f9cd06b84f4921f146a3f7a73ed64158cae20b8`
+Public Wiki commit `c67b33036d63c095e3aadc5d19e492d3aeb53665`
 updates the comprehensive
 [Orbital Tracking](https://github.com/vasilyevstan/LiveTrafficStan/wiki/Orbital-Tracking)
 and
@@ -439,12 +443,14 @@ with a forced 517 px visual viewport. All 20 results remain in one outer scroll
 region; the last result is topmost under hit testing, task labels are
 unclipped, and one canvas and one catalog request remain unchanged.
 
-The same deterministic harness then ran against the deployed
-`ddc414e26dd8dacb5a9d4e1f528ccec44dc0bf4f` production bundle. It again
-rendered all 20 results with one scroll owner, reached the final result through
-touch, wheel, Page Down, and 38 Tab steps, retained exact 58vh stack bounds,
-one canvas, one catalog request, zero browser CelesTrak requests, compact
-deduplicated attribution, and no console/runtime error.
+The strengthened deterministic harness then ran against the deployed
+`bb9829bd0bb59c819b936777fe4e2cdfe32239a3` production bundle. It rendered all
+20 results with one scroll owner at 390x844, 390x568, and a 315x517-class view;
+touch, wheel, Page Down, and 25 Tab steps reached the final result. A separate
+844 px layout / 517 px visual viewport run retained the 299.86 px control
+budget. The final result was topmost under hit testing in every case, while one
+canvas, one catalog request, zero browser CelesTrak requests, compact
+attribution, and no console/runtime error were retained.
 
 Rollback run
 [36488117751](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/36488117751)
