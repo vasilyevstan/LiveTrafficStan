@@ -19,6 +19,7 @@ import { useTrafficHistory } from './app/useTrafficHistory'
 import { useTrailHistory } from './app/useTrailHistory'
 import { useWeatherObservations } from './app/useWeatherObservations'
 import { useOrbitalObjects } from './app/useOrbitalObjects'
+import { visualViewportCssValues } from './app/visualViewport'
 import { AirportDetails } from './components/AirportDetails'
 import { HistoryModeNotice } from './components/HistoryModeNotice'
 import { LiveStatus } from './components/LiveStatus'
@@ -85,6 +86,7 @@ const canRestoreFocus = (element: HTMLElement | null) =>
   )
 
 function App() {
+  const appShellRef = useRef<HTMLElement>(null)
   const [sharedState] = useState(() =>
     readBrowserShareState(APP_CONFIG.navigation.coordinatePrecision),
   )
@@ -1157,8 +1159,46 @@ function App() {
       ? airportsResult.retry
       : weatherResult.retry
 
+  useEffect(() => {
+    const appShell = appShellRef.current
+    if (!appShell) return
+
+    const updateViewportVariables = () => {
+      const values = visualViewportCssValues(
+        window.visualViewport?.height ?? window.innerHeight,
+      )
+      if (!values) return
+      appShell.style.setProperty(
+        '--app-visual-viewport-height',
+        values.height,
+      )
+      appShell.style.setProperty(
+        '--app-visual-viewport-58',
+        values.controlBudget,
+      )
+    }
+    const visualViewport = window.visualViewport
+    updateViewportVariables()
+    window.addEventListener('resize', updateViewportVariables)
+    visualViewport?.addEventListener('resize', updateViewportVariables)
+    visualViewport?.addEventListener('scroll', updateViewportVariables)
+
+    return () => {
+      window.removeEventListener('resize', updateViewportVariables)
+      visualViewport?.removeEventListener(
+        'resize',
+        updateViewportVariables,
+      )
+      visualViewport?.removeEventListener(
+        'scroll',
+        updateViewportVariables,
+      )
+    }
+  }, [])
+
   return (
     <main
+      ref={appShellRef}
       className={`app-shell${historyActive ? ' app-shell--history' : ''}`}
     >
       <TrafficMap

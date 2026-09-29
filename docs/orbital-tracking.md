@@ -428,6 +428,17 @@ horizontal overflow. VIEW, resize, scrolling, and compact attribution retained
 one canvas and one catalog load with no direct CelesTrak request or runtime
 error.
 
+A later real-device report exposed two gaps in that acceptance: the emulation
+did not separate the shorter visual viewport from the layout viewport, and a
+sticky task selector could cover the final result while a bounds-only check
+still passed. The corrective layout follows `window.visualViewport.height`,
+splits Operations More into session-only Layers, Find, Context, Orbits, and
+Sources views, and lets the selector scroll away. Corrective rendered checks
+cover 390x844, 390x568, a 315x517-class view, and an 844 px layout viewport
+with a forced 517 px visual viewport. All 20 results remain in one outer scroll
+region; the last result is topmost under hit testing, task labels are
+unclipped, and one canvas and one catalog request remain unchanged.
+
 The same deterministic harness then ran against the deployed
 `ddc414e26dd8dacb5a9d4e1f528ccec44dc0bf4f` production bundle. It again
 rendered all 20 results with one scroll owner, reached the final result through

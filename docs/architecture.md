@@ -117,20 +117,23 @@ tombstone can be removed after Cloudflare confirms that deletion has applied.
 
 `TrafficControls` owns one location-search model and two stable native
 disclosures with the same `name`. The upper Operations panel keeps only Center,
-Aircraft, Ships, and ORBITS visible; its disclosure owns operational layers,
-recovery, discovery, context, and provenance. The duplicate traffic legend is
-intentionally absent; textual state and limitations remain in controls and
-selected details. The lower Location & Settings panel keeps the single mounted
-location input, theme, and Trails visible; its disclosure owns search feedback,
-browser location, history setup, preferences, sharing, reset, and application
-state.
+Aircraft, Ships, and ORBITS visible. Its disclosure separates secondary tools
+into session-only Layers, Find, Context, Orbits, and Sources views; **VIEW**
+opens Orbits and focuses the first result without moving the map or fetching
+again. The duplicate traffic legend is intentionally absent; textual state and
+limitations remain in controls and selected details. The lower Location &
+Settings panel keeps the single mounted location input, theme, and Trails
+visible; its disclosure owns search feedback, browser location, history setup,
+preferences, sharing, reset, and application state.
 
 Opening either disclosure closes the other without remounting the search model.
 Operational recovery and app/storage/history recovery have separate promotion
 slots in their owning panels. Active HISTORY playback remains outside both
-disclosures. The expanded pair shares one 58vh layout budget. Each disclosure
-body is its only vertical scroll owner; nested result lists, including orbital
-results, remain fully expanded inside that outer scroll region.
+disclosures. The expanded pair uses 58% of the current visual viewport, with
+`dvh`/`vh` fallbacks when `window.visualViewport` is unavailable. Each
+disclosure body is its only vertical scroll owner; the task selector scrolls
+away rather than covering short-view results, and orbital results remain fully
+expanded inside the outer scroll region.
 
 ## Provider boundaries
 

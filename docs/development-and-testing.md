@@ -517,8 +517,12 @@ Use `npm run dev` and verify:
    at desktop, 390x844, and 390x568. With 20 orbital results, verify the outer
    Operations body is the only scroll owner, the final result is reachable by
    touch, wheel, Tab, and keyboard scrolling, search state and disclosure
-   identity survive rerenders, focus returns to a visible owner, and a real
-   touch drag works on an unobscured map region.
+   identity survive rerenders, focus returns to a visible owner, task labels
+   remain unclipped, and a real touch drag works on an unobscured map region.
+   Include a 315x517-class view and a case where the layout viewport remains
+   tall while `window.visualViewport.height` is forced to 517 px. At the final
+   scroll position, verify the last result is topmost with
+   `document.elementFromPoint()` rather than relying only on bounding boxes.
 9. Map and provider attribution remains visible.
 10. Strict coordinates navigate with no Photon request; named text makes one
     explicit bounded request and renders Photon/OpenStreetMap attribution.
@@ -869,18 +873,28 @@ closed. Public Wiki commit
 `abb4e21ae4c6225d9530675ce66cb9f3c4bc443e` records the same release,
 responsive, accessibility, operations, and recovery evidence.
 
-Issue #194 compact-control development acceptance used a deterministic
-24-object crossing fixture in Chrome 153. At both 390x844 and 390x568 it
-rendered the bounded 20 orbital results inside one Operations scroll owner:
-the result list had `overflow-y: visible`, no private height cap, and no
-horizontal overflow. Touch drag, wheel, Page Down, and 38 Tab steps each moved
-the outer region and exposed the final result. The 844 px control stack measured
-489.515625 px against a 489.52 px limit; the 568 px stack measured 329.4375 px
-against a 329.44 px limit. One MapLibre canvas and one catalog load persisted
-through VIEW, resize, scrolling, and attribution expansion, with no browser
-CelesTrak request, runtime exception, or console error. The same run rendered
-the compact unavailable-route and aircraft-photo cards at 96.46875 px and
-125.703125 px respectively and verified the shortened source/privacy copy.
+The first #194 compact-control acceptance used only emulated layout viewport
+sizes and a bounds-only visibility assertion. A later real-device report showed
+that it had not proven the shorter visual viewport below mobile browser chrome,
+and the assertion could miss a sticky task selector covering the final result.
+
+Corrective #194 development acceptance uses a deterministic 24-object crossing
+fixture in Chrome 153. At 390x844, 390x568, and a requested 315x517-class view
+(reported by headless Chrome as 315x526 with a 525.206 px visual viewport), it
+renders all 20 bounded results inside one Operations scroll owner. The last
+result is fully bounded, topmost under `elementFromPoint()`, and reachable by
+touch, wheel, Page Down, and 25 Tab steps; task labels remain unclipped and the
+orbital list remains unbounded and overflow-visible. The control stacks measure
+489.515625 px against 489.52 px, 329.4375 px against 329.44 px, and
+304.609375 px against 304.6197 px respectively.
+
+A separate run keeps the layout viewport at 844 px while forcing
+`window.visualViewport.height` to 517 px. The app writes 517 px and 299.86 px
+CSS variables, keeps the controls at 299.859375 px, and exposes the unobscured
+final result after 958 px of outer scrolling. Both runs retain one MapLibre
+canvas, one catalog request, zero browser CelesTrak requests, no horizontal
+overflow, and no console or runtime errors. Physical iOS Safari and Android
+Chrome remain explicit outstanding evidence rather than an inference from CDP.
 
 The release source was
 `ddc414e26dd8dacb5a9d4e1f528ccec44dc0bf4f`; exact merged-`main`

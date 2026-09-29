@@ -142,7 +142,7 @@ describe('TrafficControls', () => {
       '<summary id="traffic-controls-map-tools-summary">MORE</summary>',
     )
     expect(navigationMore).toContain('<legend>Layers</legend>')
-    expect(navigationMore).not.toContain('>ORBITS<')
+    expect(navigationMore).toContain('>ORBITS</button>')
     expect(navigationMore).not.toContain('Traffic legend')
     expect(navigationMore).not.toContain('Band 1 · below 1,000 m')
     expect(navigationMore).toContain(
@@ -176,7 +176,34 @@ describe('TrafficControls', () => {
     expect(html.match(/>AIRCRAFT</g)).toHaveLength(1)
     expect(html.match(/>SHIPS</g)).toHaveLength(1)
     expect(html.match(/>TRAILS</g)).toHaveLength(1)
-    expect(html.match(/>ORBITS</g)).toHaveLength(1)
+    expect(html.match(/>ORBITS</g)).toHaveLength(2)
+  })
+
+  it('separates map tools into compact session-only views', () => {
+    const html = renderControls()
+
+    expect(html).toContain(
+      'role="group" aria-label="Map tools view"',
+    )
+    for (const task of [
+      'layers',
+      'find',
+      'context',
+      'orbits',
+      'sources',
+    ]) {
+      expect(html).toContain(`id="map-tools-task-${task}"`)
+      expect(html).toContain(`id="map-tools-panel-${task}"`)
+    }
+    expect(html).toContain(
+      'id="map-tools-task-layers" type="button" class="is-active" aria-pressed="true"',
+    )
+    expect(html).toContain(
+      'id="map-tools-panel-find" class="control-panel__task" aria-labelledby="map-tools-task-find" hidden=""',
+    )
+    expect(html).toContain('Enable AIRPORTS or METAR in Layers.')
+    expect(html).toContain('Natural Earth')
+    expect(html).toContain('SGP4 modeled')
   })
 
   it('shows modeled orbital status and selection only after explicit enable', () => {
