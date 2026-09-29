@@ -20,17 +20,19 @@ Worker selects that path only through the protected `oci-private-relay`
 deployment mode and fails closed rather than reverting to shared egress.
 Production source `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` and the relay
 originally activated the private path together. The current browser/Worker
-application is source `bb9829bd0bb59c819b936777fe4e2cdfe32239a3`,
-deployed in run `36619533493` as Cloudflare version
-`49c704b3-47ec-47b4-b30b-9483dbd35564`; the compatible relay remains at
+application is source `96d67b6da3e395be79acff27b47ad6dee34de309`,
+deployed in run `36627748051` as Cloudflare version
+`3d6c692e-1a29-4fa4-bbee-2ab5545d9d57`; the compatible relay remains at
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c`.
 
 The current run's full smoke and fresh-profile desktop/mobile acceptance
-passed. A first exact-source deployment exposed recurrent OCI guest/network
-unavailability behind the unchanged VPC/Tunnel path as aircraft HTTP `502`.
-Diagnostic reboot restored real aircraft JSON and the canonical exact-source
-rerun passed. Marine and orbital partial operation remained truthful
-throughout.
+passed. First exact-source run `36627068064` deployed healthy
+application/orbital/enrichment assets as Cloudflare version
+`7b1233c9-3461-440b-ac5f-1d30b02c0525` but exposed recurrent OCI
+guest/network unavailability behind the unchanged VPC/Tunnel path as aircraft
+HTTP `502`. Diagnostic reboot restored real aircraft JSON and the canonical
+exact-source rerun passed without application rollback. Marine, orbital,
+weather, and static-asset partial operation remained truthful throughout.
 
 ```text
                        visibility lifecycle
@@ -320,10 +322,17 @@ Orbital purpose and imagery are a second, static display-only boundary. The
 two-record manifest is compiled into the browser and matches the current
 feature only when NORAD ID, object name, international designator, and exact
 SATCAT type all equal the reviewed identity. Purpose labels therefore require
-no request. A selected image uses one immutable same-origin path; a later map
-tooltip may reuse it only after a successful browser `load` event. Failed,
-aborted, mismatched, or unreviewed entries remain unavailable and cannot
-change propagation, crossings, selection, provider state, or traffic.
+no request. A selected image uses one immutable same-origin path through a
+session-scoped loader that omits credentials and referrer, rejects redirects,
+applies a five-second deadline, streams under the exact expected byte count,
+verifies final media type/length/SHA-256, and creates a Blob URL only after
+complete validation. Concurrent calls share one promise; fulfilled URLs are
+reused by selected details and tooltips. Tooltips receive only already
+validated path-to-Blob mappings and cannot fetch. Obsolete work is aborted,
+failures remain terminal for the running tab, and Blob URLs are revoked on
+invalidation or teardown. Failed, mismatched, or unreviewed entries remain
+unavailable and cannot change propagation, crossings, selection, provider
+state, or traffic.
 
 ## Lifecycle and failure isolation
 

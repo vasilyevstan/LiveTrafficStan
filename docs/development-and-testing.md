@@ -914,7 +914,7 @@ canvas, one catalog request, zero browser CelesTrak requests, no horizontal
 overflow, and no console or runtime errors. Physical iOS Safari and Android
 Chrome remain explicit outstanding evidence rather than an inference from CDP.
 
-The corrective release source is
+The historical corrective #194 release source was
 `bb9829bd0bb59c819b936777fe4e2cdfe32239a3`; exact merged-`main`
 validation run `36619407782` passed, and canonical deployment run
 `36619533493` passed full smoke and published Cloudflare version
@@ -932,6 +932,57 @@ or runtime error.
 Public Wiki commit `c67b33036d63c095e3aadc5d19e492d3aeb53665`
 records the same visual-viewport contract, production identity, rendered
 evidence, and troubleshooting guidance.
+
+### Issue #193 release acceptance evidence
+
+The exact-NORAD enrichment release is source
+`96d67b6da3e395be79acff27b47ad6dee34de309`, delivered through feature PR
+#212, zero-tree ancestry PR #213, and release PR #214. Exact merged-`main`
+validation run `36626910897` passed. Canonical deployment run `36627748051`
+passed full smoke and published Cloudflare version
+`3d6c692e-1a29-4fa4-bbee-2ab5545d9d57`, client asset
+`assets/index-Cl87tlUV.js`, and deployed `index.html` SHA-256
+`140921b505e2043ded16a4ebb09c11a30c4a5f7b8f4d4b8f55120c5bb7f9b97d`.
+
+The release validation covered 115 Vitest files and 682 tests, lint, strict
+TypeScript, aircraft metadata, country allocation, vessel-photo, orbital
+catalog, orbital-enrichment, airport, and port integrity, normal and
+PWA-retirement builds, and both deployment dry runs. The generated
+application shell contained 11 URLs and 2,619,551 bytes; both enrichment
+images remained excluded.
+
+Cache-disabled public-origin Chrome 154 acceptance used real current Hubble
+`20580`, ISS `25544`, and rocket body `733` map features:
+
+- zero enrichment-image requests before selection;
+- exactly one uncached same-origin `Fetch` per reviewed asset, both
+  `200 image/jpeg`, outside disk cache and the Service Worker;
+- exact 46,716-byte/437x640 Hubble and 48,741-byte/640x425 ISS responses with
+  `public, max-age=31536000, immutable`;
+- the identical validated ISS Blob URL in details and the later tooltip;
+- no hover, theme, re-selection, fallback, or NASA runtime request;
+- exact A-to-B-to-A purpose/image fencing and truthful rocket-body fallback;
+- a forced terminal image failure that remained unavailable and did not retry;
+- one unchanged MapLibre canvas, no same-origin failure, no runtime exception,
+  and no console error.
+
+At 390x844, the details panel measured 303.828125 px, the image
+159.984375 px, and scrolling reached the exact 931 px maximum. At 390x568,
+the corresponding values were 115 px, 87.984375 px, and 1,048 px. Both kept
+horizontal overflow false and source, rights, map attribution, and one canvas
+reachable.
+
+First deployment run `36627068064` deployed the exact source and healthy
+enrichment assets as Cloudflare version
+`7b1233c9-3461-440b-ac5f-1d30b02c0525`, then failed only on the recurrent
+aircraft-relay `502`. The supported diagnostic reboot recovered real ADSB JSON;
+the canonical same-source rerun passed without rollback or application change.
+#174 records the recovery and is closed.
+
+Public Wiki commit `1cedad08275d9e162aab618bea0af2e0bbf4cb43`
+synchronizes the exact identity, source/rights, request boundary, production
+measurements, relay recovery, troubleshooting, accessibility, and release
+evidence.
 
 Physical iOS Safari, Android Chrome, and supported-device drag-FPS evidence
 remain outstanding and must not be inferred from CDP emulation.

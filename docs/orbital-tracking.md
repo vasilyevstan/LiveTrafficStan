@@ -17,7 +17,7 @@ This is cataloged orbital-object context, not another live-traffic provider:
   this feature.
 
 The browser implementation and scheduled catalog infrastructure are active in
-production source `bb9829bd0bb59c819b936777fe4e2cdfe32239a3`. The layer
+production source `96d67b6da3e395be79acff27b47ad6dee34de309`. The layer
 remains a default-off user preference, while the protected Worker deployment
 sets `ORBITAL_CATALOG_ENABLED=true`, serves the same-origin catalog route, and
 runs the checked two-hour scheduler. A deployment with that Worker flag off
@@ -390,42 +390,43 @@ Production activation completed on 2026-09-28:
 - stable validator:
   `W/"2cbe00a3285c7bdfd80fe07661b6a14b48279d0629e44c026c6306bb20453d5b"`.
 
-The current real-mobile Operations release is:
+The current exact application release is:
 
-- source: `bb9829bd0bb59c819b936777fe4e2cdfe32239a3`;
-- implementation PR: #204;
-- ancestry PR: #205;
-- release PR: #206;
+- source: `96d67b6da3e395be79acff27b47ad6dee34de309`;
+- orbital-enrichment implementation PR: #212;
+- ancestry PR: #213;
+- release PR: #214;
 - exact merged-`main` validation:
-  [36619407782](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/36619407782);
+  [36626910897](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/36626910897);
 - deployment:
-  [36619533493](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/36619533493);
-- Cloudflare version: `49c704b3-47ec-47b4-b30b-9483dbd35564`;
-- client asset: `assets/index-On-Ohfl9.js`;
+  [36627748051](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/36627748051);
+- Cloudflare version: `3d6c692e-1a29-4fa4-bbee-2ab5545d9d57`;
+- client asset: `assets/index-Cl87tlUV.js`;
 - deployed `index.html` SHA-256:
-  `2f8f4204640c6f2a05cd316cbf175fd95733ea41dfea5f89ce79e6060f4bdd82`.
-- catalog response at `2026-09-29T19:30Z`: source `bootstrap`, schema `1`,
+  `140921b505e2043ded16a4ebb09c11a30c4a5f7b8f4d4b8f55120c5bb7f9b97d`.
+- catalog response at `2026-09-29T20:43:08.453Z`: source `bootstrap`, schema `1`,
   156 records, retrieval `2026-09-29T18:52:12.000Z`, digest
   `f6183329084286f4fbb5cdfcea16e827e751569e7d5919d9e8222eadf95f017d`.
 
-The protected deployment and full smoke passed. The earlier compact-controls
-release's first exact-source attempt
-[36598727844](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/36598727844)
-exposed recurrent private-relay guest/network unavailability as aircraft HTTP
-`502`, but a supported OCI diagnostic reboot restored the unchanged
-VPC/Tunnel path. The canonical exact-source rerun passed without rollback.
+The protected deployment and full smoke passed. First exact-source run
+[36627068064](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/36627068064)
+deployed healthy application, catalog, and enrichment assets as Cloudflare
+version `7b1233c9-3461-440b-ac5f-1d30b02c0525`, but exposed recurrent
+private-relay guest/network unavailability as aircraft HTTP `502`. A supported
+OCI diagnostic reboot restored the unchanged VPC/Tunnel path. The canonical
+exact-source rerun passed without application rollback or provider/privacy
+change.
 
-The restoration deployed its triggers at `2026-09-28T21:46:41Z`, before the
-first eligible `22:17Z` schedule. Bounded public observations at `22:19:30Z`
-and every two minutes through `22:31:54Z` still returned
-`X-LiveTrafficStan-Orbital-Source: bootstrap` with the exact activation
-retrieval time and digest. That evidence proves that no compatible KV snapshot
-had become publicly available in that window; it does not claim whether the
-scheduled delivery was delayed or an admitted refresh failed. The bootstrap
-kept the layer operational. The first successful production KV publication
-remains open in #162.
+At `2026-09-29T20:31:40.271Z`, approximately 14 minutes after the next
+`20:17Z` schedule, the public route still returned
+`X-LiveTrafficStan-Orbital-Source: bootstrap` with the exact current retrieval
+time and digest. That evidence proves that no compatible KV snapshot had
+become publicly available by that check; it does not claim whether scheduled
+delivery was delayed or an admitted refresh failed. The bootstrap kept the
+layer operational. The first successful production KV publication remains
+open in #162.
 
-Public Wiki commit `c67b33036d63c095e3aadc5d19e492d3aeb53665`
+Public Wiki commit `1cedad08275d9e162aab618bea0af2e0bbf4cb43`
 updates the comprehensive
 [Orbital Tracking](https://github.com/vasilyevstan/LiveTrafficStan/wiki/Orbital-Tracking)
 and
@@ -445,6 +446,21 @@ controls on one row and no horizontal overflow. Deterministic tests retain the
 stable one-pass summary/focus fixture because live crossing counts are
 time-anchored. Earlier exact selection, style rehydration, touch, and long-task
 evidence remains valid because this release does not change those paths.
+
+Cache-disabled public-origin enrichment acceptance used real current Hubble
+`20580`, ISS `25544`, and exact rocket body `733` features. It observed zero
+image requests before selection, exactly one uncached same-origin `Fetch` for
+each reviewed JPEG, exact manifest byte counts and dimensions, and the same
+validated ISS Blob URL in details and tooltip. Hover, theme, re-selection, and
+fallback made no image request; a forced terminal failure did not retry. No
+NASA runtime request, same-origin failure, runtime exception, or console error
+occurred, and one MapLibre canvas persisted.
+
+At 390x844, selected ISS details measured 303.828125 px high with a
+159.984375 px image and reached the exact 931 px maximum scroll. At 390x568,
+the panel measured 115 px with an 87.984375 px image and reached the exact
+1,048 px maximum scroll. Both retained source/rights text, map attribution,
+and no horizontal overflow.
 
 Issue #194 development acceptance then exercised a deterministic 24-object
 crossing fixture at 390x844 and 390x568. All 20 detailed results shared the
@@ -466,7 +482,7 @@ with a forced 517 px visual viewport. All 20 results remain in one outer scroll
 region; the last result is topmost under hit testing, task labels are
 unclipped, and one canvas and one catalog request remain unchanged.
 
-The strengthened deterministic harness then ran against the deployed
+The strengthened #194 deterministic harness had run against the deployed
 `bb9829bd0bb59c819b936777fe4e2cdfe32239a3` production bundle. It rendered all
 20 results with one scroll owner at 390x844, 390x568, and a 315x517-class view;
 touch, wheel, Page Down, and 25 Tab steps reached the final result. A separate
@@ -488,6 +504,7 @@ evidence remain explicit outstanding acceptance for #162.
 ## Related documentation
 
 - [Orbital Data Source Evaluation](orbital-data-source-evaluation.md)
+- [Orbital Purpose and Image Source Evaluation](orbital-enrichment-source-evaluation.md)
 - [Architecture](architecture.md)
 - [Configuration](configuration.md)
 - [Hosting and Deployment](hosting-and-deployment.md)
