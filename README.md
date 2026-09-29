@@ -431,15 +431,14 @@ persistent route cache.
 Public production is live at
 <https://livetrafficstan.syntal.workers.dev> on Cloudflare Workers Free with
 Static Assets. The current application source is
-`cea3a1f553266a0c4d21e90506904aed6f484887`. Primary ORBITS/status deployment
-run `36589814477` passed the exact-source validation, deployment, and full
-production smoke path and published Cloudflare version
-`2fe26151-d18e-4994-a147-887014d84af0` with client asset
-`assets/index-DZMYhfjJ.js`. The first same-source deployment exposed the
-recurrent private-relay guest/network outage; a supported OCI diagnostic
-reboot restored the unchanged path, and the canonical rerun, controlled relay
-service restart, and post-restart exact smoke all passed. #174 is closed. The
-deployment preserves:
+`ddc414e26dd8dacb5a9d4e1f528ccec44dc0bf4f`. Compact-controls deployment run
+`36599339842` passed the exact-source deployment and full production smoke path
+and published Cloudflare version `98147f84-68c6-49c0-84a3-bc7dc1481897`
+with client asset `assets/index-Bm-WP8Xp.js`. The first exact-source deployment
+run `36598727844` exposed the recurrent private-relay guest/network outage as
+aircraft HTTP `502`; a supported OCI diagnostic reboot restored the unchanged
+path to real `200 application/json`, and the canonical rerun passed without a
+source change. The deployment preserves:
 
 - `oci-private-relay`, aircraft photos, and plausible routes enabled;
 - the orbital catalog enabled with Cron `17 */2 * * *`;
@@ -447,15 +446,18 @@ deployment preserves:
 - a validated 156-record schema-v1 catalog with digest
   `2cbe00a3285c7bdfd80fe07661b6a14b48279d0629e44c026c6306bb20453d5b`;
 - deployed `index.html` SHA-256
-  `3659dd113e455927925249031198690aae082216ae9e348ba45831bcd3f6d566`.
+  `dc2f367f02764016570915cc3706494c7c0a6dbb0f1891800720a2994ba75e74`.
 
-Fresh rendered production acceptance found one primary ORBITS toggle beside
-AIRCRAFT and SHIPS, matching Operations/status summaries, one same-origin
-catalog request, zero browser CelesTrak requests, focus-safe **VIEW**, and one
-unchanged MapLibre canvas. The desktop evidence visibly showed
-`LIVE / 4 aircraft / 33 ships shown` with four aircraft markers. A 16 px
-brand/control gap remained at 1024, 900, and 761 CSS pixels, and 390x844 plus
-390x568 stayed within the 58vh control budget without horizontal overflow.
+Fresh rendered production acceptance used a deterministic 24-object crossing
+fixture and exposed all 20 bounded results at both 390x844 and 390x568.
+Operations More was the single scroll owner; touch, wheel, Page Down, and 38
+Tab steps reached the final result with no nested orbital-list overflow. The
+stacks measured 489.515625 px against 489.52 px and 329.4375 px against
+329.44 px. One catalog request, zero browser CelesTrak requests, one unchanged
+MapLibre canvas, compact deduplicated attribution, and zero console/runtime
+errors were retained. The compact unavailable-route and aircraft-photo cards
+also retained the required standing-data, provider/privacy, cache, and rights
+wording.
 
 The restored deployment installed its triggers at `2026-09-28T21:46:41Z`.
 The first eligible `22:17Z` schedule was then observed through the public
@@ -465,12 +467,13 @@ claimed for that window. The modeled layer remained available and truthful;
 the first successful scheduled KV publication remains open in #162.
 
 The comprehensive public Wiki synchronization is commit
-`abb4e21ae4c6225d9530675ce66cb9f3c4bc443e`; it updates
+`5f9cd06b84f4921f146a3f7a73ed64158cae20b8`; it updates
 [Orbital Tracking](https://github.com/vasilyevstan/LiveTrafficStan/wiki/Orbital-Tracking)
 and
 [Infrastructure and Hosting](https://github.com/vasilyevstan/LiveTrafficStan/wiki/Infrastructure-and-Hosting)
 plus the related Home, map, release, troubleshooting, and accessibility pages
-with the primary-control release, rendered evidence, and relay recovery.
+with the compact-control release, single-scroll contract, rendered evidence,
+current production identity, and relay recovery.
 
 The compatible aircraft relay remains at
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` and retains
