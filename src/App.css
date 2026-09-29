@@ -51,7 +51,8 @@
   position: absolute;
   top: 16px;
   left: 16px;
-  min-width: min(490px, calc(100vw - 32px));
+  min-width: min(490px, calc(100vw - 358px));
+  max-width: calc(100vw - 358px);
   padding: 14px 16px 12px;
   border-radius: 14px;
 }
@@ -149,6 +150,12 @@
   margin-top: 6px;
   color: var(--provider-text);
   font-size: 0.69rem;
+}
+
+.live-status__orbital {
+  color: var(--summary-strong);
+  font-weight: 700;
+  letter-spacing: 0.04em;
 }
 
 .live-status__providers span + span::before {
@@ -1328,6 +1335,7 @@
     right: 8px;
     left: 8px;
     min-width: 0;
+    max-width: none;
     padding: 11px 12px 10px;
   }
 

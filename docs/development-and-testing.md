@@ -505,16 +505,18 @@ Use `npm run dev` and verify:
    expire clears selection safely. Failed navigation and ordinary same-entity
    refreshes do not.
 8. The default Operations and Location & Settings panels remain compact and
-   require no scroll. Center, Aircraft, and Ships stay visible above; the one
-   mounted location input, theme, and Trails stay visible below. Operational
-   layers, discovery, context, and the traffic legend live behind Operations
-   More. Location feedback, browser location, history setup, preferences,
-   sharing, reset, and app detail live behind Location & Settings More. Verify
+   require no scroll. Center, Aircraft, Ships, and ORBITS stay visible above;
+   the one mounted location input, theme, and Trails stay visible below. Other
+   operational layers, discovery, context, and the traffic legend live behind
+   Operations More. Location feedback, browser location, history setup,
+   preferences, sharing, reset, and app detail live behind Location & Settings
+   More. Verify
    each panel promotes recovery only from its own domain with no duplicated
-   action or alert. Measure each collapsed panel and the combined expanded
-   stack at desktop, 390x844, and 390x568; verify search state and disclosure
-   identity survive rerenders, focus returns to a visible owner, and a real
-   touch drag works on an unobscured map region.
+   action or alert. Verify the brand/status panel and fixed control column do
+   not overlap at 1024, 900, or 761 CSS pixels. Measure each collapsed panel
+   and the combined expanded stack at desktop, 390x844, and 390x568; verify
+   search state and disclosure identity survive rerenders, focus returns to a
+   visible owner, and a real touch drag works on an unobscured map region.
 9. Map and provider attribution remains visible.
 10. Strict coordinates navigate with no Photon request; named text makes one
     explicit bounded request and renders Photon/OpenStreetMap attribution.
