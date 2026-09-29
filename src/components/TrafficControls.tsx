@@ -408,6 +408,60 @@ export function TrafficControls({
         return orbitalState.message
     }
   })()
+  const orbitalPrimarySummary = (() => {
+    if (!orbitalVisible) return undefined
+    if (
+      playback.mode !== 'live' ||
+      orbitalState.phase === 'paused-history'
+    ) {
+      return 'ORBITS · HIDDEN IN HISTORY'
+    }
+    if (orbitalState.phase === 'disabled') return 'ORBITS · STARTING'
+    if (orbitalState.phase === 'loading') return 'ORBITS · LOADING'
+    if (orbitalState.phase === 'unavailable') {
+      return 'ORBITS · UNAVAILABLE'
+    }
+    if (orbitalState.phase === 'clock-invalid') {
+      return 'ORBITS · CHECK DEVICE CLOCK'
+    }
+    if (orbitalState.phase === 'empty') {
+      return 'ORBITS · NO SAFE POSITIONS'
+    }
+    if (
+      orbitalState.phase === 'offline' &&
+      orbitalState.positions.length === 0
+    ) {
+      return 'ORBITS · OFFLINE'
+    }
+
+    const prediction = orbitalState.prediction
+    if (prediction.mode === 'world') {
+      return `ORBITS · ${prediction.inViewCount} VISIBLE`
+    }
+    if (prediction.mode === 'local') {
+      const crossings = prediction.futureCrossingCount
+      return `ORBITS · ${prediction.inViewCount} IN VIEW · ${crossings} ${
+        crossings === 1 ? 'PASS' : 'PASSES'
+      } ≤${Math.round(orbitalPredictionHorizonMs / 60_000)}M`
+    }
+    if (orbitalState.positions.length > 0) {
+      return `ORBITS · ${orbitalState.positions.length} MODELED`
+    }
+    return 'ORBITS · VIEW UNAVAILABLE'
+  })()
+  const revealOrbitalObjects = () => {
+    const details = mapToolsDetailsRef.current
+    if (!details) return
+    details.open = true
+    globalThis.requestAnimationFrame(() => {
+      const target =
+        details.querySelector<HTMLElement>(
+          '.orbital-results button',
+        ) ??
+        details.querySelector<HTMLElement>('#orbital-layer-toggle')
+      target?.focus()
+    })
+  }
 
   return (
     <div className="control-stack" aria-label="Map controls">
@@ -442,6 +496,22 @@ export function TrafficControls({
           SHIPS
         </button>
       </div>
+
+      {orbitalPrimarySummary && (
+        <div className="control-panel__urgent control-panel__orbital-summary">
+          <span title={orbitalPrimarySummary}>
+            {orbitalPrimarySummary}
+          </span>
+          <button
+            type="button"
+            aria-label="View modeled orbital objects"
+            aria-controls="traffic-controls-map-tools"
+            onClick={revealOrbitalObjects}
+          >
+            VIEW
+          </button>
+        </div>
+      )}
 
       <div
         className="control-panel__urgent"
