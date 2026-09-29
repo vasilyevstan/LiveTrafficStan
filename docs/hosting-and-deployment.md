@@ -43,27 +43,26 @@ no paid fallback is enabled. Orbital activation uses the included free KV and
 SQLite Durable Object allocations; R2 is not used.
 
 The current application source is
-`cea3a1f553266a0c4d21e90506904aed6f484887`. Primary ORBITS/status deployment
-run `36589814477` published Cloudflare version
-`2fe26151-d18e-4994-a147-887014d84af0` with aircraft delivery through
+`ddc414e26dd8dacb5a9d4e1f528ccec44dc0bf4f`. Compact-controls deployment run
+`36599339842` published Cloudflare version
+`98147f84-68c6-49c0-84a3-bc7dc1481897` with aircraft delivery through
 `oci-private-relay`, aircraft photos, plausible routes, the five-file
 exact-IMO vessel-photo manifest, and the orbital catalog enabled. It preserved
 KV namespace `59178d55418247c4bab473b52a5dc07d`, one SQLite coordinator, and
 Cron `17 */2 * * *`. The compatible relay remains at
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` and retains
 `76540a21291878b44e7f92ceecb37d03a366c0c7` as the prior release. The
-deployed client is `assets/index-DZMYhfjJ.js`, and the deployed `index.html`
+deployed client is `assets/index-Bm-WP8Xp.js`, and the deployed `index.html`
 SHA-256 is
-`3659dd113e455927925249031198690aae082216ae9e348ba45831bcd3f6d566`.
+`dc2f367f02764016570915cc3706494c7c0a6dbb0f1891800720a2994ba75e74`.
 
 The exact-release endpoint, full smoke, and fresh-profile desktop/mobile
-browser acceptance passed. The first same-source deployment exposed recurrent
-private-relay guest/network unavailability. A supported diagnostic reboot
-restored the unchanged VPC/Tunnel path from `502`, through bounded
-`503 Retry-After`, to real `200 application/json`. The canonical rerun passed,
-as did a controlled relay-service restart and post-restart exact smoke; #174
-is closed. Orbital, marine, map, and static-context behavior remained healthy
-and isolated throughout.
+browser acceptance passed. The first exact-source deployment run `36598727844`
+exposed recurrent private-relay guest/network unavailability as aircraft HTTP
+`502`. A supported diagnostic reboot restored the unchanged VPC/Tunnel path to
+real `200 application/json`, and the canonical exact-source rerun passed
+without rollback. Orbital, marine, map, and static-context behavior remained
+healthy and isolated throughout.
 
 The activation catalog contains 156 schema-v1 records with digest
 `2cbe00a3285c7bdfd80fe07661b6a14b48279d0629e44c026c6306bb20453d5b`
@@ -81,13 +80,20 @@ kept the feature available; #162 retains the first successful scheduled KV
 publication as explicit outstanding evidence.
 
 The public Wiki synchronization is commit
-`abb4e21ae4c6225d9530675ce66cb9f3c4bc443e`. It updates focused
+`5f9cd06b84f4921f146a3f7a73ed64158cae20b8`. It updates focused
 [Orbital Tracking](https://github.com/vasilyevstan/LiveTrafficStan/wiki/Orbital-Tracking)
 and
 [Infrastructure and Hosting](https://github.com/vasilyevstan/LiveTrafficStan/wiki/Infrastructure-and-Hosting)
 pages plus the surrounding Home, map, release, troubleshooting, and
-accessibility documentation with the primary-control release and relay
-recovery evidence.
+accessibility documentation with the compact-control release, single-scroll
+contract, current production identity, and relay recovery evidence.
+
+Production browser acceptance used a deterministic 24-object fixture to expose
+all 20 bounded orbital results at 390x844 and 390x568. Operations More was the
+single scroll owner; touch, wheel, Page Down, and 38 Tab steps reached the
+final result. The exact 58vh bounds, one MapLibre canvas, one catalog request,
+zero browser CelesTrak requests, compact deduplicated attribution, and zero
+console/runtime errors were retained.
 
 Current rendered route acceptance selected live `BTI877`, made exactly one
 route request, rendered TLL to BCN, and made no second route request after an

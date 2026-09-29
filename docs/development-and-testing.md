@@ -882,6 +882,22 @@ CelesTrak request, runtime exception, or console error. The same run rendered
 the compact unavailable-route and aircraft-photo cards at 96.46875 px and
 125.703125 px respectively and verified the shortened source/privacy copy.
 
+The release source was
+`ddc414e26dd8dacb5a9d4e1f528ccec44dc0bf4f`; exact merged-`main`
+validation run `36598593975` passed. The first deployment run `36598727844`
+published the application but failed only at the recurrent private-relay
+aircraft `502`. After the supported OCI diagnostic reboot restored real JSON,
+canonical deployment run `36599339842` passed full smoke and published
+Cloudflare version `98147f84-68c6-49c0-84a3-bc7dc1481897`.
+
+The deterministic acceptance was repeated against that deployed production
+bundle. It again exposed all 20 results through the one Operations scroll
+owner at both mobile sizes, retained the exact 58vh bounds, one canvas, one
+catalog request, zero browser CelesTrak requests, compact deduplicated
+attribution, and no console/runtime error. Public Wiki commit
+`5f9cd06b84f4921f146a3f7a73ed64158cae20b8` records the same release and
+evidence.
+
 Physical iOS Safari, Android Chrome, and supported-device drag-FPS evidence
 remain outstanding and must not be inferred from CDP emulation.
 

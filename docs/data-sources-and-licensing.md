@@ -104,7 +104,7 @@ identity, the same fixed point route and User-Agent, one aggregate upstream
 start per 20 seconds, and provider `Retry-After` backoff. It does not rotate
 addresses, add a provider, alter attribution, or claim additional capacity
 permission. Production application source
-`cea3a1f553266a0c4d21e90506904aed6f484887` uses compatible relay release
+`ddc414e26dd8dacb5a9d4e1f528ccec44dc0bf4f` uses compatible relay release
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` through the fixed Workers VPC
 Service and private Tunnel; see
 [OCI Aircraft Relay](oci-aircraft-relay.md).

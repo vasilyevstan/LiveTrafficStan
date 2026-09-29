@@ -28,11 +28,11 @@ active on the relay VM with four IPv6 QUIC connections and a dedicated
 used only when a protected deployment selects `oci-private-relay`.
 
 The current application source is
-`cea3a1f553266a0c4d21e90506904aed6f484887`; compatible relay source
+`ddc414e26dd8dacb5a9d4e1f528ccec44dc0bf4f`; compatible relay source
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` remains active and the initial
 relay release remains the retained rollback target. Exact-main validation run
-`36588520860` and production run `36589814477` published Cloudflare version
-`2fe26151-d18e-4994-a147-887014d84af0`.
+`36598593975` and production run `36599339842` published Cloudflare version
+`98147f84-68c6-49c0-84a3-bc7dc1481897`.
 
 This component does not move the application to OCI. An OCI, Tunnel, or relay
 failure must affect aircraft only; Static Assets, the map, vessels, weather,
@@ -303,10 +303,8 @@ pending.
 The supported `DIAGNOSTICREBOOT` showed the explicit lifecycle
 `STOPPING -> STARTING -> RUNNING`. Production then progressed truthfully from
 connector-startup `502`, through relay-local `503 Retry-After: 7`, to real
-`200 application/json`. Exact application source
-`cea3a1f553266a0c4d21e90506904aed6f484887` passed protected deployment run
-`36589814477` and full smoke through the unchanged VPC Service, Tunnel, and
-relay release.
+`200 application/json`. That recovery established the supported procedure but
+did not eliminate the underlying no-SLA guest/network recurrence.
 
 A later controlled relay-service restart used the existing noninteractive sudo
 policy and proved `active`, `enabled`, `NRestarts=0`, loopback
@@ -315,6 +313,16 @@ policy and proved `active`, `enabled`, `NRestarts=0`, loopback
 production smoke. Guest-plugin timestamps may remain stale while queued
 commands later complete; use command execution state and output, not plugin
 timestamps alone.
+
+During compact-controls deployment run
+`36598727844`, the same isolated path again returned aircraft HTTP `502` while
+Static Assets, the Worker release, and the orbital endpoint remained healthy.
+The supported diagnostic reboot moved the instance through `STOPPING`,
+`STARTING`, and `RUNNING`; four bounded public probes returned `502` before
+real `200 application/json` at `2026-09-29T16:39:35Z`. Exact application
+source `ddc414e26dd8dacb5a9d4e1f528ccec44dc0bf4f` then passed canonical
+deployment run `36599339842` through the unchanged VPC Service, Tunnel, and
+relay release.
 
 ## Failure interpretation
 
