@@ -555,7 +555,8 @@ has these expected states:
   snapshot exists yet, so the exact-release normalized bootstrap is serving;
 - `200` with `X-LiveTrafficStan-Orbital-Source: kv` — a complete scheduled
   snapshot is serving;
-- `503` — neither KV nor the bootstrap passed schema/digest validation.
+- `503` — neither compatible candidate passed validation, or candidates had
+  equal retrieval timestamps with different canonical digests.
 
 Check the release SHA, schema, digest, retrieval time, serve time, ETag, and
 source headers. Do not diagnose freshness from HTTP `Date` alone: each orbital
@@ -583,10 +584,20 @@ If the first production Cron does not publish:
 
 If the active immutable bootstrap will cross the 24-hour browser hard age
 before an ordinary repaired Cron can be proven, generate one fresh bounded
-snapshot offline into a new `/orbital-data/v<next>/` directory, update the
-Worker fallback and production smoke to that version, and release normally.
-Never overwrite a published version, seed KV by hand, reset the coordinator,
-or expose an on-demand provider trigger.
+snapshot offline into a new never-reused `/orbital-data/<new-version>/`
+directory, update the pinned manifest, Worker fallback, and production smoke,
+and release normally. Never overwrite a published version, seed KV by hand,
+reset the coordinator, or expose an on-demand provider trigger.
+
+Current schema 2 expects catalog ID `celestrak-curated-v1`, key
+`orbital:catalog:v2:curated-v1`, immutable path
+`/orbital-data/curated-2026-09-30-v1/catalog.json`, and source order
+`visual`, `stations`, `weather`, `gnss`, `science`. Run
+`npm run check:orbital-catalog` to validate that contract, the
+462-record/239,460-byte bootstrap, and the retained schema-1 rollback assets.
+A schema mismatch, incomplete per-group join, cross-group conflict,
+equal-epoch propagation conflict, timeout, or bound violation is an atomic
+refresh failure; do not accept a partial union or fall back to v1 at runtime.
 
 A persisted `301`, other redirect, `403`, or `404` is an intentional blocked
 state. Recheck CelesTrak's current endpoint and usage policy before clearing the
@@ -595,7 +606,9 @@ invoke the object, delete its storage ad hoc, rotate Cloudflare identity, change
 group, or add a proxy/fallback. `429` and readable `5xx Retry-After` guidance
 must retain the later next-allowed time. Guidance longer than seven days, or an
 outcome-storage failure, intentionally leaves acquisition fail-closed until a
-reviewed coordinator reset.
+reviewed coordinator reset. Catalog schema 2 does not itself reset admission:
+the schema-1 coordinator row retains `lastStartedAt`, in-progress state,
+attempt sequence, `Retry-After`/`nextAllowedAt`, terminal block, and cadence.
 
 Rollback to a target with the orbital flag off must also remove the Cron
 through the checked rollback workflow. Do not delete the KV namespace to fix a

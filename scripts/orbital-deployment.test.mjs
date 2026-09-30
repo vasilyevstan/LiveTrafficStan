@@ -3,6 +3,17 @@ import { mkdtempSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import {
+  ORBITAL_CATALOG_KEY,
+  ORBITAL_CATALOG_SCHEMA_VERSION,
+  ORBITAL_CATALOG_V1_KEY,
+  ORBITAL_SOURCE_CONTRACT_VERSION,
+} from '../worker/orbitalCatalog.ts'
+import {
+  ORBITAL_COORDINATOR_OBJECT_NAME,
+  ORBITAL_COORDINATOR_STATE_CONTRACT_VERSION,
+  ORBITAL_COORDINATOR_STATE_SCHEMA_VERSION,
+} from '../worker/orbitalCatalogCoordinator.ts'
 
 const repositoryRoot = resolve(import.meta.dirname, '..')
 const script = join(
@@ -95,5 +106,19 @@ describe('orbital Cloudflare deployment configuration', () => {
     expect(enabled.triggers.crons).toEqual(['17 */2 * * *'])
     expect(disabled.name).toBe('livetrafficstan')
     expect(disabled.triggers.crons).toEqual([])
+  })
+
+  it('separates catalog v2 storage without resetting coordinator identity', () => {
+    expect(ORBITAL_CATALOG_SCHEMA_VERSION).toBe(2)
+    expect(ORBITAL_SOURCE_CONTRACT_VERSION).toBe(2)
+    expect(ORBITAL_CATALOG_KEY).toBe(
+      'orbital:catalog:v2:curated-v1',
+    )
+    expect(ORBITAL_CATALOG_V1_KEY).toBe('orbital:catalog:v1')
+    expect(ORBITAL_COORDINATOR_OBJECT_NAME).toBe(
+      'celestrak-visual-refresh-v2',
+    )
+    expect(ORBITAL_COORDINATOR_STATE_SCHEMA_VERSION).toBe(1)
+    expect(ORBITAL_COORDINATOR_STATE_CONTRACT_VERSION).toBe(1)
   })
 })

@@ -70,10 +70,11 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   Center. It uses explicit ICAO codes from the pinned airport projection,
   shows observation and retrieval age, expires old reports, and remains
   independent of traffic providers and static airport context.
-- A default-off modeled orbital layer for CelesTrak's bounded `visual`
-  catalog. It propagates current satellite and cataloged rocket-body
-  subpoints locally with SGP4, identifies ground tracks that cross a safe local
-  map view within 90 minutes, and draws one bounded selected-object track.
+- A default-off modeled orbital layer currently released against CelesTrak's
+  bounded `visual` catalog. It propagates current satellite and cataloged
+  rocket-body subpoints locally with SGP4, identifies ground tracks that cross
+  a safe local map view within 90 minutes, and draws one bounded selected-object
+  track.
   **ORBITS** stays beside **AIRCRAFT** and **SHIPS** in the primary Operations
   row; its compact modeled-state summary is also mirrored in the upper-left
   status panel without changing aircraft/marine health.
@@ -86,6 +87,16 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   selected image uses one bounded same-origin load whose media type, byte
   count, and SHA-256 are validated before a session Blob URL can appear in
   details or a later tooltip.
+- Issue #211's infrastructure slice defines the next atomic source contract:
+  schema 2 catalog `celestrak-curated-v1`, ordered groups `visual`, `stations`,
+  `weather`, `gnss`, and `science`, 462 unique records (369 payloads, 91
+  rocket bodies, and 2 debris objects), and a separate
+  `orbital:catalog:v2:curated-v1` KV key. The immutable 239,460-byte bootstrap
+  is `/orbital-data/curated-2026-09-30-v1/catalog.json`, canonical digest
+  `5cb57fdeaa99dc585dc6c16e1548aa6e5bd05217f23b28c6ae205b96ee70bde6`.
+  Existing schema-1 assets and KV data remain for rollback. This source-only
+  slice must not be released by itself: zoom tiers and complete catalog
+  discovery remain the follow-on browser PR.
 - A default-enabled ADSB.lol plausible-route lookup for a selected live
   aircraft. A committed selection starts one lookup and shows a compact result
   directly below the aircraft heading. Hover, HISTORY, and same-flight position
@@ -249,6 +260,15 @@ results, and selected tracks remain outside traffic models, clustering,
 freshness, trails, metadata, photos, and history. Wide views can therefore
 show orbital objects while aircraft and ships pause under their unchanged
 100 km eligibility contract.
+
+The curated updater performs ten strictly sequential fixed requests (GP then
+SATCAT for each reviewed group), validates each group before one union,
+deduplicates only by canonical decimal NORAD ID, chooses the newest valid OMM
+epoch, and performs one final v2 KV write. Any non-200, redirect, malformed or
+oversized body, timeout, incomplete join, identity/type conflict, equal-epoch
+propagation conflict, or failed publication preserves the previous complete
+snapshot. The same Durable Object name and schema-1 admission state retain the
+two-hour cadence, in-progress fence, `Retry-After`, and terminal block.
 
 Aircraft metadata is a separate selected-object boundary. It makes no startup
 request, loads one immutable index and one ICAO24-prefix shard on first use,
@@ -646,8 +666,9 @@ monitoring, privacy, and rollback procedure.
   views or independent confirmation of the transmitting hull. Missing,
   invalid, or unmatched IMO shows no real-image substitute. No general yacht
   photo coverage is promised.
-- Orbital positions and map crossings are SGP4 models from a bounded
-  CelesTrak bright-object catalog. They are not observations, launch or reentry
+- Orbital positions and map crossings are SGP4 models from a bounded reviewed
+  CelesTrak catalog; the `visual` group is only one member of the curated
+  source set. They are not observations, launch or reentry
   telemetry, hazard predictions, or proof that an object is illuminated or
   visible to a person at the map location. The two reviewed NASA photographs
   are historical references to the exact object, not a view of its current

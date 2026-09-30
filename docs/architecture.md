@@ -118,7 +118,7 @@ tombstone can be removed after Cloudflare confirms that deletion has applied.
 | `scripts/pwa-shell.mjs` | Deterministic shell allowlist/versioning, request classification, two-generation cleanup, and normal/retirement worker source |
 | `public/manifest.webmanifest` | Root-scoped standalone install metadata and versioned maskable icons |
 | `public/vessel-photos/` | Immutable reviewed vessel-photo derivatives plus co-located file-specific license records; excluded from the application-shell cache |
-| `public/orbital-data/` | Immutable normalized CelesTrak bootstrap for the schema-compatible first deploy and rollback fallback; excluded from the application-shell cache |
+| `public/orbital-data/` | Immutable normalized CelesTrak bootstraps. Schema-1 `v1`/`v2` paths remain byte-for-byte rollback assets; schema 2 uses the never-reused `curated-2026-09-30-v1` path. All are excluded from the application-shell cache |
 | `public/orbital-enrichment/` | Immutable exact-NORAD NASA photographs plus co-located rights/provenance notices; selected on demand and excluded from the application-shell cache |
 
 ## Control composition
@@ -308,12 +308,25 @@ airport `ident`/IATA values as ICAO codes. The adapter accepts only requested
 METAR/SPECI records, validates Unix-second observation time and bounded fields,
 and keeps the newest valid report per station.
 
-Orbital objects are a separate modeled-data boundary. ORBITS starts off and
-loads one complete same-origin schema-v1 snapshot only after explicit enable.
-The provider performs streamed byte, fatal UTF-8, exact-field, source,
-ordering, header, ETag, and SHA-256 checks before a fulfilled current-tab cache
-is created. It sends no camera, Home, geolocation, selection, cookie, or
-credential data and cannot select another catalog or provider.
+Orbital objects are a separate modeled-data boundary. The released browser
+starts ORBITS off and loads one complete same-origin schema-v1 snapshot only
+after explicit enable. Issue #211 stages a schema-2 server contract for catalog
+`celestrak-curated-v1`; its browser schema, zoom tiers, and discovery model are
+a separate follow-on and the infrastructure slice is not independently
+releasable. Both contracts perform streamed byte, fatal UTF-8, exact-field,
+source, ordering, header, ETag, and SHA-256 checks before a fulfilled
+current-tab cache is created. They send no camera, Home, geolocation,
+selection, cookie, or credential data and cannot select another catalog or
+provider.
+
+The schema-2 scheduler owns one fixed ordered source set: `visual`, `stations`,
+`weather`, `gnss`, and `science`. It performs GP then SATCAT reads serially for
+each group, validates unique per-group IDs and complete joins, and only then
+builds one union. Cross-group identity and SATCAT type must agree after outer
+whitespace normalization. Newer OMM epoch wins; an equal-epoch propagation
+conflict rejects the refresh. Published records remain numerically ordered by
+NORAD ID, while `displayOrder` is derived only from reviewed group order and
+numeric NORAD ID for later clutter control.
 
 A dedicated module worker prepares `satellite.js` SGP4 records and emits only
 application-owned modeled positions, local crossing results, and one selected
@@ -685,11 +698,12 @@ and gives only the aircraft proxy one private outbound dependency:
    canonical `GET /api/weather/metar?ids=...`; the fixed
    `GET /api/orbits/catalog` route reads only KV or the exact-release bootstrap
    and never performs an upstream request;
-5. a protected two-hour Cron, independent of browser requests, may fetch
-   only after one named SQLite Durable Object atomically admits the start; it
-   may then fetch only the fixed CelesTrak `visual` GP and SATCAT URLs, persist
-   the provider outcome, and publish one complete schema-versioned KV snapshot
-   with one final write;
+5. a protected two-hour Cron, independent of browser requests, may fetch only
+   after the existing named SQLite Durable Object atomically admits the start;
+   it then performs the ten fixed, strictly sequential GP/SATCAT requests for
+   `visual`, `stations`, `weather`, `gnss`, and `science`, validates one union,
+   persists the provider outcome, and publishes one complete schema-2 snapshot
+   to `orbital:catalog:v2:curated-v1` with one final write;
 6. after private-relay activation, the aircraft route may use only its
    configured fixed transport and never fail over within a request;
 7. OpenFreeMap, Photon, and Digitraffic HTTPS/WSS remain direct browser
@@ -713,6 +727,13 @@ upstream start per 20 seconds across all clients, and persists only bounded
 backoff state. It has no public hostname, cache, queue, provider fallback, or
 coordinate-bearing application log. See
 [OCI Aircraft Relay](oci-aircraft-relay.md).
+
+The coordinator table, class, binding, namespace, and fixed object name do not
+change for catalog schema 2. Its schema-1 cadence state therefore preserves
+`lastStartedAt`, in-progress admission, `Retry-After`/`nextAllowedAt`, terminal
+block, and the two-hour gate across rollout. The prior
+`orbital:catalog:v1` value and both schema-1 bootstrap generations remain for
+rollback.
 
 No application database, general backend, shared live traffic cache, preview
 deployment, or server-side marine relay is added. The only provider scheduler

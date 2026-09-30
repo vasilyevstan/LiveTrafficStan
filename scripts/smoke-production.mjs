@@ -18,7 +18,6 @@ import {
 } from './smoke-policy.mjs'
 
 const MAX_AIRCRAFT_RESPONSE_BYTES = 4 * 1_024 * 1_024
-const MAX_ORBITAL_RESPONSE_BYTES = 256 * 1_024
 
 const [
   deploymentUrl,
@@ -55,6 +54,11 @@ if (
     'The orbital catalog flag must be "true" or "false"',
   )
 }
+
+const targetOrbitalContract =
+  orbitalCatalogEnabled === 'true'
+    ? await import('../worker/orbitalCatalog.ts')
+    : undefined
 
 const baseUrl = new URL(deploymentUrl)
 if (baseUrl.protocol !== 'https:') {
@@ -254,9 +258,7 @@ const verifyStaticAssets = async () => {
   }
 
   if (orbitalCatalogEnabled === 'true') {
-    const { ORBITAL_BOOTSTRAP_PATH } = await import(
-      '../worker/orbitalCatalog.ts'
-    )
+    const { ORBITAL_BOOTSTRAP_PATH } = targetOrbitalContract
     const { bootstrapPath: orbitalPath, noticePath } =
       deriveOrbitalStaticAssetPaths(ORBITAL_BOOTSTRAP_PATH)
     const localOrbital = await readFile(`dist${orbitalPath}`)
@@ -582,35 +584,20 @@ const verifyOrbitalCatalog = async () => {
 
   const body = new Uint8Array(await response.arrayBuffer())
   assert(
-    body.byteLength <= MAX_ORBITAL_RESPONSE_BYTES,
+    body.byteLength <=
+      targetOrbitalContract.ORBITAL_MAX_SNAPSHOT_BYTES,
     'Orbital catalog response is oversized',
   )
-  const payload = JSON.parse(new TextDecoder().decode(body))
+  const payload =
+    await targetOrbitalContract.validateOrbitalCatalogSnapshot(
+      JSON.parse(new TextDecoder().decode(body)),
+    )
   assert(
-    payload &&
-      typeof payload === 'object' &&
-      payload.schemaVersion === 1 &&
-      payload.sourceContractVersion === 1 &&
-      payload.group === 'visual' &&
-      payload.gpSourceUrl ===
-        'https://celestrak.org/NORAD/elements/gp.php?GROUP=visual&FORMAT=json' &&
-      payload.satcatSourceUrl ===
-        'https://celestrak.org/satcat/records.php?GROUP=visual&FORMAT=json' &&
-      Array.isArray(payload.records) &&
-      payload.records.length > 0 &&
-      payload.records.length <= 256 &&
-      payload.recordCount === payload.records.length,
-    'Orbital catalog returned an unexpected payload',
-  )
-  assert(
-    payload.records.every(
-      (record) =>
-        record &&
-        typeof record === 'object' &&
-        /^(?:[1-9]\d{0,8})$/.test(record.noradCatalogId) &&
-        ['PAY', 'R/B', 'DEB', 'UNK'].includes(record.objectType),
-    ),
-    'Orbital catalog contains an invalid object identity or type',
+    payload.schemaVersion ===
+      targetOrbitalContract.ORBITAL_CATALOG_SCHEMA_VERSION &&
+      payload.sourceContractVersion ===
+        targetOrbitalContract.ORBITAL_SOURCE_CONTRACT_VERSION,
+    'Orbital catalog returned an unsupported release contract',
   )
   assert(
     response.headers.get('x-livetrafficstan-orbital-sha256') ===

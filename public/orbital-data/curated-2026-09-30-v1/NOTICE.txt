@@ -1,0 +1,87 @@
+LiveTrafficStan curated orbital catalog bootstrap
+
+Catalog:
+  celestrak-curated-v1
+  Schema 2 / source contract 2
+  462 unique objects: 369 PAY, 91 R/B, 2 DEB
+  Canonical digest:
+  5cb57fdeaa99dc585dc6c16e1548aa6e5bd05217f23b28c6ae205b96ee70bde6
+
+Sources, in reviewed acquisition and display-priority order:
+  visual
+    GP: https://celestrak.org/NORAD/elements/gp.php?GROUP=visual&FORMAT=json
+    SATCAT: https://celestrak.org/satcat/records.php?GROUP=visual&FORMAT=json
+    Rows: 156 GP / 158 SATCAT
+  stations
+    GP: https://celestrak.org/NORAD/elements/gp.php?GROUP=stations&FORMAT=json
+    SATCAT: https://celestrak.org/satcat/records.php?GROUP=stations&FORMAT=json
+    Rows: 22 GP / 22 SATCAT
+  weather
+    GP: https://celestrak.org/NORAD/elements/gp.php?GROUP=weather&FORMAT=json
+    SATCAT: https://celestrak.org/satcat/records.php?GROUP=weather&FORMAT=json
+    Rows: 72 GP / 74 SATCAT
+  gnss
+    GP: https://celestrak.org/NORAD/elements/gp.php?GROUP=gnss&FORMAT=json
+    SATCAT: https://celestrak.org/satcat/records.php?GROUP=gnss&FORMAT=json
+    Rows: 172 GP / 173 SATCAT
+  science
+    GP: https://celestrak.org/NORAD/elements/gp.php?GROUP=science&FORMAT=json
+    SATCAT: https://celestrak.org/satcat/records.php?GROUP=science&FORMAT=json
+    Rows: 46 GP / 47 SATCAT
+
+Retrieved:
+  2026-09-30T18:25:59.094Z
+
+Published:
+  2026-09-30T18:25:59.094Z
+
+Probe evidence:
+  Aggregate decoded source bytes: 353281
+  visual GP: 65172 bytes,
+    SHA-256 4a69f3af2db28eead1428b465d8bceebbc0599b7b586e8315b951efff863818f
+  visual SATCAT: 52060 bytes,
+    SHA-256 3d6bd9dbdb7e3e0bfa88d965e2f68c5e3aa953bcbc6fa9791b1f17ed3681a5dd
+  stations GP: 9303 bytes,
+    SHA-256 b61ed1bcec9c19232239163b225c1d4d3826a1af0c770f91ddb28d11d009f121
+  stations SATCAT: 7302 bytes,
+    SHA-256 dc26f4beef451fa8ca47f3811294169cebd30e59f61bfba4469d6ffb98cbc8af
+  weather GP: 29841 bytes,
+    SHA-256 1e468ec983d8f51635f90b337b7f40f43c97ce0e7179fad1abe6160bceb8ebb9
+  weather SATCAT: 24544 bytes,
+    SHA-256 6ab5a9d1e3cc08669b336517253f106e3ba3dd411f6bae9f078193852c09f02b
+  gnss GP: 71028 bytes,
+    SHA-256 9837b20e1a3a0c366c0205bfeb6583c67bbd30187f18e0719260cef9dee3ab69
+  gnss SATCAT: 59475 bytes,
+    SHA-256 c902ec719c74f8e883731c1e1b50fcc5d5eca14cb052d882981cbd65020d15a8
+  science GP: 19059 bytes,
+    SHA-256 95646331b480e191f2f48a839012ca855b37758b3149081b7281881ce1800411
+  science SATCAT: 15497 bytes,
+    SHA-256 ac1176d4f8e1c7717d30ccf7fa549f418cc9cdacd6cf4031bfef89b39fc6e9cb
+
+Transformation:
+  Each group was validated independently. GP and SATCAT rows were joined by
+  canonical decimal NORAD catalog ID. Six non-conflicting cross-group
+  overlaps were deduplicated by that ID, with the newest valid OMM epoch
+  retained. Records are canonically sorted by numeric NORAD ID. sourceGroups
+  retain reviewed order, and displayOrder is derived only from the first
+  reviewed source-group position and numeric NORAD ID.
+
+Meaning:
+  The file contains orbital elements and catalog metadata, not live telemetry.
+  Group membership is not object purpose, operational state, or optical
+  visibility. Any positions displayed by LiveTrafficStan are modeled locally
+  and do not prove naked-eye visibility, powered flight, reentry, impact,
+  conjunction, or hazard.
+
+Attribution:
+  CelesTrak GP/OMM and SATCAT
+  https://celestrak.org/
+
+Use-policy review:
+  https://celestrak.org/usage-policy.php
+
+CelesTrak does not publish a conventional formal data-license grant covering
+every downstream caching and redistribution question. LiveTrafficStan uses
+this bounded, attributed, noncommercial, value-added snapshot under the
+documented engineering assessment in docs/orbital-data-source-evaluation.md.
+Recheck current provider terms before deployment.

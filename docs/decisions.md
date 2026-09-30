@@ -227,35 +227,56 @@ verify matching client/MapLibre-worker bytes plus bounded provider smoke.
 Account selection and protected credentials are configured. Client-side
 secrets and temporary-account workarounds remain prohibited.
 
-## Scheduled CelesTrak snapshot, not direct browser orbital fetches
+## Scheduled curated CelesTrak snapshot, not direct browser orbital fetches
 
-Issue #162 uses CelesTrak's bounded `visual` GP/OMM group plus its matching
-SATCAT metadata. The GP feed supplies orbital elements; SATCAT supplies exact
-payload, rocket-body, debris, or unknown type. Names and orbit behavior are not
-type evidence.
+Issue #162 established the protected scheduled snapshot with CelesTrak's
+bounded `visual` GP/OMM and SATCAT pair. Issue #211 retains that boundary and
+expands only the reviewed source contract to the ordered set `visual`,
+`stations`, `weather`, `gnss`, and `science`. The final coordinated
+2026-09-30 probe produced 462 unique objects: 369 `PAY`, 91 `R/B`, and 2
+`DEB`, with six non-conflicting overlaps, no missing GP-to-SATCAT join, and
+353,281 aggregate decoded bytes.
 
-The browser does not call CelesTrak. One protected Cloudflare Cron invokes
-one named SQLite Durable Object, which atomically admits at most one start per
-two hours before the two fixed requests. A complete normalized result is
-published through one final Workers KV write. `GET /api/orbits/catalog` reads
-only KV or the exact-release bootstrap and cannot perform upstream work.
+The browser does not call CelesTrak. One protected Cloudflare Cron invokes the
+same named SQLite Durable Object, which atomically admits at most one start per
+two hours before ten strictly sequential requests: GP then SATCAT for each
+group. Each group validates independently. The union deduplicates only by
+canonical decimal NORAD ID, requires normalized name/designator and exact type
+agreement, chooses the newest valid OMM epoch, and rejects equal-epoch
+propagation differences. One complete result is published through one final
+Workers KV write. `GET /api/orbits/catalog` reads only compatible KV and the
+exact-release bootstrap and cannot perform upstream work.
 
-This adds the smallest shared acquisition boundary that satisfies CelesTrak's
-once-per-update guidance, avoids per-tab provider load and third-party browser
-disclosure, and preserves a deterministic first deployment and rollback. A
-pass-through Worker, eventually consistent KV lock, ordinary edge-cache miss
-fetch, full active catalog, direct browser mode, provider fallback, and
-viewport-driven acquisition were rejected.
+Schema 2 identifies catalog `celestrak-curated-v1`, records the ordered source
+URLs and row counts, retrieval/publication times, exact OMM and SATCAT fields,
+ordered `sourceGroups`, numeric-NORAD canonical ordering, and a canonical
+digest. `displayOrder` is derived only from reviewed group order plus numeric
+NORAD ID; it is future clutter control, not importance or mission inference.
+The new key is `orbital:catalog:v2:curated-v1`; schema-1 KV and immutable
+`v1`/`v2` assets remain certifiable for rollback.
 
-The snapshot records exact source URLs, retrieval time, element epoch, schema,
-record count, and digest. A failed refresh retains the prior snapshot; terminal
-provider statuses block further acquisition until review. The provider
-contract and alternatives are recorded in
+The catalog contract changes without resetting provider admission. The Durable
+Object class, namespace, binding, object name, table, and schema-1 state keep
+`lastStartedAt`, an in-progress fence, `Retry-After`/`nextAllowedAt`, terminal
+block, and the two-hour cadence. A pass-through Worker, KV lock, edge-cache
+miss fetch, full `active` catalog, direct browser mode, provider fallback,
+parallel source burst, truncation, partial publication, and viewport-driven
+acquisition remain rejected.
+
+The schema-2 bootstrap is the never-reused
+`/orbital-data/curated-2026-09-30-v1/catalog.json`: 239,460 bytes, 462
+records, canonical digest
+`5cb57fdeaa99dc585dc6c16e1548aa6e5bd05217f23b28c6ae205b96ee70bde6`.
+Checksum and repository-history guards require a new path for any byte change.
+Current code validates both compatible v2 KV and bootstrap, serves the newer
+`retrievedAt`, and fails closed when equal timestamps have different digests.
+
+This infrastructure does not make propagated coordinates live observations,
+and it is not independently releasable before the follow-on browser schema,
+zoom-tier, and catalog-discovery work. Orbital models remain outside
+aircraft/marine traffic, freshness, trails, and history. The provider contract
+and alternatives are recorded in
 [Orbital Data Source Evaluation](orbital-data-source-evaluation.md).
-
-This infrastructure does not make propagated coordinates live observations.
-The separate map work keeps orbital models out of aircraft/marine traffic,
-freshness, trails, and history.
 
 Production activation at source
 `46cb2007bc0cc27d1905fab32db6149a91d17576` retained this design unchanged:

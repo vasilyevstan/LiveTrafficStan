@@ -705,42 +705,69 @@ or relationships to visible aircraft.
 
 ## Orbital objects: CelesTrak GP/OMM and SATCAT
 
-Issue #162 selects CelesTrak's bounded `visual` group for modeled satellites
-and cataloged rocket bodies. The fixed GP/OMM JSON feed supplies orbital
-elements; the fixed SATCAT JSON feed supplies exact public catalog type.
-LiveTrafficStan joins only by canonical NORAD catalog ID and never infers
-payload, rocket body, debris, or unknown from a name suffix or orbit.
+Issue #162 selected CelesTrak's bounded `visual` group for the released
+modeled layer. Issue #211's infrastructure contract expands the reviewed
+source set, in fixed order, to `visual`, `stations`, `weather`, `gnss`, and
+`science`. It continues to reject the broad `active`, the conflicting
+`last-30-days`, and unreviewed large/specialized catalogs documented in the
+source evaluation. Every group uses its exact GP/OMM JSON feed for
+orbital elements and matching SATCAT JSON feed for public catalog type.
+LiveTrafficStan joins and deduplicates only by canonical decimal NORAD catalog
+ID and never infers payload, rocket body, debris, or unknown from a name,
+suffix, orbit, mission, or source group.
 
-The browser does not contact CelesTrak. One protected Cloudflare Cron may
-ask one named SQLite Durable Object to atomically admit the two fixed requests
-at most once every two hours, validates both under strict
-status/media-type/byte/record/deadline/schema limits, and publishes one complete
-schema-versioned Workers KV snapshot with one final write. Browser requests
-read only
+The browser does not contact CelesTrak. One protected Cloudflare Cron may ask
+the existing named SQLite Durable Object to atomically admit one ten-request
+strictly sequential refresh at most once every two hours. Each GP response is
+followed by its group's SATCAT response before the next group starts. Every
+group validates unique IDs and a complete GP-to-SATCAT join independently;
+validated extra SATCAT rows are ignored. The final union requires exact
+cross-group type agreement and name/designator agreement after outer
+whitespace normalization only. Newest valid OMM epoch wins, while equal-epoch
+differing propagation fields reject the complete refresh.
+
+Each response has a 10-second/512-record/512-KiB limit; the refresh has a
+90-second/4-MiB limit; the complete publication has 512-record/512-KiB limits.
+There is no truncation, parallel burst, retry, group fallback, rotation, or
+partial publication. One successful union produces one final write to
+`orbital:catalog:v2:curated-v1`. Browser requests read only
 `GET /api/orbits/catalog`; they cannot start provider work or submit a group,
 catalog ID, viewport, Home, geolocation, or selection.
 
-The exact-release bootstrap contains the same normalized schema and provides a
-deterministic first deployment and rollback fallback. Failed, blocked,
-malformed, oversized, partial, or mismatched refreshes preserve the prior
-complete snapshot. Provider `301`, other redirects, `403`, and `404` enter a
-reviewed blocked state; `429` and `5xx` honor later readable `Retry-After`
-guidance up to seven days, while longer guidance blocks for review; no
-immediate retry or provider fallback is added.
+The immutable schema-2 bootstrap contains the same normalized source contract
+and provides a deterministic first deployment. The final coordinated
+2026-09-30 probe produced 462 unique objects (369 `PAY`, 91 `R/B`, 2 `DEB`),
+six non-conflicting overlaps, no missing joins, and 353,281 aggregate decoded
+bytes. The normalized 239,460-byte bootstrap has canonical digest
+`5cb57fdeaa99dc585dc6c16e1548aa6e5bd05217f23b28c6ae205b96ee70bde6`
+at `/orbital-data/curated-2026-09-30-v1/catalog.json`. Its path is
+never reused; checksum and history guards require a new version for changed
+bytes. The previous schema-1 KV key and both `v1` and `v2` bootstrap paths
+remain intact for rollback.
 
-CelesTrak's `visual` group is a bright-object catalog, not a statement that an
-object is visible now. Propagated positions are modeled locally with SGP4 and
-must retain element epoch, snapshot retrieval time, and source attribution.
-They are not live telemetry, observed positions, naked-eye predictions,
-powered-ascent tracking, reentry alerts, impact predictions, or conjunction
-assessment.
+Failed, blocked, malformed, oversized, partial, conflicting, or timed-out
+refreshes preserve the prior complete schema-2 snapshot. Provider `301`, other
+redirects, `403`, and `404` enter a reviewed blocked state; `429` and `5xx`
+honor later readable `Retry-After` guidance up to seven days, while longer
+guidance blocks for review. Catalog schema changes do not reset the Durable
+Object's schema-1 admission state. There is no immediate retry, manual refresh,
+browser fallback, provider fallback, or alternate source.
+
+The selected groups are catalog membership, not statements that an object is
+visible now, currently operational, scientifically active, transmitting, or
+receiving navigation signals. Propagated positions are modeled locally with
+SGP4 and must retain element epoch, snapshot retrieval/publication time, exact
+SATCAT type, ordered source membership, and attribution. They are not live
+telemetry, observed positions, naked-eye predictions, powered-ascent tracking,
+reentry alerts, impact predictions, or conjunction assessment.
 
 CelesTrak operates this public orbital-data service as part of its nonprofit
 mission but does not publish a conventional formal license covering every
 downstream caching and redistribution question. The selected basis is fixed,
 noncommercial, minimum-necessary, attributed, value-added use with exact
 provenance. Provider text was rechecked for the 2026-09-28 production
-activation. It must be rechecked before any material source, group, cadence,
+activation and the source expansion was probed on 2026-09-30. It must be
+rechecked before any material source, group, cadence,
 caching, attribution, or public-display change; a prohibition stops further
 acquisition rather than introducing a fallback.
 

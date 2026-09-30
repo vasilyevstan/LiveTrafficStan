@@ -51,6 +51,16 @@ coordinator and one offset two-hour Cron, and records the KV namespace
 identity. A disabled deployment removes the Cron and omits both orbital
 bindings.
 
+Issue #211 does not add another flag, binding, namespace, service, or manual
+refresh. When the protected flag is enabled, current Worker source supports
+only schema 2 catalog `celestrak-curated-v1`, KV key
+`orbital:catalog:v2:curated-v1`, and immutable bootstrap
+`/orbital-data/curated-2026-09-30-v1/catalog.json`. The retained
+`orbital:catalog:v1` key and `/orbital-data/v1` plus `/orbital-data/v2`
+schema-1 assets are rollback contracts, not fallback inputs to schema-2 code.
+The Durable Object class, binding, namespace, object name, and schema-1
+admission row remain unchanged.
+
 Current production source
 `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8` sets the flag to `true`, uses KV
 namespace `59178d55418247c4bab473b52a5dc07d`, and runs Cron
@@ -113,7 +123,10 @@ spread through components:
 | METAR client and Worker deadline / response cap | 8 seconds / 256 KiB |
 | METAR stale / expiry | 75 minutes / 120 minutes |
 | Orbital layer | Off by default; explicit enable only |
-| Orbital catalog request | Fixed same-origin route; 5-second deadline; 256 KiB / 256-record limit |
+| Released browser orbital request | Fixed same-origin route; 5-second deadline; schema 1, 256 KiB / 256-record limit until the follow-on #211 browser PR |
+| Curated scheduler sources | Ordered `visual`, `stations`, `weather`, `gnss`, `science`; GP then SATCAT for each group |
+| Curated upstream bounds | 10 seconds, 512 records, and 512 KiB per response; 90 seconds and 4 MiB aggregate per complete refresh |
+| Curated published snapshot | Schema/source contract 2; at most 512 records / 512 KiB; no truncation or partial publication |
 | Orbital revalidation / stale / expiry | 2 hours / 6 hours / 24 hours |
 | Orbital element age / future tolerance | 14 days / 10 minutes |
 | Orbital clock initial skew / later jump | 2 minutes / 30 seconds |
