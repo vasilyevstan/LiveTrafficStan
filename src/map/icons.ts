@@ -14,146 +14,162 @@ export type IconPolygons = readonly (readonly IconPoint[])[]
 export const VESSEL_ICON_SHAPES = {
   vessel: [
     [
-      [32, 3],
-      [43, 16],
-      [45, 48],
-      [39, 61],
-      [25, 61],
-      [19, 48],
-      [21, 16],
+      [32, 8],
+      [43, 15],
+      [49, 24],
+      [49, 51],
+      [44, 57],
+      [20, 57],
+      [15, 51],
+      [15, 24],
+      [21, 15],
     ],
   ],
   'vessel-cargo': [
     [
-      [32, 3],
-      [44, 12],
-      [51, 23],
-      [49, 57],
-      [41, 62],
-      [23, 62],
-      [15, 57],
-      [13, 23],
-      [20, 12],
+      [32, 7],
+      [50, 13],
+      [57, 21],
+      [57, 59],
+      [7, 59],
+      [7, 21],
+      [14, 13],
     ],
   ],
   'vessel-tanker': [
     [
       [32, 3],
-      [40, 8],
-      [46, 18],
-      [47, 50],
-      [41, 59],
-      [35, 62],
-      [29, 62],
-      [23, 59],
-      [17, 50],
-      [18, 18],
-      [24, 8],
+      [39, 6],
+      [44, 12],
+      [47, 21],
+      [47, 45],
+      [44, 54],
+      [38, 61],
+      [26, 61],
+      [20, 54],
+      [17, 45],
+      [17, 21],
+      [20, 12],
+      [25, 6],
     ],
   ],
   'vessel-passenger': [
     [
-      [32, 2],
-      [46, 12],
-      [53, 26],
-      [50, 55],
-      [42, 62],
-      [22, 62],
-      [14, 55],
-      [11, 26],
-      [18, 12],
+      [32, 3],
+      [46, 9],
+      [57, 19],
+      [52, 27],
+      [41, 33],
+      [40, 42],
+      [55, 52],
+      [55, 60],
+      [9, 60],
+      [9, 52],
+      [24, 42],
+      [23, 33],
+      [12, 27],
+      [7, 19],
+      [18, 9],
     ],
   ],
   'vessel-fishing': [
     [
-      [32, 5],
-      [42, 18],
-      [43, 51],
-      [36, 61],
-      [28, 61],
-      [21, 51],
-      [22, 18],
+      [32, 6],
+      [40, 15],
+      [42, 50],
+      [37, 59],
+      [27, 59],
+      [22, 50],
+      [24, 15],
     ],
     [
-      [23, 28],
-      [7, 41],
-      [9, 49],
-      [25, 36],
+      [24, 27],
+      [24, 38],
+      [7, 49],
+      [4, 41],
     ],
     [
-      [41, 28],
-      [57, 41],
-      [55, 49],
-      [39, 36],
+      [40, 27],
+      [40, 38],
+      [57, 49],
+      [60, 41],
     ],
   ],
   'vessel-tug': [
     [
-      [15, 14],
-      [26, 14],
-      [26, 21],
-      [38, 21],
-      [38, 14],
-      [49, 14],
-      [50, 44],
-      [43, 58],
-      [21, 58],
-      [14, 44],
+      [16, 11],
+      [48, 11],
+      [55, 20],
+      [55, 48],
+      [47, 59],
+      [42, 59],
+      [42, 39],
+      [22, 39],
+      [22, 59],
+      [17, 59],
+      [9, 48],
+      [9, 20],
     ],
   ],
   'vessel-sailing': [
     [
-      [19, 48],
-      [45, 48],
-      [39, 60],
-      [25, 60],
+      [24, 44],
+      [40, 44],
+      [37, 61],
+      [27, 61],
     ],
     [
-      [30, 5],
-      [30, 45],
-      [10, 45],
+      [30, 4],
+      [30, 43],
+      [8, 43],
     ],
     [
-      [34, 13],
-      [34, 45],
-      [52, 45],
+      [35, 15],
+      [35, 43],
+      [51, 43],
     ],
   ],
   'vessel-pleasure': [
     [
       [32, 3],
-      [50, 29],
-      [44, 47],
-      [46, 56],
-      [37, 62],
-      [27, 62],
-      [18, 56],
-      [20, 47],
-      [14, 29],
+      [43, 13],
+      [51, 29],
+      [43, 40],
+      [50, 53],
+      [48, 61],
+      [39, 61],
+      [39, 45],
+      [25, 45],
+      [25, 61],
+      [16, 61],
+      [14, 53],
+      [21, 40],
+      [13, 29],
+      [21, 13],
     ],
   ],
   'vessel-highspeed': [
     [
-      [20, 4],
-      [29, 20],
-      [28, 54],
-      [23, 62],
-      [14, 56],
-      [16, 22],
+      [16, 3],
+      [25, 14],
+      [25, 52],
+      [21, 61],
+      [9, 56],
+      [10, 18],
     ],
     [
-      [44, 4],
-      [48, 22],
-      [50, 56],
-      [41, 62],
-      [36, 54],
-      [35, 20],
+      [48, 3],
+      [54, 18],
+      [55, 56],
+      [43, 61],
+      [39, 52],
+      [39, 14],
     ],
     [
-      [24, 23],
-      [40, 23],
-      [43, 34],
-      [21, 34],
+      [20, 24],
+      [44, 24],
+      [48, 37],
+      [16, 37],
     ],
   ],
 } as const satisfies Record<VesselStyleImageId, IconPolygons>
@@ -499,14 +515,14 @@ export const createPassengerVesselIcon = (theme: Theme) =>
     fillVesselShape(context, treatment, 'vessel-passenger')
 
     strokeDetail(context, treatment, treatment.vesselDetail, () => {
-      context.moveTo(20, 23)
-      context.lineTo(44, 23)
-      context.moveTo(17, 33)
-      context.lineTo(47, 33)
-      context.moveTo(17, 43)
-      context.lineTo(47, 43)
-      context.moveTo(20, 51)
-      context.lineTo(44, 51)
+      context.moveTo(14, 22)
+      context.lineTo(50, 22)
+      context.moveTo(19, 29)
+      context.lineTo(45, 29)
+      context.moveTo(26, 38)
+      context.lineTo(38, 38)
+      context.moveTo(13, 54)
+      context.lineTo(51, 54)
     })
   })
 
@@ -531,13 +547,13 @@ export const createTugVesselIcon = (theme: Theme) =>
     fillVesselShape(context, treatment, 'vessel-tug')
 
     strokeDetail(context, treatment, treatment.vesselDetail, () => {
-      context.moveTo(21, 29)
-      context.lineTo(43, 29)
-      context.lineTo(43, 45)
-      context.lineTo(21, 45)
+      context.moveTo(20, 22)
+      context.lineTo(44, 22)
+      context.lineTo(44, 35)
+      context.lineTo(20, 35)
       context.closePath()
-      context.moveTo(32, 29)
-      context.lineTo(32, 45)
+      context.moveTo(32, 22)
+      context.lineTo(32, 35)
     })
   })
 
@@ -547,10 +563,10 @@ export const createSailingVesselIcon = (theme: Theme) =>
     fillVesselShape(context, treatment, 'vessel-sailing')
 
     strokeDetail(context, treatment, treatment.vesselDetail, () => {
-      context.moveTo(32, 7)
-      context.lineTo(32, 48)
-      context.moveTo(17, 48)
-      context.lineTo(47, 48)
+      context.moveTo(32, 6)
+      context.lineTo(32, 44)
+      context.moveTo(15, 44)
+      context.lineTo(49, 44)
     })
   })
 
@@ -562,11 +578,9 @@ export const createPleasureVesselIcon = (theme: Theme) =>
     strokeDetail(context, treatment, treatment.vesselDetail, () => {
       context.moveTo(22, 31)
       context.lineTo(42, 31)
-      context.lineTo(38, 43)
-      context.lineTo(26, 43)
+      context.lineTo(38, 42)
+      context.lineTo(26, 42)
       context.closePath()
-      context.moveTo(22, 50)
-      context.lineTo(42, 50)
     })
   })
 

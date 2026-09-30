@@ -555,12 +555,16 @@ with an exact type shape for normalized `Sailing vessel`, `Pleasure craft`, or
 Cargo, unknown, broad `other`, names, dimensions, and movement never imply a
 yacht or unsupported cargo subtype.
 
-Each supported vessel image has a distinct outer profile at the minimum
-rendered map size: container grid, tanker deck, passenger decks, fishing
-outriggers, tug shoulders, sails, pleasure cabin, or twin high-speed hulls.
-These are category symbols, not depictions of the exact vessel. Light/Dark
-changes update the same bounded MapLibre image IDs and preserve the source,
-selection, heading, stale opacity, stopped badge, and one map instance.
+Each supported vessel image carries its identity in a bold outer contour or
+large negative space at the 26-45 CSS-pixel rendered range: neutral compact
+hull, broad cargo slab, narrow tanker capsule, flared and waisted ferry, thick
+fishing arms, blunt notched tug, asymmetric sails, notched pleasure craft, or
+twin high-speed hulls and channel. Deterministic DPR1 tests compare equal-height
+geometry, cap pairwise intersection-over-union at 0.78, require at least 22%
+symmetric difference, and preserve three-pixel identity features. These are
+category symbols, not depictions of the exact vessel. Light/Dark changes update
+the same bounded MapLibre image IDs and preserve the source, selection,
+heading, stale opacity, stopped badge, and one map instance.
 
 The local filter taxonomy is slightly broader than the artwork vocabulary:
 types 31, 32, 50-55, 58, and 59 are `tug-service`; known non-filter categories
