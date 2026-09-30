@@ -23,6 +23,13 @@ sets `ORBITAL_CATALOG_ENABLED=true`, serves the same-origin catalog route, and
 runs the checked two-hour scheduler. A deployment with that Worker flag off
 still returns `404` and removes the Cron.
 
+Issue #211's first PR is infrastructure only. It stages schema 2 catalog
+`celestrak-curated-v1` from the ordered groups `visual`, `stations`,
+`weather`, `gnss`, and `science`, but deliberately does not add catalog
+discovery or zoom tiers to this browser. The released browser remains schema 1
+until the coordinated follow-on; the source-contract PR must not be deployed
+alone.
+
 ## User experience
 
 The remembered **ORBITS** preference starts off. Its single toggle appears in
@@ -110,19 +117,30 @@ One-second position changes are not placed in an ARIA live region.
 ## Data and execution flow
 
 ```text
+staged Issue #211 source contract:
 Cloudflare Cron
   -> named SQLite Durable Object cadence admission
-  -> fixed CelesTrak visual GP + SATCAT requests with project identity
-  -> complete normalized schema-v1 snapshot
-  -> one final Workers KV publication
+  -> visual GP + SATCAT, then stations, weather, gnss, science
+  -> independent group joins + one strict NORAD-ID union
+  -> complete normalized schema-2 snapshot
+  -> one final orbital:catalog:v2:curated-v1 publication
 
+released browser contract:
 explicit ORBITS enable
   -> same-origin GET /api/orbits/catalog
-  -> strict browser validation + fulfilled current-tab cache
+  -> strict schema-1 validation + fulfilled current-tab cache
   -> dedicated module Web Worker
   -> satellite.js SGP4 propagation
   -> persistent MapLibre GeoJSON sources/layers
 ```
+
+The schema-2 server union has 462 unique records (369 payloads, 91 rocket
+bodies, and 2 debris objects) from the final
+`2026-09-30T18:25:59.094Z` probe. Six reviewed overlaps agree and all GP rows
+join SATCAT. The ten responses total 353,281 decoded bytes. The immutable
+239,460-byte bootstrap at
+`/orbital-data/curated-2026-09-30-v1/catalog.json` has canonical digest
+`5cb57fdeaa99dc585dc6c16e1548aa6e5bd05217f23b28c6ae205b96ee70bde6`.
 
 Browser camera, Home, geolocation, selection, cookies, authorization, and
 arbitrary caller headers never reach CelesTrak. Camera changes start only local
@@ -131,6 +149,15 @@ prediction work and never fetch a catalog. Scheduled source requests send only
 `User-Agent`. The Workers runtime host `fetch` is invoked through
 `globalThis`, preserving its required receiver without adding a browser,
 provider, or scheduler path.
+
+Schema 2 keeps canonical record serialization in numeric NORAD order and
+derives `displayOrder` only from reviewed group order plus numeric NORAD ID.
+Every group has a complete unique GP-to-SATCAT join before unioning; validated
+extra SATCAT rows are allowed. Newest valid OMM epoch wins across groups.
+Identity/type conflict or equal-epoch propagation conflict rejects the entire
+refresh. The schema-1 KV key and immutable `v1`/`v2` assets remain for
+rollback, while the existing Durable Object admission row retains cadence,
+in-progress, `Retry-After`, and terminal-block state.
 
 The client route is fixed and same-origin:
 
@@ -335,6 +362,12 @@ All behavioral limits are centralized in `src/config/appConfig.ts`.
 | Element age / future tolerance | 14 days / 10 minutes |
 | Clock skew / jump limit | 2 minutes / 30 seconds |
 
+Those are the released schema-1 browser bounds. The staged schema-2 scheduler
+has separate 10-second/512-record/512-KiB per-response,
+90-second/4-MiB aggregate, and 512-record/512-KiB publication bounds. The
+follow-on browser PR must define its compatible consumption bounds before
+coordinated release.
+
 The browser route is a literal `/api/orbits/catalog` and has no environment
 override. A build cannot redirect orbital reads to CelesTrak, another origin,
 or an alternate same-origin path.
@@ -343,6 +376,10 @@ or an alternate same-origin path.
 
 The automated suite covers:
 
+- exact curated URL/order, strictly sequential requests, independent joins,
+  deduplication, newest-epoch selection, conflicts, all source bounds and
+  deadlines, v1/v2 separation, immutable history, candidate selection, and
+  unchanged coordinator state;
 - strict catalog bytes, schema, digest, ETag, headers, 304, and cache admission;
 - ordinary SGP4 reference output and six-digit IDs;
 - over-age and invalid propagation;

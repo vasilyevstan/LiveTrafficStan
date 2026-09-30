@@ -33,8 +33,8 @@ Worker command below for enabled ORBITS acceptance.
 | `npm run update:aircraft-metadata` | Explicit maintainer regeneration from the pinned upstream archive and license |
 | `npm run check:country-allocations` | Network-free validation of bundled MID and ICAO24 country allocations |
 | `npm run update:country-allocations` | Explicit maintainer regeneration from pinned open-licensed sources and canonical cross-checks |
-| `npm run check:orbital-catalog` | Network-free raw-byte, fatal UTF-8, exact-schema/canonical-serialization, source, type, ordering, count, size, epoch, and SHA-256 validation of the committed CelesTrak bootstrap |
-| `npm run update:orbital-catalog -- --gp <path> --satcat <path> --retrieved-at <iso> --output public/orbital-data/v<next>/visual-catalog.json` | Explicit maintainer normalization of one already-downloaded GP/SATCAT pair after enforcing the same 256 KiB raw-byte and fatal UTF-8 bounds; never fetches the provider and never reuses a published immutable version |
+| `npm run check:orbital-catalog` | Network-free schema-2/canonical-digest validation of the curated bootstrap, pinned probe bytes/hashes/counts, immutable checksum/history guard, and both retained schema-1 rollback contracts |
+| `npm run update:orbital-catalog -- --source-dir <probe-dir> --summary <summary.json> --published-at <iso> --output public/orbital-data/<new-version>/catalog.json` | Explicit maintainer normalization of the already-downloaded fixed five-group evidence after exact URL/order/row/byte/SHA-256 checks; never fetches the provider and never reuses a published immutable version |
 | `npm run check:orbital-enrichment` | Network-free validation of exact current NORAD/name/designator/type identity, official-source provenance, rights notice, immutable asset inventory, dimensions, size, and SHA-256 |
 | `npm run check:vessel-photos` | Network-free validation of exact IMO, source revision, rights, license notice, asset inventory, dimensions, size, and SHA-256 |
 | `npm run check:ports` | Network-free validation of the committed Natural Earth port projection |
@@ -91,12 +91,21 @@ pushes targeting `dev` or `main`. The Wrangler dry run is credential-free and
 does not call a live provider.
 
 `npm run update:orbital-catalog` consumes local files only. A maintainer first
-makes one bounded GP request and one bounded SATCAT request under the current
-CelesTrak contract, records response evidence, and then runs the normalizer.
-Repeated tests use committed fixtures and the normalized bootstrap; they never
-loop against CelesTrak. `npm run check:orbital-catalog` recomputes the digest
-without network access and rejects unknown padding or any noncanonical file
-serialization.
+makes one coordinated strictly sequential GP/SATCAT read for each of the fixed
+groups `visual`, `stations`, `weather`, `gnss`, and `science`, records the
+summary plus raw response hashes, and then runs the normalizer once. The
+normalizer rejects changed URLs, order, row counts, byte counts, hashes,
+duplicates, missing joins, aggregate overflow, union count/type mismatch, or
+any schema conflict. Repeated tests use fixtures and the normalized bootstrap;
+they never loop against CelesTrak.
+
+`npm run check:orbital-catalog` recomputes the schema-2 canonical digest and
+file checksum without network access, verifies the 462-record/239,460-byte
+bootstrap and 353,281-byte probe evidence, checks the two retained schema-1
+bootstraps byte-for-byte, and rejects unknown padding or noncanonical
+serialization. Pull-request validation supplies
+`ORBITAL_CATALOG_IMMUTABLE_BASE`; reusing a historical path or changing bytes
+under `curated-2026-09-30-v1` fails and requires a new version.
 
 `npm run check:orbital-enrichment` does not fetch NASA. It verifies the
 committed two-record manifest against the committed visual catalog, requires

@@ -1,0 +1,133 @@
+{
+  "schemaVersion": 1,
+  "catalogId": "celestrak-curated-v1",
+  "bootstrapVersion": "curated-2026-09-30-v1",
+  "bootstrapPath": "/orbital-data/curated-2026-09-30-v1/catalog.json",
+  "noticePath": "/orbital-data/curated-2026-09-30-v1/NOTICE.txt",
+  "retrievedAt": "2026-09-30T18:25:59.094Z",
+  "publishedAt": "2026-09-30T18:25:59.094Z",
+  "probe": {
+    "reviewedAt": "2026-09-30",
+    "aggregateDecodedBytes": 353281,
+    "sources": [
+      {
+        "group": "visual",
+        "gp": {
+          "url": "https://celestrak.org/NORAD/elements/gp.php?GROUP=visual&FORMAT=json",
+          "records": 156,
+          "bytes": 65172,
+          "sha256": "4a69f3af2db28eead1428b465d8bceebbc0599b7b586e8315b951efff863818f"
+        },
+        "satcat": {
+          "url": "https://celestrak.org/satcat/records.php?GROUP=visual&FORMAT=json",
+          "records": 158,
+          "bytes": 52060,
+          "sha256": "3d6bd9dbdb7e3e0bfa88d965e2f68c5e3aa953bcbc6fa9791b1f17ed3681a5dd"
+        }
+      },
+      {
+        "group": "stations",
+        "gp": {
+          "url": "https://celestrak.org/NORAD/elements/gp.php?GROUP=stations&FORMAT=json",
+          "records": 22,
+          "bytes": 9303,
+          "sha256": "b61ed1bcec9c19232239163b225c1d4d3826a1af0c770f91ddb28d11d009f121"
+        },
+        "satcat": {
+          "url": "https://celestrak.org/satcat/records.php?GROUP=stations&FORMAT=json",
+          "records": 22,
+          "bytes": 7302,
+          "sha256": "dc26f4beef451fa8ca47f3811294169cebd30e59f61bfba4469d6ffb98cbc8af"
+        }
+      },
+      {
+        "group": "weather",
+        "gp": {
+          "url": "https://celestrak.org/NORAD/elements/gp.php?GROUP=weather&FORMAT=json",
+          "records": 72,
+          "bytes": 29841,
+          "sha256": "1e468ec983d8f51635f90b337b7f40f43c97ce0e7179fad1abe6160bceb8ebb9"
+        },
+        "satcat": {
+          "url": "https://celestrak.org/satcat/records.php?GROUP=weather&FORMAT=json",
+          "records": 74,
+          "bytes": 24544,
+          "sha256": "6ab5a9d1e3cc08669b336517253f106e3ba3dd411f6bae9f078193852c09f02b"
+        }
+      },
+      {
+        "group": "gnss",
+        "gp": {
+          "url": "https://celestrak.org/NORAD/elements/gp.php?GROUP=gnss&FORMAT=json",
+          "records": 172,
+          "bytes": 71028,
+          "sha256": "9837b20e1a3a0c366c0205bfeb6583c67bbd30187f18e0719260cef9dee3ab69"
+        },
+        "satcat": {
+          "url": "https://celestrak.org/satcat/records.php?GROUP=gnss&FORMAT=json",
+          "records": 173,
+          "bytes": 59475,
+          "sha256": "c902ec719c74f8e883731c1e1b50fcc5d5eca14cb052d882981cbd65020d15a8"
+        }
+      },
+      {
+        "group": "science",
+        "gp": {
+          "url": "https://celestrak.org/NORAD/elements/gp.php?GROUP=science&FORMAT=json",
+          "records": 46,
+          "bytes": 19059,
+          "sha256": "95646331b480e191f2f48a839012ca855b37758b3149081b7281881ce1800411"
+        },
+        "satcat": {
+          "url": "https://celestrak.org/satcat/records.php?GROUP=science&FORMAT=json",
+          "records": 47,
+          "bytes": 15497,
+          "sha256": "ac1176d4f8e1c7717d30ccf7fa549f418cc9cdacd6cf4031bfef89b39fc6e9cb"
+        }
+      }
+    ]
+  },
+  "expected": {
+    "records": 462,
+    "typeCounts": {
+      "PAY": 369,
+      "R/B": 91,
+      "DEB": 2,
+      "UNK": 0
+    },
+    "overlapCount": 6,
+    "snapshotBytes": 239460,
+    "snapshotFileSha256": "9716c21b171085c66f48f57396aec745917e7f30211dc48f4f4f94d3687d6159",
+    "canonicalSha256": "5cb57fdeaa99dc585dc6c16e1548aa6e5bd05217f23b28c6ae205b96ee70bde6",
+    "noticeBytes": 3727,
+    "noticeSha256": "e4caa98a4ea713c7d24e49aee21c07e25b45a1ad2a75f3e4ba1bac4fac898f2c"
+  },
+  "retainedRollbackContracts": [
+    {
+      "label": "schema-v1-original",
+      "bootstrapPath": "/orbital-data/v1/visual-catalog.json",
+      "noticePath": "/orbital-data/v1/NOTICE.txt",
+      "schemaVersion": 1,
+      "sourceContractVersion": 1,
+      "recordCount": 156,
+      "snapshotBytes": 73043,
+      "snapshotFileSha256": "bb191b0da118f3833f785d442282dff76432e055b8f79be34b938c7abac2e6a6",
+      "canonicalSha256": "f6183329084286f4fbb5cdfcea16e827e751569e7d5919d9e8222eadf95f017d",
+      "noticeBytes": 1272,
+      "noticeSha256": "82272800f9f733bd724b5eea13aee9f8cf9172858a38d97644cf4e89bfb490b4"
+    },
+    {
+      "label": "schema-v1-expiry-bridge",
+      "bootstrapPath": "/orbital-data/v2/visual-catalog.json",
+      "noticePath": "/orbital-data/v2/NOTICE.txt",
+      "schemaVersion": 1,
+      "sourceContractVersion": 1,
+      "recordCount": 156,
+      "snapshotBytes": 73565,
+      "snapshotFileSha256": "a40fd54603bbae1195340d81a990213cc6879ae02e64e514695203b94e991b6a",
+      "canonicalSha256": "58286a8bf415d1193b71d08d37a36de3f1006fe776acd5c0f8618ef046fe7df4",
+      "noticeBytes": 1272,
+      "noticeSha256": "d12fd808f68881a1a156c65a8b36b3340d5c9965a42a7343dff46c1ca9717d30"
+    }
+  ]
+}

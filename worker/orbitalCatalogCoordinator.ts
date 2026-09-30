@@ -1,6 +1,5 @@
 import { DurableObject } from 'cloudflare:workers'
 import {
-  ORBITAL_SOURCE_CONTRACT_VERSION,
   refreshOrbitalCatalog,
   type OrbitalCatalogEnvironment,
   type OrbitalRefreshCompletion,
@@ -11,6 +10,7 @@ import {
 
 export const ORBITAL_COORDINATOR_PATH = '/refresh'
 export const ORBITAL_COORDINATOR_STATE_SCHEMA_VERSION = 1
+export const ORBITAL_COORDINATOR_STATE_CONTRACT_VERSION = 1
 export const ORBITAL_COORDINATOR_OBJECT_NAME =
   'celestrak-visual-refresh-v2'
 
@@ -47,7 +47,8 @@ const isSafeInteger = (value: unknown): value is number =>
 const validateState = (row: RefreshStateRow) => {
   if (
     row.schemaVersion !== ORBITAL_COORDINATOR_STATE_SCHEMA_VERSION ||
-    row.sourceContractVersion !== ORBITAL_SOURCE_CONTRACT_VERSION ||
+    row.sourceContractVersion !==
+      ORBITAL_COORDINATOR_STATE_CONTRACT_VERSION ||
     !isSafeInteger(row.attemptSequence) ||
     row.attemptSequence < 1 ||
     !isSafeInteger(row.lastStartedAtMs) ||
@@ -156,7 +157,7 @@ class SqlOrbitalRefreshCoordinator implements OrbitalRefreshCoordinator {
                blocked_at_ms
              ) VALUES (1, ?, ?, ?, ?, ?, ?, NULL, NULL)`,
             ORBITAL_COORDINATOR_STATE_SCHEMA_VERSION,
-            ORBITAL_SOURCE_CONTRACT_VERSION,
+            ORBITAL_COORDINATOR_STATE_CONTRACT_VERSION,
             attemptSequence,
             attemptId,
             nowMs,

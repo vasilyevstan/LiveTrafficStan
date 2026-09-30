@@ -8,6 +8,10 @@ const workflow = readFileSync(
   join(repositoryRoot, '.github/workflows/rollback-production.yml'),
   'utf8',
 )
+const smoke = readFileSync(
+  join(repositoryRoot, 'scripts/smoke-production.mjs'),
+  'utf8',
+)
 
 describe('production rollback workflow', () => {
   it('serializes rollback with deployment and verifies current main', () => {
@@ -47,6 +51,15 @@ describe('production rollback workflow', () => {
     )
     expect(workflow).toContain(
       '"${{ inputs.deployment_url }}"\n          "${{ inputs.target_sha }}"\n          "${{ inputs.aircraft_delivery }}"',
+    )
+    expect(smoke).toContain(
+      "await import('../worker/orbitalCatalog.ts')",
+    )
+    expect(smoke).toContain(
+      'targetOrbitalContract.validateOrbitalCatalogSnapshot',
+    )
+    expect(smoke).toContain(
+      'deriveOrbitalStaticAssetPaths(ORBITAL_BOOTSTRAP_PATH)',
     )
   })
 

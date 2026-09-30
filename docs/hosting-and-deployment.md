@@ -508,16 +508,22 @@ or early events. Workers KV is intentionally not used as a lock because it has
 no compare-and-set contract and is eventually consistent. The coordinator
 never accepts browser input. Its cadence-state schema is independent from the
 published catalog schema so a catalog-shape revision cannot discard admission,
-backoff, or terminal-block state. A reviewed state reset changes the fixed
-coordinator object name and leaves the previous object intact. One admitted
-event may request:
+backoff, or terminal-block state. Catalog schema 2 does not reset or rename the
+class, namespace, binding, fixed coordinator object, SQLite table, or schema-1
+admission row. A reviewed admission-state reset would require a separately
+reviewed object-name change and would leave the previous object intact.
 
-```text
-https://celestrak.org/NORAD/elements/gp.php?GROUP=visual&FORMAT=json
-https://celestrak.org/satcat/records.php?GROUP=visual&FORMAT=json
-```
+One admitted event performs exactly this non-overlapping sequence:
 
-Both responses must satisfy:
+| Order | Group | GP | SATCAT |
+| --- | --- | --- | --- |
+| 1 | `visual` | `https://celestrak.org/NORAD/elements/gp.php?GROUP=visual&FORMAT=json` | `https://celestrak.org/satcat/records.php?GROUP=visual&FORMAT=json` |
+| 2 | `stations` | `https://celestrak.org/NORAD/elements/gp.php?GROUP=stations&FORMAT=json` | `https://celestrak.org/satcat/records.php?GROUP=stations&FORMAT=json` |
+| 3 | `weather` | `https://celestrak.org/NORAD/elements/gp.php?GROUP=weather&FORMAT=json` | `https://celestrak.org/satcat/records.php?GROUP=weather&FORMAT=json` |
+| 4 | `gnss` | `https://celestrak.org/NORAD/elements/gp.php?GROUP=gnss&FORMAT=json` | `https://celestrak.org/satcat/records.php?GROUP=gnss&FORMAT=json` |
+| 5 | `science` | `https://celestrak.org/NORAD/elements/gp.php?GROUP=science&FORMAT=json` | `https://celestrak.org/satcat/records.php?GROUP=science&FORMAT=json` |
+
+Every response must satisfy:
 
 - only `Accept: application/json` and the stable public project `User-Agent`
   are sent;
@@ -527,27 +533,35 @@ Both responses must satisfy:
   rejected;
 - exact `application/json` media type with at most an optional UTF-8 charset;
 - ten-second deadline per response;
-- at most 256 KiB and 256 records per response;
+- at most 512 records and 512 KiB decoded;
 - valid UTF-8 and strict required fields;
-- unique canonical NORAD IDs;
-- complete GP-to-SATCAT metadata join;
-- normalized output at most 256 KiB.
+- unique canonical NORAD IDs within that response.
 
-After both responses validate and normalize, the Durable Object durably
+The complete sequence has a 90-second deadline and 4 MiB aggregate decoded
+limit. Each group independently requires unique GP and SATCAT IDs and exactly
+one SATCAT row for every GP row; validated extra SATCAT rows are permitted but
+not published. The union deduplicates only by canonical decimal NORAD ID.
+Names, designators, and SATCAT type must agree after outer-whitespace
+normalization only. The newest valid OMM epoch wins; equal-epoch differing
+propagation fields reject the complete refresh. The result is never truncated
+and must contain at most 512 records and at most 512 KiB in normalized form.
+
+After all ten responses and one union validate, the Durable Object durably
 records the next allowed start before one final KV write replaces
-`orbital:catalog:v1`. That KV write is the sole publication commit. If
-publication fails, the prior snapshot remains and the next ordinary event may
-try again. The coordinator stores only schema/source-contract versions,
-attempt sequence, cadence, and blocked status. It contains no coordinates,
-user data, raw payload, digest, or provider body.
+`orbital:catalog:v2:curated-v1`. That write is the sole publication commit. If
+publication fails, the prior v2 snapshot remains and the next ordinary event
+may try again. The coordinator stores only its schema, attempt sequence,
+cadence, and blocked status. It contains no coordinates, user data, raw
+payload, digest, or provider body.
 
 `429` and readable `Retry-After` guidance on `5xx` extend the next-allowed
 time. Guidance is bounded to seven days; a longer value enters an
 operator-reviewed blocked state rather than creating an unsafe or
 non-representable deadline. Redirects, `403`, and `404` also block subsequent
 scheduled acquisition until explicit review. Timeout, `5xx` without readable
-guidance, malformed data, oversize, invalid fields, or incomplete joins
-preserve the prior snapshot and wait for the next normal event. If the
+guidance, malformed data, oversize, invalid fields, incomplete joins, or
+cross-group conflicts preserve the prior snapshot and wait for the next normal
+event. If the
 coordinator cannot persist any provider outcome, the initial fail-closed gate
 remains at `Number.MAX_SAFE_INTEGER`; the event reports unavailable and no
 later Cron can contact CelesTrak until a reviewed coordinator reset. There is
@@ -560,31 +574,41 @@ The public route is exactly:
 GET /api/orbits/catalog
 ```
 
-It rejects queries and other methods. It validates a schema-v1 KV value before
-serving; if KV is absent or incompatible it validates and serves the
-exact-release `/orbital-data/v2/visual-catalog.json` bootstrap. The previously
-published `v1` URL remains byte-for-byte immutable. If neither is
-valid it returns `503` with bounded retry guidance. Every response identifies
+It rejects queries and other methods. Current source validates schema-2
+catalog `celestrak-curated-v1` independently from both KV key
+`orbital:catalog:v2:curated-v1` and immutable bootstrap
+`/orbital-data/curated-2026-09-30-v1/catalog.json`, then serves the newer
+`retrievedAt`. Equal timestamps with equal canonical digest select KV; equal
+timestamps with different digests fail closed. If neither candidate is valid,
+the route returns `503` with bounded retry guidance. Every response identifies
 the release SHA, schema, digest, retrieval time, serve time, and whether KV or
 bootstrap supplied the bytes.
 
 The browser route and scheduled updater remain independent. Explicit ORBITS
 enable makes one strict same-origin read, then local SGP4 propagation runs in a
 dedicated worker. Camera, selection, theme, style, and ordinary hide/show
-changes cannot invoke CelesTrak or reset the two-hour schedule. The browser
-revalidates with ETag no more often than every two hours and stops using a
-snapshot after its 24-hour hard age.
+changes cannot invoke CelesTrak or reset the two-hour schedule. The released
+browser still supports schema 1 and the Issue #211 source-contract
+infrastructure must not be deployed until its follow-on browser schema,
+discovery, and zoom-tier work is included.
 
-The receiver repair includes a fail-closed recovery bootstrap generated from
-one bounded coordinated GP/SATCAT read at `2026-09-30T17:08:30.000Z`. It has
-156 records and digest
-`58286a8bf415d1193b71d08d37a36de3f1006fe776acd5c0f8618ef046fe7df4`.
-Deploying the repaired release immediately moves bootstrap fallback to the new
-immutable `v2` URL without changing schema, KV key, coordinator identity,
-provider cadence, or browser route. Do not seed KV manually, reset the named
-coordinator, invoke the provider on demand, or overwrite either immutable
-bootstrap URL. After deployment, bootstrap is an acceptable temporary source;
-the next ordinary admitted `17 */2 * * *` event must still be observed serving
+The curated bootstrap was generated from the final coordinated
+`2026-09-30T18:25:59.094Z` evidence: 462 records (369 `PAY`, 91 `R/B`, 2
+`DEB`), six non-conflicting overlaps, no missing joins, 353,281 aggregate decoded
+bytes, 239,460 normalized bytes, and canonical digest
+`5cb57fdeaa99dc585dc6c16e1548aa6e5bd05217f23b28c6ae205b96ee70bde6`.
+Its versioned path is never reused. Repository checksum/history checks require
+a new immutable path for any source, schema, generator, or byte change.
+
+The previous receiver-safe schema-1 assets remain byte-for-byte at
+`/orbital-data/v1/visual-catalog.json` and
+`/orbital-data/v2/visual-catalog.json`, and the v1 KV key remains untouched.
+Current smoke resolves the target checkout's supported schema, bootstrap, and
+validator so current v2 and retained v1 rollback releases are both
+certifiable. Do not seed KV manually, reset the named coordinator, invoke the
+provider on demand, or overwrite an immutable bootstrap URL. After a
+coordinated deployment, bootstrap is an acceptable temporary source; the next
+ordinary admitted `17 */2 * * *` event must still be observed serving
 `X-LiveTrafficStan-Orbital-Source: kv`.
 
 For local rendered acceptance without production credentials:
@@ -941,9 +965,10 @@ older SHA.
   through CORS;
 - one bounded canonical same-origin AWC METAR request or valid 204;
 - disabled orbital deployments return `404` from the fixed route; enabled
-  deployments return one bounded validated schema-v1 catalog from KV or the
-  exact-release bootstrap, with matching digest/ETag/source/retrieval headers,
-  reject queries and non-GET methods, and make no upstream provider request;
+  deployments return one bounded catalog under the target release's own
+  schema, validator, and immutable bootstrap contract, with matching
+  digest/ETag/source/retrieval headers, reject queries and non-GET methods, and
+  make no upstream provider request;
 - the exact `X-LiveTrafficStan-Release` value;
 - `no-store` aircraft behavior;
 - malformed-coordinate and unsupported-path rejection;

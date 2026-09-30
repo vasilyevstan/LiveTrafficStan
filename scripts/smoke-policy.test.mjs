@@ -348,9 +348,14 @@ describe('production smoke policy', () => {
       '/orbital-data/v1/NOTICE.txt',
     ],
     [
-      'v2 current release',
+      'schema-v1 expiry bridge',
       '/orbital-data/v2/visual-catalog.json',
       '/orbital-data/v2/NOTICE.txt',
+    ],
+    [
+      'schema-v2 current release',
+      '/orbital-data/curated-2026-09-30-v1/catalog.json',
+      '/orbital-data/curated-2026-09-30-v1/NOTICE.txt',
     ],
   ])(
     'derives target-specific orbital assets for %s',
@@ -363,16 +368,21 @@ describe('production smoke policy', () => {
   )
 
   it('loads the orbital bootstrap source of truth from the target checkout', () => {
-    const orbitalGuardIndex = smokeScript.indexOf(
-      "if (orbitalCatalogEnabled === 'true')",
-    )
     const targetImportIndex = smokeScript.indexOf(
-      "await import(\n      '../worker/orbitalCatalog.ts'\n    )",
+      "await import('../worker/orbitalCatalog.ts')",
     )
-    expect(orbitalGuardIndex).toBeGreaterThan(-1)
-    expect(targetImportIndex).toBeGreaterThan(orbitalGuardIndex)
+    expect(targetImportIndex).toBeGreaterThan(-1)
+    expect(smokeScript).toContain(
+      "orbitalCatalogEnabled === 'true'",
+    )
     expect(smokeScript).toContain(
       'deriveOrbitalStaticAssetPaths(ORBITAL_BOOTSTRAP_PATH)',
+    )
+    expect(smokeScript).toContain(
+      'targetOrbitalContract.validateOrbitalCatalogSnapshot',
+    )
+    expect(smokeScript).toContain(
+      'targetOrbitalContract.ORBITAL_MAX_SNAPSHOT_BYTES',
     )
     expect(smokeScript).not.toContain(
       "const orbitalPath = '/orbital-data/",
