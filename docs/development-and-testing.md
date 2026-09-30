@@ -34,7 +34,7 @@ Worker command below for enabled ORBITS acceptance.
 | `npm run check:country-allocations` | Network-free validation of bundled MID and ICAO24 country allocations |
 | `npm run update:country-allocations` | Explicit maintainer regeneration from pinned open-licensed sources and canonical cross-checks |
 | `npm run check:orbital-catalog` | Network-free raw-byte, fatal UTF-8, exact-schema/canonical-serialization, source, type, ordering, count, size, epoch, and SHA-256 validation of the committed CelesTrak bootstrap |
-| `npm run update:orbital-catalog -- --gp <path> --satcat <path> --retrieved-at <iso> --output public/orbital-data/v1/visual-catalog.json` | Explicit maintainer normalization of one already-downloaded GP/SATCAT pair after enforcing the same 256 KiB raw-byte and fatal UTF-8 bounds; never fetches the provider |
+| `npm run update:orbital-catalog -- --gp <path> --satcat <path> --retrieved-at <iso> --output public/orbital-data/v<next>/visual-catalog.json` | Explicit maintainer normalization of one already-downloaded GP/SATCAT pair after enforcing the same 256 KiB raw-byte and fatal UTF-8 bounds; never fetches the provider and never reuses a published immutable version |
 | `npm run check:orbital-enrichment` | Network-free validation of exact current NORAD/name/designator/type identity, official-source provenance, rights notice, immutable asset inventory, dimensions, size, and SHA-256 |
 | `npm run check:vessel-photos` | Network-free validation of exact IMO, source revision, rights, license notice, asset inventory, dimensions, size, and SHA-256 |
 | `npm run check:ports` | Network-free validation of the committed Natural Earth port projection |

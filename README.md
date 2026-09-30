@@ -515,7 +515,17 @@ with the stable project identity, independent coordinator schema, reviewed
 `v2` coordinator, and the current fresh bootstrap. The public route for this
 release still returned `X-LiveTrafficStan-Orbital-Source: bootstrap` at
 `2026-09-29T20:31:40.271Z`, approximately 14 minutes after the `20:17Z`
-schedule; the first successful scheduled KV publication remains open in #162.
+schedule. A checked Workers-runtime reproduction identified the scheduled
+publication defect: the updater invoked Cloudflare's receiver-sensitive
+`fetch` with an options object as `this`, so the runtime rejected acquisition
+with `TypeError: Illegal invocation`. The #162 repair calls the default host
+function through `globalThis` while preserving the fixed URLs, named
+coordinator, cadence, schema, prior snapshot, and rollback. The first
+successful ordinary scheduled KV publication remains open until the repaired
+source is deployed and a later Cron serves `source: kv`. Because the current
+bootstrap reaches its 24-hour browser hard age before that event can be proven,
+the repaired release uses a new immutable `v2` fallback retrieved at
+`2026-09-30T17:08:30.000Z`; the existing `v1` URL remains unchanged.
 
 The comprehensive public Wiki synchronization is commit
 `7bb657c8b90fda6150860f5dcba22010cf9cdf8d`; it updates

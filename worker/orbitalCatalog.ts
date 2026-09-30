@@ -1,6 +1,6 @@
 export const ORBITAL_CATALOG_PATH = '/api/orbits/catalog'
 export const ORBITAL_BOOTSTRAP_PATH =
-  '/orbital-data/v1/visual-catalog.json'
+  '/orbital-data/v2/visual-catalog.json'
 export const ORBITAL_CATALOG_KEY = 'orbital:catalog:v1'
 export const ORBITAL_CATALOG_SCHEMA_VERSION = 1
 export const ORBITAL_SOURCE_CONTRACT_VERSION = 1
@@ -931,8 +931,11 @@ export const refreshOrbitalCatalog = async (
 
   let snapshot: OrbitalCatalogSnapshot
   try {
+    const fetchImpl: OrbitalCatalogFetch =
+      options.fetchImpl ??
+      ((input, init) => globalThis.fetch(input, init))
     const fetchOptions = {
-      fetchImpl: options.fetchImpl ?? fetch,
+      fetchImpl,
       nowMs,
       timeoutMs: options.timeoutMs ?? ORBITAL_UPSTREAM_TIMEOUT_MS,
       maximumBytes:
