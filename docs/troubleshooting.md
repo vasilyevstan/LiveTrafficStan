@@ -574,9 +574,19 @@ If the first production Cron does not publish:
 3. inspect the deployed version and require both `ORBITAL_CATALOG` and
    `ORBITAL_CATALOG_COORDINATOR` bindings;
 4. verify the protected API token has the required Worker and KV permissions;
-5. inspect only aggregate status/byte/record/digest evidence; never print raw
+5. reproduce with the checked Workers runtime rather than plain Node: Workers
+   host functions such as `fetch` are receiver-sensitive and must be called
+   through `globalThis`, not as a property of a copied options object;
+6. inspect only aggregate status/byte/record/digest evidence; never print raw
    provider bodies;
-6. retain the previous snapshot or bootstrap while investigating.
+7. retain the previous snapshot or bootstrap while investigating.
+
+If the active immutable bootstrap will cross the 24-hour browser hard age
+before an ordinary repaired Cron can be proven, generate one fresh bounded
+snapshot offline into a new `/orbital-data/v<next>/` directory, update the
+Worker fallback and production smoke to that version, and release normally.
+Never overwrite a published version, seed KV by hand, reset the coordinator,
+or expose an on-demand provider trigger.
 
 A persisted `301`, other redirect, `403`, or `404` is an intentional blocked
 state. Recheck CelesTrak's current endpoint and usage policy before clearing the

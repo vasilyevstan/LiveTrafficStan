@@ -9,6 +9,7 @@ import {
   PRIVATE_RELAY_SMOKE_TIMEOUT_MS,
   SAME_ORIGIN_SMOKE_FETCH_INIT,
   classifyAircraftProxyStatus,
+  deriveOrbitalStaticAssetPaths,
   fetchPrivateRelayWithRetry,
   hasOneYearImmutableCacheControl,
   isRetryableStaticAssetStatus,
@@ -253,7 +254,11 @@ const verifyStaticAssets = async () => {
   }
 
   if (orbitalCatalogEnabled === 'true') {
-    const orbitalPath = '/orbital-data/v1/visual-catalog.json'
+    const { ORBITAL_BOOTSTRAP_PATH } = await import(
+      '../worker/orbitalCatalog.ts'
+    )
+    const { bootstrapPath: orbitalPath, noticePath } =
+      deriveOrbitalStaticAssetPaths(ORBITAL_BOOTSTRAP_PATH)
     const localOrbital = await readFile(`dist${orbitalPath}`)
     const remoteOrbital = await remoteBytes(orbitalPath, localOrbital)
     assert(
@@ -273,7 +278,6 @@ const verifyStaticAssets = async () => {
       'Deployed orbital bootstrap is not immutable',
     )
 
-    const noticePath = '/orbital-data/v1/NOTICE.txt'
     const localNotice = await readFile(`dist${noticePath}`)
     const remoteNotice = await remoteBytes(noticePath, localNotice)
     assert(

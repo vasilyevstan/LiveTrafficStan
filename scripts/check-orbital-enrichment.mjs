@@ -7,7 +7,7 @@ import { promisify } from 'node:util'
 import manifest from '../src/config/orbitalEnrichmentManifest.json' with {
   type: 'json',
 }
-import catalog from '../public/orbital-data/v1/visual-catalog.json' with {
+import catalog from '../public/orbital-data/v2/visual-catalog.json' with {
   type: 'json',
 }
 

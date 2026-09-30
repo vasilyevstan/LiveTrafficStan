@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   ORBITAL_BOOTSTRAP_PATH,
   ORBITAL_CATALOG_KEY,
@@ -189,6 +189,10 @@ describe('orbital catalog normalization', () => {
 })
 
 describe('scheduled orbital catalog refresh', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
   it('publishes one complete snapshot and enforces the persisted cadence', async () => {
     const store = new MemoryKv()
     const coordinator = new MemoryCoordinator()
@@ -259,6 +263,47 @@ describe('scheduled orbital catalog refresh', () => {
       nextAllowedAtMs: nowMs + ORBITAL_REFRESH_INTERVAL_MS,
     })
     expect(fetchImpl).toHaveBeenCalledTimes(2)
+  })
+
+  it('preserves the Workers runtime receiver for the default fetch', async () => {
+    const store = new MemoryKv()
+    const coordinator = new MemoryCoordinator()
+    const runtimeFetch = vi.fn(function (
+      this: typeof globalThis,
+      input: string | URL | Request,
+    ) {
+      if (this !== globalThis) {
+        throw new TypeError('Illegal invocation')
+      }
+      if (String(input) === ORBITAL_GP_URL) {
+        return Promise.resolve(jsonResponse([gpRecord()]))
+      }
+      if (String(input) === ORBITAL_SATCAT_URL) {
+        return Promise.resolve(jsonResponse([satcatRecord()]))
+      }
+      throw new Error('Unexpected URL')
+    })
+    vi.stubGlobal('fetch', runtimeFetch)
+
+    await expect(
+      refreshOrbitalCatalog(
+        {
+          ASSETS: { fetch: vi.fn() },
+          ORBITAL_CATALOG: store,
+          ORBITAL_CATALOG_ENABLED: 'true',
+        },
+        coordinator,
+        { nowMs },
+      ),
+    ).resolves.toMatchObject({
+      kind: 'published',
+      recordCount: 1,
+    })
+    expect(runtimeFetch.mock.contexts).toEqual([
+      globalThis,
+      globalThis,
+    ])
+    expect(store.values.has(ORBITAL_CATALOG_KEY)).toBe(true)
   })
 
   it('blocks reviewed terminal statuses without another upstream request', async () => {

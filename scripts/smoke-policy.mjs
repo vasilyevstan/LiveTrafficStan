@@ -204,6 +204,36 @@ export const hasOneYearImmutableCacheControl = (value) => {
   )
 }
 
+export const deriveOrbitalStaticAssetPaths = (bootstrapPath) => {
+  if (
+    typeof bootstrapPath !== 'string' ||
+    !bootstrapPath.startsWith('/') ||
+    bootstrapPath.includes('?') ||
+    bootstrapPath.includes('#')
+  ) {
+    throw new Error('The orbital bootstrap path is invalid')
+  }
+
+  const segments = bootstrapPath.slice(1).split('/')
+  if (
+    segments.length < 2 ||
+    segments.some(
+      (segment) =>
+        segment.length === 0 || segment === '.' || segment === '..',
+    )
+  ) {
+    throw new Error('The orbital bootstrap path is invalid')
+  }
+
+  return {
+    bootstrapPath,
+    noticePath: `${bootstrapPath.slice(
+      0,
+      bootstrapPath.lastIndexOf('/') + 1,
+    )}NOTICE.txt`,
+  }
+}
+
 export const readOptionalJson = async (file) => {
   try {
     return JSON.parse(await readFile(file, 'utf8'))
