@@ -150,6 +150,8 @@ The shared updater therefore:
   `User-Agent`;
 - uses one named SQLite Durable Object transaction for atomic admission rather
   than treating eventually consistent Workers KV as a lock;
+- invokes the Workers runtime `fetch` through `globalThis` so the
+  receiver-sensitive host function keeps its required runtime receiver;
 - leaves a fail-closed in-progress gate before provider work and persists the
   provider outcome before publishing;
 - performs no immediate retry;
@@ -184,6 +186,21 @@ Durable Object.
 
 There is no group fallback, direct-browser fallback, alternate provider, edge
 cache miss fetch, or on-demand upstream request.
+
+The first production implementation stored the runtime `fetch` function in an
+options object and then invoked it as that object's method. Cloudflare rejected
+the incorrect receiver with `TypeError: Illegal invocation` before either
+fixed CelesTrak request could complete. The #162 repair keeps injected test
+fetches unchanged but calls the default host function as
+`globalThis.fetch(...)`. It does not reset the named coordinator, bypass its
+persisted cadence, or add another acquisition path.
+
+Because the prior immutable bootstrap reaches its browser hard-age boundary
+before a repaired ordinary Cron can be proven, the same release selects a new
+`/orbital-data/v2/visual-catalog.json` fallback produced from one bounded,
+coordinated source pair. The `v1` URL remains unchanged. Future emergency
+bootstrap renewal must use a new versioned directory and must not become an
+extra scheduled, browser, or on-demand provider path.
 
 ## Response and schema bounds
 

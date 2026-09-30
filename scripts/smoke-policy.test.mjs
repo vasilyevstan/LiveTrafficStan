@@ -10,6 +10,7 @@ import {
   PRIVATE_RELAY_SMOKE_TIMEOUT_MS,
   SAME_ORIGIN_SMOKE_FETCH_INIT,
   classifyAircraftProxyStatus,
+  deriveOrbitalStaticAssetPaths,
   fetchPrivateRelayWithRetry,
   hasOneYearImmutableCacheControl,
   isRetryableStaticAssetStatus,
@@ -338,6 +339,47 @@ describe('production smoke policy', () => {
         'public, max-age=31536000, s-maxage=0, immutable',
       ),
     ).toBe(false)
+  })
+
+  it.each([
+    [
+      'v1 rollback',
+      '/orbital-data/v1/visual-catalog.json',
+      '/orbital-data/v1/NOTICE.txt',
+    ],
+    [
+      'v2 current release',
+      '/orbital-data/v2/visual-catalog.json',
+      '/orbital-data/v2/NOTICE.txt',
+    ],
+  ])(
+    'derives target-specific orbital assets for %s',
+    (_label, bootstrapPath, noticePath) => {
+      expect(deriveOrbitalStaticAssetPaths(bootstrapPath)).toEqual({
+        bootstrapPath,
+        noticePath,
+      })
+    },
+  )
+
+  it('loads the orbital bootstrap source of truth from the target checkout', () => {
+    const orbitalGuardIndex = smokeScript.indexOf(
+      "if (orbitalCatalogEnabled === 'true')",
+    )
+    const targetImportIndex = smokeScript.indexOf(
+      "await import(\n      '../worker/orbitalCatalog.ts'\n    )",
+    )
+    expect(orbitalGuardIndex).toBeGreaterThan(-1)
+    expect(targetImportIndex).toBeGreaterThan(orbitalGuardIndex)
+    expect(smokeScript).toContain(
+      'deriveOrbitalStaticAssetPaths(ORBITAL_BOOTSTRAP_PATH)',
+    )
+    expect(smokeScript).not.toContain(
+      "const orbitalPath = '/orbital-data/",
+    )
+    expect(smokeScript).not.toContain(
+      "const noticePath = '/orbital-data/",
+    )
   })
 
   it('allows current smoke policy to inspect a target without new manifests', async () => {

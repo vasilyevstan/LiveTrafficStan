@@ -128,7 +128,9 @@ Browser camera, Home, geolocation, selection, cookies, authorization, and
 arbitrary caller headers never reach CelesTrak. Camera changes start only local
 prediction work and never fetch a catalog. Scheduled source requests send only
 `Accept: application/json` and the stable public LiveTrafficStan
-`User-Agent`.
+`User-Agent`. The Workers runtime host `fetch` is invoked through
+`globalThis`, preserving its required receiver without adding a browser,
+provider, or scheduler path.
 
 The client route is fixed and same-origin:
 
@@ -424,11 +426,17 @@ change.
 At `2026-09-29T20:31:40.271Z`, approximately 14 minutes after the next
 `20:17Z` schedule, the public route still returned
 `X-LiveTrafficStan-Orbital-Source: bootstrap` with the exact current retrieval
-time and digest. That evidence proves that no compatible KV snapshot had
-become publicly available by that check; it does not claim whether scheduled
-delivery was delayed or an admitted refresh failed. The bootstrap kept the
-layer operational. The first successful production KV publication remains
-open in #162.
+time and digest. A checked local Workers-runtime reproduction subsequently
+proved that the scheduled updater invoked Cloudflare's receiver-sensitive
+`fetch` with an options object as `this`, producing `TypeError: Illegal
+invocation` before publication. The #162 repair preserves the fixed URLs,
+coordinator state, cadence, schema, prior snapshot, and rollback while calling
+the default host function through `globalThis`. The repaired release also moves
+fallback to the new immutable `v2` bootstrap retrieved at
+`2026-09-30T17:08:30.000Z`; the published `v1` bytes remain unchanged. The
+first successful ordinary production KV publication remains open until that
+source is deployed and a later Cron serves
+`X-LiveTrafficStan-Orbital-Source: kv`.
 
 Public Wiki commit `7bb657c8b90fda6150860f5dcba22010cf9cdf8d`
 updates the comprehensive

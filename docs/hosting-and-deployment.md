@@ -87,9 +87,15 @@ the reviewed `v2` named coordinator, and the current fresh bootstrap. The
 public route for the current exact application release still returned
 `X-LiveTrafficStan-Orbital-Source: bootstrap` at
 `2026-09-29T20:31:40.271Z`, approximately 14 minutes after the `20:17Z`
-schedule. #162
-retains the first successful scheduled KV publication as explicit outstanding
-evidence.
+schedule. A checked Workers-runtime reproduction identified the concrete
+cause: the updater detached the receiver-sensitive runtime `fetch` function
+into an options object, then invoked it with that object as `this`. Cloudflare
+rejected acquisition with `TypeError: Illegal invocation`; the coordinator
+truthfully preserved cadence and the bootstrap. The #162 repair calls the
+default host function through `globalThis` and adds a receiver-sensitive
+regression. The first successful ordinary production KV publication remains
+open until the repaired source is deployed and a later `17 */2 * * *` event
+serves `X-LiveTrafficStan-Orbital-Source: kv`.
 
 The public Wiki synchronization is commit
 `7bb657c8b90fda6150860f5dcba22010cf9cdf8d`. It updates focused
@@ -515,6 +521,8 @@ Both responses must satisfy:
 
 - only `Accept: application/json` and the stable public project `User-Agent`
   are sent;
+- the default Workers host `fetch` is called through `globalThis`, preserving
+  the receiver required by the Cloudflare runtime;
 - exact HTTP `200`; other successful 2xx statuses, including `206`, are
   rejected;
 - exact `application/json` media type with at most an optional UTF-8 charset;
@@ -554,7 +562,8 @@ GET /api/orbits/catalog
 
 It rejects queries and other methods. It validates a schema-v1 KV value before
 serving; if KV is absent or incompatible it validates and serves the
-exact-release `/orbital-data/v1/visual-catalog.json` bootstrap. If neither is
+exact-release `/orbital-data/v2/visual-catalog.json` bootstrap. The previously
+published `v1` URL remains byte-for-byte immutable. If neither is
 valid it returns `503` with bounded retry guidance. Every response identifies
 the release SHA, schema, digest, retrieval time, serve time, and whether KV or
 bootstrap supplied the bytes.
@@ -565,6 +574,18 @@ dedicated worker. Camera, selection, theme, style, and ordinary hide/show
 changes cannot invoke CelesTrak or reset the two-hour schedule. The browser
 revalidates with ETag no more often than every two hours and stops using a
 snapshot after its 24-hour hard age.
+
+The receiver repair includes a fail-closed recovery bootstrap generated from
+one bounded coordinated GP/SATCAT read at `2026-09-30T17:08:30.000Z`. It has
+156 records and digest
+`58286a8bf415d1193b71d08d37a36de3f1006fe776acd5c0f8618ef046fe7df4`.
+Deploying the repaired release immediately moves bootstrap fallback to the new
+immutable `v2` URL without changing schema, KV key, coordinator identity,
+provider cadence, or browser route. Do not seed KV manually, reset the named
+coordinator, invoke the provider on demand, or overwrite either immutable
+bootstrap URL. After deployment, bootstrap is an acceptable temporary source;
+the next ordinary admitted `17 */2 * * *` event must still be observed serving
+`X-LiveTrafficStan-Orbital-Source: kv`.
 
 For local rendered acceptance without production credentials:
 
