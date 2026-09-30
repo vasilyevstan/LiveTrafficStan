@@ -12,6 +12,10 @@ const smoke = readFileSync(
   join(repositoryRoot, 'scripts/smoke-production.mjs'),
   'utf8',
 )
+const smokePolicy = readFileSync(
+  join(repositoryRoot, 'scripts/smoke-policy.mjs'),
+  'utf8',
+)
 
 describe('production rollback workflow', () => {
   it('serializes rollback with deployment and verifies current main', () => {
@@ -49,6 +53,7 @@ describe('production rollback workflow', () => {
     expect(workflow).toContain(
       'cp "$RUNNER_TEMP/smoke-production.mjs" scripts/smoke-production.mjs',
     )
+    expect(workflow).toContain('echo "- Smoke: passed"')
     expect(workflow).toContain(
       '"${{ inputs.deployment_url }}"\n          "${{ inputs.target_sha }}"\n          "${{ inputs.aircraft_delivery }}"',
     )
@@ -56,10 +61,25 @@ describe('production rollback workflow', () => {
       "await import('../worker/orbitalCatalog.ts')",
     )
     expect(smoke).toContain(
-      'targetOrbitalContract.validateOrbitalCatalogSnapshot',
+      'resolveTargetOrbitalSmokeContract(targetOrbitalContract)',
     )
     expect(smoke).toContain(
-      'deriveOrbitalStaticAssetPaths(ORBITAL_BOOTSTRAP_PATH)',
+      'verifyTargetOrbitalCatalog({',
+    )
+    expect(smoke).toContain(
+      'targetOrbitalSmokeContract.bootstrapPath',
+    )
+    expect(smoke).not.toContain(
+      'targetOrbitalContract.ORBITAL_CATALOG_V2_ACCEPT',
+    )
+    expect(smoke).not.toContain(
+      'targetOrbitalContract.validateLegacyOrbitalCatalogSnapshot',
+    )
+    expect(smokePolicy).toContain("'schema1-only'")
+    expect(smokePolicy).toContain("'schema2-only'")
+    expect(smokePolicy).toContain("'dual-representation'")
+    expect(smokePolicy).toContain(
+      'const defaultResponse = await fetchResponse(url)',
     )
   })
 

@@ -308,16 +308,13 @@ airport `ident`/IATA values as ICAO codes. The adapter accepts only requested
 METAR/SPECI records, validates Unix-second observation time and bounded fields,
 and keeps the newest valid report per station.
 
-Orbital objects are a separate modeled-data boundary. The released browser
-starts ORBITS off and loads one complete same-origin schema-v1 snapshot only
-after explicit enable. Issue #211 stages a schema-2 server contract for catalog
-`celestrak-curated-v1`; its browser schema, zoom tiers, and discovery model are
-a separate follow-on and the infrastructure slice is not independently
-releasable. Both contracts perform streamed byte, fatal UTF-8, exact-field,
-source, ordering, header, ETag, and SHA-256 checks before a fulfilled
-current-tab cache is created. They send no camera, Home, geolocation,
-selection, cookie, or credential data and cannot select another catalog or
-provider.
+Orbital objects are a separate modeled-data boundary. ORBITS starts off and
+loads one complete same-origin schema-2 `celestrak-curated-v1` snapshot only
+after explicit enable. The browser performs streamed byte, fatal UTF-8,
+exact-field/source/order, header, ETag, and SHA-256 checks before a fulfilled
+current-tab cache is created. It sends no camera, Home, geolocation, search,
+filter, selection, cookie, or credential data and cannot select another
+catalog or provider.
 
 The schema-2 scheduler owns one fixed ordered source set: `visual`, `stations`,
 `weather`, `gnss`, and `science`. It performs GP then SATCAT reads serially for
@@ -329,8 +326,11 @@ NORAD ID, while `displayOrder` is derived only from reviewed group order and
 numeric NORAD ID for later clutter control.
 
 A dedicated module worker prepares `satellite.js` SGP4 records and emits only
-application-owned modeled positions, local crossing results, and one selected
-track. The orbital controller anchors time to the response clock plus
+application-owned modeled positions, filtered local crossing results, and one
+selected track. It keeps one prediction in flight plus the latest desired
+request, yields in bounded chunks, acknowledges the latest prediction start,
+and fences obsolete success and errors by catalog revision/request ID. The
+orbital controller anchors time to the response clock plus
 `performance.now()`, guards initial skew and later wall-clock jumps, and
 revalidates no more often than every two hours. Orbital IDs and timestamps
 never enter traffic normalization, freshness, clustering, trails, metadata,
@@ -502,14 +502,23 @@ stays below airport and traffic layers. Large airport points start at zoom 4
 and labels at zoom 5; medium points and labels start at zoom 7 and 8, with no
 upper zoom cutoff. METAR circles and labels render above ports/airports and
 below orbital points and traffic; stale reports include text as well as reduced
-opacity. Orbital circles and the selected line/highlight render above static
-context and below the selected traffic trail/live traffic.
+opacity. The orbital point source retains every safe current position.
+MapLibre layer filters and the matching selectable-ID set apply exact
+type/source-group eligibility plus stable schema-v2 `displayOrder` tiers: 192
+below zoom 2, 384 from zoom 2 through below zoom 4, and every matching safe
+position up to 512 from zoom 4. One safe selected object outside the tier or
+exact filters is appended as a labeled selected exception only when map display
+is available. Before a settled raw zoom exists, nothing is claimed as shown
+and selected details state that map display is unavailable. Orbital symbols
+and the selected line/highlight render above static context and below the
+selected traffic trail/live traffic.
 
 Picking is deterministic: exact traffic, cluster expansion, validated traffic
 touch fallback, exact orbital, validated orbital touch fallback, then exact
 weather, airport, and port followed by their touch fallbacks. Selecting
 traffic, orbital, weather, airport, or port clears the other selection kinds;
 an empty map click clears all. Orbital selection never moves the camera.
+Rank-hidden orbital IDs are absent from both exact and touch selection.
 
 App-owned cluster, port, airport, and weather text reuses a font stack already
 declared by the active base style instead of MapLibre's unsupported default
@@ -696,14 +705,17 @@ and gives only the aircraft proxy one private outbound dependency:
 3. Worker code runs first only for `/api` and `/api/*`;
 4. the only forwarded browser routes are the fixed aircraft point route and
    canonical `GET /api/weather/metar?ids=...`; the fixed
-   `GET /api/orbits/catalog` route reads only KV or the exact-release bootstrap
-   and never performs an upstream request;
+   `GET /api/orbits/catalog` route reads only KV or an exact-release bootstrap,
+   defaults to the newest valid schema-1 candidate for predecessor clients,
+   returns schema 2 only for the fixed vendor `Accept` media type, varies caches
+   by `Accept`, and never performs an upstream request;
 5. a protected two-hour Cron, independent of browser requests, may fetch only
    after the existing named SQLite Durable Object atomically admits the start;
    it then performs the ten fixed, strictly sequential GP/SATCAT requests for
-   `visual`, `stations`, `weather`, `gnss`, and `science`, validates one union,
-   persists the provider outcome, and publishes one complete schema-2 snapshot
-   to `orbital:catalog:v2:curated-v1` with one final write;
+   `visual`, `stations`, `weather`, `gnss`, and `science`, validates one union
+   plus the pre-substitution schema-1 `visual` snapshot, persists the provider
+   outcome, and publishes both public representations in one non-public
+   versioned bundle to `orbital:catalog:v2:curated-v1` with one final write;
 6. after private-relay activation, the aircraft route may use only its
    configured fixed transport and never fail over within a request;
 7. OpenFreeMap, Photon, and Digitraffic HTTPS/WSS remain direct browser
@@ -733,7 +745,9 @@ change for catalog schema 2. Its schema-1 cadence state therefore preserves
 `lastStartedAt`, in-progress admission, `Retry-After`/`nextAllowedAt`, terminal
 block, and the two-hour gate across rollout. The prior
 `orbital:catalog:v1` value and both schema-1 bootstrap generations remain for
-rollback.
+rollback and as read-only predecessor candidates. The bundle version is
+internal and independent from public catalog and coordinator-state schemas; a
+failed final KV write exposes neither newly derived representation.
 
 No application database, general backend, shared live traffic cache, preview
 deployment, or server-side marine relay is added. The only provider scheduler

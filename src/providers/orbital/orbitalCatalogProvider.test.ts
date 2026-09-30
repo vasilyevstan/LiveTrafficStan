@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
-import snapshotFixture from '../../../public/orbital-data/v1/visual-catalog.json'
-import type { OrbitalCatalogSnapshot } from '../../domain/orbital'
+import snapshotFixture from '../../../public/orbital-data/curated-2026-09-30-v1/catalog.json'
+import {
+  orbitalSnapshotDigestInput,
+  type OrbitalCatalogSnapshot,
+} from '../../domain/orbital'
 import {
   OrbitalCatalogProvider,
   type OrbitalCatalogProviderConfig,
@@ -11,23 +14,33 @@ const snapshot = snapshotFixture as OrbitalCatalogSnapshot
 
 const config: OrbitalCatalogProviderConfig = {
   endpointPath: '/api/orbits/catalog',
+  acceptMediaType:
+    'application/vnd.livetrafficstan.orbital-catalog+json;version=2',
   schemaVersion: snapshot.schemaVersion,
   sourceContractVersion: snapshot.sourceContractVersion,
-  group: snapshot.group,
-  gpSourceUrl: snapshot.gpSourceUrl,
-  satcatSourceUrl: snapshot.satcatSourceUrl,
-  maximumBytes: 256 * 1_024,
-  maximumRecords: 256,
+  catalogId: snapshot.catalogId,
+  sources: snapshot.sources.map(
+    ({ group, gpSourceUrl, satcatSourceUrl }) => ({
+      group,
+      gpSourceUrl,
+      satcatSourceUrl,
+    }),
+  ),
+  maximumBytes: 512 * 1_024,
+  maximumRecords: 512,
   timeoutMs: 5_000,
 }
 
-const headers = () => ({
+const headers = (
+  value: OrbitalCatalogSnapshot = snapshot,
+) => ({
   'Content-Type': 'application/json; charset=utf-8',
-  ETag: `W/"${snapshot.sha256}"`,
+  ETag: `W/"${value.sha256}"`,
+  Vary: 'Accept',
   'X-LiveTrafficStan-Orbital-Source': 'bootstrap',
-  'X-LiveTrafficStan-Orbital-Retrieved-At': snapshot.retrievedAt,
-  'X-LiveTrafficStan-Orbital-Schema': String(snapshot.schemaVersion),
-  'X-LiveTrafficStan-Orbital-Sha256': snapshot.sha256,
+  'X-LiveTrafficStan-Orbital-Retrieved-At': value.retrievedAt,
+  'X-LiveTrafficStan-Orbital-Schema': String(value.schemaVersion),
+  'X-LiveTrafficStan-Orbital-Sha256': value.sha256,
   'X-LiveTrafficStan-Served-At': '2026-09-28T18:46:00.000Z',
 })
 
@@ -46,6 +59,85 @@ const runtime = (
     fetch: fetchImplementation,
   }
 }
+
+const digest = async (value: string) => {
+  const hash = await crypto.subtle.digest(
+    'SHA-256',
+    new TextEncoder().encode(value),
+  )
+  return [...new Uint8Array(hash)]
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('')
+}
+
+const hardCapSnapshot = async (): Promise<OrbitalCatalogSnapshot> => {
+  const maximumId = Math.max(
+    ...snapshot.records.map(({ noradCatalogId }) =>
+      Number(noradCatalogId),
+    ),
+  )
+  const added = Array.from(
+    { length: 512 - snapshot.records.length },
+    (_, index) => {
+      const source =
+        snapshot.records[index % snapshot.records.length]
+      const noradCatalogId = String(maximumId + index + 1)
+      const sourceIndex = snapshot.sources.findIndex(
+        ({ group }) => group === source.sourceGroups[0],
+      )
+      return {
+        ...source,
+        noradCatalogId,
+        name: `HARD CAP OBJECT ${noradCatalogId}`,
+        displayOrder:
+          sourceIndex * 1_000_000_000 +
+          Number(noradCatalogId),
+      }
+    },
+  )
+  const records = [...snapshot.records, ...added]
+  const sources = snapshot.sources.map((source) => {
+    const count = records.filter((record) =>
+      record.sourceGroups.includes(source.group),
+    ).length
+    return {
+      ...source,
+      gpRecordCount: count,
+      satcatRecordCount: Math.max(source.satcatRecordCount, count),
+    }
+  })
+  const withoutDigest: Omit<OrbitalCatalogSnapshot, 'sha256'> = {
+    ...snapshot,
+    sources,
+    recordCount: records.length,
+    records,
+  }
+  return {
+    ...withoutDigest,
+    sha256: await digest(
+      JSON.stringify(orbitalSnapshotDigestInput(withoutDigest)),
+    ),
+  }
+}
+
+const emptyDesignatorSnapshot =
+  async (): Promise<OrbitalCatalogSnapshot> => {
+    const records = snapshot.records.map((record, index) =>
+      index === 0
+        ? { ...record, internationalDesignator: '' }
+        : record,
+    )
+    const withoutDigest: Omit<OrbitalCatalogSnapshot, 'sha256'> = {
+      ...snapshot,
+      records,
+    }
+    return {
+      ...withoutDigest,
+      sha256: await digest(
+        JSON.stringify(orbitalSnapshotDigestInput(withoutDigest)),
+      ),
+    }
+  }
 
 describe('OrbitalCatalogProvider', () => {
   it('validates the canonical snapshot and conditionally revalidates it', async () => {
@@ -90,9 +182,71 @@ describe('OrbitalCatalogProvider', () => {
     const secondHeaders = new Headers(
       fetchMock.mock.calls[1][1]?.headers,
     )
+    const firstHeaders = new Headers(
+      fetchMock.mock.calls[0][1]?.headers,
+    )
+    expect(firstHeaders.get('Accept')).toBe(config.acceptMediaType)
+    expect(secondHeaders.get('Accept')).toBe(config.acceptMediaType)
     expect(secondHeaders.get('If-None-Match')).toBe(
       `W/"${snapshot.sha256}"`,
     )
+  })
+
+  it('streams and validates the complete 512-record hard-cap snapshot', async () => {
+    const hardCap = await hardCapSnapshot()
+    const bytes = new TextEncoder().encode(JSON.stringify(hardCap))
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        for (let offset = 0; offset < bytes.length; offset += 16_384) {
+          controller.enqueue(bytes.slice(offset, offset + 16_384))
+        }
+        controller.close()
+      },
+    })
+    const responseHeaders = {
+      ...headers(),
+      ETag: `W/"${hardCap.sha256}"`,
+      'X-LiveTrafficStan-Orbital-Retrieved-At': hardCap.retrievedAt,
+      'X-LiveTrafficStan-Orbital-Sha256': hardCap.sha256,
+    }
+    const provider = new OrbitalCatalogProvider(
+      config,
+      runtime(
+        vi.fn<typeof fetch>().mockResolvedValue(
+          new Response(body, {
+            status: 200,
+            headers: responseHeaders,
+          }),
+        ),
+      ),
+    )
+
+    const result = await provider.load(new AbortController().signal)
+
+    expect(result.snapshot.recordCount).toBe(512)
+    expect(result.snapshot.records.at(-1)?.name).toMatch(
+      /^HARD CAP OBJECT /,
+    )
+    expect(bytes.byteLength).toBeLessThanOrEqual(config.maximumBytes)
+  })
+
+  it('retains an empty designator as explicitly unavailable data', async () => {
+    const value = await emptyDesignatorSnapshot()
+    const provider = new OrbitalCatalogProvider(
+      config,
+      runtime(
+        vi.fn<typeof fetch>().mockResolvedValue(
+          new Response(JSON.stringify(value), {
+            status: 200,
+            headers: headers(value),
+          }),
+        ),
+      ),
+    )
+
+    const result = await provider.load(new AbortController().signal)
+
+    expect(result.snapshot.records[0]?.internationalDesignator).toBe('')
   })
 
   it('rejects unknown schema fields before caching a response', async () => {
@@ -115,6 +269,23 @@ describe('OrbitalCatalogProvider', () => {
   })
 
   it('rejects invalid headers, partial responses, and oversized bodies', async () => {
+    const withoutVary = { ...headers() }
+    Reflect.deleteProperty(withoutVary, 'Vary')
+    const missingVaryProvider = new OrbitalCatalogProvider(
+      config,
+      runtime(
+        vi.fn<typeof fetch>().mockResolvedValue(
+          new Response(JSON.stringify(snapshot), {
+            status: 200,
+            headers: withoutVary,
+          }),
+        ),
+      ),
+    )
+    await expect(
+      missingVaryProvider.load(new AbortController().signal),
+    ).rejects.toThrow(/content negotiation is invalid/)
+
     const invalidHeaderProvider = new OrbitalCatalogProvider(
       config,
       runtime(

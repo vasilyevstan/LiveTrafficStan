@@ -55,11 +55,13 @@ Issue #211 does not add another flag, binding, namespace, service, or manual
 refresh. When the protected flag is enabled, current Worker source supports
 only schema 2 catalog `celestrak-curated-v1`, KV key
 `orbital:catalog:v2:curated-v1`, and immutable bootstrap
-`/orbital-data/curated-2026-09-30-v1/catalog.json`. The retained
+`/orbital-data/curated-2026-09-30-v1/catalog.json`. The v2 key stores one
+internal publication-version-1 bundle containing public schema 2 and the exact
+same-refresh public schema-1 `visual` snapshot. The retained
 `orbital:catalog:v1` key and `/orbital-data/v1` plus `/orbital-data/v2`
-schema-1 assets are rollback contracts, not fallback inputs to schema-2 code.
-The Durable Object class, binding, namespace, object name, and schema-1
-admission row remain unchanged.
+schema-1 assets remain read-only rollback/default-route candidates; no refresh
+writes the v1 key. The Durable Object class, binding, namespace, object name,
+and schema-1 admission row remain unchanged.
 
 Current production source
 `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8` sets the flag to `true`, uses KV
@@ -123,15 +125,19 @@ spread through components:
 | METAR client and Worker deadline / response cap | 8 seconds / 256 KiB |
 | METAR stale / expiry | 75 minutes / 120 minutes |
 | Orbital layer | Off by default; explicit enable only |
-| Released browser orbital request | Fixed same-origin route; 5-second deadline; schema 1, 256 KiB / 256-record limit until the follow-on #211 browser PR |
+| Browser orbital request | Literal same-origin `GET /api/orbits/catalog`; fixed schema-2 vendor `Accept`; 5-second deadline; 512 KiB / 512-record complete-response limit |
+| Orbital route compatibility | Missing/other `Accept` receives the newest valid schema 1 from the current bundle, retained v1 KV, or immutable v1/v2 assets; exact vendor media type receives schema 2; equal-time digest conflicts fail closed; distinct ETags and `Vary: Accept` |
 | Curated scheduler sources | Ordered `visual`, `stations`, `weather`, `gnss`, `science`; GP then SATCAT for each group |
 | Curated upstream bounds | 10 seconds, 512 records, and 512 KiB per response; 90 seconds and 4 MiB aggregate per complete refresh |
-| Curated published snapshot | Schema/source contract 2; at most 512 records / 512 KiB; no truncation or partial publication |
+| Curated publication | One internal versioned bundle and one final v2-key write containing schema/source contract 2 (at most 512 records / 512 KiB) plus same-refresh schema 1; no truncation, partial member publication, v1-key write, or extra fetch |
 | Orbital revalidation / stale / expiry | 2 hours / 6 hours / 24 hours |
 | Orbital element age / future tolerance | 14 days / 10 minutes |
 | Orbital clock initial skew / later jump | 2 minutes / 30 seconds |
 | Orbital current-position cadence | At most once per second |
 | Orbital prediction | Refresh every 30 seconds; 90-minute horizon; 30-second samples; 20 detailed results |
+| Orbital prediction cancellation | One in flight plus latest desired request; yield every 8 objects |
+| Orbital display tiers | Exact settled raw zoom `<2`: 192; `2 <= zoom <4`: 384; zoom `>=4`: every matching safe position through 512; no settled raw zoom means unavailable with no subset/exception claim; one safe selected exception once display is available |
+| Orbital catalog discovery | Query at most 64 characters; exact type/source-group filters; 20 rows per page |
 | Orbital selected track | 15 minutes; at most 31 points before gap/dateline splitting |
 | Orbital reviewed image | 5-second total deadline; exact manifest byte count, media type, and SHA-256; one fulfilled Blob URL or terminal failure per immutable asset in the running tab |
 | Marine metadata refresh | 5 minutes |

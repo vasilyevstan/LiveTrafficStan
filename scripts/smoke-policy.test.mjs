@@ -1,9 +1,10 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
   DEPLOYMENT_PROPAGATION_RETRY_DELAYS_MS,
+  ORBITAL_SCHEMA2_NEGOTIATION_ACCEPT,
   PRIVATE_RELAY_MAX_ATTEMPTS,
   PRIVATE_RELAY_MAX_ADMISSION_WAIT_MS,
   PRIVATE_RELAY_MAX_RETRY_AFTER_SECONDS,
@@ -15,6 +16,8 @@ import {
   hasOneYearImmutableCacheControl,
   isRetryableStaticAssetStatus,
   readOptionalJson,
+  resolveTargetOrbitalSmokeContract,
+  verifyTargetOrbitalCatalog,
   waitForExpectedWorkerRelease,
 } from './smoke-policy.mjs'
 
@@ -23,6 +26,132 @@ const smokeScript = readFileSync(
   join(repositoryRoot, 'scripts/smoke-production.mjs'),
   'utf8',
 )
+const smokePolicyScript = readFileSync(
+  join(repositoryRoot, 'scripts/smoke-policy.mjs'),
+  'utf8',
+)
+
+const releaseSha = 'c'.repeat(40)
+
+const orbitalPayload = ({
+  schemaVersion,
+  sourceContractVersion = schemaVersion,
+  digestCharacter,
+  ...overrides
+}) => ({
+  schemaVersion,
+  sourceContractVersion,
+  retrievedAt: '2026-09-30T18:25:59.094Z',
+  recordCount: 1,
+  records: [{ noradCatalogId: '25544' }],
+  sha256: digestCharacter.repeat(64),
+  ...overrides,
+})
+
+const createTargetContractFixture = (mode) => {
+  if (mode === 'disabled') return { target: undefined }
+
+  const schemaVersion = mode === 'schema1-only' ? 1 : 2
+  const validateSnapshot = vi.fn(async (value) => value)
+  const target = {
+    ORBITAL_BOOTSTRAP_PATH:
+      schemaVersion === 1
+        ? '/orbital-data/v1/visual-catalog.json'
+        : '/orbital-data/curated-2026-09-30-v1/catalog.json',
+    ORBITAL_CATALOG_SCHEMA_VERSION: schemaVersion,
+    ORBITAL_MAX_SNAPSHOT_BYTES: 512 * 1_024,
+    ORBITAL_SOURCE_CONTRACT_VERSION: schemaVersion,
+    validateOrbitalCatalogSnapshot: validateSnapshot,
+  }
+  const fixture = { target, validateSnapshot }
+  if (mode === 'dual-representation') {
+    fixture.validateLegacySnapshot = vi.fn(async (value) => value)
+    Object.assign(target, {
+      ORBITAL_CATALOG_V2_ACCEPT:
+        ORBITAL_SCHEMA2_NEGOTIATION_ACCEPT,
+      validateLegacyOrbitalCatalogSnapshot:
+        fixture.validateLegacySnapshot,
+    })
+  }
+  return fixture
+}
+
+const createOrbitalRouteFixture = (mode) => {
+  const requests = []
+  const defaultPayload =
+    mode === 'schema1-only' || mode === 'dual-representation'
+      ? orbitalPayload({
+          schemaVersion: 1,
+          digestCharacter: '1',
+        })
+      : orbitalPayload({
+          schemaVersion: 2,
+          digestCharacter: '2',
+        })
+  const schema2Payload = orbitalPayload({
+    schemaVersion: 2,
+    digestCharacter: '2',
+    sources: [{ group: 'visual', gpRecordCount: 1 }],
+  })
+
+  return {
+    requests,
+    fetchResponse: vi.fn(async (input, init = {}) => {
+      const url = new URL(input)
+      const headers = new Headers(init.headers)
+      const method = init.method ?? 'GET'
+      requests.push({
+        accept: headers.get('accept'),
+        ifNoneMatch: headers.get('if-none-match'),
+        method,
+        url: url.toString(),
+      })
+
+      if (mode === 'disabled') {
+        return new Response('Not found', { status: 404 })
+      }
+      if (url.search) {
+        return new Response('Unsupported query', { status: 400 })
+      }
+      if (method === 'POST') {
+        return new Response('Method not allowed', { status: 405 })
+      }
+
+      const negotiated =
+        mode === 'dual-representation' &&
+        headers.get('accept') ===
+          ORBITAL_SCHEMA2_NEGOTIATION_ACCEPT
+      const payload = negotiated ? schema2Payload : defaultPayload
+      const weakEtag = mode !== 'schema1-only'
+      const etag = `${weakEtag ? 'W/' : ''}"${payload.sha256}"`
+      const responseHeaders = {
+        'Cache-Control': 'public, max-age=300, must-revalidate',
+        'Content-Type': 'application/json; charset=utf-8',
+        ETag: etag,
+        'X-Content-Type-Options': 'nosniff',
+        'X-LiveTrafficStan-Orbital-Schema': String(
+          payload.schemaVersion,
+        ),
+        'X-LiveTrafficStan-Orbital-Sha256': payload.sha256,
+        'X-LiveTrafficStan-Orbital-Source': 'kv',
+        'X-LiveTrafficStan-Release': releaseSha,
+      }
+      if (mode === 'dual-representation') {
+        responseHeaders.Vary = 'Accept'
+      }
+      if (headers.get('if-none-match') === etag) {
+        return new Response(null, {
+          status: 304,
+          headers: responseHeaders,
+        })
+      }
+      return new Response(JSON.stringify(payload), {
+        status: 200,
+        headers: responseHeaders,
+      })
+    }),
+  }
+}
 
 describe('production smoke policy', () => {
   const workerProbe = (releaseSha, overrides = {}) =>
@@ -367,6 +496,72 @@ describe('production smoke policy', () => {
     },
   )
 
+  it.each([
+    ['disabled', 1],
+    ['schema1-only', 4],
+    ['schema2-only', 4],
+    ['dual-representation', 7],
+  ])(
+    'validates the %s rollback target without retries or provider requests',
+    async (mode, expectedRequests) => {
+      const contractFixture = createTargetContractFixture(mode)
+      const routeFixture = createOrbitalRouteFixture(mode)
+      const contract = contractFixture.target
+        ? resolveTargetOrbitalSmokeContract(contractFixture.target)
+        : undefined
+
+      await expect(
+        verifyTargetOrbitalCatalog({
+          baseUrl: new URL('https://app.example/'),
+          enabled: mode !== 'disabled',
+          expectedReleaseSha: releaseSha,
+          contract,
+          fetchResponse: routeFixture.fetchResponse,
+        }),
+      ).resolves.toEqual({ mode })
+
+      expect(routeFixture.requests).toHaveLength(expectedRequests)
+      expect(
+        routeFixture.requests.every(
+          ({ url }) => new URL(url).origin === 'https://app.example',
+        ),
+      ).toBe(true)
+      expect(
+        routeFixture.requests.some(({ url }) =>
+          url.includes('celestrak'),
+        ),
+      ).toBe(false)
+
+      if (mode === 'disabled') return
+      expect(contractFixture.validateSnapshot).toHaveBeenCalledTimes(1)
+      if (mode === 'dual-representation') {
+        expect(
+          contractFixture.validateLegacySnapshot,
+        ).toHaveBeenCalledTimes(1)
+        expect(
+          routeFixture.requests.filter(
+            ({ accept }) =>
+              accept === ORBITAL_SCHEMA2_NEGOTIATION_ACCEPT,
+          ),
+        ).toHaveLength(3)
+      } else {
+        expect(
+          routeFixture.requests.every(({ accept }) => accept === null),
+        ).toBe(true)
+      }
+    },
+  )
+
+  it('fails closed on a partial dual-representation target contract', () => {
+    const fixture = createTargetContractFixture('schema2-only')
+    fixture.target.ORBITAL_CATALOG_V2_ACCEPT =
+      ORBITAL_SCHEMA2_NEGOTIATION_ACCEPT
+
+    expect(() =>
+      resolveTargetOrbitalSmokeContract(fixture.target),
+    ).toThrow('dual-representation contract is incomplete')
+  })
+
   it('loads the orbital bootstrap source of truth from the target checkout', () => {
     const targetImportIndex = smokeScript.indexOf(
       "await import('../worker/orbitalCatalog.ts')",
@@ -376,13 +571,43 @@ describe('production smoke policy', () => {
       "orbitalCatalogEnabled === 'true'",
     )
     expect(smokeScript).toContain(
-      'deriveOrbitalStaticAssetPaths(ORBITAL_BOOTSTRAP_PATH)',
+      'deriveOrbitalStaticAssetPaths(',
     )
     expect(smokeScript).toContain(
-      'targetOrbitalContract.validateOrbitalCatalogSnapshot',
+      'resolveTargetOrbitalSmokeContract(targetOrbitalContract)',
     )
+    expect(smokeScript).toContain('verifyTargetOrbitalCatalog({')
+    expect(smokeScript).not.toContain(
+      'targetOrbitalContract.validateLegacyOrbitalCatalogSnapshot',
+    )
+    expect(smokeScript).not.toContain(
+      'targetOrbitalContract.ORBITAL_CATALOG_V2_ACCEPT',
+    )
+    expect(smokePolicyScript).toContain(
+      "visualSource?.gpRecordCount === schema1.payload.recordCount",
+    )
+    const kvFreshnessStart = smokePolicyScript.indexOf(
+      "if (schema2.source === 'kv')",
+    )
+    const kvFreshnessCheck = smokePolicyScript.slice(
+      kvFreshnessStart,
+      smokePolicyScript.indexOf(
+        '    await verifyConditional(',
+        kvFreshnessStart,
+      ),
+    )
+    expect(kvFreshnessCheck).toContain(
+      'visualSource?.gpRecordCount === schema1.payload.recordCount',
+    )
+    expect(smokePolicyScript).toContain(
+      'Date.parse(schema1.payload.retrievedAt) >=',
+    )
+    expect(smokePolicyScript).toContain(
+      "new URL('/api/orbits/catalog', baseUrl)",
+    )
+    expect(smokePolicyScript).not.toContain('/api/orbits/catalog/v2')
     expect(smokeScript).toContain(
-      'targetOrbitalContract.ORBITAL_MAX_SNAPSHOT_BYTES',
+      'targetOrbitalSmokeContract.bootstrapPath',
     )
     expect(smokeScript).not.toContain(
       "const orbitalPath = '/orbital-data/",

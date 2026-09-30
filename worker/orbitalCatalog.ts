@@ -1,4 +1,6 @@
 export const ORBITAL_CATALOG_PATH = '/api/orbits/catalog'
+export const ORBITAL_CATALOG_V2_ACCEPT =
+  'application/vnd.livetrafficstan.orbital-catalog+json;version=2'
 export const ORBITAL_CATALOG_ID = 'celestrak-curated-v1'
 export const ORBITAL_BOOTSTRAP_VERSION = 'curated-2026-09-30-v1'
 export const ORBITAL_BOOTSTRAP_PATH =
@@ -6,6 +8,14 @@ export const ORBITAL_BOOTSTRAP_PATH =
 export const ORBITAL_CATALOG_KEY =
   'orbital:catalog:v2:curated-v1'
 export const ORBITAL_CATALOG_V1_KEY = 'orbital:catalog:v1'
+export const ORBITAL_CATALOG_V1_ROLLBACK_BOOTSTRAP_PATH =
+  '/orbital-data/v1/visual-catalog.json'
+export const ORBITAL_CATALOG_V1_BOOTSTRAP_PATH =
+  '/orbital-data/v2/visual-catalog.json'
+export const ORBITAL_CATALOG_V1_BOOTSTRAP_PATHS = [
+  ORBITAL_CATALOG_V1_BOOTSTRAP_PATH,
+  ORBITAL_CATALOG_V1_ROLLBACK_BOOTSTRAP_PATH,
+] as const
 export const ORBITAL_CATALOG_SCHEMA_VERSION = 2
 export const ORBITAL_SOURCE_CONTRACT_VERSION = 2
 export const ORBITAL_REFRESH_INTERVAL_MS = 2 * 60 * 60 * 1_000
@@ -21,6 +31,21 @@ export const ORBITAL_MAX_RETRY_AFTER_MS =
   7 * 24 * 60 * 60 * 1_000
 export const ORBITAL_UPSTREAM_USER_AGENT =
   'LiveTrafficStan (+https://github.com/vasilyevstan/LiveTrafficStan)'
+
+const ORBITAL_CATALOG_V1_SCHEMA_VERSION = 1
+const ORBITAL_SOURCE_CONTRACT_V1_VERSION = 1
+const ORBITAL_CATALOG_V1_GROUP = 'visual'
+const ORBITAL_CATALOG_V1_GP_URL =
+  'https://celestrak.org/NORAD/elements/gp.php?GROUP=visual&FORMAT=json'
+const ORBITAL_CATALOG_V1_SATCAT_URL =
+  'https://celestrak.org/satcat/records.php?GROUP=visual&FORMAT=json'
+const ORBITAL_CATALOG_V1_MAX_BYTES = 256 * 1_024
+const ORBITAL_CATALOG_V1_MAX_RECORDS = 256
+export const ORBITAL_CATALOG_PUBLICATION_VERSION = 1
+export const ORBITAL_MAX_PUBLICATION_BYTES =
+  ORBITAL_MAX_SNAPSHOT_BYTES +
+  ORBITAL_CATALOG_V1_MAX_BYTES +
+  1_024
 
 export type OrbitalObjectType = 'PAY' | 'R/B' | 'DEB' | 'UNK'
 export type OrbitalSourceGroup =
@@ -121,6 +146,29 @@ export interface OrbitalCatalogSnapshot {
   sha256: string
 }
 
+export type LegacyOrbitalCatalogRecord = Omit<
+  OrbitalCatalogRecord,
+  'displayOrder' | 'sourceGroups'
+>
+
+export interface LegacyOrbitalCatalogSnapshot {
+  schemaVersion: 1
+  sourceContractVersion: 1
+  group: 'visual'
+  gpSourceUrl: typeof ORBITAL_CATALOG_V1_GP_URL
+  satcatSourceUrl: typeof ORBITAL_CATALOG_V1_SATCAT_URL
+  retrievedAt: string
+  recordCount: number
+  records: LegacyOrbitalCatalogRecord[]
+  sha256: string
+}
+
+export interface OrbitalCatalogPublication {
+  publicationVersion: typeof ORBITAL_CATALOG_PUBLICATION_VERSION
+  schema1: LegacyOrbitalCatalogSnapshot
+  schema2: OrbitalCatalogSnapshot
+}
+
 export interface OrbitalCatalogSourceInput {
   group: OrbitalSourceGroup
   gpValue: unknown
@@ -195,6 +243,17 @@ interface SnapshotDigestInput {
   publishedAt: string
   recordCount: number
   records: OrbitalCatalogRecord[]
+}
+
+interface LegacySnapshotDigestInput {
+  schemaVersion: 1
+  sourceContractVersion: 1
+  group: 'visual'
+  gpSourceUrl: typeof ORBITAL_CATALOG_V1_GP_URL
+  satcatSourceUrl: typeof ORBITAL_CATALOG_V1_SATCAT_URL
+  retrievedAt: string
+  recordCount: number
+  records: LegacyOrbitalCatalogRecord[]
 }
 
 interface RefreshOptions {
@@ -394,6 +453,13 @@ const utcEpoch = (value: unknown, name = 'epoch') =>
 const utcTimestamp = (value: unknown, name: string) =>
   utcTime(value, name, 3)
 
+// Schema 1 digests preserve the predecessor's source precision.
+const legacyUtcEpoch = (value: unknown, name = 'epoch') => {
+  const input = boundedString(value, name, 19, 27)
+  utcTime(input, name, 6)
+  return `${input.endsWith('Z') ? input.slice(0, -1) : input}Z`
+}
+
 const objectType = (value: unknown): OrbitalObjectType => {
   if (
     value === 'PAY' ||
@@ -515,6 +581,15 @@ const publishedRecordKeys = [
   'noradCatalogId',
   'objectType',
   'sourceGroups',
+] as const
+
+const legacyPublishedRecordKeys = [
+  ...propagationFields,
+  'epoch',
+  'internationalDesignator',
+  'name',
+  'noradCatalogId',
+  'objectType',
 ] as const
 
 const normalizedOmmRecord = (value: {
@@ -661,6 +736,51 @@ const publishedRecord = (value: unknown): OrbitalCatalogRecord => {
   }
 }
 
+const legacyPublishedRecord = (
+  value: unknown,
+): LegacyOrbitalCatalogRecord => {
+  if (!isRecord(value)) {
+    throw new OrbitalCatalogValidationError(
+      'Invalid legacy orbital record',
+    )
+  }
+  exactKeys(
+    value,
+    legacyPublishedRecordKeys,
+    'legacy orbital record',
+  )
+  return {
+    ...normalizedOmmRecord({
+      noradCatalogId: value.noradCatalogId,
+      name: value.name,
+      internationalDesignator: value.internationalDesignator,
+      objectType: value.objectType,
+      epoch: value.epoch,
+      meanMotion: value.meanMotion,
+      eccentricity: value.eccentricity,
+      inclination: value.inclination,
+      rightAscensionOfAscendingNode:
+        value.rightAscensionOfAscendingNode,
+      argumentOfPericenter: value.argumentOfPericenter,
+      meanAnomaly: value.meanAnomaly,
+      ephemerisType: value.ephemerisType,
+      classificationType: value.classificationType,
+      elementSetNumber: value.elementSetNumber,
+      revolutionAtEpoch: value.revolutionAtEpoch,
+      bstar: value.bstar,
+      meanMotionDot: value.meanMotionDot,
+      meanMotionDdot: value.meanMotionDdot,
+    }),
+    epoch: legacyUtcEpoch(value.epoch),
+    internationalDesignator: boundedString(
+      value.internationalDesignator,
+      'legacy international designator',
+      1,
+      24,
+    ),
+  }
+}
+
 const sourceMetadataKeys = [
   'gpRecordCount',
   'gpSourceUrl',
@@ -723,6 +843,19 @@ const digestInput = (
   records: snapshot.records,
 })
 
+const legacyDigestInput = (
+  snapshot: Omit<LegacyOrbitalCatalogSnapshot, 'sha256'>,
+): LegacySnapshotDigestInput => ({
+  schemaVersion: snapshot.schemaVersion,
+  sourceContractVersion: snapshot.sourceContractVersion,
+  group: snapshot.group,
+  gpSourceUrl: snapshot.gpSourceUrl,
+  satcatSourceUrl: snapshot.satcatSourceUrl,
+  retrievedAt: snapshot.retrievedAt,
+  recordCount: snapshot.recordCount,
+  records: snapshot.records,
+})
+
 const sha256 = async (value: string) => {
   const bytes = new TextEncoder().encode(value)
   const digest = await crypto.subtle.digest('SHA-256', bytes)
@@ -734,6 +867,14 @@ const sha256 = async (value: string) => {
 export const serializeOrbitalCatalogSnapshot = (
   snapshot: OrbitalCatalogSnapshot,
 ) => `${JSON.stringify(snapshot)}\n`
+
+export const serializeLegacyOrbitalCatalogSnapshot = (
+  snapshot: LegacyOrbitalCatalogSnapshot,
+) => `${JSON.stringify(snapshot)}\n`
+
+export const serializeOrbitalCatalogPublication = (
+  publication: OrbitalCatalogPublication,
+) => `${JSON.stringify(publication)}\n`
 
 type MergedOrbitalRecord = Omit<
   OrbitalCatalogRecord,
@@ -851,6 +992,160 @@ const ensureSnapshotSize = (snapshot: OrbitalCatalogSnapshot) => {
       'Published orbital snapshot is too large',
     )
   }
+}
+
+const ensureLegacySnapshotSize = (
+  snapshot: LegacyOrbitalCatalogSnapshot,
+) => {
+  if (
+    new TextEncoder().encode(
+      serializeLegacyOrbitalCatalogSnapshot(snapshot),
+    ).byteLength > ORBITAL_CATALOG_V1_MAX_BYTES
+  ) {
+    throw new OrbitalCatalogValidationError(
+      'Legacy orbital snapshot is too large',
+    )
+  }
+}
+
+const ensurePublicationSize = (
+  publication: OrbitalCatalogPublication,
+) => {
+  if (
+    new TextEncoder().encode(
+      serializeOrbitalCatalogPublication(publication),
+    ).byteLength > ORBITAL_MAX_PUBLICATION_BYTES
+  ) {
+    throw new OrbitalCatalogValidationError(
+      'Orbital publication is too large',
+    )
+  }
+}
+
+export const createLegacyOrbitalCatalogSnapshot = async (
+  gpValue: unknown,
+  satcatValue: unknown,
+  retrievedAtValue: string,
+): Promise<LegacyOrbitalCatalogSnapshot> => {
+  if (
+    !Array.isArray(gpValue) ||
+    gpValue.length === 0 ||
+    gpValue.length > ORBITAL_CATALOG_V1_MAX_RECORDS
+  ) {
+    throw new OrbitalCatalogValidationError(
+      'Invalid legacy GP record count',
+    )
+  }
+  if (
+    !Array.isArray(satcatValue) ||
+    satcatValue.length === 0 ||
+    satcatValue.length > ORBITAL_CATALOG_V1_MAX_RECORDS
+  ) {
+    throw new OrbitalCatalogValidationError(
+      'Invalid legacy SATCAT record count',
+    )
+  }
+
+  const satcatById = new Map<string, SatcatIdentity>()
+  for (const value of satcatValue) {
+    const { id, identity } = sourceSatcatRecord(value)
+    if (satcatById.has(id)) {
+      throw new OrbitalCatalogValidationError(
+        'Duplicate legacy SATCAT record',
+      )
+    }
+    satcatById.set(id, identity)
+  }
+
+  const records: LegacyOrbitalCatalogRecord[] = []
+  const ids = new Set<string>()
+  for (const value of gpValue) {
+    if (!isRecord(value)) {
+      throw new OrbitalCatalogValidationError(
+        'Invalid legacy GP record',
+      )
+    }
+    const id = canonicalNoradId(value.NORAD_CAT_ID)
+    if (ids.has(id)) {
+      throw new OrbitalCatalogValidationError(
+        'Duplicate legacy GP record',
+      )
+    }
+    ids.add(id)
+    const satcat = satcatById.get(id)
+    if (!satcat) {
+      throw new OrbitalCatalogValidationError(
+        'Legacy GP record is missing SATCAT metadata',
+      )
+    }
+    const candidate = sourceGpRecord(
+      value,
+      satcat.objectType,
+    )
+    if (
+      candidate.name !== satcat.name ||
+      candidate.internationalDesignator !==
+        satcat.internationalDesignator
+    ) {
+      throw new OrbitalCatalogValidationError(
+        'Legacy GP and SATCAT identity conflict',
+      )
+    }
+    records.push(
+      legacyPublishedRecord({
+        noradCatalogId: id,
+        name: value.OBJECT_NAME,
+        internationalDesignator: value.OBJECT_ID,
+        objectType: satcat.objectType,
+        epoch: value.EPOCH,
+        meanMotion: value.MEAN_MOTION,
+        eccentricity: value.ECCENTRICITY,
+        inclination: value.INCLINATION,
+        rightAscensionOfAscendingNode:
+          value.RA_OF_ASC_NODE,
+        argumentOfPericenter: value.ARG_OF_PERICENTER,
+        meanAnomaly: value.MEAN_ANOMALY,
+        ephemerisType: value.EPHEMERIS_TYPE,
+        classificationType: value.CLASSIFICATION_TYPE,
+        elementSetNumber: value.ELEMENT_SET_NO,
+        revolutionAtEpoch: value.REV_AT_EPOCH,
+        bstar: value.BSTAR,
+        meanMotionDot: value.MEAN_MOTION_DOT,
+        meanMotionDdot: value.MEAN_MOTION_DDOT,
+      }),
+    )
+  }
+  records.sort(
+    (left, right) =>
+      Number(left.noradCatalogId) -
+      Number(right.noradCatalogId),
+  )
+
+  const snapshotWithoutDigest: Omit<
+    LegacyOrbitalCatalogSnapshot,
+    'sha256'
+  > = {
+    schemaVersion: ORBITAL_CATALOG_V1_SCHEMA_VERSION,
+    sourceContractVersion:
+      ORBITAL_SOURCE_CONTRACT_V1_VERSION,
+    group: ORBITAL_CATALOG_V1_GROUP,
+    gpSourceUrl: ORBITAL_CATALOG_V1_GP_URL,
+    satcatSourceUrl: ORBITAL_CATALOG_V1_SATCAT_URL,
+    retrievedAt: legacyUtcEpoch(
+      retrievedAtValue,
+      'legacy retrieval time',
+    ),
+    recordCount: records.length,
+    records,
+  }
+  const snapshot = {
+    ...snapshotWithoutDigest,
+    sha256: await sha256(
+      JSON.stringify(legacyDigestInput(snapshotWithoutDigest)),
+    ),
+  } satisfies LegacyOrbitalCatalogSnapshot
+  ensureLegacySnapshotSize(snapshot)
+  return snapshot
 }
 
 export const createOrbitalCatalogSnapshot = async (
@@ -1055,6 +1350,65 @@ export const createOrbitalCatalogSnapshot = async (
   return snapshot
 }
 
+const ensurePublicationMembersAlign = (
+  schema1: LegacyOrbitalCatalogSnapshot,
+  schema2: OrbitalCatalogSnapshot,
+) => {
+  const visualRecords = schema2.records.filter((record) =>
+    record.sourceGroups.includes(ORBITAL_CATALOG_V1_GROUP),
+  )
+  if (
+    Date.parse(schema1.retrievedAt) !==
+      Date.parse(schema2.retrievedAt) ||
+    visualRecords.length !== schema1.recordCount
+  ) {
+    throw new OrbitalCatalogValidationError(
+      'Orbital publication members do not match',
+    )
+  }
+  const visualById = new Map(
+    visualRecords.map((record) => [
+      record.noradCatalogId,
+      record,
+    ]),
+  )
+  for (const legacyRecord of schema1.records) {
+    const current = visualById.get(legacyRecord.noradCatalogId)
+    const legacyEpoch = utcEpoch(
+      legacyRecord.epoch,
+      'legacy orbital epoch',
+    )
+    if (
+      !current ||
+      current.name !== legacyRecord.name ||
+      current.internationalDesignator !==
+        legacyRecord.internationalDesignator ||
+      current.objectType !== legacyRecord.objectType ||
+      legacyEpoch > current.epoch ||
+      (legacyEpoch === current.epoch &&
+        !propagationAgrees(current, legacyRecord))
+    ) {
+      throw new OrbitalCatalogValidationError(
+        'Orbital publication visual records do not match',
+      )
+    }
+  }
+}
+
+export const createOrbitalCatalogPublication = (
+  schema1: LegacyOrbitalCatalogSnapshot,
+  schema2: OrbitalCatalogSnapshot,
+): OrbitalCatalogPublication => {
+  ensurePublicationMembersAlign(schema1, schema2)
+  const publication = {
+    publicationVersion: ORBITAL_CATALOG_PUBLICATION_VERSION,
+    schema1,
+    schema2,
+  } satisfies OrbitalCatalogPublication
+  ensurePublicationSize(publication)
+  return publication
+}
+
 export const validateOrbitalCatalogSnapshot = async (
   value: unknown,
 ): Promise<OrbitalCatalogSnapshot> => {
@@ -1193,6 +1547,148 @@ export const validateOrbitalCatalogSnapshot = async (
   } satisfies OrbitalCatalogSnapshot
   ensureSnapshotSize(snapshot)
   return snapshot
+}
+
+export const validateLegacyOrbitalCatalogSnapshot = async (
+  value: unknown,
+): Promise<LegacyOrbitalCatalogSnapshot> => {
+  if (!isRecord(value)) {
+    throw new OrbitalCatalogValidationError(
+      'Invalid legacy orbital snapshot',
+    )
+  }
+  exactKeys(
+    value,
+    [
+      'gpSourceUrl',
+      'group',
+      'recordCount',
+      'records',
+      'retrievedAt',
+      'satcatSourceUrl',
+      'schemaVersion',
+      'sha256',
+      'sourceContractVersion',
+    ],
+    'legacy orbital snapshot',
+  )
+  if (
+    value.schemaVersion !== ORBITAL_CATALOG_V1_SCHEMA_VERSION ||
+    value.sourceContractVersion !==
+      ORBITAL_SOURCE_CONTRACT_V1_VERSION
+  ) {
+    throw new OrbitalCatalogValidationError(
+      'Unsupported legacy orbital contract',
+    )
+  }
+  if (
+    value.group !== ORBITAL_CATALOG_V1_GROUP ||
+    value.gpSourceUrl !== ORBITAL_CATALOG_V1_GP_URL ||
+    value.satcatSourceUrl !== ORBITAL_CATALOG_V1_SATCAT_URL
+  ) {
+    throw new OrbitalCatalogValidationError(
+      'Invalid legacy orbital snapshot source',
+    )
+  }
+  if (
+    !Array.isArray(value.records) ||
+    value.records.length === 0 ||
+    value.records.length > ORBITAL_CATALOG_V1_MAX_RECORDS
+  ) {
+    throw new OrbitalCatalogValidationError(
+      'Invalid legacy orbital snapshot record count',
+    )
+  }
+
+  const records = value.records.map(legacyPublishedRecord)
+  const ids = new Set<string>()
+  let previousId = 0
+  for (const record of records) {
+    const numericId = Number(record.noradCatalogId)
+    if (
+      ids.has(record.noradCatalogId) ||
+      numericId <= previousId
+    ) {
+      throw new OrbitalCatalogValidationError(
+        'Legacy orbital records are not stably ordered',
+      )
+    }
+    ids.add(record.noradCatalogId)
+    previousId = numericId
+  }
+  if (value.recordCount !== records.length) {
+    throw new OrbitalCatalogValidationError(
+      'Legacy orbital snapshot count does not match',
+    )
+  }
+
+  const snapshotWithoutDigest: Omit<
+    LegacyOrbitalCatalogSnapshot,
+    'sha256'
+  > = {
+    schemaVersion: ORBITAL_CATALOG_V1_SCHEMA_VERSION,
+    sourceContractVersion: ORBITAL_SOURCE_CONTRACT_V1_VERSION,
+    group: ORBITAL_CATALOG_V1_GROUP,
+    gpSourceUrl: ORBITAL_CATALOG_V1_GP_URL,
+    satcatSourceUrl: ORBITAL_CATALOG_V1_SATCAT_URL,
+    retrievedAt: legacyUtcEpoch(
+      value.retrievedAt,
+      'legacy retrieval time',
+    ),
+    recordCount: records.length,
+    records,
+  }
+  const expectedDigest = await sha256(
+    JSON.stringify(legacyDigestInput(snapshotWithoutDigest)),
+  )
+  if (
+    typeof value.sha256 !== 'string' ||
+    !/^[0-9a-f]{64}$/.test(value.sha256) ||
+    value.sha256 !== expectedDigest
+  ) {
+    throw new OrbitalCatalogValidationError(
+      'Legacy orbital snapshot digest does not match',
+    )
+  }
+  const snapshot = {
+    ...snapshotWithoutDigest,
+    sha256: expectedDigest,
+  } satisfies LegacyOrbitalCatalogSnapshot
+  ensureLegacySnapshotSize(snapshot)
+  return snapshot
+}
+
+export const validateOrbitalCatalogPublication = async (
+  value: unknown,
+): Promise<OrbitalCatalogPublication> => {
+  if (!isRecord(value)) {
+    throw new OrbitalCatalogValidationError(
+      'Invalid orbital publication',
+    )
+  }
+  exactKeys(
+    value,
+    ['publicationVersion', 'schema1', 'schema2'],
+    'orbital publication',
+  )
+  if (
+    value.publicationVersion !==
+    ORBITAL_CATALOG_PUBLICATION_VERSION
+  ) {
+    throw new OrbitalCatalogValidationError(
+      'Unsupported orbital publication version',
+    )
+  }
+  const [schema1, schema2] = await Promise.all([
+    validateLegacyOrbitalCatalogSnapshot(value.schema1),
+    validateOrbitalCatalogSnapshot(value.schema2),
+  ])
+  const publication = createOrbitalCatalogPublication(
+    schema1,
+    schema2,
+  )
+  ensurePublicationSize(publication)
+  return publication
 }
 
 type RetryAtResult =
@@ -1538,6 +2034,7 @@ export const refreshOrbitalCatalog = async (
     }
   }
 
+  let publication: OrbitalCatalogPublication
   let snapshot: OrbitalCatalogSnapshot
   try {
     const fetchImpl: OrbitalCatalogFetch =
@@ -1625,10 +2122,26 @@ export const refreshOrbitalCatalog = async (
     const publicationTime = new Date(
       nowMs + Math.max(0, completedElapsedMs),
     ).toISOString()
+    const visualSource = sourceValues[0]
+    if (visualSource?.group !== ORBITAL_CATALOG_V1_GROUP) {
+      throw new OrbitalCatalogValidationError(
+        'Visual orbital source is unavailable',
+      )
+    }
+    const legacySnapshot =
+      await createLegacyOrbitalCatalogSnapshot(
+        visualSource.gpValue,
+        visualSource.satcatValue,
+        retrievalTime,
+      )
     snapshot = await createOrbitalCatalogSnapshot(
       sourceValues,
       retrievalTime,
       publicationTime,
+    )
+    publication = createOrbitalCatalogPublication(
+      legacySnapshot,
+      snapshot,
     )
     if (monotonicNow() - startedAtMs > totalTimeoutMs) {
       throw totalTimeoutError()
@@ -1724,7 +2237,7 @@ export const refreshOrbitalCatalog = async (
   try {
     await store.put(
       ORBITAL_CATALOG_KEY,
-      serializeOrbitalCatalogSnapshot(snapshot),
+      serializeOrbitalCatalogPublication(publication),
     )
   } catch {
     return {
@@ -1750,6 +2263,7 @@ const textResponse = (
     headers: {
       'Cache-Control': 'no-store',
       'Content-Type': 'text/plain; charset=utf-8',
+      Vary: 'Accept',
       'X-Content-Type-Options': 'nosniff',
       ...headers,
     },
@@ -1767,6 +2281,79 @@ const readSnapshotText = async (text: string) => {
   return validateOrbitalCatalogSnapshot(JSON.parse(text))
 }
 
+const readLegacySnapshotText = async (text: string) => {
+  if (
+    new TextEncoder().encode(text).byteLength >
+    ORBITAL_CATALOG_V1_MAX_BYTES
+  ) {
+    throw new OrbitalCatalogValidationError(
+      'Legacy orbital snapshot is too large',
+    )
+  }
+  return validateLegacyOrbitalCatalogSnapshot(JSON.parse(text))
+}
+
+type StoredOrbitalCatalogPublication = {
+  schema1?: LegacyOrbitalCatalogSnapshot
+  schema2: OrbitalCatalogSnapshot
+}
+
+const readStoredPublicationText = async (
+  text: string,
+): Promise<StoredOrbitalCatalogPublication> => {
+  if (
+    new TextEncoder().encode(text).byteLength >
+    ORBITAL_MAX_PUBLICATION_BYTES
+  ) {
+    throw new OrbitalCatalogValidationError(
+      'Orbital publication is too large',
+    )
+  }
+  const value: unknown = JSON.parse(text)
+  if (
+    isRecord(value) &&
+    Object.hasOwn(value, 'publicationVersion')
+  ) {
+    const publication =
+      await validateOrbitalCatalogPublication(value)
+    return {
+      schema1: publication.schema1,
+      schema2: publication.schema2,
+    }
+  }
+  return {
+    schema2: await validateOrbitalCatalogSnapshot(value),
+  }
+}
+
+const loadStoredPublication = async (
+  store: OrbitalKeyValueStore | undefined,
+) => {
+  if (!store) return undefined
+  try {
+    const text = await store.get(ORBITAL_CATALOG_KEY)
+    return text
+      ? await readStoredPublicationText(text)
+      : undefined
+  } catch {
+    return undefined
+  }
+}
+
+const loadRetainedLegacySnapshot = async (
+  store: OrbitalKeyValueStore | undefined,
+) => {
+  if (!store) return undefined
+  try {
+    const text = await store.get(ORBITAL_CATALOG_V1_KEY)
+    return text
+      ? await readLegacySnapshotText(text)
+      : undefined
+  } catch {
+    return undefined
+  }
+}
+
 const loadBootstrap = async (
   request: Request,
   assets: OrbitalAssetBinding,
@@ -1775,6 +2362,17 @@ const loadBootstrap = async (
   const response = await assets.fetch(new Request(url))
   if (!response.ok) return undefined
   return readSnapshotText(await response.text())
+}
+
+const loadLegacyBootstrap = async (
+  request: Request,
+  assets: OrbitalAssetBinding,
+  path: string,
+) => {
+  const url = new URL(path, request.url)
+  const response = await assets.fetch(new Request(url))
+  if (!response.ok) return undefined
+  return readLegacySnapshotText(await response.text())
 }
 
 export type OrbitalCatalogCandidate = {
@@ -1808,6 +2406,71 @@ export const selectOrbitalCatalogCandidate = (
   return { snapshot: kv, source: 'kv' }
 }
 
+export type LegacyOrbitalCatalogCandidate = {
+  snapshot: LegacyOrbitalCatalogSnapshot
+  source: 'kv' | 'bootstrap'
+}
+
+export const selectLegacyOrbitalCatalogCandidate = (
+  candidates: readonly LegacyOrbitalCatalogCandidate[],
+): LegacyOrbitalCatalogCandidate | undefined => {
+  if (candidates.length === 0) return undefined
+  const newestTime = Math.max(
+    ...candidates.map((candidate) =>
+      Date.parse(candidate.snapshot.retrievedAt),
+    ),
+  )
+  const newest = candidates.filter(
+    (candidate) =>
+      Date.parse(candidate.snapshot.retrievedAt) === newestTime,
+  )
+  const digest = newest[0]?.snapshot.sha256
+  if (
+    !digest ||
+    newest.some(
+      (candidate) => candidate.snapshot.sha256 !== digest,
+    )
+  ) {
+    throw new OrbitalCatalogValidationError(
+      'Equal-time legacy orbital snapshots conflict',
+    )
+  }
+  return newest[0]
+}
+
+const catalogResponse = (
+  request: Request,
+  snapshot: {
+    retrievedAt: string
+    schemaVersion: number
+    sha256: string
+  },
+  source: 'kv' | 'bootstrap',
+  body: string,
+  nowMs: number,
+) => {
+  const etag = `W/"${snapshot.sha256}"`
+  const headers = new Headers({
+    'Cache-Control': 'public, max-age=300, must-revalidate',
+    'Content-Type': 'application/json; charset=utf-8',
+    ETag: etag,
+    Vary: 'Accept',
+    'X-Content-Type-Options': 'nosniff',
+    'X-LiveTrafficStan-Orbital-Source': source,
+    'X-LiveTrafficStan-Orbital-Retrieved-At':
+      snapshot.retrievedAt,
+    'X-LiveTrafficStan-Orbital-Schema': String(
+      snapshot.schemaVersion,
+    ),
+    'X-LiveTrafficStan-Orbital-Sha256': snapshot.sha256,
+    'X-LiveTrafficStan-Served-At': new Date(nowMs).toISOString(),
+  })
+  if (request.headers.get('If-None-Match') === etag) {
+    return new Response(null, { status: 304, headers })
+  }
+  return new Response(body, { status: 200, headers })
+}
+
 export const handleOrbitalCatalog = async (
   request: Request,
   environment: OrbitalCatalogEnvironment,
@@ -1826,18 +2489,69 @@ export const handleOrbitalCatalog = async (
       400,
     )
   }
+  const nowMs = options.nowMs ?? Date.now()
+  const wantsSchemaV2 =
+    request.headers.get('Accept') === ORBITAL_CATALOG_V2_ACCEPT
 
-  let storedSnapshot: OrbitalCatalogSnapshot | undefined
-  const stored = await environment.ORBITAL_CATALOG
-    ?.get(ORBITAL_CATALOG_KEY)
-    .catch(() => null)
-  if (stored) {
-    try {
-      storedSnapshot = await readSnapshotText(stored)
-    } catch {
-      storedSnapshot = undefined
+  if (!wantsSchemaV2) {
+    const [
+      storedPublication,
+      retained,
+      ...bootstraps
+    ] = await Promise.all([
+      loadStoredPublication(environment.ORBITAL_CATALOG),
+      loadRetainedLegacySnapshot(
+        environment.ORBITAL_CATALOG,
+      ),
+      ...ORBITAL_CATALOG_V1_BOOTSTRAP_PATHS.map((path) =>
+        loadLegacyBootstrap(
+          request,
+          environment.ASSETS,
+          path,
+        ).catch(() => undefined),
+      ),
+    ])
+    const candidates: LegacyOrbitalCatalogCandidate[] = []
+    if (storedPublication?.schema1) {
+      candidates.push({
+        snapshot: storedPublication.schema1,
+        source: 'kv',
+      })
     }
+    if (retained) {
+      candidates.push({ snapshot: retained, source: 'kv' })
+    }
+    for (const snapshot of bootstraps) {
+      if (snapshot) {
+        candidates.push({ snapshot, source: 'bootstrap' })
+      }
+    }
+    let candidate: LegacyOrbitalCatalogCandidate | undefined
+    try {
+      candidate = selectLegacyOrbitalCatalogCandidate(candidates)
+    } catch {
+      return textResponse('Orbital catalog unavailable', 503, {
+        'Retry-After': '300',
+      })
+    }
+    if (!candidate) {
+      return textResponse('Orbital catalog unavailable', 503, {
+        'Retry-After': '300',
+      })
+    }
+    const { snapshot, source } = candidate
+    return catalogResponse(
+      request,
+      snapshot,
+      source,
+      serializeLegacyOrbitalCatalogSnapshot(snapshot),
+      nowMs,
+    )
   }
+
+  const storedPublication = await loadStoredPublication(
+    environment.ORBITAL_CATALOG,
+  )
 
   let bootstrapSnapshot: OrbitalCatalogSnapshot | undefined
   try {
@@ -1852,7 +2566,7 @@ export const handleOrbitalCatalog = async (
   let candidate: OrbitalCatalogCandidate | undefined
   try {
     candidate = selectOrbitalCatalogCandidate(
-      storedSnapshot,
+      storedPublication?.schema2,
       bootstrapSnapshot,
     )
   } catch {
@@ -1867,28 +2581,11 @@ export const handleOrbitalCatalog = async (
   }
 
   const { snapshot, source } = candidate
-  const etag = `W/"${snapshot.sha256}"`
-  const headers = new Headers({
-    'Cache-Control': 'public, max-age=300, must-revalidate',
-    'Content-Type': 'application/json; charset=utf-8',
-    ETag: etag,
-    'X-Content-Type-Options': 'nosniff',
-    'X-LiveTrafficStan-Orbital-Source': source,
-    'X-LiveTrafficStan-Orbital-Retrieved-At':
-      snapshot.retrievedAt,
-    'X-LiveTrafficStan-Orbital-Schema': String(
-      snapshot.schemaVersion,
-    ),
-    'X-LiveTrafficStan-Orbital-Sha256': snapshot.sha256,
-    'X-LiveTrafficStan-Served-At': new Date(
-      options.nowMs ?? Date.now(),
-    ).toISOString(),
-  })
-  if (request.headers.get('If-None-Match') === etag) {
-    return new Response(null, { status: 304, headers })
-  }
-  return new Response(serializeOrbitalCatalogSnapshot(snapshot), {
-    status: 200,
-    headers,
-  })
+  return catalogResponse(
+    request,
+    snapshot,
+    source,
+    serializeOrbitalCatalogSnapshot(snapshot),
+    nowMs,
+  )
 }

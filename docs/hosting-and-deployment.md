@@ -545,14 +545,20 @@ Names, designators, and SATCAT type must agree after outer-whitespace
 normalization only. The newest valid OMM epoch wins; equal-epoch differing
 propagation fields reject the complete refresh. The result is never truncated
 and must contain at most 512 records and at most 512 KiB in normalized form.
+Before cross-group winner substitution, the already-fetched validated
+`visual` pair is also serialized under the exact public schema-1 contract.
 
 After all ten responses and one union validate, the Durable Object durably
 records the next allowed start before one final KV write replaces
-`orbital:catalog:v2:curated-v1`. That write is the sole publication commit. If
-publication fails, the prior v2 snapshot remains and the next ordinary event
-may try again. The coordinator stores only its schema, attempt sequence,
-cadence, and blocked status. It contains no coordinates, user data, raw
-payload, digest, or provider body.
+`orbital:catalog:v2:curated-v1` with an internal publication-version-1 bundle.
+The non-public envelope contains the canonical public schema-2 union and exact
+same-refresh public schema-1 visual snapshot. That one write is the sole
+publication commit: a failure leaves both prior representations in place, and
+the updater never writes or resets `orbital:catalog:v1`. The internal bundle
+version is independent from public catalog and coordinator-state schemas. The
+coordinator stores only its schema, attempt sequence, cadence, and blocked
+status. It contains no coordinates, user data, raw payload, digest, or provider
+body.
 
 `429` and readable `Retry-After` guidance on `5xx` extend the next-allowed
 time. Guidance is bounded to seven days; a longer value enters an
@@ -574,23 +580,33 @@ The public route is exactly:
 GET /api/orbits/catalog
 ```
 
-It rejects queries and other methods. Current source validates schema-2
-catalog `celestrak-curated-v1` independently from both KV key
-`orbital:catalog:v2:curated-v1` and immutable bootstrap
+It rejects queries and other methods. Default and predecessor requests choose
+the newest valid schema 1 among the current bundle member, retained
+`orbital:catalog:v1`, `/orbital-data/v2/visual-catalog.json`, and
+`/orbital-data/v1/visual-catalog.json`. Equal newest timestamps with different
+digests fail closed. Only the exact fixed
+`Accept: application/vnd.livetrafficstan.orbital-catalog+json;version=2`
+request validates schema-2 catalog `celestrak-curated-v1` independently from
+KV key `orbital:catalog:v2:curated-v1` and immutable bootstrap
 `/orbital-data/curated-2026-09-30-v1/catalog.json`, then serves the newer
-`retrievedAt`. Equal timestamps with equal canonical digest select KV; equal
-timestamps with different digests fail closed. If neither candidate is valid,
-the route returns `503` with bounded retry guidance. Every response identifies
-the release SHA, schema, digest, retrieval time, serve time, and whether KV or
-bootstrap supplied the bytes.
+`retrievedAt`; pre-bundle raw schema-2 KV values remain readable during
+rollout. The public route never exposes the internal envelope. The
+representations use distinct weak digest ETags and
+`Vary: Accept`; a validator for one representation cannot produce a `304` for
+the other. Equal schema-2 timestamps with equal canonical digest select KV;
+equal timestamps with different digests fail closed. If the selected
+representation has no valid candidate, the route returns `503` with bounded
+retry guidance. Every response identifies the release SHA, schema, digest,
+retrieval time, serve time, and whether KV or bootstrap supplied the bytes.
 
 The browser route and scheduled updater remain independent. Explicit ORBITS
-enable makes one strict same-origin read, then local SGP4 propagation runs in a
-dedicated worker. Camera, selection, theme, style, and ordinary hide/show
-changes cannot invoke CelesTrak or reset the two-hour schedule. The released
-browser still supports schema 1 and the Issue #211 source-contract
-infrastructure must not be deployed until its follow-on browser schema,
-discovery, and zoom-tier work is included.
+enable makes one strict negotiated schema-2 same-origin read, then local SGP4
+propagation runs in a dedicated worker. Camera, selection, theme, style, and
+ordinary hide/show changes cannot invoke CelesTrak or reset the two-hour
+schedule. Default schema 1 remains available through at least one complete
+checked production release after the schema-2 browser release. Removing it
+requires a separate reviewed change after predecessor rollback/support is no
+longer required.
 
 The curated bootstrap was generated from the final coordinated
 `2026-09-30T18:25:59.094Z` evidence: 462 records (369 `PAY`, 91 `R/B`, 2
@@ -604,12 +620,22 @@ The previous receiver-safe schema-1 assets remain byte-for-byte at
 `/orbital-data/v1/visual-catalog.json` and
 `/orbital-data/v2/visual-catalog.json`, and the v1 KV key remains untouched.
 Current smoke resolves the target checkout's supported schema, bootstrap, and
-validator so current v2 and retained v1 rollback releases are both
-certifiable. Do not seed KV manually, reset the named coordinator, invoke the
-provider on demand, or overwrite an immutable bootstrap URL. After a
-coordinated deployment, bootstrap is an acceptable temporary source; the next
-ordinary admitted `17 */2 * * *` event must still be observed serving
-`X-LiveTrafficStan-Orbital-Source: kv`.
+validator so current dual-representation, pre-negotiation schema-2-only, and
+retained schema-1-only rollback releases are all certifiable. Only a target
+that exports the exact fixed schema-2 `Accept` value and legacy validator is
+tested for both representations, `Vary: Accept`, distinct ETags, and
+cross-representation behavior. A single-representation target is validated
+through its own schema version, response limit, source-contract version,
+bootstrap path, and validator without requiring current negotiation exports or
+headers. Disabled targets require only the target `404` behavior and do not
+import an orbital contract. When dual schema 2 is served from KV, smoke
+requires default schema 1 to be served from KV with a retrieval time at least
+as current and the same visual population. Do not seed KV manually, reset the
+named coordinator, invoke the provider on demand, or overwrite an immutable
+bootstrap URL. After a coordinated deployment, bootstrap is an acceptable
+temporary source; the next ordinary admitted `17 */2 * * *` event must still
+be observed serving `X-LiveTrafficStan-Orbital-Source: kv` for both
+representations.
 
 For local rendered acceptance without production credentials:
 
@@ -1113,7 +1139,12 @@ credentials. It checks out and builds the exact target source, restores the
 current smoke policy so current provider-throttling semantics are applied
 consistently, reads the target Cloudflare version metadata, and derives its
 orbital flag from the version's exact plain-text binding. An enabled target
-must also contain exactly one orbital KV and one Durable Object binding. For an orbital-enabled target, the workflow then calls
+must also contain exactly one orbital KV and one Durable Object binding. The
+restored smoke policy feature-detects only exports present in the checked-out
+target: schema-1-only and schema-2-only versions receive one default
+representation check, while dual versions receive the negotiated checks. It
+does not dereference absent current exports, retry the orbital route, or call
+CelesTrak. For an orbital-enabled target, the workflow then calls
 `wrangler rollback <version-id>`. For a disabled or pre-orbital target after
 the coordinator namespace has been provisioned, Cloudflare cannot activate the
 old version directly because that would orphan the SQLite Durable Object

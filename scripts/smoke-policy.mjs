@@ -25,6 +25,8 @@ export const SAME_ORIGIN_SMOKE_FETCH_INIT = Object.freeze({
   cache: 'no-store',
   credentials: 'omit',
 })
+export const ORBITAL_SCHEMA2_NEGOTIATION_ACCEPT =
+  'application/vnd.livetrafficstan.orbital-catalog+json;version=2'
 
 const releaseShaPattern = /^[0-9a-f]{40}$/
 
@@ -232,6 +234,361 @@ export const deriveOrbitalStaticAssetPaths = (bootstrapPath) => {
       bootstrapPath.lastIndexOf('/') + 1,
     )}NOTICE.txt`,
   }
+}
+
+const targetExport = (target, name) =>
+  target &&
+  (typeof target === 'object' || typeof target === 'function') &&
+  Object.hasOwn(target, name)
+    ? target[name]
+    : undefined
+
+export const resolveTargetOrbitalSmokeContract = (target) => {
+  const schemaVersion = targetExport(
+    target,
+    'ORBITAL_CATALOG_SCHEMA_VERSION',
+  )
+  const sourceContractVersion = targetExport(
+    target,
+    'ORBITAL_SOURCE_CONTRACT_VERSION',
+  )
+  const maximumBytes = targetExport(
+    target,
+    'ORBITAL_MAX_SNAPSHOT_BYTES',
+  )
+  const bootstrapPath = targetExport(
+    target,
+    'ORBITAL_BOOTSTRAP_PATH',
+  )
+  const validateSnapshot = targetExport(
+    target,
+    'validateOrbitalCatalogSnapshot',
+  )
+
+  if (schemaVersion !== 1 && schemaVersion !== 2) {
+    throw new Error('The target orbital schema version is unsupported')
+  }
+  if (
+    !Number.isSafeInteger(sourceContractVersion) ||
+    sourceContractVersion < 1
+  ) {
+    throw new Error(
+      'The target orbital source contract version is unsupported',
+    )
+  }
+  if (!Number.isSafeInteger(maximumBytes) || maximumBytes < 1) {
+    throw new Error('The target orbital response limit is invalid')
+  }
+  if (typeof bootstrapPath !== 'string') {
+    throw new Error('The target orbital bootstrap path is missing')
+  }
+  if (typeof validateSnapshot !== 'function') {
+    throw new Error('The target orbital validator is missing')
+  }
+
+  const capability = targetExport(
+    target,
+    'ORBITAL_CATALOG_SMOKE_CAPABILITY',
+  )
+  if (
+    capability !== undefined &&
+    capability !== 'dual-representation'
+  ) {
+    throw new Error('The target orbital smoke capability is unsupported')
+  }
+  const schema2Accept = targetExport(
+    target,
+    'ORBITAL_CATALOG_V2_ACCEPT',
+  )
+  const validateLegacySnapshot = targetExport(
+    target,
+    'validateLegacyOrbitalCatalogSnapshot',
+  )
+  const hasDualExports =
+    schema2Accept !== undefined ||
+    validateLegacySnapshot !== undefined
+
+  if (capability === 'dual-representation' || hasDualExports) {
+    if (
+      schemaVersion !== 2 ||
+      schema2Accept !== ORBITAL_SCHEMA2_NEGOTIATION_ACCEPT ||
+      typeof validateLegacySnapshot !== 'function'
+    ) {
+      throw new Error(
+        'The target orbital dual-representation contract is incomplete',
+      )
+    }
+    return {
+      mode: 'dual-representation',
+      bootstrapPath,
+      maximumBytes,
+      schemaVersion,
+      sourceContractVersion,
+      validateSnapshot,
+      schema2Accept,
+      validateLegacySnapshot,
+    }
+  }
+
+  return {
+    mode: schemaVersion === 1 ? 'schema1-only' : 'schema2-only',
+    bootstrapPath,
+    maximumBytes,
+    schemaVersion,
+    sourceContractVersion,
+    validateSnapshot,
+  }
+}
+
+const smokeAssert = (condition, message) => {
+  if (!condition) throw new Error(message)
+}
+
+const variesByAccept = (response) =>
+  response.headers
+    .get('vary')
+    ?.toLowerCase()
+    .split(',')
+    .map((value) => value.trim())
+    .includes('accept') === true
+
+export const verifyTargetOrbitalCatalog = async ({
+  baseUrl,
+  enabled,
+  expectedReleaseSha,
+  contract,
+  fetchResponse,
+}) => {
+  const url = new URL('/api/orbits/catalog', baseUrl)
+  const defaultResponse = await fetchResponse(url)
+
+  if (!enabled) {
+    smokeAssert(
+      defaultResponse.status === 404,
+      'Disabled orbital catalog was exposed',
+    )
+    await cancelResponseBody(defaultResponse)
+    return { mode: 'disabled' }
+  }
+  if (!contract) {
+    throw new Error('The enabled target orbital contract is missing')
+  }
+
+  const validateResponse = async ({
+    response,
+    expectedSchema,
+    expectedSourceContract,
+    validateSnapshot,
+    requireAcceptVary,
+  }) => {
+    smokeAssert(
+      response.headers.get('x-livetrafficstan-release') ===
+        expectedReleaseSha,
+      'Orbital catalog release SHA does not match the deployed source',
+    )
+    smokeAssert(
+      response.status === 200,
+      `Orbital catalog schema ${expectedSchema} returned ${response.status}`,
+    )
+    smokeAssert(
+      response.headers.get('content-type')?.includes('application/json'),
+      'Orbital catalog did not return JSON',
+    )
+    smokeAssert(
+      response.headers.get('cache-control') ===
+        'public, max-age=300, must-revalidate',
+      'Orbital catalog cache guidance is incorrect',
+    )
+    if (requireAcceptVary) {
+      smokeAssert(
+        variesByAccept(response),
+        'Orbital catalog does not vary by Accept',
+      )
+    }
+    smokeAssert(
+      response.headers.get('x-content-type-options') === 'nosniff',
+      'Orbital catalog nosniff header is missing',
+    )
+    smokeAssert(
+      !response.headers.has('access-control-allow-origin'),
+      'Orbital catalog unexpectedly allows cross-origin access',
+    )
+    const source = response.headers.get(
+      'x-livetrafficstan-orbital-source',
+    )
+    smokeAssert(
+      source === 'kv' || source === 'bootstrap',
+      'Orbital catalog source identity is missing',
+    )
+    smokeAssert(
+      response.headers.get('x-livetrafficstan-orbital-schema') ===
+        String(expectedSchema),
+      'Orbital catalog schema header is incorrect',
+    )
+
+    const body = new Uint8Array(await response.arrayBuffer())
+    smokeAssert(
+      body.byteLength <= contract.maximumBytes,
+      'Orbital catalog response is oversized',
+    )
+    const payload = await validateSnapshot(
+      JSON.parse(new TextDecoder().decode(body)),
+    )
+    smokeAssert(
+      payload.schemaVersion === expectedSchema &&
+        payload.sourceContractVersion ===
+          expectedSourceContract,
+      'Orbital catalog returned an unsupported release contract',
+    )
+    smokeAssert(
+      response.headers.get('x-livetrafficstan-orbital-sha256') ===
+        payload.sha256,
+      'Orbital catalog digest header does not match the payload',
+    )
+    const etag = response.headers.get('etag')
+    smokeAssert(
+      etag === `"${payload.sha256}"` ||
+        etag === `W/"${payload.sha256}"`,
+      'Orbital catalog ETag does not match the payload digest',
+    )
+    return { etag, payload, source }
+  }
+
+  const verifyConditional = async (
+    response,
+    etag,
+    label,
+    requireAcceptVary,
+  ) => {
+    smokeAssert(
+      response.status === 304,
+      `${label} orbital conditional request did not return 304`,
+    )
+    smokeAssert(
+      response.headers.get('etag') === etag,
+      `${label} orbital conditional ETag changed`,
+    )
+    if (requireAcceptVary) {
+      smokeAssert(
+        variesByAccept(response),
+        `${label} orbital conditional response does not vary by Accept`,
+      )
+    }
+    await cancelResponseBody(response)
+  }
+
+  if (contract.mode !== 'dual-representation') {
+    const representation = await validateResponse({
+      response: defaultResponse,
+      expectedSchema: contract.schemaVersion,
+      expectedSourceContract: contract.sourceContractVersion,
+      validateSnapshot: contract.validateSnapshot,
+      requireAcceptVary: false,
+    })
+    await verifyConditional(
+      await fetchResponse(url, {
+        headers: { 'If-None-Match': representation.etag },
+      }),
+      representation.etag,
+      `Schema-${contract.schemaVersion}`,
+      false,
+    )
+  } else {
+    const schema1 = await validateResponse({
+      response: defaultResponse,
+      expectedSchema: 1,
+      expectedSourceContract: 1,
+      validateSnapshot: contract.validateLegacySnapshot,
+      requireAcceptVary: true,
+    })
+    await verifyConditional(
+      await fetchResponse(url, {
+        headers: { 'If-None-Match': schema1.etag },
+      }),
+      schema1.etag,
+      'Default schema-1',
+      true,
+    )
+
+    const schema2 = await validateResponse({
+      response: await fetchResponse(url, {
+        headers: { Accept: contract.schema2Accept },
+      }),
+      expectedSchema: contract.schemaVersion,
+      expectedSourceContract: contract.sourceContractVersion,
+      validateSnapshot: contract.validateSnapshot,
+      requireAcceptVary: true,
+    })
+    smokeAssert(
+      schema2.etag !== schema1.etag,
+      'Orbital schema representations unexpectedly share an ETag',
+    )
+    if (schema2.source === 'kv') {
+      const visualSource = schema2.payload.sources.find(
+        (source) => source.group === 'visual',
+      )
+      smokeAssert(
+        schema1.source === 'kv',
+        'KV schema 2 did not expose a current KV schema-1 representation',
+      )
+      smokeAssert(
+        visualSource?.gpRecordCount === schema1.payload.recordCount,
+        'Default schema-1 visual population does not match schema 2',
+      )
+      smokeAssert(
+        Date.parse(schema1.payload.retrievedAt) >=
+          Date.parse(schema2.payload.retrievedAt),
+        'Default schema 1 is older than the current KV schema-2 publication',
+      )
+    }
+    await verifyConditional(
+      await fetchResponse(url, {
+        headers: {
+          Accept: contract.schema2Accept,
+          'If-None-Match': schema2.etag,
+        },
+      }),
+      schema2.etag,
+      'Negotiated schema-2',
+      true,
+    )
+
+    const crossRepresentation = await fetchResponse(url, {
+      headers: {
+        Accept: contract.schema2Accept,
+        'If-None-Match': schema1.etag,
+      },
+    })
+    smokeAssert(
+      crossRepresentation.status === 200,
+      'A schema-1 ETag incorrectly validated schema 2',
+    )
+    smokeAssert(
+      crossRepresentation.headers.get('etag') === schema2.etag,
+      'Cross-representation schema-2 ETag is incorrect',
+    )
+    smokeAssert(
+      variesByAccept(crossRepresentation),
+      'Cross-representation response does not vary by Accept',
+    )
+    await cancelResponseBody(crossRepresentation)
+  }
+
+  const query = await fetchResponse(
+    new URL('/api/orbits/catalog?group=active', baseUrl),
+  )
+  smokeAssert(
+    query.status === 400,
+    'Orbital catalog query was not rejected',
+  )
+  await cancelResponseBody(query)
+  const method = await fetchResponse(url, { method: 'POST' })
+  smokeAssert(
+    method.status === 405,
+    'Orbital catalog method was not rejected',
+  )
+  await cancelResponseBody(method)
+  return { mode: contract.mode }
 }
 
 export const readOptionalJson = async (file) => {

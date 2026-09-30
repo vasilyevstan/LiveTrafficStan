@@ -14,6 +14,8 @@ import {
   hasOneYearImmutableCacheControl,
   isRetryableStaticAssetStatus,
   readOptionalJson,
+  resolveTargetOrbitalSmokeContract,
+  verifyTargetOrbitalCatalog,
   waitForExpectedWorkerRelease,
 } from './smoke-policy.mjs'
 
@@ -59,6 +61,9 @@ const targetOrbitalContract =
   orbitalCatalogEnabled === 'true'
     ? await import('../worker/orbitalCatalog.ts')
     : undefined
+const targetOrbitalSmokeContract = targetOrbitalContract
+  ? resolveTargetOrbitalSmokeContract(targetOrbitalContract)
+  : undefined
 
 const baseUrl = new URL(deploymentUrl)
 if (baseUrl.protocol !== 'https:') {
@@ -258,9 +263,10 @@ const verifyStaticAssets = async () => {
   }
 
   if (orbitalCatalogEnabled === 'true') {
-    const { ORBITAL_BOOTSTRAP_PATH } = targetOrbitalContract
     const { bootstrapPath: orbitalPath, noticePath } =
-      deriveOrbitalStaticAssetPaths(ORBITAL_BOOTSTRAP_PATH)
+      deriveOrbitalStaticAssetPaths(
+        targetOrbitalSmokeContract.bootstrapPath,
+      )
     const localOrbital = await readFile(`dist${orbitalPath}`)
     const remoteOrbital = await remoteBytes(orbitalPath, localOrbital)
     assert(
@@ -536,86 +542,14 @@ const verifyMetarProxy = async () => {
   )
 }
 
-const verifyOrbitalCatalog = async () => {
-  const url = new URL('/api/orbits/catalog', baseUrl)
-  const response = await fetchWithTimeout(url)
-  assert(
-    response.headers.get('x-livetrafficstan-release') ===
-      expectedReleaseSha,
-    'Orbital catalog release SHA does not match the deployed source',
-  )
-
-  if (orbitalCatalogEnabled === 'false') {
-    assert(
-      response.status === 404,
-      'Disabled orbital catalog was exposed',
-    )
-    void response.body?.cancel().catch(() => undefined)
-    return
-  }
-
-  assert(
-    response.status === 200,
-    `Orbital catalog returned ${response.status}`,
-  )
-  assert(
-    response.headers.get('content-type')?.includes('application/json'),
-    'Orbital catalog did not return JSON',
-  )
-  assert(
-    response.headers.get('cache-control') ===
-      'public, max-age=300, must-revalidate',
-    'Orbital catalog cache guidance is incorrect',
-  )
-  assert(
-    response.headers.get('x-content-type-options') === 'nosniff',
-    'Orbital catalog nosniff header is missing',
-  )
-  assert(
-    !response.headers.has('access-control-allow-origin'),
-    'Orbital catalog unexpectedly allows cross-origin access',
-  )
-  assert(
-    response.headers.get('x-livetrafficstan-orbital-source') === 'kv' ||
-      response.headers.get('x-livetrafficstan-orbital-source') ===
-        'bootstrap',
-    'Orbital catalog source identity is missing',
-  )
-
-  const body = new Uint8Array(await response.arrayBuffer())
-  assert(
-    body.byteLength <=
-      targetOrbitalContract.ORBITAL_MAX_SNAPSHOT_BYTES,
-    'Orbital catalog response is oversized',
-  )
-  const payload =
-    await targetOrbitalContract.validateOrbitalCatalogSnapshot(
-      JSON.parse(new TextDecoder().decode(body)),
-    )
-  assert(
-    payload.schemaVersion ===
-      targetOrbitalContract.ORBITAL_CATALOG_SCHEMA_VERSION &&
-      payload.sourceContractVersion ===
-        targetOrbitalContract.ORBITAL_SOURCE_CONTRACT_VERSION,
-    'Orbital catalog returned an unsupported release contract',
-  )
-  assert(
-    response.headers.get('x-livetrafficstan-orbital-sha256') ===
-      payload.sha256,
-    'Orbital catalog digest header does not match the payload',
-  )
-  assert(
-    response.headers.get('etag') === `W/"${payload.sha256}"`,
-    'Orbital catalog ETag does not match the payload digest',
-  )
-
-  const query = await fetchWithTimeout(
-    new URL('/api/orbits/catalog?group=active', baseUrl),
-  )
-  assert(query.status === 400, 'Orbital catalog query was not rejected')
-  const method = await fetchWithTimeout(url, { method: 'POST' })
-  assert(method.status === 405, 'Orbital catalog method was not rejected')
-}
+const verifyOrbitalCatalog = () =>
+  verifyTargetOrbitalCatalog({
+    baseUrl,
+    enabled: orbitalCatalogEnabled === 'true',
+    expectedReleaseSha,
+    contract: targetOrbitalSmokeContract,
+    fetchResponse: fetchWithTimeout,
+  })
 
 const verifyDigitrafficRest = async () => {
   const endpoint = new URL(
