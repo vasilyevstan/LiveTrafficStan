@@ -597,7 +597,11 @@ Current schema 2 expects catalog ID `celestrak-curated-v1`, key
 462-record/239,460-byte bootstrap, and the retained schema-1 rollback assets.
 A schema mismatch, incomplete per-group join, cross-group conflict,
 equal-epoch propagation conflict, timeout, or bound violation is an atomic
-refresh failure; do not accept a partial union or fall back to v1 at runtime.
+refresh failure. A successful refresh must make exactly one v2-key write whose
+internal bundle contains current schema 2 and the same-refresh pre-substitution
+schema-1 visual body; it must not write the v1 key or perform an eleventh
+provider request. A failed final write leaves both prior public
+representations. Do not accept a partial union or publish either member alone.
 
 A persisted `301`, other redirect, `403`, or `404` is an intentional blocked
 state. Recheck CelesTrak's current endpoint and usage policy before clearing the
@@ -627,16 +631,25 @@ ORBITS starts off and should make no catalog request before explicit enable.
 After enable, inspect only the same-origin `/api/orbits/catalog` request; a
 browser request to `celestrak.org` is a defect.
 
-An enabled local view can truthfully have no current orbital marker. Check the
-collapsed Operations summary before diagnosing a failure:
+An enabled view can truthfully have no shown orbital marker. Check the
+collapsed Operations summary and the Orbits counts before diagnosing a
+failure:
 
-- **ORBITS · 0 IN VIEW · 1 PASS ≤90M** means acquisition and propagation
-  succeeded and one modeled ground track is predicted to cross the view;
+- **ORBITS · 192 SHOWN / 438 MODELED** means schema validation and current
+  propagation succeeded, while the current zoom tier shows the first 192 safe
+  exact-filter matches by `displayOrder`;
+- **ORBITS · MAP COUNTS UNAVAILABLE** means no settled raw map zoom/footprint
+  is available; the app does not substitute rounded shared zoom or world tier,
+  and selected details must say map display is unavailable rather than claim a
+  subset or selected exception;
+- **0 SHOWN · 0 IN MAP · 1 PASS ≤90M** means one modeled ground track is
+  predicted to cross the safe local footprint even though none is currently
+  inside it;
 - **VIEW** opens the existing disclosure and focuses the first result without
   another request, automatic selection, or camera movement;
-- use
-  `#v=1&lat=0&lon=0&zoom=0&bearing=0&pitch=0&orbits=1` for the explicit
-  whole-world view, where all valid current modeled points are in view.
+- use the **Nearby** view for in-map objects and crossings, or **Catalog** for
+  the complete validated snapshot, including searchable rows labeled
+  **Position unavailable**.
 
 Interpret the control state before retrying:
 
@@ -654,6 +667,16 @@ Interpret the control state before retrying:
 - **No modeled positions** — the catalog succeeded, but every record was
   outside element-age or physical propagation bounds at the anchored time.
   This is distinct from a network failure.
+- **Hidden by this zoom tier** — safe current positions exist but are outside
+  the deterministic 192/384/current-all display subset. Zoom or select through
+  Catalog; rank-hidden objects must not be map-pickable.
+- **Selected exception** — the exact safe selected object remains shown outside
+  the current zoom or exact type/source-group subset. A matching zoom exception
+  remains inside SHOWN and reduces the hidden count. A filter-excluded
+  exception is shown as `+1 SELECTED EXCEPTION` outside matching SHOWN,
+  MODELED, and IN MAP totals. This is the sole intentional display exception.
+- **No catalog matches** and **matching objects have no safe current
+  position** are successful filtered outcomes, not provider failures.
 - **Crossing estimate unavailable for this view** — the current footprint is
   partial world-spanning or otherwise unsafe. Current points can remain; use a
   local view for the 90-minute crossing list.
@@ -665,9 +688,24 @@ Interpret the control state before retrying:
   revalidation boundary.
 
 If the catalog returns `200` but no worker starts, verify that the response
-headers, schema, digest, ETag, source URLs, and canonical record order all
-match. A partial `206`, HTML response, missing header, digest mismatch,
-oversize body, redirect, or invalid UTF-8 is rejected rather than rendered.
+uses the exact schema-2 vendor `Accept`, includes `Vary: Accept`, and has
+matching schema, digest, ETag, source URLs, and canonical record order. A
+default request intentionally returns predecessor schema 1. When negotiated
+schema 2 is sourced from KV, default schema 1 must also be a KV candidate with
+an equal-or-newer retrieval time; an older static default indicates a broken
+publication bundle or candidate selector. A partial `206`, HTML response,
+missing header, digest mismatch, oversize body, redirect, or invalid UTF-8 is
+rejected rather than rendered.
+
+For rollback smoke, inspect the checked-out target before treating a missing
+current export as a deployment failure. A schema-1-only or pre-negotiation
+schema-2-only target intentionally has no fixed vendor `Accept`, legacy
+validator, or `Vary: Accept`; current smoke must validate its single default
+representation with that target's own exports. Only a dual-representation
+target receives negotiation and cross-representation checks. Disabled targets
+must remain a single `404` check. Do not work around a contract mismatch by
+retrying smoke, invoking the provider, changing Cron state, or weakening
+rollback protections.
 
 If an installed app reports a missing `orbital.worker-*.js`, use the existing
 **Refresh app** flow and verify that `/sw.js`, `index.html`, and the current

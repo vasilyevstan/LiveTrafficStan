@@ -5,6 +5,7 @@ import type {
   Point,
 } from 'geojson'
 import {
+  type FilterSpecification,
   type GeoJSONSource,
   type LayerSpecification,
   type Map as MapLibreMap,
@@ -55,6 +56,8 @@ export const orbitalPositionFeatures = (
         id: position.id,
         noradCatalogId: position.noradCatalogId,
         objectType: position.objectType,
+        sourceGroups: position.sourceGroups.join(','),
+        displayOrder: position.displayOrder,
         markerIcon: orbitalStyleImageId(position.objectType),
       },
       geometry: {
@@ -184,6 +187,22 @@ export const setOrbitalVisibility = (
   }
 }
 
+export const orbitalPointFilter = (
+  shownIds: readonly string[],
+): FilterSpecification =>
+  shownIds.length > 0
+    ? ['in', ['get', 'id'], ['literal', shownIds]]
+    : ['==', ['get', 'id'], '']
+
+export const setOrbitalPointFilter = (
+  map: MapLibreMap,
+  shownIds: readonly string[],
+) => {
+  if (map.getLayer(LAYER_ORBITAL_POINTS)) {
+    map.setFilter(LAYER_ORBITAL_POINTS, orbitalPointFilter(shownIds))
+  }
+}
+
 export const installOrbitalStyle = (
   map: MapLibreMap,
   positions: FeatureCollection<Point>,
@@ -192,6 +211,7 @@ export const installOrbitalStyle = (
   theme: Theme,
   visible: boolean,
   images: OrbitalStyleImages,
+  shownIds: readonly string[],
 ) => {
   const selection = theme === 'dark' ? '#f7fcff' : '#102d3b'
   const trackColor = theme === 'dark' ? '#8fe7ff' : '#087fa6'
@@ -237,6 +257,7 @@ export const installOrbitalStyle = (
     id: LAYER_ORBITAL_POINTS,
     type: 'symbol',
     source: SOURCE_ORBITAL_POINTS,
+    filter: orbitalPointFilter(shownIds),
     layout: {
       'icon-image': ['get', 'markerIcon'],
       'icon-size': 0.72,
@@ -265,5 +286,6 @@ export const installOrbitalStyle = (
     'circle-stroke-color',
     selection,
   )
+  setOrbitalPointFilter(map, shownIds)
   setOrbitalVisibility(map, visible)
 }

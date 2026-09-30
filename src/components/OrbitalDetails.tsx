@@ -6,6 +6,7 @@ import {
   formatTimestamp,
 } from '../domain/format'
 import {
+  orbitalInternationalDesignatorLabel,
   orbitalObjectTypeLabel,
   type ModeledOrbitalPosition,
   type OrbitalCatalogSnapshot,
@@ -18,6 +19,10 @@ import {
 import type { UnitSystem } from '../domain/units'
 import type { OrbitalEnrichmentImageState } from '../app/useOrbitalEnrichmentImage'
 
+export type OrbitalDetailsMapDisplay =
+  | { available: false }
+  | { available: true; selectedException: boolean }
+
 interface OrbitalDetailsProps {
   position: ModeledOrbitalPosition
   crossing?: OrbitalCrossing
@@ -29,6 +34,7 @@ interface OrbitalDetailsProps {
   online: boolean
   units: UnitSystem
   imageState: OrbitalEnrichmentImageState
+  mapDisplay: OrbitalDetailsMapDisplay
   onImageLoaded?: (path: string, url: string) => void
   onImageFailed?: (path: string) => void
   onClose: () => void
@@ -201,6 +207,7 @@ export function OrbitalDetails({
   online,
   units,
   imageState,
+  mapDisplay,
   onImageLoaded,
   onImageFailed,
   onClose,
@@ -232,7 +239,9 @@ export function OrbitalDetails({
         <DetailRow label="NORAD catalog ID" value={position.noradCatalogId} />
         <DetailRow
           label="International designator"
-          value={position.internationalDesignator}
+          value={orbitalInternationalDesignatorLabel(
+            position.internationalDesignator,
+          )}
         />
         <DetailRow
           label="Modeled for"
@@ -267,10 +276,17 @@ export function OrbitalDetails({
         />
         <DetailRow
           label="Catalog snapshot"
-          value={`Schema ${snapshot.schemaVersion} · ${snapshot.sha256.slice(
-            0,
-            12,
-          )}`}
+          value={`${snapshot.catalogId} · schema ${snapshot.schemaVersion} · ${snapshot.sha256.slice(0, 12)}`}
+        />
+        <DetailRow
+          label="Map display"
+          value={
+            !mapDisplay.available
+              ? 'Map display unavailable; no settled map zoom is available'
+              : mapDisplay.selectedException
+              ? 'Selected exception; shown despite the current zoom or exact filter subset'
+              : 'Within the current zoom and exact filter subset'
+          }
         />
       </dl>
 

@@ -70,14 +70,19 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   Center. It uses explicit ICAO codes from the pinned airport projection,
   shows observation and retrieval age, expires old reports, and remains
   independent of traffic providers and static airport context.
-- A default-off modeled orbital layer currently released against CelesTrak's
-  bounded `visual` catalog. It propagates current satellite and cataloged
-  rocket-body subpoints locally with SGP4, identifies ground tracks that cross
-  a safe local map view within 90 minutes, and draws one bounded selected-object
-  track.
+- A default-off modeled orbital layer in this source, backed by CelesTrak's
+  reviewed `visual`, `stations`, `weather`, `gnss`, and `science` groups. It
+  propagates current
+  payload, rocket-body, debris, and unknown subpoints locally with SGP4,
+  identifies ground tracks that cross a safe local map view within 90 minutes,
+  and draws one bounded selected-object track.
   **ORBITS** stays beside **AIRCRAFT** and **SHIPS** in the primary Operations
   row; its compact modeled-state summary is also mirrored in the upper-left
   status panel without changing aircraft/marine health.
+  **Operations -> More -> Orbits** separates Nearby crossings from complete
+  Catalog discovery. Search and exact type/source-group filters are local to
+  the accepted snapshot; no camera, search, filter, selection, or theme change
+  starts another catalog request.
   Exact SATCAT type, element epoch, snapshot age, and limitations remain
   visible; these are modeled positions, not live telemetry or optical
   visibility predictions. Exact NORAD `20580` (Hubble) and `25544` (ISS) also
@@ -87,16 +92,34 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   selected image uses one bounded same-origin load whose media type, byte
   count, and SHA-256 are validated before a session Blob URL can appear in
   details or a later tooltip.
-- Issue #211's infrastructure slice defines the next atomic source contract:
+- Issue #211 defines the coordinated source and browser contract:
   schema 2 catalog `celestrak-curated-v1`, ordered groups `visual`, `stations`,
   `weather`, `gnss`, and `science`, 462 unique records (369 payloads, 91
   rocket bodies, and 2 debris objects), and a separate
-  `orbital:catalog:v2:curated-v1` KV key. The immutable 239,460-byte bootstrap
-  is `/orbital-data/curated-2026-09-30-v1/catalog.json`, canonical digest
+  `orbital:catalog:v2:curated-v1` KV key. Each successful refresh writes that
+  key once with a non-public publication bundle containing the canonical
+  schema-2 union and the exact same-refresh schema-1 `visual` representation;
+  the retained `orbital:catalog:v1` key is never rewritten. The immutable
+  239,460-byte bootstrap is
+  `/orbital-data/curated-2026-09-30-v1/catalog.json`, canonical digest
   `5cb57fdeaa99dc585dc6c16e1548aa6e5bd05217f23b28c6ae205b96ee70bde6`.
-  Existing schema-1 assets and KV data remain for rollback. This source-only
-  slice must not be released by itself: zoom tiers and complete catalog
-  discovery remain the follow-on browser PR.
+  Existing schema-1 assets and KV data remain for rollback and predecessor
+  clients. The literal `GET /api/orbits/catalog` route defaults to schema 1;
+  the new browser requests schema 2 with the fixed
+  `application/vnd.livetrafficstan.orbital-catalog+json;version=2` media type,
+  with separate ETags and `Vary: Accept`. Default requests choose the newest
+  valid schema-1 member across that bundle, retained KV, and immutable rollback
+  assets, so predecessor tabs stay current without another provider request or
+  publication write. The browser accepts at most 512
+  complete records / 512 KiB, keeps every safe current position in one
+  persistent GeoJSON source, and applies stable `displayOrder` zoom tiers from
+  the exact settled map zoom: 192 below zoom 2, 384 below zoom 4, and all safe
+  matches through 512 at zoom 4 or above. One safe selected object remains
+  visible as an explicit selected exception without inflating filter-excluded
+  matching totals only after map display is available; before a settled raw
+  zoom, details explicitly report map display unavailable. This browser work
+  is not a production-release claim;
+  release still uses the checked `dev` to `main` path.
 - A default-enabled ADSB.lol plausible-route lookup for a selected live
   aircraft. A committed selection starts one lookup and shows a compact result
   directly below the aircraft heading. Hover, HISTORY, and same-flight position
@@ -225,7 +248,9 @@ METAR toggle -> qualifying airport ICAO codes -> same-origin AWC proxy
              -> current observations -> map + weather details
 
 ORBITS toggle -> same-origin complete CelesTrak snapshot -> dedicated SGP4 worker
-              -> modeled points + local crossing results + selected track
+              -> complete safe modeled-point source
+              -> local zoom/type/group display filter + selected exception
+              -> Nearby crossings + complete Catalog discovery + selected track
 
 current aircraft -> local literal search -> existing traffic selection
 
@@ -255,11 +280,13 @@ selection, provider state, and connections.
 Orbital tracking is a separate modeled-data boundary. Explicit enable loads
 one strictly validated same-origin snapshot, anchors modeled time to the
 response clock, and creates a dedicated propagation worker. Camera and
-selection changes run only local prediction work. Orbital points, crossing
-results, and selected tracks remain outside traffic models, clustering,
-freshness, trails, metadata, photos, and history. Wide views can therefore
-show orbital objects while aircraft and ships pause under their unchanged
-100 km eligibility contract.
+exact-filter changes run only coalesced local prediction work; text search and
+paging do not reach the worker. Every safe current point remains in the
+persistent source while MapLibre receives the local zoom/type/group shown-ID
+filter. Orbital points, crossing results, discovery rows, and selected tracks
+remain outside traffic models, clustering, freshness, trails, metadata,
+photos, and history. Wide views can therefore show orbital objects while
+aircraft and ships pause under their unchanged 100 km eligibility contract.
 
 The curated updater performs ten strictly sequential fixed requests (GP then
 SATCAT for each reviewed group), validates each group before one union,

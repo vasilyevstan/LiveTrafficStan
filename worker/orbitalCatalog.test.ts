@@ -1,21 +1,34 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { readFileSync } from 'node:fs'
 import {
   ORBITAL_BOOTSTRAP_PATH,
   ORBITAL_CATALOG_ID,
   ORBITAL_CATALOG_KEY,
   ORBITAL_CATALOG_PATH,
+  ORBITAL_CATALOG_PUBLICATION_VERSION,
+  ORBITAL_CATALOG_V1_BOOTSTRAP_PATH,
   ORBITAL_CATALOG_V1_KEY,
+  ORBITAL_CATALOG_V1_ROLLBACK_BOOTSTRAP_PATH,
+  ORBITAL_CATALOG_V2_ACCEPT,
   ORBITAL_MAX_RECORDS,
   ORBITAL_MAX_RETRY_AFTER_MS,
   ORBITAL_MAX_UPSTREAM_RECORDS,
   ORBITAL_REFRESH_INTERVAL_MS,
   ORBITAL_SOURCES,
   ORBITAL_UPSTREAM_USER_AGENT,
+  createLegacyOrbitalCatalogSnapshot,
+  createOrbitalCatalogPublication,
   createOrbitalCatalogSnapshot,
   handleOrbitalCatalog,
   refreshOrbitalCatalog,
+  selectLegacyOrbitalCatalogCandidate,
   selectOrbitalCatalogCandidate,
+  serializeLegacyOrbitalCatalogSnapshot,
+  serializeOrbitalCatalogPublication,
   serializeOrbitalCatalogSnapshot,
+  type LegacyOrbitalCatalogSnapshot,
+  validateLegacyOrbitalCatalogSnapshot,
+  validateOrbitalCatalogPublication,
   validateOrbitalCatalogSnapshot,
   type OrbitalCatalogSourceInput,
   type OrbitalCatalogFetch,
@@ -27,6 +40,31 @@ import {
 } from './orbitalCatalog.js'
 
 const nowMs = Date.parse('2026-09-30T18:25:59.094Z')
+const readLegacySnapshot = (version: 'v1' | 'v2') => {
+  const text = readFileSync(
+    new URL(
+      `../public/orbital-data/${version}/visual-catalog.json`,
+      import.meta.url,
+    ),
+    'utf8',
+  )
+  return {
+    text,
+    snapshot: JSON.parse(text) as LegacyOrbitalCatalogSnapshot,
+  }
+}
+const retainedLegacyV1 = readLegacySnapshot('v1')
+const retainedLegacyV2 = readLegacySnapshot('v2')
+const legacySnapshot = retainedLegacyV2.snapshot
+
+const v2Request = (init?: RequestInit) => {
+  const headers = new Headers(init?.headers)
+  headers.set('Accept', ORBITAL_CATALOG_V2_ACCEPT)
+  return new Request(`https://app.example${ORBITAL_CATALOG_PATH}`, {
+    ...init,
+    headers,
+  })
+}
 
 const gpRecord = (
   id: number,
@@ -90,6 +128,23 @@ const snapshotAt = (
     time,
   )
 }
+
+const legacySnapshotAt = (
+  timeMs = nowMs,
+  gpOverrides: Record<string, unknown> = {},
+  satcatOverrides: Record<string, unknown> = {},
+) =>
+  createLegacyOrbitalCatalogSnapshot(
+    [gpRecord(100_831, gpOverrides)],
+    [satcatRecord(100_831, satcatOverrides)],
+    new Date(timeMs).toISOString(),
+  )
+
+const publicationAt = async (timeMs = nowMs) =>
+  createOrbitalCatalogPublication(
+    await legacySnapshotAt(timeMs),
+    await snapshotAt(timeMs),
+  )
 
 class MemoryKv implements OrbitalKeyValueStore {
   readonly values = new Map<string, string>()
@@ -263,6 +318,101 @@ describe('orbital catalog source contract v2', () => {
       sourceGroups: ['visual', 'science'],
       displayOrder: overlapId,
     })
+  })
+
+  it('bundles the exact visual predecessor before cross-group winner substitution', async () => {
+    const overlapId = 20_580
+    const inputs = sourceInputs((group, index) => {
+      if (group === 'visual') {
+        return {
+          gpValue: [
+            gpRecord(overlapId, {
+              OBJECT_NAME: 'HST',
+              OBJECT_ID: '1990-037B',
+              EPOCH: '2026-09-30T16:00:00.1',
+              MEAN_MOTION: 14,
+            }),
+          ],
+          satcatValue: [
+            satcatRecord(overlapId, {
+              OBJECT_NAME: 'HST',
+              OBJECT_ID: '1990-037B',
+            }),
+          ],
+        }
+      }
+      if (group === 'science') {
+        return {
+          gpValue: [
+            gpRecord(overlapId, {
+              OBJECT_NAME: 'HST',
+              OBJECT_ID: '1990-037B',
+              EPOCH: '2026-09-30T17:00:00.2',
+              MEAN_MOTION: 15,
+            }),
+          ],
+          satcatValue: [
+            satcatRecord(overlapId, {
+              OBJECT_NAME: 'HST',
+              OBJECT_ID: '1990-037B',
+            }),
+          ],
+        }
+      }
+      const id = 100_831 + index
+      return {
+        gpValue: [gpRecord(id)],
+        satcatValue: [satcatRecord(id)],
+      }
+    })
+    const visual = inputs[0]
+    if (!visual) throw new Error('Missing visual source fixture')
+    const time = new Date(nowMs).toISOString()
+    const publication = createOrbitalCatalogPublication(
+      await createLegacyOrbitalCatalogSnapshot(
+        visual.gpValue,
+        visual.satcatValue,
+        time,
+      ),
+      await createOrbitalCatalogSnapshot(inputs, time, time),
+    )
+
+    expect(publication.schema1.records[0]).toMatchObject({
+      noradCatalogId: String(overlapId),
+      epoch: '2026-09-30T16:00:00.1Z',
+      meanMotion: 14,
+    })
+    expect(
+      publication.schema2.records.find(
+        ({ noradCatalogId }) =>
+          noradCatalogId === String(overlapId),
+      ),
+    ).toMatchObject({
+      epoch: '2026-09-30T17:00:00.200000Z',
+      meanMotion: 15,
+      sourceGroups: ['visual', 'science'],
+    })
+    await expect(
+      validateOrbitalCatalogPublication(publication),
+    ).resolves.toEqual(publication)
+
+    await expect(
+      createLegacyOrbitalCatalogSnapshot(
+        [
+          gpRecord(overlapId, {
+            OBJECT_NAME: ' HST ',
+            OBJECT_ID: '1990-037B',
+          }),
+        ],
+        [
+          satcatRecord(overlapId, {
+            OBJECT_NAME: 'HST',
+            OBJECT_ID: '1990-037B',
+          }),
+        ],
+        time,
+      ),
+    ).rejects.toThrow('object name')
   })
 
   it('validates every group independently before allowing extra SATCAT rows', async () => {
@@ -556,7 +706,7 @@ describe('scheduled curated orbital refresh', () => {
     vi.unstubAllGlobals()
   })
 
-  it('fetches the exact fixed sequence strictly serially and writes v2 once', async () => {
+  it('fetches the exact fixed sequence strictly serially and writes one atomic publication', async () => {
     const store = new MemoryKv()
     store.values.set(ORBITAL_CATALOG_V1_KEY, 'retained-v1')
     const coordinator = new MemoryCoordinator()
@@ -618,11 +768,23 @@ describe('scheduled curated orbital refresh', () => {
     expect(store.puts).toHaveLength(1)
     expect(store.puts[0]?.key).toBe(ORBITAL_CATALOG_KEY)
     expect(store.values.get(ORBITAL_CATALOG_V1_KEY)).toBe('retained-v1')
-    expect(
-      await validateOrbitalCatalogSnapshot(
-        JSON.parse(store.puts[0]?.value ?? 'null'),
-      ),
-    ).toMatchObject({ recordCount: 5 })
+    const publication = await validateOrbitalCatalogPublication(
+      JSON.parse(store.puts[0]?.value ?? 'null'),
+    )
+    expect(publication).toMatchObject({
+      publicationVersion: ORBITAL_CATALOG_PUBLICATION_VERSION,
+      schema1: {
+        recordCount: 1,
+        retrievedAt: '2026-09-30T18:25:59.094Z',
+      },
+      schema2: {
+        recordCount: 5,
+        retrievedAt: '2026-09-30T18:25:59.094Z',
+      },
+    })
+    expect(store.puts.some(({ key }) => key === ORBITAL_CATALOG_V1_KEY)).toBe(
+      false,
+    )
 
     await expect(
       refreshOrbitalCatalog(
@@ -639,6 +801,92 @@ describe('scheduled curated orbital refresh', () => {
       nextAllowedAtMs: nowMs + ORBITAL_REFRESH_INTERVAL_MS,
     })
     expect(fetchImpl).toHaveBeenCalledTimes(10)
+  })
+
+  it('keeps schema 1 current across successive schema 2 refreshes without another fetch or write target', async () => {
+    const store = new MemoryKv()
+    store.values.set(ORBITAL_CATALOG_V1_KEY, retainedLegacyV1.text)
+    const coordinator = new MemoryCoordinator()
+    const fetchImpl = vi.fn(async (input) =>
+      sourceResponse(String(input)),
+    )
+    const bootstrapV2 = await snapshotAt(nowMs - 60_000)
+    const assetsFetch = vi.fn(async (request: Request) => {
+      const pathname = new URL(request.url).pathname
+      if (pathname === ORBITAL_BOOTSTRAP_PATH) {
+        return jsonResponse(bootstrapV2)
+      }
+      if (pathname === ORBITAL_CATALOG_V1_BOOTSTRAP_PATH) {
+        return jsonResponse(retainedLegacyV2.snapshot)
+      }
+      if (
+        pathname ===
+        ORBITAL_CATALOG_V1_ROLLBACK_BOOTSTRAP_PATH
+      ) {
+        return jsonResponse(retainedLegacyV1.snapshot)
+      }
+      throw new Error(`Unexpected asset path: ${pathname}`)
+    })
+    const environment = {
+      ASSETS: { fetch: assetsFetch },
+      ORBITAL_CATALOG: store,
+      ORBITAL_CATALOG_ENABLED: 'true',
+    }
+    const refreshTimes = [
+      nowMs,
+      nowMs + ORBITAL_REFRESH_INTERVAL_MS,
+    ]
+
+    for (const refreshTime of refreshTimes) {
+      await expect(
+        refreshOrbitalCatalog(
+          environment,
+          coordinator,
+          { fetchImpl, nowMs: refreshTime },
+        ),
+      ).resolves.toMatchObject({
+        kind: 'published',
+        retrievedAt: new Date(refreshTime).toISOString(),
+      })
+      const publication = await validateOrbitalCatalogPublication(
+        JSON.parse(
+          store.values.get(ORBITAL_CATALOG_KEY) ?? 'null',
+        ),
+      )
+      expect(publication.schema1.retrievedAt).toBe(
+        publication.schema2.retrievedAt,
+      )
+      expect(publication.schema2.retrievedAt).toBe(
+        new Date(refreshTime).toISOString(),
+      )
+      const [defaultResponse, v2Response] = await Promise.all([
+        handleOrbitalCatalog(
+          new Request(
+            `https://app.example${ORBITAL_CATALOG_PATH}`,
+          ),
+          environment,
+          { nowMs: refreshTime },
+        ),
+        handleOrbitalCatalog(v2Request(), environment, {
+          nowMs: refreshTime,
+        }),
+      ])
+      await expect(defaultResponse.json()).resolves.toEqual(
+        publication.schema1,
+      )
+      await expect(v2Response.json()).resolves.toEqual(
+        publication.schema2,
+      )
+    }
+
+    expect(fetchImpl).toHaveBeenCalledTimes(20)
+    expect(store.puts).toHaveLength(2)
+    expect(
+      new Set(store.puts.map(({ key }) => key)),
+    ).toEqual(new Set([ORBITAL_CATALOG_KEY]))
+    expect(store.values.get(ORBITAL_CATALOG_V1_KEY)).toBe(
+      retainedLegacyV1.text,
+    )
   })
 
   it('preserves the Workers runtime receiver for all default fetches', async () => {
@@ -939,7 +1187,14 @@ describe('scheduled curated orbital refresh', () => {
     })
     expect(noFetch).not.toHaveBeenCalled()
 
+    const priorPublication = await publicationAt(nowMs - 1_000)
+    const priorPublicationText =
+      serializeOrbitalCatalogPublication(priorPublication)
     const failedStore = new MemoryKv()
+    failedStore.values.set(
+      ORBITAL_CATALOG_KEY,
+      priorPublicationText,
+    )
     failedStore.failPut = true
     await expect(
       refreshOrbitalCatalog(
@@ -957,6 +1212,49 @@ describe('scheduled curated orbital refresh', () => {
       reason: 'Orbital snapshot publication failed',
     })
     expect(failedStore.puts).toHaveLength(0)
+    expect(failedStore.values.get(ORBITAL_CATALOG_KEY)).toBe(
+      priorPublicationText,
+    )
+
+    const assetsFetch = vi.fn(async (request: Request) => {
+      const pathname = new URL(request.url).pathname
+      if (pathname === ORBITAL_BOOTSTRAP_PATH) {
+        return jsonResponse(priorPublication.schema2)
+      }
+      if (
+        pathname === ORBITAL_CATALOG_V1_BOOTSTRAP_PATH ||
+        pathname ===
+          ORBITAL_CATALOG_V1_ROLLBACK_BOOTSTRAP_PATH
+      ) {
+        return jsonResponse(priorPublication.schema1)
+      }
+      throw new Error(`Unexpected asset path: ${pathname}`)
+    })
+    const failedEnvironment = {
+      ASSETS: { fetch: assetsFetch },
+      ORBITAL_CATALOG: failedStore,
+      ORBITAL_CATALOG_ENABLED: 'true',
+    }
+    await expect(
+      (
+        await handleOrbitalCatalog(
+          new Request(
+            `https://app.example${ORBITAL_CATALOG_PATH}`,
+          ),
+          failedEnvironment,
+          { nowMs },
+        )
+      ).json(),
+    ).resolves.toEqual(priorPublication.schema1)
+    await expect(
+      (
+        await handleOrbitalCatalog(
+          v2Request(),
+          failedEnvironment,
+          { nowMs },
+        )
+      ).json(),
+    ).resolves.toEqual(priorPublication.schema2)
   })
 
   it('anchors late Retry-After guidance to response receipt time', async () => {
@@ -1054,6 +1352,296 @@ describe('scheduled curated orbital refresh', () => {
 })
 
 describe('same-origin orbital catalog route', () => {
+  it('retains both predecessor snapshot bodies and digest validators', async () => {
+    for (const retained of [
+      retainedLegacyV1,
+      retainedLegacyV2,
+    ]) {
+      const snapshot = await validateLegacyOrbitalCatalogSnapshot(
+        retained.snapshot,
+      )
+      expect(serializeLegacyOrbitalCatalogSnapshot(snapshot)).toBe(
+        retained.text,
+      )
+      expect(snapshot.sha256).toBe(retained.snapshot.sha256)
+    }
+  })
+
+  it('retains default schema 1 and negotiates schema 2 with separate validators', async () => {
+    const current = await snapshotAt()
+    const store = new MemoryKv()
+    store.values.set(
+      ORBITAL_CATALOG_V1_KEY,
+      `${JSON.stringify(legacySnapshot)}\n`,
+    )
+    store.values.set(
+      ORBITAL_CATALOG_KEY,
+      serializeOrbitalCatalogSnapshot(current),
+    )
+    const assetsFetch = vi.fn(async (request: Request) => {
+      const pathname = new URL(request.url).pathname
+      if (pathname === ORBITAL_CATALOG_V1_BOOTSTRAP_PATH) {
+        return jsonResponse(legacySnapshot)
+      }
+      if (pathname === ORBITAL_BOOTSTRAP_PATH) {
+        return jsonResponse(current)
+      }
+      throw new Error(`Unexpected asset path: ${pathname}`)
+    })
+    const environment = {
+      ASSETS: { fetch: assetsFetch },
+      ORBITAL_CATALOG: store,
+      ORBITAL_CATALOG_ENABLED: 'true',
+    }
+
+    const defaultResponse = await handleOrbitalCatalog(
+      new Request(`https://app.example${ORBITAL_CATALOG_PATH}`),
+      environment,
+      { nowMs },
+    )
+    expect(defaultResponse.status).toBe(200)
+    expect(defaultResponse.headers.get('vary')).toBe('Accept')
+    expect(defaultResponse.headers.get('x-livetrafficstan-orbital-schema')).toBe(
+      '1',
+    )
+    expect(defaultResponse.headers.get('x-livetrafficstan-orbital-source')).toBe(
+      'kv',
+    )
+    expect(await defaultResponse.json()).toEqual(legacySnapshot)
+    const v1Etag = defaultResponse.headers.get('etag')
+
+    const predecessorResponse = await handleOrbitalCatalog(
+      new Request(`https://app.example${ORBITAL_CATALOG_PATH}`, {
+        headers: { Accept: 'application/json' },
+      }),
+      environment,
+      { nowMs },
+    )
+    expect(
+      predecessorResponse.headers.get(
+        'x-livetrafficstan-orbital-schema',
+      ),
+    ).toBe('1')
+
+    const v2Response = await handleOrbitalCatalog(
+      v2Request(),
+      environment,
+      { nowMs },
+    )
+    expect(v2Response.status).toBe(200)
+    expect(v2Response.headers.get('vary')).toBe('Accept')
+    expect(v2Response.headers.get('x-livetrafficstan-orbital-schema')).toBe(
+      '2',
+    )
+    expect(await v2Response.json()).toEqual(current)
+    const v2Etag = v2Response.headers.get('etag')
+    expect(v2Etag).not.toBe(v1Etag)
+
+    const v1Conditional = await handleOrbitalCatalog(
+      new Request(`https://app.example${ORBITAL_CATALOG_PATH}`, {
+        headers: { 'If-None-Match': v1Etag ?? '' },
+      }),
+      environment,
+      { nowMs },
+    )
+    expect(v1Conditional.status).toBe(304)
+
+    const v2Conditional = await handleOrbitalCatalog(
+      v2Request({
+        headers: { 'If-None-Match': v2Etag ?? '' },
+      }),
+      environment,
+      { nowMs },
+    )
+    expect(v2Conditional.status).toBe(304)
+
+    const crossRepresentation = await handleOrbitalCatalog(
+      v2Request({
+        headers: { 'If-None-Match': v1Etag ?? '' },
+      }),
+      environment,
+      { nowMs },
+    )
+    expect(crossRepresentation.status).toBe(200)
+  })
+
+  it('serves both bundled representations with independent conditional validators', async () => {
+    const publication = await publicationAt()
+    const bootstrapV2 = await snapshotAt(nowMs - 60_000)
+    const store = new MemoryKv()
+    store.values.set(
+      ORBITAL_CATALOG_KEY,
+      serializeOrbitalCatalogPublication(publication),
+    )
+    store.values.set(
+      ORBITAL_CATALOG_V1_KEY,
+      retainedLegacyV1.text,
+    )
+    const assetsFetch = vi.fn(async (request: Request) => {
+      const pathname = new URL(request.url).pathname
+      if (pathname === ORBITAL_BOOTSTRAP_PATH) {
+        return jsonResponse(bootstrapV2)
+      }
+      if (pathname === ORBITAL_CATALOG_V1_BOOTSTRAP_PATH) {
+        return jsonResponse(retainedLegacyV2.snapshot)
+      }
+      if (
+        pathname ===
+        ORBITAL_CATALOG_V1_ROLLBACK_BOOTSTRAP_PATH
+      ) {
+        return jsonResponse(retainedLegacyV1.snapshot)
+      }
+      throw new Error(`Unexpected asset path: ${pathname}`)
+    })
+    const environment = {
+      ASSETS: { fetch: assetsFetch },
+      ORBITAL_CATALOG: store,
+      ORBITAL_CATALOG_ENABLED: 'true',
+    }
+
+    const [defaultResponse, v2Response] = await Promise.all([
+      handleOrbitalCatalog(
+        new Request(
+          `https://app.example${ORBITAL_CATALOG_PATH}`,
+        ),
+        environment,
+        { nowMs },
+      ),
+      handleOrbitalCatalog(v2Request(), environment, { nowMs }),
+    ])
+    expect(await defaultResponse.json()).toEqual(
+      publication.schema1,
+    )
+    expect(await v2Response.json()).toEqual(publication.schema2)
+    const defaultEtag = defaultResponse.headers.get('etag') ?? ''
+    const v2Etag = v2Response.headers.get('etag') ?? ''
+    expect(defaultEtag).not.toBe(v2Etag)
+
+    const [defaultConditional, v2Conditional] =
+      await Promise.all([
+        handleOrbitalCatalog(
+          new Request(
+            `https://app.example${ORBITAL_CATALOG_PATH}`,
+            {
+              headers: { 'If-None-Match': defaultEtag },
+            },
+          ),
+          environment,
+          { nowMs },
+        ),
+        handleOrbitalCatalog(
+          v2Request({
+            headers: { 'If-None-Match': v2Etag },
+          }),
+          environment,
+          { nowMs },
+        ),
+      ])
+    expect(defaultConditional.status).toBe(304)
+    expect(v2Conditional.status).toBe(304)
+    expect(defaultConditional.headers.get('vary')).toBe('Accept')
+    expect(v2Conditional.headers.get('vary')).toBe('Accept')
+  })
+
+  it('selects the newest legacy candidate and fails closed on a newest equal-time conflict', async () => {
+    const older = await legacySnapshotAt(nowMs - 1_000)
+    const newer = await legacySnapshotAt(nowMs)
+    expect(
+      selectLegacyOrbitalCatalogCandidate([
+        { snapshot: older, source: 'bootstrap' },
+        { snapshot: newer, source: 'kv' },
+      ]),
+    ).toEqual({ snapshot: newer, source: 'kv' })
+
+    const conflicting = await legacySnapshotAt(nowMs, {
+      EPOCH: '2026-09-30T18:00:00.123456',
+    })
+    expect(() =>
+      selectLegacyOrbitalCatalogCandidate([
+        { snapshot: newer, source: 'kv' },
+        { snapshot: conflicting, source: 'bootstrap' },
+      ]),
+    ).toThrow('Equal-time')
+
+    const bundledOlder = await publicationAt(nowMs - 2_000)
+    const retainedMiddle = await legacySnapshotAt(nowMs - 1_000)
+    const storeWithOlderCandidates = new MemoryKv()
+    storeWithOlderCandidates.values.set(
+      ORBITAL_CATALOG_KEY,
+      serializeOrbitalCatalogPublication(bundledOlder),
+    )
+    storeWithOlderCandidates.values.set(
+      ORBITAL_CATALOG_V1_KEY,
+      serializeLegacyOrbitalCatalogSnapshot(retainedMiddle),
+    )
+    const newestBootstrapResponse = await handleOrbitalCatalog(
+      new Request(
+        `https://app.example${ORBITAL_CATALOG_PATH}`,
+      ),
+      {
+        ASSETS: {
+          fetch: vi.fn(async (request: Request) => {
+            const pathname = new URL(request.url).pathname
+            if (
+              pathname === ORBITAL_CATALOG_V1_BOOTSTRAP_PATH
+            ) {
+              return jsonResponse(newer)
+            }
+            if (
+              pathname ===
+              ORBITAL_CATALOG_V1_ROLLBACK_BOOTSTRAP_PATH
+            ) {
+              return jsonResponse(older)
+            }
+            throw new Error(`Unexpected asset path: ${pathname}`)
+          }),
+        },
+        ORBITAL_CATALOG: storeWithOlderCandidates,
+        ORBITAL_CATALOG_ENABLED: 'true',
+      },
+      { nowMs },
+    )
+    expect(
+      newestBootstrapResponse.headers.get(
+        'x-livetrafficstan-orbital-source',
+      ),
+    ).toBe('bootstrap')
+    await expect(
+      newestBootstrapResponse.json(),
+    ).resolves.toEqual(newer)
+
+    const publication = createOrbitalCatalogPublication(
+      newer,
+      await snapshotAt(nowMs),
+    )
+    const store = new MemoryKv()
+    store.values.set(
+      ORBITAL_CATALOG_KEY,
+      serializeOrbitalCatalogPublication(publication),
+    )
+    store.values.set(
+      ORBITAL_CATALOG_V1_KEY,
+      serializeLegacyOrbitalCatalogSnapshot(conflicting),
+    )
+    const response = await handleOrbitalCatalog(
+      new Request(
+        `https://app.example${ORBITAL_CATALOG_PATH}`,
+      ),
+      {
+        ASSETS: {
+          fetch: vi.fn(async () =>
+            new Response(null, { status: 404 }),
+          ),
+        },
+        ORBITAL_CATALOG: store,
+        ORBITAL_CATALOG_ENABLED: 'true',
+      },
+      { nowMs },
+    )
+    expect(response.status).toBe(503)
+    expect(response.headers.get('retry-after')).toBe('300')
+  })
+
   it('keeps the literal route and selects the newer compatible candidate', async () => {
     expect(ORBITAL_CATALOG_PATH).toBe('/api/orbits/catalog')
     const olderKv = await snapshotAt(nowMs - 10_000)
@@ -1069,7 +1657,7 @@ describe('same-origin orbital catalog route', () => {
     })
 
     const response = await handleOrbitalCatalog(
-      new Request(`https://app.example${ORBITAL_CATALOG_PATH}`),
+      v2Request(),
       {
         ASSETS: { fetch: assetsFetch },
         ORBITAL_CATALOG: store,
@@ -1091,7 +1679,7 @@ describe('same-origin orbital catalog route', () => {
       serializeOrbitalCatalogSnapshot(newerKv),
     )
     const kvResponse = await handleOrbitalCatalog(
-      new Request(`https://app.example${ORBITAL_CATALOG_PATH}`),
+      v2Request(),
       {
         ASSETS: { fetch: assetsFetch },
         ORBITAL_CATALOG: store,
@@ -1129,7 +1717,7 @@ describe('same-origin orbital catalog route', () => {
       serializeOrbitalCatalogSnapshot(kv),
     )
     const response = await handleOrbitalCatalog(
-      new Request(`https://app.example${ORBITAL_CATALOG_PATH}`),
+      v2Request(),
       {
         ASSETS: { fetch: vi.fn(async () => jsonResponse(bootstrap)) },
         ORBITAL_CATALOG: store,
@@ -1155,7 +1743,7 @@ describe('same-origin orbital catalog route', () => {
     }
 
     const response = await handleOrbitalCatalog(
-      new Request(`https://app.example${ORBITAL_CATALOG_PATH}`),
+      v2Request(),
       environment,
       { nowMs },
     )
@@ -1166,7 +1754,7 @@ describe('same-origin orbital catalog route', () => {
     ).toBe('kv')
 
     const conditional = await handleOrbitalCatalog(
-      new Request(`https://app.example${ORBITAL_CATALOG_PATH}`, {
+      v2Request({
         headers: { 'If-None-Match': `W/"${current.sha256}"` },
       }),
       environment,
@@ -1177,7 +1765,7 @@ describe('same-origin orbital catalog route', () => {
 
     store.values.set(ORBITAL_CATALOG_KEY, '{}')
     const fallback = await handleOrbitalCatalog(
-      new Request(`https://app.example${ORBITAL_CATALOG_PATH}`),
+      v2Request(),
       environment,
     )
     expect(

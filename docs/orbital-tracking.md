@@ -2,10 +2,13 @@
 
 ## Scope and release status
 
-Issue #162 adds a default-off **ORBITS** layer for CelesTrak's bounded
-`visual` catalog. The browser models current sub-satellite points, identifies
-ground tracks that cross the settled visible map within 90 minutes, and draws
-one bounded selected-object track.
+Issue #162 established a default-off **ORBITS** layer. Issue #211 expands the
+browser source contract to CelesTrak's reviewed `visual`, `stations`,
+`weather`, `gnss`, and `science` groups, adds deterministic zoom tiers and
+complete local catalog discovery, and preserves the same modeled-data
+boundary. The browser models current sub-satellite points, identifies ground
+tracks that cross the settled visible map within 90 minutes, and draws one
+bounded selected-object track.
 
 This is cataloged orbital-object context, not another live-traffic provider:
 
@@ -23,12 +26,11 @@ sets `ORBITAL_CATALOG_ENABLED=true`, serves the same-origin catalog route, and
 runs the checked two-hour scheduler. A deployment with that Worker flag off
 still returns `404` and removes the Cron.
 
-Issue #211's first PR is infrastructure only. It stages schema 2 catalog
-`celestrak-curated-v1` from the ordered groups `visual`, `stations`,
-`weather`, `gnss`, and `science`, but deliberately does not add catalog
-discovery or zoom tiers to this browser. The released browser remains schema 1
-until the coordinated follow-on; the source-contract PR must not be deployed
-alone.
+Issue #211's source-contract PR staged schema 2 catalog
+`celestrak-curated-v1`. This follow-on browser source consumes that exact
+contract, but this document does not claim a production release: deployment
+still requires the checked `dev` to `main` release path and exact-SHA
+acceptance.
 
 ## User experience
 
@@ -39,19 +41,16 @@ adds one fragment field, `orbits=0|1`. The preference stores only visibility.
 Catalog bytes, modeled positions, crossings, selected object, track, clock
 anchor, camera, and Home remain session-only.
 
-After enable, the collapsed Operations panel keeps a compact orbital summary
-visible. A local view reports current in-view objects and next-90-minute pass
-count while the detailed result list remains inside **More**. **VIEW** opens
-the existing disclosure and focuses the first modeled object result when one
-exists, otherwise the already-visible primary ORBITS toggle. The upper-left
-status panel mirrors the same compact ORBITS state and labels an eligible view
-**Visible traffic and orbital area**. Its **LIVE**, **PARTIAL**, and **OFFLINE**
-health still describes only aircraft and marine providers, so modeled orbital
-availability cannot mask a traffic outage. Compact mobile layouts retain the
-existing rule that hides provider-detail copy; the primary ORBITS toggle and
-summary remain visible there instead. These surfaces prevent a valid zero-object
-local view from looking like a failed layer and add no request or camera
-movement.
+After enable, the collapsed Operations panel keeps a compact
+**ORBITS · shown / modeled** summary visible. **VIEW** opens the existing
+disclosure and the Orbits task without another disclosure. The task has
+separate **Nearby** and **Catalog** views while the existing More body remains
+the only vertical scroll owner. The upper-left status panel mirrors the same
+compact ORBITS state and labels an eligible view **Visible traffic and orbital
+area**. Its **LIVE**, **PARTIAL**, and **OFFLINE** health still describes only
+aircraft and marine providers, so modeled orbital availability cannot mask a
+traffic outage. Compact mobile layouts retain the existing rule that hides
+provider-detail copy; the primary ORBITS toggle and summary remain visible.
 
 When enabled, the control shows distinct states for:
 
@@ -66,15 +65,51 @@ When enabled, the control shows distinct states for:
 - HISTORY pause;
 - a valid catalog with no currently propagatable positions.
 
-For a local safely representable Mercator view, the bounded result selector
-lists objects currently in view first and then future crossings ordered by
-their first approximate crossing time. It exposes at most 20 detailed results
-while retaining the truthful total count.
+For a local safely representable Mercator view, Nearby lists objects currently
+in the map first and then future crossings ordered by their first approximate
+crossing time. It exposes at most 20 detailed results while retaining the
+truthful total. Counts distinguish catalog records, accepted worker records,
+safe current modeled positions, catalog matches, modeled matches, objects in
+the footprint, shown objects in the footprint, future crossings, and rows in
+the current catalog result set. Current footprint and shown-in-footprint
+counts come from the same current safe-position revision and settled viewport;
+they remain available while a compatible prediction is pending. Only the
+future-crossing count waits for a prediction with the current viewport and
+exact filters. Unsafe footprints or a missing settled raw zoom report map-area
+counts as unavailable rather than zero.
 
-For a whole-world view, every valid current sub-satellite point is in view.
+The map applies local deterministic display tiers to matching safe current
+positions in schema-v2 `displayOrder`: below zoom 2 it shows at most 192,
+from zoom 2 through below zoom 4 at most 384, and from zoom 4 every match
+through the 512-record contract cap. Tier boundaries use the exact settled
+`map.getZoom()` value; the separately rounded camera value remains only for
+sharing/privacy. Before a raw settled zoom exists, no tier or SHOWN count is
+claimed, and selected details say **Map display unavailable; no settled map
+zoom is available** before any subset or exception wording. Once display is
+available, one exact safe selected object outside the zoom or exact-filter
+subset remains shown and is labeled **Selected exception**. A matching
+zoom-tier exception is included in matching SHOWN and reduces the hidden
+count; a filter-excluded exception is reported separately as `+1` and never
+inflates matching SHOWN, MODELED, or IN MAP totals. Hidden-by-rank objects
+cannot be picked.
+
+Catalog searches the complete accepted snapshot by normalized name, canonical
+NORAD ID, or international designator. Ranking is exact, prefix, substring,
+then `displayOrder`, normalized name, and numeric NORAD ID. Exact type and
+source-group filters can change map and crossing eligibility; text changes
+only the list. Results use 20-row pages. Records without a safe current
+position remain searchable as **Position unavailable** and cannot be selected.
+An empty source designator remains valid unavailable data and is rendered as
+**Designator unavailable** in Catalog and selected details.
+There is no fuzzy matching, punctuation stripping, mission inference,
+provider request, URL state, or persistence.
+
+For a whole-world footprint, every safe current sub-satellite point is
+geographically in the map even when a zoom tier intentionally hides some.
 The UI therefore does not invent a useful "next crossing" ranking. For a
 partial world-spanning or otherwise invalid footprint, current points remain
-available but crossing calculation is explicitly unavailable.
+available but crossing calculation and map-area counts are explicitly
+unavailable.
 
 The direct full-world share URL is:
 
@@ -117,21 +152,23 @@ One-second position changes are not placed in an ARIA live region.
 ## Data and execution flow
 
 ```text
-staged Issue #211 source contract:
+Issue #211 source contract:
 Cloudflare Cron
   -> named SQLite Durable Object cadence admission
   -> visual GP + SATCAT, then stations, weather, gnss, science
   -> independent group joins + one strict NORAD-ID union
-  -> complete normalized schema-2 snapshot
-  -> one final orbital:catalog:v2:curated-v1 publication
+  -> complete normalized schema-2 snapshot + pre-substitution schema-1 visual
+  -> one internal bundle / one final orbital:catalog:v2:curated-v1 write
 
-released browser contract:
+browser contract:
 explicit ORBITS enable
-  -> same-origin GET /api/orbits/catalog
-  -> strict schema-1 validation + fulfilled current-tab cache
+  -> same-origin GET /api/orbits/catalog with fixed schema-2 Accept
+  -> strict schema/source-contract-2 validation + fulfilled current-tab cache
   -> dedicated module Web Worker
-  -> satellite.js SGP4 propagation
-  -> persistent MapLibre GeoJSON sources/layers
+  -> satellite.js SGP4 current positions + filtered crossings
+  -> complete safe-position MapLibre GeoJSON source
+  -> local zoom/type/group shown-ID filter + selected exception
+  -> Nearby and complete Catalog views
 ```
 
 The schema-2 server union has 462 unique records (369 payloads, 91 rocket
@@ -155,9 +192,15 @@ derives `displayOrder` only from reviewed group order plus numeric NORAD ID.
 Every group has a complete unique GP-to-SATCAT join before unioning; validated
 extra SATCAT rows are allowed. Newest valid OMM epoch wins across groups.
 Identity/type conflict or equal-epoch propagation conflict rejects the entire
-refresh. The schema-1 KV key and immutable `v1`/`v2` assets remain for
-rollback, while the existing Durable Object admission row retains cadence,
-in-progress, `Retry-After`, and terminal-block state.
+refresh. The validated visual pair produces an exact public schema-1 snapshot
+before a newer cross-group propagation winner can replace its fields. An
+internal publication-version-1 envelope stores that member beside public
+schema 2 in one atomic v2-key write; the envelope is never served and its
+version is independent from both public schemas and coordinator state. The
+schema-1 KV key is never rewritten, and it plus immutable `v1`/`v2` assets
+remain read-only rollback/default candidates. The existing Durable Object
+admission row retains cadence, in-progress, `Retry-After`, and terminal-block
+state.
 
 The client route is fixed and same-origin:
 
@@ -165,18 +208,33 @@ The client route is fixed and same-origin:
 GET /api/orbits/catalog
 ```
 
-The client sends `Accept: application/json`, omits credentials, rejects
-redirects, and may send only the last accepted stable weak digest ETag. The
-weak validator survives Cloudflare content-encoding changes without changing
-snapshot identity. The client accepts exact `200` or a valid `304`. A complete
-`200` must pass:
+The new client sends the fixed, non-user-derived
+`Accept: application/vnd.livetrafficstan.orbital-catalog+json;version=2`,
+omits credentials, rejects redirects, and may send only the last accepted
+schema-2 weak digest ETag. Requests without that exact media type retain the
+newest valid schema-1 representation among the current bundle, retained v1 KV,
+and immutable v1/v2 assets. Equal newest retrieval times with different
+digests fail closed. Both representations return `Vary: Accept`, carry
+distinct weak ETags, and conditionally revalidate only against their own
+digest. A pre-bundle raw schema-2 KV value remains readable during rollout.
+The literal route, method, query rejection, provider inputs, and acquisition
+lifecycle do not change.
+
+The schema-1 default must remain through at least one full checked production
+release after the schema-2 browser release. Removing that compatibility
+representation requires a separate reviewed change after predecessor rollback
+and support are no longer required. The weak validator survives Cloudflare
+content-encoding changes without changing snapshot identity. The new client
+accepts exact `200` or a valid schema-2 `304`. A complete schema-2 `200` must
+pass:
 
 - strict JSON media type and fatal UTF-8 decoding;
-- 256 KiB streamed body limit;
+- 512 KiB streamed body limit;
 - exact schema and field allowlists;
-- one through 256 records;
+- one through 512 records;
 - canonical increasing NORAD IDs, including six-plus-digit support;
-- exact fixed group and source URLs;
+- exact fixed group/source URLs, per-record ordered source membership, and
+  schema-v2 display order;
 - finite OMM domains and UTC epochs;
 - header/body schema, retrieval time, digest, and ETag agreement;
 - recomputed SHA-256 over the canonical digest input.
@@ -218,9 +276,12 @@ validation. It:
 
 - creates `satellite.js` records once per accepted snapshot;
 - publishes current valid modeled positions no more than once per second;
-- recomputes crossings every 30 seconds or after a settled view/selection
-  revision;
-- ignores obsolete catalog, position, and prediction responses;
+- keeps one crossing prediction in flight plus only the latest desired
+  view/selection/exact-filter request;
+- yields every eight objects so an obsolete prediction can be replaced without
+  publishing a partial result;
+- acknowledges the latest prediction start and fences obsolete catalog,
+  position, prediction, and error responses;
 - omits non-finite, decayed, underground, over-age, future-invalid, or
   physically implausible results rather than clamping them;
 - pauses and is terminated when the layer is off, the page is hidden, HISTORY
@@ -312,9 +373,13 @@ Deterministic order is:
 ports -> airports -> weather -> orbital track/points -> selected traffic trail/live traffic
 ```
 
-Current points use stable feature IDs and `GeoJSONSource.updateData` diffs.
-The map and canvas are never recreated for propagation ticks, selection,
-visibility, or theme changes.
+The current-point source contains every safe modeled position, regardless of
+the current tier. Current points use stable feature IDs and
+`GeoJSONSource.updateData` diffs; exact shown IDs drive the point-layer filter
+and the selectable-ID set. Style rehydration restores the complete data,
+filter, visibility, images, selected exception/highlight, and track. The map
+and canvas are never recreated for propagation ticks, zoom, search, filters,
+selection, visibility, or theme changes.
 
 Selection priority is:
 
@@ -350,7 +415,8 @@ All behavioral limits are centralized in `src/config/appConfig.ts`.
 | Setting | Value |
 | --- | ---: |
 | Endpoint | `/api/orbits/catalog` |
-| Response / record cap | 256 KiB / 256 |
+| Schema / source contract | 2 / 2 (`celestrak-curated-v1`) |
+| Response / record cap | 512 KiB / 512 |
 | Request deadline | 5 seconds |
 | Revalidation | 2 hours |
 | Stale / hard age | 6 hours / 24 hours |
@@ -358,15 +424,16 @@ All behavioral limits are centralized in `src/config/appConfig.ts`.
 | Prediction refresh / step | 30 seconds / 30 seconds |
 | Prediction horizon | 90 minutes |
 | Detailed result cap | 20 |
+| Prediction cancellation chunk | 8 objects |
+| Display tiers | `<2`: 192; `2..<4`: 384; `>=4`: all matches through 512 |
+| Discovery query / page | 64 characters / 20 rows |
 | Selected track | 15 minutes / 31 points |
 | Element age / future tolerance | 14 days / 10 minutes |
 | Clock skew / jump limit | 2 minutes / 30 seconds |
 
-Those are the released schema-1 browser bounds. The staged schema-2 scheduler
-has separate 10-second/512-record/512-KiB per-response,
-90-second/4-MiB aggregate, and 512-record/512-KiB publication bounds. The
-follow-on browser PR must define its compatible consumption bounds before
-coordinated release.
+The scheduler retains separate 10-second/512-record/512-KiB per-response and
+90-second/4-MiB aggregate bounds. It publishes only one complete schema-2
+snapshot within the same 512-record/512-KiB browser cap.
 
 The browser route is a literal `/api/orbits/catalog` and has no environment
 override. A build cannot redirect orbital reads to CelesTrak, another origin,
@@ -381,10 +448,18 @@ The automated suite covers:
   deadlines, v1/v2 separation, immutable history, candidate selection, and
   unchanged coordinator state;
 - strict catalog bytes, schema, digest, ETag, headers, 304, and cache admission;
+- source-group/display-order validation and a deterministic 512-record
+  streamed hard-cap fixture;
 - ordinary SGP4 reference output and six-digit IDs;
 - over-age and invalid propagation;
 - local, whole-world, dateline, and invalid viewport geometry;
-- current/future crossing order, result bounds, and track bounds;
+- exact zoom boundaries, stable tier order, selected exception, hidden-ID
+  picking exclusion, and complete-source style restoration;
+- exact/prefix/substring search ranking, punctuation preservation, exact
+  type/source filters, paging/focus, unavailable positions, and distinct
+  counts;
+- current/future crossing order, filtered/cancellable latest prediction,
+  result bounds, and track bounds;
 - clock skew, visibility, HISTORY, enable/disable, cadence, and no-fetch camera
   or selection changes;
 - source/layer idempotence, visibility, stable IDs, theme reinstallation, and

@@ -10,6 +10,7 @@ import {
   LAYER_ORBITAL_HIGHLIGHT,
   LAYER_ORBITAL_POINTS,
   LAYER_ORBITAL_TRACK,
+  orbitalPointFilter,
   orbitalHighlightFeatures,
   orbitalPositionFeatures,
   orbitalTrackFeatures,
@@ -25,6 +26,8 @@ const position: ModeledOrbitalPosition = {
   name: 'ATLAS CENTAUR 2',
   internationalDesignator: '1963-047A',
   objectType: 'PAY',
+  sourceGroups: ['visual'],
+  displayOrder: 694,
   elementEpoch: 1,
   snapshotRetrievedAt: 2,
   snapshotSha256: 'a'.repeat(64),
@@ -68,6 +71,7 @@ const createMap = () => {
       layers.includes(id) ? { id } : undefined,
     addLayer,
     setLayoutProperty: vi.fn(),
+    setFilter: vi.fn(),
     setPaintProperty: vi.fn(),
   } as unknown as MapLibreMap
   return {
@@ -112,6 +116,7 @@ describe('orbital map style', () => {
       'light',
       true,
       lightImages,
+      [position.id],
     )
     installOrbitalStyle(
       map,
@@ -121,6 +126,7 @@ describe('orbital map style', () => {
       'dark',
       true,
       darkImages,
+      [position.id],
     )
     installOrbitalStyle(
       map,
@@ -130,6 +136,7 @@ describe('orbital map style', () => {
       'light',
       true,
       lightImages,
+      [position.id],
     )
 
     expect([...sources.keys()].sort()).toEqual(
@@ -168,6 +175,8 @@ describe('orbital map style', () => {
       properties: {
         id: 'orbital:694',
         objectType: 'PAY',
+        sourceGroups: 'visual',
+        displayOrder: 694,
         markerIcon: 'orbital-payload',
       },
     })
@@ -209,6 +218,7 @@ describe('orbital map style', () => {
       'light',
       false,
       lightImages,
+      [position.id],
     )
 
     expect(map.setLayoutProperty).toHaveBeenCalledTimes(3)
@@ -216,6 +226,59 @@ describe('orbital map style', () => {
       LAYER_ORBITAL_POINTS,
       'visibility',
       'none',
+    )
+  })
+
+  it('retains every safe point while restoring the exact shown-ID filter', () => {
+    const { map, sources, layerSpecs } = createMap()
+    const rankHidden = {
+      ...position,
+      id: 'orbital:999',
+      noradCatalogId: '999',
+      displayOrder: 999,
+    }
+    const points = orbitalPositionFeatures([position, rankHidden])
+
+    installOrbitalStyle(
+      map,
+      points,
+      orbitalHighlightFeatures([position, rankHidden], position.id),
+      orbitalTrackFeatures([]),
+      'light',
+      true,
+      lightImages,
+      [position.id],
+    )
+
+    expect(points.features.map(({ id }) => id)).toEqual([
+      position.id,
+      rankHidden.id,
+    ])
+    expect(layerSpecs.get(LAYER_ORBITAL_POINTS)).toMatchObject({
+      filter: orbitalPointFilter([position.id]),
+    })
+    expect(map.setFilter).toHaveBeenLastCalledWith(
+      LAYER_ORBITAL_POINTS,
+      orbitalPointFilter([position.id]),
+    )
+
+    installOrbitalStyle(
+      map,
+      points,
+      orbitalHighlightFeatures([position, rankHidden], rankHidden.id),
+      orbitalTrackFeatures([]),
+      'dark',
+      true,
+      darkImages,
+      [rankHidden.id],
+    )
+
+    expect(sources.get(SOURCE_ORBITAL_POINTS)?.setData).toHaveBeenCalledWith(
+      points,
+    )
+    expect(map.setFilter).toHaveBeenLastCalledWith(
+      LAYER_ORBITAL_POINTS,
+      orbitalPointFilter([rankHidden.id]),
     )
   })
 })

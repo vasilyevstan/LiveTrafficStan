@@ -55,6 +55,12 @@ import {
 import type { ViewportAssessment } from './domain/viewport'
 import type { OrbitalViewport } from './domain/orbitalViewport'
 import { orbitalEnrichmentForPosition } from './domain/orbitalEnrichment'
+import {
+  DEFAULT_ORBITAL_DISCOVERY_FILTERS,
+  deriveOrbitalPopulationCounts,
+  selectOrbitalDisplay,
+  type OrbitalDiscoveryFilters,
+} from './domain/orbitalDiscovery'
 import { formatTimestamp } from './domain/format'
 import {
   displayWeatherObservations,
@@ -135,6 +141,10 @@ function App() {
   const [selectedOrbitalId, setSelectedOrbitalId] = useState<string | null>(
     null,
   )
+  const [orbitalFilters, setOrbitalFilters] =
+    useState<OrbitalDiscoveryFilters>(
+      DEFAULT_ORBITAL_DISCOVERY_FILTERS,
+    )
   const orbitalEnrichmentImageLoader = useMemo(
     () =>
       new OrbitalEnrichmentImageLoader(APP_CONFIG.orbital.timeoutMs),
@@ -157,6 +167,7 @@ function App() {
   const [viewportReport, setViewportReport] = useState<{
     assessment: ViewportAssessment
     orbitalViewport: OrbitalViewport
+    rawZoom?: number
     viewRequestId: number
   } | null>(null)
   const [viewRequest, setViewRequest] = useState<ViewRequest>(() => {
@@ -404,6 +415,10 @@ function App() {
     viewReady && viewportReport?.viewRequestId === viewRequest.id
       ? viewportReport.orbitalViewport
       : undefined
+  const currentOrbitalRawZoom =
+    viewReady && viewportReport?.viewRequestId === viewRequest.id
+      ? viewportReport.rawZoom
+      : undefined
   const activeViewport =
     viewReady && currentAssessment?.kind === 'eligible'
       ? currentAssessment.viewport
@@ -463,9 +478,39 @@ function App() {
     online,
     currentOrbitalViewport,
     selectedOrbitalId,
+    orbitalFilters,
     APP_CONFIG.orbital,
   )
   const orbitalState = orbitalResult.state
+  const orbitalDiscovery = useMemo(() => {
+    const display = selectOrbitalDisplay(
+      orbitalState.positions,
+      orbitalFilters,
+      currentOrbitalRawZoom,
+      selectedOrbitalId,
+      {
+        ...APP_CONFIG.orbital.display,
+        maximumRecords: APP_CONFIG.orbital.maximumRecords,
+      },
+    )
+    return {
+      display,
+      counts: deriveOrbitalPopulationCounts(
+        orbitalState,
+        orbitalFilters,
+        display,
+        currentOrbitalViewport,
+      ),
+    }
+  }, [
+    currentOrbitalRawZoom,
+    currentOrbitalViewport,
+    orbitalFilters,
+    orbitalState,
+    selectedOrbitalId,
+  ])
+  const orbitalDisplay = orbitalDiscovery.display
+  const orbitalCounts = orbitalDiscovery.counts
   const historicalViewportEntities = useMemo(
     () =>
       activeViewport
@@ -635,10 +680,16 @@ function App() {
   )
   const selectedOrbitalCrossing = useMemo(
     () =>
-      orbitalState.prediction.results.find(
-        (crossing) => crossing.id === selectedOrbitalId,
-      ),
-    [orbitalState.prediction.results, selectedOrbitalId],
+      orbitalCounts.futureCrossingCount === undefined
+        ? undefined
+        : orbitalState.prediction.results.find(
+            (crossing) => crossing.id === selectedOrbitalId,
+          ),
+    [
+      orbitalCounts.futureCrossingCount,
+      orbitalState.prediction.results,
+      selectedOrbitalId,
+    ],
   )
   const selectedOrbitalEnrichment = useMemo(
     () =>
@@ -821,11 +872,13 @@ function App() {
     (
       assessment: ViewportAssessment,
       orbitalViewport: OrbitalViewport,
+      rawZoom: number | undefined,
       reportViewRequestId: number,
     ) => {
       setViewportReport({
         assessment,
         orbitalViewport,
+        rawZoom,
         viewRequestId: reportViewRequestId,
       })
     },
@@ -1067,11 +1120,7 @@ function App() {
     [orbitalEnrichmentImageLoader],
   )
   const handleOrbitalContextSelect = useCallback(
-    (id: string) =>
-      selectOrbital(
-        id,
-        `orbital-context-result-${id.replace(/^orbital:/, '')}`,
-      ),
+    (id: string, originId: string) => selectOrbital(id, originId),
     [selectOrbital],
   )
 
@@ -1127,7 +1176,8 @@ function App() {
     visible: orbitalObjectsVisible,
     historyActive,
     state: orbitalState,
-    predictionHorizonMs: APP_CONFIG.orbital.predictionHorizonMs,
+    display: orbitalDisplay,
+    counts: orbitalCounts,
   })
   const mapSubtitle = historyActive
     ? 'Historical traffic area'
@@ -1281,6 +1331,7 @@ function App() {
         airports={airports}
         weatherObservations={weatherObservations}
         orbitalPositions={orbitalState.positions}
+        orbitalShownIds={orbitalDisplay.shownIds}
         orbitalTrackSegments={orbitalState.prediction.trackSegments}
         orbitalImageUrls={loadedOrbitalImageUrls}
         trailSegments={trailSegments}
@@ -1413,10 +1464,18 @@ function App() {
           orbitalVisible={orbitalObjectsVisible}
           orbitalState={orbitalState}
           selectedOrbitalId={selectedOrbitalId}
+          orbitalFilters={orbitalFilters}
+          orbitalDisplay={orbitalDisplay}
+          orbitalCounts={orbitalCounts}
           orbitalPredictionHorizonMs={
             APP_CONFIG.orbital.predictionHorizonMs
           }
+          orbitalMaximumQueryLength={
+            APP_CONFIG.orbital.discovery.maximumQueryLength
+          }
+          orbitalPageSize={APP_CONFIG.orbital.discovery.pageSize}
           onOrbitalVisibleChange={setOrbitalObjectsVisible}
+          onOrbitalFiltersChange={setOrbitalFilters}
           onOrbitalSelect={handleOrbitalContextSelect}
           onRetryOrbital={orbitalResult.retry}
           clusteringEnabled={clusteringEnabled}
@@ -1533,6 +1592,15 @@ function App() {
             online={online}
             units={units}
             imageState={selectedOrbitalImageState}
+            mapDisplay={
+              orbitalDisplay.available
+                ? {
+                    available: true,
+                    selectedException:
+                      orbitalDisplay.selectedException,
+                  }
+                : { available: false }
+            }
             onImageLoaded={handleOrbitalImageLoaded}
             onImageFailed={handleOrbitalImageFailed}
             onClose={handleCloseOrbital}

@@ -182,6 +182,24 @@ describe('traffic feature picking', () => {
     ).toBeNull()
   })
 
+  it('rejects rank-hidden orbital points from exact and touch picking', () => {
+    const shownOrbitalIds = new Set(['orbital:shown'])
+    const rendered = [
+      feature('orbital:hidden'),
+      feature('orbital:shown'),
+    ]
+
+    expect(exactEligibleFeatureId(rendered, shownOrbitalIds)).toBe(
+      'orbital:shown',
+    )
+    expect(
+      uniqueEligibleFeatureId(
+        [feature('orbital:hidden')],
+        shownOrbitalIds,
+      ),
+    ).toBeNull()
+  })
+
   it('builds an 8 CSS-pixel extension without device-pixel scaling', () => {
     expect(expandedHitBox({ x: 100, y: 200 }, 8)).toEqual([
       [92, 192],

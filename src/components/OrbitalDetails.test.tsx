@@ -4,6 +4,10 @@ import type {
   ModeledOrbitalPosition,
   OrbitalCatalogSnapshot,
 } from '../domain/orbital'
+import {
+  DEFAULT_ORBITAL_DISCOVERY_FILTERS,
+  selectOrbitalDisplay,
+} from '../domain/orbitalDiscovery'
 import { orbitalEnrichmentForPosition } from '../domain/orbitalEnrichment'
 import { OrbitalDetails } from './OrbitalDetails'
 
@@ -13,6 +17,8 @@ const position: ModeledOrbitalPosition = {
   name: 'THOR AGENA D R/B',
   internationalDesignator: '1964-002A',
   objectType: 'R/B',
+  sourceGroups: ['visual'],
+  displayOrder: 733,
   elementEpoch: Date.UTC(2026, 8, 28, 0, 48),
   snapshotRetrievedAt: Date.UTC(2026, 8, 28, 18, 45),
   snapshotSha256: 'a'.repeat(64),
@@ -24,12 +30,12 @@ const position: ModeledOrbitalPosition = {
 }
 
 const snapshot: OrbitalCatalogSnapshot = {
-  schemaVersion: 1,
-  sourceContractVersion: 1,
-  group: 'visual',
-  gpSourceUrl: 'https://example.test/gp',
-  satcatSourceUrl: 'https://example.test/satcat',
+  schemaVersion: 2,
+  sourceContractVersion: 2,
+  catalogId: 'celestrak-curated-v1',
+  sources: [],
   retrievedAt: '2026-09-28T18:45:00.000Z',
+  publishedAt: '2026-09-28T18:45:00.000Z',
   recordCount: 1,
   records: [],
   sha256: 'a'.repeat(64),
@@ -56,6 +62,7 @@ describe('OrbitalDetails', () => {
         online
         units="metric"
         imageState={{ phase: 'unavailable' }}
+        mapDisplay={{ available: true, selectedException: false }}
         onClose={() => undefined}
       />,
     )
@@ -97,6 +104,7 @@ describe('OrbitalDetails', () => {
           identityKey: enrichment.identityKey,
           url: 'blob:https://example.test/iss',
         }}
+        mapDisplay={{ available: true, selectedException: true }}
         onClose={() => undefined}
       />,
     )
@@ -113,5 +121,70 @@ describe('OrbitalDetails', () => {
     expect(html).toContain('NASA Images and Media Usage Guidelines')
     expect(html).toContain('no local crop, resize, retouching')
     expect(html).not.toContain('generic satellite')
+  })
+
+  it('states when the international designator is unavailable', () => {
+    const html = renderToStaticMarkup(
+      <OrbitalDetails
+        position={{ ...position, internationalDesignator: '' }}
+        snapshot={snapshot}
+        sourceName="CelesTrak"
+        sourceWebsiteUrl="https://celestrak.org/"
+        sourceUsagePolicyUrl="https://celestrak.org/usage-policy.php"
+        now={position.modeledFor}
+        online
+        units="metric"
+        imageState={{ phase: 'unavailable' }}
+        mapDisplay={{ available: true, selectedException: false }}
+        onClose={() => undefined}
+      />,
+    )
+
+    expect(html).toContain('Designator unavailable')
+  })
+
+  it('reports map display unavailable for a Catalog selection before zoom settles', () => {
+    const display = selectOrbitalDisplay(
+      [position],
+      DEFAULT_ORBITAL_DISCOVERY_FILTERS,
+      undefined,
+      position.id,
+      {
+        worldMaximumZoom: 2,
+        midMaximumZoom: 4,
+        worldLimit: 192,
+        midLimit: 384,
+        maximumRecords: 512,
+      },
+    )
+    const html = renderToStaticMarkup(
+      <OrbitalDetails
+        position={position}
+        snapshot={snapshot}
+        sourceName="CelesTrak"
+        sourceWebsiteUrl="https://celestrak.org/"
+        sourceUsagePolicyUrl="https://celestrak.org/usage-policy.php"
+        now={position.modeledFor}
+        online
+        units="metric"
+        imageState={{ phase: 'unavailable' }}
+        mapDisplay={
+          display.available
+            ? {
+                available: true,
+                selectedException: display.selectedException,
+              }
+            : { available: false }
+        }
+        onClose={() => undefined}
+      />,
+    )
+
+    expect(display.available).toBe(false)
+    expect(html).toContain(
+      'Map display unavailable; no settled map zoom is available',
+    )
+    expect(html).not.toContain('Selected exception; shown')
+    expect(html).not.toContain('Within the current zoom')
   })
 })

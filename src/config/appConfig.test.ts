@@ -45,11 +45,13 @@ describe('createAppConfig', () => {
     })
     expect(config.orbital).toMatchObject({
       endpointPath: '/api/orbits/catalog',
-      schemaVersion: 1,
-      sourceContractVersion: 1,
-      group: 'visual',
-      maximumBytes: 256 * 1_024,
-      maximumRecords: 256,
+      acceptMediaType:
+        'application/vnd.livetrafficstan.orbital-catalog+json;version=2',
+      schemaVersion: 2,
+      sourceContractVersion: 2,
+      catalogId: 'celestrak-curated-v1',
+      maximumBytes: 512 * 1_024,
+      maximumRecords: 512,
       revalidationIntervalMs: 2 * 60 * 60_000,
       positionIntervalMs: 1_000,
       predictionHorizonMs: 90 * 60_000,
@@ -57,6 +59,17 @@ describe('createAppConfig', () => {
       maximumDetailedResults: 20,
       trackDurationMs: 15 * 60_000,
       maximumTrackPoints: 31,
+      predictionChunkSize: 8,
+      display: {
+        worldMaximumZoom: 2,
+        midMaximumZoom: 4,
+        worldLimit: 192,
+        midLimit: 384,
+      },
+      discovery: {
+        maximumQueryLength: 64,
+        pageSize: 20,
+      },
       sourceName: 'CelesTrak',
     })
     expect(config.aircraftMetadata).toMatchObject({

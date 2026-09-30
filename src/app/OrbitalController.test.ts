@@ -1,11 +1,16 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import snapshotFixture from '../../public/orbital-data/v1/visual-catalog.json'
+import snapshotFixture from '../../public/orbital-data/curated-2026-09-30-v1/catalog.json'
 import { createAppConfig } from '../config/appConfig'
 import type {
   ModeledOrbitalPosition,
   OrbitalCatalogSnapshot,
   OrbitalControllerState,
 } from '../domain/orbital'
+import {
+  DEFAULT_ORBITAL_DISCOVERY_FILTERS,
+  orbitalFiltersSignature,
+} from '../domain/orbitalDiscovery'
+import { orbitalViewportSignature } from '../domain/orbitalViewport'
 import type {
   OrbitalWorkerLike,
   OrbitalWorkerRequest,
@@ -146,6 +151,8 @@ const position = (modeledFor: number): ModeledOrbitalPosition => ({
   name: 'ATLAS CENTAUR 2',
   internationalDesignator: '1963-047A',
   objectType: 'PAY',
+  sourceGroups: ['visual'],
+  displayOrder: 694,
   elementEpoch: modeledFor,
   snapshotRetrievedAt: Date.parse(snapshot.retrievedAt),
   snapshotSha256: snapshot.sha256,
@@ -215,11 +222,15 @@ describe('OrbitalController', () => {
 
     controller.setViewport({ kind: 'world' })
     controller.setSelectedId('orbital:694')
+    controller.setFilters({
+      objectType: 'PAY',
+      sourceGroup: 'visual',
+    })
     expect(provider.load).toHaveBeenCalledTimes(1)
     const predictions = workers[0].messages.filter(
       (message) => message.type === 'prediction',
     )
-    expect(predictions).toHaveLength(1)
+    expect(predictions).toHaveLength(4)
     const firstPrediction = predictions[0]
     if (firstPrediction.type !== 'prediction') return
     workers[0].emit({
@@ -239,7 +250,7 @@ describe('OrbitalController', () => {
       workers[0].messages.filter(
         (message) => message.type === 'prediction',
       ),
-    ).toHaveLength(2)
+    ).toHaveLength(4)
 
     controller.setEnabled(false)
     expect(workers[0].terminated).toBe(true)
@@ -698,9 +709,16 @@ describe('OrbitalController', () => {
         { latitude: 4, longitude: 2 },
       ],
     })
-    expect(
-      worker.messages.filter((message) => message.type === 'prediction'),
-    ).toHaveLength(1)
+    const queuedPredictions = worker.messages.filter(
+      (message) => message.type === 'prediction',
+    )
+    expect(queuedPredictions).toHaveLength(3)
+    expect(queuedPredictions[2]).toMatchObject({
+      viewport: {
+        kind: 'local',
+        center: { latitude: 3, longitude: 3 },
+      },
+    })
 
     worker.emit({
       type: 'error',
@@ -713,14 +731,31 @@ describe('OrbitalController', () => {
     const predictions = worker.messages.filter(
       (message) => message.type === 'prediction',
     )
-    expect(predictions).toHaveLength(2)
-    expect(predictions[1]).toMatchObject({
-      viewport: {
-        kind: 'local',
-        center: { latitude: 3, longitude: 3 },
+    expect(predictions).toHaveLength(3)
+    expect(states.at(-1)?.phase).not.toBe('unavailable')
+    const latestPrediction = predictions[2]
+    if (latestPrediction?.type !== 'prediction') return
+    worker.emit({
+      type: 'prediction',
+      catalogRevision: latestPrediction.catalogRevision,
+      requestId: latestPrediction.requestId,
+      prediction: {
+        mode: 'local',
+        results: [],
+        totalResults: 0,
+        inViewCount: 0,
+        futureCrossingCount: 0,
+        trackSegments: [],
       },
     })
-    expect(states.at(-1)?.phase).not.toBe('unavailable')
+    expect(states.at(-1)?.prediction).toMatchObject({
+      filtersSignature: orbitalFiltersSignature(
+        DEFAULT_ORBITAL_DISCOVERY_FILTERS,
+      ),
+      viewportSignature: orbitalViewportSignature(
+        latestPrediction.viewport,
+      ),
+    })
     controller.stop()
   })
 })

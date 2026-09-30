@@ -243,17 +243,32 @@ two hours before ten strictly sequential requests: GP then SATCAT for each
 group. Each group validates independently. The union deduplicates only by
 canonical decimal NORAD ID, requires normalized name/designator and exact type
 agreement, chooses the newest valid OMM epoch, and rejects equal-epoch
-propagation differences. One complete result is published through one final
-Workers KV write. `GET /api/orbits/catalog` reads only compatible KV and the
-exact-release bootstrap and cannot perform upstream work.
+propagation differences. The already-fetched validated `visual` pair also
+produces the exact predecessor schema-1 representation before cross-group
+winner substitution. One final Workers KV write publishes a non-public
+internal-version-1 bundle containing both complete public bodies, or publishes
+neither; the retained v1 key is never rewritten. The literal
+`GET /api/orbits/catalog` reads only compatible KV and exact-release bootstraps
+and cannot perform upstream work. To preserve predecessor rollback during the
+schema-2 browser rollout, absent or non-matching `Accept` receives the newest
+valid schema 1 from the bundle, retained v1 KV, or immutable v1/v2 bootstrap,
+while only the fixed
+`application/vnd.livetrafficstan.orbital-catalog+json;version=2` request
+receives schema 2. The two representations use distinct digest ETags and
+`Vary: Accept`; no versioned route, query parameter, endpoint override, or new
+provider input is introduced. Default schema 1 remains for at least one full
+checked production release after the schema-2 browser release and can be
+removed only by a separate reviewed compatibility change.
 
 Schema 2 identifies catalog `celestrak-curated-v1`, records the ordered source
 URLs and row counts, retrieval/publication times, exact OMM and SATCAT fields,
 ordered `sourceGroups`, numeric-NORAD canonical ordering, and a canonical
 digest. `displayOrder` is derived only from reviewed group order plus numeric
 NORAD ID; it is future clutter control, not importance or mission inference.
-The new key is `orbital:catalog:v2:curated-v1`; schema-1 KV and immutable
-`v1`/`v2` assets remain certifiable for rollback.
+The new key is `orbital:catalog:v2:curated-v1`; its internal envelope version is
+independent from both public catalog schemas and coordinator state. Schema-1
+KV and immutable `v1`/`v2` assets remain certifiable for rollback. Equal newest
+schema-1 timestamps with different digests fail closed.
 
 The catalog contract changes without resetting provider admission. The Durable
 Object class, namespace, binding, object name, table, and schema-1 state keep
@@ -271,11 +286,12 @@ Checksum and repository-history guards require a new path for any byte change.
 Current code validates both compatible v2 KV and bootstrap, serves the newer
 `retrievedAt`, and fails closed when equal timestamps have different digests.
 
-This infrastructure does not make propagated coordinates live observations,
-and it is not independently releasable before the follow-on browser schema,
-zoom-tier, and catalog-discovery work. Orbital models remain outside
-aircraft/marine traffic, freshness, trails, and history. The provider contract
-and alternatives are recorded in
+This infrastructure does not make propagated coordinates live observations.
+The source-contract commit was intentionally not independently released; the
+coordinated browser consumer now validates schema 2 and adds local zoom tiers
+and complete catalog discovery without changing provider acquisition. Orbital
+models remain outside aircraft/marine traffic, freshness, trails, and history.
+The provider contract and alternatives are recorded in
 [Orbital Data Source Evaluation](orbital-data-source-evaluation.md).
 
 Production activation at source
@@ -331,6 +347,22 @@ views list current modeled points without inventing a crossing rank. Partial
 world-spanning or invalid footprints retain current points but suppress
 crossing results. Aircraft and ships independently pause whenever the unchanged
 traffic viewport is ineligible.
+
+Every safe current position stays in one persistent GeoJSON source. Clutter
+control is a layer/selectability policy, not source truncation: stable schema-2
+`displayOrder` admits 192 matches below zoom 2, 384 below zoom 4, and all safe
+matches through 512 at zoom 4 or above. A safe selected object is the only
+exception to zoom or exact type/source-group filtering and is labeled as such.
+This keeps style restoration and one-second source updates independent from
+search, paging, and the displayed rank subset.
+
+Catalog discovery operates only on the accepted snapshot. Text matches name,
+canonical NORAD ID, or international designator and ranks exact, prefix, then
+substring before `displayOrder`, normalized name, and numeric NORAD ID. Type
+and reviewed source-group filters are exact. Text changes only the 20-row
+paged list; exact filters also update local map eligibility and one coalesced
+prediction. Fuzzy matching, punctuation removal, mission inference, URL state,
+persistence, and network search were rejected.
 
 The worker is execution-lazy: it is not constructed until ORBITS is enabled
 and a catalog is accepted. The generated PWA shell already contains all hashed

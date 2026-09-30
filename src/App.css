@@ -335,6 +335,10 @@
   outline: none;
 }
 
+.control-panel__more:not([open]) > .control-panel__more-body {
+  display: none;
+}
+
 .control-panel__more-body {
   position: absolute;
   top: 35px;
@@ -526,12 +530,18 @@
 
 .vessel-discovery button:disabled,
 .vessel-discovery input:disabled,
-.vessel-discovery select:disabled {
+.vessel-discovery select:disabled,
+.orbital-catalog-results button[aria-disabled='true'] {
   color: var(--button-disabled-text);
   border-color: var(--button-disabled-border);
   background: var(--button-disabled-background);
   cursor: not-allowed;
   opacity: 0.72;
+}
+
+.orbital-catalog-results button[aria-disabled='true']:focus-visible {
+  outline: 1px solid var(--button-hover-border);
+  outline-offset: 1px;
 }
 
 .location-search__form > label {
@@ -787,6 +797,35 @@
   overflow: visible;
 }
 
+.orbital-context__views {
+  margin-bottom: 9px;
+}
+
+.orbital-context__views button,
+.orbital-results button,
+.orbital-context__pagination button {
+  min-height: 44px;
+}
+
+.orbital-context__filters {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.orbital-context__pagination {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.orbital-context__pagination button {
+  width: 100%;
+}
+
+.orbital-context__counts p {
+  overflow-wrap: anywhere;
+}
+
 .vessel-results button {
   display: grid;
   width: 100%;
@@ -805,6 +844,7 @@
   margin-top: 2px;
   color: var(--note-muted);
   font-size: 0.6rem;
+  overflow-wrap: anywhere;
 }
 
 .vessel-results .orbital-context__purpose {

@@ -2,7 +2,38 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_VESSEL_FILTERS } from '../domain/vesselFilters'
 import { EMPTY_ORBITAL_PREDICTION } from '../domain/orbital'
+import {
+  DEFAULT_ORBITAL_DISCOVERY_FILTERS,
+  type OrbitalDisplaySelection,
+  type OrbitalPopulationCounts,
+} from '../domain/orbitalDiscovery'
 import { TrafficControls } from './TrafficControls'
+
+const emptyOrbitalDisplay: OrbitalDisplaySelection = {
+  available: true,
+  tier: 'world',
+  limit: 192,
+  shownIds: [],
+  shownPositions: [],
+  matchingShownIds: [],
+  matchingShownPositions: [],
+  matchingPositions: [],
+  zoomHiddenCount: 0,
+  selectedException: false,
+  selectedFiltered: false,
+  selectedZoomHidden: false,
+}
+
+const emptyOrbitalCounts: OrbitalPopulationCounts = {
+  catalogCount: 0,
+  acceptedCount: 0,
+  modeledNowCount: 0,
+  catalogMatchCount: 0,
+  modeledMatchCount: 0,
+  inFootprintCount: 0,
+  shownInFootprintCount: 0,
+  futureCrossingCount: 0,
+}
 
 const renderControls = (
   overrides: Partial<Parameters<typeof TrafficControls>[0]> = {},
@@ -56,12 +87,19 @@ const renderControls = (
       orbitalVisible={false}
       orbitalState={{
         phase: 'disabled',
+        acceptedCount: 0,
         positions: [],
         prediction: EMPTY_ORBITAL_PREDICTION,
       }}
       selectedOrbitalId={null}
+      orbitalFilters={DEFAULT_ORBITAL_DISCOVERY_FILTERS}
+      orbitalDisplay={emptyOrbitalDisplay}
+      orbitalCounts={emptyOrbitalCounts}
       orbitalPredictionHorizonMs={90 * 60_000}
+      orbitalMaximumQueryLength={64}
+      orbitalPageSize={20}
       onOrbitalVisibleChange={() => undefined}
+      onOrbitalFiltersChange={() => undefined}
       onOrbitalSelect={() => undefined}
       onRetryOrbital={() => undefined}
       clusteringEnabled={false}
@@ -211,6 +249,7 @@ describe('TrafficControls', () => {
       orbitalVisible: true,
       orbitalState: {
         phase: 'ready',
+        acceptedCount: 1,
         positions: [],
         prediction: {
           mode: 'local',
@@ -230,16 +269,31 @@ describe('TrafficControls', () => {
           ],
         },
         snapshot: {
-          schemaVersion: 1,
-          sourceContractVersion: 1,
-          group: 'visual',
-          gpSourceUrl: 'https://example.test/gp',
-          satcatSourceUrl: 'https://example.test/satcat',
+          schemaVersion: 2,
+          sourceContractVersion: 2,
+          catalogId: 'celestrak-curated-v1',
+          sources: [],
           retrievedAt: '2026-03-12T12:00:00.000Z',
+          publishedAt: '2026-03-12T12:00:00.000Z',
           recordCount: 1,
           records: [],
           sha256: 'a'.repeat(64),
         },
+      },
+      orbitalDisplay: {
+        ...emptyOrbitalDisplay,
+        shownIds: ['orbital:694'],
+        matchingShownIds: ['orbital:694'],
+      },
+      orbitalCounts: {
+        ...emptyOrbitalCounts,
+        catalogCount: 1,
+        acceptedCount: 1,
+        modeledNowCount: 1,
+        catalogMatchCount: 1,
+        modeledMatchCount: 1,
+        inFootprintCount: 1,
+        shownInFootprintCount: 1,
       },
     })
 
@@ -247,14 +301,14 @@ describe('TrafficControls', () => {
       'aria-pressed="true" aria-busy="false">ORBITS',
     )
     expect(html).toContain(
-      'ORBITS · 1 IN VIEW · 0 PASSES ≤90M',
+      'ORBITS · 1 SHOWN / 1 MODELED',
     )
     expect(html).toContain(
       'aria-label="View modeled orbital objects" aria-controls="traffic-controls-map-tools">VIEW',
     )
     expect(html).toContain('Modeled orbital objects')
     expect(html).toContain('ATLAS CENTAUR 2')
-    expect(html).toContain('not live telemetry')
+    expect(html).toContain('not live or optical visibility')
     expect(html).toContain('CelesTrak')
   })
 
@@ -263,6 +317,7 @@ describe('TrafficControls', () => {
       orbitalVisible: true,
       orbitalState: {
         phase: 'stale',
+        acceptedCount: 1,
         positions: [],
         prediction: {
           mode: 'local',
@@ -282,16 +337,25 @@ describe('TrafficControls', () => {
           ],
         },
         snapshot: {
-          schemaVersion: 1,
-          sourceContractVersion: 1,
-          group: 'visual',
-          gpSourceUrl: 'https://example.test/gp',
-          satcatSourceUrl: 'https://example.test/satcat',
+          schemaVersion: 2,
+          sourceContractVersion: 2,
+          catalogId: 'celestrak-curated-v1',
+          sources: [],
           retrievedAt: '2026-03-12T12:00:00.000Z',
+          publishedAt: '2026-03-12T12:00:00.000Z',
           recordCount: 1,
           records: [],
           sha256: 'a'.repeat(64),
         },
+      },
+      orbitalCounts: {
+        ...emptyOrbitalCounts,
+        catalogCount: 1,
+        acceptedCount: 1,
+        modeledNowCount: 1,
+        catalogMatchCount: 1,
+        modeledMatchCount: 1,
+        futureCrossingCount: 1,
       },
     })
     const mapDetailsIndex = html.indexOf(
@@ -300,7 +364,7 @@ describe('TrafficControls', () => {
     const navigationPrimary = html.slice(0, mapDetailsIndex)
 
     expect(navigationPrimary).toContain(
-      'ORBITS · 0 IN VIEW · 1 PASS ≤90M',
+      'ORBITS · 0 SHOWN / 1 MODELED',
     )
     expect(navigationPrimary).toContain('>VIEW</button>')
     expect(html).toContain('COSMOS 2550')
@@ -311,15 +375,16 @@ describe('TrafficControls', () => {
       orbitalVisible: true,
       orbitalState: {
         phase: 'paused-history',
+        acceptedCount: 0,
         positions: [],
         prediction: EMPTY_ORBITAL_PREDICTION,
         snapshot: {
-          schemaVersion: 1,
-          sourceContractVersion: 1,
-          group: 'visual',
-          gpSourceUrl: 'https://example.test/gp',
-          satcatSourceUrl: 'https://example.test/satcat',
+          schemaVersion: 2,
+          sourceContractVersion: 2,
+          catalogId: 'celestrak-curated-v1',
+          sources: [],
           retrievedAt: '2026-03-12T12:00:00.000Z',
+          publishedAt: '2026-03-12T12:00:00.000Z',
           recordCount: 0,
           records: [],
           sha256: 'a'.repeat(64),

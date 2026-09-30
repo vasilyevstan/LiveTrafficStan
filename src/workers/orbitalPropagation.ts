@@ -20,6 +20,11 @@ import {
   type OrbitalTrackSegment,
 } from '../domain/orbital'
 import {
+  DEFAULT_ORBITAL_DISCOVERY_FILTERS,
+  matchesOrbitalFilters,
+  type OrbitalDiscoveryFilters,
+} from '../domain/orbitalDiscovery'
+import {
   normalizeOrbitalLongitude,
   orbitalPointInPolygon,
   orbitalSegmentEntryFraction,
@@ -145,6 +150,8 @@ const modelPosition = (
     name: prepared.object.name,
     internationalDesignator: prepared.object.internationalDesignator,
     objectType: prepared.object.objectType,
+    sourceGroups: prepared.object.sourceGroups,
+    displayOrder: prepared.object.displayOrder,
     elementEpoch: prepared.epoch,
     snapshotRetrievedAt:
       parseOrbitalTimestamp(catalog.snapshot.retrievedAt) ?? 0,
@@ -331,9 +338,13 @@ export const predictOrbitalView = (
   modeledFor: number,
   viewport: OrbitalViewport,
   selectedId: string | null,
+  filters: OrbitalDiscoveryFilters = DEFAULT_ORBITAL_DISCOVERY_FILTERS,
 ): OrbitalPrediction => {
   const selected = catalog.objects.find(
     ({ object }) => orbitalFeatureId(object.noradCatalogId) === selectedId,
+  )
+  const matchingObjects = catalog.objects.filter(({ object }) =>
+    matchesOrbitalFilters(object, filters),
   )
 
   if (viewport.kind === 'invalid') {
@@ -354,17 +365,22 @@ export const predictOrbitalView = (
   }
 
   if (viewport.kind === 'world') {
-    const current = modelOrbitalPositions(catalog, modeledFor)
-      .map(
-        (position): OrbitalCrossing => ({
+    const current = matchingObjects
+      .flatMap((prepared) => {
+        const position = modelPosition(prepared, catalog, modeledFor)
+        return position
+          ? [
+              {
           id: position.id,
           noradCatalogId: position.noradCatalogId,
           name: position.name,
           objectType: position.objectType,
           currentlyInView: true,
           firstCrossingAt: modeledFor,
-        }),
-      )
+              } satisfies OrbitalCrossing,
+            ]
+          : []
+      })
       .sort(crossingSort)
     return {
       mode: 'world',
@@ -383,7 +399,7 @@ export const predictOrbitalView = (
     }
   }
 
-  const crossings = catalog.objects
+  const crossings = matchingObjects
     .flatMap((prepared) => {
       const crossing = crossingForObject(
         catalog,
@@ -407,6 +423,123 @@ export const predictOrbitalView = (
       0,
       catalog.limits.maximumDetailedResults,
     ),
+    totalResults: crossings.length,
+    inViewCount,
+    futureCrossingCount: crossings.length - inViewCount,
+    trackSegments: trackSegments(
+      catalog,
+      selected,
+      modeledFor,
+      selectedCrossing?.firstCrossingAt,
+    ),
+  }
+}
+
+interface AsyncPredictionOptions {
+  shouldCancel: () => boolean
+  yieldControl: () => Promise<void>
+}
+
+const yieldPrediction = async (
+  index: number,
+  catalog: PreparedOrbitalCatalog,
+  options: AsyncPredictionOptions,
+) => {
+  if (
+    index === 0 ||
+    index % catalog.limits.predictionChunkSize !== 0
+  ) {
+    return !options.shouldCancel()
+  }
+  await options.yieldControl()
+  return !options.shouldCancel()
+}
+
+export const predictOrbitalViewAsync = async (
+  catalog: PreparedOrbitalCatalog,
+  modeledFor: number,
+  viewport: OrbitalViewport,
+  selectedId: string | null,
+  filters: OrbitalDiscoveryFilters,
+  options: AsyncPredictionOptions,
+): Promise<OrbitalPrediction | undefined> => {
+  const selected = catalog.objects.find(
+    ({ object }) => orbitalFeatureId(object.noradCatalogId) === selectedId,
+  )
+  if (viewport.kind === 'invalid') {
+    return options.shouldCancel()
+      ? undefined
+      : predictOrbitalView(
+          catalog,
+          modeledFor,
+          viewport,
+          selectedId,
+          filters,
+        )
+  }
+
+  const matchingObjects = catalog.objects.filter(({ object }) =>
+    matchesOrbitalFilters(object, filters),
+  )
+  if (viewport.kind === 'world') {
+    const current: OrbitalCrossing[] = []
+    for (let index = 0; index < matchingObjects.length; index += 1) {
+      if (!(await yieldPrediction(index, catalog, options))) {
+        return undefined
+      }
+      const prepared = matchingObjects[index]
+      const position = modelPosition(prepared, catalog, modeledFor)
+      if (!position) continue
+      current.push({
+        id: position.id,
+        noradCatalogId: position.noradCatalogId,
+        name: position.name,
+        objectType: position.objectType,
+        currentlyInView: true,
+        firstCrossingAt: modeledFor,
+      })
+    }
+    if (options.shouldCancel()) return undefined
+    current.sort(crossingSort)
+    return {
+      mode: 'world',
+      results: current.slice(0, catalog.limits.maximumDetailedResults),
+      totalResults: current.length,
+      inViewCount: current.length,
+      futureCrossingCount: 0,
+      trackSegments: trackSegments(
+        catalog,
+        selected,
+        modeledFor,
+        undefined,
+      ),
+      message:
+        'The whole world is visible, so upcoming crossing order is not meaningful.',
+    }
+  }
+
+  const crossings: OrbitalCrossing[] = []
+  for (let index = 0; index < matchingObjects.length; index += 1) {
+    if (!(await yieldPrediction(index, catalog, options))) {
+      return undefined
+    }
+    const crossing = crossingForObject(
+      catalog,
+      matchingObjects[index],
+      modeledFor,
+      viewport,
+    )
+    if (crossing) crossings.push(crossing)
+  }
+  if (options.shouldCancel()) return undefined
+  crossings.sort(crossingSort)
+  const selectedCrossing = crossings.find(({ id }) => id === selectedId)
+  const inViewCount = crossings.filter(
+    ({ currentlyInView }) => currentlyInView,
+  ).length
+  return {
+    mode: 'local',
+    results: crossings.slice(0, catalog.limits.maximumDetailedResults),
     totalResults: crossings.length,
     inViewCount,
     futureCrossingCount: crossings.length - inViewCount,
