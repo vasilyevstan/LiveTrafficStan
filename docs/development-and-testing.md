@@ -33,8 +33,8 @@ Worker command below for enabled ORBITS acceptance.
 | `npm run update:aircraft-metadata` | Explicit maintainer regeneration from the pinned upstream archive and license |
 | `npm run check:country-allocations` | Network-free validation of bundled MID and ICAO24 country allocations |
 | `npm run update:country-allocations` | Explicit maintainer regeneration from pinned open-licensed sources and canonical cross-checks |
-| `npm run check:orbital-catalog` | Network-free raw-byte, fatal UTF-8, exact-schema/canonical-serialization, source, type, ordering, count, size, epoch, and SHA-256 validation of the committed CelesTrak bootstrap |
-| `npm run update:orbital-catalog -- --gp <path> --satcat <path> --retrieved-at <iso> --output public/orbital-data/v<next>/visual-catalog.json` | Explicit maintainer normalization of one already-downloaded GP/SATCAT pair after enforcing the same 256 KiB raw-byte and fatal UTF-8 bounds; never fetches the provider and never reuses a published immutable version |
+| `npm run check:orbital-catalog` | Network-free schema-2/canonical-digest validation of the curated bootstrap, pinned probe bytes/hashes/counts, immutable checksum/history guard, and both retained schema-1 rollback contracts |
+| `npm run update:orbital-catalog -- --source-dir <probe-dir> --summary <summary.json> --published-at <iso> --output public/orbital-data/<new-version>/catalog.json` | Explicit maintainer normalization of the already-downloaded fixed five-group evidence after exact URL/order/row/byte/SHA-256 checks; never fetches the provider and never reuses a published immutable version |
 | `npm run check:orbital-enrichment` | Network-free validation of exact current NORAD/name/designator/type identity, official-source provenance, rights notice, immutable asset inventory, dimensions, size, and SHA-256 |
 | `npm run check:vessel-photos` | Network-free validation of exact IMO, source revision, rights, license notice, asset inventory, dimensions, size, and SHA-256 |
 | `npm run check:ports` | Network-free validation of the committed Natural Earth port projection |
@@ -91,12 +91,21 @@ pushes targeting `dev` or `main`. The Wrangler dry run is credential-free and
 does not call a live provider.
 
 `npm run update:orbital-catalog` consumes local files only. A maintainer first
-makes one bounded GP request and one bounded SATCAT request under the current
-CelesTrak contract, records response evidence, and then runs the normalizer.
-Repeated tests use committed fixtures and the normalized bootstrap; they never
-loop against CelesTrak. `npm run check:orbital-catalog` recomputes the digest
-without network access and rejects unknown padding or any noncanonical file
-serialization.
+makes one coordinated strictly sequential GP/SATCAT read for each of the fixed
+groups `visual`, `stations`, `weather`, `gnss`, and `science`, records the
+summary plus raw response hashes, and then runs the normalizer once. The
+normalizer rejects changed URLs, order, row counts, byte counts, hashes,
+duplicates, missing joins, aggregate overflow, union count/type mismatch, or
+any schema conflict. Repeated tests use fixtures and the normalized bootstrap;
+they never loop against CelesTrak.
+
+`npm run check:orbital-catalog` recomputes the schema-2 canonical digest and
+file checksum without network access, verifies the 462-record/239,460-byte
+bootstrap and 353,281-byte probe evidence, checks the two retained schema-1
+bootstraps byte-for-byte, and rejects unknown padding or noncanonical
+serialization. Pull-request validation supplies
+`ORBITAL_CATALOG_IMMUTABLE_BASE`; reusing a historical path or changing bytes
+under `curated-2026-09-30-v1` fails and requires a new version.
 
 `npm run check:orbital-enrichment` does not fetch NASA. It verifies the
 committed two-record manifest against the committed visual catalog, requires
@@ -317,17 +326,31 @@ Map-experience tests also cover:
 - weather-before-airport-before-port picking and all six asynchronous static
   layer installation orders.
 - strict orbital catalog streamed reads, fatal UTF-8, exact fields/source/
-  ordering, digest/header/ETag agreement, valid cached `304`, fulfilled-only
-  tab caching, and rejected partial/malformed/oversized responses;
+  ordering, schema-v2 source groups/display order, 512-record hard-cap fixture,
+  digest/header/ETag agreement, valid cached `304`, fulfilled-only tab caching,
+  and rejected partial/malformed/oversized responses;
 - SGP4 reference propagation, six-digit NORAD IDs, element-age bounds,
   local/dateline/whole-world/invalid view geometry, 90-minute crossings,
+  filtered prediction population, cancellable chunks/latest request,
   20-result cap, bounded selected track, and antimeridian/invalid-gap splitting;
 - orbital lifecycle enable, no-fetch view/selection/hide-show behavior,
   two-hour revalidation, page/HISTORY/offline pauses, initial clock skew,
   later wall-clock jumps, stale/expiry truthfulness, and revision fencing;
 - persistent orbital sources/layers, stable feature IDs, style rehydration,
-  all 24 port/airport/weather/orbital installation orders, traffic-first
-  picking, preference/share defaults, controls, details, and attribution;
+  complete safe-position source plus exact shown-ID filters, all 24
+  port/airport/weather/orbital installation orders, traffic-first picking,
+  hidden-ID exclusion, preference/share defaults, controls, details, and
+  attribution;
+- exact zoom boundaries and selected exception, distinct catalog/modeled/map/
+  shown/pass counts, exact/prefix/substring discovery ranking, punctuation
+  preservation, exact type/source filters, 20-row paging, unavailable-position
+  rows, focus restoration, and Catalog selection before a settled zoom,
+  which must report map display unavailable rather than a subset/exception;
+- atomic orbital publication bundles: same-refresh schema-1 freshness across
+  successive schema-2 refreshes, one final v2-key write, no v1-key write, no
+  extra upstream fetch, failed-write preservation of both prior members,
+  raw-v2 rollout compatibility, newest legacy candidate selection, equal-time
+  conflict rejection, and representation-specific conditional `304`s;
 - the collapsed enabled-state summary for a zero-object local view and the
   keyboard-focus path from **VIEW** to the first modeled-object result.
 
@@ -780,6 +803,45 @@ Safari/Android Chrome for touch claims:
     60-second trace, and at least 30 fps while dragging on the supported mobile
     device.
 
+For the final Issue #211 browser slice, run the same checks against the exact
+schema-2 curated bootstrap and a deterministic 512-record hard-cap fixture,
+then additionally verify:
+
+1. Zoom `<2`, zoom `2`, zoom just below `4`, and zoom `4` produce the exact
+   192/384/current-all boundaries in stable `displayOrder`; the safe selected
+   exception remains once and rank-hidden IDs are not pickable.
+2. The persistent orbital point source retains every safe current position
+   while the layer filter/selectable-ID set changes. Light/Dark/style
+   rehydration restores that data, exact filter, visibility, images,
+   selection/highlight, and track on the same canvas.
+3. Nearby and Catalog share the existing Orbits task. Search covers name,
+   canonical NORAD ID, and designator with exact/prefix/substring ranking;
+   exact type/group filters, 20-row pages, unavailable-position rows, range
+   text, Previous/Next, page focus, details-close focus, and Escape restoration
+   all remain keyboard-operable.
+4. Counts separately report catalog, accepted, modeled-now, catalog-match,
+   modeled-match, in-footprint or unavailable, shown-in-footprint, future
+   crossings, and listed rows. Filtered empty, zoom-hidden, no-safe-position,
+   offline, unavailable, and expired states do not collapse together.
+5. Text changes only the list. Exact filters and settled camera changes may
+   replace one coalesced local prediction but do not fetch, recreate provider
+   controllers, or reset cadence. At least 20 combined camera/search/filter/
+   selection/theme changes leave one catalog request and zero browser
+   CelesTrak requests.
+6. At 1280x900, 390x844, 390x568, 315x517, and an emulated tall screen with
+   `visualViewport.height=517`, measure no horizontal overflow, one outer
+   Operations scroll owner, unbounded `.orbital-results`, reachable
+   attribution/final rows, the 58vh budget, one contiguous hit-tested map area,
+   and a trusted touch-pointer drag. Physical iOS/Android claims require actual
+   devices; Chrome touch/DPR emulation must be labeled as emulation.
+7. With 4x CPU throttling, record one-second position p95 below 100 ms,
+   90-minute prediction p95 below one second, search/filter p95 below 16 ms
+   without throttling and below 50 ms at 4x, latest replacement
+   acknowledgement within 100 ms, and no update long task over 50 ms. A
+   ten-minute enable/filter/theme soak must show one canvas, at most one active
+   orbital worker, no extra catalog request, and no monotonic post-GC
+   heap/timer/listener growth.
+
 ### Issue #162 development acceptance evidence
 
 On 2026-09-28, the built client was exercised through local `workerd` in
@@ -1068,9 +1130,25 @@ For the production edge boundary, run `npm run preview:worker`. Confirm:
    redirects, timeouts, oversized responses, unsafe content types, and missing
    API paths are rejected without an open forwarder.
 8. With the committed default flag, `/api/orbits/catalog` returns `404`. With
-   the explicit local enabled command, exact `GET` returns the validated
-   bootstrap, matching ETag returns `304`, and query strings, other methods,
-   missing assets, or invalid stored snapshots cannot trigger CelesTrak work.
+   the explicit local enabled command, default exact `GET` returns the newest
+   valid schema 1 and its matching ETag returns `304`; the same literal route with
+   `Accept: application/vnd.livetrafficstan.orbital-catalog+json;version=2`
+   returns schema 2 and its separate matching ETag returns `304`. Both include
+   `Vary: Accept`. When schema 2 comes from KV, production smoke requires the
+   default schema-1 retrieval to be at least as current and to contain the
+   schema-2 `visual` population. Cross-representation ETags must return `200`;
+   query strings, other methods, missing assets, or invalid stored snapshots
+   cannot trigger CelesTrak work.
+
+Rollback smoke uses the current checked policy with the checked-out target's
+orbital module. Deterministic fixtures cover disabled, schema-1-only,
+schema-2-only, and dual-representation targets. Single-representation targets
+use only their own schema version, source-contract version, byte limit,
+bootstrap path, and ordinary validator; they are not required to export the
+current vendor `Accept`, legacy validator, or `Vary: Accept`. The dual fixture
+locks both validators, distinct representation ETags, conditional `304`s, and
+cross-representation `200`. Each fixture has a fixed same-origin request count
+and makes no provider request.
 
 Do not repeatedly use the local edge check as a provider load loop. All path,
 timeout, body-size, redirect, status, `Retry-After`, and cancellation cases use

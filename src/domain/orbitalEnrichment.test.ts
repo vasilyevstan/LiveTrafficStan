@@ -34,6 +34,8 @@ const position = (
   name: `OBJECT ${noradCatalogId}`,
   internationalDesignator: '2026-001A',
   objectType: 'PAY',
+  sourceGroups: ['visual'],
+  displayOrder: Number(noradCatalogId),
   elementEpoch: 1,
   snapshotRetrievedAt: 2,
   snapshotSha256: 'a'.repeat(64),

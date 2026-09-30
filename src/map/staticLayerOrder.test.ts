@@ -50,6 +50,7 @@ const installers = {
       'light',
       true,
       orbitalImages,
+      [],
     ),
 }
 
@@ -109,6 +110,7 @@ const createMap = () => {
       else layers.push(layer.id)
     },
     setLayoutProperty: vi.fn(),
+    setFilter: vi.fn(),
     setPaintProperty: vi.fn(),
   } as unknown as MapLibreMap
   return { map, layers }

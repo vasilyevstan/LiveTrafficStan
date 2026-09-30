@@ -104,6 +104,7 @@ import {
   orbitalHighlightFeatures,
   orbitalPositionFeatures,
   orbitalTrackFeatures,
+  setOrbitalPointFilter,
   setOrbitalSourceData,
   setOrbitalVisibility,
   SOURCE_ORBITAL_HIGHLIGHT,
@@ -163,6 +164,7 @@ interface TrafficMapProps {
   airports: readonly Airport[]
   weatherObservations: readonly DisplayWeatherObservation[]
   orbitalPositions: readonly ModeledOrbitalPosition[]
+  orbitalShownIds: readonly string[]
   orbitalTrackSegments: readonly OrbitalTrackSegment[]
   orbitalImageUrls: ReadonlyMap<string, string>
   trailSegments: readonly (readonly TrailPoint[])[]
@@ -195,6 +197,7 @@ interface TrafficMapProps {
   onViewportChange: (
     assessment: ViewportAssessment,
     orbitalViewport: OrbitalViewport,
+    rawZoom: number | undefined,
     viewRequestId: number,
   ) => void
   onCameraChange: (camera: MapCameraState) => void
@@ -225,6 +228,7 @@ interface WeatherRenderState {
 
 interface OrbitalRenderState {
   positions: readonly ModeledOrbitalPosition[]
+  shownIds: readonly string[]
   trackSegments: readonly OrbitalTrackSegment[]
   selectedOrbitalId: string | null
 }
@@ -356,6 +360,7 @@ export function TrafficMap({
   airports,
   weatherObservations,
   orbitalPositions,
+  orbitalShownIds,
   orbitalTrackSegments,
   orbitalImageUrls,
   trailSegments,
@@ -469,6 +474,7 @@ export function TrafficMap({
   })
   const orbitalRenderStateRef = useRef<OrbitalRenderState>({
     positions: orbitalPositions,
+    shownIds: orbitalShownIds,
     trackSegments: orbitalTrackSegments,
     selectedOrbitalId,
   })
@@ -693,17 +699,20 @@ export function TrafficMap({
 
     let assessment: ViewportAssessment
     let orbitalViewport: OrbitalViewport
+    let rawZoom: number | undefined
     try {
       const canvas = map.getCanvas()
       const width = canvas.clientWidth
       const height = canvas.clientHeight
       const center = map.getCenter()
+      const currentZoom = map.getZoom()
+      rawZoom = Number.isFinite(currentZoom) ? currentZoom : undefined
       cameraChangeRef.current(
         roundMapCameraState(
           {
             latitude: center.lat,
             longitude: center.lng,
-            zoom: map.getZoom(),
+            zoom: currentZoom,
             bearing: map.getBearing(),
             pitch: map.getPitch(),
           },
@@ -769,12 +778,13 @@ export function TrafficMap({
 
     const signature = `${viewportSignature(assessment)}|${orbitalViewportSignature(
       orbitalViewport,
-    )}`
+    )}|${rawZoom ?? 'unavailable'}`
     if (signature === lastViewportSignatureRef.current) return
     lastViewportSignatureRef.current = signature
     viewportChangeRef.current(
       assessment,
       orbitalViewport,
+      rawZoom,
       viewRequestRef.current,
     )
   }, [])
@@ -925,6 +935,7 @@ export function TrafficMap({
           activeTheme,
           viewState.orbitalVisible,
           getOrbitalImages(activeTheme),
+          orbitalState.shownIds,
         )
         lastOrbitalFeaturesRef.current = points.features
       }
@@ -1565,9 +1576,7 @@ export function TrafficMap({
       )
 
     const selectableOrbitalIds = () =>
-      new Set(
-        orbitalRenderStateRef.current.positions.map(({ id }) => id),
-      )
+      new Set(orbitalRenderStateRef.current.shownIds)
 
     const expandCluster = (
       target: NonNullable<ReturnType<typeof firstTrafficClusterTarget>>,
@@ -2236,6 +2245,7 @@ export function TrafficMap({
   useEffect(() => {
     orbitalRenderStateRef.current = {
       positions: orbitalPositions,
+      shownIds: orbitalShownIds,
       trackSegments: orbitalTrackSegments,
       selectedOrbitalId,
     }
@@ -2247,6 +2257,7 @@ export function TrafficMap({
       if (
         !orbitalVisible ||
         !hoveredPosition ||
+        !orbitalShownIds.includes(hoveredOrbitalId) ||
         hoveredOrbitalIdentityRef.current !==
           orbitalTooltipIdentity(hoveredPosition)
       ) {
@@ -2266,13 +2277,16 @@ export function TrafficMap({
         themeRef.current,
         true,
         getOrbitalImages(themeRef.current),
+        orbitalShownIds,
       )
       lastOrbitalFeaturesRef.current = points.features
       return
     }
     renderOrbitalSources()
+    setOrbitalPointFilter(map, orbitalShownIds)
   }, [
     orbitalPositions,
+    orbitalShownIds,
     orbitalTrackSegments,
     orbitalVisible,
     getOrbitalImages,
@@ -2331,6 +2345,7 @@ export function TrafficMap({
         themeRef.current,
         true,
         getOrbitalImages(themeRef.current),
+        state.shownIds,
       )
       lastOrbitalFeaturesRef.current = points.features
       return

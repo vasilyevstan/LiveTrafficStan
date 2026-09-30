@@ -55,6 +55,8 @@ jobs:
 
       - name: Check orbital catalog
         run: npm run check:orbital-catalog
+        env:
+          ORBITAL_CATALOG_IMMUTABLE_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
 
       - name: Check orbital enrichment
         run: npm run check:orbital-enrichment

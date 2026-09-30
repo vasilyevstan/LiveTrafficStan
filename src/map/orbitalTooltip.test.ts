@@ -37,6 +37,8 @@ const position: ModeledOrbitalPosition = {
   name: '<img src=x onerror=alert(1)>',
   internationalDesignator: '2099-001A',
   objectType: 'UNK',
+  sourceGroups: ['science'],
+  displayOrder: 4_000_999_999,
   elementEpoch: 1,
   snapshotRetrievedAt: 2,
   snapshotSha256: 'a'.repeat(64),

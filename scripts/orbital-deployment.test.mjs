@@ -3,6 +3,21 @@ import { mkdtempSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import {
+  ORBITAL_CATALOG_KEY,
+  ORBITAL_CATALOG_PUBLICATION_VERSION,
+  ORBITAL_CATALOG_SCHEMA_VERSION,
+  ORBITAL_CATALOG_V1_BOOTSTRAP_PATH,
+  ORBITAL_CATALOG_V1_KEY,
+  ORBITAL_CATALOG_V1_ROLLBACK_BOOTSTRAP_PATH,
+  ORBITAL_CATALOG_V2_ACCEPT,
+  ORBITAL_SOURCE_CONTRACT_VERSION,
+} from '../worker/orbitalCatalog.ts'
+import {
+  ORBITAL_COORDINATOR_OBJECT_NAME,
+  ORBITAL_COORDINATOR_STATE_CONTRACT_VERSION,
+  ORBITAL_COORDINATOR_STATE_SCHEMA_VERSION,
+} from '../worker/orbitalCatalogCoordinator.ts'
 
 const repositoryRoot = resolve(import.meta.dirname, '..')
 const script = join(
@@ -10,6 +25,10 @@ const script = join(
   'scripts/prepare-wrangler-config.mjs',
 )
 const input = join(repositoryRoot, 'wrangler.jsonc')
+const orbitalWorkerSource = readFileSync(
+  join(repositoryRoot, 'worker/orbitalCatalog.ts'),
+  'utf8',
+)
 
 const prepare = (enabled) => {
   const directory = mkdtempSync(join(tmpdir(), 'lts-orbital-config-'))
@@ -95,5 +114,38 @@ describe('orbital Cloudflare deployment configuration', () => {
     expect(enabled.triggers.crons).toEqual(['17 */2 * * *'])
     expect(disabled.name).toBe('livetrafficstan')
     expect(disabled.triggers.crons).toEqual([])
+  })
+
+  it('publishes one internal compatibility bundle without resetting coordinator identity', () => {
+    expect(ORBITAL_CATALOG_SCHEMA_VERSION).toBe(2)
+    expect(ORBITAL_SOURCE_CONTRACT_VERSION).toBe(2)
+    expect(ORBITAL_CATALOG_PUBLICATION_VERSION).toBe(1)
+    expect(ORBITAL_CATALOG_KEY).toBe(
+      'orbital:catalog:v2:curated-v1',
+    )
+    expect(ORBITAL_CATALOG_V1_KEY).toBe('orbital:catalog:v1')
+    expect(ORBITAL_CATALOG_V1_ROLLBACK_BOOTSTRAP_PATH).toBe(
+      '/orbital-data/v1/visual-catalog.json',
+    )
+    expect(ORBITAL_CATALOG_V1_BOOTSTRAP_PATH).toBe(
+      '/orbital-data/v2/visual-catalog.json',
+    )
+    expect(ORBITAL_CATALOG_V2_ACCEPT).toBe(
+      'application/vnd.livetrafficstan.orbital-catalog+json;version=2',
+    )
+    expect(ORBITAL_COORDINATOR_OBJECT_NAME).toBe(
+      'celestrak-visual-refresh-v2',
+    )
+    expect(ORBITAL_COORDINATOR_STATE_SCHEMA_VERSION).toBe(1)
+    expect(ORBITAL_COORDINATOR_STATE_CONTRACT_VERSION).toBe(1)
+    expect(
+      orbitalWorkerSource.match(/store\.put\(/g),
+    ).toHaveLength(1)
+    expect(orbitalWorkerSource).toContain(
+      'serializeOrbitalCatalogPublication(publication)',
+    )
+    expect(orbitalWorkerSource).not.toMatch(
+      /store\.put\(\s*ORBITAL_CATALOG_V1_KEY/,
+    )
   })
 })

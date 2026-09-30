@@ -3,6 +3,7 @@ import type {
   OrbitalCatalogSnapshot,
   OrbitalPrediction,
 } from '../domain/orbital'
+import type { OrbitalDiscoveryFilters } from '../domain/orbitalDiscovery'
 import type { OrbitalViewport } from '../domain/orbitalViewport'
 
 export interface OrbitalPropagationLimits {
@@ -14,6 +15,7 @@ export interface OrbitalPropagationLimits {
   maximumDetailedResults: number
   trackDurationMs: number
   maximumTrackPoints: number
+  predictionChunkSize: number
 }
 
 export type OrbitalWorkerRequest =
@@ -36,6 +38,7 @@ export type OrbitalWorkerRequest =
       modeledFor: number
       viewport: OrbitalViewport
       selectedId: string | null
+      filters: OrbitalDiscoveryFilters
     }
 
 export type OrbitalWorkerResponse =
@@ -49,6 +52,11 @@ export type OrbitalWorkerResponse =
       catalogRevision: number
       requestId: number
       positions: readonly ModeledOrbitalPosition[]
+    }
+  | {
+      type: 'prediction-started'
+      catalogRevision: number
+      requestId: number
     }
   | {
       type: 'prediction'

@@ -1,19 +1,27 @@
 import {
   orbitalSnapshotDigestInput,
   parseOrbitalTimestamp,
+  type OrbitalCatalogSource,
   type OrbitalCatalogSnapshot,
   type OrbitalObject,
   type OrbitalObjectType,
+  type OrbitalSourceGroup,
 } from '../../domain/orbital'
 import { ProviderError, parseRetryAfterMs } from '../errors'
 
-export interface OrbitalCatalogProviderConfig {
-  endpointPath: string
-  schemaVersion: number
-  sourceContractVersion: number
-  group: string
+export interface OrbitalCatalogSourceConfig {
+  group: OrbitalSourceGroup
   gpSourceUrl: string
   satcatSourceUrl: string
+}
+
+export interface OrbitalCatalogProviderConfig {
+  endpointPath: string
+  acceptMediaType: string
+  schemaVersion: number
+  sourceContractVersion: number
+  catalogId: string
+  sources: readonly OrbitalCatalogSourceConfig[]
   maximumBytes: number
   maximumRecords: number
   timeoutMs: number
@@ -49,21 +57,30 @@ const browserRuntime: OrbitalCatalogRuntime = {
 }
 
 const topLevelKeys = [
-  'gpSourceUrl',
-  'group',
+  'catalogId',
+  'publishedAt',
   'recordCount',
   'records',
   'retrievedAt',
-  'satcatSourceUrl',
   'schemaVersion',
   'sha256',
   'sourceContractVersion',
+  'sources',
+] as const
+
+const sourceKeys = [
+  'gpRecordCount',
+  'gpSourceUrl',
+  'group',
+  'satcatRecordCount',
+  'satcatSourceUrl',
 ] as const
 
 const recordKeys = [
   'argumentOfPericenter',
   'bstar',
   'classificationType',
+  'displayOrder',
   'eccentricity',
   'elementSetNumber',
   'ephemerisType',
@@ -79,6 +96,7 @@ const recordKeys = [
   'objectType',
   'revolutionAtEpoch',
   'rightAscensionOfAscendingNode',
+  'sourceGroups',
 ] as const
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -135,7 +153,66 @@ const objectType = (value: unknown): OrbitalObjectType | undefined =>
     ? value
     : undefined
 
-const parseObject = (value: unknown): OrbitalObject | undefined => {
+const parseSource = (
+  value: unknown,
+  expected: OrbitalCatalogSourceConfig,
+  maximumRecords: number,
+): OrbitalCatalogSource | undefined => {
+  if (!isRecord(value) || !exactKeys(value, sourceKeys)) return undefined
+  const gpRecordCount = integerNumber(
+    value.gpRecordCount,
+    1,
+    maximumRecords,
+  )
+  const satcatRecordCount = integerNumber(
+    value.satcatRecordCount,
+    gpRecordCount ?? 1,
+    maximumRecords,
+  )
+  if (
+    value.group !== expected.group ||
+    value.gpSourceUrl !== expected.gpSourceUrl ||
+    value.satcatSourceUrl !== expected.satcatSourceUrl ||
+    gpRecordCount === undefined ||
+    satcatRecordCount === undefined
+  ) {
+    return undefined
+  }
+  return {
+    ...expected,
+    gpRecordCount,
+    satcatRecordCount,
+  }
+}
+
+const parseSourceGroups = (
+  value: unknown,
+  config: OrbitalCatalogProviderConfig,
+) => {
+  if (
+    !Array.isArray(value) ||
+    value.length === 0 ||
+    value.length > config.sources.length
+  ) {
+    return undefined
+  }
+  const groups: OrbitalSourceGroup[] = []
+  let previousIndex = -1
+  for (const candidate of value) {
+    const index = config.sources.findIndex(
+      ({ group }) => group === candidate,
+    )
+    if (index <= previousIndex) return undefined
+    previousIndex = index
+    groups.push(config.sources[index].group)
+  }
+  return groups
+}
+
+const parseObject = (
+  value: unknown,
+  config: OrbitalCatalogProviderConfig,
+): OrbitalObject | undefined => {
   if (!isRecord(value) || !exactKeys(value, recordKeys)) return undefined
   const noradCatalogId =
     typeof value.noradCatalogId === 'string' &&
@@ -145,7 +222,7 @@ const parseObject = (value: unknown): OrbitalObject | undefined => {
   const name = boundedString(value.name, 1, 120)
   const internationalDesignator = boundedString(
     value.internationalDesignator,
-    1,
+    0,
     24,
   )
   const parsedType = objectType(value.objectType)
@@ -187,6 +264,15 @@ const parseObject = (value: unknown): OrbitalObject | undefined => {
   const bstar = finiteNumber(value.bstar, -10, 10)
   const meanMotionDot = finiteNumber(value.meanMotionDot, -10, 10)
   const meanMotionDdot = finiteNumber(value.meanMotionDdot, -10, 10)
+  const sourceGroups = parseSourceGroups(value.sourceGroups, config)
+  const expectedDisplayOrder =
+    noradCatalogId && sourceGroups
+      ? config.sources.findIndex(
+          ({ group }) => group === sourceGroups[0],
+        ) *
+          1_000_000_000 +
+        Number(noradCatalogId)
+      : undefined
 
   if (
     noradCatalogId === undefined ||
@@ -206,7 +292,10 @@ const parseObject = (value: unknown): OrbitalObject | undefined => {
     revolutionAtEpoch === undefined ||
     bstar === undefined ||
     meanMotionDot === undefined ||
-    meanMotionDdot === undefined
+    meanMotionDdot === undefined ||
+    sourceGroups === undefined ||
+    expectedDisplayOrder === undefined ||
+    value.displayOrder !== expectedDisplayOrder
   ) {
     return undefined
   }
@@ -230,6 +319,8 @@ const parseObject = (value: unknown): OrbitalObject | undefined => {
     bstar,
     meanMotionDot,
     meanMotionDdot,
+    sourceGroups,
+    displayOrder: expectedDisplayOrder,
   }
 }
 
@@ -303,6 +394,11 @@ const parseSnapshot = async (
     parseOrbitalTimestamp(value.retrievedAt) !== undefined
       ? value.retrievedAt
       : undefined
+  const publishedAt =
+    typeof value.publishedAt === 'string' &&
+    parseOrbitalTimestamp(value.publishedAt) !== undefined
+      ? value.publishedAt
+      : undefined
   const sha256 =
     typeof value.sha256 === 'string' && /^[a-f0-9]{64}$/.test(value.sha256)
       ? value.sha256
@@ -310,10 +406,12 @@ const parseSnapshot = async (
   if (
     value.schemaVersion !== config.schemaVersion ||
     value.sourceContractVersion !== config.sourceContractVersion ||
-    value.group !== config.group ||
-    value.gpSourceUrl !== config.gpSourceUrl ||
-    value.satcatSourceUrl !== config.satcatSourceUrl ||
+    value.catalogId !== config.catalogId ||
     retrievedAt === undefined ||
+    publishedAt === undefined ||
+    Date.parse(publishedAt) < Date.parse(retrievedAt) ||
+    !Array.isArray(value.sources) ||
+    value.sources.length !== config.sources.length ||
     !Array.isArray(value.records) ||
     value.records.length === 0 ||
     value.records.length > config.maximumRecords ||
@@ -323,7 +421,22 @@ const parseSnapshot = async (
     throw new ProviderError('Orbital catalog schema is invalid')
   }
 
-  const records = value.records.map(parseObject)
+  const sources = value.sources.map((source, index) =>
+    config.sources[index]
+      ? parseSource(
+          source,
+          config.sources[index],
+          config.maximumRecords,
+        )
+      : undefined,
+  )
+  if (sources.some((source) => source === undefined)) {
+    throw new ProviderError('Orbital catalog contains an invalid source')
+  }
+  const completeSources = sources as OrbitalCatalogSource[]
+  const records = value.records.map((record) =>
+    parseObject(record, config),
+  )
   if (records.some((record) => record === undefined)) {
     throw new ProviderError('Orbital catalog contains an invalid record')
   }
@@ -341,14 +454,25 @@ const parseSnapshot = async (
     ids.add(record.noradCatalogId)
     previousId = numericId
   }
+  for (const source of completeSources) {
+    if (
+      completeRecords.filter((record) =>
+        record.sourceGroups.includes(source.group),
+      ).length !== source.gpRecordCount
+    ) {
+      throw new ProviderError(
+        'Orbital catalog source membership is invalid',
+      )
+    }
+  }
 
   const withoutDigest: Omit<OrbitalCatalogSnapshot, 'sha256'> = {
     schemaVersion: config.schemaVersion,
     sourceContractVersion: config.sourceContractVersion,
-    group: config.group,
-    gpSourceUrl: config.gpSourceUrl,
-    satcatSourceUrl: config.satcatSourceUrl,
+    catalogId: config.catalogId,
+    sources: completeSources,
     retrievedAt,
+    publishedAt,
     recordCount: completeRecords.length,
     records: completeRecords,
   }
@@ -386,6 +510,11 @@ const headerClock = (
     responsePerformanceTimeMs,
   }
 }
+
+const variesOnAccept = (response: Response) =>
+  (response.headers.get('Vary') ?? '')
+    .split(',')
+    .some((value) => value.trim().toLowerCase() === 'accept')
 
 export class OrbitalCatalogProvider {
   private readonly config: OrbitalCatalogProviderConfig
@@ -430,7 +559,7 @@ export class OrbitalCatalogProvider {
         credentials: 'omit',
         referrerPolicy: 'no-referrer',
         headers: {
-          Accept: 'application/json',
+          Accept: this.config.acceptMediaType,
           ...(this.fulfilled
             ? { 'If-None-Match': this.fulfilled.etag }
             : {}),
@@ -450,6 +579,12 @@ export class OrbitalCatalogProvider {
             : `Orbital catalog returned HTTP ${response.status}`,
           response.status,
           retryAfterMs,
+        )
+      }
+      if (!variesOnAccept(response)) {
+        await response.body?.cancel()
+        throw new ProviderError(
+          'Orbital catalog content negotiation is invalid',
         )
       }
       let clock: OrbitalCatalogClock

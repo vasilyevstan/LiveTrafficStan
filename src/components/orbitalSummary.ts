@@ -1,17 +1,23 @@
 import type { OrbitalControllerState } from '../domain/orbital'
+import type {
+  OrbitalDisplaySelection,
+  OrbitalPopulationCounts,
+} from '../domain/orbitalDiscovery'
 
 interface OrbitalSummaryOptions {
   visible: boolean
   historyActive: boolean
   state: OrbitalControllerState
-  predictionHorizonMs: number
+  display: OrbitalDisplaySelection
+  counts: OrbitalPopulationCounts
 }
 
 export const formatOrbitalSummary = ({
   visible,
   historyActive,
   state,
-  predictionHorizonMs,
+  display,
+  counts,
 }: OrbitalSummaryOptions) => {
   if (!visible) return undefined
   if (historyActive || state.phase === 'paused-history') {
@@ -27,19 +33,14 @@ export const formatOrbitalSummary = ({
   if (state.phase === 'offline' && state.positions.length === 0) {
     return 'ORBITS · OFFLINE'
   }
-
-  const prediction = state.prediction
-  if (prediction.mode === 'world') {
-    return `ORBITS · ${prediction.inViewCount} VISIBLE`
+  const selectedException = display.selectedException
+    ? display.selectedFiltered
+      ? ' · +1 SELECTED EXCEPTION'
+      : ' · 1 SELECTED EXCEPTION'
+    : ''
+  if (counts.catalogMatchCount === 0) {
+    return `ORBITS · 0 MATCHING / ${counts.catalogCount} CATALOG${selectedException}`
   }
-  if (prediction.mode === 'local') {
-    const crossings = prediction.futureCrossingCount
-    return `ORBITS · ${prediction.inViewCount} IN VIEW · ${crossings} ${
-      crossings === 1 ? 'PASS' : 'PASSES'
-    } ≤${Math.round(predictionHorizonMs / 60_000)}M`
-  }
-  if (state.positions.length > 0) {
-    return `ORBITS · ${state.positions.length} MODELED`
-  }
-  return 'ORBITS · VIEW UNAVAILABLE'
+  if (!display.available) return 'ORBITS · MAP COUNTS UNAVAILABLE'
+  return `ORBITS · ${display.matchingShownIds.length} SHOWN / ${counts.modeledMatchCount} MODELED${selectedException}`
 }

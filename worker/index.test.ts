@@ -2,7 +2,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { readFile } from 'node:fs/promises'
 import worker, { type WorkerEnv } from './index.js'
 import { ADSB_LOL_USER_AGENT } from './aircraftProxy.js'
-import { ORBITAL_BOOTSTRAP_PATH } from './orbitalCatalog.js'
+import {
+  ORBITAL_BOOTSTRAP_PATH,
+  ORBITAL_CATALOG_V2_ACCEPT,
+} from './orbitalCatalog.js'
 
 const releaseSha = '0123456789abcdef0123456789abcdef01234567'
 
@@ -217,7 +220,9 @@ describe('Cloudflare worker routing', () => {
     })
 
     const response = await worker.fetch(
-      new Request('https://app.example/api/orbits/catalog'),
+      new Request('https://app.example/api/orbits/catalog', {
+        headers: { Accept: ORBITAL_CATALOG_V2_ACCEPT },
+      }),
       {
         ASSETS: { fetch: assetsFetch },
         ORBITAL_CATALOG_ENABLED: 'true',
@@ -231,6 +236,9 @@ describe('Cloudflare worker routing', () => {
     )
     expect(response.headers.get('x-livetrafficstan-orbital-source')).toBe(
       'bootstrap',
+    )
+    expect(response.headers.get('x-livetrafficstan-orbital-schema')).toBe(
+      '2',
     )
   })
 

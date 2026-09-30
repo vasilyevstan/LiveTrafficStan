@@ -6,6 +6,7 @@ import type { AwcMetarProviderConfig } from '../providers/weather/awcMetarProvid
 import type { AdsbLolFlightRouteProviderConfig } from '../providers/flightRoute/adsbLolFlightRouteProvider'
 import type { OrbitalCatalogProviderConfig } from '../providers/orbital/orbitalCatalogProvider'
 import type { OrbitalPropagationLimits } from '../workers/orbitalProtocol'
+import type { OrbitalDisplayLimits } from '../domain/orbitalDiscovery'
 import {
   DEFAULT_TRAIL_PREFERENCES,
   TRAIL_DURATION_OPTIONS_MINUTES,
@@ -92,6 +93,11 @@ export interface AppConfig {
       predictionRefreshIntervalMs: number
       maximumClockSkewMs: number
       maximumWallClockJumpMs: number
+      display: Omit<OrbitalDisplayLimits, 'maximumRecords'>
+      discovery: {
+        maximumQueryLength: number
+        pageSize: number
+      }
       sourceName: string
       sourceWebsiteUrl: string
       sourceUsagePolicyUrl: string
@@ -438,15 +444,50 @@ export const createAppConfig = (
     },
     orbital: {
       endpointPath: '/api/orbits/catalog',
-      schemaVersion: 1,
-      sourceContractVersion: 1,
-      group: 'visual',
-      gpSourceUrl:
-        'https://celestrak.org/NORAD/elements/gp.php?GROUP=visual&FORMAT=json',
-      satcatSourceUrl:
-        'https://celestrak.org/satcat/records.php?GROUP=visual&FORMAT=json',
-      maximumBytes: 256 * 1_024,
-      maximumRecords: 256,
+      acceptMediaType:
+        'application/vnd.livetrafficstan.orbital-catalog+json;version=2',
+      schemaVersion: 2,
+      sourceContractVersion: 2,
+      catalogId: 'celestrak-curated-v1',
+      sources: [
+        {
+          group: 'visual',
+          gpSourceUrl:
+            'https://celestrak.org/NORAD/elements/gp.php?GROUP=visual&FORMAT=json',
+          satcatSourceUrl:
+            'https://celestrak.org/satcat/records.php?GROUP=visual&FORMAT=json',
+        },
+        {
+          group: 'stations',
+          gpSourceUrl:
+            'https://celestrak.org/NORAD/elements/gp.php?GROUP=stations&FORMAT=json',
+          satcatSourceUrl:
+            'https://celestrak.org/satcat/records.php?GROUP=stations&FORMAT=json',
+        },
+        {
+          group: 'weather',
+          gpSourceUrl:
+            'https://celestrak.org/NORAD/elements/gp.php?GROUP=weather&FORMAT=json',
+          satcatSourceUrl:
+            'https://celestrak.org/satcat/records.php?GROUP=weather&FORMAT=json',
+        },
+        {
+          group: 'gnss',
+          gpSourceUrl:
+            'https://celestrak.org/NORAD/elements/gp.php?GROUP=gnss&FORMAT=json',
+          satcatSourceUrl:
+            'https://celestrak.org/satcat/records.php?GROUP=gnss&FORMAT=json',
+        },
+        {
+          group: 'science',
+          gpSourceUrl:
+            'https://celestrak.org/NORAD/elements/gp.php?GROUP=science&FORMAT=json',
+          satcatSourceUrl:
+            'https://celestrak.org/satcat/records.php?GROUP=science&FORMAT=json',
+        },
+      ],
+      maximumBytes: 512 * 1_024,
+      maximumRecords: 512,
       timeoutMs: 5_000,
       revalidationIntervalMs: 2 * 60 * 60_000,
       staleAfterMs: 6 * 60 * 60_000,
@@ -463,6 +504,17 @@ export const createAppConfig = (
       maximumDetailedResults: 20,
       trackDurationMs: 15 * 60_000,
       maximumTrackPoints: 31,
+      predictionChunkSize: 8,
+      display: {
+        worldMaximumZoom: 2,
+        midMaximumZoom: 4,
+        worldLimit: 192,
+        midLimit: 384,
+      },
+      discovery: {
+        maximumQueryLength: 64,
+        pageSize: 20,
+      },
       sourceName: 'CelesTrak',
       sourceWebsiteUrl: 'https://celestrak.org/',
       sourceUsagePolicyUrl: 'https://celestrak.org/usage-policy.php',

@@ -1,13 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   ORBITAL_CATALOG_KEY,
-  ORBITAL_GP_URL,
   ORBITAL_REFRESH_INTERVAL_MS,
-  ORBITAL_SATCAT_URL,
+  ORBITAL_SOURCES,
   type OrbitalKeyValueStore,
 } from './orbitalCatalog.js'
 import {
   ORBITAL_COORDINATOR_PATH,
+  ORBITAL_COORDINATOR_STATE_CONTRACT_VERSION,
+  ORBITAL_COORDINATOR_STATE_SCHEMA_VERSION,
   OrbitalCatalogCoordinator,
 } from './orbitalCatalogCoordinator.js'
 
@@ -36,6 +37,7 @@ const gpRecord = {
 const satcatRecord = {
   NORAD_CAT_ID: 100_831,
   OBJECT_NAME: 'TEST SAT',
+  OBJECT_ID: '2026-001A',
   OBJECT_TYPE: 'PAY',
 }
 
@@ -225,6 +227,18 @@ const jsonResponse = (value: unknown, status = 200) =>
     headers: { 'Content-Type': 'application/json' },
   })
 
+const sourceResponse = (url: string) => {
+  const source = ORBITAL_SOURCES.find(
+    (candidate) =>
+      candidate.gpSourceUrl === url ||
+      candidate.satcatSourceUrl === url,
+  )
+  if (!source) throw new Error('Unexpected URL')
+  return url === source.gpSourceUrl
+    ? jsonResponse([gpRecord])
+    : jsonResponse([satcatRecord])
+}
+
 const createCoordinator = (storage: FakeStorage, catalog: MemoryKv) =>
   new OrbitalCatalogCoordinator(
     { storage } as unknown as DurableObjectState,
@@ -257,15 +271,12 @@ describe('orbital catalog coordinator', () => {
     })
     const fetchImpl = vi.fn(
       async (input: string | URL | Request) => {
-        if (String(input) === ORBITAL_GP_URL) {
+        if (String(input) === ORBITAL_SOURCES[0].gpSourceUrl) {
           markGpStarted()
           await gpGate
           return jsonResponse([gpRecord])
         }
-        if (String(input) === ORBITAL_SATCAT_URL) {
-          return jsonResponse([satcatRecord])
-        }
-        throw new Error('Unexpected URL')
+        return sourceResponse(String(input))
       },
     )
     vi.stubGlobal('fetch', fetchImpl)
@@ -286,11 +297,58 @@ describe('orbital catalog coordinator', () => {
       kind: 'published',
       recordCount: 1,
     })
-    expect(fetchImpl).toHaveBeenCalledTimes(2)
+    expect(fetchImpl).toHaveBeenCalledTimes(10)
     expect(catalog.values.has(ORBITAL_CATALOG_KEY)).toBe(true)
     expect(storage.state?.nextAllowedAtMs).toBe(
       nowMs + ORBITAL_REFRESH_INTERVAL_MS,
     )
+    expect(storage.state).toMatchObject({
+      schemaVersion: ORBITAL_COORDINATOR_STATE_SCHEMA_VERSION,
+      sourceContractVersion:
+        ORBITAL_COORDINATOR_STATE_CONTRACT_VERSION,
+      attemptSequence: 1,
+      attemptId: null,
+      lastStartedAtMs: nowMs,
+      blockedStatus: null,
+      blockedAtMs: null,
+    })
+  })
+
+  it('preserves an existing schema-1 admission row during catalog v2 rollout', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(nowMs)
+    const storage = new FakeStorage()
+    storage.state = {
+      schemaVersion: 1,
+      sourceContractVersion: 1,
+      attemptSequence: 7,
+      attemptId: null,
+      lastStartedAtMs: nowMs - ORBITAL_REFRESH_INTERVAL_MS,
+      nextAllowedAtMs: nowMs,
+      blockedStatus: null,
+      blockedAtMs: null,
+    }
+    const catalog = new MemoryKv()
+    const coordinator = createCoordinator(storage, catalog)
+    const fetchImpl = vi.fn(async (input) =>
+      sourceResponse(String(input)),
+    )
+    vi.stubGlobal('fetch', fetchImpl)
+
+    const response = await coordinator.fetch(request())
+    expect(await response.json()).toMatchObject({
+      kind: 'published',
+      recordCount: 1,
+    })
+    expect(storage.state).toMatchObject({
+      schemaVersion: 1,
+      sourceContractVersion: 1,
+      attemptSequence: 8,
+      attemptId: null,
+      lastStartedAtMs: nowMs,
+      nextAllowedAtMs: nowMs + ORBITAL_REFRESH_INTERVAL_MS,
+    })
+    expect(fetchImpl).toHaveBeenCalledTimes(10)
   })
 
   it('durably blocks terminal responses before another provider request', async () => {

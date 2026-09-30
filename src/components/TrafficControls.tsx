@@ -17,6 +17,11 @@ import type { VesselFilterState } from '../domain/vesselFilters'
 import type { DisplayWeatherObservation } from '../domain/weatherObservations'
 import type { OrbitalControllerState } from '../domain/orbital'
 import type {
+  OrbitalDiscoveryFilters,
+  OrbitalDisplaySelection,
+  OrbitalPopulationCounts,
+} from '../domain/orbitalDiscovery'
+import type {
   PlaybackRange,
   PlaybackState,
 } from '../history/playback'
@@ -91,9 +96,15 @@ interface TrafficControlsProps {
   orbitalVisible: boolean
   orbitalState: OrbitalControllerState
   selectedOrbitalId: string | null
+  orbitalFilters: OrbitalDiscoveryFilters
+  orbitalDisplay: OrbitalDisplaySelection
+  orbitalCounts: OrbitalPopulationCounts
   orbitalPredictionHorizonMs: number
+  orbitalMaximumQueryLength: number
+  orbitalPageSize: number
   onOrbitalVisibleChange: (visible: boolean) => void
-  onOrbitalSelect: (id: string) => void
+  onOrbitalFiltersChange: (filters: OrbitalDiscoveryFilters) => void
+  onOrbitalSelect: (id: string, originId: string) => void
   onRetryOrbital: () => void
   clusteringEnabled: boolean
   onClusteringEnabledChange: (enabled: boolean) => void
@@ -256,8 +267,14 @@ export function TrafficControls({
   orbitalVisible,
   orbitalState,
   selectedOrbitalId,
+  orbitalFilters,
+  orbitalDisplay,
+  orbitalCounts,
   orbitalPredictionHorizonMs,
+  orbitalMaximumQueryLength,
+  orbitalPageSize,
   onOrbitalVisibleChange,
+  onOrbitalFiltersChange,
   onOrbitalSelect,
   onRetryOrbital,
   clusteringEnabled,
@@ -425,7 +442,8 @@ export function TrafficControls({
     visible: orbitalVisible,
     historyActive: playback.mode !== 'live',
     state: orbitalState,
-    predictionHorizonMs: orbitalPredictionHorizonMs,
+    display: orbitalDisplay,
+    counts: orbitalCounts,
   })
   const revealOrbitalObjects = () => {
     const details = mapToolsDetailsRef.current
@@ -547,6 +565,12 @@ export function TrafficControls({
         onToggle={(event) =>
           handleDisclosureToggle(event, focusedWithinMapToolsRef)
         }
+        onKeyDown={(event) => {
+          if (event.key !== 'Escape' || !event.currentTarget.open) return
+          event.preventDefault()
+          event.stopPropagation()
+          event.currentTarget.open = false
+        }}
       >
         <summary
           id="traffic-controls-map-tools-summary"
@@ -782,8 +806,14 @@ export function TrafficControls({
                 <OrbitalContext
                   state={orbitalState}
                   selectedId={selectedOrbitalId}
+                  filters={orbitalFilters}
+                  display={orbitalDisplay}
+                  counts={orbitalCounts}
                   horizonMs={orbitalPredictionHorizonMs}
                   now={now}
+                  maximumQueryLength={orbitalMaximumQueryLength}
+                  pageSize={orbitalPageSize}
+                  onFiltersChange={onOrbitalFiltersChange}
                   onSelect={onOrbitalSelect}
                 />
               )}

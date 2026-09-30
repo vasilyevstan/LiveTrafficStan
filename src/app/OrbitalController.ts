@@ -7,6 +7,11 @@ import {
   type OrbitalControllerState,
 } from '../domain/orbital'
 import {
+  DEFAULT_ORBITAL_DISCOVERY_FILTERS,
+  orbitalFiltersSignature,
+  type OrbitalDiscoveryFilters,
+} from '../domain/orbitalDiscovery'
+import {
   orbitalViewportSignature,
   type OrbitalViewport,
 } from '../domain/orbitalViewport'
@@ -52,6 +57,7 @@ const browserRuntime: OrbitalControllerRuntime = {
 
 const initialState = (): OrbitalControllerState => ({
   phase: 'disabled',
+  acceptedCount: 0,
   positions: [],
   prediction: EMPTY_ORBITAL_PREDICTION,
 })
@@ -60,11 +66,6 @@ const waitingPrediction = (message?: string) => ({
   ...EMPTY_ORBITAL_PREDICTION,
   message,
 })
-
-type PredictionRequest = Extract<
-  OrbitalWorkerRequest,
-  { type: 'prediction' }
->
 
 export class OrbitalController {
   private readonly provider: Pick<OrbitalCatalogProvider, 'load'>
@@ -86,6 +87,8 @@ export class OrbitalController {
   }
   private viewportSignature = orbitalViewportSignature(this.viewport)
   private selectedId: string | null = null
+  private filters = DEFAULT_ORBITAL_DISCOVERY_FILTERS
+  private filterSignature = orbitalFiltersSignature(this.filters)
   private snapshot?: OrbitalCatalogSnapshot
   private clock?: ClockAnchor
   private lastSuccessAt?: number
@@ -101,7 +104,6 @@ export class OrbitalController {
   private positionRequestId = 0
   private predictionRequestId = 0
   private predictionInFlightId?: number
-  private pendingPrediction?: PredictionRequest
   private lastPositionRequestAt?: number
   private lastPredictionRequestAt?: number
   private positionTimer?: unknown
@@ -195,6 +197,20 @@ export class OrbitalController {
     this.requestPrediction(true)
   }
 
+  setFilters(filters: OrbitalDiscoveryFilters) {
+    const signature = orbitalFiltersSignature(filters)
+    if (signature === this.filterSignature) return
+    this.filters = filters
+    this.filterSignature = signature
+    this.setState({
+      ...this.state,
+      prediction: waitingPrediction(
+        'Calculating filtered upcoming crossings.',
+      ),
+    })
+    this.requestPrediction(true)
+  }
+
   retry() {
     if (!this.running || !this.enabled || !this.online) return
     void this.fetchCatalog(true)
@@ -243,7 +259,6 @@ export class OrbitalController {
     this.workerLoaded = false
     this.positionReady = false
     this.predictionInFlightId = undefined
-    this.pendingPrediction = undefined
     this.lastPositionRequestAt = undefined
     this.lastPredictionRequestAt = undefined
   }
@@ -257,6 +272,7 @@ export class OrbitalController {
     this.destroyWorker()
     this.setState({
       phase,
+      acceptedCount: this.state.acceptedCount,
       positions: [],
       prediction: EMPTY_ORBITAL_PREDICTION,
       snapshot: this.snapshot,
@@ -289,6 +305,7 @@ export class OrbitalController {
       if (!this.online) {
         this.setState({
           phase: 'offline',
+          acceptedCount: 0,
           positions: [],
           prediction: EMPTY_ORBITAL_PREDICTION,
           message: 'The orbital catalog is unavailable while offline.',
@@ -305,6 +322,7 @@ export class OrbitalController {
       this.destroyWorker()
       this.setState({
         phase: 'clock-invalid',
+        acceptedCount: this.state.acceptedCount,
         positions: [],
         prediction: EMPTY_ORBITAL_PREDICTION,
         snapshot: this.snapshot,
@@ -322,6 +340,7 @@ export class OrbitalController {
       this.destroyWorker()
       this.setState({
         phase: this.online ? 'unavailable' : 'offline',
+        acceptedCount: this.state.acceptedCount,
         positions: [],
         prediction: EMPTY_ORBITAL_PREDICTION,
         snapshot: this.snapshot,
@@ -512,6 +531,7 @@ export class OrbitalController {
       } else {
         this.setState({
           phase: this.online ? 'unavailable' : 'offline',
+          acceptedCount: this.state.acceptedCount,
           positions: [],
           prediction: EMPTY_ORBITAL_PREDICTION,
           snapshot: this.snapshot,
@@ -555,6 +575,7 @@ export class OrbitalController {
       this.destroyWorker()
       this.setState({
         phase: 'clock-invalid',
+        acceptedCount: this.state.acceptedCount,
         positions: [],
         prediction: EMPTY_ORBITAL_PREDICTION,
         snapshot: result.snapshot,
@@ -578,6 +599,7 @@ export class OrbitalController {
       this.destroyWorker()
       this.setState({
         phase: 'unavailable',
+        acceptedCount: this.state.acceptedCount,
         positions: [],
         prediction: EMPTY_ORBITAL_PREDICTION,
         snapshot: result.snapshot,
@@ -591,6 +613,7 @@ export class OrbitalController {
     if (catalogChanged) {
       this.setState({
         phase: hadSnapshot ? 'refreshing' : 'loading',
+        acceptedCount: 0,
         positions: [],
         prediction: waitingPrediction(
           'Preparing the refreshed orbital catalog.',
@@ -621,6 +644,7 @@ export class OrbitalController {
       } catch (error) {
         this.setState({
           phase: 'unavailable',
+          acceptedCount: this.state.acceptedCount,
           positions: [],
           prediction: EMPTY_ORBITAL_PREDICTION,
           snapshot: this.snapshot,
@@ -636,7 +660,6 @@ export class OrbitalController {
     this.workerLoaded = false
     this.positionReady = false
     this.predictionInFlightId = undefined
-    this.pendingPrediction = undefined
     this.catalogRevision += 1
     this.positionRequestId += 1
     this.predictionRequestId += 1
@@ -655,6 +678,7 @@ export class OrbitalController {
         maximumDetailedResults: this.config.maximumDetailedResults,
         trackDurationMs: this.config.trackDurationMs,
         maximumTrackPoints: this.config.maximumTrackPoints,
+        predictionChunkSize: this.config.predictionChunkSize,
       },
     })
   }
@@ -679,15 +703,12 @@ export class OrbitalController {
       if (message.operation === 'prediction') {
         if (message.requestId !== this.predictionInFlightId) return
         this.predictionInFlightId = undefined
-        if (message.requestId !== this.predictionRequestId) {
-          this.postPendingPrediction()
-          return
-        }
       }
       this.clearTimers()
       this.destroyWorker()
       this.setState({
         phase: 'unavailable',
+        acceptedCount: this.state.acceptedCount,
         positions: [],
         prediction: EMPTY_ORBITAL_PREDICTION,
         snapshot: this.snapshot,
@@ -700,6 +721,7 @@ export class OrbitalController {
       this.workerLoaded = true
       this.setState({
         ...this.state,
+        acceptedCount: message.acceptedCount,
         message:
           message.acceptedCount === 0
             ? 'No catalog objects can be propagated safely.'
@@ -709,6 +731,7 @@ export class OrbitalController {
       this.requestPrediction(true)
       return
     }
+    if (message.type === 'prediction-started') return
     if (
       message.type === 'positions' &&
       message.requestId === this.positionRequestId
@@ -729,17 +752,15 @@ export class OrbitalController {
       message.requestId === this.predictionInFlightId
     ) {
       this.predictionInFlightId = undefined
-      if (message.requestId === this.predictionRequestId) {
-        this.setState({
-          ...this.state,
-          prediction: message.prediction,
-        })
-      }
-      if (this.pendingPrediction) {
-        this.postPendingPrediction()
-      } else {
-        this.schedulePrediction()
-      }
+      this.setState({
+        ...this.state,
+        prediction: {
+          ...message.prediction,
+          filtersSignature: this.filterSignature,
+          viewportSignature: this.viewportSignature,
+        },
+      })
+      this.schedulePrediction()
     }
   }
 
@@ -758,6 +779,7 @@ export class OrbitalController {
     this.destroyWorker()
     this.setState({
       phase: 'unavailable',
+      acceptedCount: this.state.acceptedCount,
       positions: [],
       prediction: EMPTY_ORBITAL_PREDICTION,
       snapshot: this.snapshot,
@@ -843,29 +865,18 @@ export class OrbitalController {
 
     this.lastPredictionRequestAt = now
     this.predictionRequestId += 1
-    this.pendingPrediction = {
+    const request: Extract<
+      OrbitalWorkerRequest,
+      { type: 'prediction' }
+    > = {
       type: 'prediction',
       catalogRevision: this.catalogRevision,
       requestId: this.predictionRequestId,
       modeledFor,
       viewport: this.viewport,
       selectedId: this.selectedId,
+      filters: this.filters,
     }
-    this.postPendingPrediction()
-  }
-
-  private postPendingPrediction() {
-    if (
-      !this.active() ||
-      !this.workerLoaded ||
-      !this.worker ||
-      this.predictionInFlightId !== undefined ||
-      !this.pendingPrediction
-    ) {
-      return
-    }
-    const request = this.pendingPrediction
-    this.pendingPrediction = undefined
     this.predictionInFlightId = request.requestId
     this.worker.postMessage(request)
   }

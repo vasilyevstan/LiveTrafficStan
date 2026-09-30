@@ -14,11 +14,12 @@ import {
   hasOneYearImmutableCacheControl,
   isRetryableStaticAssetStatus,
   readOptionalJson,
+  resolveTargetOrbitalSmokeContract,
+  verifyTargetOrbitalCatalog,
   waitForExpectedWorkerRelease,
 } from './smoke-policy.mjs'
 
 const MAX_AIRCRAFT_RESPONSE_BYTES = 4 * 1_024 * 1_024
-const MAX_ORBITAL_RESPONSE_BYTES = 256 * 1_024
 
 const [
   deploymentUrl,
@@ -55,6 +56,14 @@ if (
     'The orbital catalog flag must be "true" or "false"',
   )
 }
+
+const targetOrbitalContract =
+  orbitalCatalogEnabled === 'true'
+    ? await import('../worker/orbitalCatalog.ts')
+    : undefined
+const targetOrbitalSmokeContract = targetOrbitalContract
+  ? resolveTargetOrbitalSmokeContract(targetOrbitalContract)
+  : undefined
 
 const baseUrl = new URL(deploymentUrl)
 if (baseUrl.protocol !== 'https:') {
@@ -254,11 +263,10 @@ const verifyStaticAssets = async () => {
   }
 
   if (orbitalCatalogEnabled === 'true') {
-    const { ORBITAL_BOOTSTRAP_PATH } = await import(
-      '../worker/orbitalCatalog.ts'
-    )
     const { bootstrapPath: orbitalPath, noticePath } =
-      deriveOrbitalStaticAssetPaths(ORBITAL_BOOTSTRAP_PATH)
+      deriveOrbitalStaticAssetPaths(
+        targetOrbitalSmokeContract.bootstrapPath,
+      )
     const localOrbital = await readFile(`dist${orbitalPath}`)
     const remoteOrbital = await remoteBytes(orbitalPath, localOrbital)
     assert(
@@ -534,101 +542,14 @@ const verifyMetarProxy = async () => {
   )
 }
 
-const verifyOrbitalCatalog = async () => {
-  const url = new URL('/api/orbits/catalog', baseUrl)
-  const response = await fetchWithTimeout(url)
-  assert(
-    response.headers.get('x-livetrafficstan-release') ===
-      expectedReleaseSha,
-    'Orbital catalog release SHA does not match the deployed source',
-  )
-
-  if (orbitalCatalogEnabled === 'false') {
-    assert(
-      response.status === 404,
-      'Disabled orbital catalog was exposed',
-    )
-    void response.body?.cancel().catch(() => undefined)
-    return
-  }
-
-  assert(
-    response.status === 200,
-    `Orbital catalog returned ${response.status}`,
-  )
-  assert(
-    response.headers.get('content-type')?.includes('application/json'),
-    'Orbital catalog did not return JSON',
-  )
-  assert(
-    response.headers.get('cache-control') ===
-      'public, max-age=300, must-revalidate',
-    'Orbital catalog cache guidance is incorrect',
-  )
-  assert(
-    response.headers.get('x-content-type-options') === 'nosniff',
-    'Orbital catalog nosniff header is missing',
-  )
-  assert(
-    !response.headers.has('access-control-allow-origin'),
-    'Orbital catalog unexpectedly allows cross-origin access',
-  )
-  assert(
-    response.headers.get('x-livetrafficstan-orbital-source') === 'kv' ||
-      response.headers.get('x-livetrafficstan-orbital-source') ===
-        'bootstrap',
-    'Orbital catalog source identity is missing',
-  )
-
-  const body = new Uint8Array(await response.arrayBuffer())
-  assert(
-    body.byteLength <= MAX_ORBITAL_RESPONSE_BYTES,
-    'Orbital catalog response is oversized',
-  )
-  const payload = JSON.parse(new TextDecoder().decode(body))
-  assert(
-    payload &&
-      typeof payload === 'object' &&
-      payload.schemaVersion === 1 &&
-      payload.sourceContractVersion === 1 &&
-      payload.group === 'visual' &&
-      payload.gpSourceUrl ===
-        'https://celestrak.org/NORAD/elements/gp.php?GROUP=visual&FORMAT=json' &&
-      payload.satcatSourceUrl ===
-        'https://celestrak.org/satcat/records.php?GROUP=visual&FORMAT=json' &&
-      Array.isArray(payload.records) &&
-      payload.records.length > 0 &&
-      payload.records.length <= 256 &&
-      payload.recordCount === payload.records.length,
-    'Orbital catalog returned an unexpected payload',
-  )
-  assert(
-    payload.records.every(
-      (record) =>
-        record &&
-        typeof record === 'object' &&
-        /^(?:[1-9]\d{0,8})$/.test(record.noradCatalogId) &&
-        ['PAY', 'R/B', 'DEB', 'UNK'].includes(record.objectType),
-    ),
-    'Orbital catalog contains an invalid object identity or type',
-  )
-  assert(
-    response.headers.get('x-livetrafficstan-orbital-sha256') ===
-      payload.sha256,
-    'Orbital catalog digest header does not match the payload',
-  )
-  assert(
-    response.headers.get('etag') === `W/"${payload.sha256}"`,
-    'Orbital catalog ETag does not match the payload digest',
-  )
-
-  const query = await fetchWithTimeout(
-    new URL('/api/orbits/catalog?group=active', baseUrl),
-  )
-  assert(query.status === 400, 'Orbital catalog query was not rejected')
-  const method = await fetchWithTimeout(url, { method: 'POST' })
-  assert(method.status === 405, 'Orbital catalog method was not rejected')
-}
+const verifyOrbitalCatalog = () =>
+  verifyTargetOrbitalCatalog({
+    baseUrl,
+    enabled: orbitalCatalogEnabled === 'true',
+    expectedReleaseSha,
+    contract: targetOrbitalSmokeContract,
+    fetchResponse: fetchWithTimeout,
+  })
 
 const verifyDigitrafficRest = async () => {
   const endpoint = new URL(

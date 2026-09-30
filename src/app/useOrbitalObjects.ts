@@ -4,6 +4,7 @@ import {
   EMPTY_ORBITAL_PREDICTION,
   type OrbitalControllerState,
 } from '../domain/orbital'
+import type { OrbitalDiscoveryFilters } from '../domain/orbitalDiscovery'
 import type { OrbitalViewport } from '../domain/orbitalViewport'
 import { OrbitalCatalogProvider } from '../providers/orbital/orbitalCatalogProvider'
 import type { OrbitalWorkerLike } from '../workers/orbitalProtocol'
@@ -11,6 +12,7 @@ import { OrbitalController } from './OrbitalController'
 
 const initialState = (): OrbitalControllerState => ({
   phase: 'disabled',
+  acceptedCount: 0,
   positions: [],
   prediction: EMPTY_ORBITAL_PREDICTION,
 })
@@ -33,6 +35,7 @@ export const useOrbitalObjects = (
   online: boolean,
   viewport: OrbitalViewport | undefined,
   selectedId: string | null,
+  filters: OrbitalDiscoveryFilters,
   config: AppConfig['orbital'],
 ) => {
   const [state, setState] = useState<OrbitalControllerState>(initialState)
@@ -80,6 +83,10 @@ export const useOrbitalObjects = (
   useEffect(() => {
     controllerRef.current?.setSelectedId(selectedId)
   }, [selectedId])
+
+  useEffect(() => {
+    controllerRef.current?.setFilters(filters)
+  }, [filters])
 
   const retry = useCallback(() => controllerRef.current?.retry(), [])
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   modelOrbitalPositions,
   predictOrbitalView,
+  predictOrbitalViewAsync,
   prepareOrbitalCatalog,
 } from './orbitalPropagation'
 import type { OrbitalCatalogSnapshot, OrbitalObject } from '../domain/orbital'
@@ -26,15 +27,25 @@ const object: OrbitalObject = {
   bstar: 0.00026100196,
   meanMotionDot: 0.0000222,
   meanMotionDdot: 0,
+  sourceGroups: ['visual'],
+  displayOrder: 694,
 }
 
 const snapshot = (record = object): OrbitalCatalogSnapshot => ({
-  schemaVersion: 1,
-  sourceContractVersion: 1,
-  group: 'visual',
-  gpSourceUrl: 'https://example.test/gp',
-  satcatSourceUrl: 'https://example.test/satcat',
+  schemaVersion: 2,
+  sourceContractVersion: 2,
+  catalogId: 'celestrak-curated-v1',
+  sources: [
+    {
+      group: 'visual',
+      gpSourceUrl: 'https://example.test/gp',
+      satcatSourceUrl: 'https://example.test/satcat',
+      gpRecordCount: 1,
+      satcatRecordCount: 1,
+    },
+  ],
   retrievedAt: '2026-09-28T00:49:00.000Z',
+  publishedAt: '2026-09-28T00:49:00.000Z',
   recordCount: 1,
   records: [record],
   sha256: 'a'.repeat(64),
@@ -49,6 +60,7 @@ const limits: OrbitalPropagationLimits = {
   maximumDetailedResults: 20,
   trackDurationMs: 15 * 60_000,
   maximumTrackPoints: 31,
+  predictionChunkSize: 8,
 }
 
 const epoch = Date.parse(object.epoch)
@@ -142,6 +154,90 @@ describe('orbital SGP4 propagation', () => {
       futureCrossingCount: 0,
     })
     expect(prediction.message).toMatch(/whole world/i)
+  })
+
+  it('filters prediction populations by exact type and source group', () => {
+    const records = [
+      object,
+      {
+        ...object,
+        noradCatalogId: '695',
+        name: 'SCIENCE BODY',
+        objectType: 'R/B' as const,
+        sourceGroups: ['science' as const],
+        displayOrder: 4_000_000_695,
+      },
+      {
+        ...object,
+        noradCatalogId: '696',
+        name: 'VISUAL BODY',
+        objectType: 'R/B' as const,
+        displayOrder: 696,
+      },
+    ]
+    const catalog = prepareOrbitalCatalog(
+      {
+        ...snapshot(),
+        recordCount: records.length,
+        records,
+      },
+      limits,
+    )
+    const prediction = predictOrbitalView(
+      catalog,
+      epoch,
+      { kind: 'world' },
+      'orbital:694',
+      { objectType: 'R/B', sourceGroup: 'science' },
+    )
+
+    expect(prediction).toMatchObject({
+      mode: 'world',
+      totalResults: 1,
+      inViewCount: 1,
+      futureCrossingCount: 0,
+    })
+    expect(prediction.results.map(({ id }) => id)).toEqual([
+      'orbital:695',
+    ])
+    expect(prediction.trackSegments.length).toBeGreaterThan(0)
+  })
+
+  it('yields and cancels obsolete chunked predictions before publishing', async () => {
+    const records = Array.from({ length: 24 }, (_, index) => ({
+      ...object,
+      noradCatalogId: String(700 + index),
+      name: `OBJECT ${700 + index}`,
+      displayOrder: 700 + index,
+    }))
+    const catalog = prepareOrbitalCatalog(
+      {
+        ...snapshot(),
+        recordCount: records.length,
+        records,
+      },
+      { ...limits, predictionChunkSize: 1 },
+    )
+    let cancelled = false
+    let yields = 0
+
+    const prediction = await predictOrbitalViewAsync(
+      catalog,
+      epoch,
+      { kind: 'world' },
+      null,
+      { objectType: 'all', sourceGroup: 'all' },
+      {
+        shouldCancel: () => cancelled,
+        yieldControl: async () => {
+          yields += 1
+          cancelled = true
+        },
+      },
+    )
+
+    expect(yields).toBe(1)
+    expect(prediction).toBeUndefined()
   })
 
   it('splits selected tracks instead of drawing across the antimeridian', () => {
