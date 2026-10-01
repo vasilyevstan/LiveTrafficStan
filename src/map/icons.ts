@@ -27,13 +27,15 @@ export const VESSEL_ICON_SHAPES = {
   ],
   'vessel-cargo': [
     [
-      [32, 7],
-      [50, 13],
-      [57, 21],
-      [57, 59],
-      [7, 59],
-      [7, 21],
-      [14, 13],
+      [32, 4],
+      [45, 9],
+      [54, 18],
+      [57, 28],
+      [57, 60],
+      [7, 60],
+      [7, 28],
+      [10, 18],
+      [19, 9],
     ],
   ],
   'vessel-tanker': [
@@ -56,20 +58,16 @@ export const VESSEL_ICON_SHAPES = {
   'vessel-passenger': [
     [
       [32, 3],
-      [46, 9],
-      [57, 19],
-      [52, 27],
-      [41, 33],
-      [40, 42],
-      [55, 52],
-      [55, 60],
-      [9, 60],
-      [9, 52],
-      [24, 42],
-      [23, 33],
-      [12, 27],
-      [7, 19],
-      [18, 9],
+      [49, 8],
+      [60, 18],
+      [58, 28],
+      [49, 38],
+      [40, 59],
+      [24, 59],
+      [15, 38],
+      [6, 28],
+      [4, 18],
+      [15, 8],
     ],
   ],
   'vessel-fishing': [
@@ -191,8 +189,8 @@ export const trafficIconTreatment = (
     ? {
         aircraftFill: '#72e4ff',
         aircraftDetail: '#b9f2ff',
-        vesselFill: '#ffc878',
-        vesselDetail: '#fff0d0',
+        vesselFill: '#60a5fa',
+        vesselDetail: '#eff6ff',
         outerEdge: 'rgba(0, 9, 15, 0.92)',
         innerEdge: '#eef9fb',
         shadow: 'rgba(0, 0, 0, 0.58)',
@@ -200,8 +198,8 @@ export const trafficIconTreatment = (
     : {
         aircraftFill: '#27b7de',
         aircraftDetail: '#087b9d',
-        vesselFill: '#ed9d3f',
-        vesselDetail: '#6a3a0b',
+        vesselFill: '#2563eb',
+        vesselDetail: '#071d49',
         outerEdge: 'rgba(255, 255, 255, 0.9)',
         innerEdge: '#06243a',
         shadow: 'rgba(1, 14, 25, 0.38)',
@@ -485,12 +483,14 @@ export const createCargoVesselIcon = (theme: Theme) =>
     fillVesselShape(context, treatment, 'vessel-cargo')
 
     strokeDetail(context, treatment, treatment.vesselDetail, () => {
-      context.rect(21, 22, 10, 10)
-      context.rect(33, 22, 10, 10)
-      context.rect(21, 35, 10, 10)
-      context.rect(33, 35, 10, 10)
-      context.moveTo(20, 48)
-      context.lineTo(44, 48)
+      for (const x of [15, 27, 39]) {
+        context.rect(x, 20, 10, 10)
+        context.rect(x, 32, 10, 10)
+      }
+      context.moveTo(14, 46)
+      context.lineTo(50, 46)
+      context.moveTo(18, 52)
+      context.lineTo(46, 52)
     })
   })
 
@@ -500,12 +500,16 @@ export const createTankerVesselIcon = (theme: Theme) =>
     fillVesselShape(context, treatment, 'vessel-tanker')
 
     strokeDetail(context, treatment, treatment.vesselDetail, () => {
-      context.moveTo(32, 17)
-      context.lineTo(32, 52)
-      context.moveTo(39, 28)
-      context.ellipse(32, 28, 7, 5, 0, 0, Math.PI * 2)
-      context.moveTo(39, 43)
-      context.ellipse(32, 43, 7, 5, 0, 0, Math.PI * 2)
+      context.moveTo(32, 14)
+      context.lineTo(32, 54)
+      for (const y of [23, 36, 49]) {
+        context.moveTo(39, y)
+        context.ellipse(32, y, 7, 4, 0, 0, Math.PI * 2)
+      }
+      context.moveTo(24, 29)
+      context.lineTo(40, 29)
+      context.moveTo(24, 42)
+      context.lineTo(40, 42)
     })
   })
 
@@ -515,14 +519,17 @@ export const createPassengerVesselIcon = (theme: Theme) =>
     fillVesselShape(context, treatment, 'vessel-passenger')
 
     strokeDetail(context, treatment, treatment.vesselDetail, () => {
-      context.moveTo(14, 22)
-      context.lineTo(50, 22)
-      context.moveTo(19, 29)
-      context.lineTo(45, 29)
-      context.moveTo(26, 38)
-      context.lineTo(38, 38)
-      context.moveTo(13, 54)
-      context.lineTo(51, 54)
+      context.moveTo(18, 18)
+      context.lineTo(46, 18)
+      context.lineTo(49, 26)
+      context.lineTo(15, 26)
+      context.closePath()
+      context.moveTo(17, 34)
+      context.lineTo(47, 34)
+      context.moveTo(15, 42)
+      context.lineTo(49, 42)
+      context.moveTo(14, 50)
+      context.lineTo(50, 50)
     })
   })
 
@@ -547,13 +554,17 @@ export const createTugVesselIcon = (theme: Theme) =>
     fillVesselShape(context, treatment, 'vessel-tug')
 
     strokeDetail(context, treatment, treatment.vesselDetail, () => {
-      context.moveTo(20, 22)
-      context.lineTo(44, 22)
-      context.lineTo(44, 35)
-      context.lineTo(20, 35)
+      context.moveTo(19, 19)
+      context.lineTo(45, 19)
+      context.lineTo(45, 35)
+      context.lineTo(19, 35)
       context.closePath()
-      context.moveTo(32, 22)
+      context.moveTo(32, 19)
       context.lineTo(32, 35)
+      context.moveTo(25, 41)
+      context.lineTo(39, 41)
+      context.moveTo(32, 35)
+      context.lineTo(32, 49)
     })
   })
 

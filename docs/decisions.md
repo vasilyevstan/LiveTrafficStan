@@ -516,9 +516,9 @@ Aircraft, vessels, and the selected trail are represented as GeoJSON sources. Ma
 
 The map persists ten original canvas icon keys: light/small fixed-wing, generic
 fixed-wing, heavy fixed-wing, helicopter, cargo, tanker, passenger, fishing,
-tug, and generic vessel. Marine traffic remains amber. Aircraft category stays
-shape-based while the aircraft silhouette color carries the bounded altitude
-band.
+tug, and generic vessel. Marine traffic uses a maritime-blue palette with
+theme-specific high-contrast detail. Aircraft category stays shape-based while
+the aircraft silhouette color carries the bounded altitude band.
 
 Normalization maps only trusted provider fields to application-owned icon keys.
 ADS-B A1/A2 use light fixed-wing, A5 heavy fixed-wing, and A7 helicopter.
@@ -868,13 +868,15 @@ style-owned state, the map layer installer restores traffic images,
 sources, layers, data, visibility, and trail after every `style.load`
 without changing camera, selection, provider state, or connections.
 
-Traffic artwork keeps amber vessels and uses a bounded altitude palette on each
-aircraft silhouette in both themes. The theme-specific canvas treatment changes
-fill luminance, detail color, shadow, and two-tone edge contrast while
-retaining silhouettes and heading/course rotation. Image IDs are replaced
-through MapLibre when the theme changes, including when both theme options
-reference the same style URL. The image cache contains only the bounded light
-and dark sets.
+Traffic artwork uses maritime-blue vessels and a bounded altitude palette on
+each aircraft silhouette in both themes. Cargo/container, passenger, tanker,
+and tug use coarse interior line art that remains legible at the 26 CSS-pixel
+floor without changing exact AIS-derived classification. The theme-specific
+canvas treatment changes fill luminance, detail color, shadow, and two-tone
+edge contrast while retaining silhouettes and heading/course rotation. Image
+IDs are replaced through MapLibre when the theme changes, including when both
+theme options reference the same style URL. The image cache contains only the
+bounded light and dark sets.
 
 ## Versioned preferences, fragment sharing, and presentation units
 
