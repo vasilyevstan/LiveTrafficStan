@@ -441,6 +441,7 @@ export function TrafficControls({
   const orbitalPrimarySummary = formatOrbitalSummary({
     visible: orbitalVisible,
     historyActive: playback.mode !== 'live',
+    horizonMs: orbitalPredictionHorizonMs,
     state: orbitalState,
     display: orbitalDisplay,
     counts: orbitalCounts,

@@ -1175,6 +1175,7 @@ function App() {
   const orbitalSummary = formatOrbitalSummary({
     visible: orbitalObjectsVisible,
     historyActive,
+    horizonMs: APP_CONFIG.orbital.predictionHorizonMs,
     state: orbitalState,
     display: orbitalDisplay,
     counts: orbitalCounts,

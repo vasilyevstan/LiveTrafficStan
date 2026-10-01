@@ -40,15 +40,18 @@ Catalog bytes, modeled positions, crossings, selected object, track, clock
 anchor, camera, and Home remain session-only.
 
 After enable, the collapsed Operations panel keeps a compact
-**ORBITS · shown / modeled** summary visible. **VIEW** opens the existing
-disclosure and the Orbits task without another disclosure. The task has
-separate **Nearby** and **Catalog** views while the existing More body remains
-the only vertical scroll owner. The upper-left status panel mirrors the same
-compact ORBITS state and labels an eligible view **Visible traffic and orbital
-area**. Its **LIVE**, **PARTIAL**, and **OFFLINE** health still describes only
-aircraft and marine providers, so modeled orbital availability cannot mask a
-traffic outage. Compact mobile layouts retain the existing rule that hides
-provider-detail copy; the primary ORBITS toggle and summary remain visible.
+**ORBITS · shown · passes ≤90m** summary visible. SHOWN is the number of
+matching markers actually rendered inside the current map, not the complete
+modeled population. A compatible map with a pending prediction says **PASSES
+UPDATING** rather than zero. **VIEW** opens the existing disclosure and the
+Orbits task without another disclosure. The task has separate **Nearby** and
+**Catalog** views while the existing More body remains the only vertical scroll
+owner. The upper-left status panel mirrors the same compact ORBITS state and
+labels an eligible view **Visible traffic and orbital area**. Its **LIVE**,
+**PARTIAL**, and **OFFLINE** health still describes only aircraft and marine
+providers, so modeled orbital availability cannot mask a traffic outage.
+Compact mobile layouts retain the existing rule that hides provider-detail
+copy; the primary ORBITS toggle and both counts remain visible.
 
 When enabled, the control shows distinct states for:
 
@@ -361,7 +364,11 @@ a satellite-like payload, spent-stage rocket body, irregular debris fragment,
 and neutral unknown object. Shape and the existing type color both come only
 from exact SATCAT type; the symbol represents the catalog class, not the exact
 craft. Selection remains a separate circular halo and the predicted track
-remains a line. No text labels or DOM markers are added.
+remains a line. Exact enrichment matches for Hubble/NORAD `20580` and
+ISS/NORAD `25544` use a larger icon-size expression and `HUBBLE`/`ISS` text in
+that same point layer when the active style exposes a usable font. Every other
+object, and any identity mismatch, remains unlabeled. No DOM marker or extra
+source/layer lifecycle is added.
 
 The idempotent style installer restores current data, visibility, selection,
 track, theme-specific images, and symbol layout after `map.setStyle`.

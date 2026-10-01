@@ -359,6 +359,15 @@ exception to zoom or exact type/source-group filtering and is labeled as such.
 This keeps style restoration and one-second source updates independent from
 search, paging, and the displayed rank subset.
 
+The compact ORBITS line reports the current `shownInFootprintCount` and the
+compatible next-90-minute crossing count rather than repeating the broader
+modeled population. A missing settled map reports map counts unavailable; a
+compatible map with a pending prediction reports passes updating rather than
+zero. Exact enrichment matches for Hubble and ISS add a larger icon-size
+expression and `HUBBLE`/`ISS` text in the existing point layer. This reuses the
+reviewed NORAD/name/designator/type boundary and active style font stack;
+unreviewed objects receive no fame, mission, or label inference.
+
 Catalog discovery operates only on the accepted snapshot. Text matches name,
 canonical NORAD ID, or international designator and ranks exact, prefix, then
 substring before `displayOrder`, normalized name, and numeric NORAD ID. Type

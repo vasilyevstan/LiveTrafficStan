@@ -649,9 +649,11 @@ An enabled view can truthfully have no shown orbital marker. Check the
 collapsed Operations summary and the Orbits counts before diagnosing a
 failure:
 
-- **ORBITS · 192 SHOWN / 438 MODELED** means schema validation and current
-  propagation succeeded, while the current zoom tier shows the first 192 safe
-  exact-filter matches by `displayOrder`;
+- **ORBITS · 192 SHOWN · 0 PASSES ≤90M** means schema validation and current
+  propagation succeeded, the current zoom tier renders 192 safe exact-filter
+  matches inside the map, and the compatible prediction has no future crossing;
+- **ORBITS · 75 SHOWN · PASSES UPDATING** means map counts are current while
+  the prediction for the latest viewport/filter revision is still pending;
 - **ORBITS · MAP COUNTS UNAVAILABLE** means no settled raw map zoom/footprint
   is available; the app does not substitute rounded shared zoom or world tier,
   and selected details must say map display is unavailable rather than claim a

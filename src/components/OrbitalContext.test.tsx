@@ -179,4 +179,31 @@ describe('OrbitalContext', () => {
     expect(html).toContain('MAP-AREA COUNTS UNAVAILABLE · 438 MODELED')
     expect(html).not.toContain('0 IN MAP')
   })
+
+  it('keeps current map counts while a compatible prediction is pending', () => {
+    const html = renderContext(
+      {
+        phase: 'refreshing',
+        acceptedCount: 460,
+        positions: [position],
+        prediction: {
+          mode: 'world',
+          results: [],
+          totalResults: 438,
+          inViewCount: 438,
+          futureCrossingCount: 0,
+          trackSegments: [],
+        },
+      },
+      {
+        counts: {
+          ...counts,
+          futureCrossingCount: undefined,
+        },
+      },
+    )
+
+    expect(html).toContain('8 SHOWN · 12 IN MAP · PASSES UPDATING')
+    expect(html).not.toContain('PASSES UNAVAILABLE')
+  })
 })
