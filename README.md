@@ -42,10 +42,10 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   resize changes.
 - A truthful 100 km enclosing-query limit: wider or unsafe views pause traffic
   and ask the user to zoom in rather than showing partial coverage as complete.
-- A session Home/Center action plus privacy-safe one-shot browser location:
-  already-granted permission and grants made while the page is open are used
-  automatically; otherwise location is an explicit action with Tallinn
-  fallback.
+- A 30 km session Home/Center framing plus privacy-safe one-shot browser
+  location: already-granted permission and grants made while the page is open
+  are used automatically; otherwise location is an explicit action with
+  Tallinn fallback.
 - One explicit-submit location field accepts rounded decimal coordinates
   locally or named places through Photon. Search failure never blocks
   coordinate navigation, Center, or the live map.

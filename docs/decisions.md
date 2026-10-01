@@ -705,8 +705,11 @@ For eligible views, providers receive the enclosing circle while display
 filtering uses the actual unwrapped polygon. The 100 km decision occurs before
 ADSB.lol's required whole-nautical-mile rounding, so the boundary request uses
 54 NM (100.008 km transport coverage) but display eligibility remains 100 km.
-Center restores a session Home framing comparable to the earlier 20 km view;
-that value is camera framing, not a selectable traffic radius.
+Center restores a session Home framing comparable to a 30 km local view. This
+keeps fast aircraft on-screen about 50% longer than the earlier 20 km framing
+without changing provider or display geometry: the safely representable full
+canvas still determines the enclosing query circle and exact display polygon.
+The Home value is camera framing, not a selectable traffic radius.
 
 ## Provider-safe viewport updates
 

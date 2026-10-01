@@ -295,7 +295,7 @@ export const createAppConfig = (
         DEFAULTS.darkMapStyleUrl,
         ['https:'],
       ),
-      homeViewRadiusKm: 20,
+      homeViewRadiusKm: 30,
       maximumViewportRadiusKm: 100,
       touchHitTolerancePx: 8,
       clustering: {

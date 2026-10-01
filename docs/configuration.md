@@ -90,7 +90,7 @@ spread through components:
 
 | Setting | Current value |
 | --- | --- |
-| Initial Home framing | Comparable to a 20 km local view |
+| Initial Home framing | Comparable to a 30 km local view |
 | Maximum eligible enclosing radius | 100 km |
 | Touch marker hit extension | 8 CSS pixels per axis after an exact miss |
 | Vessel minimum-length presets | 0, 25, 50, 100, 150 m |
