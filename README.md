@@ -508,10 +508,12 @@ Static Assets. The current application source is
 
 Public symbol acceptance retained one MapLibre canvas through theme restoration
 and responsive resize. Deterministic production-path evidence covers all nine
-vessel classes; exact-release orbital acceptance modeled 450 safe current
-positions and rendered 192/384/450 through the world/mid/local tiers, with one
-same-origin request, zero browser CelesTrak requests, visible attribution,
-trusted touch drag, and bounded 390x844/390x568 controls.
+vessel classes with maritime-blue silhouettes and coarse line art for cargo,
+passenger, tanker, and tug recognition; exact-release orbital acceptance
+modeled 450 safe current positions and rendered 192/384/450 through the
+world/mid/local tiers, with one same-origin request, zero browser CelesTrak
+requests, visible attribution, trusted touch drag, and bounded
+390x844/390x568 controls.
 
 Fresh rendered production acceptance used a deterministic 24-object crossing
 fixture and exposed all 20 bounded results at both 390x844 and 390x568.

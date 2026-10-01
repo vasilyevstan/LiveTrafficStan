@@ -259,6 +259,8 @@ describe('trafficIconTreatment', () => {
     expect(dark.aircraftFill).toMatch(/^#(?:[0-9a-f]{6})$/i)
     expect(light.vesselFill).toMatch(/^#(?:[0-9a-f]{6})$/i)
     expect(dark.vesselFill).toMatch(/^#(?:[0-9a-f]{6})$/i)
+    expect(light.vesselFill).toBe('#2563eb')
+    expect(dark.vesselFill).toBe('#60a5fa')
   })
 
   it('keeps render-only vessel shapes outside persisted marker IDs', () => {

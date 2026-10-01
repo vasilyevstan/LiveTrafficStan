@@ -729,8 +729,8 @@ For the viewport-driven map experience, additionally verify:
    recognizable and distinct from live markers.
 11. Light/small, generic, heavy, rotorcraft, cargo, tanker, passenger, fishing,
     tug, and generic-vessel shapes remain distinguishable in Light and Dark
-    themes while aircraft altitude colors remain distinct from amber marine
-    traffic and the red stopped dot.
+    themes while aircraft altitude colors remain distinct from maritime-blue
+    marine traffic and the red stopped dot.
 12. Rapid theme changes restore all 33 bounded image IDs and loaded
     static/weather layers once per style generation, preserve one map, and do
     not reconnect or query any provider.
@@ -860,6 +860,17 @@ layouts, picking, and style rehydration. At 26 CSS px / DPR 1, maximum
 pairwise silhouette IoU was 0.74813, minimum normalized symmetric difference
 was 0.25187, broad hull classes differed in at least three longitudinal width
 bands, and minimum identity-feature thickness was 5 CSS px.
+
+The #240 maritime-blue follow-up repeated that production-path fixture in
+Chrome `154.0.8037.59` after replacing the hourglass-like passenger outline
+with a broad-forward, continuously tapered ferry and adding coarse
+container-bay, passenger-deck, tanker-manifold, and tug-wheelhouse line art.
+All eight desktop/mobile theme and DPR scenarios retained one map and canvas,
+picked every fixture marker, restored exact Light -> Dark -> Light image bytes,
+kept attribution visible with no clipping or overflow, and added zero
+aircraft, marine, orbital-catalog, search, or metadata requests. The unchanged
+morphology gates still measured maximum IoU `0.74813` and minimum symmetric
+difference `0.25187`.
 
 Production Chrome `154.0.8037.59` orbital acceptance passed 27/27 checks:
 
