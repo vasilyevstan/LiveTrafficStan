@@ -255,7 +255,7 @@ export const installTrafficStyle = (
     filter: ['!', ['has', 'point_count']],
     layout: {
       'icon-image': ['get', 'markerIcon'],
-      'icon-size': ['*', ['get', 'markerScale'], 1.04],
+      'icon-size': ['*', ['get', 'markerScale'], 0.86],
       'icon-rotate': ['get', 'heading'],
       'icon-rotation-alignment': 'map',
       'icon-pitch-alignment': 'map',
