@@ -720,32 +720,36 @@ For the viewport-driven map experience, additionally verify:
    prompt; other permission states retain Tallinn until explicit action.
 7. Dateline, rotated, pitched, and desktop/mobile resized views remain bounded
    and do not become a falsely small query.
-8. Auto system changes and repeated explicit Light/Dark overrides preserve
+8. Initial load, Home, and Center use the configured 30 km framing. The
+   resulting full-canvas assessment remains eligible and below the unchanged
+   100 km limit; camera actions do not add aircraft polls beyond cadence or
+   display aircraft outside the exact viewport polygon.
+9. Auto system changes and repeated explicit Light/Dark overrides preserve
    camera, live traffic, selected object, trail, controls, and provider
    connections.
-9. Both themes remain readable on desktop and a narrow mobile viewport.
-10. Aircraft, helicopter, and vessel artwork retains its identity over land,
+10. Both themes remain readable on desktop and a narrow mobile viewport.
+11. Aircraft, helicopter, and vessel artwork retains its identity over land,
    water, and busy detail at actual marker scale; stale markers remain
    recognizable and distinct from live markers.
-11. Light/small, generic, heavy, rotorcraft, cargo, tanker, passenger, fishing,
+12. Light/small, generic, heavy, rotorcraft, cargo, tanker, passenger, fishing,
     tug, and generic-vessel shapes remain distinguishable in Light and Dark
     themes while aircraft altitude colors remain distinct from maritime-blue
     marine traffic and the red stopped dot.
-12. Rapid theme changes restore all 33 bounded image IDs and loaded
+13. Rapid theme changes restore all 33 bounded image IDs and loaded
     static/weather layers once per style generation, preserve one map, and do
     not reconnect or query any provider.
-13. A direct touch hit selects normally, an isolated near miss inside the
+14. A direct touch hit selects normally, an isolated near miss inside the
     8 CSS-pixel box selects the sole eligible ID, and an outside or ambiguous
     tap clears/retains selection according to the normal empty-hit path.
-14. Mouse, touch-followed-by-mouse, drag, and pinch interactions do not receive
+15. Mouse, touch-followed-by-mouse, drag, and pinch interactions do not receive
     the touch fallback, and device pixel ratio does not change the threshold.
-15. A coordinate or place result changes only the current view. Center returns
+16. A coordinate or place result changes only the current view. Center returns
     to the latest session Home, including one updated by a late allowed
     geolocation result that did not steal the explicit camera.
-16. Wheel/trackpad, pointer drag, touch drag, double-click, and map-keyboard
+17. Wheel/trackpad, pointer drag, touch drag, double-click, and map-keyboard
     movement change the label to `Custom view`; a marker click and programmatic
     camera fit do not.
-17. Repeating the same normalized named query uses the session cache without a
+18. Repeating the same normalized named query uses the session cache without a
     second Photon request. New input, Escape, Center, location, coordinate
     navigation, or manual movement cancels obsolete results.
 
@@ -915,6 +919,19 @@ catalog requests before enable and one after enable, made zero browser
 CelesTrak requests, added no request on theme change, kept the 390x568 controls
 at 329.4375 px within the 329.44 px budget with attribution visible, and
 reported no runtime/log/HTTP error or long task over 50 ms.
+
+The #241 Home-framing follow-up used a deterministic six-aircraft browser
+fixture in Chrome `154.0.8037.59`. Initial desktop load, desktop Center after a
+manual camera change, and mobile 390x568 Center matched MapLibre's exact 30 km
+`cameraForBounds` result with zero zoom or center delta. Each differed from the
+former 20 km fit by `0.5849824` zoom levels, the expected `log2(1.5)` framing
+ratio. The complete desktop/mobile canvases remained within 71.64/76.35 km of
+Home and therefore below the unchanged 100 km eligibility limit. Six aircraft
+rendered in each view; the provider path used one outward-rounded `34 NM`
+request, and the manual camera change, Center, and resize added no second poll
+inside cadence. Both layouts retained one canvas, visible attribution, no
+document overflow, and no runtime or browser-log error; the mobile controls
+measured 329.4375 px inside the 329.44 px 58vh budget.
 
 The unchanged-tree hard-cap benchmark used 512 records / 501 safe current
 positions. Preparation took 19.4 ms; search p95 was 1.9 ms desktop / 5.6 ms at
