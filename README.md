@@ -125,7 +125,8 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   zoom, details explicitly report map display unavailable. The coordinated
   source/browser contract was first released through #235 at exact application
   source `538edd25afa49f62c13e93745b322099f662791d`; the current map follow-up
-  preserves it at `560a9bb409a92036996e391500ec36b1d7b0e728`.
+  and smaller-marker release preserve it at
+  `9e1d8c23f9047d0bf57b12bd4abc7d5fcae90f63`.
 - A default-enabled ADSB.lol plausible-route lookup for a selected live
   aircraft. A committed selection starts one lookup and shows a compact result
   directly below the aircraft heading. Hover, HISTORY, and same-flight position
@@ -494,9 +495,9 @@ persistent route cache.
 Public production is live at
 <https://livetrafficstan.syntal.workers.dev> on Cloudflare Workers Free with
 Static Assets. The current application source is
-`560a9bb409a92036996e391500ec36b1d7b0e728`. Canonical deployment run
-`36887715303`, successful attempt 2, passed the complete gate and published
-Cloudflare version `6b6043b8-3a14-49c0-8af3-b5843f8eb09f`. The deployment
+`9e1d8c23f9047d0bf57b12bd4abc7d5fcae90f63`. Canonical deployment run
+`36908605830`, successful attempt 2, passed the complete gate and published
+Cloudflare version `d83f68ae-907e-4b2d-a086-00b4fde00372`. The deployment
 preserves:
 
 - `oci-private-relay`, aircraft photos, and plausible routes enabled;
@@ -539,6 +540,19 @@ surfaces were healthy. The supported diagnostic reboot produced
 real aircraft JSON returned. The exact same authorized deployment inputs
 passed on attempt 2 without application rollback, provider fallback, relay
 source change, or credential rotation.
+
+The smaller-vessel-marker release followed through #251, #252, and #253.
+Exact-main validation run `36908354263` passed, then production Chrome
+`154.0.8037.59` proved all nine unchanged classes at 22/24/30/37 CSS px
+through the real symbol layer. Every fixture marker remained pickable across
+DPR 1/2, both themes, headings, state overlays, desktop 1280x900, and mobile
+390x844/390x568. Light -> Dark -> Light restored exact image bytes, one
+map/canvas/source/layer set persisted, attribution remained visible, and the
+fixture added zero aircraft, marine, orbital, search, or metadata requests.
+Deployment attempt 1 again isolated the unchanged private-relay guest/network
+`502`; the supported diagnostic reboot progressed through
+`STOPPING -> STARTING -> RUNNING`, bounded probes reached real exact-release
+aircraft JSON, and the unchanged workflow passed on attempt 2.
 
 Fresh rendered production acceptance used a deterministic 24-object crossing
 fixture and exposed all 20 bounded results at both 390x844 and 390x568.
@@ -636,9 +650,11 @@ run `36808295755` restored exact application source
 `83b98933-a609-405e-b07c-3e4f4ded46e8`; schema 2 immediately returned the retained KV bundle
 without another provider refresh.
 
-That curated release is the byte-exact rollback target for the current map
-follow-up: source `538edd25afa49f62c13e93745b322099f662791d`, recorded
-Cloudflare version `83b98933-a609-405e-b07c-3e4f4ded46e8`.
+The immediate byte-exact rollback target for the smaller-marker release is the
+prior map follow-up: source
+`560a9bb409a92036996e391500ec36b1d7b0e728`, recorded Cloudflare version
+`6b6043b8-3a14-49c0-8af3-b5843f8eb09f`. The curated release above remains
+the older rehearsed rollback/restoration evidence.
 
 The matching aircraft relay still runs
 `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8` and retains
@@ -651,12 +667,12 @@ wait. Provider `503`, provider `429`, redirects, malformed policy, and failure
 to reach eventual real JSON remain release failures.
 
 Comprehensive public Wiki commit
-`618943bb23fd6745783dade155e4d9fbf93634cb` synchronizes the current
-production identity, maritime-blue vessel artwork, compact orbital counts and
-exact Hubble/ISS labels, 30 km framing, Chrome measurements, screenshots,
-independent relay recovery, rollback target, and the retained curated source,
-compatibility, discovery, responsive, troubleshooting, and physical-device
-limitations.
+`5bab3ed5ef03bb967b7f7bcf2d865d1c9019df16` synchronizes the current
+production identity, reduced 22-37 CSS px maritime-blue vessel scale, compact
+orbital counts and exact Hubble/ISS labels, 30 km framing, Chrome
+measurements, screenshots, independent relay recovery, rollback target, and
+the retained curated source, compatibility, discovery, responsive,
+troubleshooting, and physical-device limitations.
 See [Hosting and Deployment](docs/hosting-and-deployment.md) for the dated
 platform matrix, request budget, proxy contract, exact-SHA workflow, smoke,
 monitoring, privacy, and rollback procedure.

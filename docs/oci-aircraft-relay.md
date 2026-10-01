@@ -28,11 +28,11 @@ active on the relay VM with four IPv6 QUIC connections and a dedicated
 used only when a protected deployment selects `oci-private-relay`.
 
 The current application source is
-`560a9bb409a92036996e391500ec36b1d7b0e728`; it continues to use active relay
+`9e1d8c23f9047d0bf57b12bd4abc7d5fcae90f63`; it continues to use active relay
 source `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8`, while
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` remains the relay rollback target.
-Canonical production run `36887715303`, successful attempt 2, published
-Cloudflare version `6b6043b8-3a14-49c0-8af3-b5843f8eb09f`.
+Canonical production run `36908605830`, successful attempt 2, published
+Cloudflare version `d83f68ae-907e-4b2d-a086-00b4fde00372`.
 
 The first same-source run `36627068064` had already deployed healthy
 application, orbital, enrichment, weather, and marine surfaces as version
@@ -350,6 +350,19 @@ inputs passed every step on attempt 2 as version
 `6b6043b8-3a14-49c0-8af3-b5843f8eb09f`. No application rollback, shared-egress
 fallback, provider substitution, relay source change, credential rotation, or
 firewall change was used.
+
+The smaller-marker deployment repeated the same independent recurrence.
+Run `36908605830`, attempt 1, deployed exact application source
+`9e1d8c23f9047d0bf57b12bd4abc7d5fcae90f63`; all source validation and the
+Worker deployment passed, while only aircraft smoke returned
+`502 Aircraft upstream unavailable`. The supported diagnostic reboot moved the
+instance through `STOPPING` at `2026-10-01T18:45:05Z`, `STARTING` at
+`18:45:57Z`, and `RUNNING` at `18:46:20Z`. Four bounded probes returned `502`,
+one returned `504`, and the next returned real `200 application/json` with the
+exact release header at `18:48:20Z`. The unchanged workflow passed on attempt
+2 as Cloudflare version `d83f68ae-907e-4b2d-a086-00b4fde00372`; no application
+rollback, relay change, credential rotation, provider fallback, or firewall
+change was used.
 
 After source `18082a1e...` activated the reviewed admission marker and smoke
 policy, canonical run `36642794309` passed. A separate bounded production

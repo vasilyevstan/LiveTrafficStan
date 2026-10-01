@@ -64,10 +64,10 @@ writes the v1 key. The Durable Object class, binding, namespace, object name,
 and schema-1 admission row remain unchanged.
 
 Current application source
-`560a9bb409a92036996e391500ec36b1d7b0e728` sets the flag to `true`, uses KV
+`9e1d8c23f9047d0bf57b12bd4abc7d5fcae90f63` sets the flag to `true`, uses KV
 namespace `59178d55418247c4bab473b52a5dc07d`, and runs Cron
-`17 */2 * * *`; deployment run `36887715303`, successful attempt 2, recorded
-Cloudflare version `6b6043b8-3a14-49c0-8af3-b5843f8eb09f`. This Worker
+`17 */2 * * *`; deployment run `36908605830`, successful attempt 2, recorded
+Cloudflare version `d83f68ae-907e-4b2d-a086-00b4fde00372`. This Worker
 setting does not change the user-facing default: the remembered ORBITS layer
 still starts off until explicitly enabled or included in a share fragment.
 
