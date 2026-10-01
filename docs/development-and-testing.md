@@ -851,16 +851,24 @@ then additionally verify:
    orbital worker, no extra catalog request, and no monotonic post-GC
    heap/timer/listener growth.
 
-### Issue #210/#211 final release evidence
+### Curated release and October 1 map follow-up evidence
 
 The exact combined feature tree
 `b6cc3d3f02fdfdb5ff9a0e4158048e77b4507add` passed lint, typecheck, 740
 tests, aircraft metadata, country allocations, vessel photos, orbital catalog
 and immutable history, orbital enrichment, build, and deployment dry-run.
-Release #235 deployed exact application source
+Base release #235 deployed exact application source
 `538edd25afa49f62c13e93745b322099f662791d` through protected run
 `36788698617` as initial Cloudflare version
 `83b98933-a609-405e-b07c-3e4f4ded46e8`.
+
+The current map follow-up merged through #242-#246 at exact application source
+`560a9bb409a92036996e391500ec36b1d7b0e728`. Exact-merged-main validation run
+`36887570850` passed 119 test files / 746 tests plus lint, typecheck, aircraft
+metadata, country allocations, vessel photos, orbital catalog/history,
+orbital enrichment, build, PWA retirement build, and deployment dry-run.
+Production run `36887715303`, successful attempt 2, passed every deployment
+step as Cloudflare version `6b6043b8-3a14-49c0-8af3-b5843f8eb09f`.
 
 The vessel fixture used the production MapLibre image/symbol path for all nine
 exact source-truthful classes at 26/29/36/45 CSS px, DPR 1/2, both themes,
@@ -933,6 +941,17 @@ inside cadence. Both layouts retained one canvas, visible attribution, no
 document overflow, and no runtime or browser-log error; the mobile controls
 measured 329.4375 px inside the 329.44 px 58vh budget.
 
+The exact production rerun repeated those three focused surfaces against the
+deployed bundle. All eight vessel desktop/mobile theme/DPR scenarios passed;
+the world orbital view reported `ORBITS · 192 SHOWN · 0 PASSES ≤90M` from 454
+safe current positions with exactly the reviewed `HUBBLE` and `ISS` labels;
+and desktop/mobile Home/Center matched the exact 30 km fit with one
+outward-rounded `34 NM` deterministic aircraft request. One MapLibre canvas,
+visible attribution, zero fixture-added provider/search/catalog requests, and
+zero runtime/log/HTTP errors persisted. The measured record and four hosted
+screenshots are attached to
+[#246](https://github.com/vasilyevstan/LiveTrafficStan/pull/246#issuecomment-5935337522).
+
 The unchanged-tree hard-cap benchmark used 512 records / 501 safe current
 positions. Preparation took 19.4 ms; search p95 was 1.9 ms desktop / 5.6 ms at
 4x CPU, filter p95 1.5 / 6.8 ms, position tick p95 3.1 ms, complete prediction
@@ -950,6 +969,12 @@ at the same retrieval time. Protected rollback run
 schema-1 rollback followed by immediate reuse of the retained schema-2 KV
 bundle as restored Cloudflare version
 `83b98933-a609-405e-b07c-3e4f4ded46e8`.
+
+That source/version is the byte-exact rollback target for the current map
+follow-up. Public Wiki commit
+`618943bb23fd6745783dade155e4d9fbf93634cb` synchronizes the current release
+identity, browser measurements, screenshots, relay recovery, and retained
+curated/rollback evidence.
 
 No `xcrun simctl`, Android emulator/`adb`, hosted-device credential, or
 physical iOS/Android device was available. Chrome DPR, touch,

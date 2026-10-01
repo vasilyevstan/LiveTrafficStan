@@ -20,7 +20,7 @@ This is cataloged orbital-object context, not another live-traffic provider:
   this feature.
 
 The browser implementation and scheduled catalog infrastructure are active in
-production source `538edd25afa49f62c13e93745b322099f662791d`. The layer
+production source `560a9bb409a92036996e391500ec36b1d7b0e728`. The layer
 remains a default-off user preference, while the protected Worker deployment
 sets `ORBITAL_CATALOG_ENABLED=true`, serves the same-origin catalog route, and
 runs the checked two-hour scheduler. A deployment with that Worker flag off
@@ -501,15 +501,17 @@ scheduled KV/Durable Object boundary.
 ## Production activation and visibility evidence
 
 The current exact application release is
-`538edd25afa49f62c13e93745b322099f662791d`, deployed by protected run
-[36788698617](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/36788698617)
-as initial Cloudflare version
-`83b98933-a609-405e-b07c-3e4f4ded46e8`. It uses KV namespace
+`560a9bb409a92036996e391500ec36b1d7b0e728`, deployed by protected run
+[36887715303](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/36887715303),
+successful attempt 2, as Cloudflare version
+`6b6043b8-3a14-49c0-8af3-b5843f8eb09f`. It uses KV namespace
 `59178d55418247c4bab473b52a5dc07d` and Cron `17 */2 * * *`.
 Implementation PRs #232 and #233 supplied the source contract and browser
-consumer; #235 performed the coordinated production release.
+consumer; #235 performed the coordinated catalog release. PR #243 added the
+compact rendered/pass summary and exact featured labels, and #246 performed
+the checked map follow-up release.
 
-Immediate exact-route proof returned:
+The initial #235 curated release's immediate exact-route proof returned:
 
 - default schema/source contract 1 from KV, retrieved
   `2026-09-30T22:17:35.578Z`, 156 records, digest
@@ -533,6 +535,10 @@ source `kv`, retained their own conditional `304`, and returned `200` for the
 other representation's ETag. An ordinary Cron that arrives seconds before the
 exact two-hour gate returns `not-due` without provider work; the next later
 event remains eligible.
+
+The current #246 map follow-up retained and served the complete KV bundle for
+both public representations; it did not reset the named coordinator or
+initiate another CelesTrak refresh.
 
 Fresh exact-release Chrome 154 acceptance passed 27/27 checks:
 
@@ -563,10 +569,23 @@ ms, zero main-thread tasks over 50 ms, and a 602.74-second bounded one-canvas/
 one-worker soak. Physical iOS Safari and Android Chrome were unavailable in
 the validation environment; their evidence is not claimed.
 
-Public Wiki commit `00fb35128ec56c3f15b74690e0ac1f58cbeffc99`
-synchronizes the current release, provider/privacy boundary, same-route
-compatibility, discovery, zoom tiers, single-scroll responsive behavior,
-validation, troubleshooting, rollback, and known device-evidence limitation.
+The current production follow-up in Chrome `154.0.8037.59` reported
+`ORBITS · 192 SHOWN · 0 PASSES ≤90M` for the measured world view, retained 454
+safe current positions, and exposed exactly two featured properties:
+`HUBBLE`/NORAD `20580` and `ISS`/NORAD `25544`. The active
+`Noto Sans Regular` stack rendered both labels; featured icon size was `1.08`
+versus ordinary `0.72`. One catalog request occurred only after enable, zero
+browser CelesTrak or theme-change catalog requests occurred, one canvas
+persisted, 390x568 controls measured 329.4375 px against the 329.44 px budget,
+attribution remained visible, and no runtime/log/HTTP error or long task over
+50 ms occurred. Evidence and world/mobile screenshots are attached to
+[#246](https://github.com/vasilyevstan/LiveTrafficStan/pull/246#issuecomment-5935337522).
+
+Public Wiki commit `618943bb23fd6745783dade155e4d9fbf93634cb`
+synchronizes the current release, compact counts, exact Hubble/ISS labels,
+provider/privacy boundary, same-route compatibility, discovery, zoom tiers,
+single-scroll responsive behavior, validation, troubleshooting, rollback, and
+known device-evidence limitation.
 
 Cache-disabled public-origin enrichment acceptance used real current Hubble
 `20580`, ISS `25544`, and exact rocket body `733` features. It observed zero
@@ -621,10 +640,13 @@ schema-2 -> schema-1 -> schema-2 compatibility:
   `2891a8b4-8111-4d7c-be93-1d355ebdf289`, activated version
   `2891a8b4-8111-4d7c-be93-1d355ebdf289`, restored the target Cron, and passed
   target-aware schema-1 smoke;
-- protected run `36808295755` restored current source
+- protected run `36808295755` restored the then-current curated source
   `538edd25afa49f62c13e93745b322099f662791d` as version
   `83b98933-a609-405e-b07c-3e4f4ded46e8`, passed dual-representation smoke, and immediately
   served the retained schema-2 KV bundle without another provider refresh.
+
+That restored source/version is the byte-exact rollback target for the current
+map follow-up release.
 
 The optional globe remains separate in #163. Physical iOS Safari, Android
 Chrome, and supported-device drag-FPS evidence remain an explicit environment

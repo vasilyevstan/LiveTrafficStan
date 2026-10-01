@@ -167,6 +167,18 @@ bounded probes recovered to real ADSB JSON at `20:38:04Z`. Canonical
 same-source run `36627748051` then passed full smoke. Do not roll back a
 healthy independent application release for this isolated relay failure.
 
+The 2026-10-01 map follow-up repeated the same isolated recovery. Deployment
+run `36887715303`, attempt 1, published exact source
+`560a9bb409a92036996e391500ec36b1d7b0e728` as version
+`45cccadf-0456-4812-aed3-54286886a3c0`; the release header, Static Assets, and
+orbital surface were healthy while only aircraft returned `502`. The supported
+diagnostic reboot produced `STOPPING -> STARTING -> RUNNING`; four bounded
+probes remained `502`, then real aircraft JSON returned. The same workflow
+inputs passed on attempt 2 as version
+`6b6043b8-3a14-49c0-8af3-b5843f8eb09f`. Treat this as an independent
+aircraft-only infrastructure recurrence, not permission to roll back a healthy
+application, rotate identity, or fall back to shared egress.
+
 ADSB.lol rejects generic Worker identification. The proxy must send the stable
 public LiveTrafficStan User-Agent. Do not work around a `403` by forwarding
 browser headers, cookies, authorization, or a client-controlled destination.
@@ -766,7 +778,7 @@ as terminal for the running tab rather than retrying on reselection. A hover
 must never contact NASA or request the same-origin asset; a tooltip can reuse
 only a validated Blob URL created by selected details earlier in the tab.
 
-Current application source `538edd25afa49f62c13e93745b322099f662791d`
+Current application source `560a9bb409a92036996e391500ec36b1d7b0e728`
 retains the same previously proven uncached `200 image/jpeg` Static Assets with
 exact 46,716-byte and 48,741-byte lengths plus one-year immutable caching. Any
 different bytes, media type, redirect, repeated request, NASA runtime request,
