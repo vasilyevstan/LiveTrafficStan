@@ -28,11 +28,11 @@ active on the relay VM with four IPv6 QUIC connections and a dedicated
 used only when a protected deployment selects `oci-private-relay`.
 
 The current application source is
-`538edd25afa49f62c13e93745b322099f662791d`; it continues to use active relay
+`560a9bb409a92036996e391500ec36b1d7b0e728`; it continues to use active relay
 source `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8`, while
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` remains the relay rollback target.
-Canonical production run `36788698617` published initial Cloudflare version
-`83b98933-a609-405e-b07c-3e4f4ded46e8`.
+Canonical production run `36887715303`, successful attempt 2, published
+Cloudflare version `6b6043b8-3a14-49c0-8af3-b5843f8eb09f`.
 
 The first same-source run `36627068064` had already deployed healthy
 application, orbital, enrichment, weather, and marine surfaces as version
@@ -336,6 +336,20 @@ real `200 application/json` at `2026-09-29T16:39:35Z`. Exact application
 source `ddc414e26dd8dacb5a9d4e1f528ccec44dc0bf4f` then passed canonical
 deployment run `36599339842` through the unchanged VPC Service, Tunnel, and
 relay release.
+
+During map follow-up deployment run `36887715303`, attempt 1 published exact
+application source `560a9bb409a92036996e391500ec36b1d7b0e728` as Cloudflare
+version `45cccadf-0456-4812-aed3-54286886a3c0`. Smoke reached the exact new
+Worker release and healthy Static Assets/orbital surfaces, but only the
+unchanged aircraft path returned `502 Aircraft upstream unavailable`. The
+supported diagnostic reboot moved the instance through `STOPPING` at
+`2026-10-01T15:55:29Z`, `STARTING` at `15:56:34Z`, and `RUNNING` at
+`15:56:55Z`. Four bounded public probes remained `502`; the fifth returned real
+`200 application/json` at `15:58:24Z`. The exact same authorized deployment
+inputs passed every step on attempt 2 as version
+`6b6043b8-3a14-49c0-8af3-b5843f8eb09f`. No application rollback, shared-egress
+fallback, provider substitution, relay source change, credential rotation, or
+firewall change was used.
 
 After source `18082a1e...` activated the reviewed admission marker and smoke
 policy, canonical run `36642794309` passed. A separate bounded production

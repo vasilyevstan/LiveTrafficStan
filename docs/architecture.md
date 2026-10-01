@@ -20,18 +20,27 @@ Worker selects that path only through the protected `oci-private-relay`
 deployment mode and fails closed rather than reverting to shared egress.
 Production source `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` and the relay
 originally activated the private path together. The current browser/Worker
-application is source `538edd25afa49f62c13e93745b322099f662791d`,
-initially deployed in run `36788698617` as Cloudflare version
-`83b98933-a609-405e-b07c-3e4f4ded46e8`. It continues to use relay source
+application is source `560a9bb409a92036996e391500ec36b1d7b0e728`,
+deployed in run `36887715303`, successful attempt 2, as Cloudflare version
+`6b6043b8-3a14-49c0-8af3-b5843f8eb09f`. It continues to use relay source
 `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8`; relay source
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` is retained as the rollback
 release.
 
 The current run's full smoke and fresh-profile desktop/mobile acceptance
-passed. Generated map images preserve nine vessel presentation classes and
-four exact-SATCAT orbital classes across Light -> Dark style restoration on
-the same sources and MapLibre instance. First exact-source orbital-enrichment
-run `36627068064` deployed healthy
+passed. Generated map images preserve nine maritime-blue vessel presentation
+classes and four exact-SATCAT orbital classes across Light -> Dark style
+restoration on the same sources and MapLibre instance. Compact ORBITS counts
+use the rendered in-map population and compatible prediction; only exact
+reviewed Hubble/ISS identities receive larger labels. Initial, Home, and Center
+use the 30 km camera fit while the settled full canvas still controls the
+unchanged 100 km traffic contract. Deployment attempt 1 published version
+`45cccadf-0456-4812-aed3-54286886a3c0` but isolated recurrent OCI
+guest/network unavailability as aircraft HTTP `502`; the exact application
+header and independent surfaces were healthy. Diagnostic reboot restored real
+aircraft JSON and attempt 2 passed without application rollback.
+
+The first exact-source orbital-enrichment run `36627068064` deployed healthy
 application/orbital/enrichment assets as Cloudflare version
 `7b1233c9-3461-440b-ac5f-1d30b02c0525` but exposed recurrent OCI
 guest/network unavailability behind the unchanged VPC/Tunnel path as aircraft
@@ -697,7 +706,7 @@ vector tiles will remain in a loading state.
   Current points update at most once per second; crossing work is bounded to
   256 objects, a 90-minute horizon, 30-second samples, and 20 detailed
   results. Stable feature IDs update persistent sources without rebuilding the
-  map. The worker chunk is about 26 KiB in the current production build.
+  map. The worker chunk is about 28 kB in the current production build.
 
 ## Deployment boundary
 
@@ -771,6 +780,12 @@ are complete. The layer remains a default-off user preference and a protected
 deployment flag, not an always-visible map surface. See
 [Hosting and Deployment](hosting-and-deployment.md) for release, version, and
 workflow evidence.
+
+The current application's byte-exact rollback target is source
+`538edd25afa49f62c13e93745b322099f662791d`, recorded Cloudflare version
+`83b98933-a609-405e-b07c-3e4f4ded46e8`. Rolling back that application does not
+mutate the retained KV/coordinator namespaces, OCI relay source, Tunnel, or VPC
+Service.
 
 ## Navigation and viewport boundaries
 

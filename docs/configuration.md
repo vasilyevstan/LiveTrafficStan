@@ -64,11 +64,12 @@ writes the v1 key. The Durable Object class, binding, namespace, object name,
 and schema-1 admission row remain unchanged.
 
 Current application source
-`538edd25afa49f62c13e93745b322099f662791d` sets the flag to `true`, uses KV
+`560a9bb409a92036996e391500ec36b1d7b0e728` sets the flag to `true`, uses KV
 namespace `59178d55418247c4bab473b52a5dc07d`, and runs Cron
-`17 */2 * * *`. This Worker setting does not change the user-facing default:
-the remembered ORBITS layer still starts off until explicitly enabled or
-included in a share fragment.
+`17 */2 * * *`; deployment run `36887715303`, successful attempt 2, recorded
+Cloudflare version `6b6043b8-3a14-49c0-8af3-b5843f8eb09f`. This Worker
+setting does not change the user-facing default: the remembered ORBITS layer
+still starts off until explicitly enabled or included in a share fragment.
 
 The exact-NORAD purpose/image manifest adds no environment variable, provider
 endpoint, secret, scheduler, Worker binding, or PWA-shell entry. Purpose is
