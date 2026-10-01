@@ -294,6 +294,7 @@ describe('TrafficControls', () => {
         modeledMatchCount: 1,
         inFootprintCount: 1,
         shownInFootprintCount: 1,
+        futureCrossingCount: 0,
       },
     })
 
@@ -301,7 +302,7 @@ describe('TrafficControls', () => {
       'aria-pressed="true" aria-busy="false">ORBITS',
     )
     expect(html).toContain(
-      'ORBITS · 1 SHOWN / 1 MODELED',
+      'ORBITS · 1 SHOWN · 0 PASSES ≤90M',
     )
     expect(html).toContain(
       'aria-label="View modeled orbital objects" aria-controls="traffic-controls-map-tools">VIEW',
@@ -355,6 +356,8 @@ describe('TrafficControls', () => {
         modeledNowCount: 1,
         catalogMatchCount: 1,
         modeledMatchCount: 1,
+        inFootprintCount: 0,
+        shownInFootprintCount: 0,
         futureCrossingCount: 1,
       },
     })
@@ -364,7 +367,7 @@ describe('TrafficControls', () => {
     const navigationPrimary = html.slice(0, mapDetailsIndex)
 
     expect(navigationPrimary).toContain(
-      'ORBITS · 0 SHOWN / 1 MODELED',
+      'ORBITS · 0 SHOWN · 1 PASS ≤90M',
     )
     expect(navigationPrimary).toContain('>VIEW</button>')
     expect(html).toContain('COSMOS 2550')

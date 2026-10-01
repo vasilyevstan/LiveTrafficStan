@@ -770,12 +770,17 @@ Safari/Android Chrome for touch claims:
    that all current subpoints are in view and does not claim a useful future
    crossing rank.
 5. A local view distinguishes current in-view objects from first crossings in
-   the next 90 minutes. Counts, ordering, exact type, modeled time, element
-   epoch, retrieval age, source, and limitations remain truthful.
+   the next 90 minutes. The compact ORBITS line uses the rendered
+   shown-in-footprint count, distinguishes zero from a pending prediction, and
+   keeps singular/plural pass wording. Counts, ordering, exact type, modeled
+   time, element epoch, retrieval age, source, and limitations remain truthful.
 6. Payload, rocket body, debris, and unknown colors, labels, and generated
    symbols match exact SATCAT type; no name-derived type appears. Map-scale
    raster assertions keep the satellite, stage, fragment, and unknown shapes
-   distinct, and Light -> Dark -> Light updates the same four image IDs.
+   distinct, and Light -> Dark -> Light updates the same four image IDs. Exact
+   reviewed Hubble and ISS identities are larger and labeled in the same point
+   layer when the active style has a usable font; identity mismatches and
+   unreviewed objects have no featured label.
 7. Exact traffic and traffic clusters keep pick priority. An exact orbital hit
    or one unique touch fallback selects only the orbital object, does not move
    the camera, and clears mutually exclusive traffic/context details.
@@ -895,6 +900,21 @@ Production Chrome `154.0.8037.59` orbital acceptance passed 27/27 checks:
   traffic pause at an intentionally ineligible world view;
 - no runtime exception, console/log error, critical HTTP failure, or network
   failure.
+
+The #239 compact-count and featured-object follow-up then exercised the built
+Worker route in Chrome `154.0.8037.59` with the current 462-record bootstrap.
+The world tier reported `ORBITS · 192 SHOWN · 0 PASSES ≤90M`; a later mobile
+view kept both the rendered count and a nonzero pass count visible in the
+collapsed Operations row. The one existing point layer retained all 454 safe
+current features and exposed exactly two reviewed featured properties:
+`HUBBLE` for NORAD `20580` and `ISS` for NORAD `25544`. Its icon-size
+expression used `1.08` only for those features versus `0.72` ordinarily, and
+the active `Noto Sans Regular` stack rendered both labels in the 1280x900
+world view. The run kept one canvas through Dark theme restoration, made zero
+catalog requests before enable and one after enable, made zero browser
+CelesTrak requests, added no request on theme change, kept the 390x568 controls
+at 329.4375 px within the 329.44 px budget with attribution visible, and
+reported no runtime/log/HTTP error or long task over 50 ms.
 
 The unchanged-tree hard-cap benchmark used 512 records / 501 safe current
 positions. Preparation took 19.4 ms; search p95 was 1.9 ms desktop / 5.6 ms at

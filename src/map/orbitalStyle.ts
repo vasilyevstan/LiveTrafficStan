@@ -15,12 +15,14 @@ import type {
   ModeledOrbitalPosition,
   OrbitalTrackSegment,
 } from '../domain/orbital'
+import { orbitalFeaturedMapLabelForPosition } from '../domain/orbitalEnrichment'
 import {
   ORBITAL_STYLE_IMAGE_IDS,
   orbitalStyleImageId,
   type OrbitalStyleImageId,
   type OrbitalStyleImages,
 } from './orbitalIcons'
+import { mapTextFont } from './textFont'
 import { LAYER_SELECTED_TRAIL } from './trafficStyle'
 
 export const SOURCE_ORBITAL_POINTS = 'orbital-modeled-points'
@@ -49,22 +51,27 @@ export const orbitalPositionFeatures = (
 ): FeatureCollection<Point> => ({
   type: 'FeatureCollection',
   features: positions.map(
-    (position): Feature<Point> => ({
-      type: 'Feature',
-      id: position.id,
-      properties: {
+    (position): Feature<Point> => {
+      const featuredLabel =
+        orbitalFeaturedMapLabelForPosition(position)
+      return {
+        type: 'Feature',
         id: position.id,
-        noradCatalogId: position.noradCatalogId,
-        objectType: position.objectType,
-        sourceGroups: position.sourceGroups.join(','),
-        displayOrder: position.displayOrder,
-        markerIcon: orbitalStyleImageId(position.objectType),
-      },
-      geometry: {
-        type: 'Point',
-        coordinates: [position.longitude, position.latitude],
-      },
-    }),
+        properties: {
+          id: position.id,
+          noradCatalogId: position.noradCatalogId,
+          objectType: position.objectType,
+          sourceGroups: position.sourceGroups.join(','),
+          displayOrder: position.displayOrder,
+          markerIcon: orbitalStyleImageId(position.objectType),
+          ...(featuredLabel ? { featuredLabel } : {}),
+        },
+        geometry: {
+          type: 'Point',
+          coordinates: [position.longitude, position.latitude],
+        },
+      }
+    },
   ),
 })
 
@@ -215,6 +222,9 @@ export const installOrbitalStyle = (
 ) => {
   const selection = theme === 'dark' ? '#f7fcff' : '#102d3b'
   const trackColor = theme === 'dark' ? '#8fe7ff' : '#087fa6'
+  const labelColor = theme === 'dark' ? '#f7fcff' : '#102d3b'
+  const labelHalo = theme === 'dark' ? '#06131d' : '#f7fcff'
+  const textFont = mapTextFont(map)
 
   for (const imageId of ORBITAL_STYLE_IMAGE_IDS) {
     ensureImage(map, imageId, images[imageId])
@@ -260,14 +270,42 @@ export const installOrbitalStyle = (
     filter: orbitalPointFilter(shownIds),
     layout: {
       'icon-image': ['get', 'markerIcon'],
-      'icon-size': 0.72,
+      'icon-size': [
+        'case',
+        ['has', 'featuredLabel'],
+        1.08,
+        0.72,
+      ],
       'icon-rotation-alignment': 'viewport',
       'icon-pitch-alignment': 'viewport',
       'icon-allow-overlap': true,
       'icon-ignore-placement': true,
+      ...(textFont
+        ? {
+            'text-field': [
+              'coalesce',
+              ['get', 'featuredLabel'],
+              '',
+            ],
+            'text-font': textFont,
+            'text-size': 12,
+            'text-offset': [0, 1.45],
+            'text-anchor': 'top',
+            'text-optional': true,
+            'text-allow-overlap': true,
+            'text-ignore-placement': true,
+          }
+        : {}),
     },
     paint: {
       'icon-opacity': 0.94,
+      ...(textFont
+        ? {
+            'text-color': labelColor,
+            'text-halo-color': labelHalo,
+            'text-halo-width': 1.4,
+          }
+        : {}),
     },
   })
 
@@ -286,6 +324,23 @@ export const installOrbitalStyle = (
     'circle-stroke-color',
     selection,
   )
+  if (textFont) {
+    map.setLayoutProperty(
+      LAYER_ORBITAL_POINTS,
+      'text-font',
+      textFont,
+    )
+    map.setPaintProperty(
+      LAYER_ORBITAL_POINTS,
+      'text-color',
+      labelColor,
+    )
+    map.setPaintProperty(
+      LAYER_ORBITAL_POINTS,
+      'text-halo-color',
+      labelHalo,
+    )
+  }
   setOrbitalPointFilter(map, shownIds)
   setOrbitalVisibility(map, visible)
 }

@@ -108,6 +108,11 @@ const enrichmentByNoradId = createOrbitalEnrichmentIndex(
   orbitalEnrichmentManifest.records,
 )
 
+const featuredMapLabelByNoradId = new Map<string, string>([
+  ['20580', 'HUBBLE'],
+  ['25544', 'ISS'],
+])
+
 export const orbitalEnrichmentForNoradId = (
   noradCatalogId: string,
 ) => enrichmentByNoradId.get(noradCatalogId)
@@ -166,4 +171,21 @@ export const orbitalEnrichmentForPosition = (
     manifestVersion: orbitalEnrichmentManifest.manifestVersion,
     reviewedAt: orbitalEnrichmentManifest.reviewedAt,
   }
+}
+
+export const orbitalFeaturedMapLabelForPosition = (
+  position: Pick<
+    ModeledOrbitalPosition,
+    | 'id'
+    | 'noradCatalogId'
+    | 'name'
+    | 'internationalDesignator'
+    | 'objectType'
+    | 'snapshotSha256'
+  >,
+) => {
+  const enrichment = orbitalEnrichmentForPosition(position)
+  return enrichment
+    ? featuredMapLabelByNoradId.get(enrichment.noradCatalogId)
+    : undefined
 }

@@ -511,7 +511,11 @@ exact filters is appended as a labeled selected exception only when map display
 is available. Before a settled raw zoom exists, nothing is claimed as shown
 and selected details state that map display is unavailable. Orbital symbols
 and the selected line/highlight render above static context and below the
-selected traffic trail/live traffic.
+selected traffic trail/live traffic. The same point layer uses the exact
+reviewed enrichment identity to enlarge and label only Hubble/NORAD `20580`
+and ISS/NORAD `25544` when the active style exposes a usable text font.
+Unreviewed or identity-mismatched objects retain the ordinary exact-SATCAT
+symbol with no inferred featured label.
 
 Picking is deterministic: exact traffic, cluster expansion, validated traffic
 touch fallback, exact orbital, validated orbital touch fallback, then exact

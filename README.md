@@ -80,21 +80,23 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   identifies ground tracks that cross a safe local map view within 90 minutes,
   and draws one bounded selected-object track.
   **ORBITS** stays beside **AIRCRAFT** and **SHIPS** in the primary Operations
-  row; its compact modeled-state summary is also mirrored in the upper-left
-  status panel without changing aircraft/marine health.
+  row; its compact summary reports how many markers are actually shown in the
+  current map plus predicted passes within 90 minutes and is mirrored in the
+  upper-left status panel without changing aircraft/marine health.
   **Operations -> More -> Orbits** separates Nearby crossings from complete
   Catalog discovery. Search and exact type/source-group filters are local to
   the accepted snapshot; no camera, search, filter, selection, or theme change
   starts another catalog request.
   Exact SATCAT type, element epoch, snapshot age, and limitations remain
   visible; these are modeled positions, not live telemetry or optical
-  visibility predictions. Exact NORAD `20580` (Hubble) and `25544` (ISS) also
-  have a reviewed bundled NASA purpose and historical photograph. Other
-  objects state that enrichment is unavailable rather than receiving an
-  inferred mission or generic picture. Hover uses bundled text only; a
-  selected image uses one bounded same-origin load whose media type, byte
-  count, and SHA-256 are validated before a session Blob URL can appear in
-  details or a later tooltip.
+  visibility predictions. Exact NORAD `20580` (Hubble) and `25544` (ISS) use
+  the same reviewed identity boundary for larger labeled map symbols and also
+  have a bundled NASA purpose and historical photograph. Other objects state
+  that enrichment is unavailable rather than receiving an inferred mission,
+  featured label, or generic picture. Hover uses bundled text only; a selected
+  image uses one bounded same-origin load whose media type, byte count, and
+  SHA-256 are validated before a session Blob URL can appear in details or a
+  later tooltip.
 - Issue #211 defines the coordinated source and browser contract:
   schema 2 catalog `celestrak-curated-v1`, ordered groups `visual`, `stations`,
   `weather`, `gnss`, and `science`, 462 unique records (369 payloads, 91
