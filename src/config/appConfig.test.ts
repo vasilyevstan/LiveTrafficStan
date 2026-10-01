@@ -23,7 +23,7 @@ describe('createAppConfig', () => {
     expect(config.geocoder.requestCooldownMs).toBe(1_000)
     expect(config.map.lightStyleUrl).toContain('/positron')
     expect(config.map.darkStyleUrl).toContain('/dark')
-    expect(config.map.homeViewRadiusKm).toBe(20)
+    expect(config.map.homeViewRadiusKm).toBe(30)
     expect(config.map.maximumViewportRadiusKm).toBe(100)
     expect(config.map.touchHitTolerancePx).toBe(8)
     expect(config.map.clustering).toEqual({

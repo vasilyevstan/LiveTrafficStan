@@ -42,10 +42,10 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   resize changes.
 - A truthful 100 km enclosing-query limit: wider or unsafe views pause traffic
   and ask the user to zoom in rather than showing partial coverage as complete.
-- A session Home/Center action plus privacy-safe one-shot browser location:
-  already-granted permission and grants made while the page is open are used
-  automatically; otherwise location is an explicit action with Tallinn
-  fallback.
+- A 30 km session Home/Center framing plus privacy-safe one-shot browser
+  location: already-granted permission and grants made while the page is open
+  are used automatically; otherwise location is an explicit action with
+  Tallinn fallback.
 - One explicit-submit location field accepts rounded decimal coordinates
   locally or named places through Photon. Search failure never blocks
   coordinate navigation, Center, or the live map.
@@ -80,21 +80,23 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   identifies ground tracks that cross a safe local map view within 90 minutes,
   and draws one bounded selected-object track.
   **ORBITS** stays beside **AIRCRAFT** and **SHIPS** in the primary Operations
-  row; its compact modeled-state summary is also mirrored in the upper-left
-  status panel without changing aircraft/marine health.
+  row; its compact summary reports how many markers are actually shown in the
+  current map plus predicted passes within 90 minutes and is mirrored in the
+  upper-left status panel without changing aircraft/marine health.
   **Operations -> More -> Orbits** separates Nearby crossings from complete
   Catalog discovery. Search and exact type/source-group filters are local to
   the accepted snapshot; no camera, search, filter, selection, or theme change
   starts another catalog request.
   Exact SATCAT type, element epoch, snapshot age, and limitations remain
   visible; these are modeled positions, not live telemetry or optical
-  visibility predictions. Exact NORAD `20580` (Hubble) and `25544` (ISS) also
-  have a reviewed bundled NASA purpose and historical photograph. Other
-  objects state that enrichment is unavailable rather than receiving an
-  inferred mission or generic picture. Hover uses bundled text only; a
-  selected image uses one bounded same-origin load whose media type, byte
-  count, and SHA-256 are validated before a session Blob URL can appear in
-  details or a later tooltip.
+  visibility predictions. Exact NORAD `20580` (Hubble) and `25544` (ISS) use
+  the same reviewed identity boundary for larger labeled map symbols and also
+  have a bundled NASA purpose and historical photograph. Other objects state
+  that enrichment is unavailable rather than receiving an inferred mission,
+  featured label, or generic picture. Hover uses bundled text only; a selected
+  image uses one bounded same-origin load whose media type, byte count, and
+  SHA-256 are validated before a session Blob URL can appear in details or a
+  later tooltip.
 - Issue #211 defines the coordinated source and browser contract:
   schema 2 catalog `celestrak-curated-v1`, ordered groups `visual`, `stations`,
   `weather`, `gnss`, and `science`, 462 unique records (369 payloads, 91
@@ -508,10 +510,12 @@ Static Assets. The current application source is
 
 Public symbol acceptance retained one MapLibre canvas through theme restoration
 and responsive resize. Deterministic production-path evidence covers all nine
-vessel classes; exact-release orbital acceptance modeled 450 safe current
-positions and rendered 192/384/450 through the world/mid/local tiers, with one
-same-origin request, zero browser CelesTrak requests, visible attribution,
-trusted touch drag, and bounded 390x844/390x568 controls.
+vessel classes with maritime-blue silhouettes and coarse line art for cargo,
+passenger, tanker, and tug recognition; exact-release orbital acceptance
+modeled 450 safe current positions and rendered 192/384/450 through the
+world/mid/local tiers, with one same-origin request, zero browser CelesTrak
+requests, visible attribution, trusted touch drag, and bounded
+390x844/390x568 controls.
 
 Fresh rendered production acceptance used a deterministic 24-object crossing
 fixture and exposed all 20 bounded results at both 390x844 and 390x568.

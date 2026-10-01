@@ -359,6 +359,15 @@ exception to zoom or exact type/source-group filtering and is labeled as such.
 This keeps style restoration and one-second source updates independent from
 search, paging, and the displayed rank subset.
 
+The compact ORBITS line reports the current `shownInFootprintCount` and the
+compatible next-90-minute crossing count rather than repeating the broader
+modeled population. A missing settled map reports map counts unavailable; a
+compatible map with a pending prediction reports passes updating rather than
+zero. Exact enrichment matches for Hubble and ISS add a larger icon-size
+expression and `HUBBLE`/`ISS` text in the existing point layer. This reuses the
+reviewed NORAD/name/designator/type boundary and active style font stack;
+unreviewed objects receive no fame, mission, or label inference.
+
 Catalog discovery operates only on the accepted snapshot. Text matches name,
 canonical NORAD ID, or international designator and ranks exact, prefix, then
 substring before `displayOrder`, normalized name, and numeric NORAD ID. Type
@@ -516,9 +525,9 @@ Aircraft, vessels, and the selected trail are represented as GeoJSON sources. Ma
 
 The map persists ten original canvas icon keys: light/small fixed-wing, generic
 fixed-wing, heavy fixed-wing, helicopter, cargo, tanker, passenger, fishing,
-tug, and generic vessel. Marine traffic remains amber. Aircraft category stays
-shape-based while the aircraft silhouette color carries the bounded altitude
-band.
+tug, and generic vessel. Marine traffic uses a maritime-blue palette with
+theme-specific high-contrast detail. Aircraft category stays shape-based while
+the aircraft silhouette color carries the bounded altitude band.
 
 Normalization maps only trusted provider fields to application-owned icon keys.
 ADS-B A1/A2 use light fixed-wing, A5 heavy fixed-wing, and A7 helicopter.
@@ -696,8 +705,11 @@ For eligible views, providers receive the enclosing circle while display
 filtering uses the actual unwrapped polygon. The 100 km decision occurs before
 ADSB.lol's required whole-nautical-mile rounding, so the boundary request uses
 54 NM (100.008 km transport coverage) but display eligibility remains 100 km.
-Center restores a session Home framing comparable to the earlier 20 km view;
-that value is camera framing, not a selectable traffic radius.
+Center restores a session Home framing comparable to a 30 km local view. This
+keeps fast aircraft on-screen about 50% longer than the earlier 20 km framing
+without changing provider or display geometry: the safely representable full
+canvas still determines the enclosing query circle and exact display polygon.
+The Home value is camera framing, not a selectable traffic radius.
 
 ## Provider-safe viewport updates
 
@@ -868,13 +880,15 @@ style-owned state, the map layer installer restores traffic images,
 sources, layers, data, visibility, and trail after every `style.load`
 without changing camera, selection, provider state, or connections.
 
-Traffic artwork keeps amber vessels and uses a bounded altitude palette on each
-aircraft silhouette in both themes. The theme-specific canvas treatment changes
-fill luminance, detail color, shadow, and two-tone edge contrast while
-retaining silhouettes and heading/course rotation. Image IDs are replaced
-through MapLibre when the theme changes, including when both theme options
-reference the same style URL. The image cache contains only the bounded light
-and dark sets.
+Traffic artwork uses maritime-blue vessels and a bounded altitude palette on
+each aircraft silhouette in both themes. Cargo/container, passenger, tanker,
+and tug use coarse interior line art that remains legible at the 26 CSS-pixel
+floor without changing exact AIS-derived classification. The theme-specific
+canvas treatment changes fill luminance, detail color, shadow, and two-tone
+edge contrast while retaining silhouettes and heading/course rotation. Image
+IDs are replaced through MapLibre when the theme changes, including when both
+theme options reference the same style URL. The image cache contains only the
+bounded light and dark sets.
 
 ## Versioned preferences, fragment sharing, and presentation units
 

@@ -4,6 +4,7 @@ import {
   createOrbitalEnrichmentIndex,
   matchingOrbitalEnrichmentRecord,
   orbitalEnrichmentForPosition,
+  orbitalFeaturedMapLabelForPosition,
   type OrbitalEnrichmentRecord,
 } from './orbitalEnrichment'
 
@@ -108,5 +109,30 @@ describe('orbital enrichment identity', () => {
         '2026-09-29-v1',
       ].join('|'),
     )
+  })
+
+  it('labels only exact reviewed featured identities on the map', () => {
+    const iss = {
+      ...position('25544'),
+      name: 'ISS (ZARYA)',
+      internationalDesignator: '1998-067A',
+    }
+    const hubble = {
+      ...position('20580'),
+      name: 'HST',
+      internationalDesignator: '1990-037B',
+    }
+
+    expect(orbitalFeaturedMapLabelForPosition(iss)).toBe('ISS')
+    expect(orbitalFeaturedMapLabelForPosition(hubble)).toBe('HUBBLE')
+    expect(
+      orbitalFeaturedMapLabelForPosition({
+        ...iss,
+        name: 'RENAMED OBJECT',
+      }),
+    ).toBeUndefined()
+    expect(
+      orbitalFeaturedMapLabelForPosition(position('999999999')),
+    ).toBeUndefined()
   })
 })

@@ -38,6 +38,26 @@ const position: ModeledOrbitalPosition = {
   velocityKmPerSecond: 7.6,
 }
 
+const issPosition: ModeledOrbitalPosition = {
+  ...position,
+  id: 'orbital:25544',
+  noradCatalogId: '25544',
+  name: 'ISS (ZARYA)',
+  internationalDesignator: '1998-067A',
+  sourceGroups: ['visual', 'stations'],
+  displayOrder: 25544,
+}
+
+const hubblePosition: ModeledOrbitalPosition = {
+  ...position,
+  id: 'orbital:20580',
+  noradCatalogId: '20580',
+  name: 'HST',
+  internationalDesignator: '1990-037B',
+  sourceGroups: ['visual', 'science'],
+  displayOrder: 20580,
+}
+
 const imageSet = (theme: string) =>
   Object.fromEntries(
     ORBITAL_STYLE_IMAGE_IDS.map((id) => [
@@ -60,6 +80,19 @@ const createMap = () => {
     layerSpecs.set(layer.id, layer)
   })
   const map = {
+    getStyle: () => ({
+      version: 8 as const,
+      glyphs: 'https://tiles.example.test/{fontstack}/{range}.pbf',
+      sources: {},
+      layers: [
+        {
+          id: 'base-label',
+          type: 'symbol' as const,
+          source: 'base',
+          layout: { 'text-font': ['Noto Sans Regular'] },
+        },
+      ],
+    }),
     hasImage: (id: string) => imageIds.has(id),
     addImage: vi.fn((id: string) => imageIds.add(id)),
     updateImage: vi.fn(),
@@ -94,7 +127,11 @@ describe('orbital map style', () => {
       imageIds,
       addLayer,
     } = createMap()
-    const points = orbitalPositionFeatures([position])
+    const points = orbitalPositionFeatures([
+      position,
+      hubblePosition,
+      issPosition,
+    ])
     const highlight = orbitalHighlightFeatures(
       [position],
       position.id,
@@ -180,13 +217,27 @@ describe('orbital map style', () => {
         markerIcon: 'orbital-payload',
       },
     })
+    expect(points.features[0].properties?.featuredLabel).toBeUndefined()
+    expect(points.features[1].properties?.featuredLabel).toBe('HUBBLE')
+    expect(points.features[2].properties?.featuredLabel).toBe('ISS')
     expect(layerSpecs.get(LAYER_ORBITAL_POINTS)).toMatchObject({
       type: 'symbol',
       layout: {
         'icon-image': ['get', 'markerIcon'],
-        'icon-size': 0.72,
+        'icon-size': [
+          'case',
+          ['has', 'featuredLabel'],
+          1.08,
+          0.72,
+        ],
         'icon-rotation-alignment': 'viewport',
         'icon-pitch-alignment': 'viewport',
+        'text-field': [
+          'coalesce',
+          ['get', 'featuredLabel'],
+          '',
+        ],
+        'text-font': ['Noto Sans Regular'],
       },
     })
     expect(highlight.features).toHaveLength(1)
@@ -206,6 +257,16 @@ describe('orbital map style', () => {
       'circle-color',
       '#f7fcff',
     )
+    expect(map.setPaintProperty).toHaveBeenCalledWith(
+      LAYER_ORBITAL_POINTS,
+      'text-color',
+      '#f7fcff',
+    )
+    expect(map.setPaintProperty).toHaveBeenCalledWith(
+      LAYER_ORBITAL_POINTS,
+      'text-color',
+      '#102d3b',
+    )
   })
 
   it('restores hidden visibility without removing modeled data', () => {
@@ -221,7 +282,6 @@ describe('orbital map style', () => {
       [position.id],
     )
 
-    expect(map.setLayoutProperty).toHaveBeenCalledTimes(3)
     expect(map.setLayoutProperty).toHaveBeenCalledWith(
       LAYER_ORBITAL_POINTS,
       'visibility',

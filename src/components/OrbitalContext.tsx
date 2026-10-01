@@ -174,7 +174,7 @@ export function OrbitalContext({
             ? `MAP-AREA COUNTS UNAVAILABLE · ${counts.modeledMatchCount} MODELED`
             : `${counts.shownInFootprintCount ?? 0} SHOWN · ${counts.inFootprintCount} IN MAP · ${
                 counts.futureCrossingCount === undefined
-                  ? 'PASSES UNAVAILABLE'
+                  ? 'PASSES UPDATING'
                   : `${counts.futureCrossingCount} ${
                       counts.futureCrossingCount === 1 ? 'PASS' : 'PASSES'
                     } ≤${horizonMinutes}M`

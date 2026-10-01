@@ -7,6 +7,7 @@ import type {
 interface OrbitalSummaryOptions {
   visible: boolean
   historyActive: boolean
+  horizonMs: number
   state: OrbitalControllerState
   display: OrbitalDisplaySelection
   counts: OrbitalPopulationCounts
@@ -15,6 +16,7 @@ interface OrbitalSummaryOptions {
 export const formatOrbitalSummary = ({
   visible,
   historyActive,
+  horizonMs,
   state,
   display,
   counts,
@@ -38,9 +40,19 @@ export const formatOrbitalSummary = ({
       ? ' · +1 SELECTED EXCEPTION'
       : ' · 1 SELECTED EXCEPTION'
     : ''
-  if (counts.catalogMatchCount === 0) {
-    return `ORBITS · 0 MATCHING / ${counts.catalogCount} CATALOG${selectedException}`
+  if (
+    !display.available ||
+    counts.inFootprintCount === undefined ||
+    counts.shownInFootprintCount === undefined
+  ) {
+    return 'ORBITS · MAP COUNTS UNAVAILABLE'
   }
-  if (!display.available) return 'ORBITS · MAP COUNTS UNAVAILABLE'
-  return `ORBITS · ${display.matchingShownIds.length} SHOWN / ${counts.modeledMatchCount} MODELED${selectedException}`
+  const passCount = counts.futureCrossingCount
+  const passes =
+    passCount === undefined
+      ? 'PASSES UPDATING'
+      : `${passCount} ${passCount === 1 ? 'PASS' : 'PASSES'} ≤${Math.round(
+          horizonMs / 60_000,
+        )}M`
+  return `ORBITS · ${counts.shownInFootprintCount} SHOWN · ${passes}${selectedException}`
 }

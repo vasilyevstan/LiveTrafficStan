@@ -511,7 +511,11 @@ exact filters is appended as a labeled selected exception only when map display
 is available. Before a settled raw zoom exists, nothing is claimed as shown
 and selected details state that map display is unavailable. Orbital symbols
 and the selected line/highlight render above static context and below the
-selected traffic trail/live traffic.
+selected traffic trail/live traffic. The same point layer uses the exact
+reviewed enrichment identity to enlarge and label only Hubble/NORAD `20580`
+and ISS/NORAD `25544` when the active style exposes a usable text font.
+Unreviewed or identity-mismatched objects retain the ordinary exact-SATCAT
+symbol with no inferred featured label.
 
 Picking is deterministic: exact traffic, cluster expansion, validated traffic
 touch fallback, exact orbital, validated orbital touch fallback, then exact
@@ -579,14 +583,17 @@ yacht or unsupported cargo subtype.
 
 Each supported vessel image carries its identity in a bold outer contour or
 large negative space at the 26-45 CSS-pixel rendered range: neutral compact
-hull, broad cargo slab, narrow tanker capsule, flared and waisted ferry, thick
-fishing arms, blunt notched tug, asymmetric sails, notched pleasure craft, or
-twin high-speed hulls and channel. Deterministic DPR1 tests compare equal-height
+hull, broad cargo slab, narrow tanker capsule, broad-forward passenger/ferry
+that tapers continuously toward the stern, thick fishing arms, blunt notched
+tug, asymmetric sails, notched pleasure craft, or twin high-speed hulls and
+channel. Coarse interior line art reinforces the principal classes with
+container bays, tank covers and manifold, passenger decks and windows, or a
+tug wheelhouse and tow centerline. Deterministic DPR1 tests compare equal-height
 geometry, cap pairwise intersection-over-union at 0.78, require at least 22%
 symmetric difference, and preserve three-pixel identity features. These are
 category symbols, not depictions of the exact vessel. Light/Dark changes update
-the same bounded MapLibre image IDs and preserve the source, selection,
-heading, stale opacity, stopped badge, and one map instance.
+the same bounded maritime-blue MapLibre image IDs and preserve the source,
+selection, heading, stale opacity, stopped badge, and one map instance.
 
 The local filter taxonomy is slightly broader than the artwork vocabulary:
 types 31, 32, 50-55, 58, and 59 are `tug-service`; known non-filter categories
