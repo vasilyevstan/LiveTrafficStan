@@ -54,7 +54,10 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   inclusive length filters; explicit unknown-value handling; and a reset to
   the released 50 metre minimum. Selected ship speed is shown in both km/h and
   knots. Fresh sailing vessels and pleasure craft at least 8 metres long and
-  moving at least 1 knot receive dedicated yacht icons.
+  moving at least 1 knot receive dedicated yacht icons. The nine exact
+  source-truthful display classes use bold, perceptually tested top-down outer
+  silhouettes; names, dimensions, routes, speed, and visual similarity never
+  infer a more specific class.
 - An optional, lazily loaded, zoom-aware Natural Earth port context layer with
   separate selection, failure, and attribution. Port points are generalized
   and incomplete and are never treated as operational harbour or vessel-call
@@ -117,9 +120,9 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   matches through 512 at zoom 4 or above. One safe selected object remains
   visible as an explicit selected exception without inflating filter-excluded
   matching totals only after map display is available; before a settled raw
-  zoom, details explicitly report map display unavailable. This browser work
-  is not a production-release claim;
-  release still uses the checked `dev` to `main` path.
+  zoom, details explicitly report map display unavailable. The coordinated
+  source/browser contract is released through #235 at exact application source
+  `538edd25afa49f62c13e93745b322099f662791d`.
 - A default-enabled ADSB.lol plausible-route lookup for a selected live
   aircraft. A committed selection starts one lookup and shows a compact result
   directly below the aircraft heading. Hover, HISTORY, and same-flight position
@@ -488,32 +491,27 @@ persistent route cache.
 Public production is live at
 <https://livetrafficstan.syntal.workers.dev> on Cloudflare Workers Free with
 Static Assets. The current application source is
-`18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8`. Exact merged-`main`
-validation run `36641143297` and canonical deployment run `36642794309`
-passed the complete gate and published Cloudflare version
-`fea1642f-8b45-4801-89ae-d2a9dca554a6` with client asset
-`assets/index-8clesHre.js`. The deployment preserves:
+`538edd25afa49f62c13e93745b322099f662791d`. Canonical deployment run
+`36788698617` passed the complete gate and published initial Cloudflare version
+`83b98933-a609-405e-b07c-3e4f4ded46e8`. The deployment preserves:
 
 - `oci-private-relay`, aircraft photos, and plausible routes enabled;
 - the orbital catalog enabled with Cron `17 */2 * * *`;
 - KV namespace `59178d55418247c4bab473b52a5dc07d`;
-- a validated 156-record schema-v1 catalog with digest
-  `f6183329084286f4fbb5cdfcea16e827e751569e7d5919d9e8222eadf95f017d`
-  and retrieval time `2026-09-29T18:52:12.000Z`;
+- the default schema-1 compatibility representation plus negotiated schema-2
+  catalog `celestrak-curated-v1`;
+- immutable schema-2 bootstrap retrieval `2026-09-30T18:25:59.094Z`, 462
+  records, and digest
+  `5cb57fdeaa99dc585dc6c16e1548aa6e5bd05217f23b28c6ae205b96ee70bde6`;
 - orbital-enrichment manifest `2026-09-29-v1`, exact Hubble/ISS identity
-  matching, and two immutable NASA JPEGs totaling 95,457 bytes;
-- deployed `index.html` SHA-256
-  `8f7da07d43d096de68adde373597d3f337ff46ec07557e429977cfa114bc16b1`.
+  matching, and two immutable NASA JPEGs totaling 95,457 bytes.
 
 Public symbol acceptance retained one MapLibre canvas through theme restoration
-and responsive resize. A live Helsinki view rendered 11 vessels across
-generic, cargo, tanker, and passenger source classes while all nine generated
-vessel images remained installed. Whole-world ORBITS rendered all 156 modeled
-source features through a symbol layer with all four exact-SATCAT class images
-installed, one same-origin catalog request, zero browser CelesTrak requests,
-visible attribution, real touch drag, and bounded 390x844/390x568 controls.
-A four-times-throttled 60-second orbital idle interval produced no main-thread
-task over 50 ms.
+and responsive resize. Deterministic production-path evidence covers all nine
+vessel classes; exact-release orbital acceptance modeled 450 safe current
+positions and rendered 192/384/450 through the world/mid/local tiers, with one
+same-origin request, zero browser CelesTrak requests, visible attribution,
+trusted touch drag, and bounded 390x844/390x568 controls.
 
 Fresh rendered production acceptance used a deterministic 24-object crossing
 fixture and exposed all 20 bounded results at both 390x844 and 390x568.
@@ -556,43 +554,62 @@ measured 115 px with an 87.984375 px image and reached the exact 1,048 px
 maximum scroll. Neither layout overflowed horizontally, and source, rights,
 map attribution, and the single canvas remained reachable.
 
-Orbital publication recovery source
-`7899c99212f01bb56489033fc9cd442178df7ea0` deployed in run `36616140867`
-with the stable project identity, independent coordinator schema, reviewed
-`v2` coordinator, and the current fresh bootstrap. The public route for this
-release still returned `X-LiveTrafficStan-Orbital-Source: bootstrap` at
-`2026-09-29T20:31:40.271Z`, approximately 14 minutes after the `20:17Z`
-schedule. A checked Workers-runtime reproduction identified the scheduled
-publication defect: the updater invoked Cloudflare's receiver-sensitive
-`fetch` with an options object as `this`, so the runtime rejected acquisition
-with `TypeError: Illegal invocation`. The #162 repair calls the default host
-function through `globalThis` while preserving the fixed URLs, named
-coordinator, cadence, schema, prior snapshot, and rollback. The first
-successful ordinary scheduled KV publication remains open until the repaired
-source is deployed and a later Cron serves `source: kv`. Because the current
-bootstrap reaches its 24-hour browser hard age before that event can be proven,
-the repaired release uses a new immutable `v2` fallback retrieved at
-`2026-09-30T17:08:30.000Z`; the existing `v1` URL remains unchanged.
+The #162 publication repair deployed exact source
+`f98252f8a22619c67006e4a7c231eebca430dae2` through run
+`36752704240` as Cloudflare version
+`2891a8b4-8111-4d7c-be93-1d355ebdf289`. It calls Cloudflare's
+receiver-sensitive runtime fetch through `globalThis` while preserving the
+named coordinator, two-hour admission, backoff, terminal block, prior
+snapshot, and rollback assets. An ordinary `2026-09-30T18:17:39.801Z` event
+published schema 1 to KV with 156 records and digest
+`a47b1b24f8f43bcd2853a742b19366eb7619d9a77eb4e66528548c51586d1220`;
+the later admitted `22:17:35.578Z` event published digest
+`98ca3ae36478113d53f0ecea99d6cd4773232aec8b7eef61bef2a9828f2ccce6`.
+The schedule may arrive seconds before the exact two-hour gate and truthfully
+return `not-due`; the next later scheduled event remains eligible without a
+manual refresh.
 
-The comprehensive public Wiki synchronization is commit
-`7bb657c8b90fda6150860f5dcba22010cf9cdf8d`; it updates
-[Orbital Tracking](https://github.com/vasilyevstan/LiveTrafficStan/wiki/Orbital-Tracking)
-and
-[Infrastructure and Hosting](https://github.com/vasilyevstan/LiveTrafficStan/wiki/Infrastructure-and-Hosting)
-plus the related Home, map, release, troubleshooting, and accessibility pages
-with the exact-NORAD source/rights/request boundary, visual-viewport and
-single-scroll contracts, generated vessel/orbital symbol semantics, bounded
-Worker/relay smoke policy, rendered evidence, and current production identity.
+The coordinated vessel and curated-orbital release is exact source
+`538edd25afa49f62c13e93745b322099f662791d`, merged through #235 and deployed
+by run `36788698617` as initial Cloudflare version
+`83b98933-a609-405e-b07c-3e4f4ded46e8`. Immediate production proof returned
+fresh default schema 1 from KV and the immutable 462-record schema-2 bootstrap
+on the same literal route. The representations had distinct ETags and matching
+`304`s, `Vary: Accept`, cross-representation `200`, and no exposed internal
+publication envelope.
 
-The first exact-source orbital-enrichment deployment run `36627068064`
-published healthy application/orbital/enrichment assets as Cloudflare version
-`7b1233c9-3461-440b-ac5f-1d30b02c0525` but found the recurrent isolated
-aircraft-relay guest/network outage through HTTP `502`. A supported OCI
-diagnostic reboot restored real bounded ADSB JSON, and the canonical run above
-passed without code, credential, route, provider, cache, privacy, or rollback
-change. Recovery evidence is closed in #174.
+Exact-release Chrome 154 acceptance passed 27/27 checks. ORBITS made zero
+catalog requests before enable and exactly one negotiated same-origin request
+afterward, with zero browser CelesTrak requests and one MapLibre canvas/worker
+lifecycle. The live modeled population was 450: raw zoom 1.5 showed 192, zoom
+3 showed 384, and zoom 4.5 showed all 450. All 24 catalog pages, exact local
+query/filter behavior, unavailable-position rows, a rank-hidden selected
+exception without camera movement, focus restoration, style replacement,
+390x844/390x568 reachability, and trusted touch movement passed. Aircraft and
+marine remained independent. No runtime, console, critical HTTP, or network
+failure occurred. Physical iOS Safari and Android Chrome were unavailable in
+the validation environment and are not claimed.
 
-The matching aircraft relay now runs
+The first ordinary schema-2 KV bundle was retrieved at
+`2026-10-01T02:17:32.034Z`. It contained `462` records
+(`369 PAY, 91 R/B, 2 DEB`) with canonical digest
+`ef7abc9080efe0ec338b1b0e516c54b27c75cd8dfb4239fa1f944f16fbbeb443`; the same atomic
+write supplied a schema-1 visual representation retrieved at the same instant
+with `156` records and digest
+`018ee9ff6c9c161485f37f5a22cfaa5a6fdd2524a4ae7fc49a12947c4478e2e5`.
+Both public
+representations returned source `kv`, their own conditional `304`, and
+cross-representation `200`; the private bundle remained absent.
+
+Protected rollback run `36807920596` restored schema-1 release
+`f98252f8a22619c67006e4a7c231eebca430dae2` and recorded Cloudflare version
+`2891a8b4-8111-4d7c-be93-1d355ebdf289` with target-aware smoke. Restoration
+run `36808295755` restored exact application source
+`538edd25afa49f62c13e93745b322099f662791d` as Cloudflare version
+`83b98933-a609-405e-b07c-3e4f4ded46e8`; schema 2 immediately returned the retained KV bundle
+without another provider refresh.
+
+The matching aircraft relay still runs
 `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8` and retains
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` as its prior rollback release.
 Exact loopback health is active and enabled. A bounded public proof returned
@@ -602,29 +619,12 @@ real aircraft JSON, then exact-release marked local
 wait. Provider `503`, provider `429`, redirects, malformed policy, and failure
 to reach eventual real JSON remain release failures.
 
-Fresh-profile rendered orbital acceptance proved zero catalog requests before
-enable in the baseline lifecycle, one same-origin request after enable, zero
-browser requests to CelesTrak, one unchanged MapLibre canvas, exact A-to-B-to-A
-selection, theme/hide/show restoration, 156 visibly rendered whole-world
-modeled objects while aircraft and ships paused, 390x844 and 390x568 panels
-within the 58vh budget, real touch camera movement, and no orbital runtime
-exception or main-thread task over 50 ms. A verified isolated post-release run
-after the earlier crossing had passed showed
-**ORBITS · 0 IN VIEW · 0 PASSES ≤90M**; **VIEW** opened the disclosure and
-focused the ORBITS toggle because the current result list was empty.
-Deterministic tests and the clean local production build separately proved the
-one-pass branch and focus on COSMOS 2550 / NORAD 48865. Use
-<https://livetrafficstan.syntal.workers.dev/#v=1&lat=0&lon=0&zoom=0&bearing=0&pitch=0&orbits=1>
-to open the default-off layer at the full-world view where all current modeled
-points are visible.
-
-Protected rollback run `36488117751` rebuilt pre-orbital source
-`3370dfe3f1cc2614feff894643ed865978ec7edc` behind the namespace-preserving
-coordinator compatibility export, removed the Cron, returned `404` from the
-orbital route, and passed target smoke. Restoration run `36488245592` restored
-the activation source, KV/coordinator bindings, Cron, catalog route, and full
-smoke. Earlier private-relay, route, aircraft-photo, and exact-IMO vessel
-acceptance remains the compatible baseline.
+Comprehensive public Wiki commit
+`00fb35128ec56c3f15b74690e0ac1f58cbeffc99` synchronizes the release
+identity, nine source-truthful vessel silhouettes, curated source and
+same-route compatibility contract, complete local discovery, zoom tiers,
+single-scroll responsive behavior, validation, troubleshooting, rollback, and
+known physical-device limitation.
 See [Hosting and Deployment](docs/hosting-and-deployment.md) for the dated
 platform matrix, request budget, proxy contract, exact-SHA workflow, smoke,
 monitoring, privacy, and rollback procedure.

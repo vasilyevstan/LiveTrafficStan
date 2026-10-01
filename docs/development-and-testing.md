@@ -842,6 +842,72 @@ then additionally verify:
    orbital worker, no extra catalog request, and no monotonic post-GC
    heap/timer/listener growth.
 
+### Issue #210/#211 final release evidence
+
+The exact combined feature tree
+`b6cc3d3f02fdfdb5ff9a0e4158048e77b4507add` passed lint, typecheck, 740
+tests, aircraft metadata, country allocations, vessel photos, orbital catalog
+and immutable history, orbital enrichment, build, and deployment dry-run.
+Release #235 deployed exact application source
+`538edd25afa49f62c13e93745b322099f662791d` through protected run
+`36788698617` as initial Cloudflare version
+`83b98933-a609-405e-b07c-3e4f4ded46e8`.
+
+The vessel fixture used the production MapLibre image/symbol path for all nine
+exact source-truthful classes at 26/29/36/45 CSS px, DPR 1/2, both themes,
+0/45/90-degree headings, live/stale/selected/stopped states, desktop/mobile
+layouts, picking, and style rehydration. At 26 CSS px / DPR 1, maximum
+pairwise silhouette IoU was 0.74813, minimum normalized symmetric difference
+was 0.25187, broad hull classes differed in at least three longitudinal width
+bands, and minimum identity-feature thickness was 5 CSS px.
+
+Production Chrome `154.0.8037.59` orbital acceptance passed 27/27 checks:
+
+- zero catalog requests before enable, exactly one fixed negotiated same-origin
+  request after enable, zero browser CelesTrak requests;
+- public schema/source contract 2, catalog `celestrak-curated-v1`, 462 records,
+  canonical bootstrap digest
+  `5cb57fdeaa99dc585dc6c16e1548aa6e5bd05217f23b28c6ae205b96ee70bde6`,
+  and no exposed internal envelope;
+- one canvas and one active orbital worker;
+- live tiers of 192/450 at raw zoom 1.5, 384/450 at zoom 3, and 450/450 at
+  zoom 4.5;
+- all 24 pages, exact name/NORAD/designator query, exact type/group filters,
+  unavailable-position handling, selected exception without camera movement,
+  and origin-row focus restoration;
+- style rehydration preserving 450 source features, 193 shown IDs, highlight,
+  selection, and request count;
+- 390x844/390x568 final-row and attribution reachability by wheel, Page Down,
+  Tab, and trusted touch, with no horizontal overflow and a trusted touch drag
+  moving the map;
+- independent aircraft, marine REST, and MQTT operation, followed by truthful
+  traffic pause at an intentionally ineligible world view;
+- no runtime exception, console/log error, critical HTTP failure, or network
+  failure.
+
+The unchanged-tree hard-cap benchmark used 512 records / 501 safe current
+positions. Preparation took 19.4 ms; search p95 was 1.9 ms desktop / 5.6 ms at
+4x CPU, filter p95 1.5 / 6.8 ms, position tick p95 3.1 ms, complete prediction
+p95 478.7 ms, and latest-request acknowledgement 15.7 ms. There were zero
+tasks over 50 ms. The 602.74-second soak retained one canvas, one active
+orbital worker, one request, and bounded heap/listener/timer counts.
+
+The first ordinary admitted schema-2 KV publication was retrieved at
+`2026-10-01T02:17:32.034Z` with `462` records and digest
+`ef7abc9080efe0ec338b1b0e516c54b27c75cd8dfb4239fa1f944f16fbbeb443`;
+the atomic schema-1 member had `156` records and digest
+`018ee9ff6c9c161485f37f5a22cfaa5a6fdd2524a4ae7fc49a12947c4478e2e5`
+at the same retrieval time. Protected rollback run
+`36807920596` and restoration run `36808295755` proved target-aware
+schema-1 rollback followed by immediate reuse of the retained schema-2 KV
+bundle as restored Cloudflare version
+`83b98933-a609-405e-b07c-3e4f4ded46e8`.
+
+No `xcrun simctl`, Android emulator/`adb`, hosted-device credential, or
+physical iOS/Android device was available. Chrome DPR, touch,
+visual-viewport, and CPU evidence is recorded as real Chrome evidence and is
+not mislabeled as physical-device acceptance.
+
 ### Issue #162 development acceptance evidence
 
 On 2026-09-28, the built client was exercised through local `workerd` in
@@ -902,8 +968,8 @@ evidence. Production source
   `59178d55418247c4bab473b52a5dc07d`, and full smoke in run `36488245592`.
 - bounded observation of the first eligible `22:17Z` Cron window from
   `22:19:30Z` through `22:31:54Z`; the endpoint remained on the exact validated
-  bootstrap, so no successful KV publication is claimed and #162 stays open
-  for that evidence.
+  bootstrap, so that release claimed no successful KV publication and #162
+  remained open until the later receiver-safe repair and ordinary KV proof.
 - comprehensive public Wiki synchronization in commit
   `c2f91bdd74f13b78e20cc3ad50f296b5de94a54b`, including focused orbital and
   infrastructure pages plus the related architecture, provider, testing,
@@ -1055,7 +1121,7 @@ evidence.
 
 ### Issues #210, #134, and #221 release acceptance evidence
 
-Current exact production source
+The earlier exact production source
 `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8` combines the accepted symbol
 release and fail-closed deployment-smoke fixes. Feature/release PRs #218 and
 #220 delivered the map images; PRs #222 and #224 delivered the smoke policy.

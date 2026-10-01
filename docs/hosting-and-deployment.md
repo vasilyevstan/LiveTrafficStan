@@ -43,78 +43,52 @@ no paid fallback is enabled. Orbital activation uses the included free KV and
 SQLite Durable Object allocations; R2 is not used.
 
 The current application source is
-`18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8`. Exact merged-`main`
-validation run `36641143297` and canonical deployment run `36642794309`
-published Cloudflare version `fea1642f-8b45-4801-89ae-d2a9dca554a6` with
-aircraft delivery through
-`oci-private-relay`, aircraft photos, plausible routes, the five-file exact-IMO
-vessel-photo manifest, the orbital catalog, and exact-NORAD enrichment enabled.
-It preserved KV
-namespace `59178d55418247c4bab473b52a5dc07d`, one SQLite coordinator, and Cron
-`17 */2 * * *`. The matching relay runs
+`538edd25afa49f62c13e93745b322099f662791d`. Protected deployment run
+`36788698617` published initial Cloudflare version
+`83b98933-a609-405e-b07c-3e4f4ded46e8` with aircraft delivery through
+`oci-private-relay`, aircraft photos, plausible routes, exact-IMO vessel
+photos, the curated orbital catalog, and exact-NORAD enrichment enabled. It
+preserved KV namespace `59178d55418247c4bab473b52a5dc07d`, one SQLite
+coordinator, and Cron `17 */2 * * *`. The matching relay runs
 `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8` and retains
-`1f9a2fd322f141fe761d3bf00113e1ab60526e6c` as the prior release. The
-deployed client is `assets/index-8clesHre.js`, and the deployed `index.html`
-SHA-256 is
-`8f7da07d43d096de68adde373597d3f337ff46ec07557e429977cfa114bc16b1`.
-The generated application shell contains 11 URLs and 2,621,531 bytes; the two
-enrichment images remain excluded.
+`1f9a2fd322f141fe761d3bf00113e1ab60526e6c` as its prior release.
 
-The exact-release endpoint, full smoke, and fresh-profile desktop/mobile
-browser acceptance passed. Public symbol checks retained one canvas, all nine
-vessel and four orbital image IDs, 11 live Helsinki vessels, 156 whole-world
-orbital source features, one catalog request, zero browser CelesTrak requests,
-theme restoration, touch movement, visible attribution, and bounded 390x844
-and 390x568 layouts. First exact-source orbital-enrichment run `36627068064`
-had already
-published healthy application, orbital, enrichment, weather, marine, map, and
-static-context surfaces as Cloudflare version
-`7b1233c9-3461-440b-ac5f-1d30b02c0525`, but aircraft smoke exposed the
-recurrent private-relay guest/network `502`. A supported OCI diagnostic reboot
-restored real JSON through the unchanged VPC/Tunnel path. The canonical rerun
-passed without application rollback or provider/privacy change.
+Immediate post-deploy proof returned:
 
-The current bootstrap contains 156 schema-v1 records with digest
-`f6183329084286f4fbb5cdfcea16e827e751569e7d5919d9e8222eadf95f017d`
-and retrieval time `2026-09-29T18:52:12.000Z`. The stable browser
-validator is the semantic weak ETag
-`W/"f6183329084286f4fbb5cdfcea16e827e751569e7d5919d9e8222eadf95f017d"`.
+- default schema/source contract 1 from KV, retrieved
+  `2026-09-30T22:17:35.578Z`, 156 records, digest
+  `98ca3ae36478113d53f0ecea99d6cd4773232aec8b7eef61bef2a9828f2ccce6`;
+- negotiated schema/source contract 2 from immutable bootstrap, retrieved
+  `2026-09-30T18:25:59.094Z`, 462 records, digest
+  `5cb57fdeaa99dc585dc6c16e1548aa6e5bd05217f23b28c6ae205b96ee70bde6`;
+- distinct representation ETags and matching `304`s, `Vary: Accept`,
+  cross-representation `200`, and no exposed internal publication envelope.
 
-Publication recovery source
-`7899c99212f01bb56489033fc9cd442178df7ea0` deployed in run `36616140867`
-with the stable project `User-Agent`, an independent coordinator-state schema,
-the reviewed `v2` named coordinator, and the current fresh bootstrap. The
-public route for the current exact application release still returned
-`X-LiveTrafficStan-Orbital-Source: bootstrap` at
-`2026-09-29T20:31:40.271Z`, approximately 14 minutes after the `20:17Z`
-schedule. A checked Workers-runtime reproduction identified the concrete
-cause: the updater detached the receiver-sensitive runtime `fetch` function
-into an options object, then invoked it with that object as `this`. Cloudflare
-rejected acquisition with `TypeError: Illegal invocation`; the coordinator
-truthfully preserved cadence and the bootstrap. The #162 repair calls the
-default host function through `globalThis` and adds a receiver-sensitive
-regression. The first successful ordinary production KV publication remains
-open until the repaired source is deployed and a later `17 */2 * * *` event
-serves `X-LiveTrafficStan-Orbital-Source: kv`.
+The first ordinary admitted schema-2 KV publication was retrieved at
+`2026-10-01T02:17:32.034Z`: `462` records with digest
+`ef7abc9080efe0ec338b1b0e516c54b27c75cd8dfb4239fa1f944f16fbbeb443`.
+The same atomic write supplied a `156`-record schema-1 visual member with
+digest
+`018ee9ff6c9c161485f37f5a22cfaa5a6fdd2524a4ae7fc49a12947c4478e2e5`
+at the same retrieval time. A Cron event that arrives seconds
+before the strict two-hour gate can truthfully return `not-due` without a
+provider request; the next later event remains eligible.
+
+Exact-release Chrome 154 acceptance passed 27/27 checks. It retained one
+canvas and one orbital worker, made zero catalog requests before enable and
+one negotiated same-origin request after enable, made zero browser CelesTrak
+requests, rendered live 192/384/450 tiers from 450 safe modeled positions,
+reached all 24 catalog pages and the final result on 390x844/390x568, restored
+selection and filters through a theme/style replacement, moved the map with a
+trusted touch drag, and preserved independent aircraft/marine operation. No
+runtime, console, critical HTTP, or network failure occurred. Physical
+iOS/Android evidence was unavailable and is not claimed.
 
 The public Wiki synchronization is commit
-`7bb657c8b90fda6150860f5dcba22010cf9cdf8d`. It updates focused
-[Orbital Tracking](https://github.com/vasilyevstan/LiveTrafficStan/wiki/Orbital-Tracking)
-and
-[Infrastructure and Hosting](https://github.com/vasilyevstan/LiveTrafficStan/wiki/Infrastructure-and-Hosting)
-pages plus the surrounding Home, map, release, troubleshooting, and
-accessibility documentation with the exact-NORAD identity/rights/request
-boundary, visual-viewport and single-scroll contracts, relay recovery, and
-current production identity.
-
-Production browser acceptance used a deterministic 24-object fixture to expose
-all 20 bounded orbital results at 390x844, 390x568, and a 315x517-class view.
-Operations More was the single scroll owner; touch, wheel, Page Down, and 25
-Tab steps reached the final result. A separate 844 px layout / 517 px visual
-viewport run kept the controls at 299.859375 px against the 299.86 px budget.
-Every final result was topmost under hit testing, task labels were unclipped,
-and the checks retained one MapLibre canvas, one catalog request, zero browser
-CelesTrak requests, compact attribution, and zero console/runtime errors.
+`00fb35128ec56c3f15b74690e0ac1f58cbeffc99`. It updates the focused orbital,
+architecture, hosting, provider, map, testing, release, troubleshooting,
+accessibility, decisions, roadmap, and Home pages with the
+current production identity and evidence.
 
 Cache-disabled public-origin orbital-enrichment acceptance used real current
 Hubble, ISS, and NORAD `733` map features. Before selection there were zero
@@ -637,6 +611,26 @@ temporary source; the next ordinary admitted `17 */2 * * *` event must still
 be observed serving `X-LiveTrafficStan-Orbital-Source: kv` for both
 representations.
 
+The coordinated curated-catalog application release is exact source
+`538edd25afa49f62c13e93745b322099f662791d`. Protected deployment run
+`36788698617` produced initial Cloudflare version
+`83b98933-a609-405e-b07c-3e4f4ded46e8` with KV namespace
+`59178d55418247c4bab473b52a5dc07d`. Immediate smoke proved fresh default
+schema 1 from KV, negotiated schema 2 from the immutable 462-record bootstrap,
+distinct representation ETags/304s, cross-representation `200`,
+`Vary: Accept`, and no exposed internal bundle.
+
+The first ordinary admitted schema-2 publication was retrieved at
+`2026-10-01T02:17:32.034Z`. Schema 2 contained `462` records with canonical
+digest
+`ef7abc9080efe0ec338b1b0e516c54b27c75cd8dfb4239fa1f944f16fbbeb443`;
+the same atomic write supplied the same-retrieval schema-1 visual member with
+`156` records and digest
+`018ee9ff6c9c161485f37f5a22cfaa5a6fdd2524a4ae7fc49a12947c4478e2e5`.
+Both responses reported source `kv`. A schedule event
+can arrive seconds before the exact two-hour admission boundary and return
+`not-due`; this consumes no provider request and is not a failed refresh.
+
 For local rendered acceptance without production credentials:
 
 ```bash
@@ -921,12 +915,16 @@ gh workflow run deploy-production.yml \
 egress. `oci-private-relay` keeps the same browser URL and uses the exact
 checked VPC Service ID in `wrangler.jsonc`. It requires
 `AIRCRAFT_RELAY_AUTH_TOKEN` only in the protected `production` environment;
-the workflow installs it as a Worker secret and never exposes it through a
-`VITE_*` value, repository variable, command argument, or log. The Worker adds
-that bearer credential only to its newly constructed relay request. Browser
-cookies, authorization, forwarding headers, and client IP are not copied.
-Missing private configuration returns local `503 Retry-After` and cannot fall
-back to shared egress.
+the workflow writes it to a mode-600 temporary JSON file, passes that file to
+the same exact-source `wrangler deploy` through `--secrets-file`, and removes
+the file in an `always()` cleanup. It does not run a separate
+`wrangler secret put`, so deployment remains valid when a recorded older
+Worker version is active after rollback. The secret is never exposed through
+a `VITE_*` value, repository variable, command argument, or log. The Worker
+adds that bearer credential only to its newly constructed relay request.
+Browser cookies, authorization, forwarding headers, and client IP are not
+copied. Missing private configuration returns local `503 Retry-After` and
+cannot fall back to shared egress.
 
 `adsb-lol-direct` sets the fixed browser endpoint to
 `https://api.adsb.lol`; it does not accept a caller-supplied URL. Do not
@@ -1180,6 +1178,19 @@ The orbital activation completed this proof in production:
   `46cb2007bc0cc27d1905fab32db6149a91d17576`, version
   `0138d581-2162-491a-bcb5-619a97cf31fb`, the retained KV/coordinator
   namespaces, Cron `17 */2 * * *`, catalog route, and full production smoke.
+
+The curated schema-2 release repeated the forward/backward proof without
+resetting either namespace:
+
+- rollback run `36807920596` restored predecessor schema-1 source
+  `f98252f8a22619c67006e4a7c231eebca430dae2` from recorded Cloudflare version
+  `2891a8b4-8111-4d7c-be93-1d355ebdf289`, activated version
+  `2891a8b4-8111-4d7c-be93-1d355ebdf289`, restored the target Cron state, and passed
+  the current target-aware schema-1 smoke;
+- restoration run `36808295755` restored exact application source
+  `538edd25afa49f62c13e93745b322099f662791d` as version
+  `83b98933-a609-405e-b07c-3e4f4ded46e8`, restored dual-representation smoke, and immediately
+  served the retained schema-2 KV bundle without another CelesTrak refresh.
 
 Build-time environment presence is part of the recorded artifact identity.
 Versions deployed before the selectable aircraft-delivery mode did not set

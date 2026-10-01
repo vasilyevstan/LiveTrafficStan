@@ -51,9 +51,9 @@ coordinator and one offset two-hour Cron, and records the KV namespace
 identity. A disabled deployment removes the Cron and omits both orbital
 bindings.
 
-Issue #211 does not add another flag, binding, namespace, service, or manual
-refresh. When the protected flag is enabled, current Worker source supports
-only schema 2 catalog `celestrak-curated-v1`, KV key
+Issue #211 adds no second flag, binding, namespace, service, or manual refresh.
+When the protected flag is enabled, current Worker source publishes schema 2
+catalog `celestrak-curated-v1` through KV key
 `orbital:catalog:v2:curated-v1`, and immutable bootstrap
 `/orbital-data/curated-2026-09-30-v1/catalog.json`. The v2 key stores one
 internal publication-version-1 bundle containing public schema 2 and the exact
@@ -63,8 +63,8 @@ schema-1 assets remain read-only rollback/default-route candidates; no refresh
 writes the v1 key. The Durable Object class, binding, namespace, object name,
 and schema-1 admission row remain unchanged.
 
-Current production source
-`18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8` sets the flag to `true`, uses KV
+Current application source
+`538edd25afa49f62c13e93745b322099f662791d` sets the flag to `true`, uses KV
 namespace `59178d55418247c4bab473b52a5dc07d`, and runs Cron
 `17 */2 * * *`. This Worker setting does not change the user-facing default:
 the remembered ORBITS layer still starts off until explicitly enabled or
@@ -281,7 +281,9 @@ aircraft-delivery values:
   outbound identity;
 - `oci-private-relay` also builds with `/api/aircraft`, but the Worker sends
   only the validated fixed path through the checked `AIRCRAFT_RELAY` VPC
-  Service binding with the protected `AIRCRAFT_RELAY_AUTH_TOKEN`;
+  Service binding with the protected `AIRCRAFT_RELAY_AUTH_TOKEN`; the workflow
+  supplies that secret through a mode-600 temporary Wrangler secrets file in
+  the same exact-source deployment and removes the file afterward;
 - `adsb-lol-direct` builds with `https://api.adsb.lol`.
 
 Private mode never changes the browser endpoint and never falls back to

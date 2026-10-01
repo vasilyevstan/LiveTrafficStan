@@ -27,9 +27,16 @@ describe('production deployment workflow', () => {
     expect(workflow).toContain(
       'echo "- Aircraft delivery: \\`${{ inputs.aircraft_delivery }}\\`"',
     )
+    expect(workflow).not.toContain('npx wrangler secret put')
+    expect(workflow).toContain('Prepare private relay secrets file')
     expect(workflow).toContain(
-      'npx wrangler secret put AIRCRAFT_RELAY_AUTH_TOKEN',
+      'JSON.stringify({ AIRCRAFT_RELAY_AUTH_TOKEN: token })',
     )
+    expect(workflow).toContain(
+      "format('--secrets-file {0}/wrangler-production-secrets.json', runner.temp)",
+    )
+    expect(workflow).toContain('Remove private relay secrets file')
+    expect(workflow).toContain('run: rm -f "$SECRETS_FILE"')
     expect(workflow).toContain(
       '--var AIRCRAFT_DELIVERY:${{ inputs.aircraft_delivery }}',
     )
