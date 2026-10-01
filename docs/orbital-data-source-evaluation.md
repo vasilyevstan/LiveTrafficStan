@@ -311,11 +311,18 @@ target uses its own schema-1 validator, bootstrap path, and retained v1 KV key;
 current smoke discovers those values from the target checkout.
 
 The browser feature remains default-off and makes zero startup requests. The
-released browser supports schema 1; Issue #211's infrastructure slice is not a
-standalone release and requires the follow-on schema-2 discovery and zoom-tier
-work. Explicit enablement remains the only browser catalog trigger. Camera,
-theme, selection, details, Home, and geolocation changes never affect
-acquisition.
+released browser requests schema 2 with the fixed vendor `Accept`; missing or
+other `Accept` values retain schema 1 for predecessor tabs and rollback. The
+coordinated #211 release is exact source
+`538edd25afa49f62c13e93745b322099f662791d`, initially deployed as Cloudflare
+version `83b98933-a609-405e-b07c-3e4f4ded46e8`. Its first ordinary admitted
+schema-2 KV publication was retrieved at `2026-10-01T02:17:32.034Z` with
+`462` records and digest
+`ef7abc9080efe0ec338b1b0e516c54b27c75cd8dfb4239fa1f944f16fbbeb443`,
+atomically paired
+with the same-retrieval schema-1 visual member. Explicit enablement remains the
+only browser catalog trigger. Camera, theme, selection, details, Home, and
+geolocation changes never affect acquisition.
 
 ## Licensing and attribution assessment
 

@@ -28,11 +28,11 @@ active on the relay VM with four IPv6 QUIC connections and a dedicated
 used only when a protected deployment selects `oci-private-relay`.
 
 The current application source is
-`18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8`; the matching relay source is
-active and `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` is the retained rollback
-target. Exact-main validation run `36641143297` and canonical production run
-`36642794309` published Cloudflare version
-`fea1642f-8b45-4801-89ae-d2a9dca554a6`.
+`538edd25afa49f62c13e93745b322099f662791d`; it continues to use active relay
+source `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8`, while
+`1f9a2fd322f141fe761d3bf00113e1ab60526e6c` remains the relay rollback target.
+Canonical production run `36788698617` published initial Cloudflare version
+`83b98933-a609-405e-b07c-3e4f4ded46e8`.
 
 The first same-source run `36627068064` had already deployed healthy
 application, orbital, enrichment, weather, and marine surfaces as version

@@ -192,6 +192,14 @@ Production deployment credentials exist only in the protected GitHub
 private mode is used. Do not duplicate them in repository secrets, place them
 in `.env.local`, or expose them through any `VITE_*` variable.
 
+The deployment workflow supplies the relay token atomically with the exact
+Worker deployment through a mode-600 temporary `--secrets-file`, then removes
+that file in an `always()` cleanup. A separate `wrangler secret put` is not
+safe after a version rollback because Wrangler refuses to mutate a secret when
+the latest uploaded version is not the active deployment. If deployment fails
+at a standalone secret-configuration step after rollback, update or restore
+the canonical workflow rather than changing the active version manually.
+
 ## METAR shows unavailable, waiting, or empty
 
 METAR is optional and independent of live traffic. It makes no startup request
@@ -570,17 +578,23 @@ does not exactly match the payload and digest header is still invalid.
 If the first production Cron does not publish:
 
 1. inspect Cloudflare Cron Events for the expected `17 */2 * * *` trigger;
-2. verify the deployment summary recorded one exact
+2. compare the last admitted `retrievedAt` second/millisecond with the strict
+   two-hour gate. Cron is scheduled by minute, so an event at `00:17:00` can
+   truthfully return `not-due` when the prior start was `22:17:35.578`; it
+   performs no provider request, and the next `02:17` event is the first
+   guaranteed admitted run. Do not manually invoke acquisition to bridge this
+   ordinary cadence alignment;
+3. verify the deployment summary recorded one exact
    `livetrafficstan-orbital-catalog` namespace ID;
-3. inspect the deployed version and require both `ORBITAL_CATALOG` and
+4. inspect the deployed version and require both `ORBITAL_CATALOG` and
    `ORBITAL_CATALOG_COORDINATOR` bindings;
-4. verify the protected API token has the required Worker and KV permissions;
-5. reproduce with the checked Workers runtime rather than plain Node: Workers
+5. verify the protected API token has the required Worker and KV permissions;
+6. reproduce with the checked Workers runtime rather than plain Node: Workers
    host functions such as `fetch` are receiver-sensitive and must be called
    through `globalThis`, not as a property of a copied options object;
-6. inspect only aggregate status/byte/record/digest evidence; never print raw
+7. inspect only aggregate status/byte/record/digest evidence; never print raw
    provider bodies;
-7. retain the previous snapshot or bootstrap while investigating.
+8. retain the previous snapshot or bootstrap while investigating.
 
 If the active immutable bootstrap will cross the 24-hour browser hard age
 before an ordinary repaired Cron can be proven, generate one fresh bounded
@@ -750,9 +764,9 @@ as terminal for the running tab rather than retrying on reselection. A hover
 must never contact NASA or request the same-origin asset; a tooltip can reuse
 only a validated Blob URL created by selected details earlier in the tab.
 
-Current production source `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8`
-proved both paths as uncached `200 image/jpeg` Static Assets with exact
-46,716-byte and 48,741-byte lengths plus one-year immutable caching. Any
+Current application source `538edd25afa49f62c13e93745b322099f662791d`
+retains the same previously proven uncached `200 image/jpeg` Static Assets with
+exact 46,716-byte and 48,741-byte lengths plus one-year immutable caching. Any
 different bytes, media type, redirect, repeated request, NASA runtime request,
 or Service Worker response is a release defect.
 

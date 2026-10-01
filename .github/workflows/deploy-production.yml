@@ -181,21 +181,31 @@ jobs:
           npx wrangler deploy
           --dry-run
           --config "$RUNNER_TEMP/wrangler-production.jsonc"
-          --var RELEASE_SHA:$RELEASE_SHA
-          --var AIRCRAFT_DELIVERY:$AIRCRAFT_DELIVERY
-          --var ORBITAL_CATALOG_ENABLED:$ORBITAL_ENABLED
+          --var "RELEASE_SHA:$RELEASE_SHA"
+          --var "AIRCRAFT_DELIVERY:$AIRCRAFT_DELIVERY"
+          --var "ORBITAL_CATALOG_ENABLED:$ORBITAL_ENABLED"
           --outdir "$RUNNER_TEMP/worker-dry-run"
 
-      - name: Configure private relay secret
+      - name: Prepare private relay secrets file
         if: inputs.aircraft_delivery == 'oci-private-relay'
         env:
           AIRCRAFT_RELAY_AUTH_TOKEN: ${{ secrets.AIRCRAFT_RELAY_AUTH_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: >-
-          printf '%s' "$AIRCRAFT_RELAY_AUTH_TOKEN" |
-          npx wrangler secret put AIRCRAFT_RELAY_AUTH_TOKEN
-          --name livetrafficstan
+          SECRETS_FILE: ${{ runner.temp }}/wrangler-production-secrets.json
+        run: |
+          umask 077
+          node - <<'NODE'
+          const { writeFileSync } = require('node:fs')
+
+          const token = process.env.AIRCRAFT_RELAY_AUTH_TOKEN
+          if (!token || token.length < 32) {
+            throw new Error('Private relay secret is missing or too short')
+          }
+          writeFileSync(
+            process.env.SECRETS_FILE,
+            `${JSON.stringify({ AIRCRAFT_RELAY_AUTH_TOKEN: token })}\n`,
+            { mode: 0o600 },
+          )
+          NODE
 
       - name: Deploy exact source
         id: deploy
@@ -213,6 +223,13 @@ jobs:
             --var RELEASE_SHA:${{ inputs.sha }}
             --var AIRCRAFT_DELIVERY:${{ inputs.aircraft_delivery }}
             --var ORBITAL_CATALOG_ENABLED:${{ inputs.orbital_catalog_enabled }}
+            ${{ inputs.aircraft_delivery == 'oci-private-relay' && format('--secrets-file {0}/wrangler-production-secrets.json', runner.temp) || '' }}
+
+      - name: Remove private relay secrets file
+        if: always() && inputs.aircraft_delivery == 'oci-private-relay'
+        env:
+          SECRETS_FILE: ${{ runner.temp }}/wrangler-production-secrets.json
+        run: rm -f "$SECRETS_FILE"
 
       - name: Smoke deployed application
         run: >-

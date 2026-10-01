@@ -20,17 +20,15 @@ This is cataloged orbital-object context, not another live-traffic provider:
   this feature.
 
 The browser implementation and scheduled catalog infrastructure are active in
-production source `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8`. The layer
+production source `538edd25afa49f62c13e93745b322099f662791d`. The layer
 remains a default-off user preference, while the protected Worker deployment
 sets `ORBITAL_CATALOG_ENABLED=true`, serves the same-origin catalog route, and
 runs the checked two-hour scheduler. A deployment with that Worker flag off
 still returns `404` and removes the Cron.
 
-Issue #211's source-contract PR staged schema 2 catalog
-`celestrak-curated-v1`. This follow-on browser source consumes that exact
-contract, but this document does not claim a production release: deployment
-still requires the checked `dev` to `main` release path and exact-SHA
-acceptance.
+Issue #211's source-contract and browser PRs delivered schema 2 catalog
+`celestrak-curated-v1`, and coordinated release #235 completed the checked
+`dev` to `main` production path with exact-SHA acceptance.
 
 ## User experience
 
@@ -495,82 +493,73 @@ scheduled KV/Durable Object boundary.
 
 ## Production activation and visibility evidence
 
-Production activation completed on 2026-09-28:
+The current exact application release is
+`538edd25afa49f62c13e93745b322099f662791d`, deployed by protected run
+[36788698617](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/36788698617)
+as initial Cloudflare version
+`83b98933-a609-405e-b07c-3e4f4ded46e8`. It uses KV namespace
+`59178d55418247c4bab473b52a5dc07d` and Cron `17 */2 * * *`.
+Implementation PRs #232 and #233 supplied the source contract and browser
+consumer; #235 performed the coordinated production release.
 
-- source: `46cb2007bc0cc27d1905fab32db6149a91d17576`;
-- final restoration deployment:
-  [36488245592](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/36488245592);
-- Cloudflare version: `0138d581-2162-491a-bcb5-619a97cf31fb`;
-- KV namespace: `59178d55418247c4bab473b52a5dc07d`;
-- Cron: `17 */2 * * *`;
-- bootstrap schema/count/digest: schema `1`, 156 records,
-  `2cbe00a3285c7bdfd80fe07661b6a14b48279d0629e44c026c6306bb20453d5b`;
-- bootstrap retrieval time: `2026-09-28T18:45:06.958Z`;
-- stable validator:
-  `W/"2cbe00a3285c7bdfd80fe07661b6a14b48279d0629e44c026c6306bb20453d5b"`.
+Immediate exact-route proof returned:
 
-The current exact application release is:
+- default schema/source contract 1 from KV, retrieved
+  `2026-09-30T22:17:35.578Z`, 156 records, digest
+  `98ca3ae36478113d53f0ecea99d6cd4773232aec8b7eef61bef2a9828f2ccce6`;
+- negotiated schema/source contract 2 from the immutable bootstrap, retrieved
+  `2026-09-30T18:25:59.094Z`, 462 records, ordered sources `visual`,
+  `stations`, `weather`, `gnss`, `science`, digest
+  `5cb57fdeaa99dc585dc6c16e1548aa6e5bd05217f23b28c6ae205b96ee70bde6`;
+- distinct representation ETags and matching `304`s, `Vary: Accept`,
+  cross-representation `200`, and no exposed internal bundle.
 
-- source: `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8`;
-- distinct symbol implementation/release PRs: #218 and #220;
-- smoke implementation/release PRs: #222 and #224;
-- exact merged-`main` validation:
-  [36641143297](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/36641143297);
-- deployment:
-  [36642794309](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/36642794309);
-- Cloudflare version: `fea1642f-8b45-4801-89ae-d2a9dca554a6`;
-- client asset: `assets/index-8clesHre.js`;
-- deployed `index.html` SHA-256:
-  `8f7da07d43d096de68adde373597d3f337ff46ec07557e429977cfa114bc16b1`.
-- catalog response at `2026-09-29T23:01:56.988Z`: source `bootstrap`, schema `1`,
-  156 records, retrieval `2026-09-29T18:52:12.000Z`, digest
-  `f6183329084286f4fbb5cdfcea16e827e751569e7d5919d9e8222eadf95f017d`.
+The first ordinary admitted schema-2 KV publication was retrieved at
+`2026-10-01T02:17:32.034Z`. It contained `462` records
+(`369 PAY, 91 R/B, 2 DEB`) with canonical digest
+`ef7abc9080efe0ec338b1b0e516c54b27c75cd8dfb4239fa1f944f16fbbeb443`.
+The same atomic write supplied a `156`-record schema-1 visual member with
+digest
+`018ee9ff6c9c161485f37f5a22cfaa5a6fdd2524a4ae7fc49a12947c4478e2e5`
+and the same retrieval time. Both public bodies reported
+source `kv`, retained their own conditional `304`, and returned `200` for the
+other representation's ETag. An ordinary Cron that arrives seconds before the
+exact two-hour gate returns `not-due` without provider work; the next later
+event remains eligible.
 
-The protected deployment and full smoke passed. First exact-source run
-[36627068064](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/36627068064)
-deployed healthy application, catalog, and enrichment assets as Cloudflare
-version `7b1233c9-3461-440b-ac5f-1d30b02c0525`, but exposed recurrent
-private-relay guest/network unavailability as aircraft HTTP `502`. A supported
-OCI diagnostic reboot restored the unchanged VPC/Tunnel path. The canonical
-exact-source rerun passed without application rollback or provider/privacy
-change.
+Fresh exact-release Chrome 154 acceptance passed 27/27 checks:
 
-At `2026-09-29T20:31:40.271Z`, approximately 14 minutes after the next
-`20:17Z` schedule, the public route still returned
-`X-LiveTrafficStan-Orbital-Source: bootstrap` with the exact current retrieval
-time and digest. A checked local Workers-runtime reproduction subsequently
-proved that the scheduled updater invoked Cloudflare's receiver-sensitive
-`fetch` with an options object as `this`, producing `TypeError: Illegal
-invocation` before publication. The #162 repair preserves the fixed URLs,
-coordinator state, cadence, schema, prior snapshot, and rollback while calling
-the default host function through `globalThis`. The repaired release also moves
-fallback to the new immutable `v2` bootstrap retrieved at
-`2026-09-30T17:08:30.000Z`; the published `v1` bytes remain unchanged. The
-first successful ordinary production KV publication remains open until that
-source is deployed and a later Cron serves
-`X-LiveTrafficStan-Orbital-Source: kv`.
+- zero catalog requests before ORBITS enable, exactly one fixed negotiated
+  same-origin request afterward, and zero browser CelesTrak requests;
+- one MapLibre canvas and one active orbital worker;
+- 450 safe modeled positions, with 192 shown at raw zoom 1.5, 384 at zoom 3,
+  and all 450 at zoom 4.5;
+- all 24 catalog pages, exact name/NORAD/designator query, exact type/group
+  filters, and an explicit unavailable-position result;
+- rank-hidden NORAD `23802` shown as one selected exception without moving the
+  camera, with origin-row focus restored after details closed;
+- Light -> Dark style restoration preserving all 450 source features, the
+  shown-ID filter, highlight, selection, and the single request;
+- 390x844 and 390x568 reachability by wheel, Page Down, Tab, and trusted touch,
+  no horizontal overflow, attribution retained, and a trusted touch drag
+  moving the map;
+- independent successful aircraft, marine REST, and marine MQTT operation,
+  followed by truthful traffic pause at the intentionally ineligible world
+  view;
+- no runtime exception, console/log error, critical HTTP failure, or network
+  failure.
 
-Public Wiki commit `7bb657c8b90fda6150860f5dcba22010cf9cdf8d`
-updates the comprehensive
-[Orbital Tracking](https://github.com/vasilyevstan/LiveTrafficStan/wiki/Orbital-Tracking)
-and
-[Infrastructure and Hosting](https://github.com/vasilyevstan/LiveTrafficStan/wiki/Infrastructure-and-Hosting)
-pages and synchronizes the related public testing, release, troubleshooting,
-accessibility, Home, map, generated class-symbol, single-scroll, smoke, and
-current-production content.
+The unchanged-tree hard-cap evidence remains 512 fixture records, search p95
+1.9 ms desktop / 5.6 ms at 4x CPU, filter p95 1.5 / 6.8 ms, position tick p95
+3.1 ms, complete prediction p95 478.7 ms, latest-request acknowledgement 15.7
+ms, zero main-thread tasks over 50 ms, and a 602.74-second bounded one-canvas/
+one-worker soak. Physical iOS Safari and Android Chrome were unavailable in
+the validation environment; their evidence is not claimed.
 
-Fresh rendered production acceptance proved exactly one primary ORBITS toggle,
-zero catalog requests before enable, one same-origin request afterward, zero
-browser CelesTrak requests, matching Operations and upper-left summaries,
-focus-safe **VIEW**, and one unchanged canvas. The desktop evidence showed
-`LIVE / 4 aircraft / 33 ships shown` with four visibly rendered aircraft and a
-time-dependent `0 IN VIEW · 3 PASSES ≤90M` orbital summary. A 16 px
-brand/control gap remained at 1024, 900, and 761 CSS pixels. The 390x844 and
-390x568 controls stayed within the exact 58vh bounds with all four primary
-controls on one row and no horizontal overflow. Deterministic tests retain the
-stable one-pass summary/focus fixture because live crossing counts are
-time-anchored. Earlier exact selection, style rehydration, touch, and long-task
-evidence remains valid because this release does not change those paths.
+Public Wiki commit `00fb35128ec56c3f15b74690e0ac1f58cbeffc99`
+synchronizes the current release, provider/privacy boundary, same-route
+compatibility, discovery, zoom tiers, single-scroll responsive behavior,
+validation, troubleshooting, rollback, and known device-evidence limitation.
 
 Cache-disabled public-origin enrichment acceptance used real current Hubble
 `20580`, ISS `25544`, and exact rocket body `733` features. It observed zero
@@ -616,15 +605,23 @@ budget. The final result was topmost under hit testing in every case, while one
 canvas, one catalog request, zero browser CelesTrak requests, compact
 attribution, and no console/runtime error were retained.
 
-Rollback run
-[36488117751](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/36488117751)
-successfully deployed the exact pre-orbital target with an unreachable live
-coordinator export, no orbital binding, and no Cron. The route returned `404`
-with target release `3370dfe3f1cc2614feff894643ed865978ec7edc`. The final
-restoration run reattached the retained namespace, restored the Cron and
-catalog, and passed full production smoke. The optional globe remains separate
-in #163. Physical iOS Safari, Android Chrome, and supported-device drag-FPS
-evidence remain explicit outstanding acceptance for #162.
+The earlier namespace-preserving pre-orbital rehearsal remains recorded in
+runs `36488117751` and `36488245592`. The curated release additionally proved
+schema-2 -> schema-1 -> schema-2 compatibility:
+
+- protected run `36807920596` restored predecessor source
+  `f98252f8a22619c67006e4a7c231eebca430dae2` from recorded version
+  `2891a8b4-8111-4d7c-be93-1d355ebdf289`, activated version
+  `2891a8b4-8111-4d7c-be93-1d355ebdf289`, restored the target Cron, and passed
+  target-aware schema-1 smoke;
+- protected run `36808295755` restored current source
+  `538edd25afa49f62c13e93745b322099f662791d` as version
+  `83b98933-a609-405e-b07c-3e4f4ded46e8`, passed dual-representation smoke, and immediately
+  served the retained schema-2 KV bundle without another provider refresh.
+
+The optional globe remains separate in #163. Physical iOS Safari, Android
+Chrome, and supported-device drag-FPS evidence remain an explicit environment
+limitation rather than a claimed result.
 
 ## Related documentation
 
