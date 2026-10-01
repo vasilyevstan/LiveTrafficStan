@@ -140,7 +140,7 @@ describe('installTrafficStyle', () => {
     })
     expect(layers.get(LAYER_VESSELS)).toMatchObject({
       layout: {
-        'icon-size': ['*', ['get', 'markerScale'], 1.04],
+        'icon-size': ['*', ['get', 'markerScale'], 0.86],
       },
     })
     expect(layers.get(LAYER_AIRCRAFT_STOPPED)).toMatchObject({
