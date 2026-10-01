@@ -43,9 +43,9 @@ no paid fallback is enabled. Orbital activation uses the included free KV and
 SQLite Durable Object allocations; R2 is not used.
 
 The current application source is
-`560a9bb409a92036996e391500ec36b1d7b0e728`. Protected deployment run
-`36887715303`, successful attempt 2, published Cloudflare version
-`6b6043b8-3a14-49c0-8af3-b5843f8eb09f` with aircraft delivery through
+`9e1d8c23f9047d0bf57b12bd4abc7d5fcae90f63`. Protected deployment run
+`36908605830`, successful attempt 2, published Cloudflare version
+`d83f68ae-907e-4b2d-a086-00b4fde00372` with aircraft delivery through
 `oci-private-relay`, aircraft photos, plausible routes, exact-IMO vessel
 photos, the curated orbital catalog, and exact-NORAD enrichment enabled. It
 preserved KV namespace `59178d55418247c4bab473b52a5dc07d`, one SQLite
@@ -102,10 +102,11 @@ record and screenshots are attached to
 [#246](https://github.com/vasilyevstan/LiveTrafficStan/pull/246#issuecomment-5935337522).
 
 The public Wiki synchronization is commit
-`618943bb23fd6745783dade155e4d9fbf93634cb`. It updates the focused orbital,
+`5bab3ed5ef03bb967b7f7bcf2d865d1c9019df16`. It updates the focused orbital,
 architecture, hosting, provider, map, testing, release, troubleshooting,
 decisions, roadmap, and Home pages with the current production identity,
-screenshots, measured acceptance, relay recovery, and rollback target.
+reduced vessel scale, screenshots, measured acceptance, relay recovery, and
+rollback target.
 
 Deployment attempt 1 published version
 `45cccadf-0456-4812-aed3-54286886a3c0`, but smoke failed only because the
@@ -120,6 +121,21 @@ supported diagnostic reboot moved the instance through `STOPPING` at
 inputs then passed build, deployment, smoke, and recording on attempt 2. No
 application rollback, shared-egress fallback, provider substitution, relay
 source change, or credential rotation was used.
+
+The smaller-marker release merged through #251, #252, and #253. Exact-main
+validation run `36908354263` passed before protected deployment run
+`36908605830` published source
+`9e1d8c23f9047d0bf57b12bd4abc7d5fcae90f63`. Attempt 1 again isolated the
+known unchanged private-relay guest/network `502`; the exact release,
+deployment checks, and Static Assets were healthy. The supported
+diagnostic reboot moved through `STOPPING` at `18:45:05Z`, `STARTING` at
+`18:45:57Z`, and `RUNNING` at `18:46:20Z`; bounded probes recovered real
+exact-release aircraft JSON at `18:48:20Z`. Attempt 2 passed the same source
+and inputs as Cloudflare version `d83f68ae-907e-4b2d-a086-00b4fde00372`.
+Fresh public Chrome acceptance proved all nine vessel classes through the real
+symbol layer at 22/24/30/37 CSS px, with one map lifecycle, exact theme
+restoration, complete picking/state overlays, responsive attribution, and
+zero fixture-added protected requests.
 
 Cache-disabled public-origin orbital-enrichment acceptance used real current
 Hubble, ISS, and NORAD `733` map features. Before selection there were zero

@@ -889,6 +889,19 @@ aircraft, marine, orbital-catalog, search, or metadata requests. The unchanged
 morphology gates still measured maximum IoU `0.74813` and minimum symmetric
 difference `0.25187`.
 
+The #250 smaller-marker follow-up changed only the vessel layer multiplier
+from `1.04` to `0.86`, moving the natural rendered range from roughly 26-45 to
+22-37 CSS px while preserving the provider-derived relative scale. The same
+deterministic morphology gates pass at the new 22 CSS px DPR 1 floor.
+Exact-production Chrome `154.0.8037.59` on source
+`9e1d8c23f9047d0bf57b12bd4abc7d5fcae90f63` then rendered all nine classes
+at 22/24/30/37 CSS px across DPR 1/2, both themes, headings, state overlays,
+1280x900, 390x844, and 390x568. Every fixture marker remained pickable in all
+eight scenarios, every selected halo and stopped badge remained independent,
+exact Light -> Dark -> Light restoration retained one map/canvas/source/layer
+set, attribution stayed visible without overflow, and the fixture added zero
+protected provider/search/catalog requests or browser errors.
+
 Production Chrome `154.0.8037.59` orbital acceptance passed 27/27 checks:
 
 - zero catalog requests before enable, exactly one fixed negotiated same-origin
@@ -970,11 +983,13 @@ schema-1 rollback followed by immediate reuse of the retained schema-2 KV
 bundle as restored Cloudflare version
 `83b98933-a609-405e-b07c-3e4f4ded46e8`.
 
-That source/version is the byte-exact rollback target for the current map
-follow-up. Public Wiki commit
-`618943bb23fd6745783dade155e4d9fbf93634cb` synchronizes the current release
-identity, browser measurements, screenshots, relay recovery, and retained
-curated/rollback evidence.
+The prior map follow-up source
+`560a9bb409a92036996e391500ec36b1d7b0e728` and Cloudflare version
+`6b6043b8-3a14-49c0-8af3-b5843f8eb09f` are the byte-exact rollback target for
+the smaller-marker release. Public Wiki commit
+`5bab3ed5ef03bb967b7f7bcf2d865d1c9019df16` synchronizes the current release
+identity, reduced scale, browser measurements, screenshots, relay recovery,
+and retained curated/rollback evidence.
 
 No `xcrun simctl`, Android emulator/`adb`, hosted-device credential, or
 physical iOS/Android device was available. Chrome DPR, touch,

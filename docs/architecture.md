@@ -20,9 +20,9 @@ Worker selects that path only through the protected `oci-private-relay`
 deployment mode and fails closed rather than reverting to shared egress.
 Production source `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` and the relay
 originally activated the private path together. The current browser/Worker
-application is source `560a9bb409a92036996e391500ec36b1d7b0e728`,
-deployed in run `36887715303`, successful attempt 2, as Cloudflare version
-`6b6043b8-3a14-49c0-8af3-b5843f8eb09f`. It continues to use relay source
+application is source `9e1d8c23f9047d0bf57b12bd4abc7d5fcae90f63`,
+deployed in run `36908605830`, successful attempt 2, as Cloudflare version
+`d83f68ae-907e-4b2d-a086-00b4fde00372`. It continues to use relay source
 `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8`; relay source
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` is retained as the rollback
 release.
