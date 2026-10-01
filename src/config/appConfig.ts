@@ -5,6 +5,7 @@ import type { StaticPortsProviderConfig } from '../providers/ports/staticPortsPr
 import type { AwcMetarProviderConfig } from '../providers/weather/awcMetarProvider'
 import type { AdsbLolFlightRouteProviderConfig } from '../providers/flightRoute/adsbLolFlightRouteProvider'
 import type { OrbitalCatalogProviderConfig } from '../providers/orbital/orbitalCatalogProvider'
+import type { StarlinkCatalogProviderConfig } from '../providers/orbital/starlinkCatalogProvider'
 import type { OrbitalPropagationLimits } from '../workers/orbitalProtocol'
 import type { OrbitalDisplayLimits } from '../domain/orbitalDiscovery'
 import {
@@ -102,6 +103,23 @@ export interface AppConfig {
       sourceWebsiteUrl: string
       sourceUsagePolicyUrl: string
     }
+  starlink: StarlinkCatalogProviderConfig &
+    OrbitalPropagationLimits & {
+      revalidationIntervalMs: number
+      staleAfterMs: number
+      expireAfterMs: number
+      positionIntervalMs: number
+      predictionRefreshIntervalMs: number
+      maximumClockSkewMs: number
+      maximumWallClockJumpMs: number
+      discovery: {
+        maximumQueryLength: number
+        pageSize: number
+      }
+      sourceName: string
+      sourceWebsiteUrl: string
+      sourceUsagePolicyUrl: string
+    }
   marine: FreshnessThresholds & {
     restBaseUrl: string
     mqttUrl: string
@@ -148,9 +166,22 @@ const DEFAULTS = {
   flightRouteEndpoint:
     'https://vrs-standing-data.adsb.lol/routes',
   weatherEndpoint: '/api/weather/metar',
+  starlinkEndpoint: '/api/orbits/starlink',
   marineRestEndpoint: 'https://meri.digitraffic.fi',
   marineMqttEndpoint: 'wss://meri.digitraffic.fi:443/mqtt',
 } as const
+
+const ORBITAL_PROPAGATION_LIMITS: OrbitalPropagationLimits = {
+  maximumElementAgeMs: 14 * 24 * 60 * 60_000,
+  maximumFutureElementMs: 10 * 60_000,
+  maximumAltitudeKm: 100_000,
+  predictionHorizonMs: 90 * 60_000,
+  predictionStepMs: 30_000,
+  maximumDetailedResults: 20,
+  trackDurationMs: 15 * 60_000,
+  maximumTrackPoints: 31,
+  predictionChunkSize: 8,
+}
 
 const readBoolean = (
   env: Record<string, string | undefined>,
@@ -496,21 +527,48 @@ export const createAppConfig = (
       predictionRefreshIntervalMs: 30_000,
       maximumClockSkewMs: 2 * 60_000,
       maximumWallClockJumpMs: 30_000,
-      maximumElementAgeMs: 14 * 24 * 60 * 60_000,
-      maximumFutureElementMs: 10 * 60_000,
-      maximumAltitudeKm: 100_000,
-      predictionHorizonMs: 90 * 60_000,
-      predictionStepMs: 30_000,
-      maximumDetailedResults: 20,
-      trackDurationMs: 15 * 60_000,
-      maximumTrackPoints: 31,
-      predictionChunkSize: 8,
+      ...ORBITAL_PROPAGATION_LIMITS,
       display: {
         worldMaximumZoom: 2,
         midMaximumZoom: 4,
         worldLimit: 192,
         midLimit: 384,
       },
+      discovery: {
+        maximumQueryLength: 64,
+        pageSize: 20,
+      },
+      sourceName: 'CelesTrak',
+      sourceWebsiteUrl: 'https://celestrak.org/',
+      sourceUsagePolicyUrl: 'https://celestrak.org/usage-policy.php',
+    },
+    starlink: {
+      endpointPath: DEFAULTS.starlinkEndpoint,
+      acceptMediaType:
+        'application/vnd.livetrafficstan.starlink-catalog+json;version=1',
+      schemaVersion: 1,
+      sourceContractVersion: 1,
+      catalogId: 'celestrak-starlink-sample-v1',
+      gpSourceUrl:
+        'https://celestrak.org/NORAD/elements/gp.php?GROUP=starlink&FORMAT=JSON',
+      satcatSourceUrl:
+        'https://celestrak.org/satcat/records.php?GROUP=starlink&FORMAT=JSON',
+      sampleLimit: 150,
+      sampleAlgorithm: 'inclination-raan-systematic-v1',
+      maximumBytes: 256 * 1_024,
+      maximumRecords: 150,
+      maximumPopulationRecords: 15_000,
+      maximumSourceBytes: 6 * 1_024 * 1_024,
+      maximumAggregateSourceBytes: 12 * 1_024 * 1_024,
+      timeoutMs: 5_000,
+      revalidationIntervalMs: 12 * 60 * 60_000,
+      staleAfterMs: 18 * 60 * 60_000,
+      expireAfterMs: 24 * 60 * 60_000,
+      positionIntervalMs: 1_000,
+      predictionRefreshIntervalMs: 30_000,
+      maximumClockSkewMs: 2 * 60_000,
+      maximumWallClockJumpMs: 30_000,
+      ...ORBITAL_PROPAGATION_LIMITS,
       discovery: {
         maximumQueryLength: 64,
         pageSize: 20,

@@ -10,6 +10,7 @@ import {
   PRIVATE_RELAY_MAX_RETRY_AFTER_SECONDS,
   PRIVATE_RELAY_SMOKE_TIMEOUT_MS,
   SAME_ORIGIN_SMOKE_FETCH_INIT,
+  STARLINK_CATALOG_MEDIA_TYPE,
   classifyAircraftProxyStatus,
   deriveOrbitalStaticAssetPaths,
   fetchPrivateRelayWithRetry,
@@ -17,7 +18,9 @@ import {
   isRetryableStaticAssetStatus,
   readOptionalJson,
   resolveTargetOrbitalSmokeContract,
+  resolveTargetStarlinkSmokeContract,
   verifyTargetOrbitalCatalog,
+  verifyTargetStarlinkCatalog,
   waitForExpectedWorkerRelease,
 } from './smoke-policy.mjs'
 
@@ -562,6 +565,201 @@ describe('production smoke policy', () => {
     ).toThrow('dual-representation contract is incomplete')
   })
 
+  it('feature-detects and validates the fixed Starlink route contract', async () => {
+    const payload = {
+      schemaVersion: 1,
+      sourceContractVersion: 1,
+      catalogId: 'celestrak-starlink-sample-v1',
+      sources: {},
+      populationCount: 1,
+      extraSatcatCount: 0,
+      sampleLimit: 150,
+      sampleAlgorithm: 'inclination-raan-systematic-v1',
+      recordCount: 1,
+      records: [],
+      publishedAt: '2026-10-01T19:45:03.000Z',
+      digest: 'd'.repeat(64),
+    }
+    const validateSnapshot = vi.fn(async (value) => value)
+    const contract = resolveTargetStarlinkSmokeContract({
+      STARLINK_BOOTSTRAP_PATH:
+        '/orbital-data/starlink-2026-10-02-v1/catalog.json',
+      STARLINK_CATALOG_MEDIA_TYPE,
+      STARLINK_CATALOG_SCHEMA_VERSION: 1,
+      STARLINK_MAX_SNAPSHOT_BYTES: 256 * 1_024,
+      STARLINK_SOURCE_CONTRACT_VERSION: 1,
+      validateStarlinkCatalogSnapshot: validateSnapshot,
+    })
+    const requests = []
+    const fetchResponse = vi.fn(async (input, init = {}) => {
+      const url = new URL(input)
+      const headers = new Headers(init.headers)
+      const method = init.method ?? 'GET'
+      requests.push({ url: url.toString(), method })
+      if (url.search) {
+        return new Response('Unsupported query', { status: 400 })
+      }
+      if (method !== 'GET') {
+        return new Response('Method not allowed', { status: 405 })
+      }
+      const etag = `W/"${payload.digest}"`
+      const responseHeaders = {
+        'Cache-Control': 'no-store',
+        'Content-Type': STARLINK_CATALOG_MEDIA_TYPE,
+        ETag: etag,
+        'X-Content-Type-Options': 'nosniff',
+        'X-LiveTrafficStan-Release': releaseSha,
+        'X-LiveTrafficStan-Starlink-Digest': payload.digest,
+        'X-LiveTrafficStan-Starlink-Published-At':
+          payload.publishedAt,
+        'X-LiveTrafficStan-Starlink-Schema': '1',
+        'X-LiveTrafficStan-Starlink-Source': 'kv',
+        'X-LiveTrafficStan-Served-At':
+          '2026-10-01T19:45:04.000Z',
+      }
+      if (headers.get('if-none-match') === etag) {
+        return new Response(null, {
+          status: 304,
+          headers: responseHeaders,
+        })
+      }
+      return new Response(JSON.stringify(payload), {
+        status: 200,
+        headers: responseHeaders,
+      })
+    })
+
+    await expect(
+      verifyTargetStarlinkCatalog({
+        baseUrl: new URL('https://app.example/'),
+        enabled: true,
+        expectedReleaseSha: releaseSha,
+        contract,
+        fetchResponse,
+      }),
+    ).resolves.toEqual({ mode: 'enabled', source: 'kv' })
+    expect(requests).toHaveLength(4)
+    expect(
+      requests.every(
+        ({ url }) => new URL(url).origin === 'https://app.example',
+      ),
+    ).toBe(true)
+    expect(
+      requests.some(({ url }) => url.includes('celestrak')),
+    ).toBe(false)
+    expect(validateSnapshot).toHaveBeenCalledTimes(1)
+
+    await expect(
+      verifyTargetStarlinkCatalog({
+        baseUrl: new URL('https://app.example/'),
+        enabled: false,
+        expectedReleaseSha: releaseSha,
+        contract: undefined,
+        fetchResponse: async () =>
+          new Response('Not found', { status: 404 }),
+      }),
+    ).resolves.toEqual({ mode: 'disabled' })
+    expect(() =>
+      resolveTargetStarlinkSmokeContract({
+        STARLINK_CATALOG_SCHEMA_VERSION: 1,
+      }),
+    ).toThrow('Starlink catalog contract is incomplete')
+  })
+
+  it.each(
+    ['initial', 'conditional'].flatMap((phase) =>
+      [
+        'ETag',
+        'X-LiveTrafficStan-Starlink-Digest',
+        'X-LiveTrafficStan-Starlink-Published-At',
+        'X-LiveTrafficStan-Starlink-Schema',
+        'X-LiveTrafficStan-Starlink-Source',
+        'X-LiveTrafficStan-Served-At',
+      ].map((header) => [phase, header]),
+    ),
+  )(
+    'rejects a missing %s Starlink %s header',
+    async (phase, missingHeader) => {
+      const payload = {
+        schemaVersion: 1,
+        sourceContractVersion: 1,
+        catalogId: 'celestrak-starlink-sample-v1',
+        sources: {},
+        populationCount: 1,
+        extraSatcatCount: 0,
+        sampleLimit: 150,
+        sampleAlgorithm: 'inclination-raan-systematic-v1',
+        recordCount: 1,
+        records: [],
+        publishedAt: '2026-10-01T19:45:03.000Z',
+        digest: 'd'.repeat(64),
+      }
+      const contract = resolveTargetStarlinkSmokeContract({
+        STARLINK_BOOTSTRAP_PATH:
+          '/orbital-data/starlink-2026-10-02-v1/catalog.json',
+        STARLINK_CATALOG_MEDIA_TYPE,
+        STARLINK_CATALOG_SCHEMA_VERSION: 1,
+        STARLINK_MAX_SNAPSHOT_BYTES: 256 * 1_024,
+        STARLINK_SOURCE_CONTRACT_VERSION: 1,
+        validateStarlinkCatalogSnapshot: vi.fn(
+          async (value) => value,
+        ),
+      })
+      const etag = `W/"${payload.digest}"`
+      const fetchResponse = vi.fn(async (input, init = {}) => {
+        const url = new URL(input)
+        const requestHeaders = new Headers(init.headers)
+        if (url.search) {
+          return new Response('Unsupported query', { status: 400 })
+        }
+        if ((init.method ?? 'GET') !== 'GET') {
+          return new Response('Method not allowed', { status: 405 })
+        }
+        const conditional =
+          requestHeaders.get('if-none-match') === etag
+        const responseHeaders = new Headers({
+          'Cache-Control': 'no-store',
+          'Content-Type': STARLINK_CATALOG_MEDIA_TYPE,
+          ETag: etag,
+          'X-Content-Type-Options': 'nosniff',
+          'X-LiveTrafficStan-Release': releaseSha,
+          'X-LiveTrafficStan-Starlink-Digest': payload.digest,
+          'X-LiveTrafficStan-Starlink-Published-At':
+            payload.publishedAt,
+          'X-LiveTrafficStan-Starlink-Schema': '1',
+          'X-LiveTrafficStan-Starlink-Source': 'kv',
+          'X-LiveTrafficStan-Served-At':
+            '2026-10-01T19:45:04.000Z',
+        })
+        if (
+          (phase === 'initial' && !conditional) ||
+          (phase === 'conditional' && conditional)
+        ) {
+          responseHeaders.delete(missingHeader)
+        }
+        return conditional
+          ? new Response(null, {
+              status: 304,
+              headers: responseHeaders,
+            })
+          : new Response(JSON.stringify(payload), {
+              status: 200,
+              headers: responseHeaders,
+            })
+      })
+
+      await expect(
+        verifyTargetStarlinkCatalog({
+          baseUrl: new URL('https://app.example/'),
+          enabled: true,
+          expectedReleaseSha: releaseSha,
+          contract,
+          fetchResponse,
+        }),
+      ).rejects.toThrow()
+    },
+  )
+
   it('loads the orbital bootstrap source of truth from the target checkout', () => {
     const targetImportIndex = smokeScript.indexOf(
       "await import('../worker/orbitalCatalog.ts')",
@@ -608,6 +806,18 @@ describe('production smoke policy', () => {
     expect(smokePolicyScript).not.toContain('/api/orbits/catalog/v2')
     expect(smokeScript).toContain(
       'targetOrbitalSmokeContract.bootstrapPath',
+    )
+    expect(smokeScript).toContain(
+      "starlinkCatalogEnabled === 'true'",
+    )
+    expect(smokeScript).toContain(
+      "await import('../worker/starlinkCatalog.ts')",
+    )
+    expect(smokeScript).toContain(
+      'resolveTargetStarlinkSmokeContract(targetStarlinkContract)',
+    )
+    expect(smokeScript).toContain(
+      'verifyTargetStarlinkCatalog({',
     )
     expect(smokeScript).not.toContain(
       "const orbitalPath = '/orbital-data/",

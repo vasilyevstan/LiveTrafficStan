@@ -133,4 +133,47 @@ describe('orbital tooltip', () => {
       textContent: 'Photo: NASA',
     })
   })
+
+  it('uses sample wording without curated enrichment for Starlink', () => {
+    const starlink: ModeledOrbitalPosition = {
+      ...position,
+      id: 'orbital:starlink:20580',
+      owner: 'starlink',
+      noradCatalogId: '20580',
+      name: 'STARLINK SAMPLE 20580',
+      objectType: 'PAY',
+      sourceGroups: ['starlink'],
+    }
+
+    expect(orbitalTooltipSummary(starlink)).toEqual({
+      title: 'STARLINK SAMPLE 20580',
+      details: [
+        'Payload · NORAD 20580',
+        'Starlink systematic sample',
+        'Modeled position · not live telemetry',
+      ],
+    })
+
+    const root = createOrbitalTooltipElement(
+      starlink,
+      fakeDocument,
+      new Map([
+        [
+          '/orbital-enrichment/2026-09-29-v1/norad-20580.jpg',
+          'blob:https://example.test/hubble',
+        ],
+      ]),
+    ) as unknown as FakeElement
+
+    expect(
+      root.children.some(
+        (child) =>
+          child.textContent.includes('Purpose:') ||
+          child.className === 'traffic-tooltip__photo-link',
+      ),
+    ).toBe(false)
+    expect(root.children.map(({ textContent }) => textContent)).toContain(
+      'Starlink systematic sample',
+    )
+  })
 })

@@ -35,6 +35,8 @@ Worker command below for enabled ORBITS acceptance.
 | `npm run update:country-allocations` | Explicit maintainer regeneration from pinned open-licensed sources and canonical cross-checks |
 | `npm run check:orbital-catalog` | Network-free schema-2/canonical-digest validation of the curated bootstrap, pinned probe bytes/hashes/counts, immutable checksum/history guard, and both retained schema-1 rollback contracts |
 | `npm run update:orbital-catalog -- --source-dir <probe-dir> --summary <summary.json> --published-at <iso> --output public/orbital-data/<new-version>/catalog.json` | Explicit maintainer normalization of the already-downloaded fixed five-group evidence after exact URL/order/row/byte/SHA-256 checks; never fetches the provider and never reuses a published immutable version |
+| `npm run check:starlink-catalog` | Network-free validation of the pending or published immutable Starlink contract, exact source evidence, systematic sample, canonical digest, notice, and immutable history |
+| `npm run update:starlink-catalog -- --source-dir <probe-dir> --summary <summary.json> --published-at <iso>` | One-time normalization of an already-downloaded paired Starlink GP/SATCAT acquisition; never fetches CelesTrak and never overwrites a published version |
 | `npm run check:orbital-enrichment` | Network-free validation of exact current NORAD/name/designator/type identity, official-source provenance, rights notice, immutable asset inventory, dimensions, size, and SHA-256 |
 | `npm run check:vessel-photos` | Network-free validation of exact IMO, source revision, rights, license notice, asset inventory, dimensions, size, and SHA-256 |
 | `npm run check:ports` | Network-free validation of the committed Natural Earth port projection |
@@ -78,6 +80,7 @@ npm test -- --run
 npm run check:aircraft-metadata
 npm run check:country-allocations
 npm run check:orbital-catalog
+npm run check:starlink-catalog
 npm run check:orbital-enrichment
 npm run check:vessel-photos
 npm run check:ports
@@ -106,6 +109,25 @@ bootstraps byte-for-byte, and rejects unknown padding or noncanonical
 serialization. Pull-request validation supplies
 `ORBITAL_CATALOG_IMMUTABLE_BASE`; reusing a historical path or changing bytes
 under `curated-2026-09-30-v1` fails and requires a new version.
+
+`npm run update:starlink-catalog` is deliberately offline. First perform one
+reviewed, strictly sequential GP then SATCAT read only after the 12-hour source
+window opens; record exact URLs, completion timestamps, statuses, media types,
+decoded bytes, rows, and SHA-256 values. Run the normalizer once against those
+saved bytes. If local validation fails, fix it offline rather than requesting
+the provider again. `npm run check:starlink-catalog -- --require-bootstrap`
+then proves canonical serialization, exact sample indices, source-clock order,
+manifest/notice hashes, and the never-reused
+`starlink-2026-10-02-v1` path.
+
+Starlink deterministic acceptance covers zero request while either parent or
+child is off; one same-origin request when effective; no request from camera,
+theme, filters, list paging, selection, or style changes; one physical worker
+with isolated channel disposal; owner-correct selection/details/tooltips;
+Light -> Dark -> Light image replacement; exact type silhouettes; 20-row
+keyboard paging and final-page reachability under the single Operations More
+scroll owner; desktop/mobile/touch layouts; and truthful partial operation when
+either curated or Starlink fails.
 
 `npm run check:orbital-enrichment` does not fetch NASA. It verifies the
 committed two-record manifest against the committed visual catalog, requires

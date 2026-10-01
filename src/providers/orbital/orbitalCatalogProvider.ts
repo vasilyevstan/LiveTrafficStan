@@ -10,7 +10,7 @@ import {
 import { ProviderError, parseRetryAfterMs } from '../errors'
 
 export interface OrbitalCatalogSourceConfig {
-  group: OrbitalSourceGroup
+  group: Exclude<OrbitalSourceGroup, 'starlink'>
   gpSourceUrl: string
   satcatSourceUrl: string
 }

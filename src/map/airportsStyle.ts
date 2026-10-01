@@ -10,7 +10,7 @@ import type { Airport } from '../domain/airports'
 import { mapTextFont, type MapTextFont } from './textFont'
 import { LAYER_SELECTED_TRAIL } from './trafficStyle'
 import { LAYER_WEATHER_HALO } from './weatherStyle'
-import { LAYER_ORBITAL_TRACK } from './orbitalStyle'
+import { firstOrbitalLayerId } from './orbitalStyle'
 
 export const SOURCE_AIRPORTS = 'context-airports'
 export const LAYER_AIRPORTS_LARGE = 'context-airports-large'
@@ -91,15 +91,16 @@ const ensureLayer = (
   layer: LayerSpecification,
 ) => {
   if (!map.getLayer(layer.id)) {
+    const orbitalLayerId = firstOrbitalLayerId(map)
     map.addLayer(
       layer,
       map.getLayer(LAYER_WEATHER_HALO)
         ? LAYER_WEATHER_HALO
-        : map.getLayer(LAYER_ORBITAL_TRACK)
-          ? LAYER_ORBITAL_TRACK
-        : map.getLayer(LAYER_SELECTED_TRAIL)
-          ? LAYER_SELECTED_TRAIL
-          : undefined,
+        : orbitalLayerId
+          ? orbitalLayerId
+          : map.getLayer(LAYER_SELECTED_TRAIL)
+            ? LAYER_SELECTED_TRAIL
+            : undefined,
     )
   }
 }

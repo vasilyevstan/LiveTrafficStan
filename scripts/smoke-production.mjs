@@ -15,7 +15,9 @@ import {
   isRetryableStaticAssetStatus,
   readOptionalJson,
   resolveTargetOrbitalSmokeContract,
+  resolveTargetStarlinkSmokeContract,
   verifyTargetOrbitalCatalog,
+  verifyTargetStarlinkCatalog,
   waitForExpectedWorkerRelease,
 } from './smoke-policy.mjs'
 
@@ -26,12 +28,14 @@ const [
   expectedReleaseSha,
   aircraftDelivery = 'worker-proxy',
   orbitalCatalogEnabled = 'false',
+  starlinkCatalogEnabled = 'false',
 ] = process.argv.slice(2)
 
 if (!deploymentUrl || !expectedReleaseSha) {
   throw new Error(
     'Usage: node scripts/smoke-production.mjs <deployment-url> <release-sha> ' +
-      '[aircraft-delivery] [orbital-catalog-enabled]',
+      '[aircraft-delivery] [orbital-catalog-enabled] ' +
+      '[starlink-catalog-enabled]',
   )
 }
 
@@ -56,6 +60,22 @@ if (
     'The orbital catalog flag must be "true" or "false"',
   )
 }
+if (
+  starlinkCatalogEnabled !== 'true' &&
+  starlinkCatalogEnabled !== 'false'
+) {
+  throw new Error(
+    'The Starlink catalog flag must be "true" or "false"',
+  )
+}
+if (
+  starlinkCatalogEnabled === 'true' &&
+  orbitalCatalogEnabled !== 'true'
+) {
+  throw new Error(
+    'The Starlink catalog requires the curated orbital catalog',
+  )
+}
 
 const targetOrbitalContract =
   orbitalCatalogEnabled === 'true'
@@ -63,6 +83,13 @@ const targetOrbitalContract =
     : undefined
 const targetOrbitalSmokeContract = targetOrbitalContract
   ? resolveTargetOrbitalSmokeContract(targetOrbitalContract)
+  : undefined
+const targetStarlinkContract =
+  starlinkCatalogEnabled === 'true'
+    ? await import('../worker/starlinkCatalog.ts')
+    : undefined
+const targetStarlinkSmokeContract = targetStarlinkContract
+  ? resolveTargetStarlinkSmokeContract(targetStarlinkContract)
   : undefined
 
 const baseUrl = new URL(deploymentUrl)
@@ -301,6 +328,54 @@ const verifyStaticAssets = async () => {
         remoteNotice.headers.get('cache-control'),
       ),
       'Deployed orbital notice is not immutable',
+    )
+  }
+
+  if (starlinkCatalogEnabled === 'true') {
+    const { bootstrapPath, noticePath } =
+      deriveOrbitalStaticAssetPaths(
+        targetStarlinkSmokeContract.bootstrapPath,
+      )
+    const localStarlink = await readFile(`dist${bootstrapPath}`)
+    const remoteStarlink = await remoteBytes(
+      bootstrapPath,
+      localStarlink,
+    )
+    assert(
+      sha256(remoteStarlink.bytes) === sha256(localStarlink),
+      'Deployed Starlink bootstrap does not match the validated build',
+    )
+    assert(
+      remoteStarlink.headers
+        .get('content-type')
+        ?.includes('application/json'),
+      'Deployed Starlink bootstrap has the wrong content type',
+    )
+    assert(
+      hasOneYearImmutableCacheControl(
+        remoteStarlink.headers.get('cache-control'),
+      ),
+      'Deployed Starlink bootstrap is not immutable',
+    )
+
+    const localNotice = await readFile(`dist${noticePath}`)
+    const remoteNotice = await remoteBytes(
+      noticePath,
+      localNotice,
+    )
+    assert(
+      sha256(remoteNotice.bytes) === sha256(localNotice),
+      'Deployed Starlink notice does not match the validated build',
+    )
+    assert(
+      remoteNotice.headers.get('content-type')?.includes('text/plain'),
+      'Deployed Starlink notice has the wrong content type',
+    )
+    assert(
+      hasOneYearImmutableCacheControl(
+        remoteNotice.headers.get('cache-control'),
+      ),
+      'Deployed Starlink notice is not immutable',
     )
   }
 }
@@ -551,6 +626,15 @@ const verifyOrbitalCatalog = () =>
     fetchResponse: fetchWithTimeout,
   })
 
+const verifyStarlinkCatalog = () =>
+  verifyTargetStarlinkCatalog({
+    baseUrl,
+    enabled: starlinkCatalogEnabled === 'true',
+    expectedReleaseSha,
+    contract: targetStarlinkSmokeContract,
+    fetchResponse: fetchWithTimeout,
+  })
+
 const verifyDigitrafficRest = async () => {
   const endpoint = new URL(
     'https://meri.digitraffic.fi/api/ais/v1/locations',
@@ -635,6 +719,7 @@ await verifyStaticAssets()
 await verifyAircraftProxy()
 await verifyMetarProxy()
 await verifyOrbitalCatalog()
+await verifyStarlinkCatalog()
 await verifyDigitrafficRest()
 await verifyDigitrafficMqtt()
 

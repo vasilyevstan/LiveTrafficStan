@@ -9,6 +9,7 @@ for (let index = 2; index < process.argv.length; index += 2) {
     throw new Error(
       'Usage: node scripts/prepare-wrangler-config.mjs ' +
         '--input <path> --output <path> --orbital-enabled <true|false> ' +
+        '--starlink-enabled <true|false> ' +
         '[--namespace-id <id>]',
     )
   }
@@ -26,6 +27,15 @@ const outputPath = resolve(required('output'))
 const orbitalEnabled = required('orbital-enabled')
 if (orbitalEnabled !== 'true' && orbitalEnabled !== 'false') {
   throw new Error('--orbital-enabled must be true or false')
+}
+const starlinkEnabled = required('starlink-enabled')
+if (starlinkEnabled !== 'true' && starlinkEnabled !== 'false') {
+  throw new Error('--starlink-enabled must be true or false')
+}
+if (starlinkEnabled === 'true' && orbitalEnabled !== 'true') {
+  throw new Error(
+    '--starlink-enabled requires --orbital-enabled true',
+  )
 }
 
 const config = JSON.parse(await readFile(inputPath, 'utf8'))
@@ -77,5 +87,6 @@ if (orbitalEnabled === 'true') {
 
 await writeFile(outputPath, `${JSON.stringify(config, null, 2)}\n`)
 console.log(
-  `Prepared ${outputPath} with orbital catalog ${orbitalEnabled}`,
+  `Prepared ${outputPath} with orbital catalog ${orbitalEnabled} ` +
+    `and Starlink catalog ${starlinkEnabled}`,
 )

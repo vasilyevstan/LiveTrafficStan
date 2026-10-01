@@ -1,3 +1,5 @@
+import { canonicalOrbitalFeatureId } from '../domain/orbital'
+
 interface PointerSample {
   pointerId: number
   pointerType: string
@@ -180,4 +182,28 @@ export const uniqueEligibleFeatureId = (
     if (ids.size > 1) return null
   }
   return ids.size === 1 ? [...ids][0] : null
+}
+
+export const uniqueCanonicalOrbitalFeatureId = (
+  features: readonly RenderedFeatureLike[],
+  eligibleIds: ReadonlySet<string>,
+) => {
+  let topmostId: string | null = null
+  let canonicalId: string | undefined
+
+  for (const feature of features) {
+    const id = featureId(feature, eligibleIds)
+    if (!id) continue
+    const candidateCanonicalId = canonicalOrbitalFeatureId(id)
+    if (!candidateCanonicalId) continue
+
+    if (topmostId === null) {
+      topmostId = id
+      canonicalId = candidateCanonicalId
+      continue
+    }
+    if (candidateCanonicalId !== canonicalId) return null
+  }
+
+  return topmostId
 }

@@ -49,6 +49,8 @@ const sourceGroupLabel = (group: OrbitalSourceGroup) => {
       return 'GNSS'
     case 'science':
       return 'Science'
+    case 'starlink':
+      return 'Starlink sample'
   }
 }
 

@@ -3,6 +3,7 @@ import snapshotFixture from '../../../public/orbital-data/curated-2026-09-30-v1/
 import {
   orbitalSnapshotDigestInput,
   type OrbitalCatalogSnapshot,
+  type OrbitalSourceGroup,
 } from '../../domain/orbital'
 import {
   OrbitalCatalogProvider,
@@ -21,7 +22,7 @@ const config: OrbitalCatalogProviderConfig = {
   catalogId: snapshot.catalogId,
   sources: snapshot.sources.map(
     ({ group, gpSourceUrl, satcatSourceUrl }) => ({
-      group,
+      group: group as Exclude<OrbitalSourceGroup, 'starlink'>,
       gpSourceUrl,
       satcatSourceUrl,
     }),
@@ -266,6 +267,32 @@ describe('OrbitalCatalogProvider', () => {
     await expect(
       provider.load(new AbortController().signal),
     ).rejects.toThrow(/schema is invalid/)
+  })
+
+  it('does not admit Starlink membership into the curated contract', async () => {
+    const invalid = {
+      ...snapshot,
+      records: snapshot.records.map((record, index) =>
+        index === 0
+          ? { ...record, sourceGroups: ['starlink'] }
+          : record,
+      ),
+    }
+    const provider = new OrbitalCatalogProvider(
+      config,
+      runtime(
+        vi.fn<typeof fetch>().mockResolvedValue(
+          new Response(JSON.stringify(invalid), {
+            status: 200,
+            headers: headers(),
+          }),
+        ),
+      ),
+    )
+
+    await expect(
+      provider.load(new AbortController().signal),
+    ).rejects.toThrow(/invalid record/)
   })
 
   it('rejects invalid headers, partial responses, and oversized bodies', async () => {

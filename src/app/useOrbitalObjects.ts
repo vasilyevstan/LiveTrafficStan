@@ -1,13 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { AppConfig } from '../config/appConfig'
+import { APP_CONFIG, type AppConfig } from '../config/appConfig'
 import {
   EMPTY_ORBITAL_PREDICTION,
+  parseOrbitalFeatureId,
   type OrbitalControllerState,
 } from '../domain/orbital'
-import type { OrbitalDiscoveryFilters } from '../domain/orbitalDiscovery'
+import {
+  DEFAULT_ORBITAL_DISCOVERY_FILTERS,
+  type OrbitalDiscoveryFilters,
+} from '../domain/orbitalDiscovery'
 import type { OrbitalViewport } from '../domain/orbitalViewport'
 import { OrbitalCatalogProvider } from '../providers/orbital/orbitalCatalogProvider'
-import type { OrbitalWorkerLike } from '../workers/orbitalProtocol'
+import { StarlinkCatalogProvider } from '../providers/orbital/starlinkCatalogProvider'
+import { OrbitalWorkerHub } from '../workers/orbitalWorkerHub'
 import { OrbitalController } from './OrbitalController'
 
 const initialState = (): OrbitalControllerState => ({
@@ -23,11 +28,10 @@ const WAITING_FOR_VIEWPORT: OrbitalViewport = {
   message: 'Waiting for the committed map view to settle.',
 }
 
-const createOrbitalWorker = (): OrbitalWorkerLike =>
-  new Worker(new URL('../workers/orbital.worker.ts', import.meta.url), {
-    type: 'module',
-    name: 'livetrafficstan-orbital-propagation',
-  })
+export interface StarlinkOrbitalHookOptions {
+  enabled: boolean
+  config?: AppConfig['starlink']
+}
 
 export const useOrbitalObjects = (
   enabled: boolean,
@@ -37,22 +41,42 @@ export const useOrbitalObjects = (
   selectedId: string | null,
   filters: OrbitalDiscoveryFilters,
   config: AppConfig['orbital'],
+  starlinkOptions?: StarlinkOrbitalHookOptions,
 ) => {
   const [state, setState] = useState<OrbitalControllerState>(initialState)
+  const [starlinkState, setStarlinkState] =
+    useState<OrbitalControllerState>(initialState)
   const controllerRef = useRef<OrbitalController | undefined>(undefined)
+  const starlinkControllerRef =
+    useRef<OrbitalController | undefined>(undefined)
+  const starlinkConfig =
+    starlinkOptions?.config ?? APP_CONFIG.starlink
+  const starlinkEnabled = starlinkOptions?.enabled ?? false
 
   useEffect(() => {
+    const workerHub = new OrbitalWorkerHub()
     const controller = new OrbitalController({
       provider: new OrbitalCatalogProvider(config),
-      workerFactory: createOrbitalWorker,
+      workerFactory: () => workerHub.createChannel('curated'),
       config,
       onState: setState,
     })
+    const starlinkController = new OrbitalController({
+      provider: new StarlinkCatalogProvider(starlinkConfig),
+      workerFactory: () => workerHub.createChannel('starlink'),
+      config: starlinkConfig,
+      onState: setStarlinkState,
+    })
     controllerRef.current = controller
+    starlinkControllerRef.current = starlinkController
     controller.start()
+    starlinkController.start()
+    starlinkController.setFilters(DEFAULT_ORBITAL_DISCOVERY_FILTERS)
 
     const handleVisibilityChange = () => {
-      controller.setPageVisible(!document.hidden)
+      const visible = !document.hidden
+      controller.setPageVisible(visible)
+      starlinkController.setPageVisible(visible)
     }
     document.addEventListener('visibilitychange', handleVisibilityChange)
     handleVisibilityChange()
@@ -60,28 +84,45 @@ export const useOrbitalObjects = (
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       controller.stop()
+      starlinkController.stop()
+      workerHub.dispose()
       controllerRef.current = undefined
+      starlinkControllerRef.current = undefined
     }
-  }, [config])
+  }, [config, starlinkConfig])
 
   useEffect(() => {
     controllerRef.current?.setEnabled(enabled)
   }, [enabled])
 
   useEffect(() => {
+    starlinkControllerRef.current?.setEnabled(starlinkEnabled)
+  }, [starlinkEnabled])
+
+  useEffect(() => {
     controllerRef.current?.setHistoryActive(historyActive)
+    starlinkControllerRef.current?.setHistoryActive(historyActive)
   }, [historyActive])
 
   useEffect(() => {
     controllerRef.current?.setOnline(online)
+    starlinkControllerRef.current?.setOnline(online)
   }, [online])
 
   useEffect(() => {
-    controllerRef.current?.setViewport(viewport ?? WAITING_FOR_VIEWPORT)
+    const committedViewport = viewport ?? WAITING_FOR_VIEWPORT
+    controllerRef.current?.setViewport(committedViewport)
+    starlinkControllerRef.current?.setViewport(committedViewport)
   }, [viewport])
 
   useEffect(() => {
-    controllerRef.current?.setSelectedId(selectedId)
+    const selected = parseOrbitalFeatureId(selectedId)
+    controllerRef.current?.setSelectedId(
+      selected?.owner === 'curated' ? selected.id : null,
+    )
+    starlinkControllerRef.current?.setSelectedId(
+      selected?.owner === 'starlink' ? selected.id : null,
+    )
   }, [selectedId])
 
   useEffect(() => {
@@ -89,6 +130,10 @@ export const useOrbitalObjects = (
   }, [filters])
 
   const retry = useCallback(() => controllerRef.current?.retry(), [])
+  const retryStarlink = useCallback(
+    () => starlinkControllerRef.current?.retry(),
+    [],
+  )
 
-  return { state, retry }
+  return { state, retry, starlinkState, retryStarlink }
 }

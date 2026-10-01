@@ -1,4 +1,5 @@
 import {
+  orbitalFeatureOwner,
   orbitalObjectTypeLabel,
   type ModeledOrbitalPosition,
 } from '../domain/orbital'
@@ -13,19 +14,38 @@ export interface OrbitalTooltipSummary {
   details: readonly string[]
 }
 
+const isStarlinkPosition = (position: ModeledOrbitalPosition) =>
+  position.owner === 'starlink' ||
+  orbitalFeatureOwner(position.id) === 'starlink'
+
 export const orbitalTooltipSummary = (
   position: ModeledOrbitalPosition,
-  enrichment = orbitalEnrichmentForPosition(position),
-): OrbitalTooltipSummary => ({
-  title: position.name,
-  details: [
-    `${orbitalObjectTypeLabel(position.objectType)} · NORAD ${position.noradCatalogId}`,
-    enrichment
-      ? `Purpose: ${enrichment.purpose.shortLabel}`
-      : 'Purpose: unavailable for this exact NORAD ID',
-    'Modeled position · not live telemetry',
-  ],
-})
+  enrichment?: OrbitalEnrichmentView,
+): OrbitalTooltipSummary => {
+  if (isStarlinkPosition(position)) {
+    return {
+      title: position.name,
+      details: [
+        `${orbitalObjectTypeLabel(position.objectType)} · NORAD ${position.noradCatalogId}`,
+        'Starlink systematic sample',
+        'Modeled position · not live telemetry',
+      ],
+    }
+  }
+
+  const curatedEnrichment =
+    enrichment ?? orbitalEnrichmentForPosition(position)
+  return {
+    title: position.name,
+    details: [
+      `${orbitalObjectTypeLabel(position.objectType)} · NORAD ${position.noradCatalogId}`,
+      curatedEnrichment
+        ? `Purpose: ${curatedEnrichment.purpose.shortLabel}`
+        : 'Purpose: unavailable for this exact NORAD ID',
+      'Modeled position · not live telemetry',
+    ],
+  }
+}
 
 const appendOrbitalImage = (
   root: HTMLElement,
@@ -53,7 +73,9 @@ export const createOrbitalTooltipElement = (
   ownerDocument: Document,
   imageUrls: ReadonlyMap<string, string> = new Map(),
 ) => {
-  const enrichment = orbitalEnrichmentForPosition(position)
+  const enrichment = isStarlinkPosition(position)
+    ? undefined
+    : orbitalEnrichmentForPosition(position)
   const summary = orbitalTooltipSummary(position, enrichment)
   const root = ownerDocument.createElement('div')
   root.className = 'traffic-tooltip orbital-tooltip'

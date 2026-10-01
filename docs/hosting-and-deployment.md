@@ -698,6 +698,41 @@ The current source and provider assessment is
 modeling and acceptance are documented in
 [Orbital Tracking](orbital-tracking.md).
 
+### Starlink sample contract
+
+`STARLINK_CATALOG_ENABLED=true` is a protected deployment value and is
+effective only with `ORBITAL_CATALOG_ENABLED=true`. It reuses the same Cron,
+named SQLite Durable Object, KV namespace, and Worker deployment. No second
+trigger or provider-facing endpoint is created. After curated processing, the
+coordinator transactionally reserves a separate Starlink row at the actual GP
+request start if at least 12 hours have elapsed and no global CelesTrak block
+or later `Retry-After` applies.
+
+The admitted sequence is the fixed official Starlink GP JSON followed by
+SATCAT JSON. Each response is exact `200` JSON, at most 6 MiB and 15,000 rows;
+the pair is at most 12 MiB and 60 seconds. The complete join must validate
+before the 150-record deterministic systematic sample is written once to
+`orbital:catalog:v1:starlink-sample-v1`. A Starlink failure is reported by the
+scheduled event but cannot undo an accepted curated publication or remove the
+last complete Starlink snapshot.
+
+The public storage route is literal `GET /api/orbits/starlink`. It validates
+KV and immutable `/orbital-data/starlink-2026-10-02-v1/catalog.json`
+concurrently, rejects future or impossible source clocks, ranks candidates by
+the later source retrieval time, and fails closed on equal-generation digest
+conflict. Bootstrap fallback has a 1.5-second budget, below the browser's
+five-second total request deadline, so a stalled asset cannot suppress healthy
+KV. Exact `200` and `304` responses include the same identity, digest,
+publication, served-at, release, cache, and ETag headers required by the
+browser and production smoke.
+
+Deploy and rollback resolve the target checkout's Starlink capability and
+flag independently from curated schema negotiation. A target without Starlink
+must not be forced to export current constants or answer the route; an enabled
+target must validate its exact immutable bootstrap and same-origin route.
+Rollback never deletes the shared KV namespace or Durable Object and never
+resets either cadence row.
+
 At twelve scheduled events per day, the coordinator uses approximately twelve
 Durable Object requests and a few row reads/writes per day, while successful
 refreshes add about twelve KV writes per day. Cloudflare currently includes

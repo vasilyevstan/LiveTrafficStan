@@ -1,10 +1,12 @@
 export type OrbitalObjectType = 'PAY' | 'R/B' | 'DEB' | 'UNK'
+export type OrbitalChannel = 'curated' | 'starlink'
 export type OrbitalSourceGroup =
   | 'visual'
   | 'stations'
   | 'weather'
   | 'gnss'
   | 'science'
+  | 'starlink'
 
 export interface OrbitalCatalogSource {
   group: OrbitalSourceGroup
@@ -49,8 +51,34 @@ export interface OrbitalCatalogSnapshot {
   records: readonly OrbitalObject[]
 }
 
+export interface StarlinkCatalogSourceMetadata {
+  url: string
+  retrievedAt: string
+  recordCount: number
+  decodedBytes: number
+  sha256: string
+}
+
+export interface StarlinkOrbitalCatalogMetadata {
+  sources: {
+    gp: StarlinkCatalogSourceMetadata
+    satcat: StarlinkCatalogSourceMetadata
+  }
+  populationCount: number
+  extraSatcatCount: number
+  sampleLimit: number
+  sampleAlgorithm: string
+}
+
+export interface StarlinkOrbitalCatalogSnapshot
+  extends OrbitalCatalogSnapshot {
+  owner: 'starlink'
+  starlink: StarlinkOrbitalCatalogMetadata
+}
+
 export interface ModeledOrbitalPosition {
   id: string
+  owner?: OrbitalChannel
   noradCatalogId: string
   name: string
   internationalDesignator: string
@@ -69,6 +97,7 @@ export interface ModeledOrbitalPosition {
 
 export interface OrbitalCrossing {
   id: string
+  owner?: OrbitalChannel
   noradCatalogId: string
   name: string
   objectType: OrbitalObjectType
@@ -130,8 +159,74 @@ export const EMPTY_ORBITAL_PREDICTION: OrbitalPrediction = {
   trackSegments: [],
 }
 
-export const orbitalFeatureId = (noradCatalogId: string) =>
-  `orbital:${noradCatalogId}`
+export interface OrbitalFeatureIdentity {
+  owner: OrbitalChannel
+  noradCatalogId: string
+  id: string
+  canonicalId: string
+}
+
+const orbitalNoradIdPattern = /^[1-9]\d{0,8}$/
+
+export const orbitalFeatureId = (
+  noradCatalogId: string,
+  owner: OrbitalChannel = 'curated',
+) =>
+  owner === 'starlink'
+    ? `orbital:starlink:${noradCatalogId}`
+    : `orbital:${noradCatalogId}`
+
+export const parseOrbitalFeatureId = (
+  id: string | null | undefined,
+): OrbitalFeatureIdentity | undefined => {
+  if (!id) return undefined
+  const curated = /^orbital:([1-9]\d{0,8})$/.exec(id)
+  if (curated) {
+    const noradCatalogId = curated[1]
+    return {
+      owner: 'curated',
+      noradCatalogId,
+      id,
+      canonicalId: orbitalFeatureId(noradCatalogId),
+    }
+  }
+  const starlink = /^orbital:starlink:([1-9]\d{0,8})$/.exec(id)
+  if (!starlink) return undefined
+  const noradCatalogId = starlink[1]
+  return {
+    owner: 'starlink',
+    noradCatalogId,
+    id,
+    canonicalId: orbitalFeatureId(noradCatalogId),
+  }
+}
+
+export const orbitalFeatureOwner = (
+  id: string | null | undefined,
+) => parseOrbitalFeatureId(id)?.owner
+
+export const canonicalOrbitalFeatureId = (
+  id: string | null | undefined,
+) => parseOrbitalFeatureId(id)?.canonicalId
+
+export const orbitalFeatureBelongsTo = (
+  id: string | null | undefined,
+  owner: OrbitalChannel,
+) => orbitalFeatureOwner(id) === owner
+
+export const isOrbitalNoradCatalogId = (value: string) =>
+  orbitalNoradIdPattern.test(value)
+
+export const isStarlinkOrbitalCatalogSnapshot = (
+  snapshot: OrbitalCatalogSnapshot,
+): snapshot is StarlinkOrbitalCatalogSnapshot => {
+  const candidate = snapshot as Partial<StarlinkOrbitalCatalogSnapshot>
+  return (
+    candidate.owner === 'starlink' &&
+    typeof candidate.starlink === 'object' &&
+    candidate.starlink !== null
+  )
+}
 
 export const orbitalObjectTypeLabel = (type: OrbitalObjectType) => {
   switch (type) {

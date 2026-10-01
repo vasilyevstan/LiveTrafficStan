@@ -826,6 +826,14 @@
   overflow-wrap: anywhere;
 }
 
+.orbital-starlink {
+  margin-bottom: 10px;
+}
+
+.orbital-starlink > .control-options button {
+  min-height: 44px;
+}
+
 .vessel-results button {
   display: grid;
   width: 100%;

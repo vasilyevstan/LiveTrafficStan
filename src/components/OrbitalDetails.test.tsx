@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type {
   ModeledOrbitalPosition,
   OrbitalCatalogSnapshot,
+  StarlinkOrbitalCatalogSnapshot,
 } from '../domain/orbital'
 import {
   DEFAULT_ORBITAL_DISCOVERY_FILTERS,
@@ -186,5 +187,72 @@ describe('OrbitalDetails', () => {
     )
     expect(html).not.toContain('Selected exception; shown')
     expect(html).not.toContain('Within the current zoom')
+  })
+
+  it('keeps Starlink ownership separate from curated enrichment for the same NORAD ID', () => {
+    const starlinkPosition: ModeledOrbitalPosition = {
+      ...position,
+      id: 'orbital:starlink:25544',
+      owner: 'starlink',
+      noradCatalogId: '25544',
+      name: 'STARLINK TEST REPRESENTATION',
+      objectType: 'PAY',
+      sourceGroups: ['starlink'],
+    }
+    const starlinkSnapshot: StarlinkOrbitalCatalogSnapshot = {
+      ...snapshot,
+      owner: 'starlink',
+      schemaVersion: 1,
+      sourceContractVersion: 1,
+      catalogId: 'celestrak-starlink-sample-v1',
+      records: [],
+      starlink: {
+        populationCount: 11_127,
+        extraSatcatCount: 0,
+        sampleLimit: 150,
+        sampleAlgorithm: 'inclination-raan-systematic-v1',
+        sources: {
+          gp: {
+            url: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=starlink&FORMAT=JSON',
+            retrievedAt: '2026-10-01T20:01:00.000Z',
+            recordCount: 11_127,
+            decodedBytes: 4_700_510,
+            sha256: 'b'.repeat(64),
+          },
+          satcat: {
+            url: 'https://celestrak.org/satcat/records.php?GROUP=starlink&FORMAT=JSON',
+            retrievedAt: '2026-10-01T20:02:00.000Z',
+            recordCount: 11_127,
+            decodedBytes: 3_684_991,
+            sha256: 'c'.repeat(64),
+          },
+        },
+      },
+    }
+    const html = renderToStaticMarkup(
+      <OrbitalDetails
+        position={starlinkPosition}
+        snapshot={starlinkSnapshot}
+        sourceName="CelesTrak"
+        sourceWebsiteUrl="https://celestrak.org/"
+        sourceUsagePolicyUrl="https://celestrak.org/usage-policy.php"
+        now={position.modeledFor}
+        online
+        units="metric"
+        imageState={{ phase: 'unavailable' }}
+        mapDisplay={{ available: true, selectedException: false }}
+        onClose={() => undefined}
+      />,
+    )
+
+    expect(html).toContain('Starlink inclination/RAAN systematic sample')
+    expect(html).toContain('11,127 validated records')
+    expect(html).toContain('systematic sample, not the full constellation')
+    expect(html).toContain(
+      'Purpose and image are not inferred for the Starlink sample',
+    )
+    expect(html).not.toContain(
+      'Crewed microgravity science laboratory',
+    )
   })
 })

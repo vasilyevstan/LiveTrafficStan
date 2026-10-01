@@ -27,6 +27,8 @@ export const SAME_ORIGIN_SMOKE_FETCH_INIT = Object.freeze({
 })
 export const ORBITAL_SCHEMA2_NEGOTIATION_ACCEPT =
   'application/vnd.livetrafficstan.orbital-catalog+json;version=2'
+export const STARLINK_CATALOG_MEDIA_TYPE =
+  'application/vnd.livetrafficstan.starlink-catalog+json;version=1'
 
 const releaseShaPattern = /^[0-9a-f]{40}$/
 
@@ -268,6 +270,7 @@ export const resolveTargetOrbitalSmokeContract = (target) => {
   if (schemaVersion !== 1 && schemaVersion !== 2) {
     throw new Error('The target orbital schema version is unsupported')
   }
+
   if (
     !Number.isSafeInteger(sourceContractVersion) ||
     sourceContractVersion < 1
@@ -340,8 +343,65 @@ export const resolveTargetOrbitalSmokeContract = (target) => {
   }
 }
 
+export const resolveTargetStarlinkSmokeContract = (target) => {
+  const schemaVersion = targetExport(
+    target,
+    'STARLINK_CATALOG_SCHEMA_VERSION',
+  )
+  const sourceContractVersion = targetExport(
+    target,
+    'STARLINK_SOURCE_CONTRACT_VERSION',
+  )
+  const maximumBytes = targetExport(
+    target,
+    'STARLINK_MAX_SNAPSHOT_BYTES',
+  )
+  const bootstrapPath = targetExport(
+    target,
+    'STARLINK_BOOTSTRAP_PATH',
+  )
+  const mediaType = targetExport(
+    target,
+    'STARLINK_CATALOG_MEDIA_TYPE',
+  )
+  const validateSnapshot = targetExport(
+    target,
+    'validateStarlinkCatalogSnapshot',
+  )
+  if (
+    schemaVersion !== 1 ||
+    sourceContractVersion !== 1 ||
+    !Number.isSafeInteger(maximumBytes) ||
+    maximumBytes < 1 ||
+    typeof bootstrapPath !== 'string' ||
+    mediaType !== STARLINK_CATALOG_MEDIA_TYPE ||
+    typeof validateSnapshot !== 'function'
+  ) {
+    throw new Error(
+      'The target Starlink catalog contract is incomplete',
+    )
+  }
+  return {
+    bootstrapPath,
+    maximumBytes,
+    mediaType,
+    schemaVersion,
+    sourceContractVersion,
+    validateSnapshot,
+  }
+}
+
 const smokeAssert = (condition, message) => {
   if (!condition) throw new Error(message)
+}
+
+const isCanonicalTimestamp = (value) => {
+  if (typeof value !== 'string') return false
+  const timeMs = Date.parse(value)
+  return (
+    Number.isFinite(timeMs) &&
+    new Date(timeMs).toISOString() === value
+  )
 }
 
 const variesByAccept = (response) =>
@@ -589,6 +649,174 @@ export const verifyTargetOrbitalCatalog = async ({
   )
   await cancelResponseBody(method)
   return { mode: contract.mode }
+}
+
+export const verifyTargetStarlinkCatalog = async ({
+  baseUrl,
+  enabled,
+  expectedReleaseSha,
+  contract,
+  fetchResponse,
+}) => {
+  const url = new URL('/api/orbits/starlink', baseUrl)
+  const response = await fetchResponse(url)
+  if (!enabled) {
+    smokeAssert(
+      response.status === 404,
+      'Disabled Starlink catalog was exposed',
+    )
+    await cancelResponseBody(response)
+    return { mode: 'disabled' }
+  }
+  if (!contract) {
+    throw new Error(
+      'The enabled target Starlink contract is missing',
+    )
+  }
+  smokeAssert(
+    response.headers.get('x-livetrafficstan-release') ===
+      expectedReleaseSha,
+    'Starlink catalog release SHA does not match the deployed source',
+  )
+  smokeAssert(
+    response.status === 200,
+    `Starlink catalog returned ${response.status}`,
+  )
+  smokeAssert(
+    response.headers.get('content-type') === contract.mediaType,
+    'Starlink catalog media type is incorrect',
+  )
+  smokeAssert(
+    response.headers.get('cache-control') === 'no-store',
+    'Starlink catalog cache guidance is incorrect',
+  )
+  smokeAssert(
+    response.headers.get('x-content-type-options') === 'nosniff',
+    'Starlink catalog nosniff header is missing',
+  )
+  smokeAssert(
+    !response.headers.has('access-control-allow-origin'),
+    'Starlink catalog unexpectedly allows cross-origin access',
+  )
+  const source = response.headers.get(
+    'x-livetrafficstan-starlink-source',
+  )
+  smokeAssert(
+    source === 'kv' || source === 'bootstrap',
+    'Starlink catalog source identity is missing',
+  )
+  smokeAssert(
+    response.headers.get('x-livetrafficstan-starlink-schema') ===
+      String(contract.schemaVersion),
+    'Starlink catalog schema header is incorrect',
+  )
+  const servedAt = response.headers.get(
+    'x-livetrafficstan-served-at',
+  )
+  smokeAssert(
+    isCanonicalTimestamp(servedAt),
+    'Starlink catalog served-at header is missing or invalid',
+  )
+  const publishedAt = response.headers.get(
+    'x-livetrafficstan-starlink-published-at',
+  )
+  smokeAssert(
+    isCanonicalTimestamp(publishedAt),
+    'Starlink catalog published-at header is missing or invalid',
+  )
+  const body = new Uint8Array(await response.arrayBuffer())
+  smokeAssert(
+    body.byteLength <= contract.maximumBytes,
+    'Starlink catalog response is oversized',
+  )
+  const payload = await contract.validateSnapshot(
+    JSON.parse(new TextDecoder().decode(body)),
+  )
+  smokeAssert(
+    payload.schemaVersion === contract.schemaVersion &&
+      payload.sourceContractVersion ===
+        contract.sourceContractVersion,
+    'Starlink catalog returned an unsupported release contract',
+  )
+  smokeAssert(
+    response.headers.get('x-livetrafficstan-starlink-digest') ===
+      payload.digest,
+    'Starlink catalog digest header does not match the payload',
+  )
+  smokeAssert(
+    publishedAt === payload.publishedAt,
+    'Starlink catalog published-at header does not match the payload',
+  )
+  const etag = response.headers.get('etag')
+  smokeAssert(
+    etag === `W/"${payload.digest}"`,
+    'Starlink catalog ETag does not match the payload digest',
+  )
+
+  const conditional = await fetchResponse(url, {
+    headers: { 'If-None-Match': etag },
+  })
+  smokeAssert(
+    conditional.status === 304,
+    'Starlink conditional request did not return 304',
+  )
+  smokeAssert(
+    conditional.headers.get('etag') === etag,
+    'Starlink conditional ETag changed',
+  )
+  smokeAssert(
+    conditional.headers.get('cache-control') === 'no-store',
+    'Starlink conditional cache guidance is incorrect',
+  )
+  smokeAssert(
+    conditional.headers.get(
+      'x-livetrafficstan-starlink-digest',
+    ) === payload.digest,
+    'Starlink conditional digest header is incorrect',
+  )
+  smokeAssert(
+    conditional.headers.get(
+      'x-livetrafficstan-starlink-published-at',
+    ) === payload.publishedAt,
+    'Starlink conditional published-at header is incorrect',
+  )
+  smokeAssert(
+    conditional.headers.get(
+      'x-livetrafficstan-starlink-schema',
+    ) === String(contract.schemaVersion),
+    'Starlink conditional schema header is incorrect',
+  )
+  const conditionalSource = conditional.headers.get(
+    'x-livetrafficstan-starlink-source',
+  )
+  smokeAssert(
+    conditionalSource === 'kv' ||
+      conditionalSource === 'bootstrap',
+    'Starlink conditional source identity is missing',
+  )
+  smokeAssert(
+    isCanonicalTimestamp(
+      conditional.headers.get('x-livetrafficstan-served-at'),
+    ),
+    'Starlink conditional served-at header is missing or invalid',
+  )
+  await cancelResponseBody(conditional)
+
+  const query = await fetchResponse(
+    new URL('/api/orbits/starlink?all=true', baseUrl),
+  )
+  smokeAssert(
+    query.status === 400,
+    'Starlink catalog query was not rejected',
+  )
+  await cancelResponseBody(query)
+  const method = await fetchResponse(url, { method: 'POST' })
+  smokeAssert(
+    method.status === 405,
+    'Starlink catalog method was not rejected',
+  )
+  await cancelResponseBody(method)
+  return { mode: 'enabled', source }
 }
 
 export const readOptionalJson = async (file) => {

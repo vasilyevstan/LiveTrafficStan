@@ -35,6 +35,31 @@ cataloged orbital objects. It does not provide live
 telemetry, powered-ascent tracking, reliable operational reentry tracking,
 impact prediction, conjunction assessment, or proof of naked-eye visibility.
 
+## Separate Starlink decision
+
+Issue #257 evaluates the official CelesTrak `starlink` group separately from
+the five-group curated union. The observed paired source contains more than
+11,000 GP records and matching SATCAT records and is several megabytes per
+response. Loading the complete group would exceed the reviewed browser record,
+snapshot, SGP4, prediction, GeoJSON, picking, and mobile-density budgets.
+
+The selected contract therefore validates the complete paired population but
+publishes at most 150 deterministic records. After sorting by inclination,
+normalized right ascension of the ascending node, and numeric NORAD ID, sample
+slot `i` selects
+`floor((i + 0.5) * populationCount / sampleCount)`. The final sample is sorted
+by numeric NORAD ID. This stable systematic coverage supports bounded visual
+context; it does not assert statistical representativeness, completeness,
+current operation, or optical visibility.
+
+Starlink shares the existing CelesTrak Cron, Durable Object identity, KV
+namespace, global terminal state, and provider `Retry-After`. Curated work
+remains first. A separate SQLite row records the actual Starlink GP request
+start and admits at most one pair per 12 hours; no immediate retry, rotation,
+fallback group, truncation, or browser-triggered acquisition exists. Fixed
+source URLs, exact evidence, and the immutable generation are recorded in
+`src/config/starlinkCatalogSource.json` and its co-located notice.
+
 ## Evidence method
 
 This decision combines:

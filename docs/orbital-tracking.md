@@ -30,6 +30,10 @@ Issue #211's source-contract and browser PRs delivered schema 2 catalog
 `celestrak-curated-v1`, and coordinated release #235 completed the checked
 `dev` to `main` production path with exact-SHA acceptance.
 
+Issue #257 adds a separate default-off STARLINK child layer. It uses a bounded
+systematic sample rather than expanding the curated catalog or claiming the
+full constellation. ORBITS remains the parent lifecycle and one-map surface.
+
 ## User experience
 
 The remembered **ORBITS** preference starts off. Its single toggle appears in
@@ -150,6 +154,30 @@ selection/details instead of hover.
 
 One-second position changes are not placed in an ARIA live region.
 
+### Starlink child experience
+
+STARLINK appears inside **Operations -> More -> Orbits**. Its preference is
+remembered and shareable but starts off; it becomes effective only while
+ORBITS is on and Live mode is active. The control reports source population,
+published sample, accepted records, safe modeled positions, current map/shown
+positions, and predicted crossings separately. A 20-row paged sample list is
+keyboard accessible and uses the existing Operations More body as the only
+vertical scroll owner.
+
+Starlink selection uses `orbital:starlink:<NORAD>`. A duplicate NORAD in the
+curated layer remains a different representation: selection, halo, track,
+tooltip, details, and failure state resolve only from the owning channel.
+Starlink details identify the systematic sample, retain separate GP/SATCAT
+retrieval times, and never infer curated purpose or imagery. Exact payloads
+use the flat-panel spacecraft silhouette; exact rocket body, debris, and
+unknown records keep their type silhouettes.
+
+The compact parent line combines owner-split shown/pass state, for example
+`ORBITS · 12 SHOWN (C 8 / S 4) · 5 PASSES ≤90M`. Failure remains partial:
+`C UNAVAILABLE · S 7` and `C 8 · S UNAVAILABLE` do not hide the working owner.
+One selected exception is reported once even when it is already included in a
+rank-limited shown count.
+
 ## Data and execution flow
 
 ```text
@@ -170,6 +198,14 @@ explicit ORBITS enable
   -> complete safe-position MapLibre GeoJSON source
   -> local zoom/type/group shown-ID filter + selected exception
   -> Nearby and complete Catalog views
+
+optional Starlink channel:
+effective ORBITS + STARLINK
+  -> same-origin GET /api/orbits/starlink
+  -> strict population/sample/source-clock/digest validation
+  -> second logical channel on the same physical orbital worker
+  -> separate persistent Starlink point/highlight/track sources and layers
+  -> owner-aware combined orbital picking and child sample list
 ```
 
 The schema-2 server union has 462 unique records (369 payloads, 91 rocket

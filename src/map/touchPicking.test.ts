@@ -3,6 +3,7 @@ import {
   exactEligibleFeatureId,
   expandedHitBox,
   TouchInteractionTracker,
+  uniqueCanonicalOrbitalFeatureId,
   uniqueEligibleFeatureId,
 } from './touchPicking'
 
@@ -196,6 +197,60 @@ describe('traffic feature picking', () => {
       uniqueEligibleFeatureId(
         [feature('orbital:hidden')],
         shownOrbitalIds,
+      ),
+    ).toBeNull()
+  })
+
+  it('keeps MapLibre topmost ownership when nearby orbital copies share one NORAD ID', () => {
+    const curatedId = 'orbital:44713'
+    const starlinkId = 'orbital:starlink:44713'
+    const eligibleIds = new Set([curatedId, starlinkId])
+
+    expect(
+      exactEligibleFeatureId(
+        [feature(starlinkId), feature(curatedId)],
+        eligibleIds,
+      ),
+    ).toBe(starlinkId)
+    expect(
+      uniqueCanonicalOrbitalFeatureId(
+        [
+          feature(starlinkId),
+          feature(curatedId),
+          feature(starlinkId),
+        ],
+        eligibleIds,
+      ),
+    ).toBe(starlinkId)
+    expect(
+      uniqueCanonicalOrbitalFeatureId(
+        [feature(curatedId), feature(starlinkId)],
+        eligibleIds,
+      ),
+    ).toBe(curatedId)
+  })
+
+  it('rejects touch fallback when different canonical orbital IDs are nearby', () => {
+    const eligibleIds = new Set([
+      'orbital:44713',
+      'orbital:starlink:44713',
+      'orbital:starlink:44714',
+    ])
+
+    expect(
+      uniqueCanonicalOrbitalFeatureId(
+        [
+          feature('orbital:starlink:44713'),
+          feature('orbital:44713'),
+          feature('orbital:starlink:44714'),
+        ],
+        eligibleIds,
+      ),
+    ).toBeNull()
+    expect(
+      uniqueCanonicalOrbitalFeatureId(
+        [feature('orbital:starlink:44714')],
+        new Set(['orbital:starlink:44713']),
       ),
     ).toBeNull()
   })

@@ -127,6 +127,26 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   source `538edd25afa49f62c13e93745b322099f662791d`; the current map follow-up
   and smaller-marker release preserve it at
   `9e1d8c23f9047d0bf57b12bd4abc7d5fcae90f63`.
+- Issue #257 adds a separate remembered **STARLINK** child layer under
+  **Operations -> More -> Orbits**. It starts off even when ORBITS is on and
+  makes no request until both toggles are effective. The server publishes at
+  most 150 records from the validated official Starlink GP/SATCAT population
+  using the fixed `inclination-raan-systematic-v1` algorithm; the UI reports
+  source population, sample, modeled, in-map, shown, and pass counts rather
+  than presenting the sample as the full constellation. One existing
+  CelesTrak Durable Object owns both schedules: curated acquisition remains
+  first, while a second SQLite row admits the paired Starlink read at most once
+  per 12 hours at the actual GP request start. The browser uses only literal
+  same-origin `GET /api/orbits/starlink`, one physical orbital worker with
+  isolated curated/Starlink channels, and separate persistent MapLibre
+  sources/layers. Starlink public IDs are
+  `orbital:starlink:<NORAD>`; selection, halo, track, details, and tooltips
+  never inherit curated purpose or imagery. Exact payloads use a flat-panel
+  spacecraft silhouette, while rocket bodies, debris, and unknown objects
+  retain their exact type silhouettes. The immutable bootstrap is versioned
+  under `/orbital-data/starlink-2026-10-02-v1/`; its manifest and notice pin
+  the exact retrieval times, source hashes, population, sample digest, and
+  byte counts.
 - A default-enabled ADSB.lol plausible-route lookup for a selected live
   aircraft. A committed selection starts one lookup and shows a compact result
   directly below the aircraft heading. Hover, HISTORY, and same-flight position
