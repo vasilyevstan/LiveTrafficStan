@@ -547,15 +547,16 @@ All nine vessel display classes use bold top-down outer silhouettes:
 generic, cargo, tanker, passenger, fishing, exact AIS-52 tug, sailing,
 pleasure craft, and high-speed craft. Installed image IDs or a small raster
 pixel difference are not accepted as proof that people can distinguish them.
-At the minimum 26 CSS px / DPR 1 size, deterministic contour tests require
+At the minimum 22 CSS px / DPR 1 size, deterministic contour tests require
 pairwise IoU no greater than 0.78, normalized symmetric difference at least
 22 percent, three longitudinal width-band differences among the broad hull
 classes, and identity-bearing features at least 3 CSS px thick. The released
 artwork measured 0.74813 maximum IoU, 0.25187 minimum symmetric difference,
-and 5 CSS px minimum feature thickness. Production-path Chrome evidence also
-covers themes, DPR 1/2, headings, state overlays, backgrounds, responsive
-sizes, picking, and style restoration. The artwork does not alter any
-classification boundary.
+and 5 CSS px minimum feature thickness at the earlier 26 CSS-pixel floor; the
+reduced 22 CSS-pixel floor continues to pass every gate. Production-path Chrome
+evidence also covers themes, DPR 1/2, headings, state overlays, backgrounds,
+responsive sizes, picking, and style restoration. The artwork does not alter
+any classification boundary.
 
 Provider-owned icon keys stay in normalized entities and bounded historical
 records. Visual-only state is derived later by one pure presentation module and
@@ -890,7 +891,7 @@ without changing camera, selection, provider state, or connections.
 
 Traffic artwork uses maritime-blue vessels and a bounded altitude palette on
 each aircraft silhouette in both themes. Cargo/container, passenger, tanker,
-and tug use coarse interior line art that remains legible at the 26 CSS-pixel
+and tug use coarse interior line art that remains legible at the 22 CSS-pixel
 floor without changing exact AIS-derived classification. The theme-specific
 canvas treatment changes fill luminance, detail color, shadow, and two-tone
 edge contrast while retaining silhouettes and heading/course rotation. Image
