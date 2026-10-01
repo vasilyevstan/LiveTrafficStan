@@ -20,7 +20,7 @@ This is cataloged orbital-object context, not another live-traffic provider:
   this feature.
 
 The browser implementation and scheduled catalog infrastructure are active in
-production source `560a9bb409a92036996e391500ec36b1d7b0e728`. The layer
+production source `9e1d8c23f9047d0bf57b12bd4abc7d5fcae90f63`. The layer
 remains a default-off user preference, while the protected Worker deployment
 sets `ORBITAL_CATALOG_ENABLED=true`, serves the same-origin catalog route, and
 runs the checked two-hour scheduler. A deployment with that Worker flag off
@@ -501,10 +501,10 @@ scheduled KV/Durable Object boundary.
 ## Production activation and visibility evidence
 
 The current exact application release is
-`560a9bb409a92036996e391500ec36b1d7b0e728`, deployed by protected run
-[36887715303](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/36887715303),
+`9e1d8c23f9047d0bf57b12bd4abc7d5fcae90f63`, deployed by protected run
+[36908605830](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/36908605830),
 successful attempt 2, as Cloudflare version
-`6b6043b8-3a14-49c0-8af3-b5843f8eb09f`. It uses KV namespace
+`d83f68ae-907e-4b2d-a086-00b4fde00372`. It uses KV namespace
 `59178d55418247c4bab473b52a5dc07d` and Cron `17 */2 * * *`.
 Implementation PRs #232 and #233 supplied the source contract and browser
 consumer; #235 performed the coordinated catalog release. PR #243 added the
@@ -581,11 +581,11 @@ attribution remained visible, and no runtime/log/HTTP error or long task over
 50 ms occurred. Evidence and world/mobile screenshots are attached to
 [#246](https://github.com/vasilyevstan/LiveTrafficStan/pull/246#issuecomment-5935337522).
 
-Public Wiki commit `618943bb23fd6745783dade155e4d9fbf93634cb`
-synchronizes the current release, compact counts, exact Hubble/ISS labels,
-provider/privacy boundary, same-route compatibility, discovery, zoom tiers,
-single-scroll responsive behavior, validation, troubleshooting, rollback, and
-known device-evidence limitation.
+Public Wiki commit `5bab3ed5ef03bb967b7f7bcf2d865d1c9019df16`
+synchronizes the current release, reduced vessel scale, compact counts, exact
+Hubble/ISS labels, provider/privacy boundary, same-route compatibility,
+discovery, zoom tiers, single-scroll responsive behavior, validation,
+troubleshooting, rollback, and known device-evidence limitation.
 
 Cache-disabled public-origin enrichment acceptance used real current Hubble
 `20580`, ISS `25544`, and exact rocket body `733` features. It observed zero

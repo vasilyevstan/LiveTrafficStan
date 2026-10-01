@@ -179,6 +179,16 @@ inputs passed on attempt 2 as version
 aircraft-only infrastructure recurrence, not permission to roll back a healthy
 application, rotate identity, or fall back to shared egress.
 
+The smaller-marker release repeated that exact independent failure mode.
+Deployment run `36908605830`, attempt 1, deployed exact source
+`9e1d8c23f9047d0bf57b12bd4abc7d5fcae90f63`, while only aircraft smoke
+returned `502`. Diagnostic reboot produced
+`STOPPING -> STARTING -> RUNNING`; bounded 20-second probes progressed through
+four `502` responses and one `504` before real exact-release aircraft JSON.
+Attempt 2 passed unchanged as Cloudflare version
+`d83f68ae-907e-4b2d-a086-00b4fde00372`. This is further evidence to recover
+the relay independently rather than roll back unrelated application changes.
+
 ADSB.lol rejects generic Worker identification. The proxy must send the stable
 public LiveTrafficStan User-Agent. Do not work around a `403` by forwarding
 browser headers, cookies, authorization, or a client-controlled destination.
@@ -778,7 +788,7 @@ as terminal for the running tab rather than retrying on reselection. A hover
 must never contact NASA or request the same-origin asset; a tooltip can reuse
 only a validated Blob URL created by selected details earlier in the tab.
 
-Current application source `560a9bb409a92036996e391500ec36b1d7b0e728`
+Current application source `9e1d8c23f9047d0bf57b12bd4abc7d5fcae90f63`
 retains the same previously proven uncached `200 image/jpeg` Static Assets with
 exact 46,716-byte and 48,741-byte lengths plus one-year immutable caching. Any
 different bytes, media type, redirect, repeated request, NASA runtime request,
