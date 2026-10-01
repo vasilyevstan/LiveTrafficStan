@@ -104,7 +104,7 @@ identity, the same fixed point route and User-Agent, one aggregate upstream
 start per 20 seconds, and provider `Retry-After` backoff. It does not rotate
 addresses, add a provider, alter attribution, or claim additional capacity
 permission. Production application source
-`538edd25afa49f62c13e93745b322099f662791d` uses active relay source
+`560a9bb409a92036996e391500ec36b1d7b0e728` uses active relay source
 `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8` through the fixed Workers VPC
 Service and private Tunnel, with
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` retained as relay rollback; see

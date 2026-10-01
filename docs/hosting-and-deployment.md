@@ -43,9 +43,9 @@ no paid fallback is enabled. Orbital activation uses the included free KV and
 SQLite Durable Object allocations; R2 is not used.
 
 The current application source is
-`538edd25afa49f62c13e93745b322099f662791d`. Protected deployment run
-`36788698617` published initial Cloudflare version
-`83b98933-a609-405e-b07c-3e4f4ded46e8` with aircraft delivery through
+`560a9bb409a92036996e391500ec36b1d7b0e728`. Protected deployment run
+`36887715303`, successful attempt 2, published Cloudflare version
+`6b6043b8-3a14-49c0-8af3-b5843f8eb09f` with aircraft delivery through
 `oci-private-relay`, aircraft photos, plausible routes, exact-IMO vessel
 photos, the curated orbital catalog, and exact-NORAD enrichment enabled. It
 preserved KV namespace `59178d55418247c4bab473b52a5dc07d`, one SQLite
@@ -53,7 +53,7 @@ coordinator, and Cron `17 */2 * * *`. The matching relay runs
 `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8` and retains
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` as its prior release.
 
-Immediate post-deploy proof returned:
+The initial curated-catalog release's immediate post-deploy proof returned:
 
 - default schema/source contract 1 from KV, retrieved
   `2026-09-30T22:17:35.578Z`, 156 records, digest
@@ -74,21 +74,52 @@ at the same retrieval time. A Cron event that arrives seconds
 before the strict two-hour gate can truthfully return `not-due` without a
 provider request; the next later event remains eligible.
 
-Exact-release Chrome 154 acceptance passed 27/27 checks. It retained one
-canvas and one orbital worker, made zero catalog requests before enable and
-one negotiated same-origin request after enable, made zero browser CelesTrak
-requests, rendered live 192/384/450 tiers from 450 safe modeled positions,
-reached all 24 catalog pages and the final result on 390x844/390x568, restored
-selection and filters through a theme/style replacement, moved the map with a
-trusted touch drag, and preserved independent aircraft/marine operation. No
-runtime, console, critical HTTP, or network failure occurred. Physical
-iOS/Android evidence was unavailable and is not claimed.
+The current map follow-up deployment retained and served that complete KV
+bundle for both public representations; it did not reset the named coordinator
+or initiate another provider refresh.
+
+Exact-merged-main validation run `36887570850` passed 119 files / 746 tests,
+lint, typecheck, static-data checks, both builds, and deployment dry-run.
+Production Chrome `154.0.8037.59` then retained one MapLibre canvas while:
+
+- all nine maritime-blue vessel classes passed eight desktop/mobile
+  theme/DPR scenarios, every fixture marker remained pickable, and exact
+  Light -> Dark -> Light image restoration added no provider/search/catalog
+  request;
+- the measured world view reported
+  `ORBITS · 192 SHOWN · 0 PASSES ≤90M`, retained 454 safe current positions,
+  exposed exactly reviewed `HUBBLE`/NORAD `20580` and `ISS`/NORAD `25544`
+  labels, made one catalog request only after enable, and created no long task
+  over 50 ms;
+- initial desktop, desktop Center, and mobile Center exactly matched the 30 km
+  `cameraForBounds` result; six aircraft rendered from one deterministic
+  outward-rounded `34 NM` request and no second request started inside cadence.
+
+Attribution remained visible, responsive controls stayed within the existing
+58vh budget, and no runtime, browser-log, or HTTP error occurred. Physical
+iOS/Android evidence was unavailable and is not claimed. The full measured
+record and screenshots are attached to
+[#246](https://github.com/vasilyevstan/LiveTrafficStan/pull/246#issuecomment-5935337522).
 
 The public Wiki synchronization is commit
-`00fb35128ec56c3f15b74690e0ac1f58cbeffc99`. It updates the focused orbital,
+`618943bb23fd6745783dade155e4d9fbf93634cb`. It updates the focused orbital,
 architecture, hosting, provider, map, testing, release, troubleshooting,
-accessibility, decisions, roadmap, and Home pages with the
-current production identity and evidence.
+decisions, roadmap, and Home pages with the current production identity,
+screenshots, measured acceptance, relay recovery, and rollback target.
+
+Deployment attempt 1 published version
+`45cccadf-0456-4812-aed3-54286886a3c0`, but smoke failed only because the
+unchanged private aircraft relay returned `502 Aircraft upstream unavailable`.
+The dynamic aircraft response carried the exact new release header; Static
+Assets, orbital behavior, and every non-aircraft surface were healthy, and the
+release contained no Worker, relay, workflow, or infrastructure change. The
+supported diagnostic reboot moved the instance through `STOPPING` at
+`2026-10-01T15:55:29Z`, `STARTING` at `15:56:34Z`, and `RUNNING` at
+`15:56:55Z`. Four bounded public probes remained `502`; the fifth returned real
+`200 application/json` at `15:58:24Z`. The exact same authorized workflow
+inputs then passed build, deployment, smoke, and recording on attempt 2. No
+application rollback, shared-egress fallback, provider substitution, relay
+source change, or credential rotation was used.
 
 Cache-disabled public-origin orbital-enrichment acceptance used real current
 Hubble, ISS, and NORAD `733` map features. Before selection there were zero
@@ -630,6 +661,10 @@ the same atomic write supplied the same-retrieval schema-1 visual member with
 Both responses reported source `kv`. A schedule event
 can arrive seconds before the exact two-hour admission boundary and return
 `not-due`; this consumes no provider request and is not a failed refresh.
+
+That curated release remains the byte-exact rollback target for the current
+map follow-up: source `538edd25afa49f62c13e93745b322099f662791d`, recorded
+Cloudflare version `83b98933-a609-405e-b07c-3e4f4ded46e8`.
 
 For local rendered acceptance without production credentials:
 

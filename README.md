@@ -123,8 +123,9 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   visible as an explicit selected exception without inflating filter-excluded
   matching totals only after map display is available; before a settled raw
   zoom, details explicitly report map display unavailable. The coordinated
-  source/browser contract is released through #235 at exact application source
-  `538edd25afa49f62c13e93745b322099f662791d`.
+  source/browser contract was first released through #235 at exact application
+  source `538edd25afa49f62c13e93745b322099f662791d`; the current map follow-up
+  preserves it at `560a9bb409a92036996e391500ec36b1d7b0e728`.
 - A default-enabled ADSB.lol plausible-route lookup for a selected live
   aircraft. A committed selection starts one lookup and shows a compact result
   directly below the aircraft heading. Hover, HISTORY, and same-flight position
@@ -493,9 +494,10 @@ persistent route cache.
 Public production is live at
 <https://livetrafficstan.syntal.workers.dev> on Cloudflare Workers Free with
 Static Assets. The current application source is
-`538edd25afa49f62c13e93745b322099f662791d`. Canonical deployment run
-`36788698617` passed the complete gate and published initial Cloudflare version
-`83b98933-a609-405e-b07c-3e4f4ded46e8`. The deployment preserves:
+`560a9bb409a92036996e391500ec36b1d7b0e728`. Canonical deployment run
+`36887715303`, successful attempt 2, passed the complete gate and published
+Cloudflare version `6b6043b8-3a14-49c0-8af3-b5843f8eb09f`. The deployment
+preserves:
 
 - `oci-private-relay`, aircraft photos, and plausible routes enabled;
 - the orbital catalog enabled with Cron `17 */2 * * *`;
@@ -508,14 +510,35 @@ Static Assets. The current application source is
 - orbital-enrichment manifest `2026-09-29-v1`, exact Hubble/ISS identity
   matching, and two immutable NASA JPEGs totaling 95,457 bytes.
 
-Public symbol acceptance retained one MapLibre canvas through theme restoration
-and responsive resize. Deterministic production-path evidence covers all nine
-vessel classes with maritime-blue silhouettes and coarse line art for cargo,
-passenger, tanker, and tug recognition; exact-release orbital acceptance
-modeled 450 safe current positions and rendered 192/384/450 through the
-world/mid/local tiers, with one same-origin request, zero browser CelesTrak
-requests, visible attribution, trusted touch drag, and bounded
-390x844/390x568 controls.
+The October 1 map follow-up was merged through #242, #243, #244, #245, and
+#246. Exact-merged-main validation run `36887570850` passed 119 files / 746
+tests plus lint, typecheck, static-data checks, build, retirement build, and
+deployment dry-run. Production Chrome `154.0.8037.59` then proved:
+
+- all nine maritime-blue vessel classes at 26/29/36/45 CSS px, DPR 1/2,
+  Light/Dark, headings, live/stale/selected/stopped states, desktop/mobile,
+  picking, exact theme restoration, one canvas/source/layer set, and zero
+  fixture-added provider/search/catalog requests;
+- `ORBITS · 192 SHOWN · 0 PASSES ≤90M` for the measured world view, 454 safe
+  current positions, exactly reviewed `HUBBLE`/NORAD `20580` and
+  `ISS`/NORAD `25544` labels, one catalog request only after enable, no browser
+  CelesTrak or theme-change request, and no task over 50 ms;
+- exact 30 km initial, Home/Center desktop, and mobile framing with zero zoom
+  delta from MapLibre's `cameraForBounds`, six rendered aircraft, one
+  outward-rounded `34 NM` request inside cadence, one canvas, and visible
+  attribution.
+
+Measured evidence and the four hosted screenshots are in
+[#246 production acceptance](https://github.com/vasilyevstan/LiveTrafficStan/pull/246#issuecomment-5935337522).
+
+Deployment attempt 1 published version
+`45cccadf-0456-4812-aed3-54286886a3c0`, but smoke isolated the known unchanged
+OCI guest/network `502`: the exact new release header and all non-aircraft
+surfaces were healthy. The supported diagnostic reboot produced
+`STOPPING -> STARTING -> RUNNING`; four bounded probes remained `502`, then
+real aircraft JSON returned. The exact same authorized deployment inputs
+passed on attempt 2 without application rollback, provider fallback, relay
+source change, or credential rotation.
 
 Fresh rendered production acceptance used a deterministic 24-object crossing
 fixture and exposed all 20 bounded results at both 390x844 and 390x568.
@@ -613,6 +636,10 @@ run `36808295755` restored exact application source
 `83b98933-a609-405e-b07c-3e4f4ded46e8`; schema 2 immediately returned the retained KV bundle
 without another provider refresh.
 
+That curated release is the byte-exact rollback target for the current map
+follow-up: source `538edd25afa49f62c13e93745b322099f662791d`, recorded
+Cloudflare version `83b98933-a609-405e-b07c-3e4f4ded46e8`.
+
 The matching aircraft relay still runs
 `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8` and retains
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` as its prior rollback release.
@@ -624,11 +651,12 @@ wait. Provider `503`, provider `429`, redirects, malformed policy, and failure
 to reach eventual real JSON remain release failures.
 
 Comprehensive public Wiki commit
-`00fb35128ec56c3f15b74690e0ac1f58cbeffc99` synchronizes the release
-identity, nine source-truthful vessel silhouettes, curated source and
-same-route compatibility contract, complete local discovery, zoom tiers,
-single-scroll responsive behavior, validation, troubleshooting, rollback, and
-known physical-device limitation.
+`618943bb23fd6745783dade155e4d9fbf93634cb` synchronizes the current
+production identity, maritime-blue vessel artwork, compact orbital counts and
+exact Hubble/ISS labels, 30 km framing, Chrome measurements, screenshots,
+independent relay recovery, rollback target, and the retained curated source,
+compatibility, discovery, responsive, troubleshooting, and physical-device
+limitations.
 See [Hosting and Deployment](docs/hosting-and-deployment.md) for the dated
 platform matrix, request budget, proxy contract, exact-SHA workflow, smoke,
 monitoring, privacy, and rollback procedure.

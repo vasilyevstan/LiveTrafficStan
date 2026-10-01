@@ -711,6 +711,14 @@ without changing provider or display geometry: the safely representable full
 canvas still determines the enclosing query circle and exact display polygon.
 The Home value is camera framing, not a selectable traffic radius.
 
+The coordinated presentation follow-up was released through #242-#246 at exact
+source `560a9bb409a92036996e391500ec36b1d7b0e728`. Production Chrome
+`154.0.8037.59` retained one map while proving the maritime-blue vessel
+silhouettes, compact rendered/pass counts with exact Hubble/ISS labels, and the
+30 km camera fit. Public Wiki commit
+`618943bb23fd6745783dade155e4d9fbf93634cb` records the measured evidence and
+rollback target without changing these architecture decisions.
+
 ## Provider-safe viewport updates
 
 ADSB.lol publishes dynamic rather than fixed rate limits. Settled camera
