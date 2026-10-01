@@ -272,8 +272,9 @@ for public `/v2` application responses; the provider edge must separately make
 any nginx-generated `429` browser-readable for direct mode to preserve
 explicit backoff. Current production did not wait for provider-side CORS or
 shared-egress allowlisting: source
-`18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8` uses the matching relay release,
-retains `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` as rollback, and keeps one
+`538edd25afa49f62c13e93745b322099f662791d` uses relay release
+`18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8`, retains
+`1f9a2fd322f141fe761d3bf00113e1ab60526e6c` as relay rollback, and keeps one
 stable isolated OCI
 identity behind a private Worker VPC Service and Tunnel. This does not enlarge
 the provider allowance; the application still exposes throttling honestly and

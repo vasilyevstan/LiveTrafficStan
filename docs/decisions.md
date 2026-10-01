@@ -295,10 +295,13 @@ The provider contract and alternatives are recorded in
 [Orbital Data Source Evaluation](orbital-data-source-evaluation.md).
 
 Production activation at source
-`46cb2007bc0cc27d1905fab32db6149a91d17576` retained this design unchanged:
+`538edd25afa49f62c13e93745b322099f662791d` retained this design unchanged:
 the layer remains default-off, the Worker scheduler is enabled only by the
-protected exact-SHA deployment, and browsers still receive only the
-same-origin complete snapshot.
+protected exact-SHA deployment, and browsers receive only complete same-origin
+representations. Run `36788698617` deployed initial Cloudflare version
+`83b98933-a609-405e-b07c-3e4f4ded46e8`; the first ordinary admitted schema-2
+KV bundle was retrieved at `2026-10-01T02:17:32.034Z` and later survived the
+recorded schema-1 rollback/restoration rehearsal without a provider refresh.
 
 ## Reviewed exact-NORAD manifest, not inferred orbital missions
 
@@ -530,6 +533,20 @@ classification service or dataset. The 10 persisted images, 3 exact
 render-only vessel shapes, and 20 aircraft altitude-color variants are
 generated once per theme and reinstalled through the existing single-map style
 lifecycle.
+
+All nine vessel display classes use bold top-down outer silhouettes:
+generic, cargo, tanker, passenger, fishing, exact AIS-52 tug, sailing,
+pleasure craft, and high-speed craft. Installed image IDs or a small raster
+pixel difference are not accepted as proof that people can distinguish them.
+At the minimum 26 CSS px / DPR 1 size, deterministic contour tests require
+pairwise IoU no greater than 0.78, normalized symmetric difference at least
+22 percent, three longitudinal width-band differences among the broad hull
+classes, and identity-bearing features at least 3 CSS px thick. The released
+artwork measured 0.74813 maximum IoU, 0.25187 minimum symmetric difference,
+and 5 CSS px minimum feature thickness. Production-path Chrome evidence also
+covers themes, DPR 1/2, headings, state overlays, backgrounds, responsive
+sizes, picking, and style restoration. The artwork does not alter any
+classification boundary.
 
 Provider-owned icon keys stay in normalized entities and bounded historical
 records. Visual-only state is derived later by one pure presentation module and
