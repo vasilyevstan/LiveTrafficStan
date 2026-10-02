@@ -931,14 +931,18 @@ exact Light -> Dark -> Light restoration retained one map/canvas/source/layer
 set, attribution stayed visible without overflow, and the fixture added zero
 protected provider/search/catalog requests or browser errors.
 
-The reopened #250 acceptance also exercises physical length rather than only
+The reopened #250 acceptance exercises physical length rather than only
 fixture size. Unit tests lock a monotonic 0.8-1.6 model scale from valid AIS
 reference-point length, the explicit 40 m unknown fallback, and the large-hull
 cap. Each of the nine silhouette contours is normalized to the same
-longitudinal source span before the physical scale is applied. Browser evidence
-must join rendered MMSIs to current AIS dimensions and prove that equal-length
-classes have equal nose-to-stern map length while 60-213 m live hulls are
-materially ordered instead of compressed into the former narrow range.
+longitudinal source span before the physical scale is applied. Exact production
+source `bba0bf4f7a69939e3c07fbeb24470fa959f6f20a` supplied 27 current
+GeoJSON vessel features that matched the bounded live AIS dimension sample by
+MMSI, image ID, and normalized marker scale. The retained visible-span
+measurements were monotonic from 60 m / 22.97 CSS px through a 126 m tug /
+29.08 px, 193 m passenger ship / 35.29 px, and 213 m / 37.14 px. One canvas
+persisted; one prior 100 m sample vessel had left the current source and was
+excluded rather than inferred.
 
 Production Chrome `154.0.8037.59` orbital acceptance passed 27/27 checks:
 
@@ -1003,6 +1007,48 @@ zero runtime/log/HTTP errors persisted. The measured record and four hosted
 screenshots are attached to
 [#246](https://github.com/vasilyevstan/LiveTrafficStan/pull/246#issuecomment-5935337522).
 
+The coordinated #267 production acceptance then covered the four follow-up
+surfaces on exact source
+`bba0bf4f7a69939e3c07fbeb24470fa959f6f20a`:
+
+- a retained paused view exposed **Resume live**, returned from zoom `5.6` to
+  `8.9776297284`, rendered four aircraft and 28 ships, issued one `34 NM`
+  request, retained one canvas, and produced no runtime/log error;
+- the vessel lifecycle check rendered 21 current ships across generic, cargo,
+  tanker, and passenger images, confirmed all nine image IDs remained
+  installed through Light -> Dark, retained one desktop/mobile canvas,
+  attribution, and no overflow;
+- the eight-photo fixture loaded every immutable current-generation asset,
+  distinguished invalid from valid-but-uncovered IMO, fenced A-to-B-to-A
+  identity, retained desktop and 390x844/390x568 reachability, and made no
+  external photo-provider request;
+- isolated Starlink acceptance made zero request before enable and one `200`
+  afterward, zero browser CelesTrak requests, reached rows 141-150 on page 8,
+  showed owner-correct details without inferred purpose/image, reproduced
+  Light checksum `208192691` after Dark checksum `162519703`, retained one
+  canvas and one active physical orbital worker, and moved the map by trusted
+  touch at 390x568 with no exception, log error, or failed response.
+
+The canonical deployment required three attempts for independent infrastructure
+transients, not application changes: run `36996396517` met the recurring OCI
+aircraft-path `502`; one documented diagnostic reboot restored real JSON.
+Run `36997137283` then met one AWC METAR `504` after aircraft passed; both
+production and direct AWC recovered immediately. Run `36997443034` passed the
+complete smoke. Target-aware rollback run `36998162009` and exact-current
+restoration run `36998245095` passed afterward.
+
+The scheduled-provider acceptance used one attached read-only observer and no
+manual acquisition. The pre-boundary `12:17:59.818Z` control remained the
+bootstrap. For the first eligible ordinary `22:17Z` Cron, a route request that
+began 1.331 ms before the nominal `22:18Z` observer target completed afterward
+and still returned bootstrap; attempt 2 at `22:19:00.327863Z` returned
+`source=kv`, exact release `bba0bf4f...`, GP retrieval `22:18:01.730Z`,
+SATCAT retrieval/publication `22:18:02.211Z`, population 11,125, sample 150,
+and digest/weak ETag
+`3cd7476fd7d42aed1772a85d4f81c27322c73b088bf58ff217e39454f425f0d7`.
+The response headers/body were retained byte-for-byte, and a bounded
+provider-contract review found no blocker.
+
 The unchanged-tree hard-cap benchmark used 512 records / 501 safe current
 positions. Preparation took 19.4 ms; search p95 was 1.9 ms desktop / 5.6 ms at
 4x CPU, filter p95 1.5 / 6.8 ms, position tick p95 3.1 ms, complete prediction
@@ -1021,13 +1067,13 @@ schema-1 rollback followed by immediate reuse of the retained schema-2 KV
 bundle as restored Cloudflare version
 `83b98933-a609-405e-b07c-3e4f4ded46e8`.
 
-The prior map follow-up source
-`560a9bb409a92036996e391500ec36b1d7b0e728` and Cloudflare version
-`6b6043b8-3a14-49c0-8af3-b5843f8eb09f` are the byte-exact rollback target for
-the smaller-marker release. Public Wiki commit
-`5bab3ed5ef03bb967b7f7bcf2d865d1c9019df16` synchronizes the current release
-identity, reduced scale, browser measurements, screenshots, relay recovery,
-and retained curated/rollback evidence.
+The current traffic-recovery rollback target is source
+`9e1d8c23f9047d0bf57b12bd4abc7d5fcae90f63` and Cloudflare version
+`d83f68ae-907e-4b2d-a086-00b4fde00372`. Public Wiki commit
+`bac76a2994a09e85e1162c5724a6071f0fc35540` synchronizes the current release
+identity, recovery and physical-size behavior, eight-photo coverage, browser
+measurements, scheduled Starlink publication, relay recovery, and
+rollback/restoration evidence.
 
 No `xcrun simctl`, Android emulator/`adb`, hosted-device credential, or
 physical iOS/Android device was available. Chrome DPR, touch,

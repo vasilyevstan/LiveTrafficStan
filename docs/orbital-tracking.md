@@ -20,7 +20,7 @@ This is cataloged orbital-object context, not another live-traffic provider:
   this feature.
 
 The browser implementation and scheduled catalog infrastructure are active in
-production source `9e1d8c23f9047d0bf57b12bd4abc7d5fcae90f63`. The layer
+production source `bba0bf4f7a69939e3c07fbeb24470fa959f6f20a`. The layer
 remains a default-off user preference, while the protected Worker deployment
 sets `ORBITAL_CATALOG_ENABLED=true`, serves the same-origin catalog route, and
 runs the checked two-hour scheduler. A deployment with that Worker flag off
@@ -545,15 +545,19 @@ scheduled KV/Durable Object boundary.
 ## Production activation and visibility evidence
 
 The current exact application release is
-`9e1d8c23f9047d0bf57b12bd4abc7d5fcae90f63`, deployed by protected run
-[36908605830](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/36908605830),
-successful attempt 2, as Cloudflare version
-`d83f68ae-907e-4b2d-a086-00b4fde00372`. It uses KV namespace
+`bba0bf4f7a69939e3c07fbeb24470fa959f6f20a`, initially deployed by protected
+run
+[36997443034](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/36997443034),
+successful attempt 3, as Cloudflare version
+`63e5a14d-7115-44aa-9386-36b13b5ff91d`. Protected rollback/restoration runs
+`36998162009` and `36998245095` then returned the exact release as running
+version `146e74df-c960-4a41-bc0c-6d5b9fa0d660`. It uses KV namespace
 `59178d55418247c4bab473b52a5dc07d` and Cron `17 */2 * * *`.
 Implementation PRs #232 and #233 supplied the source contract and browser
 consumer; #235 performed the coordinated catalog release. PR #243 added the
 compact rendered/pass summary and exact featured labels, and #246 performed
-the checked map follow-up release.
+the checked map follow-up release. PRs #258/#260 added the bounded Starlink
+channel, while #264/#267 made immediate bootstrap activation cadence-safe.
 
 The initial #235 curated release's immediate exact-route proof returned:
 
@@ -625,11 +629,42 @@ attribution remained visible, and no runtime/log/HTTP error or long task over
 50 ms occurred. Evidence and world/mobile screenshots are attached to
 [#246](https://github.com/vasilyevstan/LiveTrafficStan/pull/246#issuecomment-5935337522).
 
-Public Wiki commit `5bab3ed5ef03bb967b7f7bcf2d865d1c9019df16`
-synchronizes the current release, reduced vessel scale, compact counts, exact
-Hubble/ISS labels, provider/privacy boundary, same-route compatibility,
-discovery, zoom tiers, single-scroll responsive behavior, validation,
-troubleshooting, rollback, and known device-evidence limitation.
+Exact #267 Starlink acceptance used the production route and immutable
+`starlink-2026-10-02-v1` generation. Before enable there were zero Starlink
+requests and no Starlink worker channel. Enabling the child made exactly one
+same-origin `200` request and zero browser CelesTrak requests; 150 safe modeled
+records and the source population of 11,125 were reported separately. All
+eight pages were reachable, including rows 141-150. Selection remained
+owner-qualified and stated that purpose/image were not inferred. Light
+checksum `208192691`, Dark checksum `162519703`, and restored Light checksum
+`208192691` proved image replacement; parent-off terminated the physical
+worker while retaining the child preference, parent-on created one active
+worker without another request, and 390x568 trusted touch moved the same map.
+One canvas persisted with no runtime exception, browser-log error, or failed
+response.
+
+The ordinary `2026-10-02T12:17Z` scheduled event occurred before the Starlink
+row's exact `20:40:03Z` boundary. At `12:17:59.818Z`, the route still served
+source `bootstrap` with GP retrieval `08:40:03Z`, SATCAT/publication
+`08:40:05Z`, population 11,125, sample 150, digest
+`16233efe565c8f07f079ae4ad321219ae756931679d167fb2a3f2f52bf5a81d4`,
+and the matching weak ETag. The unchanged generation is the truthful
+pre-boundary result.
+
+The first eligible ordinary `22:17Z` event then produced the newer complete
+generation without manual acquisition. At `22:19:00.327863Z`, the route
+returned `source=kv` for exact release `bba0bf4f...`, with GP retrieval
+`22:18:01.730Z`, SATCAT retrieval/publication `22:18:02.211Z`, serve time
+`22:19:00.626Z`, population 11,125, sample 150, and digest/weak ETag
+`3cd7476fd7d42aed1772a85d4f81c27322c73b088bf58ff217e39454f425f0d7`.
+The newer GP clock proves replacement of the `08:40:03Z` bootstrap generation.
+
+Public Wiki commit `bac76a2994a09e85e1162c5724a6071f0fc35540`
+synchronizes the current release, physical vessel scale, eight-photo coverage,
+compact counts, exact Hubble/ISS labels, bounded Starlink lifecycle and
+scheduled publication, provider/privacy boundaries, same-route compatibility,
+single-scroll responsive behavior, validation, troubleshooting, rollback, and
+known device-evidence limitation.
 
 Cache-disabled public-origin enrichment acceptance used real current Hubble
 `20580`, ISS `25544`, and exact rocket body `733` features. It observed zero

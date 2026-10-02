@@ -346,6 +346,18 @@ map/shown points, and crossings separately. The child preference remains
 remembered while its parent is off, but it cannot fetch or model until ORBITS
 is effective.
 
+Production release #267 validated this smaller contract rather than expanding
+scope. The immutable 150-record bootstrap was available immediately at source
+`bba0bf4f7a69939e3c07fbeb24470fa959f6f20a`; exact Chrome acceptance made
+one same-origin request, zero browser CelesTrak requests, reached all eight
+pages, retained one active physical orbital worker, and restored theme/mobile
+state without diagnostics. Protected rollback to the pre-Starlink target and
+exact-current restoration both passed without deleting KV/Durable Object
+state, resetting cadence, or performing a manual provider refresh.
+The first eligible ordinary `22:17Z` Cron then advanced the public route to
+`source=kv` with GP retrieval `22:18:01.730Z`, a newer complete 11,125-record
+generation, the same 150-record bound, and no manual acquisition.
+
 ## Reviewed exact-NORAD manifest, not inferred orbital missions
 
 Issue #193 uses a tiny bundled manifest for purpose and image context rather

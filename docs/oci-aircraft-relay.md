@@ -28,11 +28,14 @@ active on the relay VM with four IPv6 QUIC connections and a dedicated
 used only when a protected deployment selects `oci-private-relay`.
 
 The current application source is
-`9e1d8c23f9047d0bf57b12bd4abc7d5fcae90f63`; it continues to use active relay
-source `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8`, while
+`bba0bf4f7a69939e3c07fbeb24470fa959f6f20a`; it continues to use active
+relay source `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8`, while
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` remains the relay rollback target.
-Canonical production run `36908605830`, successful attempt 2, published
-Cloudflare version `d83f68ae-907e-4b2d-a086-00b4fde00372`.
+Canonical production run `36997443034`, successful attempt 3, initially
+published version `63e5a14d-7115-44aa-9386-36b13b5ff91d`. Protected
+rollback/restoration runs `36998162009` and `36998245095` then returned the
+same exact current source as running version
+`146e74df-c960-4a41-bc0c-6d5b9fa0d660`.
 
 The first same-source run `36627068064` had already deployed healthy
 application, orbital, enrichment, weather, and marine surfaces as version
@@ -363,6 +366,17 @@ exact release header at `18:48:20Z`. The unchanged workflow passed on attempt
 2 as Cloudflare version `d83f68ae-907e-4b2d-a086-00b4fde00372`; no application
 rollback, relay change, credential rotation, provider fallback, or firewall
 change was used.
+
+The traffic-recovery deployment repeated the aircraft-only recurrence without
+any relay code or topology change. Run `36996396517` deployed exact source
+`bba0bf4f7a69939e3c07fbeb24470fa959f6f20a`, then only aircraft smoke
+returned `502`. One `DIAGNOSTICREBOOT` was requested at
+`2026-10-02T10:41:00Z`; OCI reported `STOPPING` at `10:41:02Z`, `STARTING`
+at `10:42:10Z`, and `RUNNING` at `10:42:50Z`. Four bounded 20-second probes
+remained `502`; the fifth returned real aircraft JSON at `10:44:21Z`.
+Unchanged deployment attempt 2 then met an unrelated AWC METAR `504` after
+aircraft passed, and unchanged attempt 3 passed the complete smoke. Do not
+apply the OCI recovery to an isolated weather-provider failure.
 
 After source `18082a1e...` activated the reviewed admission marker and smoke
 policy, canonical run `36642794309` passed. A separate bounded production

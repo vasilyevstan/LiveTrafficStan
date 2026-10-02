@@ -9,14 +9,13 @@ Magnifica. The three additions were observed through Digitraffic on
 2026-10-02 and retain the same exact-IMO, fixed-revision, bundled-asset
 contract.
 
-The original five-photo feature is accepted in production at application source
-`d56f8900d25bd57338c459487df6b992edab62f4`. Exact-main validation run
-`36265842006` and deployment/smoke run `36266052761` passed; Cloudflare
-version `0c84f9de-8a5e-443c-9fc5-b539b7464fec` serves the reviewed assets.
-The synchronized public Wiki commit is
-`17bb011a1b5a9a035126c772f6fd48f367e9bbc1`.
-The three-photo expansion is prepared for the next checked release and does not
-rewrite the accepted `2026-09-26-v1` bytes.
+The eight-photo generation is accepted in production at application source
+`bba0bf4f7a69939e3c07fbeb24470fa959f6f20a`. Protected release validation
+run `36996187462`, canonical deployment run `36997443034`, rollback run
+`36998162009`, and restoration run `36998245095` passed. The current running
+Cloudflare version is `146e74df-c960-4a41-bc0c-6d5b9fa0d660`. The expansion
+does not rewrite the accepted `2026-09-26-v1` bytes, which remain historical
+rollback assets.
 
 The feature is not a general vessel-image lookup. It makes no runtime request
 to Wikimedia, Wikidata, a ship tracker, an image API, or a LiveTrafficStan
@@ -225,6 +224,16 @@ additionally proved zero image request before 500 ms, the exact Finlandia
 pointer/focus traversal, Escape dismissal back to the map, stale-marker
 cleanup, unmatched omission, and no external image-provider request or browser
 diagnostic against the production origin.
+
+The current eight-photo release repeated the acceptance against exact
+production source `bba0bf4f7a69939e3c07fbeb24470fa959f6f20a`. All eight
+same-origin assets returned their declared image MIME and
+`public, max-age=31536000, immutable`; selected details distinguished the exact
+invalid/missing wording from the valid-but-uncovered exact-IMO wording; and an
+A-to-B-to-A sequence never paired stale image/title/rights state. Desktop
+1280x900 and mobile 390x844/390x568 retained the Close action, photo,
+source/license text, attribution, and one MapLibre canvas with no external
+photo-provider request or browser diagnostic.
 
 ## Adding or removing an entry
 

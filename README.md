@@ -127,9 +127,9 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   matching totals only after map display is available; before a settled raw
   zoom, details explicitly report map display unavailable. The coordinated
   source/browser contract was first released through #235 at exact application
-  source `538edd25afa49f62c13e93745b322099f662791d`; the current map follow-up
-  and smaller-marker release preserve it at
-  `9e1d8c23f9047d0bf57b12bd4abc7d5fcae90f63`.
+  source `538edd25afa49f62c13e93745b322099f662791d`; the current traffic-recovery
+  release preserves it at
+  `bba0bf4f7a69939e3c07fbeb24470fa959f6f20a`.
 - Issue #257 adds a separate remembered **STARLINK** child layer under
   **Operations -> More -> Orbits**. It starts off even when ORBITS is on and
   makes no request until both toggles are effective. The server publishes at
@@ -527,13 +527,17 @@ persistent route cache.
 Public production is live at
 <https://livetrafficstan.syntal.workers.dev> on Cloudflare Workers Free with
 Static Assets. The current application source is
-`9e1d8c23f9047d0bf57b12bd4abc7d5fcae90f63`. Canonical deployment run
-`36908605830`, successful attempt 2, passed the complete gate and published
-Cloudflare version `d83f68ae-907e-4b2d-a086-00b4fde00372`. The deployment
-preserves:
+`bba0bf4f7a69939e3c07fbeb24470fa959f6f20a`. Canonical deployment run
+`36997443034`, successful attempt 3, passed the complete gate and initially
+published Cloudflare version `63e5a14d-7115-44aa-9386-36b13b5ff91d`.
+Protected rollback run `36998162009` then restored the predecessor for
+target-aware smoke, and protected restoration run `36998245095` returned the
+exact current source as the running Cloudflare version
+`146e74df-c960-4a41-bc0c-6d5b9fa0d660`. The deployment preserves:
 
 - `oci-private-relay`, aircraft photos, and plausible routes enabled;
-- the orbital catalog enabled with Cron `17 */2 * * *`;
+- the curated orbital and bounded Starlink catalogs enabled with Cron
+  `17 */2 * * *`;
 - KV namespace `59178d55418247c4bab473b52a5dc07d`;
 - the default schema-1 compatibility representation plus negotiated schema-2
   catalog `celestrak-curated-v1`;
@@ -541,7 +545,12 @@ preserves:
   records, and digest
   `5cb57fdeaa99dc585dc6c16e1548aa6e5bd05217f23b28c6ae205b96ee70bde6`;
 - orbital-enrichment manifest `2026-09-29-v1`, exact Hubble/ISS identity
-  matching, and two immutable NASA JPEGs totaling 95,457 bytes.
+  matching, and two immutable NASA JPEGs totaling 95,457 bytes;
+- immutable vessel-photo generation `2026-10-02-v1`, eight exact-IMO entries,
+  and 951,872 bundled bytes;
+- immutable Starlink generation `starlink-2026-10-02-v1`, 150 systematic
+  sample records from a validated 11,125-record population, and digest
+  `16233efe565c8f07f079ae4ad321219ae756931679d167fb2a3f2f52bf5a81d4`.
 
 The October 1 map follow-up was merged through #242, #243, #244, #245, and
 #246. Exact-merged-main validation run `36887570850` passed 119 files / 746
@@ -585,6 +594,61 @@ Deployment attempt 1 again isolated the unchanged private-relay guest/network
 `502`; the supported diagnostic reboot progressed through
 `STOPPING -> STARTING -> RUNNING`, bounded probes reached real exact-release
 aircraft JSON, and the unchanged workflow passed on attempt 2.
+
+The coordinated traffic-recovery release followed through #262-#267.
+Protected release validation run `36996187462` passed the combined tree: 127
+test files / 950 tests, lint, typecheck, all static-data checks, both builds,
+and deployment dry runs. Production acceptance then proved:
+
+- **Resume live** recovered an initially paused retained view from zoom `5.6`
+  to the reviewed zoom `8.9776297284`, rendered four aircraft and 28 ships,
+  made one bounded `34 NM` aircraft request, retained one MapLibre canvas, and
+  reported no browser diagnostic;
+- 27 current production vessel features joined exactly by MMSI, image ID, and
+  normalized marker scale to the bounded live AIS dimension sample. Visible
+  nose-to-stern size increased monotonically from Nafta at 60 m / 22.97 CSS
+  px, through the 126 m tug Raduga Proton at 29.08 px and 193 m Romantika at
+  35.29 px, to MyStar at 213 m / 37.14 px;
+- all eight exact-IMO vessel images loaded from immutable same-origin assets,
+  while invalid and valid-but-uncovered IMO states explained why no substitute
+  was shown. A-to-B-to-A identity fencing, desktop/390-pixel reachability, and
+  zero external photo-provider requests passed;
+- the Starlink child layer made zero request before enable and exactly one
+  same-origin request afterward, made zero browser CelesTrak requests, exposed
+  all eight pages and rows 141-150, retained one canvas and one active physical
+  orbital worker, restored Light -> Dark -> Light image bytes, preserved the
+  remembered child preference across parent-off/on, and passed trusted
+  390x568 touch movement with no runtime, log, or HTTP error.
+
+Deployment attempt 1 (`36996396517`) published exact source as version
+`ebee76a9-0555-406f-95ba-285e2e548612` but encountered the independent OCI
+relay `502`. One documented `DIAGNOSTICREBOOT` moved the exact instance through
+`STOPPING`, `STARTING`, and `RUNNING`; the fifth bounded 20-second probe
+returned real aircraft JSON. Attempt 2 (`36997137283`) passed aircraft but met
+one transient AWC METAR `504`; production and direct AWC recovered immediately.
+Attempt 3 passed unchanged. The rollback rehearsal restored source
+`9e1d8c23f9047d0bf57b12bd4abc7d5fcae90f63` / version
+`d83f68ae-907e-4b2d-a086-00b4fde00372`, and exact-current restoration passed
+without a standalone secret mutation or provider refresh.
+
+The ordinary `2026-10-02T12:17Z` Cron occurred before the seeded Starlink
+boundary. A public route observation at `12:17:59.818Z` still returned source
+`bootstrap`, GP retrieval `08:40:03Z`, SATCAT/publication `08:40:05Z`,
+population 11,125, sample 150, digest
+`16233efe565c8f07f079ae4ad321219ae756931679d167fb2a3f2f52bf5a81d4`,
+and the matching weak ETag. This is the expected no-replacement result before
+the exact `20:40:03Z` admission boundary.
+
+The first eligible ordinary `22:17Z` Cron then published a newer complete
+generation without a workflow dispatch, manual scheduler call, or manual
+provider acquisition. The first request strictly after the observer's
+`22:18Z` target began at `22:19:00.327863Z` and returned HTTP 200,
+`source=kv`, and exact release `bba0bf4f...`: GP retrieval
+`22:18:01.730Z`, SATCAT retrieval/publication `22:18:02.211Z`, serve time
+`22:19:00.626Z`, population 11,125, sample 150, and digest/weak ETag
+`3cd7476fd7d42aed1772a85d4f81c27322c73b088bf58ff217e39454f425f0d7`.
+A bounded provider-contract review found no cadence, backoff/lock, complete
+pair, final-write, last-good, privacy, or failure-isolation blocker.
 
 Fresh rendered production acceptance used a deterministic 24-object crossing
 fixture and exposed all 20 bounded results at both 390x844 and 390x568.
@@ -699,12 +763,12 @@ wait. Provider `503`, provider `429`, redirects, malformed policy, and failure
 to reach eventual real JSON remain release failures.
 
 Comprehensive public Wiki commit
-`5bab3ed5ef03bb967b7f7bcf2d865d1c9019df16` synchronizes the current
-production identity, reduced 22-37 CSS px maritime-blue vessel scale, compact
-orbital counts and exact Hubble/ISS labels, 30 km framing, Chrome
-measurements, screenshots, independent relay recovery, rollback target, and
-the retained curated source, compatibility, discovery, responsive,
-troubleshooting, and physical-device limitations.
+`bac76a2994a09e85e1162c5724a6071f0fc35540` synchronizes the current
+production identity, live-traffic recovery, physical vessel sizing, all eight
+exact-IMO photos, bounded Starlink lifecycle and scheduled publication,
+browser acceptance, independent relay recovery, rollback/restoration,
+provider/privacy boundaries, troubleshooting, and physical-device
+limitations.
 See [Hosting and Deployment](docs/hosting-and-deployment.md) for the dated
 platform matrix, request budget, proxy contract, exact-SHA workflow, smoke,
 monitoring, privacy, and rollback procedure.
