@@ -6,15 +6,18 @@ import sourceSettings from '../src/config/starlinkCatalogSource.json' with {
   type: 'json',
 }
 import {
+  STARLINK_BOOTSTRAP_GP_RETRIEVED_AT_MS,
   STARLINK_BOOTSTRAP_PATH,
   STARLINK_BOOTSTRAP_VERSION,
   STARLINK_CATALOG_ID,
   STARLINK_GP_SOURCE_URL,
+  STARLINK_INITIAL_REFRESH_NOT_BEFORE_MS,
   STARLINK_MAX_AGGREGATE_BYTES,
   STARLINK_MAX_SNAPSHOT_BYTES,
   STARLINK_MAX_UPSTREAM_BYTES,
   STARLINK_MAX_UPSTREAM_RECORDS,
   STARLINK_NOTICE_PATH,
+  STARLINK_REFRESH_INTERVAL_MS,
   STARLINK_SAMPLE_ALGORITHM,
   STARLINK_SAMPLE_LIMIT,
   STARLINK_SATCAT_SOURCE_URL,
@@ -79,7 +82,6 @@ if (
 ) {
   fail('bounded provider evidence is invalid')
 }
-
 await verifyImmutableStarlinkCatalogHistory({
   base: process.env.STARLINK_CATALOG_IMMUTABLE_BASE,
   repositoryRoot,
@@ -132,6 +134,15 @@ if (
     JSON.stringify(['NOTICE.txt', 'catalog.json'])
 ) {
   fail('published provider evidence is incomplete')
+}
+if (
+  Date.parse(probe.gp.retrievedAt) !==
+    STARLINK_BOOTSTRAP_GP_RETRIEVED_AT_MS ||
+  STARLINK_INITIAL_REFRESH_NOT_BEFORE_MS !==
+    STARLINK_BOOTSTRAP_GP_RETRIEVED_AT_MS +
+      STARLINK_REFRESH_INTERVAL_MS
+) {
+  fail('bootstrap-derived first refresh boundary is invalid')
 }
 
 const catalogBytes = await readFile(catalogPath)

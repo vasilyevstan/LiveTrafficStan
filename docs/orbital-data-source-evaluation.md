@@ -60,6 +60,13 @@ fallback group, truncation, or browser-triggered acquisition exists. Fixed
 source URLs, exact evidence, and the immutable generation are recorded in
 `src/config/starlinkCatalogSource.json` and its co-located notice.
 
+For the first production activation, an absent row is initialized from the
+pinned GP retrieval time below rather than deployment time. Its initial
+not-before boundary is therefore `2026-10-02T20:40:03Z`. The immutable sample
+may be served before that boundary, but the shared Cron performs no Starlink
+provider read; the first admitted request at or after the boundary becomes the
+new actual-start anchor.
+
 The one immutable-source acquisition began at `2026-10-02T08:40:00Z`, after
 the conservative 12-hour window. GP completed at `08:40:03Z` and SATCAT at
 `08:40:05Z`; each returned 11,125 rows. Decoded sizes were 4,699,409 and

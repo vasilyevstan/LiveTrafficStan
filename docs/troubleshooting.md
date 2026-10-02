@@ -687,9 +687,12 @@ Check literal `GET /api/orbits/starlink`:
 Do not manually refresh CelesTrak. The separate SQLite admission row permits
 one actual GP start per 12 hours, after curated work and subject to the shared
 terminal block and `Retry-After`. A failed pair waits for the next normal
-window. Inspect aggregate scheduled outcome and the exact source timestamps;
-GP retrieval must not follow SATCAT retrieval, and publication must not precede
-SATCAT.
+window. On a fresh Durable Object, `not-due` through
+`2026-10-02T20:40:03Z` is the expected bootstrap-derived guard, not a failed
+activation: `/api/orbits/starlink` should still serve the immutable bootstrap
+without a CelesTrak request. Inspect aggregate scheduled outcome and the exact
+source timestamps; GP retrieval must not follow SATCAT retrieval, and
+publication must not precede SATCAT.
 
 If KV is healthy but requests time out, verify the immutable asset binding:
 bootstrap fallback must stop within 1.5 seconds and cannot consume the
