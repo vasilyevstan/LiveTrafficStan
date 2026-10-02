@@ -189,6 +189,20 @@ Attempt 2 passed unchanged as Cloudflare version
 `d83f68ae-907e-4b2d-a086-00b4fde00372`. This is further evidence to recover
 the relay independently rather than roll back unrelated application changes.
 
+The 2026-10-02 traffic-recovery release repeated the same isolated relay
+recurrence. Run `36996396517` deployed exact source
+`bba0bf4f7a69939e3c07fbeb24470fa959f6f20a` as version
+`ebee76a9-0555-406f-95ba-285e2e548612`; only the private aircraft path
+returned `502`. One exact-instance `DIAGNOSTICREBOOT` was requested at
+`10:41:00Z`; the lifecycle reached `STOPPING` at `10:41:02Z`, `STARTING` at
+`10:42:10Z`, and `RUNNING` at `10:42:50Z`. Four bounded 20-second probes
+remained `502`; the fifth returned real aircraft JSON at `10:44:21Z`.
+Unchanged run `36997137283` then passed aircraft and met a separate transient
+AWC METAR `504`; both production and direct AWC recovered immediately.
+Unchanged run `36997443034` passed the complete smoke. Diagnose these surfaces
+independently: an aircraft-only VPC exception uses the relay recovery path,
+while an isolated upstream AWC `5xx` is not evidence to reboot OCI.
+
 ADSB.lol rejects generic Worker identification. The proxy must send the stable
 public LiveTrafficStan User-Agent. Do not work around a `403` by forwarding
 browser headers, cookies, authorization, or a client-controlled destination.
@@ -699,6 +713,23 @@ without a CelesTrak request. Inspect aggregate scheduled outcome and the exact
 source timestamps; GP retrieval must not follow SATCAT retrieval, and
 publication must not precede SATCAT.
 
+The release observer confirmed that expected state after the ordinary
+`2026-10-02T12:17Z` event: at `12:17:59.818Z`, source, digest, ETag,
+retrieval/publication times, population 11,125, and sample 150 were all the
+unchanged bootstrap generation. Treat that result as the pre-boundary control,
+not as evidence to trigger acquisition manually.
+
+The first eligible ordinary `22:17Z` event subsequently published normally.
+The first strictly post-`22:18Z` observation at `22:19:00.327863Z` returned
+`source=kv`, GP retrieval `22:18:01.730Z`, SATCAT retrieval/publication
+`22:18:02.211Z`, serve time `22:19:00.626Z`, population 11,125, sample 150,
+and digest/weak ETag
+`3cd7476fd7d42aed1772a85d4f81c27322c73b088bf58ff217e39454f425f0d7`.
+If a future eligible event remains on an older generation, preserve the
+last-good snapshot and inspect the shared coordinator outcome, global
+`Retry-After`/terminal state, in-progress lock, complete-pair validation, and
+final KV write. Do not call the scheduler or provider manually.
+
 If KV is healthy but requests time out, verify the immutable asset binding:
 bootstrap fallback must stop within 1.5 seconds and cannot consume the
 browser's full five-second deadline. If a non-payload Starlink object displays
@@ -832,7 +863,7 @@ as terminal for the running tab rather than retrying on reselection. A hover
 must never contact NASA or request the same-origin asset; a tooltip can reuse
 only a validated Blob URL created by selected details earlier in the tab.
 
-Current application source `9e1d8c23f9047d0bf57b12bd4abc7d5fcae90f63`
+Current application source `bba0bf4f7a69939e3c07fbeb24470fa959f6f20a`
 retains the same previously proven uncached `200 image/jpeg` Static Assets with
 exact 46,716-byte and 48,741-byte lengths plus one-year immutable caching. Any
 different bytes, media type, redirect, repeated request, NASA runtime request,
