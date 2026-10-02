@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "catalogId": "celestrak-starlink-sample-v1",
+  "bootstrapVersion": "starlink-2026-10-02-v1",
+  "bootstrapPath": "/orbital-data/starlink-2026-10-02-v1/catalog.json",
+  "noticePath": "/orbital-data/starlink-2026-10-02-v1/NOTICE.txt",
+  "status": "published",
+  "probe": {
+    "reviewedAt": "2026-10-02",
+    "gp": {
+      "url": "https://celestrak.org/NORAD/elements/gp.php?GROUP=starlink&FORMAT=JSON",
+      "records": 11125,
+      "bytes": 4699409,
+      "retrievedAt": "2026-10-02T08:40:03.000Z",
+      "sha256": "acd397061a2d3880e50a9a703b208c9f568840303d85cbc3d13b0e5bc5349fdf"
+    },
+    "satcat": {
+      "url": "https://celestrak.org/satcat/records.php?GROUP=starlink&FORMAT=JSON",
+      "records": 11125,
+      "bytes": 3684028,
+      "retrievedAt": "2026-10-02T08:40:05.000Z",
+      "sha256": "ca962c8ce2601f0c6ad43da8c9ba1d9ca720950fa3cbaf6ef5e23d5467b2ad45"
+    },
+    "aggregateDecodedBytes": 8383437
+  },
+  "expected": {
+    "populationCount": 11125,
+    "extraSatcatCount": 0,
+    "records": 150,
+    "snapshotBytes": 74982,
+    "snapshotFileSha256": "4e5e962defb7b6b5f006874cede6dae31fe192ebee4b1e60bfcf1eb2965e6793",
+    "canonicalDigest": "16233efe565c8f07f079ae4ad321219ae756931679d167fb2a3f2f52bf5a81d4",
+    "noticeBytes": 1044,
+    "noticeSha256": "f5d932d68271624e72265ef53a7bc4a0e02de9b65e0bfdd4a81d5afddc9a7223"
+  }
+}

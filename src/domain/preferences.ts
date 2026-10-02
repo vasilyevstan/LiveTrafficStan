@@ -125,6 +125,10 @@ const resolveLayers = (value: unknown): LayerPreferences => {
       value.orbitalObjectsVisible,
       defaults.orbitalObjectsVisible,
     ),
+    starlinkVisible: booleanOr(
+      value.starlinkVisible,
+      defaults.starlinkVisible,
+    ),
   }
 }
 

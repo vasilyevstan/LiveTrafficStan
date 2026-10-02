@@ -1,3 +1,11 @@
+import {
+  STARLINK_CATALOG_KEY,
+  prepareStarlinkCatalogRefresh,
+  serializeStarlinkCatalogSnapshot,
+  type StarlinkRefreshOptions,
+  type StarlinkRefreshPreparation,
+} from './starlinkCatalog.ts'
+
 export const ORBITAL_CATALOG_PATH = '/api/orbits/catalog'
 export const ORBITAL_CATALOG_V2_ACCEPT =
   'application/vnd.livetrafficstan.orbital-catalog+json;version=2'
@@ -196,6 +204,7 @@ export interface OrbitalCatalogEnvironment {
   ASSETS: OrbitalAssetBinding
   ORBITAL_CATALOG?: OrbitalKeyValueStore
   ORBITAL_CATALOG_ENABLED?: string
+  STARLINK_CATALOG_ENABLED?: string
 }
 
 export type OrbitalRefreshReservation =
@@ -207,8 +216,20 @@ export type OrbitalRefreshCompletion =
   | { kind: 'next'; nextAllowedAtMs: number }
   | { kind: 'blocked'; status: number; blockedAtMs: number }
 
+export type StarlinkRefreshReservation =
+  | {
+      kind: 'admitted'
+      lastStartedAtMs: number
+      nextAllowedAtMs: number
+    }
+  | { kind: 'not-due'; nextAllowedAtMs: number }
+
 export interface OrbitalRefreshCoordinator {
   reserve(nowMs: number): Promise<OrbitalRefreshReservation>
+  reserveStarlink(
+    attemptId: string,
+    nowMs: number,
+  ): Promise<StarlinkRefreshReservation>
   complete(
     attemptId: string,
     completion: OrbitalRefreshCompletion,
@@ -232,6 +253,18 @@ export type OrbitalRefreshOutcome =
       recordCount: number
       sha256: string
       retrievedAt: string
+      starlink?:
+        | { kind: 'disabled' }
+        | { kind: 'not-due'; nextAllowedAtMs: number }
+        | { kind: 'skipped'; reason: string }
+        | { kind: 'failed'; reason: string }
+        | {
+            kind: 'published'
+            recordCount: number
+            populationCount: number
+            digest: string
+            publishedAt: string
+          }
     }
 
 interface SnapshotDigestInput {
@@ -264,6 +297,8 @@ interface RefreshOptions {
   totalTimeoutMs?: number
   maximumUpstreamBytes?: number
   maximumAggregateBytes?: number
+  starlinkWallNow?: () => number
+  starlink?: StarlinkRefreshOptions
 }
 
 interface CatalogRouteOptions {
@@ -2223,33 +2258,182 @@ export const refreshOrbitalCatalog = async (
     }
   }
 
-  if (
-    !(await complete({
-      kind: 'next',
-      nextAllowedAtMs: ordinaryNextAllowedAtMs,
-    }))
-  ) {
+  let starlinkPreparation: StarlinkRefreshPreparation = {
+    kind: 'disabled',
+  }
+  if (environment.STARLINK_CATALOG_ENABLED === 'true') {
+    let starlinkStartMs: number
+    try {
+      starlinkStartMs = (
+        options.starlinkWallNow ?? (() => Date.now())
+      )()
+    } catch {
+      starlinkStartMs = Number.NaN
+    }
+
+    if (
+      !Number.isSafeInteger(starlinkStartMs) ||
+      starlinkStartMs <= 0
+    ) {
+      starlinkPreparation = {
+        kind: 'skipped',
+        reason: 'Starlink refresh time is invalid',
+      }
+    } else {
+      let starlinkReservation:
+        | StarlinkRefreshReservation
+        | undefined
+      try {
+        starlinkReservation = await coordinator.reserveStarlink(
+          reservation.attemptId,
+          starlinkStartMs,
+        )
+      } catch {
+        starlinkPreparation = {
+          kind: 'skipped',
+          reason: 'Could not persist the Starlink start gate',
+        }
+      }
+      if (starlinkReservation?.kind === 'not-due') {
+        starlinkPreparation = starlinkReservation
+      } else if (starlinkReservation?.kind === 'admitted') {
+        starlinkPreparation = await prepareStarlinkCatalogRefresh(
+          environment,
+          {
+            ...options.starlink,
+            fetchImpl:
+              options.starlink?.fetchImpl ?? options.fetchImpl,
+            nowMs: starlinkReservation.lastStartedAtMs,
+          },
+        )
+      }
+    }
+  }
+
+  let completion: OrbitalRefreshCompletion = {
+    kind: 'next',
+    nextAllowedAtMs: ordinaryNextAllowedAtMs,
+  }
+  let providerOutcome:
+    | Exclude<
+        OrbitalRefreshOutcome,
+        | { kind: 'published' }
+        | { kind: 'disabled' }
+        | { kind: 'unavailable'; reason: string }
+        | { kind: 'not-due'; nextAllowedAtMs: number }
+        | { kind: 'failed'; reason: string }
+      >
+    | undefined
+  if (starlinkPreparation.kind === 'blocked') {
+    completion = {
+      kind: 'blocked',
+      status: starlinkPreparation.status,
+      blockedAtMs: starlinkPreparation.blockedAtMs,
+    }
+    providerOutcome = {
+      kind: 'blocked',
+      status: starlinkPreparation.status,
+    }
+  } else if (starlinkPreparation.kind === 'retry-after') {
+    const nextAllowedAtMs = Math.max(
+      ordinaryNextAllowedAtMs,
+      starlinkPreparation.retryAtMs ??
+        ordinaryNextAllowedAtMs,
+    )
+    completion = { kind: 'next', nextAllowedAtMs }
+    providerOutcome =
+      starlinkPreparation.status === 429
+        ? { kind: 'rate-limited', nextAllowedAtMs }
+        : {
+            kind: 'deferred',
+            status: starlinkPreparation.status,
+            nextAllowedAtMs,
+          }
+  }
+
+  if (!(await complete(completion))) {
     return {
       kind: 'unavailable',
       reason: 'Could not persist the provider outcome',
     }
   }
-  try {
-    await store.put(
-      ORBITAL_CATALOG_KEY,
-      serializeOrbitalCatalogPublication(publication),
-    )
-  } catch {
+
+  const writes = [
+    {
+      key: ORBITAL_CATALOG_KEY,
+      value: serializeOrbitalCatalogPublication(publication),
+      label: 'orbital',
+    },
+  ]
+  if (starlinkPreparation.kind === 'ready') {
+    writes.push({
+      key: STARLINK_CATALOG_KEY,
+      value: serializeStarlinkCatalogSnapshot(
+        starlinkPreparation.snapshot,
+      ),
+      label: 'Starlink',
+    })
+  }
+  const writeResults = await Promise.allSettled(
+    writes.map(({ key, value }) => store.put(key, value)),
+  )
+  const failedWrites = writeResults.flatMap((result, index) =>
+    result.status === 'rejected'
+      ? [writes[index]?.label ?? 'catalog']
+      : [],
+  )
+  if (failedWrites.length > 0) {
     return {
       kind: 'failed',
-      reason: 'Orbital snapshot publication failed',
+      reason:
+        failedWrites.length === 1 &&
+        failedWrites[0] === 'orbital'
+          ? 'Orbital snapshot publication failed'
+          : failedWrites.length === 1 &&
+              failedWrites[0] === 'Starlink'
+            ? 'Starlink snapshot publication failed'
+            : 'Catalog snapshot publication failed',
     }
   }
+  if (providerOutcome) return providerOutcome
+
+  const starlink =
+    environment.STARLINK_CATALOG_ENABLED === 'true'
+      ? starlinkPreparation.kind === 'ready'
+        ? {
+            kind: 'published' as const,
+            recordCount:
+              starlinkPreparation.snapshot.recordCount,
+            populationCount:
+              starlinkPreparation.snapshot.populationCount,
+            digest: starlinkPreparation.snapshot.digest,
+            publishedAt:
+              starlinkPreparation.snapshot.publishedAt,
+          }
+        : starlinkPreparation.kind === 'not-due'
+          ? {
+              kind: 'not-due' as const,
+              nextAllowedAtMs:
+                starlinkPreparation.nextAllowedAtMs,
+            }
+          : starlinkPreparation.kind === 'skipped'
+            ? {
+                kind: 'skipped' as const,
+                reason: starlinkPreparation.reason,
+              }
+            : starlinkPreparation.kind === 'failed'
+              ? {
+                  kind: 'failed' as const,
+                  reason: starlinkPreparation.reason,
+                }
+              : { kind: 'disabled' as const }
+      : undefined
   return {
     kind: 'published',
     recordCount: snapshot.recordCount,
     sha256: snapshot.sha256,
     retrievedAt: snapshot.retrievedAt,
+    ...(starlink ? { starlink } : {}),
   }
 }
 

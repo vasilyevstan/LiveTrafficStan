@@ -15,6 +15,10 @@ import {
   runScheduledOrbitalCatalogRefresh,
   type OrbitalCatalogCoordinatorNamespace,
 } from './orbitalCatalogCoordinator.js'
+import {
+  handleStarlinkCatalog,
+  STARLINK_CATALOG_PATH,
+} from './starlinkCatalog.js'
 export { OrbitalCatalogCoordinator } from './orbitalCatalogCoordinator.js'
 
 interface FetchBinding {
@@ -36,6 +40,7 @@ export interface WorkerEnv {
   ORBITAL_CATALOG?: OrbitalKeyValueStore
   ORBITAL_CATALOG_COORDINATOR?: OrbitalCatalogCoordinatorNamespace
   ORBITAL_CATALOG_ENABLED?: string
+  STARLINK_CATALOG_ENABLED?: string
   RELEASE_SHA?: string
 }
 
@@ -106,6 +111,12 @@ const worker = {
     if (pathname === ORBITAL_CATALOG_PATH) {
       return withReleaseSha(
         await handleOrbitalCatalog(request, env),
+        env.RELEASE_SHA,
+      )
+    }
+    if (pathname === STARLINK_CATALOG_PATH) {
+      return withReleaseSha(
+        await handleStarlinkCatalog(request, env),
         env.RELEASE_SHA,
       )
     }

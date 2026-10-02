@@ -1,4 +1,3 @@
-import type { AppConfig } from '../config/appConfig'
 import {
   EMPTY_ORBITAL_PREDICTION,
   parseOrbitalTimestamp,
@@ -21,6 +20,7 @@ import type {
 } from '../providers/orbital/orbitalCatalogProvider'
 import { errorMessage, ProviderError } from '../providers/errors'
 import type {
+  OrbitalPropagationLimits,
   OrbitalWorkerLike,
   OrbitalWorkerRequest,
   OrbitalWorkerResponse,
@@ -33,10 +33,21 @@ interface OrbitalControllerRuntime {
   clearTimeout: (handle: unknown) => void
 }
 
+export interface OrbitalControllerConfig
+  extends OrbitalPropagationLimits {
+  revalidationIntervalMs: number
+  staleAfterMs: number
+  expireAfterMs: number
+  positionIntervalMs: number
+  predictionRefreshIntervalMs: number
+  maximumClockSkewMs: number
+  maximumWallClockJumpMs: number
+}
+
 interface OrbitalControllerOptions {
   provider: Pick<OrbitalCatalogProvider, 'load'>
   workerFactory: () => OrbitalWorkerLike
-  config: AppConfig['orbital']
+  config: OrbitalControllerConfig
   onState: (state: OrbitalControllerState) => void
   runtime?: OrbitalControllerRuntime
   onWarning?: (message: string) => void
@@ -70,7 +81,7 @@ const waitingPrediction = (message?: string) => ({
 export class OrbitalController {
   private readonly provider: Pick<OrbitalCatalogProvider, 'load'>
   private readonly workerFactory: () => OrbitalWorkerLike
-  private readonly config: AppConfig['orbital']
+  private readonly config: OrbitalControllerConfig
   private readonly onState: (state: OrbitalControllerState) => void
   private readonly runtime: OrbitalControllerRuntime
   private readonly onWarning: (message: string) => void
@@ -480,10 +491,25 @@ export class OrbitalController {
       this.snapshot !== undefined &&
       modeledNow !== undefined &&
       this.snapshotAge(modeledNow) <= this.config.expireAfterMs
+    const retainedSnapshotIsUnsafe =
+      this.snapshot !== undefined && !retainedSnapshotIsSafe
+    const unsafePhase =
+      this.state.phase === 'clock-invalid'
+        ? 'clock-invalid'
+        : 'unavailable'
     this.setState({
       ...this.state,
-      phase: retainedSnapshotIsSafe ? 'refreshing' : 'loading',
-      message: undefined,
+      phase: retainedSnapshotIsSafe
+        ? 'refreshing'
+        : retainedSnapshotIsUnsafe
+          ? unsafePhase
+          : 'loading',
+      message: retainedSnapshotIsUnsafe
+        ? this.state.message ??
+          (unsafePhase === 'clock-invalid'
+            ? 'Device time changed unexpectedly. Revalidating the orbital clock.'
+            : 'The orbital catalog expired; loading a replacement.')
+        : undefined,
     })
 
     try {

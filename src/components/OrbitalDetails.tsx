@@ -6,6 +6,8 @@ import {
   formatTimestamp,
 } from '../domain/format'
 import {
+  isStarlinkOrbitalCatalogSnapshot,
+  orbitalFeatureOwner,
   orbitalInternationalDesignatorLabel,
   orbitalObjectTypeLabel,
   type ModeledOrbitalPosition,
@@ -212,7 +214,12 @@ export function OrbitalDetails({
   onImageFailed,
   onClose,
 }: OrbitalDetailsProps) {
-  const enrichment = orbitalEnrichmentForPosition(position)
+  const starlink =
+    orbitalFeatureOwner(position.id) === 'starlink' ||
+    isStarlinkOrbitalCatalogSnapshot(snapshot)
+  const enrichment = starlink
+    ? undefined
+    : orbitalEnrichmentForPosition(position)
   const crossingValue = crossing?.currentlyInView
     ? 'In the visible map now'
     : crossing?.firstCrossingAt === undefined
@@ -279,6 +286,26 @@ export function OrbitalDetails({
           value={`${snapshot.catalogId} · schema ${snapshot.schemaVersion} · ${snapshot.sha256.slice(0, 12)}`}
         />
         <DetailRow
+          label="Layer"
+          value={
+            starlink
+              ? 'Starlink inclination/RAAN systematic sample'
+              : 'Curated orbital catalog'
+          }
+        />
+        {isStarlinkOrbitalCatalogSnapshot(snapshot) && (
+          <>
+            <DetailRow
+              label="Source population"
+              value={`${snapshot.starlink.populationCount.toLocaleString('en-US')} validated records`}
+            />
+            <DetailRow
+              label="Published sample"
+              value={`${snapshot.recordCount} records · ${snapshot.starlink.sampleAlgorithm}`}
+            />
+          </>
+        )}
+        <DetailRow
           label="Map display"
           value={
             !mapDisplay.available
@@ -308,20 +335,29 @@ export function OrbitalDetails({
             Purpose and image
           </h3>
           <p className="metadata-status">
-            No reviewed exact-NORAD purpose or image is bundled for this
-            object. No substitute shown.
+            {starlink
+              ? 'Purpose and image are not inferred for the Starlink sample. No substitute shown.'
+              : 'No reviewed exact-NORAD purpose or image is bundled for this object. No substitute shown.'}
           </p>
         </section>
       )}
 
       <p className="metadata-status">
         SGP4 model, not live. Crossing does not prove visibility, illumination,
-        or status.
+        or operational status.
       </p>
       <p className="metadata-attribution">
         <a href={sourceWebsiteUrl}>{sourceName}</a> GP/SATCAT ·{' '}
-        <a href={sourceUsagePolicyUrl}>usage policy</a> · retrieved{' '}
-        {snapshot.retrievedAt}.
+        <a href={sourceUsagePolicyUrl}>usage policy</a> ·{' '}
+        {isStarlinkOrbitalCatalogSnapshot(snapshot) ? (
+          <>
+            systematic sample, not the full constellation · GP retrieved{' '}
+            {snapshot.starlink.sources.gp.retrievedAt} · SATCAT retrieved{' '}
+            {snapshot.starlink.sources.satcat.retrievedAt}.
+          </>
+        ) : (
+          <>retrieved {snapshot.retrievedAt}.</>
+        )}
       </p>
     </aside>
   )

@@ -785,6 +785,41 @@ its JavaScript-only modules directly to avoid bundling optional Node/WASM
 runtimes exposed by the package root. The distributed notice is
 [`/licenses/satellite-js-7.1.0-MIT.txt`](../public/licenses/satellite-js-7.1.0-MIT.txt).
 
+### Starlink systematic sample
+
+Issue #257 uses CelesTrak's official fixed `GROUP=starlink` GP/OMM and SATCAT
+JSON endpoints through the same protected server-side provider boundary. The
+complete observed source is too large for this browser contract, so
+LiveTrafficStan validates the full paired population and publishes at most 150
+records selected by the documented
+`inclination-raan-systematic-v1` algorithm. The sample is not described as the
+full, active, operational, visible, or statistically representative
+constellation.
+
+Every GP record requires one exact NORAD SATCAT match; duplicates,
+identity/type conflicts, malformed rows, partial responses, oversize bodies,
+or impossible retrieval order reject the whole refresh. The immutable
+`/orbital-data/starlink-2026-10-02-v1/` catalog and notice pin exact URLs,
+retrieval timestamps, record/byte counts, source SHA-256 values, population,
+extra validated SATCAT rows, sample algorithm, canonical digest, and sample
+size. Its path is never reused.
+
+The browser never contacts CelesTrak and sends no viewport, Home, geolocation,
+search, selection, cookie, credential, or referrer data. It reads only
+same-origin `/api/orbits/starlink`. Starlink names and SATCAT types are source
+facts; purpose, operational state, and curated NASA enrichment are not inferred
+or transferred from a duplicate curated NORAD.
+
+The first immutable acquisition started at `2026-10-02T08:40:00Z`. GP
+completed at `08:40:03Z` with 11,125 rows / 4,699,409 decoded bytes / SHA-256
+`acd397061a2d3880e50a9a703b208c9f568840303d85cbc3d13b0e5bc5349fdf`;
+SATCAT completed at `08:40:05Z` with 11,125 rows / 3,684,028 decoded bytes /
+SHA-256
+`ca962c8ce2601f0c6ad43da8c9ba1d9ca720950fa3cbaf6ef5e23d5467b2ad45`.
+The complete join had zero extra SATCAT rows. The published 150-record
+snapshot is 74,982 bytes with canonical digest
+`16233efe565c8f07f079ae4ad321219ae756931679d167fb2a3f2f52bf5a81d4`.
+
 ## Orbital purpose and images: reviewed NASA sources
 
 Issue #193 adds no live metadata or image provider. Version

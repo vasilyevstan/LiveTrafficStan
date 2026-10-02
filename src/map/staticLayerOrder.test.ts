@@ -18,20 +18,29 @@ import {
 } from './weatherStyle'
 import {
   installOrbitalStyle,
+  installStarlinkStyle,
   LAYER_ORBITAL_HIGHLIGHT,
   LAYER_ORBITAL_POINTS,
   LAYER_ORBITAL_TRACK,
+  LAYER_STARLINK_HIGHLIGHT,
+  LAYER_STARLINK_POINTS,
+  LAYER_STARLINK_TRACK,
   orbitalHighlightFeatures,
   orbitalPositionFeatures,
   orbitalTrackFeatures,
+  starlinkPositionFeatures,
 } from './orbitalStyle'
 import {
   ORBITAL_STYLE_IMAGE_IDS,
+  STARLINK_STYLE_IMAGE_ID,
   type OrbitalStyleImages,
 } from './orbitalIcons'
 
 const orbitalImages = Object.fromEntries(
-  ORBITAL_STYLE_IMAGE_IDS.map((id) => [id, { id }]),
+  [...ORBITAL_STYLE_IMAGE_IDS, STARLINK_STYLE_IMAGE_ID].map((id) => [
+    id,
+    { id },
+  ]),
 ) as unknown as OrbitalStyleImages
 
 const installers = {
@@ -47,6 +56,17 @@ const installers = {
       orbitalPositionFeatures([]),
       orbitalHighlightFeatures([], null),
       orbitalTrackFeatures([]),
+      'light',
+      true,
+      orbitalImages,
+      [],
+    ),
+  starlink: (map: MapLibreMap) =>
+    installStarlinkStyle(
+      map,
+      starlinkPositionFeatures([]),
+      orbitalHighlightFeatures([], null),
+      orbitalTrackFeatures([], 'starlink'),
       'light',
       true,
       orbitalImages,
@@ -72,6 +92,7 @@ const installationOrders = permutations([
   'airports',
   'weather',
   'orbital',
+  'starlink',
 ])
 const installationRows = installationOrders.map((order) => [order] as const)
 
@@ -134,14 +155,41 @@ describe('static context layer order', () => {
       const ports = range(layers, PORT_LAYER_IDS)
       const airports = range(layers, AIRPORT_LAYER_IDS)
       const weather = range(layers, WEATHER_LAYER_IDS)
-      const orbital = range(layers, [
+      const curatedOrbital = range(layers, [
         LAYER_ORBITAL_TRACK,
         LAYER_ORBITAL_POINTS,
         LAYER_ORBITAL_HIGHLIGHT,
       ])
+      const starlinkOrbital = range(layers, [
+        LAYER_STARLINK_TRACK,
+        LAYER_STARLINK_POINTS,
+        LAYER_STARLINK_HIGHLIGHT,
+      ])
+      const orbitalLayerOrder = layers.filter((layerId) =>
+        [
+          LAYER_ORBITAL_TRACK,
+          LAYER_STARLINK_TRACK,
+          LAYER_ORBITAL_HIGHLIGHT,
+          LAYER_STARLINK_HIGHLIGHT,
+          LAYER_ORBITAL_POINTS,
+          LAYER_STARLINK_POINTS,
+        ].includes(layerId),
+      )
+      const orbital = {
+        first: Math.min(curatedOrbital.first, starlinkOrbital.first),
+        last: Math.max(curatedOrbital.last, starlinkOrbital.last),
+      }
       expect(ports.last).toBeLessThan(airports.first)
       expect(airports.last).toBeLessThan(weather.first)
       expect(weather.last).toBeLessThan(orbital.first)
+      expect(orbitalLayerOrder).toEqual([
+        LAYER_ORBITAL_TRACK,
+        LAYER_STARLINK_TRACK,
+        LAYER_ORBITAL_HIGHLIGHT,
+        LAYER_STARLINK_HIGHLIGHT,
+        LAYER_ORBITAL_POINTS,
+        LAYER_STARLINK_POINTS,
+      ])
       expect(orbital.last).toBeLessThan(
         layers.indexOf(LAYER_SELECTED_TRAIL),
       )

@@ -91,5 +91,27 @@ describe('production deployment workflow', () => {
     expect(workflow).toContain(
       'echo "- Orbital coordinator enabled: \\`${{ inputs.orbital_catalog_enabled }}\\`"',
     )
+    expect(workflow).toContain('starlink_catalog_enabled:')
+    expect(workflow).toContain(
+      'The Starlink catalog requires the curated orbital catalog.',
+    )
+    expect(workflow).toContain(
+      'npm run check:starlink-catalog -- --require-bootstrap',
+    )
+    expect(workflow).toContain(
+      '--starlink-enabled "$STARLINK_ENABLED"',
+    )
+    expect(workflow).toContain(
+      '--var "STARLINK_CATALOG_ENABLED:$STARLINK_ENABLED"',
+    )
+    expect(workflow).toContain(
+      '--var STARLINK_CATALOG_ENABLED:${{ inputs.starlink_catalog_enabled }}',
+    )
+    expect(workflow).toContain(
+      '"${{ inputs.orbital_catalog_enabled }}"\n          "${{ inputs.starlink_catalog_enabled }}"',
+    )
+    expect(workflow).toContain(
+      'echo "- Starlink catalog enabled: \\`${{ inputs.starlink_catalog_enabled }}\\`"',
+    )
   })
 })

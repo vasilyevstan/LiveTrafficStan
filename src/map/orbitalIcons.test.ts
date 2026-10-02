@@ -4,6 +4,9 @@ import {
   ORBITAL_ICON_SHAPES,
   ORBITAL_STYLE_IMAGE_IDS,
   orbitalStyleImageId,
+  STARLINK_ICON_SHAPES,
+  STARLINK_STYLE_IMAGE_ID,
+  starlinkIconTreatment,
 } from './orbitalIcons'
 import type { IconPolygons } from './icons'
 
@@ -71,5 +74,39 @@ describe('orbital icons', () => {
         ).toBeGreaterThanOrEqual(16)
       }
     }
+  })
+
+  it('uses a distinct flat-panel silhouette and image ID for Starlink', () => {
+    const starlinkSignature = rasterizedSignature(
+      STARLINK_ICON_SHAPES,
+    )
+    const payloadSignature = rasterizedSignature(
+      ORBITAL_ICON_SHAPES.PAY,
+    )
+    const panel = STARLINK_ICON_SHAPES[0]
+    const panelWidth =
+      Math.max(...panel.map(([x]) => x)) -
+      Math.min(...panel.map(([x]) => x))
+    const panelHeight =
+      Math.max(...panel.map(([, y]) => y)) -
+      Math.min(...panel.map(([, y]) => y))
+
+    expect(STARLINK_STYLE_IMAGE_ID).not.toBe('orbital-payload')
+    expect(ORBITAL_STYLE_IMAGE_IDS).not.toContain(
+      STARLINK_STYLE_IMAGE_ID,
+    )
+    expect(panelWidth).toBeGreaterThan(panelHeight * 3)
+    expect(starlinkSignature).not.toBe(payloadSignature)
+    expect([...starlinkSignature].filter((pixel) => pixel === '1').length)
+      .toBeGreaterThan(20)
+  })
+
+  it('uses theme-specific Starlink icon colors', () => {
+    const light = starlinkIconTreatment('light')
+    const dark = starlinkIconTreatment('dark')
+
+    expect(light.fill).not.toBe(dark.fill)
+    expect(light.detail).not.toBe(dark.detail)
+    expect(light.innerEdge).not.toBe(dark.innerEdge)
   })
 })

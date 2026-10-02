@@ -17,6 +17,7 @@
     "check:country-allocations": "node scripts/check-country-allocations.mjs",
     "check:orbital-enrichment": "node scripts/check-orbital-enrichment.mjs",
     "check:orbital-catalog": "node scripts/check-orbital-catalog.mjs",
+    "check:starlink-catalog": "node scripts/check-starlink-catalog.mjs",
     "check:ports": "node scripts/check-ports.mjs",
     "check:vessel-photos": "node scripts/check-vessel-photos.mjs",
     "check:deploy": "wrangler deploy --dry-run",
@@ -29,6 +30,7 @@
     "update:airports": "node scripts/update-airports.mjs",
     "update:country-allocations": "node scripts/update-country-allocations.mjs",
     "update:orbital-catalog": "node scripts/update-orbital-catalog.mjs",
+    "update:starlink-catalog": "node scripts/update-starlink-catalog.mjs",
     "update:ports": "node scripts/update-ports.mjs",
     "preview": "vite preview"
   },

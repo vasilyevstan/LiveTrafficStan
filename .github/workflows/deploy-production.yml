@@ -39,6 +39,11 @@ on:
         required: true
         default: false
         type: boolean
+      starlink_catalog_enabled:
+        description: Enable the scheduled CelesTrak Starlink sample
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -63,6 +68,8 @@ jobs:
       - name: Validate deployment request
         env:
           EXPECTED_SHA: ${{ inputs.sha }}
+          ORBITAL_ENABLED: ${{ inputs.orbital_catalog_enabled }}
+          STARLINK_ENABLED: ${{ inputs.starlink_catalog_enabled }}
         run: |
           if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
             echo "Production deployments must use the main workflow." >&2
@@ -70,6 +77,10 @@ jobs:
           fi
           if [[ ! "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]; then
             echo "The deployment SHA must be 40 lowercase hex characters." >&2
+            exit 1
+          fi
+          if [[ "$STARLINK_ENABLED" == "true" && "$ORBITAL_ENABLED" != "true" ]]; then
+            echo "The Starlink catalog requires the curated orbital catalog." >&2
             exit 1
           fi
 
@@ -127,6 +138,10 @@ jobs:
       - name: Check orbital enrichment
         run: npm run check:orbital-enrichment
 
+      - name: Check Starlink catalog
+        if: inputs.starlink_catalog_enabled
+        run: npm run check:starlink-catalog -- --require-bootstrap
+
       - name: Build application
         if: inputs.artifact == 'application'
         env:
@@ -158,18 +173,21 @@ jobs:
         env:
           NAMESPACE_ID: ${{ steps.orbital-kv.outputs.namespace-id }}
           ORBITAL_ENABLED: ${{ inputs.orbital_catalog_enabled }}
+          STARLINK_ENABLED: ${{ inputs.starlink_catalog_enabled }}
         run: |
           if [[ "$ORBITAL_ENABLED" == "true" ]]; then
             node scripts/prepare-wrangler-config.mjs \
               --input wrangler.jsonc \
               --output "$RUNNER_TEMP/wrangler-production.jsonc" \
               --orbital-enabled true \
+              --starlink-enabled "$STARLINK_ENABLED" \
               --namespace-id "$NAMESPACE_ID"
           else
             node scripts/prepare-wrangler-config.mjs \
               --input wrangler.jsonc \
               --output "$RUNNER_TEMP/wrangler-production.jsonc" \
-              --orbital-enabled false
+              --orbital-enabled false \
+              --starlink-enabled false
           fi
 
       - name: Check exact production Worker configuration
@@ -177,6 +195,7 @@ jobs:
           AIRCRAFT_DELIVERY: ${{ inputs.aircraft_delivery }}
           ORBITAL_ENABLED: ${{ inputs.orbital_catalog_enabled }}
           RELEASE_SHA: ${{ inputs.sha }}
+          STARLINK_ENABLED: ${{ inputs.starlink_catalog_enabled }}
         run: >-
           npx wrangler deploy
           --dry-run
@@ -184,6 +203,7 @@ jobs:
           --var "RELEASE_SHA:$RELEASE_SHA"
           --var "AIRCRAFT_DELIVERY:$AIRCRAFT_DELIVERY"
           --var "ORBITAL_CATALOG_ENABLED:$ORBITAL_ENABLED"
+          --var "STARLINK_CATALOG_ENABLED:$STARLINK_ENABLED"
           --outdir "$RUNNER_TEMP/worker-dry-run"
 
       - name: Prepare private relay secrets file
@@ -223,6 +243,7 @@ jobs:
             --var RELEASE_SHA:${{ inputs.sha }}
             --var AIRCRAFT_DELIVERY:${{ inputs.aircraft_delivery }}
             --var ORBITAL_CATALOG_ENABLED:${{ inputs.orbital_catalog_enabled }}
+            --var STARLINK_CATALOG_ENABLED:${{ inputs.starlink_catalog_enabled }}
             ${{ inputs.aircraft_delivery == 'oci-private-relay' && format('--secrets-file {0}/wrangler-production-secrets.json', runner.temp) || '' }}
 
       - name: Remove private relay secrets file
@@ -238,6 +259,7 @@ jobs:
           "${{ inputs.sha }}"
           "${{ inputs.aircraft_delivery }}"
           "${{ inputs.orbital_catalog_enabled }}"
+          "${{ inputs.starlink_catalog_enabled }}"
 
       - name: Record deployment
         env:
@@ -253,6 +275,7 @@ jobs:
             echo "- Aircraft photos enabled: \`${{ inputs.aircraft_photo_enabled }}\`"
             echo "- Flight route lookup enabled: \`${{ inputs.flight_route_enabled }}\`"
             echo "- Orbital catalog enabled: \`${{ inputs.orbital_catalog_enabled }}\`"
+            echo "- Starlink catalog enabled: \`${{ inputs.starlink_catalog_enabled }}\`"
             echo "- Orbital KV namespace: \`${{ steps.orbital-kv.outputs.namespace-id || 'none' }}\`"
             echo "- Orbital coordinator enabled: \`${{ inputs.orbital_catalog_enabled }}\`"
             echo "- URL: $DEPLOYMENT_URL"

@@ -154,4 +154,88 @@ describe('formatOrbitalSummary', () => {
       }),
     ).toBe('ORBITS · 4 SHOWN · PASSES UPDATING')
   })
+
+  it('reports the combined surface with compact owner-split counts', () => {
+    expect(
+      formatOrbitalSummary({
+        visible: true,
+        historyActive: false,
+        horizonMs: 90 * 60_000,
+        state,
+        display: display(192),
+        counts: counts(200, {
+          inFootprintCount: 12,
+          shownInFootprintCount: 8,
+          futureCrossingCount: 3,
+        }),
+        starlink: {
+          enabled: true,
+          state: { ...state, acceptedCount: 150 },
+          display: display(150),
+          counts: counts(150, {
+            inFootprintCount: 4,
+            shownInFootprintCount: 4,
+            futureCrossingCount: 2,
+          }),
+        },
+      }),
+    ).toBe(
+      'ORBITS · 12 SHOWN (C 8 / S 4) · 5 PASSES ≤90M',
+    )
+  })
+
+  it('does not double-count a combined rank-hidden selected exception', () => {
+    expect(
+      formatOrbitalSummary({
+        visible: true,
+        historyActive: false,
+        horizonMs: 90 * 60_000,
+        state,
+        display: display(193, {
+          selectedException: true,
+          selectedZoomHidden: true,
+        }),
+        counts: counts(200, {
+          inFootprintCount: 12,
+          shownInFootprintCount: 9,
+          futureCrossingCount: 3,
+        }),
+        starlink: {
+          enabled: true,
+          state: { ...state, acceptedCount: 150 },
+          display: display(150),
+          counts: counts(150, {
+            inFootprintCount: 4,
+            shownInFootprintCount: 4,
+            futureCrossingCount: 2,
+          }),
+        },
+      }),
+    ).toBe(
+      'ORBITS · 13 SHOWN (C 9 / S 4) · 5 PASSES ≤90M · 1 SELECTED EXCEPTION',
+    )
+  })
+
+  it('does not hide a working Starlink layer behind curated failure wording', () => {
+    expect(
+      formatOrbitalSummary({
+        visible: true,
+        historyActive: false,
+        horizonMs: 90 * 60_000,
+        state: { ...state, phase: 'unavailable' },
+        display: display(0),
+        counts: counts(0),
+        starlink: {
+          enabled: true,
+          state,
+          display: display(150),
+          counts: counts(150, {
+            inFootprintCount: 7,
+            shownInFootprintCount: 7,
+            futureCrossingCount: 1,
+          }),
+        },
+      }),
+    ).toBe('ORBITS · C UNAVAILABLE · S 7')
+  })
 })

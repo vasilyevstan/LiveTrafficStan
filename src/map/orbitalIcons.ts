@@ -14,11 +14,18 @@ export const ORBITAL_STYLE_IMAGE_IDS = [
   'orbital-unknown',
 ] as const
 
+export const STARLINK_STYLE_IMAGE_ID =
+  'orbital-starlink-spacecraft' as const
+
 export type OrbitalStyleImageId =
   (typeof ORBITAL_STYLE_IMAGE_IDS)[number]
 
+export type OrbitalStyleImageKey =
+  | OrbitalStyleImageId
+  | typeof STARLINK_STYLE_IMAGE_ID
+
 export type OrbitalStyleImages = Record<
-  OrbitalStyleImageId,
+  OrbitalStyleImageKey,
   ImageData
 >
 
@@ -118,6 +125,29 @@ export const ORBITAL_ICON_SHAPES = {
   ],
 } as const satisfies Record<OrbitalObjectType, IconPolygons>
 
+export const STARLINK_ICON_SHAPES = [
+  [
+    [3, 20],
+    [61, 20],
+    [61, 35],
+    [3, 35],
+  ],
+  [
+    [25, 14],
+    [39, 14],
+    [42, 43],
+    [36, 51],
+    [28, 51],
+    [22, 43],
+  ],
+  [
+    [27, 51],
+    [37, 51],
+    [40, 60],
+    [24, 60],
+  ],
+] as const satisfies IconPolygons
+
 const tracePolygons = (
   context: CanvasRenderingContext2D,
   polygons: IconPolygons,
@@ -163,6 +193,20 @@ const treatment = (theme: Theme, objectType: OrbitalObjectType) => {
         : 'rgba(1, 14, 25, 0.36)',
   }
 }
+
+export const starlinkIconTreatment = (theme: Theme) => ({
+  fill: theme === 'dark' ? '#c4b5fd' : '#6d28d9',
+  detail: theme === 'dark' ? '#fff7d6' : '#ffffff',
+  outerEdge:
+    theme === 'dark'
+      ? 'rgba(0, 9, 15, 0.92)'
+      : 'rgba(255, 255, 255, 0.94)',
+  innerEdge: theme === 'dark' ? '#f5f0ff' : '#241044',
+  shadow:
+    theme === 'dark'
+      ? 'rgba(0, 0, 0, 0.58)'
+      : 'rgba(18, 7, 39, 0.38)',
+})
 
 export const createOrbitalIcon = (
   theme: Theme,
@@ -215,19 +259,36 @@ export const createOrbitalIcon = (
     })
   })
 
+export const createStarlinkIcon = (theme: Theme) =>
+  createIcon((context) => {
+    const colors = starlinkIconTreatment(theme)
+    fillShape(context, colors, colors.fill, () => {
+      tracePolygons(context, STARLINK_ICON_SHAPES)
+    })
+
+    strokeDetail(context, colors, colors.detail, () => {
+      for (const x of [12, 20, 44, 52]) {
+        context.moveTo(x, 22)
+        context.lineTo(x, 33)
+      }
+      context.moveTo(5, 27.5)
+      context.lineTo(59, 27.5)
+      context.moveTo(27, 20)
+      context.lineTo(37, 20)
+      context.lineTo(39, 41)
+      context.lineTo(34, 47)
+      context.lineTo(30, 47)
+      context.lineTo(25, 41)
+      context.closePath()
+    })
+  })
+
 export const createOrbitalIcons = (
   theme: Theme,
-): OrbitalStyleImages =>
-  Object.fromEntries(
-    (
-      [
-        ['PAY', 'orbital-payload'],
-        ['R/B', 'orbital-rocket-body'],
-        ['DEB', 'orbital-debris'],
-        ['UNK', 'orbital-unknown'],
-      ] as const
-    ).map(([objectType, imageId]) => [
-      imageId,
-      createOrbitalIcon(theme, objectType),
-    ]),
-  ) as OrbitalStyleImages
+): OrbitalStyleImages => ({
+  'orbital-payload': createOrbitalIcon(theme, 'PAY'),
+  'orbital-rocket-body': createOrbitalIcon(theme, 'R/B'),
+  'orbital-debris': createOrbitalIcon(theme, 'DEB'),
+  'orbital-unknown': createOrbitalIcon(theme, 'UNK'),
+  [STARLINK_STYLE_IMAGE_ID]: createStarlinkIcon(theme),
+})

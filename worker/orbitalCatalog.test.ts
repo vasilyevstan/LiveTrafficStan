@@ -37,6 +37,7 @@ import {
   type OrbitalRefreshCoordinator,
   type OrbitalRefreshReservation,
   type OrbitalSourceGroup,
+  type StarlinkRefreshReservation,
 } from './orbitalCatalog.js'
 
 const nowMs = Date.parse('2026-09-30T18:25:59.094Z')
@@ -185,6 +186,13 @@ class MemoryCoordinator implements OrbitalRefreshCoordinator {
     this.activeAttemptId = `${now}:${this.attemptSequence}`
     this.nextAllowedAtMs = Number.MAX_SAFE_INTEGER
     return { kind: 'admitted', attemptId: this.activeAttemptId }
+  }
+
+  async reserveStarlink(
+    _attemptId: string,
+    _now: number,
+  ): Promise<StarlinkRefreshReservation> {
+    throw new Error('Starlink is not enabled in these tests')
   }
 
   async complete(

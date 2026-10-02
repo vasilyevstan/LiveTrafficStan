@@ -44,6 +44,7 @@ describe('application preferences', () => {
         clusteringEnabled: false,
         weatherVisible: false,
         orbitalObjectsVisible: false,
+        starlinkVisible: false,
       },
       vesselFilters: {
         category: 'cargo',

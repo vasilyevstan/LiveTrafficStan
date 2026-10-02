@@ -71,6 +71,45 @@ describe('createAppConfig', () => {
         pageSize: 20,
       },
       sourceName: 'CelesTrak',
+      sourceWebsiteUrl: 'https://celestrak.org/',
+      sourceUsagePolicyUrl: 'https://celestrak.org/usage-policy.php',
+    })
+    expect(config.starlink).toMatchObject({
+      endpointPath: '/api/orbits/starlink',
+      acceptMediaType:
+        'application/vnd.livetrafficstan.starlink-catalog+json;version=1',
+      schemaVersion: 1,
+      sourceContractVersion: 1,
+      catalogId: 'celestrak-starlink-sample-v1',
+      gpSourceUrl:
+        'https://celestrak.org/NORAD/elements/gp.php?GROUP=starlink&FORMAT=JSON',
+      satcatSourceUrl:
+        'https://celestrak.org/satcat/records.php?GROUP=starlink&FORMAT=JSON',
+      sampleLimit: 150,
+      sampleAlgorithm: 'inclination-raan-systematic-v1',
+      maximumBytes: 256 * 1_024,
+      maximumRecords: 150,
+      maximumPopulationRecords: 15_000,
+      maximumSourceBytes: 6 * 1_024 * 1_024,
+      maximumAggregateSourceBytes: 12 * 1_024 * 1_024,
+      timeoutMs: 5_000,
+      revalidationIntervalMs: 12 * 60 * 60_000,
+      staleAfterMs: 18 * 60 * 60_000,
+      expireAfterMs: 24 * 60 * 60_000,
+      positionIntervalMs: 1_000,
+      predictionHorizonMs: 90 * 60_000,
+      predictionStepMs: 30_000,
+      maximumDetailedResults: 20,
+      trackDurationMs: 15 * 60_000,
+      maximumTrackPoints: 31,
+      predictionChunkSize: 8,
+      discovery: {
+        maximumQueryLength: 64,
+        pageSize: 20,
+      },
+      sourceName: 'CelesTrak',
+      sourceWebsiteUrl: 'https://celestrak.org/',
+      sourceUsagePolicyUrl: 'https://celestrak.org/usage-policy.php',
     })
     expect(config.aircraftMetadata).toMatchObject({
       baseUrl: '/aircraft-metadata/2026-09-13-v1',
@@ -199,6 +238,11 @@ describe('createAppConfig', () => {
         VITE_ORBITAL_ENDPOINT: '/edge/orbits/',
       }).orbital.endpointPath,
     ).toBe('/api/orbits/catalog')
+    expect(
+      createAppConfig({
+        VITE_STARLINK_ENDPOINT: '/edge/starlink/',
+      }).starlink.endpointPath,
+    ).toBe('/api/orbits/starlink')
   })
 
   it('rejects invalid supplied configuration instead of silently masking it', () => {

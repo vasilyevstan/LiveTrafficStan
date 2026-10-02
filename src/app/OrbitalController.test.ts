@@ -517,8 +517,9 @@ describe('OrbitalController', () => {
 
     expect(worker.terminated).toBe(true)
     expect(states.at(-1)).toMatchObject({
-      phase: 'loading',
+      phase: 'unavailable',
       positions: [],
+      message: 'The orbital catalog is too old to model safely.',
     })
     expect(provider.load).toHaveBeenCalledTimes(2)
     controller.stop()

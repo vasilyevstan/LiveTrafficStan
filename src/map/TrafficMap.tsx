@@ -77,6 +77,7 @@ import {
   exactEligibleFeatureId,
   expandedHitBox,
   TouchInteractionTracker,
+  uniqueCanonicalOrbitalFeatureId,
   uniqueEligibleFeatureId,
 } from './touchPicking'
 import {
@@ -99,17 +100,23 @@ import {
 } from './weatherStyle'
 import {
   installOrbitalStyle,
-  LAYER_ORBITAL_HIGHLIGHT,
-  LAYER_ORBITAL_POINTS,
-  orbitalHighlightFeatures,
+  installStarlinkStyle,
+  orbitalPickLayerIds,
   orbitalPositionFeatures,
-  orbitalTrackFeatures,
+  orbitalSelectionHighlightFeatures,
+  orbitalSelectionTrackFeatures,
   setOrbitalPointFilter,
   setOrbitalSourceData,
   setOrbitalVisibility,
+  setStarlinkPointFilter,
+  setStarlinkVisibility,
   SOURCE_ORBITAL_HIGHLIGHT,
   SOURCE_ORBITAL_POINTS,
   SOURCE_ORBITAL_TRACK,
+  SOURCE_STARLINK_HIGHLIGHT,
+  SOURCE_STARLINK_POINTS,
+  SOURCE_STARLINK_TRACK,
+  starlinkPositionFeatures,
 } from './orbitalStyle'
 import {
   createOrbitalIcons,
@@ -143,6 +150,10 @@ const emptyTrail = (): FeatureCollection<LineString> => ({
   features: [],
 })
 
+const EMPTY_ORBITAL_POSITIONS: readonly ModeledOrbitalPosition[] = []
+const EMPTY_ORBITAL_IDS: readonly string[] = []
+const EMPTY_ORBITAL_TRACK: readonly OrbitalTrackSegment[] = []
+
 interface TrafficMapProps {
   viewCenter: AppCenter
   viewCamera?: MapCameraState
@@ -166,6 +177,9 @@ interface TrafficMapProps {
   orbitalPositions: readonly ModeledOrbitalPosition[]
   orbitalShownIds: readonly string[]
   orbitalTrackSegments: readonly OrbitalTrackSegment[]
+  starlinkPositions?: readonly ModeledOrbitalPosition[]
+  starlinkShownIds?: readonly string[]
+  starlinkTrackSegments?: readonly OrbitalTrackSegment[]
   orbitalImageUrls: ReadonlyMap<string, string>
   trailSegments: readonly (readonly TrailPoint[])[]
   selectedId: string | null
@@ -179,6 +193,7 @@ interface TrafficMapProps {
   airportsVisible: boolean
   weatherVisible: boolean
   orbitalVisible: boolean
+  starlinkVisible?: boolean
   clusteringEnabled: boolean
   interpolateTraffic: boolean
   interpolationDurationMs: number
@@ -240,6 +255,7 @@ interface ViewState {
   airportsVisible: boolean
   weatherVisible: boolean
   orbitalVisible: boolean
+  starlinkVisible: boolean
   trailSegments: readonly (readonly TrailPoint[])[]
 }
 
@@ -362,6 +378,9 @@ export function TrafficMap({
   orbitalPositions,
   orbitalShownIds,
   orbitalTrackSegments,
+  starlinkPositions = EMPTY_ORBITAL_POSITIONS,
+  starlinkShownIds = EMPTY_ORBITAL_IDS,
+  starlinkTrackSegments = EMPTY_ORBITAL_TRACK,
   orbitalImageUrls,
   trailSegments,
   selectedId,
@@ -375,6 +394,7 @@ export function TrafficMap({
   airportsVisible,
   weatherVisible,
   orbitalVisible,
+  starlinkVisible = false,
   clusteringEnabled,
   interpolateTraffic,
   interpolationDurationMs,
@@ -432,7 +452,9 @@ export function TrafficMap({
     vessels?: readonly Feature<Point>[]
   }>({})
   const lastOrbitalFeaturesRef = useRef<readonly Feature<Point>[]>([])
+  const lastStarlinkFeaturesRef = useRef<readonly Feature<Point>[]>([])
   const orbitalUpdateGenerationRef = useRef(0)
+  const starlinkUpdateGenerationRef = useRef(0)
   const trafficUpdateGenerationRef = useRef({
     aircraft: 0,
     vessels: 0,
@@ -478,6 +500,12 @@ export function TrafficMap({
     trackSegments: orbitalTrackSegments,
     selectedOrbitalId,
   })
+  const starlinkRenderStateRef = useRef<OrbitalRenderState>({
+    positions: starlinkPositions,
+    shownIds: starlinkShownIds,
+    trackSegments: starlinkTrackSegments,
+    selectedOrbitalId,
+  })
   const viewStateRef = useRef<ViewState>({
     aircraftVisible,
     vesselsVisible,
@@ -485,6 +513,7 @@ export function TrafficMap({
     airportsVisible,
     weatherVisible,
     orbitalVisible,
+    starlinkVisible,
     trailSegments,
   })
   const selectRef = useRef(onSelect)
@@ -649,15 +678,73 @@ export function TrafficMap({
     setOrbitalSourceData(
       map,
       SOURCE_ORBITAL_HIGHLIGHT,
-      orbitalHighlightFeatures(
+      orbitalSelectionHighlightFeatures(
         state.positions,
         state.selectedOrbitalId,
+        'curated',
       ),
     )
     setOrbitalSourceData(
       map,
       SOURCE_ORBITAL_TRACK,
-      orbitalTrackFeatures(state.trackSegments),
+      orbitalSelectionTrackFeatures(
+        state.trackSegments,
+        state.selectedOrbitalId,
+        'curated',
+      ),
+    )
+  }, [])
+
+  const renderStarlinkSources = useCallback(() => {
+    const map = mapRef.current
+    if (!map || !loadedRef.current) return
+    const state = starlinkRenderStateRef.current
+    const points = starlinkPositionFeatures(state.positions)
+    const source = map.getSource(SOURCE_STARLINK_POINTS) as
+      | GeoJSONSource
+      | undefined
+    const previous = lastStarlinkFeaturesRef.current
+    if (source && previous.length > 0) {
+      const styleGeneration = styleGenerationRef.current
+      const updateGeneration = ++starlinkUpdateGenerationRef.current
+      const diff = pointSourceDiff(previous, points.features)
+      void source.updateData(diff).catch((error: unknown) => {
+        if (
+          styleGeneration !== styleGenerationRef.current ||
+          updateGeneration !== starlinkUpdateGenerationRef.current
+        ) {
+          return
+        }
+        errorRef.current({
+          kind: 'runtime',
+          message:
+            error instanceof Error
+              ? error.message
+              : 'Starlink orbital source update failed',
+        })
+      })
+    } else {
+      starlinkUpdateGenerationRef.current += 1
+      setOrbitalSourceData(map, SOURCE_STARLINK_POINTS, points)
+    }
+    lastStarlinkFeaturesRef.current = points.features
+    setOrbitalSourceData(
+      map,
+      SOURCE_STARLINK_HIGHLIGHT,
+      orbitalSelectionHighlightFeatures(
+        state.positions,
+        state.selectedOrbitalId,
+        'starlink',
+      ),
+    )
+    setOrbitalSourceData(
+      map,
+      SOURCE_STARLINK_TRACK,
+      orbitalSelectionTrackFeatures(
+        state.trackSegments,
+        state.selectedOrbitalId,
+        'starlink',
+      ),
     )
   }, [])
 
@@ -927,11 +1014,16 @@ export function TrafficMap({
         installOrbitalStyle(
           map,
           points,
-          orbitalHighlightFeatures(
+          orbitalSelectionHighlightFeatures(
             orbitalState.positions,
             orbitalState.selectedOrbitalId,
+            'curated',
           ),
-          orbitalTrackFeatures(orbitalState.trackSegments),
+          orbitalSelectionTrackFeatures(
+            orbitalState.trackSegments,
+            orbitalState.selectedOrbitalId,
+            'curated',
+          ),
           activeTheme,
           viewState.orbitalVisible,
           getOrbitalImages(activeTheme),
@@ -939,6 +1031,29 @@ export function TrafficMap({
         )
         lastOrbitalFeaturesRef.current = points.features
       }
+      const starlinkState = starlinkRenderStateRef.current
+      const starlinkPoints = starlinkPositionFeatures(
+        starlinkState.positions,
+      )
+      installStarlinkStyle(
+        map,
+        starlinkPoints,
+        orbitalSelectionHighlightFeatures(
+          starlinkState.positions,
+          starlinkState.selectedOrbitalId,
+          'starlink',
+        ),
+        orbitalSelectionTrackFeatures(
+          starlinkState.trackSegments,
+          starlinkState.selectedOrbitalId,
+          'starlink',
+        ),
+        activeTheme,
+        viewState.starlinkVisible,
+        getOrbitalImages(activeTheme),
+        starlinkState.shownIds,
+      )
+      lastStarlinkFeaturesRef.current = starlinkPoints.features
       loadedRef.current = true
       errorRef.current(
         fallbackActiveRef.current
@@ -1130,6 +1245,7 @@ export function TrafficMap({
       airportsVisible,
       weatherVisible,
       orbitalVisible,
+      starlinkVisible,
       trailSegments,
     }
   }, [
@@ -1137,6 +1253,7 @@ export function TrafficMap({
     airportsVisible,
     weatherVisible,
     orbitalVisible,
+    starlinkVisible,
     portsVisible,
     trailSegments,
     vesselsVisible,
@@ -1444,13 +1561,14 @@ export function TrafficMap({
         ? WEATHER_LAYER_IDS.filter((layerId) => map.getLayer(layerId))
         : []
 
-    const activeOrbitalLayers = () =>
-      viewStateRef.current.orbitalVisible
-        ? [
-            LAYER_ORBITAL_HIGHLIGHT,
-            LAYER_ORBITAL_POINTS,
-          ].filter((layerId) => map.getLayer(layerId))
-        : []
+    const activeOrbitalLayers = () => {
+      const viewState = viewStateRef.current
+      return orbitalPickLayerIds(
+        map,
+        viewState.orbitalVisible,
+        viewState.starlinkVisible,
+      )
+    }
 
     const selectableTrafficIds = () => {
       const ids = new Set<string>()
@@ -1475,6 +1593,9 @@ export function TrafficMap({
 
     const orbitalPosition = (id: string) =>
       orbitalRenderStateRef.current.positions.find(
+        (position) => position.id === id,
+      ) ??
+      starlinkRenderStateRef.current.positions.find(
         (position) => position.id === id,
       )
 
@@ -1575,8 +1696,21 @@ export function TrafficMap({
         weatherRenderStateRef.current.observations.map(({ id }) => id),
       )
 
-    const selectableOrbitalIds = () =>
-      new Set(orbitalRenderStateRef.current.shownIds)
+    const selectableOrbitalIds = () => {
+      const ids = new Set<string>()
+      const viewState = viewStateRef.current
+      if (viewState.orbitalVisible) {
+        for (const id of orbitalRenderStateRef.current.shownIds) {
+          ids.add(id)
+        }
+      }
+      if (viewState.starlinkVisible) {
+        for (const id of starlinkRenderStateRef.current.shownIds) {
+          ids.add(id)
+        }
+      }
+      return ids
+    }
 
     const expandCluster = (
       target: NonNullable<ReturnType<typeof firstTrafficClusterTarget>>,
@@ -1756,7 +1890,7 @@ export function TrafficMap({
         }
       }
       if (touchFallbackAllowed && orbitalLayers.length > 0) {
-        const nearbyOrbital = uniqueEligibleFeatureId(
+        const nearbyOrbital = uniqueCanonicalOrbitalFeatureId(
           map.queryRenderedFeatures(
             expandedHitBox(event.point, touchHitTolerancePx),
             { layers: orbitalLayers },
@@ -2249,41 +2383,35 @@ export function TrafficMap({
       trackSegments: orbitalTrackSegments,
       selectedOrbitalId,
     }
-    const hoveredOrbitalId = hoveredOrbitalIdRef.current
-    if (hoveredOrbitalId) {
-      const hoveredPosition = orbitalPositions.find(
-        (position) => position.id === hoveredOrbitalId,
-      )
-      if (
-        !orbitalVisible ||
-        !hoveredPosition ||
-        !orbitalShownIds.includes(hoveredOrbitalId) ||
-        hoveredOrbitalIdentityRef.current !==
-          orbitalTooltipIdentity(hoveredPosition)
-      ) {
-        hideTrafficTooltipRef.current()
-      }
-    }
     const map = mapRef.current
     if (!map || !loadedRef.current) return
     if (!map.getSource(SOURCE_ORBITAL_POINTS)) {
-      if (!orbitalVisible) return
-      const points = orbitalPositionFeatures(orbitalPositions)
-      installOrbitalStyle(
-        map,
-        points,
-        orbitalHighlightFeatures(orbitalPositions, selectedOrbitalId),
-        orbitalTrackFeatures(orbitalTrackSegments),
-        themeRef.current,
-        true,
-        getOrbitalImages(themeRef.current),
-        orbitalShownIds,
-      )
-      lastOrbitalFeaturesRef.current = points.features
-      return
+      if (orbitalVisible) {
+        const points = orbitalPositionFeatures(orbitalPositions)
+        installOrbitalStyle(
+          map,
+          points,
+          orbitalSelectionHighlightFeatures(
+            orbitalPositions,
+            selectedOrbitalId,
+            'curated',
+          ),
+          orbitalSelectionTrackFeatures(
+            orbitalTrackSegments,
+            selectedOrbitalId,
+            'curated',
+          ),
+          themeRef.current,
+          true,
+          getOrbitalImages(themeRef.current),
+          orbitalShownIds,
+        )
+        lastOrbitalFeaturesRef.current = points.features
+      }
+    } else {
+      renderOrbitalSources()
+      setOrbitalPointFilter(map, orbitalShownIds)
     }
-    renderOrbitalSources()
-    setOrbitalPointFilter(map, orbitalShownIds)
   }, [
     orbitalPositions,
     orbitalShownIds,
@@ -2292,6 +2420,86 @@ export function TrafficMap({
     getOrbitalImages,
     renderOrbitalSources,
     selectedOrbitalId,
+  ])
+
+  useEffect(() => {
+    starlinkRenderStateRef.current = {
+      positions: starlinkPositions,
+      shownIds: starlinkShownIds,
+      trackSegments: starlinkTrackSegments,
+      selectedOrbitalId,
+    }
+    const map = mapRef.current
+    if (!map || !loadedRef.current) return
+    if (!map.getSource(SOURCE_STARLINK_POINTS)) {
+      const points = starlinkPositionFeatures(starlinkPositions)
+      installStarlinkStyle(
+        map,
+        points,
+        orbitalSelectionHighlightFeatures(
+          starlinkPositions,
+          selectedOrbitalId,
+          'starlink',
+        ),
+        orbitalSelectionTrackFeatures(
+          starlinkTrackSegments,
+          selectedOrbitalId,
+          'starlink',
+        ),
+        themeRef.current,
+        starlinkVisible,
+        getOrbitalImages(themeRef.current),
+        starlinkShownIds,
+      )
+      lastStarlinkFeaturesRef.current = points.features
+    } else {
+      renderStarlinkSources()
+      setStarlinkPointFilter(map, starlinkShownIds)
+    }
+  }, [
+    starlinkPositions,
+    starlinkShownIds,
+    starlinkTrackSegments,
+    starlinkVisible,
+    getOrbitalImages,
+    renderStarlinkSources,
+    selectedOrbitalId,
+  ])
+
+  useEffect(() => {
+    const hoveredOrbitalId = hoveredOrbitalIdRef.current
+    if (!hoveredOrbitalId) return
+
+    const curatedHoveredPosition = orbitalPositions.find(
+      (position) => position.id === hoveredOrbitalId,
+    )
+    const starlinkHoveredPosition = starlinkPositions.find(
+      (position) => position.id === hoveredOrbitalId,
+    )
+    const hoveredPosition =
+      curatedHoveredPosition ?? starlinkHoveredPosition
+    const hoveredPositionShown = curatedHoveredPosition
+      ? orbitalVisible &&
+        orbitalShownIds.includes(hoveredOrbitalId)
+      : starlinkHoveredPosition
+        ? starlinkVisible &&
+          starlinkShownIds.includes(hoveredOrbitalId)
+        : false
+    if (
+      !hoveredPosition ||
+      !hoveredPositionShown ||
+      hoveredOrbitalIdentityRef.current !==
+        orbitalTooltipIdentity(hoveredPosition)
+    ) {
+      hideTrafficTooltipRef.current()
+    }
+  }, [
+    orbitalPositions,
+    orbitalShownIds,
+    orbitalVisible,
+    starlinkPositions,
+    starlinkShownIds,
+    starlinkVisible,
   ])
 
   useEffect(() => {
@@ -2337,11 +2545,16 @@ export function TrafficMap({
       installOrbitalStyle(
         map,
         points,
-        orbitalHighlightFeatures(
+        orbitalSelectionHighlightFeatures(
           state.positions,
           state.selectedOrbitalId,
+          'curated',
         ),
-        orbitalTrackFeatures(state.trackSegments),
+        orbitalSelectionTrackFeatures(
+          state.trackSegments,
+          state.selectedOrbitalId,
+          'curated',
+        ),
         themeRef.current,
         true,
         getOrbitalImages(themeRef.current),
@@ -2352,6 +2565,36 @@ export function TrafficMap({
     }
     setOrbitalVisibility(map, orbitalVisible)
   }, [getOrbitalImages, orbitalVisible])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !loadedRef.current) return
+    if (!map.getSource(SOURCE_STARLINK_POINTS)) {
+      const state = starlinkRenderStateRef.current
+      const points = starlinkPositionFeatures(state.positions)
+      installStarlinkStyle(
+        map,
+        points,
+        orbitalSelectionHighlightFeatures(
+          state.positions,
+          state.selectedOrbitalId,
+          'starlink',
+        ),
+        orbitalSelectionTrackFeatures(
+          state.trackSegments,
+          state.selectedOrbitalId,
+          'starlink',
+        ),
+        themeRef.current,
+        starlinkVisible,
+        getOrbitalImages(themeRef.current),
+        state.shownIds,
+      )
+      lastStarlinkFeaturesRef.current = points.features
+      return
+    }
+    setStarlinkVisibility(map, starlinkVisible)
+  }, [getOrbitalImages, starlinkVisible])
 
   useEffect(() => {
     const map = mapRef.current
