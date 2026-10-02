@@ -733,6 +733,14 @@ target must validate its exact immutable bootstrap and same-origin route.
 Rollback never deletes the shared KV namespace or Durable Object and never
 resets either cadence row.
 
+The first immutable bootstrap evidence is GP
+`2026-10-02T08:40:03Z` (11,125 rows, 4,699,409 bytes), SATCAT
+`2026-10-02T08:40:05Z` (11,125 rows, 3,684,028 bytes), 150 published records,
+74,982 normalized bytes, and digest
+`16233efe565c8f07f079ae4ad321219ae756931679d167fb2a3f2f52bf5a81d4`.
+Deployment smoke must require that exact immutable identity until a separately
+reviewed never-reused generation replaces it.
+
 At twelve scheduled events per day, the coordinator uses approximately twelve
 Durable Object requests and a few row reads/writes per day, while successful
 refreshes add about twelve KV writes per day. Cloudflare currently includes

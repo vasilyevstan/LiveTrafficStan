@@ -120,6 +120,11 @@ then proves canonical serialization, exact sample indices, source-clock order,
 manifest/notice hashes, and the never-reused
 `starlink-2026-10-02-v1` path.
 
+The first published generation validates 11,125 GP and 11,125 SATCAT rows,
+8,383,437 decoded source bytes, zero extra SATCAT rows, 150 sample records,
+74,982 normalized bytes, and canonical digest
+`16233efe565c8f07f079ae4ad321219ae756931679d167fb2a3f2f52bf5a81d4`.
+
 Starlink deterministic acceptance covers zero request while either parent or
 child is off; one same-origin request when effective; no request from camera,
 theme, filters, list paging, selection, or style changes; one physical worker

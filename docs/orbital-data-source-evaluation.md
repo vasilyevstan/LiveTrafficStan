@@ -60,6 +60,15 @@ fallback group, truncation, or browser-triggered acquisition exists. Fixed
 source URLs, exact evidence, and the immutable generation are recorded in
 `src/config/starlinkCatalogSource.json` and its co-located notice.
 
+The one immutable-source acquisition began at `2026-10-02T08:40:00Z`, after
+the conservative 12-hour window. GP completed at `08:40:03Z` and SATCAT at
+`08:40:05Z`; each returned 11,125 rows. Decoded sizes were 4,699,409 and
+3,684,028 bytes, for 8,383,437 aggregate bytes. The exact NORAD join had zero
+extra SATCAT rows. The fixed algorithm published 150 records in a 74,982-byte
+canonical snapshot with digest
+`16233efe565c8f07f079ae4ad321219ae756931679d167fb2a3f2f52bf5a81d4`.
+No retry or second provider read was made.
+
 ## Evidence method
 
 This decision combines:

@@ -208,6 +208,14 @@ effective ORBITS + STARLINK
   -> owner-aware combined orbital picking and child sample list
 ```
 
+The immutable Starlink bootstrap was published from the single paired
+`2026-10-02T08:40Z` acquisition. GP and SATCAT each contained 11,125 records;
+the validated population had zero extra SATCAT rows. The fixed sample contains
+150 records, occupies 74,982 bytes, and has canonical digest
+`16233efe565c8f07f079ae4ad321219ae756931679d167fb2a3f2f52bf5a81d4`.
+These counts describe the source generation and sample only, not active,
+operational, or optically visible spacecraft.
+
 The schema-2 server union has 462 unique records (369 payloads, 91 rocket
 bodies, and 2 debris objects) from the final
 `2026-09-30T18:25:59.094Z` probe. Six reviewed overlaps agree and all GP rows

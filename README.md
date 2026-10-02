@@ -146,7 +146,11 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   retain their exact type silhouettes. The immutable bootstrap is versioned
   under `/orbital-data/starlink-2026-10-02-v1/`; its manifest and notice pin
   the exact retrieval times, source hashes, population, sample digest, and
-  byte counts.
+  byte counts. The one permitted 2026-10-02 acquisition completed GP at
+  `08:40:03Z` and SATCAT at `08:40:05Z`: 11,125 rows in each source,
+  8,383,437 decoded bytes total, zero extra SATCAT rows, and a 74,982-byte
+  sample snapshot with canonical digest
+  `16233efe565c8f07f079ae4ad321219ae756931679d167fb2a3f2f52bf5a81d4`.
 - A default-enabled ADSB.lol plausible-route lookup for a selected live
   aircraft. A committed selection starts one lookup and shows a compact result
   directly below the aircraft heading. Hover, HISTORY, and same-flight position
