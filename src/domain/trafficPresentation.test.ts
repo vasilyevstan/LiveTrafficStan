@@ -86,6 +86,11 @@ describe('traffic presentation', () => {
     expect(
       vesselRenderIcon(vessel({ name: 'MY YACHT', vesselType: undefined })),
     ).toBe('vessel')
+    expect(
+      vesselRenderIcon(
+        vessel({ markerIcon: 'aircraft', vesselType: undefined }),
+      ),
+    ).toBe('vessel')
 
     expect(isReportedYacht(vessel({ vesselType: 'Sailing vessel' }))).toBe(
       true,

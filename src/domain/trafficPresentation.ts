@@ -87,7 +87,7 @@ export interface AircraftPresentation {
 
 export interface VesselPresentation {
   kind: 'vessel'
-  markerIcon: RenderTrafficMarkerIcon
+  markerIcon: VesselStyleImageId
   headingDegrees: number
   motionState: TrafficMotionState
   navigationConflict: boolean
@@ -134,13 +134,17 @@ export const isReportedYacht = (
 
 export const vesselRenderIcon = (
   vessel: Pick<Vessel, 'markerIcon' | 'vesselType'>,
-): RenderTrafficMarkerIcon => {
+): VesselStyleImageId => {
   if (vessel.vesselType === 'Sailing vessel') return 'vessel-sailing'
   if (vessel.vesselType === 'Pleasure craft') return 'vessel-pleasure'
   if (vessel.vesselType === 'High-speed craft') {
     return 'vessel-highspeed'
   }
-  return vessel.markerIcon
+  return (
+    VESSEL_MARKER_ICONS as readonly TrafficMarkerIcon[]
+  ).includes(vessel.markerIcon)
+    ? (vessel.markerIcon as VesselStyleImageId)
+    : 'vessel'
 }
 
 export const vesselNavigationMotionConflict = (

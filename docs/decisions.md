@@ -596,6 +596,16 @@ evidence also covers themes, DPR 1/2, headings, state overlays, backgrounds,
 responsive sizes, picking, and style restoration. The artwork does not alter
 any classification boundary.
 
+The user-visible #250 follow-up showed that a shared MapLibre multiplier did
+not preserve physical-size ordering across silhouettes with different
+longitudinal contour spans. The current contract keeps the 22 CSS-pixel
+small-hull reference floor, widens valid AIS length scaling toward a 44
+CSS-pixel reference ceiling for large hulls, and normalizes every silhouette
+to one longitudinal source span before applying that scale. Size still comes
+only from valid AIS
+reference-point dimensions; category, name, route, width, and artwork area
+never upgrade it.
+
 Provider-owned icon keys stay in normalized entities and bounded historical
 records. Visual-only state is derived later by one pure presentation module and
 projected into MapLibre properties. This avoids a history migration and keeps

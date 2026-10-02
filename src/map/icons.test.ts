@@ -10,6 +10,7 @@ import {
 import {
   aircraftAltitudeColors,
   trafficIconTreatment,
+  VESSEL_ICON_LENGTH_NORMALIZATION,
   VESSEL_ICON_SHAPES,
   type IconPolygons,
 } from './icons'
@@ -302,6 +303,20 @@ describe('trafficIconTreatment', () => {
           )
         }
       }
+    }
+  })
+
+  it('normalizes every vessel silhouette to the same longitudinal map length', () => {
+    const normalizedSpans = VESSEL_STYLE_IMAGE_IDS.map((imageId) => {
+      const bounds = shapeBounds(VESSEL_ICON_SHAPES[imageId])
+      return (
+        (bounds.maximumY - bounds.minimumY) *
+        VESSEL_ICON_LENGTH_NORMALIZATION[imageId]
+      )
+    })
+
+    for (const span of normalizedSpans) {
+      expect(span).toBeCloseTo(56)
     }
   })
 
