@@ -404,9 +404,10 @@ Settled pan, zoom, rotation, pitch, Home, and resize changes all update the
 traffic viewport. If its conservative enclosing radius exceeds 100 km, the app
 hides traffic and trails, pauses both providers, and shows **Zoom in to see live
 traffic** or **Zoom in or reduce tilt to see live traffic**. This is not an
-empty provider response. Zoom in or reduce tilt; the existing provider
-instances resume at their next allowed cadence, reconnect, REST, or metadata
-boundary.
+empty provider response. Use **Resume live** to keep the current map center and
+fit it back to the reviewed safe framing, or zoom in / reduce tilt manually.
+The existing provider instances resume at their next allowed cadence,
+reconnect, REST, or metadata boundary.
 
 If camera movement causes repeated requests, verify that settled updates are
 coalesced and that unchanged enclosing queries do not restart provider work.
