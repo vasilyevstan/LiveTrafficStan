@@ -20,25 +20,28 @@ Worker selects that path only through the protected `oci-private-relay`
 deployment mode and fails closed rather than reverting to shared egress.
 Production source `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` and the relay
 originally activated the private path together. The current browser/Worker
-application is source `9e1d8c23f9047d0bf57b12bd4abc7d5fcae90f63`,
-deployed in run `36908605830`, successful attempt 2, as Cloudflare version
-`d83f68ae-907e-4b2d-a086-00b4fde00372`. It continues to use relay source
-`18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8`; relay source
-`1f9a2fd322f141fe761d3bf00113e1ab60526e6c` is retained as the rollback
+application is source `bba0bf4f7a69939e3c07fbeb24470fa959f6f20a`.
+Canonical deployment run `36997443034`, successful attempt 3, initially
+published version `63e5a14d-7115-44aa-9386-36b13b5ff91d`. Protected rollback
+run `36998162009` proved predecessor source
+`9e1d8c23f9047d0bf57b12bd4abc7d5fcae90f63` and version
+`d83f68ae-907e-4b2d-a086-00b4fde00372`; restoration run `36998245095`
+returned exact current source as the running Cloudflare version
+`146e74df-c960-4a41-bc0c-6d5b9fa0d660`. The application continues to use
+relay source `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8`; relay source
+`1f9a2fd322f141fe761d3bf00113e1ab60526e6c` is retained as the relay rollback
 release.
 
-The current run's full smoke and fresh-profile desktop/mobile acceptance
-passed. Generated map images preserve nine maritime-blue vessel presentation
-classes and four exact-SATCAT orbital classes across Light -> Dark style
-restoration on the same sources and MapLibre instance. Compact ORBITS counts
-use the rendered in-map population and compatible prediction; only exact
-reviewed Hubble/ISS identities receive larger labels. Initial, Home, and Center
-use the 30 km camera fit while the settled full canvas still controls the
-unchanged 100 km traffic contract. Deployment attempt 1 published version
-`45cccadf-0456-4812-aed3-54286886a3c0` but isolated recurrent OCI
-guest/network unavailability as aircraft HTTP `502`; the exact application
-header and independent surfaces were healthy. Diagnostic reboot restored real
-aircraft JSON and attempt 2 passed without application rollback.
+The current release adds four bounded behaviors without changing provider
+boundaries: **Resume live** returns retained HISTORY/unsafe views to the
+reviewed local framing, valid AIS length drives a normalized 0.8-1.6 vessel
+scale across all nine silhouettes, vessel-photo generation `2026-10-02-v1`
+contains eight exact-IMO assets with explicit invalid/unmatched states, and a
+fresh Starlink cadence row is seeded from the immutable bootstrap retrieval
+time. Exact production Chrome acceptance retained one MapLibre canvas,
+independent traffic/orbital lifecycles, all eight Starlink pages, one active
+physical orbital worker, responsive touch movement, exact theme restoration,
+and zero browser CelesTrak or external vessel-photo request.
 
 The first exact-source orbital-enrichment run `36627068064` deployed healthy
 application/orbital/enrichment assets as Cloudflare version
@@ -80,6 +83,8 @@ METAR toggle -> explicit airport ICAO codes -> same-origin AWC route
              -> normalized observations -> weather map/details
 ORBITS toggle -> same-origin complete CelesTrak snapshot
               -> dedicated SGP4 worker -> modeled point/crossing/track state
+STARLINK child -> same-origin bounded systematic sample
+               -> isolated logical channel on the same physical worker
 current Aircraft[] -> local literal search -> existing traffic selection
 
 coordinate text -> local parser ------------------------+
@@ -127,7 +132,7 @@ tombstone can be removed after Cloudflare confirms that deletion has applied.
 | `scripts/pwa-shell.mjs` | Deterministic shell allowlist/versioning, request classification, two-generation cleanup, and normal/retirement worker source |
 | `public/manifest.webmanifest` | Root-scoped standalone install metadata and versioned maskable icons |
 | `public/vessel-photos/` | Immutable reviewed vessel-photo derivatives plus co-located file-specific license records; excluded from the application-shell cache |
-| `public/orbital-data/` | Immutable normalized CelesTrak bootstraps. Schema-1 `v1`/`v2` paths remain byte-for-byte rollback assets; schema 2 uses the never-reused `curated-2026-09-30-v1` path. All are excluded from the application-shell cache |
+| `public/orbital-data/` | Immutable normalized CelesTrak bootstraps. Schema-1 `v1`/`v2` paths remain byte-for-byte rollback assets; schema 2 uses the never-reused `curated-2026-09-30-v1` path, and the bounded Starlink sample uses `starlink-2026-10-02-v1`. All are excluded from the application-shell cache |
 | `public/orbital-enrichment/` | Immutable exact-NORAD NASA photographs plus co-located rights/provenance notices; selected on demand and excluded from the application-shell cache |
 
 ## Control composition
@@ -756,7 +761,9 @@ and gives only the aircraft proxy one private outbound dependency:
    `GET /api/orbits/catalog` route reads only KV or an exact-release bootstrap,
    defaults to the newest valid schema-1 candidate for predecessor clients,
    returns schema 2 only for the fixed vendor `Accept` media type, varies caches
-   by `Accept`, and never performs an upstream request;
+   by `Accept`, and never performs an upstream request; the literal
+   `GET /api/orbits/starlink` route likewise reads only its complete KV or
+   immutable exact-release sample;
 5. a protected two-hour Cron, independent of browser requests, may fetch only
    after the existing named SQLite Durable Object atomically admits the start;
    it then performs the ten fixed, strictly sequential GP/SATCAT requests for
@@ -764,6 +771,8 @@ and gives only the aircraft proxy one private outbound dependency:
    plus the pre-substitution schema-1 `visual` snapshot, persists the provider
    outcome, and publishes both public representations in one non-public
    versioned bundle to `orbital:catalog:v2:curated-v1` with one final write;
+   after curated work, a separate 12-hour SQLite row may admit one complete
+   fixed Starlink GP/SATCAT pair and one final sample-key write;
 6. after private-relay activation, the aircraft route may use only its
    configured fixed transport and never fail over within a request;
 7. OpenFreeMap, Photon, and Digitraffic HTTPS/WSS remain direct browser
@@ -814,10 +823,11 @@ deployment flag, not an always-visible map surface. See
 workflow evidence.
 
 The current application's byte-exact rollback target is source
-`538edd25afa49f62c13e93745b322099f662791d`, recorded Cloudflare version
-`83b98933-a609-405e-b07c-3e4f4ded46e8`. Rolling back that application does not
-mutate the retained KV/coordinator namespaces, OCI relay source, Tunnel, or VPC
-Service.
+`9e1d8c23f9047d0bf57b12bd4abc7d5fcae90f63`, recorded Cloudflare version
+`d83f68ae-907e-4b2d-a086-00b4fde00372`. Protected run `36998162009` proved
+that target and run `36998245095` restored the current source. Neither
+operation mutated the retained KV/coordinator namespaces, OCI relay source,
+Tunnel, or VPC Service.
 
 ## Navigation and viewport boundaries
 

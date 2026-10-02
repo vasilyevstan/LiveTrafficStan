@@ -104,7 +104,7 @@ identity, the same fixed point route and User-Agent, one aggregate upstream
 start per 20 seconds, and provider `Retry-After` backoff. It does not rotate
 addresses, add a provider, alter attribution, or claim additional capacity
 permission. Production application source
-`9e1d8c23f9047d0bf57b12bd4abc7d5fcae90f63` uses active relay source
+`bba0bf4f7a69939e3c07fbeb24470fa959f6f20a` uses active relay source
 `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8` through the fixed Workers VPC
 Service and private Tunnel, with
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` retained as relay rollback; see
@@ -281,7 +281,12 @@ the fixed Commons revision and shows author, source, license, exact-IMO, and
 historical-reference context. No Wikimedia, Wikidata, tracker, gallery, image
 API, Worker proxy, KV, R2, Web Storage, IndexedDB, or service-worker cache is
 involved. Missing, invalid, unmatched, historical, and sub-dwell hover vessels
-receive no photo. See
+receive no photo. Production source
+`bba0bf4f7a69939e3c07fbeb24470fa959f6f20a` serves immutable generation
+`2026-10-02-v1`; exact Chrome acceptance loaded all eight declared assets with
+their image MIME types and one-year immutable caching, distinguished
+missing/invalid IMO from valid-but-uncovered IMO, and made zero external
+photo-provider request. See
 [Vessel Reference Photo Evaluation](vessel-photo-evaluation.md) for the
 complete reviewed inventory, validation, takedown, and yacht limitations.
 

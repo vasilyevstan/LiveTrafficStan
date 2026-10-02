@@ -78,12 +78,14 @@ boundary. Starlink publishes only to
 flag leaves curated acquisition and `/api/orbits/catalog` unchanged.
 
 Current application source
-`9e1d8c23f9047d0bf57b12bd4abc7d5fcae90f63` sets the flag to `true`, uses KV
-namespace `59178d55418247c4bab473b52a5dc07d`, and runs Cron
-`17 */2 * * *`; deployment run `36908605830`, successful attempt 2, recorded
-Cloudflare version `d83f68ae-907e-4b2d-a086-00b4fde00372`. This Worker
-setting does not change the user-facing default: the remembered ORBITS layer
-still starts off until explicitly enabled or included in a share fragment.
+`bba0bf4f7a69939e3c07fbeb24470fa959f6f20a` sets both orbital flags to
+`true`, uses KV namespace `59178d55418247c4bab473b52a5dc07d`, and runs Cron
+`17 */2 * * *`. Canonical deployment run `36997443034` passed as version
+`63e5a14d-7115-44aa-9386-36b13b5ff91d`; protected rollback/restoration runs
+`36998162009` and `36998245095` then returned the exact source as the running
+version `146e74df-c960-4a41-bc0c-6d5b9fa0d660`. These Worker settings do not
+change the user-facing defaults: ORBITS and its STARLINK child still start off
+until explicitly enabled or included in a share fragment.
 
 The exact-NORAD purpose/image manifest adds no environment variable, provider
 endpoint, secret, scheduler, Worker binding, or PWA-shell entry. Purpose is
@@ -125,7 +127,7 @@ spread through components:
 | Aircraft photo lookup | Disabled by default; explicit selected-details action or 500 ms fine-pointer dwell, exact live ICAO24 only |
 | Photo request deadline / response cap | 8 seconds / 32 KiB |
 | Photo JSON tab cache | 32 successful or no-photo entries / 1 hour |
-| Vessel reference photos | 5 reviewed exact-IMO entries; 640 px maximum dimension; 512 KiB per image / 1 MiB total |
+| Vessel reference photos | 8 reviewed exact-IMO entries; 640 px maximum dimension; 512 KiB per image / 1 MiB total |
 | Plausible route lookup | Enabled by default; one request for each newly selected eligible live aircraft |
 | Route request deadline / response cap | 10 seconds / 32 KiB |
 | Route tab cache | 32 successful exact-identity entries / 6 hours |

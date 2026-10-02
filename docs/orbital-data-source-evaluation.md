@@ -76,6 +76,35 @@ canonical snapshot with digest
 `16233efe565c8f07f079ae4ad321219ae756931679d167fb2a3f2f52bf5a81d4`.
 No retry or second provider read was made.
 
+Production release #267 activated that immutable sample at exact source
+`bba0bf4f7a69939e3c07fbeb24470fa959f6f20a`. Before the first safe provider
+boundary, the public route served the bootstrap with the exact digest above.
+Chrome acceptance made one same-origin request only after the child toggle,
+made zero browser CelesTrak requests, reached all 150 rows, and retained one
+physical orbital worker. Protected rollback to the pre-Starlink target and
+exact-current restoration passed without deleting the KV namespace or named
+Durable Object, resetting either admission row, or invoking provider
+acquisition manually.
+
+The first ordinary post-release Cron at `2026-10-02T12:17Z` was still before
+the bootstrap-derived `20:40:03Z` boundary. A route observation at
+`12:17:59.818Z` returned the identical bootstrap source, retrieval/publication
+times, 11,125-record population, 150-record sample, canonical digest, and weak
+ETag. That is the expected pre-boundary no-replacement outcome.
+
+The first eligible ordinary `22:17Z` event produced the newer complete
+generation without manual acquisition. A read-only route request at
+`22:17:59.998669Z` completed after `22:18Z` and still returned bootstrap; the
+first request strictly after the observer target, at `22:19:00.327863Z`,
+returned HTTP 200, `source=kv`, exact release `bba0bf4f...`, GP retrieval
+`22:18:01.730Z`, SATCAT retrieval/publication `22:18:02.211Z`, serve time
+`22:19:00.626Z`, population 11,125, sample 150, and digest/weak ETag
+`3cd7476fd7d42aed1772a85d4f81c27322c73b088bf58ff217e39454f425f0d7`.
+The preserved 74,962-byte body and exact headers have SHA-256
+`beddf705cd549e11411447ebc0db9ca587144007a150cc52e035fc4aba7453db`
+and `be232df809d63a4c0617cf2df6cf16529d1d9bbcddfdd6a0ec1c1c93da3160d7`.
+A bounded provider-contract review found no release-blocking inconsistency.
+
 ## Evidence method
 
 This decision combines:

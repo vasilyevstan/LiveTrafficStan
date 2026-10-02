@@ -43,11 +43,14 @@ no paid fallback is enabled. Orbital activation uses the included free KV and
 SQLite Durable Object allocations; R2 is not used.
 
 The current application source is
-`9e1d8c23f9047d0bf57b12bd4abc7d5fcae90f63`. Protected deployment run
-`36908605830`, successful attempt 2, published Cloudflare version
-`d83f68ae-907e-4b2d-a086-00b4fde00372` with aircraft delivery through
-`oci-private-relay`, aircraft photos, plausible routes, exact-IMO vessel
-photos, the curated orbital catalog, and exact-NORAD enrichment enabled. It
+`bba0bf4f7a69939e3c07fbeb24470fa959f6f20a`. Protected deployment run
+`36997443034`, successful attempt 3, initially published Cloudflare version
+`63e5a14d-7115-44aa-9386-36b13b5ff91d` with aircraft delivery through
+`oci-private-relay`, aircraft photos, plausible routes, eight exact-IMO vessel
+photos, the curated orbital catalog, the bounded Starlink catalog, and
+exact-NORAD enrichment enabled. Protected rollback run `36998162009` proved
+the predecessor, and restoration run `36998245095` returned the exact current
+source as the running version `146e74df-c960-4a41-bc0c-6d5b9fa0d660`. It
 preserved KV namespace `59178d55418247c4bab473b52a5dc07d`, one SQLite
 coordinator, and Cron `17 */2 * * *`. The matching relay runs
 `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8` and retains
@@ -101,12 +104,13 @@ iOS/Android evidence was unavailable and is not claimed. The full measured
 record and screenshots are attached to
 [#246](https://github.com/vasilyevstan/LiveTrafficStan/pull/246#issuecomment-5935337522).
 
-The public Wiki synchronization is commit
-`5bab3ed5ef03bb967b7f7bcf2d865d1c9019df16`. It updates the focused orbital,
-architecture, hosting, provider, map, testing, release, troubleshooting,
-decisions, roadmap, and Home pages with the current production identity,
-reduced vessel scale, screenshots, measured acceptance, relay recovery, and
-rollback target.
+The final public Wiki synchronization is commit
+`bac76a2994a09e85e1162c5724a6071f0fc35540`. It records the current
+production identity, live-traffic recovery, physical vessel sizing, eight
+exact-IMO photos, bounded Starlink lifecycle and scheduled publication,
+browser acceptance, independent relay recovery, rollback/restoration,
+provider/privacy boundaries, troubleshooting, and physical-device
+limitations.
 
 Deployment attempt 1 published version
 `45cccadf-0456-4812-aed3-54286886a3c0`, but smoke failed only because the
@@ -136,6 +140,70 @@ Fresh public Chrome acceptance proved all nine vessel classes through the real
 symbol layer at 22/24/30/37 CSS px, with one map lifecycle, exact theme
 restoration, complete picking/state overlays, responsive attribution, and
 zero fixture-added protected requests.
+
+The coordinated traffic-recovery release merged #262-#265 through checked
+release #267 at exact main
+`bba0bf4f7a69939e3c07fbeb24470fa959f6f20a`. Protected release validation
+run `36996187462` passed 127 test files / 950 tests plus lint, typecheck,
+aircraft metadata, country allocations, vessel photos, curated/Starlink
+catalogs, orbital enrichment, ports, airports, both builds, and both deployment
+dry runs.
+
+Canonical deployment had two independent transient failures before the
+unchanged third attempt passed:
+
+- run `36996396517` deployed version
+  `ebee76a9-0555-406f-95ba-285e2e548612`, then aircraft smoke returned `502`
+  only on the private VPC/Tunnel/relay path. One exact-instance
+  `DIAGNOSTICREBOOT` was requested at `2026-10-02T10:41:00Z`; lifecycle
+  reached `STOPPING` at `10:41:02Z`, `STARTING` at `10:42:10Z`, and
+  `RUNNING` at `10:42:50Z`. Four bounded 20-second probes remained `502`; the
+  fifth returned real aircraft JSON at `10:44:21Z`;
+- run `36997137283` passed aircraft but later met one AWC METAR `504`.
+  Production METAR and direct AWC both returned valid `200` immediately
+  afterward, so no application rollback or provider substitution was applied;
+- run `36997443034` passed the complete canonical smoke as version
+  `63e5a14d-7115-44aa-9386-36b13b5ff91d`.
+
+Exact production Chrome acceptance proved **Resume live** returned a retained
+paused view to the reviewed framing and rendered live aircraft/marine data;
+27 current vessel features retained monotonic 60-213 m physical-size ordering
+across normalized silhouettes; all eight exact-IMO assets plus both unavailable
+states passed; and STARLINK made one same-origin request, zero browser
+CelesTrak requests, exposed all eight pages, retained one canvas/one active
+physical orbital worker, restored theme state, and passed mobile touch without
+diagnostics.
+
+Protected rollback run `36998162009` restored predecessor source
+`9e1d8c23f9047d0bf57b12bd4abc7d5fcae90f63` and version
+`d83f68ae-907e-4b2d-a086-00b4fde00372`; target-aware smoke passed. Protected
+restoration run `36998245095` redeployed exact current main as version
+`146e74df-c960-4a41-bc0c-6d5b9fa0d660`; full smoke passed with both orbital
+routes enabled and the immutable Starlink bootstrap retained. The private
+relay secret was supplied atomically through Wrangler's protected
+`--secrets-file`; no standalone secret mutation or manual provider refresh was
+used.
+
+The ordinary `2026-10-02T12:17Z` scheduled event preceded the fresh Starlink
+row's exact `20:40:03Z` not-before boundary. The public route observation at
+`12:17:59.818Z` remained the same bootstrap generation: GP retrieval
+`08:40:03Z`, SATCAT/publication `08:40:05Z`, population 11,125, sample 150,
+digest
+`16233efe565c8f07f079ae4ad321219ae756931679d167fb2a3f2f52bf5a81d4`,
+and its matching weak ETag. No replacement snapshot was presented before the
+reviewed provider boundary.
+
+The first eligible ordinary `22:17Z` Cron completed the fixed pair and one
+final KV publication without manual acquisition. The first route request
+strictly after `22:18Z`, at `22:19:00.327863Z`, returned exact release
+`bba0bf4f...`, `source=kv`, GP retrieval `22:18:01.730Z`, SATCAT
+retrieval/publication `22:18:02.211Z`, serve time `22:19:00.626Z`,
+population 11,125, sample 150, and digest/weak ETag
+`3cd7476fd7d42aed1772a85d4f81c27322c73b088bf58ff217e39454f425f0d7`.
+The immediately preceding read-only attempt completed after `22:18Z` but had
+begun 1.331 ms before the nominal observer target and truthfully returned the
+old bootstrap. This timing nuance does not change cadence safety: both route
+requests were storage-only and the provider pair came from the ordinary Cron.
 
 Cache-disabled public-origin orbital-enrichment acceptance used real current
 Hubble, ISS, and NORAD `733` map features. Before selection there were zero
@@ -678,9 +746,12 @@ Both responses reported source `kv`. A schedule event
 can arrive seconds before the exact two-hour admission boundary and return
 `not-due`; this consumes no provider request and is not a failed refresh.
 
-That curated release remains the byte-exact rollback target for the current
-map follow-up: source `538edd25afa49f62c13e93745b322099f662791d`, recorded
-Cloudflare version `83b98933-a609-405e-b07c-3e4f4ded46e8`.
+That curated release remains historical rollback evidence for the map
+follow-up: source `538edd25afa49f62c13e93745b322099f662791d`, recorded
+Cloudflare version `83b98933-a609-405e-b07c-3e4f4ded46e8`. The current
+traffic-recovery release instead uses predecessor source
+`9e1d8c23f9047d0bf57b12bd4abc7d5fcae90f63` and version
+`d83f68ae-907e-4b2d-a086-00b4fde00372`, proven by run `36998162009`.
 
 For local rendered acceptance without production credentials:
 
