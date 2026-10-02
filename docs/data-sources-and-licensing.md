@@ -232,18 +232,23 @@ boundary, deterministic evidence, live result, and enablement requirements.
 
 ## Vessel reference photos: reviewed Wikimedia Commons derivatives
 
-LiveTrafficStan includes five bundled historical reference photographs selected
+LiveTrafficStan includes eight bundled historical reference photographs selected
 through a file-by-file review:
 
+- Tarmo, IMO `5352886`;
 - Finlandia, IMO `9214379`;
+- Romantika, IMO `9237589`;
 - Victoria I, IMO `9281281`;
 - Viking XPRS, IMO `9375654`;
+- MSC Magnifica, IMO `9387085`;
 - Megastar, IMO `9773064`;
 - MyStar, IMO `9892690`.
 
-Each vessel was observed through Digitraffic in the Tallinn-Helsinki operating
-area during the 2026-09-26 review. Identity evidence binds the valid exact IMO
-to one Wikidata item and one Commons image, then pins the reviewed Commons
+The original five vessels were observed through Digitraffic in the
+Tallinn-Helsinki operating area during the 2026-09-26 review. Tarmo and
+Romantika were observed live in Tallinn and MSC Magnifica in the Baltic Sea
+during the 2026-10-02 expansion. Identity evidence binds the valid exact IMO to
+one Wikidata item and one Commons image, then pins the reviewed Commons
 file-page revision. Runtime matching uses only the exact AIS-reported IMO of
 the selected or stably hovered live vessel. It never uses MMSI, name, call
 sign, class, sister ship, or fuzzy matching and never performs a runtime
@@ -251,11 +256,11 @@ Wikimedia/Wikidata search.
 
 The selected file licenses are:
 
-- CC BY-SA 3.0 for Finlandia and Victoria I;
-- CC BY-SA 4.0 for Viking XPRS and Megastar;
+- CC BY-SA 3.0 for Tarmo, Finlandia, and Victoria I;
+- CC BY-SA 4.0 for Romantika, Viking XPRS, MSC Magnifica, and Megastar;
 - CC0 1.0 for MyStar.
 
-The four ShareAlike derivatives remain under their listed file-specific
+The seven ShareAlike derivatives remain under their listed file-specific
 license versions. Every source thumbnail was resized to a 640-pixel maximum
 dimension and stripped of embedded metadata without cropping or retouching.
 Visible selected-details credit includes author, fixed Commons revision,
@@ -266,7 +271,7 @@ The repository's Apache-2.0 license does not relicense the image files.
 `src/config/vesselPhotoManifest.json` records the complete identity, source,
 revision, original/thumbnail measurements, rights, bundled measurements, and
 checksums. The co-located
-`public/vessel-photos/2026-09-26-v1/LICENSES.md` conveys the file-specific
+`public/vessel-photos/2026-10-02-v1/LICENSES.md` conveys the file-specific
 credits and licenses.
 
 Images are versioned same-origin static assets. The browser requests one only

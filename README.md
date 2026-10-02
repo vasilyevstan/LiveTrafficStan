@@ -41,7 +41,8 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
 - Viewport-driven traffic after settled pan, zoom, rotation, pitch, Home, and
   resize changes.
 - A truthful 100 km enclosing-query limit: wider or unsafe views pause traffic
-  and ask the user to zoom in rather than showing partial coverage as complete.
+  and offer **Resume live** to fit the current map center back to the reviewed
+  safe framing rather than showing partial coverage as complete.
 - A 30 km session Home/Center framing plus privacy-safe one-shot browser
   location: already-granted permission and grants made while the page is open
   are used automatically; otherwise location is an explicit action with
@@ -57,7 +58,9 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   moving at least 1 knot receive dedicated yacht icons. The nine exact
   source-truthful display classes use bold, perceptually tested top-down outer
   silhouettes; names, dimensions, routes, speed, and visual similarity never
-  infer a more specific class.
+  infer a more specific class. Valid AIS reference-point length sets one
+  bounded physical marker scale, with each silhouette normalized to the same
+  nose-to-stern span so artwork shape cannot reverse ship-size ordering.
 - An optional, lazily loaded, zoom-aware Natural Earth port context layer with
   separate selection, failure, and attribution. Port points are generalized
   and incomplete and are never treated as operational harbour or vessel-call
@@ -136,10 +139,13 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   than presenting the sample as the full constellation. One existing
   CelesTrak Durable Object owns both schedules: curated acquisition remains
   first, while a second SQLite row admits the paired Starlink read at most once
-  per 12 hours at the actual GP request start. The browser uses only literal
-  same-origin `GET /api/orbits/starlink`, one physical orbital worker with
-  isolated curated/Starlink channels, and separate persistent MapLibre
-  sources/layers. Starlink public IDs are
+  per 12 hours at the actual GP request start. A fresh production row is seeded
+  from the pinned bootstrap GP retrieval time, so the immutable sample may be
+  activated immediately while provider work remains blocked until the first
+  safe 12-hour boundary; later starts anchor the ordinary cadence. The browser
+  uses only literal same-origin `GET /api/orbits/starlink`, one physical orbital
+  worker with isolated curated/Starlink channels, and separate persistent
+  MapLibre sources/layers. Starlink public IDs are
   `orbital:starlink:<NORAD>`; selection, halo, track, details, and tooltips
   never inherit curated purpose or imagery. Exact payloads use a flat-panel
   spacecraft silhouette, while rocket bodies, debris, and unknown objects
@@ -165,12 +171,14 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   shows visible photographer credit, keeps bounded JSON only in current-tab
   memory, and publishes a completed hover result into already-open matching
   selected details without a second provider request.
-- Five bundled historical vessel reference photos for Finlandia, Victoria I,
-  Viking XPRS, Megastar, and MyStar. A photo appears only in selected live
-  ship details or after a stable fine-pointer hover when the AIS-reported IMO
-  is valid and exactly matches the reviewed manifest; visible author, fixed
-  Commons revision, license, and modification attribution are retained without
-  any runtime image-provider request.
+- Eight bundled historical vessel reference photos for Tarmo, Finlandia,
+  Romantika, Victoria I, Viking XPRS, MSC Magnifica, Megastar, and MyStar. A
+  photo appears only in selected live ship details or after a stable
+  fine-pointer hover when the AIS-reported IMO is valid and exactly matches the
+  reviewed manifest; visible author, fixed Commons revision, license, and
+  modification attribution are retained without any runtime image-provider
+  request. Selected unmatched and invalid identities state why no reviewed
+  image is available instead of failing silently.
 - Honest detail cards, provider-specific health, stale/expired handling, and
   partial operation when one provider fails.
 - Short interpolation only between observed positions and a selected-object
@@ -715,9 +723,10 @@ monitoring, privacy, and rollback procedure.
   filtering does not reduce incoming MQTT bandwidth. Digitraffic exposes
   Class A AIS only, so Class B yachts are unavailable and the eligible yacht
   population can be small or empty.
-- Views whose conservative enclosing radius exceeds 100 km pause live traffic
-  until the user zooms in or reduces tilt. Partial coverage is never presented
-  as complete.
+- Views whose conservative enclosing radius exceeds 100 km pause live traffic.
+  **Resume live** keeps the current map center and returns to the reviewed safe
+  framing; manual zoom-in or reduced tilt remain available. Partial coverage is
+  never presented as complete.
 - Selected trails remain intentionally limited to one object. Volatile session
   history disappears on refresh; explicitly enabled private local history may
   survive within its configured bounds.
@@ -760,11 +769,11 @@ monitoring, privacy, and rollback procedure.
   remain public and free. Provider JSON stays in a bounded one-hour,
   32-entry current-tab cache, and no URL, credit, or image byte is persisted or
   proxied.
-- Vessel photos cover only five manually reviewed ferries. They are historical
+- Vessel photos cover only eight manually reviewed vessels. They are historical
   reference images matched solely by valid exact AIS-reported IMO, not live
   views or independent confirmation of the transmitting hull. Missing,
-  invalid, or unmatched IMO shows no real-image substitute. No general yacht
-  photo coverage is promised.
+  invalid, or unmatched IMO shows an explicit unavailable reason and no
+  real-image substitute. No general yacht photo coverage is promised.
 - Orbital positions and map crossings are SGP4 models from a bounded reviewed
   CelesTrak catalog; the `visual` group is only one member of the curated
   source set. They are not observations, launch or reentry

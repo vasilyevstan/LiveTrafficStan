@@ -326,25 +326,30 @@ live stream.
 
 ## A ship has no reference photo
 
-This is normally expected. The first bundled manifest contains only five
-reviewed ferries and requires the selected or stably hovered live vessel to
+This is normally expected. The current bundled manifest contains only eight
+reviewed vessels and requires the selected or stably hovered live vessel to
 report a valid exact IMO:
 
+- Tarmo `5352886`;
 - Finlandia `9214379`;
+- Romantika `9237589`;
 - Victoria I `9281281`;
 - Viking XPRS `9375654`;
+- MSC Magnifica `9387085`;
 - Megastar `9773064`;
 - MyStar `9892690`.
 
-Missing, malformed, or unmatched IMO intentionally produces no image. The
-application never falls back to MMSI, name, call sign, vessel type, class,
-sister ship, or a generic real photograph. HISTORY always omits vessel photos.
-On a fine-pointer desktop, only a listed vessel held under the pointer for at
-least 500 ms adds the compact tooltip photo; sub-dwell, invalid, and unmatched
-hover remains photo-free. Touch users open selected details instead.
+Missing, malformed, or unmatched IMO intentionally produces no image.
+Selected details distinguish a missing/invalid IMO from a valid IMO that lacks
+reviewed coverage; neither state substitutes another hull. The application
+never falls back to MMSI, name, call sign, vessel type, class, sister ship, or
+a generic real photograph. HISTORY always omits vessel photos. On a
+fine-pointer desktop, only a listed vessel held under the pointer for at least
+500 ms adds the compact tooltip photo; sub-dwell, invalid, and unmatched hover
+remains photo-free. Touch users open selected details instead.
 
 For a listed vessel, inspect the exact
-`/vessel-photos/2026-09-26-v1/imo-{IMO}.jpg` or `.png` request. A missing or
+`/vessel-photos/2026-10-02-v1/imo-{IMO}.jpg` or `.png` request. A missing or
 damaged file is a deployment defect, not permission to substitute another
 image. Run `npm run check:vessel-photos` to verify the committed directory,
 license record, dimensions, byte counts, and SHA-256 without any upstream
@@ -404,9 +409,10 @@ Settled pan, zoom, rotation, pitch, Home, and resize changes all update the
 traffic viewport. If its conservative enclosing radius exceeds 100 km, the app
 hides traffic and trails, pauses both providers, and shows **Zoom in to see live
 traffic** or **Zoom in or reduce tilt to see live traffic**. This is not an
-empty provider response. Zoom in or reduce tilt; the existing provider
-instances resume at their next allowed cadence, reconnect, REST, or metadata
-boundary.
+empty provider response. Use **Resume live** to keep the current map center and
+fit it back to the reviewed safe framing, or zoom in / reduce tilt manually.
+The existing provider instances resume at their next allowed cadence,
+reconnect, REST, or metadata boundary.
 
 If camera movement causes repeated requests, verify that settled updates are
 coalesced and that unchanged enclosing queries do not restart provider work.
@@ -686,9 +692,12 @@ Check literal `GET /api/orbits/starlink`:
 Do not manually refresh CelesTrak. The separate SQLite admission row permits
 one actual GP start per 12 hours, after curated work and subject to the shared
 terminal block and `Retry-After`. A failed pair waits for the next normal
-window. Inspect aggregate scheduled outcome and the exact source timestamps;
-GP retrieval must not follow SATCAT retrieval, and publication must not precede
-SATCAT.
+window. On a fresh Durable Object, `not-due` through
+`2026-10-02T20:40:03Z` is the expected bootstrap-derived guard, not a failed
+activation: `/api/orbits/starlink` should still serve the immutable bootstrap
+without a CelesTrak request. Inspect aggregate scheduled outcome and the exact
+source timestamps; GP retrieval must not follow SATCAT retrieval, and
+publication must not precede SATCAT.
 
 If KV is healthy but requests time out, verify the immutable asset binding:
 bootstrap fallback must stop within 1.5 seconds and cannot consume the

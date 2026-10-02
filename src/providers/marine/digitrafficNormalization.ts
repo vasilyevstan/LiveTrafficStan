@@ -15,6 +15,11 @@ import {
 import { DIGITRAFFIC_PROVIDER_NAME } from './digitrafficCapabilities'
 
 const KNOTS_TO_KPH = 1.852
+const DEFAULT_VESSEL_MARKER_LENGTH_METERS = 40
+const MINIMUM_VESSEL_MARKER_LENGTH_METERS = 20
+const VESSEL_MARKER_SCALE_LENGTH_RANGE_METERS = 260
+export const MINIMUM_VESSEL_MARKER_SCALE = 0.8
+export const MAXIMUM_VESSEL_MARKER_SCALE = 1.6
 
 export interface MarineLocationRecord {
   mmsi: number
@@ -392,6 +397,26 @@ export const navigationStatusName = (status: number | undefined) => {
   return status === undefined ? undefined : names[status]
 }
 
+export const vesselMarkerScale = (
+  lengthMeters: number | undefined,
+) => {
+  const length =
+    lengthMeters !== undefined &&
+    Number.isFinite(lengthMeters) &&
+    lengthMeters > 0
+      ? lengthMeters
+      : DEFAULT_VESSEL_MARKER_LENGTH_METERS
+  return Math.min(
+    MAXIMUM_VESSEL_MARKER_SCALE,
+    Math.max(
+      MINIMUM_VESSEL_MARKER_SCALE,
+      MINIMUM_VESSEL_MARKER_SCALE +
+        (length - MINIMUM_VESSEL_MARKER_LENGTH_METERS) /
+          VESSEL_MARKER_SCALE_LENGTH_RANGE_METERS,
+    ),
+  )
+}
+
 export const normalizeDigitrafficVessel = (
   location: MarineLocationRecord,
   metadata: MarineMetadataRecord | undefined,
@@ -441,9 +466,6 @@ export const normalizeDigitrafficVessel = (
       vesselNavigationCategory(location.navigationStatus),
     metadataObservedAt: metadata?.timestamp,
     markerIcon: vesselMarkerIcon(metadata?.shipType),
-    markerScale: Math.min(
-      1.35,
-      Math.max(0.78, 0.78 + (lengthMeters ?? 40) / 400),
-    ),
+    markerScale: vesselMarkerScale(lengthMeters),
   }
 }

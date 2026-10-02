@@ -172,6 +172,18 @@ export const VESSEL_ICON_SHAPES = {
   ],
 } as const satisfies Record<VesselStyleImageId, IconPolygons>
 
+export const VESSEL_ICON_LENGTH_NORMALIZATION = {
+  vessel: 56 / 49,
+  'vessel-cargo': 1,
+  'vessel-tanker': 56 / 58,
+  'vessel-passenger': 1,
+  'vessel-fishing': 56 / 53,
+  'vessel-tug': 56 / 48,
+  'vessel-sailing': 56 / 57,
+  'vessel-pleasure': 56 / 58,
+  'vessel-highspeed': 56 / 58,
+} as const satisfies Record<VesselStyleImageId, number>
+
 export interface TrafficIconTreatment {
   aircraftFill: string
   aircraftDetail: string

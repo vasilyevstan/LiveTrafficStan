@@ -463,6 +463,7 @@
 .history-action,
 .control-panel__urgent button,
 .history-mode-notice button,
+.viewport-notice button,
 .close-button {
   min-height: 32px;
   border: 1px solid var(--button-border);
@@ -502,6 +503,8 @@
 .control-panel__urgent button:focus-visible,
 .history-mode-notice button:hover,
 .history-mode-notice button:focus-visible,
+.viewport-notice button:hover,
+.viewport-notice button:focus-visible,
 .close-button:hover,
 .close-button:focus-visible {
   color: var(--button-hover-text);
@@ -1126,8 +1129,13 @@
   width: min(330px, calc(100vw - 32px));
   padding: 11px 13px;
   border-radius: 10px;
-  pointer-events: none;
+  gap: 7px;
   font-size: 0.72rem;
+}
+
+.viewport-notice button {
+  min-height: 28px;
+  padding: 0 8px;
 }
 
 .history-mode-notice {

@@ -706,7 +706,12 @@ named SQLite Durable Object, KV namespace, and Worker deployment. No second
 trigger or provider-facing endpoint is created. After curated processing, the
 coordinator transactionally reserves a separate Starlink row at the actual GP
 request start if at least 12 hours have elapsed and no global CelesTrak block
-or later `Retry-After` applies.
+or later `Retry-After` applies. If that row does not yet exist, the coordinator
+first seeds it from the pinned bootstrap GP retrieval at
+`2026-10-02T08:40:03Z`. Calls before `2026-10-02T20:40:03Z` return `not-due`
+without provider work, while the immutable bootstrap can already be served;
+an admission at or after the boundary replaces the seed with the actual request
+start and resumes ordinary 12-hour anchoring.
 
 The admitted sequence is the fixed official Starlink GP JSON followed by
 SATCAT JSON. Each response is exact `200` JSON, at most 6 MiB and 15,000 rows;

@@ -12,6 +12,7 @@ import {
   parseDigitrafficRestMetadata,
   vesselCategory,
   vesselLengthMeters,
+  vesselMarkerScale,
   vesselMarkerIcon,
   vesselNavigationCategory,
   vesselWidthMeters,
@@ -137,6 +138,7 @@ describe('Digitraffic normalization', () => {
       metadataObservedAt: 1_800_000_000_000,
       eta: '09-18 14:30 UTC',
       markerIcon: 'vessel-cargo',
+      markerScale: vesselMarkerScale(100),
     })
 
     const withoutMetadata = normalizeDigitrafficVessel(
@@ -150,6 +152,20 @@ describe('Digitraffic normalization', () => {
       kind: 'regional',
       exactBoundaryKnown: false,
     })
+  })
+
+  it('uses a bounded physical-length scale with a truthful unknown fallback', () => {
+    const lengths = [20, 60, 100, 150, 200, 300]
+    const scales = lengths.map(vesselMarkerScale)
+
+    expect(scales).toEqual([...scales].sort((left, right) => left - right))
+    expect(vesselMarkerScale(20)).toBe(0.8)
+    expect(vesselMarkerScale(60)).toBeCloseTo(0.9538, 4)
+    expect(vesselMarkerScale(100)).toBeCloseTo(1.1077, 4)
+    expect(vesselMarkerScale(200)).toBeCloseTo(1.4923, 4)
+    expect(vesselMarkerScale(300)).toBe(1.6)
+    expect(vesselMarkerScale(undefined)).toBeCloseTo(0.8769, 4)
+    expect(vesselMarkerScale(Number.NaN)).toBeCloseTo(0.8769, 4)
   })
 
   it('maps only trusted AIS ship types to the bounded icon vocabulary', () => {

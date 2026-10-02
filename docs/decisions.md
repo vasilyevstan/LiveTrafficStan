@@ -328,7 +328,12 @@ The existing CelesTrak coordinator, Cron, KV namespace, terminal block, and
 global provider backoff remain authoritative. A second SQLite table reserves
 Starlink immediately before the actual GP request and permits at most one
 start per 12 hours; failed work waits for the next normal window. Curated work
-always runs first. The route is storage-only
+always runs first. The initial empty row is seeded from the pinned immutable
+bootstrap GP retrieval time and returns `not-due` before that source's
+12-hour boundary. This permits immediate product activation without treating
+deployment time as permission for another provider read; the first admitted
+request and every later request retain actual-start anchoring. The route is
+storage-only
 `GET /api/orbits/starlink`, with no query, endpoint override, browser
 coordinates, credentials, or direct CelesTrak access.
 
@@ -595,6 +600,16 @@ reduced 22 CSS-pixel floor continues to pass every gate. Production-path Chrome
 evidence also covers themes, DPR 1/2, headings, state overlays, backgrounds,
 responsive sizes, picking, and style restoration. The artwork does not alter
 any classification boundary.
+
+The user-visible #250 follow-up showed that a shared MapLibre multiplier did
+not preserve physical-size ordering across silhouettes with different
+longitudinal contour spans. The current contract keeps the 22 CSS-pixel
+small-hull reference floor, widens valid AIS length scaling toward a 44
+CSS-pixel reference ceiling for large hulls, and normalizes every silhouette
+to one longitudinal source span before applying that scale. Size still comes
+only from valid AIS
+reference-point dimensions; category, name, route, width, and artwork area
+never upgrade it.
 
 Provider-owned icon keys stay in normalized entities and bounded historical
 records. Visual-only state is derived later by one pure presentation module and

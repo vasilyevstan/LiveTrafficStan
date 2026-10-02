@@ -1,13 +1,64 @@
 {
   "schemaVersion": 1,
-  "manifestVersion": "2026-09-26-v1",
-  "reviewedAt": "2026-09-26",
+  "manifestVersion": "2026-10-02-v1",
+  "reviewedAt": "2026-10-02",
   "sourcePolicy": {
     "name": "Manual exact-IMO Wikimedia Commons review",
     "identityRule": "Match only the live vessel's valid AIS-reported IMO.",
     "takedownProcedure": "Remove the manifest entry and bundled asset, run npm run check:vessel-photos, and deploy the resulting exact source revision. Never substitute another hull."
   },
   "photos": [
+    {
+      "imo": "5352886",
+      "vesselNameAtReview": "Tarmo",
+      "alt": "Icebreaker Tarmo moored in Tallinn harbour",
+      "digitrafficEvidence": {
+        "mmsiAtReview": "276158000",
+        "metadataObservedAt": "2026-10-02T10:15:40.281Z",
+        "destinationAtReview": "HUNDIPEA",
+        "operatingAreaAtReview": "Tallinn harbour"
+      },
+      "identityEvidence": {
+        "wikidataQid": "Q1530233",
+        "wikidataItemUrl": "https://www.wikidata.org/wiki/Q1530233",
+        "commonsFileTitle": "File:Tarmo 1963 IMO 5352886 Tallinn 14 July 2012.JPG",
+        "commonsPageUrl": "https://commons.wikimedia.org/wiki/File:Tarmo_1963_IMO_5352886_Tallinn_14_July_2012.JPG",
+        "commonsRevisionId": 1263937541,
+        "commonsRevisionUrl": "https://commons.wikimedia.org/w/index.php?title=File%3ATarmo_1963_IMO_5352886_Tallinn_14_July_2012.JPG&oldid=1263937541",
+        "reviewNote": "Wikidata identifies Tarmo by IMO 5352886 and uses this Commons file as its image; the filename, description, and exact-hull category identify Tarmo (ship, 1963)."
+      },
+      "source": {
+        "photoTakenAt": "2012-07-14",
+        "originalUrl": "https://upload.wikimedia.org/wikipedia/commons/3/33/Tarmo_1963_IMO_5352886_Tallinn_14_July_2012.JPG",
+        "originalMediaType": "image/jpeg",
+        "originalBytes": 1811568,
+        "originalWidth": 3264,
+        "originalHeight": 2448,
+        "originalSha1": "30e31ec5bd8cf51be89f5e3780f492d90c8d1559",
+        "reviewedThumbnailUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/33/Tarmo_1963_IMO_5352886_Tallinn_14_July_2012.JPG/960px-Tarmo_1963_IMO_5352886_Tallinn_14_July_2012.JPG",
+        "reviewedThumbnailBytes": 123202,
+        "reviewedThumbnailWidth": 960,
+        "reviewedThumbnailHeight": 720,
+        "reviewedThumbnailSha256": "4acaa9dd1ff0dbfcc8eecf2a5ad8f4e54eccb658c342db6d832ecdb9b74ea0d1"
+      },
+      "rights": {
+        "author": "Pjotr Mahhonin",
+        "sourceName": "Wikimedia Commons",
+        "licenseName": "CC BY-SA 3.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+        "creditLine": "Pjotr Mahhonin / Wikimedia Commons / CC BY-SA 3.0",
+        "attributionRequired": true
+      },
+      "asset": {
+        "path": "/vessel-photos/2026-10-02-v1/imo-5352886.jpg",
+        "mediaType": "image/jpeg",
+        "bytes": 50307,
+        "width": 640,
+        "height": 480,
+        "sha256": "164c64c026545a221c10815a9a0a0242383f8436cf87a10107ff53980a3c1db4",
+        "modificationNotice": "Resized from the reviewed Wikimedia Commons thumbnail to a 640-pixel maximum dimension and removed embedded metadata; not cropped or retouched."
+      }
+    },
     {
       "imo": "9214379",
       "vesselNameAtReview": "Finlandia",
@@ -50,12 +101,63 @@
         "attributionRequired": true
       },
       "asset": {
-        "path": "/vessel-photos/2026-09-26-v1/imo-9214379.jpg",
+        "path": "/vessel-photos/2026-10-02-v1/imo-9214379.jpg",
         "mediaType": "image/jpeg",
         "bytes": 86200,
         "width": 640,
         "height": 472,
         "sha256": "3c985873116117de641805d301a8dcc6c9b748e3b742693adad8772a52af0c83",
+        "modificationNotice": "Resized from the reviewed Wikimedia Commons thumbnail to a 640-pixel maximum dimension and removed embedded metadata; not cropped or retouched."
+      }
+    },
+    {
+      "imo": "9237589",
+      "vesselNameAtReview": "Romantika",
+      "alt": "Cruiseferry Romantika berthed at Värtahamnen in Stockholm",
+      "digitrafficEvidence": {
+        "mmsiAtReview": "275304000",
+        "metadataObservedAt": "2026-10-02T10:17:19.239Z",
+        "destinationAtReview": "EEVAN->EEPAS",
+        "operatingAreaAtReview": "Tallinn-Paldiski"
+      },
+      "identityEvidence": {
+        "wikidataQid": "Q2576348",
+        "wikidataItemUrl": "https://www.wikidata.org/wiki/Q2576348",
+        "commonsFileTitle": "File:Romantika, Stockholm, 2019 (04).jpg",
+        "commonsPageUrl": "https://commons.wikimedia.org/wiki/File:Romantika,_Stockholm,_2019_(04).jpg",
+        "commonsRevisionId": 1019112070,
+        "commonsRevisionUrl": "https://commons.wikimedia.org/w/index.php?title=File%3ARomantika%2C_Stockholm%2C_2019_%2804%29.jpg&oldid=1019112070",
+        "reviewNote": "Wikidata identifies Romantika by IMO 9237589 and uses this Commons file as its image; Commons categorizes the exact hull as Romantika (ship, 2002)."
+      },
+      "source": {
+        "photoTakenAt": "2019-08-19",
+        "originalUrl": "https://upload.wikimedia.org/wikipedia/commons/0/0e/Romantika%2C_Stockholm%2C_2019_%2804%29.jpg",
+        "originalMediaType": "image/jpeg",
+        "originalBytes": 6487066,
+        "originalWidth": 5750,
+        "originalHeight": 3806,
+        "originalSha1": "fb2ee8432820fb973220c9216ab4cc457676f8e6",
+        "reviewedThumbnailUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0e/Romantika%2C_Stockholm%2C_2019_%2804%29.jpg/960px-Romantika%2C_Stockholm%2C_2019_%2804%29.jpg",
+        "reviewedThumbnailBytes": 186829,
+        "reviewedThumbnailWidth": 960,
+        "reviewedThumbnailHeight": 635,
+        "reviewedThumbnailSha256": "9d63f93344f593cb73cb9ebaf742d8a181bc82585bc93c0530ef94b19ae9f7ce"
+      },
+      "rights": {
+        "author": "Bahnfrend",
+        "sourceName": "Wikimedia Commons",
+        "licenseName": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "creditLine": "Bahnfrend / Wikimedia Commons / CC BY-SA 4.0",
+        "attributionRequired": true
+      },
+      "asset": {
+        "path": "/vessel-photos/2026-10-02-v1/imo-9237589.jpg",
+        "mediaType": "image/jpeg",
+        "bytes": 76609,
+        "width": 640,
+        "height": 423,
+        "sha256": "f59a6730513569013a59257cdece8721c63d4f75cb6457e704fd3d030eab6f0a",
         "modificationNotice": "Resized from the reviewed Wikimedia Commons thumbnail to a 640-pixel maximum dimension and removed embedded metadata; not cropped or retouched."
       }
     },
@@ -101,7 +203,7 @@
         "attributionRequired": true
       },
       "asset": {
-        "path": "/vessel-photos/2026-09-26-v1/imo-9281281.jpg",
+        "path": "/vessel-photos/2026-10-02-v1/imo-9281281.jpg",
         "mediaType": "image/jpeg",
         "bytes": 86211,
         "width": 640,
@@ -152,12 +254,63 @@
         "attributionRequired": true
       },
       "asset": {
-        "path": "/vessel-photos/2026-09-26-v1/imo-9375654.jpg",
+        "path": "/vessel-photos/2026-10-02-v1/imo-9375654.jpg",
         "mediaType": "image/jpeg",
         "bytes": 80015,
         "width": 640,
         "height": 480,
         "sha256": "da55686ca50685f10f53c7cca1b14743ff3dba18061f7ccdea6cd4490126b4bf",
+        "modificationNotice": "Resized from the reviewed Wikimedia Commons thumbnail to a 640-pixel maximum dimension and removed embedded metadata; not cropped or retouched."
+      }
+    },
+    {
+      "imo": "9387085",
+      "vesselNameAtReview": "MSC Magnifica",
+      "alt": "Cruise ship MSC Magnifica berthed at Ocean Cay",
+      "digitrafficEvidence": {
+        "mmsiAtReview": "352594000",
+        "metadataObservedAt": "2026-10-02T02:47:16.721Z",
+        "destinationAtReview": "DKCPH",
+        "operatingAreaAtReview": "Baltic Sea, Copenhagen-bound"
+      },
+      "identityEvidence": {
+        "wikidataQid": "Q1881854",
+        "wikidataItemUrl": "https://www.wikidata.org/wiki/Q1881854",
+        "commonsFileTitle": "File:MSC Magnifica at Ocean Cay MSC Marine Reserve (March 12, 2024) 01.jpg",
+        "commonsPageUrl": "https://commons.wikimedia.org/wiki/File:MSC_Magnifica_at_Ocean_Cay_MSC_Marine_Reserve_(March_12,_2024)_01.jpg",
+        "commonsRevisionId": 1107507134,
+        "commonsRevisionUrl": "https://commons.wikimedia.org/w/index.php?title=File%3AMSC_Magnifica_at_Ocean_Cay_MSC_Marine_Reserve_%28March_12%2C_2024%29_01.jpg&oldid=1107507134",
+        "reviewNote": "Wikidata identifies MSC Magnifica by IMO 9387085 and links this image; Commons categorizes the exact hull as MSC Magnifica (ship, 2010), avoiding sister-ship substitution."
+      },
+      "source": {
+        "photoTakenAt": "2024-03-12",
+        "originalUrl": "https://upload.wikimedia.org/wikipedia/commons/6/63/MSC_Magnifica_at_Ocean_Cay_MSC_Marine_Reserve_%28March_12%2C_2024%29_01.jpg",
+        "originalMediaType": "image/jpeg",
+        "originalBytes": 2826715,
+        "originalWidth": 4032,
+        "originalHeight": 2268,
+        "originalSha1": "6077499acb2812ab665771cde483d715b871dacd",
+        "reviewedThumbnailUrl": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/63/MSC_Magnifica_at_Ocean_Cay_MSC_Marine_Reserve_%28March_12%2C_2024%29_01.jpg/960px-MSC_Magnifica_at_Ocean_Cay_MSC_Marine_Reserve_%28March_12%2C_2024%29_01.jpg",
+        "reviewedThumbnailBytes": 121857,
+        "reviewedThumbnailWidth": 960,
+        "reviewedThumbnailHeight": 540,
+        "reviewedThumbnailSha256": "e7a247f7802c1b9ce03c197d3adaa5b339a47cd6ac5cfdf2e2172794795556f1"
+      },
+      "rights": {
+        "author": "Kiran891",
+        "sourceName": "Wikimedia Commons",
+        "licenseName": "CC BY-SA 4.0",
+        "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+        "creditLine": "Kiran891 / Wikimedia Commons / CC BY-SA 4.0",
+        "attributionRequired": true
+      },
+      "asset": {
+        "path": "/vessel-photos/2026-10-02-v1/imo-9387085.jpg",
+        "mediaType": "image/jpeg",
+        "bytes": 43520,
+        "width": 640,
+        "height": 360,
+        "sha256": "8ca84b8bb135759ed1a6db1753e9da4ec9f58cede9427ae0a891b48c7cd41f8d",
         "modificationNotice": "Resized from the reviewed Wikimedia Commons thumbnail to a 640-pixel maximum dimension and removed embedded metadata; not cropped or retouched."
       }
     },
@@ -203,7 +356,7 @@
         "attributionRequired": true
       },
       "asset": {
-        "path": "/vessel-photos/2026-09-26-v1/imo-9773064.jpg",
+        "path": "/vessel-photos/2026-10-02-v1/imo-9773064.jpg",
         "mediaType": "image/jpeg",
         "bytes": 75630,
         "width": 640,
@@ -254,7 +407,7 @@
         "attributionRequired": false
       },
       "asset": {
-        "path": "/vessel-photos/2026-09-26-v1/imo-9892690.png",
+        "path": "/vessel-photos/2026-10-02-v1/imo-9892690.png",
         "mediaType": "image/png",
         "bytes": 453380,
         "width": 640,

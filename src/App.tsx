@@ -981,6 +981,22 @@ function App() {
     )
   }, [commitNavigation, location.homeCenter])
 
+  const handleResumeLiveTraffic = useCallback(() => {
+    if (
+      currentAssessment?.kind !== 'ineligible' ||
+      !currentAssessment.viewport
+    ) {
+      return
+    }
+    commitNavigation(
+      {
+        ...currentAssessment.viewport.center,
+        label: 'Current map area',
+      },
+      'Current map area',
+    )
+  }, [commitNavigation, currentAssessment])
+
   const handleUseLocation = useCallback(() => {
     locationCameraIntent.requestLocationNavigation()
     cancelPlaceSearch()
@@ -1649,6 +1665,11 @@ function App() {
           <div className="viewport-notice" role="status">
             <strong>Aircraft and ships paused</strong>
             <span>{currentAssessment.message}</span>
+            {currentAssessment.viewport && (
+              <button type="button" onClick={handleResumeLiveTraffic}>
+                RESUME LIVE
+              </button>
+            )}
           </div>
         )}
 
