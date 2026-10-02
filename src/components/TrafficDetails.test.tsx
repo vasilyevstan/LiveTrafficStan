@@ -580,7 +580,7 @@ describe('TrafficDetails aircraft metadata', () => {
     )
     expect(html).toContain('Exact AIS-reported IMO 9214379 match')
     expect(html).toContain(
-      'src="/vessel-photos/2026-09-26-v1/imo-9214379.jpg"',
+      'src="/vessel-photos/2026-10-02-v1/imo-9214379.jpg"',
     )
     expect(html).toContain('width="640"')
     expect(html).toContain('height="472"')
@@ -592,7 +592,7 @@ describe('TrafficDetails aircraft metadata', () => {
     expect(html).toContain('not cropped or retouched')
   })
 
-  it('shows no real-photo substitute for an invalid or unmatched IMO', () => {
+  it('explains invalid and unmatched IMO photo coverage without a substitute', () => {
     const vessel: DisplayVessel = {
       id: 'vessel:230361000',
       kind: 'vessel',
@@ -631,9 +631,15 @@ describe('TrafficDetails aircraft metadata', () => {
       />,
     )
 
-    expect(unmatchedHtml).not.toContain('Vessel photo')
+    expect(unmatchedHtml).toContain('Vessel photo')
+    expect(unmatchedHtml).toContain(
+      'No reviewed exact-IMO photo for AIS-reported IMO 8917601; no substitute shown.',
+    )
     expect(unmatchedHtml).not.toContain('/vessel-photos/')
-    expect(invalidHtml).not.toContain('Vessel photo')
+    expect(invalidHtml).toContain('Vessel photo')
+    expect(invalidHtml).toContain(
+      'Unavailable: AIS has no valid IMO for exact-hull matching.',
+    )
     expect(invalidHtml).not.toContain('/vessel-photos/')
   })
 

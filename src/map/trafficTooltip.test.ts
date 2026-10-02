@@ -205,7 +205,7 @@ describe('trafficTooltipSummary', () => {
       })
       expect(link?.children[0]).toMatchObject({
         className: 'traffic-tooltip__photo',
-        src: '/vessel-photos/2026-09-26-v1/imo-9214379.jpg',
+        src: '/vessel-photos/2026-10-02-v1/imo-9214379.jpg',
         width: 640,
         height: 472,
         alt: 'Eckerö Line ferry Finlandia seen broadside at sea',

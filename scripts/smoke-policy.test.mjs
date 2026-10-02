@@ -835,7 +835,7 @@ describe('production smoke policy', () => {
       join(repositoryRoot, 'src/config/does-not-exist.json'),
     )
 
-    expect(manifest?.photos).toHaveLength(5)
+    expect(manifest?.photos).toHaveLength(8)
     expect(absentManifest).toBeUndefined()
     expect(smokeScript).not.toContain('import vesselPhotoManifest')
   })

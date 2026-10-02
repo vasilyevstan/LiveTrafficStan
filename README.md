@@ -171,12 +171,14 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   shows visible photographer credit, keeps bounded JSON only in current-tab
   memory, and publishes a completed hover result into already-open matching
   selected details without a second provider request.
-- Five bundled historical vessel reference photos for Finlandia, Victoria I,
-  Viking XPRS, Megastar, and MyStar. A photo appears only in selected live
-  ship details or after a stable fine-pointer hover when the AIS-reported IMO
-  is valid and exactly matches the reviewed manifest; visible author, fixed
-  Commons revision, license, and modification attribution are retained without
-  any runtime image-provider request.
+- Eight bundled historical vessel reference photos for Tarmo, Finlandia,
+  Romantika, Victoria I, Viking XPRS, MSC Magnifica, Megastar, and MyStar. A
+  photo appears only in selected live ship details or after a stable
+  fine-pointer hover when the AIS-reported IMO is valid and exactly matches the
+  reviewed manifest; visible author, fixed Commons revision, license, and
+  modification attribution are retained without any runtime image-provider
+  request. Selected unmatched and invalid identities state why no reviewed
+  image is available instead of failing silently.
 - Honest detail cards, provider-specific health, stale/expired handling, and
   partial operation when one provider fails.
 - Short interpolation only between observed positions and a selected-object
@@ -767,11 +769,11 @@ monitoring, privacy, and rollback procedure.
   remain public and free. Provider JSON stays in a bounded one-hour,
   32-entry current-tab cache, and no URL, credit, or image byte is persisted or
   proxied.
-- Vessel photos cover only five manually reviewed ferries. They are historical
+- Vessel photos cover only eight manually reviewed vessels. They are historical
   reference images matched solely by valid exact AIS-reported IMO, not live
   views or independent confirmation of the transmitting hull. Missing,
-  invalid, or unmatched IMO shows no real-image substitute. No general yacht
-  photo coverage is promised.
+  invalid, or unmatched IMO shows an explicit unavailable reason and no
+  real-image substitute. No general yacht photo coverage is promised.
 - Orbital positions and map crossings are SGP4 models from a bounded reviewed
   CelesTrak catalog; the `visual` group is only one member of the curated
   source set. They are not observations, launch or reentry

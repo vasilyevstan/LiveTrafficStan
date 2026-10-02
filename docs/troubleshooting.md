@@ -326,25 +326,30 @@ live stream.
 
 ## A ship has no reference photo
 
-This is normally expected. The first bundled manifest contains only five
-reviewed ferries and requires the selected or stably hovered live vessel to
+This is normally expected. The current bundled manifest contains only eight
+reviewed vessels and requires the selected or stably hovered live vessel to
 report a valid exact IMO:
 
+- Tarmo `5352886`;
 - Finlandia `9214379`;
+- Romantika `9237589`;
 - Victoria I `9281281`;
 - Viking XPRS `9375654`;
+- MSC Magnifica `9387085`;
 - Megastar `9773064`;
 - MyStar `9892690`.
 
-Missing, malformed, or unmatched IMO intentionally produces no image. The
-application never falls back to MMSI, name, call sign, vessel type, class,
-sister ship, or a generic real photograph. HISTORY always omits vessel photos.
-On a fine-pointer desktop, only a listed vessel held under the pointer for at
-least 500 ms adds the compact tooltip photo; sub-dwell, invalid, and unmatched
-hover remains photo-free. Touch users open selected details instead.
+Missing, malformed, or unmatched IMO intentionally produces no image.
+Selected details distinguish a missing/invalid IMO from a valid IMO that lacks
+reviewed coverage; neither state substitutes another hull. The application
+never falls back to MMSI, name, call sign, vessel type, class, sister ship, or
+a generic real photograph. HISTORY always omits vessel photos. On a
+fine-pointer desktop, only a listed vessel held under the pointer for at least
+500 ms adds the compact tooltip photo; sub-dwell, invalid, and unmatched hover
+remains photo-free. Touch users open selected details instead.
 
 For a listed vessel, inspect the exact
-`/vessel-photos/2026-09-26-v1/imo-{IMO}.jpg` or `.png` request. A missing or
+`/vessel-photos/2026-10-02-v1/imo-{IMO}.jpg` or `.png` request. A missing or
 damaged file is a deployment defect, not permission to substitute another
 image. Run `npm run check:vessel-photos` to verify the committed directory,
 license record, dimensions, byte counts, and SHA-256 without any upstream

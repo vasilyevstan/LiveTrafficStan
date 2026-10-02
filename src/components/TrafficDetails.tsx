@@ -32,8 +32,9 @@ import {
 } from '../domain/trafficPresentation'
 import type { UnitSystem } from '../domain/units'
 import {
-  vesselReferencePhotoForSelection,
+  vesselReferencePhotoSelection,
   type VesselReferencePhoto,
+  type VesselReferencePhotoSelection,
 } from '../domain/vesselPhoto'
 
 interface DetailRowProps {
@@ -519,6 +520,26 @@ function VesselPhotoDetails({
   )
 }
 
+function VesselPhotoUnavailable({
+  selection,
+}: {
+  selection: Exclude<
+    VesselReferencePhotoSelection,
+    { kind: 'available' }
+  >
+}) {
+  return (
+    <section className="vessel-photo" aria-labelledby="vessel-photo-heading">
+      <h3 id="vessel-photo-heading">Vessel photo</h3>
+      <p className="metadata-status">
+        {selection.kind === 'invalid-imo'
+          ? 'Unavailable: AIS has no valid IMO for exact-hull matching.'
+          : `No reviewed exact-IMO photo for AIS-reported IMO ${selection.imo}; no substitute shown.`}
+      </p>
+    </section>
+  )
+}
+
 export function TrafficDetails({
   entity,
   aircraftMetadata,
@@ -550,9 +571,9 @@ export function TrafficDetails({
       ? countryForAircraftHex(entity.hex)
       : flagStateForMmsi(entity.mmsi)
   const presentation = trafficPresentation(entity)
-  const vesselPhoto =
+  const vesselPhotoSelection =
     entity.kind === 'vessel' && !historical
-      ? vesselReferencePhotoForSelection(entity)
+      ? vesselReferencePhotoSelection(entity)
       : undefined
 
   return (
@@ -576,12 +597,18 @@ export function TrafficDetails({
         </button>
       </div>
 
-      {vesselPhoto && (
+      {vesselPhotoSelection?.kind === 'available' && (
         <VesselPhotoDetails
-          key={vesselPhoto.identityKey}
-          photo={vesselPhoto}
+          key={vesselPhotoSelection.photo.identityKey}
+          photo={vesselPhotoSelection.photo}
         />
       )}
+      {vesselPhotoSelection &&
+        vesselPhotoSelection.kind !== 'available' && (
+          <VesselPhotoUnavailable
+            selection={vesselPhotoSelection}
+          />
+        )}
 
       {entity.kind === 'aircraft' &&
         flightRouteEnabled &&
