@@ -58,7 +58,9 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   moving at least 1 knot receive dedicated yacht icons. The nine exact
   source-truthful display classes use bold, perceptually tested top-down outer
   silhouettes; names, dimensions, routes, speed, and visual similarity never
-  infer a more specific class.
+  infer a more specific class. Valid AIS reference-point length sets one
+  bounded physical marker scale, with each silhouette normalized to the same
+  nose-to-stern span so artwork shape cannot reverse ship-size ordering.
 - An optional, lazily loaded, zoom-aware Natural Earth port context layer with
   separate selection, failure, and attribution. Port points are generalized
   and incomplete and are never treated as operational harbour or vessel-call

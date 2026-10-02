@@ -609,7 +609,8 @@ Cargo, unknown, broad `other`, names, dimensions, and movement never imply a
 yacht or unsupported cargo subtype.
 
 Each supported vessel image carries its identity in a bold outer contour or
-large negative space at the roughly 22-37 CSS-pixel rendered range: neutral
+large negative space across a reference scale equivalent to roughly 22-44 CSS
+pixels before contour normalization: neutral
 compact hull, broad cargo slab, narrow tanker capsule, broad-forward
 passenger/ferry that tapers continuously toward the stern, thick fishing arms,
 blunt notched tug, asymmetric sails, notched pleasure craft, or twin high-speed
@@ -622,6 +623,16 @@ These are category symbols, not depictions of the exact vessel. Light/Dark
 changes update the same bounded maritime-blue MapLibre image IDs and preserve
 the source, selection, heading, stale opacity, stopped badge, and one map
 instance.
+
+Valid AIS reference-point length drives one monotonic bounded scale: 20 m and
+smaller use the 22 CSS-pixel reference floor, large hulls rise materially
+toward the 44 CSS-pixel reference ceiling, and missing/invalid dimensions keep
+the explicit 40 m fallback rather than inferring size from class or name. A
+render-only
+per-silhouette factor normalizes every outer contour to the same longitudinal
+map span before applying that physical-length scale, so a tug, passenger ship,
+tanker, and cargo vessel with the same reported length occupy the same
+nose-to-stern distance.
 
 The local filter taxonomy is slightly broader than the artwork vocabulary:
 types 31, 32, 50-55, 58, and 59 are `tug-service`; known non-filter categories

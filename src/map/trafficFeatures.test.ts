@@ -90,6 +90,9 @@ describe('trafficFeatures presentation projection', () => {
         navigationConflict: false,
       },
     })
+    expect(
+      collection.features[0]?.properties?.markerScale,
+    ).toBeCloseTo(0.83 * (56 / 57))
   })
 
   it('renders slow vessel silhouettes north-up with a non-directional badge', () => {

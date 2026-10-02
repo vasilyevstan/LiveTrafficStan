@@ -929,6 +929,15 @@ exact Light -> Dark -> Light restoration retained one map/canvas/source/layer
 set, attribution stayed visible without overflow, and the fixture added zero
 protected provider/search/catalog requests or browser errors.
 
+The reopened #250 acceptance also exercises physical length rather than only
+fixture size. Unit tests lock a monotonic 0.8-1.6 model scale from valid AIS
+reference-point length, the explicit 40 m unknown fallback, and the large-hull
+cap. Each of the nine silhouette contours is normalized to the same
+longitudinal source span before the physical scale is applied. Browser evidence
+must join rendered MMSIs to current AIS dimensions and prove that equal-length
+classes have equal nose-to-stern map length while 60-213 m live hulls are
+materially ordered instead of compressed into the former narrow range.
+
 Production Chrome `154.0.8037.59` orbital acceptance passed 27/27 checks:
 
 - zero catalog requests before enable, exactly one fixed negotiated same-origin
