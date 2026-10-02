@@ -54,6 +54,7 @@ import {
 } from './domain/vesselFilters'
 import type { ViewportAssessment } from './domain/viewport'
 import type { OrbitalViewport } from './domain/orbitalViewport'
+import { orbitalFeatureOwner } from './domain/orbital'
 import { orbitalEnrichmentForPosition } from './domain/orbitalEnrichment'
 import {
   DEFAULT_ORBITAL_DISCOVERY_FILTERS,
@@ -136,6 +137,7 @@ function App() {
     clusteringEnabled,
     weatherVisible,
     orbitalObjectsVisible,
+    starlinkVisible,
   } = layerPreferences
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [selectedOrbitalId, setSelectedOrbitalId] = useState<string | null>(
@@ -257,8 +259,23 @@ function App() {
     [setLayerPreference],
   )
   const setOrbitalObjectsVisible = useCallback(
-    (visible: boolean) =>
-      setLayerPreference('orbitalObjectsVisible', visible),
+    (visible: boolean) => {
+      if (!visible) setSelectedOrbitalId(null)
+      setLayerPreference('orbitalObjectsVisible', visible)
+    },
+    [setLayerPreference],
+  )
+  const setStarlinkVisible = useCallback(
+    (visible: boolean) => {
+      if (!visible) {
+        setSelectedOrbitalId((current) =>
+          orbitalFeatureOwner(current) === 'starlink'
+            ? null
+            : current,
+        )
+      }
+      setLayerPreference('starlinkVisible', visible)
+    },
     [setLayerPreference],
   )
   const setTrailPreferences = useCallback(
@@ -480,14 +497,23 @@ function App() {
     selectedOrbitalId,
     orbitalFilters,
     APP_CONFIG.orbital,
+    {
+      enabled:
+        orbitalObjectsVisible && starlinkVisible && !historyActive,
+      config: APP_CONFIG.starlink,
+    },
   )
   const orbitalState = orbitalResult.state
+  const starlinkState = orbitalResult.starlinkState
+  const selectedOrbitalOwner = orbitalFeatureOwner(selectedOrbitalId)
   const orbitalDiscovery = useMemo(() => {
     const display = selectOrbitalDisplay(
       orbitalState.positions,
       orbitalFilters,
       currentOrbitalRawZoom,
-      selectedOrbitalId,
+      selectedOrbitalOwner === 'curated'
+        ? selectedOrbitalId
+        : null,
       {
         ...APP_CONFIG.orbital.display,
         maximumRecords: APP_CONFIG.orbital.maximumRecords,
@@ -508,9 +534,44 @@ function App() {
     orbitalFilters,
     orbitalState,
     selectedOrbitalId,
+    selectedOrbitalOwner,
   ])
   const orbitalDisplay = orbitalDiscovery.display
   const orbitalCounts = orbitalDiscovery.counts
+  const starlinkDiscovery = useMemo(() => {
+    const display = selectOrbitalDisplay(
+      starlinkState.positions,
+      DEFAULT_ORBITAL_DISCOVERY_FILTERS,
+      currentOrbitalRawZoom,
+      selectedOrbitalOwner === 'starlink'
+        ? selectedOrbitalId
+        : null,
+      {
+        worldMaximumZoom: APP_CONFIG.orbital.display.worldMaximumZoom,
+        midMaximumZoom: APP_CONFIG.orbital.display.midMaximumZoom,
+        worldLimit: APP_CONFIG.starlink.maximumRecords,
+        midLimit: APP_CONFIG.starlink.maximumRecords,
+        maximumRecords: APP_CONFIG.starlink.maximumRecords,
+      },
+    )
+    return {
+      display,
+      counts: deriveOrbitalPopulationCounts(
+        starlinkState,
+        DEFAULT_ORBITAL_DISCOVERY_FILTERS,
+        display,
+        currentOrbitalViewport,
+      ),
+    }
+  }, [
+    currentOrbitalRawZoom,
+    currentOrbitalViewport,
+    selectedOrbitalId,
+    selectedOrbitalOwner,
+    starlinkState,
+  ])
+  const starlinkDisplay = starlinkDiscovery.display
+  const starlinkCounts = starlinkDiscovery.counts
   const historicalViewportEntities = useMemo(
     () =>
       activeViewport
@@ -672,31 +733,53 @@ function App() {
     [selectedWeatherId, weatherObservations],
   )
   const selectedOrbitalPosition = useMemo(
-    () =>
-      orbitalState.positions.find(
+    () => {
+      const positions =
+        selectedOrbitalOwner === 'starlink'
+          ? starlinkState.positions
+          : orbitalState.positions
+      return positions.find(
         (position) => position.id === selectedOrbitalId,
-      ),
-    [orbitalState.positions, selectedOrbitalId],
+      )
+    },
+    [
+      orbitalState.positions,
+      selectedOrbitalId,
+      selectedOrbitalOwner,
+      starlinkState.positions,
+    ],
   )
+  const selectedOrbitalState =
+    selectedOrbitalOwner === 'starlink'
+      ? starlinkState
+      : orbitalState
+  const selectedOrbitalCounts =
+    selectedOrbitalOwner === 'starlink'
+      ? starlinkCounts
+      : orbitalCounts
+  const selectedOrbitalDisplay =
+    selectedOrbitalOwner === 'starlink'
+      ? starlinkDisplay
+      : orbitalDisplay
   const selectedOrbitalCrossing = useMemo(
     () =>
-      orbitalCounts.futureCrossingCount === undefined
+      selectedOrbitalCounts.futureCrossingCount === undefined
         ? undefined
-        : orbitalState.prediction.results.find(
+        : selectedOrbitalState.prediction.results.find(
             (crossing) => crossing.id === selectedOrbitalId,
           ),
     [
-      orbitalCounts.futureCrossingCount,
-      orbitalState.prediction.results,
+      selectedOrbitalCounts.futureCrossingCount,
+      selectedOrbitalState.prediction.results,
       selectedOrbitalId,
     ],
   )
   const selectedOrbitalEnrichment = useMemo(
     () =>
-      selectedOrbitalPosition
+      selectedOrbitalOwner === 'curated' && selectedOrbitalPosition
         ? orbitalEnrichmentForPosition(selectedOrbitalPosition)
         : undefined,
-    [selectedOrbitalPosition],
+    [selectedOrbitalOwner, selectedOrbitalPosition],
   )
   const selectedOrbitalImageState = useOrbitalEnrichmentImage(
     selectedOrbitalEnrichment,
@@ -804,24 +887,30 @@ function App() {
 
   useEffect(() => {
     if (!selectedOrbitalId) return
+    const selectedLayerVisible =
+      selectedOrbitalOwner === 'starlink'
+        ? orbitalObjectsVisible && starlinkVisible
+        : orbitalObjectsVisible
     if (
-      !orbitalObjectsVisible ||
+      !selectedLayerVisible ||
       historyActive ||
-      orbitalState.phase === 'unavailable' ||
-      orbitalState.phase === 'clock-invalid' ||
+      selectedOrbitalState.phase === 'unavailable' ||
+      selectedOrbitalState.phase === 'clock-invalid' ||
       (!selectedOrbitalPosition &&
-        orbitalState.phase !== 'paused-hidden' &&
-        orbitalState.phase !== 'loading' &&
-        orbitalState.phase !== 'refreshing')
+        selectedOrbitalState.phase !== 'paused-hidden' &&
+        selectedOrbitalState.phase !== 'loading' &&
+        selectedOrbitalState.phase !== 'refreshing')
     ) {
       setSelectedOrbitalId(null)
     }
   }, [
     historyActive,
     orbitalObjectsVisible,
-    orbitalState.phase,
     selectedOrbitalId,
+    selectedOrbitalOwner,
     selectedOrbitalPosition,
+    selectedOrbitalState.phase,
+    starlinkVisible,
   ])
 
   useEffect(() => {
@@ -1179,6 +1268,12 @@ function App() {
     state: orbitalState,
     display: orbitalDisplay,
     counts: orbitalCounts,
+    starlink: {
+      enabled: starlinkVisible,
+      state: starlinkState,
+      display: starlinkDisplay,
+      counts: starlinkCounts,
+    },
   })
   const mapSubtitle = historyActive
     ? 'Historical traffic area'
@@ -1334,6 +1429,11 @@ function App() {
         orbitalPositions={orbitalState.positions}
         orbitalShownIds={orbitalDisplay.shownIds}
         orbitalTrackSegments={orbitalState.prediction.trackSegments}
+        starlinkPositions={starlinkState.positions}
+        starlinkShownIds={starlinkDisplay.shownIds}
+        starlinkTrackSegments={
+          starlinkState.prediction.trackSegments
+        }
         orbitalImageUrls={loadedOrbitalImageUrls}
         trailSegments={trailSegments}
         selectedId={selectedId}
@@ -1347,6 +1447,9 @@ function App() {
         airportsVisible={airportsVisible}
         weatherVisible={weatherVisible}
         orbitalVisible={orbitalObjectsVisible && !historyActive}
+        starlinkVisible={
+          orbitalObjectsVisible && starlinkVisible && !historyActive
+        }
         clusteringEnabled={clusteringEnabled}
         interpolateTraffic={!historyActive}
         interpolationDurationMs={APP_CONFIG.interpolationDurationMs}
@@ -1468,6 +1571,7 @@ function App() {
           orbitalFilters={orbitalFilters}
           orbitalDisplay={orbitalDisplay}
           orbitalCounts={orbitalCounts}
+          orbitalPrimarySummary={orbitalSummary}
           orbitalPredictionHorizonMs={
             APP_CONFIG.orbital.predictionHorizonMs
           }
@@ -1479,6 +1583,11 @@ function App() {
           onOrbitalFiltersChange={setOrbitalFilters}
           onOrbitalSelect={handleOrbitalContextSelect}
           onRetryOrbital={orbitalResult.retry}
+          starlinkVisible={starlinkVisible}
+          starlinkState={starlinkState}
+          starlinkCounts={starlinkCounts}
+          onStarlinkVisibleChange={setStarlinkVisible}
+          onRetryStarlink={orbitalResult.retryStarlink}
           clusteringEnabled={clusteringEnabled}
           onClusteringEnabledChange={setClusteringEnabled}
           trailPreferences={trailPreferences}
@@ -1577,13 +1686,15 @@ function App() {
         )}
 
         {!historyActive &&
+          orbitalObjectsVisible &&
+          (selectedOrbitalOwner !== 'starlink' || starlinkVisible) &&
           selectedOrbitalPosition &&
-          orbitalState.snapshot && (
+          selectedOrbitalState.snapshot && (
           <OrbitalDetails
-            key={`${selectedOrbitalPosition.id}|${orbitalState.snapshot.sha256}`}
+            key={`${selectedOrbitalPosition.id}|${selectedOrbitalState.snapshot.sha256}`}
             position={selectedOrbitalPosition}
             crossing={selectedOrbitalCrossing}
-            snapshot={orbitalState.snapshot}
+            snapshot={selectedOrbitalState.snapshot}
             sourceName={APP_CONFIG.orbital.sourceName}
             sourceWebsiteUrl={APP_CONFIG.orbital.sourceWebsiteUrl}
             sourceUsagePolicyUrl={
@@ -1594,11 +1705,11 @@ function App() {
             units={units}
             imageState={selectedOrbitalImageState}
             mapDisplay={
-              orbitalDisplay.available
+              selectedOrbitalDisplay.available
                 ? {
                     available: true,
                     selectedException:
-                      orbitalDisplay.selectedException,
+                      selectedOrbitalDisplay.selectedException,
                   }
                 : { available: false }
             }

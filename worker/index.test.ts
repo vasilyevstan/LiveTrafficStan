@@ -6,6 +6,13 @@ import {
   ORBITAL_BOOTSTRAP_PATH,
   ORBITAL_CATALOG_V2_ACCEPT,
 } from './orbitalCatalog.js'
+import {
+  STARLINK_CATALOG_KEY,
+  STARLINK_CATALOG_MEDIA_TYPE,
+  STARLINK_CATALOG_PATH,
+  createStarlinkCatalogSnapshot,
+  serializeStarlinkCatalogSnapshot,
+} from './starlinkCatalog.js'
 
 const releaseSha = '0123456789abcdef0123456789abcdef01234567'
 
@@ -242,10 +249,99 @@ describe('Cloudflare worker routing', () => {
     )
   })
 
+  it('routes the Starlink catalog with the release header and fixed media type', async () => {
+    const snapshot = await createStarlinkCatalogSnapshot(
+      {
+        gpValue: [
+          {
+            OBJECT_NAME: 'STARLINK TEST',
+            OBJECT_ID: '2026-001A',
+            OBJECT_TYPE: 'PAY',
+            EPOCH: '2026-10-01T18:45:00.123456',
+            MEAN_MOTION: 15.2,
+            ECCENTRICITY: 0.001,
+            INCLINATION: 53,
+            RA_OF_ASC_NODE: 120,
+            ARG_OF_PERICENTER: 30,
+            MEAN_ANOMALY: 40,
+            EPHEMERIS_TYPE: 0,
+            CLASSIFICATION_TYPE: 'U',
+            NORAD_CAT_ID: 90_001,
+            ELEMENT_SET_NO: 999,
+            REV_AT_EPOCH: 123,
+            BSTAR: 0.0001,
+            MEAN_MOTION_DOT: 0.00001,
+            MEAN_MOTION_DDOT: 0,
+          },
+        ],
+        satcatValue: [
+          {
+            NORAD_CAT_ID: 90_001,
+            OBJECT_NAME: 'STARLINK TEST',
+            OBJECT_ID: '2026-001A',
+            OBJECT_TYPE: 'PAY',
+          },
+        ],
+        gpRetrievedAt: '2026-10-01T19:45:01.000Z',
+        satcatRetrievedAt: '2026-10-01T19:45:02.000Z',
+        gpDecodedBytes: 1_000,
+        satcatDecodedBytes: 900,
+        gpSha256: 'a'.repeat(64),
+        satcatSha256: 'b'.repeat(64),
+      },
+      '2026-10-01T19:45:03.000Z',
+    )
+    const response = await worker.fetch(
+      new Request(
+        `https://app.example${STARLINK_CATALOG_PATH}`,
+      ),
+      {
+        ASSETS: {
+          fetch: vi.fn(async () =>
+            new Response(null, { status: 404 }),
+          ),
+        },
+        ORBITAL_CATALOG: {
+          get: vi.fn(async (key) =>
+            key === STARLINK_CATALOG_KEY
+              ? serializeStarlinkCatalogSnapshot(snapshot)
+              : null,
+          ),
+          put: vi.fn(),
+        },
+        ORBITAL_CATALOG_ENABLED: 'true',
+        STARLINK_CATALOG_ENABLED: 'true',
+        RELEASE_SHA: releaseSha,
+      },
+    )
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('content-type')).toBe(
+      STARLINK_CATALOG_MEDIA_TYPE,
+    )
+    expect(response.headers.get('x-livetrafficstan-release')).toBe(
+      releaseSha,
+    )
+    expect(
+      response.headers.get('x-livetrafficstan-starlink-source'),
+    ).toBe('kv')
+  })
+
   it('disables platform retries for scheduled catalog refreshes', async () => {
     const noRetry = vi.fn()
     const coordinatorFetch = vi.fn(
-      async (_request: Request) => new Response('{}'),
+      async (_request: Request) =>
+        new Response(
+          JSON.stringify({
+            kind: 'not-due',
+            nextAllowedAtMs: Date.now() + 60_000,
+          }),
+          {
+            headers: {
+              'Content-Type': 'application/json; charset=utf-8',
+            },
+          },
+        ),
     )
 
     await worker.scheduled(
@@ -265,6 +361,162 @@ describe('Cloudflare worker routing', () => {
     const request = coordinatorFetch.mock.calls[0]?.[0]
     expect(request?.method).toBe('POST')
     expect(new URL(request?.url ?? '').pathname).toBe('/refresh')
+  })
+
+  it.each([
+    ['disabled', { kind: 'disabled' }],
+    [
+      'not due',
+      { kind: 'not-due', nextAllowedAtMs: Date.now() + 60_000 },
+    ],
+    ['published', { kind: 'published' }],
+    [
+      'Starlink published',
+      {
+        kind: 'published',
+        starlink: { kind: 'published' },
+      },
+    ],
+    [
+      'Starlink not due',
+      {
+        kind: 'published',
+        starlink: {
+          kind: 'not-due',
+          nextAllowedAtMs: Date.now() + 60_000,
+        },
+      },
+    ],
+    [
+      'Starlink disabled',
+      {
+        kind: 'published',
+        starlink: { kind: 'disabled' },
+      },
+    ],
+  ])(
+    'accepts the scheduled %s operational outcome',
+    async (_label, outcome) => {
+      const noRetry = vi.fn()
+      const coordinatorFetch = vi.fn(
+        async () =>
+          new Response(JSON.stringify(outcome), {
+            headers: { 'Content-Type': 'application/json' },
+          }),
+      )
+
+      await expect(
+        worker.scheduled(
+          { noRetry },
+          {
+            ASSETS: { fetch: vi.fn() },
+            ORBITAL_CATALOG_ENABLED: 'true',
+            ORBITAL_CATALOG_COORDINATOR: {
+              idFromName: vi.fn(() => 'coordinator-id'),
+              get: vi.fn(() => ({ fetch: coordinatorFetch })),
+            },
+          },
+        ),
+      ).resolves.toBeUndefined()
+      expect(noRetry).toHaveBeenCalledTimes(1)
+      expect(coordinatorFetch).toHaveBeenCalledTimes(1)
+    },
+  )
+
+  it.each([
+    [
+      'rate limited',
+      { kind: 'rate-limited', nextAllowedAtMs: 1 },
+      'rate limited',
+    ],
+    [
+      'deferred',
+      { kind: 'deferred', status: 503, nextAllowedAtMs: 1 },
+      'deferred',
+    ],
+    ['blocked', { kind: 'blocked', status: 403 }, 'blocked'],
+    [
+      'catalog publication failed',
+      { kind: 'failed', reason: 'publication failed' },
+      'refresh failed',
+    ],
+    [
+      'Starlink failed',
+      {
+        kind: 'published',
+        starlink: { kind: 'failed', reason: 'provider failed' },
+      },
+      'Starlink failure',
+    ],
+    [
+      'Starlink skipped',
+      {
+        kind: 'published',
+        starlink: { kind: 'skipped', reason: 'storage failed' },
+      },
+      'skipped Starlink',
+    ],
+  ])(
+    'surfaces the scheduled %s operational outcome',
+    async (_label, outcome, message) => {
+      const noRetry = vi.fn()
+      const coordinatorFetch = vi.fn(
+        async () =>
+          new Response(JSON.stringify(outcome), {
+            headers: { 'Content-Type': 'application/json' },
+          }),
+      )
+
+      await expect(
+        worker.scheduled(
+          { noRetry },
+          {
+            ASSETS: { fetch: vi.fn() },
+            ORBITAL_CATALOG_ENABLED: 'true',
+            ORBITAL_CATALOG_COORDINATOR: {
+              idFromName: vi.fn(() => 'coordinator-id'),
+              get: vi.fn(() => ({ fetch: coordinatorFetch })),
+            },
+          },
+        ),
+      ).rejects.toThrow(message)
+      expect(noRetry).toHaveBeenCalledTimes(1)
+      expect(coordinatorFetch).toHaveBeenCalledTimes(1)
+    },
+  )
+
+  it('rejects and cancels an oversized scheduled outcome', async () => {
+    const noRetry = vi.fn()
+    const cancel = vi.fn()
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new Uint8Array(20 * 1_024))
+      },
+      cancel,
+    })
+    const coordinatorFetch = vi.fn(
+      async () =>
+        new Response(body, {
+          headers: { 'Content-Type': 'application/json' },
+        }),
+    )
+
+    await expect(
+      worker.scheduled(
+        { noRetry },
+        {
+          ASSETS: { fetch: vi.fn() },
+          ORBITAL_CATALOG_ENABLED: 'true',
+          ORBITAL_CATALOG_COORDINATOR: {
+            idFromName: vi.fn(() => 'coordinator-id'),
+            get: vi.fn(() => ({ fetch: coordinatorFetch })),
+          },
+        },
+      ),
+    ).rejects.toThrow('outcome was invalid')
+    expect(noRetry).toHaveBeenCalledTimes(1)
+    expect(coordinatorFetch).toHaveBeenCalledTimes(1)
+    expect(cancel).toHaveBeenCalledTimes(1)
   })
 
   it('rejects the API root without consulting Static Assets', async () => {

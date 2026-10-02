@@ -303,6 +303,44 @@ representations. Run `36788698617` deployed initial Cloudflare version
 KV bundle was retrieved at `2026-10-01T02:17:32.034Z` and later survived the
 recorded schema-1 rollback/restoration rehearsal without a provider refresh.
 
+## Separate bounded Starlink sample, not the full constellation
+
+Issue #257 keeps Starlink outside the curated catalog rather than raising the
+512-record curated cap or silently truncating the official group. The observed
+official GP and SATCAT feeds exceed 11,000 rows and several megabytes each, so
+shipping the complete constellation would increase browser parse, SGP4,
+prediction, GeoJSON, picking, and mobile costs while still not proving
+operational status. A separate default-off child layer makes that limitation
+visible and independently disposable.
+
+One paired source acquisition validates every GP and SATCAT row, requires a
+one-to-one NORAD join for every GP record, and rejects duplicate IDs,
+identity/type conflicts, malformed/oversized input, partial bodies, redirects,
+or clock order other than GP retrieval <= SATCAT retrieval <= publication.
+Only after complete validation does
+`inclination-raan-systematic-v1` sort by inclination, normalized RAAN, and
+numeric NORAD ID and choose index
+`floor((i + 0.5) * populationCount / sampleCount)` for at most 150 records.
+This is a deterministic systematic sample for bounded display, not a
+representative or complete constellation claim.
+
+The existing CelesTrak coordinator, Cron, KV namespace, terminal block, and
+global provider backoff remain authoritative. A second SQLite table reserves
+Starlink immediately before the actual GP request and permits at most one
+start per 12 hours; failed work waits for the next normal window. Curated work
+always runs first. The route is storage-only
+`GET /api/orbits/starlink`, with no query, endpoint override, browser
+coordinates, credentials, or direct CelesTrak access.
+
+The browser reuses one physical orbital worker through two isolated logical
+channels and one MapLibre map through separate persistent Starlink sources and
+layers. Owner-qualified IDs prevent curated purpose/image inference. A
+keyboard-paged 20-row list shares the existing Operations More scroll owner.
+Counts name source population, published sample, accepted/modeled positions,
+map/shown points, and crossings separately. The child preference remains
+remembered while its parent is off, but it cannot fetch or model until ORBITS
+is effective.
+
 ## Reviewed exact-NORAD manifest, not inferred orbital missions
 
 Issue #193 uses a tiny bundled manifest for purpose and image context rather

@@ -6,13 +6,18 @@ import {
   type OrbitalRefreshCoordinator,
   type OrbitalRefreshOutcome,
   type OrbitalRefreshReservation,
+  type StarlinkRefreshReservation,
 } from './orbitalCatalog.js'
+import { STARLINK_REFRESH_INTERVAL_MS } from './starlinkCatalog.js'
 
 export const ORBITAL_COORDINATOR_PATH = '/refresh'
 export const ORBITAL_COORDINATOR_STATE_SCHEMA_VERSION = 1
 export const ORBITAL_COORDINATOR_STATE_CONTRACT_VERSION = 1
+export const STARLINK_COORDINATOR_STATE_SCHEMA_VERSION = 1
+export const STARLINK_COORDINATOR_STATE_CONTRACT_VERSION = 1
 export const ORBITAL_COORDINATOR_OBJECT_NAME =
   'celestrak-visual-refresh-v2'
+export const ORBITAL_COORDINATOR_MAX_OUTCOME_BYTES = 16 * 1_024
 
 export interface OrbitalCatalogCoordinatorStub {
   fetch(request: Request): Promise<Response>
@@ -37,6 +42,13 @@ type RefreshStateRow = {
   nextAllowedAtMs: number
   blockedStatus: number | null
   blockedAtMs: number | null
+}
+
+type StarlinkRefreshStateRow = {
+  schemaVersion: number
+  sourceContractVersion: number
+  lastStartedAtMs: number
+  nextAllowedAtMs: number
 }
 
 const isSafeInteger = (value: unknown): value is number =>
@@ -72,6 +84,23 @@ const validateState = (row: RefreshStateRow) => {
   return row
 }
 
+const validateStarlinkState = (row: StarlinkRefreshStateRow) => {
+  if (
+    row.schemaVersion !==
+      STARLINK_COORDINATOR_STATE_SCHEMA_VERSION ||
+    row.sourceContractVersion !==
+      STARLINK_COORDINATOR_STATE_CONTRACT_VERSION ||
+    !isSafeInteger(row.lastStartedAtMs) ||
+    row.lastStartedAtMs === 0 ||
+    !isSafeInteger(row.nextAllowedAtMs) ||
+    row.nextAllowedAtMs !==
+      row.lastStartedAtMs + STARLINK_REFRESH_INTERVAL_MS
+  ) {
+    throw new Error('Invalid Starlink refresh state')
+  }
+  return row
+}
+
 class SqlOrbitalRefreshCoordinator implements OrbitalRefreshCoordinator {
   private readonly storage: DurableObjectStorage
 
@@ -99,6 +128,24 @@ class SqlOrbitalRefreshCoordinator implements OrbitalRefreshCoordinator {
       throw new Error('Invalid orbital refresh state')
     }
     return rows[0] ? validateState(rows[0]) : undefined
+  }
+
+  private readStarlinkState() {
+    const rows = this.storage.sql
+      .exec<StarlinkRefreshStateRow>(`
+        SELECT
+          schema_version AS schemaVersion,
+          source_contract_version AS sourceContractVersion,
+          last_started_at_ms AS lastStartedAtMs,
+          next_allowed_at_ms AS nextAllowedAtMs
+        FROM starlink_refresh_state
+        WHERE singleton = 1
+      `)
+      .toArray()
+    if (rows.length > 1) {
+      throw new Error('Invalid Starlink refresh state')
+    }
+    return rows[0] ? validateStarlinkState(rows[0]) : undefined
   }
 
   reserve(nowMs: number): Promise<OrbitalRefreshReservation> {
@@ -166,6 +213,80 @@ class SqlOrbitalRefreshCoordinator implements OrbitalRefreshCoordinator {
         }
         return { kind: 'admitted', attemptId }
       }),
+    )
+  }
+
+  reserveStarlink(
+    attemptId: string,
+    nowMs: number,
+  ): Promise<StarlinkRefreshReservation> {
+    if (
+      typeof attemptId !== 'string' ||
+      attemptId.length === 0 ||
+      !isSafeInteger(nowMs) ||
+      nowMs === 0
+    ) {
+      return Promise.reject(
+        new Error('Invalid Starlink refresh reservation'),
+      )
+    }
+
+    return Promise.resolve(
+      this.storage.transactionSync<StarlinkRefreshReservation>(
+        () => {
+          const currentAttempt = this.readState()
+          if (
+            !currentAttempt ||
+            currentAttempt.attemptId !== attemptId
+          ) {
+            throw new Error('Obsolete orbital refresh attempt')
+          }
+
+          const current = this.readStarlinkState()
+          if (current && current.nextAllowedAtMs > nowMs) {
+            return {
+              kind: 'not-due',
+              nextAllowedAtMs: current.nextAllowedAtMs,
+            }
+          }
+
+          const nextAllowedAtMs =
+            nowMs + STARLINK_REFRESH_INTERVAL_MS
+          if (!Number.isSafeInteger(nextAllowedAtMs)) {
+            throw new Error('Invalid Starlink next refresh time')
+          }
+          if (current) {
+            this.storage.sql.exec(
+              `UPDATE starlink_refresh_state
+               SET
+                 last_started_at_ms = ?,
+                 next_allowed_at_ms = ?
+               WHERE singleton = 1`,
+              nowMs,
+              nextAllowedAtMs,
+            )
+          } else {
+            this.storage.sql.exec(
+              `INSERT INTO starlink_refresh_state (
+                 singleton,
+                 schema_version,
+                 source_contract_version,
+                 last_started_at_ms,
+                 next_allowed_at_ms
+               ) VALUES (1, ?, ?, ?, ?)`,
+              STARLINK_COORDINATOR_STATE_SCHEMA_VERSION,
+              STARLINK_COORDINATOR_STATE_CONTRACT_VERSION,
+              nowMs,
+              nextAllowedAtMs,
+            )
+          }
+          return {
+            kind: 'admitted',
+            lastStartedAtMs: nowMs,
+            nextAllowedAtMs,
+          }
+        },
+      ),
     )
   }
 
@@ -275,6 +396,15 @@ export class OrbitalCatalogCoordinator extends DurableObject<OrbitalCatalogEnvir
           blocked_at_ms INTEGER
         )
       `)
+      state.storage.sql.exec(`
+        CREATE TABLE IF NOT EXISTS starlink_refresh_state (
+          singleton INTEGER PRIMARY KEY CHECK (singleton = 1),
+          schema_version INTEGER NOT NULL,
+          source_contract_version INTEGER NOT NULL,
+          last_started_at_ms INTEGER NOT NULL,
+          next_allowed_at_ms INTEGER NOT NULL
+        )
+      `)
     } catch {
       this.initializationFailed = true
     }
@@ -309,6 +439,134 @@ export class OrbitalCatalogCoordinator extends DurableObject<OrbitalCatalogEnvir
   }
 }
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+
+const readScheduledOutcome = async (response: Response) => {
+  const mediaType = response.headers
+    .get('Content-Type')
+    ?.split(';', 1)[0]
+    ?.trim()
+    .toLowerCase()
+  if (mediaType !== 'application/json' || !response.body) {
+    await response.body?.cancel().catch(() => undefined)
+    throw new Error('Orbital catalog refresh outcome was invalid')
+  }
+  const contentLength = response.headers.get('Content-Length')
+  if (
+    contentLength !== null &&
+    (!/^(?:0|[1-9]\d*)$/.test(contentLength) ||
+      Number(contentLength) >
+        ORBITAL_COORDINATOR_MAX_OUTCOME_BYTES)
+  ) {
+    await response.body.cancel().catch(() => undefined)
+    throw new Error('Orbital catalog refresh outcome was invalid')
+  }
+
+  const reader = response.body.getReader()
+  const chunks: Uint8Array[] = []
+  let totalBytes = 0
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      if (!(value instanceof Uint8Array)) {
+        throw new Error('Orbital catalog refresh outcome was invalid')
+      }
+      totalBytes += value.byteLength
+      if (totalBytes > ORBITAL_COORDINATOR_MAX_OUTCOME_BYTES) {
+        await reader.cancel().catch(() => undefined)
+        throw new Error('Orbital catalog refresh outcome was invalid')
+      }
+      chunks.push(value)
+    }
+  } finally {
+    try {
+      reader.releaseLock()
+    } catch {
+      // The oversized body has already been cancelled.
+    }
+  }
+
+  const bytes = new Uint8Array(totalBytes)
+  let offset = 0
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset)
+    offset += chunk.byteLength
+  }
+  let outcome: unknown
+  try {
+    outcome = JSON.parse(
+      new TextDecoder('utf-8', {
+        fatal: true,
+        ignoreBOM: false,
+      }).decode(bytes),
+    )
+  } catch {
+    throw new Error('Orbital catalog refresh outcome was invalid')
+  }
+  if (!isRecord(outcome) || typeof outcome.kind !== 'string') {
+    throw new Error('Orbital catalog refresh outcome was invalid')
+  }
+  return outcome
+}
+
+const requireSuccessfulScheduledOutcome = (
+  outcome: Record<string, unknown>,
+) => {
+  if (
+    outcome.kind === 'disabled' ||
+    outcome.kind === 'not-due'
+  ) {
+    return
+  }
+  if (outcome.kind === 'published') {
+    if (outcome.starlink === undefined) return
+    if (
+      !isRecord(outcome.starlink) ||
+      typeof outcome.starlink.kind !== 'string'
+    ) {
+      throw new Error('Orbital catalog refresh outcome was invalid')
+    }
+    if (
+      outcome.starlink.kind === 'published' ||
+      outcome.starlink.kind === 'not-due' ||
+      outcome.starlink.kind === 'disabled'
+    ) {
+      return
+    }
+    if (outcome.starlink.kind === 'skipped') {
+      throw new Error(
+        'Scheduled orbital catalog refresh skipped Starlink work',
+      )
+    }
+    if (outcome.starlink.kind === 'failed') {
+      throw new Error(
+        'Scheduled orbital catalog refresh reported a Starlink failure',
+      )
+    }
+    throw new Error('Orbital catalog refresh outcome was invalid')
+  }
+  if (outcome.kind === 'rate-limited') {
+    throw new Error(
+      'Scheduled orbital catalog refresh was rate limited',
+    )
+  }
+  if (outcome.kind === 'deferred') {
+    throw new Error('Scheduled orbital catalog refresh was deferred')
+  }
+  if (outcome.kind === 'blocked') {
+    throw new Error('Scheduled orbital catalog refresh was blocked')
+  }
+  if (outcome.kind === 'failed') {
+    throw new Error('Scheduled orbital catalog refresh failed')
+  }
+  if (outcome.kind === 'unavailable') {
+    throw new Error('Scheduled orbital catalog refresh was unavailable')
+  }
+  throw new Error('Orbital catalog refresh outcome was invalid')
+}
+
 export const runScheduledOrbitalCatalogRefresh = async (
   environment: OrbitalScheduledEnvironment,
 ) => {
@@ -326,6 +584,10 @@ export const runScheduledOrbitalCatalogRefresh = async (
     ),
   )
   if (!response.ok) {
+    await response.body?.cancel().catch(() => undefined)
     throw new Error('Orbital catalog refresh was unavailable')
   }
+  requireSuccessfulScheduledOutcome(
+    await readScheduledOutcome(response),
+  )
 }

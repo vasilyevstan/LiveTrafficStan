@@ -42,7 +42,7 @@ import { useLocationSearchModel } from './useLocationSearchModel'
 import { VesselDiscovery } from './VesselDiscovery'
 import { WeatherContext } from './WeatherContext'
 import { OrbitalContext } from './OrbitalContext'
-import { formatOrbitalSummary } from './orbitalSummary'
+import { StarlinkContext } from './StarlinkContext'
 
 interface TrafficControlsProps {
   aircraftQuery: string
@@ -99,6 +99,7 @@ interface TrafficControlsProps {
   orbitalFilters: OrbitalDiscoveryFilters
   orbitalDisplay: OrbitalDisplaySelection
   orbitalCounts: OrbitalPopulationCounts
+  orbitalPrimarySummary?: string
   orbitalPredictionHorizonMs: number
   orbitalMaximumQueryLength: number
   orbitalPageSize: number
@@ -106,6 +107,11 @@ interface TrafficControlsProps {
   onOrbitalFiltersChange: (filters: OrbitalDiscoveryFilters) => void
   onOrbitalSelect: (id: string, originId: string) => void
   onRetryOrbital: () => void
+  starlinkVisible: boolean
+  starlinkState: OrbitalControllerState
+  starlinkCounts: OrbitalPopulationCounts
+  onStarlinkVisibleChange: (visible: boolean) => void
+  onRetryStarlink: () => void
   clusteringEnabled: boolean
   onClusteringEnabledChange: (enabled: boolean) => void
   trailPreferences: TrailPreferences
@@ -270,6 +276,7 @@ export function TrafficControls({
   orbitalFilters,
   orbitalDisplay,
   orbitalCounts,
+  orbitalPrimarySummary,
   orbitalPredictionHorizonMs,
   orbitalMaximumQueryLength,
   orbitalPageSize,
@@ -277,6 +284,11 @@ export function TrafficControls({
   onOrbitalFiltersChange,
   onOrbitalSelect,
   onRetryOrbital,
+  starlinkVisible,
+  starlinkState,
+  starlinkCounts,
+  onStarlinkVisibleChange,
+  onRetryStarlink,
   clusteringEnabled,
   onClusteringEnabledChange,
   trailPreferences,
@@ -417,7 +429,9 @@ export function TrafficControls({
       case 'loading':
         return 'Loading orbital catalog.'
       case 'refreshing':
-        return 'Refreshing catalog; positions retained.'
+        return orbitalState.positions.length > 0
+          ? 'Refreshing catalog; positions retained.'
+          : 'Refreshing catalog; positions temporarily unavailable.'
       case 'stale':
         return (
           orbitalState.message ??
@@ -438,14 +452,6 @@ export function TrafficControls({
         return orbitalState.message
     }
   })()
-  const orbitalPrimarySummary = formatOrbitalSummary({
-    visible: orbitalVisible,
-    historyActive: playback.mode !== 'live',
-    horizonMs: orbitalPredictionHorizonMs,
-    state: orbitalState,
-    display: orbitalDisplay,
-    counts: orbitalCounts,
-  })
   const revealOrbitalObjects = () => {
     const details = mapToolsDetailsRef.current
     if (!details) return
@@ -793,6 +799,20 @@ export function TrafficControls({
             {!orbitalVisible && (
               <p className="control-note">Enable ORBITS above.</p>
             )}
+
+            <StarlinkContext
+              parentVisible={orbitalVisible}
+              enabled={starlinkVisible}
+              live={playback.mode === 'live'}
+              state={starlinkState}
+              selectedId={selectedOrbitalId}
+              counts={starlinkCounts}
+              horizonMs={orbitalPredictionHorizonMs}
+              pageSize={orbitalPageSize}
+              onEnabledChange={onStarlinkVisibleChange}
+              onSelect={onOrbitalSelect}
+              onRetry={onRetryStarlink}
+            />
 
             {orbitalVisible &&
               playback.mode === 'live' &&

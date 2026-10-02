@@ -41,6 +41,7 @@ build:
 | --- | --- | --- |
 | `AIRCRAFT_DELIVERY` | `worker-proxy` | Protected selection of `worker-proxy`, `oci-private-relay`, or `adsb-lol-direct` |
 | `ORBITAL_CATALOG_ENABLED` | `false` | Exact `true` enables the fixed CelesTrak Cron, KV snapshot binding, SQLite Durable Object cadence coordinator, and same-origin catalog route; every other value leaves the updater and route disabled |
+| `STARLINK_CATALOG_ENABLED` | `false` | Exact `true`, together with `ORBITAL_CATALOG_ENABLED=true`, enables the independent 12-hour Starlink acquisition row and literal `/api/orbits/starlink` storage/bootstrap route; it adds no Cron, namespace, Durable Object, or browser-direct provider access |
 | `RELEASE_SHA` | unset | Exact 40-character lowercase source SHA added to Worker API responses |
 
 `ORBITAL_CATALOG_ENABLED` is not a browser feature preference and is never
@@ -62,6 +63,15 @@ same-refresh public schema-1 `visual` snapshot. The retained
 schema-1 assets remain read-only rollback/default-route candidates; no refresh
 writes the v1 key. The Durable Object class, binding, namespace, object name,
 and schema-1 admission row remain unchanged.
+
+Issue #257 reuses those exact resources. The existing Cron still enters the
+same coordinator once; curated work runs first, then the coordinator may
+reserve the Starlink row immediately before its actual GP request. That second
+row enforces a 12-hour start interval without resetting curated cadence,
+global terminal blocks, or `Retry-After`. Starlink publishes only to
+`orbital:catalog:v1:starlink-sample-v1` and falls back to immutable
+`/orbital-data/starlink-2026-10-02-v1/catalog.json`. Disabling the Starlink
+flag leaves curated acquisition and `/api/orbits/catalog` unchanged.
 
 Current application source
 `9e1d8c23f9047d0bf57b12bd4abc7d5fcae90f63` sets the flag to `true`, uses KV
@@ -138,6 +148,10 @@ spread through components:
 | Orbital prediction | Refresh every 30 seconds; 90-minute horizon; 30-second samples; 20 detailed results |
 | Orbital prediction cancellation | One in flight plus latest desired request; yield every 8 objects |
 | Orbital display tiers | Exact settled raw zoom `<2`: 192; `2 <= zoom <4`: 384; zoom `>=4`: every matching safe position through 512; no settled raw zoom means unavailable with no subset/exception claim; one safe selected exception once display is available |
+| Starlink layer | Remembered/shareable child preference, off by default; effective only with ORBITS on and Live mode active |
+| Browser Starlink request | Literal same-origin `GET /api/orbits/starlink`; fixed vendor `Accept`; credentials/referrer omitted; 5-second deadline; 256 KiB / 150-record complete-response limit |
+| Starlink source and publication | Fixed official `starlink` GP then SATCAT pair; 6 MiB and 15,000 rows per response, 12 MiB aggregate, 60-second total deadline; exact joins and one final KV write |
+| Starlink cadence/sample | One actual-start SQLite reservation per 12 hours; at most 150 records selected by `inclination-raan-systematic-v1`; no retry, truncation, rotation, viewport request, or claim that the sample is representative/full |
 | Orbital catalog discovery | Query at most 64 characters; exact type/source-group filters; 20 rows per page |
 | Orbital selected track | 15 minutes; at most 31 points before gap/dateline splitting |
 | Orbital reviewed image | 5-second total deadline; exact manifest byte count, media type, and SHA-256; one fulfilled Blob URL or terminal failure per immutable asset in the running tab |

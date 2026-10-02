@@ -1,0 +1,25 @@
+LiveTrafficStan CelesTrak Starlink systematic sample
+
+Catalog: celestrak-starlink-sample-v1
+Published: 2026-10-02T08:40:05.000Z
+Digest: 16233efe565c8f07f079ae4ad321219ae756931679d167fb2a3f2f52bf5a81d4
+Sample algorithm: inclination-raan-systematic-v1
+Population count: 11125
+Sample record count: 150
+Extra validated SATCAT rows: 0
+
+GP URL: https://celestrak.org/NORAD/elements/gp.php?GROUP=starlink&FORMAT=JSON
+GP retrieved: 2026-10-02T08:40:03.000Z
+GP records: 11125
+GP decoded bytes: 4699409
+GP SHA-256: acd397061a2d3880e50a9a703b208c9f568840303d85cbc3d13b0e5bc5349fdf
+
+SATCAT URL: https://celestrak.org/satcat/records.php?GROUP=starlink&FORMAT=JSON
+SATCAT retrieved: 2026-10-02T08:40:05.000Z
+SATCAT records: 11125
+SATCAT decoded bytes: 3684028
+SATCAT SHA-256: ca962c8ce2601f0c6ad43da8c9ba1d9ca720950fa3cbaf6ef5e23d5467b2ad45
+
+This is a deterministic systematic sample of the validated source population.
+It is not the complete constellation and is not live telemetry.
+CelesTrak data use remains subject to the provider terms and attribution.

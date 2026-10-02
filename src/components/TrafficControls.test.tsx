@@ -102,6 +102,16 @@ const renderControls = (
       onOrbitalFiltersChange={() => undefined}
       onOrbitalSelect={() => undefined}
       onRetryOrbital={() => undefined}
+      starlinkVisible={false}
+      starlinkState={{
+        phase: 'disabled',
+        acceptedCount: 0,
+        positions: [],
+        prediction: EMPTY_ORBITAL_PREDICTION,
+      }}
+      starlinkCounts={emptyOrbitalCounts}
+      onStarlinkVisibleChange={() => undefined}
+      onRetryStarlink={() => undefined}
       clusteringEnabled={false}
       onClusteringEnabledChange={() => undefined}
       trailPreferences={{ visible: true, durationMinutes: 15 }}
@@ -296,6 +306,8 @@ describe('TrafficControls', () => {
         shownInFootprintCount: 1,
         futureCrossingCount: 0,
       },
+      orbitalPrimarySummary:
+        'ORBITS · 1 SHOWN · 0 PASSES ≤90M',
     })
 
     expect(html).toContain(
@@ -360,6 +372,8 @@ describe('TrafficControls', () => {
         shownInFootprintCount: 0,
         futureCrossingCount: 1,
       },
+      orbitalPrimarySummary:
+        'ORBITS · 0 SHOWN · 1 PASS ≤90M',
     })
     const mapDetailsIndex = html.indexOf(
       '<details id="traffic-controls-map-tools"',
@@ -401,6 +415,7 @@ describe('TrafficControls', () => {
         range: { oldest: 0, newest: 1 },
         speed: 1,
       },
+      orbitalPrimarySummary: 'ORBITS · HIDDEN IN HISTORY',
     })
 
     expect(html).toContain(

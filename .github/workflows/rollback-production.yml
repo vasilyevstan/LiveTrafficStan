@@ -130,6 +130,7 @@ jobs:
           cp scripts/smoke-production.mjs "$RUNNER_TEMP/smoke-production.mjs"
           cp scripts/smoke-policy.mjs "$RUNNER_TEMP/smoke-policy.mjs"
           cp scripts/resolve-orbital-version-state.mjs "$RUNNER_TEMP/resolve-orbital-version-state.mjs"
+          cp scripts/resolve-starlink-version-state.mjs "$RUNNER_TEMP/resolve-starlink-version-state.mjs"
           cp scripts/prepare-orbital-rollback-config.mjs "$RUNNER_TEMP/prepare-orbital-rollback-config.mjs"
           cp infra/cloudflare/triggers/orbital-enabled.jsonc "$RUNNER_TEMP/orbital-enabled.jsonc"
           cp infra/cloudflare/triggers/orbital-disabled.jsonc "$RUNNER_TEMP/orbital-disabled.jsonc"
@@ -167,7 +168,12 @@ jobs:
             node "$RUNNER_TEMP/resolve-orbital-version-state.mjs" \
               "$RUNNER_TEMP/target-version.json"
           )"
+          starlink_enabled="$(
+            node "$RUNNER_TEMP/resolve-starlink-version-state.mjs" \
+              "$RUNNER_TEMP/target-version.json"
+          )"
           echo "enabled=$enabled" >> "$GITHUB_OUTPUT"
+          echo "starlink_enabled=$starlink_enabled" >> "$GITHUB_OUTPUT"
 
       - name: Build target application
         if: inputs.artifact == 'application'
@@ -237,6 +243,7 @@ jobs:
           --var RELEASE_SHA:$TARGET_SHA
           --var AIRCRAFT_DELIVERY:$AIRCRAFT_DELIVERY
           --var ORBITAL_CATALOG_ENABLED:false
+          --var STARLINK_CATALOG_ENABLED:false
           --message "GitHub compatible rollback to $TARGET_SHA"
 
       - name: Restore target orbital Cron state
@@ -259,6 +266,7 @@ jobs:
           "${{ inputs.target_sha }}"
           "${{ inputs.aircraft_delivery }}"
           "${{ steps.target-orbital.outputs.enabled }}"
+          "${{ steps.target-orbital.outputs.starlink_enabled }}"
 
       - name: Record rollback
         env:
@@ -277,6 +285,7 @@ jobs:
             echo "- Aircraft photos enabled: \`${{ inputs.aircraft_photo_enabled }}\`"
             echo "- Flight route lookup enabled: \`${{ inputs.flight_route_enabled }}\`"
             echo "- Orbital catalog enabled: \`${{ steps.target-orbital.outputs.enabled }}\`"
+            echo "- Starlink catalog enabled: \`${{ steps.target-orbital.outputs.starlink_enabled }}\`"
             echo "- URL: $DEPLOYMENT_URL"
             echo "- Smoke: passed"
           } >> "$GITHUB_STEP_SUMMARY"

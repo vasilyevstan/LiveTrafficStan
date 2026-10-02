@@ -9,14 +9,22 @@ import {
   ORBITAL_COORDINATOR_PATH,
   ORBITAL_COORDINATOR_STATE_CONTRACT_VERSION,
   ORBITAL_COORDINATOR_STATE_SCHEMA_VERSION,
+  STARLINK_COORDINATOR_STATE_CONTRACT_VERSION,
+  STARLINK_COORDINATOR_STATE_SCHEMA_VERSION,
   OrbitalCatalogCoordinator,
 } from './orbitalCatalogCoordinator.js'
+import {
+  STARLINK_GP_SOURCE_URL,
+  STARLINK_REFRESH_INTERVAL_MS,
+  STARLINK_SATCAT_SOURCE_URL,
+} from './starlinkCatalog.js'
 
 const nowMs = Date.parse('2026-09-28T18:45:00.000Z')
 
 const gpRecord = {
   OBJECT_NAME: 'TEST SAT',
   OBJECT_ID: '2026-001A',
+  OBJECT_TYPE: 'PAY',
   EPOCH: '2026-09-28T17:45:00.123456',
   MEAN_MOTION: 15.2,
   ECCENTRICITY: 0.001,
@@ -64,6 +72,13 @@ type StateRow = {
   blockedAtMs: number | null
 }
 
+type StarlinkStateRow = {
+  schemaVersion: number
+  sourceContractVersion: number
+  lastStartedAtMs: number
+  nextAllowedAtMs: number
+}
+
 class FakeCursor<Row> implements Iterable<Row> {
   private readonly rows: Row[]
 
@@ -82,7 +97,9 @@ class FakeCursor<Row> implements Iterable<Row> {
 
 class FakeStorage {
   state: StateRow | undefined
+  starlinkState: StarlinkStateRow | undefined
   failOutcomeWrite = false
+  failStarlinkReservation = false
 
   readonly sql = {
     exec: <Row,>(
@@ -93,9 +110,22 @@ class FakeStorage {
       if (normalized.startsWith('CREATE TABLE')) {
         return new FakeCursor<Row>([])
       }
-      if (normalized.startsWith('SELECT schema_version')) {
+      if (
+        normalized.startsWith('SELECT schema_version') &&
+        normalized.includes('FROM orbital_refresh_state')
+      ) {
         return new FakeCursor<Row>(
           this.state ? [{ ...this.state } as Row] : [],
+        )
+      }
+      if (
+        normalized.startsWith('SELECT schema_version') &&
+        normalized.includes('FROM starlink_refresh_state')
+      ) {
+        return new FakeCursor<Row>(
+          this.starlinkState
+            ? [{ ...this.starlinkState } as Row]
+            : [],
         )
       }
       if (normalized.startsWith('INSERT INTO orbital_refresh_state')) {
@@ -201,16 +231,71 @@ class FakeStorage {
         }
         return new FakeCursor<Row>([])
       }
+      if (
+        normalized.startsWith('INSERT INTO starlink_refresh_state')
+      ) {
+        if (this.failStarlinkReservation) {
+          throw new Error('Storage failed')
+        }
+        const [
+          schemaVersion,
+          sourceContractVersion,
+          lastStartedAtMs,
+          nextAllowedAtMs,
+        ] = bindings
+        if (
+          typeof schemaVersion !== 'number' ||
+          typeof sourceContractVersion !== 'number' ||
+          typeof lastStartedAtMs !== 'number' ||
+          typeof nextAllowedAtMs !== 'number'
+        ) {
+          throw new Error('Invalid Starlink insert')
+        }
+        this.starlinkState = {
+          schemaVersion,
+          sourceContractVersion,
+          lastStartedAtMs,
+          nextAllowedAtMs,
+        }
+        return new FakeCursor<Row>([])
+      }
+      if (
+        normalized.startsWith('UPDATE starlink_refresh_state')
+      ) {
+        if (this.failStarlinkReservation) {
+          throw new Error('Storage failed')
+        }
+        if (!this.starlinkState) {
+          throw new Error('Missing Starlink state')
+        }
+        const [lastStartedAtMs, nextAllowedAtMs] = bindings
+        if (
+          typeof lastStartedAtMs !== 'number' ||
+          typeof nextAllowedAtMs !== 'number'
+        ) {
+          throw new Error('Invalid Starlink update')
+        }
+        this.starlinkState = {
+          ...this.starlinkState,
+          lastStartedAtMs,
+          nextAllowedAtMs,
+        }
+        return new FakeCursor<Row>([])
+      }
       throw new Error(`Unexpected SQL: ${normalized}`)
     },
   }
 
   transactionSync<Result>(callback: () => Result): Result {
     const state = this.state ? { ...this.state } : undefined
+    const starlinkState = this.starlinkState
+      ? { ...this.starlinkState }
+      : undefined
     try {
       return callback()
     } catch (error) {
       this.state = state
+      this.starlinkState = starlinkState
       throw error
     }
   }
@@ -233,19 +318,32 @@ const sourceResponse = (url: string) => {
       candidate.gpSourceUrl === url ||
       candidate.satcatSourceUrl === url,
   )
+  if (url === STARLINK_GP_SOURCE_URL) {
+    return jsonResponse([gpRecord])
+  }
+  if (url === STARLINK_SATCAT_SOURCE_URL) {
+    return jsonResponse([satcatRecord])
+  }
   if (!source) throw new Error('Unexpected URL')
   return url === source.gpSourceUrl
     ? jsonResponse([gpRecord])
     : jsonResponse([satcatRecord])
 }
 
-const createCoordinator = (storage: FakeStorage, catalog: MemoryKv) =>
+const createCoordinator = (
+  storage: FakeStorage,
+  catalog: MemoryKv,
+  starlinkEnabled = false,
+) =>
   new OrbitalCatalogCoordinator(
     { storage } as unknown as DurableObjectState,
     {
       ASSETS: { fetch: vi.fn() },
       ORBITAL_CATALOG: catalog,
       ORBITAL_CATALOG_ENABLED: 'true',
+      ...(starlinkEnabled
+        ? { STARLINK_CATALOG_ENABLED: 'true' }
+        : {}),
     },
   )
 
@@ -312,6 +410,7 @@ describe('orbital catalog coordinator', () => {
       blockedStatus: null,
       blockedAtMs: null,
     })
+    expect(storage.starlinkState).toBeUndefined()
   })
 
   it('preserves an existing schema-1 admission row during catalog v2 rollout', async () => {
@@ -328,8 +427,11 @@ describe('orbital catalog coordinator', () => {
       blockedStatus: null,
       blockedAtMs: null,
     }
+    const existingState = { ...storage.state }
     const catalog = new MemoryKv()
     const coordinator = createCoordinator(storage, catalog)
+    expect(storage.state).toEqual(existingState)
+    expect(storage.starlinkState).toBeUndefined()
     const fetchImpl = vi.fn(async (input) =>
       sourceResponse(String(input)),
     )
@@ -371,6 +473,107 @@ describe('orbital catalog coordinator', () => {
       status: 403,
     })
     expect(fetchImpl).toHaveBeenCalledTimes(1)
+  })
+
+  it('applies a Starlink provider outcome to the same durable admission row', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(nowMs)
+    const starlinkStartMs = nowMs + 45_000
+    const storage = new FakeStorage()
+    const catalog = new MemoryKv()
+    const coordinator = createCoordinator(
+      storage,
+      catalog,
+      true,
+    )
+    const lastCuratedSource =
+      ORBITAL_SOURCES.at(-1)?.satcatSourceUrl
+    let advancedToStarlinkStart = false
+    const fetchImpl = vi.fn(async (input) => {
+      const url = String(input)
+      if (
+        url === lastCuratedSource &&
+        !advancedToStarlinkStart
+      ) {
+        advancedToStarlinkStart = true
+        vi.setSystemTime(starlinkStartMs)
+      }
+      return url === STARLINK_SATCAT_SOURCE_URL
+        ? new Response(null, {
+            status: 429,
+            headers: { 'Retry-After': '10800' },
+          })
+        : sourceResponse(url)
+    })
+    vi.stubGlobal('fetch', fetchImpl)
+
+    expect(await (await coordinator.fetch(request())).json()).toEqual({
+      kind: 'rate-limited',
+      nextAllowedAtMs: starlinkStartMs + 10_800_000,
+    })
+    expect(fetchImpl).toHaveBeenCalledTimes(12)
+    expect(catalog.values.has(ORBITAL_CATALOG_KEY)).toBe(true)
+    expect(storage.state?.nextAllowedAtMs).toBe(
+      starlinkStartMs + 10_800_000,
+    )
+    expect(storage.starlinkState).toEqual({
+      schemaVersion: STARLINK_COORDINATOR_STATE_SCHEMA_VERSION,
+      sourceContractVersion:
+        STARLINK_COORDINATOR_STATE_CONTRACT_VERSION,
+      lastStartedAtMs: starlinkStartMs,
+      nextAllowedAtMs:
+        starlinkStartMs + STARLINK_REFRESH_INTERVAL_MS,
+    })
+
+    vi.setSystemTime(nowMs + ORBITAL_REFRESH_INTERVAL_MS)
+    expect(await (await coordinator.fetch(request())).json()).toEqual({
+      kind: 'not-due',
+      nextAllowedAtMs: starlinkStartMs + 10_800_000,
+    })
+    expect(fetchImpl).toHaveBeenCalledTimes(12)
+
+    vi.setSystemTime(starlinkStartMs + 10_800_000)
+    expect(await (await coordinator.fetch(request())).json()).toMatchObject({
+      kind: 'published',
+      starlink: {
+        kind: 'not-due',
+        nextAllowedAtMs:
+          starlinkStartMs + STARLINK_REFRESH_INTERVAL_MS,
+      },
+    })
+    expect(fetchImpl).toHaveBeenCalledTimes(22)
+    expect(storage.starlinkState?.lastStartedAtMs).toBe(
+      starlinkStartMs,
+    )
+  })
+
+  it('skips Starlink provider work when its durable reservation fails', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(nowMs)
+    const storage = new FakeStorage()
+    storage.failStarlinkReservation = true
+    const catalog = new MemoryKv()
+    const coordinator = createCoordinator(storage, catalog, true)
+    const fetchImpl = vi.fn(async (input) =>
+      sourceResponse(String(input)),
+    )
+    vi.stubGlobal('fetch', fetchImpl)
+
+    expect(await (await coordinator.fetch(request())).json()).toMatchObject({
+      kind: 'published',
+      starlink: {
+        kind: 'skipped',
+        reason: 'Could not persist the Starlink start gate',
+      },
+    })
+    expect(fetchImpl).toHaveBeenCalledTimes(10)
+    expect(
+      fetchImpl.mock.calls.some(
+        ([input]) => String(input) === STARLINK_GP_SOURCE_URL,
+      ),
+    ).toBe(false)
+    expect(catalog.values.has(ORBITAL_CATALOG_KEY)).toBe(true)
+    expect(storage.starlinkState).toBeUndefined()
   })
 
   it('keeps the fail-closed admission lock when outcome storage fails', async () => {

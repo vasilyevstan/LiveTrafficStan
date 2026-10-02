@@ -35,6 +35,40 @@ cataloged orbital objects. It does not provide live
 telemetry, powered-ascent tracking, reliable operational reentry tracking,
 impact prediction, conjunction assessment, or proof of naked-eye visibility.
 
+## Separate Starlink decision
+
+Issue #257 evaluates the official CelesTrak `starlink` group separately from
+the five-group curated union. The observed paired source contains more than
+11,000 GP records and matching SATCAT records and is several megabytes per
+response. Loading the complete group would exceed the reviewed browser record,
+snapshot, SGP4, prediction, GeoJSON, picking, and mobile-density budgets.
+
+The selected contract therefore validates the complete paired population but
+publishes at most 150 deterministic records. After sorting by inclination,
+normalized right ascension of the ascending node, and numeric NORAD ID, sample
+slot `i` selects
+`floor((i + 0.5) * populationCount / sampleCount)`. The final sample is sorted
+by numeric NORAD ID. This stable systematic coverage supports bounded visual
+context; it does not assert statistical representativeness, completeness,
+current operation, or optical visibility.
+
+Starlink shares the existing CelesTrak Cron, Durable Object identity, KV
+namespace, global terminal state, and provider `Retry-After`. Curated work
+remains first. A separate SQLite row records the actual Starlink GP request
+start and admits at most one pair per 12 hours; no immediate retry, rotation,
+fallback group, truncation, or browser-triggered acquisition exists. Fixed
+source URLs, exact evidence, and the immutable generation are recorded in
+`src/config/starlinkCatalogSource.json` and its co-located notice.
+
+The one immutable-source acquisition began at `2026-10-02T08:40:00Z`, after
+the conservative 12-hour window. GP completed at `08:40:03Z` and SATCAT at
+`08:40:05Z`; each returned 11,125 rows. Decoded sizes were 4,699,409 and
+3,684,028 bytes, for 8,383,437 aggregate bytes. The exact NORAD join had zero
+extra SATCAT rows. The fixed algorithm published 150 records in a 74,982-byte
+canonical snapshot with digest
+`16233efe565c8f07f079ae4ad321219ae756931679d167fb2a3f2f52bf5a81d4`.
+No retry or second provider read was made.
+
 ## Evidence method
 
 This decision combines:

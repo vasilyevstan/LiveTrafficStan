@@ -124,6 +124,9 @@ describe('production rollback workflow', () => {
       'resolve-orbital-version-state.mjs',
     )
     expect(workflow).toContain(
+      'resolve-starlink-version-state.mjs',
+    )
+    expect(workflow).toContain(
       'cp infra/cloudflare/triggers/orbital-enabled.jsonc "$RUNNER_TEMP/orbital-enabled.jsonc"',
     )
     expect(workflow).toContain(
@@ -137,7 +140,23 @@ describe('production rollback workflow', () => {
       '"${{ inputs.aircraft_delivery }}"\n          "${{ steps.target-orbital.outputs.enabled }}"',
     )
     expect(workflow).toContain(
+      '"${{ steps.target-orbital.outputs.enabled }}"\n          "${{ steps.target-orbital.outputs.starlink_enabled }}"',
+    )
+    expect(workflow).toContain(
       'echo "- Orbital catalog enabled: \\`${{ steps.target-orbital.outputs.enabled }}\\`"',
     )
+    expect(workflow).toContain(
+      'echo "- Starlink catalog enabled: \\`${{ steps.target-orbital.outputs.starlink_enabled }}\\`"',
+    )
+    expect(workflow).toContain(
+      '--var STARLINK_CATALOG_ENABLED:false',
+    )
+    expect(smoke).toContain(
+      "await import('../worker/starlinkCatalog.ts')",
+    )
+    expect(smoke).toContain(
+      'resolveTargetStarlinkSmokeContract(targetStarlinkContract)',
+    )
+    expect(smoke).toContain('verifyTargetStarlinkCatalog({')
   })
 })

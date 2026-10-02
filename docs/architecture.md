@@ -345,6 +345,24 @@ revalidates no more often than every two hours. Orbital IDs and timestamps
 never enter traffic normalization, freshness, clustering, trails, metadata,
 photos, route lookup, session history, or IndexedDB.
 
+Starlink is a subordinate modeled-data channel, not another map or traffic
+provider. The remembered STARLINK preference is effective only while ORBITS is
+effective and Live mode is active. `useOrbitalObjects` owns one physical
+`orbital.worker` hub and exposes two logical channels; every worker message has
+an explicit `curated` or `starlink` envelope, and catalog revision,
+coalescing, cancellation, errors, and disposal remain channel-scoped. The
+physical worker terminates only when no logical channel remains.
+
+The map keeps separate persistent Starlink point, highlight, and track
+sources/layers beside the curated sources. Both channels participate in one
+orbital pick surface after traffic and before static context. Public Starlink
+IDs use `orbital:starlink:<NORAD>`, preventing a duplicate NORAD from borrowing
+curated selection, enrichment, tooltip, halo, or track state. Theme/style
+rehydration reinstalls both channels idempotently and restores current data,
+visibility, filters, selection, and track without reconnecting any provider.
+Starlink payloads receive the dedicated flat-panel image; exact `R/B`, `DEB`,
+and `UNK` records retain the existing type images.
+
 Orbital purpose and imagery are a second, static display-only boundary. The
 two-record manifest is compiled into the browser and matches the current
 feature only when NORAD ID, object name, international designator, and exact

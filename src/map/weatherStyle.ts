@@ -12,7 +12,7 @@ import {
   setTrafficLayerVisibility,
 } from './trafficStyle'
 import { mapTextFont } from './textFont'
-import { LAYER_ORBITAL_TRACK } from './orbitalStyle'
+import { firstOrbitalLayerId } from './orbitalStyle'
 
 export const SOURCE_WEATHER = 'context-weather'
 export const LAYER_WEATHER_HALO = 'context-weather-halo'
@@ -88,10 +88,11 @@ const ensureSource = (
 
 const ensureLayer = (map: MapLibreMap, layer: LayerSpecification) => {
   if (!map.getLayer(layer.id)) {
+    const orbitalLayerId = firstOrbitalLayerId(map)
     map.addLayer(
       layer,
-      map.getLayer(LAYER_ORBITAL_TRACK)
-        ? LAYER_ORBITAL_TRACK
+      orbitalLayerId
+        ? orbitalLayerId
         : map.getLayer(LAYER_SELECTED_TRAIL)
           ? LAYER_SELECTED_TRAIL
           : undefined,

@@ -1,8 +1,13 @@
 import { execFileSync } from 'node:child_process'
-import { mkdtempSync, readFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { randomUUID } from 'node:crypto'
+import {
+  mkdirSync,
+  readFileSync,
+  rmdirSync,
+  rmSync,
+} from 'node:fs'
 import { join, resolve } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { afterAll, describe, expect, it } from 'vitest'
 import {
   ORBITAL_CATALOG_KEY,
   ORBITAL_CATALOG_PUBLICATION_VERSION,
@@ -17,7 +22,10 @@ import {
   ORBITAL_COORDINATOR_OBJECT_NAME,
   ORBITAL_COORDINATOR_STATE_CONTRACT_VERSION,
   ORBITAL_COORDINATOR_STATE_SCHEMA_VERSION,
+  STARLINK_COORDINATOR_STATE_CONTRACT_VERSION,
+  STARLINK_COORDINATOR_STATE_SCHEMA_VERSION,
 } from '../worker/orbitalCatalogCoordinator.ts'
+import { STARLINK_CATALOG_KEY } from '../worker/starlinkCatalog.ts'
 
 const repositoryRoot = resolve(import.meta.dirname, '..')
 const script = join(
@@ -29,9 +37,15 @@ const orbitalWorkerSource = readFileSync(
   join(repositoryRoot, 'worker/orbitalCatalog.ts'),
   'utf8',
 )
+const workRoot = join(
+  repositoryRoot,
+  '.test-work',
+  'orbital-deployment',
+)
 
-const prepare = (enabled) => {
-  const directory = mkdtempSync(join(tmpdir(), 'lts-orbital-config-'))
+const prepare = (enabled, starlinkEnabled = false) => {
+  const directory = join(workRoot, randomUUID())
+  mkdirSync(directory, { recursive: true })
   const output = join(directory, 'wrangler.jsonc')
   const args = [
     script,
@@ -41,6 +55,8 @@ const prepare = (enabled) => {
     output,
     '--orbital-enabled',
     String(enabled),
+    '--starlink-enabled',
+    String(starlinkEnabled),
   ]
   if (enabled) {
     args.push(
@@ -53,8 +69,23 @@ const prepare = (enabled) => {
 }
 
 describe('orbital Cloudflare deployment configuration', () => {
+  afterAll(() => {
+    rmSync(workRoot, { recursive: true, force: true })
+    try {
+      rmdirSync(join(repositoryRoot, '.test-work'))
+    } catch (error) {
+      if (
+        !(error instanceof Error) ||
+        !('code' in error) ||
+        (error.code !== 'ENOENT' && error.code !== 'ENOTEMPTY')
+      ) {
+        throw error
+      }
+    }
+  })
+
   it('adds exact KV, coordinator, and Cron resources when enabled', () => {
-    const config = prepare(true)
+    const config = prepare(true, true)
 
     expect(config.main).toBe(join(repositoryRoot, 'worker/index.ts'))
     expect(config.assets.directory).toBe(join(repositoryRoot, 'dist'))
@@ -79,15 +110,21 @@ describe('orbital Cloudflare deployment configuration', () => {
     expect(config.triggers).toEqual({
       crons: ['17 */2 * * *'],
     })
+    expect(config.kv_namespaces).toHaveLength(1)
+    expect(config.durable_objects.bindings).toHaveLength(1)
   })
 
   it('removes the binding and all Cron triggers when disabled', () => {
-    const config = prepare(false)
+    const config = prepare(false, false)
 
     expect(config.kv_namespaces).toBeUndefined()
     expect(config.durable_objects).toBeUndefined()
     expect(config.exports.OrbitalCatalogCoordinator).toBeUndefined()
     expect(config.triggers).toEqual({ crons: [] })
+  })
+
+  it('rejects Starlink without the curated orbital deployment', () => {
+    expect(() => prepare(false, true)).toThrow()
   })
 
   it('keeps explicit rollback trigger configs symmetric', () => {
@@ -133,11 +170,16 @@ describe('orbital Cloudflare deployment configuration', () => {
     expect(ORBITAL_CATALOG_V2_ACCEPT).toBe(
       'application/vnd.livetrafficstan.orbital-catalog+json;version=2',
     )
+    expect(STARLINK_CATALOG_KEY).toBe(
+      'orbital:catalog:v1:starlink-sample-v1',
+    )
     expect(ORBITAL_COORDINATOR_OBJECT_NAME).toBe(
       'celestrak-visual-refresh-v2',
     )
     expect(ORBITAL_COORDINATOR_STATE_SCHEMA_VERSION).toBe(1)
     expect(ORBITAL_COORDINATOR_STATE_CONTRACT_VERSION).toBe(1)
+    expect(STARLINK_COORDINATOR_STATE_SCHEMA_VERSION).toBe(1)
+    expect(STARLINK_COORDINATOR_STATE_CONTRACT_VERSION).toBe(1)
     expect(
       orbitalWorkerSource.match(/store\.put\(/g),
     ).toHaveLength(1)
