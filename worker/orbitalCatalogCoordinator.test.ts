@@ -14,7 +14,10 @@ import {
   OrbitalCatalogCoordinator,
 } from './orbitalCatalogCoordinator.js'
 import {
+  STARLINK_BOOTSTRAP_GP_RETRIEVED_AT_MS,
+  STARLINK_CATALOG_KEY,
   STARLINK_GP_SOURCE_URL,
+  STARLINK_INITIAL_REFRESH_NOT_BEFORE_MS,
   STARLINK_REFRESH_INTERVAL_MS,
   STARLINK_SATCAT_SOURCE_URL,
 } from './starlinkCatalog.js'
@@ -478,7 +481,8 @@ describe('orbital catalog coordinator', () => {
   it('applies a Starlink provider outcome to the same durable admission row', async () => {
     vi.useFakeTimers()
     vi.setSystemTime(nowMs)
-    const starlinkStartMs = nowMs + 45_000
+    const starlinkStartMs =
+      STARLINK_INITIAL_REFRESH_NOT_BEFORE_MS + 45_000
     const storage = new FakeStorage()
     const catalog = new MemoryKv()
     const coordinator = createCoordinator(
@@ -546,6 +550,82 @@ describe('orbital catalog coordinator', () => {
       starlinkStartMs,
     )
   })
+
+  it('seeds a fresh Starlink row from the immutable bootstrap before the first safe refresh', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(STARLINK_INITIAL_REFRESH_NOT_BEFORE_MS - 1)
+    const storage = new FakeStorage()
+    const catalog = new MemoryKv()
+    const coordinator = createCoordinator(storage, catalog, true)
+    const fetchImpl = vi.fn(async (input) =>
+      sourceResponse(String(input)),
+    )
+    vi.stubGlobal('fetch', fetchImpl)
+
+    expect(await (await coordinator.fetch(request())).json()).toMatchObject({
+      kind: 'published',
+      starlink: {
+        kind: 'not-due',
+        nextAllowedAtMs:
+          STARLINK_INITIAL_REFRESH_NOT_BEFORE_MS,
+      },
+    })
+    expect(fetchImpl).toHaveBeenCalledTimes(10)
+    expect(
+      fetchImpl.mock.calls.some(
+        ([input]) => String(input) === STARLINK_GP_SOURCE_URL,
+      ),
+    ).toBe(false)
+    expect(catalog.values.has(STARLINK_CATALOG_KEY)).toBe(false)
+    expect(storage.starlinkState).toEqual({
+      schemaVersion: STARLINK_COORDINATOR_STATE_SCHEMA_VERSION,
+      sourceContractVersion:
+        STARLINK_COORDINATOR_STATE_CONTRACT_VERSION,
+      lastStartedAtMs: STARLINK_BOOTSTRAP_GP_RETRIEVED_AT_MS,
+      nextAllowedAtMs:
+        STARLINK_INITIAL_REFRESH_NOT_BEFORE_MS,
+    })
+  })
+
+  it.each([
+    ['at', STARLINK_INITIAL_REFRESH_NOT_BEFORE_MS],
+    ['after', STARLINK_INITIAL_REFRESH_NOT_BEFORE_MS + 1],
+  ])(
+    'admits a fresh Starlink row %s the bootstrap-derived boundary',
+    async (_label, refreshAtMs) => {
+      vi.useFakeTimers()
+      vi.setSystemTime(refreshAtMs)
+      const storage = new FakeStorage()
+      const catalog = new MemoryKv()
+      const coordinator = createCoordinator(
+        storage,
+        catalog,
+        true,
+      )
+      const fetchImpl = vi.fn(async (input) =>
+        sourceResponse(String(input)),
+      )
+      vi.stubGlobal('fetch', fetchImpl)
+
+      expect(
+        await (await coordinator.fetch(request())).json(),
+      ).toMatchObject({
+        kind: 'published',
+        starlink: { kind: 'published', recordCount: 1 },
+      })
+      expect(fetchImpl).toHaveBeenCalledTimes(12)
+      expect(catalog.values.has(STARLINK_CATALOG_KEY)).toBe(true)
+      expect(storage.starlinkState).toEqual({
+        schemaVersion:
+          STARLINK_COORDINATOR_STATE_SCHEMA_VERSION,
+        sourceContractVersion:
+          STARLINK_COORDINATOR_STATE_CONTRACT_VERSION,
+        lastStartedAtMs: refreshAtMs,
+        nextAllowedAtMs:
+          refreshAtMs + STARLINK_REFRESH_INTERVAL_MS,
+      })
+    },
+  )
 
   it('skips Starlink provider work when its durable reservation fails', async () => {
     vi.useFakeTimers()

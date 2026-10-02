@@ -328,7 +328,12 @@ The existing CelesTrak coordinator, Cron, KV namespace, terminal block, and
 global provider backoff remain authoritative. A second SQLite table reserves
 Starlink immediately before the actual GP request and permits at most one
 start per 12 hours; failed work waits for the next normal window. Curated work
-always runs first. The route is storage-only
+always runs first. The initial empty row is seeded from the pinned immutable
+bootstrap GP retrieval time and returns `not-due` before that source's
+12-hour boundary. This permits immediate product activation without treating
+deployment time as permission for another provider read; the first admitted
+request and every later request retain actual-start anchoring. The route is
+storage-only
 `GET /api/orbits/starlink`, with no query, endpoint override, browser
 coordinates, credentials, or direct CelesTrak access.
 

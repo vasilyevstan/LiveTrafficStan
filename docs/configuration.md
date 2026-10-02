@@ -68,7 +68,11 @@ Issue #257 reuses those exact resources. The existing Cron still enters the
 same coordinator once; curated work runs first, then the coordinator may
 reserve the Starlink row immediately before its actual GP request. That second
 row enforces a 12-hour start interval without resetting curated cadence,
-global terminal blocks, or `Retry-After`. Starlink publishes only to
+global terminal blocks, or `Retry-After`. On first activation, an absent row
+is seeded from the immutable bootstrap GP retrieval at
+`2026-10-02T08:40:03Z`, making the initial not-before boundary
+`2026-10-02T20:40:03Z`; the public bootstrap route remains usable before that
+boundary. Starlink publishes only to
 `orbital:catalog:v1:starlink-sample-v1` and falls back to immutable
 `/orbital-data/starlink-2026-10-02-v1/catalog.json`. Disabling the Starlink
 flag leaves curated acquisition and `/api/orbits/catalog` unchanged.

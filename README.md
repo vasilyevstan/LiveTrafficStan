@@ -139,10 +139,13 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   than presenting the sample as the full constellation. One existing
   CelesTrak Durable Object owns both schedules: curated acquisition remains
   first, while a second SQLite row admits the paired Starlink read at most once
-  per 12 hours at the actual GP request start. The browser uses only literal
-  same-origin `GET /api/orbits/starlink`, one physical orbital worker with
-  isolated curated/Starlink channels, and separate persistent MapLibre
-  sources/layers. Starlink public IDs are
+  per 12 hours at the actual GP request start. A fresh production row is seeded
+  from the pinned bootstrap GP retrieval time, so the immutable sample may be
+  activated immediately while provider work remains blocked until the first
+  safe 12-hour boundary; later starts anchor the ordinary cadence. The browser
+  uses only literal same-origin `GET /api/orbits/starlink`, one physical orbital
+  worker with isolated curated/Starlink channels, and separate persistent
+  MapLibre sources/layers. Starlink public IDs are
   `orbital:starlink:<NORAD>`; selection, halo, track, details, and tooltips
   never inherit curated purpose or imagery. Exact payloads use a flat-panel
   spacecraft silhouette, while rocket bodies, debris, and unknown objects

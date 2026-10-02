@@ -8,7 +8,11 @@ import {
   type OrbitalRefreshReservation,
   type StarlinkRefreshReservation,
 } from './orbitalCatalog.js'
-import { STARLINK_REFRESH_INTERVAL_MS } from './starlinkCatalog.js'
+import {
+  STARLINK_BOOTSTRAP_GP_RETRIEVED_AT_MS,
+  STARLINK_INITIAL_REFRESH_NOT_BEFORE_MS,
+  STARLINK_REFRESH_INTERVAL_MS,
+} from './starlinkCatalog.js'
 
 export const ORBITAL_COORDINATOR_PATH = '/refresh'
 export const ORBITAL_COORDINATOR_STATE_SCHEMA_VERSION = 1
@@ -243,6 +247,29 @@ class SqlOrbitalRefreshCoordinator implements OrbitalRefreshCoordinator {
           }
 
           const current = this.readStarlinkState()
+          if (
+            !current &&
+            nowMs < STARLINK_INITIAL_REFRESH_NOT_BEFORE_MS
+          ) {
+            this.storage.sql.exec(
+              `INSERT INTO starlink_refresh_state (
+                 singleton,
+                 schema_version,
+                 source_contract_version,
+                 last_started_at_ms,
+                 next_allowed_at_ms
+               ) VALUES (1, ?, ?, ?, ?)`,
+              STARLINK_COORDINATOR_STATE_SCHEMA_VERSION,
+              STARLINK_COORDINATOR_STATE_CONTRACT_VERSION,
+              STARLINK_BOOTSTRAP_GP_RETRIEVED_AT_MS,
+              STARLINK_INITIAL_REFRESH_NOT_BEFORE_MS,
+            )
+            return {
+              kind: 'not-due',
+              nextAllowedAtMs:
+                STARLINK_INITIAL_REFRESH_NOT_BEFORE_MS,
+            }
+          }
           if (current && current.nextAllowedAtMs > nowMs) {
             return {
               kind: 'not-due',
