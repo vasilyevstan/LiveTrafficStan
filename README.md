@@ -41,7 +41,8 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
 - Viewport-driven traffic after settled pan, zoom, rotation, pitch, Home, and
   resize changes.
 - A truthful 100 km enclosing-query limit: wider or unsafe views pause traffic
-  and ask the user to zoom in rather than showing partial coverage as complete.
+  and offer **Resume live** to fit the current map center back to the reviewed
+  safe framing rather than showing partial coverage as complete.
 - A 30 km session Home/Center framing plus privacy-safe one-shot browser
   location: already-granted permission and grants made while the page is open
   are used automatically; otherwise location is an explicit action with
@@ -715,9 +716,10 @@ monitoring, privacy, and rollback procedure.
   filtering does not reduce incoming MQTT bandwidth. Digitraffic exposes
   Class A AIS only, so Class B yachts are unavailable and the eligible yacht
   population can be small or empty.
-- Views whose conservative enclosing radius exceeds 100 km pause live traffic
-  until the user zooms in or reduces tilt. Partial coverage is never presented
-  as complete.
+- Views whose conservative enclosing radius exceeds 100 km pause live traffic.
+  **Resume live** keeps the current map center and returns to the reviewed safe
+  framing; manual zoom-in or reduced tilt remain available. Partial coverage is
+  never presented as complete.
 - Selected trails remain intentionally limited to one object. Volatile session
   history disappears on refresh; explicitly enabled private local history may
   survive within its configured bounds.
