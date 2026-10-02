@@ -231,10 +231,11 @@ covers:
   reuse, abort/throttling behavior, exact returned-origin checks, unchanged
   URLs, visible attribution/link DOM semantics, one-hour 32-entry LRU behavior,
   and storage/service-worker isolation;
-- vessel-photo IMO checksum and exact-match behavior, invalid/unmatched
-  omission, selected-identity tagging, prominent live-details rendering,
-  author/source/license/modification attribution, HISTORY omission, immutable
-  asset integrity, and service-worker exclusion;
+- vessel-photo IMO checksum and exact-match behavior, distinct invalid/unmatched
+  unavailable reasons with asset omission, selected-identity tagging,
+  prominent live-details rendering, author/source/license/modification
+  attribution, HISTORY omission, immutable asset integrity, and service-worker
+  exclusion;
 - ADSB.lol request construction, abort forwarding, response/error validation,
   retry guidance, enclosing-circle transport, and metric conversion;
 - Digitraffic REST/MQTT normalization, capabilities, provenance, dimensions,
@@ -617,16 +618,17 @@ Use `npm run dev` and verify:
     speed at least one knot. Future, stale, stopped, speed-unknown, and
     length-unknown yachts stay hidden at every size; non-yachts preserve the
     50 m reset state. A selected yacht becoming ineligible clears cleanly.
-16. Selecting each reviewed ferry by its exact live IMO shows the correct
+16. Selecting each reviewed vessel by its exact live IMO shows the correct
     bundled reference photo directly below the ship heading, with author,
     fixed Commons revision, selected license, modification notice, and the
-    historical/not-live caveat visible. An invalid or unmatched IMO shows no
-    image. Switching matched A to matched B to A never flashes the wrong hull;
-    HISTORY and search results show no vessel photo. A sub-500 ms hover adds no
-    image request; one stable matched-vessel hover loads only the correct
-    same-origin asset with fixed-source and rights context. No hover makes a
-    Wikimedia, Wikidata, tracker, or image-provider request. Verify all five
-    same-origin assets return `200` with immutable caching.
+    historical/not-live caveat visible. An invalid or unmatched IMO explains
+    why coverage is unavailable and shows no image. Switching matched A to
+    matched B to A never flashes the wrong hull; HISTORY and search results
+    show no vessel photo. A sub-500 ms hover adds no image request; one stable
+    matched-vessel hover loads only the correct same-origin asset with
+    fixed-source and rights context. No hover makes a Wikimedia, Wikidata,
+    tracker, or image-provider request. Verify all eight same-origin assets
+    return `200` with immutable caching.
 17. With SHIPS hidden, matching results remain counted but cannot be selected.
     Re-enabling SHIPS restores map visibility without reconnecting MQTT or
     starting REST work.
@@ -1476,15 +1478,16 @@ the selected provider terms prohibit proxying and re-exposure.
 
 Vessel-photo acceptance requires no live image-provider request. Run
 `npm run check:vessel-photos`, build the exact application, and use
-deterministic live-vessel fixtures for all five reviewed IMOs plus one valid
+deterministic live-vessel fixtures for all eight reviewed IMOs plus one valid
 unmatched and one invalid IMO. Confirm exact image bytes, immutable headers,
-source/license navigation, no horizontal overflow, and no stale hull across A
-to B to A selection at desktop 1280x900 and mobile 390x844 and 390x568. At
-desktop width, prove a sub-500 ms hover adds no image request, a stable matched
-hover loads only its same-origin `/vessel-photos/` asset and presents the
-fixed-source/rights context, and unmatched or stale identity hover stays
-photo-free. HISTORY, search, and unmatched selections must add no image
-request, and no scenario may contact Wikimedia, Wikidata, or a tracker.
+source/license navigation, explicit invalid/unmatched unavailable wording, no
+horizontal overflow, and no stale hull across A to B to A selection at desktop
+1280x900 and mobile 390x844 and 390x568. At desktop width, prove a sub-500 ms
+hover adds no image request, a stable matched hover loads only its same-origin
+`/vessel-photos/` asset and presents the fixed-source/rights context, and
+unmatched or stale identity hover stays photo-free. HISTORY, search, and
+unmatched selections must add no image request, and no scenario may contact
+Wikimedia, Wikidata, or a tracker.
 
 Use local fixtures, fake clocks, fake maps, mocked fetch, and mocked MQTT for
 repeated lifecycle checks. A milestone needs one bounded real-provider browser

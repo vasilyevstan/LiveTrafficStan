@@ -187,14 +187,15 @@ IMO -> Wikidata QID -> fixed Commons file revision -> verified hull photograph
     -> author -> source -> selected license -> license URL -> exact credit
 ```
 
-Five reviewed ferry photos are bundled as versioned same-origin assets.
+Eight reviewed vessel photos are bundled as versioned same-origin assets.
 MMSI-only, vessel-name, fuzzy, arbitrary runtime P18, sister-ship, class, and
 model substitutions remain prohibited. Public pages from MarineTraffic,
 VesselFinder, ShipSpotting, JetPhotos, Airliners.net, or similar services are
 not integration or display-rights evidence.
 
 The vessel path makes no Planespotters, Commons, Wikidata, tracker, or Worker
-request at runtime and never appears in hover or HISTORY. See
+request at runtime, appears only after a stable eligible fine-pointer hover or
+in selected live details, and never appears in HISTORY. See
 [Vessel Reference Photo Evaluation](vessel-photo-evaluation.md) for its
 file-specific identity, rights, checksum, attribution, cache, and takedown
 contract.

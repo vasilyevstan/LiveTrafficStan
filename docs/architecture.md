@@ -256,7 +256,9 @@ Commons revision, selected license, and modification notice. After the
 existing 500 ms fine-pointer dwell, the compact map tooltip may load the same
 asset with fixed source, author, license, exact-IMO, and historical-reference
 context. Missing, invalid, unmatched, sub-dwell, search, marker, trail, and
-HISTORY states produce no image.
+HISTORY states produce no image. Live selected details distinguish invalid or
+missing AIS IMO from a valid exact IMO without reviewed coverage, while hover
+and historical surfaces remain photo-free.
 
 The image is a versioned same-origin file under `/vessel-photos/`, loaded only
 when a matching details card renders or the exact rendered hover remains

@@ -8,6 +8,11 @@ export type VesselReferencePhoto = ManifestPhoto & {
   manifestVersion: string
 }
 
+export type VesselReferencePhotoSelection =
+  | { kind: 'available'; photo: VesselReferencePhoto }
+  | { kind: 'invalid-imo' }
+  | { kind: 'unmatched'; imo: string }
+
 const IMO_WEIGHTS = [7, 6, 5, 4, 3, 2] as const
 
 export const isValidImo = (value: string) =>
@@ -39,18 +44,30 @@ if (photosByImo.size !== vesselPhotoManifest.photos.length) {
   throw new Error('Vessel photo manifest contains duplicate IMO entries')
 }
 
+export const vesselReferencePhotoSelection = (
+  vessel: Pick<Vessel, 'id' | 'imo'>,
+): VesselReferencePhotoSelection => {
+  const imo = canonicalImo(vessel.imo)
+  if (!imo) return { kind: 'invalid-imo' }
+
+  const photo = photosByImo.get(imo)
+  if (!photo) return { kind: 'unmatched', imo }
+
+  return {
+    kind: 'available',
+    photo: {
+      ...photo,
+      identityKey: `${vessel.id}|${imo}|${vesselPhotoManifest.manifestVersion}`,
+      manifestVersion: vesselPhotoManifest.manifestVersion,
+    },
+  }
+}
+
 export const vesselReferencePhotoForSelection = (
   vessel: Pick<Vessel, 'id' | 'imo'>,
 ): VesselReferencePhoto | undefined => {
-  const imo = canonicalImo(vessel.imo)
-  if (!imo) return undefined
-
-  const photo = photosByImo.get(imo)
-  if (!photo) return undefined
-
-  return {
-    ...photo,
-    identityKey: `${vessel.id}|${imo}|${vesselPhotoManifest.manifestVersion}`,
-    manifestVersion: vesselPhotoManifest.manifestVersion,
-  }
+  const selection = vesselReferencePhotoSelection(vessel)
+  return selection.kind === 'available'
+    ? selection.photo
+    : undefined
 }
