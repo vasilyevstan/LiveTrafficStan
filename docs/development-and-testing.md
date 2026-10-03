@@ -571,6 +571,72 @@ The A→B→A production exercise proves:
 
 ## Overall UI redesign (#276)
 
+The first released presentation pass (#280–#282) retained the two-corner
+silhouette. The follow-up source replaces that structure on the default,
+collapsed screen: a unified full-width masthead, a left desktop layer rail,
+and a bottom mobile command dock. More and Settings open adjacent panels or
+upward mobile sheets, while search and Center stay in the masthead. The
+historical release identities and their evidence below remain unchanged.
+
+### Distinct workspace correction (local evidence)
+
+The follow-up baseline is `a11efce3ae53f953af937d18de617c0097e37a86`,
+after the #280–#282 release, not the earlier interface. Matching collapsed
+More/Settings screenshots use identical aircraft fixtures, camera sequence,
+and a frozen display clock, in both Light and Dark. The same attribution
+disclosure state is retained across desktop-to-mobile resizing.
+
+| Default screen | Released baseline | Follow-up source |
+| --- | --- | --- |
+| 1280x900 | 420x118.25 top-left header; two 320 px top-right cards | Full-width 80 px masthead; 76x335 px left rail |
+| 390x844 | Tools at y=102–265.38 | 140 px masthead; 70 px dock at y=743.98 |
+| 390x568 | Tools at y=102–265.38 | 140 px masthead; 70 px dock at y=467.98 |
+| 315x517 | Tools at y=102–265.38 | 140 px masthead; 70 px dock at y=416.98 |
+
+Chrome 154.0.8037.95 rendered real MapLibre vector tiles with local traffic,
+MQTT, Photon, and validated curated/512-record Starlink fixtures. All 26
+Starlink pages and 512 unique entries were traversed. With selected details
+and the visible zoom prompt at 315x517, the final 61.16 px row fit inside a
+103 px sole scroll owner. With an 844 px layout and 517 px visual viewport,
+the selected row fit inside a 79 px body in **both** themes. Every measured
+row was topmost, fully visible, and free of nested or horizontal scrolling;
+the existing 58% maximum was retained. The reserved prompt stayed readable.
+
+Touch, wheel, and PageDown moved the More body by 136, 250, and 217 px;
+18 sequential Tabs reached the last row with a three-pixel focus ring.
+Trusted touch in the uncovered map strip moved the camera. Selection close,
+disclosure Escape, provider details, and attribution touch checks passed.
+The same map/canvas, one physical orbital worker, and one request per orbital
+catalog survived presentation/theme changes; 44 successful vector-tile
+responses and no runtime or console errors were recorded. LIVE, PARTIAL,
+PAUSED, OFFLINE, and HISTORY remained distinct. Mobile playback starts 12 px
+below the tools; Return to Live and all four speed labels remain reachable.
+Closing historical selection restores the dock.
+
+Separate 761/900/1024 px Light/Dark checks measured no masthead/rail overlap
+and at least 44x44 px primary actions. Trusted coordinate submission used the
+existing fit-padding/navigation path with zero Photon requests. Typing did
+not fetch; explicit named submission made one mocked request and exposed the
+empty result in Settings at 315x517. Escape restored the input; switching
+disclosures retained its identity/value, map, and marine connection.
+
+All required checks passed: lint, typecheck, **972 tests in 129 files**, the
+four required metadata/allocation/photo/orbital checks, and build. The existing
+Vite large-chunk advisory is unchanged. No package, font fetch, provider,
+worker, data model, dataset, viewport/framing policy, or cadence changed.
+
+Evidence is retained in the candidate worktree's
+`.ui-redesign-evidence/distinct-followup/`: matching `before/` and `final/`
+screens (`desktop-{light,dark}.png` and
+`mobile-{390x844,390x568,315x517}-{light,dark}.png`), `final/report.json`,
+`navigation-final/report.json`, the reused `navigation/breakpoint-*.png`,
+and `required-checks.log`. The reused harness is
+`.ui-redesign-evidence/distinct-followup/browser.mjs`. This is local development-server
+acceptance plus a separate production build, not deployment or physical
+iOS/Android/Safari evidence.
+
+### Initial presentation pass (local evidence)
+
 Local candidate verification on October 3, 2026 used Chrome
 154.0.8037.95 on macOS, real MapLibre rendering, mocked aircraft/MQTT/search
 responses, and the current validated curated/512-record Starlink fixture
@@ -688,17 +754,17 @@ Use `npm run dev` and verify:
    exclusive context, hiding/filtering the selected entity, or allowing it to
    expire clears selection safely. Failed navigation and ordinary same-entity
    refreshes do not.
-8. The default Operations and Location & Settings panels remain compact and
-   require no scroll. Center, Aircraft, Ships, and ORBITS stay visible above;
-   the one mounted location input stays visible below. Auto/Light/Dark and
-   Trails live under Appearance in **View & settings → More**. Other
+8. The default masthead, left desktop rail, and bottom mobile command dock
+   require no scroll. Center and the one mounted location input stay in the
+   masthead; Aircraft, Ships, ORBITS, More, and Settings stay in the dock.
+   Auto/Light/Dark and Trails live under Appearance in **Settings**. Other
    operational layers, discovery, context, and source detail live behind
-   **Explore map → More**; the duplicate traffic legend is absent. Location feedback,
+   **More** (Explore map); the duplicate traffic legend is absent. Location feedback,
    browser location, history setup, preferences, sharing, reset, and app detail
-   live behind Location & Settings More. Verify each panel promotes recovery
+   live in Settings. Verify each panel promotes recovery
    only from its own domain with no duplicated action or alert. Verify the
-   brand/status panel and fixed control column do not overlap at 1024, 900, or
-   761 CSS pixels. Measure each collapsed panel and the combined expanded stack
+   masthead, navigation, and rail do not overlap at 1024, 900, or 761 CSS pixels.
+   Measure the visible collapsed dock and the expanded stack separately
    at desktop, 390x844, and 390x568. With 20 orbital results, verify the outer
    Operations body is the only scroll owner, the final result is reachable by
    touch, wheel, Tab, and keyboard scrolling, search state and disclosure
@@ -712,6 +778,8 @@ Use `npm run dev` and verify:
    playback cursor, speed controls, and Return to Live remain separate from
    expanded settings; mobile historical details temporarily replace the tool
    rail and closing the detail restores it without losing disclosure state.
+   The mobile zoom/tilt prompt must remain readable above both selected
+   details and the open sheet, including the visual-viewport mismatch case.
    In both themes, open Provider details with touch and keyboard and verify
    that counts/age remain visible when closed, provider errors and regional
    limitations remain readable when open, and Escape restores summary focus.

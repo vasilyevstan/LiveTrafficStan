@@ -140,16 +140,19 @@ tombstone can be removed after Cloudflare confirms that deletion has applied.
 
 Presentation uses a shared opaque surface/token system: white Light panels
 and slate Dark panels, restrained borders and shadows, system typography,
-and a solid three-pixel keyboard focus ring. The compact header keeps traffic
+and a solid three-pixel keyboard focus ring. One edge-to-edge masthead groups
+the brand, explicit-submit location input, Center, and traffic status. It keeps
 mode, shown counts, regional marine coverage, and update age visible. Its
 native **Provider details** disclosure exposes independent transport/error
 messages and coverage limitations on every screen size; Escape closes it and
 restores summary focus. Presentation does not change provider state or polling.
 
-`TrafficControls` owns one location-search model and two stable native
-disclosures with the same `name`. The upper Operations panel keeps only Center,
-Aircraft, Ships, and ORBITS visible as icon-and-text actions. **Explore map**
-(More) separates secondary tools
+`TrafficControls` composes App's brand/status slot with navigation, one
+location-search model, and two stable native disclosures with the same `name`.
+Aircraft, Ships, ORBITS, **More**, and **Settings** form a left desktop rail
+and a bottom mobile command dock. Center stays with search in the masthead,
+not among layer toggles. **More** opens the Explore map panel beside the rail
+or above the dock and separates secondary tools
 into session-only Layers, Find, Context, Orbits, and Sources views; **VIEW**
 opens Orbits and focuses the first result without moving the map or fetching
 again. The task strip uses the same application button, focus, and active-state
@@ -158,26 +161,32 @@ Starlink child presents modeled, in-map, and next-pass counts before compact
 source/model caveats. The duplicate traffic legend is intentionally absent;
 textual state and limitations remain in controls and selected details. The
 collapsed orbital summary is omitted while the detailed Orbits view is open,
-avoiding repeated information and preserving result space. The lower Location
-& Settings panel keeps the single mounted location input visible. **View &
-settings** (More) owns Appearance (Auto/Light/Dark and Trails), search feedback,
+avoiding repeated information and preserving result space. The single mounted
+location input remains in the masthead when either panel is open. **Settings**
+opens View & settings and owns Appearance (Auto/Light/Dark and Trails), search feedback,
 browser location, history setup, preferences, sharing, reset, and application
 state. No controls or disclosure identities are duplicated or remounted.
 
 Opening either disclosure closes the other without remounting the search model.
 Operational recovery and app/storage/history recovery have separate promotion
-slots in their owning panels. Active HISTORY playback remains outside both
-disclosures. The expanded pair uses 58% of the current visual viewport, with
+slots beside/above the dock rather than extra default corner cards. Active
+HISTORY playback remains outside both disclosures. The expanded controls use
+at most 58% of the current visual viewport, with
 `dvh`/`vh` fallbacks when `window.visualViewport` is unavailable. Each
 disclosure body is its only vertical scroll owner; the task selector scrolls
 away rather than covering short-view results, and orbital results remain fully
-expanded inside the outer scroll region. Mobile navigation uses one compact row
-while collapsed and leaves an uncovered map strip. Live selected details have a
-separate height budget so they cannot cover the last result or its focus ring.
+expanded inside the outer scroll region. The mobile sheet leaves a 48 px map
+strip beside the control stack; the collapsed dock needs no scrolling.
+Live selected details occupy a right desktop inspector or a reserved mobile
+area below the masthead. A mobile ineligible-viewport prompt has its own row,
+so neither selection nor More can hide the zoom/tilt instruction. These
+separate height budgets keep the last result and its focus ring reachable.
 Mobile HISTORY playback also reserves its own bottom control area. Opening a
 historical object's detail sheet temporarily hides the tool rail, without
 resetting disclosure state or discarding the selected object; closing the sheet restores the rail,
-while the playback controls stay reachable throughout.
+while the playback controls stay reachable throughout. Mobile attribution opens
+above the command dock rather than beneath its buttons. None of these DOM/CSS
+positions changes the full-canvas viewport used by MapLibre or provider queries.
 
 ## Provider boundaries
 
