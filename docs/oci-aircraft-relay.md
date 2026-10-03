@@ -28,11 +28,11 @@ active on the relay VM with four IPv6 QUIC connections and a dedicated
 used only when a protected deployment selects `oci-private-relay`.
 
 The current application source is
-`d565b56278e81ff2478ab1e476c269084f2297d4`; it continues to use active
+`9f5ee37d9ad2bbeedb20a89ea08e7cd5629e36e8`; it continues to use active
 relay source `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8`, while
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` remains the relay rollback target.
-Canonical production run `37121314015` passed as running version
-`e9e473d1-fac5-4594-b62b-7ba68573efeb`.
+Canonical production run `37134585858`, attempt 2, passed as running version
+`85d1418b-3316-4299-9758-20810aa58898`.
 
 The first same-source run `36627068064` had already deployed healthy
 application, orbital, enrichment, weather, and marine surfaces as version
@@ -385,6 +385,21 @@ One exact-instance `DIAGNOSTICREBOOT` reached `STOPPING` at
 `11:55:46Z`; bounded probes progressed through four `502`s and one `504`
 before real aircraft JSON at `11:57:37Z`. Unchanged run `37121314015` passed
 the complete smoke as version `e9e473d1-fac5-4594-b62b-7ba68573efeb`.
+
+The UI release #282 encountered the same isolated failure in deployment
+`37134585858`, attempt 1: source `9f5ee37d...` and version
+`ef0ff9a6-6a28-46c2-ba1b-550e80674514` were deployed, with only private
+aircraft returning `502`. Static/orbital and direct ADSB.lol were healthy;
+Worker and relay source/configuration were unchanged. One exact-instance
+`DIAGNOSTICREBOOT` was requested at `2026-10-03T15:55:57.881Z`. Observed
+states were `STOPPING` at `15:55:59.771Z`, `STARTING` at `15:56:54.566Z`,
+and `RUNNING` at `15:57:27.107Z`. Bounded probes returned `502` at
+`15:58:16.540Z`, then real JSON with two aircraft at `15:58:39.121Z`.
+All eleven before/after resource groups, power state, and cost configuration
+matched. The unchanged workflow passed complete smoke at `15:59:57.387Z`
+as version `85d1418b-3316-4299-9758-20810aa58898`. No rollback, credential
+rotation, provider fallback, new resource, or network-policy change was used.
+This is recovery evidence, not a permanent repair; #174 remains open.
 
 After source `18082a1e...` activated the reviewed admission marker and smoke
 policy, canonical run `36642794309` passed. A separate bounded production

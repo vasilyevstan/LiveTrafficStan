@@ -569,7 +569,7 @@ The A→B→A production exercise proves:
   shell caches, preserves the unrelated cache, exact preferences/history
   settings, and three IndexedDB rows, and leaves retirement `/sw.js` available.
 
-## Overall UI redesign candidate (#276)
+## Overall UI redesign (#276)
 
 Local candidate verification on October 3, 2026 used Chrome
 154.0.8037.95 on macOS, real MapLibre rendering, mocked aircraft/MQTT/search
@@ -634,6 +634,41 @@ uncommitted in the isolated candidate worktree's `.ui-redesign-evidence/`
 directory (`before/`, `final/`, `browser.mjs`, and `required-checks.log`).
 Mobile/touch and visual-viewport evidence is browser emulation, not physical
 iOS/Android or Safari testing.
+
+### Released production acceptance
+
+Feature #280 and ancestry #281 promoted through #282 to exact application
+`9f5ee37d9ad2bbeedb20a89ea08e7cd5629e36e8`. Exact-main Validation
+`37134495129` and canonical deployment `37134585858` attempt 2 passed all
+970 tests in 129 files; full smoke passed at `2026-10-03T15:59:57.387Z`.
+The running Worker is `85d1418b-3316-4299-9758-20810aa58898`.
+
+Actual Chrome 154.0.8037.95 acceptance completed at `16:07:15.828Z` with no
+response fixtures. Light/Dark 1280x900, 390x844, 390x568, and 315x517 layouts
+retained the same canvas with no horizontal overflow. Visible collapsed
+panels ended at 232 px on desktop and 265.375 px on mobile, matching the
+candidate. Do not substitute the transparent control-stack maximum height
+for the measured visible panels.
+
+All 26 current Starlink pages were traversed. Keyboard Tab reached the
+topmost final row; trusted touch selected it. At 315x517 the selected row
+was 74.453 px tall inside a 91.625 px body. With an 844 px layout and
+517 px visual height, the selected row remained reachable inside the 239 px
+tool stack. Provider details/Escape and touch-opened attribution passed.
+There was one request per curated/Starlink catalog, no CelesTrak request,
+one physical orbital worker, seven successful vector-tile responses, and no
+observed runtime or console error. A transient aircraft `503` remained
+truthfully PARTIAL with marine independent; later captures showed LIVE
+aircraft. This is not an uninterrupted-provider-availability claim.
+
+Two CDP harness assumptions, not application bugs, were corrected: bare
+Enter without native text did not activate a button, and tapping an
+already-open attribution closed it. Pointer/touch selection worked; the
+final attribution assertion resumed on the same owned page without replaying
+accepted work. Reports and screenshots are retained under
+`ui-redesign-production/` and `ui-redesign-production-attempt1/` in the session
+artifacts, with [public production media on #282](https://github.com/vasilyevstan/LiveTrafficStan/pull/282).
+Physical mobile/Safari testing is not claimed.
 
 ## Browser smoke test
 

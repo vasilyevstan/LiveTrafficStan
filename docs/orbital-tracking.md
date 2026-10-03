@@ -20,7 +20,7 @@ This is cataloged orbital-object context, not another live-traffic provider:
   this feature.
 
 The browser implementation and scheduled catalog infrastructure are active in
-production source `d565b56278e81ff2478ab1e476c269084f2297d4`. The layer
+production source `9f5ee37d9ad2bbeedb20a89ea08e7cd5629e36e8`. The layer
 remains a default-off user preference, while the protected Worker deployment
 sets `ORBITAL_CATALOG_ENABLED=true`, serves the same-origin catalog route, and
 runs the checked two-hour scheduler. A deployment with that Worker flag off
@@ -559,11 +559,15 @@ scheduled KV/Durable Object boundary.
 ## Production activation and visibility evidence
 
 The current exact application release is
-`d565b56278e81ff2478ab1e476c269084f2297d4`, deployed by protected run
-[37121314015](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/37121314015)
+`9f5ee37d9ad2bbeedb20a89ea08e7cd5629e36e8`, deployed by protected run
+[37134585858, attempt 2](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/37134585858)
 as running Cloudflare version
-`e9e473d1-fac5-4594-b62b-7ba68573efeb`. It uses KV namespace
+`85d1418b-3316-4299-9758-20810aa58898`. It uses KV namespace
 `59178d55418247c4bab473b52a5dc07d` and Cron `17 */2 * * *`.
+The #282 overall UI release preserves the #275 sampling, acquisition, source,
+and compatibility contracts. Its real production acceptance additionally
+proved selected final-row reachability at 315x517 and under a shortened
+visual viewport; it does not replace the earlier density/publication evidence.
 Implementation PRs #232 and #233 supplied the source contract and browser
 consumer; #235 performed the coordinated catalog release. PR #243 added the
 compact rendered/pass summary and exact featured labels, and #246 performed

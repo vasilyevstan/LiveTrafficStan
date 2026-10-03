@@ -20,19 +20,20 @@ Worker selects that path only through the protected `oci-private-relay`
 deployment mode and fails closed rather than reverting to shared egress.
 Production source `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` and the relay
 originally activated the private path together. The current browser/Worker
-application is source `d565b56278e81ff2478ab1e476c269084f2297d4`.
-Canonical deployment run `37121314015` passed as Cloudflare version
-`e9e473d1-fac5-4594-b62b-7ba68573efeb` after one documented exact-instance
-diagnostic reboot recovered the independent VPC/Tunnel/guest `502` exposed by
-attempt `37120958690`. The application continues to use
+application is source `9f5ee37d9ad2bbeedb20a89ea08e7cd5629e36e8`.
+Canonical deployment run `37134585858`, attempt 2, passed as Cloudflare version
+`85d1418b-3316-4299-9758-20810aa58898` after one documented exact-instance
+diagnostic reboot recovered the independent private-transport `502` exposed
+by attempt 1. The application continues to use
 relay source `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8`; relay source
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` is retained as the relay rollback
 release.
 
-The current release adds two bounded behaviors without changing provider
-boundaries: Operations task controls use the application's compact
-active/focus hierarchy with metric-first Starlink context, and the same
-Starlink route negotiates a 512-record shell-balanced schema 2 while retaining
+The current release refreshes the complete map-first interface: shared
+Light/Dark surfaces, status and task hierarchy, focus treatment, and
+responsive details/playback. It changes no provider, worker, or sampling
+boundary. The earlier #275 Starlink release remains intact: the same
+route negotiates a 512-record shell-balanced schema 2 while retaining
 the fresh 150-record schema 1 for predecessor clients. The two public members
 come from one complete GP/SATCAT normalization and one final KV bundle write.
 The map still uses one MapLibre instance and one shared physical orbital
@@ -858,7 +859,7 @@ deployment flag, not an always-visible map surface. See
 [Hosting and Deployment](hosting-and-deployment.md) for release, version, and
 workflow evidence.
 
-The current application's byte-exact rollback target is source
+The #275 Starlink milestone's byte-exact rollback target was source
 `bba0bf4f7a69939e3c07fbeb24470fa959f6f20a`, recorded Cloudflare version
 `146e74df-c960-4a41-bc0c-6d5b9fa0d660`. Protected run `37129586003` proved
 that target and run `37129687283` restored source `d565b562...` / version
@@ -866,6 +867,10 @@ that target and run `37129687283` restored source `d565b562...` / version
 retained byte-identical bodies and the `2026-10-03T14:17:23.055Z` publication.
 Neither operation mutated the retained KV/coordinator namespaces, OCI relay source,
 Tunnel, or VPC Service.
+
+The subsequent #282 UI release's real predecessor is `d565b562...` /
+`e9e473d1-fac5-4594-b62b-7ba68573efeb`, not a later documentation-only commit.
+Its backend/provider contracts and protected rollback mechanism are unchanged.
 
 ## Navigation and viewport boundaries
 

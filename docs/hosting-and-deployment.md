@@ -43,9 +43,9 @@ no paid fallback is enabled. Orbital activation uses the included free KV and
 SQLite Durable Object allocations; R2 is not used.
 
 The current application source is
-`d565b56278e81ff2478ab1e476c269084f2297d4`. Protected deployment run
-`37121314015` passed as Cloudflare version
-`e9e473d1-fac5-4594-b62b-7ba68573efeb` with aircraft delivery through
+`9f5ee37d9ad2bbeedb20a89ea08e7cd5629e36e8`. Protected deployment run
+`37134585858`, attempt 2, passed as Cloudflare version
+`85d1418b-3316-4299-9758-20810aa58898` with aircraft delivery through
 `oci-private-relay`, aircraft photos, plausible routes, eight exact-IMO vessel
 photos, the curated orbital catalog, negotiated systematic/shell-balanced
 Starlink catalogs, and exact-NORAD enrichment enabled. It preserves KV
@@ -53,6 +53,35 @@ namespace `59178d55418247c4bab473b52a5dc07d`, one SQLite coordinator, and Cron
 `17 */2 * * *`. The matching relay runs
 `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8` and retains
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` as its prior release.
+
+The overall UI release used feature #280, tree-neutral ancestry #281, and
+checked dev-to-main #282. Exact-main Validation `37134495129` passed; the
+deployment ran 970 tests in 129 files and complete smoke passed at
+`2026-10-03T15:59:57.387Z`. Production Chrome acceptance completed at
+`16:07:15.828Z` with actual provider responses, both themes, short/mobile
+layouts, keyboard/touch, selected final orbital rows, and attribution.
+[Release evidence and screenshots](https://github.com/vasilyevstan/LiveTrafficStan/pull/282)
+separate local fixtures, real production observations, and browser emulation.
+
+Attempt 1 deployed version `ef0ff9a6-6a28-46c2-ba1b-550e80674514` but only
+aircraft smoke returned `502`; static/orbital and direct ADSB.lol were healthy.
+The recorded exact-instance diagnostic reboot recovered real aircraft JSON
+at `15:58:39.121Z`. All eleven before/after infrastructure groups and cost
+configuration were unchanged, and the unchanged workflow passed on attempt 2.
+Issue #174 remains the existing infrastructure reliability workstream.
+
+The real UI rollback predecessor is source
+`d565b56278e81ff2478ab1e476c269084f2297d4` / Worker
+`e9e473d1-fac5-4594-b62b-7ba68573efeb`. Restore it only through the existing
+protected rollback workflow with the same deployment flags for an evidenced
+release regression. No new rollback rehearsal was required for unchanged
+backend/provider contracts; earlier drills below remain historical evidence.
+Later documentation-only main commits do not replace the running application
+identity.
+
+Public Wiki commit `61b8be294ea39aed57f98440856c1847719cda87` publishes the
+matching twelve-page interface/release update and links the real production
+screenshots. It preserves earlier Starlink and rollback records as history.
 
 The initial curated-catalog release's immediate post-deploy proof returned:
 

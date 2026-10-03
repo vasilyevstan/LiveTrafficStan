@@ -6,7 +6,7 @@ single React application, without accounts, a database, or persistent tracking.
 
 Public production: <https://livetrafficstan.syntal.workers.dev>
 
-![LiveTrafficStan showing live aircraft and vessels around Tallinn](docs/images/live-traffic-map.png)
+![Released map-first Light interface with live aircraft and vessels around Tallinn](https://github.com/user-attachments/assets/00098d08-b551-4f83-911b-ed2ef96bfb97)
 
 ## Current features
 
@@ -127,8 +127,8 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   matching totals only after map display is available; before a settled raw
   zoom, details explicitly report map display unavailable. The coordinated
   source/browser contract was first released through #235 at exact application
-  source `538edd25afa49f62c13e93745b322099f662791d`; the current shell-balanced
-  Starlink release preserves it at
+  source `538edd25afa49f62c13e93745b322099f662791d`; the shell-balanced
+  Starlink milestone #275 preserved it at
   `d565b56278e81ff2478ab1e476c269084f2297d4`.
 - Issue #257 adds a separate remembered **STARLINK** child layer under
   **Operations -> More -> Orbits**. It starts off even when ORBITS is on and
@@ -547,15 +547,27 @@ persistent route cache.
 Public production is live at
 <https://livetrafficstan.syntal.workers.dev> on Cloudflare Workers Free with
 Static Assets. The current application source is
-`d565b56278e81ff2478ab1e476c269084f2297d4`, released through #272-#275.
-Deployment run `37120958690` published the exact source as version
-`32bffacf-3f90-4f9c-953b-bb50a6ec0ff4`, then isolated the documented
-aircraft-only private-relay `502`. Direct ADSB.lol remained healthy. One
-exact-instance `DIAGNOSTICREBOOT` progressed through `STOPPING` at
-`2026-10-03T11:54:26Z`, `STARTING` at `11:55:12Z`, and `RUNNING` at
-`11:55:46Z`; bounded probe 6 returned real aircraft JSON at `11:57:37Z`.
-Unchanged canonical deployment run `37121314015` then passed the complete
-smoke as Cloudflare version `e9e473d1-fac5-4594-b62b-7ba68573efeb`. The
+`9f5ee37d9ad2bbeedb20a89ea08e7cd5629e36e8`, released through #280-#282.
+Exact-main Validation `37134495129` passed, and canonical deployment
+`37134585858`, attempt 2, passed complete smoke at
+`2026-10-03T15:59:57.387Z` as Cloudflare version
+`85d1418b-3316-4299-9758-20810aa58898`. Both ran 970 tests in 129 files.
+The overall redesign changes presentation, not providers or orbital sampling.
+Its [real production screenshots and measured acceptance](https://github.com/vasilyevstan/LiveTrafficStan/pull/282)
+cover Light/Dark desktop, mobile, short screens, keyboard/touch, and selected
+orbital details.
+
+Attempt 1 exposed the existing aircraft-only relay `502` recurrence. One
+documented exact-instance diagnostic reboot recovered real aircraft JSON at
+`15:58:39.121Z`; all eleven before/after infrastructure groups and cost
+configuration were unchanged. The unchanged workflow then passed. Issue #174
+remains open for underlying infrastructure reliability; recovery is not a
+claim of a permanent repair.
+
+The real rollback predecessor is application
+`d565b56278e81ff2478ab1e476c269084f2297d4` / Worker
+`e9e473d1-fac5-4594-b62b-7ba68573efeb`, the accepted #275 Starlink release.
+Later documentation-only commits are not deployed application versions. This
 deployment preserves:
 
 - `oci-private-relay`, aircraft photos, and plausible routes enabled;
@@ -578,6 +590,16 @@ deployment preserves:
 - retained predecessor `starlink-2026-10-02-v1`, 150 systematic sample
   records from the same validated 11,125-record population, and digest
   `16233efe565c8f07f079ae4ad321219ae756931679d167fb2a3f2f52bf5a81d4`.
+
+The default desktop header is 420 px wide instead of 620 px. At 390x844 the
+visible collapsed tools end at 265.375 px instead of 337 px; the transparent
+58% control-stack budget is not visible overlay coverage. Final orbital rows
+remain reachable at 315x517 with a selected detail card, including the
+844-layout/517-visual-height case. The production run retained one map, one
+physical orbital worker, and one request per catalog. Transient aircraft
+HTTP `503` remained truthfully PARTIAL with independent marine operation;
+other captures showed LIVE aircraft. Chrome emulation is not physical
+iOS/Android or Safari evidence.
 
 The October 1 map follow-up was merged through #242, #243, #244, #245, and
 #246. Exact-merged-main validation run `36887570850` passed 119 files / 746
@@ -705,9 +727,10 @@ also record the Chrome-emulation, not physical-device, limitation.
 Protected predecessor rollback `37129586003` and exact restoration
 `37129687283` passed. Both restored KV representations retained byte-identical
 bodies, digests, ETags, and publication clocks without a provider acquisition
-or namespace/cadence reset. The overall visual redesign remains a separate
-open workstream in [#276](https://github.com/vasilyevstan/LiveTrafficStan/issues/276);
-compact controls are not its completion.
+or namespace/cadence reset. Those were the #275 Starlink milestone checks.
+The separate overall redesign in
+[#276](https://github.com/vasilyevstan/LiveTrafficStan/issues/276) subsequently
+shipped through #280-#282; it was not silently closed by the compact controls.
 
 Earlier #194 production-bundle acceptance used a deterministic 24-object
 crossing fixture and exposed all 20 bounded results at both 390x844 and 390x568.
@@ -821,11 +844,18 @@ real aircraft JSON, then exact-release marked local
 wait. Provider `503`, provider `429`, redirects, malformed policy, and failure
 to reach eventual real JSON remain release failures.
 
-Public Wiki commit `0d535744e4159cf5b12931db4bf14adf4d5521d9`
+Public Wiki commit `61b8be294ea39aed57f98440856c1847719cda87`
+synchronizes the overall redesign across twelve affected pages: interface
+navigation and themes, selected/history layout, architecture, real production
+acceptance and screenshots, operational recovery, release identity, and
+rollback. It records running application `9f5ee37d...`, independently of the
+later documentation-only repository promotion.
+
+Historical public Wiki commit `0d535744e4159cf5b12931db4bf14adf4d5521d9`
 synchronizes the shell-balanced release across fourteen pages, including the
 fresh scheduled publication, real production browser evidence,
 rollback/restoration, provider/privacy boundaries, and the separately open
-overall redesign in #276. It records application `d565b562...`, not a later
+overall redesign in #276 at that time. It records application `d565b562...`, not a later
 documentation-only repository commit.
 
 Traffic-recovery public Wiki commit
