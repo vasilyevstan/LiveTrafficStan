@@ -549,8 +549,8 @@ function App() {
       {
         worldMaximumZoom: APP_CONFIG.orbital.display.worldMaximumZoom,
         midMaximumZoom: APP_CONFIG.orbital.display.midMaximumZoom,
-        worldLimit: APP_CONFIG.starlink.maximumRecords,
-        midLimit: APP_CONFIG.starlink.maximumRecords,
+        worldLimit: APP_CONFIG.orbital.display.worldLimit,
+        midLimit: APP_CONFIG.orbital.display.midLimit,
         maximumRecords: APP_CONFIG.starlink.maximumRecords,
       },
     )

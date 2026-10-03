@@ -545,18 +545,31 @@ export const createAppConfig = (
     starlink: {
       endpointPath: DEFAULTS.starlinkEndpoint,
       acceptMediaType:
-        'application/vnd.livetrafficstan.starlink-catalog+json;version=1',
-      schemaVersion: 1,
-      sourceContractVersion: 1,
-      catalogId: 'celestrak-starlink-sample-v1',
+        'application/vnd.livetrafficstan.starlink-catalog+json;version=2, application/vnd.livetrafficstan.starlink-catalog+json;version=1;q=0.9',
+      schemaVersion: 2,
+      sourceContractVersion: 2,
+      catalogId: 'celestrak-starlink-shell-balanced-v1',
       gpSourceUrl:
         'https://celestrak.org/NORAD/elements/gp.php?GROUP=starlink&FORMAT=JSON',
       satcatSourceUrl:
         'https://celestrak.org/satcat/records.php?GROUP=starlink&FORMAT=JSON',
-      sampleLimit: 150,
-      sampleAlgorithm: 'inclination-raan-systematic-v1',
-      maximumBytes: 256 * 1_024,
-      maximumRecords: 150,
+      sampleLimit: 512,
+      sampleAlgorithm: 'inclination-shell-raan-phase-grid-v1',
+      compatibleContracts: [
+        {
+          mediaType:
+            'application/vnd.livetrafficstan.starlink-catalog+json;version=1',
+          schemaVersion: 1,
+          sourceContractVersion: 1,
+          catalogId: 'celestrak-starlink-sample-v1',
+          sampleLimit: 150,
+          sampleAlgorithm: 'inclination-raan-systematic-v1',
+          maximumRecords: 150,
+          shellBalanced: false,
+        },
+      ],
+      maximumBytes: 512 * 1_024,
+      maximumRecords: 512,
       maximumPopulationRecords: 15_000,
       maximumSourceBytes: 6 * 1_024 * 1_024,
       maximumAggregateSourceBytes: 12 * 1_024 * 1_024,

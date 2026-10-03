@@ -27,7 +27,7 @@ export const orbitalTooltipSummary = (
       title: position.name,
       details: [
         `${orbitalObjectTypeLabel(position.objectType)} · NORAD ${position.noradCatalogId}`,
-        'Starlink systematic sample',
+        'Starlink sample',
         'Modeled position · not live telemetry',
       ],
     }

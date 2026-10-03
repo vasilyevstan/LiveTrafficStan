@@ -149,7 +149,7 @@ describe('orbital tooltip', () => {
       title: 'STARLINK SAMPLE 20580',
       details: [
         'Payload · NORAD 20580',
-        'Starlink systematic sample',
+        'Starlink sample',
         'Modeled position · not live telemetry',
       ],
     })
@@ -173,7 +173,7 @@ describe('orbital tooltip', () => {
       ),
     ).toBe(false)
     expect(root.children.map(({ textContent }) => textContent)).toContain(
-      'Starlink systematic sample',
+      'Starlink sample',
     )
   })
 })

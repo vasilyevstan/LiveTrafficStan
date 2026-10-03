@@ -35,7 +35,7 @@ Worker command below for enabled ORBITS acceptance.
 | `npm run update:country-allocations` | Explicit maintainer regeneration from pinned open-licensed sources and canonical cross-checks |
 | `npm run check:orbital-catalog` | Network-free schema-2/canonical-digest validation of the curated bootstrap, pinned probe bytes/hashes/counts, immutable checksum/history guard, and both retained schema-1 rollback contracts |
 | `npm run update:orbital-catalog -- --source-dir <probe-dir> --summary <summary.json> --published-at <iso> --output public/orbital-data/<new-version>/catalog.json` | Explicit maintainer normalization of the already-downloaded fixed five-group evidence after exact URL/order/row/byte/SHA-256 checks; never fetches the provider and never reuses a published immutable version |
-| `npm run check:starlink-catalog` | Network-free validation of the pending or published immutable Starlink contract, exact source evidence, systematic sample, canonical digest, notice, and immutable history |
+| `npm run check:starlink-catalog` | Network-free validation of the published shell-balanced Starlink contract, exact retained source evidence, four fixed shell quotas, canonical digest/notice, immutable history, and byte-for-byte schema-1 predecessor |
 | `npm run update:starlink-catalog -- --source-dir <probe-dir> --summary <summary.json> --published-at <iso>` | One-time normalization of an already-downloaded paired Starlink GP/SATCAT acquisition; never fetches CelesTrak and never overwrites a published version |
 | `npm run check:orbital-enrichment` | Network-free validation of exact current NORAD/name/designator/type identity, official-source provenance, rights notice, immutable asset inventory, dimensions, size, and SHA-256 |
 | `npm run check:vessel-photos` | Network-free validation of exact IMO, source revision, rights, license notice, asset inventory, dimensions, size, and SHA-256 |
@@ -116,23 +116,33 @@ window opens; record exact URLs, completion timestamps, statuses, media types,
 decoded bytes, rows, and SHA-256 values. Run the normalizer once against those
 saved bytes. If local validation fails, fix it offline rather than requesting
 the provider again. `npm run check:starlink-catalog -- --require-bootstrap`
-then proves canonical serialization, exact sample indices, source-clock order,
-manifest/notice hashes, and the never-reused
-`starlink-2026-10-02-v1` path.
+then proves canonical serialization, source-clock order, all four
+128-record shell quotas, manifest/notice hashes, the never-reused
+`starlink-shell-balanced-2026-10-02-v1` path, and the unchanged
+`starlink-2026-10-02-v1` predecessor.
 
 The first published generation validates 11,125 GP and 11,125 SATCAT rows,
-8,383,437 decoded source bytes, zero extra SATCAT rows, 150 sample records,
-74,982 normalized bytes, and canonical digest
+8,383,437 decoded source bytes, and zero extra SATCAT rows. The schema-2
+bootstrap has 512 records / 254,275 bytes / digest
+`56db2f4d7ea342fa8b1e74f4e2f6567d1f6d416caedeefc021eed3d8a04b71c2`;
+the preserved schema-1 predecessor remains 150 records / 74,982 bytes /
+digest
 `16233efe565c8f07f079ae4ad321219ae756931679d167fb2a3f2f52bf5a81d4`.
+`scripts/starlink-density-replay.test.mjs` replays both immutable snapshots at
+145 ten-minute instants and fixes the Baltic and northern-European
+mean/median/p90/maximum/empty measurements.
 
 Starlink deterministic acceptance covers zero request while either parent or
 child is off; one same-origin request when effective; no request from camera,
 theme, filters, list paging, selection, or style changes; one physical worker
 with isolated channel disposal; owner-correct selection/details/tooltips;
-Light -> Dark -> Light image replacement; exact type silhouettes; 20-row
-keyboard paging and final-page reachability under the single Operations More
-scroll owner; desktop/mobile/touch layouts; and truthful partial operation when
-either curated or Starlink fails.
+Light -> Dark -> Light image replacement; exact type silhouettes; exact
+192/384/512 display tiers; all 26 20-row pages and final-page reachability under
+the single Operations More scroll owner; desktop/mobile/touch layouts; and
+truthful partial operation when either curated or Starlink fails. Route tests
+also cover schema-1 default/rollout compatibility, schema-2 negotiation,
+representation-specific ETags/`304`, cross-representation `200`, and stale-v2
+fallback to fresh schema 1 in one request.
 
 `npm run check:orbital-enrichment` does not fetch NASA. It verifies the
 committed two-record manifest against the committed visual catalog, requires

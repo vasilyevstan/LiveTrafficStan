@@ -220,6 +220,11 @@ export function OrbitalDetails({
   const enrichment = starlink
     ? undefined
     : orbitalEnrichmentForPosition(position)
+  const starlinkSample =
+    isStarlinkOrbitalCatalogSnapshot(snapshot) &&
+    snapshot.starlink.sampleAlgorithm.includes('shell')
+      ? 'Starlink shell-balanced inclination/RAAN/phase sample'
+      : 'Starlink inclination/RAAN systematic sample'
   const crossingValue = crossing?.currentlyInView
     ? 'In the visible map now'
     : crossing?.firstCrossingAt === undefined
@@ -289,7 +294,7 @@ export function OrbitalDetails({
           label="Layer"
           value={
             starlink
-              ? 'Starlink inclination/RAAN systematic sample'
+              ? starlinkSample
               : 'Curated orbital catalog'
           }
         />
@@ -351,7 +356,10 @@ export function OrbitalDetails({
         <a href={sourceUsagePolicyUrl}>usage policy</a> ·{' '}
         {isStarlinkOrbitalCatalogSnapshot(snapshot) ? (
           <>
-            systematic sample, not the full constellation · GP retrieved{' '}
+            {snapshot.starlink.sampleAlgorithm.includes('shell')
+              ? 'shell-balanced sample'
+              : 'systematic sample'}
+            , not the full constellation · GP retrieved{' '}
             {snapshot.starlink.sources.gp.retrievedAt} · SATCAT retrieved{' '}
             {snapshot.starlink.sources.satcat.retrievedAt}.
           </>

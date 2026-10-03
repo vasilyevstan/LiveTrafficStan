@@ -43,14 +43,21 @@ the five-group curated union. The observed paired source contains more than
 response. Loading the complete group would exceed the reviewed browser record,
 snapshot, SGP4, prediction, GeoJSON, picking, and mobile-density budgets.
 
-The selected contract therefore validates the complete paired population but
-publishes at most 150 deterministic records. After sorting by inclination,
-normalized right ascension of the ascending node, and numeric NORAD ID, sample
-slot `i` selects
-`floor((i + 0.5) * populationCount / sampleCount)`. The final sample is sorted
-by numeric NORAD ID. This stable systematic coverage supports bounded visual
-context; it does not assert statistical representativeness, completeness,
-current operation, or optical visibility.
+The released contract validates the complete paired population and preserves a
+150-record schema-1 representation. After sorting by inclination, normalized
+right ascension of the ascending node, and numeric NORAD ID, sample slot `i`
+selects `floor((i + 0.5) * populationCount / sampleCount)`.
+
+Issue #271 adds a schema-2 representation because that population-proportional
+sample contains only 32 objects capable of reaching Tallinn's latitude and is
+frequently empty over the Baltic. Schema 2 allocates exactly 128 records to
+each inclination band `<48`, `48-<60`, `60-<85`, and `>=85` degrees. Each band
+fills 16 RAAN by 8 phase targets. Phase is advanced from each element epoch to
+the common GP retrieval time before distance comparison; numeric NORAD ID is
+the equal-distance tie-breaker. The final 512 records are unique and
+canonically ordered. Both samples support bounded modeled context only; they do
+not assert statistical representativeness, completeness, current operation,
+or optical visibility.
 
 Starlink shares the existing CelesTrak Cron, Durable Object identity, KV
 namespace, global terminal state, and provider `Retry-After`. Curated work
@@ -74,7 +81,18 @@ the conservative 12-hour window. GP completed at `08:40:03Z` and SATCAT at
 extra SATCAT rows. The fixed algorithm published 150 records in a 74,982-byte
 canonical snapshot with digest
 `16233efe565c8f07f079ae4ad321219ae756931679d167fb2a3f2f52bf5a81d4`.
-No retry or second provider read was made.
+No retry or second provider read was made. The schema-2 immutable snapshot is
+254,275 bytes with digest
+`56db2f4d7ea342fa8b1e74f4e2f6567d1f6d416caedeefc021eed3d8a04b71c2`.
+Its shell populations are 3,616 / 5,111 / 871 / 1,527 and each contributes
+128 records.
+
+A deterministic 24-hour replay uses both immutable snapshots at 145
+ten-minute instants. In the Baltic box (54-70 N, 16-40 E), schema 1 averages
+0.269 objects and is empty 75.9% of the time; schema 2 averages 2.110 and is
+empty 7.6%, with median 2, p90 4, and maximum 6. In northern Europe
+(57.5-80 N, 15 W-40 E), schema 1 averages 0.655 and is empty 50.3%; schema 2
+averages 5.614 and is empty 0.7%, with median 6, p90 9, and maximum 11.
 
 Production release #267 activated that immutable sample at exact source
 `bba0bf4f7a69939e3c07fbeb24470fa959f6f20a`. Before the first safe provider

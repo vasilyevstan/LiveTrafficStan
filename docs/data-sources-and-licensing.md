@@ -795,24 +795,28 @@ its JavaScript-only modules directly to avoid bundling optional Node/WASM
 runtimes exposed by the package root. The distributed notice is
 [`/licenses/satellite-js-7.1.0-MIT.txt`](../public/licenses/satellite-js-7.1.0-MIT.txt).
 
-### Starlink systematic sample
+### Starlink bounded samples
 
 Issue #257 uses CelesTrak's official fixed `GROUP=starlink` GP/OMM and SATCAT
 JSON endpoints through the same protected server-side provider boundary. The
 complete observed source is too large for this browser contract, so
-LiveTrafficStan validates the full paired population and publishes at most 150
-records selected by the documented
-`inclination-raan-systematic-v1` algorithm. The sample is not described as the
+LiveTrafficStan validates the full paired population before sampling. The
+released schema-1 representation keeps 150 records selected by
+`inclination-raan-systematic-v1`. Issue #271 adds schema 2 with exactly
+512 records: 128 from each fixed inclination band `<48`, `48-<60`, `60-<85`,
+and `>=85` degrees, selected through a deterministic 16 RAAN by 8
+common-time-phase grid per band. Neither representation is described as the
 full, active, operational, visible, or statistically representative
 constellation.
 
 Every GP record requires one exact NORAD SATCAT match; duplicates,
 identity/type conflicts, malformed rows, partial responses, oversize bodies,
 or impossible retrieval order reject the whole refresh. The immutable
-`/orbital-data/starlink-2026-10-02-v1/` catalog and notice pin exact URLs,
-retrieval timestamps, record/byte counts, source SHA-256 values, population,
-extra validated SATCAT rows, sample algorithm, canonical digest, and sample
-size. Its path is never reused.
+`/orbital-data/starlink-2026-10-02-v1/` predecessor and
+`/orbital-data/starlink-shell-balanced-2026-10-02-v1/` schema-2 catalog each
+have a co-located notice pinning exact URLs, retrieval timestamps,
+record/byte counts, source SHA-256 values, population, extra validated SATCAT
+rows, algorithm, canonical digest, and sample size. Neither path is reused.
 
 The browser never contacts CelesTrak and sends no viewport, Home, geolocation,
 search, selection, cookie, credential, or referrer data. It reads only
@@ -826,8 +830,10 @@ completed at `08:40:03Z` with 11,125 rows / 4,699,409 decoded bytes / SHA-256
 SATCAT completed at `08:40:05Z` with 11,125 rows / 3,684,028 decoded bytes /
 SHA-256
 `ca962c8ce2601f0c6ad43da8c9ba1d9ca720950fa3cbaf6ef5e23d5467b2ad45`.
-The complete join had zero extra SATCAT rows. The published 150-record
-snapshot is 74,982 bytes with canonical digest
+The complete join had zero extra SATCAT rows. The schema-2 snapshot contains
+512 records, occupies 254,275 bytes, and has canonical digest
+`56db2f4d7ea342fa8b1e74f4e2f6567d1f6d416caedeefc021eed3d8a04b71c2`.
+The byte-for-byte predecessor remains 150 records / 74,982 bytes / digest
 `16233efe565c8f07f079ae4ad321219ae756931679d167fb2a3f2f52bf5a81d4`.
 
 ## Orbital purpose and images: reviewed NASA sources

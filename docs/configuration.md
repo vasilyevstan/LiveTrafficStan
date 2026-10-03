@@ -64,7 +64,7 @@ schema-1 assets remain read-only rollback/default-route candidates; no refresh
 writes the v1 key. The Durable Object class, binding, namespace, object name,
 and schema-1 admission row remain unchanged.
 
-Issue #257 reuses those exact resources. The existing Cron still enters the
+Issues #257 and #271 reuse those exact resources. The existing Cron still enters the
 same coordinator once; curated work runs first, then the coordinator may
 reserve the Starlink row immediately before its actual GP request. That second
 row enforces a 12-hour start interval without resetting curated cadence,
@@ -72,10 +72,14 @@ global terminal blocks, or `Retry-After`. On first activation, an absent row
 is seeded from the immutable bootstrap GP retrieval at
 `2026-10-02T08:40:03Z`, making the initial not-before boundary
 `2026-10-02T20:40:03Z`; the public bootstrap route remains usable before that
-boundary. Starlink publishes only to
-`orbital:catalog:v1:starlink-sample-v1` and falls back to immutable
-`/orbital-data/starlink-2026-10-02-v1/catalog.json`. Disabling the Starlink
-flag leaves curated acquisition and `/api/orbits/catalog` unchanged.
+boundary. The released v1 key and
+`/orbital-data/starlink-2026-10-02-v1/catalog.json` remain read-only
+compatibility evidence. Current refreshes publish one aligned schema-1/schema-2
+bundle to `orbital:catalog:v2:starlink-shell-balanced-v1`; schema 2 also has
+immutable fallback
+`/orbital-data/starlink-shell-balanced-2026-10-02-v1/catalog.json`.
+Disabling the Starlink flag leaves curated acquisition and
+`/api/orbits/catalog` unchanged.
 
 Current application source
 `bba0bf4f7a69939e3c07fbeb24470fa959f6f20a` sets both orbital flags to
@@ -155,9 +159,10 @@ spread through components:
 | Orbital prediction cancellation | One in flight plus latest desired request; yield every 8 objects |
 | Orbital display tiers | Exact settled raw zoom `<2`: 192; `2 <= zoom <4`: 384; zoom `>=4`: every matching safe position through 512; no settled raw zoom means unavailable with no subset/exception claim; one safe selected exception once display is available |
 | Starlink layer | Remembered/shareable child preference, off by default; effective only with ORBITS on and Live mode active |
-| Browser Starlink request | Literal same-origin `GET /api/orbits/starlink`; fixed vendor `Accept`; credentials/referrer omitted; 5-second deadline; 256 KiB / 150-record complete-response limit |
-| Starlink source and publication | Fixed official `starlink` GP then SATCAT pair; 6 MiB and 15,000 rows per response, 12 MiB aggregate, 60-second total deadline; exact joins and one final KV write |
-| Starlink cadence/sample | One actual-start SQLite reservation per 12 hours; at most 150 records selected by `inclination-raan-systematic-v1`; no retry, truncation, rotation, viewport request, or claim that the sample is representative/full |
+| Browser Starlink request | Literal same-origin `GET /api/orbits/starlink`; schema-2 then schema-1 vendor preference; credentials/referrer omitted; 5-second deadline; 512 KiB / 512-record complete-response limit; strict selected-media validation |
+| Starlink route compatibility | Missing/legacy `Accept` receives schema 1; negotiated schema 2 uses an independent ETag; both return `Vary: Accept`; combined requests may receive fresher schema 1 while schema 2 is older than the 24-hour expiry |
+| Starlink source and publication | Fixed official `starlink` GP then SATCAT pair; 6 MiB and 15,000 rows per response, 12 MiB aggregate, 60-second total deadline; one normalization and one final aligned schema-1/schema-2 bundle write |
+| Starlink cadence/sample | One actual-start SQLite reservation per 12 hours; schema 1 remains the exact 150-record `inclination-raan-systematic-v1` sample; schema 2 is exactly 512 records, 128 per fixed inclination band, selected by `inclination-shell-raan-phase-grid-v1`; no retry, truncation, rotation, viewport request, or completeness/representativeness claim |
 | Orbital catalog discovery | Query at most 64 characters; exact type/source-group filters; 20 rows per page |
 | Orbital selected track | 15 minutes; at most 31 points before gap/dateline splitting |
 | Orbital reviewed image | 5-second total deadline; exact manifest byte count, media type, and SHA-256; one fulfilled Blob URL or terminal failure per immutable asset in the running tab |

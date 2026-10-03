@@ -202,15 +202,16 @@ describe('OrbitalDetails', () => {
     const starlinkSnapshot: StarlinkOrbitalCatalogSnapshot = {
       ...snapshot,
       owner: 'starlink',
-      schemaVersion: 1,
-      sourceContractVersion: 1,
-      catalogId: 'celestrak-starlink-sample-v1',
+      schemaVersion: 2,
+      sourceContractVersion: 2,
+      catalogId: 'celestrak-starlink-shell-balanced-v1',
       records: [],
       starlink: {
         populationCount: 11_127,
         extraSatcatCount: 0,
-        sampleLimit: 150,
-        sampleAlgorithm: 'inclination-raan-systematic-v1',
+        sampleLimit: 512,
+        sampleAlgorithm: 'inclination-shell-raan-phase-grid-v1',
+        samplingReferenceTime: '2026-10-01T20:01:00.000Z',
         sources: {
           gp: {
             url: 'https://celestrak.org/NORAD/elements/gp.php?GROUP=starlink&FORMAT=JSON',
@@ -245,9 +246,13 @@ describe('OrbitalDetails', () => {
       />,
     )
 
-    expect(html).toContain('Starlink inclination/RAAN systematic sample')
+    expect(html).toContain(
+      'Starlink shell-balanced inclination/RAAN/phase sample',
+    )
     expect(html).toContain('11,127 validated records')
-    expect(html).toContain('systematic sample, not the full constellation')
+    expect(html).toContain(
+      'shell-balanced sample, not the full constellation',
+    )
     expect(html).toContain(
       'Purpose and image are not inferred for the Starlink sample',
     )

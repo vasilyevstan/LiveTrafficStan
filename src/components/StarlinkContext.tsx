@@ -177,12 +177,16 @@ export function StarlinkContext({
               <dt>Next {horizonMinutes}m</dt>
               <dd>
                 {counts.futureCrossingCount === undefined
-                  ? '…'
+                  ? counts.inFootprintCount === undefined
+                    ? '—'
+                    : '…'
                   : counts.futureCrossingCount}
               </dd>
               <span>
                 {counts.futureCrossingCount === undefined
-                  ? 'Updating'
+                  ? counts.inFootprintCount === undefined
+                    ? 'Unavailable'
+                    : 'Updating'
                   : counts.futureCrossingCount === 1
                     ? 'map pass'
                     : 'map passes'}
@@ -196,6 +200,14 @@ export function StarlinkContext({
               {snapshot.starlink.populationCount.toLocaleString('en-US')}{' '}
               source objects.
             </p>
+            {snapshot.starlink.shells && (
+              <p>
+                {snapshot.starlink.shells.length} inclination bands ·{' '}
+                {snapshot.starlink.shells
+                  .map((shell) => shell.sampleCount)
+                  .join('/')} sampled.
+              </p>
+            )}
             <p>
               GP{' '}
               {formatTimestamp(
@@ -222,7 +234,7 @@ export function StarlinkContext({
 
           <ul
             className="vessel-results orbital-results orbital-catalog-results"
-            aria-label="Starlink systematic sample results"
+            aria-label={`${sampleLabel} results`}
           >
             {catalogPage.rows.map((record) => {
               const id = orbitalFeatureId(

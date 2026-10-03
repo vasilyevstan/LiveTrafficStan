@@ -689,18 +689,27 @@ ORBITS, STARLINK, page visibility, and Live mode are all effective. Turning
 ORBITS off remembers the child preference but synchronously clears any
 Starlink selection and track.
 
-The layer is intentionally a maximum 150-record
-inclination/RAAN systematic sample of the validated source population, not the
-full constellation. Use the displayed population and sample counts before
-diagnosing missing objects. `S 0`, `S LOADING`, `S UNAVAILABLE`, and a numeric
-Starlink count describe only that channel; curated objects may continue
-working. Likewise, a curated failure must not hide a working Starlink count.
+The layer is intentionally bounded, not the full constellation. Current
+schema 2 contains exactly 512 records: 128 from each fixed inclination band
+`<48`, `48-<60`, `60-<85`, and `>=85` degrees, spread across RAAN and
+common-time orbital phase. Predecessor schema 1 contains the released 150
+inclination/RAAN systematic records. Use the displayed sample label,
+population, shell quotas, and modeled/map/pass counts before diagnosing
+missing objects. `S 0`, `S LOADING`, `S UNAVAILABLE`, and a numeric Starlink
+count describe only that channel; curated objects may continue working.
+Likewise, a curated failure must not hide a working Starlink count.
 
 Check literal `GET /api/orbits/starlink`:
 
 - `404` means the protected Starlink flag or parent orbital flag is off;
 - `200` with source `bootstrap` or `kv` is a complete validated sample;
-- `304` must repeat identity/digest/publication/serve/release headers;
+- missing/legacy `Accept` should return schema 1, while the fixed browser
+  preference normally returns schema 2;
+- during rollout, a combined request may truthfully return fresher schema 1
+  while an old schema-2 bootstrap is beyond 24 hours;
+- `Vary: Accept` and representation-specific ETags are required;
+- `304` must repeat identity/digest/publication/serve/release headers and must
+  match the requested representation;
 - `503` means no valid candidate or an equal-generation digest conflict.
 
 Do not manually refresh CelesTrak. The separate SQLite admission row permits
@@ -732,9 +741,12 @@ final KV write. Do not call the scheduler or provider manually.
 
 If KV is healthy but requests time out, verify the immutable asset binding:
 bootstrap fallback must stop within 1.5 seconds and cannot consume the
-browser's full five-second deadline. If a non-payload Starlink object displays
-the flat-panel payload icon, or details show curated purpose/image, record its
-NORAD/type/owner and treat that as an identity-boundary regression.
+browser's full five-second deadline. Validate the schema-2 body under the
+512 KiB cap, four exact 128-record quotas, canonical order, sampling reference
+time, digest, media type, and response headers. If a non-payload Starlink
+object displays the flat-panel payload icon, or details show curated
+purpose/image, record its NORAD/type/owner and treat that as an
+identity-boundary regression.
 
 ## ORBITS is empty, paused, or clock invalid
 
