@@ -28,14 +28,11 @@ active on the relay VM with four IPv6 QUIC connections and a dedicated
 used only when a protected deployment selects `oci-private-relay`.
 
 The current application source is
-`bba0bf4f7a69939e3c07fbeb24470fa959f6f20a`; it continues to use active
+`d565b56278e81ff2478ab1e476c269084f2297d4`; it continues to use active
 relay source `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8`, while
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` remains the relay rollback target.
-Canonical production run `36997443034`, successful attempt 3, initially
-published version `63e5a14d-7115-44aa-9386-36b13b5ff91d`. Protected
-rollback/restoration runs `36998162009` and `36998245095` then returned the
-same exact current source as running version
-`146e74df-c960-4a41-bc0c-6d5b9fa0d660`.
+Canonical production run `37121314015` passed as running version
+`e9e473d1-fac5-4594-b62b-7ba68573efeb`.
 
 The first same-source run `36627068064` had already deployed healthy
 application, orbital, enrichment, weather, and marine surfaces as version
@@ -377,6 +374,17 @@ remained `502`; the fifth returned real aircraft JSON at `10:44:21Z`.
 Unchanged deployment attempt 2 then met an unrelated AWC METAR `504` after
 aircraft passed, and unchanged attempt 3 passed the complete smoke. Do not
 apply the OCI recovery to an isolated weather-provider failure.
+
+The shell-balanced Starlink deployment repeated the same independent
+infrastructure recurrence. Run `37120958690` published exact application
+source `d565b56278e81ff2478ab1e476c269084f2297d4` as version
+`32bffacf-3f90-4f9c-953b-bb50a6ec0ff4`, then only aircraft smoke returned
+`502`. Direct ADSB.lol and all non-aircraft production surfaces were healthy.
+One exact-instance `DIAGNOSTICREBOOT` reached `STOPPING` at
+`2026-10-03T11:54:26Z`, `STARTING` at `11:55:12Z`, and `RUNNING` at
+`11:55:46Z`; bounded probes progressed through four `502`s and one `504`
+before real aircraft JSON at `11:57:37Z`. Unchanged run `37121314015` passed
+the complete smoke as version `e9e473d1-fac5-4594-b62b-7ba68573efeb`.
 
 After source `18082a1e...` activated the reviewed admission marker and smoke
 policy, canonical run `36642794309` passed. A separate bounded production

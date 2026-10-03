@@ -43,16 +43,14 @@ no paid fallback is enabled. Orbital activation uses the included free KV and
 SQLite Durable Object allocations; R2 is not used.
 
 The current application source is
-`bba0bf4f7a69939e3c07fbeb24470fa959f6f20a`. Protected deployment run
-`36997443034`, successful attempt 3, initially published Cloudflare version
-`63e5a14d-7115-44aa-9386-36b13b5ff91d` with aircraft delivery through
+`d565b56278e81ff2478ab1e476c269084f2297d4`. Protected deployment run
+`37121314015` passed as Cloudflare version
+`e9e473d1-fac5-4594-b62b-7ba68573efeb` with aircraft delivery through
 `oci-private-relay`, aircraft photos, plausible routes, eight exact-IMO vessel
-photos, the curated orbital catalog, the bounded Starlink catalog, and
-exact-NORAD enrichment enabled. Protected rollback run `36998162009` proved
-the predecessor, and restoration run `36998245095` returned the exact current
-source as the running version `146e74df-c960-4a41-bc0c-6d5b9fa0d660`. It
-preserved KV namespace `59178d55418247c4bab473b52a5dc07d`, one SQLite
-coordinator, and Cron `17 */2 * * *`. The matching relay runs
+photos, the curated orbital catalog, negotiated systematic/shell-balanced
+Starlink catalogs, and exact-NORAD enrichment enabled. It preserves KV
+namespace `59178d55418247c4bab473b52a5dc07d`, one SQLite coordinator, and Cron
+`17 */2 * * *`. The matching relay runs
 `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8` and retains
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` as its prior release.
 
@@ -104,8 +102,8 @@ iOS/Android evidence was unavailable and is not claimed. The full measured
 record and screenshots are attached to
 [#246](https://github.com/vasilyevstan/LiveTrafficStan/pull/246#issuecomment-5935337522).
 
-The final public Wiki synchronization is commit
-`bac76a2994a09e85e1162c5724a6071f0fc35540`. It records the current
+The traffic-recovery public Wiki synchronization is commit
+`bac76a2994a09e85e1162c5724a6071f0fc35540`. It records that predecessor
 production identity, live-traffic recovery, physical vessel sizing, eight
 exact-IMO photos, bounded Starlink lifecycle and scheduled publication,
 browser acceptance, independent relay recovery, rollback/restoration,
@@ -749,7 +747,8 @@ can arrive seconds before the exact two-hour admission boundary and return
 That curated release remains historical rollback evidence for the map
 follow-up: source `538edd25afa49f62c13e93745b322099f662791d`, recorded
 Cloudflare version `83b98933-a609-405e-b07c-3e4f4ded46e8`. The current
-traffic-recovery release instead uses predecessor source
+shell-balanced release uses the rollback target recorded below. The earlier
+October 2 traffic-recovery release used predecessor source
 `9e1d8c23f9047d0bf57b12bd4abc7d5fcae90f63` and version
 `d83f68ae-907e-4b2d-a086-00b4fde00372`, proven by run `36998162009`.
 
@@ -826,6 +825,41 @@ The predecessor remains 150 records / 74,982 bytes / digest
 `16233efe565c8f07f079ae4ad321219ae756931679d167fb2a3f2f52bf5a81d4`.
 Deployment smoke feature-detects predecessor and dual-representation targets
 instead of imposing the current contract on an older rollback.
+
+The ordinary `2026-10-03T14:17Z` event published one fresh 150/512-record
+bundle at `14:17:23.055Z`. GP retrieval was `14:17:20.296Z`; SATCAT retrieval
+was `14:17:23.055Z`. Both representations reported `source=kv`, exact release
+`d565b562...`, and aligned source metadata. Full record/digest validation and
+all ten negotiation/ETag cases passed. The source hashes and exact body
+identities are recorded in
+[Orbital Data Source Evaluation](orbital-data-source-evaluation.md).
+
+Protected rollback
+[37129586003](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/37129586003)
+restored predecessor application
+`bba0bf4f7a69939e3c07fbeb24470fa959f6f20a` / recorded Worker version
+`146e74df-c960-4a41-bc0c-6d5b9fa0d660` and passed target-aware smoke.
+Protected restoration
+[37129687283](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/37129687283)
+restored `d565b56278e81ff2478ab1e476c269084f2297d4` /
+`e9e473d1-fac5-4594-b62b-7ba68573efeb` and passed full dual-representation
+smoke at `14:28:39Z`. At `14:30:12.614Z`, both fresh KV bodies, canonical
+digests, ETags, and publication clocks remained byte-identical to pre-rollback
+evidence. The workflows preserved production serialization, the existing
+namespaces, Cron, and both cadence rows; no manual provider acquisition or
+secret mutation was needed.
+
+Exact-production Chrome `154.0.8037.95` used no catalog response fixtures and
+passed the 512-record lifecycle and responsive acceptance.
+[Desktop/mobile screenshots and measured
+evidence](https://github.com/vasilyevstan/LiveTrafficStan/pull/275#issuecomment-5970127249)
+remain separate from the earlier candidate fixtures and physical-device
+evidence remains unavailable. Later documentation-only commits do not change
+the running application SHA.
+
+Public Wiki commit `0d535744e4159cf5b12931db4bf14adf4d5521d9` records this
+same release, publication, production acceptance, and rollback/restoration
+across fourteen pages.
 
 At twelve scheduled events per day, the coordinator uses approximately twelve
 Durable Object requests and a few row reads/writes per day, while successful
@@ -1043,7 +1077,8 @@ gh workflow run deploy-production.yml \
   -f aircraft_delivery=oci-private-relay \
   -f aircraft_photo_enabled=true \
   -f flight_route_enabled=true \
-  -f orbital_catalog_enabled=true
+  -f orbital_catalog_enabled=true \
+  -f starlink_catalog_enabled=true
 ```
 
 The workflow:

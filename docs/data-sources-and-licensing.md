@@ -104,7 +104,7 @@ identity, the same fixed point route and User-Agent, one aggregate upstream
 start per 20 seconds, and provider `Retry-After` backoff. It does not rotate
 addresses, add a provider, alter attribution, or claim additional capacity
 permission. Production application source
-`bba0bf4f7a69939e3c07fbeb24470fa959f6f20a` uses active relay source
+`d565b56278e81ff2478ab1e476c269084f2297d4` uses active relay source
 `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8` through the fixed Workers VPC
 Service and private Tunnel, with
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` retained as relay rollback; see
@@ -281,10 +281,10 @@ the fixed Commons revision and shows author, source, license, exact-IMO, and
 historical-reference context. No Wikimedia, Wikidata, tracker, gallery, image
 API, Worker proxy, KV, R2, Web Storage, IndexedDB, or service-worker cache is
 involved. Missing, invalid, unmatched, historical, and sub-dwell hover vessels
-receive no photo. Production source
-`bba0bf4f7a69939e3c07fbeb24470fa959f6f20a` serves immutable generation
-`2026-10-02-v1`; exact Chrome acceptance loaded all eight declared assets with
-their image MIME types and one-year immutable caching, distinguished
+receive no photo. Current production source
+`d565b56278e81ff2478ab1e476c269084f2297d4` retains immutable generation
+`2026-10-02-v1`; release #267 exact Chrome acceptance loaded all eight declared
+assets with their image MIME types and one-year immutable caching, distinguished
 missing/invalid IMO from valid-but-uncovered IMO, and made zero external
 photo-provider request. See
 [Vessel Reference Photo Evaluation](vessel-photo-evaluation.md) for the
@@ -835,6 +835,14 @@ The complete join had zero extra SATCAT rows. The schema-2 snapshot contains
 `56db2f4d7ea342fa8b1e74f4e2f6567d1f6d416caedeefc021eed3d8a04b71c2`.
 The byte-for-byte predecessor remains 150 records / 74,982 bytes / digest
 `16233efe565c8f07f079ae4ad321219ae756931679d167fb2a3f2f52bf5a81d4`.
+
+Release #275 activates same-route negotiation without changing the provider
+boundary. Default and legacy requests retain schema 1; the browser prefers
+schema 2 and permits schema 1 as a freshness fallback. Each representation has
+its own ETag and conditional `304`, responses use `Vary: Accept`, and the
+other representation's validator returns `200`. No browser request, viewport,
+Home, geolocation, search, selection, cookie, credential, or referrer is added
+to the fixed server-side CelesTrak pair.
 
 ## Orbital purpose and images: reviewed NASA sources
 

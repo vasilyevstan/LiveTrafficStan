@@ -389,6 +389,18 @@ and empty time falls from 75.9% to 7.6%; northern Europe rises from 0.655 to
 5.614 and falls from 50.3% empty to 0.7%. The released schema-1 immutable bytes
 and key remain untouched rollback evidence.
 
+Release #275 deploys this contract at exact application source
+`d565b56278e81ff2478ab1e476c269084f2297d4`. Immediate negotiation evidence
+confirms the intended rollout: default, wildcard, and combined clients receive
+the fresher schema-1 KV member while the immutable schema-2 bootstrap is
+beyond the browser expiry; exact schema-2 clients can still inspect that
+bootstrap. Independent ETags/`304`, cross-representation `200`, `Vary:
+Accept`, and explicit `q=0` exclusion prevent cache or preference ambiguity.
+Only an ordinary admitted Cron may replace both members with one aligned fresh
+bundle. The ordinary `2026-10-03T14:17Z` event did so at `14:17:23.055Z`;
+full production record/digest and negotiation checks passed, and protected
+rollback/restoration retained both representations byte-identically.
+
 ## Reviewed exact-NORAD manifest, not inferred orbital missions
 
 Issue #193 uses a tiny bundled manifest for purpose and image context rather
