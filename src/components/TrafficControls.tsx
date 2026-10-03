@@ -497,25 +497,6 @@ export function TrafficControls({
     <>
     <header className="brand-panel">
       {masthead}
-      <div className="workspace-navigation" role="group" aria-label="Map navigation">
-        <LocationSearchInput
-          model={locationSearch}
-          inputRef={locationSearchInputRef}
-          maximumQueryLength={maximumLocationQueryLength}
-          searchState={placeSearchState}
-          disabled={locationNavigationDisabled}
-        />
-        <button
-          className="workspace-center"
-          type="button"
-          disabled={centerDisabled}
-          onClick={onCenter}
-          title="Center on session Home"
-        >
-          <OperationIcon name="center" />
-          CENTER
-        </button>
-      </div>
     </header>
     <div className="control-stack" aria-label="Map controls">
       <div className="workspace-dock">
@@ -997,6 +978,31 @@ export function TrafficControls({
             tabIndex={0}
           >
             <p className="workspace-panel-title">View &amp; settings</p>
+            <div className="workspace-navigation" role="group" aria-label="Map navigation">
+              <LocationSearchInput
+                model={locationSearch}
+                inputRef={locationSearchInputRef}
+                maximumQueryLength={maximumLocationQueryLength}
+                searchState={placeSearchState}
+                disabled={locationNavigationDisabled}
+              />
+              <button
+                className="workspace-center"
+                type="button"
+                disabled={centerDisabled}
+                onClick={onCenter}
+                title="Center on session Home"
+              >
+                <OperationIcon name="center" />
+                CENTER
+              </button>
+            </div>
+            <LocationSearchDetails
+              model={locationSearch}
+              activeLabel={activeLocationLabel}
+              searchState={placeSearchState}
+            />
+
             <fieldset className="control-group">
               <legend>Appearance</legend>
               <div
@@ -1032,12 +1038,6 @@ export function TrafficControls({
                 </button>
               </div>
             </fieldset>
-
-            <LocationSearchDetails
-              model={locationSearch}
-              activeLabel={activeLocationLabel}
-              searchState={placeSearchState}
-            />
 
             <fieldset className="control-group">
               <legend>View</legend>

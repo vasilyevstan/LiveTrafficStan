@@ -85,7 +85,7 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   **ORBITS** stays beside **AIRCRAFT** and **SHIPS** in the layer dock;
   its compact summary reports how many markers are actually shown in the
   current map plus predicted passes within 90 minutes and is mirrored in the
-  masthead's Provider details without changing aircraft/marine health.
+  floating status card's Provider details without changing aircraft/marine health.
   **More → Orbits** separates Nearby crossings from complete
   Catalog discovery. Search and exact type/source-group filters are local to
   the accepted snapshot; no camera, search, filter, selection, or theme change
@@ -216,21 +216,22 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   bounded current/predecessor shell caches, and a tested retirement build that
   removes only application-shell caches without deleting preferences or private
   history.
-- A minimal map workspace in this source: a compact masthead joins the
-  brand, explicit-submit search, Center, and truthful traffic status. The
+- A minimal map workspace in this source: a 280x88 px floating card joins the
+  brand and truthful traffic status without an edge-to-edge top bar. The
   existing buttons form a right desktop rail with inward-opening panels and
   remain a bottom mobile command dock. Selected details use a left desktop
-  inspector or a reserved mobile sheet. The bar is 56 px on wide desktops,
-  104 px at intermediate widths, and 120 px on phones; no search or status
-  action is removed to save space.
+  inspector below the card or a reserved mobile sheet. The card is inset
+  16 px on desktops and 12 px on phones; the mobile dock remains 70 px tall.
   White Light and slate Dark surfaces share system typography and one accent.
   Counts, regional marine coverage, freshness, and traffic mode remain visible;
   **Provider details** opens independent provider messages on every screen size.
 - **More** (Explore map) and **Settings** (View & settings) open beside the
   desktop rail or above the mobile dock. These stable native disclosures
   retain one scroll owner per panel and session-only
-  Layers/Find/Context/Orbits/Sources views. Location input stays immediately
-  available; Auto/Light/Dark and Trails live under **Appearance** in settings.
+  Layers/Find/Context/Orbits/Sources views. **Settings** groups the single
+  explicit-submit location input, **Center**, results, and search privacy text
+  before **Appearance**. These stay mounted when Settings is closed;
+  Auto/Light/Dark and Trails remain under Appearance.
   The mobile zoom/tilt prompt, selected details, and HISTORY playback reserve
   their own space; closing historical details restores the same tool state.
   Visual-viewport-aware sizing, solid keyboard focus rings, non-color

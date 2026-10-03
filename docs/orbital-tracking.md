@@ -51,7 +51,7 @@ modeled population. A compatible map with a pending prediction says **PASSES
 UPDATING** rather than zero. **VIEW** opens the existing disclosure and the
 Orbits task without another disclosure. The task has separate **Nearby** and
 **Catalog** views while the existing More body remains the only vertical scroll
-owner. The masthead's Provider details mirrors the compact ORBITS state;
+owner. The floating card's Provider details mirrors the compact ORBITS state;
 the redundant brand subtitle is hidden in the minimal layout. Its **LIVE**,
 **PARTIAL**, and **OFFLINE** health still describes only aircraft and marine
 providers, so modeled orbital availability cannot mask a traffic outage.

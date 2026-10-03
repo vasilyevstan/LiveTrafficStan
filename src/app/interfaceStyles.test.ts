@@ -62,15 +62,17 @@ describe('interface presentation contracts', () => {
     expect(styles).toContain('outline: 3px solid var(--focus-ring)')
   })
 
-  it('uses a compact masthead and preserves the mobile bottom dock', () => {
-    expect(styles).toMatch(/\.brand-panel\s*\{[^}]*top: 0;[^}]*right: 0;[^}]*left: 0;/)
-    expect(styles).toContain("grid-template-areas: 'brand navigation status'")
-    expect(styles).toContain('--workspace-masthead-height: 56px')
-    expect(styles).toContain('--workspace-masthead-height: 104px')
-    expect(styles).toContain('--workspace-masthead-height: 120px')
-    expect(styles).toContain('grid-template-rows: 24px 44px 44px')
+  it('floats a compact status card and preserves the mobile bottom dock', () => {
+    expect(styles).toMatch(/\.brand-panel\s*\{[^}]*top: 16px;[^}]*left: 16px;/)
+    expect(styles).toMatch(/\.brand-panel\s*\{[^}]*width: min\(280px, calc\(100vw - 24px\)\);/)
+    expect(styles).not.toMatch(/\.brand-panel\s*\{[^}]*width: 100%;/)
+    expect(styles).not.toContain("grid-template-areas: 'brand navigation status'")
+    expect(styles).toContain('--workspace-header-bottom: 104px')
+    expect(styles).toContain('--workspace-header-bottom: 100px')
+    expect(styles).not.toContain('--workspace-masthead-height')
+    expect(styles).toMatch(/\.live-status__providers\s*\{[^}]*top: calc\(100% \+ 8px\);[^}]*left: 0;/)
     expect(styles).toContain('.workspace-dock {')
-    expect(styles).toContain('top: calc(var(--workspace-masthead-height) + 16px)')
+    expect(styles).toContain('top: calc(var(--workspace-header-bottom) + 16px)')
     expect(styles).toContain('top: calc(var(--app-visual-viewport-height) - var(--control-stack-height) - 30px)')
     expect(styles).toContain('bottom: calc(78px + var(--workspace-note-height))')
     expect(styles).not.toContain('--mobile-controls-top')
@@ -80,7 +82,7 @@ describe('interface presentation contracts', () => {
   })
 
   it('anchors desktop controls right, opens panels inward and keeps details opposite', () => {
-    expect(styles).toMatch(/\.control-stack\s*\{[^}]*right: 16px;[^}]*left: auto;/)
+    expect(styles).toMatch(/\.control-stack\s*\{[^}]*top: 16px;[^}]*right: 16px;[^}]*left: auto;/)
     expect(styles).toMatch(/\.control-panel__more-body\s*\{[^}]*right: calc\(100% \+ 12px\);[^}]*left: auto;/)
     expect(styles).toMatch(/\.control-panel__urgent\s*\{[^}]*right: calc\(100% \+ 12px\);[^}]*left: auto;/)
     expect(styles).toMatch(/\.details-panel\s*\{[^}]*right: auto;[^}]*left: 16px;/)

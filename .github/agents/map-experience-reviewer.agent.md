@@ -130,10 +130,12 @@ Check these project invariants:
 - Added controls must not let the mobile overlay consume the entire map.
   Verify a real touch drag starts on an unobscured map region at both 390x844
   and 390x568 while the control panel remains scrollable and reachable.
-- Keep the accepted minimal controls compact and task-based: search and Center
-  stay in the masthead, while the existing buttons occupy the right desktop
-  rail or mobile bottom dock. Desktop panels open inward and the inspector is
-  opposite; a smaller header must not hide provider status or primary actions.
+- Keep the accepted minimal controls compact and task-based: a 280 px floating
+  brand/status card replaces the top bar. Do not reintroduce an edge-to-edge
+  header. Search, Center, results and privacy text stay together in Settings,
+  while the existing buttons occupy the right desktop rail or mobile bottom
+  dock. Desktop panels open inward and the inspector is opposite below the
+  card; keep counts, freshness, coverage and Provider details visible.
   Appearance groups Auto/Light/Dark and Trails inside settings. More and
   Settings remain stable mutually exclusive native disclosures. Operational and
   app/storage/history recovery may each be promoted only above their owning
