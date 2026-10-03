@@ -3,6 +3,7 @@ import {
   useState,
   type FocusEvent,
   type MutableRefObject,
+  type ReactNode,
   type Ref,
   type SyntheticEvent,
 } from 'react'
@@ -45,6 +46,7 @@ import { OrbitalContext } from './OrbitalContext'
 import { StarlinkContext } from './StarlinkContext'
 
 interface TrafficControlsProps {
+  masthead?: ReactNode
   aircraftQuery: string
   aircraftResults: readonly DisplayAircraft[]
   totalAircraft: number
@@ -188,6 +190,8 @@ const operationIcons = {
   aircraft: 'm12 3 2 7 6 4v2l-6-2v4l2 2v1l-4-1-4 1v-1l2-2v-4l-6 2v-2l6-4 2-7Z',
   ships: 'M5 12V7h14v5M9 7V4h6v3M3 13l9-3 9 3-3 5H6l-3-5Zm0 8 3-1 3 1 3-1 3 1 3-1 3 1',
   orbits: 'M12 3a9 9 0 1 0 9 9M12 7a5 5 0 1 0 5 5m0-7 4 4m-2-6 4 4m-4 0-2 2',
+  explore: 'm12 3 9 5-9 5-9-5 9-5ZM3 12l9 5 9-5M3 16l9 5 9-5',
+  settings: 'M4 6h16M4 12h16M4 18h16M8 3v6m8 0v6m-6 0v6',
 } as const
 
 function OperationIcon({ name }: { name: keyof typeof operationIcons }) {
@@ -237,6 +241,7 @@ const handleDisclosureToggle = (
 }
 
 export function TrafficControls({
+  masthead,
   aircraftQuery,
   aircraftResults,
   totalAircraft,
@@ -489,7 +494,31 @@ export function TrafficControls({
   }
 
   return (
+    <>
+    <header className="brand-panel">
+      {masthead}
+      <div className="workspace-navigation" role="group" aria-label="Map navigation">
+        <LocationSearchInput
+          model={locationSearch}
+          inputRef={locationSearchInputRef}
+          maximumQueryLength={maximumLocationQueryLength}
+          searchState={placeSearchState}
+          disabled={locationNavigationDisabled}
+        />
+        <button
+          className="workspace-center"
+          type="button"
+          disabled={centerDisabled}
+          onClick={onCenter}
+          title="Center on session Home"
+        >
+          <OperationIcon name="center" />
+          CENTER
+        </button>
+      </div>
+    </header>
     <div className="control-stack" aria-label="Map controls">
+      <div className="workspace-dock">
       <aside
         className={`control-panel control-panel--operations${
           operationalPromotedAction ? ' control-panel--urgent' : ''
@@ -501,10 +530,6 @@ export function TrafficControls({
         role="group"
         aria-label="Map operations"
       >
-        <button type="button" disabled={centerDisabled} onClick={onCenter}>
-          <OperationIcon name="center" />
-          CENTER
-        </button>
         <button
           type="button"
           className={aircraftVisible ? 'is-active' : undefined}
@@ -601,9 +626,10 @@ export function TrafficControls({
         <summary
           id="traffic-controls-map-tools-summary"
           ref={mapToolsSummaryRef}
+          title="Explore map: layers, discovery, context and sources"
         >
-          <span>Explore map</span>
-          <span className="control-panel__more-hint">More</span>
+          <OperationIcon name="explore" />
+          <span>More</span>
         </summary>
         <div
           ref={mapToolsBodyRef}
@@ -612,6 +638,7 @@ export function TrafficControls({
           aria-label="Map tools"
           tabIndex={0}
         >
+          <p className="workspace-panel-title">Explore map</p>
           <div
             className="control-panel__tasks"
             role="group"
@@ -910,14 +937,6 @@ export function TrafficControls({
         }`}
         aria-label="Location and settings"
       >
-        <LocationSearchInput
-          model={locationSearch}
-          inputRef={locationSearchInputRef}
-          maximumQueryLength={maximumLocationQueryLength}
-          searchState={placeSearchState}
-          disabled={locationNavigationDisabled}
-        />
-
         <div
           className="control-panel__urgent"
           hidden={!settingsPromotedAction}
@@ -956,13 +975,20 @@ export function TrafficControls({
           onToggle={(event) =>
             handleDisclosureToggle(event, focusedWithinSettingsRef)
           }
+          onKeyDown={(event) => {
+            if (event.key !== 'Escape' || !event.currentTarget.open) return
+            event.preventDefault()
+            event.stopPropagation()
+            event.currentTarget.open = false
+          }}
         >
           <summary
             id="traffic-controls-settings-summary"
             ref={settingsSummaryRef}
+            title="View and settings: appearance, location and history"
           >
-            <span>View &amp; settings</span>
-            <span className="control-panel__more-hint">More</span>
+            <OperationIcon name="settings" />
+            <span>Settings</span>
           </summary>
           <div
             className="control-panel__more-body"
@@ -970,6 +996,7 @@ export function TrafficControls({
             aria-label="Location and settings"
             tabIndex={0}
           >
+            <p className="workspace-panel-title">View &amp; settings</p>
             <fieldset className="control-group">
               <legend>Appearance</legend>
               <div
@@ -1127,6 +1154,8 @@ export function TrafficControls({
           </div>
         </details>
       </aside>
+      </div>
     </div>
+    </>
   )
 }

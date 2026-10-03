@@ -82,11 +82,11 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   payload, rocket-body, debris, and unknown subpoints locally with SGP4,
   identifies ground tracks that cross a safe local map view within 90 minutes,
   and draws one bounded selected-object track.
-  **ORBITS** stays beside **AIRCRAFT** and **SHIPS** in the primary Operations
-  row; its compact summary reports how many markers are actually shown in the
+  **ORBITS** stays beside **AIRCRAFT** and **SHIPS** in the layer dock;
+  its compact summary reports how many markers are actually shown in the
   current map plus predicted passes within 90 minutes and is mirrored in the
-  upper-left status panel without changing aircraft/marine health.
-  **Operations -> More -> Orbits** separates Nearby crossings from complete
+  masthead's Provider details without changing aircraft/marine health.
+  **More → Orbits** separates Nearby crossings from complete
   Catalog discovery. Search and exact type/source-group filters are local to
   the accepted snapshot; no camera, search, filter, selection, or theme change
   starts another catalog request.
@@ -131,7 +131,7 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   Starlink milestone #275 preserved it at
   `d565b56278e81ff2478ab1e476c269084f2297d4`.
 - Issue #257 adds a separate remembered **STARLINK** child layer under
-  **Operations -> More -> Orbits**. It starts off even when ORBITS is on and
+  **More → Orbits**. It starts off even when ORBITS is on and
   makes no request until both toggles are effective. Issue #271 adds a
   negotiated schema-2 representation with exactly 512 records: 128 from each
   fixed inclination band `<48`, `48-<60`, `60-<85`, and `>=85` degrees.
@@ -216,15 +216,20 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   bounded current/predecessor shell caches, and a tested retirement build that
   removes only application-shell caches without deleting preferences or private
   history.
-- A map-first interface with white Light surfaces, slate Dark surfaces, a
-  compact status header, clearly grouped icon-and-text map operations, and
-  readable selected-object cards. Counts, regional marine coverage, freshness,
-  and the traffic mode remain visible; **Provider details** opens independent
-  provider messages on desktop and mobile.
-- Responsive **Explore map → More** and **View & settings → More** disclosures
+- A unified map workspace in this source: an edge-to-edge masthead joins the
+  brand, explicit-submit search, Center, and truthful traffic status. A
+  separate left desktop layer rail becomes a bottom mobile command dock;
+  selected details use a right desktop inspector or a reserved mobile sheet.
+  White Light and slate Dark surfaces share system typography and one accent.
+  Counts, regional marine coverage, freshness, and traffic mode remain visible;
+  **Provider details** opens independent provider messages on every screen size.
+- **More** (Explore map) and **Settings** (View & settings) open beside the
+  desktop rail or above the mobile dock. These stable native disclosures
   retain one scroll owner per panel and session-only
   Layers/Find/Context/Orbits/Sources views. Location input stays immediately
   available; Auto/Light/Dark and Trails live under **Appearance** in settings.
+  The mobile zoom/tilt prompt, selected details, and HISTORY playback reserve
+  their own space; closing historical details restores the same tool state.
   Visual-viewport-aware sizing, solid keyboard focus rings, non-color
   status/detail labels, required provider/privacy copy, and metric-first
   Starlink modeled/map/pass context accompany a
@@ -232,6 +237,8 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   vessel silhouettes with generic fallbacks. Orbital payload, rocket-body,
   debris, and unknown classes use exact-SATCAT object symbols instead of
   colored dots. The duplicate traffic legend is intentionally omitted.
+  [Local follow-up layout evidence](docs/development-and-testing.md#distinct-workspace-correction-local-evidence)
+  is separate from the historical production release below.
 - Touch-specific selection tolerance for isolated markers; exact mouse hits stay
   unchanged and ambiguous nearby traffic is never guessed.
 
