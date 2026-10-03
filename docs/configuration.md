@@ -82,10 +82,10 @@ Disabling the Starlink flag leaves curated acquisition and
 `/api/orbits/catalog` unchanged.
 
 Current application source
-`d565b56278e81ff2478ab1e476c269084f2297d4` sets both orbital flags to
+`9f5ee37d9ad2bbeedb20a89ea08e7cd5629e36e8` sets both orbital flags to
 `true`, uses KV namespace `59178d55418247c4bab473b52a5dc07d`, and runs Cron
-`17 */2 * * *`. Canonical deployment run `37121314015` passed as version
-`e9e473d1-fac5-4594-b62b-7ba68573efeb`. These Worker settings do not change
+`17 */2 * * *`. Canonical deployment run `37134585858`, attempt 2, passed as
+version `85d1418b-3316-4299-9758-20810aa58898`. These Worker settings do not change
 the user-facing defaults: ORBITS and its STARLINK child still start off until
 explicitly enabled or included in a share fragment.
 

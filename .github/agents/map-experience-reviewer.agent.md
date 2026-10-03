@@ -128,22 +128,29 @@ Check these project invariants:
   Verify a real touch drag starts on an unobscured map region at both 390x844
   and 390x568 while the control panel remains scrollable and reachable.
 - Keep the primary controls compact and task-based. Operations keeps Center,
-  Aircraft, and Ships visible. Location & Settings keeps the one mounted search
-  input, theme, and Trails visible. Secondary controls belong behind two stable
-  native disclosures that are mutually exclusive. Operational and
+  Aircraft, Ships, and ORBITS visible. The one mounted location input remains
+  immediate; Appearance groups Auto/Light/Dark and Trails inside settings.
+  Explore map and View & settings label two stable native disclosures that are
+  mutually exclusive. Operational and
   app/storage/history recovery may each be promoted only above their owning
   disclosure without duplication. Active historical playback remains outside
   both panels. A collapsed disclosure removes descendants from the tab order,
   survives normal rerenders, preserves search state, and restores focus to a
   visible owning control.
-- Keep one shared traffic legend under Operations More. Reuse application-owned
-  altitude, trend, movement, exact AIS-shape, yacht-length, one-knot, and
-  freshness semantics; pair every visual cue with text and never rely on color
-  alone.
+- Do not reintroduce the duplicate Traffic legend. Existing filters, status,
+  tooltips, and selected details preserve altitude, trend, movement, exact
+  AIS-shape, yacht-length, one-knot, and freshness meaning without relying on
+  color alone.
 - Measure each collapsed panel, the combined expanded-stack bound, overlay
-  obstruction, and attribution visibility in a real browser. The 58vh bound
-  applies to the whole stack; it alone does not prove that the default surfaces
-  remain lightweight.
+  obstruction, and attribution visibility in a real browser. Visible panel
+  bounds are distinct from the transparent stack's maximum-height budget.
+  Use the current visual viewport and repeat final-row reachability with
+  selected details at 315x517 and an 844-layout/517-visual-height mismatch.
+  More remains the sole orbital scroll owner; the task strip scrolls away.
+- The compact header retains mode, counts, regional qualification, and age.
+  Provider details remains accessible on mobile and restores summary focus
+  on Escape. Mobile historical details may replace the tool rail only while
+  preserving its state and keeping playback/Return to Live reachable.
 - Theme preference and resolved rendering theme stay separate. Missing or
   invalid storage remains Light; only explicit Auto follows system changes,
   and pre-paint/React resolution must agree without duplicate listeners.
