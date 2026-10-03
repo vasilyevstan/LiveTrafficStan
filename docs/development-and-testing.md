@@ -1240,6 +1240,20 @@ Public Wiki commit `c67b33036d63c095e3aadc5d19e492d3aeb53665`
 records the same visual-viewport contract, production identity, rendered
 evidence, and troubleshooting guidance.
 
+The October 3 compact-design follow-up repeats the rendered contract in Chrome
+154 while replacing browser-default task tabs with application-styled active
+states and putting Starlink modeled, in-map/shown, and next-90-minute metrics
+before provenance prose. At 1280x900, 390x844, 390x568, and 315x517, all five
+task labels fit without clipping, there is no horizontal overflow or
+brand/control overlap, and one MapLibre canvas remains. The control stacks
+measure 489.515625 px, 329.4375 px, and 299.859375 px at the three mobile
+heights, each within the exact 58vh budget. On the final 10-row Starlink page,
+the last result is fully inside and topmost in the sole Operations scroll owner
+at every mobile size; the task strip scrolls away and `.orbital-results`
+remains unbounded with visible overflow. The local acceptance reuses the
+current production representations through same-origin interception and adds
+no browser request to CelesTrak.
+
 ### Issue #193 release acceptance evidence
 
 The exact-NORAD enrichment release is source

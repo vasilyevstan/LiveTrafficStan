@@ -142,11 +142,14 @@ disclosures with the same `name`. The upper Operations panel keeps only Center,
 Aircraft, Ships, and ORBITS visible. Its disclosure separates secondary tools
 into session-only Layers, Find, Context, Orbits, and Sources views; **VIEW**
 opens Orbits and focuses the first result without moving the map or fetching
-again. The duplicate traffic legend is intentionally absent; textual state and
-limitations remain in controls and selected details. The lower Location &
-Settings panel keeps the single mounted location input, theme, and Trails
-visible; its disclosure owns search feedback, browser location, history setup,
-preferences, sharing, reset, and application state.
+again. The task strip uses the same application button, focus, and active-state
+system as the primary controls rather than browser-default buttons. The
+Starlink child presents modeled, in-map, and next-pass counts before compact
+source/model caveats. The duplicate traffic legend is intentionally absent;
+textual state and limitations remain in controls and selected details. The
+lower Location & Settings panel keeps the single mounted location input, theme,
+and Trails visible; its disclosure owns search feedback, browser location,
+history setup, preferences, sharing, reset, and application state.
 
 Opening either disclosure closes the other without remounting the search model.
 Operational recovery and app/storage/history recovery have separate promotion

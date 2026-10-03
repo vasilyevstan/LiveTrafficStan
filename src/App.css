@@ -47,7 +47,7 @@
   color: var(--panel-text);
   background: var(--panel-background);
   border: 1px solid var(--panel-border);
-  box-shadow: 0 16px 42px var(--panel-shadow);
+  box-shadow: 0 12px 34px var(--panel-shadow);
   backdrop-filter: blur(14px);
   transition:
     color 180ms ease,
@@ -60,7 +60,8 @@
   position: absolute;
   top: 16px;
   left: 16px;
-  min-width: min(490px, calc(100vw - 358px));
+  width: min(620px, calc(100vw - 358px));
+  min-width: 0;
   max-width: calc(100vw - 358px);
   padding: 14px 16px 12px;
   border-radius: 14px;
@@ -231,8 +232,8 @@
   width: 100%;
   max-height: 100%;
   overflow: hidden;
-  padding: 7px 8px;
-  border-radius: 14px;
+  padding: 8px;
+  border-radius: 16px;
 }
 
 .control-panel:has(.control-panel__more[open]) {
@@ -246,7 +247,16 @@
 
 .control-panel__primary {
   flex: 0 0 auto;
-  gap: 3px;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--divider);
+  border-radius: 10px;
+  background: var(--button-background);
+}
+
+.control-panel__primary button {
+  border-color: transparent;
+  background: transparent;
 }
 
 .control-panel__primary button,
@@ -376,20 +386,27 @@
 
 .control-panel__tasks {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 3px;
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(0, 0.72fr)
+    minmax(0, 1.08fr)
+    minmax(0, 1fr)
+    minmax(0, 1.1fr);
+  gap: 4px;
   margin-bottom: 8px;
-  padding-bottom: 5px;
+  padding: 2px 0 7px;
+  border-bottom: 1px solid var(--divider);
   background: var(--panel-background);
 }
 
 .control-panel__tasks button {
   min-width: 0;
-  min-height: 27px;
-  padding: 0 2px;
+  min-height: 30px;
+  padding: 0 1px;
   overflow: hidden;
-  font-size: 0.52rem;
-  letter-spacing: 0.04em;
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
   text-overflow: ellipsis;
 }
 
@@ -455,6 +472,8 @@
 }
 
 .control-options button,
+.control-panel__tasks button,
+.orbital-starlink__toggle,
 .location-search__input-row button,
 .location-results button,
 .vessel-discovery button,
@@ -487,6 +506,10 @@
 
 .control-options button:hover,
 .control-options button:focus-visible,
+.control-panel__tasks button:hover,
+.control-panel__tasks button:focus-visible,
+.orbital-starlink__toggle:hover,
+.orbital-starlink__toggle:focus-visible,
 .location-search__input-row button:hover,
 .location-search__input-row button:focus-visible,
 .location-results button:hover,
@@ -513,11 +536,18 @@
 }
 
 .control-options button.is-active,
+.control-panel__tasks button.is-active,
+.orbital-starlink__toggle.is-active,
 .history-mode-notice button.is-active {
   color: var(--button-active-text);
   border-color: var(--button-active-border);
   background: var(--button-active-background);
   box-shadow: inset 0 0 18px var(--button-active-shadow);
+}
+
+.control-panel__tasks button:focus-visible {
+  outline: 2px solid var(--button-hover-border);
+  outline-offset: -3px;
 }
 
 .control-options button:disabled,
@@ -829,12 +859,76 @@
   overflow-wrap: anywhere;
 }
 
+.orbital-summary-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+  margin: 9px 0 0;
+}
+
+.orbital-summary-metrics div {
+  min-width: 0;
+  padding: 8px 7px 7px;
+  border: 1px solid var(--divider);
+  border-radius: 10px;
+  background: var(--button-background);
+}
+
+.orbital-summary-metrics dt {
+  color: var(--legend-text);
+  font-size: 0.54rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.orbital-summary-metrics dd {
+  margin: 2px 0 0;
+  color: var(--heading-text);
+  font-size: 1.08rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.orbital-summary-metrics span {
+  display: block;
+  margin-top: 4px;
+  overflow: hidden;
+  color: var(--note-muted);
+  font-size: 0.55rem;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .orbital-starlink {
   margin-bottom: 10px;
 }
 
-.orbital-starlink > .control-options button {
+.orbital-starlink__heading {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.orbital-starlink__heading .eyebrow {
+  margin: 0;
+}
+
+.orbital-starlink__toggle {
+  min-width: 88px;
   min-height: 44px;
+  padding: 0 9px;
+}
+
+.orbital-starlink__provenance {
+  gap: 3px;
+  padding: 0 2px;
+}
+
+.orbital-starlink__page {
+  margin-top: 6px;
 }
 
 .vessel-results button {
@@ -1331,6 +1425,7 @@
     top: 8px;
     right: 8px;
     left: 8px;
+    width: auto;
     min-width: 0;
     max-width: none;
     padding: 11px 12px 10px;
@@ -1427,8 +1522,20 @@
 }
 
 @media (max-width: 430px) {
+  .brand-panel__title p {
+    display: none;
+  }
+
   .live-status__providers {
     display: none;
+  }
+
+  .control-stack {
+    --control-stack-height: min(
+      var(--app-visual-viewport-58),
+      calc(var(--app-visual-viewport-height) - 134px)
+    );
+    top: 126px;
   }
 
   .details-grid {
@@ -1452,9 +1559,9 @@
   .control-stack {
     --control-stack-height: min(
       var(--app-visual-viewport-58),
-      calc(var(--app-visual-viewport-height) - 118px)
+      calc(var(--app-visual-viewport-height) - 116px)
     );
-    top: 112px;
+    top: 108px;
     right: 6px;
     left: auto;
     width: calc(100vw - 112px);
@@ -1463,10 +1570,6 @@
 
   .control-panel {
     padding: 7px 8px;
-  }
-
-  .control-panel__tasks {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .control-group + .control-group {
@@ -1494,12 +1597,35 @@
     font-size: 0.58rem;
   }
 
+  .control-panel__tasks button {
+    padding: 0 1px;
+    font-size: 0.52rem;
+    letter-spacing: 0.02em;
+  }
+
   .details-panel {
     max-height: 115px;
   }
 
   .orbital-enrichment__image {
     max-height: 88px;
+  }
+}
+
+@media (max-width: 340px) {
+  .control-panel {
+    padding: 5px 6px;
+  }
+
+  .control-panel__primary {
+    gap: 3px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+
+  .control-panel__tasks {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 

@@ -170,11 +170,13 @@ describe('StarlinkContext', () => {
 
   it('reports source population, sample, modeled, and map counts distinctly', () => {
     const html = renderContext()
-    expect(html).toContain(
-      '1 SAFE MODELED / 1 SAMPLE RECORDS · SOURCE REPORTED 11,127',
-    )
-    expect(html).toContain('1 SHOWN · 1 IN MAP · 0 PASSES ≤90M')
-    expect(html).toContain('systematic sample, not the full constellation')
+    expect(html).toContain('aria-label="Starlink sample summary"')
+    expect(html).toContain('<dt>Modeled</dt><dd>1</dd>')
+    expect(html).toContain('<span>of 1 sampled</span>')
+    expect(html).toContain('<dt>In map</dt><dd>1</dd><span>1 shown</span>')
+    expect(html).toContain('<dt>Next 90m</dt><dd>0</dd>')
+    expect(html).toContain('Systematic sample from 11,127 source objects')
+    expect(html).toContain('Not the full constellation')
     expect(html).toContain('not live telemetry')
     expect(html).toContain('STARLINK-TEST')
     expect(html).toContain('Safe modeled position · in map now')
