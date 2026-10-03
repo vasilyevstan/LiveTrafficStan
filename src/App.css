@@ -34,7 +34,7 @@
 }
 
 .interface-layer {
-  --workspace-masthead-height: 80px;
+  --workspace-masthead-height: 56px;
   --workspace-notice-height: 0px;
   --workspace-flyout-width: 352px;
   position: absolute;
@@ -77,7 +77,7 @@
   width: 100%;
   height: var(--workspace-masthead-height);
   min-width: 0;
-  padding: 12px 20px;
+  padding: 5px 16px;
   border: 0;
   border-bottom: 1px solid var(--panel-border);
   box-shadow: 0 2px 8px var(--panel-shadow);
@@ -100,9 +100,7 @@
 }
 
 .brand-panel__title p {
-  margin: 3px 0 0;
-  color: var(--subtle-text);
-  font-size: 0.68rem;
+  display: none;
 }
 
 .radar-mark {
@@ -310,7 +308,8 @@
   );
   position: absolute;
   top: calc(var(--workspace-masthead-height) + 16px);
-  left: 16px;
+  right: 16px;
+  left: auto;
   z-index: 4;
   display: flex;
   flex-direction: column;
@@ -430,7 +429,8 @@
 .control-panel__urgent {
   position: absolute;
   top: var(--workspace-orbital-note);
-  left: calc(100% + 12px);
+  right: calc(100% + 12px);
+  left: auto;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   flex: 0 0 auto;
@@ -564,8 +564,9 @@
 .control-panel__more-body {
   position: absolute;
   top: var(--workspace-note-height);
+  right: calc(100% + 12px);
   bottom: 0;
-  left: calc(100% + 12px);
+  left: auto;
   width: var(--workspace-flyout-width);
   height: auto;
   min-height: 0;
@@ -1209,7 +1210,8 @@
 .details-panel {
   position: absolute;
   top: calc(var(--workspace-masthead-height) + 16px);
-  right: 16px;
+  right: auto;
+  left: 16px;
   z-index: 3;
   width: min(370px, calc(100vw - 32px));
   max-height: min(var(--app-visual-viewport-58), 620px);
@@ -1472,7 +1474,6 @@
   border-radius: 10px;
   gap: 5px;
   font-size: 0.75rem;
-  border-left: 3px solid var(--accent-border);
 }
 
 .viewport-notice span {
@@ -1676,7 +1677,7 @@
 
 @media (min-width: 761px) and (max-width: 1050px) {
   .interface-layer {
-    --workspace-masthead-height: 116px;
+    --workspace-masthead-height: 104px;
   }
 
   .brand-panel {
@@ -1702,7 +1703,7 @@
 
 @media (max-width: 760px) {
   .interface-layer {
-    --workspace-masthead-height: 140px;
+    --workspace-masthead-height: 120px;
     --mobile-history-height: 128px;
     --mobile-detail-height: clamp(
       128px,
@@ -1713,10 +1714,10 @@
 
   .brand-panel {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: 28px 44px 44px;
+    grid-template-rows: 24px 44px 44px;
     grid-template-areas: 'brand' 'status' 'navigation';
-    gap: 4px;
-    padding: 8px 12px;
+    gap: 0;
+    padding: 4px 12px;
   }
 
   .brand-panel h1 {
@@ -1727,14 +1728,10 @@
     padding-right: 90px;
   }
 
-  .brand-panel__title p {
-    display: none;
-  }
-
   .radar-mark {
-    width: 26px;
-    height: 26px;
-    flex-basis: 26px;
+    width: 24px;
+    height: 24px;
+    flex-basis: 24px;
   }
 
   .live-status {
@@ -1744,7 +1741,7 @@
 
   .live-status__mode {
     position: absolute;
-    top: 10px;
+    top: 5px;
     right: 12px;
     padding: 5px 7px;
     font-size: 0.6rem;
@@ -1765,7 +1762,7 @@
   }
 
   .live-status__providers {
-    top: 86px;
+    top: 74px;
     right: 8px;
     width: calc(100% - 16px);
   }

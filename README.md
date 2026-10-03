@@ -216,10 +216,13 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   bounded current/predecessor shell caches, and a tested retirement build that
   removes only application-shell caches without deleting preferences or private
   history.
-- A unified map workspace in this source: an edge-to-edge masthead joins the
-  brand, explicit-submit search, Center, and truthful traffic status. A
-  separate left desktop layer rail becomes a bottom mobile command dock;
-  selected details use a right desktop inspector or a reserved mobile sheet.
+- A minimal map workspace in this source: a compact masthead joins the
+  brand, explicit-submit search, Center, and truthful traffic status. The
+  existing buttons form a right desktop rail with inward-opening panels and
+  remain a bottom mobile command dock. Selected details use a left desktop
+  inspector or a reserved mobile sheet. The bar is 56 px on wide desktops,
+  104 px at intermediate widths, and 120 px on phones; no search or status
+  action is removed to save space.
   White Light and slate Dark surfaces share system typography and one accent.
   Counts, regional marine coverage, freshness, and traffic mode remain visible;
   **Provider details** opens independent provider messages on every screen size.
@@ -237,7 +240,7 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   vessel silhouettes with generic fallbacks. Orbital payload, rocket-body,
   debris, and unknown classes use exact-SATCAT object symbols instead of
   colored dots. The duplicate traffic legend is intentionally omitted.
-  [Local follow-up layout evidence](docs/development-and-testing.md#distinct-workspace-correction-local-evidence)
+  [Local refinement evidence](docs/development-and-testing.md#minimal-right-controls-local-evidence)
   is separate from the historical production release below.
 - Touch-specific selection tolerance for isolated markers; exact mouse hits stay
   unchanged and ambiguous nearby traffic is never guessed.

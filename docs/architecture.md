@@ -149,9 +149,13 @@ restores summary focus. Presentation does not change provider state or polling.
 
 `TrafficControls` composes App's brand/status slot with navigation, one
 location-search model, and two stable native disclosures with the same `name`.
-Aircraft, Ships, ORBITS, **More**, and **Settings** form a left desktop rail
+Aircraft, Ships, ORBITS, **More**, and **Settings** form a right desktop rail
 and a bottom mobile command dock. Center stays with search in the masthead,
-not among layer toggles. **More** opens the Explore map panel beside the rail
+not among layer toggles. The compact masthead is 56 px on wide desktops,
+104 px at intermediate widths, and 120 px on phones. Its redundant brand
+subtitle is hidden; search, counts, freshness, and provider disclosure stay
+visible, with unchanged 44 px search/status targets. **More** opens the Explore
+map panel inward to the left of the rail
 or above the dock and separates secondary tools
 into session-only Layers, Find, Context, Orbits, and Sources views; **VIEW**
 opens Orbits and focuses the first result without moving the map or fetching
@@ -177,7 +181,7 @@ disclosure body is its only vertical scroll owner; the task selector scrolls
 away rather than covering short-view results, and orbital results remain fully
 expanded inside the outer scroll region. The mobile sheet leaves a 48 px map
 strip beside the control stack; the collapsed dock needs no scrolling.
-Live selected details occupy a right desktop inspector or a reserved mobile
+Live selected details occupy a left desktop inspector opposite the controls or a reserved mobile
 area below the masthead. A mobile ineligible-viewport prompt has its own row,
 so neither selection nor More can hide the zoom/tilt instruction. These
 separate height budgets keep the last result and its focus ring reachable.

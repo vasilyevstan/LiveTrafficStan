@@ -572,11 +572,52 @@ The A→B→A production exercise proves:
 ## Overall UI redesign (#276)
 
 The first released presentation pass (#280–#282) retained the two-corner
-silhouette. The follow-up source replaces that structure on the default,
+silhouette. The structural correction (#286–#288) replaced that structure on the default,
 collapsed screen: a unified full-width masthead, a left desktop layer rail,
 and a bottom mobile command dock. More and Settings open adjacent panels or
 upward mobile sheets, while search and Center stay in the masthead. The
 historical release identities and their evidence below remain unchanged.
+
+### Minimal right controls (local evidence)
+
+After #288, the user liked the buttons but requested a more minimal layout,
+right-side controls, and a smaller or absent top bar. This refinement keeps
+the existing buttons and all search/status actions, moves only the desktop
+rail to the right with inward-opening panels, and puts the desktop inspector
+opposite it. Phones keep the bottom dock. The redundant brand subtitle is
+hidden instead of hiding provider state or introducing another disclosure.
+
+| Surface | #288 | Minimal refinement |
+| --- | --- | --- |
+| Wide masthead | 80 px | 56 px |
+| Intermediate masthead | 116 px | 104 px |
+| Mobile masthead | 140 px | 120 px |
+| 1280 px desktop rail | x=16 | x=1188; unchanged 76x335 px |
+| Mobile command dock | 70 px | Unchanged 70 px |
+
+The existing fixture-backed Chrome harness exercised both themes, the four
+desktop/mobile sizes, all 512 Starlink records, selected final-row focus,
+the shortened visual viewport, touch/wheel/keyboard scrolling, provider
+disclosures, paused/partial/offline states, attribution, HISTORY selection,
+and Return to Live. A separate 761/900/1024 px pass checked header containment,
+44 px primary targets, and explicit coordinate/named-search behavior without
+remounting the input, map, or marine connection. Real MapLibre tiles were
+rendered; traffic and catalog responses were fixtures, not production proof.
+
+Impeccable's installed distill/craft guidance was used for the refinement,
+followed by its bundled detector on App, TrafficControls, and App.css. Its
+one warning identified the pre-existing thick accent border on the viewport
+notice; that decoration was removed while preserving the standard panel
+border, text, and recovery action. No automatic hook, new dependency, design
+framework, provider, scheduler, or application state was introduced.
+
+Lint, typecheck, 973 tests in 129 files, all four required integrity checks,
+and the production build passed. The unchanged Vite chunk-size advisory is
+not a new regression. Browser artifacts are retained in
+`.ui-redesign-evidence/minimal-right/{final,navigation}/` in the existing
+evidence worktree. Native scrolling is part of playback reachability; an
+at-rest footer edge is not a substitute for checking keyboard/touch access.
+Chrome emulation is not physical Safari/iOS/Android evidence.
 
 ### Distinct workspace correction (local evidence)
 
