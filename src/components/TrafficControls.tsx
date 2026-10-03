@@ -183,6 +183,21 @@ const MAP_TOOL_TASKS = [
 
 type MapToolTask = (typeof MAP_TOOL_TASKS)[number][0]
 
+const operationIcons = {
+  center: 'M12 3v3m0 12v3M3 12h3m12 0h3M17 12a5 5 0 1 1-10 0 5 5 0 0 1 10 0Z',
+  aircraft: 'm12 3 2 7 6 4v2l-6-2v4l2 2v1l-4-1-4 1v-1l2-2v-4l-6 2v-2l6-4 2-7Z',
+  ships: 'M5 12V7h14v5M9 7V4h6v3M3 13l9-3 9 3-3 5H6l-3-5Zm0 8 3-1 3 1 3-1 3 1 3-1 3 1',
+  orbits: 'M12 3a9 9 0 1 0 9 9M12 7a5 5 0 1 0 5 5m0-7 4 4m-2-6 4 4m-4 0-2 2',
+} as const
+
+function OperationIcon({ name }: { name: keyof typeof operationIcons }) {
+  return (
+    <svg className="operation-icon" viewBox="0 0 24 24" aria-hidden="true">
+      <path d={operationIcons[name]} />
+    </svg>
+  )
+}
+
 const handleDisclosureFocus = (
   event: FocusEvent<HTMLDetailsElement>,
   focusedWithinRef: MutableRefObject<boolean>,
@@ -487,6 +502,7 @@ export function TrafficControls({
         aria-label="Map operations"
       >
         <button type="button" disabled={centerDisabled} onClick={onCenter}>
+          <OperationIcon name="center" />
           CENTER
         </button>
         <button
@@ -495,6 +511,7 @@ export function TrafficControls({
           aria-pressed={aircraftVisible}
           onClick={() => onAircraftVisibleChange(!aircraftVisible)}
         >
+          <OperationIcon name="aircraft" />
           AIRCRAFT
         </button>
         <button
@@ -503,6 +520,7 @@ export function TrafficControls({
           aria-pressed={vesselsVisible}
           onClick={() => onVesselsVisibleChange(!vesselsVisible)}
         >
+          <OperationIcon name="ships" />
           SHIPS
         </button>
         <button
@@ -514,6 +532,7 @@ export function TrafficControls({
           aria-busy={orbitalVisible && orbitalLoading}
           onClick={() => onOrbitalVisibleChange(!orbitalVisible)}
         >
+          <OperationIcon name="orbits" />
           {orbitalVisible && orbitalLoading ? 'ORBITS...' : 'ORBITS'}
         </button>
       </div>
@@ -583,7 +602,8 @@ export function TrafficControls({
           id="traffic-controls-map-tools-summary"
           ref={mapToolsSummaryRef}
         >
-          MORE
+          <span>Explore map</span>
+          <span className="control-panel__more-hint">More</span>
         </summary>
         <div
           ref={mapToolsBodyRef}
@@ -899,39 +919,6 @@ export function TrafficControls({
         />
 
         <div
-          className="control-options control-options--four control-panel__primary"
-          role="group"
-          aria-label="Theme and trails"
-        >
-          {(['auto', 'light', 'dark'] as const).map((option) => (
-            <button
-              key={option}
-              type="button"
-              className={
-                themePreference === option ? 'is-active' : undefined
-              }
-              aria-pressed={themePreference === option}
-              onClick={() => onThemePreferenceChange(option)}
-            >
-              {option.toUpperCase()}
-            </button>
-          ))}
-          <button
-            type="button"
-            className={trailPreferences.visible ? 'is-active' : undefined}
-            aria-pressed={trailPreferences.visible}
-            onClick={() =>
-              onTrailPreferencesChange({
-                ...trailPreferences,
-                visible: !trailPreferences.visible,
-              })
-            }
-          >
-            TRAILS
-          </button>
-        </div>
-
-        <div
           className="control-panel__urgent"
           hidden={!settingsPromotedAction}
           role={settingsPromotedAction ? 'status' : undefined}
@@ -974,7 +961,8 @@ export function TrafficControls({
             id="traffic-controls-settings-summary"
             ref={settingsSummaryRef}
           >
-            MORE
+            <span>View &amp; settings</span>
+            <span className="control-panel__more-hint">More</span>
           </summary>
           <div
             className="control-panel__more-body"
@@ -982,6 +970,42 @@ export function TrafficControls({
             aria-label="Location and settings"
             tabIndex={0}
           >
+            <fieldset className="control-group">
+              <legend>Appearance</legend>
+              <div
+                className="control-options control-options--four"
+                role="group"
+                aria-label="Theme and trails"
+              >
+                {(['auto', 'light', 'dark'] as const).map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    className={
+                      themePreference === option ? 'is-active' : undefined
+                    }
+                    aria-pressed={themePreference === option}
+                    onClick={() => onThemePreferenceChange(option)}
+                  >
+                    {option.toUpperCase()}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  className={trailPreferences.visible ? 'is-active' : undefined}
+                  aria-pressed={trailPreferences.visible}
+                  onClick={() =>
+                    onTrailPreferencesChange({
+                      ...trailPreferences,
+                      visible: !trailPreferences.visible,
+                    })
+                  }
+                >
+                  TRAILS
+                </button>
+              </div>
+            </fieldset>
+
             <LocationSearchDetails
               model={locationSearch}
               activeLabel={activeLocationLabel}

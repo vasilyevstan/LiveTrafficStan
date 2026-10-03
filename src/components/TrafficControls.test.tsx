@@ -187,7 +187,7 @@ describe('TrafficControls', () => {
     expect(navigationPrimary).not.toContain('>AUTO<')
     expect(navigationPrimary).not.toContain('href=')
     expect(navigationMore).toContain(
-      '<summary id="traffic-controls-map-tools-summary">MORE</summary>',
+      '<summary id="traffic-controls-map-tools-summary"><span>Explore map</span><span class="control-panel__more-hint">More</span></summary>',
     )
     expect(navigationMore).toContain('<legend>Layers</legend>')
     expect(navigationMore).toContain('>ORBITS</button>')
@@ -204,12 +204,14 @@ describe('TrafficControls', () => {
     expect(navigationMore).not.toContain('USE LOCATION')
     expect(navigationMore).not.toContain('<legend>History</legend>')
     expect(settingsPrimary).toContain('id="location-search-input"')
-    expect(settingsPrimary).toContain('>AUTO<')
-    expect(settingsPrimary).toContain('>LIGHT<')
-    expect(settingsPrimary).toContain('>DARK<')
-    expect(settingsPrimary).toContain('>TRAILS<')
+    expect(settingsPrimary).not.toContain('>AUTO<')
+    expect(settingsMore).toContain('<legend>Appearance</legend>')
+    expect(settingsMore).toContain('>AUTO<')
+    expect(settingsMore).toContain('>LIGHT<')
+    expect(settingsMore).toContain('>DARK<')
+    expect(settingsMore).toContain('>TRAILS<')
     expect(settingsMore).toContain(
-      '<summary id="traffic-controls-settings-summary">MORE</summary>',
+      '<summary id="traffic-controls-settings-summary"><span>View &amp; settings</span><span class="control-panel__more-hint">More</span></summary>',
     )
     expect(settingsMore).toContain('aria-label="Location search details"')
     expect(settingsMore).toContain('USE LOCATION')
@@ -225,6 +227,9 @@ describe('TrafficControls', () => {
     expect(html.match(/>SHIPS</g)).toHaveLength(1)
     expect(html.match(/>TRAILS</g)).toHaveLength(1)
     expect(html.match(/>ORBITS</g)).toHaveLength(2)
+    expect(html.match(/class="operation-icon"/g)).toHaveLength(4)
+    expect(html.match(/aria-label="Theme and trails"/g)).toHaveLength(1)
+    expect(html.match(/>LIGHT</g)).toHaveLength(1)
   })
 
   it('separates map tools into compact session-only views', () => {
@@ -311,7 +316,7 @@ describe('TrafficControls', () => {
     })
 
     expect(html).toContain(
-      'aria-pressed="true" aria-busy="false">ORBITS',
+      'id="orbital-layer-toggle" type="button" class="is-active" aria-pressed="true" aria-busy="false"',
     )
     expect(html).toContain(
       'ORBITS · 1 SHOWN · 0 PASSES ≤90M',

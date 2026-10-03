@@ -216,11 +216,18 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   bounded current/predecessor shell caches, and a tested retirement build that
   removes only application-shell caches without deleting preferences or private
   history.
-- Responsive Operations and Location & Settings controls with one scroll owner
-  per disclosure, session-only Layers/Find/Context/Orbits/Sources views,
-  application-styled task and active states, visual-viewport-aware mobile
-  sizing, keyboard focus states, non-color status/detail labels, compact
-  provider/privacy copy, metric-first Starlink modeled/map/pass context, and a
+- A map-first interface with white Light surfaces, slate Dark surfaces, a
+  compact status header, clearly grouped icon-and-text map operations, and
+  readable selected-object cards. Counts, regional marine coverage, freshness,
+  and the traffic mode remain visible; **Provider details** opens independent
+  provider messages on desktop and mobile.
+- Responsive **Explore map → More** and **View & settings → More** disclosures
+  retain one scroll owner per panel and session-only
+  Layers/Find/Context/Orbits/Sources views. Location input stays immediately
+  available; Auto/Light/Dark and Trails live under **Appearance** in settings.
+  Visual-viewport-aware sizing, solid keyboard focus rings, non-color
+  status/detail labels, required provider/privacy copy, and metric-first
+  Starlink modeled/map/pass context accompany a
   small provider-reported set of map-scale aircraft and category-distinct
   vessel silhouettes with generic fallbacks. Orbital payload, rocket-body,
   debris, and unknown classes use exact-SATCAT object symbols instead of
