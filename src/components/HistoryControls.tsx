@@ -75,6 +75,7 @@ export function HistoryControls({
   retryPromoted = false,
   trailVisibilityPromoted = false,
 }: HistoryControlsProps) {
+  const statusLabel = persistenceLabel(historyStatus)
   const setVisible = (visible: boolean) => {
     onTrailPreferencesChange({
       ...trailPreferences,
@@ -172,7 +173,7 @@ export function HistoryControls({
         </label>
 
         <p className="control-note" role="status">
-          {persistenceLabel(historyStatus)}
+          {statusLabel}
           {' · '}
           {historyStatus.recordCount} durable / {historyRecordCount} available
           {' · '}
@@ -185,8 +186,7 @@ export function HistoryControls({
           </p>
         )}
         {historyStatus.message &&
-          !['blocked', 'stale-tab', 'quota-exceeded', 'error', 'deletion-failed']
-            .includes(historyStatus.phase) && (
+          historyStatus.message !== statusLabel && (
             <p className="control-note control-note--muted">
               {historyStatus.message}
             </p>

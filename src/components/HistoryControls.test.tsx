@@ -105,4 +105,39 @@ describe('HistoryControls', () => {
     expect(html).toContain('History database unavailable')
     expect(html).not.toContain('RETRY LOCAL HISTORY')
   })
+
+  it('shows the pending deletion message exactly once', () => {
+    const message = 'Clearing session and private local history.'
+    const html = renderToStaticMarkup(
+      <HistoryControls
+        {...baseProps}
+        historyStatus={{
+          ...baseProps.historyStatus,
+          phase: 'deletion-pending',
+          message,
+        }}
+      />,
+    )
+
+    expect(html.split(message)).toHaveLength(2)
+    expect(html).toContain(`role="status">${message}`)
+    expect(html).toContain('0 durable / 0 available')
+  })
+
+  it('retains a distinct supplementary history message', () => {
+    const message = 'Older observations were removed.'
+    const html = renderToStaticMarkup(
+      <HistoryControls
+        {...baseProps}
+        historyStatus={{
+          ...baseProps.historyStatus,
+          phase: 'ready',
+          message,
+        }}
+      />,
+    )
+
+    expect(html).toContain('Private local history is ready.')
+    expect(html.split(message)).toHaveLength(2)
+  })
 })

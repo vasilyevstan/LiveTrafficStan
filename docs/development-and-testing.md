@@ -622,6 +622,13 @@ contrast plus visual-viewport and single-scroll-owner contracts.
 The required repository checks passed, including 968 tests in 129 files.
 No framework, font, icon package, provider, worker, or scheduler was added.
 
+The broader copy pass in #195 already shortened route, selected-object,
+metadata/photo, weather, history, and Photon text beyond Operations. This
+candidate preserves those reductions and necessary caveats. A follow-up
+regression removes the remaining repeated pending-history deletion message:
+it appears once in the existing status, while distinct supplementary history
+notices remain visible.
+
 Screenshots, detailed geometry, CDP actions, and validation output remain
 uncommitted in the isolated candidate worktree's `.ui-redesign-evidence/`
 directory (`before/`, `final/`, `browser.mjs`, and `required-checks.log`).
