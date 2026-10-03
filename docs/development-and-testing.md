@@ -619,7 +619,53 @@ evidence worktree. Native scrolling is part of playback reachability; an
 at-rest footer edge is not a substitute for checking keyboard/touch access.
 Chrome emulation is not physical Safari/iOS/Android evidence.
 
+### Minimal right controls (production evidence)
+
+#289 and tree-neutral #290 promoted through #291 to application
+`cd05a38f7c2f130629e961cb4a56fc67d9c42a44`. Exact-main Validation
+`37152118432` and deployment `37152238178` attempt 2 passed 973 tests in
+129 files. Full smoke passed at `2026-10-03T20:55:36.196Z` as Worker
+`89313ed1-b31a-467d-86b5-4cf8d558af9c`.
+
+Actual Chrome 154 observations began at `20:57Z`, without response fixtures.
+Both themes measured 56 px desktop and 120 px mobile mastheads, a 76x335 px
+desktop rail at x=1188, inward panels at x=824-1176, and a selected real vessel
+inspector at x=16. The 70 px dock remained unchanged at 390x844, 390x568 and
+315x517. Ordinary navigation in the retained profile loaded
+`index-C6kNCOeT.js` / `index-BQDHeey3.css` without disabling cache or clearing
+storage. The new shell cache was `a50f129130253277bbf1`; remembered orbital
+visibility and the pending app-update notice remained. These are not
+clean-profile, layers-off startup screenshots.
+
+All 26 pages remained reachable. Selected NORAD 100775 was 61.16 px tall
+inside a 125 px body at 315x517; the 844-layout/517-visual case retained a
+101 px body and 221 px control area in both themes. Provider details/Escape,
+live/historical selection, attribution and Return to Live passed. At 315 px,
+native focus scrolled playback by 2 px to reveal the action fully; no app
+change was made to satisfy an artificial at-rest requirement. The map and
+catalogs survived HISTORY; the orbital worker intentionally stopped/restarted.
+LIVE and aircraft-503 PARTIAL captures remained truthful.
+
+The map reported **49 rendered features from vector sources**. A main-target
+`.pbf` response count includes font glyphs and is not proof of worker-fetched
+vector tiles. The raw report preserves a stale terminal assertion referencing
+the removed counter; a separate terminal receipt verified the actual vector
+metric, exact release, all eight layouts, cache transition and zero browser
+errors at `21:00:21.143Z`, without replaying accepted interactions. Artifacts:
+`ui-minimal-production/final/report.json` and `final-verification.json`.
+
+[Actual production screenshots and complete evidence](https://github.com/vasilyevstan/LiveTrafficStan/pull/291#issuecomment-5973461428)
+remain separate from local fixtures. Physical mobile/Safari is not claimed.
+The independent relay recovery is recorded in #174 and the hosting/relay docs.
+
 ### Distinct workspace correction (local evidence)
+
+This correction shipped as #288, application
+`2d11e3e649fc55f8be0965d9b0cce41a42545ad0` / Worker
+`ce0dffd2-a22a-48d9-95a8-695e814c4c5e`. Deployment `37144136921` attempt 2
+passed at `2026-10-03T19:54:45.336Z`; retained-cache and HISTORY production
+acceptance is [preserved on #288](https://github.com/vasilyevstan/LiveTrafficStan/pull/288#issuecomment-5973032236).
+It is the real predecessor for the subsequent minimal refinement.
 
 The follow-up baseline is `a11efce3ae53f953af937d18de617c0097e37a86`,
 after the #280–#282 release, not the earlier interface. Matching collapsed
@@ -648,7 +694,7 @@ Touch, wheel, and PageDown moved the More body by 136, 250, and 217 px;
 Trusted touch in the uncovered map strip moved the camera. Selection close,
 disclosure Escape, provider details, and attribution touch checks passed.
 The same map/canvas, one physical orbital worker, and one request per orbital
-catalog survived presentation/theme changes; 44 successful vector-tile
+catalog survived presentation/theme changes; 44 successful glyph-PBF
 responses and no runtime or console errors were recorded. LIVE, PARTIAL,
 PAUSED, OFFLINE, and HISTORY remained distinct. Mobile playback starts 12 px
 below the tools; Return to Live and all four speed labels remain reachable.
@@ -714,8 +760,9 @@ Touch, wheel, and PageDown moved the outer Operations body; 18 sequential
 Tabs reached the last result. Escape and detail close restored focus.
 Trusted touch on the uncovered strip moved the map. Opening settings and
 switching themes retained the same canvas, one physical orbital worker, and
-one request per orbital catalog; 44 successful vector-tile responses were
-observed. Offline/HISTORY transitions were checked separately, including
+one request per orbital catalog. The 44 main-target PBF responses were font
+glyphs, not a vector-tile count; the basemap was visually rendered.
+Offline/HISTORY transitions were checked separately, including
 truthful PARTIAL, PAUSED, OFFLINE, and HISTORY presentation, independent
 provider messages, playback controls, historical details, and Return to Live.
 At 390x568 and 315x517, playback starts 14 px below the reserved tool area.
@@ -742,13 +789,13 @@ directory (`before/`, `final/`, `browser.mjs`, and `required-checks.log`).
 Mobile/touch and visual-viewport evidence is browser emulation, not physical
 iOS/Android or Safari testing.
 
-### Released production acceptance
+### Historical first-refresh production acceptance (#282)
 
 Feature #280 and ancestry #281 promoted through #282 to exact application
 `9f5ee37d9ad2bbeedb20a89ea08e7cd5629e36e8`. Exact-main Validation
 `37134495129` and canonical deployment `37134585858` attempt 2 passed all
 970 tests in 129 files; full smoke passed at `2026-10-03T15:59:57.387Z`.
-The running Worker is `85d1418b-3316-4299-9758-20810aa58898`.
+Its accepted Worker was `85d1418b-3316-4299-9758-20810aa58898`.
 
 Actual Chrome 154.0.8037.95 acceptance completed at `16:07:15.828Z` with no
 response fixtures. Light/Dark 1280x900, 390x844, 390x568, and 315x517 layouts
@@ -763,7 +810,7 @@ was 74.453 px tall inside a 91.625 px body. With an 844 px layout and
 517 px visual height, the selected row remained reachable inside the 239 px
 tool stack. Provider details/Escape and touch-opened attribution passed.
 There was one request per curated/Starlink catalog, no CelesTrak request,
-one physical orbital worker, seven successful vector-tile responses, and no
+one physical orbital worker, seven successful glyph-PBF responses, and no
 observed runtime or console error. A transient aircraft `503` remained
 truthfully PARTIAL with marine independent; later captures showed LIVE
 aircraft. This is not an uninterrupted-provider-availability claim.
@@ -795,7 +842,7 @@ Use `npm run dev` and verify:
    exclusive context, hiding/filtering the selected entity, or allowing it to
    expire clears selection safely. Failed navigation and ordinary same-entity
    refreshes do not.
-8. The default masthead, left desktop rail, and bottom mobile command dock
+8. The default masthead, right desktop rail, and bottom mobile command dock
    require no scroll. Center and the one mounted location input stay in the
    masthead; Aircraft, Ships, ORBITS, More, and Settings stay in the dock.
    Auto/Light/Dark and Trails live under Appearance in **Settings**. Other

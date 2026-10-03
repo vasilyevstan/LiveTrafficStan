@@ -28,11 +28,11 @@ active on the relay VM with four IPv6 QUIC connections and a dedicated
 used only when a protected deployment selects `oci-private-relay`.
 
 The current application source is
-`9f5ee37d9ad2bbeedb20a89ea08e7cd5629e36e8`; it continues to use active
+`cd05a38f7c2f130629e961cb4a56fc67d9c42a44`; it continues to use active
 relay source `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8`, while
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` remains the relay rollback target.
-Canonical production run `37134585858`, attempt 2, passed as running version
-`85d1418b-3316-4299-9758-20810aa58898`.
+Canonical production run `37152238178`, attempt 2, passed as running version
+`89313ed1-b31a-467d-86b5-4cf8d558af9c`.
 
 The first same-source run `36627068064` had already deployed healthy
 application, orbital, enrichment, weather, and marine surfaces as version
@@ -42,7 +42,7 @@ through `STOPPING` at `20:35:14Z`, `STARTING` at `20:35:57Z`, and `RUNNING`
 at `20:36:28Z`; real bounded ADSB JSON recovered at `20:38:04Z`. No
 application rollback, relay source change, credential rotation, provider
 fallback, firewall change, cache, or privacy-boundary change was used. #174
-records the evidence and is closed.
+records the recovery evidence and remains open after later recurrences.
 
 This component does not move the application to OCI. An OCI, Tunnel, or relay
 failure must affect aircraft only; Static Assets, the map, vessels, weather,
@@ -400,6 +400,20 @@ matched. The unchanged workflow passed complete smoke at `15:59:57.387Z`
 as version `85d1418b-3316-4299-9758-20810aa58898`. No rollback, credential
 rotation, provider fallback, new resource, or network-policy change was used.
 This is recovery evidence, not a permanent repair; #174 remains open.
+
+The #288 structural UI deployment `37144136921` first failed aircraft smoke
+at `2026-10-03T18:26:15Z`. By `19:52Z`, the path returned marked local
+admission `503`; the same job passed at `19:54:45.336Z` without a VM reboot.
+Do not treat reachable admission backoff as evidence for restarting the VM.
+
+The #291 minimal refinement repeated persistent private `502` while static,
+orbital and direct-provider probes remained healthy. One fresh-ETag-fenced
+diagnostic reboot showed `STOPPING` at `20:51:01.129Z`, `STARTING` at
+`20:52:04.310Z`, and `RUNNING` at `20:52:36.142Z`. Real exact-release aircraft
+JSON returned at `20:53:57.430Z`. All eleven before/after resource groups and
+cost configuration matched. The unchanged deployment `37152238178` attempt 2
+passed full smoke at `20:55:36.196Z`. This is another recovery record, not a
+durable diagnosis or closure of #174.
 
 After source `18082a1e...` activated the reviewed admission marker and smoke
 policy, canonical run `36642794309` passed. A separate bounded production

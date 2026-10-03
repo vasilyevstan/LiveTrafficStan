@@ -82,12 +82,12 @@ Disabling the Starlink flag leaves curated acquisition and
 `/api/orbits/catalog` unchanged.
 
 Current application source
-`9f5ee37d9ad2bbeedb20a89ea08e7cd5629e36e8` sets both orbital flags to
+`cd05a38f7c2f130629e961cb4a56fc67d9c42a44` sets both orbital flags to
 `true`, uses KV namespace `59178d55418247c4bab473b52a5dc07d`, and runs Cron
-`17 */2 * * *`. Canonical deployment run `37134585858`, attempt 2, passed as
-version `85d1418b-3316-4299-9758-20810aa58898`. These Worker settings do not change
-the user-facing defaults: ORBITS and its STARLINK child still start off until
-explicitly enabled or included in a share fragment.
+`17 */2 * * *`. Canonical deployment run `37152238178`, attempt 2, passed as
+version `89313ed1-b31a-467d-86b5-4cf8d558af9c`. These Worker settings do not change
+the user-facing defaults: ORBITS and its STARLINK child start off on a first
+visit; explicit, remembered, or shared visibility choices still apply.
 
 The exact-NORAD purpose/image manifest adds no environment variable, provider
 endpoint, secret, scheduler, Worker binding, or PWA-shell entry. Purpose is
