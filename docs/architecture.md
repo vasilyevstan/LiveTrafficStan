@@ -142,8 +142,8 @@ tombstone can be removed after Cloudflare confirms that deletion has applied.
 
 Presentation uses a shared opaque surface/token system: white Light panels
 and slate Dark panels, restrained borders and shadows, system typography,
-and a solid three-pixel keyboard focus ring. One edge-to-edge masthead groups
-the brand, explicit-submit location input, Center, and traffic status. It keeps
+and a solid three-pixel keyboard focus ring. A compact floating card groups
+the brand and traffic status without an edge-to-edge top bar. It keeps
 mode, shown counts, regional marine coverage, and update age visible. Its
 native **Provider details** disclosure exposes independent transport/error
 messages and coverage limitations on every screen size; Escape closes it and
@@ -152,11 +152,11 @@ restores summary focus. Presentation does not change provider state or polling.
 `TrafficControls` composes App's brand/status slot with navigation, one
 location-search model, and two stable native disclosures with the same `name`.
 Aircraft, Ships, ORBITS, **More**, and **Settings** form a right desktop rail
-and a bottom mobile command dock. Center stays with search in the masthead,
-not among layer toggles. The compact masthead is 56 px on wide desktops,
-104 px at intermediate widths, and 120 px on phones. Its redundant brand
-subtitle is hidden; search, counts, freshness, and provider disclosure stay
-visible, with unchanged 44 px search/status targets. **More** opens the Explore
+and a bottom mobile command dock. Center stays with search at the start of
+Settings, not among layer toggles. The floating card is 280x88 px, inset 16 px
+on desktop and 12 px on mobile. Its redundant brand subtitle is hidden;
+counts, freshness, and provider disclosure stay visible, with unchanged 44 px
+search/status targets. **More** opens the Explore
 map panel inward to the left of the rail
 or above the dock and separates secondary tools
 into session-only Layers, Find, Context, Orbits, and Sources views; **VIEW**
@@ -168,10 +168,12 @@ source/model caveats. The duplicate traffic legend is intentionally absent;
 textual state and limitations remain in controls and selected details. The
 collapsed orbital summary is omitted while the detailed Orbits view is open,
 avoiding repeated information and preserving result space. The single mounted
-location input remains in the masthead when either panel is open. **Settings**
-opens View & settings and owns Appearance (Auto/Light/Dark and Trails), search feedback,
-browser location, history setup, preferences, sharing, reset, and application
-state. No controls or disclosure identities are duplicated or remounted.
+location input remains mounted inside Settings when either panel is closed.
+**Settings** opens View & settings with location input, Center, search feedback,
+and the existing privacy/attribution copy together, followed by Appearance
+(Auto/Light/Dark and Trails), browser location, history setup, preferences,
+sharing, reset, and application state. No controls or disclosure identities
+are duplicated or remounted.
 
 Opening either disclosure closes the other without remounting the search model.
 Operational recovery and app/storage/history recovery have separate promotion
@@ -184,7 +186,10 @@ away rather than covering short-view results, and orbital results remain fully
 expanded inside the outer scroll region. The mobile sheet leaves a 48 px map
 strip beside the control stack; the collapsed dock needs no scrolling.
 Live selected details occupy a left desktop inspector opposite the controls or a reserved mobile
-area below the masthead. A mobile ineligible-viewport prompt has its own row,
+area below the floating card. `--workspace-header-bottom` reserves the card's
+bottom edge at 104 px on desktop or 100 px on mobile; the desktop rail is
+independently inset 16 px from the upper-right corner. A mobile
+ineligible-viewport prompt has its own row,
 so neither selection nor More can hide the zoom/tilt instruction. These
 separate height budgets keep the last result and its focus ring reachable.
 Mobile HISTORY playback also reserves its own bottom control area. Opening a

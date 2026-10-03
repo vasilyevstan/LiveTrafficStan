@@ -1162,12 +1162,16 @@ substitutes.
 
 ## Compact controls and rendered interaction evidence
 
-The full-width masthead keeps the single location input, Center and provider
-status immediately available. Desktop has a 76 px right-hand rail with the
+The user explicitly rejected retaining a full-width bar after #291. The
+current source therefore restores a 280x88 px floating brand/status card
+instead of treating another small height reduction as completion. Counts,
+freshness, regional coverage, and Provider details remain immediately visible.
+The single location input, Center, results, and privacy/attribution text are
+grouped at the start of Settings. Desktop has a 76 px right-hand rail with the
 existing Aircraft, Ships, ORBITS, More and Settings buttons; panels open inward
 and the inspector sits opposite them. Phones retain the 70 px bottom dock.
-Wide/intermediate/mobile mastheads are 56/104/120 px. The refinement reduces
-redundant branding and decoration rather than hiding useful actions.
+The card is inset 16 px on desktop and 12 px on phones, while the right desktop
+rail begins at 16 px. Do not reintroduce an edge-to-edge header.
 
 The first presentation pass was not visually distinct enough; #288 supplied
 the structural correction. Subsequent feedback explicitly favored its buttons
@@ -1178,12 +1182,18 @@ earlier implementation. Its one decorative notice-border finding was removed
 without removing status text or recovery. Preserve accepted work and validate
 the changed surface rather than repeating unrelated reviews.
 
+#295 applies the installed Impeccable context, distill and craft guidance to
+the incumbent design, then runs its detector over the changed CSS/component.
+It changes composition, not provider or map behavior. The removed persistent
+search row remains available in the existing Settings disclosure; no new
+search model, menu state, framework, or application dependency is introduced.
+
 More contains session-only Layers, Find, Context, Orbits and Sources views.
 Inactive views stay mounted so controlled search/filter state survives task
 changes. **VIEW** selects Orbits and focuses its first result without another
 catalog request or camera movement. Settings groups Auto/Light/Dark and Trails
-under Appearance, plus search feedback, browser location, local history, units,
-sharing, reset and application detail. The disclosures share one native
+under Appearance after location search and its feedback, plus browser location,
+local history, units, sharing, reset and application detail. The disclosures share one native
 `name`, so at most one is open.
 
 The task strip uses the application's ordinary button, focus, and active-state
@@ -1194,8 +1204,8 @@ values precede the compact source population, retrieval time, sample, SGP4,
 not-live, and not-optical caveats. This is presentation only and adds no
 provider request, worker, map source, layer, or scheduler.
 
-The location input stays mounted while its feedback is collapsed, preserving
-entered text and in-flight state. Active historical controls remain outside
+The location input and its feedback stay mounted while Settings is collapsed,
+preserving entered text and in-flight state. Active historical controls remain outside
 both disclosures. Each panel may promote one action from its own recovery
 domain without duplicating that action inside More: operational recovery
 belongs above Operations More, while application, storage, update, and history

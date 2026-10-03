@@ -157,7 +157,7 @@ const renderControls = (
   )
 
 describe('TrafficControls', () => {
-  it('keeps navigation in the masthead and layers in one dock without duplicates', () => {
+  it('keeps a floating status header, navigation in Settings and layers in one dock', () => {
     const html = renderControls()
     const headerEnd = html.indexOf('</header>')
     const masthead = html.slice(0, headerEnd)
@@ -181,9 +181,9 @@ describe('TrafficControls', () => {
     expect(html).toContain('aria-label="Operations"')
     expect(html).toContain('aria-label="Location and settings"')
     expect(masthead).toContain('class="brand-panel"')
-    expect(masthead).toContain('aria-label="Map navigation"')
-    expect(masthead).toContain('id="location-search-input"')
-    expect(masthead).toContain('>CENTER<')
+    expect(masthead).not.toContain('aria-label="Map navigation"')
+    expect(masthead).not.toContain('id="location-search-input"')
+    expect(masthead).not.toContain('>CENTER<')
     expect(masthead).not.toContain('>AIRCRAFT<')
     expect(html).toContain('class="workspace-dock"')
     expect(navigationPrimary).not.toContain('id="location-search-input"')
@@ -221,7 +221,12 @@ describe('TrafficControls', () => {
     expect(settingsMore).toContain('id="traffic-controls-settings-summary"')
     expect(settingsMore).toContain('<span>Settings</span></summary>')
     expect(settingsMore).toContain('class="workspace-panel-title">View &amp; settings')
+    expect(settingsMore).toContain('aria-label="Map navigation"')
+    expect(settingsMore).toContain('id="location-search-input"')
+    expect(settingsMore).toContain('>CENTER<')
     expect(settingsMore).toContain('aria-label="Location search details"')
+    expect(settingsMore.indexOf('id="location-search-input"'))
+      .toBeLessThan(settingsMore.indexOf('<legend>Appearance</legend>'))
     expect(settingsMore).toContain('USE LOCATION')
     expect(settingsMore).toContain('<legend>History</legend>')
     expect(settingsMore).toContain('<legend>Preferences</legend>')
@@ -231,6 +236,7 @@ describe('TrafficControls', () => {
     expect(settingsMore).not.toContain('<legend>Layers</legend>')
     expect(html.match(/name="traffic-control-panels"/g)).toHaveLength(2)
     expect(html.match(/id="location-search-input"/g)).toHaveLength(1)
+    expect(html.match(/>CENTER</g)).toHaveLength(1)
     expect(html.match(/>AIRCRAFT</g)).toHaveLength(1)
     expect(html.match(/>SHIPS</g)).toHaveLength(1)
     expect(html.match(/>TRAILS</g)).toHaveLength(1)
@@ -240,17 +246,19 @@ describe('TrafficControls', () => {
     expect(html.match(/>LIGHT</g)).toHaveLength(1)
   })
 
-  it('composes status into the stable masthead without moving settings state', () => {
+  it('composes status into the floating header without duplicating settings state', () => {
     const html = renderControls({
       masthead: <section aria-label="Traffic provider status">PARTIAL</section>,
     })
     const header = html.slice(0, html.indexOf('</header>'))
     expect(header).toContain('aria-label="Traffic provider status">PARTIAL')
-    expect(header).toContain('role="search"')
+    expect(header).not.toContain('role="search"')
     expect(header).not.toContain('id="traffic-controls-settings"')
     expect(html).toContain(
       'id="traffic-controls-settings" name="traffic-control-panels"',
     )
+    expect(html.slice(html.indexOf('id="traffic-controls-settings"')))
+      .toContain('role="search"')
   })
 
   it('separates map tools into compact session-only views', () => {
