@@ -1162,17 +1162,29 @@ substitutes.
 
 ## Compact controls and rendered interaction evidence
 
-The primary map controls remain intentionally small and split by task. The
-upper Operations panel keeps Center, Aircraft, Ships, and ORBITS visible; its
-disclosure contains session-only Layers, Find, Context, Orbits, and Sources
-views. Inactive views remain mounted but hidden so controlled search/filter
-state survives task changes. **VIEW** selects Orbits and focuses its first
-result without adding a catalog request or moving the camera. The lower
-Location & Settings panel keeps the one location input plus Auto, Light, Dark,
-and Trails visible; its native disclosure contains search feedback, browser
-location, trail duration, local-history setup, units, sharing, reset, and
-application detail. The two disclosures share one native `name`, so at most
-one is open.
+The full-width masthead keeps the single location input, Center and provider
+status immediately available. Desktop has a 76 px right-hand rail with the
+existing Aircraft, Ships, ORBITS, More and Settings buttons; panels open inward
+and the inspector sits opposite them. Phones retain the 70 px bottom dock.
+Wide/intermediate/mobile mastheads are 56/104/120 px. The refinement reduces
+redundant branding and decoration rather than hiding useful actions.
+
+The first presentation pass was not visually distinct enough; #288 supplied
+the structural correction. Subsequent feedback explicitly favored its buttons
+but requested minimalism, right-side controls and a smaller bar. #291 used
+the installed Impeccable distill/craft guidance and detector for that focused
+CSS change, not a new design system or a claim that Impeccable created the
+earlier implementation. Its one decorative notice-border finding was removed
+without removing status text or recovery. Preserve accepted work and validate
+the changed surface rather than repeating unrelated reviews.
+
+More contains session-only Layers, Find, Context, Orbits and Sources views.
+Inactive views stay mounted so controlled search/filter state survives task
+changes. **VIEW** selects Orbits and focuses its first result without another
+catalog request or camera movement. Settings groups Auto/Light/Dark and Trails
+under Appearance, plus search feedback, browser location, local history, units,
+sharing, reset and application detail. The disclosures share one native
+`name`, so at most one is open.
 
 The task strip uses the application's ordinary button, focus, and active-state
 tokens. It must not fall back to browser-default controls, but it also remains

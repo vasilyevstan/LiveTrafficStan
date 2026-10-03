@@ -15,6 +15,9 @@ Check these project invariants:
   instance, and sibling controls remain usable.
 - A single MapLibre instance survives normal React updates and theme changes.
 - The explicit Vite-bundled MapLibre worker remains configured.
+- A loaded style or main-target `.pbf` count is not vector-tile proof: those
+  responses may be font glyphs. Use rendered vector-source features plus
+  visible basemap evidence, or inspect actual worker-target tile requests.
 - `setStyle` rehydrates custom images, sources, layers, current GeoJSON data,
   visibility, selected trail, and theme-dependent paint exactly once.
 - Rapid style changes cannot let an obsolete `style.load` win.
@@ -127,11 +130,12 @@ Check these project invariants:
 - Added controls must not let the mobile overlay consume the entire map.
   Verify a real touch drag starts on an unobscured map region at both 390x844
   and 390x568 while the control panel remains scrollable and reachable.
-- Keep the primary controls compact and task-based. Operations keeps Center,
-  Aircraft, Ships, and ORBITS visible. The one mounted location input remains
-  immediate; Appearance groups Auto/Light/Dark and Trails inside settings.
-  Explore map and View & settings label two stable native disclosures that are
-  mutually exclusive. Operational and
+- Keep the accepted minimal controls compact and task-based: search and Center
+  stay in the masthead, while the existing buttons occupy the right desktop
+  rail or mobile bottom dock. Desktop panels open inward and the inspector is
+  opposite; a smaller header must not hide provider status or primary actions.
+  Appearance groups Auto/Light/Dark and Trails inside settings. More and
+  Settings remain stable mutually exclusive native disclosures. Operational and
   app/storage/history recovery may each be promoted only above their owning
   disclosure without duplication. Active historical playback remains outside
   both panels. A collapsed disclosure removes descendants from the tab order,
