@@ -62,9 +62,13 @@ describe('interface presentation contracts', () => {
     expect(styles).toContain('outline: 3px solid var(--focus-ring)')
   })
 
-  it('uses an edge-to-edge masthead and a responsive rail rather than corner cards', () => {
+  it('uses a compact masthead and preserves the mobile bottom dock', () => {
     expect(styles).toMatch(/\.brand-panel\s*\{[^}]*top: 0;[^}]*right: 0;[^}]*left: 0;/)
     expect(styles).toContain("grid-template-areas: 'brand navigation status'")
+    expect(styles).toContain('--workspace-masthead-height: 56px')
+    expect(styles).toContain('--workspace-masthead-height: 104px')
+    expect(styles).toContain('--workspace-masthead-height: 120px')
+    expect(styles).toContain('grid-template-rows: 24px 44px 44px')
     expect(styles).toContain('.workspace-dock {')
     expect(styles).toContain('top: calc(var(--workspace-masthead-height) + 16px)')
     expect(styles).toContain('top: calc(var(--app-visual-viewport-height) - var(--control-stack-height) - 30px)')
@@ -72,5 +76,13 @@ describe('interface presentation contracts', () => {
     expect(styles).not.toContain('--mobile-controls-top')
     expect(styles).toContain('.interface-layer:has(.viewport-notice)')
     expect(styles).toContain('var(--workspace-notice-height) - var(--mobile-detail-height)')
+    expect(styles).not.toMatch(/\.viewport-notice\s*\{[^}]*border-left:/)
+  })
+
+  it('anchors desktop controls right, opens panels inward and keeps details opposite', () => {
+    expect(styles).toMatch(/\.control-stack\s*\{[^}]*right: 16px;[^}]*left: auto;/)
+    expect(styles).toMatch(/\.control-panel__more-body\s*\{[^}]*right: calc\(100% \+ 12px\);[^}]*left: auto;/)
+    expect(styles).toMatch(/\.control-panel__urgent\s*\{[^}]*right: calc\(100% \+ 12px\);[^}]*left: auto;/)
+    expect(styles).toMatch(/\.details-panel\s*\{[^}]*right: auto;[^}]*left: 16px;/)
   })
 })
