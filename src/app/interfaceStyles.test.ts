@@ -61,4 +61,16 @@ describe('interface presentation contracts', () => {
     expect(styles).not.toMatch(/\.control-panel__tasks\s*\{[^}]*position: sticky;/)
     expect(styles).toContain('outline: 3px solid var(--focus-ring)')
   })
+
+  it('uses an edge-to-edge masthead and a responsive rail rather than corner cards', () => {
+    expect(styles).toMatch(/\.brand-panel\s*\{[^}]*top: 0;[^}]*right: 0;[^}]*left: 0;/)
+    expect(styles).toContain("grid-template-areas: 'brand navigation status'")
+    expect(styles).toContain('.workspace-dock {')
+    expect(styles).toContain('top: calc(var(--workspace-masthead-height) + 16px)')
+    expect(styles).toContain('top: calc(var(--app-visual-viewport-height) - var(--control-stack-height) - 30px)')
+    expect(styles).toContain('bottom: calc(78px + var(--workspace-note-height))')
+    expect(styles).not.toContain('--mobile-controls-top')
+    expect(styles).toContain('.interface-layer:has(.viewport-notice)')
+    expect(styles).toContain('var(--workspace-notice-height) - var(--mobile-detail-height)')
+  })
 })

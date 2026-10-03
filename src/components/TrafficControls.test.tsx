@@ -157,8 +157,10 @@ const renderControls = (
   )
 
 describe('TrafficControls', () => {
-  it('separates operations and location/settings without duplicating controls', () => {
+  it('keeps navigation in the masthead and layers in one dock without duplicates', () => {
     const html = renderControls()
+    const headerEnd = html.indexOf('</header>')
+    const masthead = html.slice(0, headerEnd)
     const mapDetailsIndex = html.indexOf(
       '<details id="traffic-controls-map-tools"',
     )
@@ -168,7 +170,7 @@ describe('TrafficControls', () => {
     const settingsDetailsIndex = html.indexOf(
       '<details id="traffic-controls-settings"',
     )
-    const navigationPrimary = html.slice(0, mapDetailsIndex)
+    const navigationPrimary = html.slice(headerEnd, mapDetailsIndex)
     const navigationMore = html.slice(mapDetailsIndex, settingsPanelIndex)
     const settingsPrimary = html.slice(
       settingsPanelIndex,
@@ -178,17 +180,23 @@ describe('TrafficControls', () => {
 
     expect(html).toContain('aria-label="Operations"')
     expect(html).toContain('aria-label="Location and settings"')
+    expect(masthead).toContain('class="brand-panel"')
+    expect(masthead).toContain('aria-label="Map navigation"')
+    expect(masthead).toContain('id="location-search-input"')
+    expect(masthead).toContain('>CENTER<')
+    expect(masthead).not.toContain('>AIRCRAFT<')
+    expect(html).toContain('class="workspace-dock"')
     expect(navigationPrimary).not.toContain('id="location-search-input"')
-    expect(navigationPrimary).toContain('>CENTER<')
+    expect(navigationPrimary).not.toContain('>CENTER<')
     expect(navigationPrimary).toContain('>AIRCRAFT<')
     expect(navigationPrimary).toContain('>SHIPS<')
     expect(navigationPrimary).toContain('>ORBITS<')
     expect(navigationPrimary).not.toContain('control-options--three')
     expect(navigationPrimary).not.toContain('>AUTO<')
     expect(navigationPrimary).not.toContain('href=')
-    expect(navigationMore).toContain(
-      '<summary id="traffic-controls-map-tools-summary"><span>Explore map</span><span class="control-panel__more-hint">More</span></summary>',
-    )
+    expect(navigationMore).toContain('id="traffic-controls-map-tools-summary"')
+    expect(navigationMore).toContain('<span>More</span></summary>')
+    expect(navigationMore).toContain('class="workspace-panel-title">Explore map')
     expect(navigationMore).toContain('<legend>Layers</legend>')
     expect(navigationMore).toContain('>ORBITS</button>')
     expect(navigationMore).not.toContain('Traffic legend')
@@ -203,16 +211,16 @@ describe('TrafficControls', () => {
     )
     expect(navigationMore).not.toContain('USE LOCATION')
     expect(navigationMore).not.toContain('<legend>History</legend>')
-    expect(settingsPrimary).toContain('id="location-search-input"')
+    expect(settingsPrimary).not.toContain('id="location-search-input"')
     expect(settingsPrimary).not.toContain('>AUTO<')
     expect(settingsMore).toContain('<legend>Appearance</legend>')
     expect(settingsMore).toContain('>AUTO<')
     expect(settingsMore).toContain('>LIGHT<')
     expect(settingsMore).toContain('>DARK<')
     expect(settingsMore).toContain('>TRAILS<')
-    expect(settingsMore).toContain(
-      '<summary id="traffic-controls-settings-summary"><span>View &amp; settings</span><span class="control-panel__more-hint">More</span></summary>',
-    )
+    expect(settingsMore).toContain('id="traffic-controls-settings-summary"')
+    expect(settingsMore).toContain('<span>Settings</span></summary>')
+    expect(settingsMore).toContain('class="workspace-panel-title">View &amp; settings')
     expect(settingsMore).toContain('aria-label="Location search details"')
     expect(settingsMore).toContain('USE LOCATION')
     expect(settingsMore).toContain('<legend>History</legend>')
@@ -227,9 +235,22 @@ describe('TrafficControls', () => {
     expect(html.match(/>SHIPS</g)).toHaveLength(1)
     expect(html.match(/>TRAILS</g)).toHaveLength(1)
     expect(html.match(/>ORBITS</g)).toHaveLength(2)
-    expect(html.match(/class="operation-icon"/g)).toHaveLength(4)
+    expect(html.match(/class="operation-icon"/g)).toHaveLength(6)
     expect(html.match(/aria-label="Theme and trails"/g)).toHaveLength(1)
     expect(html.match(/>LIGHT</g)).toHaveLength(1)
+  })
+
+  it('composes status into the stable masthead without moving settings state', () => {
+    const html = renderControls({
+      masthead: <section aria-label="Traffic provider status">PARTIAL</section>,
+    })
+    const header = html.slice(0, html.indexOf('</header>'))
+    expect(header).toContain('aria-label="Traffic provider status">PARTIAL')
+    expect(header).toContain('role="search"')
+    expect(header).not.toContain('id="traffic-controls-settings"')
+    expect(html).toContain(
+      'id="traffic-controls-settings" name="traffic-control-panels"',
+    )
   })
 
   it('separates map tools into compact session-only views', () => {

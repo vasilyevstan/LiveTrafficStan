@@ -1491,34 +1491,35 @@ function App() {
       <div className="radar-shade" aria-hidden="true" />
 
       <div className="interface-layer">
-        <header className="brand-panel">
-          <div className="brand-panel__title">
-            <div className="radar-mark" aria-hidden="true">
-              <span />
-            </div>
-            <div>
-              <h1>LiveTrafficStan</h1>
-              <p>{mapSubtitle}</p>
-            </div>
-          </div>
-          <LiveStatus
-            aircraftCount={aircraftVisible ? aircraft.length : 0}
-            vesselCount={vesselsVisible ? vessels.length : 0}
-            aircraftStatus={aircraftResult.status}
-            marineStatus={marineResult.status}
-            marineCapabilities={marineResult.capabilities}
-            now={now}
-            online={online}
-            orbitalSummary={orbitalSummary}
-            historicalAt={
-              history.playback.mode === 'live'
-                ? undefined
-                : history.playback.cursor
-            }
-          />
-        </header>
-
         <TrafficControls
+          masthead={
+            <>
+              <div className="brand-panel__title">
+                <div className="radar-mark" aria-hidden="true">
+                  <span />
+                </div>
+                <div>
+                  <h1>LiveTrafficStan</h1>
+                  <p>{mapSubtitle}</p>
+                </div>
+              </div>
+              <LiveStatus
+                aircraftCount={aircraftVisible ? aircraft.length : 0}
+                vesselCount={vesselsVisible ? vessels.length : 0}
+                aircraftStatus={aircraftResult.status}
+                marineStatus={marineResult.status}
+                marineCapabilities={marineResult.capabilities}
+                now={now}
+                online={online}
+                orbitalSummary={orbitalSummary}
+                historicalAt={
+                  history.playback.mode === 'live'
+                    ? undefined
+                    : history.playback.cursor
+                }
+              />
+            </>
+          }
           aircraftQuery={aircraftQuery}
           aircraftResults={aircraftResults}
           totalAircraft={aircraft.length}
