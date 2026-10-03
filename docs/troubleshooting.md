@@ -902,7 +902,7 @@ as terminal for the running tab rather than retrying on reselection. A hover
 must never contact NASA or request the same-origin asset; a tooltip can reuse
 only a validated Blob URL created by selected details earlier in the tab.
 
-Current application source `d565b56278e81ff2478ab1e476c269084f2297d4`
+Current application source `9f5ee37d9ad2bbeedb20a89ea08e7cd5629e36e8`
 retains the same previously proven uncached `200 image/jpeg` Static Assets with
 exact 46,716-byte and 48,741-byte lengths plus one-year immutable caching. Any
 different bytes, media type, redirect, repeated request, NASA runtime request,
