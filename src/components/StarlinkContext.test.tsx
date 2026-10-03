@@ -121,6 +121,7 @@ const renderContext = (
     enabled: boolean
     live: boolean
     state: OrbitalControllerState
+    counts: OrbitalPopulationCounts
   }> = {},
 ) =>
   renderToStaticMarkup(
@@ -151,7 +152,7 @@ const renderContext = (
         }
       }
       selectedId={null}
-      counts={counts}
+      counts={overrides.counts ?? counts}
       horizonMs={90 * 60_000}
       pageSize={20}
       onEnabledChange={() => undefined}
@@ -170,14 +171,86 @@ describe('StarlinkContext', () => {
 
   it('reports source population, sample, modeled, and map counts distinctly', () => {
     const html = renderContext()
-    expect(html).toContain(
-      '1 SAFE MODELED / 1 SAMPLE RECORDS · SOURCE REPORTED 11,127',
-    )
-    expect(html).toContain('1 SHOWN · 1 IN MAP · 0 PASSES ≤90M')
-    expect(html).toContain('systematic sample, not the full constellation')
+    expect(html).toContain('aria-label="Starlink sample summary"')
+    expect(html).toContain('<dt>Modeled</dt><dd>1</dd>')
+    expect(html).toContain('<span>of 1 sampled</span>')
+    expect(html).toContain('<dt>In map</dt><dd>1</dd><span>1 shown</span>')
+    expect(html).toContain('<dt>Next 90m</dt><dd>0</dd>')
+    expect(html).toContain('Systematic sample from 11,127 source objects')
+    expect(html).toContain('Not the full constellation')
     expect(html).toContain('not live telemetry')
     expect(html).toContain('STARLINK-TEST')
     expect(html).toContain('Safe modeled position · in map now')
+  })
+
+  it('labels schema-2 shell balancing and its four fixed sample quotas truthfully', () => {
+    const shellSnapshot: StarlinkOrbitalCatalogSnapshot = {
+      ...snapshot,
+      schemaVersion: 2,
+      sourceContractVersion: 2,
+      catalogId: 'celestrak-starlink-shell-balanced-v1',
+      starlink: {
+        ...snapshot.starlink,
+        sampleLimit: 512,
+        sampleAlgorithm: 'inclination-shell-raan-phase-grid-v1',
+        samplingReferenceTime: '2026-10-01T20:01:00.000Z',
+        shells: [
+          'low',
+          'middle',
+          'high',
+          'polar',
+        ].map((id) => ({
+          id,
+          inclinationMinimumDegrees: 0,
+          inclinationMaximumDegreesExclusive: null,
+          populationCount: 128,
+          sampleCount: 128,
+        })),
+      },
+    }
+    const html = renderContext({
+      state: {
+        phase: 'ready',
+        acceptedCount: 1,
+        positions: [position],
+        prediction: EMPTY_ORBITAL_PREDICTION,
+        snapshot: shellSnapshot,
+      },
+    })
+
+    expect(html).toContain(
+      'Shell-balanced sample from 11,127 source objects',
+    )
+    expect(html).toContain(
+      '4 inclination bands · 128/128/128/128 sampled',
+    )
+    expect(html).toContain(
+      'aria-label="Shell-balanced sample results"',
+    )
+  })
+
+  it('distinguishes unavailable map geometry from a pending crossing prediction', () => {
+    const unavailable = renderContext({
+      counts: {
+        ...counts,
+        inFootprintCount: undefined,
+        shownInFootprintCount: undefined,
+        futureCrossingCount: undefined,
+      },
+    })
+    expect(unavailable).toContain(
+      '<dt>Next 90m</dt><dd>—</dd><span>Unavailable</span>',
+    )
+
+    const updating = renderContext({
+      counts: {
+        ...counts,
+        futureCrossingCount: undefined,
+      },
+    })
+    expect(updating).toContain(
+      '<dt>Next 90m</dt><dd>…</dd><span>Updating</span>',
+    )
   })
 
   it('does not expose sample rows while disabled', () => {

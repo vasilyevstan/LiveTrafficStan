@@ -11,16 +11,16 @@ import sourceSettings from '../src/config/starlinkCatalogSource.json' with {
   type: 'json',
 }
 import {
-  STARLINK_CATALOG_ID,
+  STARLINK_CATALOG_V2_ID,
   STARLINK_GP_SOURCE_URL,
   STARLINK_MAX_AGGREGATE_BYTES,
-  STARLINK_MAX_SNAPSHOT_BYTES,
+  STARLINK_V2_MAX_SNAPSHOT_BYTES,
   STARLINK_MAX_UPSTREAM_BYTES,
   STARLINK_MAX_UPSTREAM_RECORDS,
-  STARLINK_SAMPLE_ALGORITHM,
+  STARLINK_V2_SAMPLE_ALGORITHM,
   STARLINK_SATCAT_SOURCE_URL,
-  createStarlinkCatalogSnapshot,
-  serializeStarlinkCatalogSnapshot,
+  createStarlinkCatalogSnapshotV2,
+  serializeStarlinkCatalogSnapshotV2,
 } from '../worker/starlinkCatalog.ts'
 import { readBoundedJsonFile } from './read-bounded-json-file.mjs'
 
@@ -58,8 +58,8 @@ const sha256 = (value) =>
   createHash('sha256').update(value).digest('hex')
 
 if (
-  sourceSettings.schemaVersion !== 1 ||
-  sourceSettings.catalogId !== STARLINK_CATALOG_ID ||
+  sourceSettings.schemaVersion !== 2 ||
+  sourceSettings.catalogId !== STARLINK_CATALOG_V2_ID ||
   sourceSettings.status !== 'pending-source-artifacts'
 ) {
   throw new Error(
@@ -132,7 +132,7 @@ if (
   )
 }
 
-const snapshot = await createStarlinkCatalogSnapshot(
+const snapshot = await createStarlinkCatalogSnapshotV2(
   {
     gpValue,
     satcatValue,
@@ -145,22 +145,31 @@ const snapshot = await createStarlinkCatalogSnapshot(
   },
   publishedAt,
 )
-const catalogText = serializeStarlinkCatalogSnapshot(snapshot)
+const catalogText = serializeStarlinkCatalogSnapshotV2(snapshot)
 const catalogBytes = new TextEncoder().encode(catalogText)
-if (catalogBytes.byteLength > STARLINK_MAX_SNAPSHOT_BYTES) {
+if (catalogBytes.byteLength > STARLINK_V2_MAX_SNAPSHOT_BYTES) {
   throw new Error('Generated Starlink snapshot is oversized')
 }
 
 const notice = [
-  'LiveTrafficStan CelesTrak Starlink systematic sample',
+  'LiveTrafficStan CelesTrak Starlink shell-balanced sample',
   '',
   `Catalog: ${snapshot.catalogId}`,
   `Published: ${snapshot.publishedAt}`,
   `Digest: ${snapshot.digest}`,
   `Sample algorithm: ${snapshot.sampleAlgorithm}`,
+  `Sampling reference time: ${snapshot.samplingReferenceTime}`,
   `Population count: ${snapshot.populationCount}`,
   `Sample record count: ${snapshot.recordCount}`,
   `Extra validated SATCAT rows: ${snapshot.extraSatcatCount}`,
+  ...snapshot.shells.flatMap((shell) => [
+    '',
+    `Shell: ${shell.id}`,
+    `Inclination minimum: ${shell.inclinationMinimumDegrees}`,
+    `Inclination maximum exclusive: ${shell.inclinationMaximumDegreesExclusive ?? 'none'}`,
+    `Population count: ${shell.populationCount}`,
+    `Sample count: ${shell.sampleCount}`,
+  ]),
   '',
   `GP URL: ${snapshot.sources.gp.url}`,
   `GP retrieved: ${snapshot.sources.gp.retrievedAt}`,
@@ -174,13 +183,13 @@ const notice = [
   `SATCAT decoded bytes: ${snapshot.sources.satcat.decodedBytes}`,
   `SATCAT SHA-256: ${snapshot.sources.satcat.sha256}`,
   '',
-  'This is a deterministic systematic sample of the validated source population.',
+  'This is a deterministic shell-balanced RAAN/phase-grid sample of the validated source population.',
   'It is not the complete constellation and is not live telemetry.',
   'CelesTrak data use remains subject to the provider terms and attribution.',
   '',
 ].join('\n')
 if (
-  snapshot.sampleAlgorithm !== STARLINK_SAMPLE_ALGORITHM ||
+  snapshot.sampleAlgorithm !== STARLINK_V2_SAMPLE_ALGORITHM ||
   /representative/i.test(notice)
 ) {
   throw new Error('Generated Starlink notice is invalid')
@@ -200,6 +209,8 @@ const manifest = {
     populationCount: snapshot.populationCount,
     extraSatcatCount: snapshot.extraSatcatCount,
     records: snapshot.recordCount,
+    samplingReferenceTime: snapshot.samplingReferenceTime,
+    shells: snapshot.shells,
     snapshotBytes: catalogBytes.byteLength,
     snapshotFileSha256: sha256(catalogBytes),
     canonicalDigest: snapshot.digest,

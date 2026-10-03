@@ -78,6 +78,9 @@ export function StarlinkContext({
   const horizonMinutes = Math.round(horizonMs / 60_000)
   const active = parentVisible && enabled && live
   const status = active ? stateMessage(state) : undefined
+  const sampleLabel = snapshot?.starlink.sampleAlgorithm.includes('shell')
+    ? 'Shell-balanced sample'
+    : 'Systematic sample'
 
   useEffect(() => {
     if (page === catalogPage.page) return
@@ -104,12 +107,19 @@ export function StarlinkContext({
   }
 
   return (
-    <fieldset className="control-group orbital-starlink">
-      <legend>Starlink systematic sample</legend>
-      <div className="control-options">
+    <section
+      className="control-group orbital-starlink"
+      aria-labelledby="starlink-sample-heading"
+    >
+      <div className="orbital-starlink__heading">
+        <h3 id="starlink-sample-heading" className="eyebrow">
+          Starlink sample
+        </h3>
         <button
           type="button"
-          className={enabled ? 'is-active' : undefined}
+          className={`orbital-starlink__toggle${
+            enabled ? ' is-active' : ''
+          }`}
           aria-pressed={enabled}
           onClick={() => onEnabledChange(!enabled)}
         >
@@ -141,49 +151,90 @@ export function StarlinkContext({
 
       {active && snapshot && (
         <>
-          <div className="vessel-discovery__summary orbital-context__counts">
+          <dl
+            className="orbital-summary-metrics"
+            aria-label="Starlink sample summary"
+          >
+            <div>
+              <dt>Modeled</dt>
+              <dd>{counts.modeledNowCount}</dd>
+              <span>of {snapshot.recordCount} sampled</span>
+            </div>
+            <div>
+              <dt>In map</dt>
+              <dd>
+                {counts.inFootprintCount === undefined
+                  ? '—'
+                  : counts.inFootprintCount}
+              </dd>
+              <span>
+                {counts.inFootprintCount === undefined
+                  ? 'Area unavailable'
+                  : `${counts.shownInFootprintCount ?? 0} shown`}
+              </span>
+            </div>
+            <div>
+              <dt>Next {horizonMinutes}m</dt>
+              <dd>
+                {counts.futureCrossingCount === undefined
+                  ? counts.inFootprintCount === undefined
+                    ? '—'
+                    : '…'
+                  : counts.futureCrossingCount}
+              </dd>
+              <span>
+                {counts.futureCrossingCount === undefined
+                  ? counts.inFootprintCount === undefined
+                    ? 'Unavailable'
+                    : 'Updating'
+                  : counts.futureCrossingCount === 1
+                    ? 'map pass'
+                    : 'map passes'}
+              </span>
+            </div>
+          </dl>
+
+          <div className="vessel-discovery__summary orbital-context__counts orbital-starlink__provenance">
             <p>
-              {counts.modeledNowCount} SAFE MODELED / {snapshot.recordCount}{' '}
-              SAMPLE RECORDS · SOURCE REPORTED{' '}
-              {snapshot.starlink.populationCount.toLocaleString('en-US')}.
+              {sampleLabel} from{' '}
+              {snapshot.starlink.populationCount.toLocaleString('en-US')}{' '}
+              source objects.
             </p>
+            {snapshot.starlink.shells && (
+              <p>
+                {snapshot.starlink.shells.length} inclination bands ·{' '}
+                {snapshot.starlink.shells
+                  .map((shell) => shell.sampleCount)
+                  .join('/')} sampled.
+              </p>
+            )}
             <p>
-              {counts.inFootprintCount === undefined
-                ? 'MAP-AREA COUNTS UNAVAILABLE'
-                : `${counts.shownInFootprintCount ?? 0} SHOWN · ${counts.inFootprintCount} IN MAP`}
-              {' · '}
-              {counts.futureCrossingCount === undefined
-                ? 'PASSES UPDATING'
-                : `${counts.futureCrossingCount} ${
-                    counts.futureCrossingCount === 1 ? 'PASS' : 'PASSES'
-                  } ≤${horizonMinutes}M`}
-            </p>
-            <p>
-              GP retrieved{' '}
+              GP{' '}
               {formatTimestamp(
                 Date.parse(snapshot.starlink.sources.gp.retrievedAt),
               )}
-              {' · '}SATCAT retrieved{' '}
+              {' · '}SATCAT{' '}
               {formatTimestamp(
                 Date.parse(snapshot.starlink.sources.satcat.retrievedAt),
               )}
-              {' · '}inclination/RAAN systematic sample, not the full
-              constellation · SGP4, not live telemetry, optical visibility,
-              or operational status.
+            </p>
+            <p>
+              Not the full constellation. SGP4 modeled, not live telemetry,
+              optical visibility, or operational status.
             </p>
           </div>
 
-          <div className="vessel-discovery__summary">
+          <div className="vessel-discovery__summary orbital-starlink__page">
             <p>
               {catalogPage.rangeStart}-{catalogPage.rangeEnd} of{' '}
-              {catalogPage.listedRowCount} sampled rows · page{' '}
-              {catalogPage.page + 1} of {catalogPage.pageCount}.
+              {catalogPage.listedRowCount} sampled objects · page{' '}
+              {catalogPage.page + 1}/{catalogPage.pageCount}.
             </p>
           </div>
 
           <ul
             className="vessel-results orbital-results orbital-catalog-results"
-            aria-label="Starlink systematic sample results"
+            aria-label={`${sampleLabel} results`}
           >
             {catalogPage.rows.map((record) => {
               const id = orbitalFeatureId(
@@ -256,6 +307,6 @@ export function StarlinkContext({
           </div>
         </>
       )}
-    </fieldset>
+    </section>
   )
 }

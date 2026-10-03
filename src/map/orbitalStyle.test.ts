@@ -450,7 +450,7 @@ describe('orbital map style', () => {
     })
     expect(STARLINK_SOURCE_ATTRIBUTION).toContain('CelesTrak')
     expect(STARLINK_SOURCE_ATTRIBUTION).toContain(
-      'Starlink systematic sample',
+      'Starlink sample',
     )
     expect(STARLINK_SOURCE_ATTRIBUTION).toContain('SGP4')
     expect(STARLINK_SOURCE_ATTRIBUTION).toContain('not live')

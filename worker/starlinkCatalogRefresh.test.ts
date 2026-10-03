@@ -11,10 +11,11 @@ import {
   type StarlinkRefreshReservation,
 } from './orbitalCatalog.js'
 import {
-  STARLINK_CATALOG_KEY,
+  STARLINK_CATALOG_PUBLICATION_KEY,
   STARLINK_GP_SOURCE_URL,
   STARLINK_REFRESH_INTERVAL_MS,
   STARLINK_SATCAT_SOURCE_URL,
+  STARLINK_V2_SAMPLE_LIMIT,
 } from './starlinkCatalog.js'
 
 const nowMs = Date.parse('2026-10-01T19:45:00.000Z')
@@ -54,6 +55,25 @@ const satcatRecord = (
   OBJECT_TYPE: 'PAY',
   ...overrides,
 })
+
+const starlinkPopulation = Array.from(
+  { length: STARLINK_V2_SAMPLE_LIMIT },
+  (_, index) => {
+    const shellIndex = Math.floor(index / 128)
+    const shellOffset = index % 128
+    return gpRecord(90_000 + index, {
+      INCLINATION: [43, 53, 70, 97.5][shellIndex],
+      RA_OF_ASC_NODE:
+        ((shellOffset % 16) + 0.5) * (360 / 16),
+      MEAN_ANOMALY:
+        ((Math.floor(shellOffset / 16) + 0.5) * 360) / 8,
+      ARG_OF_PERICENTER: 0,
+    })
+  },
+)
+const starlinkSatcat = starlinkPopulation.map((row) =>
+  satcatRecord(Number(row.NORAD_CAT_ID)),
+)
 
 const jsonResponse = (value: unknown, init: ResponseInit = {}) =>
   new Response(JSON.stringify(value), {
@@ -173,10 +193,10 @@ const sourceResponse = (url: string) => {
       : jsonResponse([satcatRecord(id)])
   }
   if (url === STARLINK_GP_SOURCE_URL) {
-    return jsonResponse([gpRecord(90_001)])
+    return jsonResponse(starlinkPopulation)
   }
   if (url === STARLINK_SATCAT_SOURCE_URL) {
-    return jsonResponse([satcatRecord(90_001)])
+    return jsonResponse(starlinkSatcat)
   }
   throw new Error(`Unexpected URL: ${url}`)
 }
@@ -220,8 +240,8 @@ describe('shared curated and Starlink refresh attempt', () => {
       recordCount: 5,
       starlink: {
         kind: 'published',
-        populationCount: 1,
-        recordCount: 1,
+        populationCount: STARLINK_V2_SAMPLE_LIMIT,
+        recordCount: STARLINK_V2_SAMPLE_LIMIT,
       },
     })
     expect(calls).toEqual([
@@ -233,20 +253,28 @@ describe('shared curated and Starlink refresh attempt', () => {
       STARLINK_SATCAT_SOURCE_URL,
     ])
     expect(store.values.has(ORBITAL_CATALOG_KEY)).toBe(true)
-    expect(store.values.has(STARLINK_CATALOG_KEY)).toBe(true)
+    expect(
+      store.values.has(STARLINK_CATALOG_PUBLICATION_KEY),
+    ).toBe(true)
     const storedStarlink = JSON.parse(
-      store.values.get(STARLINK_CATALOG_KEY) ?? 'null',
+      store.values.get(STARLINK_CATALOG_PUBLICATION_KEY) ??
+        'null',
     )
     expect(storedStarlink).toMatchObject({
-      sources: {
-        gp: {
-          retrievedAt: new Date(starlinkStartMs).toISOString(),
+      schema1: {
+        sources: {
+          gp: {
+            retrievedAt: new Date(starlinkStartMs).toISOString(),
+          },
+          satcat: {
+            retrievedAt: new Date(starlinkStartMs).toISOString(),
+          },
         },
-        satcat: {
-          retrievedAt: new Date(starlinkStartMs).toISOString(),
-        },
+        publishedAt: new Date(starlinkStartMs).toISOString(),
       },
-      publishedAt: new Date(starlinkStartMs).toISOString(),
+      schema2: {
+        recordCount: STARLINK_V2_SAMPLE_LIMIT,
+      },
     })
     expect(coordinator.starlinkLastStartedAtMs).toBe(
       starlinkStartMs,
@@ -263,7 +291,9 @@ describe('shared curated and Starlink refresh attempt', () => {
       events.indexOf(`put:${ORBITAL_CATALOG_KEY}`),
     )
     expect(completionIndex).toBeLessThan(
-      events.indexOf(`put:${STARLINK_CATALOG_KEY}`),
+      events.indexOf(
+        `put:${STARLINK_CATALOG_PUBLICATION_KEY}`,
+      ),
     )
     expect(
       calls.indexOf(STARLINK_GP_SOURCE_URL),
@@ -348,7 +378,10 @@ describe('shared curated and Starlink refresh attempt', () => {
   it('persists a Starlink terminal state globally after retaining curated publication', async () => {
     const events: string[] = []
     const store = new EventKv(events)
-    store.values.set(STARLINK_CATALOG_KEY, 'prior-starlink')
+    store.values.set(
+      STARLINK_CATALOG_PUBLICATION_KEY,
+      'prior-starlink',
+    )
     const coordinator = new EventCoordinator(events)
     const fetchImpl = vi.fn(async (input) => {
       const url = String(input)
@@ -369,9 +402,9 @@ describe('shared curated and Starlink refresh attempt', () => {
     ).resolves.toEqual({ kind: 'blocked', status: 403 })
     expect(coordinator.blockedStatus).toBe(403)
     expect(store.values.has(ORBITAL_CATALOG_KEY)).toBe(true)
-    expect(store.values.get(STARLINK_CATALOG_KEY)).toBe(
-      'prior-starlink',
-    )
+    expect(
+      store.values.get(STARLINK_CATALOG_PUBLICATION_KEY),
+    ).toBe('prior-starlink')
     expect(events.indexOf('complete:blocked')).toBeLessThan(
       events.indexOf(`put:${ORBITAL_CATALOG_KEY}`),
     )
@@ -409,13 +442,18 @@ describe('shared curated and Starlink refresh attempt', () => {
       starlinkStartMs + 10_800_000,
     )
     expect(store.values.has(ORBITAL_CATALOG_KEY)).toBe(true)
-    expect(store.values.has(STARLINK_CATALOG_KEY)).toBe(false)
+    expect(
+      store.values.has(STARLINK_CATALOG_PUBLICATION_KEY),
+    ).toBe(false)
   })
 
   it('isolates a transient Starlink failure from a valid curated publication', async () => {
     const events: string[] = []
     const store = new EventKv(events)
-    store.values.set(STARLINK_CATALOG_KEY, 'prior-starlink')
+    store.values.set(
+      STARLINK_CATALOG_PUBLICATION_KEY,
+      'prior-starlink',
+    )
     const coordinator = new EventCoordinator(events)
     const fetchImpl = vi.fn(async (input) => {
       const url = String(input)
@@ -446,9 +484,9 @@ describe('shared curated and Starlink refresh attempt', () => {
       },
     })
     expect(store.values.has(ORBITAL_CATALOG_KEY)).toBe(true)
-    expect(store.values.get(STARLINK_CATALOG_KEY)).toBe(
-      'prior-starlink',
-    )
+    expect(
+      store.values.get(STARLINK_CATALOG_PUBLICATION_KEY),
+    ).toBe('prior-starlink')
     expect(coordinator.nextAllowedAtMs).toBe(
       nowMs + ORBITAL_REFRESH_INTERVAL_MS,
     )
@@ -485,7 +523,9 @@ describe('shared curated and Starlink refresh attempt', () => {
       ORBITAL_SOURCES.length * 2,
     )
     expect(store.values.has(ORBITAL_CATALOG_KEY)).toBe(true)
-    expect(store.values.has(STARLINK_CATALOG_KEY)).toBe(false)
+    expect(
+      store.values.has(STARLINK_CATALOG_PUBLICATION_KEY),
+    ).toBe(false)
   })
 
   it.each([
@@ -496,7 +536,7 @@ describe('shared curated and Starlink refresh attempt', () => {
     ],
     [
       'Starlink',
-      STARLINK_CATALOG_KEY,
+      STARLINK_CATALOG_PUBLICATION_KEY,
       'Starlink snapshot publication failed',
     ],
   ])(
@@ -505,7 +545,10 @@ describe('shared curated and Starlink refresh attempt', () => {
       const events: string[] = []
       const store = new EventKv(events)
       store.values.set(ORBITAL_CATALOG_KEY, 'prior-curated')
-      store.values.set(STARLINK_CATALOG_KEY, 'prior-starlink')
+      store.values.set(
+        STARLINK_CATALOG_PUBLICATION_KEY,
+        'prior-starlink',
+      )
       store.failPutKey = failedKey
       const coordinator = new EventCoordinator(events)
 
@@ -522,7 +565,9 @@ describe('shared curated and Starlink refresh attempt', () => {
       ).resolves.toEqual({ kind: 'failed', reason })
 
       expect(events).toContain(`put:${ORBITAL_CATALOG_KEY}`)
-      expect(events).toContain(`put:${STARLINK_CATALOG_KEY}`)
+      expect(events).toContain(
+        `put:${STARLINK_CATALOG_PUBLICATION_KEY}`,
+      )
       expect(store.values.get(failedKey)).toBe(
         failedKey === ORBITAL_CATALOG_KEY
           ? 'prior-curated'
@@ -530,7 +575,7 @@ describe('shared curated and Starlink refresh attempt', () => {
       )
       const successfulKey =
         failedKey === ORBITAL_CATALOG_KEY
-          ? STARLINK_CATALOG_KEY
+          ? STARLINK_CATALOG_PUBLICATION_KEY
           : ORBITAL_CATALOG_KEY
       expect(store.values.get(successfulKey)).not.toBe(
         successfulKey === ORBITAL_CATALOG_KEY
@@ -562,6 +607,8 @@ describe('shared curated and Starlink refresh attempt', () => {
     })
     expect(events).toContain('reserve-starlink')
     expect(events).not.toContain(`put:${ORBITAL_CATALOG_KEY}`)
-    expect(events).not.toContain(`put:${STARLINK_CATALOG_KEY}`)
+    expect(events).not.toContain(
+      `put:${STARLINK_CATALOG_PUBLICATION_KEY}`,
+    )
   })
 })

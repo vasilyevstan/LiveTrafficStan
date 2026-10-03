@@ -358,6 +358,37 @@ The first eligible ordinary `22:17Z` Cron then advanced the public route to
 `source=kv` with GP retrieval `22:18:01.730Z`, a newer complete 11,125-record
 generation, the same 150-record bound, and no manual acquisition.
 
+Issue #271 retains that released representation and adds a bounded,
+shell-balanced schema 2 because the population-proportional sample frequently
+contained no object over Estonia, Finland, or the wider Baltic. From the
+retained complete source, 8,727 of 11,125 records cannot reach Tallinn's
+latitude and schema 1 contains only 32 northern-capable records. The selected
+schema-2 contract allocates exactly 128 records to each fixed inclination band
+`<48`, `48-<60`, `60-<85`, and `>=85` degrees. Within each band it fills
+16 RAAN by 8 orbital-phase targets, advances every record's phase to the GP
+retrieval time, resolves equal target distance by numeric NORAD ID, and
+canonically sorts the final 512 records. This intentionally improves geographic
+density without claiming whole-constellation, operational, or optical
+coverage.
+
+The upgrade does not add a scheduler, provider request, browser endpoint, map,
+or physical worker. One complete GP/SATCAT normalization now produces the exact
+schema-1 member and the schema-2 member in one private envelope and one final
+KV write. Same-route media negotiation, representation-specific ETags/`304`,
+and `Vary: Accept` preserve predecessor tabs. During activation, a combined
+schema-2/schema-1 browser request may receive a fresher schema 1 when the
+immutable schema-2 bootstrap is already beyond the 24-hour hard expiry; the
+next ordinary admitted refresh aligns both fresh members without a manual
+provider read.
+
+The immutable schema-2 snapshot contains 512 records, 128 per band, occupies
+254,275 bytes, and has digest
+`56db2f4d7ea342fa8b1e74f4e2f6567d1f6d416caedeefc021eed3d8a04b71c2`.
+Across 145 ten-minute samples, the Baltic box mean rises from 0.269 to 2.110
+and empty time falls from 75.9% to 7.6%; northern Europe rises from 0.655 to
+5.614 and falls from 50.3% empty to 0.7%. The released schema-1 immutable bytes
+and key remain untouched rollback evidence.
+
 ## Reviewed exact-NORAD manifest, not inferred orbital missions
 
 Issue #193 uses a tiny bundled manifest for purpose and image context rather
@@ -1130,6 +1161,14 @@ and Trails visible; its native disclosure contains search feedback, browser
 location, trail duration, local-history setup, units, sharing, reset, and
 application detail. The two disclosures share one native `name`, so at most
 one is open.
+
+The task strip uses the application's ordinary button, focus, and active-state
+tokens. It must not fall back to browser-default controls, but it also remains
+non-sticky so short-view scrolling can move it away from the final result.
+Starlink summary content is metric-first: modeled, in-map/shown, and next-pass
+values precede the compact source population, retrieval time, sample, SGP4,
+not-live, and not-optical caveats. This is presentation only and adds no
+provider request, worker, map source, layer, or scheduler.
 
 The location input stays mounted while its feedback is collapsed, preserving
 entered text and in-flight state. Active historical controls remain outside

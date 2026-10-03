@@ -3,7 +3,7 @@ import { verifyImmutableStarlinkCatalogHistory } from './starlink-catalog-histor
 
 const base = 'a'.repeat(40)
 const manifest = {
-  bootstrapVersion: 'starlink-2026-10-02-v1',
+  bootstrapVersion: 'starlink-shell-balanced-2026-10-02-v1',
   status: 'published',
 }
 const gitError = (code) =>

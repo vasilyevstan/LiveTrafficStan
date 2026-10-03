@@ -167,10 +167,12 @@ vertical scroll owner.
 Starlink selection uses `orbital:starlink:<NORAD>`. A duplicate NORAD in the
 curated layer remains a different representation: selection, halo, track,
 tooltip, details, and failure state resolve only from the owning channel.
-Starlink details identify the systematic sample, retain separate GP/SATCAT
-retrieval times, and never infer curated purpose or imagery. Exact payloads
-use the flat-panel spacecraft silhouette; exact rocket body, debris, and
-unknown records keep their type silhouettes.
+Starlink details identify whether the fulfilled representation is the
+shell-balanced schema-2 sample or the systematic schema-1 compatibility
+sample, retain separate GP/SATCAT retrieval times, and never infer curated
+purpose or imagery. Schema 2 also reports its four exact inclination-band
+quotas. Exact payloads use the flat-panel spacecraft silhouette; exact rocket
+body, debris, and unknown records keep their type silhouettes.
 
 The compact parent line combines owner-split shown/pass state, for example
 `ORBITS · 12 SHOWN (C 8 / S 4) · 5 PASSES ≤90M`. Failure remains partial:
@@ -201,17 +203,21 @@ explicit ORBITS enable
 
 optional Starlink channel:
 effective ORBITS + STARLINK
-  -> same-origin GET /api/orbits/starlink
-  -> strict population/sample/source-clock/digest validation
+  -> same-origin GET /api/orbits/starlink with schema-2/schema-1 preference
+  -> strict selected-media/population/sample/source-clock/digest validation
   -> second logical channel on the same physical orbital worker
   -> separate persistent Starlink point/highlight/track sources and layers
   -> owner-aware combined orbital picking and child sample list
 ```
 
-The immutable Starlink bootstrap was published from the single paired
+The immutable Starlink bootstraps were published from the single paired
 `2026-10-02T08:40Z` acquisition. GP and SATCAT each contained 11,125 records;
-the validated population had zero extra SATCAT rows. The fixed sample contains
-150 records, occupies 74,982 bytes, and has canonical digest
+the validated population had zero extra SATCAT rows. Schema 2 contains exactly
+512 records, 128 per fixed inclination band, occupies 254,275 bytes, and has
+canonical digest
+`56db2f4d7ea342fa8b1e74f4e2f6567d1f6d416caedeefc021eed3d8a04b71c2`.
+The retained schema-1 predecessor contains 150 records, occupies 74,982 bytes,
+and has digest
 `16233efe565c8f07f079ae4ad321219ae756931679d167fb2a3f2f52bf5a81d4`.
 These counts describe the source generation and sample only, not active,
 operational, or optically visible spacecraft.

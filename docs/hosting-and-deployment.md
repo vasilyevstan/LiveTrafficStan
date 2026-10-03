@@ -786,21 +786,28 @@ start and resumes ordinary 12-hour anchoring.
 
 The admitted sequence is the fixed official Starlink GP JSON followed by
 SATCAT JSON. Each response is exact `200` JSON, at most 6 MiB and 15,000 rows;
-the pair is at most 12 MiB and 60 seconds. The complete join must validate
-before the 150-record deterministic systematic sample is written once to
-`orbital:catalog:v1:starlink-sample-v1`. A Starlink failure is reported by the
-scheduled event but cannot undo an accepted curated publication or remove the
-last complete Starlink snapshot.
+the pair is at most 12 MiB and 60 seconds. The complete join is normalized
+once. That population produces the exact released 150-record schema-1
+systematic representation and the 512-record schema-2 shell-balanced
+representation. The two members must have identical source counts, hashes,
+retrieval/publication metadata, and population. One final write publishes the
+private envelope to
+`orbital:catalog:v2:starlink-shell-balanced-v1`; the released v1 key is not
+mutated. A Starlink failure is reported by the scheduled event but cannot undo
+an accepted curated publication or remove the last complete Starlink snapshot.
 
 The public storage route is literal `GET /api/orbits/starlink`. It validates
-KV and immutable `/orbital-data/starlink-2026-10-02-v1/catalog.json`
-concurrently, rejects future or impossible source clocks, ranks candidates by
-the later source retrieval time, and fails closed on equal-generation digest
-conflict. Bootstrap fallback has a 1.5-second budget, below the browser's
-five-second total request deadline, so a stalled asset cannot suppress healthy
-KV. Exact `200` and `304` responses include the same identity, digest,
-publication, served-at, release, cache, and ETag headers required by the
-browser and production smoke.
+the bundled KV members and both immutable Starlink generations concurrently,
+rejects future or impossible source clocks, ranks candidates by the later
+source retrieval time, and fails closed on equal-generation digest conflict.
+Missing or legacy `Accept` receives schema 1. The browser's fixed preference
+list requests schema 2 and permits schema 1; if schema 2 is beyond the
+24-hour hard expiry while schema 1 is fresher, the same request receives
+schema 1. Exact schema-2 requests remain available for immutable-bootstrap
+inspection. Each representation has its own digest, weak ETag, body cap, and
+`304`; cross-representation ETags return `200`, and every response includes
+`Vary: Accept`. Bootstrap fallback has a 1.5-second budget, below the browser's
+five-second total request deadline.
 
 Deploy and rollback resolve the target checkout's Starlink capability and
 flag independently from curated schema negotiation. A target without Starlink
@@ -811,11 +818,14 @@ resets either cadence row.
 
 The first immutable bootstrap evidence is GP
 `2026-10-02T08:40:03Z` (11,125 rows, 4,699,409 bytes), SATCAT
-`2026-10-02T08:40:05Z` (11,125 rows, 3,684,028 bytes), 150 published records,
-74,982 normalized bytes, and digest
+`2026-10-02T08:40:05Z` (11,125 rows, 3,684,028 bytes). Schema 2 contains
+512 records, exactly 128 per fixed inclination band, 254,275 normalized bytes,
+and digest
+`56db2f4d7ea342fa8b1e74f4e2f6567d1f6d416caedeefc021eed3d8a04b71c2`.
+The predecessor remains 150 records / 74,982 bytes / digest
 `16233efe565c8f07f079ae4ad321219ae756931679d167fb2a3f2f52bf5a81d4`.
-Deployment smoke must require that exact immutable identity until a separately
-reviewed never-reused generation replaces it.
+Deployment smoke feature-detects predecessor and dual-representation targets
+instead of imposing the current contract on an older rollback.
 
 At twelve scheduled events per day, the coordinator uses approximately twelve
 Durable Object requests and a few row reads/writes per day, while successful

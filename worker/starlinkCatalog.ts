@@ -13,12 +13,27 @@ export const STARLINK_CATALOG_ID =
   'celestrak-starlink-sample-v1'
 export const STARLINK_CATALOG_KEY =
   'orbital:catalog:v1:starlink-sample-v1'
+export const STARLINK_CATALOG_V2_MEDIA_TYPE =
+  'application/vnd.livetrafficstan.starlink-catalog+json;version=2'
+export const STARLINK_CATALOG_V2_SCHEMA_VERSION = 2
+export const STARLINK_V2_SOURCE_CONTRACT_VERSION = 2
+export const STARLINK_CATALOG_V2_ID =
+  'celestrak-starlink-shell-balanced-v1'
+export const STARLINK_CATALOG_PUBLICATION_KEY =
+  'orbital:catalog:v2:starlink-shell-balanced-v1'
+export const STARLINK_CATALOG_PUBLICATION_VERSION = 1
 export const STARLINK_BOOTSTRAP_VERSION =
   'starlink-2026-10-02-v1'
 export const STARLINK_BOOTSTRAP_PATH =
   `/orbital-data/${STARLINK_BOOTSTRAP_VERSION}/catalog.json`
 export const STARLINK_NOTICE_PATH =
   `/orbital-data/${STARLINK_BOOTSTRAP_VERSION}/NOTICE.txt`
+export const STARLINK_V2_BOOTSTRAP_VERSION =
+  'starlink-shell-balanced-2026-10-02-v1'
+export const STARLINK_V2_BOOTSTRAP_PATH =
+  `/orbital-data/${STARLINK_V2_BOOTSTRAP_VERSION}/catalog.json`
+export const STARLINK_V2_NOTICE_PATH =
+  `/orbital-data/${STARLINK_V2_BOOTSTRAP_VERSION}/NOTICE.txt`
 export const STARLINK_GP_SOURCE_URL =
   'https://celestrak.org/NORAD/elements/gp.php?GROUP=starlink&FORMAT=JSON'
 export const STARLINK_SATCAT_SOURCE_URL =
@@ -26,6 +41,12 @@ export const STARLINK_SATCAT_SOURCE_URL =
 export const STARLINK_SAMPLE_LIMIT = 150
 export const STARLINK_SAMPLE_ALGORITHM =
   'inclination-raan-systematic-v1'
+export const STARLINK_V2_SAMPLE_LIMIT = 512
+export const STARLINK_V2_SAMPLE_ALGORITHM =
+  'inclination-shell-raan-phase-grid-v1'
+export const STARLINK_SHELL_SAMPLE_COUNT = 128
+export const STARLINK_RAAN_TARGET_COUNT = 16
+export const STARLINK_PHASE_TARGET_COUNT = 8
 export const STARLINK_REFRESH_INTERVAL_MS =
   12 * 60 * 60 * 1_000
 export const STARLINK_BOOTSTRAP_GP_RETRIEVED_AT_MS = Date.parse(
@@ -39,8 +60,15 @@ export const STARLINK_MAX_AGGREGATE_BYTES =
   12 * 1_024 * 1_024
 export const STARLINK_MAX_UPSTREAM_RECORDS = 15_000
 export const STARLINK_MAX_SNAPSHOT_BYTES = 256 * 1_024
+export const STARLINK_V2_MAX_SNAPSHOT_BYTES = 512 * 1_024
+export const STARLINK_MAX_PUBLICATION_BYTES =
+  STARLINK_MAX_SNAPSHOT_BYTES +
+  STARLINK_V2_MAX_SNAPSHOT_BYTES +
+  8 * 1_024
 export const STARLINK_BOOTSTRAP_TIMEOUT_MS = 1_500
 export const STARLINK_CLOCK_TOLERANCE_MS = 5 * 60 * 1_000
+export const STARLINK_BROWSER_EXPIRE_AFTER_MS =
+  24 * 60 * 60 * 1_000
 export const STARLINK_TOTAL_REFRESH_TIMEOUT_MS = 60_000
 export const STARLINK_UPSTREAM_TIMEOUT_MS = 30_000
 export const STARLINK_MAX_RETRY_AFTER_MS =
@@ -100,6 +128,46 @@ export interface StarlinkCatalogSnapshot {
   digest: string
 }
 
+export type StarlinkShellId =
+  | 'inclination-lt-48'
+  | 'inclination-48-lt-60'
+  | 'inclination-60-lt-85'
+  | 'inclination-gte-85'
+
+export interface StarlinkSamplingShell {
+  id: StarlinkShellId
+  inclinationMinimumDegrees: number
+  inclinationMaximumDegreesExclusive: number | null
+  populationCount: number
+  sampleCount: typeof STARLINK_SHELL_SAMPLE_COUNT
+}
+
+export interface StarlinkCatalogSnapshotV2 {
+  schemaVersion: typeof STARLINK_CATALOG_V2_SCHEMA_VERSION
+  sourceContractVersion: typeof STARLINK_V2_SOURCE_CONTRACT_VERSION
+  catalogId: typeof STARLINK_CATALOG_V2_ID
+  sources: {
+    gp: StarlinkSourceMetadata
+    satcat: StarlinkSourceMetadata
+  }
+  populationCount: number
+  extraSatcatCount: number
+  sampleLimit: typeof STARLINK_V2_SAMPLE_LIMIT
+  sampleAlgorithm: typeof STARLINK_V2_SAMPLE_ALGORITHM
+  samplingReferenceTime: string
+  shells: StarlinkSamplingShell[]
+  recordCount: number
+  records: StarlinkCatalogRecord[]
+  publishedAt: string
+  digest: string
+}
+
+export interface StarlinkCatalogPublication {
+  publicationVersion: typeof STARLINK_CATALOG_PUBLICATION_VERSION
+  schema1: StarlinkCatalogSnapshot
+  schema2: StarlinkCatalogSnapshotV2
+}
+
 export interface StarlinkCatalogSourceInput {
   gpValue: unknown
   satcatValue: unknown
@@ -135,7 +203,7 @@ export type StarlinkRefreshPreparation =
   | { kind: 'skipped'; reason: string }
   | {
       kind: 'ready'
-      snapshot: StarlinkCatalogSnapshot
+      publication: StarlinkCatalogPublication
     }
   | {
       kind: 'blocked'
@@ -702,9 +770,35 @@ const snapshotDigestInput = (
   publishedAt: snapshot.publishedAt,
 })
 
+const snapshotV2DigestInput = (
+  snapshot: Omit<StarlinkCatalogSnapshotV2, 'digest'>,
+) => ({
+  schemaVersion: snapshot.schemaVersion,
+  sourceContractVersion: snapshot.sourceContractVersion,
+  catalogId: snapshot.catalogId,
+  sources: snapshot.sources,
+  populationCount: snapshot.populationCount,
+  extraSatcatCount: snapshot.extraSatcatCount,
+  sampleLimit: snapshot.sampleLimit,
+  sampleAlgorithm: snapshot.sampleAlgorithm,
+  samplingReferenceTime: snapshot.samplingReferenceTime,
+  shells: snapshot.shells,
+  recordCount: snapshot.recordCount,
+  records: snapshot.records,
+  publishedAt: snapshot.publishedAt,
+})
+
 export const serializeStarlinkCatalogSnapshot = (
   snapshot: StarlinkCatalogSnapshot,
 ) => `${JSON.stringify(snapshot)}\n`
+
+export const serializeStarlinkCatalogSnapshotV2 = (
+  snapshot: StarlinkCatalogSnapshotV2,
+) => `${JSON.stringify(snapshot)}\n`
+
+export const serializeStarlinkCatalogPublication = (
+  publication: StarlinkCatalogPublication,
+) => `${JSON.stringify(publication)}\n`
 
 const ensureSnapshotSize = (snapshot: StarlinkCatalogSnapshot) => {
   if (
@@ -714,6 +808,34 @@ const ensureSnapshotSize = (snapshot: StarlinkCatalogSnapshot) => {
   ) {
     throw new StarlinkCatalogValidationError(
       'Published Starlink snapshot is too large',
+    )
+  }
+}
+
+const ensureSnapshotV2Size = (
+  snapshot: StarlinkCatalogSnapshotV2,
+) => {
+  if (
+    new TextEncoder().encode(
+      serializeStarlinkCatalogSnapshotV2(snapshot),
+    ).byteLength > STARLINK_V2_MAX_SNAPSHOT_BYTES
+  ) {
+    throw new StarlinkCatalogValidationError(
+      'Published Starlink schema-2 snapshot is too large',
+    )
+  }
+}
+
+const ensurePublicationSize = (
+  publication: StarlinkCatalogPublication,
+) => {
+  if (
+    new TextEncoder().encode(
+      serializeStarlinkCatalogPublication(publication),
+    ).byteLength > STARLINK_MAX_PUBLICATION_BYTES
+  ) {
+    throw new StarlinkCatalogValidationError(
+      'Published Starlink publication is too large',
     )
   }
 }
@@ -747,10 +869,186 @@ export const starlinkSystematicSampleIndices = (
 const normalizedRaan = (value: number) =>
   ((value % 360) + 360) % 360
 
-export const createStarlinkCatalogSnapshot = async (
+const STARLINK_SHELL_DEFINITIONS = [
+  {
+    id: 'inclination-lt-48',
+    inclinationMinimumDegrees: 0,
+    inclinationMaximumDegreesExclusive: 48,
+  },
+  {
+    id: 'inclination-48-lt-60',
+    inclinationMinimumDegrees: 48,
+    inclinationMaximumDegreesExclusive: 60,
+  },
+  {
+    id: 'inclination-60-lt-85',
+    inclinationMinimumDegrees: 60,
+    inclinationMaximumDegreesExclusive: 85,
+  },
+  {
+    id: 'inclination-gte-85',
+    inclinationMinimumDegrees: 85,
+    inclinationMaximumDegreesExclusive: null,
+  },
+] as const satisfies readonly Omit<
+  StarlinkSamplingShell,
+  'populationCount' | 'sampleCount'
+>[]
+
+const angularDistance = (left: number, right: number) => {
+  const distance = Math.abs(normalizedRaan(left) - normalizedRaan(right))
+  return Math.min(distance, 360 - distance)
+}
+
+export const starlinkPhaseAt = (
+  record: Pick<
+    NormalizedStarlinkRecord,
+    | 'epoch'
+    | 'meanMotion'
+    | 'argumentOfPericenter'
+    | 'meanAnomaly'
+  >,
+  referenceTimeValue: string,
+) => {
+  const referenceTime = Date.parse(
+    utcTimestamp(referenceTimeValue, 'Starlink sampling reference time'),
+  )
+  const epoch = Date.parse(record.epoch)
+  if (!Number.isFinite(referenceTime) || !Number.isFinite(epoch)) {
+    throw new StarlinkCatalogValidationError(
+      'Starlink sampling time is invalid',
+    )
+  }
+  const elapsedDays = (referenceTime - epoch) / 86_400_000
+  return normalizedRaan(
+    record.meanAnomaly +
+      record.argumentOfPericenter +
+      record.meanMotion * 360 * elapsedDays,
+  )
+}
+
+const shellForInclination = (inclination: number) =>
+  STARLINK_SHELL_DEFINITIONS.find(
+    (shell) =>
+      inclination >= shell.inclinationMinimumDegrees &&
+      (shell.inclinationMaximumDegreesExclusive === null ||
+        inclination < shell.inclinationMaximumDegreesExclusive),
+  )
+
+export const starlinkShellBalancedSample = (
+  population: readonly NormalizedStarlinkRecord[],
+  samplingReferenceTime: string,
+) => {
+  const selected: NormalizedStarlinkRecord[] = []
+  const shells: StarlinkSamplingShell[] = []
+
+  for (const definition of STARLINK_SHELL_DEFINITIONS) {
+    const members = population
+      .filter(
+        (record) =>
+          shellForInclination(record.inclination)?.id ===
+          definition.id,
+      )
+      .map((record) => ({
+        record,
+        phase: starlinkPhaseAt(record, samplingReferenceTime),
+      }))
+    if (members.length < STARLINK_SHELL_SAMPLE_COUNT) {
+      throw new StarlinkCatalogValidationError(
+        `Starlink shell ${definition.id} cannot satisfy its fixed sample`,
+      )
+    }
+
+    const available = new Set(
+      members.map(({ record }) => record.noradCatalogId),
+    )
+    for (
+      let raanIndex = 0;
+      raanIndex < STARLINK_RAAN_TARGET_COUNT;
+      raanIndex += 1
+    ) {
+      const targetRaan =
+        ((raanIndex + 0.5) * 360) / STARLINK_RAAN_TARGET_COUNT
+      for (
+        let phaseIndex = 0;
+        phaseIndex < STARLINK_PHASE_TARGET_COUNT;
+        phaseIndex += 1
+      ) {
+        const targetPhase =
+          ((phaseIndex + 0.5) * 360) /
+          STARLINK_PHASE_TARGET_COUNT
+        let candidate:
+          | {
+              record: NormalizedStarlinkRecord
+              distance: number
+            }
+          | undefined
+        for (const { record, phase } of members) {
+          if (!available.has(record.noradCatalogId)) continue
+          const distance =
+            angularDistance(
+              record.rightAscensionOfAscendingNode,
+              targetRaan,
+            ) ** 2 +
+            angularDistance(phase, targetPhase) ** 2
+          if (
+            !candidate ||
+            distance < candidate.distance ||
+            (distance === candidate.distance &&
+              Number(record.noradCatalogId) <
+                Number(candidate.record.noradCatalogId))
+          ) {
+            candidate = { record, distance }
+          }
+        }
+        if (!candidate) {
+          throw new StarlinkCatalogValidationError(
+            `Starlink shell ${definition.id} sampling failed`,
+          )
+        }
+        available.delete(candidate.record.noradCatalogId)
+        selected.push(candidate.record)
+      }
+    }
+    shells.push({
+      ...definition,
+      populationCount: members.length,
+      sampleCount: STARLINK_SHELL_SAMPLE_COUNT,
+    })
+  }
+
+  return {
+    records: selected
+      .sort(
+        (left, right) =>
+          Number(left.noradCatalogId) -
+          Number(right.noradCatalogId),
+      )
+      .map(
+        (record): StarlinkCatalogRecord => ({
+          ...record,
+          displayOrder: Number(record.noradCatalogId),
+        }),
+      ),
+    shells,
+  }
+}
+
+interface NormalizedStarlinkPopulation {
+  joined: NormalizedStarlinkRecord[]
+  sources: {
+    gp: StarlinkSourceMetadata
+    satcat: StarlinkSourceMetadata
+  }
+  populationCount: number
+  extraSatcatCount: number
+  publishedAt: string
+}
+
+const normalizeStarlinkPopulation = (
   input: StarlinkCatalogSourceInput,
   publishedAtValue: string,
-): Promise<StarlinkCatalogSnapshot> => {
+) => {
   if (
     !Array.isArray(input.gpValue) ||
     input.gpValue.length === 0 ||
@@ -842,37 +1140,6 @@ export const createStarlinkCatalogSnapshot = async (
     joined.push(candidate)
   }
 
-  joined.sort(
-    (left, right) =>
-      left.inclination - right.inclination ||
-      normalizedRaan(left.rightAscensionOfAscendingNode) -
-        normalizedRaan(
-          right.rightAscensionOfAscendingNode,
-        ) ||
-      Number(left.noradCatalogId) -
-        Number(right.noradCatalogId),
-  )
-  const sampleCount = Math.min(
-    joined.length,
-    STARLINK_SAMPLE_LIMIT,
-  )
-  const records = starlinkSystematicSampleIndices(
-    joined.length,
-    sampleCount,
-  )
-    .map((index) => joined[index] as NormalizedStarlinkRecord)
-    .sort(
-      (left, right) =>
-        Number(left.noradCatalogId) -
-        Number(right.noradCatalogId),
-    )
-    .map(
-      (record): StarlinkCatalogRecord => ({
-        ...record,
-        displayOrder: Number(record.noradCatalogId),
-      }),
-    )
-
   const gpRetrievedAt = utcTimestamp(
     input.gpRetrievedAt,
     'Starlink GP retrieval time',
@@ -890,22 +1157,21 @@ export const createStarlinkCatalogSnapshot = async (
       'Starlink SATCAT retrieval precedes GP retrieval',
     )
   }
-  if (
-    Date.parse(publishedAt) <
-    Date.parse(satcatRetrievedAt)
-  ) {
+  if (Date.parse(publishedAt) < Date.parse(satcatRetrievedAt)) {
     throw new StarlinkCatalogValidationError(
       'Starlink publication precedes source retrieval',
     )
   }
 
-  const snapshotWithoutDigest: Omit<
-    StarlinkCatalogSnapshot,
-    'digest'
-  > = {
-    schemaVersion: STARLINK_CATALOG_SCHEMA_VERSION,
-    sourceContractVersion: STARLINK_SOURCE_CONTRACT_VERSION,
-    catalogId: STARLINK_CATALOG_ID,
+  const extraSatcatCount =
+    input.satcatValue.length - input.gpValue.length
+  if (extraSatcatCount < 0) {
+    throw new StarlinkCatalogValidationError(
+      'Invalid Starlink SATCAT population',
+    )
+  }
+  return {
+    joined,
     sources: {
       gp: {
         url: STARLINK_GP_SOURCE_URL,
@@ -923,18 +1189,60 @@ export const createStarlinkCatalogSnapshot = async (
       },
     },
     populationCount: joined.length,
-    extraSatcatCount:
-      input.satcatValue.length - input.gpValue.length,
+    extraSatcatCount,
+    publishedAt,
+  } satisfies NormalizedStarlinkPopulation
+}
+
+const createLegacySnapshotFromPopulation = async (
+  population: NormalizedStarlinkPopulation,
+) => {
+  const canonical = [...population.joined].sort(
+    (left, right) =>
+      left.inclination - right.inclination ||
+      normalizedRaan(left.rightAscensionOfAscendingNode) -
+        normalizedRaan(
+          right.rightAscensionOfAscendingNode,
+        ) ||
+      Number(left.noradCatalogId) -
+        Number(right.noradCatalogId),
+  )
+  const sampleCount = Math.min(
+    canonical.length,
+    STARLINK_SAMPLE_LIMIT,
+  )
+  const records = starlinkSystematicSampleIndices(
+    canonical.length,
+    sampleCount,
+  )
+    .map((index) => canonical[index] as NormalizedStarlinkRecord)
+    .sort(
+      (left, right) =>
+        Number(left.noradCatalogId) -
+        Number(right.noradCatalogId),
+    )
+    .map(
+      (record): StarlinkCatalogRecord => ({
+        ...record,
+        displayOrder: Number(record.noradCatalogId),
+      }),
+    )
+
+  const snapshotWithoutDigest: Omit<
+    StarlinkCatalogSnapshot,
+    'digest'
+  > = {
+    schemaVersion: STARLINK_CATALOG_SCHEMA_VERSION,
+    sourceContractVersion: STARLINK_SOURCE_CONTRACT_VERSION,
+    catalogId: STARLINK_CATALOG_ID,
+    sources: population.sources,
+    populationCount: population.populationCount,
+    extraSatcatCount: population.extraSatcatCount,
     sampleLimit: STARLINK_SAMPLE_LIMIT,
     sampleAlgorithm: STARLINK_SAMPLE_ALGORITHM,
     recordCount: records.length,
     records,
-    publishedAt,
-  }
-  if (snapshotWithoutDigest.extraSatcatCount < 0) {
-    throw new StarlinkCatalogValidationError(
-      'Invalid Starlink SATCAT population',
-    )
+    publishedAt: population.publishedAt,
   }
   const snapshot: StarlinkCatalogSnapshot = {
     ...snapshotWithoutDigest,
@@ -944,6 +1252,84 @@ export const createStarlinkCatalogSnapshot = async (
   }
   ensureSnapshotSize(snapshot)
   return snapshot
+}
+
+const createSnapshotV2FromPopulation = async (
+  population: NormalizedStarlinkPopulation,
+) => {
+  const samplingReferenceTime = population.sources.gp.retrievedAt
+  const sample = starlinkShellBalancedSample(
+    population.joined,
+    samplingReferenceTime,
+  )
+  if (sample.records.length !== STARLINK_V2_SAMPLE_LIMIT) {
+    throw new StarlinkCatalogValidationError(
+      'Invalid Starlink schema-2 sample count',
+    )
+  }
+  const snapshotWithoutDigest: Omit<
+    StarlinkCatalogSnapshotV2,
+    'digest'
+  > = {
+    schemaVersion: STARLINK_CATALOG_V2_SCHEMA_VERSION,
+    sourceContractVersion: STARLINK_V2_SOURCE_CONTRACT_VERSION,
+    catalogId: STARLINK_CATALOG_V2_ID,
+    sources: population.sources,
+    populationCount: population.populationCount,
+    extraSatcatCount: population.extraSatcatCount,
+    sampleLimit: STARLINK_V2_SAMPLE_LIMIT,
+    sampleAlgorithm: STARLINK_V2_SAMPLE_ALGORITHM,
+    samplingReferenceTime,
+    shells: sample.shells,
+    recordCount: sample.records.length,
+    records: sample.records,
+    publishedAt: population.publishedAt,
+  }
+  const snapshot: StarlinkCatalogSnapshotV2 = {
+    ...snapshotWithoutDigest,
+    digest: await digestHex(
+      JSON.stringify(snapshotV2DigestInput(snapshotWithoutDigest)),
+    ),
+  }
+  ensureSnapshotV2Size(snapshot)
+  return snapshot
+}
+
+export const createStarlinkCatalogSnapshot = async (
+  input: StarlinkCatalogSourceInput,
+  publishedAtValue: string,
+) =>
+  createLegacySnapshotFromPopulation(
+    normalizeStarlinkPopulation(input, publishedAtValue),
+  )
+
+export const createStarlinkCatalogSnapshotV2 = async (
+  input: StarlinkCatalogSourceInput,
+  publishedAtValue: string,
+) =>
+  createSnapshotV2FromPopulation(
+    normalizeStarlinkPopulation(input, publishedAtValue),
+  )
+
+export const createStarlinkCatalogPublication = async (
+  input: StarlinkCatalogSourceInput,
+  publishedAtValue: string,
+) => {
+  const population = normalizeStarlinkPopulation(
+    input,
+    publishedAtValue,
+  )
+  const [schema1, schema2] = await Promise.all([
+    createLegacySnapshotFromPopulation(population),
+    createSnapshotV2FromPopulation(population),
+  ])
+  const publication: StarlinkCatalogPublication = {
+    publicationVersion: STARLINK_CATALOG_PUBLICATION_VERSION,
+    schema1,
+    schema2,
+  }
+  ensurePublicationSize(publication)
+  return publication
 }
 
 export const validateStarlinkCatalogSnapshot = async (
@@ -1117,6 +1503,312 @@ export const validateStarlinkCatalogSnapshot = async (
   const snapshot = { ...snapshotWithoutDigest, digest }
   ensureSnapshotSize(snapshot)
   return snapshot
+}
+
+export const validateStarlinkCatalogSnapshotV2 = async (
+  value: unknown,
+): Promise<StarlinkCatalogSnapshotV2> => {
+  if (!isRecord(value)) {
+    throw new StarlinkCatalogValidationError(
+      'Invalid Starlink schema-2 snapshot',
+    )
+  }
+  exactKeys(
+    value,
+    [
+      'schemaVersion',
+      'sourceContractVersion',
+      'catalogId',
+      'sources',
+      'populationCount',
+      'extraSatcatCount',
+      'sampleLimit',
+      'sampleAlgorithm',
+      'samplingReferenceTime',
+      'shells',
+      'recordCount',
+      'records',
+      'publishedAt',
+      'digest',
+    ],
+    'Starlink schema-2 snapshot',
+  )
+  if (
+    value.schemaVersion !== STARLINK_CATALOG_V2_SCHEMA_VERSION ||
+    value.sourceContractVersion !==
+      STARLINK_V2_SOURCE_CONTRACT_VERSION ||
+    value.catalogId !== STARLINK_CATALOG_V2_ID ||
+    value.sampleLimit !== STARLINK_V2_SAMPLE_LIMIT ||
+    value.sampleAlgorithm !== STARLINK_V2_SAMPLE_ALGORITHM ||
+    !isRecord(value.sources)
+  ) {
+    throw new StarlinkCatalogValidationError(
+      'Unsupported Starlink schema-2 snapshot contract',
+    )
+  }
+  exactKeys(value.sources, ['gp', 'satcat'], 'Starlink sources')
+  const sources = {
+    gp: sourceMetadata(
+      value.sources.gp,
+      STARLINK_GP_SOURCE_URL,
+      'Starlink GP',
+    ),
+    satcat: sourceMetadata(
+      value.sources.satcat,
+      STARLINK_SATCAT_SOURCE_URL,
+      'Starlink SATCAT',
+    ),
+  }
+  if (
+    sources.gp.decodedBytes + sources.satcat.decodedBytes >
+    STARLINK_MAX_AGGREGATE_BYTES
+  ) {
+    throw new StarlinkCatalogValidationError(
+      'Starlink aggregate source bytes are invalid',
+    )
+  }
+  const populationCount = integerNumber(
+    value.populationCount,
+    'Starlink population count',
+    1,
+    STARLINK_MAX_UPSTREAM_RECORDS,
+  )
+  const extraSatcatCount = integerNumber(
+    value.extraSatcatCount,
+    'Starlink extra SATCAT count',
+    0,
+    STARLINK_MAX_UPSTREAM_RECORDS,
+  )
+  if (
+    sources.gp.recordCount !== populationCount ||
+    sources.satcat.recordCount !==
+      populationCount + extraSatcatCount
+  ) {
+    throw new StarlinkCatalogValidationError(
+      'Starlink source counts do not match the population',
+    )
+  }
+  const samplingReferenceTime = utcTimestamp(
+    value.samplingReferenceTime,
+    'Starlink sampling reference time',
+  )
+  if (samplingReferenceTime !== sources.gp.retrievedAt) {
+    throw new StarlinkCatalogValidationError(
+      'Starlink sampling reference time does not match GP retrieval',
+    )
+  }
+  if (
+    !Array.isArray(value.shells) ||
+    value.shells.length !== STARLINK_SHELL_DEFINITIONS.length
+  ) {
+    throw new StarlinkCatalogValidationError(
+      'Invalid Starlink sampling shells',
+    )
+  }
+  const shells = value.shells.map(
+    (shellValue, index): StarlinkSamplingShell => {
+      if (!isRecord(shellValue)) {
+        throw new StarlinkCatalogValidationError(
+          'Invalid Starlink sampling shell',
+        )
+      }
+      exactKeys(
+        shellValue,
+        [
+          'id',
+          'inclinationMinimumDegrees',
+          'inclinationMaximumDegreesExclusive',
+          'populationCount',
+          'sampleCount',
+        ],
+        'Starlink sampling shell',
+      )
+      const expected = STARLINK_SHELL_DEFINITIONS[index]
+      if (
+        !expected ||
+        shellValue.id !== expected.id ||
+        shellValue.inclinationMinimumDegrees !==
+          expected.inclinationMinimumDegrees ||
+        shellValue.inclinationMaximumDegreesExclusive !==
+          expected.inclinationMaximumDegreesExclusive ||
+        shellValue.sampleCount !== STARLINK_SHELL_SAMPLE_COUNT
+      ) {
+        throw new StarlinkCatalogValidationError(
+          'Invalid Starlink sampling shell contract',
+        )
+      }
+      return {
+        ...expected,
+        populationCount: integerNumber(
+          shellValue.populationCount,
+          'Starlink shell population count',
+          STARLINK_SHELL_SAMPLE_COUNT,
+          populationCount,
+        ),
+        sampleCount: STARLINK_SHELL_SAMPLE_COUNT,
+      }
+    },
+  )
+  if (
+    shells.reduce(
+      (total, shell) => total + shell.populationCount,
+      0,
+    ) !== populationCount
+  ) {
+    throw new StarlinkCatalogValidationError(
+      'Starlink shell populations do not match the source population',
+    )
+  }
+  if (!Array.isArray(value.records)) {
+    throw new StarlinkCatalogValidationError(
+      'Invalid Starlink records',
+    )
+  }
+  const recordCount = integerNumber(
+    value.recordCount,
+    'Starlink record count',
+    STARLINK_V2_SAMPLE_LIMIT,
+    STARLINK_V2_SAMPLE_LIMIT,
+  )
+  if (value.records.length !== recordCount) {
+    throw new StarlinkCatalogValidationError(
+      'Invalid Starlink schema-2 sample count',
+    )
+  }
+  const records = value.records.map(publishedRecord)
+  const sampledShellCounts = new Map<StarlinkShellId, number>()
+  for (let index = 0; index < records.length; index += 1) {
+    const record = records[index] as StarlinkCatalogRecord
+    if (
+      index > 0 &&
+      Number(records[index - 1]?.noradCatalogId) >=
+        Number(record.noradCatalogId)
+    ) {
+      throw new StarlinkCatalogValidationError(
+        'Starlink records are not canonically ordered',
+      )
+    }
+    const shell = shellForInclination(record.inclination)
+    if (!shell) {
+      throw new StarlinkCatalogValidationError(
+        'Starlink record does not match a sampling shell',
+      )
+    }
+    sampledShellCounts.set(
+      shell.id,
+      (sampledShellCounts.get(shell.id) ?? 0) + 1,
+    )
+  }
+  if (
+    shells.some(
+      (shell) =>
+        sampledShellCounts.get(shell.id) !== shell.sampleCount,
+    )
+  ) {
+    throw new StarlinkCatalogValidationError(
+      'Starlink sampled shell counts are invalid',
+    )
+  }
+  const publishedAt = utcTimestamp(
+    value.publishedAt,
+    'Starlink publication time',
+  )
+  if (
+    Date.parse(sources.gp.retrievedAt) >
+      Date.parse(sources.satcat.retrievedAt) ||
+    Date.parse(publishedAt) <
+      Date.parse(sources.satcat.retrievedAt)
+  ) {
+    throw new StarlinkCatalogValidationError(
+      'Starlink source or publication timing is invalid',
+    )
+  }
+  const digest = boundedString(
+    value.digest,
+    'Starlink digest',
+    64,
+    64,
+  )
+  if (!/^[0-9a-f]{64}$/.test(digest)) {
+    throw new StarlinkCatalogValidationError(
+      'Invalid Starlink digest',
+    )
+  }
+  const snapshotWithoutDigest: Omit<
+    StarlinkCatalogSnapshotV2,
+    'digest'
+  > = {
+    schemaVersion: STARLINK_CATALOG_V2_SCHEMA_VERSION,
+    sourceContractVersion: STARLINK_V2_SOURCE_CONTRACT_VERSION,
+    catalogId: STARLINK_CATALOG_V2_ID,
+    sources,
+    populationCount,
+    extraSatcatCount,
+    sampleLimit: STARLINK_V2_SAMPLE_LIMIT,
+    sampleAlgorithm: STARLINK_V2_SAMPLE_ALGORITHM,
+    samplingReferenceTime,
+    shells,
+    recordCount,
+    records,
+    publishedAt,
+  }
+  if (
+    (await digestHex(
+      JSON.stringify(snapshotV2DigestInput(snapshotWithoutDigest)),
+    )) !== digest
+  ) {
+    throw new StarlinkCatalogValidationError(
+      'Starlink schema-2 snapshot digest does not match',
+    )
+  }
+  const snapshot = { ...snapshotWithoutDigest, digest }
+  ensureSnapshotV2Size(snapshot)
+  return snapshot
+}
+
+export const validateStarlinkCatalogPublication = async (
+  value: unknown,
+): Promise<StarlinkCatalogPublication> => {
+  if (!isRecord(value)) {
+    throw new StarlinkCatalogValidationError(
+      'Invalid Starlink publication',
+    )
+  }
+  exactKeys(
+    value,
+    ['publicationVersion', 'schema1', 'schema2'],
+    'Starlink publication',
+  )
+  if (
+    value.publicationVersion !==
+    STARLINK_CATALOG_PUBLICATION_VERSION
+  ) {
+    throw new StarlinkCatalogValidationError(
+      'Unsupported Starlink publication contract',
+    )
+  }
+  const [schema1, schema2] = await Promise.all([
+    validateStarlinkCatalogSnapshot(value.schema1),
+    validateStarlinkCatalogSnapshotV2(value.schema2),
+  ])
+  if (
+    JSON.stringify(schema1.sources) !==
+      JSON.stringify(schema2.sources) ||
+    schema1.populationCount !== schema2.populationCount ||
+    schema1.extraSatcatCount !== schema2.extraSatcatCount ||
+    schema1.publishedAt !== schema2.publishedAt
+  ) {
+    throw new StarlinkCatalogValidationError(
+      'Starlink publication members are not aligned',
+    )
+  }
+  const publication: StarlinkCatalogPublication = {
+    publicationVersion: STARLINK_CATALOG_PUBLICATION_VERSION,
+    schema1,
+    schema2,
+  }
+  ensurePublicationSize(publication)
+  return publication
 }
 
 type RetryAtResult =
@@ -1515,7 +2207,7 @@ export const prepareStarlinkCatalogRefresh = async (
       )
     }
     const publishedAt = new Date(wallNowMs()).toISOString()
-    const snapshot = await createStarlinkCatalogSnapshot(
+    const publication = await createStarlinkCatalogPublication(
       {
         gpValue: gp.value,
         satcatValue: satcat.value,
@@ -1533,7 +2225,7 @@ export const prepareStarlinkCatalogRefresh = async (
       publishedAt,
     )
     wallNowMs()
-    return { kind: 'ready', snapshot }
+    return { kind: 'ready', publication }
   } catch (error) {
     if (error instanceof StarlinkCatalogUpstreamError) {
       if (
@@ -1580,7 +2272,31 @@ const readSnapshotText = async (text: string) => {
   return validateStarlinkCatalogSnapshot(JSON.parse(text))
 }
 
-const loadStoredSnapshot = async (
+const readSnapshotV2Text = async (text: string) => {
+  if (
+    new TextEncoder().encode(text).byteLength >
+    STARLINK_V2_MAX_SNAPSHOT_BYTES
+  ) {
+    throw new StarlinkCatalogValidationError(
+      'Starlink schema-2 snapshot is too large',
+    )
+  }
+  return validateStarlinkCatalogSnapshotV2(JSON.parse(text))
+}
+
+const readPublicationText = async (text: string) => {
+  if (
+    new TextEncoder().encode(text).byteLength >
+    STARLINK_MAX_PUBLICATION_BYTES
+  ) {
+    throw new StarlinkCatalogValidationError(
+      'Starlink publication is too large',
+    )
+  }
+  return validateStarlinkCatalogPublication(JSON.parse(text))
+}
+
+const loadStoredLegacySnapshot = async (
   store: OrbitalKeyValueStore | undefined,
 ) => {
   if (!store) return undefined
@@ -1592,15 +2308,32 @@ const loadStoredSnapshot = async (
   }
 }
 
+const loadStoredPublication = async (
+  store: OrbitalKeyValueStore | undefined,
+) => {
+  if (!store) return undefined
+  try {
+    const text = await store.get(STARLINK_CATALOG_PUBLICATION_KEY)
+    return text ? await readPublicationText(text) : undefined
+  } catch {
+    return undefined
+  }
+}
+
 const cancelResponseBody = (response: Response) => {
   if (response.body) {
     void response.body.cancel().catch(() => undefined)
   }
 }
 
-const loadBootstrap = async (
+const loadBootstrap = async <Snapshot>(
   request: Request,
   assets: OrbitalAssetBinding,
+  options: {
+    path: string
+    maximumBytes: number
+    readSnapshot: (text: string) => Promise<Snapshot>
+  },
   timeoutMs = STARLINK_BOOTSTRAP_TIMEOUT_MS,
 ) => {
   if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
@@ -1609,7 +2342,7 @@ const loadBootstrap = async (
     )
   }
 
-  const url = new URL(STARLINK_BOOTSTRAP_PATH, request.url)
+  const url = new URL(options.path, request.url)
   const controller = new AbortController()
   let reader: ReadableStreamDefaultReader<Uint8Array> | undefined
   let timedOut = false
@@ -1674,7 +2407,7 @@ const loadBootstrap = async (
     if (
       contentLength !== null &&
       (!/^(?:0|[1-9]\d*)$/.test(contentLength) ||
-        Number(contentLength) > STARLINK_MAX_SNAPSHOT_BYTES)
+        Number(contentLength) > options.maximumBytes)
     ) {
       cancelResponseBody(response)
       return undefined
@@ -1698,7 +2431,7 @@ const loadBootstrap = async (
           )
         }
         totalBytes += result.value.byteLength
-        if (totalBytes > STARLINK_MAX_SNAPSHOT_BYTES) {
+        if (totalBytes > options.maximumBytes) {
           void reader.cancel().catch(() => undefined)
           throw new StarlinkCatalogValidationError(
             'Starlink bootstrap is too large',
@@ -1730,7 +2463,10 @@ const loadBootstrap = async (
       ignoreBOM: false,
     }).decode(bytes)
     ensureWithinDeadline()
-    return await Promise.race([readSnapshotText(text), deadline])
+    return await Promise.race([
+      options.readSnapshot(text),
+      deadline,
+    ])
   } finally {
     if (timeout !== undefined) clearTimeout(timeout)
   }
@@ -1741,42 +2477,76 @@ export type StarlinkCatalogCandidate = {
   source: 'kv' | 'bootstrap'
 }
 
-const sourceGenerationMs = (snapshot: StarlinkCatalogSnapshot) =>
+export type StarlinkCatalogCandidateV2 = {
+  snapshot: StarlinkCatalogSnapshotV2
+  source: 'kv' | 'bootstrap'
+}
+
+type AnyStarlinkCatalogSnapshot =
+  | StarlinkCatalogSnapshot
+  | StarlinkCatalogSnapshotV2
+
+type AnyStarlinkCatalogCandidate = {
+  snapshot: AnyStarlinkCatalogSnapshot
+  source: 'kv' | 'bootstrap'
+}
+
+const sourceGenerationMs = (
+  snapshot: AnyStarlinkCatalogSnapshot,
+) =>
   Math.max(
     Date.parse(snapshot.sources.gp.retrievedAt),
     Date.parse(snapshot.sources.satcat.retrievedAt),
   )
 
+const selectCandidate = <
+  Snapshot extends AnyStarlinkCatalogSnapshot,
+>(
+  candidates: readonly {
+    snapshot: Snapshot | undefined
+    source: 'kv' | 'bootstrap'
+  }[],
+) => {
+  const available = candidates.filter(
+    (
+      candidate,
+    ): candidate is {
+      snapshot: Snapshot
+      source: 'kv' | 'bootstrap'
+    } => candidate.snapshot !== undefined,
+  )
+  if (available.length === 0) return undefined
+  available.sort((left, right) => {
+    const generationDifference =
+      sourceGenerationMs(right.snapshot) -
+      sourceGenerationMs(left.snapshot)
+    if (generationDifference !== 0) return generationDifference
+    if (left.snapshot.digest !== right.snapshot.digest) {
+      throw new StarlinkCatalogValidationError(
+        'Equal-generation Starlink snapshots conflict',
+      )
+    }
+    return left.source === right.source
+      ? 0
+      : left.source === 'kv'
+        ? -1
+        : 1
+  })
+  return available[0]
+}
+
 export const selectStarlinkCatalogCandidate = (
   kv: StarlinkCatalogSnapshot | undefined,
   bootstrap: StarlinkCatalogSnapshot | undefined,
 ): StarlinkCatalogCandidate | undefined => {
-  if (!kv && !bootstrap) return undefined
-  if (!kv) {
-    return {
-      snapshot: bootstrap as StarlinkCatalogSnapshot,
-      source: 'bootstrap',
-    }
-  }
-  if (!bootstrap) return { snapshot: kv, source: 'kv' }
-  const kvGenerationMs = sourceGenerationMs(kv)
-  const bootstrapGenerationMs = sourceGenerationMs(bootstrap)
-  if (kvGenerationMs > bootstrapGenerationMs) {
-    return { snapshot: kv, source: 'kv' }
-  }
-  if (bootstrapGenerationMs > kvGenerationMs) {
-    return { snapshot: bootstrap, source: 'bootstrap' }
-  }
-  if (kv.digest !== bootstrap.digest) {
-    throw new StarlinkCatalogValidationError(
-      'Equal-generation Starlink snapshots conflict',
-    )
-  }
-  return { snapshot: kv, source: 'kv' }
+  return selectCandidate([
+    { snapshot: kv, source: 'kv' },
+    { snapshot: bootstrap, source: 'bootstrap' },
+  ])
 }
 
 const isCurrentAtServeTime = (
-  snapshot: StarlinkCatalogSnapshot,
+  snapshot: AnyStarlinkCatalogSnapshot,
   servedAtMs: number,
 ) => {
   const latestAllowedMs =
@@ -1790,6 +2560,65 @@ const isCurrentAtServeTime = (
     Date.parse(snapshot.publishedAt) <= latestAllowedMs
   )
 }
+
+const isFreshForBrowser = (
+  snapshot: AnyStarlinkCatalogSnapshot,
+  servedAtMs: number,
+) =>
+  servedAtMs - sourceGenerationMs(snapshot) <=
+  STARLINK_BROWSER_EXPIRE_AFTER_MS
+
+const acceptedMediaTypes = (request: Request) =>
+  (request.headers.get('Accept') ?? '')
+    .split(',')
+    .map((value) => {
+      const trimmed = value.trim()
+      const qualityMatch = trimmed.match(
+        /;\s*q=(0(?:\.\d+)?|1(?:\.0+)?)$/i,
+      )
+      return {
+        mediaType: trimmed.replace(
+          /;\s*q=(?:0(?:\.\d+)?|1(?:\.0+)?)$/i,
+          '',
+        ),
+        quality: qualityMatch ? Number(qualityMatch[1]) : 1,
+      }
+    })
+    .filter(({ mediaType }) => mediaType)
+
+const acceptedMediaQuality = (
+  accepted: Readonly<ReturnType<typeof acceptedMediaTypes>>,
+  mediaType: string,
+) => {
+  const exact = accepted.filter(
+    (value) =>
+      value.mediaType.toLowerCase() === mediaType.toLowerCase(),
+  )
+  if (exact.length > 0) {
+    return Math.max(...exact.map(({ quality }) => quality))
+  }
+  const wildcard = accepted.filter(
+    (value) => value.mediaType === '*/*',
+  )
+  return wildcard.length > 0
+    ? Math.max(...wildcard.map(({ quality }) => quality))
+    : 0
+}
+
+const acceptsMediaType = (
+  accepted: Readonly<ReturnType<typeof acceptedMediaTypes>>,
+  mediaType: string,
+) => acceptedMediaQuality(accepted, mediaType) > 0
+
+const explicitlyAcceptsMediaType = (
+  accepted: Readonly<ReturnType<typeof acceptedMediaTypes>>,
+  mediaType: string,
+) =>
+  accepted.some(
+    (value) =>
+      value.quality > 0 &&
+      value.mediaType.toLowerCase() === mediaType.toLowerCase(),
+  )
 
 const textResponse = (
   message: string,
@@ -1808,15 +2637,20 @@ const textResponse = (
 
 const catalogResponse = (
   request: Request,
-  snapshot: StarlinkCatalogSnapshot,
+  candidate: AnyStarlinkCatalogCandidate,
   source: 'kv' | 'bootstrap',
   nowMs: number,
 ) => {
+  const snapshot = candidate.snapshot
   const etag = `W/"${snapshot.digest}"`
   const headers = new Headers({
     'Cache-Control': 'no-store',
-    'Content-Type': STARLINK_CATALOG_MEDIA_TYPE,
+    'Content-Type':
+      snapshot.schemaVersion === STARLINK_CATALOG_SCHEMA_VERSION
+        ? STARLINK_CATALOG_MEDIA_TYPE
+        : STARLINK_CATALOG_V2_MEDIA_TYPE,
     ETag: etag,
+    Vary: 'Accept',
     'X-Content-Type-Options': 'nosniff',
     'X-LiveTrafficStan-Starlink-Digest': snapshot.digest,
     'X-LiveTrafficStan-Starlink-Published-At':
@@ -1831,7 +2665,9 @@ const catalogResponse = (
     return new Response(null, { status: 304, headers })
   }
   return new Response(
-    serializeStarlinkCatalogSnapshot(snapshot),
+    snapshot.schemaVersion === STARLINK_CATALOG_SCHEMA_VERSION
+      ? serializeStarlinkCatalogSnapshot(snapshot)
+      : serializeStarlinkCatalogSnapshotV2(snapshot),
     { status: 200, headers },
   )
 }
@@ -1862,11 +2698,32 @@ export const handleStarlinkCatalog = async (
       400,
     )
   }
-  const [storedSnapshot, bootstrapSnapshot] = await Promise.all([
-    loadStoredSnapshot(environment.ORBITAL_CATALOG),
+  const [
+    storedPublication,
+    storedLegacySnapshot,
+    bootstrapLegacySnapshot,
+    bootstrapSnapshotV2,
+  ] = await Promise.all([
+    loadStoredPublication(environment.ORBITAL_CATALOG),
+    loadStoredLegacySnapshot(environment.ORBITAL_CATALOG),
     loadBootstrap(
       request,
       environment.ASSETS,
+      {
+        path: STARLINK_BOOTSTRAP_PATH,
+        maximumBytes: STARLINK_MAX_SNAPSHOT_BYTES,
+        readSnapshot: readSnapshotText,
+      },
+      options.bootstrapTimeoutMs,
+    ).catch(() => undefined),
+    loadBootstrap(
+      request,
+      environment.ASSETS,
+      {
+        path: STARLINK_V2_BOOTSTRAP_PATH,
+        maximumBytes: STARLINK_V2_MAX_SNAPSHOT_BYTES,
+        readSnapshot: readSnapshotV2Text,
+      },
       options.bootstrapTimeoutMs,
     ).catch(() => undefined),
   ])
@@ -1876,31 +2733,99 @@ export const handleStarlinkCatalog = async (
       'Retry-After': '300',
     })
   }
-  let candidate: StarlinkCatalogCandidate | undefined
+  let schema1Candidate: StarlinkCatalogCandidate | undefined
+  let schema2Candidate: StarlinkCatalogCandidateV2 | undefined
   try {
-    candidate = selectStarlinkCatalogCandidate(
-      storedSnapshot &&
-        isCurrentAtServeTime(storedSnapshot, servedAtMs)
-        ? storedSnapshot
-        : undefined,
-      bootstrapSnapshot &&
-        isCurrentAtServeTime(bootstrapSnapshot, servedAtMs)
-        ? bootstrapSnapshot
-        : undefined,
-    )
+    schema1Candidate = selectCandidate([
+      {
+        snapshot:
+          storedPublication &&
+          isCurrentAtServeTime(
+            storedPublication.schema1,
+            servedAtMs,
+          )
+            ? storedPublication.schema1
+            : undefined,
+        source: 'kv',
+      },
+      {
+        snapshot:
+          storedLegacySnapshot &&
+          isCurrentAtServeTime(
+            storedLegacySnapshot,
+            servedAtMs,
+          )
+            ? storedLegacySnapshot
+            : undefined,
+        source: 'kv',
+      },
+      {
+        snapshot:
+          bootstrapLegacySnapshot &&
+          isCurrentAtServeTime(
+            bootstrapLegacySnapshot,
+            servedAtMs,
+          )
+            ? bootstrapLegacySnapshot
+            : undefined,
+        source: 'bootstrap',
+      },
+    ])
+    schema2Candidate = selectCandidate([
+      {
+        snapshot:
+          storedPublication &&
+          isCurrentAtServeTime(
+            storedPublication.schema2,
+            servedAtMs,
+          )
+            ? storedPublication.schema2
+            : undefined,
+        source: 'kv',
+      },
+      {
+        snapshot:
+          bootstrapSnapshotV2 &&
+          isCurrentAtServeTime(
+            bootstrapSnapshotV2,
+            servedAtMs,
+          )
+            ? bootstrapSnapshotV2
+            : undefined,
+        source: 'bootstrap',
+      },
+    ])
   } catch {
     return textResponse('Starlink catalog unavailable', 503, {
       'Retry-After': '300',
     })
   }
+  const accepted = acceptedMediaTypes(request)
+  const prefersSchema2 = explicitlyAcceptsMediaType(
+    accepted,
+    STARLINK_CATALOG_V2_MEDIA_TYPE,
+  )
+  const acceptsSchema1 =
+    accepted.length === 0 ||
+    acceptsMediaType(accepted, STARLINK_CATALOG_MEDIA_TYPE)
+  const candidate = prefersSchema2
+    ? schema2Candidate &&
+      (!acceptsSchema1 ||
+        isFreshForBrowser(schema2Candidate.snapshot, servedAtMs))
+      ? schema2Candidate
+      : acceptsSchema1
+        ? schema1Candidate
+        : undefined
+    : schema1Candidate
   if (!candidate) {
     return textResponse('Starlink catalog unavailable', 503, {
       'Retry-After': '300',
+      Vary: 'Accept',
     })
   }
   return catalogResponse(
     request,
-    candidate.snapshot,
+    candidate,
     candidate.source,
     servedAtMs,
   )

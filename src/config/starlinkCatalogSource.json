@@ -1,10 +1,18 @@
 {
-  "schemaVersion": 1,
-  "catalogId": "celestrak-starlink-sample-v1",
-  "bootstrapVersion": "starlink-2026-10-02-v1",
-  "bootstrapPath": "/orbital-data/starlink-2026-10-02-v1/catalog.json",
-  "noticePath": "/orbital-data/starlink-2026-10-02-v1/NOTICE.txt",
+  "schemaVersion": 2,
+  "catalogId": "celestrak-starlink-shell-balanced-v1",
+  "bootstrapVersion": "starlink-shell-balanced-2026-10-02-v1",
+  "bootstrapPath": "/orbital-data/starlink-shell-balanced-2026-10-02-v1/catalog.json",
+  "noticePath": "/orbital-data/starlink-shell-balanced-2026-10-02-v1/NOTICE.txt",
   "status": "published",
+  "predecessor": {
+    "schemaVersion": 1,
+    "catalogId": "celestrak-starlink-sample-v1",
+    "bootstrapVersion": "starlink-2026-10-02-v1",
+    "bootstrapPath": "/orbital-data/starlink-2026-10-02-v1/catalog.json",
+    "snapshotFileSha256": "4e5e962defb7b6b5f006874cede6dae31fe192ebee4b1e60bfcf1eb2965e6793",
+    "canonicalDigest": "16233efe565c8f07f079ae4ad321219ae756931679d167fb2a3f2f52bf5a81d4"
+  },
   "probe": {
     "reviewedAt": "2026-10-02",
     "gp": {
@@ -26,11 +34,42 @@
   "expected": {
     "populationCount": 11125,
     "extraSatcatCount": 0,
-    "records": 150,
-    "snapshotBytes": 74982,
-    "snapshotFileSha256": "4e5e962defb7b6b5f006874cede6dae31fe192ebee4b1e60bfcf1eb2965e6793",
-    "canonicalDigest": "16233efe565c8f07f079ae4ad321219ae756931679d167fb2a3f2f52bf5a81d4",
-    "noticeBytes": 1044,
-    "noticeSha256": "f5d932d68271624e72265ef53a7bc4a0e02de9b65e0bfdd4a81d5afddc9a7223"
+    "records": 512,
+    "samplingReferenceTime": "2026-10-02T08:40:03.000Z",
+    "shells": [
+      {
+        "id": "inclination-lt-48",
+        "inclinationMinimumDegrees": 0,
+        "inclinationMaximumDegreesExclusive": 48,
+        "populationCount": 3616,
+        "sampleCount": 128
+      },
+      {
+        "id": "inclination-48-lt-60",
+        "inclinationMinimumDegrees": 48,
+        "inclinationMaximumDegreesExclusive": 60,
+        "populationCount": 5111,
+        "sampleCount": 128
+      },
+      {
+        "id": "inclination-60-lt-85",
+        "inclinationMinimumDegrees": 60,
+        "inclinationMaximumDegreesExclusive": 85,
+        "populationCount": 871,
+        "sampleCount": 128
+      },
+      {
+        "id": "inclination-gte-85",
+        "inclinationMinimumDegrees": 85,
+        "inclinationMaximumDegreesExclusive": null,
+        "populationCount": 1527,
+        "sampleCount": 128
+      }
+    ],
+    "snapshotBytes": 254275,
+    "snapshotFileSha256": "e8b0ae9e3d195c1002f83bb3fdd4c3dfec010cf1bb4e81ae621fa3fb5a049750",
+    "canonicalDigest": "56db2f4d7ea342fa8b1e74f4e2f6567d1f6d416caedeefc021eed3d8a04b71c2",
+    "noticeBytes": 1639,
+    "noticeSha256": "71bda782f0e994918637fad8e5a108f4ede67114a1ac84ff3a6eb3d2a3190a2a"
   }
 }

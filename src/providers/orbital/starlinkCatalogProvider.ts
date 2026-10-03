@@ -21,12 +21,24 @@ export interface StarlinkCatalogProviderConfig {
   satcatSourceUrl: string
   sampleLimit: number
   sampleAlgorithm: string
+  compatibleContracts: readonly StarlinkCatalogContractConfig[]
   maximumBytes: number
   maximumRecords: number
   maximumPopulationRecords: number
   maximumSourceBytes: number
   maximumAggregateSourceBytes: number
   timeoutMs: number
+}
+
+export interface StarlinkCatalogContractConfig {
+  mediaType: string
+  schemaVersion: number
+  sourceContractVersion: number
+  catalogId: string
+  sampleLimit: number
+  sampleAlgorithm: string
+  maximumRecords: number
+  shellBalanced: boolean
 }
 
 export interface StarlinkCatalogRecordPayload {
@@ -63,10 +75,20 @@ export interface StarlinkCatalogSnapshotPayload {
   extraSatcatCount: number
   sampleLimit: number
   sampleAlgorithm: string
+  samplingReferenceTime?: string
+  shells?: StarlinkSamplingShellPayload[]
   recordCount: number
   records: StarlinkCatalogRecordPayload[]
   publishedAt: string
   digest: string
+}
+
+export interface StarlinkSamplingShellPayload {
+  id: string
+  inclinationMinimumDegrees: number
+  inclinationMaximumDegreesExclusive: number | null
+  populationCount: number
+  sampleCount: number
 }
 
 const browserRuntime: OrbitalCatalogRuntime = {
@@ -77,7 +99,7 @@ const browserRuntime: OrbitalCatalogRuntime = {
   fetch: (...arguments_) => fetch(...arguments_),
 }
 
-const topLevelKeys = [
+const topLevelKeysV1 = [
   'catalogId',
   'digest',
   'extraSatcatCount',
@@ -92,12 +114,49 @@ const topLevelKeys = [
   'sources',
 ] as const
 
+const topLevelKeysV2 = [
+  ...topLevelKeysV1,
+  'samplingReferenceTime',
+  'shells',
+] as const
+
 const sourceKeys = [
   'decodedBytes',
   'recordCount',
   'retrievedAt',
   'sha256',
   'url',
+] as const
+
+const shellKeys = [
+  'id',
+  'inclinationMaximumDegreesExclusive',
+  'inclinationMinimumDegrees',
+  'populationCount',
+  'sampleCount',
+] as const
+
+const shellDefinitions = [
+  {
+    id: 'inclination-lt-48',
+    inclinationMinimumDegrees: 0,
+    inclinationMaximumDegreesExclusive: 48,
+  },
+  {
+    id: 'inclination-48-lt-60',
+    inclinationMinimumDegrees: 48,
+    inclinationMaximumDegreesExclusive: 60,
+  },
+  {
+    id: 'inclination-60-lt-85',
+    inclinationMinimumDegrees: 60,
+    inclinationMaximumDegreesExclusive: 85,
+  },
+  {
+    id: 'inclination-gte-85',
+    inclinationMinimumDegrees: 85,
+    inclinationMaximumDegreesExclusive: null,
+  },
 ] as const
 
 const recordKeys = [
@@ -136,6 +195,22 @@ const exactKeys = (
     actual.every((key, index) => key === sortedExpected[index])
   )
 }
+
+const catalogContracts = (
+  config: StarlinkCatalogProviderConfig,
+): readonly StarlinkCatalogContractConfig[] => [
+  {
+    mediaType: config.acceptMediaType.split(',')[0]?.trim() ?? '',
+    schemaVersion: config.schemaVersion,
+    sourceContractVersion: config.sourceContractVersion,
+    catalogId: config.catalogId,
+    sampleLimit: config.sampleLimit,
+    sampleAlgorithm: config.sampleAlgorithm,
+    maximumRecords: config.maximumRecords,
+    shellBalanced: true,
+  },
+  ...config.compatibleContracts,
+]
 
 const boundedString = (
   value: unknown,
@@ -230,6 +305,59 @@ const parseSource = (
     decodedBytes,
     sha256,
   }
+}
+
+const parseShells = (
+  value: unknown,
+  populationCount: number,
+  sampleLimit: number,
+) => {
+  if (
+    !Array.isArray(value) ||
+    value.length !== shellDefinitions.length ||
+    sampleLimit % shellDefinitions.length !== 0
+  ) {
+    return undefined
+  }
+  const sampleCount = sampleLimit / shellDefinitions.length
+  const shells = value.map((candidate, index) => {
+    const expected = shellDefinitions[index]
+    if (
+      !expected ||
+      !isRecord(candidate) ||
+      !exactKeys(candidate, shellKeys) ||
+      candidate.id !== expected.id ||
+      candidate.inclinationMinimumDegrees !==
+        expected.inclinationMinimumDegrees ||
+      candidate.inclinationMaximumDegreesExclusive !==
+        expected.inclinationMaximumDegreesExclusive ||
+      candidate.sampleCount !== sampleCount
+    ) {
+      return undefined
+    }
+    const shellPopulationCount = integerNumber(
+      candidate.populationCount,
+      sampleCount,
+      populationCount,
+    )
+    return shellPopulationCount === undefined
+      ? undefined
+      : {
+          ...expected,
+          populationCount: shellPopulationCount,
+          sampleCount,
+        }
+  })
+  if (
+    shells.some((shell) => shell === undefined) ||
+    shells.reduce(
+      (total, shell) => total + (shell?.populationCount ?? 0),
+      0,
+    ) !== populationCount
+  ) {
+    return undefined
+  }
+  return shells as StarlinkSamplingShellPayload[]
 }
 
 const parseObject = (
@@ -345,6 +473,12 @@ export const starlinkCatalogDigestInput = (
   extraSatcatCount: snapshot.extraSatcatCount,
   sampleLimit: snapshot.sampleLimit,
   sampleAlgorithm: snapshot.sampleAlgorithm,
+  ...(snapshot.samplingReferenceTime !== undefined
+    ? {
+        samplingReferenceTime: snapshot.samplingReferenceTime,
+        shells: snapshot.shells,
+      }
+    : {}),
   recordCount: snapshot.recordCount,
   records: snapshot.records,
   publishedAt: snapshot.publishedAt,
@@ -399,6 +533,12 @@ const applicationSnapshot = (
       extraSatcatCount: payload.extraSatcatCount,
       sampleLimit: payload.sampleLimit,
       sampleAlgorithm: payload.sampleAlgorithm,
+      ...(payload.samplingReferenceTime
+        ? {
+            samplingReferenceTime: payload.samplingReferenceTime,
+            shells: payload.shells,
+          }
+        : {}),
     },
   }
 }
@@ -406,16 +546,23 @@ const applicationSnapshot = (
 const parseSnapshot = async (
   value: unknown,
   config: StarlinkCatalogProviderConfig,
+  contract: StarlinkCatalogContractConfig,
 ) => {
-  if (!isRecord(value) || !exactKeys(value, topLevelKeys)) {
+  if (
+    !isRecord(value) ||
+    !exactKeys(
+      value,
+      contract.shellBalanced ? topLevelKeysV2 : topLevelKeysV1,
+    )
+  ) {
     throw new ProviderError('Starlink catalog schema is invalid')
   }
   if (
-    value.schemaVersion !== config.schemaVersion ||
-    value.sourceContractVersion !== config.sourceContractVersion ||
-    value.catalogId !== config.catalogId ||
-    value.sampleLimit !== config.sampleLimit ||
-    value.sampleAlgorithm !== config.sampleAlgorithm ||
+    value.schemaVersion !== contract.schemaVersion ||
+    value.sourceContractVersion !== contract.sourceContractVersion ||
+    value.catalogId !== contract.catalogId ||
+    value.sampleLimit !== contract.sampleLimit ||
+    value.sampleAlgorithm !== contract.sampleAlgorithm ||
     !isRecord(value.sources) ||
     !exactKeys(value.sources, ['gp', 'satcat'])
   ) {
@@ -465,6 +612,25 @@ const parseSnapshot = async (
       'Starlink catalog source counts are invalid',
     )
   }
+  const samplingReferenceTime = contract.shellBalanced
+    ? timestamp(value.samplingReferenceTime, 3)
+    : undefined
+  const shells = contract.shellBalanced
+    ? parseShells(
+        value.shells,
+        populationCount,
+        contract.sampleLimit,
+      )
+    : undefined
+  if (
+    contract.shellBalanced &&
+    (samplingReferenceTime !== sources.gp.retrievedAt ||
+      shells === undefined)
+  ) {
+    throw new ProviderError(
+      'Starlink catalog sampling metadata is invalid',
+    )
+  }
 
   if (!Array.isArray(value.records)) {
     throw new ProviderError('Starlink catalog records are invalid')
@@ -472,11 +638,14 @@ const parseSnapshot = async (
   const recordCount = integerNumber(
     value.recordCount,
     1,
-    config.maximumRecords,
+    contract.maximumRecords,
   )
   if (
     recordCount === undefined ||
-    recordCount !== Math.min(populationCount, config.sampleLimit) ||
+    recordCount !==
+      (contract.shellBalanced
+        ? contract.sampleLimit
+        : Math.min(populationCount, contract.sampleLimit)) ||
     value.records.length !== recordCount
   ) {
     throw new ProviderError(
@@ -489,12 +658,42 @@ const parseSnapshot = async (
   }
   const completeRecords = records as StarlinkCatalogRecordPayload[]
   let previousId = 0
+  const sampledShellCounts = new Map<string, number>()
   for (const record of completeRecords) {
     const numericId = Number(record.noradCatalogId)
     if (numericId <= previousId) {
       throw new ProviderError('Starlink catalog ordering is invalid')
     }
     previousId = numericId
+    if (contract.shellBalanced) {
+      const shell = shellDefinitions.find(
+        (definition) =>
+          record.inclination >=
+            definition.inclinationMinimumDegrees &&
+          (definition.inclinationMaximumDegreesExclusive === null ||
+            record.inclination <
+              definition.inclinationMaximumDegreesExclusive),
+      )
+      if (!shell) {
+        throw new ProviderError(
+          'Starlink catalog sampling metadata is invalid',
+        )
+      }
+      sampledShellCounts.set(
+        shell.id,
+        (sampledShellCounts.get(shell.id) ?? 0) + 1,
+      )
+    }
+  }
+  if (
+    shells?.some(
+      (shell) =>
+        sampledShellCounts.get(shell.id) !== shell.sampleCount,
+    )
+  ) {
+    throw new ProviderError(
+      'Starlink catalog sampling metadata is invalid',
+    )
   }
 
   const publishedAt = timestamp(value.publishedAt, 3)
@@ -518,17 +717,20 @@ const parseSnapshot = async (
     StarlinkCatalogSnapshotPayload,
     'digest'
   > = {
-    schemaVersion: config.schemaVersion,
-    sourceContractVersion: config.sourceContractVersion,
-    catalogId: config.catalogId,
+    schemaVersion: contract.schemaVersion,
+    sourceContractVersion: contract.sourceContractVersion,
+    catalogId: contract.catalogId,
     sources: {
       gp: sources.gp,
       satcat: sources.satcat,
     },
     populationCount,
     extraSatcatCount,
-    sampleLimit: config.sampleLimit,
-    sampleAlgorithm: config.sampleAlgorithm,
+    sampleLimit: contract.sampleLimit,
+    sampleAlgorithm: contract.sampleAlgorithm,
+    ...(samplingReferenceTime
+      ? { samplingReferenceTime, shells }
+      : {}),
     recordCount,
     records: completeRecords,
     publishedAt,
@@ -550,10 +752,11 @@ const readBoundedJson = async (
   config: StarlinkCatalogProviderConfig,
 ) => {
   const contentType = response.headers.get('Content-Type')?.trim()
-  if (
-    contentType?.toLowerCase() !==
-    config.acceptMediaType.toLowerCase()
-  ) {
+  const contract = catalogContracts(config).find(
+    (candidate) =>
+      candidate.mediaType.toLowerCase() === contentType?.toLowerCase(),
+  )
+  if (!contract) {
     await response.body?.cancel()
     throw new ProviderError(
       'Starlink catalog returned an invalid content type',
@@ -595,9 +798,12 @@ const readBoundedJson = async (
     offset += chunk.byteLength
   }
   try {
-    return JSON.parse(
-      new TextDecoder('utf-8', { fatal: true }).decode(bytes),
-    ) as unknown
+    return {
+      value: JSON.parse(
+        new TextDecoder('utf-8', { fatal: true }).decode(bytes),
+      ) as unknown,
+      contract,
+    }
   } catch {
     throw new ProviderError('Starlink catalog returned invalid JSON')
   }
@@ -733,7 +939,7 @@ export class StarlinkCatalogProvider {
           source === undefined ||
           responseDigest !== this.fulfilled.snapshot.sha256 ||
           responsePublishedAt !== this.fulfilled.snapshot.publishedAt ||
-          responseSchema !== this.config.schemaVersion
+          responseSchema !== this.fulfilled.snapshot.schemaVersion
         ) {
           throw new ProviderError(
             'Starlink catalog revalidation response is invalid',
@@ -750,9 +956,11 @@ export class StarlinkCatalogProvider {
         throw new ProviderError('Starlink catalog response is invalid')
       }
 
+      const bounded = await readBoundedJson(response, this.config)
       const snapshot = await parseSnapshot(
-        await readBoundedJson(response, this.config),
+        bounded.value,
         this.config,
+        bounded.contract,
       )
       ensureActive()
       const etag = response.headers.get('ETag')

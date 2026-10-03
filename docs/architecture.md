@@ -132,7 +132,7 @@ tombstone can be removed after Cloudflare confirms that deletion has applied.
 | `scripts/pwa-shell.mjs` | Deterministic shell allowlist/versioning, request classification, two-generation cleanup, and normal/retirement worker source |
 | `public/manifest.webmanifest` | Root-scoped standalone install metadata and versioned maskable icons |
 | `public/vessel-photos/` | Immutable reviewed vessel-photo derivatives plus co-located file-specific license records; excluded from the application-shell cache |
-| `public/orbital-data/` | Immutable normalized CelesTrak bootstraps. Schema-1 `v1`/`v2` paths remain byte-for-byte rollback assets; schema 2 uses the never-reused `curated-2026-09-30-v1` path, and the bounded Starlink sample uses `starlink-2026-10-02-v1`. All are excluded from the application-shell cache |
+| `public/orbital-data/` | Immutable normalized CelesTrak bootstraps. Schema-1 `v1`/`v2` paths remain byte-for-byte rollback assets; the curated schema-2 catalog uses `curated-2026-09-30-v1`; Starlink retains `starlink-2026-10-02-v1` and adds the never-reused schema-2 `starlink-shell-balanced-2026-10-02-v1`. All are excluded from the application-shell cache |
 | `public/orbital-enrichment/` | Immutable exact-NORAD NASA photographs plus co-located rights/provenance notices; selected on demand and excluded from the application-shell cache |
 
 ## Control composition
@@ -142,11 +142,14 @@ disclosures with the same `name`. The upper Operations panel keeps only Center,
 Aircraft, Ships, and ORBITS visible. Its disclosure separates secondary tools
 into session-only Layers, Find, Context, Orbits, and Sources views; **VIEW**
 opens Orbits and focuses the first result without moving the map or fetching
-again. The duplicate traffic legend is intentionally absent; textual state and
-limitations remain in controls and selected details. The lower Location &
-Settings panel keeps the single mounted location input, theme, and Trails
-visible; its disclosure owns search feedback, browser location, history setup,
-preferences, sharing, reset, and application state.
+again. The task strip uses the same application button, focus, and active-state
+system as the primary controls rather than browser-default buttons. The
+Starlink child presents modeled, in-map, and next-pass counts before compact
+source/model caveats. The duplicate traffic legend is intentionally absent;
+textual state and limitations remain in controls and selected details. The
+lower Location & Settings panel keeps the single mounted location input, theme,
+and Trails visible; its disclosure owns search feedback, browser location,
+history setup, preferences, sharing, reset, and application state.
 
 Opening either disclosure closes the other without remounting the search model.
 Operational recovery and app/storage/history recovery have separate promotion
@@ -359,6 +362,17 @@ effective and Live mode is active. `useOrbitalObjects` owns one physical
 an explicit `curated` or `starlink` envelope, and catalog revision,
 coalescing, cancellation, errors, and disposal remain channel-scoped. The
 physical worker terminates only when no logical channel remains.
+
+The same literal Starlink route negotiates two public representations. Missing
+or legacy `Accept` receives the released 150-record schema 1; the browser's
+fixed preference list requests the 512-record schema 2 and permits schema 1 as
+a rollout fallback. Both are derived from one normalized GP/SATCAT population
+inside one private publication envelope and one final KV write. The schema-2
+sampler assigns 128 records to each of four fixed inclination bands and fills
+16 RAAN by 8 common-time-phase targets per band. Independent ETags, `304`
+responses, and `Vary: Accept` prevent cross-representation cache confusion.
+If schema 2 is older than the 24-hour browser expiry while schema 1 is fresher,
+the combined browser request receives schema 1 without a second request.
 
 The map keeps separate persistent Starlink point, highlight, and track
 sources/layers beside the curated sources. Both channels participate in one
@@ -763,7 +777,8 @@ and gives only the aircraft proxy one private outbound dependency:
    returns schema 2 only for the fixed vendor `Accept` media type, varies caches
    by `Accept`, and never performs an upstream request; the literal
    `GET /api/orbits/starlink` route likewise reads only its complete KV or
-   immutable exact-release sample;
+   immutable exact-release samples, defaults to schema 1, negotiates schema 2,
+   and varies by `Accept`;
 5. a protected two-hour Cron, independent of browser requests, may fetch only
    after the existing named SQLite Durable Object atomically admits the start;
    it then performs the ten fixed, strictly sequential GP/SATCAT requests for
@@ -772,7 +787,10 @@ and gives only the aircraft proxy one private outbound dependency:
    outcome, and publishes both public representations in one non-public
    versioned bundle to `orbital:catalog:v2:curated-v1` with one final write;
    after curated work, a separate 12-hour SQLite row may admit one complete
-   fixed Starlink GP/SATCAT pair and one final sample-key write;
+   fixed Starlink GP/SATCAT pair; one normalization creates the exact released
+   schema-1 systematic member and the schema-2 shell-balanced member, then one
+   final write publishes the aligned bundle to
+   `orbital:catalog:v2:starlink-shell-balanced-v1`;
 6. after private-relay activation, the aircraft route may use only its
    configured fixed transport and never fail over within a request;
 7. OpenFreeMap, Photon, and Digitraffic HTTPS/WSS remain direct browser
