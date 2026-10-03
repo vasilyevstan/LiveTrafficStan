@@ -60,7 +60,7 @@ const ORBITAL_SOURCE_ATTRIBUTION =
   'Orbits <a href="https://celestrak.org/" target="_blank" rel="noreferrer">CelesTrak</a> · SGP4 · not live'
 
 export const STARLINK_SOURCE_ATTRIBUTION =
-  'Starlink systematic sample · <a href="https://celestrak.org/" target="_blank" rel="noreferrer">CelesTrak</a> · SGP4 · not live'
+  'Starlink sample · <a href="https://celestrak.org/" target="_blank" rel="noreferrer">CelesTrak</a> · SGP4 · not live'
 
 const emptyPoints = (): FeatureCollection<Point> => ({
   type: 'FeatureCollection',

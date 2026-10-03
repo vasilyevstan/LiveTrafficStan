@@ -8,21 +8,25 @@ import sourceSettings from '../src/config/starlinkCatalogSource.json' with {
 import {
   STARLINK_BOOTSTRAP_GP_RETRIEVED_AT_MS,
   STARLINK_BOOTSTRAP_PATH,
-  STARLINK_BOOTSTRAP_VERSION,
   STARLINK_CATALOG_ID,
+  STARLINK_CATALOG_V2_ID,
   STARLINK_GP_SOURCE_URL,
   STARLINK_INITIAL_REFRESH_NOT_BEFORE_MS,
   STARLINK_MAX_AGGREGATE_BYTES,
   STARLINK_MAX_SNAPSHOT_BYTES,
+  STARLINK_V2_BOOTSTRAP_PATH,
+  STARLINK_V2_BOOTSTRAP_VERSION,
+  STARLINK_V2_MAX_SNAPSHOT_BYTES,
+  STARLINK_V2_NOTICE_PATH,
   STARLINK_MAX_UPSTREAM_BYTES,
   STARLINK_MAX_UPSTREAM_RECORDS,
-  STARLINK_NOTICE_PATH,
   STARLINK_REFRESH_INTERVAL_MS,
-  STARLINK_SAMPLE_ALGORITHM,
-  STARLINK_SAMPLE_LIMIT,
+  STARLINK_V2_SAMPLE_ALGORITHM,
+  STARLINK_V2_SAMPLE_LIMIT,
   STARLINK_SATCAT_SOURCE_URL,
-  serializeStarlinkCatalogSnapshot,
+  serializeStarlinkCatalogSnapshotV2,
   validateStarlinkCatalogSnapshot,
+  validateStarlinkCatalogSnapshotV2,
 } from '../worker/starlinkCatalog.ts'
 import { verifyImmutableStarlinkCatalogHistory } from './starlink-catalog-history.mjs'
 
@@ -51,13 +55,28 @@ const publicPath = (assetPath) =>
   path.join(repositoryRoot, 'public', assetPath.slice(1))
 
 if (
-  sourceSettings.schemaVersion !== 1 ||
-  sourceSettings.catalogId !== STARLINK_CATALOG_ID ||
-  sourceSettings.bootstrapVersion !== STARLINK_BOOTSTRAP_VERSION ||
-  sourceSettings.bootstrapPath !== STARLINK_BOOTSTRAP_PATH ||
-  sourceSettings.noticePath !== STARLINK_NOTICE_PATH
+  sourceSettings.schemaVersion !== 2 ||
+  sourceSettings.catalogId !== STARLINK_CATALOG_V2_ID ||
+  sourceSettings.bootstrapVersion !==
+    STARLINK_V2_BOOTSTRAP_VERSION ||
+  sourceSettings.bootstrapPath !== STARLINK_V2_BOOTSTRAP_PATH ||
+  sourceSettings.noticePath !== STARLINK_V2_NOTICE_PATH
 ) {
   fail('source manifest does not match the runtime contract')
+}
+if (
+  sourceSettings.predecessor?.schemaVersion !== 1 ||
+  sourceSettings.predecessor.catalogId !== STARLINK_CATALOG_ID ||
+  sourceSettings.predecessor.bootstrapPath !==
+    STARLINK_BOOTSTRAP_PATH ||
+  !/^[0-9a-f]{64}$/.test(
+    sourceSettings.predecessor.snapshotFileSha256 ?? '',
+  ) ||
+  !/^[0-9a-f]{64}$/.test(
+    sourceSettings.predecessor.canonicalDigest ?? '',
+  )
+) {
+  fail('predecessor source manifest is invalid')
 }
 const probe = sourceSettings.probe
 if (
@@ -90,6 +109,9 @@ await verifyImmutableStarlinkCatalogHistory({
 
 const catalogPath = publicPath(sourceSettings.bootstrapPath)
 const noticePath = publicPath(sourceSettings.noticePath)
+const predecessorCatalogPath = publicPath(
+  sourceSettings.predecessor.bootstrapPath,
+)
 const directoryFiles = (
   await readdir(path.dirname(catalogPath))
 ).sort()
@@ -146,11 +168,35 @@ if (
 }
 
 const catalogBytes = await readFile(catalogPath)
+const predecessorCatalogBytes = await readFile(
+  predecessorCatalogPath,
+)
+if (
+  predecessorCatalogBytes.byteLength >
+    STARLINK_MAX_SNAPSHOT_BYTES ||
+  sha256(predecessorCatalogBytes) !==
+    sourceSettings.predecessor.snapshotFileSha256
+) {
+  fail('predecessor bootstrap bytes changed')
+}
+const predecessorSnapshot = await validateStarlinkCatalogSnapshot(
+  JSON.parse(
+    new TextDecoder('utf-8', { fatal: true }).decode(
+      predecessorCatalogBytes,
+    ),
+  ),
+)
+if (
+  predecessorSnapshot.digest !==
+  sourceSettings.predecessor.canonicalDigest
+) {
+  fail('predecessor bootstrap identity changed')
+}
 const expected = sourceSettings.expected
 if (
   !expected ||
   catalogBytes.byteLength !== expected.snapshotBytes ||
-  catalogBytes.byteLength > STARLINK_MAX_SNAPSHOT_BYTES ||
+  catalogBytes.byteLength > STARLINK_V2_MAX_SNAPSHOT_BYTES ||
   sha256(catalogBytes) !== expected.snapshotFileSha256
 ) {
   fail('bootstrap bytes do not match the source manifest')
@@ -158,18 +204,21 @@ if (
 const catalogText = new TextDecoder('utf-8', {
   fatal: true,
 }).decode(catalogBytes)
-const snapshot = await validateStarlinkCatalogSnapshot(
+const snapshot = await validateStarlinkCatalogSnapshotV2(
   JSON.parse(catalogText),
 )
 if (
-  catalogText !== serializeStarlinkCatalogSnapshot(snapshot) ||
+  catalogText !== serializeStarlinkCatalogSnapshotV2(snapshot) ||
   snapshot.digest !== expected.canonicalDigest ||
   snapshot.populationCount !== expected.populationCount ||
   snapshot.extraSatcatCount !== expected.extraSatcatCount ||
   snapshot.recordCount !== expected.records ||
-  snapshot.recordCount !==
-    Math.min(snapshot.populationCount, STARLINK_SAMPLE_LIMIT) ||
-  snapshot.sampleAlgorithm !== STARLINK_SAMPLE_ALGORITHM
+  snapshot.recordCount !== STARLINK_V2_SAMPLE_LIMIT ||
+  snapshot.sampleAlgorithm !== STARLINK_V2_SAMPLE_ALGORITHM ||
+  snapshot.samplingReferenceTime !==
+    expected.samplingReferenceTime ||
+  JSON.stringify(snapshot.shells) !==
+    JSON.stringify(expected.shells)
 ) {
   fail('bootstrap identity does not match the source manifest')
 }
@@ -209,7 +258,9 @@ for (const required of [
   snapshot.sources.satcat.url,
   snapshot.sources.satcat.retrievedAt,
   snapshot.sources.satcat.sha256,
-  'systematic sample',
+  snapshot.samplingReferenceTime,
+  ...snapshot.shells.map((shell) => shell.id),
+  'shell-balanced',
   'not live telemetry',
 ]) {
   if (!notice.includes(required)) {

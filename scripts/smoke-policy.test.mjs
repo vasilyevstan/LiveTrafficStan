@@ -11,6 +11,7 @@ import {
   PRIVATE_RELAY_SMOKE_TIMEOUT_MS,
   SAME_ORIGIN_SMOKE_FETCH_INIT,
   STARLINK_CATALOG_MEDIA_TYPE,
+  STARLINK_SCHEMA2_NEGOTIATION_ACCEPT,
   classifyAircraftProxyStatus,
   deriveOrbitalStaticAssetPaths,
   fetchPrivateRelayWithRetry,
@@ -637,7 +638,7 @@ describe('production smoke policy', () => {
         contract,
         fetchResponse,
       }),
-    ).resolves.toEqual({ mode: 'enabled', source: 'kv' })
+    ).resolves.toEqual({ mode: 'schema1-only', source: 'kv' })
     expect(requests).toHaveLength(4)
     expect(
       requests.every(
@@ -665,6 +666,158 @@ describe('production smoke policy', () => {
       }),
     ).toThrow('Starlink catalog contract is incomplete')
   })
+
+  it.each([
+    {
+      label: 'aligned',
+      schema1GpRetrievedAt: '2026-10-02T08:40:03.000Z',
+      schema1SatcatRetrievedAt: '2026-10-02T08:40:05.000Z',
+      schema1PublishedAt: '2026-10-02T08:40:06.000Z',
+    },
+    {
+      label: 'newer schema-1 rollback',
+      schema1GpRetrievedAt: '2026-10-02T20:40:03.000Z',
+      schema1SatcatRetrievedAt: '2026-10-02T20:40:05.000Z',
+      schema1PublishedAt: '2026-10-02T20:40:06.000Z',
+    },
+  ])(
+    'validates $label Starlink dual representations and cross-representation ETags',
+    async ({
+      schema1GpRetrievedAt,
+      schema1SatcatRetrievedAt,
+      schema1PublishedAt,
+    }) => {
+    const shared = {
+      sources: {
+        gp: {
+          retrievedAt: '2026-10-02T08:40:03.000Z',
+          sha256: 'a'.repeat(64),
+        },
+        satcat: {
+          retrievedAt: '2026-10-02T08:40:05.000Z',
+          sha256: 'b'.repeat(64),
+        },
+      },
+      populationCount: 11_125,
+      extraSatcatCount: 0,
+      publishedAt: '2026-10-02T08:40:06.000Z',
+      records: [],
+    }
+    const schema1 = {
+      ...shared,
+      sources: {
+        gp: {
+          retrievedAt: schema1GpRetrievedAt,
+          sha256: 'a'.repeat(64),
+        },
+        satcat: {
+          retrievedAt: schema1SatcatRetrievedAt,
+          sha256: 'b'.repeat(64),
+        },
+      },
+      publishedAt: schema1PublishedAt,
+      schemaVersion: 1,
+      sourceContractVersion: 1,
+      catalogId: 'celestrak-starlink-sample-v1',
+      sampleLimit: 150,
+      sampleAlgorithm: 'inclination-raan-systematic-v1',
+      recordCount: 150,
+      digest: '1'.repeat(64),
+    }
+    const schema2 = {
+      ...shared,
+      schemaVersion: 2,
+      sourceContractVersion: 2,
+      catalogId: 'celestrak-starlink-shell-balanced-v1',
+      sampleLimit: 512,
+      sampleAlgorithm: 'inclination-shell-raan-phase-grid-v1',
+      samplingReferenceTime: '2026-10-02T08:40:03.000Z',
+      shells: [],
+      recordCount: 512,
+      digest: '2'.repeat(64),
+    }
+    const validateSchema1 = vi.fn(async (value) => value)
+    const validateSchema2 = vi.fn(async (value) => value)
+    const contract = resolveTargetStarlinkSmokeContract({
+      STARLINK_BOOTSTRAP_PATH:
+        '/orbital-data/starlink-2026-10-02-v1/catalog.json',
+      STARLINK_CATALOG_MEDIA_TYPE,
+      STARLINK_CATALOG_SCHEMA_VERSION: 1,
+      STARLINK_MAX_SNAPSHOT_BYTES: 256 * 1_024,
+      STARLINK_SOURCE_CONTRACT_VERSION: 1,
+      validateStarlinkCatalogSnapshot: validateSchema1,
+      STARLINK_CATALOG_V2_SCHEMA_VERSION: 2,
+      STARLINK_V2_SOURCE_CONTRACT_VERSION: 2,
+      STARLINK_V2_MAX_SNAPSHOT_BYTES: 512 * 1_024,
+      STARLINK_V2_BOOTSTRAP_PATH:
+        '/orbital-data/starlink-shell-balanced-2026-10-02-v1/catalog.json',
+      STARLINK_CATALOG_V2_MEDIA_TYPE:
+        STARLINK_SCHEMA2_NEGOTIATION_ACCEPT,
+      validateStarlinkCatalogSnapshotV2: validateSchema2,
+    })
+    const fetchResponse = vi.fn(async (input, init = {}) => {
+      const url = new URL(input)
+      if (url.search) {
+        return new Response('Unsupported query', { status: 400 })
+      }
+      if ((init.method ?? 'GET') !== 'GET') {
+        return new Response('Method not allowed', { status: 405 })
+      }
+      const requestHeaders = new Headers(init.headers)
+      const payload =
+        requestHeaders.get('accept') ===
+        STARLINK_SCHEMA2_NEGOTIATION_ACCEPT
+          ? schema2
+          : schema1
+      const mediaType =
+        payload.schemaVersion === 2
+          ? STARLINK_SCHEMA2_NEGOTIATION_ACCEPT
+          : STARLINK_CATALOG_MEDIA_TYPE
+      const etag = `W/"${payload.digest}"`
+      const responseHeaders = {
+        'Cache-Control': 'no-store',
+        'Content-Type': mediaType,
+        ETag: etag,
+        Vary: 'Accept',
+        'X-Content-Type-Options': 'nosniff',
+        'X-LiveTrafficStan-Release': releaseSha,
+        'X-LiveTrafficStan-Starlink-Digest': payload.digest,
+        'X-LiveTrafficStan-Starlink-Published-At':
+          payload.publishedAt,
+        'X-LiveTrafficStan-Starlink-Schema': String(
+          payload.schemaVersion,
+        ),
+        'X-LiveTrafficStan-Starlink-Source': 'kv',
+        'X-LiveTrafficStan-Served-At':
+          '2026-10-02T08:40:07.000Z',
+      }
+      return requestHeaders.get('if-none-match') === etag
+        ? new Response(null, {
+            status: 304,
+            headers: responseHeaders,
+          })
+        : new Response(JSON.stringify(payload), {
+            status: 200,
+            headers: responseHeaders,
+          })
+    })
+
+    await expect(
+      verifyTargetStarlinkCatalog({
+        baseUrl: new URL('https://app.example/'),
+        enabled: true,
+        expectedReleaseSha: releaseSha,
+        contract,
+        fetchResponse,
+      }),
+    ).resolves.toEqual({
+      mode: 'dual-representation',
+      source: 'kv',
+    })
+    expect(validateSchema1).toHaveBeenCalledTimes(1)
+    expect(validateSchema2).toHaveBeenCalledTimes(1)
+    },
+  )
 
   it.each(
     ['initial', 'conditional'].flatMap((phase) =>

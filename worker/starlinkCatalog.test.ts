@@ -6,6 +6,8 @@ import {
   STARLINK_CATALOG_KEY,
   STARLINK_CATALOG_MEDIA_TYPE,
   STARLINK_CATALOG_PATH,
+  STARLINK_CATALOG_PUBLICATION_KEY,
+  STARLINK_CATALOG_V2_MEDIA_TYPE,
   STARLINK_GP_SOURCE_URL,
   STARLINK_MAX_SNAPSHOT_BYTES,
   STARLINK_MAX_UPSTREAM_BYTES,
@@ -15,13 +17,21 @@ import {
   STARLINK_SATCAT_SOURCE_URL,
   STARLINK_TOTAL_REFRESH_TIMEOUT_MS,
   STARLINK_UPSTREAM_USER_AGENT,
+  STARLINK_V2_MAX_SNAPSHOT_BYTES,
+  STARLINK_V2_SAMPLE_LIMIT,
+  createStarlinkCatalogPublication,
   createStarlinkCatalogSnapshot,
+  createStarlinkCatalogSnapshotV2,
   handleStarlinkCatalog,
   prepareStarlinkCatalogRefresh,
   selectStarlinkCatalogCandidate,
   serializeStarlinkCatalogSnapshot,
+  serializeStarlinkCatalogSnapshotV2,
+  serializeStarlinkCatalogPublication,
   starlinkSystematicSampleIndices,
+  starlinkPhaseAt,
   validateStarlinkCatalogSnapshot,
+  validateStarlinkCatalogSnapshotV2,
   type StarlinkCatalogSourceInput,
 } from './starlinkCatalog.js'
 import type { OrbitalKeyValueStore } from './orbitalCatalog.js'
@@ -79,6 +89,30 @@ const sourceInput = (
   satcatSha256: 'b'.repeat(64),
   ...overrides,
 })
+
+const balancedPopulation = (startId = 70_000) => {
+  const gp = Array.from(
+    { length: STARLINK_V2_SAMPLE_LIMIT },
+    (_, index) => {
+      const shellIndex = Math.floor(index / 128)
+      const shellOffset = index % 128
+      return gpRecord(startId + index, {
+        INCLINATION: [43, 53, 70, 97.5][shellIndex],
+        RA_OF_ASC_NODE:
+          ((shellOffset % 16) + 0.5) * (360 / 16),
+        MEAN_ANOMALY:
+          ((Math.floor(shellOffset / 16) + 0.5) * 360) / 8,
+        ARG_OF_PERICENTER: 0,
+      })
+    },
+  )
+  return {
+    gp,
+    satcat: gp.map((row) =>
+      satcatRecord(Number(row.NORAD_CAT_ID)),
+    ),
+  }
+}
 
 const snapshotFrom = (
   gpValue: unknown[],
@@ -180,6 +214,108 @@ describe('Starlink catalog source contract', () => {
     await expect(
       validateStarlinkCatalogSnapshot(snapshot),
     ).resolves.toEqual(snapshot)
+  })
+
+  it('advances orbital phase to the common GP retrieval time', () => {
+    expect(
+      starlinkPhaseAt(
+        {
+          epoch: '2026-10-01T00:00:00.000000Z',
+          meanMotion: 1.5,
+          argumentOfPericenter: 20,
+          meanAnomaly: 10,
+        },
+        '2026-10-02T00:00:00.000Z',
+      ),
+    ).toBe(210)
+  })
+
+  it('publishes exactly 128 deterministic records from each reviewed inclination shell', async () => {
+    const population = balancedPopulation()
+    const snapshot = await createStarlinkCatalogSnapshotV2(
+      sourceInput(population.gp, population.satcat),
+      '2026-10-01T19:45:03.000Z',
+    )
+    const repeated = await createStarlinkCatalogSnapshotV2(
+      sourceInput(
+        [...population.gp].reverse(),
+        [...population.satcat].reverse(),
+      ),
+      '2026-10-01T19:45:03.000Z',
+    )
+
+    expect(snapshot.recordCount).toBe(STARLINK_V2_SAMPLE_LIMIT)
+    expect(snapshot.samplingReferenceTime).toBe(
+      '2026-10-01T19:45:01.000Z',
+    )
+    expect(snapshot.shells).toEqual([
+      expect.objectContaining({
+        id: 'inclination-lt-48',
+        populationCount: 128,
+        sampleCount: 128,
+      }),
+      expect.objectContaining({
+        id: 'inclination-48-lt-60',
+        populationCount: 128,
+        sampleCount: 128,
+      }),
+      expect.objectContaining({
+        id: 'inclination-60-lt-85',
+        populationCount: 128,
+        sampleCount: 128,
+      }),
+      expect.objectContaining({
+        id: 'inclination-gte-85',
+        populationCount: 128,
+        sampleCount: 128,
+      }),
+    ])
+    expect(new Set(snapshot.records.map((record) => record.noradCatalogId)).size)
+      .toBe(STARLINK_V2_SAMPLE_LIMIT)
+    expect(repeated).toEqual(snapshot)
+    await expect(
+      validateStarlinkCatalogSnapshotV2(snapshot),
+    ).resolves.toEqual(snapshot)
+  })
+
+  it('fails closed when a fixed inclination shell cannot supply 128 unique records', async () => {
+    const population = balancedPopulation()
+    population.gp.pop()
+    population.satcat.pop()
+    await expect(
+      createStarlinkCatalogSnapshotV2(
+        sourceInput(population.gp, population.satcat),
+        '2026-10-01T19:45:03.000Z',
+      ),
+    ).rejects.toThrow('cannot satisfy its fixed sample')
+  })
+
+  it('uses numeric NORAD ID as the deterministic equal-distance tie-breaker', async () => {
+    const population = balancedPopulation()
+    const duplicate = gpRecord(69_999, {
+      INCLINATION: 43,
+      RA_OF_ASC_NODE: 0.5 * (360 / 16),
+      MEAN_ANOMALY: (0.5 * 360) / 8,
+      ARG_OF_PERICENTER: 0,
+    })
+    population.gp.unshift(duplicate)
+    population.satcat.unshift(satcatRecord(69_999))
+
+    const snapshot = await createStarlinkCatalogSnapshotV2(
+      sourceInput(population.gp, population.satcat),
+      '2026-10-01T19:45:03.000Z',
+    )
+
+    expect(
+      snapshot.records.some(
+        (record) => record.noradCatalogId === '69999',
+      ),
+    ).toBe(true)
+    expect(
+      snapshot.records.some(
+        (record) => record.noradCatalogId === '70000',
+      ),
+    ).toBe(false)
   })
 
   it('validates every joined and extra SATCAT row', async () => {
@@ -304,6 +440,7 @@ describe('Starlink catalog source contract', () => {
 describe('Starlink acquisition', () => {
   it('anchors two strictly sequential source reads to the admitted start', async () => {
     const store = new MemoryKv()
+    const population = balancedPopulation()
     let active = 0
     let maximumActive = 0
     const calls: string[] = []
@@ -324,8 +461,8 @@ describe('Starlink acquisition', () => {
       await Promise.resolve()
       active -= 1
       return url === STARLINK_GP_SOURCE_URL
-        ? jsonResponse([gpRecord(70_001)])
-        : jsonResponse([satcatRecord(70_001)])
+        ? jsonResponse(population.gp)
+        : jsonResponse(population.satcat)
     })
     const environment = {
       ASSETS: { fetch: vi.fn() },
@@ -341,9 +478,15 @@ describe('Starlink acquisition', () => {
     })
     expect(first).toMatchObject({
       kind: 'ready',
-      snapshot: {
-        populationCount: 1,
-        recordCount: 1,
+      publication: {
+        schema1: {
+          populationCount: STARLINK_V2_SAMPLE_LIMIT,
+          recordCount: STARLINK_SAMPLE_LIMIT,
+        },
+        schema2: {
+          populationCount: STARLINK_V2_SAMPLE_LIMIT,
+          recordCount: STARLINK_V2_SAMPLE_LIMIT,
+        },
       },
     })
     expect(calls).toEqual([
@@ -352,12 +495,14 @@ describe('Starlink acquisition', () => {
     ])
     expect(maximumActive).toBe(1)
     expect(first).toMatchObject({
-      snapshot: {
-        sources: {
-          gp: { retrievedAt: new Date(nowMs).toISOString() },
-          satcat: { retrievedAt: new Date(nowMs).toISOString() },
+      publication: {
+        schema2: {
+          sources: {
+            gp: { retrievedAt: new Date(nowMs).toISOString() },
+            satcat: { retrievedAt: new Date(nowMs).toISOString() },
+          },
+          publishedAt: new Date(nowMs).toISOString(),
         },
-        publishedAt: new Date(nowMs).toISOString(),
       },
     })
     expect(store.events).toEqual([])
@@ -586,6 +731,188 @@ describe('same-origin Starlink catalog route', () => {
     expect(
       conditional.headers.get('x-livetrafficstan-served-at'),
     ).toBe(new Date(nowMs).toISOString())
+  })
+
+  it('negotiates aligned schema-1 and schema-2 publication members with independent validators', async () => {
+    const population = balancedPopulation()
+    const publication = await createStarlinkCatalogPublication(
+      sourceInput(population.gp, population.satcat),
+      '2026-10-01T19:45:03.000Z',
+    )
+    const store = new MemoryKv()
+    store.values.set(
+      STARLINK_CATALOG_PUBLICATION_KEY,
+      serializeStarlinkCatalogPublication(publication),
+    )
+    const environment = {
+      ASSETS: {
+        fetch: vi.fn(async () =>
+          new Response(null, { status: 404 }),
+        ),
+      },
+      ORBITAL_CATALOG: store,
+      ORBITAL_CATALOG_ENABLED: 'true',
+      STARLINK_CATALOG_ENABLED: 'true',
+    }
+    const url = `https://app.example${STARLINK_CATALOG_PATH}`
+
+    const schema1 = await handleStarlinkCatalog(
+      new Request(url),
+      environment,
+      { nowMs },
+    )
+    expect(schema1.status).toBe(200)
+    expect(schema1.headers.get('content-type')).toBe(
+      STARLINK_CATALOG_MEDIA_TYPE,
+    )
+    expect(schema1.headers.get('vary')).toBe('Accept')
+    expect(await schema1.json()).toEqual(publication.schema1)
+
+    const wildcard = await handleStarlinkCatalog(
+      new Request(url, {
+        headers: { Accept: '*/*' },
+      }),
+      environment,
+      { nowMs },
+    )
+    expect(wildcard.status).toBe(200)
+    expect(wildcard.headers.get('content-type')).toBe(
+      STARLINK_CATALOG_MEDIA_TYPE,
+    )
+    expect(await wildcard.json()).toEqual(publication.schema1)
+
+    const schema2 = await handleStarlinkCatalog(
+      new Request(url, {
+        headers: { Accept: STARLINK_CATALOG_V2_MEDIA_TYPE },
+      }),
+      environment,
+      { nowMs },
+    )
+    expect(schema2.status).toBe(200)
+    expect(schema2.headers.get('content-type')).toBe(
+      STARLINK_CATALOG_V2_MEDIA_TYPE,
+    )
+    expect(await schema2.json()).toEqual(publication.schema2)
+    expect(schema2.headers.get('etag')).not.toBe(
+      schema1.headers.get('etag'),
+    )
+
+    const combined = await handleStarlinkCatalog(
+      new Request(url, {
+        headers: {
+          Accept:
+            `${STARLINK_CATALOG_V2_MEDIA_TYPE}, ` +
+            `${STARLINK_CATALOG_MEDIA_TYPE};q=0.9`,
+        },
+      }),
+      environment,
+      { nowMs },
+    )
+    expect(combined.headers.get('content-type')).toBe(
+      STARLINK_CATALOG_V2_MEDIA_TYPE,
+    )
+
+    const crossRepresentation = await handleStarlinkCatalog(
+      new Request(url, {
+        headers: {
+          Accept: STARLINK_CATALOG_V2_MEDIA_TYPE,
+          'If-None-Match': schema1.headers.get('etag') ?? '',
+        },
+      }),
+      environment,
+      { nowMs },
+    )
+    expect(crossRepresentation.status).toBe(200)
+    expect(crossRepresentation.headers.get('etag')).toBe(
+      schema2.headers.get('etag'),
+    )
+    expect(store.values.has(STARLINK_CATALOG_KEY)).toBe(false)
+  })
+
+  it('falls back to a fresh schema-1 representation for compatible clients while schema 2 is expired', async () => {
+    const population = balancedPopulation()
+    const publication = await createStarlinkCatalogPublication(
+      sourceInput(population.gp, population.satcat),
+      '2026-10-01T19:45:03.000Z',
+    )
+    const freshLegacy = await snapshotFrom(
+      [gpRecord(80_001)],
+      [satcatRecord(80_001)],
+      {
+        gpRetrievedAt: '2026-10-04T00:00:01.000Z',
+        satcatRetrievedAt: '2026-10-04T00:00:02.000Z',
+      },
+      '2026-10-04T00:00:03.000Z',
+    )
+    const store = new MemoryKv()
+    store.values.set(
+      STARLINK_CATALOG_PUBLICATION_KEY,
+      serializeStarlinkCatalogPublication(publication),
+    )
+    store.values.set(
+      STARLINK_CATALOG_KEY,
+      serializeStarlinkCatalogSnapshot(freshLegacy),
+    )
+    const environment = {
+      ASSETS: {
+        fetch: vi.fn(async () =>
+          new Response(null, { status: 404 }),
+        ),
+      },
+      ORBITAL_CATALOG: store,
+      ORBITAL_CATALOG_ENABLED: 'true',
+      STARLINK_CATALOG_ENABLED: 'true',
+    }
+    const url = `https://app.example${STARLINK_CATALOG_PATH}`
+    const servedAtMs = Date.parse('2026-10-04T00:05:00.000Z')
+
+    const compatible = await handleStarlinkCatalog(
+      new Request(url, {
+        headers: {
+          Accept:
+            `${STARLINK_CATALOG_V2_MEDIA_TYPE}, ` +
+            `${STARLINK_CATALOG_MEDIA_TYPE};q=0.9`,
+        },
+      }),
+      environment,
+      { nowMs: servedAtMs },
+    )
+    expect(compatible.headers.get('content-type')).toBe(
+      STARLINK_CATALOG_MEDIA_TYPE,
+    )
+    await expect(compatible.json()).resolves.toEqual(freshLegacy)
+
+    const schema1Excluded = await handleStarlinkCatalog(
+      new Request(url, {
+        headers: {
+          Accept:
+            `${STARLINK_CATALOG_V2_MEDIA_TYPE}, ` +
+            `${STARLINK_CATALOG_MEDIA_TYPE};q=0, */*;q=0.1`,
+        },
+      }),
+      environment,
+      { nowMs: servedAtMs },
+    )
+    expect(schema1Excluded.headers.get('content-type')).toBe(
+      STARLINK_CATALOG_V2_MEDIA_TYPE,
+    )
+    await expect(schema1Excluded.json()).resolves.toEqual(
+      publication.schema2,
+    )
+
+    const schema2Only = await handleStarlinkCatalog(
+      new Request(url, {
+        headers: { Accept: STARLINK_CATALOG_V2_MEDIA_TYPE },
+      }),
+      environment,
+      { nowMs: servedAtMs },
+    )
+    expect(schema2Only.headers.get('content-type')).toBe(
+      STARLINK_CATALOG_V2_MEDIA_TYPE,
+    )
+    await expect(schema2Only.json()).resolves.toEqual(
+      publication.schema2,
+    )
   })
 
   it('rejects disabled, query, method, and equal-time conflicts', async () => {
@@ -954,7 +1281,9 @@ describe('maximum Starlink fixture processing', () => {
       const count = STARLINK_MAX_UPSTREAM_RECORDS
       const gp = Array.from({ length: count }, (_, index) =>
         gpRecord(100_000 + index, {
-          INCLINATION: 50 + (index % 5_000) / 100,
+          INCLINATION:
+            [43, 53, 70, 97.5][index % 4] +
+            ((index % 100) / 10_000),
           RA_OF_ASC_NODE: (index * 13) % 361,
         }),
       )
@@ -1014,14 +1343,16 @@ describe('maximum Starlink fixture processing', () => {
       expect(result.kind).toBe('ready')
       if (result.kind !== 'ready') return
       const serializedBytes = new TextEncoder().encode(
-        serializeStarlinkCatalogSnapshot(result.snapshot),
+        serializeStarlinkCatalogSnapshotV2(
+          result.publication.schema2,
+        ),
       ).byteLength
-      expect(result.snapshot.populationCount).toBe(count)
-      expect(result.snapshot.recordCount).toBe(
-        STARLINK_SAMPLE_LIMIT,
+      expect(result.publication.schema2.populationCount).toBe(count)
+      expect(result.publication.schema2.recordCount).toBe(
+        STARLINK_V2_SAMPLE_LIMIT,
       )
       expect(serializedBytes).toBeLessThanOrEqual(
-        STARLINK_MAX_SNAPSHOT_BYTES,
+        STARLINK_V2_MAX_SNAPSHOT_BYTES,
       )
       expect(durationMs).toBeLessThan(15_000)
       console.info(

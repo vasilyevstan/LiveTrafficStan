@@ -68,6 +68,14 @@ export interface StarlinkOrbitalCatalogMetadata {
   extraSatcatCount: number
   sampleLimit: number
   sampleAlgorithm: string
+  samplingReferenceTime?: string
+  shells?: readonly {
+    id: string
+    inclinationMinimumDegrees: number
+    inclinationMaximumDegreesExclusive: number | null
+    populationCount: number
+    sampleCount: number
+  }[]
 }
 
 export interface StarlinkOrbitalCatalogSnapshot

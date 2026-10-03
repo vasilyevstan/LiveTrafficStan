@@ -1,7 +1,7 @@
 import {
-  STARLINK_CATALOG_KEY,
+  STARLINK_CATALOG_PUBLICATION_KEY,
   prepareStarlinkCatalogRefresh,
-  serializeStarlinkCatalogSnapshot,
+  serializeStarlinkCatalogPublication,
   type StarlinkRefreshOptions,
   type StarlinkRefreshPreparation,
 } from './starlinkCatalog.ts'
@@ -2367,9 +2367,9 @@ export const refreshOrbitalCatalog = async (
   ]
   if (starlinkPreparation.kind === 'ready') {
     writes.push({
-      key: STARLINK_CATALOG_KEY,
-      value: serializeStarlinkCatalogSnapshot(
-        starlinkPreparation.snapshot,
+      key: STARLINK_CATALOG_PUBLICATION_KEY,
+      value: serializeStarlinkCatalogPublication(
+        starlinkPreparation.publication,
       ),
       label: 'Starlink',
     })
@@ -2403,12 +2403,14 @@ export const refreshOrbitalCatalog = async (
         ? {
             kind: 'published' as const,
             recordCount:
-              starlinkPreparation.snapshot.recordCount,
+              starlinkPreparation.publication.schema2.recordCount,
             populationCount:
-              starlinkPreparation.snapshot.populationCount,
-            digest: starlinkPreparation.snapshot.digest,
+              starlinkPreparation.publication.schema2
+                .populationCount,
+            digest:
+              starlinkPreparation.publication.schema2.digest,
             publishedAt:
-              starlinkPreparation.snapshot.publishedAt,
+              starlinkPreparation.publication.schema2.publishedAt,
           }
         : starlinkPreparation.kind === 'not-due'
           ? {

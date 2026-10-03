@@ -132,11 +132,19 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   `bba0bf4f7a69939e3c07fbeb24470fa959f6f20a`.
 - Issue #257 adds a separate remembered **STARLINK** child layer under
   **Operations -> More -> Orbits**. It starts off even when ORBITS is on and
-  makes no request until both toggles are effective. The server publishes at
-  most 150 records from the validated official Starlink GP/SATCAT population
-  using the fixed `inclination-raan-systematic-v1` algorithm; the UI reports
-  source population, sample, modeled, in-map, shown, and pass counts rather
-  than presenting the sample as the full constellation. One existing
+  makes no request until both toggles are effective. Issue #271 adds a
+  negotiated schema-2 representation with exactly 512 records: 128 from each
+  fixed inclination band `<48`, `48-<60`, `60-<85`, and `>=85` degrees.
+  `inclination-shell-raan-phase-grid-v1` deterministically fills a
+  16-by-8 RAAN/common-time-phase grid in each band, advancing phase to the GP
+  retrieval time before comparison and using numeric NORAD ID for exact ties.
+  The released schema-1 150-record
+  `inclination-raan-systematic-v1` representation remains available for
+  predecessor tabs. Both representations come from one completely validated
+  GP/SATCAT population and one atomic publication; no second provider read is
+  added. The UI reports source population, sample, modeled, in-map, shown, and
+  pass counts rather than presenting either sample as the full constellation.
+  It reuses the existing 192/384/512 world/mid/local display tiers. One existing
   CelesTrak Durable Object owns both schedules: curated acquisition remains
   first, while a second SQLite row admits the paired Starlink read at most once
   per 12 hours at the actual GP request start. A fresh production row is seeded
@@ -149,14 +157,18 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   `orbital:starlink:<NORAD>`; selection, halo, track, details, and tooltips
   never inherit curated purpose or imagery. Exact payloads use a flat-panel
   spacecraft silhouette, while rocket bodies, debris, and unknown objects
-  retain their exact type silhouettes. The immutable bootstrap is versioned
-  under `/orbital-data/starlink-2026-10-02-v1/`; its manifest and notice pin
-  the exact retrieval times, source hashes, population, sample digest, and
-  byte counts. The one permitted 2026-10-02 acquisition completed GP at
+  retain their exact type silhouettes. The schema-2 immutable bootstrap is
+  versioned under
+  `/orbital-data/starlink-shell-balanced-2026-10-02-v1/`; the released
+  `/orbital-data/starlink-2026-10-02-v1/` predecessor remains byte-for-byte
+  intact. The one permitted 2026-10-02 acquisition completed GP at
   `08:40:03Z` and SATCAT at `08:40:05Z`: 11,125 rows in each source,
-  8,383,437 decoded bytes total, zero extra SATCAT rows, and a 74,982-byte
-  sample snapshot with canonical digest
-  `16233efe565c8f07f079ae4ad321219ae756931679d167fb2a3f2f52bf5a81d4`.
+  8,383,437 decoded bytes total, and zero extra SATCAT rows. Schema 2 is
+  254,275 bytes with digest
+  `56db2f4d7ea342fa8b1e74f4e2f6567d1f6d416caedeefc021eed3d8a04b71c2`.
+  A 145-step retained-source replay improves the Baltic regional mean from
+  0.269 to 2.110 objects and empty time from 75.9% to 7.6%; northern Europe
+  improves from 0.655 to 5.614 and from 50.3% empty to 0.7%.
 - A default-enabled ADSB.lol plausible-route lookup for a selected live
   aircraft. A committed selection starts one lookup and shows a compact result
   directly below the aircraft heading. Hover, HISTORY, and same-flight position

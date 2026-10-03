@@ -15,11 +15,12 @@ import {
 } from './orbitalCatalogCoordinator.js'
 import {
   STARLINK_BOOTSTRAP_GP_RETRIEVED_AT_MS,
-  STARLINK_CATALOG_KEY,
+  STARLINK_CATALOG_PUBLICATION_KEY,
   STARLINK_GP_SOURCE_URL,
   STARLINK_INITIAL_REFRESH_NOT_BEFORE_MS,
   STARLINK_REFRESH_INTERVAL_MS,
   STARLINK_SATCAT_SOURCE_URL,
+  STARLINK_V2_SAMPLE_LIMIT,
 } from './starlinkCatalog.js'
 
 const nowMs = Date.parse('2026-09-28T18:45:00.000Z')
@@ -51,6 +52,32 @@ const satcatRecord = {
   OBJECT_ID: '2026-001A',
   OBJECT_TYPE: 'PAY',
 }
+
+const starlinkGpRecords = Array.from(
+  { length: STARLINK_V2_SAMPLE_LIMIT },
+  (_, index) => {
+    const shellIndex = Math.floor(index / 128)
+    const shellOffset = index % 128
+    return {
+      ...gpRecord,
+      OBJECT_NAME: `STARLINK ${90_000 + index}`,
+      OBJECT_ID: `2026-${String(index).padStart(3, '0')}A`,
+      NORAD_CAT_ID: 90_000 + index,
+      INCLINATION: [43, 53, 70, 97.5][shellIndex],
+      RA_OF_ASC_NODE:
+        ((shellOffset % 16) + 0.5) * (360 / 16),
+      MEAN_ANOMALY:
+        ((Math.floor(shellOffset / 16) + 0.5) * 360) / 8,
+      ARG_OF_PERICENTER: 0,
+    }
+  },
+)
+const starlinkSatcatRecords = starlinkGpRecords.map((record) => ({
+  ...satcatRecord,
+  OBJECT_NAME: record.OBJECT_NAME,
+  OBJECT_ID: record.OBJECT_ID,
+  NORAD_CAT_ID: record.NORAD_CAT_ID,
+}))
 
 class MemoryKv implements OrbitalKeyValueStore {
   readonly values = new Map<string, string>()
@@ -322,10 +349,10 @@ const sourceResponse = (url: string) => {
       candidate.satcatSourceUrl === url,
   )
   if (url === STARLINK_GP_SOURCE_URL) {
-    return jsonResponse([gpRecord])
+    return jsonResponse(starlinkGpRecords)
   }
   if (url === STARLINK_SATCAT_SOURCE_URL) {
-    return jsonResponse([satcatRecord])
+    return jsonResponse(starlinkSatcatRecords)
   }
   if (!source) throw new Error('Unexpected URL')
   return url === source.gpSourceUrl
@@ -576,7 +603,9 @@ describe('orbital catalog coordinator', () => {
         ([input]) => String(input) === STARLINK_GP_SOURCE_URL,
       ),
     ).toBe(false)
-    expect(catalog.values.has(STARLINK_CATALOG_KEY)).toBe(false)
+    expect(
+      catalog.values.has(STARLINK_CATALOG_PUBLICATION_KEY),
+    ).toBe(false)
     expect(storage.starlinkState).toEqual({
       schemaVersion: STARLINK_COORDINATOR_STATE_SCHEMA_VERSION,
       sourceContractVersion:
@@ -611,10 +640,15 @@ describe('orbital catalog coordinator', () => {
         await (await coordinator.fetch(request())).json(),
       ).toMatchObject({
         kind: 'published',
-        starlink: { kind: 'published', recordCount: 1 },
+        starlink: {
+          kind: 'published',
+          recordCount: STARLINK_V2_SAMPLE_LIMIT,
+        },
       })
       expect(fetchImpl).toHaveBeenCalledTimes(12)
-      expect(catalog.values.has(STARLINK_CATALOG_KEY)).toBe(true)
+      expect(
+        catalog.values.has(STARLINK_CATALOG_PUBLICATION_KEY),
+      ).toBe(true)
       expect(storage.starlinkState).toEqual({
         schemaVersion:
           STARLINK_COORDINATOR_STATE_SCHEMA_VERSION,
