@@ -1131,6 +1131,14 @@ location, trail duration, local-history setup, units, sharing, reset, and
 application detail. The two disclosures share one native `name`, so at most
 one is open.
 
+The task strip uses the application's ordinary button, focus, and active-state
+tokens. It must not fall back to browser-default controls, but it also remains
+non-sticky so short-view scrolling can move it away from the final result.
+Starlink summary content is metric-first: modeled, in-map/shown, and next-pass
+values precede the compact source population, retrieval time, sample, SGP4,
+not-live, and not-optical caveats. This is presentation only and adds no
+provider request, worker, map source, layer, or scheduler.
+
 The location input stays mounted while its feedback is collapsed, preserving
 entered text and in-flight state. Active historical controls remain outside
 both disclosures. Each panel may promote one action from its own recovery

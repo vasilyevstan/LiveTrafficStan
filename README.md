@@ -206,12 +206,13 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   history.
 - Responsive Operations and Location & Settings controls with one scroll owner
   per disclosure, session-only Layers/Find/Context/Orbits/Sources views,
-  visual-viewport-aware mobile sizing, keyboard focus states, non-color
-  status/detail labels, compact provider/privacy copy, and a small
-  provider-reported set of map-scale aircraft and category-distinct vessel
-  silhouettes with generic fallbacks. Orbital payload, rocket-body, debris,
-  and unknown classes use exact-SATCAT object symbols instead of colored dots.
-  The duplicate traffic legend is intentionally omitted.
+  application-styled task and active states, visual-viewport-aware mobile
+  sizing, keyboard focus states, non-color status/detail labels, compact
+  provider/privacy copy, metric-first Starlink modeled/map/pass context, and a
+  small provider-reported set of map-scale aircraft and category-distinct
+  vessel silhouettes with generic fallbacks. Orbital payload, rocket-body,
+  debris, and unknown classes use exact-SATCAT object symbols instead of
+  colored dots. The duplicate traffic legend is intentionally omitted.
 - Touch-specific selection tolerance for isolated markers; exact mouse hits stay
   unchanged and ambiguous nearby traffic is never guessed.
 
