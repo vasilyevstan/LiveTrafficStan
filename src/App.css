@@ -34,7 +34,7 @@
 }
 
 .interface-layer {
-  --workspace-masthead-height: 56px;
+  --workspace-header-bottom: 104px;
   --workspace-notice-height: 0px;
   --workspace-flyout-width: 352px;
   position: absolute;
@@ -65,35 +65,26 @@
 
 .brand-panel {
   position: absolute;
-  top: 0;
-  right: 0;
-  left: 0;
+  top: 16px;
+  left: 16px;
   z-index: 6;
-  display: grid;
-  grid-template-columns: minmax(210px, 1fr) minmax(250px, 420px) minmax(280px, 1fr);
-  grid-template-areas: 'brand navigation status';
-  align-items: center;
-  gap: 24px;
-  width: 100%;
-  height: var(--workspace-masthead-height);
+  width: min(280px, calc(100vw - 24px));
   min-width: 0;
-  padding: 5px 16px;
-  border: 0;
-  border-bottom: 1px solid var(--panel-border);
-  box-shadow: 0 2px 8px var(--panel-shadow);
+  padding: 8px 12px 6px;
+  border-radius: 12px;
 }
 
 .brand-panel__title {
-  grid-area: brand;
   display: flex;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
+  padding-right: 82px;
 }
 
 .brand-panel h1 {
   margin: 0;
   color: var(--heading-text);
-  font-size: 1.06rem;
+  font-size: 0.96rem;
   line-height: 1.15;
   letter-spacing: -0.025em;
   white-space: nowrap;
@@ -105,9 +96,9 @@
 
 .radar-mark {
   position: relative;
-  width: 34px;
-  height: 34px;
-  flex: 0 0 34px;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
   border: 1px solid var(--accent-border);
   border-radius: 50%;
   box-shadow: inset 0 0 0 7px var(--accent-soft);
@@ -146,26 +137,20 @@
 }
 
 .live-status {
-  position: relative;
-  grid-area: status;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 12px;
+  position: static;
+  margin-top: 4px;
   min-width: 0;
 }
 
 .live-status__mode {
+  position: absolute;
+  top: 13px;
+  right: 12px;
   display: flex;
-  flex-shrink: 0;
   align-items: center;
   gap: 7px;
-  padding: 7px 9px;
-  border: 1px solid var(--divider);
-  border-radius: 24px;
   color: var(--status-live);
-  background: var(--button-background);
-  font-size: 0.66rem;
+  font-size: 0.62rem;
   letter-spacing: 0.07em;
 }
 
@@ -191,9 +176,9 @@
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 2px 8px;
+  gap: 2px 6px;
   color: var(--summary-text);
-  font-size: 0.72rem;
+  font-size: 0.68rem;
 }
 
 .live-status__summary > span:first-child {
@@ -212,7 +197,7 @@
   justify-content: space-between;
   gap: 8px;
   color: var(--provider-text);
-  font-size: 0.65rem;
+  font-size: 0.62rem;
 }
 
 .live-status__disclosure-label {
@@ -231,12 +216,12 @@
 
 .live-status__providers {
   position: absolute;
-  top: calc(100% + 16px);
-  right: 0;
+  top: calc(100% + 8px);
+  left: 0;
   width: min(360px, calc(100vw - 24px));
   display: grid;
   gap: 8px;
-  max-height: min(280px, calc(var(--app-visual-viewport-height) - 160px));
+  max-height: min(280px, calc(var(--app-visual-viewport-height) - var(--workspace-header-bottom) - 16px));
   overflow: auto;
   overscroll-behavior: contain;
   margin: 0;
@@ -304,10 +289,10 @@
   );
   --control-stack-height: min(
     var(--app-visual-viewport-58),
-    calc(var(--app-visual-viewport-height) - var(--workspace-masthead-height) - 48px)
+    calc(var(--app-visual-viewport-height) - 48px)
   );
   position: absolute;
-  top: calc(var(--workspace-masthead-height) + 16px);
+  top: 16px;
   right: 16px;
   left: auto;
   z-index: 4;
@@ -319,7 +304,6 @@
 }
 
 .workspace-navigation {
-  grid-area: navigation;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
@@ -1209,7 +1193,7 @@
 
 .details-panel {
   position: absolute;
-  top: calc(var(--workspace-masthead-height) + 16px);
+  top: calc(var(--workspace-header-bottom) + 16px);
   right: auto;
   left: 16px;
   z-index: 3;
@@ -1675,35 +1659,9 @@
   }
 }
 
-@media (min-width: 761px) and (max-width: 1050px) {
-  .interface-layer {
-    --workspace-masthead-height: 104px;
-  }
-
-  .brand-panel {
-    grid-template-columns: minmax(200px, 1fr) minmax(300px, 1.4fr);
-    grid-template-areas: 'brand navigation' 'status status';
-    gap: 4px 20px;
-  }
-
-  .live-status {
-    justify-content: flex-start;
-  }
-
-  .live-status__disclosure summary {
-    display: flex;
-    gap: 16px;
-  }
-
-  .live-status__providers {
-    right: auto;
-    left: 0;
-  }
-}
-
 @media (max-width: 760px) {
   .interface-layer {
-    --workspace-masthead-height: 120px;
+    --workspace-header-bottom: 100px;
     --mobile-history-height: 128px;
     --mobile-detail-height: clamp(
       128px,
@@ -1713,38 +1671,8 @@
   }
 
   .brand-panel {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: 24px 44px 44px;
-    grid-template-areas: 'brand' 'status' 'navigation';
-    gap: 0;
-    padding: 4px 12px;
-  }
-
-  .brand-panel h1 {
-    font-size: 0.98rem;
-  }
-
-  .brand-panel__title {
-    padding-right: 90px;
-  }
-
-  .radar-mark {
-    width: 24px;
-    height: 24px;
-    flex-basis: 24px;
-  }
-
-  .live-status {
-    position: static;
-    display: block;
-  }
-
-  .live-status__mode {
-    position: absolute;
-    top: 5px;
-    right: 12px;
-    padding: 5px 7px;
-    font-size: 0.6rem;
+    top: 12px;
+    left: 12px;
   }
 
   .live-status__disclosure summary {
@@ -1752,19 +1680,8 @@
     gap: 1px;
   }
 
-  .live-status__summary {
-    gap: 2px 7px;
-    font-size: 0.68rem;
-  }
-
-  .live-status__updated {
-    font-size: 0.62rem;
-  }
-
   .live-status__providers {
-    top: 74px;
-    right: 8px;
-    width: calc(100% - 16px);
+    width: calc(100vw - 24px);
   }
 
   .workspace-navigation {
@@ -1788,7 +1705,7 @@
     --control-stack-height: min(
       var(--app-visual-viewport-58),
       calc(
-        var(--app-visual-viewport-height) - var(--workspace-masthead-height) -
+        var(--app-visual-viewport-height) - var(--workspace-header-bottom) -
           var(--workspace-notice-height) - 48px
       )
     );
@@ -1866,7 +1783,7 @@
     --control-stack-height: min(
       var(--app-visual-viewport-58),
       calc(
-        var(--app-visual-viewport-height) - var(--workspace-masthead-height) -
+        var(--app-visual-viewport-height) - var(--workspace-header-bottom) -
           var(--workspace-notice-height) - var(--mobile-detail-height) - 48px
       )
     );
@@ -1888,7 +1805,7 @@
 
   .details-panel {
     right: 8px;
-    top: calc(var(--workspace-masthead-height) + var(--workspace-notice-height) + 8px);
+    top: calc(var(--workspace-header-bottom) + var(--workspace-notice-height) + 8px);
     left: 8px;
     width: auto;
     max-height: var(--mobile-detail-height);
@@ -1902,7 +1819,7 @@
 
   .details-panel--historical {
     max-height: calc(
-      var(--app-visual-viewport-height) - var(--workspace-masthead-height) -
+      var(--app-visual-viewport-height) - var(--workspace-header-bottom) -
         var(--mobile-history-height) - 48px
     );
   }
@@ -1912,7 +1829,7 @@
   }
 
   .map-error {
-    top: calc(var(--workspace-masthead-height) + 8px);
+    top: calc(var(--workspace-header-bottom) + 8px);
     right: 8px;
     bottom: auto;
     left: 56px;
@@ -1925,7 +1842,7 @@
   }
 
   .viewport-notice {
-    top: var(--workspace-masthead-height);
+    top: var(--workspace-header-bottom);
     right: 0;
     bottom: auto;
     left: 0;
@@ -1981,7 +1898,7 @@
     --control-stack-height: min(
       var(--app-visual-viewport-58),
       calc(
-        var(--app-visual-viewport-height) - var(--workspace-masthead-height) -
+        var(--app-visual-viewport-height) - var(--workspace-header-bottom) -
           var(--mobile-history-height) - 48px
       )
     );

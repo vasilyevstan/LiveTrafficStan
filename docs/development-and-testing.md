@@ -578,7 +578,55 @@ and a bottom mobile command dock. More and Settings open adjacent panels or
 upward mobile sheets, while search and Center stay in the masthead. The
 historical release identities and their evidence below remain unchanged.
 
-### Minimal right controls (local evidence)
+### Floating status card (#295, local evidence)
+
+The later explicit request was to remove the full-width upper bar, not merely
+make it shorter again. The candidate replaces it with a 280x88 px floating
+title/status card and moves the existing location input, Center, results, and
+privacy/attribution copy together into Settings. The right desktop buttons and
+70 px mobile dock are unchanged.
+
+Chrome 154 measured the card at x/y=16 on desktop and x/y=12 on phones in both
+themes at 1280x900, 1024x768, 900x700, 761x650, 390x844, 390x568 and 315x517.
+There was no horizontal overflow. The longest status label, CONNECTING,
+retained a 25.5 px gap from the title in both themes. The desktop rail began
+at y=16. Location inputs remained 44 px tall and unobscured at desktop,
+intermediate and short-mobile sizes.
+
+The existing fixture browser harness verified native Enter submission,
+coordinate navigation with zero Photon requests, rejected exponent-format
+coordinates with zero requests, one explicit named-search request with visible
+empty feedback, and Center restoring session Home. It also passed 26-page
+Starlink discovery (512 distinct records), selected last-row focus at 315 px,
+touch/wheel/keyboard scrolling, visual-viewport mismatch, provider
+disclosure/Escape, theme rehydration, attribution, PARTIAL/offline recovery,
+HISTORY selection and Return to Live. At 315x517, the selected final row was
+61.16 px tall within a 143 px body and remained topmost and focused. HISTORY's
+Return button ended at y=486.31 within a notice ending at y=487. There were
+124 rendered vector-source features and no recorded runtime or console errors.
+
+Accepted layout observations are retained in
+`.ui-redesign-evidence/floating-header/initial/report.json`; the completed
+interaction receipt is `floating-header/interaction-v2/report.json` with
+`passed: true`. The latter verifies identical CSS/component hashes before
+reusing the initial layout observations. Initial navigation automation needed
+the native Enter carriage-return event and an assertion against the existing
+padded map framing rather than raw camera-center equality. Its Photon fixture
+also needed the required `FeatureCollection` type. No application change was
+made to bypass those checks.
+
+The malformed numeric-token case `59..450, 24.760` exposed a pre-existing
+parser gap, recorded separately as #297 rather than folded into this layout
+change. The native navigation receipt uses the already-supported exponent
+rejection case; it does not claim that #297 is fixed. The separate live yacht
+check and Class B coverage dependency are recorded in #296.
+
+All 973 tests, required integrity checks, lint, typecheck and production build
+passed. The installed Impeccable detector reported no findings in the changed
+CSS/component. These are local fixture/Chrome-emulation results, not new
+production measurements or physical Safari/iOS/Android evidence.
+
+### Minimal right controls (#291, historical local evidence)
 
 After #288, the user liked the buttons but requested a more minimal layout,
 right-side controls, and a smaller or absent top bar. This refinement keeps
@@ -842,16 +890,18 @@ Use `npm run dev` and verify:
    exclusive context, hiding/filtering the selected entity, or allowing it to
    expire clears selection safely. Failed navigation and ordinary same-entity
    refreshes do not.
-8. The default masthead, right desktop rail, and bottom mobile command dock
-   require no scroll. Center and the one mounted location input stay in the
-   masthead; Aircraft, Ships, ORBITS, More, and Settings stay in the dock.
+8. The floating status card, right desktop rail, and bottom mobile command dock
+   require no scroll. Center and the one mounted location input are grouped
+   with results and privacy text at the start of Settings; Aircraft, Ships,
+   ORBITS, More, and Settings stay in the dock.
    Auto/Light/Dark and Trails live under Appearance in **Settings**. Other
    operational layers, discovery, context, and source detail live behind
    **More** (Explore map); the duplicate traffic legend is absent. Location feedback,
    browser location, history setup, preferences, sharing, reset, and app detail
    live in Settings. Verify each panel promotes recovery
    only from its own domain with no duplicated action or alert. Verify the
-   masthead, navigation, and rail do not overlap at 1024, 900, or 761 CSS pixels.
+   floating card, navigation panel, and rail do not overlap at 1024, 900, or
+   761 CSS pixels. Do not replace the compact card with an edge-to-edge bar.
    Measure the visible collapsed dock and the expanded stack separately
    at desktop, 390x844, and 390x568. With 20 orbital results, verify the outer
    Operations body is the only scroll owner, the final result is reachable by
