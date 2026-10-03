@@ -20,7 +20,7 @@ This is cataloged orbital-object context, not another live-traffic provider:
   this feature.
 
 The browser implementation and scheduled catalog infrastructure are active in
-production source `bba0bf4f7a69939e3c07fbeb24470fa959f6f20a`. The layer
+production source `d565b56278e81ff2478ab1e476c269084f2297d4`. The layer
 remains a default-off user preference, while the protected Worker deployment
 sets `ORBITAL_CATALOG_ENABLED=true`, serves the same-origin catalog route, and
 runs the checked two-hour scheduler. A deployment with that Worker flag off
@@ -221,6 +221,14 @@ and has digest
 `16233efe565c8f07f079ae4ad321219ae756931679d167fb2a3f2f52bf5a81d4`.
 These counts describe the source generation and sample only, not active,
 operational, or optically visible spacecraft.
+
+Release #275 deploys schema 2 at exact application source
+`d565b56278e81ff2478ab1e476c269084f2297d4` while preserving schema 1 for
+predecessor tabs. The browser's fixed preference list can receive fresher
+schema 1 in the same request when schema 2 is beyond the 24-hour hard expiry.
+Immediate production proof exercised default, wildcard, combined, exact-v1,
+exact-v2, `q=0`, representation-specific ETag/`304`, and
+cross-representation-validator behavior without contacting CelesTrak.
 
 The schema-2 server union has 462 unique records (369 payloads, 91 rocket
 bodies, and 2 debris objects) from the final
@@ -551,13 +559,10 @@ scheduled KV/Durable Object boundary.
 ## Production activation and visibility evidence
 
 The current exact application release is
-`bba0bf4f7a69939e3c07fbeb24470fa959f6f20a`, initially deployed by protected
-run
-[36997443034](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/36997443034),
-successful attempt 3, as Cloudflare version
-`63e5a14d-7115-44aa-9386-36b13b5ff91d`. Protected rollback/restoration runs
-`36998162009` and `36998245095` then returned the exact release as running
-version `146e74df-c960-4a41-bc0c-6d5b9fa0d660`. It uses KV namespace
+`d565b56278e81ff2478ab1e476c269084f2297d4`, deployed by protected run
+[37121314015](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/37121314015)
+as running Cloudflare version
+`e9e473d1-fac5-4594-b62b-7ba68573efeb`. It uses KV namespace
 `59178d55418247c4bab473b52a5dc07d` and Cron `17 */2 * * *`.
 Implementation PRs #232 and #233 supplied the source contract and browser
 consumer; #235 performed the coordinated catalog release. PR #243 added the
@@ -623,7 +628,7 @@ ms, zero main-thread tasks over 50 ms, and a 602.74-second bounded one-canvas/
 one-worker soak. Physical iOS Safari and Android Chrome were unavailable in
 the validation environment; their evidence is not claimed.
 
-The current production follow-up in Chrome `154.0.8037.59` reported
+The October 1 map-follow-up production pass in Chrome `154.0.8037.59` reported
 `ORBITS · 192 SHOWN · 0 PASSES ≤90M` for the measured world view, retained 454
 safe current positions, and exposed exactly two featured properties:
 `HUBBLE`/NORAD `20580` and `ISS`/NORAD `25544`. The active
@@ -665,12 +670,41 @@ returned `source=kv` for exact release `bba0bf4f...`, with GP retrieval
 `3cd7476fd7d42aed1772a85d4f81c27322c73b088bf58ff217e39454f425f0d7`.
 The newer GP clock proves replacement of the `08:40:03Z` bootstrap generation.
 
-Public Wiki commit `bac76a2994a09e85e1162c5724a6071f0fc35540`
-synchronizes the current release, physical vessel scale, eight-photo coverage,
-compact counts, exact Hubble/ISS labels, bounded Starlink lifecycle and
-scheduled publication, provider/privacy boundaries, same-route compatibility,
-single-scroll responsive behavior, validation, troubleshooting, rollback, and
-known device-evidence limitation.
+For shell-balanced release #275, the ordinary `2026-10-03T14:17Z` event
+published aligned schema-1/schema-2 KV members at `14:17:23.055Z`. Schema 1
+contained 150 records; schema 2 contained 512 records with exact 128-per-shell
+quotas and digest
+`cebc2fd1dfe8b58e6dce30ca15dfa1ec0e327d7e1272d2f79690116a6a41356b`.
+The normal browser preference selected fresh schema 2. Complete production
+record/digest checks and all ten negotiation/ETag cases passed.
+
+Chrome `154.0.8037.95` used the real production route without response
+fixtures. It proved zero Starlink startup requests, one schema-2/KV request,
+all 26 pages and final rows 501-512, exact 192/384/512 tiers, a 193-ID selected
+exception, one map/physical worker, theme restoration, parent off/on without
+refetch, and 390x844/390x568 touch and final-result reachability. At `14:30Z`,
+the measured full Estonia/Finland desktop view showed six Starlinks and 86
+next-90-minute map passes; the narrower mobile canvas showed two and 63.
+These are time- and viewport-specific modeled observations, not guaranteed
+density. The earlier smaller southern view correctly showed zero current
+sample points, confirmed against the exact source records with SGP4.
+
+Protected predecessor rollback `37129586003` and exact restoration
+`37129687283` passed; both fresh KV representations retained byte-identical
+bodies, digests, ETags, and publication clocks. [Actual production screenshots
+and evidence](https://github.com/vasilyevstan/LiveTrafficStan/pull/275#issuecomment-5970127249)
+record the remaining physical-device evidence limitation.
+
+Public Wiki commit `0d535744e4159cf5b12931db4bf14adf4d5521d9` synchronizes
+the shell-balanced release and its fresh publication, production browser,
+rollback/restoration, and time-dependent northern-view evidence.
+
+Traffic-recovery Wiki commit `bac76a2994a09e85e1162c5724a6071f0fc35540`
+synchronizes that predecessor release, physical vessel scale, eight-photo
+coverage, compact counts, exact Hubble/ISS labels, bounded Starlink lifecycle
+and scheduled publication, provider/privacy boundaries, same-route
+compatibility, single-scroll responsive behavior, validation, troubleshooting,
+rollback, and known device-evidence limitation.
 
 Cache-disabled public-origin enrichment acceptance used real current Hubble
 `20580`, ISS `25544`, and exact rocket body `733` features. It observed zero
@@ -730,8 +764,8 @@ schema-2 -> schema-1 -> schema-2 compatibility:
   `83b98933-a609-405e-b07c-3e4f4ded46e8`, passed dual-representation smoke, and immediately
   served the retained schema-2 KV bundle without another provider refresh.
 
-That restored source/version is the byte-exact rollback target for the current
-map follow-up release.
+That restored source/version was the byte-exact rollback target for the curated
+catalog release and its map follow-up.
 
 The optional globe remains separate in #163. Physical iOS Safari, Android
 Chrome, and supported-device drag-FPS evidence remain an explicit environment

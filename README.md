@@ -127,9 +127,9 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   matching totals only after map display is available; before a settled raw
   zoom, details explicitly report map display unavailable. The coordinated
   source/browser contract was first released through #235 at exact application
-  source `538edd25afa49f62c13e93745b322099f662791d`; the current traffic-recovery
-  release preserves it at
-  `bba0bf4f7a69939e3c07fbeb24470fa959f6f20a`.
+  source `538edd25afa49f62c13e93745b322099f662791d`; the current shell-balanced
+  Starlink release preserves it at
+  `d565b56278e81ff2478ab1e476c269084f2297d4`.
 - Issue #257 adds a separate remembered **STARLINK** child layer under
   **Operations -> More -> Orbits**. It starts off even when ORBITS is on and
   makes no request until both toggles are effective. Issue #271 adds a
@@ -540,13 +540,16 @@ persistent route cache.
 Public production is live at
 <https://livetrafficstan.syntal.workers.dev> on Cloudflare Workers Free with
 Static Assets. The current application source is
-`bba0bf4f7a69939e3c07fbeb24470fa959f6f20a`. Canonical deployment run
-`36997443034`, successful attempt 3, passed the complete gate and initially
-published Cloudflare version `63e5a14d-7115-44aa-9386-36b13b5ff91d`.
-Protected rollback run `36998162009` then restored the predecessor for
-target-aware smoke, and protected restoration run `36998245095` returned the
-exact current source as the running Cloudflare version
-`146e74df-c960-4a41-bc0c-6d5b9fa0d660`. The deployment preserves:
+`d565b56278e81ff2478ab1e476c269084f2297d4`, released through #272-#275.
+Deployment run `37120958690` published the exact source as version
+`32bffacf-3f90-4f9c-953b-bb50a6ec0ff4`, then isolated the documented
+aircraft-only private-relay `502`. Direct ADSB.lol remained healthy. One
+exact-instance `DIAGNOSTICREBOOT` progressed through `STOPPING` at
+`2026-10-03T11:54:26Z`, `STARTING` at `11:55:12Z`, and `RUNNING` at
+`11:55:46Z`; bounded probe 6 returned real aircraft JSON at `11:57:37Z`.
+Unchanged canonical deployment run `37121314015` then passed the complete
+smoke as Cloudflare version `e9e473d1-fac5-4594-b62b-7ba68573efeb`. The
+deployment preserves:
 
 - `oci-private-relay`, aircraft photos, and plausible routes enabled;
 - the curated orbital and bounded Starlink catalogs enabled with Cron
@@ -561,8 +564,12 @@ exact current source as the running Cloudflare version
   matching, and two immutable NASA JPEGs totaling 95,457 bytes;
 - immutable vessel-photo generation `2026-10-02-v1`, eight exact-IMO entries,
   and 951,872 bundled bytes;
-- immutable Starlink generation `starlink-2026-10-02-v1`, 150 systematic
-  sample records from a validated 11,125-record population, and digest
+- immutable shell-balanced Starlink generation
+  `starlink-shell-balanced-2026-10-02-v1`, 512 records with exact
+  `128/128/128/128` inclination-shell quotas, 254,275 bytes, and digest
+  `56db2f4d7ea342fa8b1e74f4e2f6567d1f6d416caedeefc021eed3d8a04b71c2`;
+- retained predecessor `starlink-2026-10-02-v1`, 150 systematic sample
+  records from the same validated 11,125-record population, and digest
   `16233efe565c8f07f079ae4ad321219ae756931679d167fb2a3f2f52bf5a81d4`.
 
 The October 1 map follow-up was merged through #242, #243, #244, #245, and
@@ -663,8 +670,40 @@ provider acquisition. The first request strictly after the observer's
 A bounded provider-contract review found no cadence, backoff/lock, complete
 pair, final-write, last-good, privacy, or failure-isolation blocker.
 
-Fresh rendered production acceptance used a deterministic 24-object crossing
-fixture and exposed all 20 bounded results at both 390x844 and 390x568.
+The October 3 shell-balanced release retains that schema-1 generation for
+predecessor clients and adds the negotiated 512-record schema 2. Immediate
+post-deploy proof showed default, wildcard, and combined requests selecting
+fresh schema 1 from KV while the immutable schema-2 bootstrap was beyond the
+browser's 24-hour expiry. Exact schema-2 requests still returned the validated
+bootstrap. Both representations used independent ETags and matching `304`s,
+opposite-representation validators returned `200`, `Vary: Accept` was present,
+and explicit schema-2 `q=0` exclusion selected schema 1. The ordinary
+`2026-10-03T12:17Z` observation window remained on the prior schema-1
+generation through `12:28:56Z`; no scheduler call or manual provider request
+was made. The ordinary `14:17Z` event then published one fresh, aligned
+150/512-record KV generation at `2026-10-03T14:17:23.055Z`. Full record,
+canonical-digest, four-by-128 quota, and ten-case negotiation checks passed;
+the normal browser preference now receives fresh schema 2.
+
+Real production Chrome `154.0.8037.95`, without response fixtures, confirmed
+512 modeled records, all 26 pages, exact 192/384/512 tiers, one map/physical
+worker, theme restoration, and parent off/on without refetch. At `14:30Z`,
+the measured Estonia/Finland desktop view showed six Starlinks and 86
+next-90-minute map passes; the narrower mobile canvas showed two and 63.
+These are time- and viewport-specific modeled observations, not guaranteed
+density or optical visibility. [Production screenshots and exact
+evidence](https://github.com/vasilyevstan/LiveTrafficStan/pull/275#issuecomment-5970127249)
+also record the Chrome-emulation, not physical-device, limitation.
+
+Protected predecessor rollback `37129586003` and exact restoration
+`37129687283` passed. Both restored KV representations retained byte-identical
+bodies, digests, ETags, and publication clocks without a provider acquisition
+or namespace/cadence reset. The overall visual redesign remains a separate
+open workstream in [#276](https://github.com/vasilyevstan/LiveTrafficStan/issues/276);
+compact controls are not its completion.
+
+Earlier #194 production-bundle acceptance used a deterministic 24-object
+crossing fixture and exposed all 20 bounded results at both 390x844 and 390x568.
 Operations More was the single scroll owner; touch, wheel, Page Down, and 38
 Tab steps reached the final result with no nested orbital-list overflow. The
 stacks measured 489.515625 px against 489.52 px and 329.4375 px against
@@ -775,8 +814,15 @@ real aircraft JSON, then exact-release marked local
 wait. Provider `503`, provider `429`, redirects, malformed policy, and failure
 to reach eventual real JSON remain release failures.
 
-Comprehensive public Wiki commit
-`bac76a2994a09e85e1162c5724a6071f0fc35540` synchronizes the current
+Public Wiki commit `0d535744e4159cf5b12931db4bf14adf4d5521d9`
+synchronizes the shell-balanced release across fourteen pages, including the
+fresh scheduled publication, real production browser evidence,
+rollback/restoration, provider/privacy boundaries, and the separately open
+overall redesign in #276. It records application `d565b562...`, not a later
+documentation-only repository commit.
+
+Traffic-recovery public Wiki commit
+`bac76a2994a09e85e1162c5724a6071f0fc35540` synchronizes the predecessor
 production identity, live-traffic recovery, physical vessel sizing, all eight
 exact-IMO photos, bounded Starlink lifecycle and scheduled publication,
 browser acceptance, independent relay recovery, rollback/restoration,

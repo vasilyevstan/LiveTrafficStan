@@ -123,6 +123,41 @@ The preserved 74,962-byte body and exact headers have SHA-256
 and `be232df809d63a4c0617cf2df6cf16529d1d9bbcddfdd6a0ec1c1c93da3160d7`.
 A bounded provider-contract review found no release-blocking inconsistency.
 
+Release #275 at exact application source
+`d565b56278e81ff2478ab1e476c269084f2297d4` adds the 512-record
+shell-balanced consumer/publication contract without another source probe.
+Immediate production evidence retained the prior fresh schema-1 KV generation
+for default, wildcard, and combined clients while exact schema 2 exposed the
+validated immutable bootstrap. Independent ETags/`304`,
+cross-representation `200`, `Vary: Accept`, and schema-2 `q=0` exclusion all
+passed. The ordinary `2026-10-03T12:17Z` observation remained on the prior
+schema-1 generation through `12:28:56Z`; no manual scheduler or provider
+request was substituted for the next ordinary event.
+
+The ordinary `14:17Z` event published the complete aligned pair at
+`2026-10-03T14:17:23.055Z`. Both actual production bodies passed the repository
+publication validator. The complete population remained 11,125, with zero
+extra SATCAT rows and shell populations 3,616 / 5,111 / 871 / 1,527.
+
+| Source | Retrieval on 2026-10-03 (UTC) | Rows | Decoded bytes | SHA-256 |
+| --- | --- | ---: | ---: | --- |
+| GP | `14:17:20.296Z` | 11,125 | 4,700,667 | `0db59a3bc7fae26fed83560d9cd3e6e86eabe212f9d1d9f252611a0ade0396d2` |
+| SATCAT | `14:17:23.055Z` | 11,125 | 3,684,065 | `0a1d5f5219a38c010ae2d2f17c9faf2e02c689afa6229e48fc8f3726ae17a7bd` |
+
+Schema 1 contained 150 records / 74,962 bytes, canonical digest
+`1e570978cdc4854651c1dd5256882273040b8c0980964a0b4307d7b509567c44`,
+and raw-body SHA-256
+`c91ccd9d4584ff61fa3321fa975e133be358f2061983d2bbd6d714a4706027ba`.
+Schema 2 contained 512 records / 254,287 bytes with four exact 128-record
+quotas, canonical digest
+`cebc2fd1dfe8b58e6dce30ca15dfa1ec0e327d7e1272d2f79690116a6a41356b`,
+and raw-body SHA-256
+`108318133c427c89dd6db56fa085282e800bf2bc5a09898ce8fd14867f578808`.
+Both were served from KV under exact release `d565b562...`. All ten
+negotiation/ETag cases passed. The protected predecessor rollback and exact
+restoration retained both raw body hashes and publication identities at
+`14:30:12.614Z`; no manual provider acquisition was used.
+
 ## Evidence method
 
 This decision combines:

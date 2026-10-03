@@ -12,9 +12,11 @@ contract.
 The eight-photo generation is accepted in production at application source
 `bba0bf4f7a69939e3c07fbeb24470fa959f6f20a`. Protected release validation
 run `36996187462`, canonical deployment run `36997443034`, rollback run
-`36998162009`, and restoration run `36998245095` passed. The current running
-Cloudflare version is `146e74df-c960-4a41-bc0c-6d5b9fa0d660`. The expansion
-does not rewrite the accepted `2026-09-26-v1` bytes, which remain historical
+`36998162009`, and restoration run `36998245095` passed. The expansion remains
+included unchanged in current application source
+`d565b56278e81ff2478ab1e476c269084f2297d4`, deployed as Cloudflare version
+`e9e473d1-fac5-4594-b62b-7ba68573efeb`. Those assets do not rewrite the
+accepted `2026-09-26-v1` bytes, which remain historical
 rollback assets.
 
 The feature is not a general vessel-image lookup. It makes no runtime request
@@ -225,8 +227,8 @@ pointer/focus traversal, Escape dismissal back to the map, stale-marker
 cleanup, unmatched omission, and no external image-provider request or browser
 diagnostic against the production origin.
 
-The current eight-photo release repeated the acceptance against exact
-production source `bba0bf4f7a69939e3c07fbeb24470fa959f6f20a`. All eight
+The eight-photo release repeated the acceptance against exact release source
+`bba0bf4f7a69939e3c07fbeb24470fa959f6f20a`. All eight
 same-origin assets returned their declared image MIME and
 `public, max-age=31536000, immutable`; selected details distinguished the exact
 invalid/missing wording from the valid-but-uncovered exact-IMO wording; and an

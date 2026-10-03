@@ -203,6 +203,18 @@ Unchanged run `36997443034` passed the complete smoke. Diagnose these surfaces
 independently: an aircraft-only VPC exception uses the relay recovery path,
 while an isolated upstream AWC `5xx` is not evidence to reboot OCI.
 
+The 2026-10-03 shell-balanced Starlink release repeated only the aircraft-side
+recurrence. Run `37120958690` published exact application source
+`d565b56278e81ff2478ab1e476c269084f2297d4` as version
+`32bffacf-3f90-4f9c-953b-bb50a6ec0ff4`; static assets, orbital routes,
+weather, and direct ADSB.lol were healthy, while the unchanged private relay
+returned `502`. One exact-instance diagnostic reboot reached `STOPPING` at
+`11:54:26Z`, `STARTING` at `11:55:12Z`, and `RUNNING` at `11:55:46Z`.
+Bounded probes returned four `502`s, one `504`, then real aircraft JSON at
+`11:57:37Z`. Unchanged run `37121314015` passed the full smoke as version
+`e9e473d1-fac5-4594-b62b-7ba68573efeb`. Do not roll back unrelated Starlink
+or UI changes for this isolated infrastructure failure.
+
 ADSB.lol rejects generic Worker identification. The proxy must send the stable
 public LiveTrafficStan User-Agent. Do not work around a `403` by forwarding
 browser headers, cookies, authorization, or a client-controlled destination.
@@ -739,6 +751,21 @@ last-good snapshot and inspect the shared coordinator outcome, global
 `Retry-After`/terminal state, in-progress lock, complete-pair validation, and
 final KV write. Do not call the scheduler or provider manually.
 
+The shell-balanced release observed another unchanged window at
+`2026-10-03T12:17Z`, then a normal fresh publication at
+`2026-10-03T14:17:23.055Z`. Both 150/512-record representations were validated
+from KV and survived protected rollback/restoration byte-identically. The
+earlier unchanged observation did not justify a forced refresh or a diagnosis
+of the coordinator's unobserved admission result.
+
+An enabled 512-record sample can still have zero current points in a smaller
+Estonia/southern-Finland view. Wait for the settled viewport and its current
+prediction, distinguish modeled/in-map/shown/pass counts, and compare exact
+records and modeled time before diagnosing missing markers. The release
+observed a correct empty smaller view and, later, six/two shown Starlinks in
+desktop/mobile views covering all of Estonia and Finland. The sample is not
+the whole constellation and promises no minimum count in every place/time.
+
 If KV is healthy but requests time out, verify the immutable asset binding:
 bootstrap fallback must stop within 1.5 seconds and cannot consume the
 browser's full five-second deadline. Validate the schema-2 body under the
@@ -875,7 +902,7 @@ as terminal for the running tab rather than retrying on reselection. A hover
 must never contact NASA or request the same-origin asset; a tooltip can reuse
 only a validated Blob URL created by selected details earlier in the tab.
 
-Current application source `bba0bf4f7a69939e3c07fbeb24470fa959f6f20a`
+Current application source `d565b56278e81ff2478ab1e476c269084f2297d4`
 retains the same previously proven uncached `200 image/jpeg` Static Assets with
 exact 46,716-byte and 48,741-byte lengths plus one-year immutable caching. Any
 different bytes, media type, redirect, repeated request, NASA runtime request,
