@@ -72,51 +72,76 @@ export function LiveStatus({
           : 'Historical traffic status'
       }
     >
-      <div className="live-status__summary">
+      <span className="live-status__mode">
         <span className="live-status__dot" aria-hidden="true" />
         <strong>{mode}</strong>
-        <span aria-hidden="true">/</span>
-        <span>{aircraftCount} aircraft</span>
-        <span aria-hidden="true">/</span>
-        <span title={marineCapabilities.coverage.label}>
-          {vesselCount} ships shown · regional source
-        </span>
-        <span aria-hidden="true">/</span>
-        <span>
-          {historicalAt === undefined
-            ? `updated ${formatAge(latestUpdate || undefined, now)}`
-            : `at ${formatTimestamp(historicalAt)}`}
-        </span>
-      </div>
-      <div className="live-status__providers">
-        {!online && historicalAt === undefined && (
-          <span>
-            Live traffic is unavailable while the browser is offline
+      </span>
+      <details
+        className="live-status__disclosure"
+        onKeyDown={(event) => {
+          if (event.key !== 'Escape' || !event.currentTarget.open) return
+          event.preventDefault()
+          event.stopPropagation()
+          event.currentTarget.open = false
+          event.currentTarget.querySelector('summary')?.focus()
+        }}
+      >
+        <summary>
+          <span className="live-status__summary">
+            <span>{aircraftCount} aircraft</span>
+            <span title={marineCapabilities.coverage.label}>
+              {vesselCount} ships shown · regional source
+            </span>
           </span>
-        )}
-        {historicalAt !== undefined && (
-          <span>
-            {online
-              ? 'Live acquisition continues in the background when eligible'
-              : 'Browser offline; local playback remains available'}
+          <span className="live-status__updated">
+            <span>
+              {historicalAt === undefined
+                ? `updated ${formatAge(latestUpdate || undefined, now)}`
+                : `at ${formatTimestamp(historicalAt)}`}
+            </span>
+            <span className="live-status__disclosure-label">
+              Provider details
+            </span>
           </span>
-        )}
-        <span title={aircraftStatus.error}>
-          {providerLabel('Aircraft', aircraftStatus)}
-        </span>
-        <span title={marineStatus.error}>
-          {providerLabel('Marine stream', marineStatus, 'connected')}
-        </span>
-        {orbitalSummary && (
-          <span
-            className="live-status__orbital"
-            aria-hidden="true"
-          >
-            {orbitalSummary}
+        </summary>
+        <div className="live-status__providers">
+          {!online && historicalAt === undefined && (
+            <span>
+              Live traffic is unavailable while the browser is offline
+            </span>
+          )}
+          {historicalAt !== undefined && (
+            <span>
+              {online
+                ? 'Live acquisition continues in the background when eligible'
+                : 'Browser offline; local playback remains available'}
+            </span>
+          )}
+          <span title={aircraftStatus.error}>
+            {providerLabel('Aircraft', aircraftStatus)}
+            {aircraftStatus.error && (
+              <span className="live-status__error">
+                {aircraftStatus.error}
+              </span>
+            )}
           </span>
-        )}
-        <span>{marineCapabilities.coverage.label}</span>
-      </div>
+          <span title={marineStatus.error}>
+            {providerLabel('Marine stream', marineStatus, 'connected')}
+            {marineStatus.error && (
+              <span className="live-status__error">{marineStatus.error}</span>
+            )}
+          </span>
+          {orbitalSummary && (
+            <span
+              className="live-status__orbital"
+              aria-hidden="true"
+            >
+              {orbitalSummary}
+            </span>
+          )}
+          <span>{marineCapabilities.coverage.label}</span>
+        </div>
+      </details>
     </section>
   )
 }
