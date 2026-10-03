@@ -569,6 +569,72 @@ The A→B→A production exercise proves:
   shell caches, preserves the unrelated cache, exact preferences/history
   settings, and three IndexedDB rows, and leaves retirement `/sw.js` available.
 
+## Overall UI redesign candidate (#276)
+
+Local candidate verification on October 3, 2026 used Chrome
+154.0.8037.95 on macOS, real MapLibre rendering, mocked aircraft/MQTT/search
+responses, and the current validated curated/512-record Starlink fixture
+contracts. This is not production-release evidence. The existing deployment
+identities elsewhere in this document are unchanged.
+
+Matching Light/Dark baseline and candidate captures used the same local
+traffic fixture and camera. Update age advances normally:
+
+| Default layout, CSS px | Before | Candidate |
+| --- | --- | --- |
+| Desktop header width, 1280x900 | 620 | 420 |
+| Desktop header height | 123.61 | 118.25 |
+| Mobile header height, 390x844 | 107 | 92 |
+| Bottom of collapsed tools, 390x844 | 337 | 265.38 |
+| Bottom of collapsed tools, 390x568 | 319 | 265.38 |
+| Bottom of collapsed tools, 315x517 | 295 | 265.38 |
+
+The narrow rail deliberately grows from 203 to 235 px at 315x517 to fit
+readable labels and 44 px primary actions, leaving a 74 px map strip. The
+combined default overlay area is about 28% smaller at 390x844 and 17% smaller
+on desktop; the narrowest layout trades approximately unchanged area for
+better touch/readability and less vertical coverage.
+
+Rendered acceptance traversed all 26 Starlink pages and all 512 unique
+entries. The last row was topmost and fully inside its sole scroll owner at
+1280x900, 390x844, 390x568, and 315x517, including a selected orbital card.
+At 315x517 the selected result was 74.45 px high inside a 91.63 px body.
+An 844 px layout with a forced 517 px `visualViewport.height` retained the
+299.86 px / 58% control cap and reachable final row. Geometric comparisons
+allow one CSS pixel for fractional layout/scroll rounding.
+
+Touch, wheel, and PageDown moved the outer Operations body; 18 sequential
+Tabs reached the last result. Escape and detail close restored focus.
+Trusted touch on the uncovered strip moved the map. Opening settings and
+switching themes retained the same canvas, one physical orbital worker, and
+one request per orbital catalog; 44 successful vector-tile responses were
+observed. Offline/HISTORY transitions were checked separately, including
+truthful PARTIAL, PAUSED, OFFLINE, and HISTORY presentation, independent
+provider messages, playback controls, historical details, and Return to Live.
+At 390x568 and 315x517, playback starts 14 px below the reserved tool area.
+The run reported no runtime exception or console error.
+
+Opaque surface contrast ratios are 11.07:1 / 12.27:1 for main text and
+5.63:1 / 7.51:1 for secondary text in Light / Dark. Three-pixel focus rings
+contrast 6.46:1 / 10.69:1 against panels and 5.63:1 / 6.49:1 against active
+controls. `src/app/interfaceStyles.test.ts` checks small-text and focus
+contrast plus visual-viewport and single-scroll-owner contracts.
+The required repository checks passed, including 968 tests in 129 files.
+No framework, font, icon package, provider, worker, or scheduler was added.
+
+The broader copy pass in #195 already shortened route, selected-object,
+metadata/photo, weather, history, and Photon text beyond Operations. This
+candidate preserves those reductions and necessary caveats. A follow-up
+regression removes the remaining repeated pending-history deletion message:
+it appears once in the existing status, while distinct supplementary history
+notices remain visible.
+
+Screenshots, detailed geometry, CDP actions, and validation output remain
+uncommitted in the isolated candidate worktree's `.ui-redesign-evidence/`
+directory (`before/`, `final/`, `browser.mjs`, and `required-checks.log`).
+Mobile/touch and visual-viewport evidence is browser emulation, not physical
+iOS/Android or Safari testing.
+
 ## Browser smoke test
 
 Use `npm run dev` and verify:
@@ -589,9 +655,10 @@ Use `npm run dev` and verify:
    refreshes do not.
 8. The default Operations and Location & Settings panels remain compact and
    require no scroll. Center, Aircraft, Ships, and ORBITS stay visible above;
-   the one mounted location input, theme, and Trails stay visible below. Other
+   the one mounted location input stays visible below. Auto/Light/Dark and
+   Trails live under Appearance in **View & settings → More**. Other
    operational layers, discovery, context, and source detail live behind
-   Operations More; the duplicate traffic legend is absent. Location feedback,
+   **Explore map → More**; the duplicate traffic legend is absent. Location feedback,
    browser location, history setup, preferences, sharing, reset, and app detail
    live behind Location & Settings More. Verify each panel promotes recovery
    only from its own domain with no duplicated action or alert. Verify the
@@ -606,6 +673,13 @@ Use `npm run dev` and verify:
    tall while `window.visualViewport.height` is forced to 517 px. At the final
    scroll position, verify the last result is topmost with
    `document.elementFromPoint()` rather than relying only on bounding boxes.
+   Repeat with a selected orbital detail card open. In HISTORY, verify the
+   playback cursor, speed controls, and Return to Live remain separate from
+   expanded settings; mobile historical details temporarily replace the tool
+   rail and closing the detail restores it without losing disclosure state.
+   In both themes, open Provider details with touch and keyboard and verify
+   that counts/age remain visible when closed, provider errors and regional
+   limitations remain readable when open, and Escape restores summary focus.
 9. Map and provider attribution remains visible.
 10. Strict coordinates navigate with no Photon request; named text makes one
     explicit bounded request and renders Photon/OpenStreetMap attribution.

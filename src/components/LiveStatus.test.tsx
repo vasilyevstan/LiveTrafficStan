@@ -44,6 +44,39 @@ describe('LiveStatus', () => {
 
     expect(html).toContain('Marine stream unavailable')
     expect(html).not.toContain('Marine stream connected')
+    expect(html).toContain(
+      '<span class="live-status__error">Disconnected</span>',
+    )
+    expect(html).toContain(
+      '<details class="live-status__disclosure"><summary>',
+    )
+    expect(html).toContain('Provider details')
+    expect(html).not.toContain(' hidden=')
+  })
+
+  it('keeps counts and update age outside the collapsed provider body', () => {
+    const html = renderToStaticMarkup(
+      <LiveStatus
+        aircraftCount={0}
+        vesselCount={0}
+        aircraftStatus={{
+          phase: 'live',
+          paused: false,
+          lastDataAt: 1_800_000_000_000,
+        }}
+        marineStatus={{ phase: 'live', paused: false }}
+        marineCapabilities={DIGITRAFFIC_MARINE_CAPABILITIES}
+        now={1_800_000_005_000}
+        online
+      />,
+    )
+    const summary = html.slice(0, html.indexOf('</summary>'))
+    expect(summary).toContain('<strong>LIVE</strong>')
+    expect(summary).toContain('0 aircraft')
+    expect(summary).toContain('0 ships shown · regional source')
+    expect(summary).toContain('updated 5 sec ago')
+    expect(html).toContain('Marine stream connected')
+    expect(html).toContain('Digitraffic regional source; exact coverage unknown')
   })
 
   it('labels historical and offline display without live cursor announcements', () => {

@@ -137,9 +137,18 @@ tombstone can be removed after Cloudflare confirms that deletion has applied.
 
 ## Control composition
 
+Presentation uses a shared opaque surface/token system: white Light panels
+and slate Dark panels, restrained borders and shadows, system typography,
+and a solid three-pixel keyboard focus ring. The compact header keeps traffic
+mode, shown counts, regional marine coverage, and update age visible. Its
+native **Provider details** disclosure exposes independent transport/error
+messages and coverage limitations on every screen size; Escape closes it and
+restores summary focus. Presentation does not change provider state or polling.
+
 `TrafficControls` owns one location-search model and two stable native
 disclosures with the same `name`. The upper Operations panel keeps only Center,
-Aircraft, Ships, and ORBITS visible. Its disclosure separates secondary tools
+Aircraft, Ships, and ORBITS visible as icon-and-text actions. **Explore map**
+(More) separates secondary tools
 into session-only Layers, Find, Context, Orbits, and Sources views; **VIEW**
 opens Orbits and focuses the first result without moving the map or fetching
 again. The task strip uses the same application button, focus, and active-state
@@ -147,9 +156,12 @@ system as the primary controls rather than browser-default buttons. The
 Starlink child presents modeled, in-map, and next-pass counts before compact
 source/model caveats. The duplicate traffic legend is intentionally absent;
 textual state and limitations remain in controls and selected details. The
-lower Location & Settings panel keeps the single mounted location input, theme,
-and Trails visible; its disclosure owns search feedback, browser location,
-history setup, preferences, sharing, reset, and application state.
+collapsed orbital summary is omitted while the detailed Orbits view is open,
+avoiding repeated information and preserving result space. The lower Location
+& Settings panel keeps the single mounted location input visible. **View &
+settings** (More) owns Appearance (Auto/Light/Dark and Trails), search feedback,
+browser location, history setup, preferences, sharing, reset, and application
+state. No controls or disclosure identities are duplicated or remounted.
 
 Opening either disclosure closes the other without remounting the search model.
 Operational recovery and app/storage/history recovery have separate promotion
@@ -158,7 +170,13 @@ disclosures. The expanded pair uses 58% of the current visual viewport, with
 `dvh`/`vh` fallbacks when `window.visualViewport` is unavailable. Each
 disclosure body is its only vertical scroll owner; the task selector scrolls
 away rather than covering short-view results, and orbital results remain fully
-expanded inside the outer scroll region.
+expanded inside the outer scroll region. Mobile navigation uses one compact row
+while collapsed and leaves an uncovered map strip. Live selected details have a
+separate height budget so they cannot cover the last result or its focus ring.
+Mobile HISTORY playback also reserves its own bottom control area. Opening a
+historical object's detail sheet temporarily hides the tool rail, without
+resetting disclosure state or discarding the selected object; closing the sheet restores the rail,
+while the playback controls stay reachable throughout.
 
 ## Provider boundaries
 
