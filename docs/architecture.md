@@ -20,26 +20,26 @@ Worker selects that path only through the protected `oci-private-relay`
 deployment mode and fails closed rather than reverting to shared egress.
 Production source `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` and the relay
 originally activated the private path together. The current browser/Worker
-application is source `bba0bf4f7a69939e3c07fbeb24470fa959f6f20a`.
-Canonical deployment run `36997443034`, successful attempt 3, initially
-published version `63e5a14d-7115-44aa-9386-36b13b5ff91d`. Protected rollback
-run `36998162009` proved predecessor source
-`9e1d8c23f9047d0bf57b12bd4abc7d5fcae90f63` and version
-`d83f68ae-907e-4b2d-a086-00b4fde00372`; restoration run `36998245095`
-returned exact current source as the running Cloudflare version
-`146e74df-c960-4a41-bc0c-6d5b9fa0d660`. The application continues to use
+application is source `d565b56278e81ff2478ab1e476c269084f2297d4`.
+Canonical deployment run `37121314015` passed as Cloudflare version
+`e9e473d1-fac5-4594-b62b-7ba68573efeb` after one documented exact-instance
+diagnostic reboot recovered the independent VPC/Tunnel/guest `502` exposed by
+attempt `37120958690`. The application continues to use
 relay source `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8`; relay source
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` is retained as the relay rollback
 release.
 
-The current release adds four bounded behaviors without changing provider
-boundaries: **Resume live** returns retained HISTORY/unsafe views to the
-reviewed local framing, valid AIS length drives a normalized 0.8-1.6 vessel
-scale across all nine silhouettes, vessel-photo generation `2026-10-02-v1`
-contains eight exact-IMO assets with explicit invalid/unmatched states, and a
-fresh Starlink cadence row is seeded from the immutable bootstrap retrieval
-time. Exact production Chrome acceptance retained one MapLibre canvas,
-independent traffic/orbital lifecycles, all eight Starlink pages, one active
+The current release adds two bounded behaviors without changing provider
+boundaries: Operations task controls use the application's compact
+active/focus hierarchy with metric-first Starlink context, and the same
+Starlink route negotiates a 512-record shell-balanced schema 2 while retaining
+the fresh 150-record schema 1 for predecessor clients. The two public members
+come from one complete GP/SATCAT normalization and one final KV bundle write.
+The map still uses one MapLibre instance and one shared physical orbital
+worker; exact 192/384/512 display tiers, selected exceptions, separate
+curated/Starlink channels, and independent aircraft/marine lifecycles remain.
+Pre-release Chrome acceptance retained one MapLibre canvas,
+all 26 Starlink pages, one active
 physical orbital worker, responsive touch movement, exact theme restoration,
 and zero browser CelesTrak or external vessel-photo request.
 
@@ -841,10 +841,12 @@ deployment flag, not an always-visible map surface. See
 workflow evidence.
 
 The current application's byte-exact rollback target is source
-`9e1d8c23f9047d0bf57b12bd4abc7d5fcae90f63`, recorded Cloudflare version
-`d83f68ae-907e-4b2d-a086-00b4fde00372`. Protected run `36998162009` proved
-that target and run `36998245095` restored the current source. Neither
-operation mutated the retained KV/coordinator namespaces, OCI relay source,
+`bba0bf4f7a69939e3c07fbeb24470fa959f6f20a`, recorded Cloudflare version
+`146e74df-c960-4a41-bc0c-6d5b9fa0d660`. Protected run `37129586003` proved
+that target and run `37129687283` restored source `d565b562...` / version
+`e9e473d1-fac5-4594-b62b-7ba68573efeb`. Both fresh Starlink representations
+retained byte-identical bodies and the `2026-10-03T14:17:23.055Z` publication.
+Neither operation mutated the retained KV/coordinator namespaces, OCI relay source,
 Tunnel, or VPC Service.
 
 ## Navigation and viewport boundaries

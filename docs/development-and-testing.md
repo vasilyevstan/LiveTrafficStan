@@ -1077,10 +1077,10 @@ schema-1 rollback followed by immediate reuse of the retained schema-2 KV
 bundle as restored Cloudflare version
 `83b98933-a609-405e-b07c-3e4f4ded46e8`.
 
-The current traffic-recovery rollback target is source
+The traffic-recovery release used rollback target source
 `9e1d8c23f9047d0bf57b12bd4abc7d5fcae90f63` and Cloudflare version
-`d83f68ae-907e-4b2d-a086-00b4fde00372`. Public Wiki commit
-`bac76a2994a09e85e1162c5724a6071f0fc35540` synchronizes the current release
+`d83f68ae-907e-4b2d-a086-00b4fde00372`. Traffic-recovery Wiki commit
+`bac76a2994a09e85e1162c5724a6071f0fc35540` synchronizes that predecessor release
 identity, recovery and physical-size behavior, eight-photo coverage, browser
 measurements, scheduled Starlink publication, relay recovery, and
 rollback/restoration evidence.
@@ -1263,6 +1263,45 @@ at every mobile size; the task strip scrolls away and `.orbital-results`
 remains unbounded with visible overflow. The local acceptance reuses the
 current production representations through same-origin interception and adds
 no browser request to CelesTrak.
+
+The combined shell-balanced candidate passed 128 test files / 962 tests,
+Oxlint, strict TypeScript, every required static-data check, build, deployment
+dry-run, provider-contract review, and map-experience review. The final 4x-CPU
+ten-minute benchmark accepted 462 curated plus 512 Starlink records in one
+physical worker: load `29.7 ms`, current-position p95 `8.2 ms`, prediction p95
+`501.2 ms`, latest-request acknowledgement `8.5 ms`, and only `6,696` bytes
+of post-warmup post-GC growth across 586 iterations / 600,012 ms.
+
+Chrome 154 candidate acceptance exercised exact 192/384/512 tiers, all 26
+pages, rows 501-512, a 193-ID selected world-tier exception, one canvas, one
+physical orbital worker, Light -> Dark -> Light restoration, parent-off
+shutdown/re-enable without refetch, and desktop plus 390x844/390x568 DPR 2
+reachability. The final result remained topmost in the sole Operations scroll
+owner, attribution remained reachable, the exact 58vh budget held, trusted
+touch moved the same map, and no runtime, log, or HTTP error occurred.
+
+The same acceptance then passed on exact production `d565b562...` in Chrome
+`154.0.8037.95` at `2026-10-03T14:21Z`, with response interception disabled
+and startup request/error evidence retained. The sole Starlink response was
+actual schema 2 from KV, digest
+`cebc2fd1dfe8b58e6dce30ca15dfa1ec0e327d7e1272d2f79690116a6a41356b`.
+Zero startup Starlink requests, 192/384/512 tiers, a 193-ID selected exception,
+26 pages, final 12 rows, one map/physical worker, theme restoration, and
+parent off/on without refetch all passed. The mobile stacks measured
+489.515625 px and 329.4375 px, and the final result was fully inside and
+topmost in the outer scroll owner with working trusted map touch.
+
+After protected rollback `37129586003` and restoration `37129687283`, both
+representations retained byte-identical bodies and the fresh
+`14:17:23.055Z` publication. Settled views covering Estonia and Finland at
+`14:30:15.777Z` / `14:30:18.928Z` measured six/two Starlinks shown and 86/63
+next-90-minute map passes. The narrower southern views earlier contained zero
+sample points; independent SGP4 propagation of the exact production records
+confirmed that result. Do not replace time-dependent counts with a guaranteed
+positive count, or read a prior viewport's still-settling prediction as new
+evidence. [Production
+screenshots](https://github.com/vasilyevstan/LiveTrafficStan/pull/275#issuecomment-5970127249)
+are Chrome emulation, not physical iOS/Android acceptance.
 
 ### Issue #193 release acceptance evidence
 
