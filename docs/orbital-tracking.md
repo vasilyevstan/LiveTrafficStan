@@ -20,7 +20,7 @@ This is cataloged orbital-object context, not another live-traffic provider:
   this feature.
 
 The browser implementation and scheduled catalog infrastructure are active in
-production source `9f5ee37d9ad2bbeedb20a89ea08e7cd5629e36e8`. The layer
+production source `cd05a38f7c2f130629e961cb4a56fc67d9c42a44`. The layer
 remains a default-off user preference, while the protected Worker deployment
 sets `ORBITAL_CATALOG_ENABLED=true`, serves the same-origin catalog route, and
 runs the checked two-hour scheduler. A deployment with that Worker flag off
@@ -36,8 +36,9 @@ full constellation. ORBITS remains the parent lifecycle and one-map surface.
 
 ## User experience
 
-The remembered **ORBITS** preference starts off. Its single toggle appears in
-the primary **Operations** row beside **AIRCRAFT** and **SHIPS**, while the
+The **ORBITS** preference defaults off and remembers explicit visibility.
+Its single toggle appears in the primary rail/mobile dock beside
+**AIRCRAFT** and **SHIPS**, while the
 detailed result list and attribution remain under **Operations -> More**. It
 adds one fragment field, `orbits=0|1`. The preference stores only visibility.
 Catalog bytes, modeled positions, crossings, selected object, track, clock
@@ -50,12 +51,12 @@ modeled population. A compatible map with a pending prediction says **PASSES
 UPDATING** rather than zero. **VIEW** opens the existing disclosure and the
 Orbits task without another disclosure. The task has separate **Nearby** and
 **Catalog** views while the existing More body remains the only vertical scroll
-owner. The upper-left status panel mirrors the same compact ORBITS state and
-labels an eligible view **Visible traffic and orbital area**. Its **LIVE**,
+owner. The masthead's Provider details mirrors the compact ORBITS state;
+the redundant brand subtitle is hidden in the minimal layout. Its **LIVE**,
 **PARTIAL**, and **OFFLINE** health still describes only aircraft and marine
 providers, so modeled orbital availability cannot mask a traffic outage.
-Compact mobile layouts retain the existing rule that hides provider-detail
-copy; the primary ORBITS toggle and both counts remain visible.
+Provider details remains available through its native disclosure on mobile;
+the primary ORBITS toggle and compact summary remain reachable.
 
 When enabled, the control shows distinct states for:
 
@@ -559,15 +560,17 @@ scheduled KV/Durable Object boundary.
 ## Production activation and visibility evidence
 
 The current exact application release is
-`9f5ee37d9ad2bbeedb20a89ea08e7cd5629e36e8`, deployed by protected run
-[37134585858, attempt 2](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/37134585858)
+`cd05a38f7c2f130629e961cb4a56fc67d9c42a44`, deployed by protected run
+[37152238178, attempt 2](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/37152238178)
 as running Cloudflare version
-`85d1418b-3316-4299-9758-20810aa58898`. It uses KV namespace
+`89313ed1-b31a-467d-86b5-4cf8d558af9c`. It uses KV namespace
 `59178d55418247c4bab473b52a5dc07d` and Cron `17 */2 * * *`.
-The #282 overall UI release preserves the #275 sampling, acquisition, source,
-and compatibility contracts. Its real production acceptance additionally
-proved selected final-row reachability at 315x517 and under a shortened
-visual viewport; it does not replace the earlier density/publication evidence.
+The #291 minimal-interface release preserves the #275 sampling, acquisition,
+source and compatibility contracts. Its real production acceptance retained
+all 26 pages, final-row selection/focus at 315x517 and under a shortened
+visual viewport, one catalog request per channel, and the shared worker.
+The earlier #282/#288 UI and #275 density/publication records remain historical
+evidence, not newly repeated sampling experiments.
 Implementation PRs #232 and #233 supplied the source contract and browser
 consumer; #235 performed the coordinated catalog release. PR #243 added the
 compact rendered/pass summary and exact featured labels, and #246 performed

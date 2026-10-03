@@ -43,9 +43,9 @@ no paid fallback is enabled. Orbital activation uses the included free KV and
 SQLite Durable Object allocations; R2 is not used.
 
 The current application source is
-`9f5ee37d9ad2bbeedb20a89ea08e7cd5629e36e8`. Protected deployment run
-`37134585858`, attempt 2, passed as Cloudflare version
-`85d1418b-3316-4299-9758-20810aa58898` with aircraft delivery through
+`cd05a38f7c2f130629e961cb4a56fc67d9c42a44`. Protected deployment run
+`37152238178`, attempt 2, passed as Cloudflare version
+`89313ed1-b31a-467d-86b5-4cf8d558af9c` with aircraft delivery through
 `oci-private-relay`, aircraft photos, plausible routes, eight exact-IMO vessel
 photos, the curated orbital catalog, negotiated systematic/shell-balanced
 Starlink catalogs, and exact-NORAD enrichment enabled. It preserves KV
@@ -54,34 +54,58 @@ namespace `59178d55418247c4bab473b52a5dc07d`, one SQLite coordinator, and Cron
 `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8` and retains
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` as its prior release.
 
-The overall UI release used feature #280, tree-neutral ancestry #281, and
-checked dev-to-main #282. Exact-main Validation `37134495129` passed; the
-deployment ran 970 tests in 129 files and complete smoke passed at
-`2026-10-03T15:59:57.387Z`. Production Chrome acceptance completed at
-`16:07:15.828Z` with actual provider responses, both themes, short/mobile
-layouts, keyboard/touch, selected final orbital rows, and attribution.
-[Release evidence and screenshots](https://github.com/vasilyevstan/LiveTrafficStan/pull/282)
-separate local fixtures, real production observations, and browser emulation.
+The minimal UI release used feature #289, tree-neutral ancestry #290, and
+checked dev-to-main #291. Exact-main Validation `37152118432` passed; the
+deployment ran 973 tests in 129 files and complete smoke passed at
+`2026-10-03T20:55:36.196Z`. Production Chrome observed the 56 px header,
+right desktop rail, inward panels, left inspector and unchanged mobile dock
+through ordinary retained-cache navigation. Actual provider responses,
+49 rendered vector-basemap features, both themes, selected final orbital rows,
+keyboard/touch and playback were recorded. The terminal evidence verification
+completed at `21:00:21.143Z`.
+[Release evidence and screenshots](https://github.com/vasilyevstan/LiveTrafficStan/pull/291#issuecomment-5973461428)
+separate local fixtures, actual production, browser emulation and the
+corrected harness-only glyph-counter assertion.
 
-Attempt 1 deployed version `ef0ff9a6-6a28-46c2-ba1b-550e80674514` but only
-aircraft smoke returned `502`; static/orbital and direct ADSB.lol were healthy.
-The recorded exact-instance diagnostic reboot recovered real aircraft JSON
-at `15:58:39.121Z`. All eleven before/after infrastructure groups and cost
-configuration were unchanged, and the unchanged workflow passed on attempt 2.
-Issue #174 remains the existing infrastructure reliability workstream.
+Attempt 1 deployed version `d6deae36-0ec9-4266-ad21-6e2221a23c49` but only
+aircraft smoke returned `502`. Static/orbital and direct ADSB.lol were healthy.
+One fresh-ETag-fenced diagnostic reboot of the recorded relay instance restored
+real exact-release aircraft JSON at `20:53:57.430Z`. All eleven before/after
+infrastructure groups and cost configuration matched. The same deployment job
+then passed without source, credential, provider or network-policy changes.
+[Issue #174](https://github.com/vasilyevstan/LiveTrafficStan/issues/174#issuecomment-5973461420)
+remains open; recovery does not establish a durable root-cause fix.
 
 The real UI rollback predecessor is source
-`d565b56278e81ff2478ab1e476c269084f2297d4` / Worker
-`e9e473d1-fac5-4594-b62b-7ba68573efeb`. Restore it only through the existing
+`2d11e3e649fc55f8be0965d9b0cce41a42545ad0` / Worker
+`ce0dffd2-a22a-48d9-95a8-695e814c4c5e`. Restore it only through the existing
 protected rollback workflow with the same deployment flags for an evidenced
 release regression. No new rollback rehearsal was required for unchanged
 backend/provider contracts; earlier drills below remain historical evidence.
 Later documentation-only main commits do not replace the running application
 identity.
 
-Public Wiki commit `61b8be294ea39aed57f98440856c1847719cda87` publishes the
-matching twelve-page interface/release update and links the real production
-screenshots. It preserves earlier Starlink and rollback records as history.
+The first refresh #282 remains historical application
+`9f5ee37d9ad2bbeedb20a89ea08e7cd5629e36e8` / Worker
+`85d1418b-3316-4299-9758-20810aa58898`, deployment `37134585858` attempt 2,
+accepted at `15:59:57.387Z` after the earlier diagnostic recovery. Its modest
+visual change did not satisfy the requested structural distinction.
+
+#288 then delivered application `2d11e3e...` / Worker `ce0dffd2...`, with
+an 80 px masthead, left desktop rail and mobile bottom dock. Exact-main
+Validation `37144068057` and deployment `37144136921` attempt 2 passed; smoke
+completed at `19:54:45.336Z`. That rerun followed reachable marked admission
+backoff, without a VM reboot. Its [actual retained-cache and HISTORY evidence](https://github.com/vasilyevstan/LiveTrafficStan/pull/288#issuecomment-5973032236)
+remains the immediate predecessor record. The right-hand/smaller-header
+refinement follows the user's subsequent preference, not another provider or
+sampling release.
+
+Public Wiki commit `c5206cf8cc477a1a6266f7988b11da9e050116db` publishes the
+matching thirteen-page design, navigation, testing, release and recovery update,
+including the actual production screenshots and the Impeccable refinement.
+It identifies application `cd05a38f...`, not the later docs-only main.
+Historical Wiki commit `61b8be294ea39aed57f98440856c1847719cda87` records the
+first-refresh #282 interface/release evidence.
 
 The initial curated-catalog release's immediate post-deploy proof returned:
 

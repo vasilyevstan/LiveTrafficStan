@@ -20,19 +20,21 @@ Worker selects that path only through the protected `oci-private-relay`
 deployment mode and fails closed rather than reverting to shared egress.
 Production source `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` and the relay
 originally activated the private path together. The current browser/Worker
-application is source `9f5ee37d9ad2bbeedb20a89ea08e7cd5629e36e8`.
-Canonical deployment run `37134585858`, attempt 2, passed as Cloudflare version
-`85d1418b-3316-4299-9758-20810aa58898` after one documented exact-instance
+application is source `cd05a38f7c2f130629e961cb4a56fc67d9c42a44`.
+Canonical deployment run `37152238178`, attempt 2, passed as Cloudflare version
+`89313ed1-b31a-467d-86b5-4cf8d558af9c` after one documented exact-instance
 diagnostic reboot recovered the independent private-transport `502` exposed
 by attempt 1. The application continues to use
 relay source `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8`; relay source
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` is retained as the relay rollback
 release.
 
-The current release refreshes the complete map-first interface: shared
-Light/Dark surfaces, status and task hierarchy, focus treatment, and
-responsive details/playback. It changes no provider, worker, or sampling
-boundary. The earlier #275 Starlink release remains intact: the same
+The current release refines the #288 structural interface with a smaller
+masthead, a right desktop rail, inward panels and an opposite inspector,
+while preserving the buttons and mobile bottom dock. Impeccable's installed
+guidance and detector informed this CSS-led refinement without adding state
+or a design framework. It changes no provider, worker, or sampling boundary.
+The earlier #275 Starlink release remains intact: the same
 route negotiates a 512-record shell-balanced schema 2 while retaining
 the fresh 150-record schema 1 for predecessor clients. The two public members
 come from one complete GP/SATCAT normalization and one final KV bundle write.
