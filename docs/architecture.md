@@ -20,12 +20,12 @@ Worker selects that path only through the protected `oci-private-relay`
 deployment mode and fails closed rather than reverting to shared egress.
 Production source `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` and the relay
 originally activated the private path together. The current browser/Worker
-application is source `0972ba8d24ba96e18627b13b252e6ac7c5473f10`.
-Canonical deployment run `37187599808`, attempt 2, passed as Cloudflare version
-`a22bfa09-03fa-40cd-ac76-3915e0e52eea` after one documented, no-retry,
-fresh-ETag-fenced diagnostic reboot recovered the private-transport `502`.
-The earlier predecessor baseline had been healthy; the recurrence is recorded
-separately from the map refinement. The application continues to use
+application is source `e2b2afaa04466116719310d6286441f8e6ba60ca`.
+Canonical run `37203064394` deployed Cloudflare version
+`816506f7-2cb1-4e6c-8626-ae990eb62b8a`, then failed private-aircraft smoke
+with `502`. Real marine rendering and selection passed independently; overall
+activation remains blocked by #174, not reported as healthy or retried through
+an infrastructure mutation. The application continues to use
 relay source `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8`; relay source
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` is retained as the relay rollback
 release.
@@ -36,9 +36,11 @@ existing Settings body and retain one mounted input/model. The right desktop
 rail, inward panels, opposite inspector and mobile bottom dock remain.
 Impeccable's installed guidance and detector informed this CSS-led refinement
 without adding state or a design framework. It changes no provider, worker,
-or sampling boundary. Current release #307 adds the atlas basemap treatment
+or sampling boundary. The earlier #307 adds the retained atlas basemap treatment
 through the existing MapLibre installer, preserving that layout and those
 provider boundaries; the exact/shared-style rules are described below.
+Release #316 adds display-only MMSI-country flags and restores normal yacht
+speed/freshness filtering without changing those infrastructure boundaries.
 The earlier #275 Starlink release remains intact: the same
 route negotiates a 512-record shell-balanced schema 2 while retaining
 the fresh 150-record schema 1 for predecessor clients. The two public members

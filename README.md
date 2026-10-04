@@ -569,6 +569,36 @@ persistent route cache.
 Public production is live at
 <https://livetrafficstan.syntal.workers.dev> on Cloudflare Workers Free with
 Static Assets. The current application source is
+`e2b2afaa04466116719310d6286441f8e6ba60ca`, released through yacht fix #313,
+country flags #314, tree-neutral ancestry #315 and checked release #316.
+Exact-main Validation `37202642661` passed; required local gates passed
+1,011 tests in 131 files. Canonical deployment `37203064394` installed Worker
+`816506f7-2cb1-4e6c-8626-ae990eb62b8a`, but its final smoke failed on the
+unchanged private-aircraft path with `502`. **The ship changes are deployed;
+overall activation acceptance remains blocked by #174.** No second dispatch,
+VM reboot, provider fallback or weakened check was used.
+
+[Actual production ship acceptance and screenshot](https://github.com/vasilyevstan/LiveTrafficStan/pull/316#issuecomment-5980143455)
+at `2026-10-04T12:51:36Z-12:51:41Z` used a fresh Chrome context with native
+networking and clock, not response fixtures. It observed 35 supplied ships and
+33 rendered country flags, and selected SINILIND (`276014100`): a 16 m
+pleasure craft at 0 kn with the Estonian flag and matching details. The same
+craft was also observed stopped/stale in the earlier retained receipt. Any
+reported speed now includes stopped and unknown-speed eligible yachts; normal
+two-minute stale and ten-minute expiry rules still apply. Flags are compact,
+bundled MMSI-country allocation badges, not independent current-registry
+verification. Class B/ANTARES coverage remains separate under #296.
+
+All backend, relay, provider, build-input, KV and Cron settings are unchanged.
+The accepted rollback predecessor is atlas application
+`0972ba8d24ba96e18627b13b252e6ac7c5473f10` / Worker
+`a22bfa09-03fa-40cd-ac76-3915e0e52eea`; the aircraft-only incident does not
+justify rolling back the healthy marine change. Later Markdown-only main
+commits do not replace the running application.
+
+### Atlas predecessor (#307)
+
+The previous accepted application was
 `0972ba8d24ba96e18627b13b252e6ac7c5473f10`, released through #305-#307.
 Exact-main Validation `37187440710` passed, and canonical deployment
 `37187599808`, attempt 2, passed complete smoke at
@@ -595,7 +625,7 @@ configuration matched. The same deployment job passed with unchanged inputs.
 [Issue #174](https://github.com/vasilyevstan/LiveTrafficStan/issues/174#issuecomment-5978306226)
 remains open; this is recovery, not a permanent infrastructure repair.
 
-The real rollback predecessor is application
+That release's rollback predecessor was application
 `8117859518155f77e9413fa0d86902a3b371da9e` / Worker
 `79f74a36-f1a6-4e1b-b41a-1314a3e92a76`, the accepted #300 floating-header UI.
 Later documentation-only commits are not deployed application versions. This
@@ -880,17 +910,24 @@ the older rehearsed rollback/restoration evidence.
 The matching aircraft relay still runs
 `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8` and retains
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` as its prior rollback release.
-Exact loopback health is active and enabled. A bounded public proof returned
+Earlier relay acceptance established active/enabled loopback health. A
+historical bounded public proof returned
 real aircraft JSON, then exact-release marked local
 `503 Retry-After: 20` with
 `X-LiveTrafficStan-Relay-Status: admission`, then real JSON after the advised
 wait. Provider `503`, provider `429`, redirects, malformed policy, and failure
 to reach eventual real JSON remain release failures.
 
-Public Wiki commit `5f9fbd82b77bdd6555379bef65431629f6abf80e` synchronizes
+Public Wiki commit `27a78348c9c79640a6f331cbd2c393fb4bdc4549` synchronizes
+fourteen pages for #311/#312: normal yacht filters, MMSI-country flag semantics
+and MIT artwork, actual production proof, and the explicit #174 overall-smoke
+blocker. It identifies deployed application `e2b2afaa...`, not a later
+documentation-only main commit.
+
+Historical Wiki commit `5f9fbd82b77bdd6555379bef65431629f6abf80e` synchronized
 thirteen pages for #307: atlas cartography, custom/shared-style preservation,
 actual retained-cache/browser evidence, Impeccable use and independent relay
-recovery. It identifies running application `0972ba8d...`, not a later
+recovery. It identifies that release's application `0972ba8d...`, not a later
 documentation-only main commit.
 
 Historical Wiki commit `3d89ccd30469960061838a6be33bc07a0aef2ae3` preserves

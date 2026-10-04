@@ -147,6 +147,15 @@ origin failure; `401` indicates a Worker/relay secret mismatch. Do not respond
 by rotating the OCI address, falling back to shared Cloudflare egress, exposing
 a public relay, or accelerating browser polling.
 
+The ship-only #316 release deployed application `e2b2afaa...` as Worker
+`816506f7-2cb1-4e6c-8626-ae990eb62b8a`, then failed aircraft smoke with
+`502` at `2026-10-04T12:44:18Z`. Actual marine flags and stopped-yacht
+selection remain usable; [#174](https://github.com/vasilyevstan/LiveTrafficStan/issues/174#issuecomment-5980126344)
+records the unchanged aircraft-only blocker. No repeat reboot, restart,
+resource mutation, fallback, second dispatch or reduced smoke gate was used.
+The overall activation criterion remains open. Earlier recoveries below do
+not establish current health or authorize a recurring reboot loop.
+
 An OCI instance lifecycle of `RUNNING` is not sufficient guest-health
 evidence. During the 2026-09-29 recurrence, VPC fetches threw while a bounded
 Run Command remained unacknowledged. Ordinary soft reset did not provide
@@ -902,7 +911,7 @@ as terminal for the running tab rather than retrying on reselection. A hover
 must never contact NASA or request the same-origin asset; a tooltip can reuse
 only a validated Blob URL created by selected details earlier in the tab.
 
-Current application source `0972ba8d24ba96e18627b13b252e6ac7c5473f10`
+Current application source `e2b2afaa04466116719310d6286441f8e6ba60ca`
 retains the same previously proven uncached `200 image/jpeg` Static Assets with
 exact 46,716-byte and 48,741-byte lengths plus one-year immutable caching. Any
 different bytes, media type, redirect, repeated request, NASA runtime request,

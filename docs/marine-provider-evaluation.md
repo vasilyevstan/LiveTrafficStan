@@ -38,6 +38,18 @@ are not covered and the eligible population may be small or empty.
 Names, dimensions, speed, or broad `other` classification never
 create a yacht identity.
 
+Release #316 deployed this visibility correction at application
+`e2b2afaa04466116719310d6286441f8e6ba60ca`.
+[The bounded actual production check](https://github.com/vasilyevstan/LiveTrafficStan/pull/316#issuecomment-5980143455)
+selected SINILIND (`276014100`), a 16 m exact pleasure craft reporting 0 kn,
+with its MMSI-derived Estonian flag. The final position was live; an earlier
+retained receipt observed the same stopped craft stale at 175.962 seconds.
+This demonstrates a supplied yacht, not complete pleasure-boat coverage.
+The user's ANTARES (`276015010`) was absent from the earlier bounded
+Digitraffic sample; #296 remains the separate Class B source-capability issue.
+The aircraft-only #174 outage leaves the overall deployment smoke failed,
+without invalidating the independent marine result.
+
 AISstream.io offers genuine server-side geographic streaming, but direct
 browser connections are prohibited, an API key and relay are required, and no
 public data-use license establishing display, screenshots, caching, history,

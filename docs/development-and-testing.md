@@ -1004,6 +1004,51 @@ not presented as a map-code fix. No physical Safari/iOS/Android claim is made.
 The prior #300 application/Worker remain the accepted rollback predecessor;
 later documentation-only main commits are not redeployed runtimes.
 
+### Yacht filters and vessel flags (#313-#316)
+
+All required local gates passed 1,011 tests in 131 files, lint, typecheck,
+aircraft metadata, country allocations, vessel photos, orbital catalog and
+build. Exact-main Validation `37202642661` passed for application
+`e2b2afaa04466116719310d6286441f8e6ba60ca`.
+
+The deterministic Chrome receipts are separate from real source coverage:
+
+- `yacht-filter-browser/before` and `candidate-v4` reproduce two old versus
+  four corrected rendered vessels, stopped/unknown speed, stale selection,
+  normal expiry, history/filter compatibility, native wheel note reachability,
+  the actual 58vh panel body, 390x568/315x517 layouts and touch.
+- `vessel-flags-browser/candidate-v3` uses the built candidate. Nine synthetic
+  ships retain nine hulls and six correct country badges; excluded, special
+  and unassigned MMSIs remain unflagged. Native selection/country text,
+  Light -> Dark -> Light, bearing 45/pitch 40, hide/show, clustering without a
+  flag, uncluster restoration, expiry, narrow DPR 1/2 and touch pass. One
+  canvas, three existing traffic sources and one metadata/location/MQTT
+  lifecycle remain, with zero missing images or extra flag/provider requests.
+  [Native-scale screenshots](https://github.com/vasilyevstan/LiveTrafficStan/pull/314#issuecomment-5979883735)
+  prove the actual small badges rather than only registered image IDs.
+
+[Production receipt `vessel-release-production/production-v2`](https://github.com/vasilyevstan/LiveTrafficStan/pull/316#issuecomment-5980143455)
+ran at `2026-10-04T12:51:36.993Z-12:51:41.713Z`, in a fresh Chrome 154
+context with native fetch, WebSocket and clock, not response fixtures. It
+observed 35 supplied vessels and 33 rendered flags, checked every rendered
+flag against the bundled MID projection, and selected SINILIND (`276014100`):
+exact Pleasure craft, 16 m, 0 kn, Estonia (EE), live age 31.913 seconds. It
+retained one canvas, 226 images, zero supplemental flag requests, zero runtime
+exceptions and zero console errors. The earlier `production-v1` receipt saw
+the same stopped craft stale at 175.962 seconds but failed its selection wait.
+It used stored observation coordinates without checking the current rendered
+hit target; the accepted helper waits for that target and clicks the actual
+hull. The failed receipt is preserved, not relabeled as accepted.
+
+Canonical deployment `37203064394` installed Worker
+`816506f7-2cb1-4e6c-8626-ae990eb62b8a`, then failed private-aircraft smoke
+with `502`. The browser recorded the exact release on the same aircraft-only
+failure while marine traffic and tiles worked. #174 remains open; this is
+independent marine acceptance, not a green overall activation. No backend
+change, VM reboot, second dispatch, extra provider probe or rollback drill
+was performed. Physical Safari/iOS/Android and Class B/ANTARES coverage are
+not claimed.
+
 ## Browser smoke test
 
 Use `npm run dev` and verify:
