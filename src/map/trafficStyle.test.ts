@@ -13,6 +13,7 @@ import {
   LAYER_AIRCRAFT_HALO,
   LAYER_AIRCRAFT_STOPPED,
   LAYER_VESSEL_HALO,
+  LAYER_VESSEL_FLAGS,
   LAYER_VESSEL_STOPPED,
   LAYER_VESSELS,
   SOURCE_AIRCRAFT,
@@ -20,6 +21,7 @@ import {
   type TrafficStyleImages,
   type TrafficStyleSnapshot,
 } from './trafficStyle'
+import { VESSEL_FLAG_IMAGES } from './vesselFlags'
 
 const points: FeatureCollection<Point> = {
   type: 'FeatureCollection',
@@ -106,12 +108,14 @@ describe('installTrafficStyle', () => {
     installTrafficStyle(map, snapshot('light'), lightImages)
 
     expect(addImage).toHaveBeenCalledTimes(
-      TRAFFIC_STYLE_IMAGE_IDS.length,
+      TRAFFIC_STYLE_IMAGE_IDS.length + VESSEL_FLAG_IMAGES.size,
     )
     expect(updateImage).toHaveBeenCalledTimes(
-      TRAFFIC_STYLE_IMAGE_IDS.length * 2,
+      (TRAFFIC_STYLE_IMAGE_IDS.length + VESSEL_FLAG_IMAGES.size) * 2,
     )
-    expect(imageIds).toEqual(new Set(TRAFFIC_STYLE_IMAGE_IDS))
+    expect(imageIds).toEqual(
+      new Set([...TRAFFIC_STYLE_IMAGE_IDS, ...VESSEL_FLAG_IMAGES.keys()]),
+    )
     for (const imageId of TRAFFIC_STYLE_IMAGE_IDS) {
       expect(updateImage).toHaveBeenCalledWith(
         imageId,
@@ -122,8 +126,12 @@ describe('installTrafficStyle', () => {
         lightImages[imageId],
       )
     }
+    for (const [imageId, image] of VESSEL_FLAG_IMAGES) {
+      expect(addImage).toHaveBeenCalledWith(imageId, image, { pixelRatio: 2 })
+      expect(updateImage).toHaveBeenCalledWith(imageId, image)
+    }
     expect(addSource).toHaveBeenCalledTimes(3)
-    expect(addLayer).toHaveBeenCalledTimes(11)
+    expect(addLayer).toHaveBeenCalledTimes(12)
     expect(sources.get(SOURCE_AIRCRAFT)?.setData).toHaveBeenCalledTimes(2)
     expect(sourceOptions.get(SOURCE_AIRCRAFT)).toMatchObject({
       cluster: false,
@@ -141,6 +149,26 @@ describe('installTrafficStyle', () => {
     expect(layers.get(LAYER_VESSELS)).toMatchObject({
       layout: {
         'icon-size': ['*', ['get', 'markerScale'], 0.86],
+      },
+    })
+    expect(layers.get(LAYER_VESSEL_FLAGS)).toMatchObject({
+      source: 'traffic-vessels',
+      filter: [
+        'all',
+        ['!', ['has', 'point_count']],
+        ['has', 'flagIcon'],
+      ],
+      layout: {
+        'icon-image': ['get', 'flagIcon'],
+        'icon-size': 1,
+        'icon-anchor': 'top-left',
+        'icon-offset': [
+          'interpolate', ['linear'], ['get', 'markerScale'],
+          0, ['literal', [2, 2]], 4, ['literal', [58, 58]],
+        ],
+        'icon-rotate': 0,
+        'icon-rotation-alignment': 'viewport',
+        'icon-pitch-alignment': 'viewport',
       },
     })
     expect(layers.get(LAYER_AIRCRAFT_STOPPED)).toMatchObject({
@@ -206,8 +234,31 @@ describe('installTrafficStyle', () => {
       visibility.get(`${LAYER_AIRCRAFT_STOPPED}:visibility`),
     ).toBe('visible')
     expect(visibility.get(`${LAYER_VESSELS}:visibility`)).toBe('none')
+    expect(visibility.get(`${LAYER_VESSEL_FLAGS}:visibility`)).toBe('none')
+    expect(paint.get(`${LAYER_VESSEL_FLAGS}:icon-opacity`)).toEqual(
+      paint.get(`${LAYER_VESSELS}:icon-opacity`),
+    )
     expect(visibility.get(`${LAYER_VESSEL_STOPPED}:visibility`)).toBe(
       'none',
     )
+
+    imageIds.clear()
+    sources.clear()
+    layers.clear()
+    installTrafficStyle(
+      map,
+      { ...snapshot('dark'), vesselsVisible: true },
+      darkImages,
+    )
+    expect(imageIds.has('vessel-flag-EE')).toBe(true)
+    expect(imageIds.size).toBe(
+      TRAFFIC_STYLE_IMAGE_IDS.length + VESSEL_FLAG_IMAGES.size,
+    )
+    expect(sources.size).toBe(3)
+    expect(layers.size).toBe(12)
+    expect(visibility.get(`${LAYER_VESSEL_FLAGS}:visibility`)).toBe('visible')
+    expect(paint.get(`${LAYER_VESSEL_FLAGS}:icon-opacity`)).toEqual([
+      'case', ['get', 'stale'], 0.52, 0.98,
+    ])
   })
 })

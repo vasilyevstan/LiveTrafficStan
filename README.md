@@ -59,13 +59,19 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   callsign, MMSI, or IMO; typed category, navigation, reported-speed, and
   inclusive length filters; explicit unknown-value handling; and a reset to
   the released 50 metre minimum. Selected ship speed is shown in both km/h and
-  knots. Fresh sailing vessels and pleasure craft at least 8 metres long and
-  moving at least 1 knot receive dedicated yacht icons. The nine exact
-  source-truthful display classes use bold, perceptually tested top-down outer
-  silhouettes; names, dimensions, routes, speed, and visual similarity never
+  knots. Reported sailing vessels and pleasure craft with a known length of
+  at least 8 metres receive dedicated yacht icons and honor the same speed
+  filters as other ships. Any reported speed includes stopped and unknown-speed
+  yachts; reports become stale after two minutes and expire after ten.
+  The nine exact source-truthful display classes use bold, perceptually tested
+  top-down outer silhouettes; names, dimensions, routes, speed, and visual similarity never
   infer a more specific class. Valid AIS reference-point length sets one
   bounded physical marker scale, with each silhouette normalized to the same
   nose-to-stern span so artwork shape cannot reverse ship-size ordering.
+  Small upright country flags sit beside ships with an available ordinary
+  MMSI allocation. They use bundled artwork, not a flag service, and do not
+  claim a fresh vessel-registry check; unknown or excluded identifiers have
+  no flag.
 - An optional, lazily loaded, zoom-aware Natural Earth port context layer with
   separate selection, failure, and attribution. Port points are generalized
   and incomplete and are never treated as operational harbour or vessel-call

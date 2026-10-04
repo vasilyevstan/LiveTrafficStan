@@ -243,8 +243,9 @@ export function VesselDiscovery({
         </button>
       </div>
       <p className="control-note control-note--muted">
-        Yachts: ≥8 m, ≥1 kn, ≤120 s; max length still applies. Digitraffic is
-        Class A only, so Class B coverage is incomplete.
+        Yachts: ≥8 m; reported-speed, maximum-length and normal freshness
+        rules apply. Digitraffic is Class A only; Class B coverage is
+        incomplete.
       </p>
 
       {totalVessels === 0 && (

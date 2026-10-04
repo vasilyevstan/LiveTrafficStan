@@ -101,3 +101,53 @@ console.log(
     contents.byteLength
   } raw bytes, ${gzipBytes} gzip-9 bytes`,
 )
+
+const flagContents = await readFile(
+  path.join(repositoryRoot, 'src/config/vesselFlags.generated.json'),
+)
+const flagAsset = JSON.parse(flagContents.toString('utf8'))
+if (
+  flagAsset.width !== 28 ||
+  flagAsset.height !== 22 ||
+  flagAsset.pixelRatio !== 2 ||
+  flagAsset.source.repository !== 'https://github.com/lipis/flag-icons' ||
+  flagAsset.source.directory !== 'flags/4x3' ||
+  !/^[0-9a-f]{40}$/.test(flagAsset.source.commit) ||
+  flagAsset.source.license !== 'MIT'
+) {
+  fail('vessel flag artwork contract is invalid')
+}
+assertSha256Digest(flagAsset.source.sourceSha256, 'Flag source artwork')
+assertSha256Digest(flagAsset.sha256, 'Flag pixels')
+const expectedCountries = [
+  ...new Set(Object.values(projected.mids).map((record) => record[1])),
+].sort()
+if (JSON.stringify(Object.keys(flagAsset.flags)) !== JSON.stringify(expectedCountries)) {
+  fail('vessel flag countries differ from the existing MID allocation')
+}
+for (const [iso2, encoded] of Object.entries(flagAsset.flags)) {
+  const pixels = Buffer.from(encoded, 'base64')
+  if (
+    pixels.byteLength !== flagAsset.width * flagAsset.height * 4 ||
+    pixels.toString('base64') !== encoded
+  ) {
+    fail(`incomplete or invalid flag raster: ${iso2}`)
+  }
+}
+if (sha256(JSON.stringify(flagAsset.flags)) !== flagAsset.sha256) {
+  fail('vessel flag pixel checksum does not match')
+}
+const flagLicense = await readFile(
+  path.join(repositoryRoot, 'public/licenses/vessel-flags-MIT.txt'),
+)
+if (sha256(flagLicense) !== flagAsset.source.licenseSha256) {
+  fail('the complete vessel flag artwork license is missing or changed')
+}
+const flagGzipBytes = gzipSync(flagContents, { level: 9, mtime: 0 }).byteLength
+if (flagContents.byteLength > 1024 * 1024 || flagGzipBytes > 64 * 1024) {
+  fail('vessel flag artwork exceeds its one-MiB raw / 64-KiB gzip budget')
+}
+console.log(
+  `Vessel flags: ${expectedCountries.length} bundled 14x11 CSS-pixel badges, ` +
+    `${flagContents.byteLength} raw bytes, ${flagGzipBytes} gzip-9 bytes`,
+)
