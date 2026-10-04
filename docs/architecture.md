@@ -84,7 +84,8 @@ live Aircraft + explicit details action or 500 ms fine-pointer hover
 selected live Vessel or 500 ms fine-pointer hover -> valid exact AIS-reported IMO
              -> reviewed bundled manifest + immutable same-origin image
              -> credited historical reference in details or compact tooltip
-selected ICAO24/MMSI -> bundled validated allocation tables -> details only
+selected ICAO24/MMSI -> bundled validated allocation tables -> country text
+visible Vessel MMSI -> same allocation lookup + bundled pixels -> flag badge
 PORTS toggle -> validated static Natural Earth projection -> port map/details
 AIRPORTS toggle -> validated static OurAirports projection -> airport map/details
 METAR toggle -> explicit airport ICAO codes -> same-origin AWC route
@@ -321,12 +322,23 @@ checksum, rights, and takedown record is in the vessel-photo evaluation and
 machine-readable manifest.
 
 Country allocation is a smaller bundled boundary. Pure synchronous helpers
-derive an optional country name and ISO code from the selected entity's
-existing ICAO24 or ordinary ship-station MMSI. The generated tables are
+derive an optional country name and ISO code from an existing ICAO24 or
+ordinary ship-station MMSI. The generated tables are
 validated at build time and imported with the application bundle, so opening
 details creates no request, cache, loading state, persistence, provider work,
 or history-schema change. Unknown, special-purpose, conflicting, invalid, and
 excluded source rows produce no detail row.
+
+Visible vessels reuse the same MMSI lookup for a render-only `flagIcon`.
+Bundled 28x22 RGBA images provide 14x11 CSS-pixel country badges at pixel ratio
+two, without emoji, external images, asynchronous loading, or a new source.
+The screen-aligned `traffic-vessel-flags` layer uses the existing vessel source,
+omits clusters and unavailable allocations, shares vessel visibility and stale
+opacity, and sits outside the heading-rotated ship sprite. Theme rehydration
+reinstalls its images and layer through the existing installer. Hull picking,
+the stopped badge, selected halo, normalized entities, history, providers and
+country text remain unchanged. The flag represents an MMSI country allocation,
+not an independently verified current registry or vessel-specific ensign.
 
 Vessel discovery is an application-owned display boundary after freshness and
 exact viewport filtering. Search and typed filters consume only normalized

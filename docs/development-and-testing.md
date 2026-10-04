@@ -31,7 +31,7 @@ Worker command below for enabled ORBITS acceptance.
 | `npm run test:watch` | Run Vitest in watch mode |
 | `npm run check:aircraft-metadata` | Offline validation of the committed pinned metadata database |
 | `npm run update:aircraft-metadata` | Explicit maintainer regeneration from the pinned upstream archive and license |
-| `npm run check:country-allocations` | Network-free validation of bundled MID and ICAO24 country allocations |
+| `npm run check:country-allocations` | Network-free validation of bundled MID/ICAO24 allocations and vessel flag pixels, coverage, license and size bounds |
 | `npm run update:country-allocations` | Explicit maintainer regeneration from pinned open-licensed sources and canonical cross-checks |
 | `npm run check:orbital-catalog` | Network-free schema-2/canonical-digest validation of the curated bootstrap, pinned probe bytes/hashes/counts, immutable checksum/history guard, and both retained schema-1 rollback contracts |
 | `npm run update:orbital-catalog -- --source-dir <probe-dir> --summary <summary.json> --published-at <iso> --output public/orbital-data/<new-version>/catalog.json` | Explicit maintainer normalization of the already-downloaded fixed five-group evidence after exact URL/order/row/byte/SHA-256 checks; never fetches the provider and never reuses a published immutable version |
@@ -1087,6 +1087,14 @@ Use `npm run dev` and verify:
     rejection. Non-yachts preserve the 50 m reset state. Selection survives a
     stale or stopped transition under Any, but clears when an explicit filter
     or expiry makes the yacht ineligible.
+    Available ordinary-MMSI countries also show recognizable, upright 14x11
+    CSS-pixel flags beside their ships. Cover Estonia/Finland and an unavailable
+    or excluded MID, with moving/stopped/stale/selected vessels in both themes,
+    at DPR 1/2 and narrow layouts. Bearing, pitch, ship heading, clustering,
+    filtering and SHIPS visibility must not rotate the flags, obscure the
+    silhouettes or stopped dots, duplicate counts, change hull picking, create
+    a map/source, reconnect providers or request flag images. Rehydration must
+    restore actual rendered badges, not merely their image IDs.
 16. Selecting each reviewed vessel by its exact live IMO shows the correct
     bundled reference photo directly below the ship heading, with author,
     fixed Commons revision, selected license, modification notice, and the

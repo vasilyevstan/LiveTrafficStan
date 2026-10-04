@@ -69,6 +69,7 @@ describe('trafficFeatures presentation projection', () => {
         stale: false,
       },
     })
+    expect(collection.features[0]?.properties).not.toHaveProperty('flagIcon')
   })
 
   it('projects exact yacht artwork and speed-derived heading without persisting it', () => {
@@ -88,11 +89,51 @@ describe('trafficFeatures presentation projection', () => {
         markerIcon: 'vessel-sailing',
         motionState: 'moving',
         navigationConflict: false,
+        flagIcon: 'vessel-flag-FI',
       },
     })
     expect(
       collection.features[0]?.properties?.markerScale,
     ).toBeCloseTo(0.83 * (56 / 57))
+    expect(yacht).not.toHaveProperty('flagIcon')
+  })
+
+  it.each([
+    [276_123_456, 'vessel-flag-EE'],
+    [352_123_456, 'vessel-flag-PA'],
+    [306_123_456, undefined],
+    [111_276_123, undefined],
+    [992_761_234, undefined],
+    [280_123_456, undefined],
+    [27_612_345, undefined],
+  ])('derives only an available ordinary-MMSI flag for %s', (mmsi, flagIcon) => {
+    const entity: DisplayVessel = {
+      ...yacht,
+      mmsi,
+      id: `vessel:${mmsi}`,
+      freshness: 'stale',
+      speedKph: 0,
+    }
+    const collection = trafficFeatures(
+      [entity],
+      new Map(),
+      123_592,
+      entity.id,
+      false,
+    )
+    expect(collection.features).toHaveLength(1)
+    expect(collection.features[0]?.properties).toMatchObject({
+      id: entity.id,
+      selected: true,
+      stale: true,
+      heading: 0,
+      motionState: 'slow-stopped',
+    })
+    expect(collection.features[0]?.properties?.flagIcon).toBe(flagIcon)
+    if (flagIcon === undefined) {
+      expect(collection.features[0]?.properties).not.toHaveProperty('flagIcon')
+    }
+    expect(entity).not.toHaveProperty('flagIcon')
   })
 
   it('renders slow vessel silhouettes north-up with a non-directional badge', () => {
