@@ -43,14 +43,18 @@ no paid fallback is enabled. Orbital activation uses the included free KV and
 SQLite Durable Object allocations; R2 is not used.
 
 The current application source is
-`e2b2afaa04466116719310d6286441f8e6ba60ca`, promoted through #313-#316 after
-exact-main Validation `37202642661`. The accepted tree is
-`7b7ec86ae85a8dac5d2a747f459c4011f4ef0de4`; all required local gates passed
-1,011 tests in 131 files. One canonical deployment, `37203064394`, installed
-Cloudflare version `816506f7-2cb1-4e6c-8626-ae990eb62b8a` at
-`2026-10-04T12:44:01Z`. Its private-aircraft smoke failed with `502` at
-`12:44:18Z`. The workflow remains failed: deployment is not equivalent to
-complete activation acceptance.
+`1afa175d8bb6b3f0636c2a02576cc82a35ced373`, the checked #319 main with
+content tree `4672081adaf8a6307ad196aa09c5ccc9db6a3699` and accepted exact-SHA
+Validation `37204522573`. Application, Worker, relay, asset, dependency and
+workflow code are unchanged from #316 source `e2b2afaa...`. Canonical deployment
+`37214110439` installed Cloudflare version
+`cb5b199b-5fc9-46f4-b7d8-f816928eae5f` and passed full smoke at
+`2026-10-04T15:45:14.901Z`.
+
+The original ship deployment `37203064394` installed
+`816506f7-2cb1-4e6c-8626-ae990eb62b8a`, then failed aircraft smoke at
+`12:44:18Z`. That workflow remains failed. The later checked-current-main
+activation is a separate run, not an obsolete-SHA rerun or a weakened gate.
 
 [Real production ship acceptance](https://github.com/vasilyevstan/LiveTrafficStan/pull/316#issuecomment-5980143455)
 at `12:51:36.993Z-12:51:41.713Z` observed 35 supplied vessels and 33 actual
@@ -60,18 +64,33 @@ one canvas and 226 bundled flag images with no flag request, runtime exception
 or console error. This fresh-context check used native networking and clock;
 the separate local fixtures cover lifecycle, exclusions and narrow layouts.
 
-Worker, relay, infrastructure, Wrangler configuration, workflows, dependencies
-and production inputs are unchanged. Aircraft-only `502` also appeared in
-normal browser requests while marine traffic and vector tiles remained usable.
-[#174 records the recurrence](https://github.com/vasilyevstan/LiveTrafficStan/issues/174#issuecomment-5980126344).
-No second dispatch, VM reboot, service restart, fallback, secret change,
-admission reset or weakened smoke was performed. #311/#312 retain an explicit
-open overall-activation criterion; #296 remains the Class B coverage blocker.
-The smallest remaining activation action is to resolve #174 in its existing
-workstream, then use the canonical exact-current-source gate. Do not blindly
-rerun an obsolete SHA after a later documentation-only main promotion.
+[#174 records the diagnosis and recovery](https://github.com/vasilyevstan/LiveTrafficStan/issues/174#issuecomment-5980728396).
+Automatic `dnf makecache --timer` started at 09:40, immediately before the
+guest-telemetry gap and CPU plateau; retained logs also contain earlier DNF
+OOM kills. The 1 GB shape has only 498 MiB usable guest memory after its
+448 MiB crash reservation. One diagnostic SOFTRESET recovered the management
+channel; eleven infrastructure inventory groups remained unchanged. The
+targeted repair then disabled only the optional metadata timer at 15:32:35,
+without changing security agents, kdump, swap, routes, credentials or cost.
+A controlled relay-service restart at 15:40:57 retained the admission deadline
+and exact relay source, before the successful canonical deployment.
 
-The accepted application rollback target is atlas source
+Production inputs remain `application`, `oci-private-relay`, aircraft photos,
+plausible routes, orbital catalog and Starlink catalog enabled. The accepted
+marine evidence is reused because those application sources are unchanged.
+Final observation completed at `16:21Z`, beyond the former `16:15:33Z`
+metadata-timer deadline: consecutive five-minute memory maxima ranged from
+49.21% to 54.02%, without a telemetry gap. The `16:24:56Z` guest check retained
+the same boot, active relay/Tunnel/kdump, disabled timer and zero OOM kills.
+The post-window production request returned two aircraft and HTTP 200 in
+732 ms with the exact release, no-store and no CORS allowance. This completes
+the operational recovery evidence for #174 and the coordinated #311/#312
+activation; publication details are retained in the issue checkpoint.
+#296 remains the separate Class B/ANTARES coverage issue.
+
+The immediately preceding installed version is #316 source `e2b2afaa...` /
+Worker `816506f7-2cb1-4e6c-8626-ae990eb62b8a`. The earlier accepted rollback
+target is atlas source
 `0972ba8d24ba96e18627b13b252e6ac7c5473f10` / Worker
 `a22bfa09-03fa-40cd-ac76-3915e0e52eea`. No marine regression warrants rollback.
 Later documentation-only commits do not deploy another Worker or replace the
@@ -111,7 +130,7 @@ no-retry, fresh-ETag-fenced diagnostic reboot returned the recorded relay to
 aircraft at `08:40:59.167Z`. Eleven before/after resource hashes matched.
 The same failed job passed with unchanged inputs on attempt 2.
 [Issue #174](https://github.com/vasilyevstan/LiveTrafficStan/issues/174#issuecomment-5978306226)
-remains open; this is recovery, not a durable diagnosis.
+remained open at that point; this was recovery, not a durable diagnosis.
 
 That release's accepted application rollback predecessor was
 `8117859518155f77e9413fa0d86902a3b371da9e` /
@@ -157,7 +176,8 @@ fresh-ETag-fenced exact-instance diagnostic reboot reached `RUNNING` at
 `00:12:34.414Z`. All eleven before/after resource hashes and cost configuration
 matched. The same deployment job passed with unchanged source and inputs.
 [Issue #174](https://github.com/vasilyevstan/LiveTrafficStan/issues/174#issuecomment-5974933051)
-remains open; recovery does not establish a durable root-cause fix.
+remained open at that point; recovery alone did not establish a durable
+root-cause fix.
 
 That release's UI rollback predecessor was source
 `cd05a38f7c2f130629e961cb4a56fc67d9c42a44` / Worker
@@ -189,11 +209,12 @@ remains an older structural predecessor record. The subsequent #291 and #300
 refinements follow the user's layout preferences, not another provider or
 sampling release.
 
-Public Wiki commit `27a78348c9c79640a6f331cbd2c393fb4bdc4549` publishes
+Historical Wiki commit `27a78348c9c79640a6f331cbd2c393fb4bdc4549` published
 fourteen affected pages covering the yacht correction, country badges and
 license, real production evidence, and the explicit unresolved aircraft smoke
-gate. It records deployed application `e2b2afaa...`; this documentation
-reconciliation does not trigger another application deployment.
+gate as it stood then. It records application `e2b2afaa...`, not the later
+recovery activation. Recovery Wiki publication is recorded in #174; later
+documentation reconciliation does not trigger another application deployment.
 
 Historical Wiki commit `5f9fbd82b77bdd6555379bef65431629f6abf80e` published the
 thirteen-page atlas map, custom/shared-style, actual acceptance and release
