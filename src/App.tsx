@@ -621,7 +621,7 @@ function App() {
     () =>
       filterVessels(currentVessels, vesselFilters, {
         displayTime: displayNow,
-        staleAfterMs: APP_CONFIG.marine.staleAfterMs,
+        expireAfterMs: APP_CONFIG.marine.expireAfterMs,
       }),
     [currentVessels, displayNow, vesselFilters],
   )

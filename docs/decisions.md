@@ -683,12 +683,23 @@ conflicting reports are disclosed.
 
 Sailing and pleasure craft form a strict branch rather than a generic length
 exception. They display only with exact normalized type, known length at least
-8 m, a finite position age between zero and the configured 120-second stale
-threshold, and finite speed at least one knot. The live clock or historical
+8 m and a finite position age between zero and the configured marine expiry.
+The existing speed filter applies equally to yachts: Any includes stopped and
+unknown-speed reports, while explicit speed choices remain restrictive.
+Ordinary marine freshness marks them stale after two minutes and removes them
+after ten. Invalid/future values remain excluded. The live clock or historical
 cursor supplies display time. They never fall through to the ordinary length
 rule; non-yachts retain the 50 m default and unknown-length preference.
 Digitraffic's Class A-only scope means small-yacht coverage is expected to be
 incomplete.
+
+Issue #311 supersedes only the mandatory moving-only and fresh-only yacht
+visibility introduced by #77. A supplied 16 m pleasure craft reporting 0 kn at
+age 123.591 seconds demonstrated that both gates hid usable observations even
+when Any reported speed was selected. The user approved reusing the existing
+controls and freshness pipeline rather than adding another preference,
+scheduler or source. This does not resolve the separate Class B coverage gap
+tracked by #296.
 
 Aircraft use the silhouette fill itself for sequential altitude colors, with
 boundaries below 1,000 m, 1,000-3,000 m, 3,000-10,000 m, and 10,000 m or

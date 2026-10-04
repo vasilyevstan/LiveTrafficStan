@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { APP_CONFIG } from '../config/appConfig'
+import { displayTraffic } from '../traffic/freshness'
 import type { Vessel } from './traffic'
 import {
   DEFAULT_VESSEL_FILTERS,
@@ -13,7 +15,7 @@ import {
 
 const context = {
   displayTime: 120_001,
-  staleAfterMs: 120_000,
+  expireAfterMs: 600_000,
 }
 
 const vessel = (
@@ -238,7 +240,7 @@ describe('vessel filters', () => {
     ).toBe(true)
   })
 
-  it('shows exact sailing and pleasure craft only when the moving-yacht gate passes', () => {
+  it('shows exact sailing and pleasure craft from eight metres at any reported speed', () => {
     const baseYacht = {
       vesselCategory: 'other' as const,
       vesselType: 'Sailing vessel',
@@ -263,6 +265,7 @@ describe('vessel filters', () => {
       }),
       vessel('4', {
         ...baseYacht,
+        vesselType: 'Pleasure craft',
         lengthMeters: 70,
         speedKph: 0,
       }),
@@ -273,14 +276,51 @@ describe('vessel filters', () => {
         lengthMeters: 70,
         speedKph: 0,
       }),
+      vessel('6', {
+        ...baseYacht,
+        vesselType: 'Pleasure craft',
+        speedKph: undefined,
+      }),
+      vessel('7', {
+        ...baseYacht,
+        name: 'PLEASURE YACHT',
+        vesselType: 'Other vessel',
+      }),
     ]
 
     expect(
       filterVessels(values, DEFAULT_VESSEL_FILTERS, context).map(
         ({ id }) => id,
       ),
-    ).toEqual(['vessel:1', 'vessel:5'])
+    ).toEqual(['vessel:1', 'vessel:3', 'vessel:4', 'vessel:5', 'vessel:6'])
   })
+
+  it.each(['Sailing vessel', 'Pleasure craft'])(
+    'honors every reported-speed choice for %s without a hidden movement gate',
+    (vesselType) => {
+      const values = [0, 0.999 * ONE_KNOT_KPH, ONE_KNOT_KPH, 5, undefined]
+        .map((speedKph, index) => vessel(String(index + 1), {
+          vesselCategory: 'other',
+          vesselType,
+          lengthMeters: 8,
+          speedKph,
+        }))
+
+      for (const [reportedSpeed, expected] of [
+        ['all', ['vessel:1', 'vessel:2', 'vessel:3', 'vessel:4', 'vessel:5']],
+        ['under-one-knot', ['vessel:1', 'vessel:2']],
+        ['one-knot-or-more', ['vessel:3', 'vessel:4']],
+        ['unknown', ['vessel:5']],
+      ] as const) {
+        expect(
+          filterVessels(values, {
+            ...DEFAULT_VESSEL_FILTERS,
+            reportedSpeed,
+          }, context).map(({ id }) => id),
+        ).toEqual(expected)
+      }
+    },
+  )
 
   it('rejects yacht eligibility when a required reported value is missing or invalid', () => {
     const baseYacht = {
@@ -298,9 +338,9 @@ describe('vessel filters', () => {
         ...baseYacht,
         lengthMeters: Number.NaN,
       }),
-      vessel('missing-speed', {
+      vessel('negative-speed', {
         ...baseYacht,
-        speedKph: undefined,
+        speedKph: -1,
       }),
       vessel('invalid-speed', {
         ...baseYacht,
@@ -323,13 +363,19 @@ describe('vessel filters', () => {
     expect(
       matchesVesselFilters(validYacht, DEFAULT_VESSEL_FILTERS, {
         displayTime: Number.NaN,
-        staleAfterMs: 120_000,
+        expireAfterMs: 600_000,
       }),
     ).toBe(false)
     expect(
       matchesVesselFilters(validYacht, DEFAULT_VESSEL_FILTERS, {
         displayTime: context.displayTime,
-        staleAfterMs: -1,
+        expireAfterMs: -1,
+      }),
+    ).toBe(false)
+    expect(
+      matchesVesselFilters(validYacht, DEFAULT_VESSEL_FILTERS, {
+        displayTime: context.displayTime,
+        expireAfterMs: Number.POSITIVE_INFINITY,
       }),
     ).toBe(false)
   })
@@ -350,15 +396,46 @@ describe('vessel filters', () => {
     for (const [age, expected] of [
       [0, true],
       [120_000, true],
-      [120_001, false],
+      [120_001, true],
+      [600_000, true],
+      [600_001, false],
       [-1, false],
     ] as const) {
       expect(
         matchesVesselFilters(yacht, DEFAULT_VESSEL_FILTERS, {
           displayTime: yacht.position.observedAt + age,
-          staleAfterMs: 120_000,
+          expireAfterMs: 600_000,
         }),
       ).toBe(expected)
+    }
+  })
+
+  it('keeps stopped yachts visibly stale until normal marine expiry', () => {
+    const yacht = vessel('1', {
+      vesselCategory: 'other',
+      vesselType: 'Pleasure craft',
+      lengthMeters: 16,
+      speedKph: 0,
+    })
+
+    expect(APP_CONFIG.marine.staleAfterMs).toBe(120_000)
+    expect(APP_CONFIG.marine.expireAfterMs).toBe(600_000)
+    for (const [age, freshness] of [
+      [120_000, 'live'],
+      [120_001, 'stale'],
+      [123_591, 'stale'],
+      [600_000, 'stale'],
+      [600_001, undefined],
+    ] as const) {
+      const displayTime = yacht.position.observedAt + age
+      const current = displayTraffic([yacht], displayTime, APP_CONFIG.marine)
+      const shown = filterVessels(current, DEFAULT_VESSEL_FILTERS, {
+        displayTime,
+        expireAfterMs: APP_CONFIG.marine.expireAfterMs,
+      })
+      expect(shown.map(({ id, freshness }) => ({ id, freshness }))).toEqual(
+        freshness ? [{ id: yacht.id, freshness }] : [],
+      )
     }
   })
 

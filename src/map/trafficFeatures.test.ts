@@ -111,6 +111,34 @@ describe('trafficFeatures presentation projection', () => {
     })
   })
 
+  it.each([
+    ['Pleasure craft', 'vessel-pleasure', 0, 'slow-stopped'],
+    ['Sailing vessel', 'vessel-sailing', undefined, 'unknown'],
+  ] as const)(
+    'preserves stale selected %s artwork without implying movement',
+    (vesselType, markerIcon, speedKph, motionState) => {
+      const collection = trafficFeatures(
+        [{ ...yacht, vesselType, speedKph, freshness: 'stale' }],
+        new Map(),
+        123_592,
+        yacht.id,
+        false,
+      )
+
+      expect(collection.features[0]).toMatchObject({
+        id: yacht.id,
+        properties: {
+          heading: 0,
+          markerIcon,
+          motionState,
+          selected: true,
+          stale: true,
+        },
+      })
+      expect(yacht.markerIcon).toBe('vessel')
+    },
+  )
+
   it('projects stopped aircraft as north-up without changing altitude color', () => {
     const collection = trafficFeatures(
       [{ ...aircraft, speedKph: 0, courseDegrees: 220 }],

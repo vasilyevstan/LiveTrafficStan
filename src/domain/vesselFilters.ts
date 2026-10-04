@@ -37,7 +37,7 @@ export interface VesselFilterState {
 
 export interface VesselFilterContext {
   displayTime: number
-  staleAfterMs: number
+  expireAfterMs: number
 }
 
 export const DEFAULT_VESSEL_FILTERS: VesselFilterState = {
@@ -197,7 +197,7 @@ const matchesLength = (
 const finiteNumber = (value: number | undefined): value is number =>
   value !== undefined && Number.isFinite(value)
 
-export const matchesMovingYachtEligibility = (
+export const matchesYachtEligibility = (
   vessel: Vessel,
   filters: Pick<VesselFilterState, 'maximumLengthMeters'>,
   context: VesselFilterContext,
@@ -206,18 +206,18 @@ export const matchesMovingYachtEligibility = (
   if (
     !finiteNumber(vessel.lengthMeters) ||
     vessel.lengthMeters < 8 ||
-    !finiteNumber(vessel.speedKph) ||
-    vessel.speedKph < ONE_KNOT_KPH ||
+    (vessel.speedKph !== undefined &&
+      (!finiteNumber(vessel.speedKph) || vessel.speedKph < 0)) ||
     !Number.isFinite(vessel.position.observedAt) ||
     !Number.isFinite(context.displayTime) ||
-    !Number.isFinite(context.staleAfterMs) ||
-    context.staleAfterMs < 0
+    !Number.isFinite(context.expireAfterMs) ||
+    context.expireAfterMs < 0
   ) {
     return false
   }
 
   const age = context.displayTime - vessel.position.observedAt
-  if (age < 0 || age > context.staleAfterMs) return false
+  if (age < 0 || age > context.expireAfterMs) return false
 
   return (
     filters.maximumLengthMeters === null ||
@@ -239,7 +239,7 @@ export const matchesVesselFilters = (
       vessel.navigationCategory === filters.navigation) &&
     matchesReportedSpeed(vessel, filters.reportedSpeed) &&
     (isReportedYacht(vessel)
-      ? matchesMovingYachtEligibility(vessel, filters, context)
+      ? matchesYachtEligibility(vessel, filters, context)
       : matchesLength(vessel, filters))
   )
 }
