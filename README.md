@@ -569,14 +569,25 @@ persistent route cache.
 Public production is live at
 <https://livetrafficstan.syntal.workers.dev> on Cloudflare Workers Free with
 Static Assets. The current application source is
-`e2b2afaa04466116719310d6286441f8e6ba60ca`, released through yacht fix #313,
-country flags #314, tree-neutral ancestry #315 and checked release #316.
-Exact-main Validation `37202642661` passed; required local gates passed
-1,011 tests in 131 files. Canonical deployment `37203064394` installed Worker
-`816506f7-2cb1-4e6c-8626-ae990eb62b8a`, but its final smoke failed on the
-unchanged private-aircraft path with `502`. **The ship changes are deployed;
-overall activation acceptance remains blocked by #174.** No second dispatch,
-VM reboot, provider fallback or weakened check was used.
+`1afa175d8bb6b3f0636c2a02576cc82a35ced373`, the checked #319 main with
+unchanged application code from yacht fix #313, country flags #314 and release
+#316 (`e2b2afaa...`). Exact-main Validation `37204522573` passed. Canonical
+deployment `37214110439` installed Worker
+`cb5b199b-5fc9-46f4-b7d8-f816928eae5f`; full production smoke passed at
+`2026-10-04T15:45:14.901Z`. The original ship deployment `37203064394`
+remains a failed historical run, not a retrospectively green result.
+
+[#174 recovery](https://github.com/vasilyevstan/LiveTrafficStan/issues/174#issuecomment-5980728396)
+identified automatic DNF package-metadata generation immediately before the
+guest stalled, with retained earlier DNF out-of-memory kills. Only the optional
+`dnf-makecache.timer` was disabled. Security agents, package upgrades, kdump,
+networking and relay admission remain unchanged. One controlled relay-service
+restart preserved admission and recovered exact-source health before canonical
+smoke. Observation through `16:21Z` crossed the former `16:15:33Z` timer
+boundary with fresh memory telemetry. The final same-boot guest check at
+`16:24:56Z` found healthy services and zero OOM kills; the post-window
+production request returned valid aircraft JSON. The reboot alone is not
+treated as the fix; see the [measured recovery record](docs/oci-aircraft-relay.md#october-4-metadata-prefetch-diagnosis-and-repair).
 
 [Actual production ship acceptance and screenshot](https://github.com/vasilyevstan/LiveTrafficStan/pull/316#issuecomment-5980143455)
 at `2026-10-04T12:51:36Z-12:51:41Z` used a fresh Chrome context with native
@@ -589,8 +600,10 @@ two-minute stale and ten-minute expiry rules still apply. Flags are compact,
 bundled MMSI-country allocation badges, not independent current-registry
 verification. Class B/ANTARES coverage remains separate under #296.
 
-All backend, relay, provider, build-input, KV and Cron settings are unchanged.
-The accepted rollback predecessor is atlas application
+Application and relay code, provider/build inputs, KV and Cron are unchanged;
+the only guest-setting change is the optional metadata timer. The preceding
+installed Worker was `816506f7-2cb1-4e6c-8626-ae990eb62b8a` / application
+`e2b2afaa...`. The earlier accepted rollback predecessor is atlas application
 `0972ba8d24ba96e18627b13b252e6ac7c5473f10` / Worker
 `a22bfa09-03fa-40cd-ac76-3915e0e52eea`; the aircraft-only incident does not
 justify rolling back the healthy marine change. Later Markdown-only main
@@ -623,7 +636,8 @@ reboot recovered the recorded instance; the first later probe returned six
 aircraft at `08:40:59.167Z`. Eleven before/after resource groups and cost
 configuration matched. The same deployment job passed with unchanged inputs.
 [Issue #174](https://github.com/vasilyevstan/LiveTrafficStan/issues/174#issuecomment-5978306226)
-remains open; this is recovery, not a permanent infrastructure repair.
+remained open at that point; this was recovery, not a permanent infrastructure
+repair.
 
 That release's rollback predecessor was application
 `8117859518155f77e9413fa0d86902a3b371da9e` / Worker

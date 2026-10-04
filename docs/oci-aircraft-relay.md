@@ -28,16 +28,19 @@ active on the relay VM with four IPv6 QUIC connections and a dedicated
 used only when a protected deployment selects `oci-private-relay`.
 
 The current application source is
-`e2b2afaa04466116719310d6286441f8e6ba60ca`; it continues to use active
+`1afa175d8bb6b3f0636c2a02576cc82a35ced373`; it continues to use active
 relay source `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8`, while
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` remains the relay rollback target.
-Canonical run `37203064394` deployed version
-`816506f7-2cb1-4e6c-8626-ae990eb62b8a`, then failed aircraft smoke with
-`502` at `2026-10-04T12:44:18Z`. Real ships, country flags and yacht selection
-remain usable. [The #174 recurrence](https://github.com/vasilyevstan/LiveTrafficStan/issues/174#issuecomment-5980126344)
-is not resolved or folded into the marine work. No reboot, service restart,
-resource mutation, fallback or second deployment was performed. Earlier
-recovery records below are historical, not proof of current aircraft health.
+Canonical run `37214110439` deployed version
+`cb5b199b-5fc9-46f4-b7d8-f816928eae5f` and passed full production smoke at
+`2026-10-04T15:45:14.901Z`, after the targeted guest-maintenance repair below.
+Application code is unchanged from the #316 ship release. Its original
+deployment `37203064394` / version `816506f7-2cb1-4e6c-8626-ae990eb62b8a`
+remains a failed historical run, not a retrospectively successful activation.
+[#174](https://github.com/vasilyevstan/LiveTrafficStan/issues/174#issuecomment-5980728396)
+records the completed recurrence-window, same-boot guest and private-route
+checks. Earlier recovery records below are historical, not proof of current
+aircraft health.
 
 The first same-source run `36627068064` had already deployed healthy
 application, orbital, enrichment, weather, and marine surfaces as version
@@ -47,7 +50,7 @@ through `STOPPING` at `20:35:14Z`, `STARTING` at `20:35:57Z`, and `RUNNING`
 at `20:36:28Z`; real bounded ADSB JSON recovered at `20:38:04Z`. No
 application rollback, relay source change, credential rotation, provider
 fallback, firewall change, cache, or privacy-boundary change was used. #174
-records the recovery evidence and remains open after later recurrences.
+recorded that recovery without resolving the later recurrences.
 
 This component does not move the application to OCI. An OCI, Tunnel, or relay
 failure must affect aircraft only; Static Assets, the map, vessels, weather,
@@ -82,6 +85,37 @@ OCIDs. Never discover resources by name and delete them tenancy-wide. Before
 and after any infrastructure mutation, compare the recorded inventory of
 pre-existing instances, volumes, networks, routes, policies, power state, and
 cost. Stop if another deployment changes.
+
+## Memory-safe package maintenance
+
+On this dedicated Oracle Linux relay, keep optional `dnf-makecache.timer`
+disabled. Its vendor unit executes `dnf makecache --timer`: automatic package
+metadata prefetch, not package installation or security upgrades. The measured
+1 GB shape has only 498 MiB usable total RAM after its 448 MiB
+crash-kernel reservation. Do not treat the advertised shape RAM as the usable
+process budget.
+
+Through the existing private management path, first verify the exact recorded
+instance, unchanged relay source, expected vendor command, and an inactive
+`dnf-makecache.service`. Then apply and verify:
+
+```bash
+sudo systemctl disable --now dnf-makecache.timer
+systemctl show dnf-makecache.timer -p UnitFileState -p ActiveState
+systemctl show dnf-makecache.service -p ActiveState
+```
+
+Expected states are timer `disabled` / `inactive` and service `inactive`.
+This persists across boot without masking manual DNF use. Leave package
+installation/upgrades, Oracle Cloud Agent, security plugins, kdump, swap,
+networking, relay/Tunnel units and admission state unchanged. Perform package
+maintenance deliberately within the small VM's measured memory budget; do not
+use metadata rebuilds as ordinary health checks.
+
+Configuration rollback is `sudo systemctl enable --now dnf-makecache.timer`.
+It reintroduces the demonstrated memory-pressure trigger, so use it only in
+controlled maintenance after addressing headroom, not as a production rehearsal.
+Application-version rollback does not require re-enabling this timer.
 
 ## Provider and privacy contract
 
@@ -404,7 +438,7 @@ All eleven before/after resource groups, power state, and cost configuration
 matched. The unchanged workflow passed complete smoke at `15:59:57.387Z`
 as version `85d1418b-3316-4299-9758-20810aa58898`. No rollback, credential
 rotation, provider fallback, new resource, or network-policy change was used.
-This is recovery evidence, not a permanent repair; #174 remains open.
+This was recovery evidence, not a permanent repair; #174 remained open then.
 
 The #288 structural UI deployment `37144136921` first failed aircraft smoke
 at `2026-10-03T18:26:15Z`. By `19:52Z`, the path returned marked local
@@ -454,6 +488,64 @@ probe returned real `200 application/json`, then exact-release local
 wait. That proof created only two provider requests; the rejected admission
 created none.
 
+## October 4 metadata-prefetch diagnosis and repair
+
+Three independent code/runtime/transport reviews informed the investigation,
+but their unverified route-lifetime and service-policy theories were not
+implemented. Native guest evidence established a narrower cause:
+
+- Systemd started DNF metadata prefetch at `09:40:01Z`; the unit and retained
+  DNF log both identify `dnf makecache --timer`. It fetched 184 MB of OCI
+  repository metadata at `09:40:13Z`.
+- Guest CPU/memory reporting ended in the `09:45` bucket, while independent
+  hypervisor CPU rose from roughly 2-5% to a sustained roughly 50%. These
+  metrics use different normalization; the latter is not a proved physical
+  core count or process identity.
+- Retained `/var/log/messages` records earlier DNF OOM kills at `04:07` and
+  `05:28`, each reporting about 703 MiB anonymous RSS. No terminal OOM record
+  survived for the final `09:45` stall, so its exact last kernel state is
+  unknown. The resource-heavy automatic prefetch is the supported trigger,
+  rather than an aircraft, ship-rendering, or demonstrated IPv6 regression.
+- One diagnostic SOFTRESET, requested at `14:50:57Z`, reached RUNNING at
+  `15:06:31Z`; a fresh guest boot and real command execution were then checked.
+  All eleven infrastructure-inventory groups matched. This recovered evidence
+  access; it was not the durable remedy.
+- At `15:32:35Z`, disabling only the metadata timer preserved the relay/Tunnel
+  PIDs, crash reservation and exact relay source. A bounded private production
+  request at `15:35:14Z` returned four aircraft, 1,523 bytes and HTTP 200 in
+  1,046 ms, with no-store and no CORS allowance.
+- One controlled relay-service restart at `15:40:57Z` changed its PID from
+  2210 to 6353, kept the same boot and active Tunnel, and retained
+  `nextAllowedAtMs=1791128135060` with `failureCount=0`. No state file was
+  removed or reset. Canonical exact-current-main smoke then passed.
+
+Provider-free observation completed at `16:21:00Z`, beyond the metadata
+timer's former `16:15:33Z` deadline. Eleven consecutive five-minute memory
+maxima from `15:30Z` through `16:20Z` ranged from 49.21% to 54.02%; reporting
+remained fresh without a gap. The final compact guest check executed at
+`16:24:56Z` with a complete successful footer: same boot, metadata timer
+disabled/inactive, metadata service inactive with no recorded start, active
+relay/Tunnel/kdump, zero reported automatic service restarts, unchanged
+448 MiB crash reservation, 240 MiB available memory, and `oom_kill=0`.
+Exact relay-source health also passed.
+
+One post-window production request at `16:23:44Z-16:23:45Z` returned two
+aircraft, 716 bytes and HTTP 200 in 732 ms, with exact application
+`1afa175d8bb6b3f0636c2a02576cc82a35ced373`, no-store, no CORS allowance and no
+Retry-After. No admission retry was needed. These results complete bounded
+recovery acceptance, not a guarantee against every future cloud failure.
+Root-cause and release evidence is maintained in the
+[single #174 recovery record](https://github.com/vasilyevstan/LiveTrafficStan/issues/174#issuecomment-5980728396).
+There was no new VM, paid capacity, security-plugin disablement, kernel-memory
+change, credential rotation, provider fallback, or speculative network patch.
+
+Diagnostic limitations matter: this guest has no persistent journald history
+and no PSI files, but its system log survives boot. OCI Run Command TEXT output
+was truncated after 1,024 bytes; a successful command state or partial text
+without the collector footer is not full evidence. Read execution output from
+`data.content`, including its exit code, and keep captures compact. An execution
+record can remain ACCEPTED even after its command object is canceled.
+
 ## Failure interpretation
 
 | Observation | Meaning |
@@ -461,6 +553,7 @@ created none.
 | `/healthz` unavailable locally | Relay process, unit, listener, or VM failure |
 | Tunnel inactive, relay healthy | cloudflared token, QUIC egress, DNS, clock, or Cloudflare control-plane issue |
 | VPC `fetch()` throws | VPC Service, Tunnel association, connector, or private origin unreachable |
+| Generic `502 Aircraft upstream unavailable` | Either Worker private-fetch/body-read or relay upstream failure; the Worker release header does not distinguish them |
 | Worker local `503` with `Retry-After: 20` before VPC fetch | Missing/short secret, absent binding, or invalid deployment mode; no shared-egress fallback |
 | Relay `401` | Missing or mismatched Worker-to-relay secret |
 | Relay local `503` with `Retry-After` and `X-LiveTrafficStan-Relay-Status: admission` | Global cadence/concurrency/backoff admission; no provider request started |

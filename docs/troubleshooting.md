@@ -150,11 +150,36 @@ a public relay, or accelerating browser polling.
 The ship-only #316 release deployed application `e2b2afaa...` as Worker
 `816506f7-2cb1-4e6c-8626-ae990eb62b8a`, then failed aircraft smoke with
 `502` at `2026-10-04T12:44:18Z`. Actual marine flags and stopped-yacht
-selection remain usable; [#174](https://github.com/vasilyevstan/LiveTrafficStan/issues/174#issuecomment-5980126344)
-records the unchanged aircraft-only blocker. No repeat reboot, restart,
-resource mutation, fallback, second dispatch or reduced smoke gate was used.
-The overall activation criterion remains open. Earlier recoveries below do
-not establish current health or authorize a recurring reboot loop.
+selection remained usable. That initial failed workflow remains historical
+evidence. The later [#174 diagnosis](https://github.com/vasilyevstan/LiveTrafficStan/issues/174#issuecomment-5980728396)
+found `dnf makecache --timer` fetching 184 MB of metadata immediately before
+guest telemetry stopped, with earlier DNF OOM kills in `/var/log/messages`.
+The nominal 1 GB VM has 498 MiB usable RAM after a 448 MiB kdump reservation.
+Only optional `dnf-makecache.timer` was disabled; package upgrades, security
+agents, kdump, swap, networking and provider admission were preserved.
+One controlled relay-service restart retained admission, and exact-main
+deployment `37214110439` passed full smoke. Observation beyond the formerly
+due metadata timer completed at `16:21Z` without a telemetry gap. The final
+same-boot guest check found active services, the disabled timer and zero OOM
+kills; a post-window private production request returned valid aircraft JSON.
+Earlier reboots are not a durable fix or permission to create a recurring
+reboot loop.
+
+For this dedicated relay, keep the metadata timer disabled/inactive and its
+service inactive; see the [maintenance procedure](oci-aircraft-relay.md#memory-safe-package-maintenance).
+Check actual `/proc/meminfo` and named processes, not only the shape's advertised
+RAM. If `journalctl -b -1` reports no persistent journal, check the retained
+system log instead of claiming there was no OOM. Missing PSI files mean
+unavailable pressure telemetry, not zero pressure. OCI Run Command TEXT output
+is limited to 1,024 bytes plus truncation indication here: use compact bounded
+results and an explicit completion footer, and inspect `data.content` and
+its exit code. An ACCEPTED command is not evidence that it executed.
+
+The literal `502 Aircraft upstream unavailable` can originate at either the
+Worker's private-fetch/body-read boundary or the relay's upstream boundary.
+The Worker release header alone does not identify which boundary failed.
+Do not infer a guest IPv6-lifetime defect from an assigned control-plane IPv6
+address, absent connectors, or a silent serial-console diagnostic.
 
 An OCI instance lifecycle of `RUNNING` is not sufficient guest-health
 evidence. During the 2026-09-29 recurrence, VPC fetches threw while a bounded

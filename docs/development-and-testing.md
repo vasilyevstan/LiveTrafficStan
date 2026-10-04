@@ -1043,11 +1043,25 @@ hull. The failed receipt is preserved, not relabeled as accepted.
 Canonical deployment `37203064394` installed Worker
 `816506f7-2cb1-4e6c-8626-ae990eb62b8a`, then failed private-aircraft smoke
 with `502`. The browser recorded the exact release on the same aircraft-only
-failure while marine traffic and tiles worked. #174 remains open; this is
-independent marine acceptance, not a green overall activation. No backend
-change, VM reboot, second dispatch, extra provider probe or rollback drill
-was performed. Physical Safari/iOS/Android and Class B/ANTARES coverage are
-not claimed.
+failure while marine traffic and tiles worked. This was independent marine
+acceptance, not a green overall activation, and that receipt did not include
+a backend change, VM reboot, second dispatch, extra provider probe or rollback
+drill. Physical Safari/iOS/Android and Class B/ANTARES coverage are not claimed.
+
+The later #174 memory investigation disabled only optional DNF metadata
+prefetch. A controlled relay-service restart preserved the persisted admission
+deadline, and canonical deployment `37214110439` passed full smoke for
+`1afa175d8bb6b3f0636c2a02576cc82a35ced373` at `15:45:14.901Z`. The application,
+Worker, relay, asset and workflow paths are unchanged from the accepted marine
+source, so the real-browser ship evidence is reused, not needlessly repeated.
+See [OCI Aircraft Relay](oci-aircraft-relay.md) for the guest evidence,
+completed recurrence-window observation and diagnostic-output limitations.
+Eleven consecutive five-minute memory samples from `15:30Z` through `16:20Z`
+were available at the `16:21Z` observation end. The final guest check at
+`16:24:56Z` retained the same boot, active services, disabled timer and zero
+OOM kills. One post-window production request returned two aircraft in
+716 bytes, HTTP 200 in 732 ms, with exact-release/no-store/no-CORS checks.
+These are bounded recovery results, not a guarantee of future availability.
 
 ## Browser smoke test
 

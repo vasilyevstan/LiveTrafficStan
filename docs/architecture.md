@@ -20,12 +20,17 @@ Worker selects that path only through the protected `oci-private-relay`
 deployment mode and fails closed rather than reverting to shared egress.
 Production source `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` and the relay
 originally activated the private path together. The current browser/Worker
-application is source `e2b2afaa04466116719310d6286441f8e6ba60ca`.
-Canonical run `37203064394` deployed Cloudflare version
-`816506f7-2cb1-4e6c-8626-ae990eb62b8a`, then failed private-aircraft smoke
-with `502`. Real marine rendering and selection passed independently; overall
-activation remains blocked by #174, not reported as healthy or retried through
-an infrastructure mutation. The application continues to use
+application is source `1afa175d8bb6b3f0636c2a02576cc82a35ced373`.
+Canonical run `37214110439` deployed Cloudflare version
+`cb5b199b-5fc9-46f4-b7d8-f816928eae5f` and passed full production smoke.
+Application code is unchanged from the #316 ship release; its earlier failed
+aircraft smoke remains historical evidence. The #174 guest-memory diagnosis
+removed only automatic DNF metadata prefetch by disabling
+`dnf-makecache.timer`. It does not change this topology, provider contracts,
+security agents, kdump, package upgrades or admission. Observation crossed the
+former timer boundary without a telemetry gap; final same-boot guest and
+private-route checks passed in the [relay record](oci-aircraft-relay.md).
+The application continues to use
 relay source `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8`; relay source
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` is retained as the relay rollback
 release.
