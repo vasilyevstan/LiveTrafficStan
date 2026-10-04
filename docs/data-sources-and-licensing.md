@@ -104,7 +104,7 @@ identity, the same fixed point route and User-Agent, one aggregate upstream
 start per 20 seconds, and provider `Retry-After` backoff. It does not rotate
 addresses, add a provider, alter attribution, or claim additional capacity
 permission. Production application source
-`cd05a38f7c2f130629e961cb4a56fc67d9c42a44` uses active relay source
+`8117859518155f77e9413fa0d86902a3b371da9e` uses active relay source
 `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8` through the fixed Workers VPC
 Service and private Tunnel, with
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` retained as relay rollback; see
@@ -282,7 +282,7 @@ historical-reference context. No Wikimedia, Wikidata, tracker, gallery, image
 API, Worker proxy, KV, R2, Web Storage, IndexedDB, or service-worker cache is
 involved. Missing, invalid, unmatched, historical, and sub-dwell hover vessels
 receive no photo. Current production source
-`cd05a38f7c2f130629e961cb4a56fc67d9c42a44` retains immutable generation
+`8117859518155f77e9413fa0d86902a3b371da9e` retains immutable generation
 `2026-10-02-v1`; release #267 exact Chrome acceptance loaded all eight declared
 assets with their image MIME types and one-year immutable caching, distinguished
 missing/invalid IMO from valid-but-uncovered IMO, and made zero external

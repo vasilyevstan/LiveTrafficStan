@@ -20,20 +20,23 @@ Worker selects that path only through the protected `oci-private-relay`
 deployment mode and fails closed rather than reverting to shared egress.
 Production source `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` and the relay
 originally activated the private path together. The current browser/Worker
-application is source `cd05a38f7c2f130629e961cb4a56fc67d9c42a44`.
-Canonical deployment run `37152238178`, attempt 2, passed as Cloudflare version
-`89313ed1-b31a-467d-86b5-4cf8d558af9c` after one documented exact-instance
-diagnostic reboot recovered the independent private-transport `502` exposed
-by attempt 1. The application continues to use
+application is source `8117859518155f77e9413fa0d86902a3b371da9e`.
+Canonical deployment run `37163611027`, attempt 2, passed as Cloudflare version
+`79f74a36-f1a6-4e1b-b41a-1314a3e92a76` after one documented, fresh-ETag-fenced
+diagnostic reboot recovered the independent private-transport `502`.
+The actual predecessor baseline had already shown that failure before the UI
+deployment. The application continues to use
 relay source `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8`; relay source
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` is retained as the relay rollback
 release.
 
-The current release refines the #288 structural interface with a smaller
-masthead, a right desktop rail, inward panels and an opposite inspector,
-while preserving the buttons and mobile bottom dock. Impeccable's installed
-guidance and detector informed this CSS-led refinement without adding state
-or a design framework. It changes no provider, worker, or sampling boundary.
+The current #300 release removes the full-width bar in favor of a 280x88 px
+floating status card. Search, Center, results and privacy text share the
+existing Settings body and retain one mounted input/model. The right desktop
+rail, inward panels, opposite inspector and mobile bottom dock remain.
+Impeccable's installed guidance and detector informed this CSS-led refinement
+without adding state or a design framework. It changes no provider, worker,
+or sampling boundary.
 The earlier #275 Starlink release remains intact: the same
 route negotiates a 512-record shell-balanced schema 2 while retaining
 the fresh 150-record schema 1 for predecessor clients. The two public members

@@ -558,29 +558,31 @@ persistent route cache.
 Public production is live at
 <https://livetrafficstan.syntal.workers.dev> on Cloudflare Workers Free with
 Static Assets. The current application source is
-`cd05a38f7c2f130629e961cb4a56fc67d9c42a44`, released through #289-#291.
-Exact-main Validation `37152118432` passed, and canonical deployment
-`37152238178`, attempt 2, passed complete smoke at
-`2026-10-03T20:55:36.196Z` as Cloudflare version
-`89313ed1-b31a-467d-86b5-4cf8d558af9c`. Both ran 973 tests in 129 files.
-The minimal refinement preserves the buttons, moves desktop controls right,
-and reduces the masthead rather than hiding search or provider status.
-Impeccable's installed distill/craft guidance and detector were used without
-adding an application dependency or design framework.
-[Actual production screenshots and measured acceptance](https://github.com/vasilyevstan/LiveTrafficStan/pull/291#issuecomment-5973461428)
+`8117859518155f77e9413fa0d86902a3b371da9e`, released through #298-#300.
+Exact-main Validation `37163497963` passed, and canonical deployment
+`37163611027`, attempt 2, passed complete smoke at
+`2026-10-04T00:13:26.611Z` as Cloudflare version
+`79f74a36-f1a6-4e1b-b41a-1314a3e92a76`. Both ran 973 tests in 129 files.
+The full-width upper bar is gone: a compact floating status card preserves
+counts and provider details, while search and Center live together in Settings.
+The right-side buttons and mobile dock remain. Impeccable's installed
+context/distill/craft-floor guidance and detector were used without adding an
+application dependency or design framework.
+[Actual production screenshots and measured acceptance](https://github.com/vasilyevstan/LiveTrafficStan/pull/300#issuecomment-5974937301)
 cover both themes, retained-cache navigation, mobile/short screens, selection,
 keyboard/touch, and playback.
 
-Attempt 1 exposed the existing aircraft-only relay `502` recurrence. One
-fenced exact-instance diagnostic reboot recovered real aircraft JSON at
-`20:53:57.430Z`; all eleven before/after infrastructure groups and cost
-configuration were unchanged. The same deployment job then passed without
-source, provider, credential, or network-policy changes. Issue #174 remains
-open; this is recovery, not a permanent infrastructure repair.
+The actual predecessor baseline already showed aircraft-only `502` before
+deployment. Attempt 1 encountered that same independent recurrence. One
+fresh-ETag-fenced exact-instance diagnostic reboot recovered valid aircraft
+JSON at `00:12:34.414Z`; all eleven before/after resource groups and cost
+configuration matched. The same deployment job then passed unchanged.
+[Issue #174](https://github.com/vasilyevstan/LiveTrafficStan/issues/174#issuecomment-5974933051)
+remains open; this is recovery, not a permanent infrastructure repair.
 
 The real rollback predecessor is application
-`2d11e3e649fc55f8be0965d9b0cce41a42545ad0` / Worker
-`ce0dffd2-a22a-48d9-95a8-695e814c4c5e`, the accepted #288 structural UI.
+`cd05a38f7c2f130629e961cb4a56fc67d9c42a44` / Worker
+`89313ed1-b31a-467d-86b5-4cf8d558af9c`, the accepted #291 right-hand UI.
 Later documentation-only commits are not deployed application versions. This
 deployment preserves:
 
@@ -605,19 +607,22 @@ deployment preserves:
   records from the same validated 11,125-record population, and digest
   `16233efe565c8f07f079ae4ad321219ae756931679d167fb2a3f2f52bf5a81d4`.
 
-Production measured a 56 px full-width desktop header, a 76x335 px right rail,
-inward-opening panels, and a selected inspector at x=16. Mobile retained its
-70 px bottom dock below a 120 px header. The 104 px intermediate header was
-measured locally at 761/900/1024 px. Ordinary cached navigation loaded the new
-assets without clearing storage; remembered orbital layers and the pending
+Production measured a 280x88 px floating card in both themes at 1280x900,
+390x844, 390x568 and 315x517. It is inset 16 px on desktop and 12 px on mobile.
+The 76x335 px right rail starts at y=16, its panels open inward, and the
+70 px mobile dock is unchanged. Settings contains exactly one 44 px location
+input. Local evidence additionally covers 761/900/1024 px widths.
+Ordinary cached navigation loaded `index-KqCAW4Ds.js` and
+`index-B5IN6iN9.css` without clearing storage or disabling cache; the normal
 app-update notice remained visible.
 
 Final orbital rows remained reachable at 315x517 and with an
 844-layout/517-visual-height mismatch. Production rendered vector-basemap
 features and retained one map and one request per catalog; HISTORY alone
-intentionally restarted the orbital worker. LIVE and aircraft-`503` PARTIAL
-states stayed truthful. Chrome emulation is not physical iOS/Android or Safari
-evidence. The first refresh #282 and structural correction #288 remain
+intentionally restarted the orbital worker. Real aircraft and ships rendered;
+one later aircraft `503` was recorded without a browser runtime error.
+Chrome emulation is not physical iOS/Android or Safari evidence.
+The first refresh #282, structural correction #288 and smaller bar #291 remain
 [historical release evidence](docs/hosting-and-deployment.md), not the current
 layout or a new sampling change.
 
@@ -864,8 +869,14 @@ real aircraft JSON, then exact-release marked local
 wait. Provider `503`, provider `429`, redirects, malformed policy, and failure
 to reach eventual real JSON remain release failures.
 
-Public Wiki commit `c5206cf8cc477a1a6266f7988b11da9e050116db`
-synchronizes thirteen pages with the minimal right-hand interface, actual
+Public Wiki commit `3d89ccd30469960061838a6be33bc07a0aef2ae3` synchronizes
+thirteen pages for #300: the floating card, Settings navigation, actual
+retained-cache/browser evidence, Impeccable use, and independent relay
+recovery. It identifies running application `81178595...`, not a later
+documentation-only main commit.
+
+Historical Wiki commit `c5206cf8cc477a1a6266f7988b11da9e050116db`
+published thirteen pages for the #291 minimal right-hand interface, actual
 Impeccable use, selected/history layout, retained-cache and production evidence,
 release identity, independent relay recovery, and rollback. It records running
 application `cd05a38f...`, independently of later documentation-only repository
