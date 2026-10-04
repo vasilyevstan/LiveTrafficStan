@@ -20,6 +20,14 @@ Check these project invariants:
   visible basemap evidence, or inspect actual worker-target tile requests.
 - `setStyle` rehydrates custom images, sources, layers, current GeoJSON data,
   visibility, selected trail, and theme-dependent paint exactly once.
+- Reapply atlas basemap paint through that same installer only for the exact
+  default style URL of the active theme. Preserve custom/fallback styles and
+  upstream geometry, label placement, road widths, and boundary semantics.
+  Check unchanged blue vessel artwork against the new water background, not
+  just the palette in isolation.
+- Shared stock style URLs must not carry atlas paint into an opposite-theme
+  custom override. A same-URL reset must emit `style.load` and rehydrate the
+  same map's overlays, selection, and camera without restarting providers.
 - Rapid style changes cannot let an obsolete `style.load` win.
 - Traffic images are keyed by the active visual treatment and can be replaced
   even when light and dark use the same style URL.

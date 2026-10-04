@@ -53,6 +53,10 @@ import {
 } from '../traffic/interpolation'
 import { createTrafficIcons } from './icons'
 import {
+  applyBasemapCartography,
+  needsBasemapStyleReset,
+} from './basemapCartography'
+import {
   createMapSafely,
   type TrafficMapError,
 } from './mapInitialization'
@@ -931,6 +935,11 @@ export function TrafficMap({
       const renderState = renderStateRef.current
       const viewState = viewStateRef.current
       const activeTheme = themeRef.current
+      applyBasemapCartography(
+        map,
+        activeTheme,
+        appliedStyleUrlRef.current,
+      )
       const aircraftFeatures = trafficFeatures(
         renderState.aircraft,
         aircraftMotionRef.current,
@@ -1139,7 +1148,10 @@ export function TrafficMap({
 
         map.once('style.load', handleStyleLoad)
         try {
-          map.setStyle(style)
+          // A same-URL reset must emit style.load for overlay rehydration.
+          map.setStyle(style, {
+            diff: styleKey !== appliedStyleUrlRef.current,
+          })
         } catch (error) {
           map.off('style.load', handleStyleLoad)
           if (reason === undefined) {
@@ -2207,6 +2219,16 @@ export function TrafficMap({
     if (!loadedRef.current) return
 
     if (theme !== appliedThemeRef.current) {
+      if (
+        needsBasemapStyleReset(
+          mapStyleUrl,
+          appliedThemeRef.current,
+          theme,
+        )
+      ) {
+        switchMapStyle(map, mapStyleUrl, mapStyleUrl)
+        return
+      }
       appliedThemeRef.current = theme
       installCurrentStyle(map)
     }

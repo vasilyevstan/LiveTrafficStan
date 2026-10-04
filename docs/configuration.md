@@ -573,12 +573,22 @@ or unavailable storage selects Light to preserve the previous default. Auto
 resolves the browser system color scheme and follows later changes; explicit
 Light/Dark choices remain overrides. Map center coordinates are never stored.
 
+The default URLs are centralized in `DEFAULT_MAP_STYLE_URLS`. Their existing
+OpenFreeMap layers receive the application's atlas paint treatment: blue water,
+green vegetation, warm roads/buildings, and theme-specific label contrast.
+The wood layer is shown from zoom 5 using the same vector data. A custom URL,
+including intentionally using the opposite theme's default URL, bypasses this
+treatment. When both themes share a stock URL, switching out of its atlas theme
+resets that style through the existing loader rather than retaining its paint.
+The bundled offline style is also unchanged. No new tile/imagery
+provider, terrain source, API key, preference, or camera behavior is introduced.
+
 The current behavioral configuration keeps:
 
 | Setting | Decision |
 | --- | --- |
-| Light map style | OpenFreeMap Positron |
-| Dark map style | OpenFreeMap Dark |
+| Light map style | OpenFreeMap Positron with the application's warm atlas palette |
+| Dark map style | OpenFreeMap Dark with the application's deep-blue/forest/bronze atlas palette |
 | Theme default | Light; Auto is explicit opt-in |
 | Aircraft query cadence during camera movement | No faster than 20 seconds |
 | Marine query-triggered REST refresh | No more than once per 5 minutes |
