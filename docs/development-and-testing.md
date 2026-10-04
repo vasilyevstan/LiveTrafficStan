@@ -626,7 +626,7 @@ passed. The installed Impeccable detector reported no findings in the changed
 CSS/component. These are local fixture/Chrome-emulation results, not new
 production measurements or physical Safari/iOS/Android evidence.
 
-### Floating status card (#300, production evidence)
+### Floating status card predecessor (#300, production evidence)
 
 Feature #298 and tree-neutral #299 promoted through #300 to application
 `8117859518155f77e9413fa0d86902a3b371da9e`. Exact-main Validation
@@ -970,8 +970,39 @@ above is reused rather than repeated.
 
 All required final local gates passed: 991 tests in 130 files, lint, typecheck,
 aircraft metadata, country allocations, vessel photos, orbital catalog
-integrity, and the production build. Production acceptance is recorded
-separately after the checked release.
+integrity, and the production build.
+
+### Accepted atlas production (#307)
+
+Exact application `0972ba8d24ba96e18627b13b252e6ac7c5473f10` passed
+exact-main Validation `37187440710` and canonical deployment `37187599808`
+attempt 2, with full smoke at `2026-10-04T08:43:41.594Z` as Worker
+`a22bfa09-03fa-40cd-ac76-3915e0e52eea`.
+[The actual production receipt and screenshots](https://github.com/vasilyevstan/LiveTrafficStan/pull/307#issuecomment-5978336335)
+ran from `08:49:10.049Z` to `08:49:48.904Z`, without response fixtures:
+
+- Both themes passed 1280x900, 390x844, 390x568 and 315x517, with the same
+  280x88 card, right rail/mobile dock and one canvas. Actual water/land paint
+  matched the atlas palette after each style installation.
+- The initial map rendered 87 vector-source features and real aircraft/ships.
+  Selection, provider disclosure, Settings navigation, orbital results/focus,
+  shortened visual viewport, touch, HISTORY and Return to Live passed.
+- Startup made zero catalog requests. Enabling each channel made one
+  same-origin request, with no browser CelesTrak work. A later aircraft `503`
+  was recorded without runtime/console errors; availability was not claimed
+  uninterrupted.
+- Ordinary navigation from the actual predecessor profile changed
+  `index-KqCAW4Ds.js` to `index-BRvLbc4q.js`. The interface stylesheet remained
+  exactly `index-B5IN6iN9.css`, as intended for this map-only change.
+  Old shell `84e5a30fc6fce373d145` remained alongside
+  `068c4381a2493276f835`; service-worker control and the normal update notice
+  remained, without clearing storage or disabling cache.
+
+The private-relay recovery is independently recorded on
+[#174](https://github.com/vasilyevstan/LiveTrafficStan/issues/174#issuecomment-5978306226),
+not presented as a map-code fix. No physical Safari/iOS/Android claim is made.
+The prior #300 application/Worker remain the accepted rollback predecessor;
+later documentation-only main commits are not redeployed runtimes.
 
 ## Browser smoke test
 

@@ -563,31 +563,35 @@ persistent route cache.
 Public production is live at
 <https://livetrafficstan.syntal.workers.dev> on Cloudflare Workers Free with
 Static Assets. The current application source is
-`8117859518155f77e9413fa0d86902a3b371da9e`, released through #298-#300.
-Exact-main Validation `37163497963` passed, and canonical deployment
-`37163611027`, attempt 2, passed complete smoke at
-`2026-10-04T00:13:26.611Z` as Cloudflare version
-`79f74a36-f1a6-4e1b-b41a-1314a3e92a76`. Both ran 973 tests in 129 files.
-The full-width upper bar is gone: a compact floating status card preserves
+`0972ba8d24ba96e18627b13b252e6ac7c5473f10`, released through #305-#307.
+Exact-main Validation `37187440710` passed, and canonical deployment
+`37187599808`, attempt 2, passed complete smoke at
+`2026-10-04T08:43:41.594Z` as Cloudflare version
+`a22bfa09-03fa-40cd-ac76-3915e0e52eea`. Final gates passed 991 tests in 130 files.
+The atlas basemap adds blue water, visible forests/parks, warm streets and
+clearer harbour/building detail in both themes using the existing vector data.
+Custom/fallback styles are preserved, including shared-stock-URL resets.
+The full-width upper bar stays gone: a compact floating status card preserves
 counts and provider details, while search and Center live together in Settings.
 The right-side buttons and mobile dock remain. Impeccable's installed
-context/distill/craft-floor guidance and detector were used without adding an
+context/colorize/craft-floor guidance and detector were used without adding an
 application dependency or design framework.
-[Actual production screenshots and measured acceptance](https://github.com/vasilyevstan/LiveTrafficStan/pull/300#issuecomment-5974937301)
+[Actual production screenshots and measured acceptance](https://github.com/vasilyevstan/LiveTrafficStan/pull/307#issuecomment-5978336335)
 cover both themes, retained-cache navigation, mobile/short screens, selection,
 keyboard/touch, and playback.
 
-The actual predecessor baseline already showed aircraft-only `502` before
-deployment. Attempt 1 encountered that same independent recurrence. One
-fresh-ETag-fenced exact-instance diagnostic reboot recovered valid aircraft
-JSON at `00:12:34.414Z`; all eleven before/after resource groups and cost
-configuration matched. The same deployment job then passed unchanged.
-[Issue #174](https://github.com/vasilyevstan/LiveTrafficStan/issues/174#issuecomment-5974933051)
+The predecessor baseline was healthy at `07:04Z`; attempt 1 later encountered
+the recurring private-aircraft `502` while direct ADSB.lol and the exact-release
+orbital route remained healthy. One no-retry, fresh-ETag-fenced diagnostic
+reboot recovered the recorded instance; the first later probe returned six
+aircraft at `08:40:59.167Z`. Eleven before/after resource groups and cost
+configuration matched. The same deployment job passed with unchanged inputs.
+[Issue #174](https://github.com/vasilyevstan/LiveTrafficStan/issues/174#issuecomment-5978306226)
 remains open; this is recovery, not a permanent infrastructure repair.
 
 The real rollback predecessor is application
-`cd05a38f7c2f130629e961cb4a56fc67d9c42a44` / Worker
-`89313ed1-b31a-467d-86b5-4cf8d558af9c`, the accepted #291 right-hand UI.
+`8117859518155f77e9413fa0d86902a3b371da9e` / Worker
+`79f74a36-f1a6-4e1b-b41a-1314a3e92a76`, the accepted #300 floating-header UI.
 Later documentation-only commits are not deployed application versions. This
 deployment preserves:
 
@@ -617,17 +621,20 @@ Production measured a 280x88 px floating card in both themes at 1280x900,
 The 76x335 px right rail starts at y=16, its panels open inward, and the
 70 px mobile dock is unchanged. Settings contains exactly one 44 px location
 input. Local evidence additionally covers 761/900/1024 px widths.
-Ordinary cached navigation loaded `index-KqCAW4Ds.js` and
-`index-B5IN6iN9.css` without clearing storage or disabling cache; the normal
+Ordinary cached navigation upgraded `index-KqCAW4Ds.js` to
+`index-BRvLbc4q.js`, intentionally retaining `index-B5IN6iN9.css`.
+Old shell `84e5a30fc6fce373d145` remained alongside
+`068c4381a2493276f835`, without clearing storage or disabling cache; the normal
 app-update notice remained visible.
 
 Final orbital rows remained reachable at 315x517 and with an
-844-layout/517-visual-height mismatch. Production rendered vector-basemap
-features and retained one map and one request per catalog; HISTORY alone
+844-layout/517-visual-height mismatch. Production rendered 87 initial
+vector-source features and retained one map and one request per catalog; HISTORY alone
 intentionally restarted the orbital worker. Real aircraft and ships rendered;
 one later aircraft `503` was recorded without a browser runtime error.
 Chrome emulation is not physical iOS/Android or Safari evidence.
-The first refresh #282, structural correction #288 and smaller bar #291 remain
+The first refresh #282, structural correction #288, smaller bar #291 and
+floating-card release #300 remain
 [historical release evidence](docs/hosting-and-deployment.md), not the current
 layout or a new sampling change.
 
@@ -874,11 +881,15 @@ real aircraft JSON, then exact-release marked local
 wait. Provider `503`, provider `429`, redirects, malformed policy, and failure
 to reach eventual real JSON remain release failures.
 
-Public Wiki commit `3d89ccd30469960061838a6be33bc07a0aef2ae3` synchronizes
-thirteen pages for #300: the floating card, Settings navigation, actual
-retained-cache/browser evidence, Impeccable use, and independent relay
-recovery. It identifies running application `81178595...`, not a later
+Public Wiki commit `5f9fbd82b77bdd6555379bef65431629f6abf80e` synchronizes
+thirteen pages for #307: atlas cartography, custom/shared-style preservation,
+actual retained-cache/browser evidence, Impeccable use and independent relay
+recovery. It identifies running application `0972ba8d...`, not a later
 documentation-only main commit.
+
+Historical Wiki commit `3d89ccd30469960061838a6be33bc07a0aef2ae3` preserves
+the thirteen-page #300 floating-card and Settings-navigation release record
+for application `81178595...`.
 
 Historical Wiki commit `c5206cf8cc477a1a6266f7988b11da9e050116db`
 published thirteen pages for the #291 minimal right-hand interface, actual

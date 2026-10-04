@@ -28,11 +28,11 @@ active on the relay VM with four IPv6 QUIC connections and a dedicated
 used only when a protected deployment selects `oci-private-relay`.
 
 The current application source is
-`8117859518155f77e9413fa0d86902a3b371da9e`; it continues to use active
+`0972ba8d24ba96e18627b13b252e6ac7c5473f10`; it continues to use active
 relay source `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8`, while
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` remains the relay rollback target.
-Canonical production run `37163611027`, attempt 2, passed as running version
-`79f74a36-f1a6-4e1b-b41a-1314a3e92a76`.
+Canonical production run `37187599808`, attempt 2, passed as running version
+`a22bfa09-03fa-40cd-ac76-3915e0e52eea`.
 
 The first same-source run `36627068064` had already deployed healthy
 application, orbital, enrichment, weather, and marine surfaces as version
@@ -427,6 +427,19 @@ The unchanged deployment `37163611027` attempt 2 passed full smoke at
 `00:13:26.611Z`. No new resource, credential, provider, admission-state or
 network-policy change occurred. [The recurrence record](https://github.com/vasilyevstan/LiveTrafficStan/issues/174#issuecomment-5974933051)
 remains recovery evidence, not a permanent fix.
+
+The #307 atlas rollout repeated private-aircraft `502` at
+`2026-10-04T08:02:51Z`; its earlier predecessor baseline had been healthy at
+`07:04Z`. Direct ADSB.lol and the exact-release orbital route were healthy,
+and backend/relay/workflow configuration was unchanged. One diagnostic reboot,
+with fresh ETag fencing and retries disabled, showed `STOPPING` at
+`08:34:08.819Z`, `STARTING` at `08:35:11.693Z` and `RUNNING` at
+`08:35:53.431Z`. All eleven before/after resource groups matched.
+The first subsequent probe returned six aircraft at `08:40:59.167Z`.
+The same deployment job, with unchanged inputs, passed smoke on attempt 2 at
+`08:43:41.594Z`. [The #174 record](https://github.com/vasilyevstan/LiveTrafficStan/issues/174#issuecomment-5978306226)
+does not claim a permanent diagnosis, new resource, credential change,
+network-policy change, or manual admission-state reset.
 
 After source `18082a1e...` activated the reviewed admission marker and smoke
 policy, canonical run `36642794309` passed. A separate bounded production

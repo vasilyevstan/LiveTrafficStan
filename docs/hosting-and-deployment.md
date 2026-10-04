@@ -43,6 +43,49 @@ no paid fallback is enabled. Orbital activation uses the included free KV and
 SQLite Durable Object allocations; R2 is not used.
 
 The current application source is
+`0972ba8d24ba96e18627b13b252e6ac7c5473f10`, deployed by protected run
+`37187599808`, attempt 2, as Cloudflare version
+`a22bfa09-03fa-40cd-ac76-3915e0e52eea`. Feature #305, tree-neutral ancestry
+#306 and checked dev-to-main #307 preserve accepted tree
+`0f21c1d35aef3bb2c35632dcc90b8c5dac2a112e`. Exact-main Validation
+`37187440710` passed; final gates covered 991 tests in 130 files and complete
+smoke passed at `2026-10-04T08:43:41.594Z`. Existing private-relay, photo,
+route, orbital/Starlink, KV, coordinator, Cron and secret-delivery settings
+remain unchanged.
+
+[Actual production acceptance](https://github.com/vasilyevstan/LiveTrafficStan/pull/307#issuecomment-5978336335)
+ran at `08:49:10.049Z-08:49:48.904Z`, without response fixtures. Both atlas
+palettes, eight layouts, one canvas, 87 initial rendered vector-source
+features, real traffic, selection, focus/touch, orbital discovery and HISTORY
+passed. The 280x88 floating card, right rail/mobile dock and one Settings
+input remain. Ordinary retained-cache navigation upgraded
+`index-KqCAW4Ds.js` to `index-BRvLbc4q.js`, intentionally keeping
+`index-B5IN6iN9.css`. Shell `068c4381a2493276f835` was added beside
+`84e5a30fc6fce373d145` without clearing storage or disabling cache.
+The normal app-update notice remained. Physical Safari/iOS/Android and
+uninterrupted provider availability are not claimed.
+
+Attempt 1 deployed Worker `55c50d94-364f-45a6-bfcc-5c05d7d0197a`, then
+private-aircraft smoke returned `502`. The earlier `07:04Z` predecessor
+baseline had been healthy. Direct ADSB.lol and the exact-release orbital route
+were healthy; backend/relay/workflow configuration was unchanged. One
+no-retry, fresh-ETag-fenced diagnostic reboot returned the recorded relay to
+`RUNNING` at `08:35:53.431Z`; the first subsequent probe returned six
+aircraft at `08:40:59.167Z`. Eleven before/after resource hashes matched.
+The same failed job passed with unchanged inputs on attempt 2.
+[Issue #174](https://github.com/vasilyevstan/LiveTrafficStan/issues/174#issuecomment-5978306226)
+remains open; this is recovery, not a durable diagnosis.
+
+The accepted application rollback predecessor is
+`8117859518155f77e9413fa0d86902a3b371da9e` /
+`79f74a36-f1a6-4e1b-b41a-1314a3e92a76`, not the transient failed-attempt
+Worker. Use the existing protected rollback workflow for an evidenced
+regression; no new rollback drill is claimed. Later documentation-only main
+commits do not redeploy or replace this running application.
+
+### Floating-header predecessor (#300)
+
+The previously accepted application source was
 `8117859518155f77e9413fa0d86902a3b371da9e`. Protected deployment run
 `37163611027`, attempt 2, passed as Cloudflare version
 `79f74a36-f1a6-4e1b-b41a-1314a3e92a76` with aircraft delivery through
@@ -79,7 +122,7 @@ matched. The same deployment job passed with unchanged source and inputs.
 [Issue #174](https://github.com/vasilyevstan/LiveTrafficStan/issues/174#issuecomment-5974933051)
 remains open; recovery does not establish a durable root-cause fix.
 
-The real UI rollback predecessor is source
+That release's UI rollback predecessor was source
 `cd05a38f7c2f130629e961cb4a56fc67d9c42a44` / Worker
 `89313ed1-b31a-467d-86b5-4cf8d558af9c`. Restore it only through the existing
 protected rollback workflow with the same deployment flags for an evidenced
@@ -109,9 +152,14 @@ remains an older structural predecessor record. The subsequent #291 and #300
 refinements follow the user's layout preferences, not another provider or
 sampling release.
 
-Public Wiki commit `3d89ccd30469960061838a6be33bc07a0aef2ae3` publishes the
+Public Wiki commit `5f9fbd82b77bdd6555379bef65431629f6abf80e` publishes the
+thirteen-page atlas map, custom/shared-style, actual acceptance and release
+update. It identifies running application `0972ba8d...`, independently of
+later documentation-only main promotions.
+
+Historical Wiki commit `3d89ccd30469960061838a6be33bc07a0aef2ae3` published the
 matching thirteen-page floating-card, navigation, accessibility, acceptance
-and release update. Its current identity is application `81178595...`;
+and release update. It records application `81178595...`;
 subsequent Markdown-only main promotions do not deploy another Worker.
 
 Historical Wiki commit `c5206cf8cc477a1a6266f7988b11da9e050116db` published the
