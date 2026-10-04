@@ -722,10 +722,14 @@ render-only motion boundary; a slow/stopped aircraft is north-up and receives
 the same red dot, while unknown speed does not claim stopped or on-ground.
 
 Exact normalized sailing and pleasure types use a dedicated visibility branch.
-They render only with known length of at least 8 m, finite non-future position
-age no greater than the marine stale threshold, and finite speed of at least
-one knot. The rule uses the live clock or historical cursor and never falls
-through to the ordinary length filter. Non-yachts retain the 50 m default.
+They render only with known length of at least 8 m and finite non-future position
+age no greater than the normal marine expiry threshold. The existing
+reported-speed filter applies: Any includes stopped and unknown-speed yachts;
+explicit below-one-knot, moving and unknown choices remain restrictive. Normal freshness
+marks reports stale after two minutes and removes them after ten. Invalid
+reported speeds remain rejected. The rule uses the live clock or historical
+cursor and never falls through to the ordinary length filter. Query, category,
+navigation and maximum length still apply; non-yachts retain the 50 m default.
 Digitraffic publishes Class A AIS only, so this does not claim comprehensive
 Class B yacht coverage.
 

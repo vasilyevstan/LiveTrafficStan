@@ -1077,11 +1077,16 @@ Use `npm run dev` and verify:
 15. Vessel search matches normalized name, callsign, MMSI, and IMO without any
     provider request. Combined category, navigation, speed, and inclusive
     length filters keep matching/shown counts truthful. Exact sailing and
-    pleasure types render only with known length at least 8 m, finite age from
-    0 through 120 seconds at the live clock or historical cursor, and reported
-    speed at least one knot. Future, stale, stopped, speed-unknown, and
-    length-unknown yachts stay hidden at every size; non-yachts preserve the
-    50 m reset state. A selected yacht becoming ineligible clears cleanly.
+    pleasure types render only with known length at least 8 m and finite age
+    from 0 through the normal ten-minute marine expiry at the live clock or
+    historical cursor. Any reported speed includes stopped and unknown-speed
+    yachts; explicit below-one-knot, moving and unknown choices select their
+    exact populations. Reports older than two minutes remain visibly stale
+    until expiry. Cover the 16 m / 0 kn / 123.591-second regression, exact
+    8 m and 600/600.001-second boundaries, and invalid/future/unknown-length
+    rejection. Non-yachts preserve the 50 m reset state. Selection survives a
+    stale or stopped transition under Any, but clears when an explicit filter
+    or expiry makes the yacht ineligible.
 16. Selecting each reviewed vessel by its exact live IMO shows the correct
     bundled reference photo directly below the ship heading, with author,
     fixed Commons revision, selected license, modification notice, and the

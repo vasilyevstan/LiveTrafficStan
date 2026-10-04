@@ -107,14 +107,14 @@ describe('historical observation projection', () => {
     )
   })
 
-  it('preserves every input needed to recompute yacht eligibility at the cursor', () => {
+  it.each([0, ONE_KNOT_KPH])('recomputes yacht eligibility at the cursor with speed %s', (speedKph) => {
     const projected = projectHistoricalObservation(
       {
         ...vessel,
         vesselCategory: 'other',
         vesselType: 'Sailing vessel',
         lengthMeters: 20,
-        speedKph: ONE_KNOT_KPH,
+        speedKph,
         markerIcon: 'vessel',
       },
       context,
@@ -125,7 +125,7 @@ describe('historical observation projection', () => {
 
     expect(projected).toMatchObject({
       observedAt: 20_000,
-      speedKph: ONE_KNOT_KPH,
+      speedKph,
       vesselType: 'Sailing vessel',
       lengthMeters: 20,
       markerIcon: 'vessel',
@@ -149,19 +149,25 @@ describe('historical observation projection', () => {
     expect(
       filterVessels([beforeMetadata], DEFAULT_VESSEL_FILTERS, {
         displayTime: 18_000,
-        staleAfterMs: 120_000,
+        expireAfterMs: 600_000,
       }),
     ).toEqual([])
     expect(
       filterVessels([atObservation], DEFAULT_VESSEL_FILTERS, {
         displayTime: 20_000,
-        staleAfterMs: 120_000,
+        expireAfterMs: 600_000,
       }),
     ).toHaveLength(1)
     expect(
       filterVessels([atObservation], DEFAULT_VESSEL_FILTERS, {
         displayTime: 140_001,
-        staleAfterMs: 120_000,
+        expireAfterMs: 600_000,
+      }),
+    ).toHaveLength(1)
+    expect(
+      filterVessels([atObservation], DEFAULT_VESSEL_FILTERS, {
+        displayTime: 620_001,
+        expireAfterMs: 600_000,
       }),
     ).toEqual([])
   })
