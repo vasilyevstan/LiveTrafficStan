@@ -415,9 +415,10 @@ matching rules, and re-evaluation conditions are in
 
 ## Offline aircraft and vessel country allocations
 
-Country rows in selected details are bundled identifier-derived context. They
-make no runtime request and do not change traffic providers, normalization,
-history records, persistence, map state, or selection.
+Country rows in selected details and available vessel-marker flags are bundled
+identifier-derived context. They make no runtime request and do not change
+traffic providers, normalization, history records, persistence, camera or
+selection.
 
 ### Vessel MID projection
 
@@ -447,6 +448,35 @@ publication layout or text. Only a safe integer with exactly nine digits, first
 digit 2 through 7, and an included assigned MID can produce **Flag state**.
 Group, coast, SAR-aircraft, handheld, craft-associated, AtoN, SART/MOB/EPIRB,
 unassigned, conflicting, and malformed identifiers remain unknown.
+
+### Vessel flag artwork
+
+The small ship-marker badge uses the same MID-derived ISO code, not a second
+registration lookup or a claim about a vessel-specific ensign. Its source is
+[flag-icons](https://github.com/lipis/flag-icons), pinned at
+`086f7e97d657358203916dbe84f61c2bccaa81eb`, using `flags/4x3` under the MIT
+license, Copyright (c) 2013 Panayiotis Lipiridis. The complete license is
+distributed at `/licenses/vessel-flags-MIT.txt`.
+
+`src/config/vesselFlags.generated.json` contains bounded pre-rasterized RGBA
+pixels for exactly the 226 countries already represented by the accepted MID
+projection, plus source, rasterizer and checksum records. Each 28x22 pixel
+asset includes a contrasting frame and displays at 14x11 CSS pixels. Artwork
+is bundled in JavaScript; displaying or rehydrating a flag fetches no image,
+font, registry, flag CDN or provider data. Special or excluded MMSIs do not
+gain a flag merely because artwork for a related country exists.
+
+For an intentional artwork update, retrieve the pinned repository archive into
+a dedicated scratch directory and extract only `flags/4x3` and `LICENSE`.
+With an isolated loopback Chrome/CDP session running, use
+`node scripts/generate-vessel-flags.mjs <flags/4x3 directory> src/config/vesselFlags.generated.json <CDP port>`
+from the repository root. The generator accepts only the existing MID
+countries, rejects external/executable SVG content, blocks rasterization
+network requests and records the actual source/pixel/license digests and
+browser version. Retain the complete source license at the published path.
+`npm run check:country-allocations` verifies coverage, complete pixels,
+checksum, license and the one-MiB raw / 64-KiB gzip bounds. Review real-scale
+rendering before changing the pin or pixels; CI never downloads flag artwork.
 
 ### Aircraft ICAO24 projection
 

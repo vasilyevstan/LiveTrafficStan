@@ -777,13 +777,22 @@ conflicting, malformed, and excluded values omit the row.
 The projection uses pinned open-licensed third-party source data plus a
 canonical hash-pinned CC0 Wikidata cross-check. It copies no ITU/ICAO
 publication layout or text, excludes every known ambiguous or invalid source
-row, and is checked offline in CI. Registration-prefix fallback and decorative
-flags are intentionally deferred.
+row, and is checked offline in CI. Registration-prefix fallback remains
+deferred.
 
 Keeping this as a pure domain lookup avoids changes to provider normalization,
-map/source properties, history records, persistence, loading, cache, or
-networking. Live and historical details therefore use the same deterministic
-derivation.
+history records, persistence, loading, cache, or networking. Live and
+historical details therefore use the same deterministic derivation.
+
+Issue #312 adds the requested small vessel-country flag as a render-only
+decoration beside the existing ship silhouette. It reuses the exact MMSI
+lookup rather than adding a registry provider or inferring a flag from name,
+position, owner, route or appearance. A bundled, licensed pixel set avoids
+platform-dependent flag emoji and runtime image requests. The fixed-size,
+upright badge shares the vessel source, visibility and stale opacity; it does
+not replace the AIS category, stopped indicator, selected halo, text country
+context or hull hit target. Unknown and excluded MMSIs stay unflagged.
+This is an allocation-country badge, not live registry or ensign evidence.
 
 ## Explicit MapLibre worker bundling
 
