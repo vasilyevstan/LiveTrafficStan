@@ -20,7 +20,7 @@ This is cataloged orbital-object context, not another live-traffic provider:
   this feature.
 
 The browser implementation and scheduled catalog infrastructure are active in
-production source `cd05a38f7c2f130629e961cb4a56fc67d9c42a44`. The layer
+production source `8117859518155f77e9413fa0d86902a3b371da9e`. The layer
 remains a default-off user preference, while the protected Worker deployment
 sets `ORBITAL_CATALOG_ENABLED=true`, serves the same-origin catalog route, and
 runs the checked two-hour scheduler. A deployment with that Worker flag off
@@ -560,16 +560,16 @@ scheduled KV/Durable Object boundary.
 ## Production activation and visibility evidence
 
 The current exact application release is
-`cd05a38f7c2f130629e961cb4a56fc67d9c42a44`, deployed by protected run
-[37152238178, attempt 2](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/37152238178)
+`8117859518155f77e9413fa0d86902a3b371da9e`, deployed by protected run
+[37163611027, attempt 2](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/37163611027)
 as running Cloudflare version
-`89313ed1-b31a-467d-86b5-4cf8d558af9c`. It uses KV namespace
+`79f74a36-f1a6-4e1b-b41a-1314a3e92a76`. It uses KV namespace
 `59178d55418247c4bab473b52a5dc07d` and Cron `17 */2 * * *`.
-The #291 minimal-interface release preserves the #275 sampling, acquisition,
+The #300 floating-header release preserves the #275 sampling, acquisition,
 source and compatibility contracts. Its real production acceptance retained
 all 26 pages, final-row selection/focus at 315x517 and under a shortened
 visual viewport, one catalog request per channel, and the shared worker.
-The earlier #282/#288 UI and #275 density/publication records remain historical
+The earlier #282/#288/#291 UI and #275 density/publication records remain historical
 evidence, not newly repeated sampling experiments.
 Implementation PRs #232 and #233 supplied the source contract and browser
 consumer; #235 performed the coordinated catalog release. PR #243 added the
