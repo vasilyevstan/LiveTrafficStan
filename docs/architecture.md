@@ -1005,6 +1005,26 @@ Interaction listeners remain registered once, and a style revision prevents a
 late obsolete load from winning. Provider hooks, React selection/history, and
 camera state do not restart.
 
+The same installer applies `basemapCartography.ts` to the resolved default
+OpenFreeMap style before restoring the traffic overlays. It changes existing
+background, water, vegetation, urban/building, road, boundary, and label paint;
+the existing wood layer becomes available at zoom 5 rather than 10. Removing
+the Dark style's wood sprite pattern lets its forest color render consistently.
+It adds no map source, layer, image, fetch path, camera change, or geographic
+inference. Source geometry, filters, label content/font/placement,
+road widths, boundary dash patterns, and attribution remain provider-owned.
+
+The treatment is gated by the exact resolved default URL for each theme.
+Custom style URLs, opposite-theme overrides, and fallback style keys are left
+untouched. Every external style replacement reapplies the palette through the
+existing generation-fenced installation; it does not create a second style
+loader or provider lifecycle. If both themes share one stock URL, leaving that
+URL's atlas-owning theme reloads the original style through the same loader.
+The same-URL reset uses `diff: false` so `style.load` reliably restores overlays;
+otherwise application paint could leak into the deliberately custom override.
+It keeps the map, camera, selection, and provider controllers. The new palette
+does not add terrain, building heights, a globe projection, or an automatic tilt.
+
 ## Application-shell and offline lifecycle
 
 The service worker is build output, not hand-maintained source. After Vite emits

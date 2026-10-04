@@ -27,6 +27,11 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   REST initialization and MQTT over secure WebSockets.
 - OpenStreetMap-derived vector maps from
   [OpenFreeMap](https://openfreemap.org/), rendered with MapLibre GL JS.
+- An atlas-style treatment of the default maps: blue water, visible forests
+  and parks, warm roads, and clearer building and harbour detail. Light uses
+  a warm paper palette; Dark uses deep-blue water with forest and bronze
+  detail. This is cartographic styling, not new imagery, terrain, or 3D
+  building geometry. Custom style URLs and the offline fallback are unchanged.
 - Explicit Auto, Light, and Dark theme preferences. Auto follows the browser
   color-scheme signal, while Light and Dark remain persistent overrides; all
   three switch the base map without recreating MapLibre or resetting traffic.

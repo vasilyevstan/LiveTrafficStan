@@ -154,11 +154,16 @@ export interface AppConfig {
   interpolationDurationMs: number
 }
 
+export const DEFAULT_MAP_STYLE_URLS = {
+  light: 'https://tiles.openfreemap.org/styles/positron',
+  dark: 'https://tiles.openfreemap.org/styles/dark',
+} as const
+
 const DEFAULTS = {
   latitude: 59.437,
   longitude: 24.7536,
-  lightMapStyleUrl: 'https://tiles.openfreemap.org/styles/positron',
-  darkMapStyleUrl: 'https://tiles.openfreemap.org/styles/dark',
+  lightMapStyleUrl: DEFAULT_MAP_STYLE_URLS.light,
+  darkMapStyleUrl: DEFAULT_MAP_STYLE_URLS.dark,
   geocoderEndpoint: 'https://photon.komoot.io/api',
   aircraftEndpoint: '/api/aircraft',
   aircraftPhotoEndpoint:

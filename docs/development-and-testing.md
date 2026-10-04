@@ -920,11 +920,71 @@ accepted work. Reports and screenshots are retained under
 artifacts, with [public production media on #282](https://github.com/vasilyevstan/LiveTrafficStan/pull/282).
 Physical mobile/Safari testing is not claimed.
 
+## Atlas basemap acceptance (#304)
+
+The first atlas pass changes existing default-map paint, not the floating
+interface or traffic artwork. Eighteen deterministic tests cover both palettes,
+Light -> Dark -> Light restoration, exact-default URL gating, foreign-source
+and fallback preservation, unchanged geometry/label/road/boundary properties,
+opaque label/halo paint-pair contrast of at least 4.5:1, and actual blue vessel
+fill against water at at least 3:1. Existing label opacity and zoom transitions
+remain provider-owned; these paint-pair checks are not a claim that every
+transitional glyph has full opacity.
+
+Chrome `154.0.8037.95` paired the previous application
+`8117859518155f77e9413fa0d86902a3b371da9e` with the candidate using controlled
+traffic responses and real OpenFreeMap vector tiles. Ten views cover Light and
+Dark at regional, close-up harbour/city, and world scales at 1280x900, plus
+390x844 and 315x517 mobile layouts. The palette confirmation ran
+`2026-10-04T07:24:49Z` to `07:25:09Z`; every view rendered vector-source
+features (83-1,346), retained one canvas and the 280x88 floating card, and had
+no document overflow or recorded runtime/console error.
+
+Actual marker selection and Light -> Dark -> Light kept the selected ship,
+longitude/latitude, zoom, bearing, pitch, and canvas. The theme-only interval
+created no marine connection. The complete matrix also crosses the intentional
+wide-view pause and resume, so its two total marine socket constructions are
+not described as an uninterrupted connection. Trusted mobile touch moved the
+same map. All protected provider traffic was fixture-routed; zero real
+ADSB.lol, Digitraffic, CelesTrak, Photon, or photo-provider requests were made
+by these paired checks. Synthetic vessel counts are not live coverage evidence.
+
+The retained artifact receipts are `atlas-basemap-visuals/before-v2/` and
+`atlas-basemap-visuals/candidate-v2/`. The final palette tightened light label
+ink, subdued dark boundary lines, and corrected the first water color's
+2.933:1 vessel contrast instead of weakening the 3:1 test. A separate earlier
+`before/` receipt records a CDP-only attempt to serialize MapLibre's circular
+return value; it is not accepted evidence. Physical Safari/iOS/Android, new
+terrain imagery, 3D building geometry, and globe mode are not claimed.
+
+Final source review found one tightly coupled shared-style edge: choosing
+Positron for both Light and Dark could carry the Light atlas paint into the
+custom Dark override. The fix uses the existing loader to reset the same URL
+with `diff: false`, ensuring `style.load` runs and restores current overlays.
+The focused `atlas-basemap-visuals/shared-v1/` receipt proves the atlas Light
+colors and zoom-5 forest return after the custom Dark view restores original
+Positron colors and zoom-10 forest. Repeated transitions retain the selected
+ship, full camera, canvas, and theme-only marine connection. It adds no paint
+snapshot cache or parallel style loader. The unchanged default-palette evidence
+above is reused rather than repeated.
+
+All required final local gates passed: 991 tests in 130 files, lint, typecheck,
+aircraft metadata, country allocations, vessel photos, orbital catalog
+integrity, and the production build. Production acceptance is recorded
+separately after the checked release.
+
 ## Browser smoke test
 
 Use `npm run dev` and verify:
 
 1. OpenFreeMap labels and land/water geometry render, not only the overlays.
+   With the default style URLs, verify the atlas water/forest/road/building
+   palette at regional and close-up city scale in both themes. Compare actual
+   before/after screenshots, not only stored paint values. Confirm the same
+   map/canvas, current selection, camera, and readable traffic after
+   Light -> Dark -> Light. Custom style overrides and the offline fallback
+   must not receive the default-map treatment. No new imagery or 3D geometry
+   is implied by the stronger cartographic detail.
 2. The status reaches `LIVE` or a truthful provider-specific `PARTIAL` state.
 3. Aircraft and vessels appear when current provider coverage contains them.
 4. Pan, zoom, rotate, pitch, Home, and resize update the visible traffic area
