@@ -28,11 +28,11 @@ active on the relay VM with four IPv6 QUIC connections and a dedicated
 used only when a protected deployment selects `oci-private-relay`.
 
 The current application source is
-`cd05a38f7c2f130629e961cb4a56fc67d9c42a44`; it continues to use active
+`8117859518155f77e9413fa0d86902a3b371da9e`; it continues to use active
 relay source `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8`, while
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` remains the relay rollback target.
-Canonical production run `37152238178`, attempt 2, passed as running version
-`89313ed1-b31a-467d-86b5-4cf8d558af9c`.
+Canonical production run `37163611027`, attempt 2, passed as running version
+`79f74a36-f1a6-4e1b-b41a-1314a3e92a76`.
 
 The first same-source run `36627068064` had already deployed healthy
 application, orbital, enrichment, weather, and marine surfaces as version
@@ -414,6 +414,19 @@ JSON returned at `20:53:57.430Z`. All eleven before/after resource groups and
 cost configuration matched. The unchanged deployment `37152238178` attempt 2
 passed full smoke at `20:55:36.196Z`. This is another recovery record, not a
 durable diagnosis or closure of #174.
+
+The #300 floating-header rollout had the same independent failure, already
+present on the real predecessor baseline before deployment. Private aircraft
+returned `502` while the application, orbital route and correctly identified
+direct ADSB.lol probe remained healthy. One fresh-ETag-fenced diagnostic reboot
+showed `STOPPING` at `2026-10-04T00:09:58.864Z`, `STARTING` at
+`00:11:01.281Z` and `RUNNING` at `00:11:22.149Z`. All eleven fresh before/after
+resource hashes matched. Valid empty aircraft JSON returned at
+`00:12:34.414Z`; real aircraft subsequently rendered in production acceptance.
+The unchanged deployment `37163611027` attempt 2 passed full smoke at
+`00:13:26.611Z`. No new resource, credential, provider, admission-state or
+network-policy change occurred. [The recurrence record](https://github.com/vasilyevstan/LiveTrafficStan/issues/174#issuecomment-5974933051)
+remains recovery evidence, not a permanent fix.
 
 After source `18082a1e...` activated the reviewed admission marker and smoke
 policy, canonical run `36642794309` passed. A separate bounded production

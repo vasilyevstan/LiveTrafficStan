@@ -626,6 +626,54 @@ passed. The installed Impeccable detector reported no findings in the changed
 CSS/component. These are local fixture/Chrome-emulation results, not new
 production measurements or physical Safari/iOS/Android evidence.
 
+### Floating status card (#300, production evidence)
+
+Feature #298 and tree-neutral #299 promoted through #300 to application
+`8117859518155f77e9413fa0d86902a3b371da9e`. Exact-main Validation
+`37163497963` and canonical deployment `37163611027` attempt 2 passed 973
+tests in 129 files. Full smoke passed at `2026-10-04T00:13:26.611Z` as
+Worker `79f74a36-f1a6-4e1b-b41a-1314a3e92a76`.
+
+Actual Chrome `154.0.8037.95` acceptance ran from `00:15:09.566Z` to
+`00:15:49.187Z`, without response fixtures:
+
+- Both themes at 1280x900, 390x844, 390x568 and 315x517 measured a 280x88 px
+  card, inset 16 px on desktop and 12 px on mobile. No horizontal overflow
+  occurred. The visible desktop rail remained 76x335 px at y=16, its panel
+  opened inward at x=824-1176, and the mobile dock remained 70 px.
+- Settings contained exactly one 44 px input. Center, native disclosure
+  switching, Provider details/Escape, attribution, theme restoration and
+  live/historical selection remained usable.
+- Complete 26-page Starlink discovery retained one request per channel,
+  zero browser CelesTrak work and one active orbital worker across ordinary
+  presentation changes. HISTORY intentionally terminated and recreated it;
+  Return to Live retained the same canvas and cached catalogs.
+- The selected last row was 61.16 px, fully visible/topmost/focused inside a
+  145 px body / 265 px control area at 315x517. Under the 844-layout/
+  517-visual-height mismatch it remained usable in a 121 px body / 241 px
+  control area. The 3 px focus ring and absence of nested scrolling held.
+- At 315x517, HISTORY controls ended at y=347 and playback began at y=359.
+  Native focus scrolled two pixels, keeping Return to Live at y=486.31 inside
+  the y=487 notice boundary; every speed label fit.
+- The map rendered 49 vector-source features, two real aircraft and regional
+  marine traffic. One later aircraft `503` was recorded; there were no
+  recorded browser runtime/console errors.
+
+The same profile had accepted the actual `cd05a38f...` predecessor before
+deployment. Normal navigation loaded `index-KqCAW4Ds.js` and
+`index-B5IN6iN9.css` while retaining service-worker control, the old cache and
+the normal app-update notice. The new shell was `84e5a30fc6fce373d145`.
+Neither storage clearing nor cache disabling was used. The terminal
+`ui-floating-production/final/report.json` has `passed: true`; the earlier
+local fixture evidence was not rerun for branch synchronization.
+
+The before-deployment baseline already showed aircraft-only `502`. The
+independent #174 recovery and unchanged deployment rerun are recorded
+separately from UI acceptance. The immediate rollback predecessor remains
+`cd05a38f...` / `89313ed1...`, not a later docs-only main commit.
+[Actual production screenshots and complete evidence](https://github.com/vasilyevstan/LiveTrafficStan/pull/300#issuecomment-5974937301)
+do not claim physical Safari/iOS/Android testing or a new provider experiment.
+
 ### Minimal right controls (#291, historical local evidence)
 
 After #288, the user liked the buttons but requested a more minimal layout,

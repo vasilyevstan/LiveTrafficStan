@@ -14,8 +14,8 @@ The eight-photo generation is accepted in production at application source
 run `36996187462`, canonical deployment run `36997443034`, rollback run
 `36998162009`, and restoration run `36998245095` passed. The expansion remains
 included unchanged in current application source
-`cd05a38f7c2f130629e961cb4a56fc67d9c42a44`, deployed as Cloudflare version
-`89313ed1-b31a-467d-86b5-4cf8d558af9c`. Those assets do not rewrite the
+`8117859518155f77e9413fa0d86902a3b371da9e`, deployed as Cloudflare version
+`79f74a36-f1a6-4e1b-b41a-1314a3e92a76`. Those assets do not rewrite the
 accepted `2026-09-26-v1` bytes, which remain historical
 rollback assets.
 

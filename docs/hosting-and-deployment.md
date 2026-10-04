@@ -43,9 +43,9 @@ no paid fallback is enabled. Orbital activation uses the included free KV and
 SQLite Durable Object allocations; R2 is not used.
 
 The current application source is
-`cd05a38f7c2f130629e961cb4a56fc67d9c42a44`. Protected deployment run
-`37152238178`, attempt 2, passed as Cloudflare version
-`89313ed1-b31a-467d-86b5-4cf8d558af9c` with aircraft delivery through
+`8117859518155f77e9413fa0d86902a3b371da9e`. Protected deployment run
+`37163611027`, attempt 2, passed as Cloudflare version
+`79f74a36-f1a6-4e1b-b41a-1314a3e92a76` with aircraft delivery through
 `oci-private-relay`, aircraft photos, plausible routes, eight exact-IMO vessel
 photos, the curated orbital catalog, negotiated systematic/shell-balanced
 Starlink catalogs, and exact-NORAD enrichment enabled. It preserves KV
@@ -54,36 +54,45 @@ namespace `59178d55418247c4bab473b52a5dc07d`, one SQLite coordinator, and Cron
 `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8` and retains
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` as its prior release.
 
-The minimal UI release used feature #289, tree-neutral ancestry #290, and
-checked dev-to-main #291. Exact-main Validation `37152118432` passed; the
+The floating-header release used feature #298, tree-neutral ancestry #299, and
+checked dev-to-main #300. Exact-main Validation `37163497963` passed; the
 deployment ran 973 tests in 129 files and complete smoke passed at
-`2026-10-03T20:55:36.196Z`. Production Chrome observed the 56 px header,
-right desktop rail, inward panels, left inspector and unchanged mobile dock
-through ordinary retained-cache navigation. Actual provider responses,
-49 rendered vector-basemap features, both themes, selected final orbital rows,
-keyboard/touch and playback were recorded. The terminal evidence verification
-completed at `21:00:21.143Z`.
-[Release evidence and screenshots](https://github.com/vasilyevstan/LiveTrafficStan/pull/291#issuecomment-5973461428)
-separate local fixtures, actual production, browser emulation and the
-corrected harness-only glyph-counter assertion.
+`2026-10-04T00:13:26.611Z`. Production Chrome accepted the 280x88 px floating
+card, right desktop rail, inward panels, Settings navigation and unchanged
+mobile dock through ordinary retained-cache navigation. Both themes, eight
+layouts, 49 rendered vector-source features, selected final orbital rows,
+keyboard/touch and playback were recorded from `00:15:09.566Z` to
+`00:15:49.187Z`.
+[Release evidence and screenshots](https://github.com/vasilyevstan/LiveTrafficStan/pull/300#issuecomment-5974937301)
+separate local fixtures, actual production and browser emulation. The new
+assets are `index-KqCAW4Ds.js` and `index-B5IN6iN9.css`; shell cache
+`84e5a30fc6fce373d145` was installed without clearing the predecessor cache.
 
-Attempt 1 deployed version `d6deae36-0ec9-4266-ad21-6e2221a23c49` but only
-aircraft smoke returned `502`. Static/orbital and direct ADSB.lol were healthy.
-One fresh-ETag-fenced diagnostic reboot of the recorded relay instance restored
-real exact-release aircraft JSON at `20:53:57.430Z`. All eleven before/after
-infrastructure groups and cost configuration matched. The same deployment job
-then passed without source, credential, provider or network-policy changes.
-[Issue #174](https://github.com/vasilyevstan/LiveTrafficStan/issues/174#issuecomment-5973461420)
+The actual `cd05a38f...` baseline already returned private-aircraft `502`
+before deployment. Attempt 1 deployed version
+`0213fe56-7f9d-42bf-ad09-bffb0d3a9514`, then encountered the same aircraft-only
+failure while static/orbital and direct ADSB.lol remained healthy. One
+fresh-ETag-fenced exact-instance diagnostic reboot reached `RUNNING` at
+`00:11:22.149Z`; valid exact-release aircraft JSON returned at
+`00:12:34.414Z`. All eleven before/after resource hashes and cost configuration
+matched. The same deployment job passed with unchanged source and inputs.
+[Issue #174](https://github.com/vasilyevstan/LiveTrafficStan/issues/174#issuecomment-5974933051)
 remains open; recovery does not establish a durable root-cause fix.
 
 The real UI rollback predecessor is source
-`2d11e3e649fc55f8be0965d9b0cce41a42545ad0` / Worker
-`ce0dffd2-a22a-48d9-95a8-695e814c4c5e`. Restore it only through the existing
+`cd05a38f7c2f130629e961cb4a56fc67d9c42a44` / Worker
+`89313ed1-b31a-467d-86b5-4cf8d558af9c`. Restore it only through the existing
 protected rollback workflow with the same deployment flags for an evidenced
 release regression. No new rollback rehearsal was required for unchanged
 backend/provider contracts; earlier drills below remain historical evidence.
 Later documentation-only main commits do not replace the running application
 identity.
+
+That #291 predecessor used exact-main Validation `37152118432` and deployment
+`37152238178` attempt 2, with smoke at `2026-10-03T20:55:36.196Z`. Its
+56/104/120 px bar, actual browser evidence and earlier independent relay
+recovery remain [historical evidence](https://github.com/vasilyevstan/LiveTrafficStan/pull/291#issuecomment-5973461428),
+not the current floating layout.
 
 The first refresh #282 remains historical application
 `9f5ee37d9ad2bbeedb20a89ea08e7cd5629e36e8` / Worker
@@ -96,12 +105,17 @@ an 80 px masthead, left desktop rail and mobile bottom dock. Exact-main
 Validation `37144068057` and deployment `37144136921` attempt 2 passed; smoke
 completed at `19:54:45.336Z`. That rerun followed reachable marked admission
 backoff, without a VM reboot. Its [actual retained-cache and HISTORY evidence](https://github.com/vasilyevstan/LiveTrafficStan/pull/288#issuecomment-5973032236)
-remains the immediate predecessor record. The right-hand/smaller-header
-refinement follows the user's subsequent preference, not another provider or
+remains an older structural predecessor record. The subsequent #291 and #300
+refinements follow the user's layout preferences, not another provider or
 sampling release.
 
-Public Wiki commit `c5206cf8cc477a1a6266f7988b11da9e050116db` publishes the
-matching thirteen-page design, navigation, testing, release and recovery update,
+Public Wiki commit `3d89ccd30469960061838a6be33bc07a0aef2ae3` publishes the
+matching thirteen-page floating-card, navigation, accessibility, acceptance
+and release update. Its current identity is application `81178595...`;
+subsequent Markdown-only main promotions do not deploy another Worker.
+
+Historical Wiki commit `c5206cf8cc477a1a6266f7988b11da9e050116db` published the
+#291 thirteen-page design, navigation, testing, release and recovery update,
 including the actual production screenshots and the Impeccable refinement.
 It identifies application `cd05a38f...`, not the later docs-only main.
 Historical Wiki commit `61b8be294ea39aed57f98440856c1847719cda87` records the
