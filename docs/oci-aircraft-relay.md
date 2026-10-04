@@ -28,11 +28,16 @@ active on the relay VM with four IPv6 QUIC connections and a dedicated
 used only when a protected deployment selects `oci-private-relay`.
 
 The current application source is
-`0972ba8d24ba96e18627b13b252e6ac7c5473f10`; it continues to use active
+`e2b2afaa04466116719310d6286441f8e6ba60ca`; it continues to use active
 relay source `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8`, while
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` remains the relay rollback target.
-Canonical production run `37187599808`, attempt 2, passed as running version
-`a22bfa09-03fa-40cd-ac76-3915e0e52eea`.
+Canonical run `37203064394` deployed version
+`816506f7-2cb1-4e6c-8626-ae990eb62b8a`, then failed aircraft smoke with
+`502` at `2026-10-04T12:44:18Z`. Real ships, country flags and yacht selection
+remain usable. [The #174 recurrence](https://github.com/vasilyevstan/LiveTrafficStan/issues/174#issuecomment-5980126344)
+is not resolved or folded into the marine work. No reboot, service restart,
+resource mutation, fallback or second deployment was performed. Earlier
+recovery records below are historical, not proof of current aircraft health.
 
 The first same-source run `36627068064` had already deployed healthy
 application, orbital, enrichment, weather, and marine surfaces as version
