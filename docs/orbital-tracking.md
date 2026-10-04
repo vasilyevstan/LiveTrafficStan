@@ -20,7 +20,7 @@ This is cataloged orbital-object context, not another live-traffic provider:
   this feature.
 
 The browser implementation and scheduled catalog infrastructure are active in
-production source `0972ba8d24ba96e18627b13b252e6ac7c5473f10`. The layer
+production source `e2b2afaa04466116719310d6286441f8e6ba60ca`. The layer
 remains a default-off user preference, while the protected Worker deployment
 sets `ORBITAL_CATALOG_ENABLED=true`, serves the same-origin catalog route, and
 runs the checked two-hour scheduler. A deployment with that Worker flag off
@@ -560,10 +560,12 @@ scheduled KV/Durable Object boundary.
 ## Production activation and visibility evidence
 
 The current exact application release is
-`0972ba8d24ba96e18627b13b252e6ac7c5473f10`, deployed by protected run
-[37187599808, attempt 2](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/37187599808)
+`e2b2afaa04466116719310d6286441f8e6ba60ca`, deployed by protected run
+[37203064394](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/37203064394)
 as running Cloudflare version
-`a22bfa09-03fa-40cd-ac76-3915e0e52eea`. It uses KV namespace
+`816506f7-2cb1-4e6c-8626-ae990eb62b8a`. Overall smoke remains failed on
+the unrelated aircraft relay (#174); the ship-only release does not claim a
+new orbital acceptance or refresh. It uses KV namespace
 `59178d55418247c4bab473b52a5dc07d` and Cron `17 */2 * * *`.
 The #307 atlas map preserves the #300 layout and #275 sampling, acquisition,
 source and compatibility contracts. Its real production acceptance retained

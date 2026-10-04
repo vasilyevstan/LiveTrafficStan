@@ -272,7 +272,7 @@ for public `/v2` application responses; the provider edge must separately make
 any nginx-generated `429` browser-readable for direct mode to preserve
 explicit backoff. Current production did not wait for provider-side CORS or
 shared-egress allowlisting: source
-`0972ba8d24ba96e18627b13b252e6ac7c5473f10` uses relay release
+`e2b2afaa04466116719310d6286441f8e6ba60ca` uses relay release
 `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8`, retains
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` as relay rollback, and keeps one
 stable isolated OCI

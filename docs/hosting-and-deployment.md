@@ -43,6 +43,43 @@ no paid fallback is enabled. Orbital activation uses the included free KV and
 SQLite Durable Object allocations; R2 is not used.
 
 The current application source is
+`e2b2afaa04466116719310d6286441f8e6ba60ca`, promoted through #313-#316 after
+exact-main Validation `37202642661`. The accepted tree is
+`7b7ec86ae85a8dac5d2a747f459c4011f4ef0de4`; all required local gates passed
+1,011 tests in 131 files. One canonical deployment, `37203064394`, installed
+Cloudflare version `816506f7-2cb1-4e6c-8626-ae990eb62b8a` at
+`2026-10-04T12:44:01Z`. Its private-aircraft smoke failed with `502` at
+`12:44:18Z`. The workflow remains failed: deployment is not equivalent to
+complete activation acceptance.
+
+[Real production ship acceptance](https://github.com/vasilyevstan/LiveTrafficStan/pull/316#issuecomment-5980143455)
+at `12:51:36.993Z-12:51:41.713Z` observed 35 supplied vessels and 33 actual
+MMSI-country flags, then natively selected stopped 16 m pleasure craft SINILIND
+(`276014100`) with its Estonian flag and matching country text. It retained
+one canvas and 226 bundled flag images with no flag request, runtime exception
+or console error. This fresh-context check used native networking and clock;
+the separate local fixtures cover lifecycle, exclusions and narrow layouts.
+
+Worker, relay, infrastructure, Wrangler configuration, workflows, dependencies
+and production inputs are unchanged. Aircraft-only `502` also appeared in
+normal browser requests while marine traffic and vector tiles remained usable.
+[#174 records the recurrence](https://github.com/vasilyevstan/LiveTrafficStan/issues/174#issuecomment-5980126344).
+No second dispatch, VM reboot, service restart, fallback, secret change,
+admission reset or weakened smoke was performed. #311/#312 retain an explicit
+open overall-activation criterion; #296 remains the Class B coverage blocker.
+The smallest remaining activation action is to resolve #174 in its existing
+workstream, then use the canonical exact-current-source gate. Do not blindly
+rerun an obsolete SHA after a later documentation-only main promotion.
+
+The accepted application rollback target is atlas source
+`0972ba8d24ba96e18627b13b252e6ac7c5473f10` / Worker
+`a22bfa09-03fa-40cd-ac76-3915e0e52eea`. No marine regression warrants rollback.
+Later documentation-only commits do not deploy another Worker or replace the
+running source identity.
+
+### Atlas predecessor (#307)
+
+The previously accepted application source was
 `0972ba8d24ba96e18627b13b252e6ac7c5473f10`, deployed by protected run
 `37187599808`, attempt 2, as Cloudflare version
 `a22bfa09-03fa-40cd-ac76-3915e0e52eea`. Feature #305, tree-neutral ancestry
@@ -76,7 +113,7 @@ The same failed job passed with unchanged inputs on attempt 2.
 [Issue #174](https://github.com/vasilyevstan/LiveTrafficStan/issues/174#issuecomment-5978306226)
 remains open; this is recovery, not a durable diagnosis.
 
-The accepted application rollback predecessor is
+That release's accepted application rollback predecessor was
 `8117859518155f77e9413fa0d86902a3b371da9e` /
 `79f74a36-f1a6-4e1b-b41a-1314a3e92a76`, not the transient failed-attempt
 Worker. Use the existing protected rollback workflow for an evidenced
@@ -152,9 +189,15 @@ remains an older structural predecessor record. The subsequent #291 and #300
 refinements follow the user's layout preferences, not another provider or
 sampling release.
 
-Public Wiki commit `5f9fbd82b77bdd6555379bef65431629f6abf80e` publishes the
+Public Wiki commit `27a78348c9c79640a6f331cbd2c393fb4bdc4549` publishes
+fourteen affected pages covering the yacht correction, country badges and
+license, real production evidence, and the explicit unresolved aircraft smoke
+gate. It records deployed application `e2b2afaa...`; this documentation
+reconciliation does not trigger another application deployment.
+
+Historical Wiki commit `5f9fbd82b77bdd6555379bef65431629f6abf80e` published the
 thirteen-page atlas map, custom/shared-style, actual acceptance and release
-update. It identifies running application `0972ba8d...`, independently of
+update. It identifies that release's application `0972ba8d...`, independently of
 later documentation-only main promotions.
 
 Historical Wiki commit `3d89ccd30469960061838a6be33bc07a0aef2ae3` published the
