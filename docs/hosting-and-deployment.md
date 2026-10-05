@@ -1266,6 +1266,45 @@ The normal `validate` check runs lint, strict TypeScript, deterministic tests,
 the Vite production build, and the Wrangler dry run. It makes no live provider
 request and receives no deployment secret.
 
+## Preparing trackstan.xyz
+
+Issue #334 requests the new domain and a separately planned TrackStan
+wordmark/name update. The Worker has no fixed origin IP to enter at GoDaddy.
+The registrar can remain GoDaddy, but Workers Custom Domains need an active
+Cloudflare full zone. Do not guess nameservers or point at arbitrary
+Cloudflare/parking IPs.
+
+The fixed `prepare-trackstan-domain.yml` workflow reads or creates only
+`trackstan.xyz` using existing protected credentials. It requires exact current
+main, successful exact-SHA validation, the production environment and the
+production serialization group. It prints only the actual assigned
+nameservers/status; it does not change registrar delegation, DNS records,
+billing, Worker code/routes or credentials. A rerun reads first and never
+automatically retries an unconfirmed create.
+
+```bash
+gh workflow run prepare-trackstan-domain.yml \
+  --repo vasilyevstan/LiveTrafficStan --ref main \
+  -f sha=<40-character-current-main-sha>
+```
+
+If access fails, report the actual HTTP failure rather than treating an
+unauthenticated local CLI as proof that protected automation cannot work.
+Cloudflare documents `Zone Zone Edit` or `Zone DNS Edit` for zone creation;
+zone read access must also cover this account/domain. Keep credentials in the
+protected environment, never in chat, source, artifacts or client variables.
+
+After existing DNS records are accounted for, the user enters the returned
+pair in GoDaddy's nameserver settings. Only verified delegation/active-zone
+state permits the checked Worker Custom Domain binding and HTTPS/new-origin
+acceptance. Keep workers.dev available: private history, permissions,
+preferences and installed apps are origin-local and do not automatically
+migrate. No temporary account, paid upgrade, blanket redirect or silent
+history deletion is part of this setup.
+
+References: [Custom Domains](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/)
+and [Create Zone API](https://developers.cloudflare.com/api/resources/zones/methods/create/).
+
 ## Production environment and credentials
 
 The GitHub `production` environment is restricted to the `main` branch and has
