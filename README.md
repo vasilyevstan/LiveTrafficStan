@@ -111,9 +111,12 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   visible; these are modeled positions, not live telemetry or optical
   visibility predictions. Exact NORAD `20580` (Hubble) and `25544` (ISS) use
   the same reviewed identity boundary for larger labeled map symbols and also
-  have a bundled NASA purpose and historical photograph. Other objects state
-  that enrichment is unavailable rather than receiving an inferred mission,
-  featured label, or generic picture. Hover uses bundled text only; a selected
+  have a bundled NASA purpose and historical photograph. Seven more exact
+  missions (Terra, Aqua, Midori II, ALOS-2, Hitomi, XRISM and ACS3) have sourced
+  description-only context. Starlink has separately labeled general internet
+  service context, not a per-object operational claim. Other objects remain
+  explicitly unavailable without an inferred mission, featured label or
+  generic picture. Hover uses bundled text only; a selected
   image uses one bounded same-origin load whose media type, byte count, and
   SHA-256 are validated before a session Blob URL can appear in details or a
   later tooltip.
@@ -195,19 +198,23 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   reused from a bounded six-hour in-memory tab cache; provider `Retry-After` or
   a bounded local cooldown prevents repeated failures without automatic retry.
 - A production-enabled Planespotters aircraft-photo path. It accepts only an
-  exact ICAO24 hex lookup after **Load aircraft photo** or one stable 500 ms
+  exact ICAO24 hex lookup on committed live selection or one stable 500 ms
   fine-pointer hover, preserves the returned thumbnail and photo-page URLs,
   shows visible photographer credit, keeps bounded JSON only in current-tab
   memory, and publishes a completed hover result into already-open matching
   selected details without a second provider request.
-- Eight bundled historical vessel reference photos for Tarmo, Finlandia,
-  Romantika, Victoria I, Viking XPRS, MSC Magnifica, Megastar, and MyStar. A
-  photo appears only in selected live ship details or after a stable
-  fine-pointer hover when the AIS-reported IMO is valid and exactly matches the
-  reviewed manifest; visible author, fixed Commons revision, license, and
-  modification attribution are retained without any runtime image-provider
-  request. Selected unmatched and invalid identities state why no reviewed
-  image is available instead of failing silently.
+- On-demand vessel photographs from Open Waters / Wikimedia Commons by valid
+  reported IMO, with ordinary MMSI fallback and an explicit reassignment
+  caveat. Selected details and stable hover preserve artist, source and
+  license. A bounded same-origin metadata route keeps coordinates and
+  credentials out of photo lookup; approved thumbnails load directly without
+  referrer or cross-origin cookies. Eight reviewed bundled IMO photographs
+  remain the first-choice fallback and require no media API request.
+- Pointed ship hulls with container decks, tanker tanks, passenger
+  superstructures, outriggers, sails or twin hulls, retaining blue colors,
+  reported-length scale, bearings, flags and stopped/stale cues. Provider
+  details and More → Sources name the feeds; the corner keeps basemap
+  attribution and a compact Data credits link.
 - Honest detail cards, provider-specific health, stale/expired handling, and
   partial operation when one provider fails.
 - Short interpolation only between observed positions and a selected-object
@@ -329,8 +336,9 @@ AISStream + Open Waters -> shared bounded marine relay -> same-origin WSS
                        -> normalized supplemental vessels -> exact-MMSI fusion
 
 selected aircraft -> static metadata index + one prefix shard -> details only
-selected/hovered live vessel -> exact valid IMO -> bundled reviewed photo
-                              -> details or stable-hover tooltip
+selected/hovered live vessel -> reviewed bundled exact-IMO photo, otherwise
+                            -> IMO/MMSI -> same-origin Open Waters metadata
+                            -> attributed Commons photo -> details/tooltip
 
 PORTS toggle -> pinned same-origin Natural Earth projection -> map + port details
 AIRPORTS toggle -> pinned same-origin OurAirports projection -> map + airport details
@@ -394,12 +402,13 @@ request, loads one immutable index and one ICAO24-prefix shard on first use,
 validates the complete assets before bounded caching, and never mutates live
 traffic or marker categories.
 
-Vessel reference photos are a smaller synchronous presentation boundary. They
-use only a valid exact AIS-reported IMO and a committed file-by-file manifest.
-The image bytes are versioned same-origin assets, excluded from the
-service-worker shell, and may load only for selected details or after the
-existing 500 ms stable fine-pointer hover. Sub-dwell hover, search, unmatched
-vessels, and HISTORY remain photo-free.
+Vessel photos preserve the synchronous exact-IMO bundled boundary and add
+Open Waters media lookup for other reported numbers. Full identity/revision
+fencing, cancellation, bounded fulfilled-only tab caching and shared
+Retry-After keep it independent of live traffic. Metadata, URLs and images
+never enter history or the service-worker shell. Startup, sub-dwell hover,
+camera movement, search and HISTORY start no photo lookup; source failure
+never substitutes another hull.
 
 Vessel discovery is local display filtering after provider freshness and exact
 viewport filtering. It does not alter Digitraffic subscriptions, REST gates,
@@ -491,8 +500,8 @@ operational thresholds, and examples.
 | Place search | Photon / OpenStreetMap | OSM ODbL attribution applies | Direct browser access on explicit submit |
 | Aircraft | ADSB.lol | ODbL 1.0 | Same-origin Vite/Cloudflare proxy by default; protected direct-browser build only after provider-approved CORS |
 | Aircraft metadata | Mictronics aircraft-database derivative | ODC-By 1.0 | Immutable same-origin static assets, loaded only after selection |
-| Selected-aircraft photos | Planespotters Photo API | API-specific and general terms apply | Explicit direct browser request and direct unchanged returned thumbnail; enabled in production |
-| Selected-vessel reference photos | Reviewed Wikimedia Commons files | File-specific CC BY-SA 3.0, CC BY-SA 4.0, or CC0 1.0 | Bundled immutable same-origin assets selected only by exact valid IMO |
+| Selected-aircraft photos | Planespotters Photo API | API-specific and general terms apply | On-demand direct browser request and unchanged returned thumbnail; enabled in production |
+| Vessel photos | Open Waters / Wikimedia Commons; eight reviewed bundled files | Individual CC BY, CC BY-SA, CC0 or public-domain rights | IMO-first/MMSI-fallback same-origin metadata lookup and direct Commons image; bundled exact-IMO matches remain local |
 | Country allocations | michaeljfazio/MIDs, ibosoftnet ICAO24 transcription, Wikidata cross-check | Apache-2.0 and CC0 1.0 | Bundled deterministic local lookup |
 | Marine | Fintraffic Digitraffic | CC BY 4.0 | Direct regional REST and MQTT |
 | Supplemental marine | AISStream and Open Waters AIS | Documented service use / original per-source terms and credit | Optional shared server-side streams; normalized same-origin WebSocket |
@@ -1090,19 +1099,20 @@ monitoring, privacy, and rollback procedure.
   remain public and free. Provider JSON stays in a bounded one-hour,
   32-entry current-tab cache, and no URL, credit, or image byte is persisted or
   proxied.
-- Vessel photos cover only eight manually reviewed vessels. They are historical
-  reference images matched solely by valid exact AIS-reported IMO, not live
-  views or independent confirmation of the transmitting hull. Missing,
-  invalid, or unmatched IMO shows an explicit unavailable reason and no
-  real-image substitute. No general yacht photo coverage is promised.
+- Dynamic vessel-photo coverage depends on Open Waters / Commons. A reported
+  number match is a historical reference, not live confirmation of the
+  transmitting hull; MMSIs can be reassigned. Eight bundled IMOs additionally
+  retain manual review. Empty, failed and unsupported responses remain
+  distinct, with no substitute image or guaranteed yacht coverage.
 - Orbital positions and map crossings are SGP4 models from a bounded reviewed
   CelesTrak catalog; the `visual` group is only one member of the curated
   source set. They are not observations, launch or reentry
   telemetry, hazard predictions, or proof that an object is illuminated or
   visible to a person at the map location. The two reviewed NASA photographs
   are historical references to the exact object, not a view of its current
-  modeled position; every unreviewed payload, rocket body, debris object, or
-  unknown type remains purpose/image unavailable.
+  modeled position. Nine exact objects have reviewed purpose text; unreviewed
+  objects remain unavailable. Starlink service context is explicitly general,
+  not an inferred individual mission.
 - There is no reverse geocoding, radar, precipitation forecast, account, saved
   center preference, or offline basemap guarantee. An installed shell can
   start cold offline and replay retained private local history over a plain

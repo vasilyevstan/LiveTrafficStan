@@ -5,11 +5,12 @@
 LiveTrafficStan V1 is a browser application with no authentication, account
 database, or general backend. Production adds one fixed-purpose Cloudflare
 Worker for browser-incompatible aircraft/weather access, the protected
-scheduled CelesTrak snapshot and an optional isolated marine-stream relay.
+scheduled CelesTrak snapshot, an optional isolated marine-stream relay and
+the fixed Open Waters vessel-photo metadata route.
 Plausible route lookup, Digitraffic marine traffic, place search, map data,
 and aircraft photos use reviewed direct browser paths.
-Vessel reference photos are reviewed versioned same-origin assets with no
-runtime third-party lookup. React owns controls and selected-object UI state.
+Vessel photos prefer reviewed versioned same-origin assets, then use a bounded
+reported-IMO/MMSI lookup and credited Commons image. React owns controls and selected-object UI state.
 Provider adapters own external protocols and normalization. MapLibre owns
 high-frequency geographic rendering.
 
@@ -20,8 +21,8 @@ remote-managed Tunnel, VPC Service, and QUIC connector are deployed. The
 Worker selects that path only through the protected `oci-private-relay`
 deployment mode and fails closed rather than reverting to shared egress.
 Production source `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` and the relay
-originally activated the private path together. The current browser/Worker
-application is source `1afa175d8bb6b3f0636c2a02576cc82a35ced373`.
+originally activated the private path together. The relay-memory recovery
+receipt records application `1afa175d8bb6b3f0636c2a02576cc82a35ced373`.
 Canonical run `37214110439` deployed Cloudflare version
 `cb5b199b-5fc9-46f4-b7d8-f816928eae5f` and passed full production smoke.
 Application code is unchanged from the #316 ship release; its earlier failed
@@ -88,12 +89,12 @@ committed selected live Aircraft
              -> exact callsign + local route-position plausibility check
              -> bounded six-hour tab cache + failure cooldown
              -> compact details result + explicit refresh/retry only
-live Aircraft + explicit details action or 500 ms fine-pointer hover
+selected live Aircraft or 500 ms fine-pointer hover
              -> direct Planespotters hex API -> validated unchanged thumbnail
              -> shared bounded one-hour tab cache -> credited source-page link
-selected live Vessel or 500 ms fine-pointer hover -> valid exact AIS-reported IMO
-             -> reviewed bundled manifest + immutable same-origin image
-             -> credited historical reference in details or compact tooltip
+selected live Vessel or 500 ms fine-pointer hover -> reported IMO, else MMSI
+             -> reviewed bundled IMO match, otherwise fixed Open Waters lookup
+             -> licensed historical image with matching/identity caveat
 selected ICAO24/MMSI -> bundled validated allocation tables -> country text
 visible Vessel MMSI -> same allocation lookup + bundled pixels -> flag badge
 PORTS toggle -> validated static Natural Earth projection -> port map/details
@@ -312,8 +313,8 @@ never changes provider health, freshness, history, or marker artwork.
 
 Aircraft photos form a separate fail-closed direct-browser boundary, explicitly
 enabled in the protected production build. They accept only the normalized
-live ICAO24. Selected details retain the
-explicit **Load aircraft photo** action; a fine pointer can also start one
+live ICAO24. Selected details start one automatic attempt and retain an
+explicit retry action; a fine pointer can also start one
 automatic lookup only after remaining on the same live aircraft for 500 ms.
 One cancellable lookup targets only the fixed Planespotters hex endpoint.
 Runtime validation accepts an empty photo array or exactly one regular
@@ -340,31 +341,48 @@ setup for this low-volume browser path. Production remains enabled only while
 the authorized exact production origin continues to satisfy the live-CORS and
 rendering gate in the aircraft-photo evaluation.
 
-Vessel reference photos use no provider lifecycle. The selected or stably
-hovered normalized vessel's existing `imo` is accepted only as a safe
-seven-digit integer with a valid IMO check digit. A synchronous
-application-owned lookup then requires an exact entry in the committed
-reviewed manifest. MMSI, name, call sign, vessel type, class, route, and visual
-similarity are never fallback keys.
+Vessel photos first use the synchronous reviewed eight-image manifest for a
+valid exact AIS-reported IMO. Other selected or stably hovered vessels use
+Open Waters' media lookup, preferring that valid IMO and otherwise using the
+exact ordinary MMSI. A provider number/category match is explicitly distinct
+from reviewed hull identity, particularly because MMSIs can be reassigned.
+Names, locations, sister ships, class and visual similarity are never
+fallback keys.
 
-Each result is tagged with entity ID, exact IMO, and manifest version, so A to
+Each bundled result is tagged with entity ID, exact IMO, and manifest version, so A to
 B to A selection or hover cannot retain another hull. The full historical
 image appears near the top of live selected-ship details with author, fixed
 Commons revision, selected license, and modification notice. After the
 existing 500 ms fine-pointer dwell, the compact map tooltip may load the same
 asset with fixed source, author, license, exact-IMO, and historical-reference
-context. Missing, invalid, unmatched, sub-dwell, search, marker, trail, and
-HISTORY states produce no image. Live selected details distinguish invalid or
-missing AIS IMO from a valid exact IMO without reviewed coverage, while hover
-and historical surfaces remain photo-free.
+context. Sub-dwell, search, marker, trail and HISTORY states start no photo
+work. Missing usable identity has no fallback image. The bundled match remains entirely
+synchronous; dynamic identity includes entity ID, number kind and number and
+is revision-fenced through the shared `PhotoController`.
 
-The image is a versioned same-origin file under `/vessel-photos/`, loaded only
+The bundled image is a versioned same-origin file under `/vessel-photos/`, loaded only
 when a matching details card renders or the exact rendered hover remains
 stable. It is excluded from the service-worker shell and all application
-persistence. There is no runtime Wikimedia, Wikidata, gallery, tracker, proxy,
-Worker, or provider request. The complete identity, source, transformation,
-checksum, rights, and takedown record is in the vessel-photo evaluation and
-machine-readable manifest.
+persistence. Dynamic metadata instead uses only
+`GET /api/vessel-photos/{IMO-or-MMSI}`. The Worker fixes the Open Waters origin,
+rejects arbitrary queries/redirects/foreign Origins, strips browser context,
+caps streamed JSON at 128 KiB, applies an eight-second deadline
+and returns no-store responses. The browser's ten-second adapter validates
+at most eight photo records, hosts, Commons file pages, dimensions, artist and
+supported licenses.
+Only an unchanged allowed Commons image URL is loaded directly, anonymously
+and without referrer. Fulfilled/empty results share a bounded 32-entry,
+one-hour tab cache; failure Retry-After and 429 deadlines are shared without
+automatic retries. Hidden, offline, HISTORY, changed identity and unmount
+cannot revive obsolete work. The complete contracts are in the vessel-photo
+evaluation.
+
+The map corner keeps basemap credits and a full-data-credit link. Curated and
+Starlink sources use identical CelesTrak/SGP4/not-live attribution so MapLibre
+shows it once. Provider details and More -> Sources retain the named traffic,
+photo and original-source records. Vessel photos fit within the existing
+mobile inspector height and keep native scrolling for image credits/details;
+the inspector and command-dock layout are unchanged.
 
 Country allocation is a smaller bundled boundary. Pure synchronous helpers
 derive an optional country name and ISO code from an existing ICAO24 or
@@ -486,7 +504,7 @@ Starlink payloads receive the dedicated flat-panel image; exact `R/B`, `DEB`,
 and `UNK` records retain the existing type images.
 
 Orbital purpose and imagery are a second, static display-only boundary. The
-two-record manifest is compiled into the browser and matches the current
+nine-record manifest is compiled into the browser and matches the current
 feature only when NORAD ID, object name, international designator, and exact
 SATCAT type all equal the reviewed identity. Purpose labels therefore require
 no request. A selected image uses one immutable same-origin path through a
@@ -499,7 +517,11 @@ validated path-to-Blob mappings and cannot fetch. Obsolete work is aborted,
 failures remain terminal for the running tab, and Blob URLs are revoked on
 invalidation or teardown. Failed, mismatched, or unreviewed entries remain
 unavailable and cannot change propagation, crossings, selection, provider
-state, or traffic.
+state, or traffic. Seven additional reviewed missions have description-only
+records; ISS and Hubble retain their exact historical images. Separately
+labeled Starlink service context is not exact-object enrichment or a claim
+about current operation. Purpose/context precedes telemetry in selected
+details.
 
 ## Lifecycle and failure isolation
 
@@ -532,7 +554,7 @@ continues to render.
   after A to B to A selection changes. Only complete valid assets enter one
   index cache and an eight-shard LRU; failure remains local to the detail card.
 - Aircraft photos have an independent selected-identity controller. Selection
-  does not request. One explicit request is aborted and revision-guarded across
+  starts one automatic attempt. Work is aborted and revision-guarded across
   A to B to A changes, close, HISTORY, and unmount. Provider, timeout,
   throttling, forbidden, invalid-response, and network failures remain local
   and never alter ADS-B selection, polling, map state, or route lookup.
@@ -541,11 +563,12 @@ continues to render.
   updates only refresh the coordinates available to a later manual refresh.
   Cached routes render without a request. A to B changes abort obsolete work,
   and unavailable/error results never schedule a retry after cooldown.
-- Vessel reference photos have no asynchronous controller or provider state.
-  The render path derives one exact manifest result from selected entity ID,
-  valid IMO, and manifest version. Selection replacement or HISTORY entry
-  removes the image synchronously; a missing asset cannot trigger a substitute
-  or affect Digitraffic.
+- Bundled vessel photos derive an exact synchronous manifest result from
+  entity ID, valid IMO and manifest version. Other valid IMO/MMSI identities
+  reuse the shared photo-controller lifecycle, with independent provider state,
+  bounded fulfilled-result cache and shared Retry-After deadline. Selection
+  replacement or HISTORY entry removes obsolete imagery; failure cannot
+  substitute another hull or affect any AIS provider.
 - Port loading has its own lazy state and retry. Failure remains inside the
   layer control, leaves MapLibre and both traffic providers usable, and never
   creates a success-shaped empty port dataset.
@@ -738,17 +761,16 @@ with an exact type shape for normalized `Sailing vessel`, `Pleasure craft`, or
 Cargo, unknown, broad `other`, names, dimensions, and movement never imply a
 yacht or unsupported cargo subtype.
 
-Each supported vessel image carries its identity in a bold outer contour or
-large negative space across a reference scale equivalent to roughly 22-44 CSS
-pixels before contour normalization: neutral
-compact hull, broad cargo slab, narrow tanker capsule, broad-forward
-passenger/ferry that tapers continuously toward the stern, thick fishing arms,
-blunt notched tug, asymmetric sails, notched pleasure craft, or twin high-speed
-hulls and channel. Coarse interior line art reinforces the principal classes
-with container bays, tank covers and manifold, passenger decks and windows, or
-a tug wheelhouse and tow centerline. Deterministic DPR1 tests compare
-equal-height geometry, cap pairwise intersection-over-union at 0.78, require at
-least 22% symmetric difference, and preserve three-pixel identity features.
+Each supported vessel image uses a recognizable top-down boat: pointed bow,
+longitudinal hull and deck/superstructure, with cargo containers, tanker tanks,
+passenger decks, fishing outriggers, a tug wheelhouse, asymmetric sails,
+pleasure-craft cockpit or high-speed twin hulls. The 22-44 CSS-pixel reference
+scale, blue palette and physical-length normalization are unchanged.
+Deterministic tests protect geometry, longitudinal size, nautical structures
+and aircraft colors. Artificial pairwise-outline difference thresholds were
+removed because they encouraged slabs, capsules and notches rather than
+recognizable ships. Actual-scale browser review in both themes remains
+mandatory; image IDs and numerical pixel differences are not visual proof.
 These are category symbols, not depictions of the exact vessel. Light/Dark
 changes update the same bounded maritime-blue MapLibre image IDs and preserve
 the source, selection, heading, stale opacity, stopped badge, and one map

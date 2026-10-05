@@ -260,9 +260,10 @@ representation-specific ETags/`304`, cross-representation `200`, and stale-v2
 fallback to fresh schema 1 in one request.
 
 `npm run check:orbital-enrichment` does not fetch NASA. It verifies the
-committed two-record manifest against the committed visual catalog, requires
+committed nine-record manifest against the committed visual catalog, requires
 sorted unique canonical NORAD IDs and exact name/designator/type agreement,
-checks the pinned NASA purpose/metadata/image digests and co-located notice,
+checks the pinned NASA/JAXA purpose sources, separately labeled Starlink
+context, image digests and co-located notice,
 and fails if a published version path changes. Image files are excluded from
 the PWA shell, so building or installing the shell cannot create an enrichment
 request.
@@ -1177,6 +1178,44 @@ were available at the `16:21Z` observation end. The final guest check at
 OOM kills. One post-window production request returned two aircraft in
 716 bytes, HTTP 200 in 732 ms, with exact-release/no-store/no-CORS checks.
 These are bounded recovery results, not a guarantee of future availability.
+
+### Identity photos, recognizable ships and orbital context (#331, #193)
+
+The local candidate passed all required gates: 1,128 tests in 144 files,
+lint/typecheck, metadata/allocation/photo/catalog/enrichment checks, production
+build and Worker dry-run. Chrome 154 rendered one real MapLibre canvas and
+178 vector-source features at the public Tallinn view, with no startup or
+camera photo request and one retained Digitraffic MQTT connection.
+
+Actual BALTIC WHALE, reported IMO `9354454` outside the eight bundled entries,
+loaded a 960x640 Commons photograph by Eduard47 under CC BY-SA 4.0. A 150 ms
+hover made no request; stable hover made one metadata request, and selected
+details reused the fulfilled result. The historical file depicts the vessel
+under the former name ANNA SIRKKA; the UI claims a provider IMO match, not
+independent current-hull verification.
+
+Native touch selected that same real ship at 390x844 and 390x568. The complete
+image fit at 240x160 and 150x100 respectively after inspector scrolling,
+inside the unchanged 200 px and 128 px inspectors. Credits and Close were
+reachable, scrolling did not pan the map, and document width stayed 390 px.
+Provider details remained 366x280 px and scrolled 312 px by touch. Both source
+surfaces named the three AIS services, original contributors and photo sources.
+
+Actual-scale MapLibre galleries separately cover all nine ship designs in
+both themes at approximately 20, 28 and 39 CSS-pixel longitudinal spans,
+including headings 0/60 degrees. Those gallery points are fixtures; the
+surrounding vessel/photo observations are real. Purpose cards were observed
+for actual current Terra and Hubble catalog identities, the real 437-pixel
+Hubble image, unreviewed ATLAS CENTAUR 2, and separately labeled Starlink
+service context. Only the local orbital routes were forwarded by the
+acceptance harness to the existing production catalog; no upstream CelesTrak
+work or modified orbital payload was introduced.
+
+Local supplemental marine transport is unconfigured, and a local-origin
+Planespotters attempt was unavailable. Neither proves a production failure
+nor satisfies production-image acceptance. The release still requires native
+production AIS, actual vessel and aircraft images, exact running-source
+evidence, and compatible rollback/restoration.
 
 ## Browser smoke test
 
@@ -2206,11 +2245,10 @@ VITE_AIRCRAFT_PHOTO_ENABLED=true npm run dev -- --host 127.0.0.1 --port 5174
 
 The Node/Vitest suite does not mount MapLibre or prove pointer timing and popup
 reachability. Before any live aircraft-photo request, use the milestone CDP
-browser fixture to prove that aircraft selection, HISTORY, and sub-dwell
-aircraft hover make zero aircraft-photo requests; explicit action or one
-stable 500 ms aircraft hover makes one; selecting first and then resolving the
-same exact aircraft through hover publishes the successful/no-photo cache entry
-into the already-open details panel without another request, including after
+browser fixture to prove that startup, ordinary camera movement, HISTORY and
+sub-dwell aircraft hover make zero aircraft-photo requests. A new selected
+aircraft or one stable 500 ms hover starts one attempt; fulfilled results are
+shared between hover and details without another request, including after
 Strict Mode cleanup/re-subscribe; A to B to A cannot publish a stale result;
 the popup remains reachable for its exact thumbnail link; direct thumbnail/
 link/credit semantics pass; errors remain local; and no provider content
@@ -2226,18 +2264,36 @@ JSON, one unchanged `t.plnspttrs.net` thumbnail rendered at 200 by 137 pixels,
 and exact credit/source navigation. Do not substitute a Worker proxy because
 the selected provider terms prohibit proxying and re-exposure.
 
-Vessel-photo acceptance requires no live image-provider request. Run
+Bundled vessel-photo regression needs no live image-provider request. Run
 `npm run check:vessel-photos`, build the exact application, and use
 deterministic live-vessel fixtures for all eight reviewed IMOs plus one valid
 unmatched and one invalid IMO. Confirm exact image bytes, immutable headers,
-source/license navigation, explicit invalid/unmatched unavailable wording, no
+source/license navigation, explicit unavailable wording, no
 horizontal overflow, and no stale hull across A to B to A selection at desktop
 1280x900 and mobile 390x844 and 390x568. At desktop width, prove a sub-500 ms
 hover adds no image request, a stable matched hover loads only its same-origin
 `/vessel-photos/` asset and presents the fixed-source/rights context, and
-unmatched or stale identity hover stays photo-free. HISTORY, search, and
-unmatched selections must add no image request, and no scenario may contact
-Wikimedia, Wikidata, or a tracker.
+stale identity hover stays photo-free. Bundled matches must never start the
+dynamic route. HISTORY, search, startup and ordinary camera movement must add
+no image request.
+
+Dynamic vessel photos require separate boundary/controller fixtures for valid
+IMO, ordinary MMSI fallback, malformed/special identities, A-to-B-to-A, metadata
+identity changes, cancellation, shared cache/cooldown, `429`, explicit
+Retry-After, network/timeout/oversize, unsupported rights, genuine empty and
+Open Waters' incomplete-result cache. Verify the fixed same-origin route,
+bounded JSON, no browser credentials/referrer, exact Commons image CSP,
+anonymous direct loading and no PWA/history persistence. A release milestone
+must display an actual current vessel outside the eight bundled IMOs, with
+decoded image dimensions and visible artist, source and license. A JSON
+success or a fixture image alone is insufficient.
+
+At real browser scale, inspect all nine ship silhouettes in both themes and
+the normal length-size range. Check pointed bows/decks, headings, flags and
+stopped/stale cues rather than forcing arbitrary pairwise outline differences.
+At 390x844 and 390x568, exercise touch selection/Close, image and rights
+reachability, named Provider details and More -> Sources, native disclosure
+scrolling, compact corner attribution, and absence of horizontal overflow.
 
 Use local fixtures, fake clocks, fake maps, mocked fetch, and mocked MQTT for
 repeated lifecycle checks. A milestone needs one bounded real-provider browser

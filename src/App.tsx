@@ -5,6 +5,7 @@ import { useAppShell } from './app/useAppShell'
 import { useAircraftTraffic } from './app/useAircraftTraffic'
 import { useAircraftMetadata } from './app/useAircraftMetadata'
 import { useAircraftPhoto } from './app/useAircraftPhoto'
+import { useVesselPhoto } from './app/useVesselPhoto'
 import { useFlightRoute } from './app/useFlightRoute'
 import { useAirports } from './app/useAirports'
 import { LocationCameraIntent } from './app/locationCameraIntent'
@@ -75,6 +76,7 @@ import { TrafficMap } from './map/TrafficMap'
 import type { PlaceSearchResult } from './providers/geocoding/photonProvider'
 import { StaticAircraftMetadataProvider } from './providers/aircraftMetadata/staticAircraftMetadataProvider'
 import { PlanespottersPhotoProvider } from './providers/aircraftPhoto/planespottersPhotoProvider'
+import { OpenWatersPhotoProvider } from './providers/vesselPhoto/openWatersPhotoProvider'
 import { StaticAirportsProvider } from './providers/airports/staticAirportsProvider'
 import { AdsbLolFlightRouteProvider } from './providers/flightRoute/adsbLolFlightRouteProvider'
 import { StaticPortsProvider } from './providers/ports/staticPortsProvider'
@@ -158,6 +160,7 @@ function App() {
   const [hoveredAircraftId, setHoveredAircraftId] = useState<string | null>(
     null,
   )
+  const [hoveredVesselId, setHoveredVesselId] = useState<string | null>(null)
   const [selectedPortId, setSelectedPortId] = useState<string | null>(null)
   const [selectedAirportId, setSelectedAirportId] = useState<string | null>(
     null,
@@ -338,6 +341,7 @@ function App() {
     () => new PlanespottersPhotoProvider(APP_CONFIG.aircraftPhoto),
     [],
   )
+  const vesselPhotoProvider = useMemo(() => new OpenWatersPhotoProvider(), [])
   const flightRouteProvider = useMemo(
     () => new AdsbLolFlightRouteProvider(APP_CONFIG.flightRoute),
     [],
@@ -717,6 +721,10 @@ function App() {
     () => aircraft.find((entity) => entity.id === hoveredAircraftId),
     [aircraft, hoveredAircraftId],
   )
+  const hoveredVessel = useMemo(
+    () => vessels.find((entity) => entity.id === hoveredVesselId),
+    [vessels, hoveredVesselId],
+  )
   const selectedPort = useMemo(
     () => ports.find((port) => port.id === selectedPortId),
     [ports, selectedPortId],
@@ -800,6 +808,7 @@ function App() {
     aircraftPhotoEnabled ? selectedEntity : undefined,
     aircraftPhotoProvider,
     APP_CONFIG.aircraftPhoto,
+    { automaticRequestDelayMs: 0 },
   )
   const hoveredAircraftPhoto = useAircraftPhoto(
     aircraftPhotoFeatureEnabled ? hoveredAircraft : undefined,
@@ -808,6 +817,14 @@ function App() {
     {
       automaticRequestDelayMs: 0,
     },
+  )
+  const vesselPhoto = useVesselPhoto(
+    !historyActive && selectedEntity?.kind === 'vessel' ? selectedEntity : undefined,
+    vesselPhotoProvider,
+  )
+  const hoveredVesselPhoto = useVesselPhoto(
+    !historyActive ? hoveredVessel : undefined,
+    vesselPhotoProvider,
   )
   const flightRouteEnabled =
     APP_CONFIG.flightRoute.enabled &&
@@ -1475,9 +1492,11 @@ function App() {
           APP_CONFIG.aircraftPhoto.hoverDelayMs
         }
         vesselPhotoEnabled={!historyActive}
+        vesselPhoto={hoveredVesselPhoto.state}
         viewRequestId={viewRequest.id}
         viewportSettleMs={APP_CONFIG.navigation.viewportSettleMs}
         onHoverAircraftChange={setHoveredAircraftId}
+        onHoverVesselChange={setHoveredVesselId}
         onSelect={handleMapTrafficSelect}
         onSelectOrbital={handleMapOrbitalSelect}
         onSelectPort={handleMapPortSelect}
@@ -1492,6 +1511,7 @@ function App() {
 
       <div className="interface-layer">
         <TrafficControls
+          marineProviderName={marineResult.capabilities.name}
           masthead={
             <>
               <div className="brand-panel__title">
@@ -1693,6 +1713,9 @@ function App() {
             aircraftMetadata={aircraftMetadata}
             aircraftPhotoEnabled={aircraftPhotoEnabled}
             aircraftPhoto={aircraftPhoto.state}
+            vesselPhotoEnabled={!historyActive}
+            vesselPhoto={vesselPhoto.state}
+            onRequestVesselPhoto={vesselPhoto.request}
             aircraftPhotoTermsUrl={
               APP_CONFIG.aircraftPhoto.sourceTermsUrl
             }

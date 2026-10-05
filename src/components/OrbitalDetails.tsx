@@ -16,6 +16,7 @@ import {
 } from '../domain/orbital'
 import {
   orbitalEnrichmentForPosition,
+  starlinkConstellationContext,
   type OrbitalEnrichmentView,
 } from '../domain/orbitalEnrichment'
 import type { UnitSystem } from '../domain/units'
@@ -90,7 +91,7 @@ const OrbitalEnrichmentDetails = ({
       <h3
         id={`orbital-enrichment-heading-${enrichment.noradCatalogId}`}
       >
-        Purpose and image
+        {image ? 'Purpose and image' : 'Purpose'}
       </h3>
       {image && matchingImageState?.phase === 'available' && !decodeFailed && (
         <a
@@ -243,6 +244,45 @@ export function OrbitalDetails({
         </button>
       </div>
 
+      {enrichment ? (
+        <OrbitalEnrichmentDetails
+          key={enrichment.identityKey}
+          enrichment={enrichment}
+          imageState={imageState}
+          online={online}
+          onImageLoaded={onImageLoaded}
+          onImageFailed={onImageFailed}
+        />
+      ) : (
+        <section
+          className="orbital-enrichment"
+          aria-labelledby="orbital-context-heading"
+        >
+          <h3 id="orbital-context-heading">
+            {starlink ? 'Constellation context' : 'Purpose and image'}
+          </h3>
+          {starlink && (
+            <>
+              <p className="orbital-enrichment__purpose">
+                <strong>{starlinkConstellationContext.shortLabel}</strong>
+                {' — '}{starlinkConstellationContext.description}
+              </p>
+              <p className="metadata-attribution">
+                Source: <a href={starlinkConstellationContext.sourceUrl} target="_blank" rel="noopener noreferrer">
+                  {starlinkConstellationContext.sourceName}
+                </a>
+                {' · '}retrieved {starlinkConstellationContext.sourceRetrievedAt}.
+              </p>
+            </>
+          )}
+          <p className="metadata-status">
+            {starlink
+              ? 'General service context, not a verified purpose or operational status for this individual object. Verified image unavailable; no substitute shown.'
+              : 'No reviewed exact-NORAD purpose or image is bundled for this object. No substitute shown.'}
+          </p>
+        </section>
+      )}
+
       <dl className="details-grid">
         <DetailRow
           label="Catalog type"
@@ -321,31 +361,6 @@ export function OrbitalDetails({
           }
         />
       </dl>
-
-      {enrichment ? (
-        <OrbitalEnrichmentDetails
-          key={enrichment.identityKey}
-          enrichment={enrichment}
-          imageState={imageState}
-          online={online}
-          onImageLoaded={onImageLoaded}
-          onImageFailed={onImageFailed}
-        />
-      ) : (
-        <section
-          className="orbital-enrichment"
-          aria-labelledby="orbital-enrichment-unavailable-heading"
-        >
-          <h3 id="orbital-enrichment-unavailable-heading">
-            Purpose and image
-          </h3>
-          <p className="metadata-status">
-            {starlink
-              ? 'Purpose and image are not inferred for the Starlink sample. No substitute shown.'
-              : 'No reviewed exact-NORAD purpose or image is bundled for this object. No substitute shown.'}
-          </p>
-        </section>
-      )}
 
       <p className="metadata-status">
         SGP4 model, not live. Crossing does not prove visibility, illumination,

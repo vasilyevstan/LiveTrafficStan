@@ -15,9 +15,9 @@ import {
 } from 'maplibre-gl'
 import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
 import type { Theme } from '../app/theme'
-import { APP_CONFIG, type AppCenter } from '../config/appConfig'
-import { MARINE_SUPPLEMENT_ATTRIBUTIONS } from '../providers/marine/multiSourceCapabilities'
+import type { AppCenter } from '../config/appConfig'
 import type { AircraftPhotoViewState } from '../domain/aircraftPhoto'
+import { vesselPhotoIdentity, type VesselPhotoViewState } from '../domain/vesselPhoto'
 import type { Airport } from '../domain/airports'
 import { boundsAroundCenter } from '../domain/geo'
 import {
@@ -206,9 +206,11 @@ interface TrafficMapProps {
   aircraftPhoto: AircraftPhotoViewState
   aircraftPhotoHoverDelayMs: number
   vesselPhotoEnabled: boolean
+  vesselPhoto?: VesselPhotoViewState
   viewRequestId: number
   viewportSettleMs: number
   onHoverAircraftChange: (id: string | null) => void
+  onHoverVesselChange?: (id: string | null) => void
   onSelect: (id: string | null) => void
   onSelectOrbital: (id: string | null) => void
   onSelectPort: (id: string | null) => void
@@ -407,9 +409,11 @@ export function TrafficMap({
   aircraftPhoto,
   aircraftPhotoHoverDelayMs,
   vesselPhotoEnabled,
+  vesselPhoto = { phase: 'idle' },
   viewRequestId,
   viewportSettleMs,
   onHoverAircraftChange,
+  onHoverVesselChange,
   onSelect,
   onSelectOrbital,
   onSelectPort,
@@ -537,6 +541,8 @@ export function TrafficMap({
   )
   const aircraftPhotoRef = useRef(aircraftPhoto)
   const vesselPhotoEnabledRef = useRef(vesselPhotoEnabled)
+  const vesselPhotoRef = useRef(vesselPhoto)
+  const hoverVesselChangeRef = useRef(onHoverVesselChange)
   const orbitalImageUrlsRef = useRef(orbitalImageUrls)
   const previousVesselPhotoEnabledRef = useRef(vesselPhotoEnabled)
   const hoverAircraftChangeRef = useRef(onHoverAircraftChange)
@@ -1218,6 +1224,9 @@ export function TrafficMap({
   useEffect(() => {
     hoverAircraftChangeRef.current = onHoverAircraftChange
   }, [onHoverAircraftChange])
+  useEffect(() => {
+    hoverVesselChangeRef.current = onHoverVesselChange
+  }, [onHoverVesselChange])
 
   useEffect(() => {
     unitsRef.current = units
@@ -1238,6 +1247,7 @@ export function TrafficMap({
     aircraftPhotoEnabledRef.current = aircraftPhotoEnabled
     aircraftPhotoRef.current = aircraftPhoto
     vesselPhotoEnabledRef.current = vesselPhotoEnabled
+    vesselPhotoRef.current = vesselPhoto
     if (
       (wasEnabled && !aircraftPhotoEnabled) ||
       (wasVesselPhotoEnabled && !vesselPhotoEnabled)
@@ -1248,7 +1258,7 @@ export function TrafficMap({
     if (aircraftPhotoEnabled || vesselPhotoEnabled) {
       refreshTrafficTooltipRef.current()
     }
-  }, [aircraftPhoto, aircraftPhotoEnabled, vesselPhotoEnabled])
+  }, [aircraftPhoto, aircraftPhotoEnabled, vesselPhotoEnabled, vesselPhoto])
 
   useEffect(() => {
     viewStateRef.current = {
@@ -1315,6 +1325,7 @@ export function TrafficMap({
     let pendingTrafficPhotoId: string | null = null
     let activeTrafficPhotoId: string | null = null
     let activeAircraftPhotoId: string | null = null
+    let activeVesselPhotoId: string | null = null
     let lastHoverPoint: [number, number] | null = null
     const cancelTrafficTooltipHide = () => {
       if (tooltipHideTimer === undefined) return
@@ -1335,12 +1346,16 @@ export function TrafficMap({
         activeAircraftPhotoId = null
         hoverAircraftChangeRef.current(null)
       }
+      if (activeVesselPhotoId !== null) {
+        activeVesselPhotoId = null
+        hoverVesselChangeRef.current?.(null)
+      }
     }
     const trafficPhotoEligible = (entity: TrafficEntity) =>
       entity.kind === 'aircraft'
         ? aircraftPhotoEnabledRef.current
         : vesselPhotoEnabledRef.current &&
-          vesselReferencePhotoForSelection(entity) !== undefined
+          vesselPhotoIdentity(entity) !== undefined
     const scheduleTrafficPhotoHover = (
       entity: TrafficEntity,
       point: { x: number; y: number },
@@ -1386,6 +1401,8 @@ export function TrafficMap({
           activeAircraftPhotoId = entity.id
           hoverAircraftChangeRef.current(entity.id)
         } else {
+          activeVesselPhotoId = entity.id
+          hoverVesselChangeRef.current?.(entity.id)
           refreshTrafficTooltipRef.current()
         }
       }, aircraftPhotoHoverDelayMs)
@@ -1624,6 +1641,10 @@ export function TrafficMap({
           activeTrafficPhotoId === entity.id
             ? vesselReferencePhotoForSelection(entity)
             : undefined,
+        dynamicVesselPhoto:
+          entity.kind === 'vessel' && vesselPhotoEnabledRef.current &&
+            activeTrafficPhotoId === entity.id
+            ? vesselPhotoRef.current : undefined,
       })
       hoverPopup.setDOMContent(element)
     }
@@ -1820,11 +1841,7 @@ export function TrafficMap({
       new AttributionControl({
         compact: true,
         customAttribution: [
-          'Air <a href="https://www.adsb.lol/" target="_blank" rel="noreferrer">ADSB.lol</a> · <a href="https://opendatacommons.org/licenses/odbl/1-0/" target="_blank" rel="noreferrer">ODbL 1.0</a>',
-          'Sea <a href="https://www.digitraffic.fi/en/marine-traffic/" target="_blank" rel="noreferrer">Digitraffic</a> · <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">CC BY 4.0</a> · filtered/normalized',
-          ...(APP_CONFIG.marine.supplementEnabled ? MARINE_SUPPLEMENT_ATTRIBUTIONS : []),
-          'Ports <a href="https://www.naturalearthdata.com/downloads/10m-cultural-vectors/ports/" target="_blank" rel="noreferrer">Natural Earth</a> · <a href="https://www.naturalearthdata.com/about/terms-of-use/" target="_blank" rel="noreferrer">public domain</a> · generalized',
-          'Airports <a href="https://ourairports.com/data/" target="_blank" rel="noreferrer">OurAirports</a> · <a href="https://ourairports.com/data/" target="_blank" rel="noreferrer">public domain</a> · context only',
+          '<a href="https://github.com/vasilyevstan/LiveTrafficStan/blob/main/docs/data-sources-and-licensing.md" target="_blank" rel="noreferrer">Data credits</a>',
         ],
       }),
       'bottom-right',

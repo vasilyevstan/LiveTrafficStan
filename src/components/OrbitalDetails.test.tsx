@@ -144,6 +144,31 @@ describe('OrbitalDetails', () => {
     expect(html).toContain('Designator unavailable')
   })
 
+  it('puts verified description-only context before telemetry without loading an image', () => {
+    const html = renderToStaticMarkup(
+      <OrbitalDetails
+        position={{ ...position, id: 'orbital:25994', noradCatalogId: '25994', name: 'TERRA', internationalDesignator: '1999-068A', objectType: 'PAY' }}
+        snapshot={snapshot}
+        sourceName="CelesTrak"
+        sourceWebsiteUrl="https://celestrak.org/"
+        sourceUsagePolicyUrl="https://celestrak.org/usage-policy.php"
+        now={position.modeledFor}
+        online
+        units="metric"
+        imageState={{ phase: 'unavailable' }}
+        mapDisplay={{ available: true, selectedException: false }}
+        onClose={() => undefined}
+      />,
+    )
+    expect(html).toContain('Earth-system observation')
+    expect(html.indexOf('Earth-system observation')).toBeLessThan(html.indexOf('Catalog type'))
+    expect(html).toContain('https://science.nasa.gov/mission/terra/')
+    expect(html).toContain('source retrieved 2026-10-05')
+    expect(html).toContain('Verified image unavailable; no substitute shown.')
+    expect(html).not.toContain('<img')
+    expect(html).not.toContain('Loading verified')
+  })
+
   it('reports map display unavailable for a Catalog selection before zoom settles', () => {
     const display = selectOrbitalDisplay(
       [position],
@@ -254,8 +279,11 @@ describe('OrbitalDetails', () => {
       'shell-balanced sample, not the full constellation',
     )
     expect(html).toContain(
-      'Purpose and image are not inferred for the Starlink sample',
+      'General service context, not a verified purpose or operational status for this individual object',
     )
+    expect(html).toContain('Constellation context')
+    expect(html).toContain('Internet connectivity')
+    expect(html).toContain('https://starlink.com/')
     expect(html).not.toContain(
       'Crewed microgravity science laboratory',
     )

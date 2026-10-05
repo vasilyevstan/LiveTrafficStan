@@ -24,6 +24,8 @@ import {
   MARINE_STREAM_PATH,
   type MarineRelayNamespace,
 } from './marineStream.js'
+import { handleVesselPhotos } from './vesselPhotos.js'
+import { VESSEL_PHOTO_CONFIG } from '../src/config/vesselPhotoConfig.js'
 export { OrbitalCatalogCoordinator } from './orbitalCatalogCoordinator.js'
 export { MarineTrafficRelay } from './marineStream.js'
 
@@ -118,6 +120,9 @@ const withReleaseSha = (response: Response, releaseSha: string | undefined) => {
 const worker = {
   async fetch(request: Request, env: WorkerEnv) {
     const pathname = new URL(request.url).pathname
+    if (pathname === VESSEL_PHOTO_CONFIG.path || pathname.startsWith(`${VESSEL_PHOTO_CONFIG.path}/`)) {
+      return withReleaseSha(await handleVesselPhotos(request), env.RELEASE_SHA)
+    }
     if (pathname === MARINE_STREAM_PATH) {
       const response = await handleMarineStream(request, env)
       return response.status === 101

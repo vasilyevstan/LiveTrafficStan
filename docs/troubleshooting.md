@@ -427,9 +427,8 @@ older historical binaries are not the primary history-compatible fallback.
 
 ## A ship has no reference photo
 
-This is normally expected. The current bundled manifest contains only eight
-reviewed vessels and requires the selected or stably hovered live vessel to
-report a valid exact IMO:
+Photo coverage is best-effort. The bundled fallback contains eight reviewed
+vessels and requires a valid exact AIS-reported IMO:
 
 - Tarmo `5352886`;
 - Finlandia `9214379`;
@@ -440,14 +439,26 @@ report a valid exact IMO:
 - Megastar `9773064`;
 - MyStar `9892690`.
 
-Missing, malformed, or unmatched IMO intentionally produces no image.
-Selected details distinguish a missing/invalid IMO from a valid IMO that lacks
-reviewed coverage; neither state substitutes another hull. The application
-never falls back to MMSI, name, call sign, vessel type, class, sister ship, or
-a generic real photograph. HISTORY always omits vessel photos. On a
-fine-pointer desktop, only a listed vessel held under the pointer for at least
-500 ms adds the compact tooltip photo; sub-dwell, invalid, and unmatched hover
-remains photo-free. Touch users open selected details instead.
+Other vessels can use Open Waters' dynamic lookup by valid IMO or, if absent,
+ordinary MMSI. An MMSI result carries a reassignment/category-match caveat,
+not an independently verified hull claim. There is no name, location, class,
+sister-ship or generic-image fallback. HISTORY always omits photos; ordinary
+hover shorter than 500 ms starts no work. Touch users open selected details.
+
+For a dynamic lookup, inspect `/api/vessel-photos/{number}`. A `200` empty
+array is genuine missing coverage. `429` and `503` with Retry-After require
+waiting; in particular, Open Waters' 900-second incomplete-result cache must
+not be presented as "no photo". A timeout, malformed/oversized response,
+unsupported license or disallowed image URL is a local photo failure, not an
+AIS outage. Check the visible status before retrying. Hidden/offline tabs
+cannot start a retry or revive obsolete work.
+
+A valid image loads directly from `thumb.wikimedia.org` or
+`upload.wikimedia.org`, with `crossorigin="anonymous"` and no referrer.
+Check CSP, actual decoded dimensions and the source-file/artist/license
+record. HTTP JSON success alone does not prove a displayed image. Historical
+file names can differ from a current AIS name; the lookup uses the reported
+number, not a name match.
 
 For a listed vessel, inspect the exact
 `/vessel-photos/2026-10-02-v1/imo-{IMO}.jpg` or `.png` request. A missing or
@@ -456,8 +467,9 @@ image. Run `npm run check:vessel-photos` to verify the committed directory,
 license record, dimensions, byte counts, and SHA-256 without any upstream
 request.
 
-The browser should make no request to Wikimedia, Wikidata, or a ship-tracking
-site. Versioned vessel-photo files use immutable browser caching but are
+Bundled matches make no external media request. Dynamic metadata never goes
+directly to Open Waters from the browser, and only validated Commons images
+are loaded externally. Versioned vessel-photo files use immutable browser caching but are
 excluded from the service-worker shell. If identity or rights evidence is
 disputed, remove that exact manifest entry and asset in a new version and
 deploy or roll back; do not replace bytes under the existing immutable path.
@@ -949,10 +961,12 @@ configuration.
 
 ## Orbital purpose or image is unavailable
 
-Only exact current `HST` / NORAD `20580` and `ISS (ZARYA)` / NORAD `25544`
-identities are reviewed in manifest `2026-09-29-v1`. Every other object,
-including rocket bodies and debris, intentionally reports purpose/image
-unavailable. Do not add a generic satellite/rocket picture or infer a mission
+Manifest `2026-10-05-v1` has nine exact-object descriptions: Hubble, ISS,
+Terra, Aqua, Midori II, ALOS-2, Hitomi, XRISM and ACS3. Only Hubble and ISS
+have reviewed photographs; description-only records are intentionally useful
+without a substitute image. Starlink's general service context is separately
+labeled and is not a verified individual mission. Unreviewed exact objects
+remain unavailable. Do not add a generic satellite/rocket picture or infer a mission
 from the object name, owner, orbit, launch family, or payload.
 
 For a reviewed object, confirm current NORAD ID, name, international
@@ -970,15 +984,14 @@ Purpose is bundled and should appear offline. The photograph is deliberately
 not in the PWA shell and starts only after exact selection. If it fails while
 offline, details say so and modeled orbital data remains available. If it
 fails online, inspect the same-origin
-`/orbital-enrichment/2026-09-29-v1/norad-*.jpg` response for exact `200`,
+`/orbital-enrichment/2026-10-05-v1/norad-*.jpg` response for exact `200`,
 declared JPEG media type, manifest byte count, and unchanged bytes. The
 application verifies SHA-256 before creating a Blob URL and treats a failure
 as terminal for the running tab rather than retrying on reselection. A hover
 must never contact NASA or request the same-origin asset; a tooltip can reuse
 only a validated Blob URL created by selected details earlier in the tab.
 
-Current application source `e2b2afaa04466116719310d6286441f8e6ba60ca`
-retains the same previously proven uncached `200 image/jpeg` Static Assets with
+The new version retains the previously proven NASA image bytes with
 exact 46,716-byte and 48,741-byte lengths plus one-year immutable caching. Any
 different bytes, media type, redirect, repeated request, NASA runtime request,
 or Service Worker response is a release defect.

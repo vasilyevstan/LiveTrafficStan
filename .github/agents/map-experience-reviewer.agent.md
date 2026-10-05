@@ -34,6 +34,16 @@ Check these project invariants:
 - Every application marker icon has one bounded original image in both themes.
   Full style rehydration restores the complete image set without duplicate IDs,
   missing-image errors, map recreation, or provider work.
+- Judge ship recognition at actual map scale in both themes: pointed hulls,
+  decks, sails and superstructures must read as ships while length, bearing,
+  flags and stopped/stale cues remain intact. Arbitrary pairwise outline
+  thresholds must not force unnatural silhouettes.
+- Mobile photo acceptance measures the whole image and source/license
+  reachability after native inspector scrolling, not only decoded dimensions.
+  Reuse the existing inspector-height bound and keep its scroll off the map.
+- Compact corner credits retain basemap attribution and the full-credit link;
+  identical orbital-source credits deduplicate. Provider details and Sources
+  keep complete named-source and image-rights context reachable.
 - Settled pan, zoom, rotation, pitch, Home, and real resize changes all update
   the desired traffic viewport without fitting the camera back to provider
   data.

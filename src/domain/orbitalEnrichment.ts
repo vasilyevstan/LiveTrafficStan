@@ -90,6 +90,9 @@ export interface OrbitalEnrichmentView extends OrbitalEnrichmentRecord {
 export const orbitalEnrichmentManifest =
   orbitalEnrichmentManifestJson as OrbitalEnrichmentManifest
 
+export const starlinkConstellationContext =
+  orbitalEnrichmentManifestJson.constellationContext.starlink
+
 export const createOrbitalEnrichmentIndex = (
   records: readonly OrbitalEnrichmentRecord[],
 ) => {

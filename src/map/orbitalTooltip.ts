@@ -5,6 +5,7 @@ import {
 } from '../domain/orbital'
 import {
   orbitalEnrichmentForPosition,
+  starlinkConstellationContext,
   type OrbitalEnrichmentView,
 } from '../domain/orbitalEnrichment'
 import { appendTooltipPhoto } from './tooltipPhoto'
@@ -27,7 +28,7 @@ export const orbitalTooltipSummary = (
       title: position.name,
       details: [
         `${orbitalObjectTypeLabel(position.objectType)} · NORAD ${position.noradCatalogId}`,
-        'Starlink sample',
+        `Starlink sample · ${starlinkConstellationContext.shortLabel.toLowerCase()} (general service context)`,
         'Modeled position · not live telemetry',
       ],
     }

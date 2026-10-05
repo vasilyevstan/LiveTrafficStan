@@ -3,18 +3,40 @@
 ## Decision
 
 Issue #193 uses a small application-owned manifest indexed by exact canonical
-NORAD catalog ID and fenced by the complete reviewed identity. The first
-reviewed version,
-`2026-09-29-v1`, contains:
+NORAD catalog ID and fenced by the complete reviewed identity. Current version
+`2026-10-05-v1` contains nine exact-object descriptions. The original
+`2026-09-29-v1` remains an immutable historical asset generation.
 
 | NORAD ID | Current catalog identity | Purpose source | Image |
 | --- | --- | --- | --- |
 | `20580` | `HST`, `1990-037B`, `PAY` | NASA Science, **About Hubble** | NASA photograph `s125e011615` |
 | `25544` | `ISS (ZARYA)`, `1998-067A`, `PAY` | NASA, **Space Station Research and Technology** | NASA photograph `s132e012212` |
+| `25994` | `TERRA`, `1999-068A`, `PAY` | [NASA Science: Terra](https://science.nasa.gov/mission/terra/) | Unavailable |
+| `27424` | `AQUA`, `2002-022A`, `PAY` | [NASA Science: Aqua](https://science.nasa.gov/mission/aqua/) | Unavailable |
+| `27597` | `MIDORI II (ADEOS-II)`, `2002-056A`, `PAY` | [JAXA: Midori II](https://global.jaxa.jp/projects/sat/adeos2/) | Unavailable |
+| `39766` | `ALOS-2`, `2014-029A`, `PAY` | [JAXA: Daichi-2](https://global.jaxa.jp/projects/sat/alos2/) | Unavailable |
+| `41337` | `ASTRO-H (HITOMI)`, `2016-012A`, `PAY` | [NASA HEASARC: Hitomi](https://heasarc.gsfc.nasa.gov/docs/hitomi/) | Unavailable |
+| `57800` | `XRISM`, `2023-137A`, `PAY` | [NASA HEASARC: XRISM](https://heasarc.gsfc.nasa.gov/docs/xrism/) | Unavailable |
+| `59588` | `ACS3`, `2024-077B`, `PAY` | [NASA: ACS3](https://www.nasa.gov/mission/acs3/) | Unavailable |
 
-Every other orbital object remains explicitly unenriched. A missing record
-means purpose and image are unavailable; the application never substitutes a
-generic satellite, rocket, mission, operator, or stock image.
+The seven new official-source pages were retrieved on 2026-10-05; their exact
+HTML SHA-256 and identity evidence are pinned in the manifest. The text is an
+original concise factual summary, not a live operational claim. Hitomi's
+description explicitly records the historical loss of contact and end of
+recovery efforts. Useful descriptions do not depend on obtaining an image.
+
+Starlink selected details separately show **Constellation context** from
+[Starlink's official service overview](https://starlink.com/), reviewed on
+2026-10-05 with HTML SHA-256
+`feca9c47eca99caf892fb87166d70d865988dee3a57c75e6635878102e584ce4`.
+This explains the internet service, not an individual sampled object's
+verified purpose or operational status. It does not borrow curated enrichment
+or an ISS/Hubble image when NORAD IDs overlap.
+
+Other unreviewed exact objects retain explicit purpose/image unavailability;
+the application never substitutes a generic satellite, rocket, mission,
+operator or stock image. Selected purpose/context is placed above telemetry,
+and hover carries only the compact bundled label.
 
 The reviewed manifest is static application context. It does not change
 CelesTrak acquisition, SGP4 propagation, map crossings, provider health,
@@ -159,7 +181,7 @@ e2b914510c5a295c22ccba384c32ca99282bc9c49fd43ac20d5e27730b558c16
 
 The two files use the visible credit **Photo: NASA** and link to the applicable
 NASA source page and usage guidelines. The co-located
-`public/orbital-enrichment/2026-09-29-v1/LICENSES.md` notice makes clear that
+`public/orbital-enrichment/2026-10-05-v1/LICENSES.md` notice makes clear that
 the photographs are not licensed under the repository's Apache-2.0 source-code
 license. LiveTrafficStan uses no NASA insignia or logotype as application
 branding and makes no endorsement claim.
@@ -184,7 +206,8 @@ reviewed to the same depth in this release and it is intentionally excluded.
 
 ## Browser and request contract
 
-- The two-record JSON manifest is compiled into the application bundle.
+- The nine-record JSON manifest and separately labeled Starlink service
+  context are compiled into the application bundle.
 - Purpose labels require no request.
 - Images are immutable same-origin Static Assets and are not part of the PWA
   application-shell precache.

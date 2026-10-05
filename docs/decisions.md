@@ -645,16 +645,15 @@ All nine vessel display classes use bold top-down outer silhouettes:
 generic, cargo, tanker, passenger, fishing, exact AIS-52 tug, sailing,
 pleasure craft, and high-speed craft. Installed image IDs or a small raster
 pixel difference are not accepted as proof that people can distinguish them.
-At the minimum 22 CSS px / DPR 1 size, deterministic contour tests require
-pairwise IoU no greater than 0.78, normalized symmetric difference at least
-22 percent, three longitudinal width-band differences among the broad hull
-classes, and identity-bearing features at least 3 CSS px thick. The released
-artwork measured 0.74813 maximum IoU, 0.25187 minimum symmetric difference,
-and 5 CSS px minimum feature thickness at the earlier 26 CSS-pixel floor; the
-reduced 22 CSS-pixel floor continues to pass every gate. Production-path Chrome
-evidence also covers themes, DPR 1/2, headings, state overlays, backgrounds,
-responsive sizes, picking, and style restoration. The artwork does not alter
-any classification boundary.
+The original contour gates required pairwise IoU below 0.78, at least
+22 percent symmetric difference and large width-band/notch differences.
+The user's subsequent "tombstones" report showed that those proxies encouraged
+distorted silhouettes and did not prove recognizable boats. Issue #331
+replaces them with pointed hulls and nautical deck/superstructure motifs,
+retaining physical-length normalization and color/state behavior.
+Geometry tests protect those invariants, but acceptance depends on inspecting
+actual-scale rendered ships in both themes, headings and responsive layouts.
+No classification boundary changes.
 
 The user-visible #250 follow-up showed that a shared MapLibre multiplier did
 not preserve physical-size ordering across silhouettes with different

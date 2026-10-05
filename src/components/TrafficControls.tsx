@@ -57,6 +57,7 @@ interface TrafficControlsProps {
   vesselResults: readonly DisplayVessel[]
   totalVessels: number
   vesselEmptyMessage: string
+  marineProviderName?: string
   units: UnitSystem
   onVesselFiltersChange: (filters: VesselFilterState) => void
   onVesselSelect: (id: string) => void
@@ -241,6 +242,7 @@ const handleDisclosureToggle = (
 }
 
 export function TrafficControls({
+  marineProviderName = 'Digitraffic',
   masthead,
   aircraftQuery,
   aircraftResults,
@@ -878,6 +880,19 @@ export function TrafficControls({
               <legend>Sources</legend>
               <ul className="control-source-list">
                 <li>
+                  Aircraft: <a href="https://www.adsb.lol/">ADSB.lol</a>.
+                </li>
+                <li>
+                  Marine: {marineProviderName}. Original contributing
+                  sources are credited in ship details and Provider details.
+                </li>
+                <li>
+                  Photos: <a href="https://www.planespotters.net/photo/api">Planespotters</a>
+                  {' · '}<a href="https://openwaters.io/ais/">Open Waters</a>
+                  {' / '}<a href="https://commons.wikimedia.org/">Wikimedia Commons</a>
+                  {' · '}individual image credits and licenses.
+                </li>
+                <li>
                   Ports:{' '}
                   <a href="https://www.naturalearthdata.com/downloads/10m-cultural-vectors/ports/">
                     Natural Earth
@@ -905,6 +920,7 @@ export function TrafficControls({
               <p className="control-note control-note--muted">
                 METAR sends visible ICAO IDs via this app; source/retrieval
                 times are in details.
+                {' '}<a href="https://github.com/vasilyevstan/LiveTrafficStan/blob/main/docs/data-sources-and-licensing.md">Full data credits</a>.
               </p>
             </fieldset>
           </section>

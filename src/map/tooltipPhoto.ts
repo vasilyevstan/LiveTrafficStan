@@ -1,6 +1,7 @@
 export interface TooltipPhoto {
   alt: string
   context?: string
+  crossOrigin?: 'anonymous'
   credit: string
   height: number
   href: string
@@ -24,13 +25,14 @@ export const appendTooltipPhoto = (
 
   const image = ownerDocument.createElement('img')
   image.className = 'traffic-tooltip__photo'
+  if (photo.referrerPolicy) image.referrerPolicy = photo.referrerPolicy
+  if (photo.crossOrigin) image.crossOrigin = photo.crossOrigin
   image.src = photo.src
   image.width = photo.width
   image.height = photo.height
   image.alt = photo.alt
   image.loading = 'eager'
   image.decoding = 'async'
-  if (photo.referrerPolicy) image.referrerPolicy = photo.referrerPolicy
 
   const credit = ownerDocument.createElement('span')
   credit.className = 'traffic-tooltip__photo-credit'

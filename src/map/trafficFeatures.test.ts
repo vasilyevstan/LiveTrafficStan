@@ -94,7 +94,7 @@ describe('trafficFeatures presentation projection', () => {
     })
     expect(
       collection.features[0]?.properties?.markerScale,
-    ).toBeCloseTo(0.83 * (56 / 57))
+    ).toBeCloseTo(0.83)
     expect(yacht).not.toHaveProperty('flagIcon')
   })
 
