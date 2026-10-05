@@ -15,6 +15,16 @@ API request. They cover Tarmo, Finlandia, Romantika, Victoria I, Viking XPRS,
 MSC Magnifica, Megastar and MyStar. Dynamic coverage is additional and
 best-effort, not an expansion of that immutable reviewed library.
 
+Production source `de9d8603bebe1797a1b57cd0b9f99fe343858f8b` verified actual
+BALTIC WHALE / reported IMO `9354454` outside that library: a decoded 960x640
+Commons image by Eduard47, CC BY-SA 4.0. Stable hover made one metadata
+request and details reused it. Native 390x844/568 touch exposed the complete
+image, source/license and Close without horizontal overflow or map pan.
+The historical file is captioned ANNA SIRKKA; this remains a provider IMO
+match, not independent current-transmitter verification. The
+[release receipt](https://github.com/vasilyevstan/LiveTrafficStan/pull/333#issuecomment-6001037124)
+records exact deployment, rollback and restoration.
+
 The historical eight-photo generation was accepted at application source
 `bba0bf4f7a69939e3c07fbeb24470fa959f6f20a`. Protected release validation
 run `36996187462`, canonical deployment run `36997443034`, rollback run

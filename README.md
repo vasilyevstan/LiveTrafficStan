@@ -590,6 +590,46 @@ persistent route cache.
 Public production is live at
 <https://livetrafficstan.syntal.workers.dev> on Cloudflare Workers Free with
 Static Assets. The current application source is
+`de9d8603bebe1797a1b57cd0b9f99fe343858f8b`, released through #332/#333.
+Exact-main Validation `37351007615` passed. Final restoration
+`37355581014` installed Worker `90338910-c837-46a5-9f55-c4eb513dd885`;
+full production smoke passed at `2026-10-05T18:24:26.553Z`.
+
+This release adds real IMO/MMSI-based vessel photos, automatic selected-aircraft
+photos, pointed ship designs, nine exact orbital descriptions and separately
+labeled Starlink service context. Provider details and Sources name the
+services/contributors while corner credits are shorter. Digitraffic, AISStream
+and Open Waters remain enabled, as do private aircraft delivery, routes and
+both orbital catalogs.
+
+Actual production BALTIC WHALE / IMO `9354454` loaded an attributed 960x640
+Commons image outside the bundled set. Normal Chrome loaded the real
+200x134 Planespotters photo for CS-TJN / ICAO24 `49514E`; the earlier automated
+CORS failure was not treated as a global outage. Native production orbital
+purpose/image/fallback and touch checks at 390x844/568 retained one map and
+reachable source/license controls. Aircraft marker flag badges remain a
+separate pending item; registration-country text is already in details.
+
+The compatible rollback is predecessor source `65eb71bad7b873c7980096f6e92a477e76fd6102`
+/ Worker `5c6538ce-7fde-44ac-b288-e005f8d3d67b`, with marine still enabled.
+Rollback `37354059156` switched to it; an immediate Starlink release-SHA check
+failed, then unchanged attempt 2 passed before final restoration. The
+[complete receipt](docs/hosting-and-deployment.md#identity-photos-and-orbital-context-332333)
+preserves both outcomes. Later documentation-only commits do not redeploy
+this application.
+
+The requested `trackstan.xyz` setup and separately planned **TrackStan**
+logo/name update are tracked in #334, with the demonstrated DNS/account
+prerequisite in #335. The new origin is not yet active; the existing address
+will remain available for origin-local preferences, installed apps and history.
+The fifteen-page Wiki update is published as
+`a903ef941bbd43492d682b5a49e6766b51be3980`;
+[production screenshots and evidence](https://github.com/vasilyevstan/LiveTrafficStan/pull/333#issuecomment-6001037124)
+show the actual delivered imagery and context.
+
+### Complementary marine predecessor (#325/#326)
+
+The preceding accepted application was
 `65eb71bad7b873c7980096f6e92a477e76fd6102`, released through #325/#326.
 Exact-main Validation `37247107520` passed. Final enabled deployment
 `37247800498` installed Worker `5c6538ce-7fde-44ac-b288-e005f8d3d67b`;
@@ -614,7 +654,7 @@ The same checked source was first deployed with supplementation disabled as
 version `9091ba27-073f-4bb5-acbb-f2ebe395525d` (run `37247238771`), enabled,
 then actually restored to that compatible version by rollback run
 `37247681663` before final re-enablement. Every stage passed production smoke.
-The primary rollback is **updated code with supplementation disabled**:
+That release's primary rollback was **updated code with supplementation disabled**:
 IndexedDB version 2 preserves existing history and fences older readers that
 would otherwise delete unfamiliar provider records. Do not erase history or
 substitute an older binary.
