@@ -50,9 +50,45 @@ credentials and the private-relay secret. Observability remains disabled and
 no paid fallback is enabled. Orbital activation uses the included free KV and
 SQLite Durable Object allocations; R2 is not used.
 
-### Identity photos and orbital context (#332/#333)
+### Aircraft registration-country flags (#341/#342)
 
 Current application source is
+`99baed2dece100f9066f31fecb215df26e781911`. Implementation #341 and promotion
+#342 passed exact-source checks; exact-main Validation `37385967766` passed.
+Protected deployment `37386217568` installed Worker
+`aa62b10d-03d6-40d4-bdd2-2cdd2dacaeff` and passed full exact-release smoke at
+`2026-10-05T23:03:57.186Z`.
+
+This render-only change reuses the existing ICAO24 country lookup and 226
+reviewed flag rasters. It adds no image asset, provider request, dependency,
+credential, binding, scheduler or history/schema change. Private aircraft
+delivery, aircraft photos, flight routes, curated orbital, Starlink and marine
+supplementation all remain enabled, with the same KV namespace, coordinator
+identities, `17 */2 * * *` Cron, VPC binding and atomic secrets-file delivery.
+
+Normal Chrome production acceptance at `23:05:21Z-23:06:05Z` used native
+fetch, WebSocket and clock in a fresh context: 11 visible aircraft and 11
+matching Netherlands/UK badges around Amsterdam. Native selection of
+G-JZBE / ICAO24 `407181` / EXS75NE showed United Kingdom (GB) with a live
+position age of 1.806 seconds. One canvas and 226 shared images remained,
+without extra flag requests, runtime exceptions or console errors. An
+intermediate aircraft `503` was followed by `200` through the unchanged
+lifecycle; uninterrupted provider availability is not claimed. No aircraft
+photo binary or selected-aircraft photo screenshot was saved.
+
+[Actual production receipt and screenshot](https://github.com/vasilyevstan/LiveTrafficStan/pull/342#issuecomment-6005079795)
+are distinct from the [local native-scale fixtures](https://github.com/vasilyevstan/LiveTrafficStan/pull/341#issuecomment-6004900618).
+Compatible rollback is the previously verified imagery source
+`de9d8603bebe1797a1b57cd0b9f99fe343858f8b` /
+`90338910-c837-46a5-9f55-c4eb513dd885`. No optional duplicate rollback drill
+was added for unchanged provider/state contracts. Earlier rollback outcomes
+remain historical below. Wiki `784938953937982381a4f39b5310f372927a8b1d`
+publishes the current receipt; later docs-only commits do not redeploy it.
+Domain activation and branding remain separate work.
+
+### Identity photos and orbital context (#332/#333)
+
+The preceding application source was
 `de9d8603bebe1797a1b57cd0b9f99fe343858f8b`, from checked implementation
 #332 and promotion #333. Exact-main Validation `37351007615` passed.
 
@@ -88,11 +124,11 @@ through those map/context interactions. Full-source credits remain reachable;
 both orbital channels share one corner credit. See the
 [browser receipt](development-and-testing.md#identity-photos-recognizable-ships-and-orbital-context-331-193).
 
-The current compatible rollback target is the enabled-marine `65eb71ba...`
+That release's compatible rollback target was the enabled-marine `65eb71ba...`
 version above. The earlier same-source disabled marine baseline remains
 historical recovery evidence, not a pre-marine binary to substitute or a
 reason to delete history. Subsequent documentation-only main commits are
-separate from this running application SHA.
+separate from that deployed application SHA.
 
 Wiki revision `a903ef941bbd43492d682b5a49e6766b51be3980` published fifteen
 curated pages covering the actual photo contracts, nine-purpose manifest,
@@ -1328,6 +1364,21 @@ The registrar can remain GoDaddy, but Workers Custom Domains need an active
 Cloudflare full zone. Do not guess nameservers or point at arbitrary
 Cloudflare/parking IPs.
 
+The owned Free full zone is active. Both authoritative `.xyz` servers
+confirmed `ben.ns.cloudflare.com` / `nora.ns.cloudflare.com` at
+`2026-10-05T23:16:45Z`. Protected read-first operation `37387870998` at main
+`99baed2dece100f9066f31fecb215df26e781911` returned active status at
+`2026-10-05T23:20:12Z`; Cloudflare and Google recursive resolvers also returned
+the assigned pair. This resolves the earlier creation-POST `403` and subsequent
+propagation wait without changing credentials. Active DNS is a prerequisite,
+not proof that the application is already serving this hostname. #334 owns
+binding and new-origin acceptance; #335 records the resolved prerequisite.
+
+The observed account dashboard uses the left-sidebar **Domains -> Overview ->
+Add domain -> Connect a domain** flow. This is not the Worker's separate
+Domains tab or a registrar transfer; choose the Free plan and retain existing
+DNS records. Use the actual assigned pair, not a documentation example.
+
 The fixed `prepare-trackstan-domain.yml` workflow reads or creates only
 `trackstan.xyz` using existing protected credentials. It requires exact current
 main, successful exact-SHA validation, the production environment and the
@@ -1348,13 +1399,39 @@ Cloudflare documents `Zone Zone Edit` or `Zone DNS Edit` for zone creation;
 zone read access must also cover this account/domain. Keep credentials in the
 protected environment, never in chat, source, artifacts or client variables.
 
-After existing DNS records are accounted for, the user enters the returned
-pair in GoDaddy's nameserver settings. Only verified delegation/active-zone
-state permits the checked Worker Custom Domain binding and HTTPS/new-origin
-acceptance. Keep workers.dev available: private history, permissions,
-preferences and installed apps are origin-local and do not automatically
-migrate. No temporary account, paid upgrade, blanket redirect or silent
-history deletion is part of this setup.
+The persistent binding in `wrangler.jsonc` targets only the apex and keeps
+the existing Worker identity and workers.dev origin:
+
+```json
+{
+  "workers_dev": true,
+  "routes": [{ "pattern": "trackstan.xyz", "custom_domain": true }]
+}
+```
+
+The production configuration generator preserves both settings in all six
+valid orbital/Starlink/marine combinations. Cloudflare manages the apex DNS
+record and certificate; no fixed IP, separate certificate subscription or
+new Worker is required. The imported apex parking addresses were
+`3.33.130.190` and `15.197.148.33`; after zone activation public DNS shows
+Cloudflare proxy addresses instead. No apex MX, TXT, CAA or parent DS appeared
+in the bounded checks. This is not a complete subdomain inventory: only the
+requested apex is a binding target, and unrelated records remain untouched.
+No `www` binding or redirect is included.
+
+Deploy through the existing exact-current-main workflow with every currently
+enabled application input preserved. Its existing workers.dev smoke remains
+useful; separately run the same smoke against `https://trackstan.xyz` and
+verify the actual new origin in normal Chrome, including marine WebSocket,
+aircraft/vessel images, static assets and both orbital catalogs. Do not call
+the new domain live until HTTPS and those new-origin checks succeed. A Worker
+version rollback does not itself remove the Custom Domain; retain the domain
+when restoring the compatible prior application.
+
+Private history, permissions, preferences and installed apps are origin-local
+and do not automatically migrate. Keep workers.dev available without a forced
+redirect or history deletion. The separately planned TrackStan logo/name
+update does not rename the repository or Worker as part of domain activation.
 
 References: [Custom Domains](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/)
 and [Create Zone API](https://developers.cloudflare.com/api/resources/zones/methods/create/).

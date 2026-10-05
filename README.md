@@ -592,6 +592,31 @@ persistent route cache.
 Public production is live at
 <https://livetrafficstan.syntal.workers.dev> on Cloudflare Workers Free with
 Static Assets. The current application source is
+`99baed2dece100f9066f31fecb215df26e781911`, released through #341/#342.
+Exact-main Validation `37385967766` and deployment `37386217568` passed;
+Worker `aa62b10d-03d6-40d4-bdd2-2cdd2dacaeff` passed full exact-release
+smoke at `2026-10-05T23:03:57.186Z`.
+
+Aircraft now have the same small, upright country badges as vessels, derived
+from the existing ICAO24 allocation and unchanged bundled artwork. Normal
+Chrome observed 11 real Amsterdam-area aircraft and 11 Netherlands/UK flags,
+then selected G-JZBE / `407181` / EXS75NE with United Kingdom country text.
+One canvas, 226 shared images and zero extra flag requests or browser errors
+remained. The [production receipt](https://github.com/vasilyevstan/LiveTrafficStan/pull/342#issuecomment-6005079795)
+distinguishes that observation from the accepted local theme/mobile/rotation/
+clustering fixtures and records an intermediate recovered aircraft `503`.
+
+All prior provider, photo, orbital, marine, history and deployment inputs
+remain enabled. Compatible rollback is the verified imagery predecessor
+`de9d8603...` / `90338910-c837-46a5-9f55-c4eb513dd885`; no provider/state
+migration or optional duplicate rollback drill was added. Wiki revision
+`784938953937982381a4f39b5310f372927a8b1d` publishes the flag behavior and
+actual runtime receipt. Later documentation-only main commits do not replace
+the running application SHA.
+
+### Identity photos and orbital context predecessor (#332/#333)
+
+The preceding application source was
 `de9d8603bebe1797a1b57cd0b9f99fe343858f8b`, released through #332/#333.
 Exact-main Validation `37351007615` passed. Final restoration
 `37355581014` installed Worker `90338910-c837-46a5-9f55-c4eb513dd885`;
@@ -609,10 +634,10 @@ Commons image outside the bundled set. Normal Chrome loaded the real
 200x134 Planespotters photo for CS-TJN / ICAO24 `49514E`; the earlier automated
 CORS failure was not treated as a global outage. Native production orbital
 purpose/image/fallback and touch checks at 390x844/568 retained one map and
-reachable source/license controls. Aircraft marker flag badges remain a
-separate pending item; registration-country text is already in details.
+reachable source/license controls. Aircraft marker flags were still pending
+at this historical release; #341/#342 subsequently delivered them.
 
-The compatible rollback is predecessor source `65eb71bad7b873c7980096f6e92a477e76fd6102`
+That release's compatible rollback was predecessor source `65eb71bad7b873c7980096f6e92a477e76fd6102`
 / Worker `5c6538ce-7fde-44ac-b288-e005f8d3d67b`, with marine still enabled.
 Rollback `37354059156` switched to it; an immediate Starlink release-SHA check
 failed, then unchanged attempt 2 passed before final restoration. The
@@ -622,8 +647,14 @@ this application.
 
 The requested `trackstan.xyz` setup and separately planned **TrackStan**
 logo/name update are tracked in #334, with the demonstrated DNS/account
-prerequisite in #335. The new origin is not yet active; the existing address
-will remain available for origin-local preferences, installed apps and history.
+prerequisite in #335. The owned Free zone now exists with assigned nameservers
+`ben.ns.cloudflare.com` / `nora.ns.cloudflare.com`; authoritative delegation
+and active Cloudflare status were confirmed on 2026-10-05. The checked
+configuration binds only the apex to the existing Worker and explicitly
+preserves workers.dev. New-origin HTTPS/browser acceptance is still required
+before advertising the application at the domain. The existing address will
+remain available for origin-local preferences, installed apps and history;
+those data do not automatically migrate between origins.
 The fifteen-page Wiki update is published as
 `a903ef941bbd43492d682b5a49e6766b51be3980`;
 [production screenshots and evidence](https://github.com/vasilyevstan/LiveTrafficStan/pull/333#issuecomment-6001037124)

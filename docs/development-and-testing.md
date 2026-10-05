@@ -1212,6 +1212,18 @@ Vessel badge pixels, placement, filtering and allocation semantics are unchanged
 their accepted native-scale evidence above remains applicable. Normal production
 observations belong in the exact release receipt, not in these fixture claims.
 
+Actual production acceptance for `99baed2dece100f9066f31fecb215df26e781911`
+ran at `2026-10-05T23:05:21Z-23:06:05Z` using native fetch, WebSocket and clock:
+11 rendered Amsterdam-area aircraft and 11 matching Netherlands/UK flags.
+Native selection of G-JZBE / `407181` / EXS75NE showed United Kingdom (GB)
+and a live age of 1.806 seconds. One canvas, 226 shared images, no new flag
+requests and no runtime/console errors. An intermediate aircraft `503`
+recovered to `200` through the unchanged provider lifecycle; this is not an
+outage-free guarantee. No aircraft photo binary or selected-photo screenshot
+was saved. [Production evidence](https://github.com/vasilyevstan/LiveTrafficStan/pull/342#issuecomment-6005079795)
+records Worker `aa62b10d-03d6-40d4-bdd2-2cdd2dacaeff`, exact-main validation,
+successful deployment/smoke and the compatible previously verified rollback.
+
 ### Identity photos, recognizable ships and orbital context (#331, #193)
 
 The local candidate passed all required gates: 1,128 tests in 144 files,
