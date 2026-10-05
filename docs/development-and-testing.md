@@ -131,6 +131,48 @@ enabled builds, and default/enabled Worker dry runs. Existing source,
 dependency and catalog checks are reused; no new framework or dependency was
 added.
 
+Production source `65eb71bad7b873c7980096f6e92a477e76fd6102` passed exact-main
+Validation `37247107520` and all four protected rollout stages. The actual
+Cloudflare source check at 2026-10-05 `00:27:34.685Z-00:28:19.696Z` received an
+exact-release `101`, 45 acknowledged snapshots and 1,989,085 decoded bytes.
+Both protected providers delivered observed data without source errors.
+The final snapshot contained 63 distinct vessels (seven AISStream, 56 Open
+Waters), including one reported yacht at least 8 m; first useful data arrived
+in 1.504 seconds and the oldest retained position was 594.695 seconds.
+Only aggregate receipts were retained. The actual same-source disabled
+rollback and final enabled restoration both passed exact-build smoke; see
+the [rollout record](hosting-and-deployment.md).
+
+The final actual production-browser pass at `00:33:02.003Z-00:35:12.028Z`
+used Chrome 154, native provider traffic and clock, and enabled asset
+`index-BzgPcwIW.js`:
+
+| View | Actually rendered vessels | Position owners | Eligible reported yachts in view |
+| --- | ---: | --- | ---: |
+| Tallinn | 30 | 27 Digitraffic, 3 Open Waters | 2 |
+| Southern Baltic | 13 | 13 Open Waters | 0 in this later view/window |
+| Rotterdam | 792 | 63 AISStream, 729 Open Waters | 143 |
+
+Both supplementary sources reported live observed data without errors in all
+three snapshots, including where fusion selected another source's position.
+Actual vector-tile feature counts were 178, 27 and 716; exact-ID uniqueness
+and one persistent canvas were checked. The selected real TALISMAN was a
+reported stopped 10 m pleasure craft with Netherlands allocation and
+Open Waters/AISHub attribution. Its absent valid IMO correctly left the photo
+unavailable; no yacht/IMO/class inference was introduced.
+
+Both themes retained selection and exact camera without reconnecting.
+An induced supplementary-channel outage kept 792 rendered vessels, and cold
+relay reconnect preserved the unexpired selected craft and compatible static
+context. Native search/Clear restored the same feed. At 390x568 and 315x517,
+175 and 161 vessels rendered respectively without horizontal overflow; native
+touch pan changed the camera on the same map. All eight checks passed with no
+uncaught browser exceptions. These are Chrome-emulated mobile layouts, not
+physical Safari/iOS/Android certification. Overall `PARTIAL` remains distinct
+from the two observed live supplemental-source states.
+[Screenshots and complete release receipts](https://github.com/vasilyevstan/LiveTrafficStan/pull/326#issuecomment-5986155527)
+are public; raw AIS records were not archived.
+
 The dependency-free OCI relay tests live beside the implementation under
 `infra/oci/aircraft-relay/`. The normal Vitest suite covers its HTTP boundary,
 authentication, canonical path, concurrency/cadence admission, persisted

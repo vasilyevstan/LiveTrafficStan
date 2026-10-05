@@ -581,6 +581,45 @@ persistent route cache.
 Public production is live at
 <https://livetrafficstan.syntal.workers.dev> on Cloudflare Workers Free with
 Static Assets. The current application source is
+`65eb71bad7b873c7980096f6e92a477e76fd6102`, released through #325/#326.
+Exact-main Validation `37247107520` passed. Final enabled deployment
+`37247800498` installed Worker `5c6538ce-7fde-44ac-b288-e005f8d3d67b`;
+full production smoke passed at `2026-10-05T00:31:43.586Z`.
+
+Digitraffic now runs alongside AISStream and Open Waters AIS. The first actual
+Cloudflare source check received 63 distinct southern-Baltic vessels with both
+supplemental sources live: seven AISStream and 56 Open Waters position owners,
+including one reported sailing/pleasure craft at least 8 m. Its first useful
+snapshot arrived in 1.504 seconds. These are bounded observations, not a
+coverage census or a promise that a particular yacht is currently received.
+
+[Final real production-browser acceptance and screenshots](https://github.com/vasilyevstan/LiveTrafficStan/pull/326#issuecomment-5986155527)
+at `00:33:02Z-00:35:12Z` rendered 30 Tallinn vessels, 13 southern-Baltic vessels
+and 792 Rotterdam vessels; the Rotterdam view contained 143 reported eligible
+yachts. Both supplemental sources were live. Actual selection, source
+attribution, both themes, cold-reconnect retention, search/Clear, narrow
+layouts and native touch input passed on one persistent map. Those mobile
+checks are Chrome emulation, not physical iOS/Android certification.
+
+The same checked source was first deployed with supplementation disabled as
+version `9091ba27-073f-4bb5-acbb-f2ebe395525d` (run `37247238771`), enabled,
+then actually restored to that compatible version by rollback run
+`37247681663` before final re-enablement. Every stage passed production smoke.
+The primary rollback is **updated code with supplementation disabled**:
+IndexedDB version 2 preserves existing history and fences older readers that
+would otherwise delete unfamiliar provider records. Do not erase history or
+substitute an older binary.
+
+Private aircraft delivery, photos, plausible routes, curated/Starlink catalogs,
+KV and Cron remain enabled. Only operational marine quota/retry state persists
+server-side; provider keys remain protected and vessel data remains bounded
+in memory. See the [complete rollout record](docs/hosting-and-deployment.md)
+and [marine acceptance](docs/development-and-testing.md#multi-source-marine-acceptance).
+Later documentation-only commits do not replace the running application SHA.
+
+### Yacht/flags and aircraft-recovery predecessor (#316/#319)
+
+The preceding accepted application was
 `1afa175d8bb6b3f0636c2a02576cc82a35ced373`, the checked #319 main with
 unchanged application code from yacht fix #313, country flags #314 and release
 #316 (`e2b2afaa...`). Exact-main Validation `37204522573` passed. Canonical
@@ -612,8 +651,9 @@ two-minute stale and ten-minute expiry rules still apply. Flags are compact,
 bundled MMSI-country allocation badges, not independent current-registry
 verification. Class B/ANTARES coverage remains separate under #296.
 
-Application and relay code, provider/build inputs, KV and Cron are unchanged;
-the only guest-setting change is the optional metadata timer. The preceding
+That recovery left application and relay code, provider/build inputs, KV and
+Cron unchanged; its only guest-setting change was the optional metadata timer.
+The preceding
 installed Worker was `816506f7-2cb1-4e6c-8626-ae990eb62b8a` / application
 `e2b2afaa...`. The earlier accepted rollback predecessor is atlas application
 `0972ba8d24ba96e18627b13b252e6ac7c5473f10` / Worker
