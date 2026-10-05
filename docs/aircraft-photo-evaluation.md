@@ -28,6 +28,16 @@ unchanged-URL, attribution, bounded-memory, and no-persistence contract
 continues to pass. A material provider-policy or origin change requires a new
 bounded check and a fail-closed redeployment if acceptance fails.
 
+On 2026-10-05 the terms were rechecked and the new automatic-selection path
+passed in unmodified normal Chrome 154 on the production origin: live CS-TJN,
+ICAO24 `49514E`, loaded a 200x134 `t.plnspttrs.net` image credited to Mario
+Ferioli through one API request. A preceding headless attempt failed CORS;
+that limited result was not treated as a global outage. No provider request
+was proxied, no browser headers/security controls were spoofed or weakened,
+and no photo binary was saved or rehosted. The published policy distinguishes
+normal webpage requests with Origin/Referer from non-browser clients, which
+must identify themselves with a descriptive contact-bearing User-Agent.
+
 Production source `1f9a2fd322f141fe761d3bf00113e1ab60526e6c`
 also passed select-first/hover-second synchronization acceptance. Selecting an
 aircraft made no photo request, sub-dwell hover made no request, stable hover
