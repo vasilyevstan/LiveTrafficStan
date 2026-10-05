@@ -1364,13 +1364,15 @@ The registrar can remain GoDaddy, but Workers Custom Domains need an active
 Cloudflare full zone. Do not guess nameservers or point at arbitrary
 Cloudflare/parking IPs.
 
-The owned Free full zone now exists. Protected read-first operation
-`37384098539` at main `5b8023026afafb3bf45be4869e3403237f0f93d3` returned
-`ben.ns.cloudflare.com` / `nora.ns.cloudflare.com` and pending status at
-`2026-10-05T22:42:39Z`. This resolves the earlier creation-POST `403` without
-changing credentials. The user reports updating GoDaddy nameservers;
-authoritative delegation/active-zone state must still be verified before
-binding or advertising the new origin. #334/#335 own the current state.
+The owned Free full zone is active. Both authoritative `.xyz` servers
+confirmed `ben.ns.cloudflare.com` / `nora.ns.cloudflare.com` at
+`2026-10-05T23:16:45Z`. Protected read-first operation `37387870998` at main
+`99baed2dece100f9066f31fecb215df26e781911` returned active status at
+`2026-10-05T23:20:12Z`; Cloudflare and Google recursive resolvers also returned
+the assigned pair. This resolves the earlier creation-POST `403` and subsequent
+propagation wait without changing credentials. Active DNS is a prerequisite,
+not proof that the application is already serving this hostname. #334 owns
+binding and new-origin acceptance; #335 records the resolved prerequisite.
 
 The observed account dashboard uses the left-sidebar **Domains -> Overview ->
 Add domain -> Connect a domain** flow. This is not the Worker's separate
@@ -1397,13 +1399,39 @@ Cloudflare documents `Zone Zone Edit` or `Zone DNS Edit` for zone creation;
 zone read access must also cover this account/domain. Keep credentials in the
 protected environment, never in chat, source, artifacts or client variables.
 
-After existing DNS records are accounted for, the user enters the returned
-pair in GoDaddy's nameserver settings. Only verified delegation/active-zone
-state permits the checked Worker Custom Domain binding and HTTPS/new-origin
-acceptance. Keep workers.dev available: private history, permissions,
-preferences and installed apps are origin-local and do not automatically
-migrate. No temporary account, paid upgrade, blanket redirect or silent
-history deletion is part of this setup.
+The persistent binding in `wrangler.jsonc` targets only the apex and keeps
+the existing Worker identity and workers.dev origin:
+
+```json
+{
+  "workers_dev": true,
+  "routes": [{ "pattern": "trackstan.xyz", "custom_domain": true }]
+}
+```
+
+The production configuration generator preserves both settings in all six
+valid orbital/Starlink/marine combinations. Cloudflare manages the apex DNS
+record and certificate; no fixed IP, separate certificate subscription or
+new Worker is required. The imported apex parking addresses were
+`3.33.130.190` and `15.197.148.33`; after zone activation public DNS shows
+Cloudflare proxy addresses instead. No apex MX, TXT, CAA or parent DS appeared
+in the bounded checks. This is not a complete subdomain inventory: only the
+requested apex is a binding target, and unrelated records remain untouched.
+No `www` binding or redirect is included.
+
+Deploy through the existing exact-current-main workflow with every currently
+enabled application input preserved. Its existing workers.dev smoke remains
+useful; separately run the same smoke against `https://trackstan.xyz` and
+verify the actual new origin in normal Chrome, including marine WebSocket,
+aircraft/vessel images, static assets and both orbital catalogs. Do not call
+the new domain live until HTTPS and those new-origin checks succeed. A Worker
+version rollback does not itself remove the Custom Domain; retain the domain
+when restoring the compatible prior application.
+
+Private history, permissions, preferences and installed apps are origin-local
+and do not automatically migrate. Keep workers.dev available without a forced
+redirect or history deletion. The separately planned TrackStan logo/name
+update does not rename the repository or Worker as part of domain activation.
 
 References: [Custom Domains](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/)
 and [Create Zone API](https://developers.cloudflare.com/api/resources/zones/methods/create/).
