@@ -15,3 +15,19 @@ interface DurableObjectStorage {
 interface DurableObjectState {
   readonly storage: DurableObjectStorage
 }
+
+interface WebSocket {
+  accept(): void
+}
+
+declare const WebSocketPair: {
+  new(): { 0: WebSocket; 1: WebSocket }
+}
+
+interface Response {
+  readonly webSocket?: WebSocket | null
+}
+
+interface ResponseInit {
+  webSocket?: WebSocket | null
+}

@@ -11,6 +11,10 @@ const workflow = readFileSync(
 const wrangler = JSON.parse(
   readFileSync(join(repositoryRoot, 'wrangler.jsonc'), 'utf8'),
 )
+const secretsScript = readFileSync(
+  join(repositoryRoot, 'scripts/prepare-production-secrets.mjs'),
+  'utf8',
+)
 
 describe('production deployment workflow', () => {
   it('uses a fixed aircraft delivery choice and records it in smoke', () => {
@@ -28,14 +32,14 @@ describe('production deployment workflow', () => {
       'echo "- Aircraft delivery: \\`${{ inputs.aircraft_delivery }}\\`"',
     )
     expect(workflow).not.toContain('npx wrangler secret put')
-    expect(workflow).toContain('Prepare private relay secrets file')
-    expect(workflow).toContain(
-      'JSON.stringify({ AIRCRAFT_RELAY_AUTH_TOKEN: token })',
+    expect(workflow).toContain('Prepare production secrets file')
+    expect(secretsScript).toContain(
+      'secrets.AIRCRAFT_RELAY_AUTH_TOKEN = token',
     )
     expect(workflow).toContain(
       "format('--secrets-file {0}/wrangler-production-secrets.json', runner.temp)",
     )
-    expect(workflow).toContain('Remove private relay secrets file')
+    expect(workflow).toContain('Remove production secrets file')
     expect(workflow).toContain('run: rm -f "$SECRETS_FILE"')
     expect(workflow).toContain(
       '--var AIRCRAFT_DELIVERY:${{ inputs.aircraft_delivery }}',
@@ -59,14 +63,31 @@ describe('production deployment workflow', () => {
     expect(workflow).not.toContain('FLIGHT_ROUTE_QUOTA')
   })
 
-  it('keeps only the deleted route quota export in the base config', () => {
+  it('retains the marine state identity without enabling its binding by default', () => {
     expect(wrangler.durable_objects).toBeUndefined()
     expect(wrangler.exports).toEqual({
       FlightRouteQuota: {
         type: 'durable-object',
         state: 'deleted',
       },
+      MarineTrafficRelay: {
+        type: 'durable-object',
+        storage: 'sqlite',
+      },
     })
+  })
+
+  it('keeps marine credentials server-side and includes them in the atomic deployment', () => {
+    expect(workflow).toContain('marine_supplement_enabled:')
+    expect(workflow).toContain('VITE_MARINE_SUPPLEMENT_ENABLED: ${{ inputs.marine_supplement_enabled }}')
+    expect(workflow).toContain('--marine-enabled "$MARINE_ENABLED"')
+    expect(workflow).toContain('--var MARINE_SUPPLEMENT_ENABLED:${{ inputs.marine_supplement_enabled }}')
+    expect(workflow).toContain('node scripts/prepare-production-secrets.mjs')
+    expect(secretsScript).toContain("['AISSTREAM_API_KEY', 'OPENWATERS_AIS_TOKEN']")
+    expect(secretsScript).toContain('JSON.stringify(secrets)')
+    expect(workflow).not.toContain('VITE_AISSTREAM_API_KEY')
+    expect(workflow).not.toContain('VITE_OPENWATERS_AIS_TOKEN')
+    expect(workflow).not.toContain('OPENWATERS_AIS_IDENTITY_PRIVATE_KEY')
   })
 
   it('gates the orbital catalog behind coordinated scheduled storage', () => {

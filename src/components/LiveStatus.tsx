@@ -43,6 +43,8 @@ export function LiveStatus({
   const allPaused = statuses.every((status) => status.paused)
   const liveCount = statuses.filter((status) => status.phase === 'live').length
   const errorCount = statuses.filter((status) => status.phase === 'error').length
+  const partialSources = marineCapabilities.coverage.kind === 'global-best-effort' &&
+    marineStatus.phase === 'live' && Boolean(marineStatus.error)
   const mode =
     historicalAt !== undefined
       ? 'HISTORY'
@@ -51,7 +53,7 @@ export function LiveStatus({
       : allPaused
         ? 'PAUSED'
         : liveCount === 2
-          ? 'LIVE'
+          ? partialSources ? 'PARTIAL' : 'LIVE'
           : liveCount === 1 && errorCount === 1
             ? 'PARTIAL'
             : errorCount === 2
@@ -90,7 +92,9 @@ export function LiveStatus({
           <span className="live-status__summary">
             <span>{aircraftCount} aircraft</span>
             <span title={marineCapabilities.coverage.label}>
-              {vesselCount} ships shown · regional source
+              {vesselCount} ships shown ·{' '}
+              {marineCapabilities.coverage.kind === 'global-best-effort'
+                ? 'global sources' : 'regional source'}
             </span>
           </span>
           <span className="live-status__updated">

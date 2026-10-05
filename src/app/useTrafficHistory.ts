@@ -793,14 +793,18 @@ export const useTrafficHistory = (
     () => historicalRange(durableRecords),
     [durableRecords],
   )
+  const sessionRange = useMemo(
+    () => historicalRange(sessionSnapshot.records),
+    [sessionSnapshot.records],
+  )
   const range = useMemo(() => {
     const oldest = [
       durableRange?.oldest,
-      sessionSnapshot.oldestObservedAt,
+      sessionRange?.oldest,
     ].filter((value): value is number => value !== undefined)
     const newest = [
       durableRange?.newest,
-      sessionSnapshot.newestObservedAt,
+      sessionRange?.newest,
     ].filter((value): value is number => value !== undefined)
     return oldest.length === 0 || newest.length === 0
       ? undefined
@@ -810,8 +814,7 @@ export const useTrafficHistory = (
         }
   }, [
     durableRange,
-    sessionSnapshot.newestObservedAt,
-    sessionSnapshot.oldestObservedAt,
+    sessionRange,
   ])
   const durableIndex = useMemo(
     () => createObservationIndex(durableRecords),

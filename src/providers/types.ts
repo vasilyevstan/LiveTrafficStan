@@ -1,5 +1,5 @@
-import type { AppCenter } from '../config/appConfig'
-import type { Aircraft } from '../domain/traffic'
+import type { AppCenter } from '../domain/geo.js'
+import type { Aircraft } from '../domain/traffic.js'
 
 export interface TrafficQuery {
   center: AppCenter
@@ -13,10 +13,11 @@ export interface AircraftDataProvider {
 export interface MarineProviderCapabilities {
   id: string
   name: string
-  browserAccess: 'direct-keyless' | 'server-required'
-  restGeography: 'radius' | 'none'
-  streamGeography: 'all-published-vessels' | 'geographic'
+  browserAccess: 'direct-keyless' | 'server-required' | 'mixed'
+  restGeography: 'radius' | 'none' | 'mixed'
+  streamGeography: 'all-published-vessels' | 'geographic' | 'mixed'
   metadata: boolean
+  discoveryNote?: string
   license: {
     name: string
     url: string
@@ -24,7 +25,7 @@ export interface MarineProviderCapabilities {
     modificationNotice: string
   }
   coverage: {
-    kind: 'regional' | 'unknown'
+    kind: 'regional' | 'global-best-effort' | 'unknown'
     label: string
     exactBoundaryKnown: boolean
     exclusions: readonly string[]

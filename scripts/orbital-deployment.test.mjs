@@ -43,7 +43,7 @@ const workRoot = join(
   'orbital-deployment',
 )
 
-const prepare = (enabled, starlinkEnabled = false) => {
+const prepare = (enabled, starlinkEnabled = false, marineEnabled = false) => {
   const directory = join(workRoot, randomUUID())
   mkdirSync(directory, { recursive: true })
   const output = join(directory, 'wrangler.jsonc')
@@ -57,6 +57,8 @@ const prepare = (enabled, starlinkEnabled = false) => {
     String(enabled),
     '--starlink-enabled',
     String(starlinkEnabled),
+    '--marine-enabled',
+    String(marineEnabled),
   ]
   if (enabled) {
     args.push(
@@ -126,6 +128,20 @@ describe('orbital Cloudflare deployment configuration', () => {
   it('rejects Starlink without the curated orbital deployment', () => {
     expect(() => prepare(false, true)).toThrow()
   })
+
+  it.each([[false, false], [false, true], [true, false], [true, true]])(
+    'keeps orbital=%s and marine=%s bindings independent',
+    (orbital, marine) => {
+      const config = prepare(orbital, orbital, marine)
+      const names = (config.durable_objects?.bindings ?? []).map((binding) => binding.name)
+      expect(names.includes('ORBITAL_CATALOG_COORDINATOR')).toBe(orbital)
+      expect(names.includes('MARINE_TRAFFIC_RELAY')).toBe(marine)
+      expect(config.exports.MarineTrafficRelay).toEqual({
+        type: 'durable-object', storage: 'sqlite',
+      })
+      expect(config.triggers.crons).toEqual(orbital ? ['17 */2 * * *'] : [])
+    },
+  )
 
   it('keeps explicit rollback trigger configs symmetric', () => {
     const enabled = JSON.parse(

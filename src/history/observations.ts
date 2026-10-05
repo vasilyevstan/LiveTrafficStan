@@ -15,6 +15,14 @@ export const ADSB_HISTORY_LICENSE_DECISION =
   'adsb-lol-odbl-local-playback-2026-09-19'
 export const DIGITRAFFIC_HISTORY_LICENSE_DECISION =
   'fintraffic-cc-by-local-playback-2026-09-19'
+export const MARINE_HISTORY_LICENSE_DECISION =
+  'marine-per-source-local-playback-2026-10-04'
+export const HISTORY_LICENSE_DECISIONS = [
+  ADSB_HISTORY_LICENSE_DECISION,
+  DIGITRAFFIC_HISTORY_LICENSE_DECISION,
+  MARINE_HISTORY_LICENSE_DECISION,
+] as const
+export type HistoryLicenseDecision = typeof HISTORY_LICENSE_DECISIONS[number]
 
 interface HistoricalObservationBase {
   schemaVersion: typeof HISTORY_SCHEMA_VERSION
@@ -33,9 +41,7 @@ interface HistoricalObservationBase {
   markerScale: number
   sessionId: string
   segmentId: string
-  licenseDecisionId:
-    | typeof ADSB_HISTORY_LICENSE_DECISION
-    | typeof DIGITRAFFIC_HISTORY_LICENSE_DECISION
+  licenseDecisionId: HistoryLicenseDecision
   logicalBytes: number
 }
 
@@ -56,6 +62,7 @@ export interface HistoricalVesselObservation
   extends HistoricalObservationBase {
   kind: 'vessel'
   mmsi: number
+  attribution?: string
   vesselCategory: VesselCategory
   navigationCategory: VesselNavigationCategory
   name?: string
@@ -138,6 +145,7 @@ const VESSEL_HISTORY_FIELDS = [
   'draughtMeters',
   'navigationStatus',
   'metadataObservedAt',
+  'attribution',
 ] as const
 
 const AIRCRAFT_HISTORY_FIELD_SET = new Set<string>([
@@ -237,11 +245,15 @@ const isVesselNavigationCategory = (
   typeof value === 'string' &&
   VESSEL_NAVIGATION_CATEGORIES.some((category) => category === value)
 
-const historyLicenseDecision = (provider: string) => {
-  if (provider === 'ADSB.lol') return ADSB_HISTORY_LICENSE_DECISION
-  if (provider === 'Fintraffic Digitraffic') {
+const vesselHistoryLicenseDecision = (provider: string, attribution?: unknown) => {
+  if (provider === 'Fintraffic Digitraffic' && attribution === undefined) {
     return DIGITRAFFIC_HISTORY_LICENSE_DECISION
   }
+  if (
+    ['Fintraffic Digitraffic', 'AISStream', 'Open Waters AIS'].includes(provider) &&
+    typeof attribution === 'string' && attribution.length > 0 &&
+    attribution.length <= 4_096 && !/\p{Cc}/u.test(attribution)
+  ) return MARINE_HISTORY_LICENSE_DECISION
   return undefined
 }
 
@@ -357,7 +369,9 @@ const projectAircraft = (
 const projectVessel = (
   entity: Vessel,
   context: ObservationProjectionContext,
-  licenseDecisionId: typeof DIGITRAFFIC_HISTORY_LICENSE_DECISION,
+  licenseDecisionId:
+    | typeof DIGITRAFFIC_HISTORY_LICENSE_DECISION
+    | typeof MARINE_HISTORY_LICENSE_DECISION,
 ): HistoricalVesselObservation =>
   withLogicalBytes({
     schemaVersion: HISTORY_SCHEMA_VERSION,
@@ -389,26 +403,21 @@ const projectVessel = (
     draughtMeters: entity.draughtMeters,
     navigationStatus: entity.navigationStatus,
     metadataObservedAt: entity.metadataObservedAt,
+    attribution: entity.attribution,
   })
 
 export const projectHistoricalObservation = (
   entity: TrafficEntity,
   context: ObservationProjectionContext,
 ): HistoricalObservation | undefined => {
-  const licenseDecisionId = historyLicenseDecision(entity.provider)
+  if (entity.kind === 'aircraft') {
+    return entity.provider === 'ADSB.lol'
+      ? projectAircraft(entity, context, ADSB_HISTORY_LICENSE_DECISION)
+      : undefined
+  }
+  const licenseDecisionId = vesselHistoryLicenseDecision(entity.provider, entity.attribution)
   if (!licenseDecisionId) return undefined
-
-  return entity.kind === 'aircraft'
-    ? projectAircraft(
-        entity,
-        context,
-        licenseDecisionId as typeof ADSB_HISTORY_LICENSE_DECISION,
-      )
-    : projectVessel(
-        entity,
-        context,
-        licenseDecisionId as typeof DIGITRAFFIC_HISTORY_LICENSE_DECISION,
-      )
+  return projectVessel(entity, context, licenseDecisionId)
 }
 
 export const historicalObservationKey = (
@@ -528,10 +537,13 @@ export const validateHistoricalObservation = (
     })
   }
 
+  const vesselLicense = typeof value.provider === 'string'
+    ? vesselHistoryLicenseDecision(value.provider, value.attribution)
+    : undefined
   if (
     value.kind === 'vessel' &&
-    value.provider === 'Fintraffic Digitraffic' &&
-    value.licenseDecisionId === DIGITRAFFIC_HISTORY_LICENSE_DECISION &&
+    vesselLicense !== undefined &&
+    value.licenseDecisionId === vesselLicense &&
     positiveNumber(value.mmsi) &&
     isVesselCategory(value.vesselCategory) &&
     isVesselNavigationCategory(value.navigationCategory) &&
@@ -563,7 +575,7 @@ export const validateHistoricalObservation = (
     return withLogicalBytes({
       schemaVersion: HISTORY_SCHEMA_VERSION,
       normalizationVersion: HISTORY_NORMALIZATION_VERSION,
-      provider: 'Fintraffic Digitraffic',
+      provider: vessel.provider,
       entityId: vessel.entityId,
       kind: 'vessel',
       observedAt: vessel.observedAt,
@@ -577,7 +589,7 @@ export const validateHistoricalObservation = (
       markerScale: vessel.markerScale,
       sessionId: vessel.sessionId,
       segmentId: vessel.segmentId,
-      licenseDecisionId: DIGITRAFFIC_HISTORY_LICENSE_DECISION,
+      licenseDecisionId: vesselLicense,
       mmsi: vessel.mmsi,
       vesselCategory: vessel.vesselCategory,
       navigationCategory: vessel.navigationCategory,
@@ -590,6 +602,7 @@ export const validateHistoricalObservation = (
       draughtMeters: vessel.draughtMeters,
       navigationStatus: vessel.navigationStatus,
       metadataObservedAt: vessel.metadataObservedAt,
+      attribution: vessel.attribution,
     })
   }
 
@@ -631,14 +644,16 @@ export const historicalObservationToEntity = (
     }
   }
 
-  const metadataAvailable =
-    observation.metadataObservedAt === undefined ||
-    observation.metadataObservedAt <= cursor
+  const metadataAvailable = observation.metadataObservedAt === undefined
+    ? observation.licenseDecisionId !== MARINE_HISTORY_LICENSE_DECISION ||
+      observation.receivedAt <= cursor
+    : observation.metadataObservedAt <= cursor
 
   return {
     ...base,
     kind: 'vessel',
     mmsi: observation.mmsi,
+    attribution: observation.attribution,
     vesselCategory: metadataAvailable
       ? observation.vesselCategory
       : 'unknown',

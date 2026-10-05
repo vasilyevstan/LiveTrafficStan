@@ -3,6 +3,7 @@ import {
   historicalEntityKey,
   historicalObservationKey,
   historicalObservationToEntity,
+  MARINE_HISTORY_LICENSE_DECISION,
   type HistoricalObservation,
 } from './observations'
 
@@ -202,15 +203,17 @@ export const historicalSnapshotFromIndexes = (
 ): TrafficEntity[] => {
   const observations = new Map<string, HistoricalObservation>()
   for (const index of indexes) {
-    for (const [key, records] of index) {
+    for (const records of index.values()) {
       const candidate = observationAtOrBefore(records, cursor)
       if (!candidate) continue
-      const current = observations.get(key)
+      const current = observations.get(candidate.entityId)
       if (
         !current ||
-        candidate.observedAt >= current.observedAt
+        candidate.observedAt > current.observedAt ||
+        (candidate.observedAt === current.observedAt &&
+          candidate.receivedAt >= current.receivedAt)
       ) {
-        observations.set(key, candidate)
+        observations.set(candidate.entityId, candidate)
       }
     }
   }
@@ -225,9 +228,14 @@ export const historicalRange = (
   if (observations.length === 0) return undefined
   let oldest = observations[0].observedAt
   let newest = observations[0].observedAt
-  for (const observation of observations.slice(1)) {
+  for (const observation of observations) {
     oldest = Math.min(oldest, observation.observedAt)
-    newest = Math.max(newest, observation.observedAt)
+    newest = Math.max(
+      newest,
+      observation.observedAt,
+      observation.licenseDecisionId === MARINE_HISTORY_LICENSE_DECISION
+        ? observation.receivedAt : observation.observedAt,
+    )
   }
   return { oldest, newest }
 }
@@ -256,10 +264,9 @@ export const historicalTrailSegmentsFromIndexes = (
 ) => {
   if (!selectedId) return [] as readonly (readonly TrailPoint[])[]
   const matching = indexes.flatMap((index) => {
-    const entry = [...index.entries()].find(([, records]) =>
-      records.some((record) => record.entityId === selectedId),
-    )
-    return entry ? [...entry[1]] : []
+    return [...index.values()]
+      .filter((records) => records.some((record) => record.entityId === selectedId))
+      .flat()
   })
   if (matching.length === 0) {
     return [] as readonly (readonly TrailPoint[])[]

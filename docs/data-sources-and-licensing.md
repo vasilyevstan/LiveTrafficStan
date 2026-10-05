@@ -609,10 +609,11 @@ Stored rows use decision ID
 or cross-device database is part of that decision. Destination, ETA, and
 current-only enrichment remain excluded.
 
-The provider was reevaluated on 2026-09-19 against AISstream.io, Datalastic,
-and Kpler/MarineTraffic. It remains the only reviewed option that is keyless,
-browser-native, and covered by a clear open-data license for this public map.
-The complete matrix and bounded stream measurement are in
+The 2026-10-04 evaluation retains this useful keyless regional source and adds
+AISStream and Open Waters as optional complementary sources, without changing
+Digitraffic's own terms or lifecycle. A regional receiver network is not the
+benchmark for worldwide coverage. The current decision, historical comparison
+and bounded stream measurements are in
 [Marine Provider Evaluation](marine-provider-evaluation.md).
 
 Digitraffic is suitable for the current application:
@@ -665,6 +666,86 @@ The local filter taxonomy additionally groups 31, 32, 50-55, 58, and 59 as
 `tug-service`; 20-24, 29, 33-37, 40-44, 49, 90-94, and 99 are known `other`.
 This affects only normalized display filtering. It does not create another
 provider category, alter marker inference, or change upstream traffic.
+
+## Marine traffic: AISStream and Open Waters AIS
+
+Reviewed 2026-10-04 for #296. The optional supplement supplies normalized,
+exact-MMSI-deduplicated observations through the same-origin
+`/api/marine/stream` WebSocket. It does not replace useful Digitraffic
+observations or turn any provider into a guaranteed global service.
+
+**AISStream**:
+
+- Service: <https://aisstream.io/>
+- API and technical requirements: <https://aisstream.io/documentation>
+- Privacy policy: <https://aisstream.io/privacypolicy>
+- Fixed upstream: `wss://stream.aisstream.io/v0/stream`
+- Authentication: private server-side `AISSTREAM_API_KEY`; never browser code,
+  browser URLs or public logs.
+- Service-use basis: the documentation describes proxying information clients
+  need from an application server, prohibits direct browser connections and
+  discusses persisting messages applications cannot afford to lose.
+- Scope: best-effort public display of limited normalized observations,
+  attributed metadata, bounded observed trails/playback and existing optional
+  device-local history; no bulk raw feed or server-side vessel archive.
+- Credit: linked AISStream attribution on the map and attributed selected
+  records, retained through local playback.
+
+This is use of the documented free service, not a claim that its returned
+data has a blanket open-data licence. The MIT message-model/code licence and
+privacy policy do not license the feed. An unanswered public question is not
+an individual-written-permission requirement: follow actual applicable
+published/account terms, rather than inventing a provider approval gate.
+
+**Open Waters AIS**:
+
+- Service and source licensing: <https://openwaters.io/ais/>
+- Native API: <https://openwaters.io/api/ais/>
+- Public policy and limits:
+  <https://github.com/openwatersio/aiscast/tree/main/docs>
+- Fixed upstreams: `wss://ais.openwaters.io/v1/stream` and metadata-only
+  `https://ais.openwaters.io/v1/vessels`.
+- Authentication: protected `OPENWATERS_AIS_TOKEN`. The separately protected
+  identity private key is used for account ownership, not Worker deployment.
+- Its public policy allows display/screenshots, normalized relaying, bounded
+  caches/playback and device-local history, retaining original source terms
+  and attribution. Aggregation does not relicense all received data.
+
+| Original Open Waters source | Rights and attribution treatment |
+| --- | --- |
+| Digitraffic | CC BY 4.0; preserve `Source: Fintraffic / digitraffic.fi, license CC 4.0 BY` |
+| AISHub | Preserve AISHub credit; Open Waters' public policy records redistribution/commercial-use confirmation dated 2026-08-22 |
+| Kystverket / BarentsWatch | Preserve Norwegian licence for Open Government data (NLOD), Norwegian Coastal Administration and applicable BarentsWatch credit; regional small-craft exclusions still apply |
+| Volunteer receptions | CC0 reception data; the volunteer aggregate carries ODbL. Preserve Open Waters and the original attribution, not a uniform CC0 claim |
+| AISStream | Retains the documented-service-use context above; receipt through Open Waters is not a new blanket licence |
+
+The normalizer retains supplied source attribution. Known-source fallback
+credits are used only when a message omits its credit; an unknown source
+without usable attribution is not silently relabeled. Compatible metadata
+fusion combines attribution without fabricating a new position source.
+React renders these strings as text, not provider-supplied HTML. The map
+links AISStream, Open Waters, AISHub and applicable NLOD/volunteer terms.
+
+**Clocks and retention**: native position events carry the position clock.
+Open Waters REST `seen` also advances for static messages and must never
+refresh or manufacture a live position. REST enriches static fields only.
+Missing motion, type, dimensions and class remain unavailable. Server-side
+positions/metadata are bounded in memory; persisted SQLite state contains
+only operational quota reservations and retry deadlines. No coordinates,
+raw messages or vessel history are written there. This does not imply that
+the upstream services have no archives or access logs.
+
+The explicit local-history decision is
+`marine-per-source-local-playback-2026-10-04`. New source rows require
+attribution and retain provider identity, observation/receipt times, existing
+retention limits, opt-in authorization and deletion controls. Existing
+ADSB.lol/Digitraffic decisions are unchanged. Playback deduplicates vessels
+without joining unrelated source trail segments; unknown metadata report
+times are not backdated before receipt. IndexedDB database version 2 fences
+older readers that would otherwise delete an unfamiliar provider. It retains
+the same record schema, stores, consent, recording epoch and existing rows.
+Rollback should disable the supplement on this compatible reader, not erase
+history or restore a version-1 reader.
 
 ## Port context: Natural Earth Ports
 
@@ -943,6 +1024,8 @@ separate licenses and attribution requirements:
   ibosoftnet/icao-aircraft-addresses, CC0 1.0, with a CC0 Wikidata ISO
   crosswalk
 - marine data: Fintraffic Digitraffic, CC BY 4.0
+- optional supplemental marine data: AISStream documented service use and
+  Open Waters AIS with its original per-source terms and attribution
 - optional port context: Natural Earth Ports, public domain
 - optional airport context: OurAirports, public domain
 - modeled orbital elements and catalog type: CelesTrak GP/OMM and SATCAT,
@@ -952,8 +1035,10 @@ separate licenses and attribution requirements:
 - two historical exact-object photographs: NASA informational media guidance,
   visible `Photo: NASA` credit, separate co-located notice
 
-The application does not persist or redistribute a live traffic database. It
-does distribute the separately identified static aircraft metadata derivative
+The application does not operate a server-side vessel history archive or bulk
+raw-data service. Limited normalized live records are relayed to interested
+viewers; optional origin-local history remains under explicit user control.
+It does distribute the separately identified static aircraft metadata derivative
 database under ODC-By 1.0, the separately identified Apache-2.0/CC0 country
 allocation projections, and the separately identified public-domain Natural
 Earth port projection and OurAirports airport projection.

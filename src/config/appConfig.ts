@@ -15,12 +15,11 @@ import {
 import aircraftMetadataSource from './aircraftMetadataSource.json'
 import airportsSource from './airportsSource.json'
 import portsSource from './portsSource.json'
+import type { AppCenter } from '../domain/geo'
+import { MARINE_STREAM_CONFIG } from './marineStreamConfig'
 
-export interface AppCenter {
-  latitude: number
-  longitude: number
-  label: string
-}
+export type { AppCenter } from '../domain/geo'
+export { MARINE_STREAM_CONFIG } from './marineStreamConfig'
 
 export interface FreshnessThresholds {
   staleAfterMs: number
@@ -121,6 +120,7 @@ export interface AppConfig {
       sourceUsagePolicyUrl: string
     }
   marine: FreshnessThresholds & {
+    supplementEnabled?: boolean
     restBaseUrl: string
     mqttUrl: string
     mqttConnectTimeoutMs: number
@@ -596,6 +596,11 @@ export const createAppConfig = (
       sourceUsagePolicyUrl: 'https://celestrak.org/usage-policy.php',
     },
     marine: {
+      supplementEnabled: readBoolean(
+        env,
+        'VITE_MARINE_SUPPLEMENT_ENABLED',
+        false,
+      ),
       restBaseUrl: readEndpoint(
         env,
         'VITE_MARINE_REST_ENDPOINT',
@@ -613,9 +618,9 @@ export const createAppConfig = (
       metadataRefreshIntervalMs: 5 * 60_000,
       queryRestRefreshIntervalMs: 5 * 60_000,
       restLookbackMs: 15 * 60_000,
-      snapshotFlushIntervalMs: 1_000,
-      staleAfterMs: 2 * 60_000,
-      expireAfterMs: 10 * 60_000,
+      snapshotFlushIntervalMs: MARINE_STREAM_CONFIG.publishIntervalMs,
+      staleAfterMs: MARINE_STREAM_CONFIG.staleAfterMs,
+      expireAfterMs: MARINE_STREAM_CONFIG.expireAfterMs,
     },
     trail: {
       durationOptionsMinutes: TRAIL_DURATION_OPTIONS_MINUTES,
