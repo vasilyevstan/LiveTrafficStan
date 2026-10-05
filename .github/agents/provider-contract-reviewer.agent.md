@@ -211,9 +211,9 @@ Check these project invariants:
   and future-clock rules reevaluate while open without refetch.
 - Aircraft photos remain fail-closed in source configuration and may be enabled
   only after dated API terms and one exact-production-origin browser check pass.
-  The production-enabled path is an explicit selected-details action or one
+  The production-enabled path is one automatic selected-details attempt or one
   stable 500 ms fine-pointer hover on a live aircraft's exact six-character
-  ICAO24; selection alone, HISTORY, vessels, callsign, registration, model,
+  ICAO24; startup, camera changes, HISTORY, vessels, callsign, registration, model,
   airline, and fuzzy text make no request.
 - Planespotters JSON is fetched directly from the fixed hex endpoint with one
   active cancellable request, bounded timeout/body, no credentials, no-store,
@@ -228,8 +228,19 @@ Check these project invariants:
   Cache API, service-worker/Worker cache, KV/R2, a proxy, feed, or export.
 - Aircraft-photo failure stays local to details and cannot alter ADS-B
   polling, marker selection, map/canvas identity, route lookup, history, or
-  another provider. Vessel UI must not imply photo support without the reviewed
-  exact-IMO/file-revision rights manifest.
+  another provider.
+- Vessel photos prefer the reviewed bundled IMO manifest, then use Open Waters'
+  fixed same-origin media route by valid IMO or ordinary MMSI. A provider number
+  match is not independently reviewed hull identity; MMSI reassignment and
+  historical-image caveats remain explicit. Never fall back to names or classes.
+- Dynamic photo metadata is bounded and revision-fenced; only fulfilled
+  success/empty results enter the session cache. Open Waters' empty
+  `max-age=900` incomplete-result policy becomes unavailable with Retry-After,
+  not "no photo". Shared cooldowns cannot trigger automatic retries.
+- Commons images require validated original file/artist/license metadata, exact
+  permitted image origins in both parser and CSP, anonymous loading and no
+  referrer. Prove a real decoded image outside the bundled set and a real
+  production-origin aircraft photo; JSON/fixture success alone is insufficient.
 - Credentials stay server-side behind allowlisted routes. A missing authorized
   provider or account becomes an explicit blocker rather than client-side
   secrets, scraping, or success-shaped placeholder data.

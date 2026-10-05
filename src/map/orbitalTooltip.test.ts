@@ -104,7 +104,7 @@ describe('orbital tooltip', () => {
       fakeDocument,
       new Map([
         [
-          '/orbital-enrichment/2026-09-29-v1/norad-20580.jpg',
+          '/orbital-enrichment/2026-10-05-v1/norad-20580.jpg',
           'blob:https://example.test/hubble',
         ],
       ]),
@@ -149,7 +149,7 @@ describe('orbital tooltip', () => {
       title: 'STARLINK SAMPLE 20580',
       details: [
         'Payload · NORAD 20580',
-        'Starlink sample',
+        'Starlink sample · internet connectivity (general service context)',
         'Modeled position · not live telemetry',
       ],
     })
@@ -159,7 +159,7 @@ describe('orbital tooltip', () => {
       fakeDocument,
       new Map([
         [
-          '/orbital-enrichment/2026-09-29-v1/norad-20580.jpg',
+          '/orbital-enrichment/2026-10-05-v1/norad-20580.jpg',
           'blob:https://example.test/hubble',
         ],
       ]),
@@ -173,7 +173,7 @@ describe('orbital tooltip', () => {
       ),
     ).toBe(false)
     expect(root.children.map(({ textContent }) => textContent)).toContain(
-      'Starlink sample',
+      'Starlink sample · internet connectivity (general service context)',
     )
   })
 })

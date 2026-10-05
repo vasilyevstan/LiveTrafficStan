@@ -1,36 +1,69 @@
-# Vessel Reference Photo Evaluation
+# Vessel Photo Evaluation
 
 ## Status
 
-LiveTrafficStan ships a deliberately small, manually reviewed vessel-photo
-manifest. Version `2026-10-02-v1` contains eight historical reference
-photographs: the original five ferries plus Tarmo, Romantika, and MSC
-Magnifica. The three additions were observed through Digitraffic on
-2026-10-02 and retain the same exact-IMO, fixed-revision, bundled-asset
-contract.
+LiveTrafficStan loads vessel photographs on selection or stable hover through
+Open Waters' existing media lookup. It prefers a valid AIS-reported IMO and
+otherwise uses the exact ordinary vessel MMSI. This is a provider lookup, not
+independent verification of the transmitting hull. MMSIs can be reassigned.
+AISStream and Open Waters both continue supplying traffic alongside
+Digitraffic; AISStream's AIS messages are not a photograph feed.
 
-The eight-photo generation is accepted in production at application source
+The eight reviewed historical photographs in bundled version
+`2026-10-02-v1` remain the first choice for their exact IMOs, without a media
+API request. They cover Tarmo, Finlandia, Romantika, Victoria I, Viking XPRS,
+MSC Magnifica, Megastar and MyStar. Dynamic coverage is additional and
+best-effort, not an expansion of that immutable reviewed library.
+
+The historical eight-photo generation was accepted at application source
 `bba0bf4f7a69939e3c07fbeb24470fa959f6f20a`. Protected release validation
 run `36996187462`, canonical deployment run `36997443034`, rollback run
 `36998162009`, and restoration run `36998245095` passed. The expansion remains
-included unchanged in current application source
+included unchanged in the subsequent application source
 `e2b2afaa04466116719310d6286441f8e6ba60ca`, deployed as Cloudflare version
 `816506f7-2cb1-4e6c-8626-ae990eb62b8a`. Those assets do not rewrite the
 accepted `2026-09-26-v1` bytes, which remain historical
 rollback assets.
 
-The feature is not a general vessel-image lookup. It makes no runtime request
-to Wikimedia, Wikidata, a ship tracker, an image API, or a LiveTrafficStan
-proxy. A photo is eligible only when the selected or stably hovered live vessel
-reports a valid seven-digit IMO that exactly matches one reviewed manifest
-entry.
+## Open Waters source contract
+
+The public implementation was reviewed at
+[`openwatersio/aiscast@37f97fe2166f8fa55c7789641dca53c85deeac8a`](https://github.com/openwatersio/aiscast/tree/37f97fe2166f8fa55c7789641dca53c85deeac8a),
+particularly `client/app/routes/vessel-media.ts`, `client/app/lib/media.server.ts`
+and the client photo components. Its route is:
+
+```text
+GET https://openwaters.io/ais/vessels/media/{IMO-or-MMSI}
+```
+
+It uses exact-number Commons categories and, for IMO, an exact P458 Wikidata
+item image. It returns at most eight images with thumbnail URL, dimensions,
+Commons file page, artist and license. A 2026-10-05 request for IMO `8919805`
+returned eight attributed photographs outside our bundled library. The route
+does not send a browser CORS allowance, so the application uses the narrow
+same-origin `GET /api/vessel-photos/{number}` Worker route. No key, account,
+new service or arbitrary image proxy is required.
+
+The provider can return historical names or imperfect category associations.
+The UI therefore labels the reported-number lookup rather than calling it a
+reviewed exact-hull photograph. An MMSI lookup additionally warns about
+reassignment. There is no name, location, nearby-vessel, sister-ship or fuzzy
+fallback.
+
+The browser accepts only supported CC BY, CC BY-SA, CC0 or public-domain
+records with bounded artist/license fields, sensible dimensions, a Commons
+file page and an allowed Commons thumbnail host. Attribution licenses require
+a Creative Commons license link. Unsupported or incomplete nonempty metadata
+is an error, not a successful empty result. The image remains a link to its
+source with visible artist, source and license. No image bytes are proxied,
+modified, rehosted or added to the bundled library.
 
 This is an engineering and attribution record, not legal advice. Source and
 license evidence must be re-reviewed before adding or replacing an entry.
 
-## Why a bundled manifest was selected
+## Why the original bundled manifest was selected
 
-No reviewed free runtime provider supplied all of:
+At the original review, no selected free runtime provider supplied all of:
 
 - exact selected-hull identity;
 - predictable public browser access;
@@ -44,7 +77,7 @@ different hull. Arbitrary runtime Wikidata `P18` or Commons search would also
 leave file-specific identity, revision, multi-license, deletion, and
 attribution decisions to unreviewed browser behavior.
 
-The accepted path is therefore:
+That reviewed fallback remains:
 
 ```text
 live AIS vessel
@@ -123,14 +156,22 @@ relicense these photographs.
 
 ## Runtime contract
 
-`src/domain/vesselPhoto.ts` performs a synchronous lookup from the selected
-normalized vessel's existing `imo` field:
+`src/domain/vesselPhoto.ts` first performs a synchronous bundled lookup from
+the selected normalized vessel's existing `imo` field:
 
 - the value must be a safe integer rendered as exactly seven digits;
 - the IMO weighted check digit must be valid;
 - the exact IMO must exist in the committed manifest;
-- MMSI, name, call sign, vessel type, class, route, or visual similarity are
-  never fallback keys.
+- the reviewed bundled match never uses MMSI, name, call sign, vessel type,
+  class, route or visual similarity as fallback keys.
+
+If no bundled photo exists, a dynamic lookup uses the valid IMO or an ordinary
+nine-digit MMSI in `[200000000, 800000000)`. Its full identity contains entity
+ID, number kind and number. The shared photo controller fences each revision,
+including an IMO arriving after an MMSI lookup and A-to-B-to-A changes.
+Selection starts one automatic attempt; hover uses the existing 500 ms dwell.
+Aircraft retains its separate Planespotters adapter with the same reusable
+controller and automatic selection behavior.
 
 The result identity includes entity ID, exact IMO, and manifest version. React
 derives the selected-details result directly on every render, while the map
@@ -148,31 +189,48 @@ links the fixed Commons revision and retains visible author, source, license,
 historical-reference, and exact-IMO context. Touch and keyboard users continue
 to use selected details for the full record.
 
-Missing, invalid, or unmatched IMO produces no real image and no placeholder.
-Selected details now state whether AIS lacks a valid IMO or whether the valid
-exact IMO has no reviewed manifest entry; both states explicitly say that no
-substitute is shown. Sub-dwell hover, search results, map markers, trails, and
-HISTORY produce no photo. The tooltip path does not mutate normalized traffic,
+Missing usable identity, successful empty response, loading, unsupported
+metadata, timeout, offline and provider failure have distinct presentation.
+No substitute image is shown. Sub-dwell hover, search results, map markers,
+trails and HISTORY start no photo lookup. The tooltip path does not mutate normalized traffic,
 provider health, freshness, selection, camera, filters, or MQTT/REST lifecycle.
 
 ## Network, cache, privacy, and failure behavior
 
-The browser loads only the selected or stable-hover same-origin versioned
-asset. There is:
+Bundled matches load only the versioned same-origin image. Dynamic matches use
+one fixed same-origin metadata route and directly load the validated unchanged
+thumbnail from `thumb.wikimedia.org` or `upload.wikimedia.org`. CSP allows only
+those exact additional image origins. Anonymous image loading and
+`no-referrer` suppress cross-origin cookies and referrer context.
 
-- no Wikimedia or Wikidata runtime request;
-- no tracker, gallery, image API, proxy, Worker route, credential, cookie, or
-  submitted user data;
-- no image URL or metadata persistence in Web Storage or IndexedDB;
-- no service-worker precache or runtime-cache path for vessel photographs.
+The Worker permits GET, a checksum-valid IMO or ordinary MMSI, and no query
+string or foreign browser Origin. It forwards only Accept and the project
+User-Agent to the fixed Open Waters host. It rejects redirects, bounds the
+streamed JSON to 128 KiB and eight photos, and applies an eight-second total
+upstream deadline. The browser applies a ten-second deadline. Responses are
+`no-store`; there is no wildcard CORS, coordinate forwarding, shared Worker
+cache, secret, backend image archive or arbitrary URL input.
+
+Open Waters caches genuine empty results for one day, but failed/incomplete
+lookups for 900 seconds. An empty response with the latter cache policy maps
+to `503` and `Retry-After: 900`, not "no photo". Both `429` and failure
+`Retry-After` deadlines block manual/automatic requests across the tab's
+hover/details controllers without scheduling retries.
+
+Fulfilled photo or genuine empty metadata may use a 32-entry, one-hour
+current-tab LRU. Failed, aborted, partial and rejected responses do not enter
+it. Hidden/offline/HISTORY/selection/unmount transitions abort obsolete work.
+There is no Web Storage, IndexedDB, service-worker, Cache API or history
+persistence for image URLs, metadata or image bytes. The service worker
+bypasses the new API and both Commons image hosts.
 
 `public/_headers` gives `/vessel-photos/*` one-year immutable browser caching.
 Every changed source, transformation, manifest field, or bundled byte requires
 a new manifest/version directory; files are never replaced under an existing
 immutable path.
 
-An absent asset remains a normal failed image request. The application does not
-replace it with another photo or report success-shaped generic imagery.
+An image load failure is reported with a source-page link. The application
+does not replace it with another photo or report success-shaped generic imagery.
 Rollback restores the earlier application/static-asset version as one
 Cloudflare deployment.
 
@@ -213,6 +271,17 @@ external provider request, matched/unmatched transitions do not flash a stale
 hull, and the desktop plus 390-pixel layouts keep the selected-details photo,
 source, license, Close action, attribution, and map reachable without
 horizontal overflow.
+
+Dynamic regressions additionally cover IMO/MMSI preference and checksum,
+full selected identity and returned lookup-number matching, stale callbacks,
+shared results/cooldowns, fixed upstream/privacy/redirect rules, bounded body
+and timeout handling, supported license/host validation, hover image rendering,
+offline/history exclusions and failure-versus-empty wording. Real-browser
+acceptance must load an actual current vessel outside the eight bundled IMOs;
+HTTP metadata or fixture-only success is insufficient. The 2026-10-05 local
+Worker/browser check loaded BALTIC WHALE, reported IMO `9354454`, as a
+960 x 640 Commons image credited to Eduard47 under CC BY-SA 4.0. This local
+receipt is not a claim that the new application has already been deployed.
 
 The original five-photo production acceptance passed those checks with
 deterministic marine fixtures against the deployed application and actual
@@ -259,10 +328,8 @@ finding a replacement image.
 
 ## Yacht limitation
 
-This manifest contains ferries, one icebreaker, and one cruise ship, not
-yachts. Digitraffic publishes Class A AIS only, and many yachts either use
-Class B AIS or do not carry a stable IMO. The application already renders
-truthful sailing-vessel and pleasure-craft silhouettes when reported data meets
-the released criteria, but it will show a real yacht photograph only if a
-future yacht has the same exact-IMO and file-specific evidence as every entry
-above.
+The bundled manifest contains no yachts. AISStream and Open Waters add
+best-effort Class B reception, and dynamic media lookup can use an ordinary
+MMSI when a yacht has no valid IMO. This does not guarantee that Commons has
+an image, that a receiver sees the yacht, or that a reassigned MMSI identifies
+the current hull. Existing reported-type and length filters are unchanged.

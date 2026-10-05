@@ -23,6 +23,14 @@ describe('LiveStatus', () => {
     expect(html).toContain('reception is not guaranteed')
     expect(html).toContain('Marine stream connected')
     expect(html).not.toContain('0 ships shown · regional source')
+    for (const source of ['ADSB.lol', 'Digitraffic', 'AISStream', 'Open Waters AIS', 'AISHub', 'Kystverket', 'BarentsWatch']) {
+      expect(html).toContain(source)
+    }
+    expect(html).toContain('https://aisstream.io/')
+    expect(html).toContain('https://openwaters.io/ais/')
+    expect(html).toContain('Wikimedia Commons')
+    expect(html).toContain('Norwegian licence for Open Government data')
+    expect(html).toContain('Data delivered by BarentsWatch')
   })
 
   it('reports partial operation when one marine source fails but others remain live', () => {
@@ -68,6 +76,8 @@ describe('LiveStatus', () => {
       'Digitraffic regional source; exact coverage unknown',
     )
     expect(html).not.toContain('0 ships</span>')
+    expect(html).not.toContain('https://aisstream.io/')
+    expect(html).not.toContain('Open Waters network inputs')
   })
 
   it('does not label an unavailable stream as connected', () => {

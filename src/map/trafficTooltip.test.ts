@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { AircraftPhotoViewState } from '../domain/aircraftPhoto'
 import type { Aircraft, Vessel } from '../domain/traffic'
-import { vesselReferencePhotoForSelection } from '../domain/vesselPhoto'
+import { vesselReferencePhotoForSelection, type VesselPhotoViewState } from '../domain/vesselPhoto'
 import {
   createTrafficTooltipElement,
   trafficTooltipSummary,
@@ -23,6 +23,7 @@ class FakeElement {
   loading = ''
   decoding = ''
   referrerPolicy = ''
+  crossOrigin = ''
 
   append(...children: FakeElement[]) {
     this.children.push(...children)
@@ -252,6 +253,50 @@ describe('trafficTooltipSummary', () => {
           ),
         ).toBe(false)
       }
+    })
+
+    it('shows a dynamic number-matched vessel image without requiring a bundled photo', () => {
+      const state: VesselPhotoViewState = {
+        phase: 'available',
+        identityKey: 'vessel:230123456|MMSI|230123456',
+        photo: {
+          lookupKind: 'MMSI', lookupNumber: '230123456',
+          thumbnailUrl: 'https://upload.wikimedia.org/wikipedia/commons/a/ab/Test.jpg',
+          pageUrl: 'https://commons.wikimedia.org/wiki/File:Test.jpg',
+          width: 640, height: 480, artist: 'Test photographer', license: 'CC BY 4.0',
+        },
+      }
+      const root = createTrafficTooltipElement(vessel(), fakeDocument, {
+        dynamicVesselPhoto: state,
+      }) as unknown as FakeElement
+      const link = root.children.find(child => child.className === 'traffic-tooltip__photo-link')
+      expect(link?.children[0]).toMatchObject({
+        src: state.photo.thumbnailUrl, referrerPolicy: 'no-referrer', crossOrigin: 'anonymous',
+      })
+      expect(link?.children[1].textContent).toContain('Test photographer · Wikimedia Commons · CC BY 4.0')
+      expect(link?.children[2].textContent).toContain('MMSIs can be reassigned')
+      const other = createTrafficTooltipElement(vessel({ imo: 8919805 }), fakeDocument, {
+        dynamicVesselPhoto: state,
+      }) as unknown as FakeElement
+      expect(other.children.some(child => child.className === 'traffic-tooltip__photo-link')).toBe(false)
+    })
+
+    it.each([
+      ['idle', undefined],
+      ['loading', 'Loading vessel photo…'],
+      ['unavailable', 'No photo returned for this vessel number.'],
+      ['error', 'Vessel photo lookup unavailable.'],
+    ] as const)('keeps dynamic hover %s truthful', (phase, text) => {
+      const identityKey = 'vessel:230123456|MMSI|230123456'
+      const state: VesselPhotoViewState = phase === 'error'
+        ? { phase, identityKey, reason: 'network' }
+        : phase === 'unavailable'
+          ? { phase, identityKey, reason: 'not-found' }
+          : { phase, identityKey }
+      const root = createTrafficTooltipElement(vessel(), fakeDocument, {
+        dynamicVesselPhoto: state,
+      }) as unknown as FakeElement
+      expect(root.children.find(child => child.className === 'traffic-tooltip__photo-status')?.textContent).toBe(text)
     })
   })
 

@@ -211,11 +211,11 @@ or dataset.
 
 LiveTrafficStan tightens the JSON cache to one hour and 32 current-tab entries,
 shared only between its hover and selected-details controllers. It uses only
-an exact six-character ICAO24 after **Load aircraft
-photo** or a stable 500 ms fine-pointer hover, accepts only the documented
+an exact six-character ICAO24 on committed live selection or a stable
+500 ms fine-pointer hover, accepts only the documented
 API/CDN/photo-page origins, shows the photographer credit and source link, and
 writes no response, URL, credit, or image byte to application-managed storage.
-Selection alone, HISTORY, and vessels never use the path.
+Startup, ordinary camera movement, HISTORY and vessels never use this path.
 
 The API-specific terms page has no visible dated revision. The separate general
 terms state "As of: December 22nd, 2012", but that date does not prove when the
@@ -230,9 +230,32 @@ no-re-exposure terms. See
 [Aircraft Photo Evaluation](aircraft-photo-evaluation.md) for the exact
 boundary, deterministic evidence, live result, and enablement requirements.
 
-## Vessel reference photos: reviewed Wikimedia Commons derivatives
+## Vessel photos: Open Waters lookup and reviewed Commons derivatives
 
-LiveTrafficStan includes eight bundled historical reference photographs selected
+Selected or stably hovered vessels without a bundled match can request
+`GET /api/vessel-photos/{IMO-or-MMSI}`. The fixed Worker route retrieves
+Open Waters' documented media response at
+`https://openwaters.io/ais/vessels/media/{number}`. This route is necessary
+because that metadata endpoint has no browser CORS allowance; it is not a
+general image proxy. AISStream and Open Waters remain complementary traffic
+feeds, but only Open Waters supplies this media lookup.
+
+Lookup prefers a checksum-valid reported IMO, then an ordinary vessel MMSI.
+The UI labels provider number/category matching separately from reviewed
+exact-hull identity and warns that MMSIs can be reassigned. Only fully
+attributed supported CC BY, CC BY-SA, CC0 or public-domain images are accepted.
+The unchanged thumbnail loads directly from an allowlisted Commons image
+host, anonymously and without referrer. Visible artist, file-page and license
+credit stays beside it. Neither the provider lookup nor our code guarantees
+that every current hull has a photo.
+
+No coordinates, Home, search text, browser credentials or private AIS token
+are sent. No photo metadata or image bytes enter backend archives, traffic
+history, service-worker storage or IndexedDB. Full source review, bounded
+transport, failure/empty distinction and tab-only retention are documented in
+[Vessel Photo Evaluation](vessel-photo-evaluation.md).
+
+LiveTrafficStan also retains eight bundled historical reference photographs selected
 through a file-by-file review:
 
 - Tarmo, IMO `5352886`;
@@ -249,7 +272,7 @@ Tallinn-Helsinki operating area during the 2026-09-26 review. Tarmo and
 Romantika were observed live in Tallinn and MSC Magnifica in the Baltic Sea
 during the 2026-10-02 expansion. Identity evidence binds the valid exact IMO to
 one Wikidata item and one Commons image, then pins the reviewed Commons
-file-page revision. Runtime matching uses only the exact AIS-reported IMO of
+file-page revision. Matching for this bundled fallback uses only the exact AIS-reported IMO of
 the selected or stably hovered live vessel. It never uses MMSI, name, call
 sign, class, sister ship, or fuzzy matching and never performs a runtime
 Wikimedia/Wikidata search.
@@ -280,8 +303,8 @@ fine-pointer hover over that exact live vessel. The compact hover image links
 the fixed Commons revision and shows author, source, license, exact-IMO, and
 historical-reference context. No Wikimedia, Wikidata, tracker, gallery, image
 API, Worker proxy, KV, R2, Web Storage, IndexedDB, or service-worker cache is
-involved. Missing, invalid, unmatched, historical, and sub-dwell hover vessels
-receive no photo. Current production source
+involved in the bundled fallback. A missing bundled match may use the dynamic
+lookup above; historical and sub-dwell hover vessels do not. Historical source
 `e2b2afaa04466116719310d6286441f8e6ba60ca` retains immutable generation
 `2026-10-02-v1`; release #267 exact Chrome acceptance loaded all eight declared
 assets with their image MIME types and one-year immutable caching, distinguished
@@ -955,19 +978,25 @@ other representation's validator returns `200`. No browser request, viewport,
 Home, geolocation, search, selection, cookie, credential, or referrer is added
 to the fixed server-side CelesTrak pair.
 
-## Orbital purpose and images: reviewed NASA sources
+## Orbital purpose and images: reviewed NASA/JAXA sources
 
 Issue #193 adds no live metadata or image provider. Version
-`2026-09-29-v1` is a two-record application-owned manifest for exact NORAD
-`20580` (Hubble) and `25544` (ISS). Purpose comes from official NASA mission
-pages. Historical photographs come from exact NASA Image and Video Library
+`2026-10-05-v1` contains nine exact-object descriptions: Hubble, ISS, Terra,
+Aqua, Midori II, ALOS-2, Hitomi, XRISM and ACS3. Purpose comes from official
+NASA and JAXA mission pages, summarized factually with retrieval dates and
+source digests. The two historical photographs still come from NASA Library
 IDs `s125e011615` and `s132e012212`.
 
 The lookup requires the current NORAD ID, CelesTrak name, international
-designator, and exact SATCAT type to match the reviewed record. Every other
-object, including rocket bodies and debris, reports purpose/image unavailable.
+designator, and exact SATCAT type to match the reviewed record. Unreviewed
+objects, including rocket bodies and debris, report exact purpose/image unavailable.
 No mission, operator, payload relationship, or image is inferred from a name,
 orbit, owner code, launch family, or catalog group.
+
+Starlink details separately describe general internet-service context from
+its official service overview, explicitly not an individual object's verified
+purpose or operational state. This compiled, source-pinned text makes no
+request and cannot transfer curated images or enrichment to the sample.
 
 NASA's Images and Media Usage Guidelines say NASA content generally is not
 subject to copyright in the United States and permit educational or
@@ -981,7 +1010,7 @@ dimensions, byte counts, identity chain, rejected sources, request boundary,
 and stop conditions are in
 [Orbital Purpose and Image Source Evaluation](orbital-enrichment-source-evaluation.md).
 The media-specific notice is co-located at
-[`public/orbital-enrichment/2026-09-29-v1/LICENSES.md`](../public/orbital-enrichment/2026-09-29-v1/LICENSES.md);
+[`public/orbital-enrichment/2026-10-05-v1/LICENSES.md`](../public/orbital-enrichment/2026-10-05-v1/LICENSES.md);
 the photographs are not covered by the repository's Apache-2.0 code license.
 
 The manifest is compiled into the browser, so purpose adds no request. Image

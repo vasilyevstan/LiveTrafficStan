@@ -76,9 +76,10 @@ The application deliberately tightens the permitted JSON cache to one hour.
 ## Accepted application boundary
 
 Only a live aircraft with a syntactically valid six-character ICAO24 is
-eligible. Selection itself never starts a lookup. The user can activate
-**Load aircraft photo** in selected details, or a fine pointer can remain over
-one aircraft marker for 500 ms. Leaving before that dwell cancels the automatic
+eligible. Selection now starts one automatic lookup, matching the requested
+on-demand vessel experience; the existing photo action remains available for
+retry. A fine pointer can also remain over one aircraft marker for 500 ms.
+Leaving before that dwell cancels the automatic
 attempt, and vessels and HISTORY never start one.
 
 The browser then makes one direct request to the exact hex endpoint with
@@ -133,9 +134,10 @@ substitutes a model, airline, or generic photo.
 
 Synthetic browser and unit fixtures prove:
 
-- zero photo requests on selection, sub-500 ms aircraft hover, vessel hover,
+- zero photo requests at startup, sub-500 ms aircraft hover, vessel hover,
   and during HISTORY;
-- one request only after explicit action or one stable 500 ms aircraft hover;
+- one request on committed live selection, explicit retry or one stable
+  500 ms aircraft hover;
 - A to B to A stale-result rejection and cancellation on leave/unmount;
 - select-first/hover-second shared cache publication to the exact open details
   panel with no duplicate provider request, including Strict Mode

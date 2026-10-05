@@ -1,5 +1,8 @@
 import vesselPhotoManifest from '../config/vesselPhotoManifest.json'
 import type { Vessel } from './traffic'
+import type { PhotoViewState } from './photo'
+import { isValidImo } from './vesselPhotoIdentity'
+export { isValidImo, isValidVesselPhotoNumber } from './vesselPhotoIdentity'
 
 type ManifestPhoto = (typeof vesselPhotoManifest.photos)[number]
 
@@ -13,17 +16,52 @@ export type VesselReferencePhotoSelection =
   | { kind: 'invalid-imo' }
   | { kind: 'unmatched'; imo: string }
 
-const IMO_WEIGHTS = [7, 6, 5, 4, 3, 2] as const
+export interface VesselPhotoIdentity {
+  entityId: string
+  kind: 'IMO' | 'MMSI'
+  number: string
+}
 
-export const isValidImo = (value: string) =>
-  /^[0-9]{7}$/.test(value) &&
-  IMO_WEIGHTS.reduce(
-    (total, weight, index) =>
-      total + Number(value[index]) * weight,
-    0,
-  ) %
-    10 ===
-    Number(value[6])
+export interface DynamicVesselPhoto {
+  lookupKind: 'IMO' | 'MMSI'
+  lookupNumber: string
+  thumbnailUrl: string
+  width: number
+  height: number
+  pageUrl: string
+  artist: string
+  license: string
+  licenseUrl?: string
+  description?: string
+}
+
+export type VesselPhotoViewState = PhotoViewState<DynamicVesselPhoto>
+
+export const vesselPhotoIdentity = (
+  vessel: Pick<Vessel, 'id' | 'mmsi' | 'imo'>,
+): VesselPhotoIdentity | undefined => {
+  const imo = canonicalImo(vessel.imo)
+  if (imo) return { entityId: vessel.id, kind: 'IMO', number: imo }
+  const mmsi = String(vessel.mmsi)
+  return /^[2-7][0-9]{8}$/.test(mmsi)
+    ? { entityId: vessel.id, kind: 'MMSI', number: mmsi }
+    : undefined
+}
+
+export const vesselPhotoIdentityKey = (identity: VesselPhotoIdentity) =>
+  `${identity.entityId}|${identity.kind}|${identity.number}`
+
+export const dynamicVesselPhotoForSelection = (
+  vessel: Pick<Vessel, 'id' | 'mmsi' | 'imo'>,
+  state: VesselPhotoViewState | undefined,
+) => {
+  const identity = vesselPhotoIdentity(vessel)
+  return identity && state?.phase === 'available' &&
+    state.identityKey === vesselPhotoIdentityKey(identity) &&
+    state.photo.lookupKind === identity.kind &&
+    state.photo.lookupNumber === identity.number
+    ? state.photo : undefined
+}
 
 const canonicalImo = (imo: number | undefined) => {
   if (!Number.isSafeInteger(imo)) return undefined

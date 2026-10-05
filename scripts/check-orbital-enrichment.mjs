@@ -76,6 +76,19 @@ const requiredHttpsUrl = (value, label) => {
 const sha256 = (bytes) =>
   createHash('sha256').update(bytes).digest('hex')
 
+const verifyPurposeSource = (purpose, label) => {
+  requiredString(purpose?.shortLabel, `${label} purpose label`, 80)
+  requiredString(purpose?.description, `${label} purpose`, 600)
+  requiredString(purpose?.sourceName, `${label} purpose source`, 120)
+  requiredString(purpose?.sourceTitle, `${label} purpose title`, 240)
+  requiredHttpsUrl(purpose?.sourceUrl, `${label} purpose URL`)
+  if (purpose?.sourcePublishedAt !== undefined) {
+    requiredDate(purpose.sourcePublishedAt, `${label} purpose publication date`)
+  }
+  requiredDate(purpose?.sourceRetrievedAt, `${label} purpose retrieval date`)
+  requiredSha256(purpose?.sourceSha256, `${label} purpose source digest`)
+}
+
 const imageDimensions = (bytes, mediaType) => {
   if (mediaType === 'image/png') {
     if (bytes.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a') {
@@ -212,6 +225,7 @@ if (
   fail(`records must contain 1-${MAX_RECORDS} reviewed objects`)
 }
 await verifyImmutableVersion()
+verifyPurposeSource(manifest.constellationContext?.starlink, 'Starlink general context')
 
 const catalogById = new Map(
   catalog.records.map((record) => [record.noradCatalogId, record]),
@@ -270,25 +284,7 @@ for (const [index, record] of manifest.records.entries()) {
     }
   }
 
-  requiredString(record.purpose?.shortLabel, `${id} purpose label`, 80)
-  requiredString(record.purpose?.description, `${id} purpose`, 600)
-  requiredString(record.purpose?.sourceName, `${id} purpose source`, 120)
-  requiredString(record.purpose?.sourceTitle, `${id} purpose title`, 240)
-  requiredHttpsUrl(record.purpose?.sourceUrl, `${id} purpose URL`)
-  if (record.purpose?.sourcePublishedAt !== undefined) {
-    requiredDate(
-      record.purpose.sourcePublishedAt,
-      `${id} purpose publication date`,
-    )
-  }
-  requiredDate(
-    record.purpose?.sourceRetrievedAt,
-    `${id} purpose retrieval date`,
-  )
-  requiredSha256(
-    record.purpose?.sourceSha256,
-    `${id} purpose source digest`,
-  )
+  verifyPurposeSource(record.purpose, id)
   requiredString(
     record.purpose?.identityEvidence,
     `${id} purpose identity evidence`,

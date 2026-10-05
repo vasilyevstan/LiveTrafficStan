@@ -49,10 +49,12 @@ describe('PWA manifest and deployment headers', () => {
       "connect-src 'self' https://tiles.openfreemap.org https://photon.komoot.io https://meri.digitraffic.fi wss://meri.digitraffic.fi https://api.adsb.lol https://vrs-standing-data.adsb.lol https://api.planespotters.net",
     )
     expect(headers).toContain(
-      "img-src 'self' data: blob: https://cdn.planespotters.net https://t.plnspttrs.net",
+      "img-src 'self' data: blob: https://cdn.planespotters.net https://t.plnspttrs.net https://thumb.wikimedia.org https://upload.wikimedia.org",
     )
     expect(headers).not.toContain('*.planespotters.net')
     expect(headers).not.toContain('*.plnspttrs.net')
+    expect(headers).not.toContain('*.wikimedia.org')
+    expect(headers.split('; img-src')[0]).not.toContain('https://openwaters.io')
     expect(headers).toMatch(
       /\/sw\.js[\s\S]*must-revalidate[\s\S]*Service-Worker-Allowed: \//,
     )

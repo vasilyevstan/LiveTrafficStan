@@ -9,7 +9,13 @@ import {
 } from '../domain/format'
 import type { TrafficEntity } from '../domain/traffic'
 import type { UnitSystem } from '../domain/units'
-import type { VesselReferencePhoto } from '../domain/vesselPhoto'
+import {
+  dynamicVesselPhotoForSelection,
+  vesselPhotoIdentity,
+  vesselPhotoIdentityKey,
+  type VesselPhotoViewState,
+  type VesselReferencePhoto,
+} from '../domain/vesselPhoto'
 import { appendTooltipPhoto } from './tooltipPhoto'
 
 export interface TrafficTooltipSummary {
@@ -22,6 +28,7 @@ export interface TrafficTooltipOptions {
   aircraftPhotoEnabled?: boolean
   units?: UnitSystem
   vesselPhoto?: VesselReferencePhoto
+  dynamicVesselPhoto?: VesselPhotoViewState
 }
 
 const reportedText = (value: string | undefined) => {
@@ -149,6 +156,34 @@ export const createTrafficTooltipElement = (
         title: `Open the fixed ${photo.rights.sourceName} source revision`,
         width: photo.asset.width,
       })
+    }
+  }
+  if (entity.kind === 'vessel' && !options.vesselPhoto && options.dynamicVesselPhoto) {
+    const photo = dynamicVesselPhotoForSelection(entity, options.dynamicVesselPhoto)
+    const identity = vesselPhotoIdentity(entity)
+    if (photo) {
+      appendTooltipPhoto(root, ownerDocument, {
+        alt: photo.description ?? `Vessel image listed for ${photo.lookupKind} ${photo.lookupNumber}`,
+        context: `Open Waters ${photo.lookupKind} lookup · historical image, not live${photo.lookupKind === 'MMSI' ? ' · MMSIs can be reassigned' : ''}`,
+        crossOrigin: 'anonymous',
+        credit: `${photo.artist} · Wikimedia Commons · ${photo.license}`,
+        height: photo.height,
+        href: photo.pageUrl,
+        referrerPolicy: 'no-referrer',
+        src: photo.thumbnailUrl,
+        title: 'Open the Wikimedia Commons photo and licence',
+        width: photo.width,
+      })
+    } else if (identity && options.dynamicVesselPhoto.identityKey === vesselPhotoIdentityKey(identity) &&
+      options.dynamicVesselPhoto.phase !== 'idle') {
+      const status = ownerDocument.createElement('p')
+      status.className = 'traffic-tooltip__photo-status'
+      status.textContent = options.dynamicVesselPhoto.phase === 'loading'
+        ? 'Loading vessel photo…'
+        : options.dynamicVesselPhoto.phase === 'unavailable'
+          ? 'No photo returned for this vessel number.'
+          : 'Vessel photo lookup unavailable.'
+      root.append(status)
     }
   }
 
