@@ -1211,11 +1211,37 @@ service context. Only the local orbital routes were forwarded by the
 acceptance harness to the existing production catalog; no upstream CelesTrak
 work or modified orbital payload was introduced.
 
-Local supplemental marine transport is unconfigured, and a local-origin
-Planespotters attempt was unavailable. Neither proves a production failure
-nor satisfies production-image acceptance. The release still requires native
-production AIS, actual vessel and aircraft images, exact running-source
-evidence, and compatible rollback/restoration.
+Local supplemental marine transport was unconfigured, and a local-origin
+Planespotters attempt was unavailable. Neither was counted as production
+failure or successful aircraft-image evidence.
+
+**Production receipt:** #333 released
+`de9d8603bebe1797a1b57cd0b9f99fe343858f8b`, finally restored as Worker
+`90338910-c837-46a5-9f55-c4eb513dd885`. Native initial acceptance showed
+33 Tallinn vessels and one socket per marine path. The actual vessel hover
+and selected-detail image decoded at 960x640 with one metadata lookup.
+At `18:07:25Z-18:08:02Z`, unmodified normal Chrome selected live CS-TJN
+(`49514E`, TAP67U) through aircraft discovery and automatically loaded one
+direct Planespotters API result plus its unchanged `t.plnspttrs.net` 200x134
+image, credited to Mario Ferioli. No photo binary was saved or rehosted.
+The earlier headless CORS failure was not reproduced by this normal browser;
+no fake headers, proxy, security bypass or provider-contact gate was added.
+
+Final native production acceptance at `18:30:33Z-18:30:54Z` used the actual
+orbital routes, not interception: Terra purpose, Hubble's real 437-pixel image,
+ATLAS CENTAUR 2's unreviewed fallback and STARLINK-1361's general service
+context were displayed. Both channels produced one CelesTrak corner credit.
+The same real vessel photo fit at 240x160 / 150x100 after native touch scrolling
+in 390x844 / 390x568. Rights and Close were reachable, the camera did not pan,
+document width remained 390 px, and the 366x280 provider disclosure scrolled
+292 px. One canvas, one supplemental socket and one Digitraffic connection
+remained; there were no runtime exceptions. Browser emulation is not physical
+device certification, and live counts/pass predictions are not fixed fixtures.
+
+The original rollback switched versions but failed an immediate Starlink
+release-SHA check. Source-qualified read-only rechecks and unchanged attempt 2
+passed before final restoration; both outcomes remain in the
+[rollout receipt](hosting-and-deployment.md#identity-photos-and-orbital-context-332333).
 
 ## Browser smoke test
 
