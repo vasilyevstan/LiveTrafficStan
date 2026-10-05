@@ -50,9 +50,45 @@ credentials and the private-relay secret. Observability remains disabled and
 no paid fallback is enabled. Orbital activation uses the included free KV and
 SQLite Durable Object allocations; R2 is not used.
 
-### Identity photos and orbital context (#332/#333)
+### Aircraft registration-country flags (#341/#342)
 
 Current application source is
+`99baed2dece100f9066f31fecb215df26e781911`. Implementation #341 and promotion
+#342 passed exact-source checks; exact-main Validation `37385967766` passed.
+Protected deployment `37386217568` installed Worker
+`aa62b10d-03d6-40d4-bdd2-2cdd2dacaeff` and passed full exact-release smoke at
+`2026-10-05T23:03:57.186Z`.
+
+This render-only change reuses the existing ICAO24 country lookup and 226
+reviewed flag rasters. It adds no image asset, provider request, dependency,
+credential, binding, scheduler or history/schema change. Private aircraft
+delivery, aircraft photos, flight routes, curated orbital, Starlink and marine
+supplementation all remain enabled, with the same KV namespace, coordinator
+identities, `17 */2 * * *` Cron, VPC binding and atomic secrets-file delivery.
+
+Normal Chrome production acceptance at `23:05:21Z-23:06:05Z` used native
+fetch, WebSocket and clock in a fresh context: 11 visible aircraft and 11
+matching Netherlands/UK badges around Amsterdam. Native selection of
+G-JZBE / ICAO24 `407181` / EXS75NE showed United Kingdom (GB) with a live
+position age of 1.806 seconds. One canvas and 226 shared images remained,
+without extra flag requests, runtime exceptions or console errors. An
+intermediate aircraft `503` was followed by `200` through the unchanged
+lifecycle; uninterrupted provider availability is not claimed. No aircraft
+photo binary or selected-aircraft photo screenshot was saved.
+
+[Actual production receipt and screenshot](https://github.com/vasilyevstan/LiveTrafficStan/pull/342#issuecomment-6005079795)
+are distinct from the [local native-scale fixtures](https://github.com/vasilyevstan/LiveTrafficStan/pull/341#issuecomment-6004900618).
+Compatible rollback is the previously verified imagery source
+`de9d8603bebe1797a1b57cd0b9f99fe343858f8b` /
+`90338910-c837-46a5-9f55-c4eb513dd885`. No optional duplicate rollback drill
+was added for unchanged provider/state contracts. Earlier rollback outcomes
+remain historical below. Wiki `784938953937982381a4f39b5310f372927a8b1d`
+publishes the current receipt; later docs-only commits do not redeploy it.
+Domain activation and branding remain separate work.
+
+### Identity photos and orbital context (#332/#333)
+
+The preceding application source was
 `de9d8603bebe1797a1b57cd0b9f99fe343858f8b`, from checked implementation
 #332 and promotion #333. Exact-main Validation `37351007615` passed.
 
@@ -88,11 +124,11 @@ through those map/context interactions. Full-source credits remain reachable;
 both orbital channels share one corner credit. See the
 [browser receipt](development-and-testing.md#identity-photos-recognizable-ships-and-orbital-context-331-193).
 
-The current compatible rollback target is the enabled-marine `65eb71ba...`
+That release's compatible rollback target was the enabled-marine `65eb71ba...`
 version above. The earlier same-source disabled marine baseline remains
 historical recovery evidence, not a pre-marine binary to substitute or a
 reason to delete history. Subsequent documentation-only main commits are
-separate from this running application SHA.
+separate from that deployed application SHA.
 
 Wiki revision `a903ef941bbd43492d682b5a49e6766b51be3980` published fifteen
 curated pages covering the actual photo contracts, nine-purpose manifest,
@@ -1327,6 +1363,19 @@ wordmark/name update. The Worker has no fixed origin IP to enter at GoDaddy.
 The registrar can remain GoDaddy, but Workers Custom Domains need an active
 Cloudflare full zone. Do not guess nameservers or point at arbitrary
 Cloudflare/parking IPs.
+
+The owned Free full zone now exists. Protected read-first operation
+`37384098539` at main `5b8023026afafb3bf45be4869e3403237f0f93d3` returned
+`ben.ns.cloudflare.com` / `nora.ns.cloudflare.com` and pending status at
+`2026-10-05T22:42:39Z`. This resolves the earlier creation-POST `403` without
+changing credentials. The user reports updating GoDaddy nameservers;
+authoritative delegation/active-zone state must still be verified before
+binding or advertising the new origin. #334/#335 own the current state.
+
+The observed account dashboard uses the left-sidebar **Domains -> Overview ->
+Add domain -> Connect a domain** flow. This is not the Worker's separate
+Domains tab or a registrar transfer; choose the Free plan and retain existing
+DNS records. Use the actual assigned pair, not a documentation example.
 
 The fixed `prepare-trackstan-domain.yml` workflow reads or creates only
 `trackstan.xyz` using existing protected credentials. It requires exact current
