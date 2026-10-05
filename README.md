@@ -16,10 +16,12 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
 - Lazily loaded selected-aircraft model, configuration, and wake-category
   context from a pinned ODC-By aircraft database, with exact identity checks,
   source age, confidence, and local failure isolation.
-- Offline selected-detail country context: aircraft registration allocation
+- Small, upright country flags beside aircraft and vessel markers, with
+  accessible country text in selected details: aircraft registration allocation
   from vetted ICAO24 ranges and vessel flag state from valid ordinary MMSIs.
   Unknown, special-purpose, conflicting, and malformed identifiers are omitted
-  rather than guessed.
+  rather than guessed. Flags reuse bundled artwork and add no network requests;
+  they are allocation context, not airline nationality or verified registry data.
 - Local current-aircraft search by callsign, registration, ICAO24, or reported
   type. Search ranks exact, prefix, and substring matches without changing the
   map, camera, providers, or visible marker set.

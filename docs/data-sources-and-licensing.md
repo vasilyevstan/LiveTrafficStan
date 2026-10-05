@@ -438,7 +438,7 @@ matching rules, and re-evaluation conditions are in
 
 ## Offline aircraft and vessel country allocations
 
-Country rows in selected details and available vessel-marker flags are bundled
+Country rows in selected details and available aircraft/vessel marker flags are bundled
 identifier-derived context. They make no runtime request and do not change
 traffic providers, normalization, history records, persistence, camera or
 selection.
@@ -475,7 +475,9 @@ unassigned, conflicting, and malformed identifiers remain unknown.
 ### Vessel flag artwork
 
 The small ship-marker badge uses the same MID-derived ISO code, not a second
-registration lookup or a claim about a vessel-specific ensign. Its source is
+registration lookup or a claim about a vessel-specific ensign. Aircraft
+badges reuse that same artwork with the existing exact-ICAO24 allocation,
+not registration-string, callsign, airline or operator inference. Its source is
 [flag-icons](https://github.com/lipis/flag-icons), pinned at
 `086f7e97d657358203916dbe84f61c2bccaa81eb`, using `flags/4x3` under the MIT
 license, Copyright (c) 2013 Panayiotis Lipiridis. The complete license is
@@ -486,8 +488,11 @@ pixels for exactly the 226 countries already represented by the accepted MID
 projection, plus source, rasterizer and checksum records. Each 28x22 pixel
 asset includes a contrasting frame and displays at 14x11 CSS pixels. Artwork
 is bundled in JavaScript; displaying or rehydrating a flag fetches no image,
-font, registry, flag CDN or provider data. Special or excluded MMSIs do not
-gain a flag merely because artwork for a related country exists.
+font, registry, flag CDN or provider data. All 192 country codes in the accepted
+aircraft ranges are already covered by this unchanged artwork set. Special,
+invalid or excluded MMSIs and aircraft addresses do not gain a flag merely
+because artwork for a related country exists. The existing asset, image IDs,
+source pin and full license path are retained for both traffic kinds.
 
 For an intentional artwork update, retrieve the pinned repository archive into
 a dedicated scratch directory and extract only `flags/4x3` and `LICENSE`.

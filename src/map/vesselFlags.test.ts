@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import allocations from '../config/countryAllocations.generated.json'
-import { flagStateForMmsi } from '../domain/countryAllocations'
+import {
+  countryForAircraftHex,
+  flagStateForMmsi,
+} from '../domain/countryAllocations'
 import { VESSEL_FLAG_IMAGES, vesselFlagImageId } from './vesselFlags'
 
-describe('bundled vessel flag artwork', () => {
+describe('bundled country flag artwork', () => {
   it('covers exactly the existing assigned MID countries with complete 2x pixels', () => {
     const countries = new Set(
       Object.values(allocations.mids).map((record) => record[1]),
@@ -17,6 +20,23 @@ describe('bundled vessel flag artwork', () => {
       const image = VESSEL_FLAG_IMAGES.get(id!)
       expect(image).toMatchObject({ width: 28, height: 22 })
       expect(image?.data.length).toBe(28 * 22 * 4)
+    }
+  })
+
+  it('also covers every accepted aircraft range without additional artwork', () => {
+    for (const [start, end, , iso2] of allocations.aircraftRanges) {
+      for (const address of [start, end]) {
+        const country = countryForAircraftHex(
+          address.toString(16).padStart(6, '0'),
+        )
+        expect(country?.iso2).toBe(iso2)
+        const id = vesselFlagImageId(country?.iso2)
+        expect(id).toBe(`vessel-flag-${iso2}`)
+        expect(VESSEL_FLAG_IMAGES.get(id!)).toMatchObject({
+          width: 28,
+          height: 22,
+        })
+      }
     }
   })
 

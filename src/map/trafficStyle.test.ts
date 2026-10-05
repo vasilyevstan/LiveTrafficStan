@@ -10,6 +10,7 @@ import {
   LAYER_AIRCRAFT_CLUSTER_COUNT,
   LAYER_AIRCRAFT_CLUSTERS,
   LAYER_AIRCRAFT,
+  LAYER_AIRCRAFT_FLAGS,
   LAYER_AIRCRAFT_HALO,
   LAYER_AIRCRAFT_STOPPED,
   LAYER_VESSEL_HALO,
@@ -131,7 +132,7 @@ describe('installTrafficStyle', () => {
       expect(updateImage).toHaveBeenCalledWith(imageId, image)
     }
     expect(addSource).toHaveBeenCalledTimes(3)
-    expect(addLayer).toHaveBeenCalledTimes(12)
+    expect(addLayer).toHaveBeenCalledTimes(13)
     expect(sources.get(SOURCE_AIRCRAFT)?.setData).toHaveBeenCalledTimes(2)
     expect(sourceOptions.get(SOURCE_AIRCRAFT)).toMatchObject({
       cluster: false,
@@ -149,6 +150,26 @@ describe('installTrafficStyle', () => {
     expect(layers.get(LAYER_VESSELS)).toMatchObject({
       layout: {
         'icon-size': ['*', ['get', 'markerScale'], 0.86],
+      },
+    })
+    expect(layers.get(LAYER_AIRCRAFT_FLAGS)).toMatchObject({
+      source: SOURCE_AIRCRAFT,
+      filter: [
+        'all',
+        ['!', ['has', 'point_count']],
+        ['has', 'flagIcon'],
+      ],
+      layout: {
+        'icon-image': ['get', 'flagIcon'],
+        'icon-size': 1,
+        'icon-anchor': 'top-left',
+        'icon-offset': [
+          'interpolate', ['linear'], ['get', 'markerScale'],
+          0, ['literal', [2, 2]], 4, ['literal', [74, 74]],
+        ],
+        'icon-rotate': 0,
+        'icon-rotation-alignment': 'viewport',
+        'icon-pitch-alignment': 'viewport',
       },
     })
     expect(layers.get(LAYER_VESSEL_FLAGS)).toMatchObject({
@@ -227,6 +248,10 @@ describe('installTrafficStyle', () => {
       paint.get(`${LAYER_AIRCRAFT_STOPPED}:circle-color`),
     ).toBe('#c1121f')
     expect(visibility.get(`${LAYER_AIRCRAFT}:visibility`)).toBe('visible')
+    expect(visibility.get(`${LAYER_AIRCRAFT_FLAGS}:visibility`)).toBe('visible')
+    expect(paint.get(`${LAYER_AIRCRAFT_FLAGS}:icon-opacity`)).toEqual(
+      paint.get(`${LAYER_AIRCRAFT}:icon-opacity`),
+    )
     expect(
       visibility.get(`${LAYER_AIRCRAFT_CLUSTERS}:visibility`),
     ).toBe('visible')
@@ -247,7 +272,7 @@ describe('installTrafficStyle', () => {
     layers.clear()
     installTrafficStyle(
       map,
-      { ...snapshot('dark'), vesselsVisible: true },
+      { ...snapshot('dark'), aircraftVisible: false, vesselsVisible: true },
       darkImages,
     )
     expect(imageIds.has('vessel-flag-EE')).toBe(true)
@@ -255,10 +280,21 @@ describe('installTrafficStyle', () => {
       TRAFFIC_STYLE_IMAGE_IDS.length + VESSEL_FLAG_IMAGES.size,
     )
     expect(sources.size).toBe(3)
-    expect(layers.size).toBe(12)
+    expect(layers.size).toBe(13)
+    expect(visibility.get(`${LAYER_AIRCRAFT_FLAGS}:visibility`)).toBe('none')
+    expect(paint.get(`${LAYER_AIRCRAFT_FLAGS}:icon-opacity`)).toEqual([
+      'case', ['get', 'stale'], 0.52, 0.98,
+    ])
     expect(visibility.get(`${LAYER_VESSEL_FLAGS}:visibility`)).toBe('visible')
     expect(paint.get(`${LAYER_VESSEL_FLAGS}:icon-opacity`)).toEqual([
       'case', ['get', 'stale'], 0.52, 0.98,
+    ])
+
+    installTrafficStyle(map, snapshot('light'), lightImages)
+    expect(visibility.get(`${LAYER_AIRCRAFT_FLAGS}:visibility`)).toBe('visible')
+    expect(visibility.get(`${LAYER_VESSEL_FLAGS}:visibility`)).toBe('none')
+    expect(paint.get(`${LAYER_AIRCRAFT_FLAGS}:icon-opacity`)).toEqual([
+      'case', ['get', 'stale'], 0.54, 0.98,
     ])
   })
 })
