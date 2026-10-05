@@ -50,7 +50,61 @@ credentials and the private-relay secret. Observability remains disabled and
 no paid fallback is enabled. Orbital activation uses the included free KV and
 SQLite Durable Object allocations; R2 is not used.
 
-The current application source is
+### Identity photos and orbital context (#332/#333)
+
+Current application source is
+`de9d8603bebe1797a1b57cd0b9f99fe343858f8b`, from checked implementation
+#332 and promotion #333. Exact-main Validation `37351007615` passed.
+
+| Stage | Application source | Cloudflare version | Workflow |
+| --- | --- | --- | --- |
+| Initial deployment | `de9d8603...` | `86ac6bf7-fabc-45dd-98fb-7799454563c3` | [37351156520](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/37351156520) |
+| Compatible rollback and verification | `65eb71ba...` | `5c6538ce-7fde-44ac-b288-e005f8d3d67b` | [37354059156](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/37354059156), attempt 2 |
+| Final restoration | `de9d8603...` | `90338910-c837-46a5-9f55-c4eb513dd885` | [37355581014](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/37355581014) |
+
+Final smoke passed at `2026-10-05T18:24:26.553Z`. Every stage preserved
+`oci-private-relay`, aircraft photos, flight routes, curated orbital,
+Starlink and marine supplementation enabled. KV, Cron, secrets, history schema
+and provider protocols are unchanged. The photo route adds no credential,
+binding, database or paid service.
+
+Rollback attempt 1 really switched 100% of traffic from `86ac6bf7...` to
+`5c6538ce...` at `18:11:55.872Z`, but its immediate Starlink smoke reported a
+release-SHA mismatch. That failure is not relabeled. Later read-only responses
+from curated and both Starlink representations returned the target SHA;
+unchanged attempt 2 passed the complete smoke, reselecting the already-active
+target. No exact-SHA assertion, protection or source contract was weakened.
+The original mismatching response's precise cause was not established.
+
+Native production acceptance used actual BALTIC WHALE / reported IMO
+`9354454` and its 960x640 Commons image, plus normal Chrome's real 200x134
+Planespotters image for CS-TJN / ICAO24 `49514E`. A preceding automated
+browser CORS failure remains recorded, not proof of a provider-wide outage.
+The final restored application also rendered Terra purpose, the verified
+Hubble image, truthful unreviewed ATLAS CENTAUR 2 and separate Starlink context.
+390x844/568 touch checks exposed the complete vessel image and source/license,
+retained one canvas, and kept one marine socket plus one Digitraffic connection
+through those map/context interactions. Full-source credits remain reachable;
+both orbital channels share one corner credit. See the
+[browser receipt](development-and-testing.md#identity-photos-recognizable-ships-and-orbital-context-331-193).
+
+The current compatible rollback target is the enabled-marine `65eb71ba...`
+version above. The earlier same-source disabled marine baseline remains
+historical recovery evidence, not a pre-marine binary to substitute or a
+reason to delete history. Subsequent documentation-only main commits are
+separate from this running application SHA.
+
+Wiki revision `a903ef941bbd43492d682b5a49e6766b51be3980` published fifteen
+curated pages covering the actual photo contracts, nine-purpose manifest,
+ship artwork, complete source credits, production/rollback evidence and
+troubleshooting. It also records requested `trackstan.xyz` setup and the
+separate TrackStan branding plan (#334/#335) as pending, not deployed.
+[Production screenshots and complete receipt](https://github.com/vasilyevstan/LiveTrafficStan/pull/333#issuecomment-6001037124)
+remain attached to the owning release.
+
+### Complementary marine predecessor (#325/#326)
+
+The preceding accepted application source was
 `65eb71bad7b873c7980096f6e92a477e76fd6102`, promoted by #326 from the
 accepted #325 implementation. Exact-main Validation `37247107520` passed.
 The final enabled deployment `37247800498` installed
@@ -94,7 +148,7 @@ and native touch at narrow Chrome-emulated sizes. The
 [testing record](development-and-testing.md#multi-source-marine-acceptance)
 separates the observed counts, missing metadata and platform limits.
 
-The current primary rollback target is the **same-source, marine-disabled**
+That release's primary rollback target was the **same-source, marine-disabled**
 version above, not an older database-version-1 application. Provider keys are
 installed atomically with the Worker; the Open Waters identity private key is
 not deployed. No paid capacity, extra aircraft host, new provider approval
