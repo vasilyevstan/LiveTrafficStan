@@ -7,6 +7,17 @@ import type {
 } from '../../domain/aircraftPhoto'
 import { isRecord } from '../guards'
 import { parseRetryAfterMs } from '../errors'
+import {
+  PhotoProviderError,
+  readBoundedPhotoJson,
+} from '../photo'
+
+export class AircraftPhotoProviderError extends PhotoProviderError {
+  constructor(reason: AircraftPhotoErrorReason, retryAfterMs?: number) {
+    super(reason, retryAfterMs)
+    this.name = 'AircraftPhotoProviderError'
+  }
+}
 
 export interface PlanespottersPhotoProviderConfig {
   endpointBaseUrl: string
@@ -30,21 +41,6 @@ type PhotoFetch = (
   input: string | URL | Request,
   init?: RequestInit,
 ) => Promise<Response>
-
-export class AircraftPhotoProviderError extends Error {
-  readonly reason: AircraftPhotoErrorReason
-  readonly retryAfterMs?: number
-
-  constructor(
-    reason: AircraftPhotoErrorReason,
-    retryAfterMs?: number,
-  ) {
-    super(reason)
-    this.name = 'AircraftPhotoProviderError'
-    this.reason = reason
-    this.retryAfterMs = retryAfterMs
-  }
-}
 
 const ICAO24 = /^[0-9A-F]{6}$/
 const MAX_URL_CHARACTERS = 2_048
@@ -147,53 +143,6 @@ const parsePhoto = (
   }
 }
 
-const readBoundedJson = async (
-  response: Response,
-  maximumBytes: number,
-) => {
-  const contentType = response.headers.get('Content-Type') ?? ''
-  if (!contentType.toLowerCase().startsWith('application/json')) {
-    void response.body?.cancel().catch(() => undefined)
-    throw new AircraftPhotoProviderError('invalid-response')
-  }
-
-  const contentLength = Number(response.headers.get('Content-Length'))
-  if (Number.isFinite(contentLength) && contentLength > maximumBytes) {
-    void response.body?.cancel().catch(() => undefined)
-    throw new AircraftPhotoProviderError('invalid-response')
-  }
-  if (!response.body) {
-    throw new AircraftPhotoProviderError('invalid-response')
-  }
-
-  const reader = response.body.getReader()
-  const chunks: Uint8Array[] = []
-  let totalBytes = 0
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
-    totalBytes += value.byteLength
-    if (totalBytes > maximumBytes) {
-      void reader.cancel().catch(() => undefined)
-      throw new AircraftPhotoProviderError('invalid-response')
-    }
-    chunks.push(value)
-  }
-
-  const bytes = new Uint8Array(totalBytes)
-  let offset = 0
-  for (const chunk of chunks) {
-    bytes.set(chunk, offset)
-    offset += chunk.byteLength
-  }
-
-  try {
-    return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes))
-  } catch {
-    throw new AircraftPhotoProviderError('invalid-response')
-  }
-}
-
 const parseResponse = (
   value: unknown,
   identity: AircraftPhotoIdentity,
@@ -288,13 +237,16 @@ export class PlanespottersPhotoProvider
       }
 
       return parseResponse(
-        await readBoundedJson(response, this.config.maximumBytes),
+        await readBoundedPhotoJson(response, this.config.maximumBytes),
         identity,
         this.config,
       )
     } catch (error) {
       if (signal.aborted) throw abortError()
       if (error instanceof AircraftPhotoProviderError) throw error
+      if (error instanceof PhotoProviderError) {
+        throw new AircraftPhotoProviderError(error.reason, error.retryAfterMs)
+      }
       if (timedOut) throw new AircraftPhotoProviderError('timeout')
       if (error instanceof TypeError) {
         throw new AircraftPhotoProviderError('network')

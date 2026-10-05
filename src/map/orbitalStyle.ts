@@ -57,10 +57,10 @@ export const STARLINK_LAYER_IDS = [
 ] as const
 
 const ORBITAL_SOURCE_ATTRIBUTION =
-  'Orbits <a href="https://celestrak.org/" target="_blank" rel="noreferrer">CelesTrak</a> · SGP4 · not live'
+  '<a href="https://celestrak.org/" target="_blank" rel="noreferrer">CelesTrak</a> · SGP4 · not live'
 
 export const STARLINK_SOURCE_ATTRIBUTION =
-  'Starlink sample · <a href="https://celestrak.org/" target="_blank" rel="noreferrer">CelesTrak</a> · SGP4 · not live'
+  ORBITAL_SOURCE_ATTRIBUTION
 
 const emptyPoints = (): FeatureCollection<Point> => ({
   type: 'FeatureCollection',

@@ -321,6 +321,13 @@ describe('PWA shell generation', () => {
         mode: 'cors',
       }),
     ).toBe('bypass')
+    for (const requestUrl of [
+      'https://example.test/api/vessel-photos/8919805',
+      'https://thumb.wikimedia.org/wikipedia/commons/a/ab/Test.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/a/ab/Test.jpg',
+    ]) {
+      expect(classifyShellRequest({ ...input, requestUrl, mode: 'cors' })).toBe('bypass')
+    }
   })
 
   it('retains only the current and recorded active predecessor caches', () => {

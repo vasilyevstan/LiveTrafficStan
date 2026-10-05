@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   formatAge,
   formatAltitude,
@@ -33,6 +33,12 @@ import {
 import type { UnitSystem } from '../domain/units'
 import {
   vesselReferencePhotoSelection,
+  dynamicVesselPhotoForSelection,
+  vesselPhotoIdentity,
+  vesselPhotoIdentityKey,
+  type DynamicVesselPhoto,
+  type VesselPhotoIdentity,
+  type VesselPhotoViewState,
   type VesselReferencePhoto,
   type VesselReferencePhotoSelection,
 } from '../domain/vesselPhoto'
@@ -59,12 +65,15 @@ interface TrafficDetailsProps {
   aircraftPhotoEnabled?: boolean
   aircraftPhoto?: AircraftPhotoViewState
   aircraftPhotoTermsUrl?: string
+  vesselPhotoEnabled?: boolean
+  vesselPhoto?: VesselPhotoViewState
   flightRouteEnabled?: boolean
   flightRoute?: FlightRouteViewState
   now: number
   units: UnitSystem
   historical?: boolean
   onRequestAircraftPhoto?: () => void
+  onRequestVesselPhoto?: () => void
   onRequestFlightRoute?: () => void
   onClose: () => void
 }
@@ -464,58 +473,112 @@ function AircraftPhotoDetails({
 function VesselPhotoDetails({
   photo,
 }: {
-  photo: VesselReferencePhoto
+  photo: VesselReferencePhoto | DynamicVesselPhoto
 }) {
+  const [failed, setFailed] = useState(false)
+  const dynamic = 'lookupNumber' in photo
+  const number = dynamic ? photo.lookupNumber : photo.imo
+  const pageUrl = dynamic ? photo.pageUrl : photo.identityEvidence.commonsRevisionUrl
+  const licenseUrl = dynamic ? photo.licenseUrl : photo.rights.licenseUrl
+  const license = dynamic ? photo.license : photo.rights.licenseName
   return (
     <section
       className="vessel-photo"
-      aria-labelledby={`vessel-photo-heading-${photo.imo}`}
+      aria-labelledby={`vessel-photo-heading-${number}`}
     >
-      <h3 id={`vessel-photo-heading-${photo.imo}`}>
+      <h3 id={`vessel-photo-heading-${number}`}>
         Vessel photo
       </h3>
       <p className="metadata-status">
-        Exact AIS-reported IMO {photo.imo} match.
+        {dynamic
+          ? `Open Waters photo lookup for reported ${photo.lookupKind} ${number}.`
+          : `Exact AIS-reported IMO ${number} match.`}
       </p>
       <a
         className="vessel-photo__link"
-        href={photo.identityEvidence.commonsRevisionUrl}
+        href={pageUrl}
         target="_blank"
         rel="noopener noreferrer"
       >
-        <img
+        {!failed && <img
           className="vessel-photo__image"
-          src={photo.asset.path}
-          width={photo.asset.width}
-          height={photo.asset.height}
-          alt={photo.alt}
+          crossOrigin={dynamic ? 'anonymous' : undefined}
+          src={dynamic ? photo.thumbnailUrl : photo.asset.path}
+          width={dynamic ? photo.width : photo.asset.width}
+          height={dynamic ? photo.height : photo.asset.height}
+          alt={dynamic ? photo.description ?? `Vessel image listed for ${photo.lookupKind} ${number}` : photo.alt}
           loading="lazy"
           decoding="async"
-        />
+          referrerPolicy="no-referrer"
+          onError={() => setFailed(true)}
+        />}
+        {failed && <span className="metadata-status metadata-status--error">Image failed to load. Open its source page.</span>}
       </a>
       <p className="metadata-attribution vessel-photo__credit">
-        {photo.rights.author} ·{' '}
+        {dynamic ? photo.artist : photo.rights.author} ·{' '}
         <a
-          href={photo.identityEvidence.commonsRevisionUrl}
+          href={pageUrl}
           target="_blank"
           rel="noopener noreferrer"
         >
-          {photo.rights.sourceName}
+          {dynamic ? 'Wikimedia Commons via Open Waters' : photo.rights.sourceName}
         </a>
         {' · '}
-        <a
-          href={photo.rights.licenseUrl}
+        {licenseUrl ? <a
+          href={licenseUrl}
           target="_blank"
           rel="noopener noreferrer"
         >
-          {photo.rights.licenseName}
-        </a>
-        {' · '}
-        {photo.asset.modificationNotice}
+          {license}
+        </a> : license}
+        {!dynamic && <> · {photo.asset.modificationNotice}</>}
       </p>
       <p className="metadata-status">
         Historical reference only; not live confirmation of this AIS report.
+        {dynamic && photo.lookupKind === 'MMSI' && ' MMSIs can be reassigned; this is a provider category match, not verified hull identity.'}
       </p>
+    </section>
+  )
+}
+
+function DynamicVesselPhotoStatus({
+  identity, state, now, onRequest,
+}: {
+  identity: VesselPhotoIdentity | undefined
+  state: VesselPhotoViewState
+  now: number
+  onRequest: () => void
+}) {
+  const current = identity && state.identityKey === vesselPhotoIdentityKey(identity)
+    ? state : { phase: 'idle' } as const
+  const throttled = current.phase === 'error' &&
+    current.retryAt !== undefined && current.retryAt > now
+  return (
+    <section className="vessel-photo" aria-labelledby="vessel-photo-heading">
+      <h3 id="vessel-photo-heading">Vessel photo</h3>
+      <p className="metadata-status" role={current.phase === 'loading' ? 'status' : undefined}>
+        {!identity ? 'No usable IMO or ordinary MMSI for photo lookup.'
+          : current.phase === 'loading' ? 'Loading vessel photo from Open Waters…'
+            : current.phase === 'unavailable' ? `Open Waters returned no photo for ${identity.kind} ${identity.number}; no substitute shown.`
+              : 'Photos by vessel number from Open Waters / Wikimedia Commons.'}
+      </p>
+      {current.phase === 'error' && (
+        <p className="metadata-status metadata-status--error" role="alert">
+          {throttled && current.retryAt !== undefined ? `Photo lookup can retry after ${formatTimestamp(current.retryAt)}.`
+            : current.reason === 'invalid-response' ? 'No supported, attributed photo in the source response.'
+              : current.reason === 'timeout' ? 'Vessel photo lookup timed out.'
+                : current.reason === 'network' ? 'Vessel photos need an online connection.'
+                : 'Vessel photo lookup is temporarily unavailable.'} Traffic data is unchanged.
+        </p>
+      )}
+      {identity && <button
+        type="button"
+        className="aircraft-photo__action"
+        disabled={current.phase === 'loading' || throttled}
+        onClick={onRequest}
+      >
+        {current.phase === 'loading' ? 'Loading photo…' : throttled ? 'Try again later' : 'Try photo lookup'}
+      </button>}
     </section>
   )
 }
@@ -545,6 +608,8 @@ export function TrafficDetails({
   aircraftMetadata,
   aircraftPhotoEnabled = false,
   aircraftPhoto = { phase: 'idle' },
+  vesselPhotoEnabled = false,
+  vesselPhoto = { phase: 'idle' },
   aircraftPhotoTermsUrl =
     'https://www.planespotters.net/photo/api',
   flightRouteEnabled = false,
@@ -553,6 +618,7 @@ export function TrafficDetails({
   units,
   historical = false,
   onRequestAircraftPhoto = () => undefined,
+  onRequestVesselPhoto = () => undefined,
   onRequestFlightRoute = () => undefined,
   onClose,
 }: TrafficDetailsProps) {
@@ -575,6 +641,8 @@ export function TrafficDetails({
     entity.kind === 'vessel' && !historical
       ? vesselReferencePhotoSelection(entity)
       : undefined
+  const dynamicVesselPhoto = entity.kind === 'vessel' && !historical && vesselPhotoEnabled
+    ? dynamicVesselPhotoForSelection(entity, vesselPhoto) : undefined
 
   return (
     <aside
@@ -605,7 +673,15 @@ export function TrafficDetails({
       )}
       {vesselPhotoSelection &&
         vesselPhotoSelection.kind !== 'available' && (
-          <VesselPhotoUnavailable
+          dynamicVesselPhoto ? <VesselPhotoDetails
+            key={`${vesselPhoto.identityKey}|${dynamicVesselPhoto.thumbnailUrl}`}
+            photo={dynamicVesselPhoto}
+          /> : vesselPhotoEnabled && entity.kind === 'vessel' ? <DynamicVesselPhotoStatus
+            identity={vesselPhotoIdentity(entity)}
+            state={vesselPhoto}
+            now={now}
+            onRequest={onRequestVesselPhoto}
+          /> : <VesselPhotoUnavailable
             selection={vesselPhotoSelection}
           />
         )}

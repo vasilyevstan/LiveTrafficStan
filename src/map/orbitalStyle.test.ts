@@ -300,7 +300,7 @@ describe('orbital map style', () => {
     )
   })
 
-  it('installs a separate persistent Starlink source, layers, icon, filter, and attribution', () => {
+  it('installs separate Starlink sources and layers with deduplicated orbital attribution', () => {
     const {
       map,
       sources,
@@ -449,14 +449,24 @@ describe('orbital map style', () => {
       attribution: STARLINK_SOURCE_ATTRIBUTION,
     })
     expect(STARLINK_SOURCE_ATTRIBUTION).toContain('CelesTrak')
-    expect(STARLINK_SOURCE_ATTRIBUTION).toContain(
-      'Starlink sample',
-    )
     expect(STARLINK_SOURCE_ATTRIBUTION).toContain('SGP4')
     expect(STARLINK_SOURCE_ATTRIBUTION).toContain('not live')
     expect(STARLINK_SOURCE_ATTRIBUTION).not.toMatch(
       /active fleet|optical/i,
     )
+    installOrbitalStyle(
+      map,
+      orbitalPositionFeatures([]),
+      orbitalPositionFeatures([]),
+      orbitalSelectionTrackFeatures([], null, 'curated'),
+      'light',
+      true,
+      lightImages,
+      [],
+    )
+    expect(sourceSpecs.get(SOURCE_ORBITAL_POINTS)).toMatchObject({
+      attribution: STARLINK_SOURCE_ATTRIBUTION,
+    })
   })
 
   it('keeps selected highlights and predicted tracks on the owning channel only', () => {

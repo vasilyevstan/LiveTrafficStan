@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import type { AircraftMetadataViewState } from '../domain/aircraftMetadata'
+import type { VesselPhotoViewState } from '../domain/vesselPhoto'
 import type {
   DisplayAircraft,
   DisplayVessel,
@@ -49,6 +50,80 @@ const availableMetadata: AircraftMetadataViewState = {
     futureToleranceHours: 24,
   },
 }
+
+describe('TrafficDetails dynamic vessel photos', () => {
+  const vessel: DisplayVessel = {
+    id: 'vessel:230123456', kind: 'vessel', provider: 'Open Waters',
+    mmsi: 230123456, imo: 8919805, vesselCategory: 'passenger',
+    navigationCategory: 'underway', name: 'TEST VESSEL',
+    position: { latitude: 59.4, longitude: 24.7, observedAt: 1_800_000_000_000 },
+    receivedAt: 1_800_000_000_000, markerIcon: 'vessel-passenger',
+    markerScale: 1, freshness: 'live',
+  }
+  const state: Extract<VesselPhotoViewState, { phase: 'available' }> = {
+    phase: 'available', identityKey: 'vessel:230123456|IMO|8919805',
+    photo: {
+      lookupKind: 'IMO', lookupNumber: '8919805',
+      thumbnailUrl: 'https://thumb.wikimedia.org/wikipedia/commons/a/ab/Test.jpg',
+      pageUrl: 'https://commons.wikimedia.org/wiki/File:Test.jpg',
+      width: 960, height: 643, artist: 'Test photographer',
+      license: 'CC BY 4.0', licenseUrl: 'https://creativecommons.org/licenses/by/4.0/',
+    },
+  }
+  const render = (photo: VesselPhotoViewState, entity = vessel, historical = false) =>
+    renderToStaticMarkup(<TrafficDetails
+      entity={entity} aircraftMetadata={{ phase: 'idle' }} vesselPhotoEnabled
+      vesselPhoto={photo} now={1_800_000_001_000} units="metric" historical={historical}
+      onRequestVesselPhoto={() => undefined} onClose={() => undefined}
+    />)
+
+  it('shows attributed, licensed lookup imagery without claiming reviewed exact-hull identity', () => {
+    const html = render(state)
+    expect(html).toContain('reported IMO 8919805')
+    expect(html).toContain(`src="${state.photo.thumbnailUrl}"`)
+    expect(html).toContain('crossorigin="anonymous"')
+    expect(html).toContain('referrerPolicy="no-referrer"')
+    expect(html).toContain('Test photographer')
+    expect(html).toContain('Wikimedia Commons via Open Waters')
+    expect(html).toContain('https://creativecommons.org/licenses/by/4.0/')
+    expect(html).toContain('Historical reference only')
+    expect(html).not.toContain('Exact AIS-reported IMO')
+    expect(html.indexOf('Vessel photo')).toBeLessThan(html.indexOf('<dt>MMSI'))
+  })
+
+  it('guards the complete selected identity, prefers bundled imagery and excludes history', () => {
+    expect(render(state, { ...vessel, imo: 8917601 })).not.toContain(state.photo.thumbnailUrl)
+    expect(render(state, { ...vessel, id: 'vessel:230123457' })).not.toContain(state.photo.thumbnailUrl)
+    const bundled = render(state, { ...vessel, imo: 9214379 })
+    expect(bundled).toContain('/vessel-photos/2026-10-02-v1/imo-9214379.jpg')
+    expect(bundled).not.toContain(state.photo.thumbnailUrl)
+    expect(render(state, vessel, true)).not.toContain('Vessel photo')
+    expect(render(state, vessel, true)).not.toContain(state.photo.thumbnailUrl)
+  })
+
+  it('labels an ordinary MMSI lookup as a reassignable provider match', () => {
+    const html = render({
+      ...state, identityKey: 'vessel:230123456|MMSI|230123456',
+      photo: { ...state.photo, lookupKind: 'MMSI', lookupNumber: '230123456' },
+    }, { ...vessel, imo: undefined })
+    expect(html).toContain('reported MMSI 230123456')
+    expect(html).toContain('MMSIs can be reassigned')
+    expect(html).toContain('not verified hull identity')
+  })
+
+  it('distinguishes loading, empty, offline and provider failure with enforced cooldown', () => {
+    const identityKey = state.identityKey
+    expect(render({ phase: 'loading', identityKey })).toContain('Loading vessel photo from Open Waters')
+    expect(render({ phase: 'unavailable', identityKey, reason: 'not-found' })).toContain('Open Waters returned no photo')
+    const offline = render({ phase: 'error', identityKey, reason: 'network' })
+    expect(offline).toContain('Vessel photos need an online connection')
+    expect(offline).not.toContain('AIS traffic remains active')
+    const failure = render({ phase: 'error', identityKey, reason: 'provider-error', retryAt: 1_800_000_101_000 })
+    expect(failure).toContain('Photo lookup can retry after')
+    expect(failure).toContain('disabled=""')
+    expect(failure).not.toContain('returned no photo')
+  })
+})
 
 describe('TrafficDetails aircraft metadata', () => {
   it('shows factual model context, confidence, publication age, and attribution separately from live data', () => {

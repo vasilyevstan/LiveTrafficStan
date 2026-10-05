@@ -288,6 +288,18 @@ describe('TrafficControls', () => {
     expect(html).toContain('SGP4 modeled')
   })
 
+  it('names the configured traffic and photo providers in Sources', () => {
+    const html = renderControls({
+      marineProviderName: 'Digitraffic, AISStream and Open Waters AIS',
+    })
+    const sources = html.slice(html.indexOf('id="map-tools-panel-sources"'), html.indexOf('id="traffic-controls-settings"'))
+    expect(sources).toContain('ADSB.lol')
+    expect(sources).toContain('Marine: Digitraffic, AISStream and Open Waters AIS')
+    expect(sources).toContain('Planespotters')
+    expect(sources).toContain('Wikimedia Commons')
+    expect(sources).toContain('Full data credits')
+  })
+
   it('shows modeled orbital status and selection only after explicit enable', () => {
     const html = renderControls({
       orbitalVisible: true,

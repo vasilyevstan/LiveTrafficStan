@@ -96,7 +96,7 @@ describe('orbital enrichment identity', () => {
 
     expect(enrichment).toMatchObject({
       noradCatalogId: '25544',
-      manifestVersion: '2026-09-29-v1',
+      manifestVersion: '2026-10-05-v1',
     })
     expect(enrichment?.identityKey).toBe(
       [
@@ -106,9 +106,26 @@ describe('orbital enrichment identity', () => {
         '1998-067A',
         'PAY',
         'b'.repeat(64),
-        '2026-09-29-v1',
+        '2026-10-05-v1',
       ].join('|'),
     )
+  })
+
+  it.each([
+    ['25994', 'TERRA', '1999-068A', 'Earth-system observation'],
+    ['27424', 'AQUA', '2002-022A', "Earth's water cycle and climate"],
+    ['27597', 'MIDORI II (ADEOS-II)', '2002-056A', 'Global environmental observation'],
+    ['39766', 'ALOS-2', '2014-029A', 'Radar observation of land and disasters'],
+    ['41337', 'ASTRO-H (HITOMI)', '2016-012A', 'X-ray astronomy mission'],
+    ['57800', 'XRISM', '2023-137A', 'X-ray imaging and spectroscopy'],
+    ['59588', 'ACS3', '2024-077B', 'Solar-sail technology demonstration'],
+  ])('provides source-backed, image-free purpose for NORAD %s', (id, name, designator, label) => {
+    const current = { ...position(id), name, internationalDesignator: designator }
+    const enrichment = orbitalEnrichmentForPosition(current)
+    expect(enrichment?.purpose.shortLabel).toBe(label)
+    expect(enrichment?.purpose.sourceSha256).toMatch(/^[a-f0-9]{64}$/)
+    expect(enrichment?.image).toBeUndefined()
+    expect(orbitalEnrichmentForPosition({ ...current, objectType: 'R/B' })).toBeUndefined()
   })
 
   it('labels only exact reviewed featured identities on the map', () => {

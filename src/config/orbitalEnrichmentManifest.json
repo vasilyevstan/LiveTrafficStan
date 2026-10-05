@@ -1,13 +1,24 @@
 {
   "schemaVersion": 1,
-  "manifestVersion": "2026-09-29-v1",
-  "reviewedAt": "2026-09-29",
+  "manifestVersion": "2026-10-05-v1",
+  "reviewedAt": "2026-10-05",
   "sourcePolicy": {
     "name": "Manual exact-NORAD official-source review",
     "identityRule": "Index by canonical NORAD catalog ID, then require the current object name, international designator, and exact SATCAT type to match the reviewed record.",
-    "purposeRule": "Use only purpose text supported by the cited authoritative mission source; never infer purpose from name, type, owner, group, or orbit.",
+    "purposeRule": "Use only purpose text supported by the cited authoritative mission source; never infer object-specific purpose from name, type, owner, group, or orbit. Separately labeled constellation context describes the service, not an individual object's purpose or operational status.",
     "imageRule": "Bundle only an image reviewed as depicting the exact object, with explicit public-display and transformation rights.",
     "takedownProcedure": "Remove the manifest record and bundled asset, run npm run check:orbital-enrichment, and deploy the resulting exact source revision. Never substitute a generic object image."
+  },
+  "constellationContext": {
+    "starlink": {
+      "shortLabel": "Internet connectivity",
+      "description": "Starlink describes its service as internet access at home and on the go, including rural and remote locations.",
+      "sourceName": "Starlink",
+      "sourceTitle": "Starlink official service overview",
+      "sourceUrl": "https://starlink.com/",
+      "sourceRetrievedAt": "2026-10-05",
+      "sourceSha256": "feca9c47eca99caf892fb87166d70d865988dee3a57c75e6635878102e584ce4"
+    }
   },
   "records": [
     {
@@ -58,7 +69,7 @@
           "restrictions": "Informational use only; the credit does not imply NASA endorsement. NASA insignia and logotypes are not used as application branding."
         },
         "asset": {
-          "path": "/orbital-enrichment/2026-09-29-v1/norad-20580.jpg",
+          "path": "/orbital-enrichment/2026-10-05-v1/norad-20580.jpg",
           "mediaType": "image/jpeg",
           "bytes": 46716,
           "width": 437,
@@ -116,7 +127,7 @@
           "restrictions": "Informational use only; the credit does not imply NASA endorsement. NASA insignia and logotypes are not used as application branding."
         },
         "asset": {
-          "path": "/orbital-enrichment/2026-09-29-v1/norad-25544.jpg",
+          "path": "/orbital-enrichment/2026-10-05-v1/norad-25544.jpg",
           "mediaType": "image/jpeg",
           "bytes": 48741,
           "width": 640,
@@ -124,6 +135,118 @@
           "sha256": "19b0fc48542f8c543f01a85aced18aadb2bbc162ac8144741d22dd066a2a40f6",
           "modificationNotice": "Copied byte-for-byte from NASA's reviewed small JPEG alternate; no local crop, resize, retouching, or metadata change."
         }
+      }
+    },
+    {
+      "noradCatalogId": "25994",
+      "objectNameAtReview": "TERRA",
+      "internationalDesignatorAtReview": "1999-068A",
+      "catalogTypeAtReview": "PAY",
+      "purpose": {
+        "shortLabel": "Earth-system observation",
+        "description": "Terra was designed to study interactions among Earth's atmosphere, land, oceans and radiant energy. Its measurements support research into environmental change and natural hazards, including fires and volcanoes.",
+        "sourceName": "NASA Science",
+        "sourceTitle": "Terra",
+        "sourceUrl": "https://science.nasa.gov/mission/terra/",
+        "sourceRetrievedAt": "2026-10-05",
+        "sourceSha256": "73fb62507eb2b7b33f88db511aed027b3e978a90cf1a3b5e6cccf573e2610e52",
+        "identityEvidence": "The reviewed CelesTrak visual catalog identifies NORAD 25994 as TERRA, 1999-068A, PAY. NASA's Terra mission page identifies the same Earth Observing System spacecraft and describes its mission."
+      }
+    },
+    {
+      "noradCatalogId": "27424",
+      "objectNameAtReview": "AQUA",
+      "internationalDesignatorAtReview": "2002-022A",
+      "catalogTypeAtReview": "PAY",
+      "purpose": {
+        "shortLabel": "Earth's water cycle and climate",
+        "description": "Aqua was designed to measure Earth's water cycle, including atmospheric water vapor, clouds, precipitation, snow and ice. Its instruments also investigate temperatures, vegetation, ocean biology and Earth's energy balance.",
+        "sourceName": "NASA Science",
+        "sourceTitle": "Aqua",
+        "sourceUrl": "https://science.nasa.gov/mission/aqua/",
+        "sourceRetrievedAt": "2026-10-05",
+        "sourceSha256": "c16ccad43ced6217b2dd6ae603e9dff15c0eb34b285c38bb7dae90b5b50a6445",
+        "identityEvidence": "The reviewed CelesTrak visual catalog identifies NORAD 27424 as AQUA, 2002-022A, PAY. NASA identifies Aqua as its Earth Observing System spacecraft launched on 2002-05-04 and describes the water-cycle mission."
+      }
+    },
+    {
+      "noradCatalogId": "27597",
+      "objectNameAtReview": "MIDORI II (ADEOS-II)",
+      "internationalDesignatorAtReview": "2002-056A",
+      "catalogTypeAtReview": "PAY",
+      "purpose": {
+        "shortLabel": "Global environmental observation",
+        "description": "Midori II (ADEOS-II) was built to investigate global environmental change. Its microwave and optical sensors were designed to measure water-related conditions, oceans, land, clouds and the atmosphere.",
+        "sourceName": "JAXA",
+        "sourceTitle": "Advanced Earth Observing Satellite-II Midori II",
+        "sourceUrl": "https://global.jaxa.jp/projects/sat/adeos2/",
+        "sourceRetrievedAt": "2026-10-05",
+        "sourceSha256": "a49145400d2fe7fa67846deb9a28a108ae12737fb9ebd66d1f82a4ce94f97c4a",
+        "identityEvidence": "The reviewed CelesTrak visual catalog identifies NORAD 27597 as MIDORI II (ADEOS-II), 2002-056A, PAY. JAXA explicitly equates Midori II with ADEOS-II and dates its launch to 2002-12-14."
+      }
+    },
+    {
+      "noradCatalogId": "39766",
+      "objectNameAtReview": "ALOS-2",
+      "internationalDesignatorAtReview": "2014-029A",
+      "catalogTypeAtReview": "PAY",
+      "purpose": {
+        "shortLabel": "Radar observation of land and disasters",
+        "description": "ALOS-2 (Daichi-2) carries L-band synthetic-aperture radar designed for day-and-night, all-weather observation. Its mission includes disaster mapping, land and infrastructure information, agriculture and tropical-forest monitoring.",
+        "sourceName": "JAXA",
+        "sourceTitle": "Advanced Land Observing Satellite-2 Daichi-2",
+        "sourceUrl": "https://global.jaxa.jp/projects/sat/alos2/",
+        "sourceRetrievedAt": "2026-10-05",
+        "sourceSha256": "6f9dc234d04976748d16053e6c1f2f623bd6371999fd10516ae3d9b65fe0ffbd",
+        "identityEvidence": "The reviewed CelesTrak visual catalog identifies NORAD 39766 as ALOS-2, 2014-029A, PAY. JAXA explicitly identifies Daichi-2 as ALOS-2 and documents its radar payload and mission objectives."
+      }
+    },
+    {
+      "noradCatalogId": "41337",
+      "objectNameAtReview": "ASTRO-H (HITOMI)",
+      "internationalDesignatorAtReview": "2016-012A",
+      "catalogTypeAtReview": "PAY",
+      "purpose": {
+        "shortLabel": "X-ray astronomy mission",
+        "description": "Hitomi (ASTRO-H) was designed to study galaxy clusters, black holes and matter under extreme conditions using X-ray and gamma-ray instruments. NASA records that contact was lost in March 2016 and recovery efforts ended in April 2016; this is its historical mission, not a claim of current operation.",
+        "sourceName": "NASA HEASARC",
+        "sourceTitle": "The Hitomi Mission",
+        "sourceUrl": "https://heasarc.gsfc.nasa.gov/docs/hitomi/",
+        "sourceRetrievedAt": "2026-10-05",
+        "sourceSha256": "5a6bbdea4e083d184d2d8f9c8db843d08746b07f95185247f8191e945fe7692a",
+        "identityEvidence": "The reviewed CelesTrak visual catalog identifies NORAD 41337 as ASTRO-H (HITOMI), 2016-012A, PAY. NASA explicitly states that ASTRO-H was renamed Hitomi after its 2016-02-17 launch."
+      }
+    },
+    {
+      "noradCatalogId": "57800",
+      "objectNameAtReview": "XRISM",
+      "internationalDesignatorAtReview": "2023-137A",
+      "catalogTypeAtReview": "PAY",
+      "purpose": {
+        "shortLabel": "X-ray imaging and spectroscopy",
+        "description": "XRISM is a JAXA/NASA mission with ESA participation, designed to investigate celestial X-ray sources. Its Resolve spectrometer and Xtend imager measure X-ray energies and images to study hot, energetic matter in the universe.",
+        "sourceName": "NASA HEASARC",
+        "sourceTitle": "X-Ray Imaging and Spectroscopy Mission",
+        "sourceUrl": "https://heasarc.gsfc.nasa.gov/docs/xrism/",
+        "sourceRetrievedAt": "2026-10-05",
+        "sourceSha256": "a7088679f58dce01e2b2403c9eebe3927c7ada69864346a5efd542db630f906e",
+        "identityEvidence": "The reviewed CelesTrak visual catalog identifies NORAD 57800 as XRISM, 2023-137A, PAY. NASA names the same mission, its instruments and its 2023-09-07 Japan-time launch."
+      }
+    },
+    {
+      "noradCatalogId": "59588",
+      "objectNameAtReview": "ACS3",
+      "internationalDesignatorAtReview": "2024-077B",
+      "catalogTypeAtReview": "PAY",
+      "purpose": {
+        "shortLabel": "Solar-sail technology demonstration",
+        "description": "NASA's Advanced Composite Solar Sail System demonstrates lightweight, deployable composite booms that support a solar sail. The technology is intended to enable larger sails for propulsion using sunlight.",
+        "sourceName": "NASA",
+        "sourceTitle": "Advanced Composite Solar Sail System",
+        "sourceUrl": "https://www.nasa.gov/mission/acs3/",
+        "sourceRetrievedAt": "2026-10-05",
+        "sourceSha256": "5c142e8b357c7b06df17f297202da0fa455d8937c08420ac9ae89e83a537f7f4",
+        "identityEvidence": "The reviewed CelesTrak visual catalog identifies NORAD 59588 as ACS3, 2024-077B, PAY. NASA's ACS3 mission page expands the mission name and documents the composite-boom solar-sail demonstration."
       }
     }
   ]

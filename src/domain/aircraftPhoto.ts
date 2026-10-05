@@ -1,4 +1,10 @@
 import type { Aircraft } from './traffic'
+import type {
+  PhotoErrorReason,
+  PhotoLookupResult,
+  PhotoUnavailableReason,
+  PhotoViewState,
+} from './photo'
 
 export interface AircraftPhotoIdentity {
   icao24: string
@@ -20,41 +26,10 @@ export interface AircraftPhoto {
   source: AircraftPhotoSource
 }
 
-export type AircraftPhotoUnavailableReason =
-  | 'invalid-identity'
-  | 'not-found'
-
-export type AircraftPhotoErrorReason =
-  | 'timeout'
-  | 'throttled'
-  | 'forbidden'
-  | 'invalid-response'
-  | 'network'
-  | 'provider-error'
-
-export type AircraftPhotoLookupResult =
-  | { kind: 'available'; photo: AircraftPhoto }
-  | { kind: 'unavailable'; reason: AircraftPhotoUnavailableReason }
-
-export type AircraftPhotoViewState =
-  | { phase: 'idle'; identityKey?: string }
-  | { phase: 'loading'; identityKey: string }
-  | {
-      phase: 'available'
-      identityKey: string
-      photo: AircraftPhoto
-    }
-  | {
-      phase: 'unavailable'
-      identityKey?: string
-      reason: AircraftPhotoUnavailableReason
-    }
-  | {
-      phase: 'error'
-      identityKey: string
-      reason: AircraftPhotoErrorReason
-      retryAt?: number
-    }
+export type AircraftPhotoUnavailableReason = PhotoUnavailableReason
+export type AircraftPhotoErrorReason = PhotoErrorReason
+export type AircraftPhotoLookupResult = PhotoLookupResult<AircraftPhoto>
+export type AircraftPhotoViewState = PhotoViewState<AircraftPhoto>
 
 const ICAO24 = /^[0-9A-F]{6}$/
 

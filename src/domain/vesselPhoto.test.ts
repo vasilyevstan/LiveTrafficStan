@@ -1,11 +1,41 @@
 import { describe, expect, it } from 'vitest'
 import {
   isValidImo,
+  dynamicVesselPhotoForSelection,
+  vesselPhotoIdentity,
+  vesselPhotoIdentityKey,
   vesselReferencePhotoForSelection,
   vesselReferencePhotoSelection,
 } from './vesselPhoto'
 
 describe('vessel reference photos', () => {
+  it('prefers a valid IMO and otherwise permits only an ordinary exact MMSI', () => {
+    const vessel = { id: 'vessel:230123456', mmsi: 230123456, imo: 8919805 }
+    expect(vesselPhotoIdentity(vessel)).toEqual({ entityId: vessel.id, kind: 'IMO', number: '8919805' })
+    const fallback = vesselPhotoIdentity({ ...vessel, imo: 8919806 })
+    expect(fallback).toEqual({ entityId: vessel.id, kind: 'MMSI', number: '230123456' })
+    expect(vesselPhotoIdentity({ ...vessel, imo: undefined, mmsi: 970123456 })).toBeUndefined()
+    expect(vesselPhotoIdentity({ ...vessel, imo: undefined, mmsi: 230123456.5 })).toBeUndefined()
+    expect(vesselPhotoIdentityKey(fallback!)).toBe('vessel:230123456|MMSI|230123456')
+  })
+
+  it('requires both complete selected identity and returned lookup number', () => {
+    const vessel = { id: 'vessel:230123456', mmsi: 230123456, imo: 8919805 }
+    const state = {
+      phase: 'available' as const,
+      identityKey: 'vessel:230123456|IMO|8919805',
+      photo: {
+        lookupKind: 'IMO' as const, lookupNumber: '8919805',
+        thumbnailUrl: 'https://upload.wikimedia.org/wikipedia/commons/a/ab/Test.jpg',
+        pageUrl: 'https://commons.wikimedia.org/wiki/File:Test.jpg',
+        width: 640, height: 480, artist: 'Test photographer', license: 'CC BY 4.0',
+      },
+    }
+    expect(dynamicVesselPhotoForSelection(vessel, state)).toBe(state.photo)
+    expect(dynamicVesselPhotoForSelection({ ...vessel, id: 'vessel:230123457' }, state)).toBeUndefined()
+    expect(dynamicVesselPhotoForSelection({ ...vessel, imo: undefined }, state)).toBeUndefined()
+    expect(dynamicVesselPhotoForSelection(vessel, { ...state, photo: { ...state.photo, lookupNumber: '8917601' } })).toBeUndefined()
+  })
   it('validates the IMO check digit', () => {
     expect(isValidImo('9214379')).toBe(true)
     expect(isValidImo('9281281')).toBe(true)

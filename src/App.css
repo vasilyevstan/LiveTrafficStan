@@ -237,6 +237,20 @@
   color: var(--error-text);
 }
 
+.live-status__sources {
+  display: block;
+  margin-top: 4px;
+}
+
+.live-status__providers a {
+  color: var(--accent-line);
+}
+
+.live-status__credits {
+  font-size: 0.68rem;
+  line-height: 1.5;
+}
+
 .live-status__orbital {
   color: var(--summary-strong);
   font-weight: 700;
@@ -1417,6 +1431,11 @@
   height: auto;
 }
 
+.vessel-photo__image {
+  max-height: 240px;
+  object-fit: contain;
+}
+
 .orbital-enrichment__image {
   width: auto;
   max-height: 220px;
@@ -1815,6 +1834,11 @@
 
   .orbital-enrichment__image {
     max-height: 160px;
+  }
+
+  .vessel-photo__image {
+    width: auto;
+    max-height: min(160px, calc(var(--mobile-detail-height) - 28px));
   }
 
   .details-panel--historical {

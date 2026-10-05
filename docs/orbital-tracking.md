@@ -138,8 +138,11 @@ NASA photograph with source, credit, usage-policy link, capture date, and
 modification statement. The photograph is explicitly not a live view of the
 current modeled position.
 
-Every other object shows **Purpose and image unavailable**. This includes
-rocket bodies and debris: the application does not transfer a payload mission
+Terra, Aqua, Midori II, ALOS-2, Hitomi, XRISM and ACS3 additionally have
+exact-identity, NASA/JAXA-supported descriptions in `2026-10-05-v1`, with
+**Verified image unavailable** rather than a substitute photo. Unreviewed
+objects still show **Purpose and image unavailable**. The application does
+not transfer a payload mission
 to a discarded stage, infer purpose from an object name, or display a generic
 satellite/rocket picture. The full source and rights review is
 [Orbital Purpose and Image Source Evaluation](orbital-enrichment-source-evaluation.md).
@@ -171,7 +174,9 @@ tooltip, details, and failure state resolve only from the owning channel.
 Starlink details identify whether the fulfilled representation is the
 shell-balanced schema-2 sample or the systematic schema-1 compatibility
 sample, retain separate GP/SATCAT retrieval times, and never infer curated
-purpose or imagery. Schema 2 also reports its four exact inclination-band
+purpose or imagery. A separately sourced **Constellation context** explains
+Starlink's general internet service, explicitly not a verified purpose or
+operational status for the individual object. Schema 2 also reports its four exact inclination-band
 quotas. Exact payloads use the flat-panel spacecraft silhouette; exact rocket
 body, debris, and unknown records keep their type silhouettes.
 

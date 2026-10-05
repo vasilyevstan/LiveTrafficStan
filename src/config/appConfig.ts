@@ -17,9 +17,11 @@ import airportsSource from './airportsSource.json'
 import portsSource from './portsSource.json'
 import type { AppCenter } from '../domain/geo'
 import { MARINE_STREAM_CONFIG } from './marineStreamConfig'
+import { VESSEL_PHOTO_CONFIG } from './vesselPhotoConfig'
 
 export type { AppCenter } from '../domain/geo'
 export { MARINE_STREAM_CONFIG } from './marineStreamConfig'
+export { VESSEL_PHOTO_CONFIG } from './vesselPhotoConfig'
 
 export interface FreshnessThresholds {
   staleAfterMs: number
@@ -71,6 +73,7 @@ export interface AppConfig {
     hoverDelayMs: number
     rateLimitFallbackMs: number
   }
+  vesselPhoto: typeof VESSEL_PHOTO_CONFIG
   flightRoute: AdsbLolFlightRouteProviderConfig & {
     enabled: boolean
     cacheMaxEntries: number
@@ -315,6 +318,7 @@ export const createAppConfig = (
   }
 
   return {
+    vesselPhoto: VESSEL_PHOTO_CONFIG,
     center,
     vesselLengthPresetsMeters: [25, 50, 100, 150],
     defaultVesselLengthMeters: 50,

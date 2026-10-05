@@ -10,11 +10,14 @@ production platform:
 - Vite's `dist/` output is served as immutable static assets;
 - one Worker handles the same-origin ADSB.lol point and AWC METAR paths plus a
   protected storage-only orbital catalog route and scheduler, with an
-  optional isolated same-origin marine relay;
+  optional isolated same-origin marine relay and a fixed Open Waters
+  vessel-photo metadata route;
 - plausible route lookup calls ADSB.lol standing data directly from the
   browser once for a newly selected eligible live aircraft;
-- exact-IMO vessel reference photos are versioned same-origin Static Assets
-  and require no runtime Wikimedia, Wikidata, tracker, or image API;
+- eight reviewed exact-IMO vessel photographs remain versioned same-origin
+  Static Assets. Other reported IMO/MMSI identities can use
+  `/api/vessel-photos/{number}` with no secret or new binding; validated
+  Commons thumbnails load directly, anonymously and without referrer;
 - OpenFreeMap, Photon, and Digitraffic REST/MQTT remain direct browser
   connections;
 - no plausible-route secret, quota store, result database, queue, or general
@@ -1238,10 +1241,19 @@ npm run preview:worker
   source/type identity, bounds, epochs, canonical order, and digest without
   contacting CelesTrak.
 - `check:orbital-enrichment` validates exact current NORAD/name/designator/type
-  identity, NASA purpose/image provenance, the co-located rights notice,
+  identity, NASA/JAXA purpose and NASA image provenance, separately labeled
+  Starlink service context, the co-located rights notice,
   immutable inventory, dimensions, bytes, and SHA-256 without contacting NASA.
 - `preview:worker` builds the client and runs the actual local `workerd`
   runtime.
+
+  The dynamic vessel-photo route is part of the same Worker/artifact as the
+  frontend. `npm run preview:worker` exercises it; Vite's development server
+  alone does not implement that API. It uses a fixed Open Waters endpoint,
+  eight-second upstream deadline, 128 KiB response bound, no-store responses
+  and no KV, Durable Object or credential. The browser API and Commons image
+  hosts bypass the PWA shell. Rolling back the application version also removes
+  the route/UI together while retaining the existing bundled fallback.
 
 Plausible route lookup is enabled by default and uses the same direct static
 data path in development and production. To exercise the disabled state:
