@@ -48,6 +48,66 @@ no paid fallback is enabled. Orbital activation uses the included free KV and
 SQLite Durable Object allocations; R2 is not used.
 
 The current application source is
+`65eb71bad7b873c7980096f6e92a477e76fd6102`, promoted by #326 from the
+accepted #325 implementation. Exact-main Validation `37247107520` passed.
+The final enabled deployment `37247800498` installed
+`5c6538ce-7fde-44ac-b288-e005f8d3d67b` and passed full production smoke at
+`2026-10-05T00:31:43.586Z`.
+
+All four stages used that same checked source and preserved `application`,
+`oci-private-relay`, aircraft photos, plausible routes, curated orbital and
+Starlink flags, KV namespace `59178d55418247c4bab473b52a5dc07d` and Cron
+`17 */2 * * *`:
+
+| Stage | Marine supplement | Cloudflare version | Successful workflow |
+| --- | --- | --- | --- |
+| Compatible baseline | Disabled | `9091ba27-073f-4bb5-acbb-f2ebe395525d` | [37247238771](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/37247238771) |
+| Initial activation | Enabled | `c50727bb-a105-400e-8a79-9904f5a311fc` | [37247433054](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/37247433054) |
+| Actual prior-version rollback | Disabled | `9091ba27-073f-4bb5-acbb-f2ebe395525d` | [37247681663](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/37247681663) |
+| Final restoration | Enabled | `5c6538ce-7fde-44ac-b288-e005f8d3d67b` | [37247800498](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/37247800498) |
+
+The rollback deployed the recorded version to 100% of traffic, preserved
+target orbital/Cron state and passed exact-build smoke at `00:29:31.645Z`.
+The disabled marine route was independently confirmed as `404`, `no-store`
+and the exact release SHA both before activation and after rollback. Its
+updated history reader remains compatible with database version 2.
+
+At `00:27:34.685Z-00:28:19.696Z`, the actual Cloudflare WebSocket returned
+`101` with the exact release header and 45 acknowledged normalized snapshots,
+1,989,085 decoded bytes. Both protected upstream sources were live with
+observed data and no source error. The first useful result arrived in
+1.504 seconds; the last snapshot contained 63 distinct vessels, seven
+AISStream and 56 Open Waters position owners, including one reported yacht at
+least 8 m. The oldest retained position was 594.695 seconds. Only aggregate
+receipts were retained; the client disconnected after the bounded check.
+
+[Final actual production-browser acceptance](https://github.com/vasilyevstan/LiveTrafficStan/pull/326#issuecomment-5986155527)
+ran at `00:33:02.003Z-00:35:12.028Z` with enabled asset
+`index-BzgPcwIW.js`. It rendered 30 Tallinn, 13 southern-Baltic and 792
+Rotterdam vessels, with both supplemental sources live in every regional
+snapshot. It preserved one map, exact-MMSI deduplication, original-source
+attribution, selection through both themes and cold reconnect, search/Clear,
+and native touch at narrow Chrome-emulated sizes. The
+[testing record](development-and-testing.md#multi-source-marine-acceptance)
+separates the observed counts, missing metadata and platform limits.
+
+The current primary rollback target is the **same-source, marine-disabled**
+version above, not an older database-version-1 application. Provider keys are
+installed atomically with the Worker; the Open Waters identity private key is
+not deployed. No paid capacity, extra aircraft host, new provider approval
+gate or weakened CI/smoke safeguard was introduced. The finite free budget
+remains an admission bound, not a promise of unlimited account headroom.
+Later documentation-only main commits do not deploy another application.
+
+Wiki revision `52b9b5b83fe5665514e521400350f8ad1014a68a` published the
+fourteen-page curated marine, source/licensing, history, configuration,
+acceptance, troubleshooting and release update. It records this running
+application and the historical predecessors separately; see
+[Release Operations](https://github.com/vasilyevstan/LiveTrafficStan/wiki/Release-Operations).
+
+### Yacht/flags and aircraft-recovery predecessor (#316/#319)
+
+The preceding accepted application source was
 `1afa175d8bb6b3f0636c2a02576cc82a35ced373`, the checked #319 main with
 content tree `4672081adaf8a6307ad196aa09c5ccc9db6a3699` and accepted exact-SHA
 Validation `37204522573`. Application, Worker, relay, asset, dependency and
@@ -80,7 +140,8 @@ without changing security agents, kdump, swap, routes, credentials or cost.
 A controlled relay-service restart at 15:40:57 retained the admission deadline
 and exact relay source, before the successful canonical deployment.
 
-Production inputs remain `application`, `oci-private-relay`, aircraft photos,
+That recovery's production inputs remained `application`, `oci-private-relay`,
+aircraft photos,
 plausible routes, orbital catalog and Starlink catalog enabled. The accepted
 marine evidence is reused because those application sources are unchanged.
 Final observation completed at `16:21Z`, beyond the former `16:15:33Z`
@@ -93,7 +154,8 @@ the operational recovery evidence for #174 and the coordinated #311/#312
 activation; publication details are retained in the issue checkpoint.
 #296 remains the separate Class B/ANTARES coverage issue.
 
-The immediately preceding installed version is #316 source `e2b2afaa...` /
+That recovery's immediately preceding installed version was #316 source
+`e2b2afaa...` /
 Worker `816506f7-2cb1-4e6c-8626-ae990eb62b8a`. The earlier accepted rollback
 target is atlas source
 `0972ba8d24ba96e18627b13b252e6ac7c5473f10` / Worker

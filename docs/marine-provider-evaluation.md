@@ -5,6 +5,12 @@
 Reviewed **2026-10-04**, workstream #296. Retain useful Digitraffic reception
 and add **AISStream plus Open Waters AIS** behind the default-off
 `VITE_MARINE_SUPPLEMENT_ENABLED` build flag and matching Worker flag.
+Production enabled the combination on **2026-10-05** through #325/#326;
+checked-in defaults remain disabled. The deployed application is
+`65eb71bad7b873c7980096f6e92a477e76fd6102`, Worker
+`5c6538ce-7fde-44ac-b288-e005f8d3d67b`. The
+[deployment record](hosting-and-deployment.md) retains the same-source
+disabled/enabled rollout, actual compatible rollback and final restoration.
 Digitraffic is a regional contribution, not a benchmark that other sources
 must reproduce worldwide. Preserve application functionality, not a claim
 that one receiver network is complete.
@@ -96,6 +102,8 @@ retain no data.
 | Open Waters snapshot, Tallinn, 19:28:02 UTC | 93 entries within 35 km; latest sources 51 Digitraffic and 42 AISHub | Potential complementary reception; REST `seen` alone is not live-position evidence |
 | Open Waters snapshot, Gedser-Rugen, 19:40:24 UTC | 48 entries within 75 km; ten reported sailing/pleasure craft at least 8 m | Motivated broader-region acceptance, not a rendered/live coverage claim |
 | Implemented native Worker, Gedser-Rugen, 23:44:14-23:44:59 UTC | First useful snapshot 1.026 s; peak 81 vessels; final 80, with 15 AISStream and 65 Open Waters position owners; both transports live | Real normalized supplemental delivery; oldest retained position 592.425 s, below the ten-minute expiry; no qualifying yacht was established in this later window |
+| Actual production Cloudflare Worker, 2026-10-05 00:27:34-00:28:19 UTC | Exact-release `101`; first useful result 1.504 s; peak 64 vessels; final 63, with 7 AISStream and 56 Open Waters position owners; one reported yacht at least 8 m | Both protected upstreams delivered observed data through Cloudflare; oldest retained position 594.695 s; no raw-data archive |
+| Final actual production Chrome/MapLibre, 00:33:02-00:35:12 UTC | Rendered 30 Tallinn vessels (27 Digitraffic, 3 Open Waters), 13 southern-Baltic vessels and 792 Rotterdam vessels (63 AISStream, 729 Open Waters); Rotterdam had 143 eligible reported yachts in view | Both supplemental sources live; actual vector tiles, attribution, themes, selection/recovery, filters and narrow/touch interaction passed; no guarantee of unchanged future counts |
 
 The first five-region AISStream stream delivered 4,236 binary messages /
 2,397,642 decoded bytes. Only aggregate receipts were retained; raw messages
@@ -124,11 +132,14 @@ subscription batching, 15-120 second reconnect backoff, and bounded provider
 frames/HTTP bodies. Metadata view changes are gated at five seconds;
 unchanged views refresh at five minutes and preserve `Retry-After`.
 
-Production activation still requires a checked release, real Cloudflare
-egress, the shared free allowance and rendered-browser evidence. Deploy
-updated code with the supplement disabled first so rollback retains the
-new history reader; then enable the same checked source. An older binary is
-not the primary rollback for an upgraded history database.
+The checked production activation demonstrated actual Cloudflare egress and
+protected-token behavior within the bounded free path. The current release
+was deployed disabled first, enabled, actually rolled back to that compatible
+version, and restored enabled on the same SHA. The
+[acceptance record](development-and-testing.md#multi-source-marine-acceptance)
+distinguishes native source proof, local rendering and actual production
+rendering. An older binary is not the primary rollback for an upgraded
+history database.
 
 ### Additional primary sources
 
