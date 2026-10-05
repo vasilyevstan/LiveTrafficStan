@@ -417,6 +417,14 @@ error, close it and use the compatible release with the supplement disabled.
 Do not delete history as a rollback workaround; the data, consent and epoch
 remain in the existing stores.
 
+The 2026-10-05 activation rehearsed this exact recovery path: source
+`65eb71bad7b873c7980096f6e92a477e76fd6102`, marine-disabled version
+`9091ba27-073f-4bb5-acbb-f2ebe395525d`, rollback run `37247681663`.
+It restored 100% of traffic, passed smoke and returned the expected disabled
+`404` before the same source was re-enabled. See
+[Hosting and Deployment](hosting-and-deployment.md) for current receipts;
+older historical binaries are not the primary history-compatible fallback.
+
 ## A ship has no reference photo
 
 This is normally expected. The current bundled manifest contains only eight

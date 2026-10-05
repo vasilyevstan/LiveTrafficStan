@@ -33,6 +33,22 @@ Check these project invariants:
   bounded backoff rather than a success-shaped fallback or request burst.
 - Digitraffic query changes reuse the existing global MQTT connection, refilter
   caches immediately, and do not repeatedly refresh bounded REST data.
+- Supplemental AISStream/Open Waters work uses one demand-driven shared marine
+  object with one connection per source and the bounded union of eligible
+  views. Preserve acknowledgement backpressure, admission limits and persisted
+  quota/retry fences; last-viewer departure stops upstreams and clears vessel
+  caches, not operational deadlines. Never move this work onto the aircraft VM.
+- Marine fusion keeps exact MMSI identity and the newest observed position,
+  with only compatible attributed static enrichment. Open Waters native
+  position events own freshness; REST `seen` is metadata-only. Missing class,
+  yacht type, length, IMO or movement remains unknown rather than inferred.
+- A cold relay reconnect may retain raw pre-disconnect observations only until
+  their original expiry and within the current view. Repeated reconnects cannot
+  make enriched metadata immortal, and normal newer same-source unavailable
+  fields must not be resurrected by the recovery exception.
+- Follow actual published/account terms and technical limits. Do not invent
+  an individual permission-reply gate, treat a code license as a blanket data
+  license, or require global sources to mirror Digitraffic's regional inventory.
 - MQTT reconnect attempts remain at least 15 seconds apart and all timers,
   requests, and clients stop cleanly on page hiding or unmount.
 - Intentional pause reasons compose. Disabling and resuming a view, provider, or
@@ -100,7 +116,10 @@ Check these project invariants:
   provider-qualified, time/count/byte bounded, clearable, and independently
   fallible. No export, sharing, cross-device synchronization, backend history,
   service-worker live cache, or public retained-history output is covered by
-  the current ADSB.lol/ODbL and Fintraffic/CC BY decision.
+  the current ADSB.lol/ODbL, Fintraffic/CC BY and attributed per-source marine
+  decisions. Database-version fencing must preserve existing rows, consent
+  and epoch while preventing old readers from deleting unfamiliar providers;
+  primary rollback uses the compatible updated reader with supplementation off.
 - The application-shell worker may cache only root/index, hashed build assets,
   manifest, favicon, and versioned icons. APIs, MQTT, map resources, Photon,
   AWC, metadata/context datasets, and private history must bypass it and must
@@ -134,7 +153,9 @@ Check these project invariants:
   reconnect, REST, or metadata deadlines.
 - Prove lifecycle and interaction changes with deterministic fixtures first.
   A milestone uses one bounded live-provider smoke; repeated UI test loops must
-  not become provider load.
+  not become provider load. Existing HTTP/Digitraffic smoke does not prove a
+  new marine relay: distinguish native Cloudflare/token evidence from actual
+  rendered-browser acceptance, and reuse accepted unchanged-source evidence.
 - Orbital acquisition makes zero startup requests. The browser route is the
   literal same-origin `GET /api/orbits/catalog` with no environment override,
   query, credentials, referrer, redirect, or browser-selectable provider/group.
