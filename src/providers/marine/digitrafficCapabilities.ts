@@ -1,4 +1,4 @@
-import type { MarineProviderCapabilities } from '../types'
+import type { MarineProviderCapabilities } from '../types.js'
 
 export const DIGITRAFFIC_PROVIDER_NAME = 'Fintraffic Digitraffic'
 

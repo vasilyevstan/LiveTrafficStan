@@ -44,6 +44,11 @@ on:
         required: true
         default: false
         type: boolean
+      marine_supplement_enabled:
+        description: Enable AISStream and Open Waters alongside Digitraffic
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -104,11 +109,18 @@ jobs:
           AIRCRAFT_RELAY_AUTH_TOKEN: ${{ secrets.AIRCRAFT_RELAY_AUTH_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          MARINE_ENABLED: ${{ inputs.marine_supplement_enabled }}
+          AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
+          OPENWATERS_AIS_TOKEN: ${{ secrets.OPENWATERS_AIS_TOKEN }}
         run: |
           test -n "$CLOUDFLARE_ACCOUNT_ID"
           test -n "$CLOUDFLARE_API_TOKEN"
           if [[ "$AIRCRAFT_DELIVERY" == "oci-private-relay" ]]; then
             test "${#AIRCRAFT_RELAY_AUTH_TOKEN}" -ge 32
+          fi
+          if [[ "$MARINE_ENABLED" == "true" ]]; then
+            test -n "$AISSTREAM_API_KEY"
+            test -n "$OPENWATERS_AIS_TOKEN"
           fi
 
       - name: Use Node.js
@@ -148,6 +160,7 @@ jobs:
           VITE_AIRCRAFT_ENDPOINT: ${{ inputs.aircraft_delivery == 'adsb-lol-direct' && 'https://api.adsb.lol' || '/api/aircraft' }}
           VITE_AIRCRAFT_PHOTO_ENABLED: ${{ inputs.aircraft_photo_enabled }}
           VITE_FLIGHT_ROUTE_ENABLED: ${{ inputs.flight_route_enabled }}
+          VITE_MARINE_SUPPLEMENT_ENABLED: ${{ inputs.marine_supplement_enabled }}
         run: npm run build
 
       - name: Build PWA retirement artifact
@@ -156,6 +169,7 @@ jobs:
           VITE_AIRCRAFT_ENDPOINT: ${{ inputs.aircraft_delivery == 'adsb-lol-direct' && 'https://api.adsb.lol' || '/api/aircraft' }}
           VITE_AIRCRAFT_PHOTO_ENABLED: ${{ inputs.aircraft_photo_enabled }}
           VITE_FLIGHT_ROUTE_ENABLED: ${{ inputs.flight_route_enabled }}
+          VITE_MARINE_SUPPLEMENT_ENABLED: ${{ inputs.marine_supplement_enabled }}
         run: npm run build:pwa-retire
 
       - name: Check exact deployment bundle
@@ -174,6 +188,7 @@ jobs:
           NAMESPACE_ID: ${{ steps.orbital-kv.outputs.namespace-id }}
           ORBITAL_ENABLED: ${{ inputs.orbital_catalog_enabled }}
           STARLINK_ENABLED: ${{ inputs.starlink_catalog_enabled }}
+          MARINE_ENABLED: ${{ inputs.marine_supplement_enabled }}
         run: |
           if [[ "$ORBITAL_ENABLED" == "true" ]]; then
             node scripts/prepare-wrangler-config.mjs \
@@ -181,13 +196,15 @@ jobs:
               --output "$RUNNER_TEMP/wrangler-production.jsonc" \
               --orbital-enabled true \
               --starlink-enabled "$STARLINK_ENABLED" \
+              --marine-enabled "$MARINE_ENABLED" \
               --namespace-id "$NAMESPACE_ID"
           else
             node scripts/prepare-wrangler-config.mjs \
               --input wrangler.jsonc \
               --output "$RUNNER_TEMP/wrangler-production.jsonc" \
               --orbital-enabled false \
-              --starlink-enabled false
+              --starlink-enabled false \
+              --marine-enabled "$MARINE_ENABLED"
           fi
 
       - name: Check exact production Worker configuration
@@ -196,6 +213,7 @@ jobs:
           ORBITAL_ENABLED: ${{ inputs.orbital_catalog_enabled }}
           RELEASE_SHA: ${{ inputs.sha }}
           STARLINK_ENABLED: ${{ inputs.starlink_catalog_enabled }}
+          MARINE_ENABLED: ${{ inputs.marine_supplement_enabled }}
         run: >-
           npx wrangler deploy
           --dry-run
@@ -204,28 +222,21 @@ jobs:
           --var "AIRCRAFT_DELIVERY:$AIRCRAFT_DELIVERY"
           --var "ORBITAL_CATALOG_ENABLED:$ORBITAL_ENABLED"
           --var "STARLINK_CATALOG_ENABLED:$STARLINK_ENABLED"
+          --var "MARINE_SUPPLEMENT_ENABLED:$MARINE_ENABLED"
           --outdir "$RUNNER_TEMP/worker-dry-run"
 
-      - name: Prepare private relay secrets file
-        if: inputs.aircraft_delivery == 'oci-private-relay'
+      - name: Prepare production secrets file
+        if: inputs.aircraft_delivery == 'oci-private-relay' || inputs.marine_supplement_enabled
         env:
+          AIRCRAFT_DELIVERY: ${{ inputs.aircraft_delivery }}
           AIRCRAFT_RELAY_AUTH_TOKEN: ${{ secrets.AIRCRAFT_RELAY_AUTH_TOKEN }}
+          MARINE_ENABLED: ${{ inputs.marine_supplement_enabled }}
+          AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
+          OPENWATERS_AIS_TOKEN: ${{ secrets.OPENWATERS_AIS_TOKEN }}
           SECRETS_FILE: ${{ runner.temp }}/wrangler-production-secrets.json
         run: |
           umask 077
-          node - <<'NODE'
-          const { writeFileSync } = require('node:fs')
-
-          const token = process.env.AIRCRAFT_RELAY_AUTH_TOKEN
-          if (!token || token.length < 32) {
-            throw new Error('Private relay secret is missing or too short')
-          }
-          writeFileSync(
-            process.env.SECRETS_FILE,
-            `${JSON.stringify({ AIRCRAFT_RELAY_AUTH_TOKEN: token })}\n`,
-            { mode: 0o600 },
-          )
-          NODE
+          node scripts/prepare-production-secrets.mjs
 
       - name: Deploy exact source
         id: deploy
@@ -244,10 +255,11 @@ jobs:
             --var AIRCRAFT_DELIVERY:${{ inputs.aircraft_delivery }}
             --var ORBITAL_CATALOG_ENABLED:${{ inputs.orbital_catalog_enabled }}
             --var STARLINK_CATALOG_ENABLED:${{ inputs.starlink_catalog_enabled }}
-            ${{ inputs.aircraft_delivery == 'oci-private-relay' && format('--secrets-file {0}/wrangler-production-secrets.json', runner.temp) || '' }}
+            --var MARINE_SUPPLEMENT_ENABLED:${{ inputs.marine_supplement_enabled }}
+            ${{ (inputs.aircraft_delivery == 'oci-private-relay' || inputs.marine_supplement_enabled) && format('--secrets-file {0}/wrangler-production-secrets.json', runner.temp) || '' }}
 
-      - name: Remove private relay secrets file
-        if: always() && inputs.aircraft_delivery == 'oci-private-relay'
+      - name: Remove production secrets file
+        if: always() && (inputs.aircraft_delivery == 'oci-private-relay' || inputs.marine_supplement_enabled)
         env:
           SECRETS_FILE: ${{ runner.temp }}/wrangler-production-secrets.json
         run: rm -f "$SECRETS_FILE"
@@ -276,6 +288,7 @@ jobs:
             echo "- Flight route lookup enabled: \`${{ inputs.flight_route_enabled }}\`"
             echo "- Orbital catalog enabled: \`${{ inputs.orbital_catalog_enabled }}\`"
             echo "- Starlink catalog enabled: \`${{ inputs.starlink_catalog_enabled }}\`"
+            echo "- Marine supplement enabled: \`${{ inputs.marine_supplement_enabled }}\`"
             echo "- Orbital KV namespace: \`${{ steps.orbital-kv.outputs.namespace-id || 'none' }}\`"
             echo "- Orbital coordinator enabled: \`${{ inputs.orbital_catalog_enabled }}\`"
             echo "- URL: $DEPLOYMENT_URL"

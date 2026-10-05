@@ -1,8 +1,9 @@
 import 'fake-indexeddb/auto'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { Aircraft } from '../domain/traffic'
 import {
   HistoryRepositoryError,
+  HISTORY_DATABASE_VERSION,
   IndexedDbHistoryRepository,
 } from './indexedDbHistory'
 import {
@@ -51,6 +52,55 @@ const limits = {
 }
 
 describe('IndexedDbHistoryRepository', () => {
+  it('upgrades version 1 without losing records and fences destructive older readers', async () => {
+    const databaseName = `history-upgrade-${crypto.randomUUID()}`
+    const existing = record(10_000)
+    const database = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open(databaseName, 1)
+      request.onupgradeneeded = () => {
+        const observations = request.result.createObjectStore('observations', {
+          keyPath: ['provider', 'entityId', 'observedAt'],
+        })
+        observations.createIndex('observedAt', 'observedAt')
+        observations.createIndex('receivedAt', 'receivedAt')
+        observations.createIndex('providerReceivedAt', ['provider', 'receivedAt'])
+        request.result.createObjectStore('metadata', { keyPath: 'key' })
+      }
+      request.onsuccess = () => resolve(request.result)
+      request.onerror = () => reject(request.error)
+    })
+    const transaction = database.transaction(['observations', 'metadata'], 'readwrite')
+    transaction.objectStore('observations').put(existing)
+    transaction.objectStore('metadata').put({
+      key: 'state', schemaVersion: 1, normalizationVersion: '2026-09-19-v1',
+      licenseDecisionIds: [
+        'adsb-lol-odbl-local-playback-2026-09-19',
+        'fintraffic-cc-by-local-playback-2026-09-19',
+      ],
+      recordingEnabled: true, recordingEpoch: 7,
+      recordCount: 1, logicalBytes: existing.logicalBytes,
+    })
+    await new Promise<void>((resolve, reject) => {
+      transaction.oncomplete = () => resolve()
+      transaction.onerror = () => reject(transaction.error)
+    })
+    const versionChange = vi.fn(() => database.close())
+    database.onversionchange = versionChange
+    const history = new IndexedDbHistoryRepository({ databaseName })
+    const migrated = await history.readAll()
+    expect(versionChange).toHaveBeenCalledOnce()
+    expect(migrated.records).toEqual([existing])
+    expect(migrated.invalidRecordsRemoved).toBe(0)
+    expect(migrated.metadata).toMatchObject({ recordingEnabled: true, recordingEpoch: 7 })
+    await expect(new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open(databaseName, 1)
+      request.onsuccess = () => resolve(request.result)
+      request.onerror = () => reject(request.error)
+    })).rejects.toMatchObject({ name: 'VersionError' })
+    expect((await history.readAll()).records).toEqual([existing])
+    history.close()
+  })
+
   it('creates, authorizes, writes, reads, and prunes the bounded store', async () => {
     const history = repository()
     const initial = await history.readAll()
@@ -159,7 +209,7 @@ describe('IndexedDbHistoryRepository', () => {
     await history.readAll()
 
     const database = await new Promise<IDBDatabase>((resolve, reject) => {
-      const request = indexedDB.open(databaseName, 1)
+      const request = indexedDB.open(databaseName, HISTORY_DATABASE_VERSION)
       request.onsuccess = () => resolve(request.result)
       request.onerror = () => reject(request.error)
     })
@@ -194,7 +244,7 @@ describe('IndexedDbHistoryRepository', () => {
     const enabled = await first.setRecordingEnabled(true)
 
     const database = await new Promise<IDBDatabase>((resolve, reject) => {
-      const request = indexedDB.open(databaseName, 1)
+      const request = indexedDB.open(databaseName, HISTORY_DATABASE_VERSION)
       request.onsuccess = () => resolve(request.result)
       request.onerror = () => reject(request.error)
     })
@@ -238,7 +288,7 @@ describe('IndexedDbHistoryRepository', () => {
     await history.readAll()
 
     const database = await new Promise<IDBDatabase>((resolve, reject) => {
-      const request = indexedDB.open(databaseName, 1)
+      const request = indexedDB.open(databaseName, HISTORY_DATABASE_VERSION)
       request.onsuccess = () => resolve(request.result)
       request.onerror = () => reject(request.error)
     })
@@ -275,7 +325,7 @@ describe('IndexedDbHistoryRepository', () => {
     expect(result.metadata.logicalBytes).toBe(projected.logicalBytes)
 
     const reopened = await new Promise<IDBDatabase>((resolve, reject) => {
-      const request = indexedDB.open(databaseName, 1)
+      const request = indexedDB.open(databaseName, HISTORY_DATABASE_VERSION)
       request.onsuccess = () => resolve(request.result)
       request.onerror = () => reject(request.error)
     })

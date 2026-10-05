@@ -4,9 +4,10 @@
 
 LiveTrafficStan V1 is a browser application with no authentication, account
 database, or general backend. Production adds one fixed-purpose Cloudflare
-Worker for browser-incompatible aircraft/weather access and the protected
-scheduled CelesTrak snapshot. Plausible route lookup, marine traffic, place
-search, map data, and aircraft photos use reviewed direct browser paths.
+Worker for browser-incompatible aircraft/weather access, the protected
+scheduled CelesTrak snapshot and an optional isolated marine-stream relay.
+Plausible route lookup, Digitraffic marine traffic, place search, map data,
+and aircraft photos use reviewed direct browser paths.
 Vessel reference photos are reviewed versioned same-origin assets with no
 runtime third-party lookup. React owns controls and selected-object UI state.
 Provider adapters own external protocols and normalization. MapLibre owns
@@ -74,6 +75,8 @@ ADSB.lol <- private OCI relay <- Tunnel/VPC <- same-origin aircraft proxy
                                      aircraft adapter -> normalized Aircraft[]
                                                         |
 Digitraffic REST + MQTT -> marine adapter -> normalized Vessel[]
+AISStream + Open Waters -> shared marine relay -> same-origin WebSocket
+                                              -> normalized Vessel[] fusion
                                                         |
                            freshness + local vessel filters + bounded history
                                                         |
@@ -131,7 +134,7 @@ tombstone can be removed after Cloudflare confirms that deletion has applied.
 | `src/providers/aircraftMetadata/` | Bounded same-origin static metadata loading, provenance/schema/hash validation, exact identity matching, and shard LRU |
 | `src/providers/aircraftPhoto/` | Disabled-by-default direct Planespotters hex lookup, bounded response validation, exact returned-origin enforcement, and typed local failures |
 | `src/providers/flightRoute/` | Direct ADSB.lol standing-route requests, bounded response validation, geographic plausibility checks, typed unavailable/error results, and attribution |
-| `src/providers/marine/` | Digitraffic capabilities, REST/MQTT lifecycle, metadata merging, normalization, and opt-in development diagnostics |
+| `src/providers/marine/` | Digitraffic REST/MQTT, optional same-origin marine stream, source normalization, exact-MMSI fusion, capabilities and opt-in development diagnostics |
 | `src/providers/ports/` | Bounded lazy same-origin port loading plus checksum, schema, and source-provenance validation |
 | `src/providers/airports/` | Bounded lazy same-origin airport loading plus checksum, schema, and source-provenance validation |
 | `src/providers/weather/` | Canonical same-origin AWC requests, bounded JSON validation, METAR/SPECI normalization, newest-report selection, and source provenance |
@@ -157,7 +160,7 @@ Presentation uses a shared opaque surface/token system: white Light panels
 and slate Dark panels, restrained borders and shadows, system typography,
 and a solid three-pixel keyboard focus ring. A compact floating card groups
 the brand and traffic status without an edge-to-edge top bar. It keeps
-mode, shown counts, regional marine coverage, and update age visible. Its
+mode, shown counts, marine source scope, and update age visible. Its
 native **Provider details** disclosure exposes independent transport/error
 messages and coverage limitations on every screen size; Escape closes it and
 restores summary focus. Presentation does not change provider state or polling.
@@ -244,11 +247,46 @@ metadata records. The adapter retains only the latest record per MMSI, removes
 expired locations, and filters its cache to the enclosing circle before
 emitting a snapshot.
 
-The marine boundary also exposes one immutable capability descriptor. It
-records direct keyless browser access, radius REST, the all-published-vessels
-stream, CC BY 4.0 obligations, regional source scope, unknown exact coverage,
-and documented Class A/fishing-vessel exclusions. It is not a provider
-registry and does not drive networking or infer a coverage polygon.
+With the default-off supplement enabled, `MultiSourceMarineProvider` composes
+that unchanged controller with `MarineStreamProvider`. Newer observed
+positions win exact-MMSI deduplication; equal times prefer Digitraffic, Open
+Waters, then AISStream. Compatible missing static metadata can be filled
+without replacing position provenance or borrowing unknown motion fields.
+Incompatible identity changes stop interpolation and clear only that vessel's
+live trail. Provider loss cannot clear another source's observations.
+
+`MarineTrafficRelay` is a separate SQLite Durable Object with fixed identity
+`marine-live-viewers-v1`, not the aircraft host or orbital coordinator. It
+owns one fixed-origin connection per supplemental provider, conservatively
+encloses the union of eligible viewers, splits wrapped boxes and preserves
+already-admitted interests when a new viewer would exceed capacity. No
+viewer means no upstream work. The same-origin upgrade rejects foreign
+Origin, query parameters and invalid/unrounded views; browsers receive no key
+or raw provider payload.
+
+Native Open Waters snapshot events retain the position clock. Its REST
+snapshot is metadata-only because `seen` can advance on static reports.
+Locations expire at ten minutes, metadata is bounded to an hour, and caches,
+frames, HTTP bodies and aggregate pending client bytes have explicit limits.
+Each client acknowledges a revision/sequence-fenced snapshot before another
+is sent; a ten-second slow reader is closed. Operational daily quota
+reservations and provider/metadata retry deadlines survive restarts in
+SQLite; vessel records and view coordinates do not. Limits live in the
+dependency-free `marineStreamConfig.ts` leaf re-exported by `appConfig.ts`.
+
+The browser preserves unexpired raw observations across a cold relay
+reconnect, rather than interpreting an empty initializing cache as vessel
+deletion. Compatible cached static context may bridge that reconnect; its
+original observation expiry is not extended by newer positions or repeated
+disconnects. Normal continuous same-source reports still replace unavailable
+fields. This keeps selection and yacht eligibility stable through recovery
+without turning temporary metadata into an unbounded cache.
+
+The marine boundary exposes either the original regional descriptor or a
+global-best-effort multi-source descriptor. They describe capability and
+attribution, not a provider registry or a coverage polygon. Partial source
+failure stays visible even while the composite is live. A connected empty
+view does not establish that the area has no vessels.
 
 After provider normalization, the application filters both traffic kinds to the
 actual unwrapped viewport polygon. An object inside the enclosing circle but
@@ -560,14 +598,22 @@ The history boundary has two stores:
 - an explicit opt-in IndexedDB store bounded to 1, 6, or 24 hours, 100,000
   records, and 32 MiB logical payload.
 
-Both store only versioned normalized ADSB.lol or Fintraffic Digitraffic
-observations with provider, license-decision, source-time, receipt-time,
+Both store only versioned normalized ADSB.lol, Fintraffic Digitraffic or
+attributed AISStream/Open Waters observations with provider, license-decision, source-time, receipt-time,
 session, and navigation-segment identity. Interpolation frames, route data,
 destination/ETA, browser location, current METAR, and third-party aircraft
 metadata or photos are not persisted. Bundled vessel reference photos and
 their manifest are static application assets, not history records, and are
 never rendered in HISTORY. Vessel metadata is visible in history only after
-its own observation time.
+its own observation time, or no earlier than receipt when mixed-source
+metadata has no trustworthy report time. Playback deduplicates vessel IDs
+across providers and retains separate source trail segments.
+
+IndexedDB database version 2 retains the existing record schema, stores,
+consent, recording epoch and rows. It fences old version-1 readers whose
+unknown-provider repair would delete new records. Use updated code with the
+supplement disabled for rollback; older code may report a database version
+error but must not be used to erase the store.
 
 IndexedDB writes recheck opt-in authorization and a monotonic recording epoch
 inside the transaction. Clear and Disable increment that epoch atomically with
@@ -749,8 +795,9 @@ marks reports stale after two minutes and removes them after ten. Invalid
 reported speeds remain rejected. The rule uses the live clock or historical
 cursor and never falls through to the ordinary length filter. Query, category,
 navigation and maximum length still apply; non-yachts retain the 50 m default.
-Digitraffic publishes Class A AIS only, so this does not claim comprehensive
-Class B yacht coverage.
+Digitraffic publishes Class A AIS only. Supplemental Class B reception still
+requires actual positions plus transmitted type/dimensions and does not
+promise comprehensive yacht coverage.
 
 Aircraft retain their provider-reported silhouette category, but the
 silhouette fill itself carries four sequential reported barometric-altitude

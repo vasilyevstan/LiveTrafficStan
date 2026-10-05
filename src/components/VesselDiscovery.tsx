@@ -23,6 +23,8 @@ import {
   type VesselReportedSpeedFilter,
 } from '../domain/vesselFilters'
 import type { UnitSystem } from '../domain/units'
+import { APP_CONFIG } from '../config/appConfig'
+import { MULTI_SOURCE_MARINE_CAPABILITIES } from '../providers/marine/multiSourceCapabilities'
 
 interface VesselDiscoveryProps {
   filters: VesselFilterState
@@ -244,8 +246,10 @@ export function VesselDiscovery({
       </div>
       <p className="control-note control-note--muted">
         Yachts: ≥8 m; reported-speed, maximum-length and normal freshness
-        rules apply. Digitraffic is Class A only; Class B coverage is
-        incomplete.
+        rules apply.{' '}
+        {APP_CONFIG.marine.supplementEnabled
+          ? MULTI_SOURCE_MARINE_CAPABILITIES.discoveryNote
+          : 'Digitraffic is Class A only; Class B coverage is incomplete.'}
       </p>
 
       {totalVessels === 0 && (

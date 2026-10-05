@@ -75,6 +75,7 @@ export interface Aircraft extends TrafficEntityBase {
 export interface Vessel extends TrafficEntityBase {
   kind: 'vessel'
   mmsi: number
+  attribution?: string
   vesselCategory: VesselCategory
   navigationCategory: VesselNavigationCategory
   name?: string

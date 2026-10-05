@@ -3,14 +3,16 @@ import {
   DIGITRAFFIC_HISTORY_LICENSE_DECISION,
   HISTORY_NORMALIZATION_VERSION,
   HISTORY_SCHEMA_VERSION,
+  HISTORY_LICENSE_DECISIONS,
   historicalObservationKey,
   isCanonicalHistoricalObservation,
   validateHistoricalObservation,
   type HistoricalObservation,
+  type HistoryLicenseDecision,
 } from './observations'
 
 export const HISTORY_DATABASE_NAME = 'livetrafficstan-history'
-export const HISTORY_DATABASE_VERSION = 1
+export const HISTORY_DATABASE_VERSION = 2
 const OBSERVATIONS_STORE = 'observations'
 const METADATA_STORE = 'metadata'
 const METADATA_KEY = 'state'
@@ -24,10 +26,7 @@ export interface HistoryDatabaseMetadata {
   key: typeof METADATA_KEY
   schemaVersion: typeof HISTORY_SCHEMA_VERSION
   normalizationVersion: typeof HISTORY_NORMALIZATION_VERSION
-  licenseDecisionIds: readonly [
-    typeof ADSB_HISTORY_LICENSE_DECISION,
-    typeof DIGITRAFFIC_HISTORY_LICENSE_DECISION,
-  ]
+  licenseDecisionIds: readonly HistoryLicenseDecision[]
   recordingEnabled: boolean
   recordingEpoch: number
   recordCount: number
@@ -88,10 +87,7 @@ const currentMetadata = (
   key: METADATA_KEY,
   schemaVersion: HISTORY_SCHEMA_VERSION,
   normalizationVersion: HISTORY_NORMALIZATION_VERSION,
-  licenseDecisionIds: [
-    ADSB_HISTORY_LICENSE_DECISION,
-    DIGITRAFFIC_HISTORY_LICENSE_DECISION,
-  ],
+  licenseDecisionIds: HISTORY_LICENSE_DECISIONS,
   recordingEnabled: false,
   recordingEpoch: 0,
   recordCount: 0,
@@ -543,6 +539,7 @@ export class IndexedDbHistoryRepository {
         'Durable history recording is disabled',
       )
     }
+    metadata.licenseDecisionIds = HISTORY_LICENSE_DECISIONS
     if (metadata.recordingEpoch !== expectedEpoch) {
       transaction.abort()
       throw new HistoryRepositoryError(

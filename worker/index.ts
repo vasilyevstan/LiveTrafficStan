@@ -19,7 +19,13 @@ import {
   handleStarlinkCatalog,
   STARLINK_CATALOG_PATH,
 } from './starlinkCatalog.js'
+import {
+  handleMarineStream,
+  MARINE_STREAM_PATH,
+  type MarineRelayNamespace,
+} from './marineStream.js'
 export { OrbitalCatalogCoordinator } from './orbitalCatalogCoordinator.js'
+export { MarineTrafficRelay } from './marineStream.js'
 
 interface FetchBinding {
   fetch(
@@ -41,6 +47,10 @@ export interface WorkerEnv {
   ORBITAL_CATALOG_COORDINATOR?: OrbitalCatalogCoordinatorNamespace
   ORBITAL_CATALOG_ENABLED?: string
   STARLINK_CATALOG_ENABLED?: string
+  MARINE_SUPPLEMENT_ENABLED?: string
+  MARINE_TRAFFIC_RELAY?: MarineRelayNamespace
+  AISSTREAM_API_KEY?: string
+  OPENWATERS_AIS_TOKEN?: string
   RELEASE_SHA?: string
 }
 
@@ -108,6 +118,11 @@ const withReleaseSha = (response: Response, releaseSha: string | undefined) => {
 const worker = {
   async fetch(request: Request, env: WorkerEnv) {
     const pathname = new URL(request.url).pathname
+    if (pathname === MARINE_STREAM_PATH) {
+      const response = await handleMarineStream(request, env)
+      return response.status === 101
+        ? response : withReleaseSha(response, env.RELEASE_SHA)
+    }
     if (pathname === ORBITAL_CATALOG_PATH) {
       return withReleaseSha(
         await handleOrbitalCatalog(request, env),

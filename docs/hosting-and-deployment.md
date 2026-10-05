@@ -9,7 +9,8 @@ production platform:
 
 - Vite's `dist/` output is served as immutable static assets;
 - one Worker handles the same-origin ADSB.lol point and AWC METAR paths plus a
-  protected storage-only orbital catalog route and scheduler;
+  protected storage-only orbital catalog route and scheduler, with an
+  optional isolated same-origin marine relay;
 - plausible route lookup calls ADSB.lol standing data directly from the
   browser once for a newly selected eligible live aircraft;
 - exact-IMO vessel reference photos are versioned same-origin Static Assets
@@ -21,6 +22,10 @@ production platform:
   Worker-to-relay bearer secret and one fixed VPC Service binding. Orbital
   activation adds one dedicated bounded KV namespace, one SQLite-backed
   Durable Object coordinator, and one two-hour Cron.
+- marine supplementation adds one demand-driven SQLite Durable Object with
+  one private AISStream connection and one Open Waters connection. Only
+  operational quota/retry state is persisted; live vessel records remain
+  bounded in memory. It does not use the OCI aircraft host.
 
 The accepted recovery design keeps that public Cloudflare boundary and routes
 only aircraft through a private Workers VPC Service and Tunnel to an isolated
@@ -1199,6 +1204,9 @@ The protected environment supplies these secrets:
 | --- | --- |
 | `CLOUDFLARE_ACCOUNT_ID` | Selects the permanent Cloudflare account |
 | `CLOUDFLARE_API_TOKEN` | Least-privilege token allowed to deploy this Worker, provision its SQLite Durable Object binding, and resolve/create its one dedicated orbital KV namespace when that feature is enabled |
+| `AISSTREAM_API_KEY` | Private AISStream subscription credential, required only for enabled marine supplementation |
+| `OPENWATERS_AIS_TOKEN` | Free personal Open Waters token, required only for enabled marine supplementation |
+| `OPENWATERS_AIS_IDENTITY_PRIVATE_KEY` | Protected account identity/recovery material; never included in a Worker deployment or browser build |
 
 Private relay bootstrap additionally requires Cloudflare Tunnel Write,
 Connectivity Directory Admin, and Connectivity Directory Bind. The existing
@@ -1355,6 +1363,70 @@ If a newer pull request reaches `main` while an older manual deployment is
 validating, the second equality check fails rather than silently promoting the
 older SHA.
 
+## Supplemental marine activation and rollback
+
+`marine_supplement_enabled` is an explicit, default-false deployment input.
+It controls both `VITE_MARINE_SUPPLEMENT_ENABLED` in the browser build and
+`MARINE_SUPPLEMENT_ENABLED` plus `MARINE_TRAFFIC_RELAY` in the Worker.
+`prepare-wrangler-config.mjs` preserves independent orbital/marine bindings.
+The declarative `MarineTrafficRelay` SQLite export remains while its binding
+is disabled, retaining the operational object identity and quota fences.
+
+The protected environment must contain both provider API credentials before
+enabled deployment. `prepare-production-secrets.mjs` writes only required
+Worker secrets to an exclusive mode-600 temporary file; one atomic
+`wrangler deploy --secrets-file` installs them together with the source and
+existing aircraft secret. The workflow deletes that file in `always()`.
+It never deploys the Open Waters identity private key or runs a standalone
+`wrangler secret put`.
+
+For a first activation:
+
+1. Deploy the checked current `main` source with the marine supplement
+   **disabled**, preserving all current aircraft/photo/route/orbital/Starlink
+   inputs. Record the successful compatible Cloudflare version.
+2. Deploy the same checked SHA with `marine_supplement_enabled=true`.
+   Keep the existing protected environment, production serialization,
+   exact-current-main checks and private aircraft delivery.
+3. Perform the mandatory real-browser marine check below. If the new path
+   fails, restore the recorded updated-code, marine-disabled version or
+   redeploy the same source disabled. Do not switch to a paid plan or the
+   memory-constrained aircraft host to hide a failure.
+
+For the current non-marine production settings, the enabled invocation is:
+
+```bash
+gh workflow run deploy-production.yml \
+  --repo vasilyevstan/LiveTrafficStan \
+  --ref main \
+  -f sha=<40-character-current-main-sha> \
+  -f artifact=application \
+  -f aircraft_delivery=oci-private-relay \
+  -f aircraft_photo_enabled=true \
+  -f flight_route_enabled=true \
+  -f orbital_catalog_enabled=true \
+  -f starlink_catalog_enabled=true \
+  -f marine_supplement_enabled=true
+```
+
+The browser history database upgrades to version 2 without changing the
+record schema, stores, consent, epoch or existing rows. Older version-1 code
+cannot open that database; this protects new provider records from its
+unknown-provider deletion logic. The primary rollback is therefore the
+**updated reader with supplementation disabled**, not an older application
+binary and not history deletion. `rollback-production.yml` accepts the target
+marine build flag and injects it only if that source supports it, preserving
+byte-exact builds of older releases. Target orbital state remains resolved
+from the actual Cloudflare version rather than guessed from current flags.
+
+The existing Workers Free allocation is finite. One 128 MB object active all
+day calculates to 11,059.2 GB-s against the nominal 13,000 GB-s/day allowance;
+incoming WebSocket messages count at 20:1 against 100,000 requests/day. The
+relay reserves at most 80,000 request equivalents/day, closes on exhaustion,
+preserves UTC retry state across restarts and does no provider work without
+viewers. This is bounded best effort, not unlimited free concurrency or a
+guarantee of all-day reception under every load.
+
 ## Automated production smoke
 
 `scripts/smoke-production.mjs` verifies:
@@ -1394,6 +1466,17 @@ older SHA.
 - Digitraffic REST preflight and a bounded REST response;
 - one Digitraffic MQTT connection, subscription, JSON message, and explicit
   disconnect.
+
+That existing smoke does **not** establish supplemental marine acceptance.
+For enabled activation, additionally open the actual production application
+in a real browser and verify the `/api/marine/stream` upgrade under the exact
+release SHA, both source statuses, real observed positions/attributed details,
+MMSI deduplication, vector tiles and rendered vessels in representative
+regions. Check that source loss remains partial and that theme, selection,
+filters and narrow/touch views preserve the single map and provider
+lifecycles. Do not treat a connected empty stream, REST header count or
+synthetic fixture as Class B/yacht coverage evidence. Retain aggregate
+receipts and screenshots, not a raw AIS archive.
 
 The production smoke does not make a plausible-route or CelesTrak request on
 every deploy. The orbital route is storage/bootstrap-only; the first live

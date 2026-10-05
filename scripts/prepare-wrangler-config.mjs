@@ -29,6 +29,10 @@ if (orbitalEnabled !== 'true' && orbitalEnabled !== 'false') {
   throw new Error('--orbital-enabled must be true or false')
 }
 const starlinkEnabled = required('starlink-enabled')
+const marineEnabled = args.get('marine-enabled') ?? 'false'
+if (marineEnabled !== 'true' && marineEnabled !== 'false') {
+  throw new Error('--marine-enabled must be true or false')
+}
 if (starlinkEnabled !== 'true' && starlinkEnabled !== 'false') {
   throw new Error('--starlink-enabled must be true or false')
 }
@@ -50,6 +54,10 @@ if (config.assets?.directory) {
 config.triggers = {
   crons: orbitalEnabled === 'true' ? ['17 */2 * * *'] : [],
 }
+const bindings = (config.durable_objects?.bindings ?? []).filter((binding) =>
+  binding.name !== 'ORBITAL_CATALOG_COORDINATOR' &&
+  binding.name !== 'MARINE_TRAFFIC_RELAY',
+)
 
 if (orbitalEnabled === 'true') {
   const namespaceId = required('namespace-id')
@@ -62,14 +70,10 @@ if (orbitalEnabled === 'true') {
       id: namespaceId,
     },
   ]
-  config.durable_objects = {
-    bindings: [
-      {
-        name: 'ORBITAL_CATALOG_COORDINATOR',
-        class_name: 'OrbitalCatalogCoordinator',
-      },
-    ],
-  }
+  bindings.push({
+    name: 'ORBITAL_CATALOG_COORDINATOR',
+    class_name: 'OrbitalCatalogCoordinator',
+  })
   config.exports = {
     ...config.exports,
     OrbitalCatalogCoordinator: {
@@ -79,14 +83,22 @@ if (orbitalEnabled === 'true') {
   }
 } else {
   delete config.kv_namespaces
-  delete config.durable_objects
   if (config.exports) {
     delete config.exports.OrbitalCatalogCoordinator
   }
 }
 
+if (marineEnabled === 'true') {
+  bindings.push({
+    name: 'MARINE_TRAFFIC_RELAY',
+    class_name: 'MarineTrafficRelay',
+  })
+}
+if (bindings.length) config.durable_objects = { ...config.durable_objects, bindings }
+else delete config.durable_objects
+
 await writeFile(outputPath, `${JSON.stringify(config, null, 2)}\n`)
 console.log(
   `Prepared ${outputPath} with orbital catalog ${orbitalEnabled} ` +
-    `and Starlink catalog ${starlinkEnabled}`,
+    `and Starlink catalog ${starlinkEnabled}; marine supplement ${marineEnabled}`,
 )

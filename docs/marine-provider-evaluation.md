@@ -1,11 +1,155 @@
 # Marine Provider Evaluation
 
-## Decision
+## Current decision: complementary free sources
+
+Reviewed **2026-10-04**, workstream #296. Retain useful Digitraffic reception
+and add **AISStream plus Open Waters AIS** behind the default-off
+`VITE_MARINE_SUPPLEMENT_ENABLED` build flag and matching Worker flag.
+Digitraffic is a regional contribution, not a benchmark that other sources
+must reproduce worldwide. Preserve application functionality, not a claim
+that one receiver network is complete.
+
+The browser retains its existing Digitraffic REST/MQTT controller. One
+same-origin `/api/marine/stream` WebSocket supplies normalized supplemental
+observations from a demand-driven shared Durable Object. The relay owns one
+connection to each additional source, with geographic subscriptions, private
+server-side credentials, compression, bounded memory and backoff. There is no
+provider-picker UI, whole-world subscription, raw-data service, backend
+vessel archive, or use of the low-memory aircraft relay.
+
+| Source | Contribution | Access and limits | Important limitations |
+| --- | --- | --- | --- |
+| Digitraffic | Useful Finnish/Baltic Class A positions and rich static fields | Existing keyless browser REST/MQTT; five-minute REST gates and at least 15 seconds between reconnect attempts | Regional reception; documented fishing exclusions; not a global/Class B reference |
+| AISStream | Class A and standard/extended Class B positions; type 5 and split type 24 static reports | Free private API key; fixed server-side WSS; three subscribed connections/account, initial subscription within three seconds, replacements no more than once/second | No SLA or durable replay; reception and arrival of type/dimensions vary; direct browser connections prohibited |
+| Open Waters AIS | Additional aggregated reception, native position snapshot replay and useful static enrichment | Fixed native v1 WSS and metadata REST; verified free personal tier: two streams, 50 messages/second, 400 square degrees | Sources overlap other feeds; rate-limited delivery is thinned; per-source terms still apply; REST `seen` is not a position clock |
+
+Open Waters' anonymous tier allows two streams per address, 20
+messages/second and 100 square degrees. Local acceptance can use that tier;
+production uses the protected personal token. The documented Ed25519 key
+registration API established that token without a paid plan, contributed
+receiver, public station, or IP binding. The identity private key is protected
+separately and is not deployed to the Worker. Neither API credential belongs
+in browser assets, URLs, issues or logs.
+
+### Identity, freshness and existing behavior
+
+Deduplicate by exact `vessel:<MMSI>`, choosing the newer observed position.
+Equal-time preference is Digitraffic, then Open Waters, then AISStream.
+Compatible missing static fields can be filled from another source without
+changing position provenance. Conflicting identities are not spliced
+together. Missing speed, heading, course or navigation state is never borrowed
+from an older source or inferred from vessel names.
+
+Open Waters' native snapshot replays the actual position event clock
+(`PosAt`). Its REST `seen` can advance on static messages, and stationary
+snapshot entries can be days old. REST is therefore **metadata-only**:
+neither its coordinates nor `seen` can create or refresh a position. Invalid,
+future and expired reports are rejected. The deployed REST sample did not
+expose a class field; an absent class means unknown, not no Class B.
+
+The existing two-minute stale / ten-minute expiry policy, exact sailing or
+pleasure type plus known length at least 8 m, stopped/unknown-speed handling,
+ordinary non-yacht filters, flags, photos, selection, themes and one-map
+lifecycle remain. Global means eligible local views anywhere with reception;
+the full-canvas 100 km enclosing-query limit is unchanged.
+
+One failed source leaves the others usable and is disclosed as partial
+operation. A successful empty view does not establish absence of vessels.
+There is no promise to receive a particular yacht, including ANTARES.
+
+### Published terms and the service-use decision
+
+Use actual published/account terms and documented technical limits. An
+individual written permission reply is **not** a prerequisite unless an
+applicable term requires one. The earlier request in
+[aisstream/issues#290](https://github.com/aisstream/issues/issues/290) is
+context, not an invented approval gate.
+
+AISStream documents server-side proxying of information clients need and
+application message persistence. This is a documented-service-use decision,
+not a claim that the feed has a blanket open-data licence. The message-model
+code licence does not license AIS data.
+
+Open Waters documents public display/screenshots, normalized relaying,
+bounded caches/playback and device-local history while retaining each
+original source's terms and attribution. It does not relicense every source
+as CC0. Its public policy records AISHub's redistribution/commercial-use
+confirmation dated 2026-08-22. See
+[Data Sources and Licensing](data-sources-and-licensing.md#marine-traffic-aisstream-and-open-waters-ais)
+for the exact source distinctions. No private correspondence is needed as a
+public documentation artifact.
+
+Our server keeps live positions and metadata only in bounded memory.
+SQLite persists operational quota reservations and retry deadlines, not
+vessels, view geometry or credentials. Existing user-enabled origin-local
+history remains available under explicit source decisions and unchanged
+retention/deletion controls. This makes no claim that upstream providers
+retain no data.
+
+### Bounded observations, not a coverage census
+
+| Observation | Result | Meaning |
+| --- | --- | --- |
+| AISStream / actual Digitraffic controller, 2026-10-04 19:09:09-19:16:09 UTC, Tallinn | 52 Digitraffic vessels; 18 AISStream; 15 exact-MMSI overlaps | Replacing Digitraffic would have lost 37 received vessels; supplementation added three in that window |
+| Same seven-minute AISStream sample | 404 standard and one extended Class B position messages; reported sailing/pleasure craft at least 8 m in Helsinki 1, Rotterdam 2, Fort Lauderdale 7, Sydney 3 | Real Class B and useful metadata exist outside the narrow initial view; not complete regional coverage |
+| Same Tallinn sample | Two Class B positions without usable type/length metadata; ANTARES absent | The original local-yacht criterion was not proved |
+| Open Waters snapshot, Tallinn, 19:28:02 UTC | 93 entries within 35 km; latest sources 51 Digitraffic and 42 AISHub | Potential complementary reception; REST `seen` alone is not live-position evidence |
+| Open Waters snapshot, Gedser-Rugen, 19:40:24 UTC | 48 entries within 75 km; ten reported sailing/pleasure craft at least 8 m | Motivated broader-region acceptance, not a rendered/live coverage claim |
+| Implemented native Worker, Gedser-Rugen, 23:44:14-23:44:59 UTC | First useful snapshot 1.026 s; peak 81 vessels; final 80, with 15 AISStream and 65 Open Waters position owners; both transports live | Real normalized supplemental delivery; oldest retained position 592.425 s, below the ten-minute expiry; no qualifying yacht was established in this later window |
+
+The first five-region AISStream stream delivered 4,236 binary messages /
+2,397,642 decoded bytes. Only aggregate receipts were retained; raw messages
+were discarded. Prior observations and screenshots do not promise that the
+same vessel remains fresh during a later check.
+
+### Free hosting and bounded load
+
+Cloudflare documents 100,000 Durable Object requests/day and 13,000 GB-s/day
+on Free. Incoming WebSocket messages count at 20:1; an always-active 128 MB
+object calculates to 11,059.2 GB-s/day before other workloads. Outgoing provider
+WebSockets cannot hibernate. These are nominal feasibility calculations, not
+proof of unlimited account headroom.
+
+The relay reserves an 80,000 request-equivalent daily ceiling, leaving 20,000
+of that nominal request allowance for existing work. Reservations and retry
+deadlines survive object restarts. Capacity/budget exhaustion is explicit;
+the relay stops rather than reconnecting in a tight loop or silently dropping
+an existing viewer's geographic interest.
+
+Limits are centralized in `src/config/marineStreamConfig.ts`, re-exported by
+`appConfig.ts`: 128 viewers, 20,000 records, 16 MiB estimated cache per source,
+16 MiB aggregate pending client snapshots, ten-second acknowledgement
+deadlines, one pending snapshot per viewer, one-second publication and
+subscription batching, 15-120 second reconnect backoff, and bounded provider
+frames/HTTP bodies. Metadata view changes are gated at five seconds;
+unchanged views refresh at five minutes and preserve `Retry-After`.
+
+Production activation still requires a checked release, real Cloudflare
+egress, the shared free allowance and rendered-browser evidence. Deploy
+updated code with the supplement disabled first so rollback retains the
+new history reader; then enable the same checked source. An older binary is
+not the primary rollback for an upgraded history database.
+
+### Additional primary sources
+
+- [Open Waters AIS service and source terms](https://openwaters.io/ais/)
+- [Open Waters native API](https://openwaters.io/api/ais/)
+- [Public implementation and policy](https://github.com/openwatersio/aiscast):
+  `docs/policy.md`, `docs/limits.md`, and `server/vessels.go`
+- [AISStream API](https://aisstream.io/documentation)
+- [Cloudflare Durable Object pricing](https://developers.cloudflare.com/durable-objects/platform/pricing/)
+- [Cloudflare outgoing WebSocket lifecycle](https://developers.cloudflare.com/durable-objects/best-practices/websockets/)
+
+## Historical single-source evaluation (superseded)
+
+The remainder records the **2026-09-19** baseline and measurements. Its
+single-provider recommendation and speculative written-permission gate were
+superseded by the 2026-10-04 decision above; they are not current instructions.
 
 Evaluation date: **2026-09-19**
 
-LiveTrafficStan will retain **Fintraffic Digitraffic as its only active marine
-provider**.
+At that point LiveTrafficStan retained **Fintraffic Digitraffic as its only
+active marine provider**.
 
 Digitraffic remains the smallest authorized option for the current
 browser-first application:

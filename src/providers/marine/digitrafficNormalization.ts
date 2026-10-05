@@ -1,18 +1,18 @@
-import { isValidCoordinate } from '../../domain/geo'
+import { isValidCoordinate } from '../../domain/geo.js'
 import type {
   TrafficMarkerIcon,
   Vessel,
   VesselCategory,
   VesselNavigationCategory,
-} from '../../domain/traffic'
+} from '../../domain/traffic.js'
 import {
   finiteInteger,
   finiteNumber,
   isRecord,
   nonEmptyString,
   normalizedDirection,
-} from '../guards'
-import { DIGITRAFFIC_PROVIDER_NAME } from './digitrafficCapabilities'
+} from '../guards.js'
+import { DIGITRAFFIC_PROVIDER_NAME } from './digitrafficCapabilities.js'
 
 const KNOTS_TO_KPH = 1.852
 const DEFAULT_VESSEL_MARKER_LENGTH_METERS = 40
@@ -46,6 +46,12 @@ export interface MarineMetadataRecord {
   referencePointD?: number
   draught?: number
   eta?: number
+}
+
+export type AisMetadataRecord = Omit<MarineMetadataRecord, 'timestamp'> & {
+  timestamp?: number
+  lengthMeters?: number
+  widthMeters?: number
 }
 
 const aisText = (value: unknown) => {
@@ -213,9 +219,16 @@ export const parseDigitrafficMqttMetadata = (
 ) => metadataRecord(payload, mmsi)
 
 export const vesselLengthMeters = (
-  metadata: MarineMetadataRecord | undefined,
+  metadata: AisMetadataRecord | undefined,
 ) => {
   if (!metadata) return undefined
+  if (
+    metadata.lengthMeters !== undefined &&
+    Number.isFinite(metadata.lengthMeters) &&
+    metadata.lengthMeters > 0
+  ) {
+    return metadata.lengthMeters
+  }
   const first = metadata.referencePointA
   const second = metadata.referencePointB
   if (
@@ -232,9 +245,16 @@ export const vesselLengthMeters = (
 }
 
 export const vesselWidthMeters = (
-  metadata: MarineMetadataRecord | undefined,
+  metadata: AisMetadataRecord | undefined,
 ) => {
   if (!metadata) return undefined
+  if (
+    metadata.widthMeters !== undefined &&
+    Number.isFinite(metadata.widthMeters) &&
+    metadata.widthMeters > 0
+  ) {
+    return metadata.widthMeters
+  }
   const first = metadata.referencePointC
   const second = metadata.referencePointD
   if (
@@ -417,11 +437,13 @@ export const vesselMarkerScale = (
   )
 }
 
-export const normalizeDigitrafficVessel = (
-  location: MarineLocationRecord,
-  metadata: MarineMetadataRecord | undefined,
-  receivedAt: number,
-): Vessel => {
+export const normalizeAisVesselMetadata = (
+  metadata: AisMetadataRecord | undefined,
+): Pick<Vessel,
+  'name' | 'callSign' | 'destination' | 'imo' | 'vesselType' | 'vesselCategory' |
+  'lengthMeters' | 'widthMeters' | 'draughtMeters' | 'eta' | 'metadataObservedAt' |
+  'markerIcon' | 'markerScale'
+> => {
   const lengthMeters = vesselLengthMeters(metadata)
   const widthMeters = vesselWidthMeters(metadata)
   const draught =
@@ -432,22 +454,6 @@ export const normalizeDigitrafficVessel = (
       : undefined
 
   return {
-    id: `vessel:${location.mmsi}`,
-    kind: 'vessel',
-    provider: DIGITRAFFIC_PROVIDER_NAME,
-    mmsi: location.mmsi,
-    position: {
-      latitude: location.latitude,
-      longitude: location.longitude,
-      observedAt: location.observedAt,
-    },
-    receivedAt,
-    headingDegrees: location.headingDegrees,
-    courseDegrees: location.courseDegrees,
-    speedKph:
-      location.speedKnots === undefined
-        ? undefined
-        : location.speedKnots * KNOTS_TO_KPH,
     name: metadata?.name,
     callSign: metadata?.callSign,
     destination: metadata?.destination,
@@ -461,11 +467,47 @@ export const normalizeDigitrafficVessel = (
     widthMeters,
     draughtMeters: draught,
     eta: decodeAisEta(metadata?.eta),
-    navigationStatus: navigationStatusName(location.navigationStatus),
-    navigationCategory:
-      vesselNavigationCategory(location.navigationStatus),
     metadataObservedAt: metadata?.timestamp,
     markerIcon: vesselMarkerIcon(metadata?.shipType),
     markerScale: vesselMarkerScale(lengthMeters),
   }
 }
+
+export const normalizeAisVessel = (
+  location: MarineLocationRecord,
+  metadata: AisMetadataRecord | undefined,
+  receivedAt: number,
+  provider: string,
+  attribution?: string,
+): Vessel => ({
+  id: `vessel:${location.mmsi}`,
+  kind: 'vessel',
+  provider,
+  ...(attribution ? { attribution } : {}),
+  mmsi: location.mmsi,
+  position: {
+    latitude: location.latitude,
+    longitude: location.longitude,
+    observedAt: location.observedAt,
+  },
+  receivedAt,
+  headingDegrees: location.headingDegrees,
+  courseDegrees: location.courseDegrees,
+  speedKph: location.speedKnots === undefined
+    ? undefined : location.speedKnots * KNOTS_TO_KPH,
+  ...normalizeAisVesselMetadata(metadata),
+  navigationStatus: navigationStatusName(location.navigationStatus),
+  navigationCategory: vesselNavigationCategory(location.navigationStatus),
+})
+
+export const normalizeDigitrafficVessel = (
+  location: MarineLocationRecord,
+  metadata: MarineMetadataRecord | undefined,
+  receivedAt: number,
+): Vessel =>
+  normalizeAisVessel(
+    location,
+    metadata,
+    receivedAt,
+    DIGITRAFFIC_PROVIDER_NAME,
+  )

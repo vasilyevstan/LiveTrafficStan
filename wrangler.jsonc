@@ -10,6 +10,10 @@
     "FlightRouteQuota": {
       "type": "durable-object",
       "state": "deleted"
+    },
+    "MarineTrafficRelay": {
+      "type": "durable-object",
+      "storage": "sqlite"
     }
   },
   "observability": {
