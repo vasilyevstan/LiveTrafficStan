@@ -1,9 +1,54 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { DIGITRAFFIC_MARINE_CAPABILITIES } from '../providers/marine/digitrafficCapabilities'
+import { MULTI_SOURCE_MARINE_CAPABILITIES } from '../providers/marine/multiSourceCapabilities'
 import { LiveStatus } from './LiveStatus'
 
 describe('LiveStatus', () => {
+  it('describes an empty global-source view without promising complete coverage', () => {
+    const html = renderToStaticMarkup(
+      <LiveStatus
+        aircraftCount={3}
+        vesselCount={0}
+        aircraftStatus={{ phase: 'live', paused: false }}
+        marineStatus={{ phase: 'live', paused: false }}
+        marineCapabilities={MULTI_SOURCE_MARINE_CAPABILITIES}
+        now={1_800_000_000_000}
+        online
+      />,
+    )
+
+    expect(html).toContain('<strong>LIVE</strong>')
+    expect(html).toContain('0 ships shown · global sources')
+    expect(html).toContain('reception is not guaranteed')
+    expect(html).toContain('Marine stream connected')
+    expect(html).not.toContain('0 ships shown · regional source')
+  })
+
+  it('reports partial operation when one marine source fails but others remain live', () => {
+    const html = renderToStaticMarkup(
+      <LiveStatus
+        aircraftCount={3}
+        vesselCount={12}
+        aircraftStatus={{ phase: 'live', paused: false }}
+        marineStatus={{
+          phase: 'live',
+          paused: false,
+          error: 'AISStream: disconnected',
+        }}
+        marineCapabilities={MULTI_SOURCE_MARINE_CAPABILITIES}
+        now={1_800_000_000_000}
+        online
+      />,
+    )
+
+    expect(html).toContain('<strong>PARTIAL</strong>')
+    expect(html).toContain('12 ships shown · global sources')
+    expect(html).toContain('Marine stream connected')
+    expect(html).toContain('AISStream: disconnected')
+    expect(html).not.toContain('Marine stream unavailable')
+  })
+
   it('keeps connected transport, regional coverage, and shown counts distinct', () => {
     const html = renderToStaticMarkup(
       <LiveStatus

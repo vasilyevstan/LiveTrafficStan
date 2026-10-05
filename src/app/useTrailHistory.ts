@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { TrafficEntity } from '../domain/traffic'
 import {
+  compatibleVesselIdentity,
+  vesselIdentity,
+  type VesselIdentity,
+} from '../domain/vesselIdentity'
+import {
   takeNewTrailObservations,
   type TrailHistory,
   type TrailHistoryConfig,
@@ -19,6 +24,7 @@ export const useTrailHistory = (
   const configRef = useRef(config)
   const observationHighWaterRef = useRef<TrailObservationHighWater>(new Map())
   const resetRevisionRef = useRef(resetRevision)
+  const vesselIdentitiesRef = useRef(new Map<string, VesselIdentity>())
   const pruneBucket = Math.floor(now / 60_000)
 
   useEffect(() => {
@@ -31,17 +37,43 @@ export const useTrailHistory = (
   useEffect(() => {
     const reset = resetRevisionRef.current !== resetRevision
     resetRevisionRef.current = resetRevision
-    if (reset) observationHighWaterRef.current.clear()
+    if (reset) {
+      observationHighWaterRef.current.clear()
+      vesselIdentitiesRef.current.clear()
+    }
 
     const currentConfig = configRef.current
+    const changedIdentities = new Set<string>()
+    for (const entity of entities) {
+      if (entity.kind !== 'vessel') continue
+      const previous = vesselIdentitiesRef.current.get(entity.id)
+      const identity = vesselIdentity(entity)
+      if (previous && previous.provider !== identity.provider &&
+        !compatibleVesselIdentity(previous, identity)) {
+        changedIdentities.add(entity.id)
+      }
+      vesselIdentitiesRef.current.delete(entity.id)
+      vesselIdentitiesRef.current.set(entity.id, identity)
+    }
+    while (vesselIdentitiesRef.current.size > currentConfig.maxTotalPoints) {
+      const oldest = vesselIdentitiesRef.current.keys().next().value
+      if (oldest === undefined) break
+      vesselIdentitiesRef.current.delete(oldest)
+    }
     const unseenEntities = takeNewTrailObservations(
       entities,
       observationHighWaterRef.current,
       currentConfig.maxTotalPoints,
     )
     setHistory((current) => {
+      let previous = current
+      if (changedIdentities.size) {
+        const retained = new Map(current)
+        for (const id of changedIdentities) retained.delete(id)
+        previous = retained
+      }
       return updateTrailHistory(
-        reset ? new Map() : current,
+        reset ? new Map() : previous,
         unseenEntities,
         Date.now(),
         currentConfig,

@@ -1,8 +1,9 @@
 # LiveTrafficStan
 
 LiveTrafficStan is a lightweight live map of aircraft and significant vessels
-around Tallinn, Estonia. It combines open traffic data with MapLibre GL JS in a
-single React application, without accounts, a database, or persistent tracking.
+in receiver-covered regions, starting around Tallinn, Estonia. It combines
+best-effort traffic feeds with MapLibre GL JS in one React application, without
+user accounts or a server-side vessel history archive.
 
 Public production: <https://livetrafficstan.syntal.workers.dev>
 
@@ -24,7 +25,12 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   map, camera, providers, or visible marker set.
 - Live marine traffic from
   [Fintraffic Digitraffic](https://www.digitraffic.fi/en/marine-traffic/) using
-  REST initialization and MQTT over secure WebSockets.
+  REST initialization and MQTT over secure WebSockets, with optional
+  complementary [AISStream](https://aisstream.io/) and
+  [Open Waters AIS](https://openwaters.io/ais/) reception for wider Class A/B
+  coverage. The supplement uses a shared server-side connection per source,
+  private credentials and exact-MMSI deduplication; reception remains
+  best effort, not a worldwide completeness promise.
 - OpenStreetMap-derived vector maps from
   [OpenFreeMap](https://openfreemap.org/), rendered with MapLibre GL JS.
 - An atlas-style treatment of the default maps: blue water, visible forests
@@ -234,7 +240,7 @@ Public production: <https://livetrafficstan.syntal.workers.dev>
   inspector below the card or a reserved mobile sheet. The card is inset
   16 px on desktops and 12 px on phones; the mobile dock remains 70 px tall.
   White Light and slate Dark surfaces share system typography and one accent.
-  Counts, regional marine coverage, freshness, and traffic mode remain visible;
+  Counts, marine source scope, freshness, and traffic mode remain visible;
   **Provider details** opens independent provider messages on every screen size.
 - **More** (Explore map) and **Settings** (View & settings) open beside the
   desktop rail or above the mobile dock. These stable native disclosures
@@ -319,6 +325,9 @@ Digitraffic REST/MQTT ──┘                         |
                                                   ├─> optional private IndexedDB
                                                   └─> historical index/playback -> map + UI
 
+AISStream + Open Waters -> shared bounded marine relay -> same-origin WSS
+                       -> normalized supplemental vessels -> exact-MMSI fusion
+
 selected aircraft -> static metadata index + one prefix shard -> details only
 selected/hovered live vessel -> exact valid IMO -> bundled reviewed photo
                               -> details or stable-hover tooltip
@@ -342,7 +351,9 @@ session Home / location ──────────────┘
 
 The application keeps one MapLibre instance and updates persistent GeoJSON
 sources and layers. Marine MQTT messages are merged and emitted at most once
-per second. Aircraft polling and marine connections pause while the document is hidden or
+per second. The optional relay also batches at one second, reuses upstream
+subscriptions across view changes and keeps source errors independent.
+Aircraft polling and marine connections pause while the document is hidden or
 the visible map cannot be covered by the bounded query. Their session-lived
 cadence, backoff, reconnect, REST, metadata, and cache state survives the pause.
 
@@ -474,7 +485,7 @@ operational thresholds, and examples.
 
 ## Data providers and licensing
 
-| Purpose | Provider | Runtime data license | V1 access |
+| Purpose | Provider | Runtime data license | Runtime access |
 | --- | --- | --- | --- |
 | Map | OpenFreeMap / OpenMapTiles / OpenStreetMap | Provider and OSM attribution applies | Direct browser access |
 | Place search | Photon / OpenStreetMap | OSM ODbL attribution applies | Direct browser access on explicit submit |
@@ -484,6 +495,7 @@ operational thresholds, and examples.
 | Selected-vessel reference photos | Reviewed Wikimedia Commons files | File-specific CC BY-SA 3.0, CC BY-SA 4.0, or CC0 1.0 | Bundled immutable same-origin assets selected only by exact valid IMO |
 | Country allocations | michaeljfazio/MIDs, ibosoftnet ICAO24 transcription, Wikidata cross-check | Apache-2.0 and CC0 1.0 | Bundled deterministic local lookup |
 | Marine | Fintraffic Digitraffic | CC BY 4.0 | Direct regional REST and MQTT |
+| Supplemental marine | AISStream and Open Waters AIS | Documented service use / original per-source terms and credit | Optional shared server-side streams; normalized same-origin WebSocket |
 | Port context | Natural Earth Ports | Public domain | Immutable same-origin static asset, loaded only when enabled |
 | Airport context | OurAirports | Public domain | Immutable same-origin static asset, loaded only when enabled |
 | Weather observations | NOAA/NWS Aviation Weather Center | U.S. public domain unless marked otherwise | Strict same-origin Worker/Vite route, loaded only when METAR is enabled |
@@ -987,9 +999,11 @@ monitoring, privacy, and rollback procedure.
   falls back to shared Cloudflare egress.
 - Digitraffic is a regional source with an unknown exact coverage boundary.
   Its all-published-vessels MQTT stream is filtered in the browser; this local
-  filtering does not reduce incoming MQTT bandwidth. Digitraffic exposes
-  Class A AIS only, so Class B yachts are unavailable and the eligible yacht
-  population can be small or empty.
+  filtering does not reduce incoming MQTT bandwidth. The optional AISStream /
+  Open Waters supplement adds Class A/B reception without claiming every
+  region or vessel is covered. Yacht type and known length at least 8 m remain
+  required; absent or delayed static metadata cannot be inferred. Source
+  failures, shared capacity limits and exhausted free budgets remain visible.
 - Views whose conservative enclosing radius exceeds 100 km pause live traffic.
   **Resume live** keeps the current map center and returns to the reviewed safe
   framing; manual zoom-in or reduced tilt remain available. Partial coverage is

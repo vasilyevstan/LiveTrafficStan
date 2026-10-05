@@ -806,6 +806,9 @@ export function TrafficDetails({
         />
         <DetailRow label="Source" value={entity.provider} />
       </dl>
+      {entity.kind === 'vessel' && entity.attribution && (
+        <p className="metadata-attribution">{entity.attribution}</p>
+      )}
       {presentation.kind === 'vessel' &&
         presentation.navigationConflict && (
           <p className="metadata-status metadata-status--error">

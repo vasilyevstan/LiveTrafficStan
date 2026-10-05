@@ -51,6 +51,11 @@ on:
         required: true
         default: true
         type: boolean
+      marine_supplement_enabled:
+        description: Marine supplement build flag used by the target version
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -132,6 +137,7 @@ jobs:
           cp scripts/resolve-orbital-version-state.mjs "$RUNNER_TEMP/resolve-orbital-version-state.mjs"
           cp scripts/resolve-starlink-version-state.mjs "$RUNNER_TEMP/resolve-starlink-version-state.mjs"
           cp scripts/prepare-orbital-rollback-config.mjs "$RUNNER_TEMP/prepare-orbital-rollback-config.mjs"
+          cp scripts/prepare-production-secrets.mjs "$RUNNER_TEMP/prepare-production-secrets.mjs"
           cp infra/cloudflare/triggers/orbital-enabled.jsonc "$RUNNER_TEMP/orbital-enabled.jsonc"
           cp infra/cloudflare/triggers/orbital-disabled.jsonc "$RUNNER_TEMP/orbital-disabled.jsonc"
           git checkout --detach "$TARGET_SHA"
@@ -182,9 +188,16 @@ jobs:
           AIRCRAFT_ENDPOINT_EXPLICIT: ${{ inputs.aircraft_endpoint_explicit }}
           VITE_AIRCRAFT_PHOTO_ENABLED: ${{ inputs.aircraft_photo_enabled }}
           VITE_FLIGHT_ROUTE_ENABLED: ${{ inputs.flight_route_enabled }}
+          MARINE_ENABLED: ${{ inputs.marine_supplement_enabled }}
         run: |
           if [[ "$AIRCRAFT_ENDPOINT_EXPLICIT" == "true" ]]; then
             export VITE_AIRCRAFT_ENDPOINT="$AIRCRAFT_ENDPOINT"
+          fi
+          if grep -q VITE_MARINE_SUPPLEMENT_ENABLED src/config/appConfig.ts; then
+            export VITE_MARINE_SUPPLEMENT_ENABLED="$MARINE_ENABLED"
+          elif [[ "$MARINE_ENABLED" == "true" ]]; then
+            echo "Target source does not support the marine supplement." >&2
+            exit 1
           fi
           npm run build
 
@@ -195,9 +208,16 @@ jobs:
           AIRCRAFT_ENDPOINT_EXPLICIT: ${{ inputs.aircraft_endpoint_explicit }}
           VITE_AIRCRAFT_PHOTO_ENABLED: ${{ inputs.aircraft_photo_enabled }}
           VITE_FLIGHT_ROUTE_ENABLED: ${{ inputs.flight_route_enabled }}
+          MARINE_ENABLED: ${{ inputs.marine_supplement_enabled }}
         run: |
           if [[ "$AIRCRAFT_ENDPOINT_EXPLICIT" == "true" ]]; then
             export VITE_AIRCRAFT_ENDPOINT="$AIRCRAFT_ENDPOINT"
+          fi
+          if grep -q VITE_MARINE_SUPPLEMENT_ENABLED src/config/appConfig.ts; then
+            export VITE_MARINE_SUPPLEMENT_ENABLED="$MARINE_ENABLED"
+          elif [[ "$MARINE_ENABLED" == "true" ]]; then
+            echo "Target source does not support the marine supplement." >&2
+            exit 1
           fi
           npm run build:pwa-retire
 
@@ -216,6 +236,18 @@ jobs:
           --input wrangler.jsonc
           --output "$RUNNER_TEMP/wrangler-rollback.jsonc"
           --wrapper "$RUNNER_TEMP/orbital-rollback-worker.ts"
+          --marine-enabled "${{ inputs.marine_supplement_enabled }}"
+
+      - name: Prepare compatible rollback secrets
+        if: steps.target-orbital.outputs.enabled == 'false' && (inputs.aircraft_delivery == 'oci-private-relay' || inputs.marine_supplement_enabled)
+        env:
+          AIRCRAFT_DELIVERY: ${{ inputs.aircraft_delivery }}
+          AIRCRAFT_RELAY_AUTH_TOKEN: ${{ secrets.AIRCRAFT_RELAY_AUTH_TOKEN }}
+          MARINE_ENABLED: ${{ inputs.marine_supplement_enabled }}
+          AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
+          OPENWATERS_AIS_TOKEN: ${{ secrets.OPENWATERS_AIS_TOKEN }}
+          SECRETS_FILE: ${{ runner.temp }}/wrangler-rollback-secrets.json
+        run: node "$RUNNER_TEMP/prepare-production-secrets.mjs"
 
       - name: Roll back Cloudflare version
         if: steps.target-orbital.outputs.enabled == 'true'
@@ -244,7 +276,15 @@ jobs:
           --var AIRCRAFT_DELIVERY:$AIRCRAFT_DELIVERY
           --var ORBITAL_CATALOG_ENABLED:false
           --var STARLINK_CATALOG_ENABLED:false
+          --var MARINE_SUPPLEMENT_ENABLED:${{ inputs.marine_supplement_enabled }}
+          ${{ (inputs.aircraft_delivery == 'oci-private-relay' || inputs.marine_supplement_enabled) && format('--secrets-file {0}/wrangler-rollback-secrets.json', runner.temp) || '' }}
           --message "GitHub compatible rollback to $TARGET_SHA"
+
+      - name: Remove compatible rollback secrets
+        if: always()
+        env:
+          SECRETS_FILE: ${{ runner.temp }}/wrangler-rollback-secrets.json
+        run: rm -f "$SECRETS_FILE"
 
       - name: Restore target orbital Cron state
         env:

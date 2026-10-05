@@ -1,5 +1,10 @@
-import type { AppCenter } from '../config/appConfig'
-import type { GeoPosition } from './traffic'
+import type { GeoPosition } from './traffic.js'
+
+export interface AppCenter {
+  latitude: number
+  longitude: number
+  label: string
+}
 
 const EARTH_RADIUS_KM = 6_371
 

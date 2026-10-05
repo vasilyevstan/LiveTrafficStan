@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import type { AppConfig } from '../config/appConfig'
 import type { TrafficProviderResult, Vessel } from '../domain/traffic'
 import { DigitrafficMarineProvider } from '../providers/marine/DigitrafficMarineProvider'
+import { MultiSourceMarineProvider } from '../providers/marine/MultiSourceMarineProvider'
+import { MULTI_SOURCE_MARINE_CAPABILITIES } from '../providers/marine/multiSourceCapabilities'
 import { DIGITRAFFIC_MARINE_CAPABILITIES } from '../providers/marine/digitrafficCapabilities'
 import type { MarineDiagnosticsOptions } from '../providers/marine/marineDiagnostics'
 import type {
@@ -49,7 +51,9 @@ export const useMarineTraffic = (
   config: AppConfig['marine'],
 ) => {
   const [result, setResult] = useState<MarineTrafficResult>(initialResult)
-  const providerRef = useRef<DigitrafficMarineProvider | undefined>(undefined)
+  const providerRef = useRef<
+    DigitrafficMarineProvider | MultiSourceMarineProvider | undefined
+  >(undefined)
   const queryRef = useRef<TrafficQuery | null>(query)
   const startProviderRef = useRef<
     ((initialQuery: TrafficQuery) => void) | undefined
@@ -87,7 +91,9 @@ export const useMarineTraffic = (
     const startProvider = (initialQuery: TrafficQuery) => {
       if (disposed || providerRef.current) return
 
-      const provider = new DigitrafficMarineProvider({
+      const Provider = config.supplementEnabled
+        ? MultiSourceMarineProvider : DigitrafficMarineProvider
+      const provider = new Provider({
         config,
         query: initialQuery,
         diagnostics: developmentDiagnostics(),
@@ -142,5 +148,9 @@ export const useMarineTraffic = (
     }
   }, [config])
 
-  return result
+  return {
+    ...result,
+    capabilities: config.supplementEnabled
+      ? MULTI_SOURCE_MARINE_CAPABILITIES : DIGITRAFFIC_MARINE_CAPABILITIES,
+  }
 }

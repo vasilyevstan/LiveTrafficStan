@@ -384,6 +384,39 @@ initialization may still provide a recent snapshot when streaming is
 temporarily unavailable, but the status remains honest about a disconnected
 live stream.
 
+When the marine supplement is enabled, also inspect the same-origin
+`/api/marine/stream` WebSocket and expanded Provider details. It carries only
+normalized records; AISStream and Open Waters credentials are never browser
+diagnostics. A `PARTIAL` indicator can mean one marine source is unavailable
+while the others and aircraft remain usable. Existing vessels age normally;
+one source outage must not clear another source's cache.
+
+- A disabled supplement returns `404`; an enabled route without its binding
+  returns `503`. Non-upgrade access is not a live-feed test.
+- Foreign Origin, URL query parameters and invalid/unrounded subscriptions
+  are rejected. Do not loosen those checks to debug a third-party client.
+- Reconnect attempts preserve 15-120 second backoff and provider
+  `Retry-After`; changing the view must not reset them.
+- Capacity and daily-budget messages are real admission states. A daily
+  exhaustion frame gives the next UTC boundary; do not reload repeatedly or
+  create another object identity to evade it.
+- Missing yacht type or length is not permission to infer it or loosen the
+  8 m rule. Open Waters REST `seen` can advance for static data; it cannot
+  establish a fresh position. Native position events are authoritative.
+- Plain Vite development has no supplemental Worker relay. Build with
+  `VITE_MARINE_SUPPLEMENT_ENABLED=true` and exercise the actual prepared
+  Worker configuration. The installed Miniflare v5 compatibility wrapper
+  may fail on `scriptPath` or omit the asset router's user-worker binding;
+  local acceptance can load the unchanged compiled module as `script` and
+  serve built files through a local `ASSETS` service binding. That harness
+  does not prove production asset routing; check the deployed application.
+
+Private history now uses IndexedDB database version 2 to protect new source
+records from old readers. If an older deployed client reports a version
+error, close it and use the compatible release with the supplement disabled.
+Do not delete history as a rollback workaround; the data, consent and epoch
+remain in the existing stores.
+
 ## A ship has no reference photo
 
 This is normally expected. The current bundled manifest contains only eight
@@ -986,15 +1019,18 @@ Do not hide MapLibre attribution controls. The application must visibly credit:
   is displayed;
 - Fintraffic Digitraffic and CC BY 4.0, including the filtering/normalization
   change notice.
+- AISStream, Open Waters AIS and original-source credits when the supplement
+  is enabled; retain the applicable AISHub, NLOD and volunteer-data terms.
 - Natural Earth and its public-domain terms, with generalized/incomplete
   wording for the optional port layer.
 - OurAirports and its public-domain terms, with static/non-operational wording.
 - NOAA/NWS Aviation Weather Center, source/retrieval time, public-domain caveat,
   and modified observation-not-forecast wording for METAR/SPECI.
 
-Digitraffic is a regional source with an unknown exact coverage boundary. A
-connected stream and zero ships shown do not prove that a location is covered
-or vessel-free.
+Digitraffic is a regional source with an unknown exact coverage boundary;
+supplemental global receiver networks are also best effort. A connected
+stream and zero ships shown do not prove that a location is covered or
+vessel-free.
 
 The Apache License 2.0 source license and project `NOTICE` do not replace these
 runtime data obligations.

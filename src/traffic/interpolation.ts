@@ -1,10 +1,16 @@
 import type { GeoPosition, TrafficEntity } from '../domain/traffic'
+import {
+  compatibleVesselIdentity,
+  vesselIdentity,
+  type VesselIdentity,
+} from '../domain/vesselIdentity'
 
 export interface MotionState {
   from: GeoPosition
   to: GeoPosition
   startedAt: number
   durationMs: number
+  vesselIdentity?: VesselIdentity
 }
 
 export type MotionStates = ReadonlyMap<string, MotionState>
@@ -43,17 +49,22 @@ export const reconcileMotionStates = (
 
   for (const entity of entities) {
     const current = previous.get(entity.id)
-    if (current && samePosition(current.to, entity.position)) {
-      next.set(entity.id, current)
+    const identity = entity.kind === 'vessel' ? vesselIdentity(entity) : undefined
+    const incompatible = current?.vesselIdentity && identity &&
+      current.vesselIdentity.provider !== identity.provider &&
+      !compatibleVesselIdentity(current.vesselIdentity, identity)
+    if (current && !incompatible && samePosition(current.to, entity.position)) {
+      next.set(entity.id, identity ? { ...current, vesselIdentity: identity } : current)
       continue
     }
 
-    const from = current ? sampleMotion(current, now) : entity.position
+    const from = current && !incompatible ? sampleMotion(current, now) : entity.position
     next.set(entity.id, {
       from,
       to: entity.position,
       startedAt: now,
       durationMs: samePosition(from, entity.position) ? 0 : durationMs,
+      ...(identity ? { vesselIdentity: identity } : {}),
     })
   }
 

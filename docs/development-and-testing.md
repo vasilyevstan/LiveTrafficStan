@@ -17,8 +17,8 @@ default ADSB.lol and AWC integrations. Plausible routes and Planespotters
 aircraft photos remain direct browser requests and are not proxied. Vessel
 reference photos are committed same-origin assets and create no Wikimedia,
 Wikidata, tracker, or image-provider request. Ordinary Vite development does
-not emulate the feature-gated orbital KV/Durable Object route; use the local
-Worker command below for enabled ORBITS acceptance.
+not emulate the feature-gated orbital KV/Durable Object route or the
+supplementary marine WebSocket; use the actual local Worker for those paths.
 
 ## Commands
 
@@ -57,6 +57,79 @@ npx wrangler dev --local --var ORBITAL_CATALOG_ENABLED:true
 
 This serves the exact Worker route without contacting CelesTrak. Scheduled
 updater tests remain fixture-based; do not invoke live provider loops.
+
+### Multi-source marine acceptance
+
+Build the browser with `VITE_MARINE_SUPPLEMENT_ENABLED=true` and use
+`prepare-wrangler-config.mjs --marine-enabled true` for the local Worker
+binding. The runtime also requires `MARINE_SUPPLEMENT_ENABLED=true`.
+Provider credentials stay in private server-side bindings, never `VITE_*`,
+URLs or committed files. Anonymous Open Waters is suitable for a bounded
+local check; its lower personal/address limits do not prove production
+token behavior.
+
+The deterministic marine tests cover Class A/B and split type 24 messages,
+sentinels/full UTC clocks, conservative wrapped boxes, exact identity,
+compatible static enrichment, no borrowed movement, metadata-only REST,
+per-source failures, pause/retry fencing, multi-view admission, byte/cache
+limits, acknowledgements and persisted operational budget deadlines.
+History tests cover new licence decisions, old records, the database-version
+fence, source-specific trails and no duplicate historical hulls. Cold relay
+reconnect tests retain unexpired raw observations and compatible metadata,
+do not reset their expiry through repeated disconnects, and verify the
+20,000-record output ceiling. Ordinary same-source unknown fields remain
+unavailable rather than being revived outside that recovery context.
+
+The 2026-10-04 native-runtime check loaded the unchanged compiled Worker
+through Miniflare's v4-to-v5 compatibility converter. Its `scriptPath` option
+produced an internal startup error; passing the bundle as `script` succeeded.
+The converted Static Assets router then lacked its user-worker binding, so
+the local harness served the built files through an `ASSETS` service binding.
+This is a local harness distinction, not an application workaround or proof
+of production asset routing.
+
+At 23:44:14-23:44:59 UTC, the actual relay delivered a first useful
+Gedser-Rugen snapshot after 1.026 seconds, peaked at 81 vessels, and ended with
+80 distinct vessels: 15 AISStream and 65 Open Waters position owners. Both
+sources were live and the oldest retained position was 592.425 seconds.
+Only aggregates were saved. This later window did not establish a qualifying
+yacht; do not substitute an older metadata snapshot for current reception.
+
+The first live Chrome/MapLibre pass at 23:47-23:50 UTC rendered 30 Tallinn
+vessels (25 Digitraffic, two AISStream, three Open Waters), 12 southern-Baltic
+vessels and 785 Rotterdam-area vessels (72 AISStream, 713 Open Waters).
+Rotterdam included 141 reported sailing/pleasure craft with known length at
+least 8 m. It physically selected stopped 10 m pleasure craft TALISMAN with
+Open Waters/AISHub attribution, retained selection/camera through light/dark
+rehydration, and preserved vessels during an induced supplemental-transport
+outage. It also exposed a cold-reconnect selection loss: the empty new relay
+cache was being interpreted as deletion. That finding required the bounded
+browser retention fix above; the first pass alone was not complete acceptance.
+
+Real-browser acceptance must use vector tiles and `queryRenderedFeatures`,
+physical selection/touch input and measured responsive layout. Preserve
+existing screenshots/aggregate evidence when source is unchanged and rerun
+only the invalidated recovery/interaction claims after a fix. Production
+activation additionally checks actual Cloudflare egress and the protected
+Open Waters token; local anonymous success cannot replace that evidence.
+
+The recovery follow-up at 2026-10-04 23:59:51 through 2026-10-05 00:01:11 UTC
+rendered 753 real vessels, including 108 eligible yachts, and kept the selected
+26 m pleasure craft NEELTJE through the cold reconnect with compatible
+attributed metadata. The remaining filter/layout pass at 00:07:16-00:07:35 UTC
+used the rebuilt `index-0vgHsY2i.js`, rendered 721 vessels, exercised native
+search/Clear, and measured 163 rendered vessels at 390x568 and 161 at 315x517.
+Both layouts had no horizontal overflow, one unchanged canvas and no uncaught
+exceptions; a physical touch pan changed the camera. The Clear test targets
+`#vessel-search + button`, because aircraft and vessel controls intentionally
+share presentation classes. This was a harness selector correction, not a
+filter behavior change.
+
+Final local gates passed: lint, typecheck, 141 test files / 1,077 tests, aircraft
+metadata, country allocations, vessel photos, orbital catalog, normal and
+enabled builds, and default/enabled Worker dry runs. Existing source,
+dependency and catalog checks are reused; no new framework or dependency was
+added.
 
 The dependency-free OCI relay tests live beside the implementation under
 `infra/oci/aircraft-relay/`. The normal Vitest suite covers its HTTP boundary,

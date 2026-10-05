@@ -25,7 +25,7 @@ interface DigitrafficCallbacks {
   onStatus: (status: ProviderStatus) => void
 }
 
-interface DigitrafficOptions {
+export interface DigitrafficOptions {
   config: AppConfig['marine']
   query: TrafficQuery
   callbacks: DigitrafficCallbacks
