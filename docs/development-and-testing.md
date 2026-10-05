@@ -1179,6 +1179,39 @@ OOM kills. One post-window production request returned two aircraft in
 716 bytes, HTTP 200 in 732 ms, with exact-release/no-store/no-CORS checks.
 These are bounded recovery results, not a guarantee of future availability.
 
+### Aircraft registration-country marker flags (#340)
+
+The focused candidate passed 1,162 tests in 145 files, lint/typecheck, aircraft
+metadata, country allocations, vessel photos, orbital catalog, production
+build and Worker dry-run. Exact-address regressions preserve the original
+aircraft entity, taxonomy, scale, motion, selection and stale state; unavailable
+addresses never gain a flag from a registration string or callsign. Every
+accepted aircraft range is covered by the unchanged 226-image artwork set.
+
+`vessel-flags-browser/aircraft-candidate-v1` ran the built candidate in normal
+Chrome 154 at `2026-10-05T22:53:13Z-22:53:24Z`. These are deterministic local
+fixtures, not claims about real provider coverage:
+
+- Nine rendered aircraft retained six correct country badges. Three excluded
+  or unavailable identities remained visible without an invented flag.
+- Native selection kept the stale, stopped Estonian aircraft's existing
+  details and country text. Light -> Dark -> Light retained selection and
+  camera; heading variation and bearing 45/pitch 40 kept flags upright.
+- Aircraft hide/show also hid/restored its badges. A nine-object mixed-country
+  cluster had no flag; uncluster restored the six exact badges on the same
+  source.
+- Real-scale screenshots cover Light/Dark desktop and 390x568/315x517 touch
+  layouts, including DPR 1/2. The framed 14x11 CSS-pixel flags sit outside the
+  rotating silhouettes and stopped/selection cues, with no horizontal overflow.
+- Native touch movement retained one canvas, the three existing traffic
+  sources, 226 shared images, and one aircraft/metadata/location/MQTT fixture
+  lifecycle. Expiry removed each marker and badge together. No missing image,
+  runtime error, flag asset request or external provider request occurred.
+
+Vessel badge pixels, placement, filtering and allocation semantics are unchanged;
+their accepted native-scale evidence above remains applicable. Normal production
+observations belong in the exact release receipt, not in these fixture claims.
+
 ### Identity photos, recognizable ships and orbital context (#331, #193)
 
 The local candidate passed all required gates: 1,128 tests in 144 files,

@@ -22,6 +22,7 @@ export const SOURCE_VESSELS = 'traffic-vessels'
 export const SOURCE_TRAIL = 'traffic-trail'
 export const LAYER_SELECTED_TRAIL = 'traffic-selected-trail'
 export const LAYER_AIRCRAFT = 'traffic-aircraft-symbols'
+export const LAYER_AIRCRAFT_FLAGS = 'traffic-aircraft-flags'
 export const LAYER_VESSELS = 'traffic-vessel-symbols'
 export const LAYER_VESSEL_FLAGS = 'traffic-vessel-flags'
 export const LAYER_AIRCRAFT_STOPPED = 'traffic-aircraft-stopped'
@@ -37,6 +38,7 @@ export const LAYER_VESSEL_CLUSTER_COUNT =
 
 export const AIRCRAFT_TRAFFIC_LAYER_IDS = [
   LAYER_AIRCRAFT,
+  LAYER_AIRCRAFT_FLAGS,
   LAYER_AIRCRAFT_STOPPED,
   LAYER_AIRCRAFT_HALO,
   LAYER_AIRCRAFT_CLUSTERS,
@@ -273,39 +275,44 @@ export const installTrafficStyle = (
     },
   })
 
-  ensureLayer(map, {
-    id: LAYER_VESSEL_FLAGS,
-    type: 'symbol',
-    source: SOURCE_VESSELS,
-    filter: [
-      'all',
-      ['!', ['has', 'point_count']],
-      ['has', 'flagIcon'],
-    ],
-    layout: {
-      'icon-image': ['get', 'flagIcon'],
-      'icon-size': 1,
-      'icon-anchor': 'top-left',
-      // Keep the fixed-size flag outside the rotating 64 px, 2x ship sprite.
-      'icon-offset': [
-        'interpolate',
-        ['linear'],
-        ['get', 'markerScale'],
-        0,
-        ['literal', [2, 2]],
-        4,
-        ['literal', [58, 58]],
+  for (const [id, source, maximumOffset] of [
+    [LAYER_AIRCRAFT_FLAGS, SOURCE_AIRCRAFT, 74],
+    [LAYER_VESSEL_FLAGS, SOURCE_VESSELS, 58],
+  ] as const) {
+    ensureLayer(map, {
+      id,
+      type: 'symbol',
+      source,
+      filter: [
+        'all',
+        ['!', ['has', 'point_count']],
+        ['has', 'flagIcon'],
       ],
-      'icon-rotate': 0,
-      'icon-rotation-alignment': 'viewport',
-      'icon-pitch-alignment': 'viewport',
-      'icon-allow-overlap': true,
-      'icon-ignore-placement': true,
-    },
-    paint: {
-      'icon-opacity': trafficOpacity,
-    },
-  })
+      layout: {
+        'icon-image': ['get', 'flagIcon'],
+        'icon-size': 1,
+        'icon-anchor': 'top-left',
+        // Clear the rotating 64 px, 2x sprites at each traffic kind's scale.
+        'icon-offset': [
+          'interpolate',
+          ['linear'],
+          ['get', 'markerScale'],
+          0,
+          ['literal', [2, 2]],
+          4,
+          ['literal', [maximumOffset, maximumOffset]],
+        ],
+        'icon-rotate': 0,
+        'icon-rotation-alignment': 'viewport',
+        'icon-pitch-alignment': 'viewport',
+        'icon-allow-overlap': true,
+        'icon-ignore-placement': true,
+      },
+      paint: {
+        'icon-opacity': trafficOpacity,
+      },
+    })
+  }
 
   for (const [id, source] of [
     [LAYER_AIRCRAFT_STOPPED, SOURCE_AIRCRAFT],
@@ -484,6 +491,7 @@ export const installTrafficStyle = (
   }
   for (const layerId of [
     LAYER_AIRCRAFT,
+    LAYER_AIRCRAFT_FLAGS,
     LAYER_VESSELS,
     LAYER_VESSEL_FLAGS,
   ]) {

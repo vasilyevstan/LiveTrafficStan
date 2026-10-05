@@ -1,5 +1,8 @@
 import type { FeatureCollection, Point } from 'geojson'
-import { flagStateForMmsi } from '../domain/countryAllocations'
+import {
+  countryForAircraftHex,
+  flagStateForMmsi,
+} from '../domain/countryAllocations'
 import type { DisplayTrafficEntity } from '../domain/traffic'
 import { trafficPresentation } from '../domain/trafficPresentation'
 import {
@@ -7,7 +10,7 @@ import {
   type MotionStates,
 } from '../traffic/interpolation'
 import { VESSEL_ICON_LENGTH_NORMALIZATION } from './icons'
-import { vesselFlagImageId } from './vesselFlags'
+import { vesselFlagImageId as countryFlagImageId } from './vesselFlags'
 
 export const trafficFeatures = (
   entities: readonly DisplayTrafficEntity[],
@@ -22,10 +25,11 @@ export const trafficFeatures = (
       ? sampleMotion(motion.get(entity.id)!, now)
       : entity.position
     const presentation = trafficPresentation(entity)
-    const flagIcon =
-      entity.kind === 'vessel'
-        ? vesselFlagImageId(flagStateForMmsi(entity.mmsi)?.iso2)
-        : undefined
+    const flagIcon = countryFlagImageId(
+      entity.kind === 'aircraft'
+        ? countryForAircraftHex(entity.hex)?.iso2
+        : flagStateForMmsi(entity.mmsi)?.iso2,
+    )
     const markerScale =
       presentation.kind === 'vessel'
         ? entity.markerScale *
