@@ -129,10 +129,23 @@ describe('orbital Cloudflare deployment configuration', () => {
     expect(() => prepare(false, true)).toThrow()
   })
 
-  it.each([[false, false], [false, true], [true, false], [true, true]])(
-    'keeps orbital=%s and marine=%s bindings independent',
-    (orbital, marine) => {
-      const config = prepare(orbital, orbital, marine)
+  it.each([
+    [false, false, false],
+    [false, false, true],
+    [true, false, false],
+    [true, false, true],
+    [true, true, false],
+    [true, true, true],
+  ])(
+    'preserves both origins and independent orbital=%s, Starlink=%s, marine=%s bindings',
+    (orbital, starlink, marine) => {
+      const config = prepare(orbital, starlink, marine)
+      expect(config.name).toBe('livetrafficstan')
+      expect(config.workers_dev).toBe(true)
+      expect(config.preview_urls).toBe(false)
+      expect(config.routes).toEqual([
+        { pattern: 'trackstan.xyz', custom_domain: true },
+      ])
       const names = (config.durable_objects?.bindings ?? []).map((binding) => binding.name)
       expect(names.includes('ORBITAL_CATALOG_COORDINATOR')).toBe(orbital)
       expect(names.includes('MARINE_TRAFFIC_RELAY')).toBe(marine)

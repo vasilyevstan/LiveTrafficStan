@@ -648,9 +648,13 @@ this application.
 The requested `trackstan.xyz` setup and separately planned **TrackStan**
 logo/name update are tracked in #334, with the demonstrated DNS/account
 prerequisite in #335. The owned Free zone now exists with assigned nameservers
-`ben.ns.cloudflare.com` / `nora.ns.cloudflare.com`; the user reports updating
-GoDaddy delegation. The new origin is not yet active; the existing address
-will remain available for origin-local preferences, installed apps and history.
+`ben.ns.cloudflare.com` / `nora.ns.cloudflare.com`; authoritative delegation
+and active Cloudflare status were confirmed on 2026-10-05. The checked
+configuration binds only the apex to the existing Worker and explicitly
+preserves workers.dev. New-origin HTTPS/browser acceptance is still required
+before advertising the application at the domain. The existing address will
+remain available for origin-local preferences, installed apps and history;
+those data do not automatically migrate between origins.
 The fifteen-page Wiki update is published as
 `a903ef941bbd43492d682b5a49e6766b51be3980`;
 [production screenshots and evidence](https://github.com/vasilyevstan/LiveTrafficStan/pull/333#issuecomment-6001037124)
