@@ -1383,9 +1383,9 @@ The fixed `prepare-trackstan-domain.yml` workflow reads or creates only
 `trackstan.xyz` using existing protected credentials. It requires exact current
 main, successful exact-SHA validation, the production environment and the
 production serialization group. It prints only the actual assigned
-nameservers/status; it does not change registrar delegation, DNS records,
-billing, Worker code/routes or credentials. A rerun reads first and never
-automatically retries an unconfirmed create.
+nameservers/status; by default it does not change DNS records. It never changes
+registrar delegation, billing, Worker code/routes or credentials. A rerun reads
+first and never automatically retries an unconfirmed create or deletion.
 
 ```bash
 gh workflow run prepare-trackstan-domain.yml \
@@ -1398,6 +1398,25 @@ unauthenticated local CLI as proof that protected automation cannot work.
 Cloudflare documents `Zone Zone Edit` or `Zone DNS Edit` for zone creation;
 zone read access must also cover this account/domain. Keep credentials in the
 protected environment, never in chat, source, artifacts or client variables.
+
+The initial domain deployment `37390093186` uploaded application
+`9de023048387c411ae9dc54f4ba9b4f8d2bc9066` and retained workers.dev/Cron, but
+Cloudflare rejected the Custom Domain with **100117: externally managed DNS
+records**. Successful trigger changes were not rolled back. The existing
+origin passed the full exact-release smoke afterward; the new domain was not
+declared live. Do not mistake this DNS conflict for a personal approval wait
+or retry the same deployment without addressing its cause.
+
+For this demonstrated conflict only, opt into `remove_parking_records=true`
+on the same exact-main preparation workflow. It requires the existing active
+owned zone, reads the complete apex record set, and removes only A records
+whose contents exactly match `3.33.130.190` or `15.197.148.33`. Unknown A,
+AAAA or CNAME records, malformed/incomplete discovery, or non-active state
+abort before any deletion. The final read must confirm removal and unchanged
+other apex records. No subdomain, MX, TXT, CAA, credential or account setting
+is a deletion target. DNS Read/Edit access is necessary; an actual denial is
+reported without extracting or broadening credentials. Then rerun the checked
+deployment and new-origin acceptance.
 
 The persistent binding in `wrangler.jsonc` targets only the apex and keeps
 the existing Worker identity and workers.dev origin:
