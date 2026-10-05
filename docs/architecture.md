@@ -392,16 +392,23 @@ details creates no request, cache, loading state, persistence, provider work,
 or history-schema change. Unknown, special-purpose, conflicting, invalid, and
 excluded source rows produce no detail row.
 
-Visible vessels reuse the same MMSI lookup for a render-only `flagIcon`.
+Visible aircraft and vessels reuse the same ICAO24/MMSI lookups for a
+render-only `flagIcon`.
 Bundled 28x22 RGBA images provide 14x11 CSS-pixel country badges at pixel ratio
 two, without emoji, external images, asynchronous loading, or a new source.
-The screen-aligned `traffic-vessel-flags` layer uses the existing vessel source,
-omits clusters and unavailable allocations, shares vessel visibility and stale
-opacity, and sits outside the heading-rotated ship sprite. Theme rehydration
-reinstalls its images and layer through the existing installer. Hull picking,
-the stopped badge, selected halo, normalized entities, history, providers and
-country text remain unchanged. The flag represents an MMSI country allocation,
-not an independently verified current registry or vessel-specific ensign.
+All 192 accepted aircraft-country codes already have artwork in the existing
+226-country vessel asset; its pixels, image IDs and license paths are reused
+without generating another flag set.
+The screen-aligned `traffic-aircraft-flags` and `traffic-vessel-flags` layers
+use their existing traffic sources, omit clusters and unavailable allocations,
+and share their own kind's visibility and stale opacity. Fixed-size flags sit
+outside the heading-rotated sprites, with the larger aircraft scale accounted
+for separately and vessel placement unchanged. Theme rehydration reinstalls
+images and layers through the existing installer. Aircraft/hull picking,
+stopped badges, selected halos, normalized entities, history, providers and
+country text remain unchanged. Flags represent identifier-derived country
+allocations, not airline/operator nationality, an independently verified
+current registry, or a vessel-specific ensign.
 
 Vessel discovery is an application-owned display boundary after freshness and
 exact viewport filtering. Search and typed filters consume only normalized

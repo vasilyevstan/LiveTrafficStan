@@ -67,9 +67,65 @@ describe('trafficFeatures presentation projection', () => {
         motionState: 'unknown',
         selected: true,
         stale: false,
+        flagIcon: 'vessel-flag-US',
       },
     })
-    expect(collection.features[0]?.properties).not.toHaveProperty('flagIcon')
+    expect(aircraft).not.toHaveProperty('flagIcon')
+  })
+
+  it.each([
+    ['511000', 'vessel-flag-EE'],
+    ['5117ff', 'vessel-flag-EE'],
+    ['A00000', 'vessel-flag-US'],
+    ['AFFFFF', 'vessel-flag-US'],
+    ['49514e', 'vessel-flag-PT'],
+    ['510FFF', undefined],
+    ['511800', undefined],
+    ['035000', undefined],
+    ['F00000', undefined],
+    ['000000', undefined],
+    ['FFFFFF', undefined],
+    ['~a00000', undefined],
+    ['12345', undefined],
+    ['0x511000', undefined],
+    [' 511000', undefined],
+  ])('derives only the exact aircraft allocation flag for %s', (hex, flagIcon) => {
+    const entity: DisplayAircraft = {
+      ...aircraft,
+      id: `aircraft:${hex}`,
+      hex,
+      registration: 'OH-NOT-A-LOOKUP-KEY',
+      callsign: 'FIN123',
+      markerScale: 1.18,
+      freshness: 'stale',
+      speedKph: 0,
+    }
+    const original = structuredClone(entity)
+    const collection = trafficFeatures(
+      [entity],
+      new Map(),
+      123_592,
+      entity.id,
+      false,
+    )
+    expect(collection.features).toHaveLength(1)
+    expect(collection.features[0]?.properties).toMatchObject({
+      id: entity.id,
+      markerIcon: 'aircraft-high',
+      markerScale: 1.18,
+      altitudeBand: 'high',
+      verticalTrend: 'descent',
+      selected: true,
+      stale: true,
+      heading: 0,
+      motionState: 'slow-stopped',
+    })
+    expect(collection.features[0]?.properties?.flagIcon).toBe(flagIcon)
+    if (flagIcon === undefined) {
+      expect(collection.features[0]?.properties).not.toHaveProperty('flagIcon')
+    }
+    expect(entity).toEqual(original)
+    expect(entity).not.toHaveProperty('flagIcon')
   })
 
   it('projects exact yacht artwork and speed-derived heading without persisting it', () => {
