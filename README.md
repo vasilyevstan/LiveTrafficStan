@@ -45,15 +45,20 @@ identity are not renamed or reset.
   best effort, not a worldwide completeness promise.
 - OpenStreetMap-derived vector maps from
   [OpenFreeMap](https://openfreemap.org/), rendered with MapLibre GL JS.
+- Smooth automatic globe when zooming out, with native interpolation to a
+  flat local map between zoom 11 and 12. **Settings → Appearance → AUTO GLOBE /
+  FLAT** provides the persistent alternative without another toolbar control,
+  renderer, map instance, or provider.
 - An atlas-style treatment of the default maps: blue water, visible forests
   and parks, warm roads, and clearer building and harbour detail. Light uses
   a warm paper palette; Dark uses deep-blue water with forest and bronze
   detail. This is cartographic styling, not new imagery, terrain, or 3D
-  building geometry. Custom style URLs and the offline fallback are unchanged.
+  building geometry. Custom styles and the offline fallback retain their
+  original paint; the separately chosen map projection still applies.
 - Explicit Auto, Light, and Dark theme preferences. Auto follows the browser
   color-scheme signal, while Light and Dark remain persistent overrides; all
   three switch the base map without recreating MapLibre or resetting traffic.
-- One versioned device-local preference schema remembers theme, metric or
+- One versioned device-local preference schema remembers theme, projection, metric or
   aviation/nautical presentation units, layers, structured vessel filters, and
   selected-trail controls. It never stores camera, Home/location, search text,
   selection, provider state, playback, or private-history consent.
@@ -637,6 +642,25 @@ Intentional Ctrl-wheel on those compact surfaces is also ignored because the
 browser does not reliably distinguish it from trackpad pinch. If an older
 shell leaves controls offscreen, reset browser zoom with Cmd+0 on macOS or
 Ctrl+0 on Windows/Linux, then use **Refresh app**; do not clear site data.
+
+### Smooth globe (#163)
+
+Automatic globe is the default, including for older saved preferences without
+a projection field. Native map zoom, not browser page magnification, drives
+the transition. Flat remains available in Appearance and in explicit shared
+views. Theme and fallback changes preserve the projection and valid camera,
+selection, and overlays in the same map.
+
+A visible limb, included pole, or other unsafe footprint pauses aircraft and
+ships rather than inventing worldwide coverage. The existing full-canvas
+100 km limit remains unchanged. Enabled modeled orbital points and tracks
+remain useful at globe scale, but unsafe footprints report map/crossing counts
+unavailable; back-side objects are not selectable through the Earth.
+
+The exact application/Worker release, deployment, production browser evidence
+and Wiki receipt are recorded in
+[#163](https://github.com/vasilyevstan/LiveTrafficStan/issues/163).
+The preceding receipts below remain historical and rollback evidence.
 
 ### TrackStan domain activation (#334)
 

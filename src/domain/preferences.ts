@@ -33,9 +33,16 @@ export const APP_PREFERENCES_STORAGE_KEY =
 
 export type StructuredVesselFilters = Omit<VesselFilterState, 'query'>
 
+export type MapProjectionPreference = 'auto' | 'flat'
+
+export const isMapProjectionPreference = (
+  value: unknown,
+): value is MapProjectionPreference => value === 'auto' || value === 'flat'
+
 export interface AppPreferencesV1 {
   version: typeof APP_PREFERENCES_VERSION
   theme: ThemePreference
+  projection: MapProjectionPreference
   units: UnitSystem
   layers: LayerPreferences
   vesselFilters: StructuredVesselFilters
@@ -44,6 +51,7 @@ export interface AppPreferencesV1 {
 
 export interface AppPreferenceOverrides {
   theme?: ThemePreference
+  projection?: MapProjectionPreference
   units?: UnitSystem
   layers?: Partial<LayerPreferences>
   vesselFilters?: Partial<StructuredVesselFilters>
@@ -84,6 +92,7 @@ const normalizeStructuredVesselFilters = (
 export const defaultAppPreferences = (): AppPreferencesV1 => ({
   version: APP_PREFERENCES_VERSION,
   theme: 'light',
+  projection: 'auto',
   units: DEFAULT_UNIT_SYSTEM,
   layers: { ...DEFAULT_LAYER_PREFERENCES },
   vesselFilters: defaultStructuredVesselFilters(),
@@ -190,6 +199,9 @@ export const resolveAppPreferences = (
     theme: isThemePreference(value.theme)
       ? value.theme
       : defaults.theme,
+    projection: isMapProjectionPreference(value.projection)
+      ? value.projection
+      : defaults.projection,
     units: isUnitSystem(value.units) ? value.units : defaults.units,
     layers: resolveLayers(value.layers),
     vesselFilters: resolveVesselFilters(value.vesselFilters),
@@ -205,6 +217,7 @@ export const mergeAppPreferenceOverrides = (
   return {
     version: APP_PREFERENCES_VERSION,
     theme: overrides.theme ?? preferences.theme,
+    projection: overrides.projection ?? preferences.projection,
     units: overrides.units ?? preferences.units,
     layers: {
       ...preferences.layers,

@@ -1072,7 +1072,7 @@ eligibility compose as pause reasons. Layer visibility remains display-only.
 ## Portable preferences, explicit sharing, and units
 
 `livetrafficstan.preferences.v1` is the one complete allowlisted preference
-schema. It stores theme, presentation units, six layer flags, structured vessel
+schema. It stores theme, projection, presentation units, layer flags, structured vessel
 filters without free text, and selected-trail visibility/duration. It excludes
 camera, browser Home/location, searches, selections, provider state,
 observations, history settings/data, and playback.
@@ -1097,6 +1097,41 @@ and the current share fragment. It does not move the camera/Home or alter
 private-history consent, epochs, settings, or IndexedDB. Existing selection
 invalidation still applies when reset defaults hide or filter the selected
 object.
+
+## Smooth globe and safe footprints
+
+`mapProjection.ts` translates the independent `auto | flat` preference to
+native globe or Mercator on the existing MapLibre instance. Automatic globe
+uses the installed engine's zoom 11-12 interpolation, not a second renderer,
+threshold toggle, listener, or animation loop. Settings, preference reset and
+explicit share state use the same validated field; no location is persisted.
+
+Both traffic and orbital assessment use the same 32-point full-canvas sample.
+On globe, public `getBounds()` rejects an included pole and public
+`unproject`/`project` round trips check a one-pixel outward guard. Finite
+coordinates alone are insufficient: globe unprojection can snap sky to the
+limb. The guard's 0.01 px tolerance never expands the actual display polygon.
+An unsafe surface fails closed before radius or whole-world classification.
+Flat whole-world orbital behavior and the exact traffic 100 km contract remain.
+
+Unsafe geometry pauses aircraft/marine through their existing independent
+controllers and cadence. Orbital current positions, valid selection and tracks
+remain separate from crossing geometry: the globe may display modeled points
+while map/crossing counts are unavailable. Projection, camera and theme do not
+refetch the catalog or reset its clock/expiry/worker boundaries. Native globe
+clipping handles back-side symbols, highlights and tracks; actual point/touch
+queries and rendered pixels, not broad line/circle query lists, establish
+rendering and picking behavior.
+
+Initial, external, fallback and replacement styles use one generation-fenced
+loader. `transformStyle` installs the chosen projection before native camera
+migration. If public `getStyle()` is undefined, the unready previous style is
+discarded before replacement: otherwise MapLibre can wait for that abandoned
+load before applying `transformStyle`. Rehydration then restores current
+sources, images, layers, visibility and selection. A shared initial camera is
+replayed after projection installation only while its original view request
+and interaction generation still own the camera. This preserves negative
+polar globe zoom without letting late initialization steal newer navigation.
 
 ## Theme lifecycle
 
@@ -1130,15 +1165,16 @@ inference. Source geometry, filters, label content/font/placement,
 road widths, boundary dash patterns, and attribution remain provider-owned.
 
 The treatment is gated by the exact resolved default URL for each theme.
-Custom style URLs, opposite-theme overrides, and fallback style keys are left
-untouched. Every external style replacement reapplies the palette through the
+Custom styles, opposite-theme overrides and the fallback are not recolored;
+their separately selected projection still applies. Every external style
+replacement reapplies the palette through the
 existing generation-fenced installation; it does not create a second style
 loader or provider lifecycle. If both themes share one stock URL, leaving that
 URL's atlas-owning theme reloads the original style through the same loader.
 The same-URL reset uses `diff: false` so `style.load` reliably restores overlays;
 otherwise application paint could leak into the deliberately custom override.
-It keeps the map, camera, selection, and provider controllers. The new palette
-does not add terrain, building heights, a globe projection, or an automatic tilt.
+It keeps the map, camera, selection, and provider controllers. The palette
+itself adds no terrain, building heights, projection change, or automatic tilt.
 
 ## Application-shell and offline lifecycle
 

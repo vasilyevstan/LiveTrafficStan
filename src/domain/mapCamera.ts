@@ -11,7 +11,8 @@ export const MAP_CAMERA_LIMITS = {
   maximumLatitude: 90,
   minimumLongitude: -180,
   maximumLongitude: 180,
-  minimumZoom: 0,
+  // Native globe zoom includes a polar adjustment below Mercator's -2.
+  minimumZoom: -6,
   maximumZoom: 22,
   minimumBearing: -180,
   maximumBearing: 180,

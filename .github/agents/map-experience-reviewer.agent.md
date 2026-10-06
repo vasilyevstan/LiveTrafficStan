@@ -14,6 +14,17 @@ Check these project invariants:
   methods, listeners, timers, style installation, or cleanup run without an
   instance, and sibling controls remain usable.
 - A single MapLibre instance survives normal React updates and theme changes.
+- Auto globe uses native zoom interpolation on that instance; Flat is the
+  separate validated preference. No new camera/provider scheduler is needed.
+- Globe viewport safety requires both pole bounds and public surface round
+  trips: finite unprojection can be a sky-to-limb snap. Keep the outward guard
+  separate from the actual full-canvas polygon and retain the 100 km bound.
+- Install projection before style migration. Discard an unready superseded
+  style so `transformStyle` cannot wait on it; preserve negative polar cameras
+  and fence initial-camera replay against newer navigation/manual input.
+- Prove back-side exclusion with pixels and actual point/expanded-touch input.
+  Broad circle/line query results can include clipped geometry and do not
+  justify a speculative picking filter.
 - The explicit Vite-bundled MapLibre worker remains configured.
 - A loaded style or main-target `.pbf` count is not vector-tile proof: those
   responses may be font glyphs. Use rendered vector-source features plus
@@ -183,7 +194,7 @@ Check these project invariants:
 - Theme preference and resolved rendering theme stay separate. Missing or
   invalid storage remains Light; only explicit Auto follows system changes,
   and pre-paint/React resolution must agree without duplicate listeners.
-- The unified preference schema owns theme, units, layers, structured vessel
+- The unified preference schema owns theme, projection, units, layers, structured vessel
   filters, and trail controls. It excludes camera/Home, free text, selection,
   provider state, history consent/data, and playback. Reset cannot touch the
   private-history contract.
