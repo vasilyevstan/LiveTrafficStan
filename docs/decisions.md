@@ -428,13 +428,19 @@ The source and rights evidence is recorded in
 
 ## Mercator-first local orbital modeling
 
-Issue #162 adds orbital context to the existing single Mercator map before any
-globe projection work. The flat map already supports whole-world and
+Issue #162 first added orbital context to the existing single Mercator map before
+globe projection work. The flat map already supported whole-world and
 street-level zooms, while the separate aircraft/marine 100 km contract remains
 well understood. A globe would also change horizon geometry, off-Earth canvas
 samples, poles, style projection restoration, front/back picking, camera/share
-state, and the zoom 11-12 projection transition. Those risks belong to
-dependent Issue #163 and do not block useful modeled objects.
+state, and the zoom 11-12 projection transition. Those risks belonged to
+dependent Issue #163 and did not block useful modeled objects.
+
+That sequencing decision is historical. #163 now supplies native automatic
+globe interpolation and a separate Flat preference on the same map, with
+projection-aware surface guards, initial-camera fencing and real rendering/
+picking evidence. See [smooth globe and safe footprints](architecture.md#smooth-globe-and-safe-footprints).
+No provider, clock, catalog or worker lifecycle is added by that follow-up.
 
 The browser uses the complete same-origin snapshot and propagates OMM locally
 with pinned `satellite.js` 7.1.0 in a dedicated worker. Sending viewport,
@@ -443,9 +449,9 @@ it would add user-derived network disclosure, another provider lifecycle, and
 per-view request load without improving the authoritative element source.
 
 Current points, 90-minute crossings, and the selected 15-minute ground track
-are separate application-owned models, not traffic observations. Whole-world
-views list current modeled points without inventing a crossing rank. Partial
-world-spanning or invalid footprints retain current points but suppress
+are separate application-owned models, not traffic observations. Safe Flat
+whole-world views list current modeled points without inventing a crossing
+rank. Partial world-spanning or invalid footprints retain current points but suppress
 crossing results. Aircraft and ships independently pause whenever the unchanged
 traffic viewport is ineligible.
 
