@@ -265,8 +265,9 @@ identity are not renamed or reset.
   desktop rail or above the mobile dock. These stable native disclosures
   retain one scroll owner per panel and session-only
   Layers/Find/Context/Orbits/Sources views. **Settings** groups the single
-  explicit-submit location input, **Center**, results, and search privacy text
-  before **Appearance**. These stay mounted when Settings is closed;
+  explicit-submit location input, results, and search privacy text before
+  **Appearance**. **Center** stays outside menus in the main rail/dock.
+  The search controls stay mounted when Settings is closed;
   Auto/Light/Dark and Trails remain under Appearance.
   The mobile zoom/tilt prompt, selected details, and HISTORY playback reserve
   their own space; closing historical details restores the same tool state.
@@ -621,6 +622,21 @@ dock height. It reuses session Home: browser-granted location supplies one
 rounded position; prompt/denied states keep the configured fallback.
 **Settings → Use location** remains the explicit permission/retry action.
 Center does not start continuous tracking or save coordinates.
+
+### Browser magnification and controls (#359)
+
+The floating header, dock, menus and corner credits follow the browser's
+visible viewport, including its width and pan offsets. Native page
+magnification is separate from map zoom: enlarged text is not counter-scaled,
+and the full map canvas still determines traffic coverage.
+
+Closed compact header/dock surfaces ignore accidental page-pinch/Ctrl-wheel
+zoom. Ordinary scrolling, map gestures, browser keyboard/menu zoom and
+magnification in open information/settings panels remain available.
+Intentional Ctrl-wheel on those compact surfaces is also ignored because the
+browser does not reliably distinguish it from trackpad pinch. If an older
+shell leaves controls offscreen, reset browser zoom with Cmd+0 on macOS or
+Ctrl+0 on Windows/Linux, then use **Refresh app**; do not clear site data.
 
 ### TrackStan domain activation (#334)
 

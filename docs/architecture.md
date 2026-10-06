@@ -38,8 +38,9 @@ relay source `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8`; relay source
 release.
 
 The #300 layout remains: no full-width bar, with a 280x88 px
-floating status card. Search, Center, results and privacy text share the
-existing Settings body and retain one mounted input/model. The right desktop
+floating status card. Search, results and privacy text share the existing
+Settings body and retain one mounted input/model. Center is outside menus in
+the main rail/dock. The right desktop
 rail, inward panels, opposite inspector and mobile bottom dock remain.
 Impeccable's installed guidance and detector informed this CSS-led refinement
 without adding state or a design framework. It changes no provider, worker,
@@ -197,13 +198,24 @@ are duplicated or remounted.
 Opening either disclosure closes the other without remounting the search model.
 Operational recovery and app/storage/history recovery have separate promotion
 slots beside/above the dock rather than extra default corner cards. Active
-HISTORY playback remains outside both disclosures. The expanded controls use
-at most 58% of the current visual viewport, with
-`dvh`/`vh` fallbacks when `window.visualViewport` is unavailable. Each
+HISTORY playback remains outside both disclosures. The existing visual-viewport
+effect publishes width, height and left/top offsets as CSS variables. Both
+the interface and native MapLibre control container use that rectangle;
+named size-container queries apply responsive layout to its visible size,
+not the unchanged layout viewport. No inverse scaling, camera adjustment or
+map resize is introduced for page magnification. Without `visualViewport`,
+the effect uses the layout dimensions and zero offsets, with CSS viewport-unit
+defaults before measurement. The expanded controls use at most 58% of the
+current visual viewport. Each
 disclosure body is its only vertical scroll owner; the task selector scrolls
 away rather than covering short-view results, and orbital results remain fully
 expanded inside the outer scroll region. The mobile sheet leaves a 48 px map
 strip beside the control stack; the collapsed dock needs no scrolling.
+Only compact closed header/dock surfaces prevent Ctrl-wheel page zoom and
+direct touch pinch. The native wheel listener belongs to the existing shell
+effect and is removed with it; ordinary or already-handled wheel events are
+untouched. Open panels permit magnification and retain their vertical scroll
+owner. Browser keyboard/menu zoom and MapLibre gestures are not intercepted.
 Live selected details occupy a left desktop inspector opposite the controls or a reserved mobile
 area below the floating card. `--workspace-header-bottom` reserves the card's
 bottom edge at 104 px on desktop or 100 px on mobile; the desktop rail is
