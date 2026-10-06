@@ -54,6 +54,7 @@ describe('interface presentation contracts', () => {
   }
 
   it('retains the visual-viewport cap and the sole orbital scroll owner', () => {
+    expect(styles).toContain('--app-visual-viewport-width')
     expect(styles).toContain('--app-visual-viewport-height')
     expect(styles).toContain('--app-visual-viewport-58')
     expect(styles).toMatch(/\.orbital-results\s*\{\s*max-height: none;\s*overflow: visible;/)
@@ -62,9 +63,27 @@ describe('interface presentation contracts', () => {
     expect(styles).toContain('outline: 3px solid var(--focus-ring)')
   })
 
+  it('anchors interface and native map controls to the visual viewport, not the canvas', () => {
+    expect(styles).toMatch(
+      /\.interface-layer,\s*\.maplibregl-control-container\s*\{[^}]*top: var\(--app-visual-viewport-top\);[^}]*left: var\(--app-visual-viewport-left\);[^}]*width: var\(--app-visual-viewport-width\);[^}]*height: var\(--app-visual-viewport-height\);[^}]*container: workspace \/ size;/,
+    )
+    expect(styles).toMatch(/\.traffic-map\s*\{\s*position: absolute;\s*inset: 0;\s*\}/)
+    expect(styles).not.toMatch(/@media \(max-width:/)
+    expect(styles).toContain('@container workspace (max-width: 760px) and (max-height: 650px)')
+    expect(styles).toContain('.interface-layer:has(.viewport-notice) > *')
+  })
+
+  it('protects compact controls without disabling magnification in open panels', () => {
+    expect(styles).toContain('.brand-panel:not(:has(details[open]))')
+    expect(styles).toContain('.workspace-dock:not(:has(details[open]))')
+    expect(styles).toContain('touch-action: pan-x pan-y')
+    expect(styles).toContain('touch-action: pan-y pinch-zoom')
+    expect(styles).not.toContain('touch-action: none')
+  })
+
   it('floats a compact status card and preserves the mobile bottom dock', () => {
     expect(styles).toMatch(/\.brand-panel\s*\{[^}]*top: 16px;[^}]*left: 16px;/)
-    expect(styles).toMatch(/\.brand-panel\s*\{[^}]*width: min\(280px, calc\(100vw - 24px\)\);/)
+    expect(styles).toMatch(/\.brand-panel\s*\{[^}]*width: min\(280px, calc\(var\(--app-visual-viewport-width\) - 24px\)\);/)
     expect(styles).not.toMatch(/\.brand-panel\s*\{[^}]*width: 100%;/)
     expect(styles).not.toContain("grid-template-areas: 'brand navigation status'")
     expect(styles).toContain('--workspace-header-bottom: 104px')
@@ -90,7 +109,7 @@ describe('interface presentation contracts', () => {
 
   it('fits Center into the existing six-slot mobile dock', () => {
     expect(styles).toMatch(/\.workspace-center\s*\{[^}]*min-width: 0;[^}]*min-height: 44px;/)
-    const mobile = styles.split('@media (max-width: 760px) {')[1]
+    const mobile = styles.split('@container workspace (max-width: 760px) {')[1]
     expect(mobile).toMatch(/\.workspace-center\s*\{[^}]*flex: 1 1 0;/)
     expect(mobile).toMatch(/\.control-panel--operations\s*\{[^}]*flex: 4 1 0;/)
     expect(mobile).toMatch(/\.control-panel--settings\s*\{[^}]*flex: 1 1 0;/)

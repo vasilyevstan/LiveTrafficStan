@@ -145,13 +145,18 @@ Check these project invariants:
   deterministic across navigation and style changes.
 - Theme, Center, location, and layer controls keep semantic buttons,
   truthful pressed state, keyboard focus, contrast, and usable mobile layout.
+- Check native browser magnification and visual-viewport pan/reload separately
+  from map zoom and window resize. Header, dock, panels and credits follow the
+  visible width/height/offsets without counter-scaling text or resizing the
+  map. Compact gesture protection must leave map input, ordinary scroll,
+  browser keyboard/menu zoom and open-panel magnification usable.
 - Added controls must not let the mobile overlay consume the entire map.
   Verify a real touch drag starts on an unobscured map region at both 390x844
   and 390x568 while the control panel remains scrollable and reachable.
 - Keep the accepted minimal controls compact and task-based: a 280 px floating
   brand/status card replaces the top bar. Do not reintroduce an edge-to-edge
-  header. Search, Center, results and privacy text stay together in Settings,
-  while the existing buttons occupy the right desktop rail or mobile bottom
+  header. Search, results and privacy text stay together in Settings;
+  Center stays outside menus in the right desktop rail or mobile bottom
   dock. Desktop panels open inward and the inspector is opposite below the
   card; keep counts, freshness, coverage and Provider details visible.
   Appearance groups Auto/Light/Dark and Trails inside settings. More and
