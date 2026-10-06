@@ -339,6 +339,31 @@ Create a separate Issue for an unrelated defect found during implementation,
 review, or release acceptance. Fold it into the active work only when it is
 tightly coupled or blocks a documented acceptance criterion.
 
+## TrackStan naming and primary Center (#354/#355)
+
+Focused regressions lock the TrackStan heading/title/install metadata,
+unchanged root manifest identity and immutable icon paths, existing storage
+keys, one Center button outside disclosures, its disabled state and the
+mobile six-slot layout. Browser-permission tests cover granted, prompt,
+denied and changes between them without prompting or continuous tracking;
+the existing navigation-intent tests retain late-result fencing.
+
+Normal Chrome 154.0.8037.98 measured the built candidate in both themes at
+1280x900, 390x844, 390x568 and 315x517. The header remained 280x88 px.
+The mobile dock remained 70 px high, with Center at least 51.8x56 px;
+desktop Center was 62x52.8 px in the existing 76 px rail. The wordmark and
+Center stayed visible with menus closed, no horizontal overflow and one
+retained vector-map canvas. Keyboard and native touch activated Center.
+
+Separate public-coordinate browser geolocation emulation verifies a rounded
+Home after browser permission is granted, prompt/denied fallback, no
+continuous movement tracking, and a later grant updating Home without
+stealing a manually moved camera. These are deterministic browser permission/
+camera fixtures, not an actual user-location or physical-device claim.
+The [delivery receipt](https://github.com/vasilyevstan/LiveTrafficStan/issues/354)
+records the deployed-source rendering and normal existing-shell update;
+local browser evidence alone is not production acceptance.
+
 ## Automated test coverage
 
 The V1 suite uses sanitized, local values and does not call live providers. It

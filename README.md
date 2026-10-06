@@ -1,7 +1,8 @@
-# LiveTrafficStan
+# TrackStan
 
-LiveTrafficStan is a lightweight live map of aircraft and significant vessels
-in receiver-covered regions, starting around Tallinn, Estonia. It combines
+TrackStan (formerly LiveTrafficStan) is a lightweight live map of aircraft and
+significant vessels in receiver-covered regions, starting around Tallinn,
+Estonia. It combines
 best-effort traffic feeds with MapLibre GL JS in one React application, without
 user accounts or a server-side vessel history archive.
 
@@ -11,7 +12,12 @@ The existing <https://livetrafficstan.syntal.workers.dev> address remains
 available. Preferences, permissions, installed apps and private history are
 separate for each origin; they are not automatically migrated.
 
-![Released map-first Light interface with live aircraft and vessels around Tallinn](https://github.com/user-attachments/assets/00098d08-b551-4f83-911b-ed2ef96bfb97)
+The visible logo/wordmark, browser title and install name are **TrackStan**.
+The existing radar symbol is retained. `LiveTrafficStan` remains the GitHub
+repository, Worker and compatibility namespace; saved data and installed-app
+identity are not renamed or reset.
+
+![TrackStan Light interface with Center visible in the main map dock](https://github.com/user-attachments/assets/07c7ef28-7bb4-43be-bc39-945f741ca191)
 
 ## Current features
 
@@ -593,11 +599,34 @@ updates do not repeat the request. Successful routes may be reused from the
 current tab's 32-entry cache for up to six hours; there is no shared or
 persistent route cache.
 
+### TrackStan public identity (#354)
+
+The requested rename applies to the desktop/mobile header, browser title,
+page description, application/Apple install metadata, manifest name and short
+name, favicon title and user-facing notices. The neutral radar artwork,
+immutable icon files, root manifest ID/scope and existing preference, history
+and shell-cache identifiers are preserved. Provider headers and the
+repository/Worker names remain unchanged.
+
+Existing tabs use the normal **Refresh app** update action. Browser and
+operating-system launcher labels can update on their own schedule; the
+application does not reinstall itself or delete local data. The
+[delivery receipt](https://github.com/vasilyevstan/LiveTrafficStan/issues/354)
+records the exact production source, browser evidence and compatible fallback.
+This is a naming change, not a map redesign or a globe/airport-board release.
+
+The companion #355 change moves **Center** into the existing right-side
+desktop rail and bottom mobile dock, outside menus, without adding mobile
+dock height. It reuses session Home: browser-granted location supplies one
+rounded position; prompt/denied states keep the configured fallback.
+**Settings → Use location** remains the explicit permission/retry action.
+Center does not start continuous tracking or save coordinates.
+
 ### TrackStan domain activation (#334)
 
 Public production is live at <https://trackstan.xyz> on the existing
-Cloudflare Workers Free application, with workers.dev retained. Current
-application source is `2fffb5a1556f883a014ce88ec8f721e76424671e`;
+Cloudflare Workers Free application, with workers.dev retained. The domain
+activation application source was `2fffb5a1556f883a014ce88ec8f721e76424671e`;
 deployment `37417266192` installed Worker
 `d4800a30-8303-4180-b591-c744aef9668b` at `2026-10-06T05:11:53Z`.
 Both origins passed the full exact-release smoke. Normal Chrome on the new
@@ -611,8 +640,8 @@ certificate; GoDaddy remains the registrar. No fixed IP, `www` binding,
 redirect, paid service or branding change was added. See the
 [activation receipt](docs/hosting-and-deployment.md#trackstan-domain-activation-334)
 for the earlier partial failure, recovered aircraft response, unchanged
-provider/state contracts and compatible rollback. Later documentation-only
-commits do not replace this running application SHA.
+provider/state contracts and compatible rollback. This remains the historical
+domain-activation receipt, not the source of a later application release.
 
 ### Aircraft registration-country flags predecessor (#341/#342)
 
@@ -671,9 +700,8 @@ preserves both outcomes. Later documentation-only commits do not redeploy
 this application.
 
 The domain setup requested in #334 is now accepted as recorded above.
-The separate **TrackStan** logo/name update remains planned: header/mobile
-wordmark, favicon/installable-app identity, page metadata and related docs,
-without renaming the repository or Worker.
+The separate **TrackStan** logo/name update is implemented under #354 as
+recorded above, without renaming the repository or Worker.
 The fifteen-page Wiki update is published as
 `a903ef941bbd43492d682b5a49e6766b51be3980`;
 [production screenshots and evidence](https://github.com/vasilyevstan/LiveTrafficStan/pull/333#issuecomment-6001037124)

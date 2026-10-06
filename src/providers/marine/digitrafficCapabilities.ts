@@ -13,7 +13,7 @@ export const DIGITRAFFIC_MARINE_CAPABILITIES = {
     name: 'CC BY 4.0',
     url: 'https://creativecommons.org/licenses/by/4.0/',
     attribution: 'Source: Fintraffic / digitraffic.fi, license CC 4.0 BY',
-    modificationNotice: 'Filtered and normalized by LiveTrafficStan',
+    modificationNotice: 'Filtered and normalized by TrackStan',
   },
   coverage: {
     kind: 'regional',

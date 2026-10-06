@@ -502,6 +502,17 @@ export function TrafficControls({
     </header>
     <div className="control-stack" aria-label="Map controls">
       <div className="workspace-dock">
+      <button
+        id="center-map-button"
+        className="workspace-center"
+        type="button"
+        disabled={centerDisabled}
+        onClick={onCenter}
+        title="Center on session Home"
+      >
+        <OperationIcon name="center" />
+        CENTER
+      </button>
       <aside
         className={`control-panel control-panel--operations${
           operationalPromotedAction ? ' control-panel--urgent' : ''
@@ -1002,16 +1013,6 @@ export function TrafficControls({
                 searchState={placeSearchState}
                 disabled={locationNavigationDisabled}
               />
-              <button
-                className="workspace-center"
-                type="button"
-                disabled={centerDisabled}
-                onClick={onCenter}
-                title="Center on session Home"
-              >
-                <OperationIcon name="center" />
-                CENTER
-              </button>
             </div>
             <LocationSearchDetails
               model={locationSearch}
