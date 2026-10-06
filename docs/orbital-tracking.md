@@ -71,8 +71,8 @@ When enabled, the control shows distinct states for:
 - HISTORY pause;
 - a valid catalog with no currently propagatable positions.
 
-For a local safely representable Mercator view, Nearby lists objects currently
-in the map first and then future crossings ordered by their first approximate
+For a safely representable local view in Auto globe or Flat, Nearby lists
+objects currently in the map first and then future crossings ordered by their first approximate
 crossing time. It exposes at most 20 detailed results while retaining the
 truthful total. Counts distinguish catalog records, accepted worker records,
 safe current modeled positions, catalog matches, modeled matches, objects in
@@ -397,6 +397,15 @@ whole-world only when the perimeter also reaches both Mercator latitude
 limits. A local footprint must remain under 180 degrees after safe unwrapping
 around the rounded camera center and must have nonzero polygon area. Partial
 world-spanning and invalid geometry are rejected.
+
+Auto globe uses the same safe local polygon contract. Public pole bounds and
+project/unproject surface guards reject an included pole, visible limb or sky
+before local/whole-world classification; finite unprojection alone can be a
+sky-to-limb snap. Current modeled points, valid selection and tracks may still
+render, but unsafe map/crossing counts remain unavailable rather than zero or
+a guessed whole-world count. Native clipping excludes back-side objects from
+rendering and actual point/touch selection. Choosing Flat retains the complete
+Mercator-world behavior above. See [smooth globe and safe footprints](architecture.md#smooth-globe-and-safe-footprints).
 
 For each bounded catalog object, local prediction:
 
@@ -781,9 +790,12 @@ schema-2 -> schema-1 -> schema-2 compatibility:
 That restored source/version was the byte-exact rollback target for the curated
 catalog release and its map follow-up.
 
-The optional globe remains separate in #163. Physical iOS Safari, Android
-Chrome, and supported-device drag-FPS evidence remain an explicit environment
-limitation rather than a claimed result.
+Smooth globe #163 subsequently added native zoom interpolation and the
+independent Flat preference without changing orbital acquisition, clocks,
+expiry or worker ownership. Its [native-browser evidence](development-and-testing.md#smooth-globe-acceptance-163)
+and actual release receipt are separate from these historical orbital
+releases. Physical iOS Safari, Android Chrome, and supported-device drag-FPS
+evidence remain an explicit environment limitation rather than a claimed result.
 
 ## Related documentation
 
