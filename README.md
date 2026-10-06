@@ -5,7 +5,11 @@ in receiver-covered regions, starting around Tallinn, Estonia. It combines
 best-effort traffic feeds with MapLibre GL JS in one React application, without
 user accounts or a server-side vessel history archive.
 
-Public production: <https://livetrafficstan.syntal.workers.dev>
+Public production: <https://trackstan.xyz>
+
+The existing <https://livetrafficstan.syntal.workers.dev> address remains
+available. Preferences, permissions, installed apps and private history are
+separate for each origin; they are not automatically migrated.
 
 ![Released map-first Light interface with live aircraft and vessels around Tallinn](https://github.com/user-attachments/assets/00098d08-b551-4f83-911b-ed2ef96bfb97)
 
@@ -589,9 +593,30 @@ updates do not repeat the request. Successful routes may be reused from the
 current tab's 32-entry cache for up to six hours; there is no shared or
 persistent route cache.
 
-Public production is live at
-<https://livetrafficstan.syntal.workers.dev> on Cloudflare Workers Free with
-Static Assets. The current application source is
+### TrackStan domain activation (#334)
+
+Public production is live at <https://trackstan.xyz> on the existing
+Cloudflare Workers Free application, with workers.dev retained. Current
+application source is `2fffb5a1556f883a014ce88ec8f721e76424671e`;
+deployment `37417266192` installed Worker
+`d4800a30-8303-4180-b591-c744aef9668b` at `2026-10-06T05:11:53Z`.
+Both origins passed the full exact-release smoke. Normal Chrome on the new
+origin rendered real traffic, opened native marine WebSockets, decoded actual
+BALTIC WHALE and PH-BHH photos, and displayed both orbital catalogs and
+purpose/image context with one retained map.
+
+The owner removed the two imported parking A records; blocker #350 is
+resolved without changing credentials. Cloudflare manages the apex DNS and
+certificate; GoDaddy remains the registrar. No fixed IP, `www` binding,
+redirect, paid service or branding change was added. See the
+[activation receipt](docs/hosting-and-deployment.md#trackstan-domain-activation-334)
+for the earlier partial failure, recovered aircraft response, unchanged
+provider/state contracts and compatible rollback. Later documentation-only
+commits do not replace this running application SHA.
+
+### Aircraft registration-country flags predecessor (#341/#342)
+
+The accepted aircraft-flag application source was
 `99baed2dece100f9066f31fecb215df26e781911`, released through #341/#342.
 Exact-main Validation `37385967766` and deployment `37386217568` passed;
 Worker `aa62b10d-03d6-40d4-bdd2-2cdd2dacaeff` passed full exact-release
@@ -645,16 +670,10 @@ failed, then unchanged attempt 2 passed before final restoration. The
 preserves both outcomes. Later documentation-only commits do not redeploy
 this application.
 
-The requested `trackstan.xyz` setup and separately planned **TrackStan**
-logo/name update are tracked in #334, with the demonstrated DNS/account
-prerequisite in #335. The owned Free zone now exists with assigned nameservers
-`ben.ns.cloudflare.com` / `nora.ns.cloudflare.com`; authoritative delegation
-and active Cloudflare status were confirmed on 2026-10-05. The checked
-configuration binds only the apex to the existing Worker and explicitly
-preserves workers.dev. New-origin HTTPS/browser acceptance is still required
-before advertising the application at the domain. The existing address will
-remain available for origin-local preferences, installed apps and history;
-those data do not automatically migrate between origins.
+The domain setup requested in #334 is now accepted as recorded above.
+The separate **TrackStan** logo/name update remains planned: header/mobile
+wordmark, favicon/installable-app identity, page metadata and related docs,
+without renaming the repository or Worker.
 The fifteen-page Wiki update is published as
 `a903ef941bbd43492d682b5a49e6766b51be3980`;
 [production screenshots and evidence](https://github.com/vasilyevstan/LiveTrafficStan/pull/333#issuecomment-6001037124)
