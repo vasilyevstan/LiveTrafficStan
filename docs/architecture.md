@@ -168,10 +168,12 @@ restores summary focus. Presentation does not change provider state or polling.
 
 `TrafficControls` composes App's brand/status slot with navigation, one
 location-search model, and two stable native disclosures with the same `name`.
-Aircraft, Ships, ORBITS, **More**, and **Settings** form a right desktop rail
-and a bottom mobile command dock. Center stays with search at the start of
-Settings, not among layer toggles. The floating card is 280x88 px, inset 16 px
-on desktop and 12 px on mobile. Its redundant brand subtitle is hidden;
+**Center**, Aircraft, Ships, ORBITS, **More**, and **Settings** form a right
+desktop rail and a bottom mobile command dock. Center is always outside the
+menus and uses the existing session-Home callback, not another location
+request. Six mobile slots retain the existing dock height and touch targets.
+Search remains in Settings. The floating card is 280x88 px, inset 16 px on
+desktop and 12 px on mobile. Its redundant brand subtitle is hidden;
 counts, freshness, and provider disclosure stay visible, with unchanged 44 px
 search/status targets. **More** opens the Explore
 map panel inward to the left of the rail
@@ -186,7 +188,7 @@ textual state and limitations remain in controls and selected details. The
 collapsed orbital summary is omitted while the detailed Orbits view is open,
 avoiding repeated information and preserving result space. The single mounted
 location input remains mounted inside Settings when either panel is closed.
-**Settings** opens View & settings with location input, Center, search feedback,
+**Settings** opens View & settings with location input and search feedback,
 and the existing privacy/attribution copy together, followed by Appearance
 (Auto/Light/Dark and Trails), browser location, history setup, preferences,
 sharing, reset, and application state. No controls or disclosure identities

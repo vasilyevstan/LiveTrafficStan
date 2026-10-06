@@ -15,21 +15,24 @@ const settings = {
 }
 
 describe('browser geolocation', () => {
-  it('checks permission without causing a location prompt', async () => {
-    const query = vi.fn().mockResolvedValue({ state: 'granted' })
-    const getCurrentPosition = vi.fn()
-    const environment: BrowserLocationEnvironment = {
-      secure: true,
-      permissions: { query },
-      geolocation: { getCurrentPosition },
-    }
+  it.each(['granted', 'prompt', 'denied'] as const)(
+    'respects browser permission %s without causing a location prompt',
+    async (state) => {
+      const query = vi.fn().mockResolvedValue({ state })
+      const getCurrentPosition = vi.fn()
+      const environment: BrowserLocationEnvironment = {
+        secure: true,
+        permissions: { query },
+        geolocation: { getCurrentPosition },
+      }
 
-    await expect(readBrowserLocationPermission(environment)).resolves.toBe(
-      'granted',
-    )
-    expect(query).toHaveBeenCalledWith({ name: 'geolocation' })
-    expect(getCurrentPosition).not.toHaveBeenCalled()
-  })
+      await expect(readBrowserLocationPermission(environment)).resolves.toBe(
+        state,
+      )
+      expect(query).toHaveBeenCalledWith({ name: 'geolocation' })
+      expect(getCurrentPosition).not.toHaveBeenCalled()
+    },
+  )
 
   it('falls back to explicit action when permission lookup is unsupported', async () => {
     const environment: BrowserLocationEnvironment = {
@@ -73,6 +76,13 @@ describe('browser geolocation', () => {
     changeListener?.()
 
     expect(listener).toHaveBeenCalledWith('granted')
+    status.state = 'denied'
+    changeListener?.()
+    expect(listener).toHaveBeenLastCalledWith('denied')
+    status.state = 'prompt'
+    changeListener?.()
+    expect(listener).toHaveBeenLastCalledWith('prompt')
+    expect(environment.geolocation?.getCurrentPosition).not.toHaveBeenCalled()
     unsubscribe()
     expect(status.removeEventListener).toHaveBeenCalledWith(
       'change',

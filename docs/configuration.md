@@ -245,8 +245,11 @@ location permission is already granted, the app resolves a rounded one-shot
 position before starting provider queries. If permission changes to granted
 while the page remains open, one lookup updates the session home automatically.
 Otherwise it starts at the configured center and offers an explicit
-`Use location` action. The lookup remains bounded but allows up to 20 seconds
-for a cold operating-system position; a timeout keeps the current Home and
+**Use location** action in Settings; prompt/denied settings are not overridden
+and no app-specific permission preference is stored. **Center** is always
+visible in the main dock and returns to the existing session Home without
+requesting another position. The lookup remains bounded but allows up to
+20 seconds for a cold operating-system position; a timeout keeps the current Home and
 leaves the action available for an explicit retry.
 
 A settled pan, zoom, rotation, pitch, Home, or real resize changes the traffic

@@ -5,6 +5,34 @@ const manifestPath = new URL('../public/manifest.webmanifest', import.meta.url)
 const headersPath = new URL('../public/_headers', import.meta.url)
 
 describe('PWA manifest and deployment headers', () => {
+  it('uses TrackStan consistently without changing the installed application identity', async () => {
+    const [manifestSource, html, app, favicon] = await Promise.all([
+      readFile(manifestPath, 'utf8'),
+      readFile(new URL('../index.html', import.meta.url), 'utf8'),
+      readFile(new URL('../src/App.tsx', import.meta.url), 'utf8'),
+      readFile(new URL('../public/favicon.svg', import.meta.url), 'utf8'),
+    ])
+    const manifest = JSON.parse(manifestSource)
+    expect(manifest.name).toBe('TrackStan')
+    expect(manifest.short_name).toBe('TrackStan')
+    expect(manifest.description).toBe(
+      'TrackStan maps live aircraft and ships with best-effort coverage, plus modeled orbital objects and private local playback.',
+    )
+    expect(html).toContain('<title>TrackStan</title>')
+    expect(html).toContain('name="application-name" content="TrackStan"')
+    expect(html).toContain('name="apple-mobile-web-app-title" content="TrackStan"')
+    expect(html).toContain(`content="${manifest.description}"`)
+    expect(html).toContain('href="/manifest.webmanifest"')
+    expect(html).toContain('href="/favicon.svg"')
+    expect(html).toContain('href="/icons/livetrafficstan-192-v1.png"')
+    expect(html).toContain("'livetrafficstan.preferences.v1'")
+    expect(html).toContain("'livetrafficstan.theme'")
+    expect(app).toContain('<h1>TrackStan</h1>')
+    expect(app).not.toContain('<h1>LiveTrafficStan</h1>')
+    expect(app).toContain('className="radar-mark" aria-hidden="true"')
+    expect(favicon).toContain('<title>TrackStan</title>')
+  })
+
   it('uses root-only install scope and complete maskable icons', async () => {
     const manifest = JSON.parse(await readFile(manifestPath, 'utf8'))
     expect(manifest).toMatchObject({

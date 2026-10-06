@@ -169,7 +169,7 @@ export const useTrafficHistory = (
           ...current,
           phase: 'blocked',
           message:
-            'Close other LiveTrafficStan tabs so local history can be opened.',
+            'Close other TrackStan tabs so local history can be opened.',
         }))
       },
       onVersionChange: () => {
