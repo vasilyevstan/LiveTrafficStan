@@ -58,6 +58,28 @@ requests, viewport eligibility, vessel filter membership, selection, or
 history changes at the same time, treat that as a regression rather than an
 expected unit conversion.
 
+## Globe, Flat and paused wide views
+
+**Settings → Appearance → AUTO GLOBE / FLAT** selects projection independently
+of the Auto/Light/Dark theme. Automatic globe becomes flat smoothly between
+map zoom 11 and 12. Browser page magnification does not change this preference.
+Reset preferences restores automatic globe without clearing private history.
+
+Aircraft and ships intentionally pause when the full canvas includes a limb,
+pole, unsafe surface or a footprint over the existing 100 km bound. Zoom in,
+reduce tilt, or use Center; do not expect worldwide live traffic. ORBITS can
+still display current modeled points while reporting map/crossing counts
+unavailable. A broad native feature query can include clipped line/circle
+geometry and is not evidence that a back-side object is visible or pickable.
+
+When diagnosing a theme/fallback failure, verify projection is installed
+before style migration and that a superseded unready style was discarded.
+Negative polar globe zoom is valid; an initial shared camera must wait for
+projection installation without overriding a later manual/navigation intent.
+Switching explicitly to Flat may constrain a camera that Mercator cannot
+represent. Older pre-globe application versions do not recognize the new
+`projection` share-fragment field; use a current application for those links.
+
 ## Header or controls disappear after browser zoom
 
 Browser page magnification and map zoom are different. A page pinch can reduce

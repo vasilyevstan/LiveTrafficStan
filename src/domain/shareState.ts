@@ -8,6 +8,7 @@ import {
 } from './mapCamera'
 import {
   APP_PREFERENCES_VERSION,
+  isMapProjectionPreference,
   type AppPreferenceOverrides,
   type AppPreferencesV1,
   type StructuredVesselFilters,
@@ -41,6 +42,7 @@ const SHARE_KEYS = new Set([
   'bearing',
   'pitch',
   'theme',
+  'projection',
   'units',
   'aircraft',
   'vessels',
@@ -128,6 +130,7 @@ const setTrailOverride = <Key extends keyof TrailPreferences>(
 
 const hasAnyPreferenceOverride = (overrides: AppPreferenceOverrides) =>
   overrides.theme !== undefined ||
+  overrides.projection !== undefined ||
   overrides.units !== undefined ||
   overrides.layers !== undefined ||
   overrides.vesselFilters !== undefined ||
@@ -191,6 +194,11 @@ export const parseShareFragment = (
     const units = params.get('units')
     if (!isUnitSystem(units)) return null
     overrides.units = units satisfies UnitSystem
+  }
+  if (params.has('projection')) {
+    const projection = params.get('projection')
+    if (!isMapProjectionPreference(projection)) return null
+    overrides.projection = projection
   }
 
   const layerParameters: readonly [
@@ -303,6 +311,7 @@ export const serializeShareFragment = (
   params.set('bearing', roundedCamera.bearing.toFixed(1))
   params.set('pitch', roundedCamera.pitch.toFixed(1))
   params.set('theme', preferences.theme)
+  params.set('projection', preferences.projection)
   params.set('units', preferences.units)
   params.set('aircraft', booleanValue(preferences.layers.aircraftVisible))
   params.set('vessels', booleanValue(preferences.layers.vesselsVisible))

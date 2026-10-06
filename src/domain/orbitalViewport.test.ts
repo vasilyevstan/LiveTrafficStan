@@ -18,6 +18,27 @@ const localSample = {
 }
 
 describe('orbital viewport geometry', () => {
+  it('never treats a globe limb or pole as a local or whole-world crossing footprint', () => {
+    for (const longitudeSpanDegrees of [4, 360]) {
+      expect(
+        assessOrbitalViewport(
+          {
+            ...localSample,
+            perimeter: [
+              { latitude: -85, longitude: -180 },
+              { latitude: -85, longitude: 180 },
+              { latitude: 85, longitude: 180 },
+              { latitude: 85, longitude: -180 },
+            ],
+            longitudeSpanDegrees,
+            surfaceIsContinuous: false,
+          },
+          3,
+        ),
+      ).toMatchObject({ kind: 'invalid', reason: 'invalid-geometry' })
+    }
+  })
+
   it('keeps a dateline-adjacent local footprint safely unwrapped', () => {
     expect(assessOrbitalViewport(localSample, 3)).toEqual({
       kind: 'local',

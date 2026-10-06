@@ -136,6 +136,8 @@ const renderControls = (
       onUseLocation={() => undefined}
       themePreference="light"
       onThemePreferenceChange={() => undefined}
+      projectionPreference="auto"
+      onProjectionPreferenceChange={() => undefined}
       onUnitsChange={() => undefined}
       shareDisabled={false}
       onShare={() => undefined}
@@ -157,6 +159,26 @@ const renderControls = (
   )
 
 describe('TrafficControls', () => {
+  it('keeps automatic globe and flat choices in Settings with explicit pressed state', () => {
+    const automatic = renderControls()
+    const projectionGroup = automatic.match(
+      /aria-label="Map projection"[^>]*>([\s\S]*?)<\/div>/,
+    )?.[1]
+    expect(projectionGroup).toMatch(
+      /aria-pressed="true"[^>]*>AUTO GLOBE<\/button>/,
+    )
+    expect(projectionGroup).toMatch(
+      /aria-pressed="false"[^>]*>FLAT<\/button>/,
+    )
+    expect(
+      renderControls({ projectionPreference: 'flat' }),
+    ).toMatch(/aria-pressed="true"[^>]*>FLAT<\/button>/)
+    expect(automatic.indexOf('aria-label="Map projection"')).toBeGreaterThan(
+      automatic.indexOf('<details id="traffic-controls-settings"'),
+    )
+    expect(automatic).toContain('Auto globe changes smoothly with map zoom.')
+  })
+
   it('keeps Center in the primary dock and search in Settings without growing the header', () => {
     const html = renderControls()
     const headerEnd = html.indexOf('</header>')

@@ -120,6 +120,7 @@ function App() {
     layers: layerPreferences,
     trail: trailPreferences,
     theme: themePreference,
+    projection: projectionPreference,
     units,
   } = preferences
   const theme = useTheme(themePreference)
@@ -302,6 +303,15 @@ function App() {
       updatePreferences((current) => ({
         ...current,
         units: nextUnits,
+      }))
+    },
+    [updatePreferences],
+  )
+  const setProjectionPreference = useCallback(
+    (nextProjection: typeof projectionPreference) => {
+      updatePreferences((current) => ({
+        ...current,
+        projection: nextProjection,
       }))
     },
     [updatePreferences],
@@ -1475,6 +1485,7 @@ function App() {
         }
         online={online}
         theme={theme}
+        projectionPreference={projectionPreference}
         units={units}
         aircraft={aircraft}
         vessels={vessels}
@@ -1677,6 +1688,8 @@ function App() {
           onUseLocation={handleUseLocation}
           themePreference={themePreference}
           onThemePreferenceChange={setThemePreference}
+          projectionPreference={projectionPreference}
+          onProjectionPreferenceChange={setProjectionPreference}
           onUnitsChange={setUnits}
           shareDisabled={!mapCamera}
           onShare={handleShare}

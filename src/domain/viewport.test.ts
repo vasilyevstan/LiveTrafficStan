@@ -25,6 +25,26 @@ const assessmentFor = (
   )
 
 describe('assessTrafficViewport', () => {
+  it('rejects a finite local-looking footprint when its projection crosses a limb or pole', () => {
+    const sample = {
+      center: { latitude: 0, longitude: 0 },
+      perimeter: [
+        { latitude: 0.1, longitude: -0.1 },
+        { latitude: 0.1, longitude: 0.1 },
+        { latitude: -0.1, longitude: 0.1 },
+        { latitude: -0.1, longitude: -0.1 },
+      ],
+      pitchDegrees: 0,
+    }
+    expect(assessTrafficViewport(sample, limits).kind).toBe('eligible')
+    const unsafe = assessTrafficViewport(
+      { ...sample, surfaceIsContinuous: false },
+      limits,
+    )
+    expect(unsafe).toMatchObject({ kind: 'ineligible', reason: 'invalid' })
+    expect(unsafe.viewport).toBeUndefined()
+  })
+
   it('rounds the center before calculating a conservative radius', () => {
     const assessment = assessmentFor(
       [

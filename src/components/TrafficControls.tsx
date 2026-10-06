@@ -11,6 +11,7 @@ import type { ThemePreference } from '../app/theme'
 import type { PlaceSearchState } from '../app/PlaceSearchController'
 import type { AppCenter } from '../config/appConfig'
 import type { Airport } from '../domain/airports'
+import type { MapProjectionPreference } from '../domain/preferences'
 import type { DisplayAircraft, DisplayVessel } from '../domain/traffic'
 import type { TrailPreferences } from '../domain/trailPreferences'
 import type { UnitSystem } from '../domain/units'
@@ -137,6 +138,8 @@ interface TrafficControlsProps {
   onUseLocation: () => void
   themePreference: ThemePreference
   onThemePreferenceChange: (preference: ThemePreference) => void
+  projectionPreference: MapProjectionPreference
+  onProjectionPreferenceChange: (preference: MapProjectionPreference) => void
   onUnitsChange: (units: UnitSystem) => void
   shareDisabled: boolean
   onShare: () => void
@@ -333,6 +336,8 @@ export function TrafficControls({
   onUseLocation,
   themePreference,
   onThemePreferenceChange,
+  projectionPreference,
+  onProjectionPreferenceChange,
   onUnitsChange,
   shareDisabled,
   onShare,
@@ -1054,6 +1059,28 @@ export function TrafficControls({
                   TRAILS
                 </button>
               </div>
+              <div
+                className="control-options control-options--two control-options--projection"
+                role="group"
+                aria-label="Map projection"
+              >
+                {(['auto', 'flat'] as const).map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    className={
+                      projectionPreference === option ? 'is-active' : undefined
+                    }
+                    aria-pressed={projectionPreference === option}
+                    onClick={() => onProjectionPreferenceChange(option)}
+                  >
+                    {option === 'auto' ? 'AUTO GLOBE' : 'FLAT'}
+                  </button>
+                ))}
+              </div>
+              <p className="control-note">
+                Auto globe changes smoothly with map zoom.
+              </p>
             </fieldset>
 
             <fieldset className="control-group">

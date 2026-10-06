@@ -339,6 +339,69 @@ Create a separate Issue for an unrelated defect found during implementation,
 review, or release acceptance. Fold it into the active work only when it is
 tightly coupled or blocks a documented acceptance criterion.
 
+## Smooth globe acceptance (#163)
+
+Deterministic regressions cover native/flat selection and idempotence,
+nonmutating style projection, all 32 full-canvas samples, the separate outward
+guard, finite limb snaps below the numeric tolerance, included poles, invalid
+dimensions, flat whole-world compatibility, legacy/invalid preferences,
+override merging, negative shared zoom and accessible pressed states.
+Unsafe surface flags fail closed in both domain assessors before a local
+traffic query or whole-world crossing result can be constructed.
+
+The production-input candidate `index-D2f4i2LA.js` /
+`index-B1F3hO29.css`, shell `fd125b48a0f5ce24e66f`, passed the required local
+gates: 1,219 tests in 147 files plus lint, typecheck, the four required data
+checks and build. Normal Chrome 155.0.8059.39 supplied the following separate
+native evidence on 2026-10-06:
+
+- Twelve integrated geometry states covered world/poles, antimeridian,
+  bearing/pitch and transition steps. The pitched zoom-10 footprint was
+  correctly over budget at 106.121 km while its orbital geometry remained
+  locally usable; zoom 11 restored traffic eligibility.
+- The moving-only transition window contained 108 frames, including 42
+  intermediate projection states: median 16.6 ms, p95 18.5 ms and maximum
+  19 ms. These are measurements of this run, not a hardware-wide guarantee.
+- Theme/fallback/rapid replacement preserved the exact negative polar camera
+  and latest preference. Shared zoom -5.5 at latitude 85 survived startup.
+  A held initial style was canceled without being released first. Trusted
+  keyboard input began while it was held; stopping that native animation at
+  its observed intermediate camera made the subsequent no-steal comparison
+  exact. Initial HTTP failure and later vector-style recovery also preserved
+  the shared camera.
+- Actual front-side orbital selection, retained selection across theme,
+  and back-side exact/8 px touch queries passed. Touch on a hidden selected
+  object's projected location selected either nothing or a different visible
+  front-side object, never the hidden one. The earlier fixed native fixtures
+  also rendered front track pixels and no back track pixels. Broad query
+  results alone were deliberately not used as visibility proof.
+- The 23:32:51-23:33:06 UTC lifecycle run kept one physical orbital worker
+  through projection, theme and coordinate/Home navigation. Hidden and off
+  states removed it; resume/re-enable created a new fenced worker. All used
+  one accepted catalog request and zero browser CelesTrak/geocoder requests.
+  Chrome exposed blank worker target URLs, so identity was measured against
+  the pre-enable target-ID baseline, not a URL-filtered zero count.
+- Native keyboard/touch projection controls were reachable at 390x568 and
+  315x517 with 40 px button heights and no horizontal overflow. The separate
+  expanded attribution disclosure was closed before operating the Settings
+  controls beneath it. Reset preserved private-history settings/databases;
+  reduced motion suppressed native camera animation.
+
+The orbital integration used the real dedicated worker with a bounded current
+public cached production catalog routed into the local origin through CDP;
+traffic was blocked for that focused run. It establishes integration, not new
+provider coverage or live production acceptance. A sample had 443 modeled
+positions from 464 catalog records, with globe map/crossing counts unavailable.
+The zero-startup assertion used the default/off orbital state; an explicitly
+restored or shared opt-in keeps the existing behavior rather than being
+silently disabled by the new projection preference.
+Separate native location and eight Light/Dark layout plus magnification runs
+passed at 23:34 UTC with the normal browser APIs. The underlying controls
+receipt below remains historical evidence rather than a second claimed fix.
+Exploratory harness failures are retained and are not application exceptions.
+The exact deployed-source and Wiki receipt belongs to
+[#163](https://github.com/vasilyevstan/LiveTrafficStan/issues/163).
+
 ## Native browser zoom and controls (#359)
 
 Geometry regressions cover fractional visible width/height, nonzero offsets,
