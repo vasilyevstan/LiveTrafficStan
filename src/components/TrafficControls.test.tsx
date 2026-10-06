@@ -157,7 +157,7 @@ const renderControls = (
   )
 
 describe('TrafficControls', () => {
-  it('keeps a floating status header, navigation in Settings and layers in one dock', () => {
+  it('keeps Center in the primary dock and search in Settings without growing the header', () => {
     const html = renderControls()
     const headerEnd = html.indexOf('</header>')
     const masthead = html.slice(0, headerEnd)
@@ -187,7 +187,8 @@ describe('TrafficControls', () => {
     expect(masthead).not.toContain('>AIRCRAFT<')
     expect(html).toContain('class="workspace-dock"')
     expect(navigationPrimary).not.toContain('id="location-search-input"')
-    expect(navigationPrimary).not.toContain('>CENTER<')
+    expect(navigationPrimary).toContain('id="center-map-button"')
+    expect(navigationPrimary).toContain('>CENTER<')
     expect(navigationPrimary).toContain('>AIRCRAFT<')
     expect(navigationPrimary).toContain('>SHIPS<')
     expect(navigationPrimary).toContain('>ORBITS<')
@@ -223,7 +224,7 @@ describe('TrafficControls', () => {
     expect(settingsMore).toContain('class="workspace-panel-title">View &amp; settings')
     expect(settingsMore).toContain('aria-label="Map navigation"')
     expect(settingsMore).toContain('id="location-search-input"')
-    expect(settingsMore).toContain('>CENTER<')
+    expect(settingsMore).not.toContain('>CENTER<')
     expect(settingsMore).toContain('aria-label="Location search details"')
     expect(settingsMore.indexOf('id="location-search-input"'))
       .toBeLessThan(settingsMore.indexOf('<legend>Appearance</legend>'))
@@ -244,6 +245,19 @@ describe('TrafficControls', () => {
     expect(html.match(/class="operation-icon"/g)).toHaveLength(6)
     expect(html.match(/aria-label="Theme and trails"/g)).toHaveLength(1)
     expect(html.match(/>LIGHT</g)).toHaveLength(1)
+  })
+
+  it('keeps the primary Center action outside disclosures and preserves its disabled state', () => {
+    const html = renderControls({ centerDisabled: true })
+    const button = html.match(/<button id="center-map-button"[\s\S]*?<\/button>/)?.[0]
+
+    expect(button).toContain('disabled=""')
+    expect(button).toContain('title="Center on session Home"')
+    expect(button).toContain('>CENTER<')
+    expect(html.indexOf('id="center-map-button"')).toBeLessThan(
+      html.indexOf('<details'),
+    )
+    expect(html.match(/id="center-map-button"/g)).toHaveLength(1)
   })
 
   it('composes status into the floating header without duplicating settings state', () => {

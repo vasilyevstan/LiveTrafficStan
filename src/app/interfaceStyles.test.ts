@@ -87,4 +87,13 @@ describe('interface presentation contracts', () => {
     expect(styles).toMatch(/\.control-panel__urgent\s*\{[^}]*right: calc\(100% \+ 12px\);[^}]*left: auto;/)
     expect(styles).toMatch(/\.details-panel\s*\{[^}]*right: auto;[^}]*left: 16px;/)
   })
+
+  it('fits Center into the existing six-slot mobile dock', () => {
+    expect(styles).toMatch(/\.workspace-center\s*\{[^}]*min-width: 0;[^}]*min-height: 44px;/)
+    const mobile = styles.split('@media (max-width: 760px) {')[1]
+    expect(mobile).toMatch(/\.workspace-center\s*\{[^}]*flex: 1 1 0;/)
+    expect(mobile).toMatch(/\.control-panel--operations\s*\{[^}]*flex: 4 1 0;/)
+    expect(mobile).toMatch(/\.control-panel--settings\s*\{[^}]*flex: 1 1 0;/)
+    expect(mobile).toMatch(/\.workspace-center,[\s\S]*?min-height: 56px;/)
+  })
 })

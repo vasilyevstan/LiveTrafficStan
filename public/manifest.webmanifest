@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "LiveTrafficStan",
-  "short_name": "TrafficStan",
-  "description": "Live aircraft and significant marine traffic with private local playback.",
+  "name": "TrackStan",
+  "short_name": "TrackStan",
+  "description": "TrackStan maps live aircraft and ships with best-effort coverage, plus modeled orbital objects and private local playback.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

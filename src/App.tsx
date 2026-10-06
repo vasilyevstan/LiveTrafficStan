@@ -1519,7 +1519,7 @@ function App() {
                   <span />
                 </div>
                 <div>
-                  <h1>LiveTrafficStan</h1>
+                  <h1>TrackStan</h1>
                   <p>{mapSubtitle}</p>
                 </div>
               </div>

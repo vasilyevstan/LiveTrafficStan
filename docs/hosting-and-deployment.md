@@ -4,7 +4,7 @@
 
 Decision date: **2026-09-19**
 
-LiveTrafficStan selects **Cloudflare Workers with Static Assets** as its
+TrackStan selects **Cloudflare Workers with Static Assets** as its
 production platform:
 
 - Vite's `dist/` output is served as immutable static assets;
@@ -50,9 +50,43 @@ credentials and the private-relay secret. Observability remains disabled and
 no paid fallback is enabled. Orbital activation uses the included free KV and
 SQLite Durable Object allocations; R2 is not used.
 
+### TrackStan public identity (#354)
+
+TrackStan is the user-facing application name, including the compact
+desktop/mobile wordmark, browser/page metadata and manifest name/short name.
+The existing radar artwork, immutable `/icons/livetrafficstan-*-v1.png`
+assets, manifest `id`, `start_url` and `scope` (`/`) are unchanged.
+The repository/Worker names, `X-LiveTrafficStan-*` response headers, upstream
+provider identification, localStorage/IndexedDB and shell-cache namespaces
+remain compatibility identifiers. A global text replacement would be a
+breaking migration, not part of this rename.
+
+Normal shell versioning detects the changed entry points and offers
+**Refresh app** to existing tabs. It does not clear preferences or private
+history, force a redirect, change the origin or create a new installed-app
+identity. Launcher labels on an already installed application depend on the
+browser/operating-system update schedule; the page and new install metadata
+use TrackStan immediately after the normal application update.
+
+Companion #355 exposes the existing Center callback in the primary dock,
+with no new mobile toolbar height. Browser location permission, one-shot
+rounding, session Home, explicit retry and navigation-intent fencing remain
+the existing mechanisms; no new provider/camera scheduler or tracking loop
+is introduced.
+
+The [#354 delivery receipt](https://github.com/vasilyevstan/LiveTrafficStan/issues/354)
+records the exact deployed source/Worker, desktop/narrow Light/Dark browser
+evidence, existing-shell update and preserved-state result. This change needs
+no new provider, credential, DNS record, binding or data migration. Its
+compatible application fallback is the accepted domain activation below,
+`2fffb5a1556f883a014ce88ec8f721e76424671e` /
+`d4800a30-8303-4180-b591-c744aef9668b`, retaining the Custom Domain and all
+enabled inputs. Historical receipts below are not relabeled as current
+application deployments.
+
 ### TrackStan domain activation (#334)
 
-Current application source is
+The domain-activation application source was
 `2fffb5a1556f883a014ce88ec8f721e76424671e`, promoted through #348.
 Exact-main Validation `37392198111` passed. Protected deployment
 [37417266192](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/37417266192)
@@ -111,8 +145,8 @@ does not remove the Custom Domain; preserve it and all enabled inputs.
 Registration stays at GoDaddy, workers.dev stays usable, and origin-local
 preferences, permissions, installed apps and private history do not migrate.
 No `www`, forced redirect, paid product, new Worker or visible branding change
-is included. TrackStan header/mobile wordmark, favicon/PWA identity, metadata
-and documentation remain a separately planned follow-up.
+was included in that domain activation. The separate TrackStan public-name
+change is recorded under #354 above.
 
 ### Aircraft registration-country flags predecessor (#341/#342)
 
@@ -148,7 +182,7 @@ Compatible rollback is the previously verified imagery source
 was added for unchanged provider/state contracts. Earlier rollback outcomes
 remain historical below. Wiki `784938953937982381a4f39b5310f372927a8b1d`
 publishes that release's receipt; later docs-only commits did not redeploy it.
-The subsequent domain activation is recorded above; branding remains planned.
+The subsequent domain activation and public-name change are recorded above.
 
 ### Identity photos and orbital context (#332/#333)
 
@@ -1423,8 +1457,9 @@ request and receives no deployment secret.
 
 ## Preparing trackstan.xyz
 
-Issue #334 requests the new domain and a separately planned TrackStan
-wordmark/name update. The Worker has no fixed origin IP to enter at GoDaddy.
+Issue #334 requested the new domain and a separately planned TrackStan
+wordmark/name update, subsequently implemented under #354. The Worker has no
+fixed origin IP to enter at GoDaddy.
 The registrar can remain GoDaddy, but Workers Custom Domains need an active
 Cloudflare full zone. Do not guess nameservers or point at arbitrary
 Cloudflare/parking IPs.
@@ -1524,8 +1559,8 @@ when restoring the compatible prior application.
 
 Private history, permissions, preferences and installed apps are origin-local
 and do not automatically migrate. Keep workers.dev available without a forced
-redirect or history deletion. The separately planned TrackStan logo/name
-update does not rename the repository or Worker as part of domain activation.
+redirect or history deletion. The separate TrackStan logo/name update
+does not rename the repository or Worker.
 
 References: [Custom Domains](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/)
 and [Create Zone API](https://developers.cloudflare.com/api/resources/zones/methods/create/).

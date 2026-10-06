@@ -38,10 +38,10 @@ const developmentDiagnostics = (): MarineDiagnosticsOptions | undefined => {
     onSnapshot: (snapshot) => {
       const serialized = JSON.stringify(snapshot)
       console.info(
-        'LiveTrafficStan marine diagnostics',
+        'TrackStan marine diagnostics',
         serialized,
       )
-      document.title = `LiveTrafficStan diagnostics ${serialized}`
+      document.title = `TrackStan diagnostics ${serialized}`
     },
   }
 }
