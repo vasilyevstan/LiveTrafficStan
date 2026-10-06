@@ -23,6 +23,7 @@ import { useOrbitalObjects } from './app/useOrbitalObjects'
 import { OrbitalEnrichmentImageLoader } from './app/OrbitalEnrichmentImageLoader'
 import { useOrbitalEnrichmentImage } from './app/useOrbitalEnrichmentImage'
 import { visualViewportCssValues } from './app/visualViewport'
+import { preventCompactControlWheelZoom } from './app/controlZoom'
 import { AirportDetails } from './components/AirportDetails'
 import { HistoryModeNotice } from './components/HistoryModeNotice'
 import { LiveStatus } from './components/LiveStatus'
@@ -1399,12 +1400,29 @@ function App() {
 
     const updateViewportVariables = () => {
       const values = visualViewportCssValues(
-        window.visualViewport?.height ?? window.innerHeight,
+        window.visualViewport ?? {
+          width: window.innerWidth,
+          height: window.innerHeight,
+          offsetLeft: 0,
+          offsetTop: 0,
+        },
       )
       if (!values) return
       appShell.style.setProperty(
+        '--app-visual-viewport-width',
+        values.width,
+      )
+      appShell.style.setProperty(
         '--app-visual-viewport-height',
         values.height,
+      )
+      appShell.style.setProperty(
+        '--app-visual-viewport-left',
+        values.left,
+      )
+      appShell.style.setProperty(
+        '--app-visual-viewport-top',
+        values.top,
       )
       appShell.style.setProperty(
         '--app-visual-viewport-58',
@@ -1413,11 +1431,15 @@ function App() {
     }
     const visualViewport = window.visualViewport
     updateViewportVariables()
+    appShell.addEventListener('wheel', preventCompactControlWheelZoom, {
+      passive: false,
+    })
     window.addEventListener('resize', updateViewportVariables)
     visualViewport?.addEventListener('resize', updateViewportVariables)
     visualViewport?.addEventListener('scroll', updateViewportVariables)
 
     return () => {
+      appShell.removeEventListener('wheel', preventCompactControlWheelZoom)
       window.removeEventListener('resize', updateViewportVariables)
       visualViewport?.removeEventListener(
         'resize',

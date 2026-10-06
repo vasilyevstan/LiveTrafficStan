@@ -58,6 +58,28 @@ requests, viewport eligibility, vessel filter membership, selection, or
 history changes at the same time, treat that as a regression rather than an
 expected unit conversion.
 
+## Header or controls disappear after browser zoom
+
+Browser page magnification and map zoom are different. A page pinch can reduce
+`visualViewport.width` and `.height` and change `.offsetLeft`/`.offsetTop`
+without changing the layout viewport or map canvas. Reload can retain that
+magnification. Reset browser zoom with **Cmd+0** on macOS or **Ctrl+0** on
+Windows/Linux; this does not delete preferences, permissions or private history.
+Use **Refresh app** if the previous application shell is still active.
+
+The repaired interface follows all four visual-viewport measurements. Its
+header, dock, panels and attribution respond to the visible size while text
+stays magnified. Inspect the `.app-shell` width/height/left/top variables and
+both `.interface-layer` and `.maplibregl-control-container`; the map canvas
+must remain full-sized. Height-only styling or a window-resize-only check
+does not prove this behavior.
+
+Compact closed header/dock surfaces deliberately ignore page-pinch/Ctrl-wheel
+zoom to reduce accidental magnification. Intentional Ctrl-wheel there is
+indistinguishable and is ignored too. Use browser keyboard/menu zoom or an
+open information/settings panel for page magnification. Ordinary scrolling
+and map zoom remain available; this is not document-wide gesture blocking.
+
 ## Operations More stops before all orbital results
 
 Operations More is the only vertical scroll owner. On mobile, touch-drag,
@@ -70,7 +92,7 @@ If results appear clipped behind a second scroll area, inspect computed styles:
   `window.visualViewport.height` when that API is available, and
   `--app-visual-viewport-58` must be 58% of the same value;
 - `.control-panel__more-body` must fill the space below the fixed disclosure
-  summary, use `overflow-y: auto`, and keep `touch-action: pan-y`;
+  summary, use `overflow-y: auto`, and keep `touch-action: pan-y pinch-zoom`;
 - `.orbital-results` must use `max-height: none` and `overflow: visible`;
 - `.control-panel__tasks` must scroll with the More body rather than remain
   sticky over a short result viewport.

@@ -339,6 +339,49 @@ Create a separate Issue for an unrelated defect found during implementation,
 review, or release acceptance. Fold it into the active work only when it is
 tightly coupled or blocks a documented acceptance criterion.
 
+## Native browser zoom and controls (#359)
+
+Geometry regressions cover fractional visible width/height, nonzero offsets,
+layout fallback and invalid measurements. Style contracts retain the full
+canvas, visible-rectangle anchoring, size-container breakpoints, six-slot
+mobile dock and sole panel scroll owner. The compact wheel policy leaves
+ordinary, already-handled and noncompact events alone.
+
+Normal Chrome 155.0.8059.39 rendered the same candidate in Light and Dark at
+1280x900, 390x844, 390x568 and 315x517. A separate native-gesture run on
+2026-10-06 at 21:10:12-21:10:33 UTC recorded nineteen viewport states and
+sixteen trusted, correctly targeted pointer actions:
+
+- closed-header mouse/trackpad and direct-touch pinch stayed at page scale 1;
+- an open panel allowed scale 2 with a roughly 640x450 visible viewport
+  over the unchanged 1280x900 canvas;
+- native horizontal page scrolling moved the visible left offset from
+  75 to 150 px, and direct-touch panel pinch also exercised left/top offsets
+  of 500/139 px;
+- header, dock, Center, corner attribution and open Settings stayed within
+  that rectangle in both themes, without counter-scaling;
+- magnified reload retained preferences; keyboard and native touch activated
+  Center, with touch restoring the pre-pan Home camera;
+- normal map pinch still changed the map zoom without page magnification,
+  and native wheel scrolling worked inside the magnified Settings body.
+
+The build used the current four production browser inputs, bundle
+`index-2mBQ3GGV.js`, CSS `index-BpjqtXwV.css` and shell
+`6920937cff508c7ba3d6`. Required local release checks passed, including
+1,206 tests in 146 files. This local evidence does not claim production
+availability or every browser/zoom combination.
+
+The earlier exploratory reports are retained as failed harness attempts,
+not application exceptions or accepted runs. In Chrome CDP, pointer input
+uses visual-viewport-relative CSS coordinates: subtract the visible offsets
+from layout rectangles but do not multiply by page scale. Wait for applied
+viewport variables and layout before input, check the trusted event's actual
+target, and return plain values rather than DOM nodes or a MapLibre instance
+through `Runtime.evaluate`. Window resizing alone and static markup cannot
+replace this native-magnification acceptance. The
+[Issue delivery receipt](https://github.com/vasilyevstan/LiveTrafficStan/issues/359)
+records deployed-source and normal-update evidence separately.
+
 ## TrackStan naming and primary Center (#354/#355)
 
 Focused regressions lock the TrackStan heading/title/install metadata,
