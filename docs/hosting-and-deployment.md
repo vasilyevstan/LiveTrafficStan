@@ -43,16 +43,80 @@ provisioned namespace and its obsolete attempt-counter data. It is not a
 runtime export or binding and can be removed only after Cloudflare reports the
 tombstone as stale.
 
-Public production is live at
-<https://livetrafficstan.syntal.workers.dev> on Cloudflare Workers Free with
-Static Assets. The protected `production` environment contains the deployment
+Public production is live at <https://trackstan.xyz>, with
+<https://livetrafficstan.syntal.workers.dev> retained, on Cloudflare Workers
+Free with Static Assets. The protected `production` environment contains the deployment
 credentials and the private-relay secret. Observability remains disabled and
 no paid fallback is enabled. Orbital activation uses the included free KV and
 SQLite Durable Object allocations; R2 is not used.
 
-### Aircraft registration-country flags (#341/#342)
+### TrackStan domain activation (#334)
 
 Current application source is
+`2fffb5a1556f883a014ce88ec8f721e76424671e`, promoted through #348.
+Exact-main Validation `37392198111` passed. Protected deployment
+[37417266192](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/37417266192)
+installed Worker `d4800a30-8303-4180-b591-c744aef9668b` and published the
+apex Custom Domain at `2026-10-06T05:11:53Z`. Its workers.dev smoke passed
+at `05:11:57.988Z`; the separate complete smoke against `https://trackstan.xyz`
+passed at `05:12Z`. Later documentation-only commits are not another
+application deployment.
+
+The owner removed both imported parking A records. At `05:10:08Z`, both
+`ben.ns.cloudflare.com` and `nora.ns.cloudflare.com` returned authoritative
+NOERROR with no apex A/AAAA/CNAME. After deployment, both authoritative
+servers, Cloudflare DNS and Google DNS resolved the managed apex. HTTPS
+returned `200` with successful certificate verification. Normal Chrome
+154.0.8037.98 independently accepted the `trackstan.xyz` certificate
+(issuer WE1) and negotiated QUIC.
+
+New-origin browser acceptance at `05:12:51Z-05:14:45Z` used native fetch,
+WebSocket and clock, without response fixtures or security/header overrides:
+
+- one MapLibre canvas with real vector tiles; 30 initial Tallinn vessels,
+  then 56 vessels and three aircraft in the photo view;
+- native `/api/marine/stream` and Digitraffic `/mqtt` upgrades returned `101`,
+  both with `Origin: https://trackstan.xyz`;
+- current BALTIC WHALE / reported IMO `9354454` fetched same-origin photo
+  metadata with `200` and decoded its attributed 960x640 Commons photograph;
+- current PH-BHH / ICAO24 `485342` / KLM192 loaded its actual 200x133
+  Planespotters image; selected details retained Netherlands country context,
+  exact-identity aircraft metadata and plausible route context;
+- curated and Starlink catalog routes both returned `200` with the exact
+  application release header. Terra purpose/no-image, Hubble purpose/image,
+  the unreviewed-object fallback and separate Starlink service context rendered;
+- one canvas remained and no runtime exception was observed. The initial
+  aircraft `503` recovered through the unchanged lifecycle; later aircraft
+  `200` and real aircraft were observed. This is not an uninterrupted
+  provider-availability or complete-coverage claim.
+
+No aircraft photo binary or selected-aircraft photo screenshot was saved.
+Application assets, providers, history schema, KV, Cron, Durable Object
+identities, VPC binding and atomic secrets-file delivery are unchanged.
+Private aircraft, photos, routes, curated orbital, Starlink and marine
+supplementation remain enabled.
+
+The earlier `37390093186` deployment really updated workers.dev/Cron to
+`9de023048387c411ae9dc54f4ba9b4f8d2bc9066`, then failed binding with 100117;
+its separate existing-origin smoke passed, but its Worker UUID was not
+printed. Protected cleanup `37392303605` then failed DNS GET 403 before any
+DELETE. The successful manual removal resolved #350; it did not repair the
+token's DNS permissions, and that denied cleanup was not rerun.
+
+The accepted history-compatible fallback remains flag source
+`99baed2dece100f9066f31fecb215df26e781911` /
+`aa62b10d-03d6-40d4-bdd2-2cdd2dacaeff`. No duplicate application rollback
+drill was needed for this origin-only activation. A Worker version rollback
+does not remove the Custom Domain; preserve it and all enabled inputs.
+Registration stays at GoDaddy, workers.dev stays usable, and origin-local
+preferences, permissions, installed apps and private history do not migrate.
+No `www`, forced redirect, paid product, new Worker or visible branding change
+is included. TrackStan header/mobile wordmark, favicon/PWA identity, metadata
+and documentation remain a separately planned follow-up.
+
+### Aircraft registration-country flags predecessor (#341/#342)
+
+The accepted aircraft-flag application source was
 `99baed2dece100f9066f31fecb215df26e781911`. Implementation #341 and promotion
 #342 passed exact-source checks; exact-main Validation `37385967766` passed.
 Protected deployment `37386217568` installed Worker
@@ -83,8 +147,8 @@ Compatible rollback is the previously verified imagery source
 `90338910-c837-46a5-9f55-c4eb513dd885`. No optional duplicate rollback drill
 was added for unchanged provider/state contracts. Earlier rollback outcomes
 remain historical below. Wiki `784938953937982381a4f39b5310f372927a8b1d`
-publishes the current receipt; later docs-only commits do not redeploy it.
-Domain activation and branding remain separate work.
+publishes that release's receipt; later docs-only commits did not redeploy it.
+The subsequent domain activation is recorded above; branding remains planned.
 
 ### Identity photos and orbital context (#332/#333)
 
@@ -133,8 +197,9 @@ separate from that deployed application SHA.
 Wiki revision `a903ef941bbd43492d682b5a49e6766b51be3980` published fifteen
 curated pages covering the actual photo contracts, nine-purpose manifest,
 ship artwork, complete source credits, production/rollback evidence and
-troubleshooting. It also records requested `trackstan.xyz` setup and the
-separate TrackStan branding plan (#334/#335) as pending, not deployed.
+troubleshooting. At that publication, `trackstan.xyz` setup and the separate
+TrackStan branding plan (#334/#335) were pending, not deployed; the later
+domain activation above supersedes only that setup status.
 [Production screenshots and complete receipt](https://github.com/vasilyevstan/LiveTrafficStan/pull/333#issuecomment-6001037124)
 remain attached to the owning release.
 
@@ -1364,6 +1429,11 @@ The registrar can remain GoDaddy, but Workers Custom Domains need an active
 Cloudflare full zone. Do not guess nameservers or point at arbitrary
 Cloudflare/parking IPs.
 
+The apex is now active and accepted; see the
+[activation receipt](#trackstan-domain-activation-334). The procedure and
+failed attempts below remain operational history, not outstanding setup.
+Do not rerun parking cleanup against the existing denied DNS credential.
+
 The owned Free full zone is active. Both authoritative `.xyz` servers
 confirmed `ben.ns.cloudflare.com` / `nora.ns.cloudflare.com` at
 `2026-10-05T23:16:45Z`. Protected read-first operation `37387870998` at main
@@ -1417,6 +1487,11 @@ other apex records. No subdomain, MX, TXT, CAA, credential or account setting
 is a deletion target. DNS Read/Edit access is necessary; an actual denial is
 reported without extracting or broadening credentials. Then rerun the checked
 deployment and new-origin acceptance.
+
+The actual cleanup run `37392303605` failed DNS GET 403 before any deletion.
+The owner instead removed the two exact parking records in Cloudflare DNS.
+After authoritative confirmation, deployment `37417266192` succeeded without
+rerunning the denied cleanup or changing token permissions. #350 is resolved.
 
 The persistent binding in `wrangler.jsonc` targets only the apex and keeps
 the existing Worker identity and workers.dev origin:
