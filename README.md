@@ -1239,9 +1239,12 @@ monitoring, privacy, and rollback procedure.
 - OurAirports points are optional static reference context. The source
   disclaims accuracy and fitness, and the app does not infer current service,
   airport operations, aircraft relationships, routes, arrivals, or departures.
-- Current arrival and departure boards remain blocked on an authorized
-  airport/time-window provider contract in
-  [Issue #46](https://github.com/vasilyevstan/LiveTrafficStan/issues/46).
+- Current arrival and departure boards are not implemented.
+  [Issue #46](https://github.com/vasilyevstan/LiveTrafficStan/issues/46)
+  identifies AeroDataBox RapidAPI Basic as an ongoing-free, noncommercial
+  candidate: at most 200 uncached combined-board calls/month shared app-wide.
+  A protected project key, actual no-overage limits and Tallinn coverage proof
+  are still needed; there is no paid fallback or inferred board.
 - Auto follows the browser's color-scheme preference, not solar time or map
   location.
 - METAR coverage is limited by both AWC reporting and the pinned large/medium
