@@ -12,6 +12,7 @@ interface LiveStatusProps {
   online: boolean
   historicalAt?: number
   orbitalSummary?: string
+  trafficContext?: boolean
 }
 
 const providerLabel = (
@@ -38,6 +39,7 @@ export function LiveStatus({
   online,
   historicalAt,
   orbitalSummary,
+  trafficContext = false,
 }: LiveStatusProps) {
   const statuses = [aircraftStatus, marineStatus]
   const allPaused = statuses.every((status) => status.paused)
@@ -90,12 +92,21 @@ export function LiveStatus({
       >
         <summary>
           <span className="live-status__summary">
-            <span>{aircraftCount} aircraft</span>
-            <span title={marineCapabilities.coverage.label}>
-              {vesselCount} ships shown ·{' '}
-              {marineCapabilities.coverage.kind === 'global-best-effort'
-                ? 'global sources' : 'regional source'}
-            </span>
+            {trafficContext && historicalAt === undefined ? (
+              <>
+                <span>Last local sample</span>
+                <span>Live updates paused</span>
+              </>
+            ) : (
+              <>
+                <span>{aircraftCount} aircraft</span>
+                <span title={marineCapabilities.coverage.label}>
+                  {vesselCount} ships shown ·{' '}
+                  {marineCapabilities.coverage.kind === 'global-best-effort'
+                    ? 'global sources' : 'regional source'}
+                </span>
+              </>
+            )}
           </span>
           <span className="live-status__updated">
             <span>

@@ -169,6 +169,15 @@ export const MAP_PROJECTION_CONFIG = {
   surfaceRoundTripTolerancePx: 0.01,
 } as const
 
+export const ZOOM_TRAFFIC_CONTEXT_CONFIG = {
+  minimumZoom: 3,
+  fullOpacityZoom: 7,
+  maximumOpacity: 0.85,
+  maximumAgeMs: 2 * 60_000,
+  maximumPointsPerKind: 12,
+  minimumSeparationPx: 64,
+} as const
+
 const DEFAULTS = {
   latitude: 59.437,
   longitude: 24.7536,

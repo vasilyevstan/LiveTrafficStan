@@ -33,7 +33,10 @@ import { TrafficDetails } from './components/TrafficDetails'
 import { WeatherObservationDetails } from './components/WeatherObservationDetails'
 import { OrbitalDetails } from './components/OrbitalDetails'
 import { formatOrbitalSummary } from './components/orbitalSummary'
-import { APP_CONFIG } from './config/appConfig'
+import {
+  APP_CONFIG,
+  ZOOM_TRAFFIC_CONTEXT_CONFIG,
+} from './config/appConfig'
 import type { AppCenter } from './config/appConfig'
 import { orderAircraftSearchResults } from './domain/aircraftSearch'
 import { airportsInViewport } from './domain/airports'
@@ -74,6 +77,11 @@ import {
   type TrafficMapError,
 } from './map/mapInitialization'
 import { TrafficMap } from './map/TrafficMap'
+import {
+  trafficZoomContextEntities,
+  trafficZoomContextViewport,
+  type LastLocalTrafficView,
+} from './map/trafficZoomContext'
 import type { PlaceSearchResult } from './providers/geocoding/photonProvider'
 import { StaticAircraftMetadataProvider } from './providers/aircraftMetadata/staticAircraftMetadataProvider'
 import { PlanespottersPhotoProvider } from './providers/aircraftPhoto/planespottersPhotoProvider'
@@ -177,6 +185,8 @@ function App() {
     rawZoom?: number
     viewRequestId: number
   } | null>(null)
+  const [lastLocalTrafficView, setLastLocalTrafficView] =
+    useState<LastLocalTrafficView | null>(null)
   const [viewRequest, setViewRequest] = useState<ViewRequest>(() => {
     const camera = sharedState?.camera
     return {
@@ -394,6 +404,7 @@ function App() {
       setSelectedWeatherId(null)
       setHistoryResetRevision((current) => current + 1)
       setViewportReport(null)
+      setLastLocalTrafficView(null)
       setViewReady(true)
       setActiveLocationLabel(label)
       setViewRequest((current) => ({
@@ -644,6 +655,47 @@ function App() {
     () => orderVesselSearchResults(vessels, vesselFilters.query),
     [vesselFilters.query, vessels],
   )
+  const zoomContextViewport = trafficZoomContextViewport(
+    lastLocalTrafficView,
+    currentAssessment,
+    currentOrbitalRawZoom,
+    viewRequest.id,
+    viewReady && online && !historyActive,
+  )
+  const contextAircraft = useMemo(
+    () =>
+      trafficZoomContextEntities(
+        aircraftResult.entities,
+        zoomContextViewport,
+        now,
+        APP_CONFIG.aircraft,
+      ),
+    [aircraftResult.entities, now, zoomContextViewport],
+  )
+  const contextVessels = useMemo(
+    () =>
+      filterVessels(
+        trafficZoomContextEntities(
+          marineResult.entities,
+          zoomContextViewport,
+          now,
+          APP_CONFIG.marine,
+        ),
+        vesselFilters,
+        {
+          displayTime: now,
+          expireAfterMs: ZOOM_TRAFFIC_CONTEXT_CONFIG.maximumAgeMs,
+        },
+      ),
+    [marineResult.entities, now, vesselFilters, zoomContextViewport],
+  )
+  const trafficContext = zoomContextViewport !== null
+  const hasTrafficContext =
+    trafficContext &&
+    currentOrbitalRawZoom !== undefined &&
+    currentOrbitalRawZoom > ZOOM_TRAFFIC_CONTEXT_CONFIG.minimumZoom &&
+    ((aircraftVisible && contextAircraft.length > 0) ||
+      (vesselsVisible && contextVessels.length > 0))
   const ports = useMemo(
     () =>
       portsResult.state.phase === 'ready'
@@ -998,8 +1050,20 @@ function App() {
         rawZoom,
         viewRequestId: reportViewRequestId,
       })
+      if (
+        reportViewRequestId === viewRequest.id &&
+        assessment.kind === 'eligible' &&
+        rawZoom !== undefined &&
+        Number.isFinite(rawZoom)
+      ) {
+        setLastLocalTrafficView({
+          viewport: assessment.viewport,
+          zoom: rawZoom,
+          viewRequestId: reportViewRequestId,
+        })
+      }
     },
-    [],
+    [viewRequest.id],
   )
 
   const handleCenter = useCallback(() => {
@@ -1487,8 +1551,9 @@ function App() {
         theme={theme}
         projectionPreference={projectionPreference}
         units={units}
-        aircraft={aircraft}
-        vessels={vessels}
+        aircraft={trafficContext ? contextAircraft : aircraft}
+        vessels={trafficContext ? contextVessels : vessels}
+        trafficContext={trafficContext}
         ports={ports}
         airports={airports}
         weatherObservations={weatherObservations}
@@ -1516,8 +1581,8 @@ function App() {
         starlinkVisible={
           orbitalObjectsVisible && starlinkVisible && !historyActive
         }
-        clusteringEnabled={clusteringEnabled}
-        interpolateTraffic={!historyActive}
+        clusteringEnabled={clusteringEnabled && !trafficContext}
+        interpolateTraffic={!historyActive && !trafficContext}
         interpolationDurationMs={APP_CONFIG.interpolationDurationMs}
         aircraftPhotoEnabled={aircraftPhotoFeatureEnabled}
         aircraftPhoto={hoveredAircraftPhoto.state}
@@ -1565,6 +1630,7 @@ function App() {
                 now={now}
                 online={online}
                 orbitalSummary={orbitalSummary}
+                trafficContext={hasTrafficContext}
                 historicalAt={
                   history.playback.mode === 'live'
                     ? undefined
@@ -1719,8 +1785,16 @@ function App() {
 
         {!historyActive && currentAssessment?.kind === 'ineligible' && (
           <div className="viewport-notice" role="status">
-            <strong>Aircraft and ships paused</strong>
-            <span>{currentAssessment.message}</span>
+            <strong>
+              {hasTrafficContext
+                ? 'Last local traffic sample'
+                : 'Aircraft and ships paused'}
+            </strong>
+            <span>
+              {hasTrafficContext &&
+                'Last local sample; not wider live coverage. '}
+              {currentAssessment.message}
+            </span>
             {currentAssessment.viewport && (
               <button type="button" onClick={handleResumeLiveTraffic}>
                 RESUME LIVE
