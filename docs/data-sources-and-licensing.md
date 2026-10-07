@@ -993,14 +993,31 @@ other representation's validator returns `200`. No browser request, viewport,
 Home, geolocation, search, selection, cookie, credential, or referrer is added
 to the fixed server-side CelesTrak pair.
 
-## Orbital purpose and images: reviewed NASA/JAXA sources
+## Orbital context and images: official sources and Wikidata
 
 Issue #193 adds no live metadata or image provider. Version
-`2026-10-05-v1` contains nine exact-object descriptions: Hubble, ISS, Terra,
+`2026-10-07-v1` retains nine exact-object official descriptions: Hubble, ISS, Terra,
 Aqua, Midori II, ALOS-2, Hitomi, XRISM and ACS3. Purpose comes from official
 NASA and JAXA mission pages, summarized factually with retrieval dates and
 source digests. The two historical photographs still come from NASA Library
 IDs `s125e011615` and `s132e012212`.
+
+Issue #369 adds one **Community context** record for COSMOS 1953 / NORAD
+`19210`, separately typed from official mission purpose. The exact
+[Wikidata revision](https://www.wikidata.org/w/index.php?title=Q12753536&oldid=1609633724)
+matches both NORAD and COSPAR and supplies historical launch/class/vehicle
+facts. Wikidata [structured entity data is CC0](https://www.wikidata.org/wiki/Wikidata:Licensing);
+this does not license Wikipedia prose, N2YO paragraphs or linked image files.
+The app shows the source, revision, retrieval/review dates, CC0 license and
+community/not-current-operation limitation. No new photograph is bundled.
+
+N2YO's [documented API](https://www.n2yo.com/api/) does not expose the prose
+shown on its satellite pages. Its [terms](https://www.n2yo.com/about/?a=terms)
+assert content copyright; no bulk paragraph-reuse feed was established.
+The app therefore supplies an explicit outbound reference, not copied or
+embedded N2YO content. No API key, browser scrape, startup/selection request,
+or new tracking provider is added. Missing English descriptions stay missing;
+community class facts are not promoted into an authoritative individual mission.
 
 The lookup requires the current NORAD ID, CelesTrak name, international
 designator, and exact SATCAT type to match the reviewed record. Unreviewed
@@ -1025,7 +1042,7 @@ dimensions, byte counts, identity chain, rejected sources, request boundary,
 and stop conditions are in
 [Orbital Purpose and Image Source Evaluation](orbital-enrichment-source-evaluation.md).
 The media-specific notice is co-located at
-[`public/orbital-enrichment/2026-10-05-v1/LICENSES.md`](../public/orbital-enrichment/2026-10-05-v1/LICENSES.md);
+[`public/orbital-enrichment/2026-10-07-v1/LICENSES.md`](../public/orbital-enrichment/2026-10-07-v1/LICENSES.md);
 the photographs are not covered by the repository's Apache-2.0 code license.
 
 The manifest is compiled into the browser, so purpose adds no request. Image

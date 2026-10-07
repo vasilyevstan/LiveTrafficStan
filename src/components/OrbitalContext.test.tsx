@@ -115,6 +115,38 @@ describe('OrbitalContext', () => {
     expect(html).not.toContain('VISIBLE')
   })
 
+  it('labels nearby community context separately from mission purpose', () => {
+    const cosmos: ModeledOrbitalPosition = {
+      ...position,
+      id: 'orbital:19210',
+      noradCatalogId: '19210',
+      name: 'COSMOS 1953',
+      internationalDesignator: '1988-050A',
+    }
+    const html = renderContext({
+      phase: 'ready',
+      acceptedCount: 1,
+      positions: [cosmos],
+      prediction: {
+        mode: 'local',
+        totalResults: 1,
+        inViewCount: 1,
+        futureCrossingCount: 0,
+        trackSegments: [],
+        results: [{
+          id: cosmos.id,
+          noradCatalogId: cosmos.noradCatalogId,
+          name: cosmos.name,
+          objectType: cosmos.objectType,
+          currentlyInView: true,
+          firstCrossingAt: now,
+        }],
+      },
+    })
+    expect(html).toContain('Community context: Tselina-D spacecraft')
+    expect(html).not.toContain('Purpose: Tselina-D')
+  })
+
   it('states zoom-hidden and selected-exception conditions in text', () => {
     const html = renderContext(
       {

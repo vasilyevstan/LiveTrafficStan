@@ -16,6 +16,7 @@ import {
 } from '../domain/orbital'
 import {
   orbitalEnrichmentForPosition,
+  orbitalEnrichmentContextLabel,
   starlinkConstellationContext,
   type OrbitalEnrichmentView,
 } from '../domain/orbitalEnrichment'
@@ -70,6 +71,8 @@ const OrbitalEnrichmentDetails = ({
   onImageLoaded?: (path: string, url: string) => void
   onImageFailed?: (path: string) => void
 }) => {
+  const context = enrichment.context
+  const contextLabel = orbitalEnrichmentContextLabel(context)
   const image = enrichment.image
   const [decodeFailed, setDecodeFailed] = useState(false)
   const matchingImageState =
@@ -91,7 +94,7 @@ const OrbitalEnrichmentDetails = ({
       <h3
         id={`orbital-enrichment-heading-${enrichment.noradCatalogId}`}
       >
-        {image ? 'Purpose and image' : 'Purpose'}
+        {image ? `${contextLabel} and image` : contextLabel}
       </h3>
       {image && matchingImageState?.phase === 'available' && !decodeFailed && (
         <a
@@ -129,23 +132,43 @@ const OrbitalEnrichmentDetails = ({
         </p>
       )}
       <p className="orbital-enrichment__purpose">
-        <strong>{enrichment.purpose.shortLabel}</strong>
+        <strong>{context.shortLabel}</strong>
         {' — '}
-        {enrichment.purpose.description}
+        {context.description}
       </p>
+      {context.kind === 'community-metadata' && (
+        <p className="metadata-status">
+          Community-maintained historical facts, not a verified individual
+          mission or current operational status.
+        </p>
+      )}
       <p className="metadata-attribution">
-        Purpose: {' '}
+        {contextLabel}:{' '}
         <a
-          href={enrichment.purpose.sourceUrl}
+          href={context.sourceUrl}
+          title={context.sourceTitle}
           target="_blank"
           rel="noopener noreferrer"
         >
-          {enrichment.purpose.sourceName}
+          {context.sourceName}
         </a>
-        {enrichment.purpose.sourcePublishedAt
-          ? ` · published ${enrichment.purpose.sourcePublishedAt}`
+        {context.kind === 'community-metadata' && (
+          <>
+            {' · '}
+            <a
+              href="https://creativecommons.org/publicdomain/zero/1.0/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              CC0 1.0
+            </a>
+            {' · '}source revision {context.sourceRevision}
+          </>
+        )}
+        {context.sourcePublishedAt
+          ? ` · published ${context.sourcePublishedAt}`
           : ''}
-        {' · '}source retrieved {enrichment.purpose.sourceRetrievedAt}
+        {' · '}source retrieved {context.sourceRetrievedAt}
         {' · '}reviewed {enrichment.reviewedAt}
         {' · '}manifest {enrichment.manifestVersion}
         {' · '}exact NORAD {enrichment.noradCatalogId}.
@@ -362,6 +385,16 @@ export function OrbitalDetails({
         />
       </dl>
 
+      <p className="metadata-attribution">
+        <a
+          href={`https://www.n2yo.com/satellite/?s=${position.noradCatalogId}`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Open N2YO reference for NORAD {position.noradCatalogId}
+        </a>
+        {' · '}external site; no N2YO content is loaded here.
+      </p>
       <p className="metadata-status">
         SGP4 model, not live. Crossing does not prove visibility, illumination,
         or operational status.

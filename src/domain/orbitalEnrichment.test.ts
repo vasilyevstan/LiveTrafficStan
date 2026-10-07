@@ -4,6 +4,8 @@ import {
   createOrbitalEnrichmentIndex,
   matchingOrbitalEnrichmentRecord,
   orbitalEnrichmentForPosition,
+  orbitalEnrichmentManifest,
+  orbitalEnrichmentSummary,
   orbitalFeaturedMapLabelForPosition,
   type OrbitalEnrichmentRecord,
 } from './orbitalEnrichment'
@@ -15,7 +17,8 @@ const record = (
   objectNameAtReview: `OBJECT ${noradCatalogId}`,
   internationalDesignatorAtReview: '2026-001A',
   catalogTypeAtReview: 'PAY',
-  purpose: {
+  context: {
+    kind: 'mission-purpose',
     shortLabel: 'Reviewed purpose',
     description: 'Purpose supported by an authoritative source.',
     sourceName: 'Source',
@@ -96,7 +99,7 @@ describe('orbital enrichment identity', () => {
 
     expect(enrichment).toMatchObject({
       noradCatalogId: '25544',
-      manifestVersion: '2026-10-05-v1',
+      manifestVersion: '2026-10-07-v1',
     })
     expect(enrichment?.identityKey).toBe(
       [
@@ -106,7 +109,7 @@ describe('orbital enrichment identity', () => {
         '1998-067A',
         'PAY',
         'b'.repeat(64),
-        '2026-10-05-v1',
+        '2026-10-07-v1',
       ].join('|'),
     )
   })
@@ -122,10 +125,53 @@ describe('orbital enrichment identity', () => {
   ])('provides source-backed, image-free purpose for NORAD %s', (id, name, designator, label) => {
     const current = { ...position(id), name, internationalDesignator: designator }
     const enrichment = orbitalEnrichmentForPosition(current)
-    expect(enrichment?.purpose.shortLabel).toBe(label)
-    expect(enrichment?.purpose.sourceSha256).toMatch(/^[a-f0-9]{64}$/)
+    expect(enrichment?.context.kind).toBe('mission-purpose')
+    expect(enrichment?.context.shortLabel).toBe(label)
+    expect(enrichment?.context.sourceSha256).toMatch(/^[a-f0-9]{64}$/)
     expect(enrichment?.image).toBeUndefined()
     expect(orbitalEnrichmentForPosition({ ...current, objectType: 'R/B' })).toBeUndefined()
+  })
+
+  it('keeps exact community facts separate from the nine official mission records', () => {
+    const current = {
+      ...position('19210'),
+      name: 'COSMOS 1953',
+      internationalDesignator: '1988-050A',
+    }
+    const original = structuredClone(current)
+    const enrichment = orbitalEnrichmentForPosition(current)
+    expect(enrichment?.context).toMatchObject({
+      kind: 'community-metadata',
+      shortLabel: 'Tselina-D spacecraft',
+      sourceName: 'Wikidata',
+      sourceRevision: '1609633724',
+      sourceLicense: 'CC0-1.0',
+      sourceUrl: 'https://www.wikidata.org/w/index.php?title=Q12753536&oldid=1609633724',
+    })
+    expect(enrichment?.context.description).toContain('14 June 1988')
+    expect(enrichment?.context.description).toContain('Tsyklon-3')
+    expect(enrichment?.image).toBeUndefined()
+    expect(orbitalEnrichmentSummary(enrichment)).toBe(
+      'Community context: Tselina-D spacecraft',
+    )
+    expect(orbitalFeaturedMapLabelForPosition(current)).toBeUndefined()
+    expect(current).toEqual(original)
+    expect(orbitalEnrichmentManifest.records.filter(
+      ({ context }) => context.kind === 'mission-purpose',
+    )).toHaveLength(9)
+    expect(orbitalEnrichmentManifest.records).toHaveLength(10)
+
+    for (const mismatch of [
+      { noradCatalogId: '019210' },
+      { name: 'COSMOS 1954' },
+      { internationalDesignator: '1988-050B' },
+      { objectType: 'R/B' as const },
+    ]) {
+      expect(orbitalEnrichmentForPosition({ ...current, ...mismatch })).toBeUndefined()
+    }
+    expect(orbitalEnrichmentForPosition({
+      ...current, snapshotSha256: 'c'.repeat(64),
+    })?.identityKey).not.toBe(enrichment?.identityKey)
   })
 
   it('labels only exact reviewed featured identities on the map', () => {

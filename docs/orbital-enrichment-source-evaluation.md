@@ -4,11 +4,13 @@
 
 Issue #193 uses a small application-owned manifest indexed by exact canonical
 NORAD catalog ID and fenced by the complete reviewed identity. Current version
-`2026-10-05-v1` contains nine exact-object descriptions. The original
-`2026-09-29-v1` remains an immutable historical asset generation.
+`2026-10-07-v1` (schema 2) contains nine unchanged official descriptions and
+one distinctly labeled community-metadata record under #369. The original
+`2026-09-29-v1` and `2026-10-05-v1` remain immutable historical generations.
 
 | NORAD ID | Current catalog identity | Purpose source | Image |
 | --- | --- | --- | --- |
+| `19210` | `COSMOS 1953`, `1988-050A`, `PAY` | Wikidata CC0 **community facts**, not official mission purpose | Unavailable |
 | `20580` | `HST`, `1990-037B`, `PAY` | NASA Science, **About Hubble** | NASA photograph `s125e011615` |
 | `25544` | `ISS (ZARYA)`, `1998-067A`, `PAY` | NASA, **Space Station Research and Technology** | NASA photograph `s132e012212` |
 | `25994` | `TERRA`, `1999-068A`, `PAY` | [NASA Science: Terra](https://science.nasa.gov/mission/terra/) | Unavailable |
@@ -19,7 +21,7 @@ NORAD catalog ID and fenced by the complete reviewed identity. Current version
 | `57800` | `XRISM`, `2023-137A`, `PAY` | [NASA HEASARC: XRISM](https://heasarc.gsfc.nasa.gov/docs/xrism/) | Unavailable |
 | `59588` | `ACS3`, `2024-077B`, `PAY` | [NASA: ACS3](https://www.nasa.gov/mission/acs3/) | Unavailable |
 
-The seven new official-source pages were retrieved on 2026-10-05; their exact
+The seven additional official-source pages were retrieved on 2026-10-05; their exact
 HTML SHA-256 and identity evidence are pinned in the manifest. The text is an
 original concise factual summary, not a live operational claim. Hitomi's
 description explicitly records the historical loss of contact and end of
@@ -58,6 +60,53 @@ or absent object fails closed to unavailable. Purpose is not inferred from the
 name, owner code, catalog group, orbit, launch date, or neighboring records.
 
 ## Purpose evidence
+
+### COSMOS 1953 - NORAD 19210 community facts, not mission purpose
+
+The reviewed Wikidata entity
+[Q12753536, revision 1609633724](https://www.wikidata.org/w/index.php?title=Q12753536&oldid=1609633724)
+explicitly matches `P377 = 19210` and `P247 = 1988-050A`. Its `P619`
+launch date has day precision for 1988-06-14, `P31` links to Tselina-D
+(`Q14701642`) and `P375` to the Tsyklon-3 launch vehicle (`Q334236`).
+The latter statements cite Jonathan's Space Report. The exact retrieved
+entity has no English description or English Wikipedia sitelink.
+
+The app supplies an original concise summary of those historical facts,
+explicitly **Community context**, not an inferred official individual mission
+or present operational status. It does not infer a spacecraft mission from
+the more general class description. Both related English entity labels were
+reviewed separately. All three JSON responses were retrieved on 2026-10-07:
+
+| Entity | Revision | Exact response SHA-256 |
+| --- | --- | --- |
+| `Q12753536` | `1609633724` | `2bd3f17acc4d20a9848ce3c56ebd2fbfda4765b166116451a64f52357955e9d6` |
+| `Q14701642` | `2450754761` | `039307b88b8b8fe07e88bc5059e07e977bfe8f787b574d7c4297d6011fba835e` |
+| `Q334236` | `2480134587` | `0b6d66dfcac7c3f2ca90133851024886cb9ccc4c3d633de849da4699b4a74ae9` |
+
+The source JSON interface is
+`https://www.wikidata.org/wiki/Special:EntityData/<QID>.json?revision=<revision>`.
+The primary response was explicitly fetched at its pinned revision; the
+supporting responses reported the exact revisions above.
+[Wikidata's licensing policy](https://www.wikidata.org/wiki/Wikidata:Licensing)
+releases structured entity data under CC0. This does not extend to Wikipedia
+prose, N2YO page text or linked images. The co-located notice and UI retain
+source attribution, a pinned revision link, retrieval/review dates and CC0.
+There is no exact-object image for this record.
+
+[N2YO's COSMOS 1953 page](https://www.n2yo.com/satellite/?s=19210) motivated
+#369, but its [documented API](https://www.n2yo.com/api/) has only TLE,
+position and pass/above operations, not website-description text. Its
+[terms](https://www.n2yo.com/about/?a=terms) assert content copyright; no
+description-copying feed/contract was established. A key cannot supply the
+missing endpoint. The linked
+[NASA catalog URL](https://nssdc.gsfc.nasa.gov/nmc/spacecraft/display.action?id=1988-050A)
+returned the catalog's error page during the assessment. Neither site is
+scraped or put on the browser selection path. Details expose an explicit
+outbound N2YO reference without prefetch, embedding or copied content.
+
+This is a bounded reviewed snapshot, not automatic coverage for every
+satellite. Expansion uses the same exact-identity review and versioning
+process; the 16-record limit and committed visual identity source are unchanged.
 
 ### Hubble Space Telescope — NORAD 20580
 
@@ -181,7 +230,7 @@ e2b914510c5a295c22ccba384c32ca99282bc9c49fd43ac20d5e27730b558c16
 
 The two files use the visible credit **Photo: NASA** and link to the applicable
 NASA source page and usage guidelines. The co-located
-`public/orbital-enrichment/2026-10-05-v1/LICENSES.md` notice makes clear that
+`public/orbital-enrichment/2026-10-07-v1/LICENSES.md` notice makes clear that
 the photographs are not licensed under the repository's Apache-2.0 source-code
 license. LiveTrafficStan uses no NASA insignia or logotype as application
 branding and makes no endorsement claim.
@@ -200,13 +249,13 @@ DISCOSweb add redistribution restrictions and do not justify a new runtime or
 credential boundary for this feature. Rocket-body, debris, and unreviewed
 payload enrichment therefore remains unavailable.
 
-Terra / EOS AM-1 (`25994`) was considered as a possible future
-purpose-available/image-unavailable record, but its source chain was not
-reviewed to the same depth in this release and it is intentionally excluded.
+Terra / EOS AM-1 (`25994`) was excluded from the original two-record
+generation; its source chain was subsequently reviewed and included in
+`2026-10-05-v1` and the current generation.
 
 ## Browser and request contract
 
-- The nine-record JSON manifest and separately labeled Starlink service
+- The ten-record JSON manifest and separately labeled Starlink service
   context are compiled into the application bundle.
 - Purpose labels require no request.
 - Images are immutable same-origin Static Assets and are not part of the PWA
@@ -227,8 +276,8 @@ reviewed to the same depth in this release and it is intentionally excluded.
   ready and remains a terminal failure for that running tab rather than
   creating an uncontrolled retry loop.
 - Blob URLs are revoked on invalidation or application teardown.
-- External NASA pages are contacted only if the user explicitly follows a
-  source or policy link.
+- External NASA, Wikidata, license and N2YO pages are contacted only if the
+  user explicitly follows a source, policy or reference link.
 - No viewport, Home, geolocation, camera, selection, cookies, credentials,
   referrer-derived personal data, or provider headers are sent to NASA.
 
@@ -239,8 +288,9 @@ reviewed to the same depth in this release and it is intentionally excluded.
 - manifest schema/version/date and bounded record count;
 - canonical sorted unique NORAD IDs;
 - exact name, designator, and SATCAT type against the committed visual catalog;
-- HTTPS purpose/image/policy provenance and recorded SHA-256 values;
-- required NASA credit and co-located notice;
+- explicit official/community context kinds, matching pinned Wikidata
+  revision/CC0 and HTTPS context/image/policy provenance with SHA-256 values;
+- required NASA/CC0 attribution and co-located notice;
 - immutable versioned asset paths;
 - JPEG/PNG signatures, dimensions, byte limits, inventory, and SHA-256;
 - at least one reviewed image;
