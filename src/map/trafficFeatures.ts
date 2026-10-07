@@ -18,10 +18,11 @@ export const trafficFeatures = (
   now: number,
   selectedId: string | null,
   interpolate: boolean,
+  contextSample = false,
 ): FeatureCollection<Point> => ({
   type: 'FeatureCollection',
   features: entities.map((entity) => {
-    const sampled = interpolate && motion.get(entity.id)
+    const sampled = interpolate && !contextSample && motion.get(entity.id)
       ? sampleMotion(motion.get(entity.id)!, now)
       : entity.position
     const presentation = trafficPresentation(entity)
@@ -44,9 +45,10 @@ export const trafficFeatures = (
         heading: presentation.headingDegrees,
         markerIcon: presentation.markerIcon,
         markerScale,
-        selected: entity.id === selectedId,
+        selected: !contextSample && entity.id === selectedId,
         stale: entity.freshness === 'stale',
         motionState: presentation.motionState,
+        ...(contextSample ? { zoomContext: true } : {}),
         ...(flagIcon === undefined ? {} : { flagIcon }),
         ...(presentation.kind === 'aircraft'
           ? {

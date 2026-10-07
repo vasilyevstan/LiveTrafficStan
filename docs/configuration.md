@@ -112,6 +112,10 @@ spread through components:
 | --- | --- |
 | Initial Home framing | Comparable to a 30 km local view |
 | Maximum eligible enclosing radius | 100 km |
+| Zoom-out sample bound | At most 12 aircraft and 12 ships from the last eligible view |
+| Zoom-out sample separation | At least 64 CSS pixels within each traffic kind |
+| Zoom-out sample opacity | 85% of normal freshness opacity at zoom 7; native linear fade to zero at zoom 3 |
+| Zoom-out sample maximum age | 2 minutes, or the existing provider expiry if shorter |
 | Touch marker hit extension | 8 CSS pixels per axis after an exact miss |
 | Vessel minimum-length presets | 0, 25, 50, 100, 150 m |
 | Vessel maximum-length presets | 24, 49, 99, 149 m, or none |

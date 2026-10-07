@@ -4,6 +4,7 @@ import type {
   DisplayVessel,
 } from '../domain/traffic'
 import { trafficFeatures } from './trafficFeatures'
+import { reconcileMotionStates } from '../traffic/interpolation'
 
 const aircraft: DisplayAircraft = {
   id: 'aircraft:abc123',
@@ -47,6 +48,37 @@ const yacht: DisplayVessel = {
 }
 
 describe('trafficFeatures presentation projection', () => {
+  it('marks read-only context without interpolating, selecting or mutating observations', () => {
+    const next = {
+      ...aircraft,
+      position: { ...aircraft.position, latitude: 59.2, observedAt: 2 },
+    }
+    const motion = reconcileMotionStates(
+      reconcileMotionStates(new Map(), [aircraft], 0, 1_000),
+      [next],
+      10,
+      1_000,
+    )
+    const original = structuredClone(next)
+    const context = trafficFeatures(
+      [next], motion, 500, next.id, true, true,
+    )
+    expect(context.features[0]).toMatchObject({
+      id: next.id,
+      properties: { zoomContext: true, selected: false, stale: false },
+      geometry: {
+        type: 'Point',
+        coordinates: [next.position.longitude, next.position.latitude],
+      },
+    })
+    expect(next).toEqual(original)
+    expect(next).not.toHaveProperty('zoomContext')
+    expect(
+      trafficFeatures([next], motion, 500, next.id, true)
+        .features[0]?.properties,
+    ).not.toHaveProperty('zoomContext')
+  })
+
   it('adds render-only aircraft state without changing entity identity', () => {
     const collection = trafficFeatures(
       [aircraft],

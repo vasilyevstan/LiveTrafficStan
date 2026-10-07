@@ -4,6 +4,7 @@ import type {
   Point,
 } from 'geojson'
 import type { Map as MapLibreMap } from 'maplibre-gl'
+import { createPropertyExpression } from '@maplibre/maplibre-gl-style-spec'
 import { describe, expect, it, vi } from 'vitest'
 import { TRAFFIC_STYLE_IMAGE_IDS } from '../domain/trafficPresentation'
 import {
@@ -69,6 +70,15 @@ const snapshot = (
   clusterMinimumPoints: 3,
   clusterMaximumZoom: 10,
 })
+
+const expectedOpacity = (stale: number) => {
+  const normal = ['case', ['get', 'stale'], stale, 0.98]
+  return [
+    'interpolate', ['linear'], ['zoom'],
+    3, ['case', ['==', ['get', 'zoomContext'], true], 0, normal],
+    7, ['case', ['==', ['get', 'zoomContext'], true], ['*', normal, 0.85], normal],
+  ]
+}
 
 describe('installTrafficStyle', () => {
   it('is idempotent and reapplies current data, visibility, and theme paint', () => {
@@ -232,12 +242,50 @@ describe('installTrafficStyle', () => {
       },
     })
     expect(paint.get('traffic-selected-trail:line-color')).toBe('#138daf')
-    expect(paint.get(`${LAYER_AIRCRAFT}:icon-opacity`)).toEqual([
-      'case',
-      ['get', 'stale'],
-      0.54,
-      0.98,
-    ])
+    expect(paint.get(`${LAYER_AIRCRAFT}:icon-opacity`)).toEqual(
+      expectedOpacity(0.54),
+    )
+    const opacity = createPropertyExpression(
+      paint.get(`${LAYER_AIRCRAFT}:icon-opacity`),
+      'icon-opacity',
+      {
+        type: 'number',
+        'property-type': 'data-driven',
+        transition: true,
+        expression: {
+          interpolated: true,
+          parameters: ['zoom', 'feature'],
+        },
+      },
+    )
+    if (opacity.result !== 'success') {
+      throw new Error(JSON.stringify(opacity.value))
+    }
+    for (const zoom of [0, 3, 3.1, 4, 5, 6, 6.9, 7, 10, 15]) {
+      for (const stale of [false, true]) {
+        const base = stale ? 0.54 : 0.98
+        expect(opacity.value.evaluate(
+          { zoom }, { type: 'Point', properties: { stale } },
+        )).toBeCloseTo(base, 10)
+        expect(opacity.value.evaluate(
+          { zoom }, { type: 'Point', properties: { stale, zoomContext: true } },
+        )).toBeCloseTo(
+          base * 0.85 * Math.max(0, Math.min(1, (zoom - 3) / 4)),
+          10,
+        )
+      }
+    }
+    for (const layer of [
+      LAYER_AIRCRAFT_STOPPED,
+      LAYER_VESSEL_STOPPED,
+    ]) {
+      expect(paint.get(`${layer}:circle-opacity`)).toEqual(
+        expectedOpacity(0.54),
+      )
+      expect(paint.get(`${layer}:circle-stroke-opacity`)).toEqual(
+        expectedOpacity(0.54),
+      )
+    }
     expect(paint.get(`${LAYER_AIRCRAFT_HALO}:circle-color`)).toBe(
       '#0f2938',
     )
@@ -282,19 +330,19 @@ describe('installTrafficStyle', () => {
     expect(sources.size).toBe(3)
     expect(layers.size).toBe(13)
     expect(visibility.get(`${LAYER_AIRCRAFT_FLAGS}:visibility`)).toBe('none')
-    expect(paint.get(`${LAYER_AIRCRAFT_FLAGS}:icon-opacity`)).toEqual([
-      'case', ['get', 'stale'], 0.52, 0.98,
-    ])
+    expect(paint.get(`${LAYER_AIRCRAFT_FLAGS}:icon-opacity`)).toEqual(
+      expectedOpacity(0.52),
+    )
     expect(visibility.get(`${LAYER_VESSEL_FLAGS}:visibility`)).toBe('visible')
-    expect(paint.get(`${LAYER_VESSEL_FLAGS}:icon-opacity`)).toEqual([
-      'case', ['get', 'stale'], 0.52, 0.98,
-    ])
+    expect(paint.get(`${LAYER_VESSEL_FLAGS}:icon-opacity`)).toEqual(
+      expectedOpacity(0.52),
+    )
 
     installTrafficStyle(map, snapshot('light'), lightImages)
     expect(visibility.get(`${LAYER_AIRCRAFT_FLAGS}:visibility`)).toBe('visible')
     expect(visibility.get(`${LAYER_VESSEL_FLAGS}:visibility`)).toBe('none')
-    expect(paint.get(`${LAYER_AIRCRAFT_FLAGS}:icon-opacity`)).toEqual([
-      'case', ['get', 'stale'], 0.54, 0.98,
-    ])
+    expect(paint.get(`${LAYER_AIRCRAFT_FLAGS}:icon-opacity`)).toEqual(
+      expectedOpacity(0.54),
+    )
   })
 })

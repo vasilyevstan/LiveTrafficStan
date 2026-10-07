@@ -10,6 +10,7 @@ import {
   type Map as MapLibreMap,
 } from 'maplibre-gl'
 import type { Theme } from '../app/theme'
+import { ZOOM_TRAFFIC_CONTEXT_CONFIG } from '../config/appConfig'
 import {
   TRAFFIC_STYLE_IMAGE_IDS,
   type TrafficStyleImageId,
@@ -207,11 +208,30 @@ export const installTrafficStyle = (
     },
   })
 
-  const trafficOpacity: ExpressionSpecification = [
+  const observationOpacity: ExpressionSpecification = [
     'case',
     ['get', 'stale'],
     paint.staleIconOpacity,
     paint.liveIconOpacity,
+  ]
+  const trafficOpacity: ExpressionSpecification = [
+    'interpolate',
+    ['linear'],
+    ['zoom'],
+    ZOOM_TRAFFIC_CONTEXT_CONFIG.minimumZoom,
+    [
+      'case',
+      ['==', ['get', 'zoomContext'], true],
+      0,
+      observationOpacity,
+    ],
+    ZOOM_TRAFFIC_CONTEXT_CONFIG.fullOpacityZoom,
+    [
+      'case',
+      ['==', ['get', 'zoomContext'], true],
+      ['*', observationOpacity, ZOOM_TRAFFIC_CONTEXT_CONFIG.maximumOpacity],
+      observationOpacity,
+    ],
   ]
 
   for (const [id, source] of [

@@ -48,6 +48,53 @@ supplementary marine WebSocket; use the actual local Worker for those paths.
 | `npm run check:deploy` | Bundle the Worker and Static Assets without credentials or deployment |
 | `npm run preview:worker` | Build and run the actual local Cloudflare `workerd` boundary |
 
+### Zoom-out local sample regression (#370)
+
+`trafficZoomContext.test.ts` covers the current navigation/last eligible view,
+lower-zoom gate, absent/unsafe/eligible assessments, display disablement,
+exact old-footprint filtering, observation freshness/expiry, stable
+representatives, twelve-per-kind cap, 64 px separation, offscreen/invalid
+projection and antimeridian copies. `trafficFeatures.test.ts` verifies that
+context keeps observed positions with no interpolation, selection or mutation.
+`trafficStyle.test.ts` evaluates the actual native MapLibre expression at
+fractional and boundary zooms: ordinary live/stale opacity remains unchanged,
+while context fades linearly between zoom 7 and 3. `LiveStatus.test.tsx`
+preserves provider health/credits and prevents misleading zero-ships-shown
+copy while samples are drawn.
+
+The browser acceptance uses the existing isolated Chrome/CDP method with
+clearly labelled aircraft/Digitraffic fixtures through native controllers,
+not production mock routes or a new browser framework. Validate actual source
+and rendered representative counts, unchanged coordinates, paused network
+cadence, nonselectability, zero trails, native frame behavior, Auto/Flat and
+theme rehydration, compact notice/Center reachability, normal local recovery
+and a wide shared startup without inherited samples. A locally routed read of
+the real public cached catalog can exercise the native orbital worker without
+changing orbital scheduling or initiating CelesTrak work. These fixtures are
+not live provider coverage evidence; production acceptance remains separate.
+
+The accepted local #370 run used 48 aircraft and 48 vessels in twelve compact
+fixture groups: 24 ordinary clusters at zoom 10 became four observed-position
+representatives per kind at zoom 7.7, then one per kind at zoom 3.3, and zero
+at zoom 3. Native transitions recorded 99 initial hand-off frames and 129
+subsequent zoom-out frames with no blank traffic frame; the latter measured
+about 16.6 ms median and 20.2 ms p95 between moving frames. These are
+instrumented Chrome observations, not a physical-device or universal frame
+rate guarantee. Auto/Flat, sample nonselection, ordinary touch Center recovery
+and a 315 x 517 layout passed. Six real modeled orbital points were visible
+in one zoom-4.4 window after explicit enablement; that count is time-dependent.
+
+After the final status-copy and History refinements, the production-input
+build repeated the lifecycle checks: fresh wide startup made no traffic or
+catalog requests, HISTORY hid samples without resetting observation times,
+native layer toggles and the 150 m ship filter worked, Dark style restored the
+sample, and native offline/online transitions preserved the paused query.
+A 21-second paused dwell added no aircraft, marine REST, WebSocket or catalog
+request. Earlier CORS/observer failures are retained as failed harness
+attempts, not product defects or successful acceptance evidence. In particular,
+wait for native source/visibility/render state rather than treating a committed
+React prop as proof that the MapLibre worker has already applied it.
+
 For a local same-origin orbital bootstrap:
 
 ```bash

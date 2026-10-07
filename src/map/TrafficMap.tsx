@@ -144,6 +144,7 @@ import {
   VESSEL_TRAFFIC_LAYER_IDS,
 } from './trafficStyle'
 import { trafficFeatures } from './trafficFeatures'
+import { sampleTrafficZoomContext } from './trafficZoomContext'
 import {
   createTrafficTooltipElement,
 } from './trafficTooltip'
@@ -183,6 +184,7 @@ interface TrafficMapProps {
   units: UnitSystem
   aircraft: readonly DisplayAircraft[]
   vessels: readonly DisplayVessel[]
+  trafficContext?: boolean
   ports: readonly Port[]
   airports: readonly Airport[]
   weatherObservations: readonly DisplayWeatherObservation[]
@@ -238,6 +240,7 @@ interface RenderState {
   aircraft: readonly DisplayAircraft[]
   vessels: readonly DisplayVessel[]
   selectedId: string | null
+  trafficContext: boolean
 }
 
 interface PortRenderState {
@@ -370,6 +373,7 @@ export function TrafficMap({
   units,
   aircraft,
   vessels,
+  trafficContext = false,
   ports,
   airports,
   weatherObservations,
@@ -482,6 +486,7 @@ export function TrafficMap({
     aircraft,
     vessels,
     selectedId,
+    trafficContext,
   })
   const portRenderStateRef = useRef<PortRenderState>({
     ports,
@@ -602,11 +607,14 @@ export function TrafficMap({
       ],
     ] as const) {
       const data = trafficFeatures(
-        entities,
+        state.trafficContext
+          ? sampleTrafficZoomContext(map, entities)
+          : entities,
         motion,
         now,
         state.selectedId,
         interpolateTrafficRef.current && !clustered,
+        state.trafficContext,
       )
       const source = map.getSource(sourceId) as GeoJSONSource | undefined
       const previous = lastTrafficFeaturesRef.current[kind]
@@ -915,20 +923,26 @@ export function TrafficMap({
         appliedStyleUrlRef.current,
       )
       const aircraftFeatures = trafficFeatures(
-        renderState.aircraft,
+        renderState.trafficContext
+          ? sampleTrafficZoomContext(map, renderState.aircraft)
+          : renderState.aircraft,
         aircraftMotionRef.current,
         now,
         renderState.selectedId,
         interpolateTrafficRef.current &&
           !clusteringEnabledRef.current,
+        renderState.trafficContext,
       )
       const vesselFeatures = trafficFeatures(
-        renderState.vessels,
+        renderState.trafficContext
+          ? sampleTrafficZoomContext(map, renderState.vessels)
+          : renderState.vessels,
         vesselMotionRef.current,
         now,
         renderState.selectedId,
         interpolateTrafficRef.current &&
           !clusteringEnabledRef.current,
+        renderState.trafficContext,
       )
       installTrafficStyle(
         map,
@@ -1550,6 +1564,7 @@ export function TrafficMap({
     canvas.addEventListener('mouseleave', scheduleTrafficTooltipHide)
 
     const activeTrafficLayers = () => {
+      if (renderStateRef.current.trafficContext) return []
       const layers: string[] = []
       const viewState = viewStateRef.current
       if (viewState.aircraftVisible && map.getLayer(LAYER_AIRCRAFT)) {
@@ -1562,6 +1577,7 @@ export function TrafficMap({
     }
 
     const activeClusterLayers = () => {
+      if (renderStateRef.current.trafficContext) return []
       if (!clusteringEnabledRef.current) return []
       const layers: string[] = []
       const viewState = viewStateRef.current
@@ -1606,6 +1622,7 @@ export function TrafficMap({
 
     const selectableTrafficIds = () => {
       const ids = new Set<string>()
+      if (renderStateRef.current.trafficContext) return ids
       const renderState = renderStateRef.current
       const viewState = viewStateRef.current
       if (viewState.aircraftVisible) {
@@ -1835,10 +1852,12 @@ export function TrafficMap({
 
     map.on('moveend', () => {
       scheduleViewportReport(map)
+      if (renderStateRef.current.trafficContext) scheduleRender()
     })
 
     map.on('resize', () => {
       scheduleViewportReport(map)
+      if (renderStateRef.current.trafficContext) scheduleRender()
     })
 
     map.addControl(
@@ -2183,6 +2202,7 @@ export function TrafficMap({
     scheduleViewportReport,
     switchMapStyle,
     touchHitTolerancePx,
+    scheduleRender,
   ])
 
   useEffect(() => {
@@ -2305,7 +2325,13 @@ export function TrafficMap({
   ])
 
   useEffect(() => {
-    renderStateRef.current = { aircraft, vessels, selectedId }
+    renderStateRef.current = {
+      aircraft,
+      vessels,
+      selectedId,
+      trafficContext,
+    }
+    if (trafficContext) hideTrafficTooltipRef.current()
     const hoveredTrafficId = hoveredTrafficIdRef.current
     if (hoveredTrafficId) {
       const hoveredEntity =
@@ -2337,6 +2363,7 @@ export function TrafficMap({
     aircraft,
     vessels,
     selectedId,
+    trafficContext,
     interpolateTraffic,
     interpolationDurationMs,
     scheduleRender,
