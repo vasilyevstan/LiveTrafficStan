@@ -349,31 +349,41 @@ LiveTrafficStan does not currently display airport arrivals or departures.
 Airport/time-window enumeration is a separate capability from selected-aircraft
 plausible-route enrichment.
 
-The dated
+The 2026-10-07
 [Airport Arrival and Departure Board Evaluation](airport-board-evaluation.md)
-found technically credible commercial candidates, but no source currently has
-the project account, accepted terms/order, approved budget, display and
-combination rights, retention rule, secure credential, source-age contract,
-and permitted Tallinn samples required for implementation.
+identifies a genuine ongoing-free candidate, not a paid-plan prerequisite:
+**AeroDataBox Basic via RapidAPI**, for a small noncommercial on-demand board.
+Its 400 API units/month permit at most **200 uncached combined-board calls
+shared across the whole app**, before other charged work. The actual project
+free subscription/key, zero-overage limits and Tallinn coverage proof are still
+missing. Published applicable terms can authorize the use; bespoke permission
+is required only where those terms say so.
 
-- OpenSky's airport endpoints expose previous-day-or-earlier overnight
+- The September OpenSky review found previous-day-or-earlier overnight
   reconstructed flights with estimated airports/times; they are not a current
   operational board, and operational REST use requires a written agreement.
-- FlightAware AeroAPI exposes strong airport-flight operations and provider
+- The September FlightAware AeroAPI review found strong airport-flight operations and provider
   identity, but the project has no account/key/order/budget. Written
   combination permission may be required for use with ADSB.lol, and published
   documents state conflicting default retention periods that an accepted
   agreement must resolve.
-- AeroDataBox exposes airport/time-window operations, but the project has no
-  selected plan or key, and the inspected board rows do not carry the
-  individual-flight `lastUpdatedUtc` contract. Coverage may be scheduled,
-  delayed, asymmetric, or ADS-B-derived.
-- aviationstack requires an account/key and no approved project plan,
-  contract, budget, or source-age semantics exist.
+- AeroDataBox RapidAPI Basic is ongoing free; API.Market Basic is only a
+  seven-day trial. A board call costs two units and permits a 12-hour window.
+  Preserve visible linked attribution, minimized retention (standard maximum
+  seven days), confidential server-held credentials and no bulk/API
+  redistribution. Board rows have no general source-update timestamp or
+  occurrence ID; retrieved-at and unknown source age must remain distinct.
+  Coverage may be scheduled, delayed, asymmetric or ADS-B-derived.
+- aviationstack advertises an ongoing $0 noncommercial 100-request/month plan
+  with real-time flights and HTTPS; dedicated Flight Schedules is paid.
+  A free airport-filtered operational board has not been proved.
+- AirLabs has an airport-schedules endpoint, but its documented Free fields
+  do not include the status, estimated/actual times and UTC fields needed here.
 - Public airport, airline, and tracker pages will not be scraped.
 
 [Issue #46](https://github.com/vasilyevstan/LiveTrafficStan/issues/46)
-records the exact authorization and sample evidence required. No board is
+records the actual account, contract and sample evidence still required.
+There is no automatic board polling or paid fallback. No board is
 constructed from visible aircraft, heading, proximity, callsign, static airport
 points, or cached plausible-route lookups.
 
