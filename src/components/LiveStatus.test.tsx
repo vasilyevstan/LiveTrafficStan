@@ -5,6 +5,31 @@ import { MULTI_SOURCE_MARINE_CAPABILITIES } from '../providers/marine/multiSourc
 import { LiveStatus } from './LiveStatus'
 
 describe('LiveStatus', () => {
+  it('labels a paused context sample without claiming zero shown or wider live counts', () => {
+    const html = renderToStaticMarkup(
+      <LiveStatus
+        aircraftCount={0}
+        vesselCount={0}
+        aircraftStatus={{ phase: 'live', paused: true }}
+        marineStatus={{ phase: 'live', paused: true }}
+        marineCapabilities={MULTI_SOURCE_MARINE_CAPABILITIES}
+        now={1_800_000_000_000}
+        online
+        trafficContext
+      />,
+    )
+    const summary = html.slice(0, html.indexOf('</summary>'))
+    expect(summary).toContain('<strong>PAUSED</strong>')
+    expect(summary).toContain('Last local sample')
+    expect(summary).toContain('Live updates paused')
+    expect(summary).not.toContain('0 ships shown')
+    expect(summary).not.toContain('0 aircraft')
+    expect(html).toContain('Aircraft paused')
+    expect(html).toContain('Marine stream paused')
+    expect(html).toContain('https://www.adsb.lol/')
+    expect(html).toContain('https://www.digitraffic.fi/en/marine-traffic/')
+  })
+
   it('describes an empty global-source view without promising complete coverage', () => {
     const html = renderToStaticMarkup(
       <LiveStatus

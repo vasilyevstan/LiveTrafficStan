@@ -82,9 +82,15 @@ Check these project invariants:
   explicit antimeridian, pitch, rotation, resize, invalid-geometry, and
   over-budget behavior. Empty, wide-view paused, and map-unavailable states are
   not interchangeable.
-- A required enclosing radius above 100 km pauses and hides traffic/trails with
+- A required enclosing radius above 100 km pauses and hides live traffic/trails with
   the specified zoom/tilt prompt. It is never clamped, subdivided, or presented
   as complete coverage.
+- The labelled zoom-out sample is read-only last-local context, not expanded
+  coverage: reuse retained observations, cap age/count/spacing, fade through
+  native zoom paint and never move representatives to cluster centroids.
+  Keep context out of picking, live counts/search, metadata/photos, trails
+  and history; navigation clears its footprint, HISTORY hides it without
+  resetting age, and wide startup has none.
 - Providers use the conservative enclosing circle, while selection, counts,
   markers, and trails use the exact viewport polygon.
 - Touch hit tolerance requires reliable interaction modality, exact-hit

@@ -1581,6 +1581,26 @@ data. Record the actual application SHA separately from later docs/Wiki
 commits in the [#163 delivery receipt](https://github.com/vasilyevstan/LiveTrafficStan/issues/163);
 do not relabel earlier deployment or rollback evidence as this release.
 
+## Sampled zoom-out context release boundary (#370)
+
+The sampled hand-off is browser-only and uses the existing traffic sources.
+It adds no provider request, service, binding, credential, data format or
+preference/history migration. Preserve every enabled production input:
+`artifact=application`, `aircraft_delivery=oci-private-relay`,
+`aircraft_photo_enabled=true`, `flight_route_enabled=true`,
+`orbital_catalog_enabled=true`, `starlink_catalog_enabled=true` and
+`marine_supplement_enabled=true`.
+
+The compatible predecessor is application
+`c925546dc1d722658e4a80a3052dddd1d03ab824`, Worker
+`66c72f1d-cb58-497d-87d4-8b3a8c9145bc`. Restoring it returns to the former
+hide-all wide-view behavior without clearing user state or changing the live
+100 km query contract. The
+[#370 delivery receipt](https://github.com/vasilyevstan/LiveTrafficStan/issues/370)
+records the actual deployed application/Worker, exact-SHA checks, real-provider
+browser hand-off, normal installed-shell update and Wiki publication.
+Documentation commits do not themselves replace that running application.
+
 ## Production environment and credentials
 
 The GitHub `production` environment is restricted to the `main` branch and has

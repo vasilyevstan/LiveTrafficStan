@@ -67,7 +67,18 @@ Reset preferences restores automatic globe without clearing private history.
 
 Aircraft and ships intentionally pause when the full canvas includes a limb,
 pole, unsafe surface or a footprint over the existing 100 km bound. Zoom in,
-reduce tilt, or use Center; do not expect worldwide live traffic. ORBITS can
+reduce tilt, or use Center; do not expect worldwide live traffic. A preceding
+eligible local view may leave a **Last local traffic sample** during zoom-out:
+at most twelve representatives per kind, at their actual observed positions,
+fading from zoom 7 to zero at zoom 3 and expiring within two minutes. This
+read-only sample does not make wider requests, enter live counts, or open
+object details. Normal local interaction returns on zoom-in/Center.
+
+An initial wide shared view, expired observations, offline mode, HISTORY, or
+navigation to another target displays no inherited sample. Returning from
+HISTORY does not reset sample age or turn playback records into context.
+ORBITS remains opt-in
+and is not automatically enabled or fetched by zooming out. Enabled ORBITS can
 still display current modeled points while reporting map/crossing counts
 unavailable. A broad native feature query can include clipped line/circle
 geometry and is not evidence that a back-side object is visible or pickable.
@@ -564,9 +575,11 @@ defined passenger, cargo, or tanker codes.
 
 Settled pan, zoom, rotation, pitch, Home, and resize changes all update the
 traffic viewport. If its conservative enclosing radius exceeds 100 km, the app
-hides traffic and trails, pauses both providers, and shows **Zoom in to see live
+hides live traffic and trails, pauses both providers, and shows **Zoom in to see live
 traffic** or **Zoom in or reduce tilt to see live traffic**. This is not an
-empty provider response. Use **Resume live** to keep the current map center and
+empty provider response. The labelled zoom-out sample described above is only
+recent local context, never a complete wider board or feed. Use **Resume live**
+to keep the current map center and
 fit it back to the reviewed safe framing, or zoom in / reduce tilt manually.
 The existing provider instances resume at their next allowed cadence,
 reconnect, REST, or metadata boundary.

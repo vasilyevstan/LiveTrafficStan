@@ -71,6 +71,11 @@ identity are not renamed or reset.
 - A truthful 100 km enclosing-query limit: wider or unsafe views pause traffic
   and offer **Resume live** to fit the current map center back to the reviewed
   safe framing rather than showing partial coverage as complete.
+- A smoother zoom-out hand-off retains a small **last local traffic sample**
+  at real observed positions, with no wider requests. At most twelve aircraft
+  and twelve ships are decluttered and faded between zoom 7 and 3; observations
+  expire within two minutes. The labelled, read-only sample is not wider live
+  coverage and never enters live counts, details, trails or history.
 - A 30 km session Home/Center framing plus privacy-safe one-shot browser
   location: already-granted permission and grants made while the page is open
   are used automatically; otherwise location is an explicit action with
@@ -1216,7 +1221,10 @@ monitoring, privacy, and rollback procedure.
 - Views whose conservative enclosing radius exceeds 100 km pause live traffic.
   **Resume live** keeps the current map center and returns to the reviewed safe
   framing; manual zoom-in or reduced tilt remain available. Partial coverage is
-  never presented as complete.
+  never presented as complete. A recent preceding eligible view may leave
+  labelled, fading local sample markers during zoom-out; an initial wide view
+  has no such sample. ORBITS remains opt-in and appears only at real modeled
+  positions, so an empty area is not filled with invented orbital objects.
 - Selected trails remain intentionally limited to one object. Volatile session
   history disappears on refresh; explicitly enabled private local history may
   survive within its configured bounds.
