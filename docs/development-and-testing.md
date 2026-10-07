@@ -37,7 +37,7 @@ supplementary marine WebSocket; use the actual local Worker for those paths.
 | `npm run update:orbital-catalog -- --source-dir <probe-dir> --summary <summary.json> --published-at <iso> --output public/orbital-data/<new-version>/catalog.json` | Explicit maintainer normalization of the already-downloaded fixed five-group evidence after exact URL/order/row/byte/SHA-256 checks; never fetches the provider and never reuses a published immutable version |
 | `npm run check:starlink-catalog` | Network-free validation of the published shell-balanced Starlink contract, exact retained source evidence, four fixed shell quotas, canonical digest/notice, immutable history, and byte-for-byte schema-1 predecessor |
 | `npm run update:starlink-catalog -- --source-dir <probe-dir> --summary <summary.json> --published-at <iso>` | One-time normalization of an already-downloaded paired Starlink GP/SATCAT acquisition; never fetches CelesTrak and never overwrites a published version |
-| `npm run check:orbital-enrichment` | Network-free validation of exact current NORAD/name/designator/type identity, official-source provenance, rights notice, immutable asset inventory, dimensions, size, and SHA-256 |
+| `npm run check:orbital-enrichment` | Network-free validation of exact current NORAD/name/designator/type identity, official/community provenance and pinned Wikidata revision/CC0, rights notice, immutable asset inventory, dimensions, size, and SHA-256 |
 | `npm run check:vessel-photos` | Network-free validation of exact IMO, source revision, rights, license notice, asset inventory, dimensions, size, and SHA-256 |
 | `npm run check:ports` | Network-free validation of the committed Natural Earth port projection |
 | `npm run update:ports` | Explicit maintainer regeneration from the pinned Natural Earth source |
@@ -306,14 +306,40 @@ also cover schema-1 default/rollout compatibility, schema-2 negotiation,
 representation-specific ETags/`304`, cross-representation `200`, and stale-v2
 fallback to fresh schema 1 in one request.
 
-`npm run check:orbital-enrichment` does not fetch NASA. It verifies the
-committed nine-record manifest against the committed visual catalog, requires
+`npm run check:orbital-enrichment` does not fetch NASA or Wikidata. It verifies the
+committed ten-record manifest against the committed visual catalog, requires
 sorted unique canonical NORAD IDs and exact name/designator/type agreement,
-checks the pinned NASA/JAXA purpose sources, separately labeled Starlink
+checks the nine pinned NASA/JAXA purpose sources, COSMOS 1953 community
+metadata with a matching pinned Wikidata revision and CC0, separately labeled Starlink
 context, image digests and co-located notice,
 and fails if a published version path changes. Image files are excluded from
 the PWA shell, so building or installing the shell cannot create an enrichment
 request.
+
+`scripts/check-orbital-enrichment.test.mjs` runs the real checker against
+isolated local fixtures: missing/unknown context kind, community facts
+mislabeled as official purpose, missing/wrong license, floating/mismatched
+revision link, missing digest/evidence, identity conflict and record-cap
+overflow fail. Domain, details, nearby-row and tooltip regressions preserve
+the community distinction, unchanged official labels, exact identity fences,
+offline text, no substituted image and owner-correct Starlink behavior.
+Rendered #369 acceptance must use actual catalog selection in a browser,
+check readable source/license/caveat links at desktop and narrow/short mobile
+sizes, retain one canvas through themes and reselection, and observe zero
+N2YO/Wikidata requests. No source link need be followed to prove this contract.
+
+The #369 local production-build pass on 2026-10-07
+21:37:26-21:37:42 UTC used Chrome 155, one cached public catalog response and
+the native orbital worker (not fabricated positions). Eight Light/Dark layouts
+at 1280x900, 390x844, 390x568 and 315x517 retained one canvas, no horizontal
+overflow, and focusable/reachable pinned-source, CC0 and N2YO links. Actual
+catalog selection, native narrow touch close/reselection, the existing More
+focus fallback, offline community text and the rendered map hover passed.
+COSMOS 1953 requested no image; later Hubble selection requested its unchanged
+reviewed image once, then switching through an unreviewed rocket body and back
+did not leak that image. There were zero startup catalog requests, one
+opt-in catalog request, zero Wikidata/N2YO/license requests and no runtime
+exceptions. This is local acceptance, not a claim of production deployment.
 
 Deterministic loader tests separately require exact `200`, media type, byte
 count, and SHA-256; one concurrent/session request; abort removal for obsolete

@@ -1601,6 +1601,25 @@ records the actual deployed application/Worker, exact-SHA checks, real-provider
 browser hand-off, normal installed-shell update and Wiki publication.
 Documentation commits do not themselves replace that running application.
 
+## Reviewed satellite context release boundary (#369)
+
+Schema-2 enrichment manifest `2026-10-07-v1` is compiled display-only context:
+nine unchanged official mission descriptions plus exact COSMOS 1953
+community facts under Wikidata CC0. There is no metadata provider, key,
+runtime request, new binding, catalog schema change or user-data migration.
+The two NASA image bytes are copied unchanged into the new immutable
+generation; all prior paths remain available. Preserve every production
+input listed in the #370 boundary above.
+
+The compatible predecessor is application
+`14f5b2605170d0fbdb0721f6424f2dd940bb8098`, Worker
+`cf2bab71-790f-4df1-86c7-b387006f08d6`. Rollback removes the additional
+context/reference UI without clearing preferences, Home or private history.
+The [#369 delivery receipt](https://github.com/vasilyevstan/LiveTrafficStan/issues/369)
+records the actual application SHA, Worker version, exact-SHA gates,
+browser/source-link acceptance and Wiki publication; this boundary does not
+claim that a new rollback exercise occurred.
+
 ## Production environment and credentials
 
 The GitHub `production` environment is restricted to the `main` branch and has

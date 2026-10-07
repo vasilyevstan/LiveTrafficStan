@@ -4,7 +4,7 @@ import type {
   OrbitalObjectType,
 } from './orbital'
 
-export interface OrbitalEnrichmentPurpose {
+interface OrbitalEnrichmentSource {
   shortLabel: string
   description: string
   sourceName: string
@@ -15,6 +15,16 @@ export interface OrbitalEnrichmentPurpose {
   sourceSha256: string
   identityEvidence: string
 }
+
+export type OrbitalEnrichmentContext = OrbitalEnrichmentSource &
+  (
+    | { kind: 'mission-purpose' }
+    | {
+        kind: 'community-metadata'
+        sourceRevision: string
+        sourceLicense: 'CC0-1.0'
+      }
+  )
 
 export interface OrbitalEnrichmentImage {
   kind: 'photograph' | 'illustration'
@@ -63,18 +73,19 @@ export interface OrbitalEnrichmentRecord {
   objectNameAtReview: string
   internationalDesignatorAtReview: string
   catalogTypeAtReview: OrbitalObjectType
-  purpose: OrbitalEnrichmentPurpose
+  context: OrbitalEnrichmentContext
   image?: OrbitalEnrichmentImage
 }
 
 interface OrbitalEnrichmentManifest {
-  schemaVersion: 1
+  schemaVersion: 2
   manifestVersion: string
   reviewedAt: string
   sourcePolicy: {
     name: string
     identityRule: string
     purposeRule: string
+    communityRule: string
     imageRule: string
     takedownProcedure: string
   }
@@ -92,6 +103,16 @@ export const orbitalEnrichmentManifest =
 
 export const starlinkConstellationContext =
   orbitalEnrichmentManifestJson.constellationContext.starlink
+
+export const orbitalEnrichmentContextLabel = (
+  context: OrbitalEnrichmentContext,
+) => context.kind === 'community-metadata' ? 'Community context' : 'Purpose'
+
+export const orbitalEnrichmentSummary = (
+  enrichment: OrbitalEnrichmentRecord | undefined,
+) => enrichment
+  ? `${orbitalEnrichmentContextLabel(enrichment.context)}: ${enrichment.context.shortLabel}`
+  : 'Purpose: unavailable for this exact NORAD ID'
 
 export const createOrbitalEnrichmentIndex = (
   records: readonly OrbitalEnrichmentRecord[],

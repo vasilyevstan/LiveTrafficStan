@@ -92,7 +92,11 @@ visit; explicit, remembered, or shared visibility choices still apply.
 
 The exact-NORAD purpose/image manifest adds no environment variable, provider
 endpoint, secret, scheduler, Worker binding, or PWA-shell entry. Purpose is
-compiled into the browser bundle. A reviewed image uses only its immutable
+compiled into the browser bundle. Schema-2 manifest `2026-10-07-v1` retains
+nine official descriptions and adds exact COSMOS 1953 community facts from
+Wikidata under CC0, pinned to a source revision. This is a reviewed static
+snapshot, not a bulk importer or browser metadata client; the 16-record cap
+is unchanged. A reviewed image uses only its immutable
 same-origin `/orbital-enrichment/<version>/` path after exact selection. The
 loader omits credentials and referrer, rejects redirects, validates exact
 status/media type/bytes/SHA-256 before creating a Blob URL, and leaves failures

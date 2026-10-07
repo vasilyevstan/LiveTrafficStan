@@ -16,7 +16,10 @@ import {
   type OrbitalDisplaySelection,
   type OrbitalPopulationCounts,
 } from '../domain/orbitalDiscovery'
-import { orbitalEnrichmentForPosition } from '../domain/orbitalEnrichment'
+import {
+  orbitalEnrichmentForPosition,
+  orbitalEnrichmentSummary,
+} from '../domain/orbitalEnrichment'
 
 interface OrbitalContextProps {
   state: OrbitalControllerState
@@ -254,9 +257,7 @@ export function OrbitalContext({
                               : futureTime(result.firstCrossingAt, now)}
                       </span>
                       <span className="orbital-context__purpose">
-                        Purpose:{' '}
-                        {enrichment?.purpose.shortLabel ??
-                          'unavailable for this exact NORAD ID'}
+                        {orbitalEnrichmentSummary(enrichment)}
                       </span>
                     </button>
                   </li>

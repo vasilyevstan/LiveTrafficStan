@@ -525,7 +525,7 @@ Starlink payloads receive the dedicated flat-panel image; exact `R/B`, `DEB`,
 and `UNK` records retain the existing type images.
 
 Orbital purpose and imagery are a second, static display-only boundary. The
-nine-record manifest is compiled into the browser and matches the current
+ten-record schema-2 manifest is compiled into the browser and matches the current
 feature only when NORAD ID, object name, international designator, and exact
 SATCAT type all equal the reviewed identity. Purpose labels therefore require
 no request. A selected image uses one immutable same-origin path through a
@@ -542,7 +542,12 @@ state, or traffic. Seven additional reviewed missions have description-only
 records; ISS and Hubble retain their exact historical images. Separately
 labeled Starlink service context is not exact-object enrichment or a claim
 about current operation. Purpose/context precedes telemetry in selected
-details.
+details. Nine records retain official `mission-purpose` context; COSMOS 1953
+uses `community-metadata` with a pinned Wikidata revision and CC0 license.
+The shared summary helper carries the distinction into nearby rows and hover,
+not just selected details. The record cap remains 16. Context makes no network
+request, adds no normalized orbital field, and never changes catalog freshness.
+The N2YO reference is a normal explicit external link, not a fetch or embed.
 
 ## Lifecycle and failure isolation
 

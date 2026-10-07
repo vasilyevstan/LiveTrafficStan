@@ -104,7 +104,7 @@ describe('orbital tooltip', () => {
       fakeDocument,
       new Map([
         [
-          '/orbital-enrichment/2026-10-05-v1/norad-20580.jpg',
+          '/orbital-enrichment/2026-10-07-v1/norad-20580.jpg',
           'blob:https://example.test/hubble',
         ],
       ]),
@@ -134,6 +134,31 @@ describe('orbital tooltip', () => {
     })
   })
 
+  it('labels the community summary without borrowing a mission or image', () => {
+    const cosmos: ModeledOrbitalPosition = {
+      ...position,
+      id: 'orbital:19210',
+      noradCatalogId: '19210',
+      name: 'COSMOS 1953',
+      internationalDesignator: '1988-050A',
+      objectType: 'PAY',
+    }
+    expect(orbitalTooltipSummary(cosmos).details).toEqual([
+      'Payload · NORAD 19210',
+      'Community context: Tselina-D spacecraft',
+      'Modeled position · not live telemetry',
+    ])
+    const root = createOrbitalTooltipElement(
+      cosmos,
+      fakeDocument,
+    ) as unknown as FakeElement
+    expect(root.children).toHaveLength(4)
+    expect(root.children.some(({ href, src }) => href || src)).toBe(false)
+    expect(orbitalTooltipSummary({
+      ...cosmos, id: 'orbital:starlink:19210', owner: 'starlink',
+    }).details).not.toContain('Community context: Tselina-D spacecraft')
+  })
+
   it('uses sample wording without curated enrichment for Starlink', () => {
     const starlink: ModeledOrbitalPosition = {
       ...position,
@@ -159,7 +184,7 @@ describe('orbital tooltip', () => {
       fakeDocument,
       new Map([
         [
-          '/orbital-enrichment/2026-10-05-v1/norad-20580.jpg',
+          '/orbital-enrichment/2026-10-07-v1/norad-20580.jpg',
           'blob:https://example.test/hubble',
         ],
       ]),

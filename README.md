@@ -135,7 +135,12 @@ identity are not renamed or reset.
   the same reviewed identity boundary for larger labeled map symbols and also
   have a bundled NASA purpose and historical photograph. Seven more exact
   missions (Terra, Aqua, Midori II, ALOS-2, Hitomi, XRISM and ACS3) have sourced
-  description-only context. Starlink has separately labeled general internet
+  description-only context. COSMOS 1953 / NORAD `19210` has separately labeled
+  **Community context**: revision-pinned Wikidata CC0 launch, spacecraft-class
+  and launch-vehicle facts, not an official individual mission or current
+  operational claim. Details provide source/review dates, the exact revision,
+  licensing and an explicit outbound N2YO reference without loading that site.
+  Starlink has separately labeled general internet
   service context, not a per-object operational claim. Other objects remain
   explicitly unavailable without an inferred mission, featured label or
   generic picture. Hover uses bundled text only; a selected
@@ -1281,8 +1286,9 @@ monitoring, privacy, and rollback procedure.
   telemetry, hazard predictions, or proof that an object is illuminated or
   visible to a person at the map location. The two reviewed NASA photographs
   are historical references to the exact object, not a view of its current
-  modeled position. Nine exact objects have reviewed purpose text; unreviewed
-  objects remain unavailable. Starlink service context is explicitly general,
+  modeled position. Nine exact objects have reviewed official purpose text;
+  COSMOS 1953 has community-maintained historical facts, not a verified mission.
+  Other unreviewed objects remain unavailable. Starlink service context is explicitly general,
   not an inferred individual mission.
 - There is no reverse geocoding, radar, precipitation forecast, account, saved
   center preference, or offline basemap guarantee. An installed shell can
