@@ -1565,6 +1565,22 @@ does not rename the repository or Worker.
 References: [Custom Domains](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/)
 and [Create Zone API](https://developers.cloudflare.com/api/resources/zones/methods/create/).
 
+## Smooth globe release boundary (#163)
+
+Globe is a browser-only change. Retain the existing private aircraft relay,
+photos, routes, curated orbital, Starlink and marine supplement inputs; it
+adds no binding, credential, provider endpoint, catalog format or backend
+migration. Use the normal checked dev-to-main and exact-current-main deploy
+path, including atomic relay-secret delivery.
+
+The pre-globe application/Worker receipt in #359 remains compatible rollback
+evidence. Older code ignores the additive stored projection preference, but
+its strict parser cannot use a new projection-bearing share fragment.
+Rollback does not require clearing preferences, Home, private history or site
+data. Record the actual application SHA separately from later docs/Wiki
+commits in the [#163 delivery receipt](https://github.com/vasilyevstan/LiveTrafficStan/issues/163);
+do not relabel earlier deployment or rollback evidence as this release.
+
 ## Production environment and credentials
 
 The GitHub `production` environment is restricted to the `main` branch and has

@@ -577,6 +577,19 @@ or unavailable storage selects Light to preserve the previous default. Auto
 resolves the browser system color scheme and follows later changes; explicit
 Light/Dark choices remain overrides. Map center coordinates are never stored.
 
+Projection is a separate `auto | flat` field in the same v1 preference schema.
+Missing or invalid values select `auto`; existing saved v1 values remain valid.
+**AUTO GLOBE** uses MapLibre's native `{ type: 'globe' }`: spherical through
+zoom 11, continuously interpolated to Mercator between 11 and 12, and flat
+at zoom 12 or above. **FLAT** uses Mercator throughout. This does not add an
+environment variable, zoom handler, animation loop, or provider setting.
+
+`MAP_PROJECTION_CONFIG` in `src/config/appConfig.ts` owns the native selection
+and surface guards: a one-CSS-pixel outward safety perimeter and 0.01 px
+project/unproject tolerance. The guard does not enlarge the actual full-canvas
+display polygon. Pole bounds and failed surface round trips make the footprint
+unsafe; neither the traffic 100 km bound nor ADSB.lol transport rounding changes.
+
 The default URLs are centralized in `DEFAULT_MAP_STYLE_URLS`. Their existing
 OpenFreeMap layers receive the application's atlas paint treatment: blue water,
 green vegetation, warm roads/buildings, and theme-specific label contrast.
@@ -584,8 +597,9 @@ The wood layer is shown from zoom 5 using the same vector data. A custom URL,
 including intentionally using the opposite theme's default URL, bypasses this
 treatment. When both themes share a stock URL, switching out of its atlas theme
 resets that style through the existing loader rather than retaining its paint.
-The bundled offline style is also unchanged. No new tile/imagery
-provider, terrain source, API key, preference, or camera behavior is introduced.
+The bundled offline style retains its original background paint. This palette
+treatment adds no tile/imagery provider, terrain source, API key, preference,
+or camera behavior; projection is configured independently above.
 
 The current behavioral configuration keeps:
 
@@ -594,6 +608,7 @@ The current behavioral configuration keeps:
 | Light map style | OpenFreeMap Positron with the application's warm atlas palette |
 | Dark map style | OpenFreeMap Dark with the application's deep-blue/forest/bronze atlas palette |
 | Theme default | Light; Auto is explicit opt-in |
+| Projection default | Auto globe; persistent Flat alternative |
 | Aircraft query cadence during camera movement | No faster than 20 seconds |
 | Marine query-triggered REST refresh | No more than once per 5 minutes |
 | Ineligible viewport behavior | Hide traffic/trails and pause providers |
@@ -612,6 +627,7 @@ objects, and selections. The shape is stored inside
 
 The complete preference schema also stores:
 
+- `auto | flat` map projection, independently of Auto/Light/Dark theme;
 - `metric | aviation-nautical` presentation units;
 - structured vessel category/navigation/reported-speed/length/unknown-length
   filters, excluding the free-text query;
@@ -625,7 +641,7 @@ mirror but leaves private-history storage untouched.
 Explicit sharing uses a validated fragment with maximum length 2,048:
 
 ```text
-#v=1&lat=59.437&lon=24.754&zoom=8.25&bearing=0.0&pitch=0.0&...
+#v=1&lat=59.437&lon=24.754&zoom=8.25&bearing=0.0&pitch=0.0&projection=auto&...
 ```
 
 The camera is all-or-nothing, coordinates use the configured three-decimal
@@ -635,6 +651,14 @@ saved automatically. Browser Home/location, queries, selection, history, and
 provider state are never serialized. The orbital field is only `orbits=0|1`;
 it never serializes catalog identity, modeled time, selected NORAD ID, or
 track.
+
+`projection=auto|flat` is allowlisted; older fragments without it inherit the
+saved/default projection. Camera validation accepts zoom -6 through 22 because
+native globe minimum zoom includes a latitude adjustment (about -5.52 at
+latitude 85). This is a serialization bound, not a new MapLibre minimum-zoom
+setting. Choosing Flat can apply Mercator's own camera constraints. A shared
+negative globe camera is restored only after projection initialization and
+only if newer navigation or trusted manual input has not superseded it.
 
 ## Installable application shell
 

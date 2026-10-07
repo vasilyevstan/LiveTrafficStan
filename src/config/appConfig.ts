@@ -1,3 +1,4 @@
+import type { ProjectionSpecification } from 'maplibre-gl'
 import type { StaticAircraftMetadataProviderConfig } from '../providers/aircraftMetadata/staticAircraftMetadataProvider'
 import type { PlanespottersPhotoProviderConfig } from '../providers/aircraftPhoto/planespottersPhotoProvider'
 import type { StaticAirportsProviderConfig } from '../providers/airports/staticAirportsProvider'
@@ -160,6 +161,12 @@ export interface AppConfig {
 export const DEFAULT_MAP_STYLE_URLS = {
   light: 'https://tiles.openfreemap.org/styles/positron',
   dark: 'https://tiles.openfreemap.org/styles/dark',
+} as const
+
+export const MAP_PROJECTION_CONFIG = {
+  automaticProjection: { type: 'globe' } satisfies ProjectionSpecification,
+  surfaceMarginPx: 1,
+  surfaceRoundTripTolerancePx: 0.01,
 } as const
 
 const DEFAULTS = {

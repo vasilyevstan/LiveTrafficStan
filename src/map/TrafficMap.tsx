@@ -25,6 +25,7 @@ import {
   type MapCameraState,
 } from '../domain/mapCamera'
 import type { Port } from '../domain/ports'
+import type { MapProjectionPreference } from '../domain/preferences'
 import type {
   ModeledOrbitalPosition,
   OrbitalTrackSegment,
@@ -147,6 +148,11 @@ import {
   createTrafficTooltipElement,
 } from './trafficTooltip'
 import { createOrbitalTooltipElement } from './orbitalTooltip'
+import {
+  applyMapProjection,
+  sampleMapViewport,
+  withMapProjection,
+} from './mapProjection'
 
 setWorkerUrl(maplibreWorkerUrl)
 
@@ -173,6 +179,7 @@ interface TrafficMapProps {
   mapStyleUrl: string
   online: boolean
   theme: Theme
+  projectionPreference: MapProjectionPreference
   units: UnitSystem
   aircraft: readonly DisplayAircraft[]
   vessels: readonly DisplayVessel[]
@@ -320,23 +327,6 @@ const fitPadding = () =>
     ? { top: 180, right: 28, bottom: 90, left: 28 }
     : { top: 70, right: 360, bottom: 70, left: 70 }
 
-const canvasPerimeter = (width: number, height: number, segments = 8) => {
-  const points: [number, number][] = []
-  for (let index = 0; index < segments; index += 1) {
-    points.push([width * (index / segments), 0])
-  }
-  for (let index = 0; index < segments; index += 1) {
-    points.push([width, height * (index / segments)])
-  }
-  for (let index = 0; index < segments; index += 1) {
-    points.push([width * (1 - index / segments), height])
-  }
-  for (let index = 0; index < segments; index += 1) {
-    points.push([0, height * (1 - index / segments)])
-  }
-  return points
-}
-
 const viewportSignature = (assessment: ViewportAssessment) => {
   let viewport
   if (assessment.kind === 'eligible') {
@@ -376,6 +366,7 @@ export function TrafficMap({
   mapStyleUrl,
   online,
   theme,
+  projectionPreference,
   units,
   aircraft,
   vessels,
@@ -438,6 +429,8 @@ export function TrafficMap({
   const viewRequestRef = useRef(viewRequestId)
   const viewCenterRef = useRef(viewCenter)
   const initialCameraRef = useRef(viewCamera)
+  const initialInteractionGenerationRef = useRef(0)
+  const projectionPreferenceRef = useRef(projectionPreference)
   const viewportLimitsRef = useRef({
     coordinatePrecision,
     maximumRadiusKm: maximumViewportRadiusKm,
@@ -468,7 +461,6 @@ export function TrafficMap({
     aircraft: 0,
     vessels: 0,
   })
-  const initialStyleUrlRef = useRef(mapStyleUrl)
   const desiredStyleUrlRef = useRef(mapStyleUrl)
   const requestedStyleUrlRef = useRef(mapStyleUrl)
   const appliedStyleUrlRef = useRef(mapStyleUrl)
@@ -799,9 +791,6 @@ export function TrafficMap({
     let orbitalViewport: OrbitalViewport
     let rawZoom: number | undefined
     try {
-      const canvas = map.getCanvas()
-      const width = canvas.clientWidth
-      const height = canvas.clientHeight
       const center = map.getCenter()
       const currentZoom = map.getZoom()
       rawZoom = Number.isFinite(currentZoom) ? currentZoom : undefined
@@ -817,36 +806,13 @@ export function TrafficMap({
           viewportLimitsRef.current.coordinatePrecision,
         ),
       )
-      const perimeter = canvasPerimeter(width, height).map(([x, y]) => {
-        const coordinate = map.unproject([x, y])
-        return {
-          latitude: coordinate.lat,
-          longitude: coordinate.lng,
-        }
-      })
+      const sample = sampleMapViewport(map)
       assessment = assessTrafficViewport(
-        {
-          center: {
-            latitude: center.lat,
-            longitude: center.lng,
-          },
-          perimeter,
-          pitchDegrees: map.getPitch(),
-        },
+        sample,
         viewportLimitsRef.current,
       )
-      const bounds = map.getBounds()
       orbitalViewport = assessOrbitalViewport(
-        {
-          center: {
-            latitude: center.lat,
-            longitude: center.lng,
-          },
-          perimeter,
-          longitudeSpanDegrees: Math.abs(
-            bounds.getEast() - bounds.getWest(),
-          ),
-        },
+        sample,
         viewportLimitsRef.current.coordinatePrecision,
       )
     } catch {
@@ -942,6 +908,7 @@ export function TrafficMap({
       const renderState = renderStateRef.current
       const viewState = viewStateRef.current
       const activeTheme = themeRef.current
+      applyMapProjection(map, projectionPreferenceRef.current)
       applyBasemapCartography(
         map,
         activeTheme,
@@ -1089,6 +1056,18 @@ export function TrafficMap({
           initialCameraRef.current &&
           viewRequestRef.current === initialViewRequestIdRef.current
         ) {
+          if (
+            interactionGenerationRef.current ===
+            initialInteractionGenerationRef.current
+          ) {
+            const camera = initialCameraRef.current
+            map.jumpTo({
+              center: [camera.longitude, camera.latitude],
+              zoom: camera.zoom,
+              bearing: camera.bearing,
+              pitch: camera.pitch,
+            })
+          }
           lastViewportSignatureRef.current = null
           scheduleViewportReport(map, 0)
         } else {
@@ -1097,6 +1076,8 @@ export function TrafficMap({
       } else if (lastViewRequestRef.current !== viewRequestRef.current) {
         lastViewRequestRef.current = viewRequestRef.current
         fitCurrentView(map, 650)
+      } else {
+        scheduleViewportReport(map)
       }
     },
     [
@@ -1155,9 +1136,14 @@ export function TrafficMap({
 
         map.once('style.load', handleStyleLoad)
         try {
+          // transformStyle waits for the previous style: discard an unready
+          // request so a failed or superseded load cannot block recovery.
+          if (!map.getStyle()) map.setStyle(null)
           // A same-URL reset must emit style.load for overlay rehydration.
           map.setStyle(style, {
             diff: styleKey !== appliedStyleUrlRef.current,
+            transformStyle: (_previous, next) =>
+              withMapProjection(next, projectionPreferenceRef.current),
           })
         } catch (error) {
           map.off('style.load', handleStyleLoad)
@@ -1184,6 +1170,24 @@ export function TrafficMap({
     },
     [installCurrentStyle],
   )
+
+  useEffect(() => {
+    projectionPreferenceRef.current = projectionPreference
+    const map = mapRef.current
+    if (!map || !loadedRef.current) return
+    try {
+      if (applyMapProjection(map, projectionPreference)) {
+        hideTrafficTooltipRef.current()
+        scheduleViewportReport(map)
+      }
+    } catch (error) {
+      errorRef.current({
+        kind: 'runtime',
+        message:
+          error instanceof Error ? error.message : 'Map projection failed',
+      })
+    }
+  }, [projectionPreference, scheduleViewportReport])
 
   useEffect(() => {
     selectRef.current = onSelect
@@ -1286,12 +1290,12 @@ export function TrafficMap({
     if (!containerRef.current) return
     const initialView = viewCenterRef.current
     const initialCamera = initialCameraRef.current
+    initialInteractionGenerationRef.current = interactionGenerationRef.current
 
     const map = createMapSafely(
       () =>
         new MapLibreMap({
           container: containerRef.current!,
-          style: initialStyleUrlRef.current,
           center: initialCamera
             ? [initialCamera.longitude, initialCamera.latitude]
             : [initialView.longitude, initialView.latitude],
@@ -2116,25 +2120,6 @@ export function TrafficMap({
       }
     })
 
-    map.on('load', () => {
-      if (loadedRef.current) return
-      if (requestedStyleUrlRef.current !== initialStyleUrlRef.current) {
-        return
-      }
-      if (desiredStyleUrlRef.current !== initialStyleUrlRef.current) {
-        switchMapStyle(
-          map,
-          desiredStyleUrlRef.current,
-          desiredStyleUrlRef.current,
-        )
-        return
-      }
-
-      appliedStyleUrlRef.current = initialStyleUrlRef.current
-      appliedThemeRef.current = themeRef.current
-      installCurrentStyle(map)
-    })
-
     map.on('error', (event) => {
       if (event.error) {
         if (
@@ -2155,6 +2140,12 @@ export function TrafficMap({
         })
       }
     })
+
+    switchMapStyle(
+      map,
+      desiredStyleUrlRef.current,
+      desiredStyleUrlRef.current,
+    )
 
     return () => {
       styleGenerationRef.current += 1

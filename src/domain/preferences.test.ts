@@ -35,6 +35,7 @@ describe('application preferences', () => {
     ).toEqual({
       version: 1,
       theme: 'dark',
+      projection: 'auto',
       units: 'aviation-nautical',
       layers: {
         aircraftVisible: false,
@@ -69,6 +70,29 @@ describe('application preferences', () => {
         radiusKm: 25,
       }),
     ).toEqual(defaultAppPreferences())
+  })
+
+  it('adds automatic globe to old saved values and validates the flat alternative', () => {
+    expect(resolveAppPreferences({ version: 1, theme: 'dark' })).toMatchObject({
+      theme: 'dark',
+      projection: 'auto',
+    })
+    expect(
+      resolveAppPreferences({ version: 1, projection: 'flat' }).projection,
+    ).toBe('flat')
+    for (const projection of ['globe', 'mercator', null, 0, {}]) {
+      expect(resolveAppPreferences({ version: 1, projection }).projection).toBe(
+        'auto',
+      )
+    }
+    const saved = { ...defaultAppPreferences(), projection: 'flat' as const }
+    expect(mergeAppPreferenceOverrides(saved, { theme: 'dark' }).projection).toBe(
+      'flat',
+    )
+    expect(
+      mergeAppPreferenceOverrides(saved, { projection: 'auto' }).projection,
+    ).toBe('auto')
+    expect(saved.projection).toBe('flat')
   })
 
   it('loads the unified key before the legacy theme and migrates only when absent', () => {

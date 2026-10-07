@@ -4,6 +4,7 @@ export interface OrbitalViewportSample {
   center: ViewportCoordinate
   perimeter: readonly ViewportCoordinate[]
   longitudeSpanDegrees: number
+  surfaceIsContinuous?: boolean
 }
 
 export type OrbitalViewport =
@@ -63,6 +64,7 @@ export const assessOrbitalViewport = (
   coordinatePrecision: number,
 ): OrbitalViewport => {
   if (
+    sample.surfaceIsContinuous === false ||
     !validCoordinate(sample.center) ||
     sample.perimeter.length < 4 ||
     sample.perimeter.some((coordinate) => !validCoordinate(coordinate)) ||

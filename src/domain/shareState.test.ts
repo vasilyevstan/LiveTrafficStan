@@ -47,6 +47,7 @@ describe('shared application state', () => {
       },
       preferences: {
         theme: 'dark',
+        projection: 'auto',
         units: 'aviation-nautical',
         layers: {
           aircraftVisible: true,
@@ -90,6 +91,35 @@ describe('shared application state', () => {
       },
     })
     expect(parseShareFragment('#v=1&lat=59&lon=24')).toBeNull()
+  })
+
+  it('round trips the globe preference and native negative polar zoom without location storage', () => {
+    for (const projection of ['auto', 'flat'] as const) {
+      const preferences = { ...defaultAppPreferences(), projection }
+      const fragment = serializeShareFragment(
+        { ...camera, latitude: 85, zoom: -5.5 },
+        preferences,
+        3,
+      )
+      expect(parseShareFragment(fragment)).toMatchObject({
+        camera: { latitude: 85, zoom: -5.5 },
+        preferences: { projection },
+      })
+      expect(preferences).not.toHaveProperty('camera')
+      expect(preferences).not.toHaveProperty('latitude')
+    }
+    expect(parseShareFragment('#v=1&projection=flat')).toEqual({
+      preferences: { projection: 'flat' },
+    })
+    expect(parseShareFragment('#v=1&projection=globe')).toBeNull()
+    expect(
+      parseShareFragment('#v=1&projection=auto&projection=flat'),
+    ).toBeNull()
+    expect(
+      parseShareFragment(
+        '#v=1&lat=85&lon=0&zoom=-6.01&bearing=0&pitch=0&projection=auto',
+      ),
+    ).toBeNull()
   })
 
   it('canonicalizes precise incoming and world-wrapped outgoing cameras', () => {

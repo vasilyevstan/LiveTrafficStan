@@ -14,6 +14,7 @@ export interface ViewportSample {
   center: Coordinates
   perimeter: readonly Coordinates[]
   pitchDegrees: number
+  surfaceIsContinuous?: boolean
 }
 
 export interface TrafficViewport {
@@ -92,6 +93,7 @@ export const assessTrafficViewport = (
   limits: ViewportLimits,
 ): ViewportAssessment => {
   if (
+    sample.surfaceIsContinuous === false ||
     !validSampleCoordinate(sample.center) ||
     !Number.isFinite(sample.pitchDegrees) ||
     sample.perimeter.length < 4 ||
