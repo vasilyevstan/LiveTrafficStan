@@ -76,17 +76,17 @@ const requiredHttpsUrl = (value, label) => {
 const sha256 = (bytes) =>
   createHash('sha256').update(bytes).digest('hex')
 
-const verifyPurposeSource = (purpose, label) => {
-  requiredString(purpose?.shortLabel, `${label} purpose label`, 80)
-  requiredString(purpose?.description, `${label} purpose`, 600)
-  requiredString(purpose?.sourceName, `${label} purpose source`, 120)
-  requiredString(purpose?.sourceTitle, `${label} purpose title`, 240)
-  requiredHttpsUrl(purpose?.sourceUrl, `${label} purpose URL`)
-  if (purpose?.sourcePublishedAt !== undefined) {
-    requiredDate(purpose.sourcePublishedAt, `${label} purpose publication date`)
+const verifyContextSource = (context, label) => {
+  requiredString(context?.shortLabel, `${label} context label`, 80)
+  requiredString(context?.description, `${label} context`, 600)
+  requiredString(context?.sourceName, `${label} context source`, 120)
+  requiredString(context?.sourceTitle, `${label} context title`, 240)
+  requiredHttpsUrl(context?.sourceUrl, `${label} context URL`)
+  if (context?.sourcePublishedAt !== undefined) {
+    requiredDate(context.sourcePublishedAt, `${label} context publication date`)
   }
-  requiredDate(purpose?.sourceRetrievedAt, `${label} purpose retrieval date`)
-  requiredSha256(purpose?.sourceSha256, `${label} purpose source digest`)
+  requiredDate(context?.sourceRetrievedAt, `${label} context retrieval date`)
+  requiredSha256(context?.sourceSha256, `${label} context source digest`)
 }
 
 const imageDimensions = (bytes, mediaType) => {
@@ -204,7 +204,7 @@ const verifyImmutableVersion = async () => {
   }
 }
 
-if (manifest.schemaVersion !== 1) fail('schemaVersion must be 1')
+if (manifest.schemaVersion !== 2) fail('schemaVersion must be 2')
 if (!/^[0-9]{4}-[0-9]{2}-[0-9]{2}-v[0-9]+$/.test(manifest.manifestVersion)) {
   fail('manifestVersion is invalid')
 }
@@ -212,6 +212,7 @@ requiredDate(manifest.reviewedAt, 'reviewedAt')
 requiredString(manifest.sourcePolicy?.name, 'source policy name')
 requiredString(manifest.sourcePolicy?.identityRule, 'identity rule')
 requiredString(manifest.sourcePolicy?.purposeRule, 'purpose rule')
+requiredString(manifest.sourcePolicy?.communityRule, 'community context rule')
 requiredString(manifest.sourcePolicy?.imageRule, 'image rule')
 requiredString(
   manifest.sourcePolicy?.takedownProcedure,
@@ -225,7 +226,7 @@ if (
   fail(`records must contain 1-${MAX_RECORDS} reviewed objects`)
 }
 await verifyImmutableVersion()
-verifyPurposeSource(manifest.constellationContext?.starlink, 'Starlink general context')
+verifyContextSource(manifest.constellationContext?.starlink, 'Starlink general context')
 
 const catalogById = new Map(
   catalog.records.map((record) => [record.noradCatalogId, record]),
@@ -284,12 +285,47 @@ for (const [index, record] of manifest.records.entries()) {
     }
   }
 
-  verifyPurposeSource(record.purpose, id)
+  const context = record.context
+  verifyContextSource(context, id)
+  if (!['mission-purpose', 'community-metadata'].includes(context.kind)) {
+    fail(`${id} context kind must distinguish mission purpose from community metadata`)
+  }
   requiredString(
-    record.purpose?.identityEvidence,
-    `${id} purpose identity evidence`,
+    context.identityEvidence,
+    `${id} context identity evidence`,
     1_000,
   )
+  if (context.kind === 'community-metadata') {
+    const sourceUrl = new URL(context.sourceUrl)
+    if (
+      context.sourceName !== 'Wikidata' ||
+      context.sourceLicense !== 'CC0-1.0' ||
+      !/^[1-9][0-9]{0,15}$/.test(context.sourceRevision ?? '') ||
+      sourceUrl.origin !== 'https://www.wikidata.org' ||
+      sourceUrl.pathname !== '/w/index.php' ||
+      !/^Q[1-9][0-9]*$/.test(sourceUrl.searchParams.get('title') ?? '') ||
+      sourceUrl.searchParams.get('oldid') !== context.sourceRevision
+    ) {
+      fail(`${id} community metadata requires Wikidata CC0 and a matching pinned revision URL`)
+    }
+    for (const notice of [
+      id,
+      context.sourceUrl,
+      'CC0 1.0',
+      'https://creativecommons.org/publicdomain/zero/1.0/',
+    ]) {
+      if (!licenseText.includes(notice)) {
+        fail(`LICENSES.md is missing ${notice}`)
+      }
+    }
+  } else if (
+    context.sourceName === 'Wikidata' ||
+    new URL(context.sourceUrl).hostname.endsWith('wikidata.org') ||
+    context.sourceRevision !== undefined ||
+    context.sourceLicense !== undefined
+  ) {
+    fail(`${id} community metadata must not be labeled as mission purpose`)
+  }
 
   const image = record.image
   if (!image) continue

@@ -169,6 +169,53 @@ describe('OrbitalDetails', () => {
     expect(html).not.toContain('Loading verified')
   })
 
+  it('shows community provenance and a passive N2YO link without claiming an official purpose', () => {
+    const cosmos = {
+      ...position,
+      id: 'orbital:19210',
+      noradCatalogId: '19210',
+      name: 'COSMOS 1953',
+      internationalDesignator: '1988-050A',
+      objectType: 'PAY' as const,
+    }
+    for (const online of [true, false]) {
+      const html = renderToStaticMarkup(
+        <OrbitalDetails
+          position={cosmos}
+          snapshot={snapshot}
+          sourceName="CelesTrak"
+          sourceWebsiteUrl="https://celestrak.org/"
+          sourceUsagePolicyUrl="https://celestrak.org/usage-policy.php"
+          now={position.modeledFor}
+          online={online}
+          units="metric"
+          imageState={{ phase: 'available', identityKey: 'obsolete-iss', url: 'blob:obsolete' }}
+          mapDisplay={{ available: true, selectedException: false }}
+          onClose={() => undefined}
+        />,
+      )
+      expect(html).toContain('Community context</h3>')
+      expect(html).toContain('Tselina-D spacecraft')
+      expect(html).toContain('14 June 1988')
+      expect(html).toContain('Tsyklon-3')
+      expect(html).toContain('not a verified individual mission or current operational status')
+      expect(html).toContain('title=Q12753536&amp;oldid=1609633724')
+      expect(html).toContain('source revision 1609633724')
+      expect(html).toContain('CC0 1.0')
+      expect(html).toContain('source retrieved 2026-10-07')
+      expect(html).toContain('exact NORAD 19210')
+      expect(html).toContain('href="https://www.n2yo.com/satellite/?s=19210" target="_blank" rel="noopener noreferrer"')
+      expect(html).toContain('no N2YO content is loaded here')
+      expect(html).toContain('Verified image unavailable; no substitute shown.')
+      expect(html).toContain('SGP4 model, not live')
+      expect(html).not.toContain('Purpose:')
+      expect(html).not.toContain('Loading verified')
+      expect(html).not.toContain('<img')
+      expect(html).not.toContain('blob:obsolete')
+      expect(html.indexOf('Community context')).toBeLessThan(html.indexOf('Catalog type'))
+    }
+  })
+
   it('reports map display unavailable for a Catalog selection before zoom settles', () => {
     const display = selectOrbitalDisplay(
       [position],

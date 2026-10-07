@@ -139,13 +139,23 @@ modification statement. The photograph is explicitly not a live view of the
 current modeled position.
 
 Terra, Aqua, Midori II, ALOS-2, Hitomi, XRISM and ACS3 additionally have
-exact-identity, NASA/JAXA-supported descriptions in `2026-10-05-v1`, with
+exact-identity, NASA/JAXA-supported descriptions in `2026-10-07-v1`, with
 **Verified image unavailable** rather than a substitute photo. Unreviewed
 objects still show **Purpose and image unavailable**. The application does
 not transfer a payload mission
 to a discarded stage, infer purpose from an object name, or display a generic
 satellite/rocket picture. The full source and rights review is
 [Orbital Purpose and Image Source Evaluation](orbital-enrichment-source-evaluation.md).
+
+COSMOS 1953 / NORAD `19210` has **Community context**, distinct from Purpose:
+Wikidata records its 1988-06-14 launch, Tselina-D spacecraft class and Tsyklon-3
+launch vehicle. The pinned source revision, CC0 link, retrieval/review dates
+and exact identity are visible. This summarizes structured historical facts;
+the source has no English individual description, and the app does not infer
+a verified mission or present operational status. Its image remains unavailable.
+Nearby results and hover preserve the community label. All selected objects
+have an explicit external N2YO reference; neither N2YO nor Wikidata is
+contacted unless the user follows a link.
 
 Desktop mouse hover gets a compact exact-object tooltip with name, NORAD ID,
 catalog type, reviewed purpose when available, and the modeled/not-live

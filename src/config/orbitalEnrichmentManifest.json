@@ -1,11 +1,12 @@
 {
-  "schemaVersion": 1,
-  "manifestVersion": "2026-10-05-v1",
-  "reviewedAt": "2026-10-05",
+  "schemaVersion": 2,
+  "manifestVersion": "2026-10-07-v1",
+  "reviewedAt": "2026-10-07",
   "sourcePolicy": {
-    "name": "Manual exact-NORAD official-source review",
+    "name": "Manual exact-NORAD context review",
     "identityRule": "Index by canonical NORAD catalog ID, then require the current object name, international designator, and exact SATCAT type to match the reviewed record.",
     "purposeRule": "Use only purpose text supported by the cited authoritative mission source; never infer object-specific purpose from name, type, owner, group, or orbit. Separately labeled constellation context describes the service, not an individual object's purpose or operational status.",
+    "communityRule": "Label revision-pinned Wikidata CC0 facts as community context, separate from official mission purpose. Cross-check both NORAD and COSPAR in the source, review referenced entity labels, and never infer an individual mission or current operational status from spacecraft class.",
     "imageRule": "Bundle only an image reviewed as depicting the exact object, with explicit public-display and transformation rights.",
     "takedownProcedure": "Remove the manifest record and bundled asset, run npm run check:orbital-enrichment, and deploy the resulting exact source revision. Never substitute a generic object image."
   },
@@ -22,11 +23,31 @@
   },
   "records": [
     {
+      "noradCatalogId": "19210",
+      "objectNameAtReview": "COSMOS 1953",
+      "internationalDesignatorAtReview": "1988-050A",
+      "catalogTypeAtReview": "PAY",
+      "context": {
+        "kind": "community-metadata",
+        "shortLabel": "Tselina-D spacecraft",
+        "description": "Wikidata lists COSMOS 1953 as a Tselina-D spacecraft launched on 14 June 1988 aboard a Tsyklon-3 launch vehicle. This is a summary of structured historical facts, not an English mission description supplied by the source.",
+        "sourceName": "Wikidata",
+        "sourceTitle": "Cosmos 1953 (Q12753536), reviewed entity revision",
+        "sourceUrl": "https://www.wikidata.org/w/index.php?title=Q12753536&oldid=1609633724",
+        "sourceRevision": "1609633724",
+        "sourceLicense": "CC0-1.0",
+        "sourceRetrievedAt": "2026-10-07",
+        "sourceSha256": "2bd3f17acc4d20a9848ce3c56ebd2fbfda4765b166116451a64f52357955e9d6",
+        "identityEvidence": "Wikidata Q12753536 revision 1609633724 explicitly matches P377 NORAD 19210 and P247 COSPAR 1988-050A to the reviewed CelesTrak COSMOS 1953 PAY record. P619 has day precision for 1988-06-14; P31 links Q14701642 (Tselina-D, label reviewed at revision 2450754761); P375 links Q334236 (Tsyklon-3, label reviewed at revision 2480134587). No English individual description or exact-object image is supplied."
+      }
+    },
+    {
       "noradCatalogId": "20580",
       "objectNameAtReview": "HST",
       "internationalDesignatorAtReview": "1990-037B",
       "catalogTypeAtReview": "PAY",
-      "purpose": {
+      "context": {
+        "kind": "mission-purpose",
         "shortLabel": "Space-based astronomical observatory",
         "description": "NASA describes Hubble as a large space-based observatory used to observe the universe and expand understanding of the cosmos.",
         "sourceName": "NASA Science",
@@ -69,7 +90,7 @@
           "restrictions": "Informational use only; the credit does not imply NASA endorsement. NASA insignia and logotypes are not used as application branding."
         },
         "asset": {
-          "path": "/orbital-enrichment/2026-10-05-v1/norad-20580.jpg",
+          "path": "/orbital-enrichment/2026-10-07-v1/norad-20580.jpg",
           "mediaType": "image/jpeg",
           "bytes": 46716,
           "width": 437,
@@ -84,7 +105,8 @@
       "objectNameAtReview": "ISS (ZARYA)",
       "internationalDesignatorAtReview": "1998-067A",
       "catalogTypeAtReview": "PAY",
-      "purpose": {
+      "context": {
+        "kind": "mission-purpose",
         "shortLabel": "Crewed microgravity science laboratory",
         "description": "NASA describes the station as an orbiting laboratory for research and technology demonstrations that enable discoveries not possible on Earth and support future exploration.",
         "sourceName": "NASA",
@@ -127,7 +149,7 @@
           "restrictions": "Informational use only; the credit does not imply NASA endorsement. NASA insignia and logotypes are not used as application branding."
         },
         "asset": {
-          "path": "/orbital-enrichment/2026-10-05-v1/norad-25544.jpg",
+          "path": "/orbital-enrichment/2026-10-07-v1/norad-25544.jpg",
           "mediaType": "image/jpeg",
           "bytes": 48741,
           "width": 640,
@@ -142,7 +164,8 @@
       "objectNameAtReview": "TERRA",
       "internationalDesignatorAtReview": "1999-068A",
       "catalogTypeAtReview": "PAY",
-      "purpose": {
+      "context": {
+        "kind": "mission-purpose",
         "shortLabel": "Earth-system observation",
         "description": "Terra was designed to study interactions among Earth's atmosphere, land, oceans and radiant energy. Its measurements support research into environmental change and natural hazards, including fires and volcanoes.",
         "sourceName": "NASA Science",
@@ -158,7 +181,8 @@
       "objectNameAtReview": "AQUA",
       "internationalDesignatorAtReview": "2002-022A",
       "catalogTypeAtReview": "PAY",
-      "purpose": {
+      "context": {
+        "kind": "mission-purpose",
         "shortLabel": "Earth's water cycle and climate",
         "description": "Aqua was designed to measure Earth's water cycle, including atmospheric water vapor, clouds, precipitation, snow and ice. Its instruments also investigate temperatures, vegetation, ocean biology and Earth's energy balance.",
         "sourceName": "NASA Science",
@@ -174,7 +198,8 @@
       "objectNameAtReview": "MIDORI II (ADEOS-II)",
       "internationalDesignatorAtReview": "2002-056A",
       "catalogTypeAtReview": "PAY",
-      "purpose": {
+      "context": {
+        "kind": "mission-purpose",
         "shortLabel": "Global environmental observation",
         "description": "Midori II (ADEOS-II) was built to investigate global environmental change. Its microwave and optical sensors were designed to measure water-related conditions, oceans, land, clouds and the atmosphere.",
         "sourceName": "JAXA",
@@ -190,7 +215,8 @@
       "objectNameAtReview": "ALOS-2",
       "internationalDesignatorAtReview": "2014-029A",
       "catalogTypeAtReview": "PAY",
-      "purpose": {
+      "context": {
+        "kind": "mission-purpose",
         "shortLabel": "Radar observation of land and disasters",
         "description": "ALOS-2 (Daichi-2) carries L-band synthetic-aperture radar designed for day-and-night, all-weather observation. Its mission includes disaster mapping, land and infrastructure information, agriculture and tropical-forest monitoring.",
         "sourceName": "JAXA",
@@ -206,7 +232,8 @@
       "objectNameAtReview": "ASTRO-H (HITOMI)",
       "internationalDesignatorAtReview": "2016-012A",
       "catalogTypeAtReview": "PAY",
-      "purpose": {
+      "context": {
+        "kind": "mission-purpose",
         "shortLabel": "X-ray astronomy mission",
         "description": "Hitomi (ASTRO-H) was designed to study galaxy clusters, black holes and matter under extreme conditions using X-ray and gamma-ray instruments. NASA records that contact was lost in March 2016 and recovery efforts ended in April 2016; this is its historical mission, not a claim of current operation.",
         "sourceName": "NASA HEASARC",
@@ -222,7 +249,8 @@
       "objectNameAtReview": "XRISM",
       "internationalDesignatorAtReview": "2023-137A",
       "catalogTypeAtReview": "PAY",
-      "purpose": {
+      "context": {
+        "kind": "mission-purpose",
         "shortLabel": "X-ray imaging and spectroscopy",
         "description": "XRISM is a JAXA/NASA mission with ESA participation, designed to investigate celestial X-ray sources. Its Resolve spectrometer and Xtend imager measure X-ray energies and images to study hot, energetic matter in the universe.",
         "sourceName": "NASA HEASARC",
@@ -238,7 +266,8 @@
       "objectNameAtReview": "ACS3",
       "internationalDesignatorAtReview": "2024-077B",
       "catalogTypeAtReview": "PAY",
-      "purpose": {
+      "context": {
+        "kind": "mission-purpose",
         "shortLabel": "Solar-sail technology demonstration",
         "description": "NASA's Advanced Composite Solar Sail System demonstrates lightweight, deployable composite booms that support a solar sail. The technology is intended to enable larger sails for propulsion using sunlight.",
         "sourceName": "NASA",
