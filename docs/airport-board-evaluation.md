@@ -21,6 +21,14 @@ no browser credential, paid plan, recurring refresh, or discretionary
 provider-permission gate. The feature defaults off in source; activation
 requires the matching checked browser/Worker deployment input.
 
+Production activation, compatible disabled rollback and enabled restoration
+completed on 2026-10-08 at application
+`c0ed2bea4e6291bcb4054df28482fd564012c676`, final Worker
+`701561eb-4654-492d-b800-3eea5be8978b`.
+[The release receipt](hosting-and-deployment.md#airport-board-production-receipt-2026-10-08)
+records the actual versions, Actions and installed-browser acceptance.
+Later receipt-only documentation does not redeploy this application.
+
 The September review's blanket paid-plan and bespoke-permission assumptions
 are superseded. Applicable published terms can authorize the intended use;
 an individual agreement is necessary only when those terms require it.
@@ -102,8 +110,14 @@ No real provider records were committed as fixtures. Native browser acceptance
 uses explicitly invented rows; see
 [Development and Testing](development-and-testing.md#on-demand-airport-boards-46).
 Actual activation and rollback receipts are recorded on
-[#46](https://github.com/vasilyevstan/LiveTrafficStan/issues/46); do not mistake
-the local fixture acceptance for a production deployment.
+[#46](https://github.com/vasilyevstan/LiveTrafficStan/issues/46) and in the
+[deployment receipt](hosting-and-deployment.md#airport-board-production-receipt-2026-10-08).
+The normal installed-app update at 22:14 UTC loaded a real EETN board with
+ten arrivals/eight departures; the restored application at 22:18 UTC returned
+ten arrivals/nine departures. Each used one explicit native-browser load.
+Empty/canceled/diverted/unknown/failure cases remain synthetic contract
+evidence, not claims that every exceptional state occurred in live Tallinn.
+Neither production pass retained raw flights or real-flight screenshots.
 
 ## Required board contract
 
@@ -123,8 +137,10 @@ the basis for any future provider change:
 - UTC and airport-local-time boundary behavior;
 - bounded pagination/window, concurrency, timeout, body-size, retry,
   `429`/`Retry-After`, and spend controls;
-- permitted representative Tallinn (`EETN`) arrival, departure, empty,
-  delayed, canceled/diverted, partial, and failure samples;
+- bounded actual Tallinn (`EETN`) arrival/departure and delayed-flight evidence,
+  with explicitly invented schema-faithful fixtures for empty,
+  canceled/diverted, partial and failure states rather than repeatedly polling
+  until rare real-world events occur;
 - independent stale/error behavior that cannot affect live traffic.
 
 ## Candidate review

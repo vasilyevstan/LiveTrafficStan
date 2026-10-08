@@ -110,6 +110,15 @@ identity are not renamed or reset.
   medium airport reference points, static details, and a bounded keyboard
   list for the current view. It does not imply operational status, routes,
   arrivals, or departures.
+- Production-enabled, explicitly loaded AeroDataBox arrivals/departures in
+  the airport inspector. Enable **More -> Layers -> AIRPORTS**, select an
+  airport, then choose **Load board**. Both directions share one six-hour
+  request window; source-update time remains unavailable and rows are not
+  linked to live aircraft. The free allowance is shared by the entire app,
+  with no automatic refresh or paid fallback.
+  [Release #46](docs/hosting-and-deployment.md#airport-board-production-receipt-2026-10-08)
+  runs application `c0ed2bea4e6291bcb4054df28482fd564012c676`; later
+  documentation-only commits do not replace that running source.
 - Optional remembered aircraft and vessel clustering, kept in separate
   MapLibre sources with distinct counts and expansion behavior. Clustering
   starts off and never changes provider request cadence or entity identity.
