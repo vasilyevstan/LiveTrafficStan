@@ -214,7 +214,8 @@ desktop and 390x844.
   geometric check.
 - Private, registration-based, malformed, and unsupported callsigns remain
   unavailable.
-- Airport arrival/departure boards remain a separate blocked capability under
-  Issue #46.
+- Airport arrival/departure boards are the separate, explicitly loaded
+  AeroDataBox context under Issue #46. They do not validate this plausible
+  route or create a live-aircraft relationship.
 - Public tracker pages, airline pages, widgets, and undocumented private APIs
   are not scraped.

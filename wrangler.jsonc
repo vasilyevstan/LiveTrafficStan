@@ -20,6 +20,10 @@
     "MarineTrafficRelay": {
       "type": "durable-object",
       "storage": "sqlite"
+    },
+    "AirportBoardCoordinator": {
+      "type": "durable-object",
+      "storage": "sqlite"
     }
   },
   "observability": {

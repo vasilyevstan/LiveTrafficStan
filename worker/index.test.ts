@@ -21,6 +21,27 @@ describe('Cloudflare worker routing', () => {
     vi.unstubAllGlobals()
   })
 
+  it('routes airport boards independently and marks disabled and enabled responses with the exact release', async () => {
+    const assets = vi.fn()
+    const upstream = vi.fn()
+    vi.stubGlobal('fetch', upstream)
+    const request = new Request('https://app.example/api/airports/board?icao=EETN')
+    const disabled = await worker.fetch(request, { ASSETS: { fetch: assets }, RELEASE_SHA: releaseSha })
+    expect(disabled.status).toBe(404)
+    expect(disabled.headers.get('x-livetrafficstan-release')).toBe(releaseSha)
+    const coordinate = vi.fn().mockResolvedValue(Response.json({ schemaVersion: 1 }))
+    const enabled = await worker.fetch(request, {
+      ASSETS: { fetch: assets }, RELEASE_SHA: releaseSha,
+      AIRPORT_BOARDS_ENABLED: 'true', AERODATABOX_RAPIDAPI_KEY: 'private-test-key-not-a-credential',
+      AIRPORT_BOARD_COORDINATOR: { idFromName: () => 'board', get: () => ({ fetch: coordinate }) },
+    })
+    expect(enabled.status).toBe(200)
+    expect(enabled.headers.get('x-livetrafficstan-release')).toBe(releaseSha)
+    expect(coordinate).toHaveBeenCalledTimes(1)
+    expect(upstream).not.toHaveBeenCalled()
+    expect(assets).not.toHaveBeenCalled()
+  })
+
   it('routes API requests through the proxy and marks the release', async () => {
     vi.stubGlobal(
       'fetch',

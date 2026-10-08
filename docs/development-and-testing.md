@@ -48,6 +48,64 @@ supplementary marine WebSocket; use the actual local Worker for those paths.
 | `npm run check:deploy` | Bundle the Worker and Static Assets without credentials or deployment |
 | `npm run preview:worker` | Build and run the actual local Cloudflare `workerd` boundary |
 
+### On-demand airport boards (#46)
+
+The deterministic airport-board tests cover both directions, duplicate versus
+marketing/conflicting rows, all reported status classes, quality, unavailable
+versus empty directions, missing optional clocks and consistent UTC/local
+timestamps across midnight/DST. Raw/provider and normalized byte/row bounds,
+fixed origin/path/parameters, credential/header isolation, no-store/CORS
+boundaries, redirects, timeouts, malformed responses, `429`/`Retry-After`,
+quota exhaustion, concurrent loads, cancellation and coordinator recreation
+are exercised without an upstream request. Reservations precede forwarding;
+failures never optimistically refund unknown spend.
+
+Client tests require explicit loading, zero selection/pause/resume requests,
+A-to-B-to-A fencing, no automatic retry, expiry and record removal on pause.
+The cached-window regression renders a snapshot requested at 16:56 UTC into
+a 17:00 viewer, requiring the original request anchor rather than claiming
+a new window. Existing photo-reader behavior remains covered after extracting
+the identical bounded JSON reader for shared use.
+
+Build the browser with `VITE_AIRPORT_BOARDS_ENABLED=true`. A real backend
+also needs the prepared `--airport-boards-enabled true` Worker configuration,
+protected flag and key; plain Vite preview is not that backend. Never place a
+key in Vite configuration or use live API records as committed fixtures.
+
+Native Chrome 155 acceptance at **2026-10-08 20:48:48-20:49:05 UTC** used the
+real map/vector renderer, native fetch/clock and trusted pointer/keyboard/touch
+input with invented board/traffic responses and a local MQTT handshake fixture.
+It is local behavior evidence, not production coverage:
+
+- Zero board requests at startup or airport selection; one after Tab/Enter.
+  Arrivals/departures switches, resize, both themes and scrolling added none.
+- All six Light/Dark layouts at 1280x900, 390x568 and 315x517 retained one
+  canvas, visible vectors, reachable linked credits and 44 px controls, with
+  no horizontal overflow or nested inspector scroll owner.
+- Narrow panels measured 288/237 px high, leaving a 72 px unobscured map strip.
+  The first real rendered flight row was visible without scrolling. The first
+  layout round had exposed an inherited 128/104 px inspector cap; the scoped
+  airport-only height/compact-toolbar correction preserves other inspectors.
+- A `429` left the camera and 48 aircraft/48 vessel fixture entities unchanged.
+  There was no automatic retry; successful empty arrivals and unavailable
+  departures stayed distinct. Closing canceled the actual pending browser
+  request. No runtime exception occurred.
+
+Earlier observer-only failures were an unsupported startup share parameter,
+an incomplete synthetic MQTT handshake, and assuming the retry button had
+already rendered eligible after a fixed sleep. They were corrected in the
+observer, not bypassed in application code. The final report is
+`issue46-local-browser-4/airport-board-report.json` in the session evidence.
+The independent finish review accepted the incumbent presentation and the
+subsequent request-timestamp copy correction without a new visual-world or
+design-system rewrite.
+
+Production smoke checks only an invalid board parameter against the expected
+enabled/disabled route and exact release header; it must consume no board
+unit. First activation additionally requires one bounded native real-board
+check and compatible disabled rollback/restoration, with aggregate receipts
+on #46. Do not relabel the invented local rows as actual Tallinn flights.
+
 ### Zoom-out local sample regression (#370)
 
 `trafficZoomContext.test.ts` covers the current navigation/last eligible view,

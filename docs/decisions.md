@@ -173,7 +173,25 @@ byte set requires a new manifest version. A rights or identity dispute removes
 that exact entry and asset; it never authorizes a substitute. See
 [Vessel Reference Photo Evaluation](vessel-photo-evaluation.md).
 
-## Airport arrival and departure boards remain blocked
+## Airport boards use a bounded, on-demand source (#46)
+
+The 2026-10-07 free-plan reassessment and 2026-10-08 protected-key/Tallinn proof
+supersede the earlier blanket commercial-authorization blocker. AeroDataBox
+RapidAPI Basic supports the small noncommercial board: 400 units/month,
+two per combined request, with no automatic paid overage. Actual headers and
+the source's billing countdown drive fail-closed admission.
+
+Choose one demand-driven coordinator in the existing Worker, a fixed
+same-origin route, an explicit six-hour combined load, short complete-only
+memory caching and operational-only SQL quota/retry state. Keep the browser
+credential-free and board data out of traffic, relationships and history.
+Expose original request, retrieval and unknown source-update semantics,
+reported quality/codeshare/status and local clocks with UTC offsets. Do not
+add polling, another host, a provider marketplace or a flight-data archive.
+The existing inspector receives a scoped compact layout; no other inspector,
+map lifecycle, right-side control or design system is replaced.
+
+### Historical September assessment (superseded)
 
 Airport/time-window boards are independent of selected-aircraft plausible-route
 lookup.

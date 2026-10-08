@@ -21,16 +21,48 @@ describe('atomic production credential preparation', () => {
           AISSTREAM_API_KEY: 'test-aisstream-secret',
           OPENWATERS_AIS_TOKEN: 'test-openwaters-secret',
           OPENWATERS_AIS_IDENTITY_PRIVATE_KEY: 'must-not-be-deployed',
+          AIRPORT_BOARDS_ENABLED: 'true',
+          AERODATABOX_RAPIDAPI_KEY: 'test-airport-board-secret',
         },
       })
       expect(JSON.parse(readFileSync(output, 'utf8'))).toEqual({
         AIRCRAFT_RELAY_AUTH_TOKEN: 'test-relay-secret'.repeat(3),
         AISSTREAM_API_KEY: 'test-aisstream-secret',
         OPENWATERS_AIS_TOKEN: 'test-openwaters-secret',
+        AERODATABOX_RAPIDAPI_KEY: 'test-airport-board-secret',
       })
+
       expect(statSync(output).mode & 0o777).toBe(0o600)
       expect(stdout).not.toContain('test-')
       expect(stdout).not.toContain('must-not-be-deployed')
+    } finally {
+      rmSync(directory, { recursive: true, force: true })
+    }
+  })
+
+  it('omits the board credential when disabled and refuses missing or malformed enabled credentials', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'airport-secrets-test-'))
+    const output = join(directory, 'secrets.json')
+    try {
+      execFileSync(process.execPath, [script], {
+        env: {
+          ...process.env, SECRETS_FILE: output, AIRCRAFT_DELIVERY: 'oci-private-relay',
+          AIRCRAFT_RELAY_AUTH_TOKEN: 'test-relay-secret'.repeat(3),
+          MARINE_ENABLED: 'false', AIRPORT_BOARDS_ENABLED: 'false',
+          AERODATABOX_RAPIDAPI_KEY: 'must-not-be-deployed',
+        },
+      })
+      expect(JSON.parse(readFileSync(output, 'utf8'))).not.toHaveProperty('AERODATABOX_RAPIDAPI_KEY')
+      rmSync(output)
+      for (const key of ['', 'invalid\nkey']) {
+        expect(() => execFileSync(process.execPath, [script], {
+          stdio: 'pipe',
+          env: {
+            ...process.env, SECRETS_FILE: output, AIRCRAFT_DELIVERY: 'worker-proxy',
+            MARINE_ENABLED: 'false', AIRPORT_BOARDS_ENABLED: 'true', AERODATABOX_RAPIDAPI_KEY: key,
+          },
+        })).toThrow()
+      }
     } finally {
       rmSync(directory, { recursive: true, force: true })
     }

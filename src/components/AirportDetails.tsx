@@ -3,12 +3,20 @@ import {
   type Airport,
   type AirportSource,
 } from '../domain/airports'
+import type { AirportBoardProvider } from '../providers/airportBoards/airportBoardProvider'
+import { AirportBoard } from './AirportBoard'
 
 interface AirportDetailsProps {
   airport: Airport
   source: AirportSource
   coordinatePrecision: number
   onClose: () => void
+  board?: {
+    provider: AirportBoardProvider
+    now: number
+    online: boolean
+    historical: boolean
+  }
 }
 
 const DetailRow = ({
@@ -30,19 +38,22 @@ export function AirportDetails({
   source,
   coordinatePrecision,
   onClose,
+  board,
 }: AirportDetailsProps) {
   return (
-    <aside className="details-panel" aria-labelledby="selected-airport-title">
+    <aside className={`details-panel${board && !board.historical ? ' details-panel--airport-board' : ''}`} aria-labelledby="selected-airport-title">
       <div className="details-panel__heading">
         <div>
           <p className="eyebrow">Selected airport</p>
-          <h2 id="selected-airport-title">{airport.name}</h2>
+          <h2 id="selected-airport-title" title={airport.name}>{airport.name}</h2>
         </div>
         <button type="button" className="close-button" onClick={onClose}>
           Close
         </button>
       </div>
 
+      {board && <AirportBoard airportIcao={airport.icaoCode} {...board} />}
+      {board && <h3 className="airport-facts-title">Airport facts</h3>}
       <dl className="details-grid">
         <DetailRow label="Category" value={airportKindLabel(airport.kind)} />
         <DetailRow label="ICAO code" value={airport.icaoCode} />

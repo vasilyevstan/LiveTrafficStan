@@ -4,6 +4,16 @@ import { aircraftQueryRadiusNauticalMiles } from '../providers/aircraft/adsbLolP
 import { createAppConfig } from './appConfig'
 
 describe('createAppConfig', () => {
+  it('keeps airport boards opt-in with a fixed same-origin route and no endpoint override', () => {
+    expect(createAppConfig({}).airportBoards).toMatchObject({
+      enabled: false, path: '/api/airports/board', durationMinutes: 360, monthlyUnits: 400,
+    })
+    expect(createAppConfig({
+      VITE_AIRPORT_BOARDS_ENABLED: 'true',
+      VITE_AIRPORT_BOARD_ENDPOINT: 'https://untrusted.example/',
+    }).airportBoards).toMatchObject({ enabled: true, path: '/api/airports/board' })
+  })
+
   it('uses the Tallinn V1 defaults', () => {
     const config = createAppConfig({})
 

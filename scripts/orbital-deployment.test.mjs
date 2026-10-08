@@ -43,7 +43,7 @@ const workRoot = join(
   'orbital-deployment',
 )
 
-const prepare = (enabled, starlinkEnabled = false, marineEnabled = false) => {
+const prepare = (enabled, starlinkEnabled = false, marineEnabled = false, airportBoardsEnabled = false) => {
   const directory = join(workRoot, randomUUID())
   mkdirSync(directory, { recursive: true })
   const output = join(directory, 'wrangler.jsonc')
@@ -59,6 +59,8 @@ const prepare = (enabled, starlinkEnabled = false, marineEnabled = false) => {
     String(starlinkEnabled),
     '--marine-enabled',
     String(marineEnabled),
+    '--airport-boards-enabled',
+    String(airportBoardsEnabled),
   ]
   if (enabled) {
     args.push(
@@ -66,7 +68,7 @@ const prepare = (enabled, starlinkEnabled = false, marineEnabled = false) => {
       '0123456789abcdef0123456789abcdef',
     )
   }
-  execFileSync(process.execPath, args)
+  execFileSync(process.execPath, args, { stdio: 'pipe' })
   return JSON.parse(readFileSync(output, 'utf8'))
 }
 
@@ -180,6 +182,25 @@ describe('orbital Cloudflare deployment configuration', () => {
     expect(enabled.triggers.crons).toEqual(['17 */2 * * *'])
     expect(disabled.name).toBe('livetrafficstan')
     expect(disabled.triggers.crons).toEqual([])
+  })
+
+  it.each([
+    [false, false, false], [false, false, true],
+    [true, false, false], [true, false, true],
+    [true, true, false], [true, true, true],
+  ])('adds airport boards without changing orbital=%s, Starlink=%s, marine=%s ownership', (orbital, starlink, marine) => {
+    const config = prepare(orbital, starlink, marine, true)
+    const names = config.durable_objects.bindings.map(binding => binding.name)
+    expect(names.includes('ORBITAL_CATALOG_COORDINATOR')).toBe(orbital)
+    expect(names.includes('MARINE_TRAFFIC_RELAY')).toBe(marine)
+    expect(names.filter(name => name === 'AIRPORT_BOARD_COORDINATOR')).toHaveLength(1)
+    expect(config.exports.AirportBoardCoordinator).toEqual({ type: 'durable-object', storage: 'sqlite' })
+    expect(config.triggers.crons).toEqual(orbital ? ['17 */2 * * *'] : [])
+    expect(config.routes).toEqual([{ pattern: 'trackstan.xyz', custom_domain: true }])
+  })
+
+  it('rejects an invalid airport-board activation flag', () => {
+    expect(() => prepare(false, false, false, 'invalid')).toThrow()
   })
 
   it('publishes one internal compatibility bundle without resetting coordinator identity', () => {
