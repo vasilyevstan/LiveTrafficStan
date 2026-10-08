@@ -30,6 +30,10 @@ if (orbitalEnabled !== 'true' && orbitalEnabled !== 'false') {
 }
 const starlinkEnabled = required('starlink-enabled')
 const marineEnabled = args.get('marine-enabled') ?? 'false'
+const airportBoardsEnabled = args.get('airport-boards-enabled') ?? 'false'
+if (airportBoardsEnabled !== 'true' && airportBoardsEnabled !== 'false') {
+  throw new Error('--airport-boards-enabled must be true or false')
+}
 if (marineEnabled !== 'true' && marineEnabled !== 'false') {
   throw new Error('--marine-enabled must be true or false')
 }
@@ -56,7 +60,8 @@ config.triggers = {
 }
 const bindings = (config.durable_objects?.bindings ?? []).filter((binding) =>
   binding.name !== 'ORBITAL_CATALOG_COORDINATOR' &&
-  binding.name !== 'MARINE_TRAFFIC_RELAY',
+  binding.name !== 'MARINE_TRAFFIC_RELAY' &&
+  binding.name !== 'AIRPORT_BOARD_COORDINATOR',
 )
 
 if (orbitalEnabled === 'true') {
@@ -94,11 +99,20 @@ if (marineEnabled === 'true') {
     class_name: 'MarineTrafficRelay',
   })
 }
+if (airportBoardsEnabled === 'true') {
+  if (config.exports?.AirportBoardCoordinator?.storage !== 'sqlite') {
+    throw new Error('This source does not support airport boards')
+  }
+  bindings.push({
+    name: 'AIRPORT_BOARD_COORDINATOR',
+    class_name: 'AirportBoardCoordinator',
+  })
+}
 if (bindings.length) config.durable_objects = { ...config.durable_objects, bindings }
 else delete config.durable_objects
 
 await writeFile(outputPath, `${JSON.stringify(config, null, 2)}\n`)
 console.log(
   `Prepared ${outputPath} with orbital catalog ${orbitalEnabled} ` +
-    `and Starlink catalog ${starlinkEnabled}; marine supplement ${marineEnabled}`,
+    `and Starlink catalog ${starlinkEnabled}; marine supplement ${marineEnabled}; airport boards ${airportBoardsEnabled}`,
 )

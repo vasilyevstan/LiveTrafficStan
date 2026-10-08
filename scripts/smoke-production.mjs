@@ -29,13 +29,14 @@ const [
   aircraftDelivery = 'worker-proxy',
   orbitalCatalogEnabled = 'false',
   starlinkCatalogEnabled = 'false',
+  airportBoardsEnabled = 'false',
 ] = process.argv.slice(2)
 
 if (!deploymentUrl || !expectedReleaseSha) {
   throw new Error(
     'Usage: node scripts/smoke-production.mjs <deployment-url> <release-sha> ' +
       '[aircraft-delivery] [orbital-catalog-enabled] ' +
-      '[starlink-catalog-enabled]',
+      '[starlink-catalog-enabled] [airport-boards-enabled]',
   )
 }
 
@@ -75,6 +76,9 @@ if (
   throw new Error(
     'The Starlink catalog requires the curated orbital catalog',
   )
+}
+if (airportBoardsEnabled !== 'true' && airportBoardsEnabled !== 'false') {
+  throw new Error('The airport boards flag must be "true" or "false"')
 }
 
 const targetOrbitalContract =
@@ -617,6 +621,25 @@ const verifyMetarProxy = async () => {
   )
 }
 
+const verifyAirportBoardBoundary = async () => {
+  // Invalid input proves the enabled/disabled boundary without spending an
+  // API unit or bootstrapping the quota coordinator.
+  const response = await fetchWithTimeout(
+    new URL('/api/airports/board?icao=invalid', baseUrl),
+  )
+  assert(
+    response.status === (airportBoardsEnabled === 'true' ? 400 : 404),
+    'Airport-board activation or canonical-input boundary is incorrect',
+  )
+  assert(
+    response.headers.get('x-livetrafficstan-release') === expectedReleaseSha,
+    'Airport-board release SHA does not match the deployed source',
+  )
+  assert(response.headers.get('cache-control') === 'no-store', 'Airport-board boundary must not be cached')
+  assert(!response.headers.has('access-control-allow-origin'), 'Airport boards unexpectedly allow cross-origin access')
+  await response.body?.cancel()
+}
+
 const verifyOrbitalCatalog = () =>
   verifyTargetOrbitalCatalog({
     baseUrl,
@@ -718,6 +741,7 @@ const verifyDigitrafficMqtt = () =>
 await verifyStaticAssets()
 await verifyAircraftProxy()
 await verifyMetarProxy()
+await verifyAirportBoardBoundary()
 await verifyOrbitalCatalog()
 await verifyStarlinkCatalog()
 await verifyDigitrafficRest()

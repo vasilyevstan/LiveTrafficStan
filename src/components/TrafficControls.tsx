@@ -10,6 +10,7 @@ import {
 import type { ThemePreference } from '../app/theme'
 import type { PlaceSearchState } from '../app/PlaceSearchController'
 import type { AppCenter } from '../config/appConfig'
+import { APP_CONFIG } from '../config/appConfig'
 import type { Airport } from '../domain/airports'
 import type { MapProjectionPreference } from '../domain/preferences'
 import type { DisplayAircraft, DisplayVessel } from '../domain/traffic'
@@ -920,6 +921,15 @@ export function TrafficControls({
                   <a href="https://ourairports.com/data/">OurAirports</a>{' '}
                   · public domain · not operational.
                 </li>
+                {APP_CONFIG.airportBoards.enabled && (
+                  <li>
+                    Airport boards:{' '}
+                    <a href={APP_CONFIG.airportBoards.sourceUrl} target="_blank" rel="noopener" referrerPolicy="origin">
+                      AeroDataBox
+                    </a>
+                    {' · '}explicit on-demand loads, shared free allowance; not linked to live aircraft.
+                  </li>
+                )}
                 <li>
                   METAR:{' '}
                   <a href="https://aviationweather.gov/data/api/">

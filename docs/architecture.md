@@ -462,6 +462,25 @@ remains available to this static context even when its enclosing radius is too
 wide for live traffic; the 100 km provider gate does not disable airport
 listing or selection.
 
+On-demand airport boards are another separate context boundary. Selecting
+an airport does not fetch its board: the explicit action calls the fixed
+same-origin `/api/airports/board?icao=<ICAO>` route. The Worker normalizes
+AeroDataBox data into application-owned board models, with independent
+loading, error, empty/unavailable, clock and identity state. No board field
+enters aircraft/marine health, map entities, trails, metadata matching,
+selection inference or history.
+
+One demand-driven `AirportBoardCoordinator`, distinct from marine/orbital
+owners, serializes the shared free allowance. Its single SQL admission record
+contains only observed billing quotas and conservative retry/in-flight
+reservations, never airport identifiers or flight rows. A free health call
+initializes/revalidates quota only for explicit demand. One bounded producer
+coalesces at most 16 matching consumers; the last cancellation aborts it.
+Complete normalized boards alone enter an eight-airport, short-lived memory
+LRU. There is no updater Cron or persistent board cache. Browser controllers
+fence A-to-B-to-A and pauses, retain provider retry deadlines, and make no
+automatic refresh. See the [complete contract](airport-board-evaluation.md).
+
 Optional weather observations are a separate, non-traffic provider boundary.
 METAR starts off, reuses only explicit four-letter `icaoCode` values from the
 pinned large/medium-airport projection, and sends a sorted unique set of at

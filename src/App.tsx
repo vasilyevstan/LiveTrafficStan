@@ -87,6 +87,7 @@ import { StaticAircraftMetadataProvider } from './providers/aircraftMetadata/sta
 import { PlanespottersPhotoProvider } from './providers/aircraftPhoto/planespottersPhotoProvider'
 import { OpenWatersPhotoProvider } from './providers/vesselPhoto/openWatersPhotoProvider'
 import { StaticAirportsProvider } from './providers/airports/staticAirportsProvider'
+import { SameOriginAirportBoardProvider } from './providers/airportBoards/airportBoardProvider'
 import { AdsbLolFlightRouteProvider } from './providers/flightRoute/adsbLolFlightRouteProvider'
 import { StaticPortsProvider } from './providers/ports/staticPortsProvider'
 import { AwcMetarProvider } from './providers/weather/awcMetarProvider'
@@ -376,6 +377,7 @@ function App() {
     () => new StaticAirportsProvider(APP_CONFIG.airports),
     [],
   )
+  const airportBoardProvider = useMemo(() => new SameOriginAirportBoardProvider(), [])
   const airportsResult = useAirports(
     airportsVisible || weatherVisible,
     airportsProvider,
@@ -1887,6 +1889,9 @@ function App() {
             source={airportsResult.state.dataset.source}
             coordinatePrecision={APP_CONFIG.navigation.coordinatePrecision}
             onClose={handleCloseAirport}
+            board={APP_CONFIG.airportBoards.enabled ? {
+              provider: airportBoardProvider, now, online, historical: historyActive,
+            } : undefined}
           />
         )}
 

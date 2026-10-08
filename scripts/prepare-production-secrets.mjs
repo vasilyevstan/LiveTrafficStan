@@ -18,6 +18,13 @@ if (process.env.MARINE_ENABLED === 'true') {
     if (!process.env[name]) throw new Error(`Missing ${name}`)
     secrets[name] = process.env[name]
   }
+  if (process.env.AIRPORT_BOARDS_ENABLED === 'true') {
+    const key = process.env.AERODATABOX_RAPIDAPI_KEY
+    if (!key || !/^[A-Za-z0-9_-]{16,256}$/.test(key)) {
+      throw new Error('Missing or invalid AERODATABOX_RAPIDAPI_KEY')
+    }
+    secrets.AERODATABOX_RAPIDAPI_KEY = key
+  }
 }
 if (Object.keys(secrets).length === 0) {
   throw new Error('No production secrets were selected')

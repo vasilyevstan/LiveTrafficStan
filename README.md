@@ -1254,12 +1254,20 @@ monitoring, privacy, and rollback procedure.
 - OurAirports points are optional static reference context. The source
   disclaims accuracy and fitness, and the app does not infer current service,
   airport operations, aircraft relationships, routes, arrivals, or departures.
-- Current arrival and departure boards are not implemented.
-  [Issue #46](https://github.com/vasilyevstan/LiveTrafficStan/issues/46)
-  identifies AeroDataBox RapidAPI Basic as an ongoing-free, noncommercial
-  candidate: at most 200 uncached combined-board calls/month shared app-wide.
-  A protected project key, actual no-overage limits and Tallinn coverage proof
-  are still needed; there is no paid fallback or inferred board.
+- When airport boards are enabled in the deployment, select an airport with
+  an explicit ICAO code and choose **Load board** for AeroDataBox arrivals and
+  departures. Loading is explicit: opening an airport, changing direction or
+  theme, and resizing do not fetch a board. **Reload** becomes available after
+  the shared cache/retry boundary. The requested six-hour window is anchored
+  to the original request, including when another viewer receives cached data.
+  Airport-local times retain dates/UTC offsets; revised times may be estimated
+  or actual. Source update time is unknown and codeshares can appear separately.
+  The ongoing-free, noncommercial plan allows at most **200 uncached combined
+  boards per billing month shared app-wide**, before other charged work.
+  Exhaustion is explicit, with no paid fallback, automatic refresh, flight
+  archive or inferred connection to map aircraft. See the
+  [board contract and evidence](docs/airport-board-evaluation.md) and
+  [#46](https://github.com/vasilyevstan/LiveTrafficStan/issues/46).
 - Auto follows the browser's color-scheme preference, not solar time or map
   location.
 - METAR coverage is limited by both AWC reporting and the pinned large/medium

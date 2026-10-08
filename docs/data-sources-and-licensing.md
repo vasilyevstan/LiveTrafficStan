@@ -343,21 +343,35 @@ technically satisfied.
 Public airport boards, airline sites, trackers, and widgets remain outside this
 contract and are not scraped.
 
-## Airport arrival/departure boards: no active source
+## Airport arrival/departure boards: AeroDataBox
 
-LiveTrafficStan does not currently display airport arrivals or departures.
-Airport/time-window enumeration is a separate capability from selected-aircraft
-plausible-route enrichment.
+When the checked airport-board deployment flag is enabled, TrackStan offers
+explicitly requested arrivals/departures in airport details. Airport/time-window
+enumeration remains separate from selected-aircraft plausible-route enrichment.
 
 The 2026-10-07
 [Airport Arrival and Departure Board Evaluation](airport-board-evaluation.md)
-identifies a genuine ongoing-free candidate, not a paid-plan prerequisite:
+identified the selected ongoing-free source, not a paid-plan prerequisite:
 **AeroDataBox Basic via RapidAPI**, for a small noncommercial on-demand board.
 Its 400 API units/month permit at most **200 uncached combined-board calls
-shared across the whole app**, before other charged work. The actual project
-free subscription/key, zero-overage limits and Tallinn coverage proof are still
-missing. Published applicable terms can authorize the use; bespoke permission
-is required only where those terms say so.
+shared across the whole app**, before other charged work. The 2026-10-08
+protected-key and bounded EETN proof resolved the access dependency. The
+gateway confirmed 400 units and its free-plan limits; one combined board used
+two units. Published Basic has no paid overage; the implementation also reserves
+and persists actual remaining quota before forwarding. Applicable published
+terms authorize the selected noncommercial display, not bulk/API redistribution.
+
+Visible AeroDataBox attribution links retain only the application origin as
+referral data, not a user location/query. Normalized boards are memory-only,
+bounded and served for at most five minutes (one minute empty/unavailable);
+active browser display expires after 30 minutes and drops records on close,
+selection change or pause. SQL stores only operational quota/reset/retry data.
+There is no board history, analytics export, raw-response archive or paid
+fallback. Committed fixtures/screenshots use invented records; real acceptance
+retains minimal aggregate/schema evidence rather than a flight-data archive.
+
+The following alternate-source observations remain historical research,
+not additional active providers:
 
 - The September OpenSky review found previous-day-or-earlier overnight
   reconstructed flights with estimated airports/times; they are not a current
@@ -382,7 +396,7 @@ is required only where those terms say so.
 - Public airport, airline, and tracker pages will not be scraped.
 
 [Issue #46](https://github.com/vasilyevstan/LiveTrafficStan/issues/46)
-records the actual account, contract and sample evidence still required.
+records project access, implementation, activation and rollback evidence.
 There is no automatic board polling or paid fallback. No board is
 constructed from visible aircraft, heading, proximity, callsign, static airport
 points, or cached plausible-route lookups.

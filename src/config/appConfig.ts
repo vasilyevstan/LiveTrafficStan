@@ -19,10 +19,12 @@ import portsSource from './portsSource.json'
 import type { AppCenter } from '../domain/geo'
 import { MARINE_STREAM_CONFIG } from './marineStreamConfig'
 import { VESSEL_PHOTO_CONFIG } from './vesselPhotoConfig'
+import { AIRPORT_BOARD_CONFIG } from './airportBoardConfig'
 
 export type { AppCenter } from '../domain/geo'
 export { MARINE_STREAM_CONFIG } from './marineStreamConfig'
 export { VESSEL_PHOTO_CONFIG } from './vesselPhotoConfig'
+export { AIRPORT_BOARD_CONFIG } from './airportBoardConfig'
 
 export interface FreshnessThresholds {
   staleAfterMs: number
@@ -83,6 +85,7 @@ export interface AppConfig {
     rateLimitBackoffMaxMs: number
   }
   airports: StaticAirportsProviderConfig
+  airportBoards: typeof AIRPORT_BOARD_CONFIG & { enabled: boolean }
   ports: StaticPortsProviderConfig
   weather: FreshnessThresholds &
     AwcMetarProviderConfig & {
@@ -460,6 +463,10 @@ export const createAppConfig = (
       expectedRecords: airportsSource.projection.expected.projectedRecords,
       expectedSha256: airportsSource.projection.expected.sha256,
       expectedKindCounts: airportsSource.projection.expected.kindCounts,
+    },
+    airportBoards: {
+      ...AIRPORT_BOARD_CONFIG,
+      enabled: readBoolean(env, 'VITE_AIRPORT_BOARDS_ENABLED', false),
     },
     ports: {
       assetUrl: `/ports/${portsSource.projection.outputVersion}/ports.geojson`,
