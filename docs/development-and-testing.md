@@ -647,8 +647,11 @@ Map-experience tests also cover:
   bounded aircraft altitude-color variants, ADS-B/AIS category boundaries,
   generic fallbacks, and stable identity when provider metadata changes an
   icon.
-- strict coordinate/query classification, including malformed numeric pairs,
-  comma-containing place names, range checks, and configured rounding;
+- strict coordinate/query classification, including repeated dots/signs,
+  broken numeric spacing/exponents, missing/extra numeric components,
+  comma- and number-containing place names, range checks, and configured
+  rounding; the #297 regression includes `59..450, 24.760` while preserving
+  `+.5, 180.`, `Paris, 75000`, `59.4, Tallinn`, and `E, 24`;
 - Photon URL/header construction, bounded response reads, GeoJSON Point
   validation, stable-identity deduplication, and provider-order preservation;
 - one-active-search cancellation, stale-result rejection, cooldown, timeout,
@@ -945,6 +948,38 @@ All 973 tests, required integrity checks, lint, typecheck and production build
 passed. The installed Impeccable detector reported no findings in the changed
 CSS/component. These are local fixture/Chrome-emulation results, not new
 production measurements or physical Safari/iOS/Android evidence.
+
+### Malformed-coordinate follow-up (#297, local acceptance)
+
+The parser's numeric-intent recognizer now catches broken dots, signs, spacing
+and exponents without relaxing the valid decimal grammar or rejecting ordinary
+named queries. Nineteen new malformed-token cases first reproduced the
+`query` fall-through against the unchanged parser. The corrected parser passes
+all 44 classification cases; the full source suite passes 1,280 tests in 149
+files, alongside lint, typecheck, required immutable-data checks and the
+production-input build.
+
+On 2026-10-08 at `15:47:41Z-15:47:54Z`, native Chrome 155 exercised the actual
+form and MapLibre canvas at 1280x900 Light and 390x568 Dark. Each size rejected
+`59..450, 24.760`, `--59.450, 24.760` and `59.450, ++24.760` with an accessible,
+unobscured alert and **zero Photon attempts**. View target, camera, zoom,
+bearing, pitch and navigation revision stayed identical. The mobile alert
+occupied x=70-368 and y=331.66-363.19 within the 390x568 viewport; no horizontal
+overflow or canvas replacement occurred.
+
+Native Enter, mouse and emulated touch submission were exercised. Correcting
+the value to `59.4504, 24.7604` navigated locally to `59.450, 24.760`, and Center
+returned to the original session Home at both sizes. Typing `Paris, 75000`
+made no request; submitting it used exactly one intercepted Photon fixture,
+and selecting its result navigated normally without changing Home.
+
+This is local candidate evidence, not live geocoder or physical-device
+coverage. Unrelated live traffic was blocked, vector tiles remained real, and
+the browser clock/fetch/WebSocket implementations were native. The retained
+receipt is `issue297-local-browser-3/coordinate-input-report.json`. Earlier
+observer attempts needed a verified native select-all command and closure of
+the existing compact attribution disclosure; no application behavior was
+changed to accommodate those observer corrections.
 
 ### Floating status card predecessor (#300, production evidence)
 

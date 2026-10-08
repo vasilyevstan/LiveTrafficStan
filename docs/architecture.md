@@ -308,10 +308,14 @@ actual unwrapped viewport polygon. An object inside the enclosing circle but
 outside the visible rotated or pitched footprint is not displayed.
 
 Place search is a separate non-traffic boundary. Strict decimal coordinate
-pairs are parsed, range-checked, and rounded locally. Other non-empty submitted
-text reaches the Photon adapter only after explicit form submission. The
-adapter permits one fixed configured endpoint, bounded query/result sizes, no
-credentials, and no browser geolocation bias. It validates GeoJSON Point
+pairs are parsed, range-checked, and rounded locally. Numeric-looking
+comma-separated attempts with broken dots, signs, spacing, or exponent syntax
+are rejected locally before query submission; recognizing numeric intent does
+not make those forms valid coordinates. Names containing commas or numbers
+remain queries. Other non-empty submitted text reaches the Photon adapter only
+after explicit form submission. The adapter permits one fixed configured
+endpoint, bounded query/result sizes, no credentials, and no browser geolocation
+bias. It validates GeoJSON Point
 features, preserves provider order, deduplicates stable OpenStreetMap
 identities, and emits bounded application-owned `PlaceSearchResult` records.
 Raw Photon payloads never enter React or MapLibre.
