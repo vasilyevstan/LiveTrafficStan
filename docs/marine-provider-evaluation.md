@@ -6,7 +6,7 @@ Reviewed **2026-10-04**, workstream #296. Retain useful Digitraffic reception
 and add **AISStream plus Open Waters AIS** behind the default-off
 `VITE_MARINE_SUPPLEMENT_ENABLED` build flag and matching Worker flag.
 Production enabled the combination on **2026-10-05** through #325/#326;
-checked-in defaults remain disabled. The deployed application is
+checked-in defaults remain disabled. The original marine-release application was
 `65eb71bad7b873c7980096f6e92a477e76fd6102`, Worker
 `5c6538ce-7fde-44ac-b288-e005f8d3d67b`. The
 [deployment record](hosting-and-deployment.md) retains the same-source
@@ -109,6 +109,45 @@ The first five-region AISStream stream delivered 4,236 binary messages /
 2,397,642 decoded bytes. Only aggregate receipts were retained; raw messages
 were discarded. Prior observations and screenshots do not promise that the
 same vessel remains fresh during a later check.
+
+#### Tallinn follow-up, 2026-10-08
+
+One seven-minute anonymous Open Waters native-stream observation ran at
+**16:16:58.760-16:23:58.768 UTC**, limited to a public Tallinn center
+(`59.437, 24.754`) and 35 km radius. It reused the application normalizer,
+dimension helper and existing two-minute stale / ten-minute expiry rules.
+No protected credential was read or exported, no direct AISStream or
+Digitraffic comparison connection was opened, and no REST request was made.
+
+The connection opened in 261 ms, received the welcome in 263 ms and the first
+valid position in 321 ms. The welcome confirmed two connections, 20 messages
+per second and 100 square degrees. The bounded window completed normally:
+
+| Measurement | Observed result |
+| --- | --- |
+| Messages / decoded bytes | 1,484 / 1,159,453 |
+| Typed envelopes | 1,315 `PositionReport`, 168 `ShipStaticData`; the remaining message was the welcome |
+| Accepted / rejected observations | 1,479 / 4 through the existing validation/freshness path |
+| Accepted observations marked `synthesized: true` | All 1,479 |
+| Attributed source-kind event counts | Digitraffic 1,224; AISHub 243; AISStream 12; includes positions and metadata, not distinct or uniquely contributed vessels |
+| Final unexpired regional positions | 92, of which 53 were within the two-minute fresh interval |
+| Explicit original AIS class | Unknown for all 92; zero established Class A or Class B |
+| Same-MMSI Class B plus reported yacht type and length at least 8 m | Not established |
+| Provider errors / recognized warnings | None |
+
+**Native transport is not proof of original AIS class.** Synthesized
+`PositionReport` envelopes cannot establish Class A from their generated
+message ID, or Class B from source attribution, a yacht label or dimensions.
+No nonsynthesized type 18/19 position was accepted in this window, so no
+qualifying specimen or new rendered Class B yacht claim exists.
+
+#296 therefore remains open for that exact regional conjunction. This is
+missing evidence, not an empty sea, a demonstrated receiver-coverage failure,
+a missing production key or a normalization/display defect. The observation
+stopped at its bound and discarded live records; only aggregates and field
+names were retained. No automatic retry, provider/filter change or application
+deployment follows from this result. See the
+[acceptance method](development-and-testing.md#tallinn-class-b-evidence-follow-up-296).
 
 ### Free hosting and bounded load
 

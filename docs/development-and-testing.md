@@ -220,6 +220,48 @@ from the two observed live supplemental-source states.
 [Screenshots and complete release receipts](https://github.com/vasilyevstan/LiveTrafficStan/pull/326#issuecomment-5986155527)
 are public; raw AIS records were not archived.
 
+#### Tallinn Class B evidence follow-up (#296)
+
+On 2026-10-08, one anonymous connection to the fixed Open Waters native
+stream observed the public Tallinn 35 km region for seven minutes,
+`16:16:58.760Z-16:23:58.768Z`. The existing diagnostic reused
+`parseMarineSourceMessage`, `vesselLengthMeters` and geographic/freshness
+helpers. It validated the welcome's area allowance before subscribing and
+enforced a 256 KiB frame limit, 50 MiB decoded total and 10,000 entries each
+for in-memory positions and metadata. It made no REST request, direct
+Digitraffic comparison or private-key read, and did not reconnect.
+
+For this criterion, require a nonsynthesized type 18/19 position and
+compatible transmitted sailing/pleasure type 36/37 plus dimensions totaling
+at least 8 m for the same exact MMSI. Keep source and receipt clocks distinct;
+only an unexpired position inside the region qualifies. A synthesized
+`PositionReport`, source-owner label, displayed yacht or metadata REST `seen`
+cannot prove original Class A/B. If a qualifying record exists, correlate
+that exact identity with actual browser rendering and native selection while
+it remains valid; do not replace the native class evidence with a screenshot.
+
+The completed window received 1,484 messages / 1,159,453 decoded bytes,
+accepted 1,479 observations and rejected four through the production
+validation/freshness path. Every accepted observation was synthesized.
+The final 92 unexpired regional positions, including 53 fresh within two
+minutes, therefore all had unknown original class. There was no qualifying
+specimen to correlate or new Class B rendered-acceptance claim. No provider
+error or recognized warning occurred. #296 remains open; this result does
+not establish absent coverage or a code defect and does not trigger more
+polling or a relaxed yacht filter.
+
+The observer source SHA-256 was
+`829ef3aa7e93e9876f7000b654f7129ab03c2f8600fcdfbba1feaa5af1f24ce2`.
+Its successful completion denotes a finished bounded observation, not a met
+yacht criterion. It cleared live records and closed the connection; retained
+evidence contains only aggregate counts and schema field names. The
+[provider receipt](marine-provider-evaluation.md#tallinn-follow-up-2026-10-08)
+records the source-kind counts and limits. This evidence-only follow-up does
+not redeploy application `478d4b65d6c99606da77ac82f0105355547c2314` /
+Worker `e4806d80-c850-4390-a1cd-e085d7aae613` from #378.
+
+### Relay checks and source gates
+
 The dependency-free OCI relay tests live beside the implementation under
 `infra/oci/aircraft-relay/`. The normal Vitest suite covers its HTTP boundary,
 authentication, canonical path, concurrency/cadence admission, persisted
