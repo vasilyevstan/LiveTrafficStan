@@ -81,8 +81,10 @@ identity are not renamed or reset.
   are used automatically; otherwise location is an explicit action with
   Tallinn fallback.
 - One explicit-submit location field accepts rounded decimal coordinates
-  locally or named places through Photon. Search failure never blocks
-  coordinate navigation, Center, or the live map.
+  locally or named places through Photon. Malformed numeric pairs, including
+  repeated dots or signs, stay local and show an input error rather than a
+  place search. Search failure never blocks coordinate navigation, Center,
+  or the live map.
 - Independent aircraft and ship layers plus local vessel search by name,
   callsign, MMSI, or IMO; typed category, navigation, reported-speed, and
   inclusive length filters; explicit unknown-value handling; and a reset to

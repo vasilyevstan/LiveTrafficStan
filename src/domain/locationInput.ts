@@ -10,10 +10,8 @@ const DECIMAL_TOKEN = '[+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)'
 const COORDINATE_PATTERN = new RegExp(
   `^\\s*(${DECIMAL_TOKEN})\\s*,\\s*(${DECIMAL_TOKEN})\\s*$`,
 )
-const NUMERIC_LOOKING_TOKEN = new RegExp(
-  `^(?:${DECIMAL_TOKEN}(?:e[+-]?\\d+)?|[+-]?(?:nan|infinity))$`,
-  'i',
-)
+const NUMERIC_LOOKING_TOKEN =
+  /^(?:[+\-.\d][+\-.\de\s]*|[+-]*(?:nan|infinity))$/i
 
 const coordinateLabel = (
   latitude: number,
