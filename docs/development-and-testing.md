@@ -102,9 +102,31 @@ design-system rewrite.
 
 Production smoke checks only an invalid board parameter against the expected
 enabled/disabled route and exact release header; it must consume no board
-unit. First activation additionally requires one bounded native real-board
-check and compatible disabled rollback/restoration, with aggregate receipts
-on #46. Do not relabel the invented local rows as actual Tallinn flights.
+unit. The first activation completed native real-board acceptance and actual
+compatible disabled rollback/restoration on 2026-10-08; the
+[release receipt](hosting-and-deployment.md#airport-board-production-receipt-2026-10-08)
+records all four successful Actions and exact Worker versions.
+
+Native production **REFRESH APP** at 22:14:11-22:14:23 UTC changed
+`/assets/index-BKUwtJ6p.js` to `/assets/index-xoDcN1BD.js`, shell
+`bb6eaa63cc2390ecd8a1`, retaining preferences, history settings/database
+identity and root service-worker scope/controller. A single explicit EETN
+load returned ten arrivals/eight departures. Final restored acceptance at
+22:18:05-22:18:13 UTC returned ten arrivals/nine departures through one more
+explicit load. Native fetch, WebSocket and clocks were used without production
+fixtures. Both passes covered Light/Dark at 1280x900 and 390x568, retaining
+one canvas, visible vectors, 44 px controls, a 72 px mobile map gap, one
+inspector scroll owner and reachable AeroDataBox attribution. Theme, resize,
+scrolling and direction switches made no additional board request.
+
+The first pass ended with one aircraft and 34 vessels; the final pass had
+22 vessels and an independent aircraft `503`, also observed before this
+release. The board remained `200` with the exact application release header.
+These are time-qualified observations, not coverage or availability promises.
+Reports retain aggregates only, with no raw-flight archive or real-flight
+screenshots. Empty/canceled/diverted/unknown/failure semantics remain the
+explicitly invented regression evidence above, not claimed live Tallinn
+samples. Physical iOS/Android devices were not used.
 
 ### Zoom-out local sample regression (#370)
 

@@ -29,6 +29,9 @@ production platform:
   one private AISStream connection and one Open Waters connection. Only
   operational quota/retry state is persisted; live vessel records remain
   bounded in memory. It does not use the OCI aircraft host.
+- airport boards add one independent, demand-driven SQLite coordinator for
+  fixed AeroDataBox requests. Only quota/reset/retry reservations persist;
+  short-lived complete boards remain in memory, with no Cron or flight archive.
 
 The accepted recovery design keeps that public Cloudflare boundary and routes
 only aircraft through a private Workers VPC Service and Tunnel to an isolated
@@ -1792,6 +1795,52 @@ validating, the second equality check fails rather than silently promoting the
 older SHA.
 
 ## Airport-board activation and rollback
+
+### Airport-board production receipt (2026-10-08)
+
+Implementation [#381](https://github.com/vasilyevstan/LiveTrafficStan/pull/381)
+and checked promotion [#382](https://github.com/vasilyevstan/LiveTrafficStan/pull/382)
+delivered application **`c0ed2bea4e6291bcb4054df28482fd564012c676`**.
+Exact-main [Validation 37851146321](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/37851146321)
+passed. All four serialized production stages passed, including their
+unchanged strict-SHA smoke:
+
+| Stage | Actions run | Worker version |
+| --- | --- | --- |
+| Compatible boards-off baseline | [37851712441](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/37851712441) | `6e6e4a72-be9e-402b-aa6a-0b4aef5cfbc6` |
+| First enabled activation | [37851931661](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/37851931661) | `7f7febad-898f-427d-9aa0-cdbb220610ba` |
+| Actual compatible disabled rollback | [37852222944](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/37852222944) | `6e6e4a72-be9e-402b-aa6a-0b4aef5cfbc6` |
+| Final enabled restoration | [37852403590](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/37852403590) | **`701561eb-4654-492d-b800-3eea5be8978b`** |
+
+Wrangler reported the final version at **22:17:27.063 UTC**. The restored
+workers.dev deployment and a separate final `https://trackstan.xyz` smoke
+passed. The rollout preserved private OCI aircraft delivery, aircraft photos,
+plausible routes, curated orbits, Starlink and the marine supplement. Secrets
+were installed atomically; no coordinator was deleted or quota state reset.
+The primary fallback is the compatible boards-off version above, not a
+pre-airport-coordinator version.
+
+Native Chrome 155 used the normal **REFRESH APP** path at
+**22:14:11-22:14:23 UTC**, retaining preferences, history settings/database
+identity and root install scope/controller. One explicit real EETN load
+returned ten arrivals and eight departures. After rollback/restoration,
+**22:18:05-22:18:13 UTC** acceptance returned ten arrivals and nine departures
+with one further explicit load. Both used native fetch, WebSocket and clocks,
+not provider fixtures; Light/Dark desktop/mobile checks retained one vector
+canvas, reachable source credits and a 72 px mobile map gap. No board request
+was added by theme, resize, scrolling or direction changes.
+
+The final board returned `200` while aircraft independently returned `503`.
+That aircraft condition also occurred in the recorded predecessor baseline;
+continuous provider availability is not claimed. Only aggregate/schema
+receipts were retained, not raw flights or real-flight screenshots. See
+[the bounded acceptance record](development-and-testing.md#on-demand-airport-boards-46).
+
+This receipt and later Wiki/documentation commits do not redeploy the
+application or replace its source SHA. The requested In view drawer and
+automatic Starlink inclusion remain planned, not part of this release.
+
+### Activation contract
 
 `airport_boards_enabled` is an explicit default-false deployment input. It
 controls `VITE_AIRPORT_BOARDS_ENABLED`, Worker `AIRPORT_BOARDS_ENABLED` and the
