@@ -621,7 +621,11 @@ The Location form distinguishes strict decimal coordinates from named text:
 - latitude must be from -90 through 90 and longitude from -180 through 180;
 - exponent notation, `NaN`, `Infinity`, incomplete pairs, and extra numeric
   segments are rejected;
-- ordinary names with commas, such as `Tallinn, Estonia`, remain place queries.
+- repeated dots/signs and broken numeric tokens, such as `59..450, 24.760`,
+  `--59.450, 24.760`, or `59.450, ++24.760`, show a local input error without
+  calling Photon or changing the current view;
+- ordinary names with commas or numbers, such as `Tallinn, Estonia`,
+  `Paris, 75000`, and `5th Avenue, New York`, remain place queries.
 
 A valid coordinate pair is rounded locally and never calls Photon. If
 coordinates fail while Photon is blocked, correct the local format rather than
