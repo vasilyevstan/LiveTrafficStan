@@ -1,6 +1,6 @@
 # Airport Arrival and Departure Board Evaluation
 
-**Latest reassessment:** 2026-10-07; original review: 2026-09-19
+**Latest access/implementation evidence:** 2026-10-08; original review: 2026-09-19
 
 **Issue:** [#5](https://github.com/vasilyevstan/LiveTrafficStan/issues/5)
 
@@ -8,19 +8,18 @@
 
 ## Decision
 
-TrackStan does not currently implement airport arrival or departure boards.
-The fresh review identifies an ongoing-free candidate: **AeroDataBox Basic
+The bounded, deployment-gated implementation uses **AeroDataBox Basic
 through RapidAPI**, with 400 API units per month. Airport boards cost two units
 per call, so the theoretical ceiling is **200 uncached board calls per month
 shared across the entire app**, before other charged work. One call can include
 arrivals and departures. This is not a per-user allowance.
 
-Pursue the smallest noncommercial, explicitly requested on-demand board with
-short-lived shared results, not automatic refresh. This direction does not
-require another discretionary approval or a paid plan. The actual external
-dependency is a project free subscription/key with confirmed zero-overage
-limits, followed by a bounded Tallinn coverage and response proof. Neither
-the credential nor that authenticated proof is currently available.
+The project credential and bounded Tallinn proof were established on
+2026-10-08. The key is held only in the main-restricted production secret
+`AERODATABOX_RAPIDAPI_KEY`, then installed atomically in the Worker. There is
+no browser credential, paid plan, recurring refresh, or discretionary
+provider-permission gate. The feature defaults off in source; activation
+requires the matching checked browser/Worker deployment input.
 
 The September review's blanket paid-plan and bespoke-permission assumptions
 are superseded. Applicable published terms can authorize the intended use;
@@ -35,12 +34,81 @@ The independent local/static part of Issue #5 is complete:
 Those capabilities do not create an operational board and do not associate a
 visible aircraft with an airport. The ADSB.lol plausible-route feature is a
 callsign-based selected-aircraft hint, not an airport/time-window enumeration
-source. A board source remains a separate provider decision.
+source. Board records stay separate from traffic and static airport facts.
+
+## Implemented bounded contract
+
+- The browser explicitly requests the literal same-origin
+  `GET /api/airports/board?icao=EETN` shape. Only one canonical uppercase
+  four-letter ICAO parameter is accepted; there is no endpoint, direction,
+  window, credential, or location override.
+- The Worker fixes the RapidAPI origin and relative-time airport endpoint:
+  offset -60 minutes, duration 360 minutes, both directions, legs,
+  cancellations/codeshares/cargo/private flights included, locations omitted.
+  Rows have no general occurrence identifier or source-update timestamp.
+- One demand-driven `AirportBoardCoordinator` in the existing Worker owns
+  global admission. It persists only quota/reset/retry reservations, uses the
+  provider's billing countdown rather than calendar-month resets, reserves
+  before forwarding, and maintains an in-flight fence across recreation.
+  There is no airport Cron, KV namespace, traffic-relay reuse or new host.
+- A documented zero-unit health request bootstraps absent/expired quota only
+  during an explicit load. Both actual API-unit and request allowances are
+  honored. An unconfirmed free-plan/quota response prevents paid board work.
+  Completed requests remain at least 1.1 seconds apart; `429`/`Retry-After`
+  and exhaustion survive coordinator recreation. Failed or canceled paid
+  reservations are not optimistically refunded.
+- At most one upstream sequence and 16 matching consumers are active.
+  Matching loads coalesce; other airports get explicit retry guidance rather
+  than an unbounded queue. Canceling the last consumer aborts the producer,
+  including the wait between free bootstrap and paid lookup.
+- One total ten-second upstream deadline, 1 MiB raw body bound, 500 combined
+  raw rows and 512 KiB normalized response bound apply. Only complete validated
+  boards enter an eight-airport memory LRU: five minutes for populated boards,
+  one minute for empty/unknown boards. Entries are checked/pruned before use;
+  eviction/recreation discards the memory cache. Flight data never enters SQL.
+- Application-owned models retain reported status, operating/codeshare/
+  unknown semantics, selected-airport quality and consistent UTC/local clocks.
+  Exact identical projected rows are deduplicated; conflicting or marketing
+  rows remain separate. Callsigns, aircraft identity/positions and inferred
+  flight-to-map associations are deliberately excluded.
+- Missing/null directions and `204` remain unavailable coverage; valid empty
+  arrays remain successful empty results. Missing optional clocks are not
+  invented. Invalid supported fields fail the board instead of silently
+  presenting a truncated or partially decoded result as complete.
+- The browser makes no startup, select-only, theme, resize, direction-change
+  or automatic retry request. Selection/close, hidden, offline and HISTORY
+  cancel its generation and discard flight records. Active displayed data
+  expires at 30 minutes. Shared retry state is not reset by selection changes.
+  No board data enters preferences, private history or the service-worker cache.
+
+## Timestamped access and rendered evidence
+
+The 2026-10-08 free EETN health request at 17:19:09-17:19:11 UTC returned
+schedules/live-update feeds `OK` and the separate ADS-B update feed `Down`.
+That last status is not TrackStan's ADSB.lol aircraft health.
+
+One combined board at 17:21:33-17:21:34 UTC returned **17 arrivals and eight
+departures**, including a delayed arrival. All rows reported `IsOperator`;
+there was no general row source-update field. The gateway reported a
+400-unit allowance, 1,600-request allowance and free-plan hard-limit headers.
+Health used zero units; the board used two, leaving 398. These are a bounded
+project-access receipt, not ongoing coverage or a promise of specific flights.
+Raw flights were discarded; only aggregate/schema evidence was retained.
+
+Synthetic deterministic cases cover unavailable/empty, delayed, canceled,
+uncertain-canceled, diverted, codeshare, approximate, missing-time, midnight,
+DST, malformed, oversized, timeout, cancellation, quota and failure states.
+No real provider records were committed as fixtures. Native browser acceptance
+uses explicitly invented rows; see
+[Development and Testing](development-and-testing.md#on-demand-airport-boards-46).
+Actual activation and rollback receipts are recorded on
+[#46](https://github.com/vasilyevstan/LiveTrafficStan/issues/46); do not mistake
+the local fixture acceptance for a production deployment.
 
 ## Required board contract
 
-An acceptable source must enumerate flights for one airport and a bounded time
-window. Before implementation, the project needs:
+The following acceptance checklist motivated the selected contract and remains
+the basis for any future provider change:
 
 - a selected endpoint, explicit row/duplicate semantics, and an honest account
   of whether the source supplies a unique flight-occurrence identity;
@@ -102,7 +170,7 @@ does not establish a general source-update timestamp for every row.
 **Outcome:** technically viable for later authorization, not currently
 authorized.
 
-### AeroDataBox: ongoing-free candidate rechecked on 2026-10-07
+### AeroDataBox: selected source, research rechecked on 2026-10-07
 
 Official material:
 
@@ -221,11 +289,13 @@ TrackStan will not:
 - add a placeholder board, synthetic production response, wildcard upstream,
   or general forwarding proxy.
 
-## Re-evaluation gate
+## Release and future provider-change gate
 
 Issue #46 remains open until the contract and actual implementation criteria
 are met, including permitted Tallinn samples and independent failure behavior.
-Public deployment is complete and does not supply provider access.
+Platform deployment alone does not supply provider access. The 2026-10-08
+credential/account/source proof above resolves that prerequisite for the
+selected free Basic path, not for an arbitrary alternate provider or plan.
 
 Provision only the ongoing **RapidAPI Basic Free** plan, verify the actual
 account's allowance and no-overage terms, and keep the key in the protected
@@ -234,7 +304,7 @@ browser environment variable, a URL or a screenshot. Selecting this candidate
 does not authorize a paid subscription or acceptance of unrelated account
 terms.
 
-The credential is needed for the bounded proof, not a reason to add placeholder
-production code. Until the source proof passes, board UI, domain fields, Worker
-routes, caches and production mocks stay absent. The existing aircraft, marine,
-orbital, route and static-airport features remain unchanged.
+The credential was used for a bounded proof before implementing this path.
+Future provider changes need equivalent evidence; a key alone never justifies
+a placeholder, synthetic production response or inferred board. Existing
+aircraft, marine, orbital, route and static-airport behavior remains separate.

@@ -385,6 +385,39 @@ operational status. Enabling it sends visible qualifying ICAO station IDs
 through the application host to AWC. Do not infer missing weather from absent
 static airport points or an empty response.
 
+## Airport boards are missing, unavailable or rate-limited
+
+Enable the existing AIRPORTS context layer, select an airport with an explicit
+ICAO code, then choose **Load board**. Selecting the airport alone makes no
+board request. If there is no action, check the deployed browser/Worker
+`airport_boards_enabled` input; checked-in defaults are off. Plain Vite preview
+does not supply the protected coordinator.
+
+- A disabled Reload usually means the shared snapshot is still inside its
+  five-minute cache interval (one minute for empty/unknown results), or a
+  provider retry deadline is pending. About this board explains the boundary.
+  Nothing retries automatically.
+- The allowance is shared app-wide: 400 API units per billing month, two per
+  combined board, before other charged work. An exhausted allowance is not
+  fixed by refreshing, changing airport, restarting, deleting object state or
+  using a paid fallback. Honor the provider's reported reset/`Retry-After`.
+- An empty direction means no rows were returned for that window. An
+  unavailable direction means coverage/data was not supplied; neither proves
+  an airport is closed or the sky is empty.
+- Local clocks include date and UTC offset. Revised times may be estimates or
+  actual gate/runway times. The cached window is anchored to its original
+  request; retrieval age is not a general provider-update time.
+- Closing/changing selection, hiding, offline and HISTORY cancel the consumer
+  and discard flight rows. Returning does not fetch automatically. Airport
+  facts and other live providers remain independent.
+- For deployment failures, check only secret presence, flags/binding and
+  sanitized responses. Keep `AERODATABOX_RAPIDAPI_KEY` in protected server
+  configuration. Never copy it into a URL, issue, screenshot, `VITE_*` variable
+  or browser console. Use the existing atomic secrets-file deployment path.
+
+See [the board contract](airport-board-evaluation.md) and the
+[compatible rollback procedure](hosting-and-deployment.md#airport-board-activation-and-rollback).
+
 ## Aircraft metadata shows unavailable
 
 Aircraft metadata is optional selected-object context. It never controls the

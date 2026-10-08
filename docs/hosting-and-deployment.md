@@ -1791,6 +1791,80 @@ If a newer pull request reaches `main` while an older manual deployment is
 validating, the second equality check fails rather than silently promoting the
 older SHA.
 
+## Airport-board activation and rollback
+
+`airport_boards_enabled` is an explicit default-false deployment input. It
+controls `VITE_AIRPORT_BOARDS_ENABLED`, Worker `AIRPORT_BOARDS_ENABLED` and the
+independent `AIRPORT_BOARD_COORDINATOR` binding. The declarative SQLite export
+remains when disabled so operational quota/retry fences are not deleted.
+There is no airport Cron, KV namespace or always-on feed connection.
+
+The main-restricted production environment holds `AERODATABOX_RAPIDAPI_KEY`.
+`prepare-production-secrets.mjs` adds it only for the enabled mode to the same
+exclusive mode-600 temporary secrets file as the required aircraft/marine
+credentials. One `wrangler deploy --secrets-file` installs all selected
+credentials atomically; `always()` removes the temporary file. Never use a
+standalone secret update after a version rollback.
+
+First activation must preserve all current aircraft/photo/route/orbital/
+Starlink/marine inputs:
+
+1. Deploy the checked exact-current `main` source with airport boards **off**,
+   registering the compatible coordinator export without provider work.
+   Record this successful updated-source disabled Worker version.
+2. Deploy that same source with `airport_boards_enabled=true`. Existing
+   production serialization, environment restriction and exact-SHA checks
+   remain. The browser and Worker flags/binding must agree.
+3. Check the native installed app and one bounded actual airport board.
+   Keep source-update/coverage uncertainty and all other providers truthful;
+   retain aggregate evidence, not a raw-flight archive.
+4. Restore the recorded compatible disabled version and verify its artifact
+   and disabled boundary, then restore the accepted enabled version through
+   the existing deployment path. Record the actual version IDs and source.
+
+The primary rollback is the updated-source, board-disabled baseline, not an
+older version that predates the coordinator export. Preserve operational
+state; do not delete a Durable Object or reset its budget to bypass a platform
+compatibility failure. The rollback input records the target board build flag
+and injects it only when the target source supports it, retaining byte-exact
+older builds. The existing orbital-disabled compatibility wrapper retains the
+airport coordinator identity without exposing it.
+
+`smoke-production.mjs` accepts an optional final airport-board flag. Its
+`?icao=invalid` check expects `400` when enabled or `404` when disabled, with
+the exact release header, no-store and no wildcard CORS. It cannot initialize
+the coordinator or consume provider quota. Actual board loading is a separate
+bounded release acceptance, not a repeated smoke/polling step.
+
+The global free allowance is at most 200 uncached combined boards per billing
+month before other work, not per visitor. HTTP-only demand lets the object
+become idle; no cache-maintenance timer keeps it running or shares the marine
+owner's always-active lifetime. The first demand checks actual remaining
+units/requests and billing countdown through the provider's documented free
+health operation. See [the complete source contract](airport-board-evaluation.md)
+and #46 for access and actual rollout receipts.
+
+For an enabled application with the existing production features preserved:
+
+```bash
+gh workflow run deploy-production.yml \
+  --repo vasilyevstan/LiveTrafficStan \
+  --ref main \
+  -f sha=<40-character-current-main-sha> \
+  -f artifact=application \
+  -f aircraft_delivery=oci-private-relay \
+  -f aircraft_photo_enabled=true \
+  -f flight_route_enabled=true \
+  -f orbital_catalog_enabled=true \
+  -f starlink_catalog_enabled=true \
+  -f marine_supplement_enabled=true \
+  -f airport_boards_enabled=true
+```
+
+Use `airport_boards_enabled=false` for the compatible disabled baseline,
+changing no other enabled input. A later deployment must preserve this
+explicit choice rather than inadvertently taking the new input's default.
+
 ## Supplemental marine activation and rollback
 
 `marine_supplement_enabled` is an explicit, default-false deployment input.
@@ -1821,7 +1895,7 @@ For a first activation:
    redeploy the same source disabled. Do not switch to a paid plan or the
    memory-constrained aircraft host to hide a failure.
 
-For the current non-marine production settings, the enabled invocation is:
+The historical first marine-activation invocation, before airport boards, was:
 
 ```bash
 gh workflow run deploy-production.yml \

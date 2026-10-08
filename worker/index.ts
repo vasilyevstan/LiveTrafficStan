@@ -26,8 +26,11 @@ import {
 } from './marineStream.js'
 import { handleVesselPhotos } from './vesselPhotos.js'
 import { VESSEL_PHOTO_CONFIG } from '../src/config/vesselPhotoConfig.js'
+import { AIRPORT_BOARD_CONFIG } from '../src/config/airportBoardConfig.js'
+import { handleAirportBoards, type AirportBoardEnvironment } from './airportBoards.js'
 export { OrbitalCatalogCoordinator } from './orbitalCatalogCoordinator.js'
 export { MarineTrafficRelay } from './marineStream.js'
+export { AirportBoardCoordinator } from './airportBoards.js'
 
 interface FetchBinding {
   fetch(
@@ -40,7 +43,7 @@ interface WorkerScheduledController {
   noRetry(): void
 }
 
-export interface WorkerEnv {
+export interface WorkerEnv extends AirportBoardEnvironment {
   ASSETS: FetchBinding
   AIRCRAFT_DELIVERY?: string
   AIRCRAFT_RELAY?: FetchBinding
@@ -120,6 +123,9 @@ const withReleaseSha = (response: Response, releaseSha: string | undefined) => {
 const worker = {
   async fetch(request: Request, env: WorkerEnv) {
     const pathname = new URL(request.url).pathname
+    if (pathname === AIRPORT_BOARD_CONFIG.path) {
+      return withReleaseSha(await handleAirportBoards(request, env), env.RELEASE_SHA)
+    }
     if (pathname === VESSEL_PHOTO_CONFIG.path || pathname.startsWith(`${VESSEL_PHOTO_CONFIG.path}/`)) {
       return withReleaseSha(await handleVesselPhotos(request), env.RELEASE_SHA)
     }

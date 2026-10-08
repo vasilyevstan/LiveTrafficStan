@@ -159,4 +159,18 @@ describe('production rollback workflow', () => {
     )
     expect(smoke).toContain('verifyTargetStarlinkCatalog({')
   })
+
+  it('preserves pre-board build bytes and protects the new coordinator/secret when applicable', () => {
+    expect(workflow).toContain('airport_boards_enabled:')
+    expect(workflow).toContain('if grep -q VITE_AIRPORT_BOARDS_ENABLED src/config/appConfig.ts; then')
+    expect(workflow).toContain('export VITE_AIRPORT_BOARDS_ENABLED="$AIRPORT_BOARDS_ENABLED"')
+    expect(workflow).toContain('Target source does not support airport boards.')
+    expect(workflow).not.toContain('VITE_AIRPORT_BOARDS_ENABLED: ${{ inputs.airport_boards_enabled }}')
+    expect(workflow).toContain('--airport-boards-enabled "${{ inputs.airport_boards_enabled }}"')
+    expect(workflow).toContain('AERODATABOX_RAPIDAPI_KEY: ${{ secrets.AERODATABOX_RAPIDAPI_KEY }}')
+    expect(workflow).toContain('--var AIRPORT_BOARDS_ENABLED:${{ inputs.airport_boards_enabled }}')
+    expect(workflow).toContain('"${{ steps.target-orbital.outputs.starlink_enabled }}"\n          "${{ inputs.airport_boards_enabled }}"')
+    expect(smoke).toContain('await verifyAirportBoardBoundary()')
+    expect(smoke).toContain("new URL('/api/airports/board?icao=invalid', baseUrl)")
+  })
 })

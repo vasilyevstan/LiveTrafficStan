@@ -24,6 +24,10 @@ const inputPath = resolve(required('input'))
 const outputPath = resolve(required('output'))
 const wrapperPath = resolve(required('wrapper'))
 const marineEnabled = args.get('marine-enabled') ?? 'false'
+const airportBoardsEnabled = args.get('airport-boards-enabled') ?? 'false'
+if (airportBoardsEnabled !== 'true' && airportBoardsEnabled !== 'false') {
+  throw new Error('--airport-boards-enabled must be true or false')
+}
 if (marineEnabled !== 'true' && marineEnabled !== 'false') {
   throw new Error('--marine-enabled must be true or false')
 }
@@ -32,6 +36,9 @@ const inputDirectory = dirname(inputPath)
 const targetMain = resolve(inputDirectory, config.main)
 if (marineEnabled === 'true' && !config.exports?.MarineTrafficRelay) {
   throw new Error('This rollback target does not support the marine supplement')
+}
+if (airportBoardsEnabled === 'true' && !config.exports?.AirportBoardCoordinator) {
+  throw new Error('This rollback target does not support airport boards')
 }
 
 await writeFile(
@@ -49,6 +56,17 @@ await writeFile(
     '  }',
     '}',
     '',
+    ...(!config.exports?.AirportBoardCoordinator ? [
+      'export class AirportBoardCoordinator {',
+      '  async fetch() {',
+      "    return new Response('Airport boards unavailable during rollback', {",
+      '      status: 503,',
+      "      headers: { 'Cache-Control': 'no-store' },",
+      '    })',
+      '  }',
+      '}',
+      '',
+    ] : []),
     'export default targetWorker',
     '',
   ].join('\n'),
@@ -65,16 +83,24 @@ config.triggers = { crons: [] }
 delete config.kv_namespaces
 const bindings = (config.durable_objects?.bindings ?? []).filter((binding) =>
   binding.name !== 'ORBITAL_CATALOG_COORDINATOR' &&
-  binding.name !== 'MARINE_TRAFFIC_RELAY',
+  binding.name !== 'MARINE_TRAFFIC_RELAY' &&
+  binding.name !== 'AIRPORT_BOARD_COORDINATOR',
 )
 if (marineEnabled === 'true') {
   bindings.push({ name: 'MARINE_TRAFFIC_RELAY', class_name: 'MarineTrafficRelay' })
+}
+if (airportBoardsEnabled === 'true') {
+  bindings.push({ name: 'AIRPORT_BOARD_COORDINATOR', class_name: 'AirportBoardCoordinator' })
 }
 if (bindings.length) config.durable_objects = { ...config.durable_objects, bindings }
 else delete config.durable_objects
 config.exports = {
   ...config.exports,
   OrbitalCatalogCoordinator: {
+    type: 'durable-object',
+    storage: 'sqlite',
+  },
+  AirportBoardCoordinator: {
     type: 'durable-object',
     storage: 'sqlite',
   },

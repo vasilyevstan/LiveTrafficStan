@@ -49,6 +49,11 @@ on:
         required: true
         default: false
         type: boolean
+      airport_boards_enabled:
+        description: Enable bounded on-demand AeroDataBox airport boards
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -112,6 +117,8 @@ jobs:
           MARINE_ENABLED: ${{ inputs.marine_supplement_enabled }}
           AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
           OPENWATERS_AIS_TOKEN: ${{ secrets.OPENWATERS_AIS_TOKEN }}
+          AIRPORT_BOARDS_ENABLED: ${{ inputs.airport_boards_enabled }}
+          AERODATABOX_RAPIDAPI_KEY: ${{ secrets.AERODATABOX_RAPIDAPI_KEY }}
         run: |
           test -n "$CLOUDFLARE_ACCOUNT_ID"
           test -n "$CLOUDFLARE_API_TOKEN"
@@ -121,6 +128,9 @@ jobs:
           if [[ "$MARINE_ENABLED" == "true" ]]; then
             test -n "$AISSTREAM_API_KEY"
             test -n "$OPENWATERS_AIS_TOKEN"
+          fi
+          if [[ "$AIRPORT_BOARDS_ENABLED" == "true" ]]; then
+            test -n "$AERODATABOX_RAPIDAPI_KEY"
           fi
 
       - name: Use Node.js
@@ -161,6 +171,7 @@ jobs:
           VITE_AIRCRAFT_PHOTO_ENABLED: ${{ inputs.aircraft_photo_enabled }}
           VITE_FLIGHT_ROUTE_ENABLED: ${{ inputs.flight_route_enabled }}
           VITE_MARINE_SUPPLEMENT_ENABLED: ${{ inputs.marine_supplement_enabled }}
+          VITE_AIRPORT_BOARDS_ENABLED: ${{ inputs.airport_boards_enabled }}
         run: npm run build
 
       - name: Build PWA retirement artifact
@@ -170,6 +181,7 @@ jobs:
           VITE_AIRCRAFT_PHOTO_ENABLED: ${{ inputs.aircraft_photo_enabled }}
           VITE_FLIGHT_ROUTE_ENABLED: ${{ inputs.flight_route_enabled }}
           VITE_MARINE_SUPPLEMENT_ENABLED: ${{ inputs.marine_supplement_enabled }}
+          VITE_AIRPORT_BOARDS_ENABLED: ${{ inputs.airport_boards_enabled }}
         run: npm run build:pwa-retire
 
       - name: Check exact deployment bundle
@@ -189,6 +201,7 @@ jobs:
           ORBITAL_ENABLED: ${{ inputs.orbital_catalog_enabled }}
           STARLINK_ENABLED: ${{ inputs.starlink_catalog_enabled }}
           MARINE_ENABLED: ${{ inputs.marine_supplement_enabled }}
+          AIRPORT_BOARDS_ENABLED: ${{ inputs.airport_boards_enabled }}
         run: |
           if [[ "$ORBITAL_ENABLED" == "true" ]]; then
             node scripts/prepare-wrangler-config.mjs \
@@ -197,6 +210,7 @@ jobs:
               --orbital-enabled true \
               --starlink-enabled "$STARLINK_ENABLED" \
               --marine-enabled "$MARINE_ENABLED" \
+              --airport-boards-enabled "$AIRPORT_BOARDS_ENABLED" \
               --namespace-id "$NAMESPACE_ID"
           else
             node scripts/prepare-wrangler-config.mjs \
@@ -204,7 +218,8 @@ jobs:
               --output "$RUNNER_TEMP/wrangler-production.jsonc" \
               --orbital-enabled false \
               --starlink-enabled false \
-              --marine-enabled "$MARINE_ENABLED"
+              --marine-enabled "$MARINE_ENABLED" \
+              --airport-boards-enabled "$AIRPORT_BOARDS_ENABLED"
           fi
 
       - name: Check exact production Worker configuration
@@ -214,6 +229,7 @@ jobs:
           RELEASE_SHA: ${{ inputs.sha }}
           STARLINK_ENABLED: ${{ inputs.starlink_catalog_enabled }}
           MARINE_ENABLED: ${{ inputs.marine_supplement_enabled }}
+          AIRPORT_BOARDS_ENABLED: ${{ inputs.airport_boards_enabled }}
         run: >-
           npx wrangler deploy
           --dry-run
@@ -223,16 +239,19 @@ jobs:
           --var "ORBITAL_CATALOG_ENABLED:$ORBITAL_ENABLED"
           --var "STARLINK_CATALOG_ENABLED:$STARLINK_ENABLED"
           --var "MARINE_SUPPLEMENT_ENABLED:$MARINE_ENABLED"
+          --var "AIRPORT_BOARDS_ENABLED:$AIRPORT_BOARDS_ENABLED"
           --outdir "$RUNNER_TEMP/worker-dry-run"
 
       - name: Prepare production secrets file
-        if: inputs.aircraft_delivery == 'oci-private-relay' || inputs.marine_supplement_enabled
+        if: inputs.aircraft_delivery == 'oci-private-relay' || inputs.marine_supplement_enabled || inputs.airport_boards_enabled
         env:
           AIRCRAFT_DELIVERY: ${{ inputs.aircraft_delivery }}
           AIRCRAFT_RELAY_AUTH_TOKEN: ${{ secrets.AIRCRAFT_RELAY_AUTH_TOKEN }}
           MARINE_ENABLED: ${{ inputs.marine_supplement_enabled }}
           AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
           OPENWATERS_AIS_TOKEN: ${{ secrets.OPENWATERS_AIS_TOKEN }}
+          AIRPORT_BOARDS_ENABLED: ${{ inputs.airport_boards_enabled }}
+          AERODATABOX_RAPIDAPI_KEY: ${{ secrets.AERODATABOX_RAPIDAPI_KEY }}
           SECRETS_FILE: ${{ runner.temp }}/wrangler-production-secrets.json
         run: |
           umask 077
@@ -256,10 +275,11 @@ jobs:
             --var ORBITAL_CATALOG_ENABLED:${{ inputs.orbital_catalog_enabled }}
             --var STARLINK_CATALOG_ENABLED:${{ inputs.starlink_catalog_enabled }}
             --var MARINE_SUPPLEMENT_ENABLED:${{ inputs.marine_supplement_enabled }}
-            ${{ (inputs.aircraft_delivery == 'oci-private-relay' || inputs.marine_supplement_enabled) && format('--secrets-file {0}/wrangler-production-secrets.json', runner.temp) || '' }}
+            --var AIRPORT_BOARDS_ENABLED:${{ inputs.airport_boards_enabled }}
+            ${{ (inputs.aircraft_delivery == 'oci-private-relay' || inputs.marine_supplement_enabled || inputs.airport_boards_enabled) && format('--secrets-file {0}/wrangler-production-secrets.json', runner.temp) || '' }}
 
       - name: Remove production secrets file
-        if: always() && (inputs.aircraft_delivery == 'oci-private-relay' || inputs.marine_supplement_enabled)
+        if: always() && (inputs.aircraft_delivery == 'oci-private-relay' || inputs.marine_supplement_enabled || inputs.airport_boards_enabled)
         env:
           SECRETS_FILE: ${{ runner.temp }}/wrangler-production-secrets.json
         run: rm -f "$SECRETS_FILE"
@@ -272,6 +292,7 @@ jobs:
           "${{ inputs.aircraft_delivery }}"
           "${{ inputs.orbital_catalog_enabled }}"
           "${{ inputs.starlink_catalog_enabled }}"
+          "${{ inputs.airport_boards_enabled }}"
 
       - name: Record deployment
         env:
@@ -289,6 +310,7 @@ jobs:
             echo "- Orbital catalog enabled: \`${{ inputs.orbital_catalog_enabled }}\`"
             echo "- Starlink catalog enabled: \`${{ inputs.starlink_catalog_enabled }}\`"
             echo "- Marine supplement enabled: \`${{ inputs.marine_supplement_enabled }}\`"
+            echo "- Airport boards enabled: \`${{ inputs.airport_boards_enabled }}\`"
             echo "- Orbital KV namespace: \`${{ steps.orbital-kv.outputs.namespace-id || 'none' }}\`"
             echo "- Orbital coordinator enabled: \`${{ inputs.orbital_catalog_enabled }}\`"
             echo "- URL: $DEPLOYMENT_URL"

@@ -1320,6 +1320,204 @@
   background: var(--button-background);
 }
 
+.airport-board {
+  margin-top: 10px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--detail-divider);
+  color: var(--detail-text);
+}
+
+.airport-board__heading,
+.airport-board__flight-heading {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.airport-board h3,
+.airport-facts-title {
+  margin: 0;
+  color: var(--detail-heading);
+  font-size: 0.85rem;
+}
+
+.airport-facts-title {
+  margin-top: 16px;
+}
+
+.airport-board button {
+  min-height: 44px;
+  padding: 7px 11px;
+  border: 1px solid var(--button-border);
+  border-radius: 8px;
+  color: var(--button-text);
+  background: var(--button-background);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.airport-board button:hover,
+.airport-board button[aria-pressed='true'] {
+  border-color: var(--button-hover-border);
+  color: var(--button-hover-text);
+}
+
+.airport-board button:focus-visible {
+  outline: 2px solid var(--accent-line);
+  outline-offset: 2px;
+}
+
+.airport-board button:disabled {
+  color: var(--button-disabled-text);
+  border-color: var(--button-disabled-border);
+  background: var(--button-disabled-background);
+  cursor: not-allowed;
+}
+
+.airport-board__directions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 0;
+}
+
+.airport-board__directions button {
+  padding-inline: 8px;
+  font-size: 0.72rem;
+}
+
+.airport-board .airport-board__reload {
+  min-width: 44px;
+  padding-inline: 6px;
+  font-size: 0.7rem;
+}
+
+.airport-board__heading {
+  gap: 8px;
+}
+
+.airport-board__announcement-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.airport-board__about {
+  margin-top: 12px;
+  font-size: 0.75rem;
+}
+
+.airport-board__about summary {
+  display: list-item;
+  min-height: 44px;
+  padding: 12px 0;
+  cursor: pointer;
+}
+
+.airport-board__context a {
+  color: var(--accent-line);
+}
+
+.details-panel--airport-board .details-panel__heading {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding-block: 6px 10px;
+  background: var(--panel-background);
+}
+
+.details-panel--airport-board .details-panel__heading > div {
+  min-width: 0;
+}
+
+.details-panel--airport-board h2 {
+  overflow: hidden;
+  font-size: 1rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.details-panel--airport-board :is(button, a, summary) {
+  scroll-margin-block: 76px 8px;
+}
+
+.airport-board__directions button[aria-pressed='true'] {
+  font-weight: 700;
+  box-shadow: inset 0 -2px var(--accent-line);
+}
+
+.airport-board__rows {
+  margin: 12px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.airport-board__rows > li {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--detail-divider);
+  overflow-wrap: anywhere;
+}
+
+.airport-board__flight-heading {
+  font-size: 0.83rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.airport-board__status {
+  font-size: 0.75rem;
+}
+
+.airport-board__status--delayed,
+.airport-board__status--canceled,
+.airport-board__status--diverted,
+.airport-board__status--canceleduncertain {
+  color: var(--error-text);
+}
+
+.airport-board__destination {
+  margin: 7px 0 0;
+  font-size: 0.81rem;
+  line-height: 1.45;
+}
+
+.airport-board__times {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(120px, 100%), 1fr));
+  gap: 10px;
+  margin: 10px 0 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.airport-board__times dt {
+  color: var(--detail-label);
+  font-size: 0.72rem;
+}
+
+.airport-board__times dd {
+  margin: 3px 0 0;
+  font-size: 0.83rem;
+}
+
+.airport-board__clock-context {
+  display: block;
+  margin-top: 3px;
+  color: var(--detail-label);
+  font-size: 0.72rem;
+}
+
+.airport-board__context {
+  margin: 7px 0 0;
+  color: var(--detail-label);
+  font-size: 0.73rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
 .flight-route {
   margin-top: 10px;
   padding: 9px 10px;
@@ -1995,6 +2193,19 @@
 @container workspace (max-width: 430px) {
   .details-grid {
     gap: 0 12px;
+  }
+
+  @container workspace (max-width: 760px) and (min-height: 400px) {
+    .interface-layer:has(.details-panel--airport-board) > * {
+      --mobile-detail-height: clamp(
+        104px,
+        calc(
+          var(--app-visual-viewport-height) - var(--workspace-header-bottom) -
+            var(--workspace-notice-height) - 180px
+        ),
+        360px
+      );
+    }
   }
 
   .details-panel h2 {

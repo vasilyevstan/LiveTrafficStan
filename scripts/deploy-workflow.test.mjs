@@ -74,6 +74,10 @@ describe('production deployment workflow', () => {
         type: 'durable-object',
         storage: 'sqlite',
       },
+      AirportBoardCoordinator: {
+        type: 'durable-object',
+        storage: 'sqlite',
+      },
     })
   })
 
@@ -134,5 +138,17 @@ describe('production deployment workflow', () => {
     expect(workflow).toContain(
       'echo "- Starlink catalog enabled: \\`${{ inputs.starlink_catalog_enabled }}\\`"',
     )
+  })
+
+  it('gates airport boards and deploys the private key atomically without exposing it to the client', () => {
+    expect(workflow).toContain('airport_boards_enabled:')
+    expect(workflow).toContain('VITE_AIRPORT_BOARDS_ENABLED: ${{ inputs.airport_boards_enabled }}')
+    expect(workflow).toContain('--airport-boards-enabled "$AIRPORT_BOARDS_ENABLED"')
+    expect(workflow).toContain('--var AIRPORT_BOARDS_ENABLED:${{ inputs.airport_boards_enabled }}')
+    expect(workflow).toContain('AERODATABOX_RAPIDAPI_KEY: ${{ secrets.AERODATABOX_RAPIDAPI_KEY }}')
+    expect(secretsScript).toContain('secrets.AERODATABOX_RAPIDAPI_KEY = key')
+    expect(workflow).not.toContain('VITE_AERODATABOX')
+    expect(workflow).not.toContain('wrangler secret put')
+    expect(workflow).toContain('"${{ inputs.starlink_catalog_enabled }}"\n          "${{ inputs.airport_boards_enabled }}"')
   })
 })
