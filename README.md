@@ -8,6 +8,10 @@ user accounts or a server-side vessel history archive.
 
 Public production: <https://trackstan.xyz>
 
+Current application: `a342b3095048f4073d453555e0b5538ff3a063dc`,
+with the [In view and automatic Starlink release](docs/hosting-and-deployment.md#in-view-production-receipt-2026-10-09).
+Later documentation-only commits do not replace that running source.
+
 The existing <https://livetrafficstan.syntal.workers.dev> address remains
 available. Preferences, permissions, installed apps and private history are
 separate for each origin; they are not automatically migrated.
@@ -117,8 +121,8 @@ identity are not renamed or reset.
   linked to live aircraft. The free allowance is shared by the entire app,
   with no automatic refresh or paid fallback.
   [Release #46](docs/hosting-and-deployment.md#airport-board-production-receipt-2026-10-08)
-  runs application `c0ed2bea4e6291bcb4054df28482fd564012c676`; later
-  documentation-only commits do not replace that running source.
+  first shipped at `c0ed2bea4e6291bcb4054df28482fd564012c676`;
+  the current application retains the enabled board feature and its quota fences.
 - Optional remembered aircraft and vessel clustering, kept in separate
   MapLibre sources with distinct counts and expansion behavior. Clustering
   starts off and never changes provider request cadence or entity identity.
@@ -195,7 +199,9 @@ identity are not renamed or reset.
   **More → Orbits** retains its sample/source context and independent retry.
   Issue #386 removes the separate switch introduced by #257. ORBITS remains
   off by default, and neither orbital route is requested while it is off.
-  Legacy saved `starlinkVisible` values are discarded; valid old `starlink=0`
+  Legacy saved `starlinkVisible` values are ignored on hydration and omitted
+  on the next ordinary preference save; startup does not rewrite existing
+  version-1 storage. Valid old `starlink=0`
   or `starlink=1` share fields are ignored without losing other settings or
   shared navigation. New share links omit the retired field. Issue #271 adds a
   negotiated schema-2 representation with exactly 512 records: 128 from each

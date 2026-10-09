@@ -883,6 +883,10 @@ ORBITS, page visibility, and Live mode are effective. Turning ORBITS off
 clears orbital selection and tracks. An old saved `starlinkVisible=false` or
 shared `starlink=0` must not suppress the sample; all unrelated saved settings,
 history and shared navigation are retained. Do not clear site data to migrate.
+Existing version-1 storage may still contain the inert field immediately
+after an upgrade: hydration does not rewrite it. The next ordinary preference
+save removes it. Check that enabling ORBITS includes both channels, rather
+than treating the old raw field as an effective switch.
 
 The layer is intentionally bounded, not the full constellation. Current
 schema 2 contains exactly 512 records: 128 from each fixed inclination band
