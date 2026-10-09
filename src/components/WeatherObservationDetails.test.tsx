@@ -43,6 +43,8 @@ describe('WeatherObservationDetails', () => {
     )
 
     expect(html).toContain('Selected METAR')
+    expect(html).toContain('aria-label="Close weather observation details"')
+    expect(html).not.toContain('>Close</button>')
     expect(html).toContain('Observed')
     expect(html).toContain('Retrieved')
     expect(html).toContain('METAR EETN fixture')

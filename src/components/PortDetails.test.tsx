@@ -32,6 +32,8 @@ describe('PortDetails', () => {
     )
 
     expect(html).toContain('Tallinn')
+    expect(html).toContain('aria-label="Close port details"')
+    expect(html).not.toContain('>Close</button>')
     expect(html).toContain('incomplete')
     expect(html).toContain('20 miles')
     expect(html).toContain('No facilities, status, berth, calls')

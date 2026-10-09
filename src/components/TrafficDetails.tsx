@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { DetailsPanel } from './DetailsPanel'
 import {
   formatAge,
   formatAltitude,
@@ -645,12 +646,14 @@ export function TrafficDetails({
     ? dynamicVesselPhotoForSelection(entity, vesselPhoto) : undefined
 
   return (
-    <aside
-      ref={panelRef}
-      className={`details-panel${
-        historical ? ' details-panel--historical' : ''
-      }`}
-      aria-labelledby="selected-traffic-title"
+    <DetailsPanel
+      panelRef={panelRef}
+      className={historical ? 'details-panel--historical' : undefined}
+      titleId="selected-traffic-title"
+      closeLabel={`Close ${historical ? 'historical ' : ''}${
+        entity.kind === 'aircraft' ? 'aircraft' : 'ship'
+      } details`}
+      onClose={onClose}
     >
       <div className="details-panel__heading">
         <div>
@@ -660,9 +663,6 @@ export function TrafficDetails({
           </p>
           <h2 id="selected-traffic-title">{title}</h2>
         </div>
-        <button type="button" className="close-button" onClick={onClose}>
-          Close
-        </button>
       </div>
 
       {vesselPhotoSelection?.kind === 'available' && (
@@ -905,6 +905,6 @@ export function TrafficDetails({
           inferred.
         </p>
       )}
-    </aside>
+    </DetailsPanel>
   )
 }

@@ -297,6 +297,10 @@ identity are not renamed or reset.
   remain a bottom mobile command dock. Selected details use a left desktop
   inspector below the card or a reserved mobile sheet. The card is inset
   16 px on desktops and 12 px on phones; the mobile dock remains 70 px tall.
+  Every object inspector has an accessible, top-right X that stays visible
+  while scrolling. Escape closes an inspector when focus is inside it;
+  either action preserves the camera and returns focus to the existing
+  selection control or visible More/Settings fallback.
   White Light and slate Dark surfaces share system typography and one accent.
   Counts, marine source scope, freshness, and traffic mode remain visible;
   **Provider details** opens independent provider messages on every screen size.
