@@ -595,6 +595,41 @@ the existing three-/two-column modifiers, native disclosure/44 px controls
 and single scroll owner are reused. The single changed-UI detector pass
 returned no findings; pre-existing missing design metadata is not repaired.
 
+**Deployed acceptance:** application
+`28235e72acd9cc9c8b9ac47765dbf45160d59592`, Worker
+`f61304d4-f235-4f73-bfbc-5aa7a62944b7`, passed both-origin strict smoke.
+Normal REFRESH APP at 14:09:59-14:10:03 UTC preserved raw preferences, history
+settings/database identity and root install scope/controller while replacing
+`index-DF3lrFa8.js` with `index-CzqaQytu.js`.
+That completed transition is retained in
+`issue393-production-browser/upgrade-failed-report.json`: the later failure
+was an observer blindly toggling already-disabled clustering, not an
+application or update failure. Native observers must read preserved state
+before temporarily changing it, then restore the prior value.
+
+After that observer-only correction, the same owned installation/profile
+passed `issue393-production-browser/in-view-report.json` at
+**2026-10-09 14:12:54.576-14:13:21.367 UTC**. Twelve layouts under
+`inView.layouts` (not the intentionally skipped generic `layouts` matrix)
+cover both rankings, both themes and all three accepted sizes. Initial real
+counts were 38 length-qualified /34 draught-qualified, with 20 listed and
+maxima 333 m /10.3 m. The 315x517 footprint later had only 19 usable draughts,
+correctly listing 19. Counts vary with reception, time and footprint.
+Actual order and formatted measurements matched the current application
+model, not a fixed synthetic count.
+
+The pass retained one canvas/outer scroll owner, six mobile slots, 44 px
+targets/map strip, Close/Escape, magnification and keyboard/touch selection.
+The existing inspector/halo and one `200` photo lookup did not move the camera;
+this is lookup continuity, not a new photo-image acceptance claim.
+Opening/ranking added no acquisition; both catalog routes were read once
+after ORBITS enable, no board request occurred, and measured aircraft starts
+were at least 20,000.2 ms apart. Aircraft independently returned `200` then
+`503`, also observed in the predecessor. There were no runtime exceptions.
+Fetch, WebSocket and clocks were native; explicit focus emulation does not
+claim physical-device or new native hidden-state evidence. No application
+edit, rebuild or redeployment was needed after local acceptance.
+
 `npm run check:orbital-enrichment` does not fetch NASA or Wikidata. It verifies the
 committed ten-record manifest against the committed visual catalog, requires
 sorted unique canonical NORAD IDs and exact name/designator/type agreement,
