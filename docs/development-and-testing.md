@@ -459,10 +459,12 @@ magnification, credits and Return to Live. Count both literal catalog routes:
 zero with ORBITS off and no extra read from opening, filtering, paging or
 theme changes. Ordinary selected metadata/photo/route lookups are permitted
 and must remain functional; they are not traffic polls or catalog reads.
-Production upgrade evidence must permit only the deliberate removal of
-`layers.starlinkVisible`, preserving the installed origin, history consent/
-database and every unrelated preference. Synthetic counts are not evidence
-of live provider coverage.
+Production upgrade evidence must preserve the installed origin, history
+consent/database and every unrelated preference. Existing version-1 hydration
+does not rewrite storage: the inert `layers.starlinkVisible` may remain until
+the next ordinary preference save. Verify that it cannot suppress the sample
+and that the ordinary save omits it; do not invent a startup-write requirement.
+Synthetic counts are not evidence of live provider coverage.
 
 The 2026-10-09 local receipt uses Chrome 155 and candidate
 `index-DF3lrFa8.js` / `index-Dcf5hrs3.css`. All required source/data gates passed
@@ -502,6 +504,36 @@ window minimization; that did not exercise a hidden transition and is **not**
 reported as a new hidden-state pass. No application lifecycle was altered to
 accommodate the observer. Production upgrade/real-provider evidence is recorded
 separately in the release receipt.
+
+The production normal **REFRESH APP** transition at 07:47 UTC changed
+`index-xoDcN1BD.js` to the accepted `index-DF3lrFa8.js`. It retained unrelated
+preferences, history settings/database identity and root install scope/
+controller. The final 07:57:24-07:58:03 UTC receipt,
+`issue386-production-browser/upgrade-report.json`, reuses that completed
+transition and eight accepted general layouts, then measures twelve actual
+In view layouts at the same three sizes in both themes. It confirms 44 px
+targets in both dimensions, the six-slot dock, one canvas/outer scroll owner,
+a 44 px mobile drag strip, close/Escape, magnification and the existing More
+path. The observer restores desktop dimensions before desktop-only focus and
+whole-world checks; correct mobile-entry focus is not a desktop-focus failure.
+
+Real catalogs returned 439 current curated positions and the 512-record
+Starlink sample: 951 unique modeled objects, 384 shown in that whole-world
+view, and all 951 reachable over 48 pages. Counts in portrait footprints
+changed with modeled time; these are not fixed coverage targets or a new
+combined display cap. Both catalog routes returned `200`, exactly once after
+ORBITS enable and zero at startup. Aircraft independently returned `503` then
+`200`; unavailable, successful empty and updating states remained distinct.
+The old opt-out did not suppress Starlink, and the ordinary preference save
+removed its inert raw field.
+
+This production check explicitly enabled browser focus emulation because
+the retained tab stayed natively hidden despite target/process activation.
+Renderer, trusted mouse/touch input, fetch, WebSocket and clocks remained real;
+it is not a physical-device or new native-visibility-transition pass.
+Earlier observer failures and the reused upgrade/layout provenance are retained.
+No application change or redeployment was made for them. See the
+[exact deployment and rollback receipt](hosting-and-deployment.md#in-view-production-receipt-2026-10-09).
 
 `npm run check:orbital-enrichment` does not fetch NASA or Wikidata. It verifies the
 committed ten-record manifest against the committed visual catalog, requires

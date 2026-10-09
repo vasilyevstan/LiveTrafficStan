@@ -983,7 +983,9 @@ rows, algorithm, canonical digest, and sample size. Neither path is reused.
 
 The browser never contacts CelesTrak and sends no viewport, Home, geolocation,
 search, selection, cookie, credential, or referrer data. It reads only
-same-origin `/api/orbits/starlink`. Starlink names and SATCAT types are source
+same-origin `/api/orbits/starlink` when ORBITS is effective; #386 removes only
+the separate visibility switch, not source/cadence/failure isolation.
+Opening, searching or paging In view adds no acquisition. Starlink names and SATCAT types are source
 facts; purpose, operational state, and curated NASA enrichment are not inferred
 or transferred from a duplicate curated NORAD.
 

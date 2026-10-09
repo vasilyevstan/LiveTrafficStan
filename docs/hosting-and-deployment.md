@@ -1794,6 +1794,63 @@ If a newer pull request reaches `main` while an older manual deployment is
 validating, the second equality check fails rather than silently promoting the
 older SHA.
 
+## In view production receipt (2026-10-09)
+
+Implementation [#387](https://github.com/vasilyevstan/LiveTrafficStan/pull/387)
+and checked promotion [#388](https://github.com/vasilyevstan/LiveTrafficStan/pull/388)
+delivered application **`a342b3095048f4073d453555e0b5538ff3a063dc`**.
+Feature, dev, promotion and exact-main Validation passed in
+[37899020170](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/37899020170),
+[37899293594](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/37899293594),
+[37899447297](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/37899447297)
+and [37899681346](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/37899681346).
+No ancestry synchronization or protection change was needed.
+
+Serialized [deployment 37899985158](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/37899985158)
+passed and reported Worker **`796febd2-9983-4ed4-b8b9-9a7812170c8a`** at
+**07:37:32.405 UTC**. Its workers.dev smoke and a separate strict-SHA
+`https://trackstan.xyz` smoke passed. The application artifact, private OCI
+aircraft path, aircraft photos, plausible routes, both orbital catalogs, marine
+supplement and airport boards all remain enabled. No backend schema, binding,
+credential, provider or cadence change was introduced.
+
+Production serves the accepted `index-DF3lrFa8.js` / `index-Dcf5hrs3.css`,
+shell `95b4f318d94816f2973c`. Normal **REFRESH APP** from the retained
+`index-xoDcN1BD.js` installation at 07:47 UTC preserved unrelated preferences,
+history settings/database identity and root install scope/controller.
+Version-1 hydration correctly ignored the old Starlink opt-out without a
+startup storage rewrite; the next ordinary save removed the inert field.
+
+Qualified real-browser acceptance finished at **07:58:03 UTC**, reusing the
+completed installed transition/eight general layouts and measuring twelve
+In view desktop/mobile Light/Dark layouts. They retain one canvas, one outer
+scroll owner, six mobile slots, 44 px targets and a 44 px mobile drag strip.
+The real whole-world view contained 439 current curated positions plus the
+512-record sample: **951 unique modeled objects, 384 shown**, all reachable
+over 48 pages. Those are time-qualified observations, not fixed coverage or
+display-cap promises. Each catalog returned `200` once after ORBITS enable,
+with zero startup reads or panel-induced acquisition. Aircraft independently
+returned `503` and then `200`; no uninterrupted availability is claimed.
+
+Browser focus emulation was necessary because the retained tab stayed
+natively hidden despite activation. Renderer, trusted input, fetch, WebSocket
+and clocks were real; this is not a fresh native hidden-state or physical-device
+pass. The unchanged hidden-worker receipt, current deterministic regressions
+and local paired HISTORY/off/on checks remain the accepted lifecycle evidence.
+Observer corrections did not change or redeploy application code.
+[Testing details](development-and-testing.md#in-view-and-automatic-starlink-inclusion-386)
+separate fixture counts, production evidence and reuse qualifications.
+
+The compatible predecessor is application
+`c0ed2bea4e6291bcb4054df28482fd564012c676`, Worker
+`701561eb-4654-492d-b800-3eea5be8978b`. This frontend-only change needs no new
+disabled baseline or duplicate rollback exercise. The existing recorded-version
+rollback preserves all production inputs and atomic secrets. It restores the
+old UI/independent Starlink control; an already retired field then uses the old
+client's default, without clearing unrelated preferences or history.
+Later receipt/Wiki documentation commits do not redeploy the application or
+replace the runtime SHA above.
+
 ## Airport-board activation and rollback
 
 ### Airport-board production receipt (2026-10-08)
@@ -1837,8 +1894,9 @@ receipts were retained, not raw flights or real-flight screenshots. See
 [the bounded acceptance record](development-and-testing.md#on-demand-airport-boards-46).
 
 This receipt and later Wiki/documentation commits do not redeploy the
-application or replace its source SHA. The requested In view drawer and
-automatic Starlink inclusion remain planned, not part of this release.
+application or replace its source SHA. In view and automatic Starlink inclusion
+were not part of this airport milestone; their separate 2026-10-09 receipt is
+recorded above.
 
 ### Activation contract
 
