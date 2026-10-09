@@ -6,14 +6,23 @@ import {
 } from '../domain/aircraftSearch'
 import {
   inViewPage,
+  rankVesselsInView,
+  vesselInViewMeasurement,
   type InViewAvailability,
   type OrbitalInView,
+  type VesselInViewRanking,
 } from '../domain/inView'
+import { formatDimension } from '../domain/format'
 import {
   DEFAULT_ORBITAL_DISCOVERY_FILTERS,
   discoverOrbitalCatalog,
 } from '../domain/orbitalDiscovery'
-import type { DisplayAircraft } from '../domain/traffic'
+import type { DisplayAircraft, DisplayVessel } from '../domain/traffic'
+import {
+  VESSEL_RESULT_LIMIT,
+  vesselResultContext,
+  vesselResultLabel,
+} from '../domain/vesselFilters'
 
 interface InViewPanelProps {
   aircraft: readonly DisplayAircraft[]
@@ -24,6 +33,11 @@ interface InViewPanelProps {
   selectedAircraftId: string | null
   onAircraftQueryChange: (query: string) => void
   onAircraftSelect: (id: string, originId: string) => void
+  vessels: readonly DisplayVessel[]
+  vesselsVisible: boolean
+  vesselAvailability: InViewAvailability
+  selectedVesselId: string | null
+  onVesselSelect: (id: string, originId: string) => void
   orbits: OrbitalInView
   selectedOrbitalId: string | null
   onOrbitalSelect: (id: string, originId: string) => void
@@ -31,7 +45,9 @@ interface InViewPanelProps {
   maximumOrbitalQueryLength: number
 }
 
-type Kind = 'aircraft' | 'orbits'
+const CATEGORIES = ['aircraft', 'ships', 'orbits'] as const
+const CATEGORY_LABELS = { aircraft: 'Aircraft', ships: 'Ships', orbits: 'Orbits' }
+type Kind = (typeof CATEGORIES)[number]
 
 interface ResultRow {
   key: string
@@ -51,6 +67,11 @@ export function InViewPanel({
   selectedAircraftId,
   onAircraftQueryChange,
   onAircraftSelect,
+  vessels,
+  vesselsVisible,
+  vesselAvailability,
+  selectedVesselId,
+  onVesselSelect,
   orbits,
   selectedOrbitalId,
   onOrbitalSelect,
@@ -59,10 +80,15 @@ export function InViewPanel({
 }: InViewPanelProps) {
   const [kind, setKind] = useState<Kind>('aircraft')
   const [orbitalQuery, setOrbitalQuery] = useState('')
-  const [pages, setPages] = useState({ aircraft: 0, orbits: 0 })
+  const [vesselRanking, setVesselRanking] = useState<VesselInViewRanking>('length')
+  const [pages, setPages] = useState({ aircraft: 0, ships: 0, orbits: 0 })
   const [focusedKey, setFocusedKey] = useState<string | null>(null)
   const focusPageRef = useRef<Kind | null>(null)
   const rootRef = useRef<HTMLDivElement>(null)
+  const rankedVessels = useMemo(() => rankVesselsInView(
+    vesselAvailability.available ? vessels : [],
+    vesselRanking,
+  ), [vessels, vesselAvailability.available, vesselRanking])
   const results = useMemo(() => {
     const orbitalResults = discoverOrbitalCatalog(
       orbits.rows.map(({ position }) => position),
@@ -90,20 +116,43 @@ export function InViewPanel({
       detail: shownIds.has(position.id) ? 'Shown on map' : 'Not shown at this zoom',
       title: `Element epoch ${new Date(position.elementEpoch).toISOString()}. Modeled ${new Date(position.modeledFor).toISOString()}. Retrieved ${new Date(position.snapshotRetrievedAt).toISOString()}.`,
       }))
-    return { aircraft: aircraftRows, orbits: orbitalRows }
-  }, [aircraft, aircraftAvailability.available, orbits.rows, orbitalQuery])
+    const vesselRows: ResultRow[] = rankedVessels.rows.map((vessel) => {
+      const length = vesselInViewMeasurement(vessel, 'length')
+      const draught = vesselInViewMeasurement(vessel, 'draught')
+      return {
+        key: vessel.id,
+        id: vessel.id,
+        label: vesselResultLabel(vessel),
+        context: [
+          length === undefined ? 'Length not reported' : `${formatDimension(length)} long`,
+          draught === undefined ? 'Draught not reported' : `${formatDimension(draught)} draught`,
+        ].join(' · '),
+        detail: [
+          vesselResultContext(vessel),
+          vessel.freshness === 'stale' ? 'STALE' : undefined,
+        ].filter(Boolean).join(' · '),
+      }
+    })
+    return { aircraft: aircraftRows, ships: vesselRows, orbits: orbitalRows }
+  }, [aircraft, aircraftAvailability.available, orbits.rows, orbitalQuery, rankedVessels.rows])
   const paged = useMemo(() => ({
     aircraft: inViewPage(results.aircraft, pages.aircraft, pageSize, focusedKey),
+    ships: inViewPage(results.ships, pages.ships, pageSize, focusedKey),
     orbits: inViewPage(results.orbits, pages.orbits, pageSize, focusedKey),
-  }), [results, pages.aircraft, pages.orbits, pageSize, focusedKey])
+  }), [results, pages.aircraft, pages.ships, pages.orbits, pageSize, focusedKey])
 
   useEffect(() => {
     if (
       pages.aircraft === paged.aircraft.page &&
+      pages.ships === paged.ships.page &&
       pages.orbits === paged.orbits.page
     ) return
-    setPages({ aircraft: paged.aircraft.page, orbits: paged.orbits.page })
-  }, [pages.aircraft, pages.orbits, paged.aircraft.page, paged.orbits.page])
+    setPages({
+      aircraft: paged.aircraft.page,
+      ships: paged.ships.page,
+      orbits: paged.orbits.page,
+    })
+  }, [pages.aircraft, pages.ships, pages.orbits, paged.aircraft.page, paged.ships.page, paged.orbits.page])
 
   useEffect(() => {
     if (!focusedKey || results[kind].some(({ key }) => key === focusedKey)) return
@@ -112,9 +161,11 @@ export function InViewPanel({
       document.activeElement === document.body &&
       rootRef.current?.getClientRects().length
     ) {
-      document.getElementById(`in-view-${kind}-search`)?.focus()
+      document.getElementById(kind === 'ships'
+        ? `in-view-ships-ranking-${vesselRanking}`
+        : `in-view-${kind}-search`)?.focus()
     }
-  }, [focusedKey, kind, results])
+  }, [focusedKey, kind, results, vesselRanking])
 
   useEffect(() => {
     const targetKind = focusPageRef.current
@@ -133,15 +184,26 @@ export function InViewPanel({
     focusPageRef.current = targetKind
     setPages((current) => ({ ...current, [targetKind]: page }))
   }
+  const availabilityByKind = {
+    aircraft: aircraftAvailability,
+    ships: vesselAvailability,
+    orbits,
+  }
+  const totals = { aircraft: totalAircraft, ships: vessels.length, orbits: orbits.rows.length }
+  const selectedVesselOutside = vesselAvailability.available
+    ? vessels.find(({ id }) =>
+        id === selectedVesselId && !rankedVessels.rows.some((vessel) => vessel.id === id),
+      )
+    : undefined
 
   return (
     <div ref={rootRef} className="in-view">
       <div
-        className="control-options control-options--two in-view__tabs"
+        className="control-options control-options--three in-view__tabs"
         role="group"
         aria-label="In view category"
       >
-        {(['aircraft', 'orbits'] as const).map((value) => (
+        {CATEGORIES.map((value) => (
           <button
             id={`in-view-${value}-tab`}
             key={value}
@@ -154,22 +216,24 @@ export function InViewPanel({
               setKind(value)
             }}
           >
-            {value === 'aircraft' ? 'Aircraft' : 'Orbits'}
+            {CATEGORY_LABELS[value]}
             <span className="in-view__count">
-              {value === 'aircraft'
-                ? aircraftAvailability.available ? totalAircraft : '—'
-                : orbits.available ? orbits.rows.length : '—'}
+              {availabilityByKind[value].available ? totals[value] : '—'}
             </span>
           </button>
         ))}
       </div>
-      {(['aircraft', 'orbits'] as const).map((value) => {
+      {CATEGORIES.map((value) => {
         const isAircraft = value === 'aircraft'
-        const availability = isAircraft ? aircraftAvailability : orbits
+        const isShips = value === 'ships'
+        const isOrbits = value === 'orbits'
+        const availability = availabilityByKind[value]
         const page = paged[value]
-        const total = isAircraft ? totalAircraft : orbits.rows.length
+        const total = totals[value]
         const query = isAircraft ? aircraftQuery : orbitalQuery
-        const selected = isAircraft ? selectedAircraftId : selectedOrbitalId
+        const selected = isAircraft ? selectedAircraftId : isShips ? selectedVesselId : selectedOrbitalId
+        const onSelect = isAircraft ? onAircraftSelect : isShips ? onVesselSelect : onOrbitalSelect
+        const selectable = isAircraft ? aircraftVisible : isShips ? vesselsVisible : true
         return (
           <section
             key={value}
@@ -178,7 +242,26 @@ export function InViewPanel({
             hidden={kind !== value}
             aria-labelledby={`in-view-${value}-tab`}
           >
-            <input
+            {isShips ? (
+              <div className="control-options control-options--two" role="group" aria-label="Rank ships">
+                {(['length', 'draught'] as const).map((ranking) => (
+                  <button
+                    key={ranking}
+                    id={`in-view-ships-ranking-${ranking}`}
+                    type="button"
+                    className={vesselRanking === ranking ? 'is-active' : undefined}
+                    aria-pressed={vesselRanking === ranking}
+                    onClick={() => {
+                      setFocusedKey(null)
+                      setVesselRanking(ranking)
+                      setPages((current) => ({ ...current, ships: 0 }))
+                    }}
+                  >
+                    {ranking === 'length' ? 'Longest' : 'Deepest draught'}
+                  </button>
+                ))}
+              </div>
+            ) : <input
               id={`in-view-${value}-search`}
               type="search"
               aria-label={
@@ -194,23 +277,31 @@ export function InViewPanel({
                 }
                 setPages((current) => ({ ...current, [value]: 0 }))
               }}
-            />
+            />}
             <div className="in-view__status" role="status">
               {availability.available && (
                 <p>{isAircraft
                   ? `${total} individual aircraft in view${aircraftVisible ? '' : ' · layer hidden'}`
-                  : `${orbits.shownCount} shown of ${total} modeled in view${orbits.partial ? ' · partial' : ''}`}</p>
+                  : isShips
+                    ? `${rankedVessels.rows.length} of ${rankedVessels.rankableCount} ranked · ${total} in view${vesselsVisible ? '' : ' · layer hidden'}`
+                    : `${orbits.shownCount} shown of ${total} modeled in view${orbits.partial ? ' · partial' : ''}`}</p>
               )}
               {availability.message && <p>{availability.message}</p>}
-              {!isAircraft && orbits.sourceMessages.map((message) => <p key={message}>{message}</p>)}
-              {availability.available && query && <p>{results[value].length} of {total} match this search.</p>}
-              {availability.available && total === 0 && <p>{isAircraft ? 'No unexpired aircraft in this view.' : 'No matching modeled positions in this view.'}</p>}
-              {availability.available && total > 0 && results[value].length === 0 && <p>No objects match this search.</p>}
+              {isOrbits && orbits.sourceMessages.map((message) => <p key={message}>{message}</p>)}
+              {availability.available && !isShips && query && <p>{results[value].length} of {total} match this search.</p>}
+              {availability.available && total === 0 && <p>{isAircraft
+                ? 'No unexpired aircraft in this view.'
+                : isShips
+                  ? 'No current ship observations match this view and its filters.'
+                  : 'No matching modeled positions in this view.'}</p>}
+              {availability.available && total > 0 && results[value].length === 0 && <p>{isShips
+                ? `No ships in this view report a usable ${vesselRanking}.`
+                : 'No objects match this search.'}</p>}
             </div>
             {page.rows.length > 0 && (
               <ul
                 className="vessel-results in-view-results"
-                aria-label={isAircraft ? 'Aircraft in view' : 'Modeled objects in view'}
+                aria-label={isAircraft ? 'Aircraft in view' : isShips ? 'Ranked ships in view' : 'Modeled objects in view'}
                 onBlurCapture={(event) => {
                   if (
                     !(event.relatedTarget instanceof Node) ||
@@ -229,11 +320,9 @@ export function InViewPanel({
                         type="button"
                         title={row.title}
                         aria-pressed={selected === row.id}
-                        disabled={isAircraft && !aircraftVisible}
+                        disabled={!selectable}
                         onFocus={() => setFocusedKey(row.key)}
-                        onClick={() => isAircraft
-                          ? onAircraftSelect(row.id, originId)
-                          : onOrbitalSelect(row.id, originId)}
+                        onClick={() => onSelect(row.id, originId)}
                       >
                         <strong>{row.label}</strong>
                         <span>{row.context}</span>
@@ -265,12 +354,24 @@ export function InViewPanel({
                 </div>
               </div>
             )}
+            {isShips && availability.available && rankedVessels.unrankedCount > 0 && (
+              <p className="control-note">
+                {rankedVessels.unrankedCount} without reported {vesselRanking}; excluded from this ranking, not treated as zero.
+              </p>
+            )}
             <p className="control-note control-note--muted">
               {isAircraft
                 ? 'Individual observations, not cluster symbols or fading last-local samples.'
-                : 'Modeled ground positions, not live telemetry or optical visibility. Includes a bounded Starlink sample, not the full constellation. Predicted passes are separate in More.'}
+                : isShips
+                  ? `Up to ${VESSEL_RESULT_LIMIT} highest-ranked observed ships, not complete coverage. The map is unchanged; search and vessel filters are in More / Find. Reported draught is not water depth.`
+                  : 'Modeled ground positions, not live telemetry or optical visibility. Includes a bounded Starlink sample, not the full constellation. Predicted passes are separate in More.'}
             </p>
-            {!isAircraft && orbits.selectedOutside && (
+            {isShips && selectedVesselOutside && (
+              <p className="control-note">
+                Selected outside this shortlist: {vesselResultLabel(selectedVesselOutside)}. Not added to the ranking.
+              </p>
+            )}
+            {isOrbits && orbits.selectedOutside && (
               <p className="control-note">
                 Selected outside this {orbits.selectedOutside.reason}: {orbits.selectedOutside.position.name}. Not added to these totals.
               </p>

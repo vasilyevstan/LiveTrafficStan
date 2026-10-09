@@ -320,14 +320,19 @@ identity are not renamed or reset.
   [Local refinement evidence](docs/development-and-testing.md#minimal-right-controls-local-evidence)
   is separate from the historical production release below.
 - **In view** opens below Settings in the desktop rail. On phones, choose
-  **Settings → Aircraft & orbits in view**; the six-slot bottom dock stays
+  **Settings → Aircraft, ships & orbits in view**; the six-slot bottom dock stays
   unchanged. Aircraft and Orbits have local search and 20-row pages, with
-  complete individual counts rather than cluster-symbol counts. Current
+  complete individual counts rather than cluster-symbol counts. **Ships**
+  shows a shortlist of up to 20 **Longest** or **Deepest draught** matches,
+  not every vessel. Ranking uses reported measurements within the current
+  vessel filters; the full in-view count, rankable population and unknown
+  measurements stay distinct. Ship search/filtering remains in **More → Find**.
+  Ranking does not change the ships on the map. Current
   modeled orbits deduplicate exact NORAD across both sources and distinguish
   shown objects from zoom-hidden matches. Paused traffic, partial sources,
   offline retained observations, HISTORY, and unsafe globe geometry are
   explicitly qualified, never presented as a successful empty view.
-  Opening, searching, or paging does not move the map or acquire provider
+  Opening, searching, ranking, or paging does not move the map or acquire provider
   data. Selecting a row uses the ordinary highlight/details and selected
   metadata/photo/route behavior. Close or Escape restores the trigger;
   one outer scroll owner leaves the full map canvas and its coverage intact.
