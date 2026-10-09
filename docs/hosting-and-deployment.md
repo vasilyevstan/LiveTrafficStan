@@ -1794,7 +1794,70 @@ If a newer pull request reaches `main` while an older manual deployment is
 validating, the second equality check fails rather than silently promoting the
 older SHA.
 
+## Ranked ships production receipt (2026-10-09)
+
+Implementation [#394](https://github.com/vasilyevstan/LiveTrafficStan/pull/394)
+and checked promotion [#395](https://github.com/vasilyevstan/LiveTrafficStan/pull/395)
+delivered application **`28235e72acd9cc9c8b9ac47765dbf45160d59592`**.
+Feature Validation 37940241529 and original dev Validation 37940934888 passed.
+Three actual documentation squash-history conflicts required tree-neutral
+[#396](https://github.com/vasilyevstan/LiveTrafficStan/pull/396), with exact-head
+Validation 37941300176. The accepted tree stayed
+`ba244885ddd301f98d9413b039a7e1b3ec08fac9`; the narrowly guarded dev
+merge-method exception was immediately restored and verified.
+Final dev/promotion Validation 37941542848 /37941549781 and
+[exact-main Validation 37941701838](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/37941701838)
+passed without another review of unchanged application source.
+
+Serialized [deployment 37941881006](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/37941881006)
+passed and reported Worker **`f61304d4-f235-4f73-bfbc-5aa7a62944b7`** at
+**14:08:45.521 UTC**. Both workers.dev and trackstan.xyz passed the unchanged
+strict-SHA smoke. The application artifact, private OCI aircraft path, photos,
+plausible routes, both orbital catalogs, marine supplement and airport boards
+all remain enabled. No provider, Worker, binding, schema, credential, cadence
+or dependency changed.
+
+Production serves `index-CzqaQytu.js`, unchanged `index-Dcf5hrs3.css`, shell
+`21cd527e5891f9b89f55`. Normal **REFRESH APP** at **14:09:59-14:10:03 UTC**
+replaced `index-DF3lrFa8.js` while retaining raw preferences, history settings/
+database identity and root install scope/controller. This includes an already
+disabled clustering preference. A later observer failure blindly toggled it;
+the observer was corrected, not the application, and the completed installed
+transition was reused rather than repeated or reset.
+
+The final **14:12:54-14:13:21 UTC** native production batch accepted both
+rankings in twelve Light/Dark layouts at 1280x900, 390x568 and 315x517.
+The initial public Tallinn-area view held 38 current length-qualified ships
+and 34 with usable draught; each ranking listed 20, with maximum reported
+length 333 m and draught 10.3 m. Counts changed with reception and footprint:
+the narrow view correctly listed 19 draught matches rather than inventing a
+twentieth. These are time-qualified received observations, not complete
+coverage or fixed acceptance counts.
+
+One map/outer scroll owner, six mobile slots, 44 px targets and a 44 px mobile
+drag strip remain. Native keyboard/touch selection retained the existing
+inspector/halo and camera; one ordinary selected-vessel photo lookup returned
+`200`. Opening/ranking added no acquisition, ORBITS remained opt-in, each
+catalog was read once after enable, and no airport-board request occurred.
+Aircraft returned `200` then `503`; that independent failure also existed in
+the predecessor baseline. Continuous provider availability is not claimed.
+
+Fetch, WebSocket and clocks were native. Explicit browser focus emulation is
+qualified; this is not physical-device or new OS-visibility evidence.
+[Testing details](development-and-testing.md#ranked-ships-in-in-view-393)
+separate deterministic fixtures, the retained installed-update receipt and
+the completed real-provider batch.
+
+The compatible predecessor is application
+`a342b3095048f4073d453555e0b5538ff3a063dc`, Worker
+`796febd2-9983-4ed4-b8b9-9a7812170c8a`. Existing recorded-version rollback
+preserves every input and atomic secrets; no new disabled baseline, migration
+or duplicate rollback rehearsal was needed. Later receipt/Wiki commits do
+not redeploy the application or replace its running source SHA.
+
 ## In view production receipt (2026-10-09)
+
+This is the historical predecessor to the ranked-ships release above.
 
 Implementation [#387](https://github.com/vasilyevstan/LiveTrafficStan/pull/387)
 and checked promotion [#388](https://github.com/vasilyevstan/LiveTrafficStan/pull/388)
@@ -1814,7 +1877,7 @@ aircraft path, aircraft photos, plausible routes, both orbital catalogs, marine
 supplement and airport boards all remain enabled. No backend schema, binding,
 credential, provider or cadence change was introduced.
 
-Production serves the accepted `index-DF3lrFa8.js` / `index-Dcf5hrs3.css`,
+That release served the accepted `index-DF3lrFa8.js` / `index-Dcf5hrs3.css`,
 shell `95b4f318d94816f2973c`. Normal **REFRESH APP** from the retained
 `index-xoDcN1BD.js` installation at 07:47 UTC preserved unrelated preferences,
 history settings/database identity and root install scope/controller.

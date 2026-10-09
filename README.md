@@ -8,8 +8,8 @@ user accounts or a server-side vessel history archive.
 
 Public production: <https://trackstan.xyz>
 
-Current application: `a342b3095048f4073d453555e0b5538ff3a063dc`,
-with the [In view and automatic Starlink release](docs/hosting-and-deployment.md#in-view-production-receipt-2026-10-09).
+Current application: `28235e72acd9cc9c8b9ac47765dbf45160d59592`,
+with the [ranked ships in In view release](docs/hosting-and-deployment.md#ranked-ships-production-receipt-2026-10-09).
 Later documentation-only commits do not replace that running source.
 
 The existing <https://livetrafficstan.syntal.workers.dev> address remains
