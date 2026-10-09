@@ -1,9 +1,5 @@
 import type { DisplayVessel } from '../domain/traffic'
 import {
-  trafficPresentation,
-  vesselMotionLabel,
-} from '../domain/trafficPresentation'
-import {
   DEFAULT_VESSEL_FILTERS,
   isDefaultVesselFilters,
   normalizeVesselSearchQuery,
@@ -15,6 +11,8 @@ import {
   VESSEL_SEARCH_MAX_LENGTH,
   vesselFilterSummary,
   vesselReportedSpeedLabels,
+  vesselResultContext,
+  vesselResultLabel,
   withMinimumVesselLength,
   type VesselCategoryFilter,
   type VesselFilterState,
@@ -39,26 +37,6 @@ interface VesselDiscoveryProps {
 
 const maximumLengthLabel = (value: VesselMaximumLength) =>
   value === null ? 'No maximum' : `${value} m`
-
-const resultLabel = (vessel: DisplayVessel) =>
-  vessel.name ?? vessel.callSign ?? `MMSI ${vessel.mmsi}`
-
-const resultContext = (vessel: DisplayVessel) => {
-  const presentation = trafficPresentation(vessel)
-  return [
-    `MMSI ${vessel.mmsi}`,
-    vessel.imo === undefined ? undefined : `IMO ${vessel.imo}`,
-    vessel.callSign,
-    vessel.vesselType,
-    vesselMotionLabel(
-      presentation.kind === 'vessel'
-        ? presentation.motionState
-        : 'unknown',
-    ),
-  ]
-    .filter(Boolean)
-    .join(' · ')
-}
 
 export function VesselDiscovery({
   filters,
@@ -272,8 +250,8 @@ export function VesselDiscovery({
                 disabled={!vesselsVisible}
                 onClick={() => onSelect(vessel.id)}
               >
-                <strong>{resultLabel(vessel)}</strong>
-                <span>{resultContext(vessel)}</span>
+                <strong>{vesselResultLabel(vessel)}</strong>
+                <span>{vesselResultContext(vessel)}</span>
               </button>
             </li>
           ))}

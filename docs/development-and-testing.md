@@ -535,6 +535,66 @@ Earlier observer failures and the reused upgrade/layout provenance are retained.
 No application change or redeployment was made for them. See the
 [exact deployment and rollback receipt](hosting-and-deployment.md#in-view-production-receipt-2026-10-09).
 
+### Ranked ships in In view (#393)
+
+The Ships category extends the same disclosure and scroll owner; it does not
+replace Aircraft/Orbits, add a mobile dock slot or introduce a provider path.
+It uses current filtered `vessels`, caps the entire shortlist at 20 and
+switches between reported length and draught. The other measurement and then
+exact MMSI make ties deterministic. Unknown/invalid measurements remain
+unranked rather than becoming guessed zeroes. Full in-view, rankable and
+listed populations are separate; original complete source objects, freshness,
+metadata clocks and selection identity are retained.
+
+`inView.test.ts` covers both rankings, exact cap/ties, immutable inputs,
+missing/nonpositive/nonfinite reports, normal vessel filters/search and
+stale/expired observations. Shared aircraft/ship availability cases preserve
+HISTORY, unsafe/unsettled view, loading/error, offline and pause distinctions.
+Marine partial errors can coexist with useful live observations and updating.
+`InViewPanel.test.tsx` keeps the original aircraft/orbital cases and adds
+the three-category markup, reported dimensions, hidden-layer selection,
+unknown-versus-empty states and selected-outside-shortlist qualification.
+`VesselDiscovery` retains the same shared labels/context after their extraction.
+
+The first native batch passed at **2026-10-09 13:21:50-13:22:27 UTC**:
+`issue393-local-browser/in-view-report.json` and twelve captures of both
+rankings at 1280x900, 390x568 and 315x517 in Light/Dark. The production-input
+candidate is `index-CzqaQytu.js`; CSS remains `index-Dcf5hrs3.css`. All required
+local gates passed with 157 suites /1,478 tests and the Worker dry run.
+
+Forty-eight synthetic ships produce 48 length-qualified and 36
+draught-qualified candidates, with 20 listed in either mode. The native
+observer checks actual order and displayed measurements against the current
+committed application model. Real local MQTT metadata moves a new ship into
+the shortlist without losing a retained focused node; a focused row leaving
+the top 20 returns focus to the active ranking control. More / Find refines the
+same pool, including one observed ship with no reported draught versus a
+successful empty filter result. Hidden/offline/HISTORY and zoom-out pause
+are distinct, with no fading-sample counts.
+
+Keyboard/touch selection opens the ordinary inspector and rendered vessel
+halo without moving the camera. Its normal photo request is preserved
+(local 404, not real-photo proof). Ranking/opening adds no catalog, marine,
+geocoder or board request; aircraft cadence remains at least 20,001 ms in
+this window. ORBITS stays opt-in, with zero startup reads and one per catalog
+after enable; existing aircraft/orbital result paths remain usable.
+
+Every layout retains one map/canvas and outer scroll owner, controls at least
+44 px in both dimensions, six dock slots and a 44 px mobile map-drag strip.
+Close/Escape returns to the actual entry. At 315x517, the first row is partly
+visible and its measurements remain reachable through the inherited outer
+scroll owner. The scoped finish reviewer inspected all twelve captures and
+returned **ship** for ranked ships, with no material findings.
+
+The pass uses explicit browser focus emulation and synthetic protocol inputs,
+not physical-device, new native OS-visibility or real-provider coverage proof.
+Unchanged provider/worker lifecycle evidence is reused rather than relabeled.
+The ordinary-extension design check was handled inline: no design-system
+files changed or were invented. Palette and typography remain inherited;
+the existing three-/two-column modifiers, native disclosure/44 px controls
+and single scroll owner are reused. The single changed-UI detector pass
+returned no findings; pre-existing missing design metadata is not repaired.
+
 `npm run check:orbital-enrichment` does not fetch NASA or Wikidata. It verifies the
 committed ten-record manifest against the committed visual catalog, requires
 sorted unique canonical NORAD IDs and exact name/designator/type agreement,

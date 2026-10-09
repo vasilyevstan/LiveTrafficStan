@@ -994,7 +994,7 @@ failure:
   **Position unavailable**.
 
 For a list of current objects only, open **In view** below desktop Settings or
-**Settings → Aircraft & orbits in view** on mobile. Aircraft counts are
+**Settings → Aircraft, ships & orbits in view** on mobile. Aircraft counts are
 individual unexpired observations, even when the map clusters them. Orbits
 are current modeled positions, not future passes or optical visibility.
 Search is local, pages hold at most 20 rows, and **More** retains full orbital
@@ -1002,6 +1002,16 @@ discovery. An ineligible traffic view says paused/zoom in, while unsafe globe
 geometry says in-view counts unavailable. Fading last-local samples are not
 counted. Source failure/offline data stays explicitly qualified; a visible
 zero requires a usable source/view, not an outage.
+
+The Ships category deliberately lists only the top 20 by reported length
+or draught. Its **ranked** population can be smaller than **in view** because
+some observations lack the selected measurement. Unknown, zero and invalid
+measurements are not guessed or ranked as zero. **Longest** and **Deepest
+draught** are independent rankings, not a tonnage/size score; reported
+draught is not water depth or a clearance estimate. The other matching ships
+remain on the map. Use **More → Find** for the existing ship search and filters;
+they refine this shortlist too. A selected ship outside the shortlist stays
+selected and is labeled separately. Rank changes add no fetch or camera move.
 
 The drawer and its rows must not have competing vertical scroll areas.
 Close/Escape returns to the actual trigger; on mobile that reopens Settings.

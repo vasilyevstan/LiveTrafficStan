@@ -201,14 +201,28 @@ box, so it adds no seventh slot. Explicit Close/Escape returns to the desktop
 summary or reopens Settings and focuses its actual mobile entry; opening
 another peer does not reopen Settings. `InViewPanel` is presentational, with
 no provider or map lifecycle. It reuses the shared aircraft query/row text
-and orbital ranking/pagination helpers. Only 20 rows per category page are
-mounted; focused row identity anchors its page across reordering, and removal
-returns focus to the visible search field.
+and orbital ranking/pagination helpers. Aircraft and Orbits mount at most 20
+rows per page. Ships instead caps the entire shortlist at the existing
+`VESSEL_RESULT_LIMIT` (20): Longest by default, or Deepest draught. The other
+reported measurement breaks ties, then exact MMSI; sorting never mutates the
+input array or splices source objects. Unknown/nonpositive/nonfinite values
+are excluded only from the ranking requiring that measurement.
 
-`domain/inView.ts` consumes current unexpired aircraft and independently
-validated modeled positions, not raw payloads. Aircraft availability gates
+Ship candidates are the same filtered, unexpired `vessels` used by the map,
+not its cluster symbols. The complete filtered count remains separate from
+rankable and shortlisted counts. Existing More / Find search and filters
+still refine that pool; ranking occupies the search-row space rather than
+adding another mobile control row. Focus follows retained row identity;
+removal returns to the visible search field or active ship-ranking control.
+Selected ships outside the shortlist remain a separately labeled exception,
+not an extra ranked row.
+
+`domain/inView.ts` consumes current unexpired aircraft/ships and independently
+validated modeled positions, not raw payloads. Traffic availability gates
 HISTORY, unsettled/ineligible views, failures, and offline retained data;
-last-local fading context never enters the list. Orbital rows use the current
+last-local fading context never enters the list. A live marine aggregate may
+still report a constituent-source error; the shortlist labels that partial
+operation without discarding useful observations. Orbital rows use the current
 safe footprint and exact NORAD deduplication. Curated ownership wins a tie
 unless an eligible selected owner is present. Each row retains one complete
 original position, element set and source clock; it never splices snapshots.
