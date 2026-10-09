@@ -19,8 +19,10 @@ This is cataloged orbital-object context, not another live-traffic provider:
 - powered ascent, reentry, impact, conjunction, and hazard claims are outside
   this feature.
 
-The browser implementation and scheduled catalog infrastructure are active in
-production source `e2b2afaa04466116719310d6286441f8e6ba60ca`. The layer
+The browser implementation and scheduled catalog infrastructure first became
+active at source `e2b2afaa04466116719310d6286441f8e6ba60ca`; the
+[release receipt](hosting-and-deployment.md#in-view-production-receipt-2026-10-09)
+identifies the current application. The layer
 remains a default-off user preference, while the protected Worker deployment
 sets `ORBITAL_CATALOG_ENABLED=true`, serves the same-origin catalog route, and
 runs the checked two-hour scheduler. A deployment with that Worker flag off
@@ -30,9 +32,10 @@ Issue #211's source-contract and browser PRs delivered schema 2 catalog
 `celestrak-curated-v1`, and coordinated release #235 completed the checked
 `dev` to `main` production path with exact-SHA acceptance.
 
-Issue #257 adds a separate default-off STARLINK child layer. It uses a bounded
-systematic sample rather than expanding the curated catalog or claiming the
-full constellation. ORBITS remains the parent lifecycle and one-map surface.
+Issue #257 introduced the bounded STARLINK child; #271 added the shell-balanced
+sample. Issue #386 removes its independent switch and includes the sample
+whenever ORBITS is effective. This does not expand the curated catalog or claim
+full-constellation coverage. ORBITS remains opt-in and the parent lifecycle.
 
 ## User experience
 
@@ -57,6 +60,18 @@ the redundant brand subtitle is hidden in the minimal layout. Its **LIVE**,
 providers, so modeled orbital availability cannot mask a traffic outage.
 Provider details remains available through its native disclosure on mobile;
 the primary ORBITS toggle and compact summary remain reachable.
+
+**In view** is a collapsed peer below desktop Settings, or an entry inside
+mobile Settings rather than another dock slot. Aircraft and Orbits categories
+reuse local search and 20-row pages without acquiring data or moving the
+camera. Aircraft counts current filtered individuals, not cluster symbols or
+fading context. Orbital rows/counts deduplicate exact NORAD identities in the
+safe current footprint, preserve whole-source ownership/clocks and distinguish
+shown from total. Unsafe geometry reports unavailable counts, and selected
+outside-view/filter context is separate. Future passes remain source-split.
+Opening, close/Escape and row/detail return preserve the appropriate trigger
+or visible result focus; the outer panel owns scrolling. More still offers
+complete catalog and predicted-crossing discovery.
 
 When enabled, the control shows distinct states for:
 
@@ -170,9 +185,12 @@ One-second position changes are not placed in an ARIA live region.
 
 ### Starlink child experience
 
-STARLINK appears inside **Operations -> More -> Orbits**. Its preference is
-remembered and shareable but starts off; it becomes effective only while
-ORBITS is on and Live mode is active. The control reports source population,
+Starlink context remains inside **Operations -> More -> Orbits**, without a
+separate on/off button. The bounded sample follows ORBITS while Live mode and
+page visibility are effective. Existing saved `starlinkVisible` values are
+ignored on hydration and omitted on the next ordinary preference save;
+valid legacy `starlink=0/1` share fields are ignored, not serialized anew.
+No unrelated state is reset or rewritten at startup. The context reports source population,
 published sample, accepted records, safe modeled positions, current map/shown
 positions, and predicted crossings separately. A 20-row paged sample list is
 keyboard accessible and uses the existing Operations More body as the only
@@ -190,8 +208,10 @@ operational status for the individual object. Schema 2 also reports its four exa
 quotas. Exact payloads use the flat-panel spacecraft silhouette; exact rocket
 body, debris, and unknown records keep their type silhouettes.
 
-The compact parent line combines owner-split shown/pass state, for example
-`ORBITS · 12 SHOWN (C 8 / S 4) · 5 PASSES ≤90M`. Failure remains partial:
+The compact parent line reports a unique exact-NORAD shown total and
+owner-split shown/pass state. Curated and Starlink source counts can overlap;
+future passes remain `C ... / S ...` rather than a false combined unique sum.
+Failure remains partial:
 `C UNAVAILABLE · S 7` and `C 8 · S UNAVAILABLE` do not hide the working owner.
 One selected exception is reported once even when it is already included in a
 rank-limited shown count.
@@ -217,8 +237,8 @@ explicit ORBITS enable
   -> local zoom/type/group shown-ID filter + selected exception
   -> Nearby and complete Catalog views
 
-optional Starlink channel:
-effective ORBITS + STARLINK
+bounded Starlink channel:
+effective ORBITS (no independent Starlink switch)
   -> same-origin GET /api/orbits/starlink with schema-2/schema-1 preference
   -> strict selected-media/population/sample/source-clock/digest validation
   -> second logical channel on the same physical orbital worker
