@@ -175,7 +175,7 @@ spread through components:
 | Starlink source and publication | Fixed official `starlink` GP then SATCAT pair; 6 MiB and 15,000 rows per response, 12 MiB aggregate, 60-second total deadline; one normalization and one final aligned schema-1/schema-2 bundle write |
 | Starlink cadence/sample | One actual-start SQLite reservation per 12 hours; schema 1 remains the exact 150-record `inclination-raan-systematic-v1` sample; schema 2 is exactly 512 records, 128 per fixed inclination band, selected by `inclination-shell-raan-phase-grid-v1`; no retry, truncation, rotation, viewport request, or completeness/representativeness claim |
 | Orbital catalog discovery | Query at most 64 characters; exact type/source-group filters; 20 rows per page |
-| In view | Collapsed peer below desktop Settings; mobile entry inside Settings, not another dock slot. Aircraft and current modeled orbits reuse local search and `orbital.discovery.pageSize` (20); no additional acquisition or timing setting |
+| In view | Collapsed peer below desktop Settings; mobile entry inside Settings, not another dock slot. Aircraft and current modeled orbits reuse local search and `orbital.discovery.pageSize` (20). Ships uses the existing `VESSEL_RESULT_LIMIT` (20) for a capped Longest/Deepest draught shortlist; ranking is component-local, not a saved preference or map filter. No additional acquisition or timing setting |
 | Orbital selected track | 15 minutes; at most 31 points before gap/dateline splitting |
 | Orbital reviewed image | 5-second total deadline; exact manifest byte count, media type, and SHA-256; one fulfilled Blob URL or terminal failure per immutable asset in the running tab |
 | Marine metadata refresh | 5 minutes |

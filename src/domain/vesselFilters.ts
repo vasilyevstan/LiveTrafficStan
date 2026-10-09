@@ -1,9 +1,14 @@
 import type {
+  DisplayVessel,
   Vessel,
   VesselCategory,
   VesselNavigationCategory,
 } from './traffic'
-import { isReportedYacht } from './trafficPresentation'
+import {
+  isReportedYacht,
+  trafficPresentation,
+  vesselMotionLabel,
+} from './trafficPresentation'
 import { ONE_KNOT_KPH } from './trafficThresholds'
 import type { UnitSystem } from './units'
 
@@ -12,6 +17,24 @@ export const VESSEL_SEARCH_MAX_LENGTH = 64
 export const VESSEL_RESULT_LIMIT = 20
 export const VESSEL_MINIMUM_LENGTH_OPTIONS = [0, 25, 50, 100, 150] as const
 export const VESSEL_MAXIMUM_LENGTH_OPTIONS = [null, 24, 49, 99, 149] as const
+
+export const vesselResultLabel = (vessel: Vessel) =>
+  vessel.name ?? vessel.callSign ?? `MMSI ${vessel.mmsi}`
+
+export const vesselResultContext = (vessel: DisplayVessel) => {
+  const presentation = trafficPresentation(vessel)
+  return [
+    `MMSI ${vessel.mmsi}`,
+    vessel.imo === undefined ? undefined : `IMO ${vessel.imo}`,
+    vessel.callSign,
+    vessel.vesselType,
+    vesselMotionLabel(
+      presentation.kind === 'vessel'
+        ? presentation.motionState
+        : 'unknown',
+    ),
+  ].filter(Boolean).join(' · ')
+}
 
 export type VesselCategoryFilter = 'all' | VesselCategory
 export type VesselNavigationFilter = 'all' | VesselNavigationCategory

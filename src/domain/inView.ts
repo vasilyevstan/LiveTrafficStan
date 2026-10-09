@@ -5,32 +5,37 @@ import {
   type OrbitalDisplaySelection,
 } from './orbitalDiscovery'
 import type { OrbitalViewport } from './orbitalViewport'
-import type { ProviderStatus } from './traffic'
+import type { ProviderStatus, Vessel } from './traffic'
+import { VESSEL_RESULT_LIMIT } from './vesselFilters'
 
 export interface InViewAvailability {
   available: boolean
   message?: string
 }
 
-export const aircraftInViewAvailability = ({
-  historyActive,
-  viewportReady,
-  viewportEligible,
-  online,
-  status,
-  count,
-}: {
+interface TrafficInViewOptions {
   historyActive: boolean
   viewportReady: boolean
   viewportEligible: boolean
   online: boolean
   status: ProviderStatus
   count: number
-}): InViewAvailability => {
+}
+
+const trafficInViewAvailability = ({
+  historyActive,
+  viewportReady,
+  viewportEligible,
+  online,
+  status,
+  count,
+}: TrafficInViewOptions, kind: 'aircraft' | 'ships'): InViewAvailability => {
+  const title = kind === 'aircraft' ? 'Aircraft' : 'Ship'
+  const source = kind === 'aircraft' ? 'aircraft source' : 'marine source'
   if (historyActive) {
     return {
       available: false,
-      message: 'HISTORY · current aircraft list paused. Return to Live to resume.',
+      message: `HISTORY · current ${kind} list paused. Return to Live to resume.`,
     }
   }
   if (!viewportReady) {
@@ -52,24 +57,82 @@ export const aircraftInViewAvailability = ({
     return {
       available: count > 0,
       message: count > 0
-        ? 'Partial · aircraft source unavailable; retained observations only.'
-        : 'Aircraft source unavailable. This is not an empty result.',
+        ? `Partial · ${source} unavailable; retained observations only.`
+        : `${kind === 'aircraft' ? 'Aircraft' : 'Marine'} source unavailable. This is not an empty result.`,
     }
   }
   if (status.phase === 'idle' || status.phase === 'loading') {
-    return { available: count > 0, message: 'Loading aircraft observations.' }
+    return { available: count > 0, message: `Loading ${kind} observations.` }
   }
   if (status.paused) {
     return {
       available: count > 0,
-      message: 'Aircraft updates paused; retained observations only.',
+      message: `${title} updates paused; retained observations only.`,
     }
   }
   return {
     available: true,
     ...(status.updating
-      ? { message: 'Updating aircraft; current observations retained.' }
+      ? { message: `Updating ${kind}; current observations retained.` }
       : {}),
+  }
+}
+
+export const aircraftInViewAvailability = (options: TrafficInViewOptions) =>
+  trafficInViewAvailability(options, 'aircraft')
+
+export const vesselInViewAvailability = (options: TrafficInViewOptions) => {
+  const availability = trafficInViewAvailability(options, 'ships')
+  if (
+    availability.available && options.online && !options.status.paused &&
+    options.status.phase === 'live' && options.status.error
+  ) {
+    return {
+      ...availability,
+      message: [
+        availability.message,
+        `Partial · ${options.status.error}`,
+      ].filter(Boolean).join(' '),
+    }
+  }
+  return availability
+}
+
+export type VesselInViewRanking = 'length' | 'draught'
+
+export const vesselInViewMeasurement = (
+  vessel: Vessel,
+  ranking: VesselInViewRanking,
+) => {
+  const value = ranking === 'length' ? vessel.lengthMeters : vessel.draughtMeters
+  return value !== undefined && Number.isFinite(value) && value > 0
+    ? value
+    : undefined
+}
+
+export const rankVesselsInView = <T extends Vessel>(
+  vessels: readonly T[],
+  ranking: VesselInViewRanking,
+) => {
+  const secondary = ranking === 'length' ? 'draught' : 'length'
+  const ranked = vessels
+    .map((vessel) => ({
+      vessel,
+      measurement: vesselInViewMeasurement(vessel, ranking),
+    }))
+    .filter((entry): entry is { vessel: T; measurement: number } =>
+      entry.measurement !== undefined,
+    )
+    .sort((first, second) =>
+      second.measurement - first.measurement ||
+      (vesselInViewMeasurement(second.vessel, secondary) ?? 0) -
+        (vesselInViewMeasurement(first.vessel, secondary) ?? 0) ||
+      first.vessel.mmsi - second.vessel.mmsi,
+    )
+  return {
+    rows: ranked.slice(0, VESSEL_RESULT_LIMIT).map(({ vessel }) => vessel),
+    rankableCount: ranked.length,
+    unrankedCount: vessels.length - ranked.length,
   }
 }
 

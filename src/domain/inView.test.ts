@@ -15,7 +15,14 @@ import {
   aircraftInViewAvailability,
   deriveOrbitalInView,
   inViewPage,
+  rankVesselsInView,
+  vesselInViewAvailability,
+  vesselInViewMeasurement,
 } from './inView'
+import { APP_CONFIG } from '../config/appConfig'
+import { displayTraffic } from '../traffic/freshness'
+import type { DisplayVessel } from './traffic'
+import { DEFAULT_VESSEL_FILTERS, filterVessels } from './vesselFilters'
 
 const now = Date.UTC(2026, 9, 9, 12)
 const position = (
@@ -272,7 +279,10 @@ describe('current orbital in-view population', () => {
   })
 })
 
-describe('aircraft in-view availability', () => {
+describe.each([
+  { name: 'aircraft', availability: aircraftInViewAvailability },
+  { name: 'ships', availability: vesselInViewAvailability },
+])('$name in-view availability', ({ availability }) => {
   const options = {
     historyActive: false,
     viewportReady: true,
@@ -283,8 +293,8 @@ describe('aircraft in-view availability', () => {
   }
 
   it('allows a successful empty view and labels updating without replacing current observations', () => {
-    expect(aircraftInViewAvailability(options)).toEqual({ available: true })
-    expect(aircraftInViewAvailability({
+    expect(availability(options)).toEqual({ available: true })
+    expect(availability({
       ...options, status: { ...options.status, updating: true }, count: 25,
     })).toMatchObject({
       available: true,
@@ -298,35 +308,156 @@ describe('aircraft in-view availability', () => {
       { viewportReady: false },
       { viewportEligible: false },
     ]) {
-      expect(aircraftInViewAvailability({ ...options, ...overrides, count }).available)
+      expect(availability({ ...options, ...overrides, count }).available)
         .toBe(false)
     }
-    expect(aircraftInViewAvailability({ ...options, viewportEligible: false }).message)
+    expect(availability({ ...options, viewportEligible: false }).message)
       .toContain('last-local samples are not live counts')
   })
 
   it.each(['idle', 'loading', 'error'] as const)('distinguishes %s from a confirmed empty result', (phase) => {
-    expect(aircraftInViewAvailability({
+    expect(availability({
       ...options, status: { phase, paused: false },
     }).available).toBe(false)
-    expect(aircraftInViewAvailability({
+    expect(availability({
       ...options, count: 5, status: { phase, paused: false },
     }).available).toBe(true)
   })
 
   it('qualifies offline and paused retained observations, without claiming zero coverage', () => {
-    expect(aircraftInViewAvailability({ ...options, online: false })).toMatchObject({
+    expect(availability({ ...options, online: false })).toMatchObject({
       available: false,
       message: expect.stringContaining('Offline'),
     })
-    expect(aircraftInViewAvailability({ ...options, online: false, count: 1 }).available)
+    expect(availability({ ...options, online: false, count: 1 }).available)
       .toBe(true)
-    expect(aircraftInViewAvailability({
+    expect(availability({
       ...options, count: 1, status: { phase: 'live', paused: true },
     })).toMatchObject({
       available: true,
       message: expect.stringContaining('updates paused'),
     })
+  })
+})
+
+const vessel = (
+  index: number,
+  overrides: Partial<DisplayVessel> = {},
+): DisplayVessel => ({
+  id: `vessel:${257000000 + index}`,
+  kind: 'vessel',
+  provider: 'Digitraffic',
+  mmsi: 257000000 + index,
+  name: `VESSEL ${index}`,
+  vesselCategory: 'cargo',
+  navigationCategory: 'underway',
+  lengthMeters: 100,
+  draughtMeters: 6,
+  position: { latitude: 59.4, longitude: 24.7, observedAt: now },
+  receivedAt: now,
+  markerIcon: 'vessel-cargo',
+  markerScale: 1,
+  freshness: 'live',
+  ...overrides,
+})
+
+describe('ranked ships in view', () => {
+  it('returns only the twenty longest while preserving full counts and original observations', () => {
+    const observations = Object.freeze(Array.from({ length: 45 }, (_, index) =>
+      Object.freeze(vessel(index + 1, { lengthMeters: 50 + index })),
+    ))
+    const result = rankVesselsInView(observations, 'length')
+    expect(result.rows).toHaveLength(20)
+    expect(result.rankableCount).toBe(45)
+    expect(result.unrankedCount).toBe(0)
+    expect(result.rows[0]).toBe(observations[44])
+    expect(result.rows[19]).toBe(observations[25])
+    expect(observations[0].lengthMeters).toBe(50)
+    expect(result.rows.every((row) => observations.includes(row))).toBe(true)
+  })
+
+  it('ranks length and reported draught independently rather than inventing a combined size', () => {
+    const long = vessel(1, { lengthMeters: 300, draughtMeters: 4 })
+    const deep = vessel(2, { lengthMeters: 180, draughtMeters: 12 })
+    const middle = vessel(3, { lengthMeters: 250, draughtMeters: 9 })
+    const observations = [long, deep, middle]
+    expect(rankVesselsInView(observations, 'length').rows).toEqual([long, middle, deep])
+    expect(rankVesselsInView(observations, 'draught').rows).toEqual([deep, middle, long])
+    expect(observations).toEqual([long, deep, middle])
+  })
+
+  it.each(['length', 'draught'] as const)('breaks %s ties by the other report, then exact MMSI', (ranking) => {
+    const first = vessel(1, { lengthMeters: 200, draughtMeters: 8 })
+    const second = vessel(2, { lengthMeters: 200, draughtMeters: 8 })
+    const lesser = vessel(3, ranking === 'length'
+      ? { lengthMeters: 200, draughtMeters: 7 }
+      : { lengthMeters: 150, draughtMeters: 8 })
+    const observations = [lesser, second, first]
+    expect(rankVesselsInView(observations, ranking).rows).toEqual([first, second, lesser])
+    expect(rankVesselsInView([...observations].reverse(), ranking).rows)
+      .toEqual([first, second, lesser])
+  })
+
+  it.each(['length', 'draught'] as const)('excludes unknown/nonpositive/nonfinite %s without changing the other ranking', (ranking) => {
+    const invalid = [undefined, 0, -1, Number.NaN, Infinity, -Infinity]
+    const observations = invalid.map((value, index) =>
+      vessel(index + 1, ranking === 'length'
+        ? { lengthMeters: value }
+        : { draughtMeters: value }),
+    )
+    const result = rankVesselsInView(observations, ranking)
+    expect(result).toEqual({ rows: [], rankableCount: 0, unrankedCount: 6 })
+    for (const observation of observations) {
+      expect(vesselInViewMeasurement(observation, ranking)).toBeUndefined()
+    }
+    expect(rankVesselsInView(observations, ranking === 'length' ? 'draught' : 'length').rows)
+      .toHaveLength(6)
+  })
+
+  it('keeps existing filter/expiry exclusions and retains stale, complete source objects', () => {
+    const observations = [
+      vessel(1, { lengthMeters: 40 }),
+      vessel(2, {
+        lengthMeters: 400,
+        position: { latitude: 59.4, longitude: 24.7, observedAt: now - APP_CONFIG.marine.expireAfterMs - 1 },
+      }),
+      vessel(3, {
+        lengthMeters: 250,
+        metadataObservedAt: now - 60_000,
+        position: { latitude: 59.4, longitude: 24.7, observedAt: now - APP_CONFIG.marine.staleAfterMs - 1 },
+      }),
+      vessel(4, { lengthMeters: 150 }),
+    ]
+    const current = displayTraffic(observations, now, APP_CONFIG.marine)
+    const filtered = filterVessels(current, DEFAULT_VESSEL_FILTERS, {
+      displayTime: now, expireAfterMs: APP_CONFIG.marine.expireAfterMs,
+    })
+    const ranked = rankVesselsInView(filtered, 'length')
+    expect(ranked.rows.map(({ id }) => id)).toEqual([vessel(3).id, vessel(4).id])
+    expect(ranked.rows[0]).toBe(filtered[0])
+    expect(ranked.rows[0].freshness).toBe('stale')
+    expect(ranked.rows[0].metadataObservedAt).toBe(now - 60_000)
+    const searched = filterVessels(current, { ...DEFAULT_VESSEL_FILTERS, query: 'VESSEL 4' }, {
+      displayTime: now, expireAfterMs: APP_CONFIG.marine.expireAfterMs,
+    })
+    expect(rankVesselsInView(searched, 'draught').rows.map(({ id }) => id))
+      .toEqual([vessel(4).id])
+  })
+
+  it('qualifies partial marine operation without discarding useful observations or updating state', () => {
+    const options = {
+      historyActive: false, viewportReady: true, viewportEligible: true,
+      online: true, count: 5,
+      status: { phase: 'live' as const, paused: false, updating: true, error: 'Digitraffic: unavailable' },
+    }
+    expect(vesselInViewAvailability(options)).toMatchObject({
+      available: true,
+      message: 'Updating ships; current observations retained. Partial · Digitraffic: unavailable',
+    })
+    expect(vesselInViewAvailability({ ...options, historyActive: true }))
+      .toMatchObject({ available: false, message: expect.stringContaining('HISTORY') })
+    expect(vesselInViewAvailability({ ...options, viewportEligible: false }))
+      .toMatchObject({ available: false, message: expect.stringContaining('Zoom in') })
   })
 })
 

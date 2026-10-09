@@ -1057,7 +1057,7 @@ export function TrafficControls({
               onClick={revealInView}
             >
               <OperationIcon name="inView" />
-              Aircraft &amp; orbits in view
+              Aircraft, ships &amp; orbits in view
             </button>
             <div className="workspace-navigation" role="group" aria-label="Map navigation">
               <LocationSearchInput
@@ -1271,7 +1271,7 @@ export function TrafficControls({
             id="traffic-controls-in-view"
             className="control-panel__more-body in-view-body"
             role="region"
-            aria-label="Aircraft and orbits in view"
+            aria-label="Aircraft, ships and orbits in view"
           >
             <button
               className="close-button in-view__close"

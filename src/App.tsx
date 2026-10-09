@@ -44,6 +44,7 @@ import { airportsInViewport } from './domain/airports'
 import {
   aircraftInViewAvailability,
   deriveOrbitalInView,
+  vesselInViewAvailability,
 } from './domain/inView'
 import {
   updateLayerPreference,
@@ -1640,6 +1641,18 @@ function App() {
               selectedAircraftId={selectedId}
               onAircraftQueryChange={setAircraftQuery}
               onAircraftSelect={selectTraffic}
+              vessels={vessels}
+              vesselsVisible={vesselsVisible}
+              vesselAvailability={vesselInViewAvailability({
+                historyActive,
+                viewportReady: viewReady && currentAssessment !== null,
+                viewportEligible: currentAssessment?.kind === 'eligible',
+                online,
+                status: marineResult.status,
+                count: vessels.length,
+              })}
+              selectedVesselId={selectedId}
+              onVesselSelect={selectTraffic}
               orbits={orbitsInView}
               selectedOrbitalId={selectedOrbitalId}
               onOrbitalSelect={handleOrbitalContextSelect}

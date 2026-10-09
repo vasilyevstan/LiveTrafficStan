@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { APP_CONFIG } from '../config/appConfig'
 import type { ModeledOrbitalPosition } from '../domain/orbital'
 import { displayTraffic } from '../traffic/freshness'
-import type { Aircraft } from '../domain/traffic'
+import type { Aircraft, Vessel } from '../domain/traffic'
 import { InViewPanel } from './InViewPanel'
 
 const now = Date.UTC(2026, 9, 9, 12)
@@ -37,6 +37,21 @@ const position: ModeledOrbitalPosition = {
   altitudeKm: 400,
   velocityKmPerSecond: 7.6,
 }
+const vesselObservations: Vessel[] = Array.from({ length: 45 }, (_, index) => ({
+  id: `vessel:${257000001 + index}`,
+  kind: 'vessel',
+  provider: 'Digitraffic',
+  mmsi: 257000001 + index,
+  name: `VESSEL ${index + 1}`,
+  vesselCategory: 'cargo',
+  navigationCategory: 'underway',
+  lengthMeters: 50 + index * 7,
+  draughtMeters: 4 + index / 10,
+  position: { latitude: 59.4, longitude: 24.7, observedAt: now },
+  receivedAt: now,
+  markerIcon: 'vessel-cargo',
+  markerScale: 1,
+}))
 
 const renderPanel = (
   overrides: Partial<Parameters<typeof InViewPanel>[0]> = {},
@@ -50,6 +65,11 @@ const renderPanel = (
     selectedAircraftId={null}
     onAircraftQueryChange={() => undefined}
     onAircraftSelect={() => undefined}
+    vessels={displayTraffic(vesselObservations, now, APP_CONFIG.marine)}
+    vesselsVisible
+    vesselAvailability={{ available: true }}
+    selectedVesselId={null}
+    onVesselSelect={() => undefined}
     orbits={{
       available: true,
       rows: [{ position, shown: true }],
@@ -80,15 +100,86 @@ describe('InViewPanel', () => {
 
   it('keeps categories accessible and inactive content hidden with local search limits', () => {
     const html = renderPanel()
-    expect(html).toContain('class="control-options control-options--two in-view__tabs"')
+    expect(html).toContain('class="control-options control-options--three in-view__tabs"')
     expect(html).toContain('role="group" aria-label="In view category"')
     expect(html).toContain(
       'id="in-view-aircraft-tab" type="button" class="is-active" aria-pressed="true"',
     )
     expect(html).toMatch(/id="in-view-orbits-panel"[^>]*hidden=""/)
+    expect(html).toMatch(/id="in-view-ships-panel"[^>]*hidden=""/)
     expect(html).toContain('aria-label="Search aircraft in view"')
     expect(html).toContain('aria-label="Search modeled objects in view"')
     expect(html.match(/maxLength="64"/g)).toHaveLength(2)
+  })
+
+  it('adds a capped ship shortlist, not a second all-vessel list or another mobile search row', () => {
+    const html = renderPanel()
+    expect(html).toContain('20 of 45 ranked · 45 in view')
+    expect(html.match(/id="in-view-ships-result-/g)).toHaveLength(20)
+    expect(html).toContain('>VESSEL 45</strong>')
+    expect(html).toContain('>VESSEL 26</strong>')
+    expect(html).not.toContain('>VESSEL 25</strong>')
+    expect(html).toContain('id="in-view-ships-ranking-length"')
+    expect(html).toContain('>Longest</button>')
+    expect(html).toContain('>Deepest draught</button>')
+    expect(html).toContain('aria-label="Ranked ships in view"')
+    expect(html).not.toContain('id="in-view-ships-search"')
+    expect(html).toContain('search and vessel filters are in More')
+    expect(html).toContain('Reported draught is not water depth')
+  })
+
+  it('shows reported measurements and missing-value exclusions without guessing', () => {
+    const vessels = displayTraffic([
+      { ...vesselObservations[0], draughtMeters: undefined },
+      { ...vesselObservations[1], lengthMeters: undefined },
+    ], now, APP_CONFIG.marine)
+    const html = renderPanel({ vessels })
+    expect(html).toContain('1 of 1 ranked · 2 in view')
+    expect(html).toContain('Draught not reported')
+    expect(html).toContain('1 without reported length; excluded from this ranking, not treated as zero.')
+    expect(html.match(/id="in-view-ships-result-/g)).toHaveLength(1)
+  })
+
+  it('distinguishes an empty ship view, unavailable observation state and unrankable measurements', () => {
+    expect(renderPanel({ vessels: [] }))
+      .toContain('No current ship observations match this view and its filters.')
+    const unavailable = renderPanel({
+      vesselAvailability: { available: false, message: 'Marine source unavailable. This is not an empty result.' },
+    })
+    expect(unavailable).not.toContain('in-view-ships-result-')
+    expect(unavailable).not.toContain('ranked · 45 in view')
+    expect(unavailable).toContain('This is not an empty result.')
+    const unknown = renderPanel({
+      vessels: displayTraffic([{ ...vesselObservations[0], lengthMeters: undefined }], now, APP_CONFIG.marine),
+    })
+    expect(unknown).toContain('0 of 0 ranked · 1 in view')
+    expect(unknown).toContain('No ships in this view report a usable length.')
+    expect(unknown).not.toContain('No current ship observations')
+  })
+
+  it('preserves exact vessel selection, stale labels and hidden-layer restrictions without activating anything', () => {
+    const onVesselSelect = vi.fn()
+    const vessels = displayTraffic([{
+      ...vesselObservations[0],
+      position: { ...vesselObservations[0].position, observedAt: now - APP_CONFIG.marine.staleAfterMs - 1 },
+    }], now, APP_CONFIG.marine)
+    const html = renderPanel({
+      vessels, vesselsVisible: false, selectedVesselId: vessels[0].id, onVesselSelect,
+      vesselAvailability: { available: true, message: 'Offline · last received, unexpired observations only.' },
+    })
+    expect(html).toContain('1 of 1 ranked · 1 in view · layer hidden')
+    expect(html).toMatch(/id="in-view-ships-result-[^"]+"[^>]*aria-pressed="true"[^>]*disabled=""/)
+    expect(html).toContain('MMSI 257000001')
+    expect(html).toContain('STALE')
+    expect(html).toContain('Offline')
+    expect(onVesselSelect).not.toHaveBeenCalled()
+  })
+
+  it('labels selected ships outside the shortlist without promoting them into the ranking', () => {
+    const html = renderPanel({ selectedVesselId: vesselObservations[0].id })
+    expect(html).toContain('Selected outside this shortlist: VESSEL 1. Not added to the ranking.')
+    expect(html.match(/id="in-view-ships-result-/g)).toHaveLength(20)
+    expect(html).not.toContain('id="in-view-ships-result-vessel:257000001"')
   })
 
   it('qualifies retained and hidden aircraft without enabling a layer or selecting a row', () => {
