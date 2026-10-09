@@ -416,8 +416,8 @@ digest
 145 ten-minute instants and fixes the Baltic and northern-European
 mean/median/p90/maximum/empty measurements.
 
-Starlink deterministic acceptance covers zero request while either parent or
-child is off; one same-origin request when effective; no request from camera,
+Starlink deterministic acceptance covers zero request while ORBITS is off;
+one same-origin request when the parent becomes effective; no request from camera,
 theme, filters, list paging, selection, or style changes; one physical worker
 with isolated channel disposal; owner-correct selection/details/tooltips;
 Light -> Dark -> Light image replacement; exact type silhouettes; exact
@@ -427,6 +427,81 @@ truthful partial operation when either curated or Starlink fails. Route tests
 also cover schema-1 default/rollout compatibility, schema-2 negotiation,
 representation-specific ETags/`304`, cross-representation `200`, and stale-v2
 fallback to fresh schema 1 in one request.
+
+### In view and automatic Starlink inclusion (#386)
+
+`domain/inView.test.ts` covers exact-NORAD overlap with complete original
+source objects, selected ownership, local/wrapped/world/invalid geometry,
+display-tier versus complete counts, separate selected exceptions, partial
+sources, stale/offline retained positions and fail-closed unavailable states.
+Aircraft tests distinguish current individuals from HISTORY, paused coverage,
+outages and fading samples. Pagination tests enforce 20 rows and preserve a
+focused identity across a boundary before clamping after removal.
+`InViewPanel.test.tsx`, the existing controls/summary tests and interface-style
+contracts cover bounded markup, accessible category/search/selection state,
+qualifiers, mutual-exclusion disclosure structure and one outer scroll owner.
+They are not proof of rendered focus, touch or layout.
+
+Preference/share regressions exercise legacy Starlink true and false with
+ORBITS on and off, preserving every unrelated field and camera. Valid old
+`starlink=0/1` is ignored; duplicate or malformed values still fail strict
+share parsing. New preferences and links omit the independent field. Existing
+provider/worker lifecycle tests remain mandatory; no panel action may reset
+polling, channel ownership, catalog clocks or revalidation boundaries.
+
+Native acceptance uses the existing Chrome/CDP observer with deterministic
+aircraft and validated curated/Starlink overlap catalogs through the real
+controllers and SGP4 worker. Check 1280x900, 390x568 and 315x517 in both themes,
+20-row bounds and full totals, first/last-page reachability, live reorder and
+removal focus, keyboard and touch selection, close/Escape, one canvas and
+scroll owner, 44 px targets, six mobile dock slots, map-drag space, browser
+magnification, credits and Return to Live. Count both literal catalog routes:
+zero with ORBITS off and no extra read from opening, filtering, paging or
+theme changes. Ordinary selected metadata/photo/route lookups are permitted
+and must remain functional; they are not traffic polls or catalog reads.
+Production upgrade evidence must permit only the deliberate removal of
+`layers.starlinkVisible`, preserving the installed origin, history consent/
+database and every unrelated preference. Synthetic counts are not evidence
+of live provider coverage.
+
+The 2026-10-09 local receipt uses Chrome 155 and candidate
+`index-DF3lrFa8.js` / `index-Dcf5hrs3.css`. All required source/data gates passed
+with 1,458 tests in 157 suites. The twelve category/theme/size captures retain
+one canvas, one outer scroll owner, six mobile dock slots and a 44 px map-drag
+strip. Every changed control measures at least 44 px in **both** dimensions;
+at 315x517 the category buttons are 85x44 px and the footer action is 225x44 px.
+The scoped finish review caught the generic four-column grid overriding the
+intended categories/footer; existing two-/one-column modifiers and regression
+assertions corrected it. The same-path confirmation captures resolved that
+finding without redesigning the incumbent controls.
+
+Native fixtures show 48 individual aircraft represented by 12 clusters, and
+48 curated plus 512 Starlink positions with 40 shared NORAD identities:
+520 unique modeled objects, 200 shown, all reachable across 26 pages. Portrait
+orbital views use a safely representable partial flat footprint, checked
+against actual map bounds, rather than claiming whole-world coverage.
+Keyboard/touch selection retains camera and ordinary selected-object lookups;
+the selected aircraft halo is checked in explicitly chosen individual-marker
+mode, not incorrectly expected to escape existing clustering. Search, paging,
+themes and panel actions add no catalog read; the longer capture run retained
+the 20-second aircraft cadence. Offline observations are qualified, unsafe
+globe counts remain unavailable, magnification fits, and credits and the
+explicit Return to Live action are reachable. Current paired-source HISTORY
+and ORBITS-off checks stop the physical worker; return/re-enable restores one
+worker from the same two cached catalog reads, with at most one active worker.
+
+The final receipt is `issue386-local-browser-final/in-view-report.json`,
+completed at 07:20:42 UTC. It explicitly reuses the unchanged-source focus
+reorder/removal receipt and the twelve post-fix captures from
+`issue386-local-browser-9`. Native hidden-state evidence is reused from the
+accepted #163 lifecycle receipt (`2026-10-06T23:33:06.024Z`), with current
+deterministic visibility coverage and unchanged `OrbitalController`,
+`useOrbitalObjects` and `orbitalWorkerHub` implementations. This Chrome session
+continued reporting native visibility as visible after tab activation and
+window minimization; that did not exercise a hidden transition and is **not**
+reported as a new hidden-state pass. No application lifecycle was altered to
+accommodate the observer. Production upgrade/real-provider evidence is recorded
+separately in the release receipt.
 
 `npm run check:orbital-enrichment` does not fetch NASA or Wikidata. It verifies the
 committed ten-record manifest against the committed visual catalog, requires

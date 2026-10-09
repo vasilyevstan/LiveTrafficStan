@@ -49,6 +49,7 @@ import { StarlinkContext } from './StarlinkContext'
 
 interface TrafficControlsProps {
   masthead?: ReactNode
+  inView: ReactNode
   aircraftQuery: string
   aircraftResults: readonly DisplayAircraft[]
   totalAircraft: number
@@ -112,10 +113,8 @@ interface TrafficControlsProps {
   onOrbitalFiltersChange: (filters: OrbitalDiscoveryFilters) => void
   onOrbitalSelect: (id: string, originId: string) => void
   onRetryOrbital: () => void
-  starlinkVisible: boolean
   starlinkState: OrbitalControllerState
   starlinkCounts: OrbitalPopulationCounts
-  onStarlinkVisibleChange: (visible: boolean) => void
   onRetryStarlink: () => void
   clusteringEnabled: boolean
   onClusteringEnabledChange: (enabled: boolean) => void
@@ -197,6 +196,8 @@ const operationIcons = {
   orbits: 'M12 3a9 9 0 1 0 9 9M12 7a5 5 0 1 0 5 5m0-7 4 4m-2-6 4 4m-4 0-2 2',
   explore: 'm12 3 9 5-9 5-9-5 9-5ZM3 12l9 5 9-5M3 16l9 5 9-5',
   settings: 'M4 6h16M4 12h16M4 18h16M8 3v6m8 0v6m-6 0v6',
+  inView: 'M4 5h4v4H4V5Zm7 2h9M4 15h4v4H4v-4Zm7 2h9',
+  close: 'm6 6 12 12M18 6 6 18',
 } as const
 
 function OperationIcon({ name }: { name: keyof typeof operationIcons }) {
@@ -248,6 +249,7 @@ const handleDisclosureToggle = (
 export function TrafficControls({
   marineProviderName = 'Digitraffic',
   masthead,
+  inView,
   aircraftQuery,
   aircraftResults,
   totalAircraft,
@@ -310,10 +312,8 @@ export function TrafficControls({
   onOrbitalFiltersChange,
   onOrbitalSelect,
   onRetryOrbital,
-  starlinkVisible,
   starlinkState,
   starlinkCounts,
-  onStarlinkVisibleChange,
   onRetryStarlink,
   clusteringEnabled,
   onClusteringEnabledChange,
@@ -364,6 +364,9 @@ export function TrafficControls({
   const mapToolsDetailsRef = useRef<HTMLDetailsElement>(null)
   const mapToolsBodyRef = useRef<HTMLDivElement>(null)
   const settingsDetailsRef = useRef<HTMLDetailsElement>(null)
+  const inViewDetailsRef = useRef<HTMLDetailsElement>(null)
+  const inViewEntryRef = useRef<HTMLButtonElement>(null)
+  const inViewOpenedFromSettingsRef = useRef(false)
   const orbitalToggleRef = useRef<HTMLButtonElement>(null)
   const [mapToolTask, setMapToolTask] =
     useState<MapToolTask>('layers')
@@ -499,6 +502,33 @@ export function TrafficControls({
     globalThis.requestAnimationFrame(() => {
       mapToolsBodyRef.current?.scrollTo({ top: 0 })
     })
+  }
+  const closeInView = () => {
+    const details = inViewDetailsRef.current
+    if (!details) return
+    details.open = false
+    const summary = details.querySelector<HTMLElement>('summary')
+    const returnToSettings =
+      inViewOpenedFromSettingsRef.current &&
+      !summary?.getClientRects().length
+    if (returnToSettings && settingsDetailsRef.current) {
+      settingsDetailsRef.current.open = true
+    }
+    globalThis.requestAnimationFrame(() => {
+      const target = returnToSettings
+        ? inViewEntryRef.current
+        : summary?.getClientRects().length
+          ? summary
+          : settingsDetailsRef.current?.querySelector<HTMLElement>('summary')
+      target?.focus()
+    })
+  }
+  const revealInView = () => {
+    const details = inViewDetailsRef.current
+    if (!details) return
+    inViewOpenedFromSettingsRef.current = true
+    details.open = true
+    details.querySelector<HTMLElement>('.in-view__tabs button')?.focus()
   }
 
   return (
@@ -849,14 +879,12 @@ export function TrafficControls({
 
             <StarlinkContext
               parentVisible={orbitalVisible}
-              enabled={starlinkVisible}
               live={playback.mode === 'live'}
               state={starlinkState}
               selectedId={selectedOrbitalId}
               counts={starlinkCounts}
               horizonMs={orbitalPredictionHorizonMs}
               pageSize={orbitalPageSize}
-              onEnabledChange={onStarlinkVisibleChange}
               onSelect={onOrbitalSelect}
               onRetry={onRetryStarlink}
             />
@@ -1020,6 +1048,17 @@ export function TrafficControls({
             tabIndex={0}
           >
             <p className="workspace-panel-title">View &amp; settings</p>
+            <button
+              ref={inViewEntryRef}
+              id="in-view-settings-entry"
+              className="in-view-mobile-entry"
+              type="button"
+              aria-controls="traffic-controls-in-view"
+              onClick={revealInView}
+            >
+              <OperationIcon name="inView" />
+              Aircraft &amp; orbits in view
+            </button>
             <div className="workspace-navigation" role="group" aria-label="Map navigation">
               <LocationSearchInput
                 model={locationSearch}
@@ -1205,6 +1244,49 @@ export function TrafficControls({
                 </p>
               )}
             </fieldset>
+          </div>
+        </details>
+      </aside>
+      <aside className="control-panel control-panel--in-view" aria-label="In view">
+        <details
+          ref={inViewDetailsRef}
+          className="control-panel__more control-panel__in-view"
+          name="traffic-control-panels"
+          onKeyDown={(event) => {
+            if (event.key !== 'Escape') return
+            event.preventDefault()
+            event.stopPropagation()
+            closeInView()
+          }}
+        >
+          <summary
+            id="in-view-summary"
+            aria-controls="traffic-controls-in-view"
+            onClick={() => { inViewOpenedFromSettingsRef.current = false }}
+          >
+            <OperationIcon name="inView" />
+            IN VIEW
+          </summary>
+          <div
+            id="traffic-controls-in-view"
+            className="control-panel__more-body in-view-body"
+            role="region"
+            aria-label="Aircraft and orbits in view"
+          >
+            <button
+              className="close-button in-view__close"
+              type="button"
+              aria-label="Close In view"
+              onClick={closeInView}
+            >
+              <OperationIcon name="close" />
+            </button>
+            {inView}
+            <div className="control-options control-options--one in-view__more">
+              <button type="button" onClick={revealOrbitalObjects}>
+                More: orbital discovery &amp; passes
+              </button>
+            </div>
           </div>
         </details>
       </aside>

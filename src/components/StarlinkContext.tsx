@@ -14,14 +14,12 @@ import {
 
 interface StarlinkContextProps {
   parentVisible: boolean
-  enabled: boolean
   live: boolean
   state: OrbitalControllerState
   selectedId: string | null
   counts: OrbitalPopulationCounts
   horizonMs: number
   pageSize: number
-  onEnabledChange: (enabled: boolean) => void
   onSelect: (id: string, originId: string) => void
   onRetry: () => void
 }
@@ -52,14 +50,12 @@ const stateMessage = (state: OrbitalControllerState) => {
 
 export function StarlinkContext({
   parentVisible,
-  enabled,
   live,
   state,
   selectedId,
   counts,
   horizonMs,
   pageSize,
-  onEnabledChange,
   onSelect,
   onRetry,
 }: StarlinkContextProps) {
@@ -76,7 +72,7 @@ export function StarlinkContext({
     pageSize,
   )
   const horizonMinutes = Math.round(horizonMs / 60_000)
-  const active = parentVisible && enabled && live
+  const active = parentVisible && live
   const status = active ? stateMessage(state) : undefined
   const sampleLabel = snapshot?.starlink.sampleAlgorithm.includes('shell')
     ? 'Shell-balanced sample'
@@ -115,25 +111,18 @@ export function StarlinkContext({
         <h3 id="starlink-sample-heading" className="eyebrow">
           Starlink sample
         </h3>
-        <button
-          type="button"
-          className={`orbital-starlink__toggle${
-            enabled ? ' is-active' : ''
-          }`}
-          aria-pressed={enabled}
-          onClick={() => onEnabledChange(!enabled)}
-        >
-          STARLINK {enabled ? 'ON' : 'OFF'}
-        </button>
       </div>
 
-      {!parentVisible && enabled && (
+      <p className="control-note">
+        Included with ORBITS. A bounded sample, not the full constellation.
+      </p>
+      {!parentVisible && (
         <p className="control-note">
-          Preference remembered. Enable ORBITS above to load and model the
+          Enable ORBITS above to load and model the
           sample.
         </p>
       )}
-      {!live && enabled && (
+      {!live && (
         <p className="control-note">
           Starlink modeling is paused during historical traffic playback.
         </p>

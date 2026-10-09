@@ -11,6 +11,7 @@ interface OrbitalSummaryOptions {
   state: OrbitalControllerState
   display: OrbitalDisplaySelection
   counts: OrbitalPopulationCounts
+  uniqueShownCount?: number
   starlink?: {
     enabled: boolean
     state: OrbitalControllerState
@@ -26,6 +27,7 @@ export const formatOrbitalSummary = ({
   state,
   display,
   counts,
+  uniqueShownCount,
   starlink,
 }: OrbitalSummaryOptions) => {
   if (!visible) return undefined
@@ -47,7 +49,6 @@ export const formatOrbitalSummary = ({
       ) {
         return 'OFFLINE'
       }
-      if (layerState.phase === 'empty') return 0
       return layerCounts.shownInFootprintCount ?? 'MAP ?'
     }
     const curatedValue = layerValue(state, counts)
@@ -65,11 +66,7 @@ export const formatOrbitalSummary = ({
         curatedPasses === undefined ||
         starlinkPasses === undefined
           ? 'PASSES UPDATING'
-          : `${curatedPasses + starlinkPasses} ${
-              curatedPasses + starlinkPasses === 1
-                ? 'PASS'
-                : 'PASSES'
-            } ≤${Math.round(horizonMs / 60_000)}M`
+          : `PASSES C ${curatedPasses} / S ${starlinkPasses} ≤${Math.round(horizonMs / 60_000)}M`
       const selectedDisplay = display.selectedException
         ? display
         : starlink.display.selectedException
@@ -80,7 +77,11 @@ export const formatOrbitalSummary = ({
           ? ' · +1 SELECTED EXCEPTION'
           : ' · 1 SELECTED EXCEPTION'
         : ''
-      return `ORBITS · ${curatedValue + starlinkValue} SHOWN (C ${curatedValue} / S ${starlinkValue}) · ${passLabel}${selectedException}`
+      const sourceCounts = `C ${curatedValue} / S ${starlinkValue}`
+      const shown = uniqueShownCount === undefined
+        ? `${sourceCounts} SHOWN`
+        : `${uniqueShownCount} SHOWN (${sourceCounts})`
+      return `ORBITS · ${shown} · ${passLabel}${selectedException}`
     }
     return `ORBITS · C ${curatedValue} · S ${starlinkValue}`
   }
