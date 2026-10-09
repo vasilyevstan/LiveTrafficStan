@@ -1,4 +1,5 @@
 import type { Port, PortSource } from '../domain/ports'
+import { DetailsPanel } from './DetailsPanel'
 
 interface PortDetailsProps {
   port: Port
@@ -12,15 +13,16 @@ export function PortDetails({
   onClose,
 }: PortDetailsProps) {
   return (
-    <aside className="details-panel" aria-labelledby="selected-port-title">
+    <DetailsPanel
+      titleId="selected-port-title"
+      closeLabel="Close port details"
+      onClose={onClose}
+    >
       <div className="details-panel__heading">
         <div>
           <p className="eyebrow">Selected port</p>
           <h2 id="selected-port-title">{port.name}</h2>
         </div>
-        <button type="button" className="close-button" onClick={onClose}>
-          Close
-        </button>
       </div>
 
       <p className="metadata-status">
@@ -32,6 +34,6 @@ export function PortDetails({
         <a href={source.termsUrl}>{source.licenseName}</a> ·{' '}
         {source.outputVersion}.
       </p>
-    </aside>
+    </DetailsPanel>
   )
 }

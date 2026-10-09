@@ -69,6 +69,8 @@ describe('OrbitalDetails', () => {
     )
 
     expect(html).toContain('Selected orbit')
+    expect(html).toContain('aria-label="Close orbital details"')
+    expect(html).not.toContain('>Close</button>')
     expect(html).toContain('Rocket body')
     expect(html).toContain('NORAD catalog ID')
     expect(html).toContain('In the visible map now')

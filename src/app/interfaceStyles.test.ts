@@ -63,6 +63,18 @@ describe('interface presentation contracts', () => {
     expect(styles).toContain('outline: 3px solid var(--focus-ring)')
   })
 
+  it('reserves the pinned close gutter for all inspector content', () => {
+    expect(styles).toMatch(
+      /\.details-panel > :not\(\.details-panel__close-anchor\)\s*\{[^}]*margin-right: 58px;/,
+    )
+    expect(styles).toMatch(
+      /\.details-panel__close-anchor\s*\{[^}]*position: sticky;[^}]*top: 0;/,
+    )
+    expect(styles).toMatch(
+      /\.details-panel__close\s*\{[^}]*width: 44px;[^}]*height: 44px;/,
+    )
+  })
+
   it('anchors interface and native map controls to the visual viewport, not the canvas', () => {
     expect(styles).toMatch(
       /\.interface-layer,\s*\.maplibregl-control-container\s*\{[^}]*top: var\(--app-visual-viewport-top\);[^}]*left: var\(--app-visual-viewport-left\);[^}]*width: var\(--app-visual-viewport-width\);[^}]*height: var\(--app-visual-viewport-height\);[^}]*container: workspace \/ size;/,

@@ -271,6 +271,19 @@ while the playback controls stay reachable throughout. Mobile attribution opens
 above the command dock rather than beneath its buttons. None of these DOM/CSS
 positions changes the full-canvas viewport used by MapLibre or provider queries.
 
+All five detail components share `DetailsPanel`, including both aircraft and
+ships and historical traffic. Its direct-child sticky close anchor belongs
+to the whole scrolling inspector, not the shorter heading. The 44 by 44 px
+icon-only X has an opaque themed backplate and an object-specific accessible
+name. All inspector content reserves a right-side gutter, so scrolled text,
+images and attribution links never pass beneath the control; scroll padding
+preserves focus reachability.
+The existing airport-board sticky heading and traffic identity scroll reset
+remain. Unhandled Escape bubbles only within the focused inspector; existing
+App close callbacks still own selection clearing and visible focus return.
+The shell introduces no map, provider, persistence or document-wide keyboard
+lifecycle.
+
 ## Provider boundaries
 
 UI and map code never consume raw provider payloads. Each adapter:

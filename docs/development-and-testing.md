@@ -48,6 +48,38 @@ supplementary marine WebSocket; use the actual local Worker for those paths.
 | `npm run check:deploy` | Bundle the Worker and Static Assets without credentials or deployment |
 | `npm run preview:worker` | Build and run the actual local Cloudflare `workerd` boundary |
 
+### Persistent inspector close (#400)
+
+The shared shell and all five detail components retain content, accessible
+names and historical modifiers while replacing visible Close text with an
+icon. Deterministic keyboard cases cover unhandled Escape, already-handled
+Escape, Enter and Tab; only the first closes and stops propagation.
+
+Local Chrome acceptance on 2026-10-09 at 23:02:13-23:03:53 UTC measured
+aircraft, ship, port, airport-board, METAR and orbital inspectors at 1280x900,
+390x568 and 315x517 in both themes: 36 layouts, top/middle/bottom, plus 2x
+page magnification. Each close target stayed at least 44 by 44 CSS px,
+inside the visual viewport and hit-testable, with no horizontal overflow
+or nested scroll owner. Trusted wheel, pointer/touch close and focused
+Escape retained one canvas, camera and visible focus return. The observer
+must not call `scrollIntoView` before testing the scrolled close target,
+since that would conceal the original defect.
+
+Provider data and selection setup were fixtures/application callbacks;
+this is not native marker-picking, physical-device or production evidence.
+Fetch and clocks were native; MQTT was simulated and browser focus emulation
+was explicit. The earlier receipt failed in a misplaced legacy observer
+scenario before inspector acceptance, not in the application.
+
+GPT-5.5's scoped review found that the zero-height anchor could cover body
+text on the shortest panels despite the passing hit-target checks. The
+correction reserves a gutter for every content block, not just the title.
+The same 36-layout confirmation at 23:30:08-23:31:49 UTC also required zero
+DOM text/link rectangles intersecting the close target; it passed, including
+2x magnification. The reviewer scored that finding resolved. Claude Opus
+4.8 found no high-confidence lifecycle regression; the author also confirmed
+the literal nontraffic diffs removed no refs or scroll-reset logic.
+
 ### On-demand airport boards (#46)
 
 The deterministic airport-board tests cover both directions, duplicate versus

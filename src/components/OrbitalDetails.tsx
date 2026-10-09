@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { DetailsPanel } from './DetailsPanel'
 import {
   formatAge,
   formatAltitude,
@@ -256,15 +257,16 @@ export function OrbitalDetails({
       : formatTimestamp(crossing.firstCrossingAt)
 
   return (
-    <aside className="details-panel" aria-labelledby="selected-orbital-title">
+    <DetailsPanel
+      titleId="selected-orbital-title"
+      closeLabel="Close orbital details"
+      onClose={onClose}
+    >
       <div className="details-panel__heading">
         <div>
           <p className="eyebrow">Selected orbit</p>
           <h2 id="selected-orbital-title">{position.name}</h2>
         </div>
-        <button type="button" className="close-button" onClick={onClose}>
-          Close
-        </button>
       </div>
 
       {enrichment ? (
@@ -415,6 +417,6 @@ export function OrbitalDetails({
           <>retrieved {snapshot.retrievedAt}.</>
         )}
       </p>
-    </aside>
+    </DetailsPanel>
   )
 }
