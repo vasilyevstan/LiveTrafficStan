@@ -1794,7 +1794,52 @@ If a newer pull request reaches `main` while an older manual deployment is
 validating, the second equality check fails rather than silently promoting the
 older SHA.
 
+## Persistent inspector close production receipt (2026-10-09)
+
+Implementation [#401](https://github.com/vasilyevstan/LiveTrafficStan/pull/401)
+and checked promotion [#402](https://github.com/vasilyevstan/LiveTrafficStan/pull/402)
+delivered application **`66743c394f6f89d613f6b06d373180435736db70`**.
+The accepted source was `0eb3b06acc45111810dfb87339a4db21754f4b5c`;
+feature/dev/promotion Validation 38005560248 /38005745687 /38005848882
+and [exact-main Validation 38006039275](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/38006039275)
+passed. No ancestry repair, protection change or personal approval was needed.
+
+Serialized [deployment 38006173321](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/38006173321)
+passed, reporting Worker **`0ebf42fc-4ee2-428b-9496-a374f4422408`** at
+**23:49:10.613 UTC**. Both production origins passed strict-SHA smoke.
+All current application/private-aircraft/photo/route/orbital/Starlink/marine/
+airport-board inputs remain enabled. This changes inspector presentation and
+scoped Escape handling, not provider protocols, credentials, dependencies,
+bindings, persistence or the map lifecycle.
+
+Production serves `index-CcHJFLWJ.js`, `index-ZvZI8BV2.css`, shell
+`d042b07d8ef4d660975f`. Normal **REFRESH APP** and focused acceptance at
+**23:51:01-23:51:23 UTC** replaced the ranked-ships bundle without resetting
+raw preferences, history/database or install identity. Six actual received-
+ship layouts, Light/Dark at 1280x900, 390x568 and 315x517, plus 2x page
+magnification retained the 44 px X at top/middle/bottom, no overlapping text,
+one scroll owner/canvas and unchanged camera/focus-return behavior.
+The all-six-kind 36-layout fixture acceptance and the requested GPT-5.5 /
+Claude Opus 4.8 reviews are recorded in
+[testing](development-and-testing.md#persistent-inspector-close-400).
+
+Native fetch/WebSocket/clocks and trusted wheel/pointer/touch/Escape are
+distinguished from callback-based selection setup and explicit focus
+emulation; physical-device, native visibility and marker-picking claims are
+not added. No airport-board request occurred. The existing vessel-photo
+lookup returned `200`; independent aircraft `503` remained truthful.
+
+The compatible predecessor is application
+`28235e72acd9cc9c8b9ac47765dbf45160d59592`, Worker
+`f61304d4-f235-4f73-bfbc-5aa7a62944b7`. Preserve its recorded inputs and atomic
+secrets for rollback; this UI-only release needs no migration or new rollback
+exercise. Later receipt/Wiki commits do not redeploy or replace the running
+application. Journey paths and water depths are separate approved work, not
+part of this release.
+
 ## Ranked ships production receipt (2026-10-09)
+
+This is the historical predecessor to the persistent-close release above.
 
 Implementation [#394](https://github.com/vasilyevstan/LiveTrafficStan/pull/394)
 and checked promotion [#395](https://github.com/vasilyevstan/LiveTrafficStan/pull/395)

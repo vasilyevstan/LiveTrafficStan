@@ -80,6 +80,20 @@ DOM text/link rectangles intersecting the close target; it passed, including
 4.8 found no high-confidence lifecycle regression; the author also confirmed
 the literal nontraffic diffs removed no refs or scroll-reset logic.
 
+The production installed-update and real-ship batch at **23:51:01-23:51:23
+UTC** loaded `index-CcHJFLWJ.js` from application
+`66743c394f6f89d613f6b06d373180435736db70`, preserving raw preferences,
+history/database and root install identity. Six Light/Dark layouts at the
+same three sizes plus 2x magnification passed top/middle/bottom checks,
+44 px targets, zero text/link overlap, one scroll owner/canvas, unchanged
+camera and existing focus return. The ship came from current marine
+reception; selection setup used the application callback, not marker picking.
+Fetch, WebSocket and clocks were native, with explicit focus emulation.
+No airport-board request occurred. An ordinary selected-vessel photo lookup
+returned `200`; aircraft `503` remained an independent provider condition,
+not an inspector failure. Both origins passed the strict-SHA smoke.
+See the [release receipt](hosting-and-deployment.md#persistent-inspector-close-production-receipt-2026-10-09).
+
 ### On-demand airport boards (#46)
 
 The deterministic airport-board tests cover both directions, duplicate versus
