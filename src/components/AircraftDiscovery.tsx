@@ -2,6 +2,8 @@ import type { DisplayAircraft } from '../domain/traffic'
 import {
   AIRCRAFT_RESULT_LIMIT,
   AIRCRAFT_SEARCH_MAX_LENGTH,
+  aircraftResultContext,
+  aircraftResultLabel,
   normalizeAircraftSearchQuery,
 } from '../domain/aircraftSearch'
 
@@ -14,19 +16,6 @@ interface AircraftDiscoveryProps {
   onQueryChange: (query: string) => void
   onSelect: (id: string) => void
 }
-
-const resultLabel = (aircraft: DisplayAircraft) =>
-  aircraft.callsign ?? aircraft.registration ?? aircraft.hex.toUpperCase()
-
-const resultContext = (aircraft: DisplayAircraft) =>
-  [
-    `ICAO24 ${aircraft.hex.toUpperCase()}`,
-    aircraft.registration,
-    aircraft.aircraftType,
-    aircraft.freshness === 'stale' ? 'STALE' : undefined,
-  ]
-    .filter(Boolean)
-    .join(' · ')
 
 export function AircraftDiscovery({
   query,
@@ -100,8 +89,8 @@ export function AircraftDiscovery({
                 disabled={!aircraftVisible}
                 onClick={() => onSelect(entity.id)}
               >
-                <strong>{resultLabel(entity)}</strong>
-                <span>{resultContext(entity)}</span>
+                <strong>{aircraftResultLabel(entity)}</strong>
+                <span>{aircraftResultContext(entity)}</span>
               </button>
             </li>
           ))}

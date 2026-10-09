@@ -118,7 +118,6 @@ const counts: OrbitalPopulationCounts = {
 const renderContext = (
   overrides: Partial<{
     parentVisible: boolean
-    enabled: boolean
     live: boolean
     state: OrbitalControllerState
     counts: OrbitalPopulationCounts
@@ -127,7 +126,6 @@ const renderContext = (
   renderToStaticMarkup(
     <StarlinkContext
       parentVisible={overrides.parentVisible ?? true}
-      enabled={overrides.enabled ?? true}
       live={overrides.live ?? true}
       state={
         overrides.state ?? {
@@ -155,17 +153,19 @@ const renderContext = (
       counts={overrides.counts ?? counts}
       horizonMs={90 * 60_000}
       pageSize={20}
-      onEnabledChange={() => undefined}
       onSelect={() => undefined}
       onRetry={() => undefined}
     />,
   )
 
 describe('StarlinkContext', () => {
-  it('keeps the child preference visible while ORBITS is off', () => {
+  it('includes the sample with ORBITS, without an independent switch', () => {
     const html = renderContext({ parentVisible: false })
-    expect(html).toContain('STARLINK ON')
-    expect(html).toContain('Preference remembered')
+    expect(html).toContain('Included with ORBITS')
+    expect(html).toContain('Enable ORBITS above')
+    expect(html).not.toContain('STARLINK ON')
+    expect(html).not.toContain('STARLINK OFF')
+    expect(html).not.toContain('Preference remembered')
     expect(html).not.toContain('Starlink systematic sample results')
   })
 
@@ -253,9 +253,9 @@ describe('StarlinkContext', () => {
     )
   })
 
-  it('does not expose sample rows while disabled', () => {
+  it('does not expose retained sample rows while ORBITS is off or in HISTORY', () => {
     const html = renderContext({
-      enabled: false,
+      parentVisible: false,
       state: {
         phase: 'disabled',
         acceptedCount: 0,
@@ -263,7 +263,10 @@ describe('StarlinkContext', () => {
         prediction: EMPTY_ORBITAL_PREDICTION,
       },
     })
-    expect(html).toContain('STARLINK OFF')
+    expect(html).toContain('Enable ORBITS')
     expect(html).not.toContain('SOURCE REPORTED')
+    const history = renderContext({ live: false })
+    expect(history).toContain('paused during historical traffic playback')
+    expect(history).not.toContain('STARLINK-TEST')
   })
 })

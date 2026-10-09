@@ -40,6 +40,7 @@ const renderControls = (
 ) =>
   renderToStaticMarkup(
     <TrafficControls
+      inView={<p>Current in-view results</p>}
       aircraftQuery=""
       aircraftResults={[]}
       totalAircraft={0}
@@ -102,7 +103,6 @@ const renderControls = (
       onOrbitalFiltersChange={() => undefined}
       onOrbitalSelect={() => undefined}
       onRetryOrbital={() => undefined}
-      starlinkVisible={false}
       starlinkState={{
         phase: 'disabled',
         acceptedCount: 0,
@@ -110,7 +110,6 @@ const renderControls = (
         prediction: EMPTY_ORBITAL_PREDICTION,
       }}
       starlinkCounts={emptyOrbitalCounts}
-      onStarlinkVisibleChange={() => undefined}
       onRetryStarlink={() => undefined}
       clusteringEnabled={false}
       onClusteringEnabledChange={() => undefined}
@@ -257,16 +256,36 @@ describe('TrafficControls', () => {
       'role="region" aria-label="Location and settings" tabindex="0"',
     )
     expect(settingsMore).not.toContain('<legend>Layers</legend>')
-    expect(html.match(/name="traffic-control-panels"/g)).toHaveLength(2)
+    expect(html.match(/name="traffic-control-panels"/g)).toHaveLength(3)
     expect(html.match(/id="location-search-input"/g)).toHaveLength(1)
     expect(html.match(/>CENTER</g)).toHaveLength(1)
     expect(html.match(/>AIRCRAFT</g)).toHaveLength(1)
     expect(html.match(/>SHIPS</g)).toHaveLength(1)
     expect(html.match(/>TRAILS</g)).toHaveLength(1)
     expect(html.match(/>ORBITS</g)).toHaveLength(2)
-    expect(html.match(/class="operation-icon"/g)).toHaveLength(6)
+    expect(html.match(/class="operation-icon"/g)).toHaveLength(9)
     expect(html.match(/aria-label="Theme and trails"/g)).toHaveLength(1)
     expect(html.match(/>LIGHT</g)).toHaveLength(1)
+  })
+
+  it('adds a collapsed peer after Settings and a mobile entry to the same In view surface', () => {
+    const html = renderControls()
+    expect(html.indexOf('id="in-view-summary"')).toBeGreaterThan(
+      html.indexOf('id="traffic-controls-settings-summary"'),
+    )
+    expect(html).toContain(
+      'class="control-panel__more control-panel__in-view" name="traffic-control-panels"',
+    )
+    expect(html).not.toMatch(/<details[^>]*open=/)
+    expect(html).toContain('id="in-view-settings-entry"')
+    expect(html).toContain('Aircraft &amp; orbits in view')
+    expect(html.match(/id="traffic-controls-in-view"/g)).toHaveLength(1)
+    expect(html).toContain('aria-label="Close In view"')
+    expect(html).toContain('Current in-view results')
+    expect(html).toContain('class="control-options control-options--one in-view__more"')
+    expect(html).toContain('More: orbital discovery &amp; passes')
+    expect(html).not.toContain('STARLINK ON')
+    expect(html).not.toContain('STARLINK OFF')
   })
 
   it('keeps the primary Center action outside disclosures and preserves its disabled state', () => {

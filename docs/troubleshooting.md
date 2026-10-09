@@ -876,11 +876,13 @@ when the orbital catalog is unavailable.
 
 ## STARLINK is unavailable, stale, or shows fewer objects than expected
 
-STARLINK is a child of ORBITS and starts off independently. No
+The bounded Starlink sample is automatically included with ORBITS. There is
+no separate STARLINK on/off button. No
 `/api/orbits/starlink` request or Starlink worker channel should exist unless
-ORBITS, STARLINK, page visibility, and Live mode are all effective. Turning
-ORBITS off remembers the child preference but synchronously clears any
-Starlink selection and track.
+ORBITS, page visibility, and Live mode are effective. Turning ORBITS off
+clears orbital selection and tracks. An old saved `starlinkVisible=false` or
+shared `starlink=0` must not suppress the sample; all unrelated saved settings,
+history and shared navigation are retained. Do not clear site data to migrate.
 
 The layer is intentionally bounded, not the full constellation. Current
 schema 2 contains exactly 512 records: 128 from each fixed inclination band
@@ -966,6 +968,9 @@ An enabled view can truthfully have no shown orbital marker. Check the
 collapsed Operations summary and the Orbits counts before diagnosing a
 failure:
 
+- **ORBITS · 10 SHOWN (C 8 / S 4) · PASSES C 3 / S 2 ≤90M** means ten unique
+  shown NORAD identities, with two identities shared by the current catalogs.
+  The source-specific predicted passes are separate, not a unique total;
 - **ORBITS · 192 SHOWN · 0 PASSES ≤90M** means schema validation and current
   propagation succeeded, the current zoom tier renders 192 safe exact-filter
   matches inside the map, and the compatible prediction has no future crossing;
@@ -983,6 +988,22 @@ failure:
 - use the **Nearby** view for in-map objects and crossings, or **Catalog** for
   the complete validated snapshot, including searchable rows labeled
   **Position unavailable**.
+
+For a list of current objects only, open **In view** below desktop Settings or
+**Settings → Aircraft & orbits in view** on mobile. Aircraft counts are
+individual unexpired observations, even when the map clusters them. Orbits
+are current modeled positions, not future passes or optical visibility.
+Search is local, pages hold at most 20 rows, and **More** retains full orbital
+discovery. An ineligible traffic view says paused/zoom in, while unsafe globe
+geometry says in-view counts unavailable. Fading last-local samples are not
+counted. Source failure/offline data stays explicitly qualified; a visible
+zero requires a usable source/view, not an outage.
+
+The drawer and its rows must not have competing vertical scroll areas.
+Close/Escape returns to the actual trigger; on mobile that reopens Settings.
+Opening another peer must not reopen Settings or move the camera. If a
+selected row expires, close-details focus falls back to a visible In view
+summary or Settings instead of an offscreen mobile summary.
 
 Interpret the control state before retrying:
 

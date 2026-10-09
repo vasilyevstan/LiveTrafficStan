@@ -57,7 +57,7 @@ describe('interface presentation contracts', () => {
     expect(styles).toContain('--app-visual-viewport-width')
     expect(styles).toContain('--app-visual-viewport-height')
     expect(styles).toContain('--app-visual-viewport-58')
-    expect(styles).toMatch(/\.orbital-results\s*\{\s*max-height: none;\s*overflow: visible;/)
+    expect(styles).toMatch(/\.orbital-results,\s*\.in-view-results\s*\{\s*max-height: none;\s*overflow: visible;/)
     expect(styles).toMatch(/\.control-panel__more-body\s*\{[^}]*overflow-y: auto;/)
     expect(styles).not.toMatch(/\.control-panel__tasks\s*\{[^}]*position: sticky;/)
     expect(styles).toContain('outline: 3px solid var(--focus-ring)')
@@ -114,5 +114,17 @@ describe('interface presentation contracts', () => {
     expect(mobile).toMatch(/\.control-panel--operations\s*\{[^}]*flex: 4 1 0;/)
     expect(mobile).toMatch(/\.control-panel--settings\s*\{[^}]*flex: 1 1 0;/)
     expect(mobile).toMatch(/\.workspace-center,[\s\S]*?min-height: 56px;/)
+    expect(mobile).toMatch(
+      /\.control-panel--in-view,\s*\.control-panel__in-view\s*\{\s*display: contents;/,
+    )
+    expect(mobile).toMatch(/\.control-panel__in-view > summary\s*\{\s*display: none;/)
+    expect(mobile).toMatch(/\.in-view-mobile-entry\s*\{\s*display: block;/)
+  })
+
+  it('gives In view search, result and paging controls 44 px minimum targets', () => {
+    expect(styles).toMatch(/\.in-view-body \.control-options button,[^{]*\{\s*min-height: 44px;/)
+    expect(styles).toMatch(/\.in-view input\[type='search'\]\s*\{\s*min-height: 44px;/)
+    expect(styles).toMatch(/\.in-view__close\s*\{[^}]*width: 44px;/)
+    expect(styles).toMatch(/\.close-button\s*\{\s*min-height: 44px;/)
   })
 })

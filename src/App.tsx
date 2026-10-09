@@ -26,6 +26,7 @@ import { visualViewportCssValues } from './app/visualViewport'
 import { preventCompactControlWheelZoom } from './app/controlZoom'
 import { AirportDetails } from './components/AirportDetails'
 import { HistoryModeNotice } from './components/HistoryModeNotice'
+import { InViewPanel } from './components/InViewPanel'
 import { LiveStatus } from './components/LiveStatus'
 import { PortDetails } from './components/PortDetails'
 import { TrafficControls } from './components/TrafficControls'
@@ -40,6 +41,10 @@ import {
 import type { AppCenter } from './config/appConfig'
 import { orderAircraftSearchResults } from './domain/aircraftSearch'
 import { airportsInViewport } from './domain/airports'
+import {
+  aircraftInViewAvailability,
+  deriveOrbitalInView,
+} from './domain/inView'
 import {
   updateLayerPreference,
   type LayerPreferences,
@@ -150,7 +155,6 @@ function App() {
     clusteringEnabled,
     weatherVisible,
     orbitalObjectsVisible,
-    starlinkVisible,
   } = layerPreferences
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [selectedOrbitalId, setSelectedOrbitalId] = useState<string | null>(
@@ -278,19 +282,6 @@ function App() {
     (visible: boolean) => {
       if (!visible) setSelectedOrbitalId(null)
       setLayerPreference('orbitalObjectsVisible', visible)
-    },
-    [setLayerPreference],
-  )
-  const setStarlinkVisible = useCallback(
-    (visible: boolean) => {
-      if (!visible) {
-        setSelectedOrbitalId((current) =>
-          orbitalFeatureOwner(current) === 'starlink'
-            ? null
-            : current,
-        )
-      }
-      setLayerPreference('starlinkVisible', visible)
     },
     [setLayerPreference],
   )
@@ -526,8 +517,7 @@ function App() {
     orbitalFilters,
     APP_CONFIG.orbital,
     {
-      enabled:
-        orbitalObjectsVisible && starlinkVisible && !historyActive,
+      enabled: orbitalObjectsVisible && !historyActive,
       config: APP_CONFIG.starlink,
     },
   )
@@ -600,6 +590,27 @@ function App() {
   ])
   const starlinkDisplay = starlinkDiscovery.display
   const starlinkCounts = starlinkDiscovery.counts
+  const orbitsInView = useMemo(
+    () =>
+      deriveOrbitalInView({
+        enabled: orbitalObjectsVisible,
+        historyActive,
+        curated: { state: orbitalState, display: orbitalDisplay },
+        starlink: { state: starlinkState, display: starlinkDisplay },
+        viewport: currentOrbitalViewport,
+        selectedId: selectedOrbitalId,
+      }),
+    [
+      orbitalObjectsVisible,
+      historyActive,
+      orbitalState,
+      orbitalDisplay,
+      starlinkState,
+      starlinkDisplay,
+      currentOrbitalViewport,
+      selectedOrbitalId,
+    ],
+  )
   const historicalViewportEntities = useMemo(
     () =>
       activeViewport
@@ -969,12 +980,8 @@ function App() {
 
   useEffect(() => {
     if (!selectedOrbitalId) return
-    const selectedLayerVisible =
-      selectedOrbitalOwner === 'starlink'
-        ? orbitalObjectsVisible && starlinkVisible
-        : orbitalObjectsVisible
     if (
-      !selectedLayerVisible ||
+      !orbitalObjectsVisible ||
       historyActive ||
       selectedOrbitalState.phase === 'unavailable' ||
       selectedOrbitalState.phase === 'clock-invalid' ||
@@ -989,10 +996,8 @@ function App() {
     historyActive,
     orbitalObjectsVisible,
     selectedOrbitalId,
-    selectedOrbitalOwner,
     selectedOrbitalPosition,
     selectedOrbitalState.phase,
-    starlinkVisible,
   ])
 
   useEffect(() => {
@@ -1178,8 +1183,13 @@ function App() {
         const origin = originId
           ? document.getElementById(originId)
           : null
-        const fallbackTarget =
-          fallback === 'settings'
+        const inViewOrigin = originId?.startsWith('in-view-')
+        const inViewSummary = inViewOrigin
+          ? document.getElementById('in-view-summary')
+          : null
+        const fallbackTarget = canRestoreFocus(inViewSummary)
+          ? inViewSummary
+          : fallback === 'settings' || inViewOrigin
             ? settingsSummaryRef.current
             : mapToolsSummaryRef.current
         const target = canRestoreFocus(origin) ? origin : fallbackTarget
@@ -1378,8 +1388,11 @@ function App() {
     state: orbitalState,
     display: orbitalDisplay,
     counts: orbitalCounts,
+    uniqueShownCount: orbitsInView.available
+      ? orbitsInView.shownCount
+      : undefined,
     starlink: {
-      enabled: starlinkVisible,
+      enabled: orbitalObjectsVisible,
       state: starlinkState,
       display: starlinkDisplay,
       counts: starlinkCounts,
@@ -1580,9 +1593,7 @@ function App() {
         airportsVisible={airportsVisible}
         weatherVisible={weatherVisible}
         orbitalVisible={orbitalObjectsVisible && !historyActive}
-        starlinkVisible={
-          orbitalObjectsVisible && starlinkVisible && !historyActive
-        }
+        starlinkVisible={orbitalObjectsVisible && !historyActive}
         clusteringEnabled={clusteringEnabled && !trafficContext}
         interpolateTraffic={!historyActive && !trafficContext}
         interpolationDurationMs={APP_CONFIG.interpolationDurationMs}
@@ -1612,6 +1623,32 @@ function App() {
       <div className="interface-layer">
         <TrafficControls
           marineProviderName={marineResult.capabilities.name}
+          inView={
+            <InViewPanel
+              aircraft={aircraftResults}
+              totalAircraft={aircraft.length}
+              aircraftQuery={aircraftQuery}
+              aircraftVisible={aircraftVisible}
+              aircraftAvailability={aircraftInViewAvailability({
+                historyActive,
+                viewportReady: viewReady && currentAssessment !== null,
+                viewportEligible: currentAssessment?.kind === 'eligible',
+                online,
+                status: aircraftResult.status,
+                count: aircraft.length,
+              })}
+              selectedAircraftId={selectedId}
+              onAircraftQueryChange={setAircraftQuery}
+              onAircraftSelect={selectTraffic}
+              orbits={orbitsInView}
+              selectedOrbitalId={selectedOrbitalId}
+              onOrbitalSelect={handleOrbitalContextSelect}
+              pageSize={APP_CONFIG.orbital.discovery.pageSize}
+              maximumOrbitalQueryLength={
+                APP_CONFIG.orbital.discovery.maximumQueryLength
+              }
+            />
+          }
           masthead={
             <>
               <div className="brand-panel__title">
@@ -1721,10 +1758,8 @@ function App() {
           onOrbitalFiltersChange={setOrbitalFilters}
           onOrbitalSelect={handleOrbitalContextSelect}
           onRetryOrbital={orbitalResult.retry}
-          starlinkVisible={starlinkVisible}
           starlinkState={starlinkState}
           starlinkCounts={starlinkCounts}
-          onStarlinkVisibleChange={setStarlinkVisible}
           onRetryStarlink={orbitalResult.retryStarlink}
           clusteringEnabled={clusteringEnabled}
           onClusteringEnabledChange={setClusteringEnabled}
@@ -1843,7 +1878,6 @@ function App() {
 
         {!historyActive &&
           orbitalObjectsVisible &&
-          (selectedOrbitalOwner !== 'starlink' || starlinkVisible) &&
           selectedOrbitalPosition &&
           selectedOrbitalState.snapshot && (
           <OrbitalDetails

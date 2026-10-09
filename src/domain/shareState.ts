@@ -212,13 +212,16 @@ export const parseShareFragment = (
     ['clusters', 'clusteringEnabled'],
     ['weather', 'weatherVisible'],
     ['orbits', 'orbitalObjectsVisible'],
-    ['starlink', 'starlinkVisible'],
   ]
   for (const [parameter, key] of layerParameters) {
     if (!params.has(parameter)) continue
     const value = parseBoolean(params.get(parameter))
     if (value === undefined) return null
     setLayerOverride(overrides, key, value)
+  }
+  // Retired child preference: old valid links keep their other overrides.
+  if (params.has('starlink') && parseBoolean(params.get('starlink')) === undefined) {
+    return null
   }
 
   if (params.has('vesselCategory')) {
@@ -325,10 +328,6 @@ export const serializeShareFragment = (
   params.set(
     'orbits',
     booleanValue(preferences.layers.orbitalObjectsVisible),
-  )
-  params.set(
-    'starlink',
-    booleanValue(preferences.layers.starlinkVisible),
   )
   params.set('vesselCategory', preferences.vesselFilters.category)
   params.set('vesselNavigation', preferences.vesselFilters.navigation)

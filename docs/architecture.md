@@ -168,7 +168,7 @@ messages and coverage limitations on every screen size; Escape closes it and
 restores summary focus. Presentation does not change provider state or polling.
 
 `TrafficControls` composes App's brand/status slot with navigation, one
-location-search model, and two stable native disclosures with the same `name`.
+location-search model, and three stable native disclosures with the same `name`.
 **Center**, Aircraft, Ships, ORBITS, **More**, and **Settings** form a right
 desktop rail and a bottom mobile command dock. Center is always outside the
 menus and uses the existing session-Home callback, not another location
@@ -183,22 +183,48 @@ into session-only Layers, Find, Context, Orbits, and Sources views; **VIEW**
 opens Orbits and focuses the first result without moving the map or fetching
 again. The task strip uses the same application button, focus, and active-state
 system as the primary controls rather than browser-default buttons. The
-Starlink child presents modeled, in-map, and next-pass counts before compact
+Starlink sample presents modeled, in-map, and next-pass counts before compact
 source/model caveats. The duplicate traffic legend is intentionally absent;
 textual state and limitations remain in controls and selected details. The
 collapsed orbital summary is omitted while the detailed Orbits view is open,
 avoiding repeated information and preserving result space. The single mounted
-location input remains mounted inside Settings when either panel is closed.
+location input remains mounted inside Settings when any peer panel is closed.
 **Settings** opens View & settings with location input and search feedback,
 and the existing privacy/attribution copy together, followed by Appearance
 (Auto/Light/Dark and Trails), browser location, history setup, preferences,
 sharing, reset, and application state. No controls or disclosure identities
 are duplicated or remounted.
 
-Opening either disclosure closes the other without remounting the search model.
+**In view** is the third peer, below Settings on desktop and reached through
+an entry inside Settings on mobile. Its mobile wrapper has no dock layout
+box, so it adds no seventh slot. Explicit Close/Escape returns to the desktop
+summary or reopens Settings and focuses its actual mobile entry; opening
+another peer does not reopen Settings. `InViewPanel` is presentational, with
+no provider or map lifecycle. It reuses the shared aircraft query/row text
+and orbital ranking/pagination helpers. Only 20 rows per category page are
+mounted; focused row identity anchors its page across reordering, and removal
+returns focus to the visible search field.
+
+`domain/inView.ts` consumes current unexpired aircraft and independently
+validated modeled positions, not raw payloads. Aircraft availability gates
+HISTORY, unsettled/ineligible views, failures, and offline retained data;
+last-local fading context never enters the list. Orbital rows use the current
+safe footprint and exact NORAD deduplication. Curated ownership wins a tie
+unless an eligible selected owner is present. Each row retains one complete
+original position, element set and source clock; it never splices snapshots.
+Display visibility is the union of matching shown identities. Selected
+objects outside the view or filters are qualified separately, not added to
+matching totals. Unsafe geometry is unavailable, and independent source
+failure remains partial. The compact summary uses the same unique shown
+count; bounded future crossing counts remain source-split, not falsely
+deduplicated or summed. Existing curated filters and Starlink sample semantics
+are unchanged. Selection reuses the ordinary owner-correct details and
+enrichment paths without moving the camera.
+
+Opening any peer disclosure closes the others without remounting the search model.
 Operational recovery and app/storage/history recovery have separate promotion
 slots beside/above the dock rather than extra default corner cards. Active
-HISTORY playback remains outside both disclosures. The existing visual-viewport
+HISTORY playback remains outside the disclosures. The existing visual-viewport
 effect publishes width, height and left/top offsets as CSS variables. Both
 the interface and native MapLibre control container use that rectangle;
 named size-container queries apply responsive layout to its visible size,
@@ -209,7 +235,8 @@ defaults before measurement. The expanded controls use at most 58% of the
 current visual viewport. Each
 disclosure body is its only vertical scroll owner; the task selector scrolls
 away rather than covering short-view results, and orbital results remain fully
-expanded inside the outer scroll region. The mobile sheet leaves a 48 px map
+expanded inside the outer scroll region, including `.in-view-results`.
+The mobile sheet leaves a 48 px map
 strip beside the control stack; the collapsed dock needs no scrolling.
 Only compact closed header/dock surfaces prevent Ctrl-wheel page zoom and
 direct touch pinch. The native wheel listener belongs to the existing shell
@@ -519,8 +546,13 @@ never enter traffic normalization, freshness, clustering, trails, metadata,
 photos, route lookup, session history, or IndexedDB.
 
 Starlink is a subordinate modeled-data channel, not another map or traffic
-provider. The remembered STARLINK preference is effective only while ORBITS is
-effective and Live mode is active. `useOrbitalObjects` owns one physical
+provider. The bounded sample follows ORBITS and Live mode directly; there is
+no separate STARLINK switch. The version-1 preference allowlist drops only
+the retired `starlinkVisible` field. The share parser still strictly validates
+legacy `starlink=0/1` but ignores it, preserving every unrelated override and
+the atomic camera; serializers omit it. ORBITS stays opt-in. Page visibility,
+offline, HISTORY, clock, expiry and channel-specific request deadlines retain
+their existing controllers. `useOrbitalObjects` owns one physical
 `orbital.worker` hub and exposes two logical channels; every worker message has
 an explicit `curated` or `starlink` envelope, and catalog revision,
 coalescing, cancellation, errors, and disposal remain channel-scoped. The

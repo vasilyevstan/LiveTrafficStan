@@ -24,7 +24,6 @@ describe('shared application state', () => {
       layers: {
         ...defaultAppPreferences().layers,
         portsVisible: true,
-        starlinkVisible: true,
       },
       vesselFilters: {
         ...defaultAppPreferences().vesselFilters,
@@ -37,6 +36,7 @@ describe('shared application state', () => {
     }
     const fragment = serializeShareFragment(camera, preferences, 3)
     expect(fragment.length).toBeLessThan(MAXIMUM_SHARE_FRAGMENT_LENGTH)
+    expect(fragment).not.toContain('starlink=')
     expect(parseShareFragment(fragment)).toEqual({
       camera: {
         latitude: 59.437,
@@ -57,7 +57,6 @@ describe('shared application state', () => {
           clusteringEnabled: false,
           weatherVisible: false,
           orbitalObjectsVisible: false,
-          starlinkVisible: true,
         },
         vesselFilters: {
           category: 'cargo',
@@ -86,11 +85,37 @@ describe('shared application state', () => {
         layers: {
           portsVisible: true,
           orbitalObjectsVisible: true,
-          starlinkVisible: true,
         },
       },
     })
     expect(parseShareFragment('#v=1&lat=59&lon=24')).toBeNull()
+  })
+
+  it.each(['0', '1'])('ignores valid legacy starlink=%s without losing camera or other overrides', (value) => {
+    const fragment =
+      '#v=1&lat=59&lon=24&zoom=8&bearing=0&pitch=0&theme=dark&orbits=1&aircraft=0'
+    expect(parseShareFragment(`${fragment}&starlink=${value}`)).toEqual(
+      parseShareFragment(fragment),
+    )
+    expect(parseShareFragment(`${fragment}&starlink=${value}`)).toMatchObject({
+      camera: { latitude: 59, longitude: 24, zoom: 8, bearing: 0, pitch: 0 },
+      preferences: {
+        theme: 'dark',
+        layers: { orbitalObjectsVisible: true, aircraftVisible: false },
+      },
+    })
+    expect(parseShareFragment(`#v=1&orbits=0&starlink=${value}`)).toEqual({
+      preferences: { layers: { orbitalObjectsVisible: false } },
+    })
+  })
+
+  it.each([
+    'starlink=false',
+    'starlink=yes',
+    'starlink=',
+    'starlink=0&starlink=1',
+  ])('still rejects invalid legacy input %s', (value) => {
+    expect(parseShareFragment(`#v=1&theme=dark&${value}`)).toBeNull()
   })
 
   it('round trips the globe preference and native negative polar zoom without location storage', () => {

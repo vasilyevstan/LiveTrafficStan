@@ -1,7 +1,18 @@
-import type { Aircraft } from './traffic'
+import type { Aircraft, DisplayAircraft } from './traffic'
 
 export const AIRCRAFT_SEARCH_MAX_LENGTH = 64
 export const AIRCRAFT_RESULT_LIMIT = 20
+
+export const aircraftResultLabel = (aircraft: Aircraft) =>
+  aircraft.callsign ?? aircraft.registration ?? aircraft.hex.toUpperCase()
+
+export const aircraftResultContext = (aircraft: DisplayAircraft) =>
+  [
+    `ICAO24 ${aircraft.hex.toUpperCase()}`,
+    aircraft.registration,
+    aircraft.aircraftType,
+    aircraft.freshness === 'stale' ? 'STALE' : undefined,
+  ].filter(Boolean).join(' · ')
 
 export const normalizeAircraftSearchQuery = (query: string) =>
   query.trim().replace(/\s+/g, ' ').toUpperCase()
