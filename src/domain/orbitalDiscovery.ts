@@ -75,7 +75,17 @@ export const matchesOrbitalFilters = (
 export const normalizeOrbitalSearchText = (value: string) =>
   value.trim().toLocaleLowerCase('en-US')
 
-const searchRank = (record: OrbitalObject, query: string) => {
+type OrbitalSearchRecord = Pick<
+  OrbitalObject,
+  | 'name'
+  | 'noradCatalogId'
+  | 'internationalDesignator'
+  | 'objectType'
+  | 'sourceGroups'
+  | 'displayOrder'
+>
+
+const searchRank = (record: OrbitalSearchRecord, query: string) => {
   if (!query) return 3
   const values = [
     normalizeOrbitalSearchText(record.name),
@@ -88,8 +98,8 @@ const searchRank = (record: OrbitalObject, query: string) => {
   return undefined
 }
 
-export const discoverOrbitalCatalog = (
-  records: readonly OrbitalObject[],
+export const discoverOrbitalCatalog = <Record extends OrbitalSearchRecord>(
+  records: readonly Record[],
   query: string,
   filters: OrbitalDiscoveryFilters,
 ) => {
@@ -222,7 +232,7 @@ export const selectOrbitalDisplay = (
   }
 }
 
-const positionInViewport = (
+export const orbitalPositionInViewport = (
   position: ModeledOrbitalPosition,
   viewport: OrbitalViewport,
 ) => {
@@ -281,10 +291,10 @@ export const deriveOrbitalPopulationCounts = (
     ...(mapCountsAvailable
       ? {
           inFootprintCount: matchingPositions.filter((position) =>
-            positionInViewport(position, viewport),
+            orbitalPositionInViewport(position, viewport),
           ).length,
           shownInFootprintCount: matchingShownPositions.filter((position) =>
-            positionInViewport(position, viewport),
+            orbitalPositionInViewport(position, viewport),
           ).length,
         }
       : {}),

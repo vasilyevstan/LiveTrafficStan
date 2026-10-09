@@ -6,7 +6,6 @@ export interface LayerPreferences {
   clusteringEnabled: boolean
   weatherVisible: boolean
   orbitalObjectsVisible: boolean
-  starlinkVisible: boolean
 }
 
 export const DEFAULT_LAYER_PREFERENCES: LayerPreferences = {
@@ -17,7 +16,6 @@ export const DEFAULT_LAYER_PREFERENCES: LayerPreferences = {
   clusteringEnabled: false,
   weatherVisible: false,
   orbitalObjectsVisible: false,
-  starlinkVisible: false,
 }
 
 export const updateLayerPreference = <

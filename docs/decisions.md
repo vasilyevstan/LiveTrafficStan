@@ -328,8 +328,20 @@ Issue #257 keeps Starlink outside the curated catalog rather than raising the
 official GP and SATCAT feeds exceed 11,000 rows and several megabytes each, so
 shipping the complete constellation would increase browser parse, SGP4,
 prediction, GeoJSON, picking, and mobile costs while still not proving
-operational status. A separate default-off child layer makes that limitation
-visible and independently disposable.
+operational status. The original separate default-off child layer is retained
+as an independent source/worker channel, but #386 removes its separate UI
+switch: the sample now follows the still-opt-in ORBITS control. This makes the
+sample available without a second enable step while keeping source failures,
+clocks, expiry and disposal independent.
+
+The companion In view panel reuses existing controls, local search and
+20-row pagination instead of adding an always-floating card, another mobile
+dock slot, a provider picker or a network lifecycle. Exact-NORAD current-view
+deduplication retains one whole source position and selected owner; it is not
+a merge of orbital elements. Source-split future passes remain separate because
+bounded prediction results cannot establish a complete unique total. Retiring
+only the saved/shared Starlink field preserves other version-1 preferences,
+camera links, history and install identity without a schema reset.
 
 One paired source acquisition validates every GP and SATCAT row, requires a
 one-to-one NORAD join for every GP record, and rejects duplicate IDs,

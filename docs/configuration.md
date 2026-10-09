@@ -84,14 +84,15 @@ immutable fallback
 Disabling the Starlink flag leaves curated acquisition and
 `/api/orbits/catalog` unchanged.
 
-Current application source
+The earlier shell-balanced application source
 `e2b2afaa04466116719310d6286441f8e6ba60ca` sets both orbital flags to
 `true`, uses KV namespace `59178d55418247c4bab473b52a5dc07d`, and runs Cron
 `17 */2 * * *`. Canonical run `37203064394` deployed version
 `816506f7-2cb1-4e6c-8626-ae990eb62b8a`; its overall smoke remains failed on
 the separate private-aircraft `502` (#174). These Worker settings do not change
-the user-facing defaults: ORBITS and its STARLINK child start off on a first
-visit; explicit, remembered, or shared visibility choices still apply.
+the user-facing default: ORBITS starts off on a first visit; explicit,
+remembered, or shared ORBITS visibility still applies. The current client
+includes the bounded Starlink sample with ORBITS, without a second switch.
 
 The exact-NORAD purpose/image manifest adds no environment variable, provider
 endpoint, secret, scheduler, Worker binding, or PWA-shell entry. Purpose is
@@ -168,12 +169,13 @@ spread through components:
 | Orbital prediction | Refresh every 30 seconds; 90-minute horizon; 30-second samples; 20 detailed results |
 | Orbital prediction cancellation | One in flight plus latest desired request; yield every 8 objects |
 | Orbital display tiers | Exact settled raw zoom `<2`: 192; `2 <= zoom <4`: 384; zoom `>=4`: every matching safe position through 512; no settled raw zoom means unavailable with no subset/exception claim; one safe selected exception once display is available |
-| Starlink layer | Remembered/shareable child preference, off by default; effective only with ORBITS on and Live mode active |
+| Starlink layer | Included with ORBITS in Live mode; no independent saved/share preference. ORBITS remains off by default. Legacy `starlinkVisible` and valid `starlink=0/1` are ignored, with other settings/navigation retained |
 | Browser Starlink request | Literal same-origin `GET /api/orbits/starlink`; schema-2 then schema-1 vendor preference; credentials/referrer omitted; 5-second deadline; 512 KiB / 512-record complete-response limit; strict selected-media validation |
 | Starlink route compatibility | Missing/legacy `Accept` receives schema 1; negotiated schema 2 uses an independent ETag; both return `Vary: Accept`; combined requests may receive fresher schema 1 while schema 2 is older than the 24-hour expiry |
 | Starlink source and publication | Fixed official `starlink` GP then SATCAT pair; 6 MiB and 15,000 rows per response, 12 MiB aggregate, 60-second total deadline; one normalization and one final aligned schema-1/schema-2 bundle write |
 | Starlink cadence/sample | One actual-start SQLite reservation per 12 hours; schema 1 remains the exact 150-record `inclination-raan-systematic-v1` sample; schema 2 is exactly 512 records, 128 per fixed inclination band, selected by `inclination-shell-raan-phase-grid-v1`; no retry, truncation, rotation, viewport request, or completeness/representativeness claim |
 | Orbital catalog discovery | Query at most 64 characters; exact type/source-group filters; 20 rows per page |
+| In view | Collapsed peer below desktop Settings; mobile entry inside Settings, not another dock slot. Aircraft and current modeled orbits reuse local search and `orbital.discovery.pageSize` (20); no additional acquisition or timing setting |
 | Orbital selected track | 15 minutes; at most 31 points before gap/dateline splitting |
 | Orbital reviewed image | 5-second total deadline; exact manifest byte count, media type, and SHA-256; one fulfilled Blob URL or terminal failure per immutable asset in the running tab |
 | Marine metadata refresh | 5 minutes |

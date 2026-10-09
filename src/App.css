@@ -612,6 +612,76 @@
   letter-spacing: -0.015em;
 }
 
+.in-view-mobile-entry {
+  display: none;
+}
+
+.in-view__close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: grid;
+  width: 44px;
+  padding: 0;
+  place-items: center;
+}
+
+.in-view__tabs {
+  margin: 0 50px 12px 0;
+}
+
+.in-view__tabs button {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px;
+}
+
+.in-view__count,
+.in-view__paging {
+  font-variant-numeric: tabular-nums;
+}
+
+.in-view__status {
+  margin: 9px 0;
+  color: var(--summary-text);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.in-view__status p,
+.in-view__paging p {
+  margin: 0;
+}
+
+.in-view__status p + p {
+  margin-top: 5px;
+}
+
+.in-view__paging,
+.in-view__more {
+  margin-top: 12px;
+}
+
+.in-view__paging p {
+  margin-bottom: 5px;
+  color: var(--summary-text);
+  font-size: 0.75rem;
+}
+
+.in-view-body .control-options button,
+.in-view-results button,
+.in-view-mobile-entry {
+  min-height: 44px;
+}
+
+.in-view__section input::placeholder {
+  color: var(--placeholder-text);
+  opacity: 1;
+}
+
 .control-panel__more-body::-webkit-scrollbar {
   width: 6px;
 }
@@ -720,6 +790,7 @@
 .location-results button,
 .vessel-discovery button,
 .vessel-results button,
+.in-view-mobile-entry,
 .ports-status button,
 .history-action,
 .control-panel__urgent button,
@@ -768,6 +839,8 @@
 .vessel-discovery button:focus-visible,
 .vessel-results button:hover,
 .vessel-results button:focus-visible,
+.in-view-mobile-entry:hover,
+.in-view-mobile-entry:focus-visible,
 .ports-status button:hover,
 .ports-status button:focus-visible,
 .history-action:hover,
@@ -979,6 +1052,7 @@
 }
 
 .vessel-discovery input[type='search'],
+.in-view input[type='search'],
 .vessel-discovery select,
 .history-controls select,
 .playback-controls select {
@@ -997,6 +1071,8 @@
 
 .vessel-discovery input:hover,
 .vessel-discovery input:focus-visible,
+.in-view input:hover,
+.in-view input:focus-visible,
 .vessel-discovery select:hover,
 .vessel-discovery select:focus-visible,
 .history-controls select:hover,
@@ -1005,6 +1081,10 @@
 .playback-controls select:focus-visible {
   border-color: var(--button-hover-border);
   outline: none;
+}
+
+.in-view input[type='search'] {
+  min-height: 44px;
 }
 
 .playback-controls label,
@@ -1089,7 +1169,8 @@
   list-style: none;
 }
 
-.orbital-results {
+.orbital-results,
+.in-view-results {
   max-height: none;
   overflow: visible;
 }
@@ -1976,6 +2057,29 @@
     padding: 0 0 0 3px;
     border: 0;
     border-left: 1px solid var(--divider);
+  }
+
+  .control-panel--in-view,
+  .control-panel__in-view {
+    display: contents;
+  }
+
+  .control-panel__in-view > summary {
+    display: none;
+  }
+
+  .in-view-mobile-entry {
+    display: block;
+    width: 100%;
+    min-height: 44px;
+    margin-bottom: 14px;
+    padding: 8px 10px;
+    text-align: left;
+  }
+
+  .in-view__close {
+    top: 12px;
+    right: 12px;
   }
 
   .control-options.control-panel__primary {

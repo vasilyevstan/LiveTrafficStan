@@ -133,8 +133,11 @@ identity are not renamed or reset.
   identifies ground tracks that cross a safe local map view within 90 minutes,
   and draws one bounded selected-object track.
   **ORBITS** stays beside **AIRCRAFT** and **SHIPS** in the layer dock;
-  its compact summary reports how many markers are actually shown in the
-  current map plus predicted passes within 90 minutes and is mirrored in the
+  its compact summary reports unique exact-NORAD objects shown in the
+  current map, with curated (`C`) and Starlink (`S`) source counts and
+  separately reported predicted passes within 90 minutes. Source counts can
+  overlap; future passes are not summed into a purported unique total.
+  The summary is mirrored in the
   floating status card's Provider details without changing aircraft/marine health.
   **More → Orbits** separates Nearby crossings from complete
   Catalog discovery. Search and exact type/source-group filters are local to
@@ -188,9 +191,13 @@ identity are not renamed or reset.
   source `538edd25afa49f62c13e93745b322099f662791d`; the shell-balanced
   Starlink milestone #275 preserved it at
   `d565b56278e81ff2478ab1e476c269084f2297d4`.
-- Issue #257 adds a separate remembered **STARLINK** child layer under
-  **More → Orbits**. It starts off even when ORBITS is on and
-  makes no request until both toggles are effective. Issue #271 adds a
+- The bounded Starlink sample is included whenever **ORBITS** is enabled;
+  **More → Orbits** retains its sample/source context and independent retry.
+  Issue #386 removes the separate switch introduced by #257. ORBITS remains
+  off by default, and neither orbital route is requested while it is off.
+  Legacy saved `starlinkVisible` values are discarded; valid old `starlink=0`
+  or `starlink=1` share fields are ignored without losing other settings or
+  shared navigation. New share links omit the retired field. Issue #271 adds a
   negotiated schema-2 representation with exactly 512 records: 128 from each
   fixed inclination band `<48`, `48-<60`, `60-<85`, and `>=85` degrees.
   `inclination-shell-raan-phase-grid-v1` deterministically fills a
@@ -306,6 +313,18 @@ identity are not renamed or reset.
   colored dots. The duplicate traffic legend is intentionally omitted.
   [Local refinement evidence](docs/development-and-testing.md#minimal-right-controls-local-evidence)
   is separate from the historical production release below.
+- **In view** opens below Settings in the desktop rail. On phones, choose
+  **Settings → Aircraft & orbits in view**; the six-slot bottom dock stays
+  unchanged. Aircraft and Orbits have local search and 20-row pages, with
+  complete individual counts rather than cluster-symbol counts. Current
+  modeled orbits deduplicate exact NORAD across both sources and distinguish
+  shown objects from zoom-hidden matches. Paused traffic, partial sources,
+  offline retained observations, HISTORY, and unsafe globe geometry are
+  explicitly qualified, never presented as a successful empty view.
+  Opening, searching, or paging does not move the map or acquire provider
+  data. Selecting a row uses the ordinary highlight/details and selected
+  metadata/photo/route behavior. Close or Escape restores the trigger;
+  one outer scroll owner leaves the full map canvas and its coverage intact.
 - Touch-specific selection tolerance for isolated markers; exact mouse hits stay
   unchanged and ambiguous nearby traffic is never guessed.
 

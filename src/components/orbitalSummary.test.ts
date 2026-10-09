@@ -155,7 +155,7 @@ describe('formatOrbitalSummary', () => {
     ).toBe('ORBITS · 4 SHOWN · PASSES UPDATING')
   })
 
-  it('reports the combined surface with compact owner-split counts', () => {
+  it('reports unique shown identities and source-split, not summed, passes', () => {
     expect(
       formatOrbitalSummary({
         visible: true,
@@ -163,6 +163,7 @@ describe('formatOrbitalSummary', () => {
         horizonMs: 90 * 60_000,
         state,
         display: display(192),
+        uniqueShownCount: 10,
         counts: counts(200, {
           inFootprintCount: 12,
           shownInFootprintCount: 8,
@@ -180,7 +181,7 @@ describe('formatOrbitalSummary', () => {
         },
       }),
     ).toBe(
-      'ORBITS · 12 SHOWN (C 8 / S 4) · 5 PASSES ≤90M',
+      'ORBITS · 10 SHOWN (C 8 / S 4) · PASSES C 3 / S 2 ≤90M',
     )
   })
 
@@ -195,6 +196,7 @@ describe('formatOrbitalSummary', () => {
           selectedException: true,
           selectedZoomHidden: true,
         }),
+        uniqueShownCount: 11,
         counts: counts(200, {
           inFootprintCount: 12,
           shownInFootprintCount: 9,
@@ -212,7 +214,7 @@ describe('formatOrbitalSummary', () => {
         },
       }),
     ).toBe(
-      'ORBITS · 13 SHOWN (C 9 / S 4) · 5 PASSES ≤90M · 1 SELECTED EXCEPTION',
+      'ORBITS · 11 SHOWN (C 9 / S 4) · PASSES C 3 / S 2 ≤90M · 1 SELECTED EXCEPTION',
     )
   })
 
@@ -237,5 +239,39 @@ describe('formatOrbitalSummary', () => {
         },
       }),
     ).toBe('ORBITS · C UNAVAILABLE · S 7')
+  })
+
+  it('does not invent a combined unique total without identity evidence', () => {
+    expect(formatOrbitalSummary({
+      visible: true,
+      historyActive: false,
+      horizonMs: 90 * 60_000,
+      state,
+      display: display(4),
+      counts: counts(4, { shownInFootprintCount: 4, futureCrossingCount: 2 }),
+      starlink: {
+        enabled: true,
+        state,
+        display: display(4),
+        counts: counts(4, { shownInFootprintCount: 4, futureCrossingCount: 2 }),
+      },
+    })).toBe('ORBITS · C 4 / S 4 SHOWN · PASSES C 2 / S 2 ≤90M')
+  })
+
+  it('does not turn empty propagation into zero map counts for unsafe geometry', () => {
+    expect(formatOrbitalSummary({
+      visible: true,
+      historyActive: false,
+      horizonMs: 90 * 60_000,
+      state: { ...state, phase: 'empty' },
+      display: display(0),
+      counts: counts(0),
+      starlink: {
+        enabled: true,
+        state: { ...state, phase: 'empty' },
+        display: display(0),
+        counts: counts(0),
+      },
+    })).toBe('ORBITS · C MAP ? · S MAP ?')
   })
 })

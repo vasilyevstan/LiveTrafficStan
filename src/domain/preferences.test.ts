@@ -45,7 +45,6 @@ describe('application preferences', () => {
         clusteringEnabled: false,
         weatherVisible: false,
         orbitalObjectsVisible: false,
-        starlinkVisible: false,
       },
       vesselFilters: {
         category: 'cargo',
@@ -60,6 +59,53 @@ describe('application preferences', () => {
         durationMinutes: 60,
       },
     })
+  })
+
+  it.each([
+    [false, false],
+    [false, true],
+    [true, false],
+    [true, true],
+  ])('retires legacy Starlink %s without changing ORBITS %s or unrelated preferences', (
+    starlinkVisible,
+    orbitalObjectsVisible,
+  ) => {
+    const expected = {
+      ...defaultAppPreferences(),
+      theme: 'dark' as const,
+      projection: 'flat' as const,
+      units: 'aviation-nautical' as const,
+      layers: {
+        ...defaultAppPreferences().layers,
+        orbitalObjectsVisible,
+        aircraftVisible: false,
+        airportsVisible: true,
+      },
+      vesselFilters: {
+        ...defaultAppPreferences().vesselFilters,
+        category: 'cargo' as const,
+      },
+      trail: { visible: false, durationMinutes: 60 as const },
+    }
+    const legacy = {
+      ...expected,
+      layers: { ...expected.layers, starlinkVisible },
+    }
+    const storage = {
+      getItem: vi.fn(() => JSON.stringify(legacy)),
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+    }
+    const migrated = readAppPreferences(storage).preferences
+    expect(migrated).toEqual(expected)
+    expect(migrated.layers).not.toHaveProperty('starlinkVisible')
+    expect(storeAppPreferences(storage, migrated)).toBe(true)
+    expect(storage.setItem).toHaveBeenCalledWith(
+      APP_PREFERENCES_STORAGE_KEY,
+      JSON.stringify(expected),
+    )
+    expect(storage.removeItem).not.toHaveBeenCalled()
+    expect(legacy.layers.starlinkVisible).toBe(starlinkVisible)
   })
 
   it('rejects old versions without importing removed fields', () => {
