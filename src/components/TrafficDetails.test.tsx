@@ -138,6 +138,8 @@ describe('TrafficDetails aircraft metadata', () => {
     )
 
     expect(html).toContain('AIRBUS A-320')
+    expect(html).toContain('aria-label="Close aircraft details"')
+    expect(html).not.toContain('>Close</button>')
     expect(html).toContain('L2J')
     expect(html).toContain('M · medium')
     expect(html).toContain('ICAO24 and live registration verified')

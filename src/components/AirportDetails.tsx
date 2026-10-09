@@ -5,6 +5,7 @@ import {
 } from '../domain/airports'
 import type { AirportBoardProvider } from '../providers/airportBoards/airportBoardProvider'
 import { AirportBoard } from './AirportBoard'
+import { DetailsPanel } from './DetailsPanel'
 
 interface AirportDetailsProps {
   airport: Airport
@@ -41,15 +42,17 @@ export function AirportDetails({
   board,
 }: AirportDetailsProps) {
   return (
-    <aside className={`details-panel${board && !board.historical ? ' details-panel--airport-board' : ''}`} aria-labelledby="selected-airport-title">
+    <DetailsPanel
+      className={board && !board.historical ? 'details-panel--airport-board' : undefined}
+      titleId="selected-airport-title"
+      closeLabel="Close airport details"
+      onClose={onClose}
+    >
       <div className="details-panel__heading">
         <div>
           <p className="eyebrow">Selected airport</p>
           <h2 id="selected-airport-title" title={airport.name}>{airport.name}</h2>
         </div>
-        <button type="button" className="close-button" onClick={onClose}>
-          Close
-        </button>
       </div>
 
       {board && <AirportBoard airportIcao={airport.icaoCode} {...board} />}
@@ -78,6 +81,6 @@ export function AirportDetails({
         <a href={source.termsUrl}>{source.licenseName}</a> ·{' '}
         {source.outputVersion}.
       </p>
-    </aside>
+    </DetailsPanel>
   )
 }

@@ -10,6 +10,7 @@ import {
   type DisplayWeatherObservation,
   type WeatherObservationSource,
 } from '../domain/weatherObservations'
+import { DetailsPanel } from './DetailsPanel'
 
 interface WeatherObservationDetailsProps {
   observation: DisplayWeatherObservation
@@ -73,9 +74,10 @@ export function WeatherObservationDetails({
   onClose,
 }: WeatherObservationDetailsProps) {
   return (
-    <aside
-      className="details-panel"
-      aria-labelledby="selected-weather-title"
+    <DetailsPanel
+      titleId="selected-weather-title"
+      closeLabel="Close weather observation details"
+      onClose={onClose}
     >
       <div className="details-panel__heading">
         <div>
@@ -85,9 +87,6 @@ export function WeatherObservationDetails({
             {flightCategoryLabel(observation.flightCategory)}
           </h2>
         </div>
-        <button type="button" className="close-button" onClick={onClose}>
-          Close
-        </button>
       </div>
 
       <dl className="details-grid">
@@ -146,6 +145,6 @@ export function WeatherObservationDetails({
         <a href={source.documentationUrl}>API documentation</a> ·{' '}
         <a href={source.termsUrl}>{source.licenseName}</a>.
       </p>
-    </aside>
+    </DetailsPanel>
   )
 }

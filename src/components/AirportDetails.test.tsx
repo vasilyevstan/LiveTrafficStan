@@ -36,6 +36,8 @@ describe('AirportDetails', () => {
     )
 
     expect(html).toContain('Lennart Meri Tallinn Airport')
+    expect(html).toContain('aria-label="Close airport details"')
+    expect(html).not.toContain('>Close</button>')
     expect(html).toContain('Large airport')
     expect(html).toContain('EETN')
     expect(html).toContain('TLL')
