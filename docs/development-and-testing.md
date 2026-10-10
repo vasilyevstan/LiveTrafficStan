@@ -93,6 +93,18 @@ focus emulation. They are not live-provider, native marker-picking or
 physical-device proof. The older rotation and full-gutter receipts below
 remain historical evidence for their original releases, not current policy.
 
+The first production check retained the accepted inspector/photo/north-up
+results but found two missed default states: ORBITS off and ungranted location
+help wrapped to three lines. The focused correction changes only those two
+messages, retaining the modeled/sample disclosure and explicit, rounded,
+unsaved location action. At **10:34:40 UTC**, twelve native copy views across
+the same three sizes and both themes measured one line at 298/300 px and
+exactly two at 223/225 px. Full Starlink limits were opened through trusted
+input; no location acquisition or orbital catalog request occurred. All
+required correction gates passed with **176 suites / 1,573 tests**, candidate
+`index-BGCLjay2.js` and unchanged `index-vg9GFLql.css`. Reuse the unchanged
+core evidence instead of repeating inspector or live journey acquisition.
+
 ### Modeled water depths (#412)
 
 Focused suites cover default-on legacy preferences and explicit saved/shared

@@ -269,7 +269,8 @@ describe('current orbital in-view population', () => {
     expect(model({ enabled: false })).toMatchObject({
       available: false,
       rows: [],
-      message: expect.stringContaining('ORBITS is off'),
+      shownCount: 0,
+      message: 'ORBITS is off. Enable it in the main controls.',
     })
     expect(model({ historyActive: true })).toMatchObject({
       available: false,
