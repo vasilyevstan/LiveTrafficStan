@@ -162,6 +162,20 @@ const renderControls = (
   )
 
 describe('TrafficControls', () => {
+  it('keeps the ungranted-location hint attached to the explicit enabled action', () => {
+    const message = 'Use location to request access. Rounded, not saved.'
+    const html = renderControls({ locationMessage: message })
+
+    expect(html).toMatch(
+      /<button type="button" aria-busy="false" aria-describedby="location-status">USE LOCATION<\/button>/,
+    )
+    expect(html).toContain(
+      `<p id="location-status" class="control-note" role="status">${message}</p>`,
+    )
+    expect(html.match(/id="location-status"/g)).toHaveLength(1)
+    expect(renderControls()).not.toContain('id="location-status"')
+  })
+
   it('keeps automatic globe and flat choices in Settings with explicit pressed state', () => {
     const automatic = renderControls()
     const projectionGroup = automatic.match(

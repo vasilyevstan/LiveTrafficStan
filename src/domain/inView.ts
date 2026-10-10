@@ -206,7 +206,7 @@ export const deriveOrbitalInView = ({
     return {
       ...empty,
       available: false,
-      message: 'ORBITS is off. Enable it in the main controls to include curated objects and the bounded Starlink sample.',
+      message: 'ORBITS is off. Enable it in the main controls.',
     }
   }
   if (!viewport || viewport.kind === 'invalid') {
