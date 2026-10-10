@@ -16,6 +16,27 @@ React and TypeScript provide a small typed component model. Vite supplies the de
 
 OpenFreeMap's Positron style is the V1 base map because it is OSM-based, MapLibre-compatible, key-free, muted, and replaceable through one configuration value. The application adds stronger blue traffic and control styling rather than maintaining a large custom map style.
 
+## Matched bathymetry imagery and separate numeric models (#412)
+
+Depths is default-on by the user's explicit choice, with one More/Layers
+toggle rather than another mobile dock slot. Preserve the application's
+Operate-mode controls and water/traffic hierarchy; numbers remain sparse,
+approximate and in metres, with source/datum and non-navigation context.
+
+Use the published matching World Base Layer v1 image and land mask, not an
+assumed transparent relief WMS or a negative-elevation/color heuristic.
+Unmatched GEBCO 2026 color and EMODnet 2020 mask boundaries visibly diverged.
+The accepted global `2020` pair contains EMODnet 2018 / GEBCO 2019; newer
+actual GetFeatureInfo grid values are deliberately a separate numeric
+product. Disclose that difference rather than invent a same-grid color key.
+
+The existing native map queue, settled viewport, source/layer installation,
+bounded readers and independent controllers suffice. No new renderer,
+tileserver, backend, polling loop or depth-aware routing is needed. Native
+rendering remains mandatory: byte/schema tests did not expose Window.fetch's
+invalid receiver when stored as a class method, nor the inherited sub-44px
+target. Fix those demonstrated defects without redesigning other controls.
+
 ## ADSB.lol remains the sole aircraft provider
 
 The dated

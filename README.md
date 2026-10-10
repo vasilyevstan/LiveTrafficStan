@@ -53,6 +53,15 @@ identity are not renamed or reset.
   flat local map between zoom 11 and 12. **Settings → Appearance → AUTO GLOBE /
   FLAT** provides the persistent alternative without another toolbar control,
   renderer, map instance, or provider.
+- Default-on **DEPTHS** in **More → Layers** adds subdued water-only model
+  shading and sparse automatic approximate metre labels when zoomed in.
+  Shading uses the matched EMODnet World Base Layer v1 image/land-mask pair
+  (EMODnet 2018 / GEBCO 2019); numbers use newer service grids, not colors
+  converted to depths. Regional numbers are LAT; global numbers are nominal
+  MSL with coastal-datum exceptions. These are models, not live soundings,
+  tides, clearance or navigation guidance. Anonymous requests reveal the
+  viewed area to the sources; explicit off is remembered.
+  See [depth coverage, bounds and controls](docs/configuration.md#modeled-water-depths).
 - An atlas-style treatment of the default maps: blue water, visible forests
   and parks, warm roads, and clearer building and harbour detail. Light uses
   a warm paper palette; Dark uses deep-blue water with forest and bronze
@@ -581,6 +590,7 @@ operational thresholds, and examples.
 | Purpose | Provider | Runtime data license | Runtime access |
 | --- | --- | --- | --- |
 | Map | OpenFreeMap / OpenMapTiles / OpenStreetMap | Provider and OSM attribution applies | Direct browser access |
+| Modeled water depths | EMODnet / GEBCO | EMODnet published product reuse terms; GEBCO public domain with attribution/disclaimers | Default-on anonymous matched imagery; bounded automatic grid values at close zoom |
 | Place search | Photon / OpenStreetMap | OSM ODbL attribution applies | Direct browser access on explicit submit |
 | Aircraft | ADSB.lol | ODbL 1.0 | Same-origin Vite/Cloudflare proxy by default; protected direct-browser build only after provider-approved CORS |
 | Aircraft metadata | Mictronics aircraft-database derivative | ODC-By 1.0 | Immutable same-origin static assets, loaded only after selection |

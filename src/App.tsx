@@ -68,6 +68,7 @@ import {
   orderVesselSearchResults,
 } from './domain/vesselFilters'
 import type { ViewportAssessment } from './domain/viewport'
+import { INITIAL_BATHYMETRY_STATUS, type BathymetryStatus } from './domain/bathymetry'
 import type { OrbitalViewport } from './domain/orbitalViewport'
 import { orbitalFeatureOwner } from './domain/orbital'
 import { orbitalEnrichmentForPosition } from './domain/orbitalEnrichment'
@@ -164,6 +165,7 @@ function App() {
     airportsVisible,
     clusteringEnabled,
     weatherVisible,
+    depthsVisible,
     orbitalObjectsVisible,
   } = layerPreferences
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -194,6 +196,7 @@ function App() {
     null,
   )
   const [mapError, setMapError] = useState<TrafficMapError | null>(null)
+  const [bathymetryStatus, setBathymetryStatus] = useState<BathymetryStatus>(INITIAL_BATHYMETRY_STATUS)
   const [viewportReport, setViewportReport] = useState<{
     assessment: ViewportAssessment
     orbitalViewport: OrbitalViewport
@@ -323,6 +326,10 @@ function App() {
   )
   const setWeatherVisible = useCallback(
     (visible: boolean) => setLayerPreference('weatherVisible', visible),
+    [setLayerPreference],
+  )
+  const setDepthsVisible = useCallback(
+    (visible: boolean) => setLayerPreference('depthsVisible', visible),
     [setLayerPreference],
   )
   const setOrbitalObjectsVisible = useCallback(
@@ -1714,6 +1721,8 @@ function App() {
         portsVisible={portsVisible}
         airportsVisible={airportsVisible}
         weatherVisible={weatherVisible}
+        depthsVisible={depthsVisible}
+        onBathymetryStatus={setBathymetryStatus}
         orbitalVisible={orbitalObjectsVisible && !historyActive}
         starlinkVisible={orbitalObjectsVisible && !historyActive}
         clusteringEnabled={clusteringEnabled && !trafficContext}
@@ -1857,6 +1866,9 @@ function App() {
           onAirportSelect={handleAirportContextSelect}
           onRetryAirports={airportsResult.retry}
           weatherVisible={weatherVisible}
+          depthsVisible={depthsVisible}
+          bathymetryStatus={bathymetryStatus}
+          onDepthsVisibleChange={setDepthsVisible}
           weatherLoading={weatherLoading}
           weatherWaiting={weatherWaiting}
           weatherReady={weatherReady}

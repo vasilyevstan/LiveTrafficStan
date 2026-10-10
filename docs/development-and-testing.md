@@ -48,6 +48,68 @@ supplementary marine WebSocket; use the actual local Worker for those paths.
 | `npm run check:deploy` | Bundle the Worker and Static Assets without credentials or deployment |
 | `npm run preview:worker` | Build and run the actual local Cloudflare `workerd` boundary |
 
+### Modeled water depths (#412)
+
+Focused suites cover default-on legacy preferences and explicit saved/shared
+off, stable native-cell candidates and floating-point block boundaries,
+dateline/invalid geometry, real-grid no-data/land normalization, strict returned
+global cell coordinates, byte/media caps, two-request concurrency across old
+generations, twelve-candidate bounds, A-B-A fencing, total deadline,
+source-specific Retry-After, fulfilled-only TTL/LRU caches and no retry polling.
+The common byte reader retains existing JSON media/checksum behavior.
+
+PNG tests require a bounded matching image/mask pair, pre-decode dimensions,
+alpha subtraction rather than color-to-value inversion, decoded-image cleanup,
+consumer-safe copied cache buffers and cancellation during composition.
+A browser-discovered native-fetch receiver regression has a focused test:
+the default fetch adapter must not call Window.fetch with the loader as `this`.
+
+Map tests cover pre-style startup, ocean-only sample gating, vector-readiness
+waiting, move/off/hidden/offline/unmount, separate optional-source errors and
+theme rehydration below existing operational/journey layers. UI tests retain
+the primary dock composition, existing inspector gutter and sole More scroll
+owner, with a full-width minimum-44px depth target. They do not substitute
+for rendered acceptance.
+
+Source proof used a real matched World Base Layer v1 tile and land mask on
+the existing native map: 12,369 transparent land pixels, 49,201 opaque ocean
+pixels and 389.5 ms acquisition/composition in that qualified run. This proves
+source alpha/composition only. An earlier unmatched GEBCO/EMODnet combination
+had coastal fringes and was rejected. Its unexpected WebSocket handshake had
+no definitive recorded source identity; block lists alone are not a reliable
+WebSocket isolation mechanism.
+
+The local feature batch uses actual built MapLibre and vector tiles, native
+fetch/clocks/pointer/touch, explicit focus emulation, and the existing local
+marine protocol fixture. Georeferenced crops of the accepted public image pair
+and invented -85/-82 numeric responses isolate repeated checks from providers;
+outside that replay area imagery is transparent. These are lifecycle/layout
+fixtures, not fresh geographic coverage or physical-device evidence.
+Measure 1280x900, 390x568, 315x517 in both themes plus 2x magnification:
+real rendered numeric symbols, one canvas, ocean gating/spacing, 44px target,
+reachable credits, the actual `.control-panel__more-body` scroll owner and
+at least a 44px mobile map strip. Also measure ordinary basemap retention,
+source-error isolation, cancellation, off/on cache, globe/dateline, unchanged
+Center/Home and orbital request ownership. Production uses one separate
+bounded actual-source acceptance window, not repeated live fixture queries.
+
+The completed local confirmation on 2026-10-10 at 02:56 UTC rendered 6 depth
+labels on desktop, 3-4 at 390x568 and 1-2 at 315x517 in the two themes, with
+two or fewer concurrent value requests. The scoped target correction measured
+44px in all six layouts, the mobile map strip remained 44px, and no nested
+More scroll owner was added. Basemap-feature retention, one map, 2x
+magnification, value cancellation/cache, independent orbital catalogs,
+depth-only HTTP failure, globe/dateline and repeated Center/Home behavior
+passed. No paid airport-board or geocoder request occurred.
+
+The observer ended on 49 identical `Fetch.fulfillRequest: Invalid
+InterceptionId` errors from delayed local fixture replies after application
+cancellation, not JavaScript application exceptions. Its completed measurements
+and raw failed report are retained together with that qualification; the
+accepted UI was not rebuilt or repeatedly inspected to erase an observer
+cleanup error. GPT-5.5's source and evidence passes found no remaining
+high-confidence UI/map regression after the 44px correction.
+
 ### Captured journeys (#406)
 
 Focused suites cover exact flight identity/ordered airports/current-leg

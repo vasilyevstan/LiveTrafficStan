@@ -1,5 +1,5 @@
 /*
-  Content-Security-Policy: connect-src 'self' https://tiles.openfreemap.org https://photon.komoot.io https://meri.digitraffic.fi wss://meri.digitraffic.fi https://api.adsb.lol https://vrs-standing-data.adsb.lol https://api.planespotters.net https://ais.openwaters.io; img-src 'self' data: blob: https://cdn.planespotters.net https://t.plnspttrs.net https://thumb.wikimedia.org https://upload.wikimedia.org
+  Content-Security-Policy: connect-src 'self' https://tiles.openfreemap.org https://photon.komoot.io https://meri.digitraffic.fi wss://meri.digitraffic.fi https://api.adsb.lol https://vrs-standing-data.adsb.lol https://api.planespotters.net https://ais.openwaters.io https://tiles.emodnet-bathymetry.eu https://ows.emodnet-bathymetry.eu https://wms.gebco.net; img-src 'self' data: blob: https://cdn.planespotters.net https://t.plnspttrs.net https://thumb.wikimedia.org https://upload.wikimedia.org
   Referrer-Policy: strict-origin-when-cross-origin
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY

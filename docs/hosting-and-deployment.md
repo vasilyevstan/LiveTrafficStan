@@ -1799,6 +1799,29 @@ If a newer pull request reaches `main` while an older manual deployment is
 validating, the second equality check fails rather than silently promoting the
 older SHA.
 
+## Modeled-depth release boundary (#412)
+
+The depth slice changes browser source/UI/preferences and the static
+origin-specific CSP only. It adds no Worker route, binding, paid source,
+credential, database migration or deployment input. Preserve
+`aircraft_delivery=oci-private-relay`, aircraft photos, plausible routes,
+curated orbital catalog, Starlink, marine supplementation and airport boards
+when deploying the exact checked main SHA.
+
+The compatible predecessor is application
+`dc1144f182408687ff3fb06249b3c66398e57f74`, Worker
+`0253b0ed-57f5-4cac-b85f-1e1708a9b307`. The existing protected exact-version
+rollback removes depth UI/requests without changing Home, private history,
+the installed identity or backend capabilities. Older code ignores the new
+preference and can drop it on a later normal preference save; returning to
+the new version then uses default-on if the field is absent. No new rollback
+exercise is claimed by this boundary.
+
+Normal installed-app update, bounded real model-source rendering and public
+canonical/Wiki receipts are release acceptance, separate from local replay
+fixtures. Keep the following journey receipt as historical/rollback evidence,
+not a claim that documentation-only commits redeploy the application.
+
 ## Captured journey production receipt (2026-10-10)
 
 Implementation [#407](https://github.com/vasilyevstan/LiveTrafficStan/pull/407)
