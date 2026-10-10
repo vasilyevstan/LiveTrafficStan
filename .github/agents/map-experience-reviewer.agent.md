@@ -59,6 +59,8 @@ Check these project invariants:
 - Default explanatory copy fits at most two rendered lines at supported
   widths. Native disclosures retain full names, rights, privacy and limits;
   prove keyboard/touch access rather than silently clipping necessary text.
+  Include layer-off and ungranted-location states at the narrowest width;
+  enabled/other-permission fixtures do not exercise those copy branches.
 - Show path makes one north-up fit. Return restores the prior bearing,
   center and zoom; unavailable geometry must not force a projection change.
 - Compact corner credits retain basemap attribution and the full-credit link;

@@ -1802,7 +1802,84 @@ If a newer pull request reaches `main` while an older manual deployment is
 validating, the second equality check fails rather than silently promoting the
 older SHA.
 
+## Compact-inspector production receipt (2026-10-10)
+
+Implementation #421 and checked promotion #422 delivered the compact fixed
+identity/action header, corner-attached 44px X, full-width body scroller,
+purposeful two-line default summaries and north-up Show path. That initial
+application **`62826ef1240c5ee9b17001ceea7862f4a05f433f`**, Worker
+**`f7da9464-241d-4f26-9a1c-2eace0d72dde`**, passed exact-main Validation
+38044559178 and deployment 38044668781. Its real installed update and
+MEGASTAR inspector/photo/path acceptance passed, but the retained production
+report found two previously untested three-line explanations. Do not
+represent that first copy check as successful.
+
+Focused #423, the necessary tree-neutral #425 and checked promotion #424
+deliver final application **`d9fb33b00a9ce0e73123b7fe3d0b4c512ec30e47`**,
+Worker **`7dd064d4-f151-431e-8db7-6bf7772bc104`**, published at
+**10:44:52 UTC**. It serves `index-BGCLjay2.js`, unchanged
+`index-vg9GFLql.css` and shell `c303246264f4bac339f0`.
+[Exact-main Validation 38045829573](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/38045829573)
+and serialized [deployment 38045908660](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/38045908660)
+passed. Both origins passed the unchanged strict-SHA smoke.
+
+Accepted implementation `84bdc2aee804acb3d6fad3fac4aa64cf8bcdb919`,
+original dev `9f6d79d03b273984ddc9e7b300634b6f6a3cbaf3`, ancestry head
+`e02c0ce47a22c1e6b3fcb6a9955c86c8838ea964`, final dev
+`159770d7b2a6d3a5bce1feae422e12ebc263637a` and final application have the
+same tree. Correction/original-dev/ancestry/final-dev/promotion Validation
+38045472135 /38045530151 /38045675944 /38045747678 /38045750258 passed.
+The one actual testing-guide history conflict required #425. Its narrowly
+guarded dev merge-method exception was restored and deep-equality verified
+in finally, preserving every other protection and repository setting.
+
+Local required gates passed **176 suites /1,573 tests**. The accepted
+36-layout, 104-copy-view, whole-photo, 2x and disclosure/map-drag evidence
+remains valid for unchanged core source. Retained GPT-5.5 resolved the
+layout/camera findings and then only the newly invalidated copy delta;
+unchanged provider/lifecycle reviews were not repeated.
+
+Actual acceptance is split by source and requirement:
+
+- **10:25:56 UTC, initial compact application:** six real MEGASTAR
+  (MMSI 276829000, IMO 9773064) Light/Dark desktop/mobile inspector and
+  whole-photo layouts, persistent X, scrolling/Escape/focus and 2x passed.
+  Show path changed bearing **38 -> 0**, and Return restored the original
+  center, zoom and bearing. One received-history GET, three bounded Portnet
+  reads and one graph asset returned 200 on explicit capture. Six captured
+  resize/theme views reused the snapshot without refetch/refit. This is not
+  a complete-voyage or real-aircraft-route claim. The 72-copy-view check then
+  correctly failed on ORBITS-off and manual-location help.
+- **10:46:20-10:46:36 UTC, final correction:** a genuinely new ordinary
+  REFRESH APP changed `index-aG8-cFcZ.js` to `index-BGCLjay2.js` in the
+  retained installation. Raw preferences/history settings, database and root
+  install identity remained equal. Twelve native copy views at 1280x900,
+  390x568 and 315x517 in Light/Dark passed: the two hints use one line at
+  298/300px and exactly two at 223/225px. Full sample limits remained
+  accessible with trusted disclosure input; no curated/Starlink or journey
+  request occurred. No application/browser exception was collected.
+
+Native renderer, fetch/WebSocket/clocks and trusted input are distinguished
+from callback selection, local fixtures and explicit focus emulation; no
+physical-device or new native-hidden guarantee is claimed. A current-document
+aircraft 503 remained visible; later strict smoke passed. Uninterrupted
+provider availability is not claimed. Release-header evidence is scoped to
+the post-update document, retaining predecessor-document responses rather
+than confusing them with current-source acceptance.
+
+Every production input remains enabled: OCI private aircraft delivery,
+aircraft photos, plausible routes, curated and Starlink catalogs, marine
+supplementation and airport boards. There is no provider, dependency, secret,
+binding, migration, persistence or scheduler change. The compatible immediate
+rollback is the accepted `62826ef...` / `f7da9464...` predecessor; the earlier
+depth application/Worker below remains a historical rollback milestone.
+Use the existing guarded workflow and unchanged inputs; no new rollback
+drill or user-data reset was performed. Later documentation/Wiki commits
+do not redeploy or replace this running application.
+
 ## Modeled-depth production receipt (2026-10-10)
+
+This is the earlier depth milestone; the current refinement is recorded above.
 
 Initial implementation #413 and release #414 introduced depth context.
 The bounded real-source check then found and corrected GEBCO's one-pixel
