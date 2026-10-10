@@ -7,6 +7,8 @@ import { useAircraftMetadata } from './app/useAircraftMetadata'
 import { useAircraftPhoto } from './app/useAircraftPhoto'
 import { useVesselPhoto } from './app/useVesselPhoto'
 import { useFlightRoute } from './app/useFlightRoute'
+import { manuallyExploreJourney, resolveJourneyFit, type JourneyOverview } from './app/journeyOverview'
+import { MarineJourneyCapture, marineJourneyIdentity } from './app/MarineJourneyCapture'
 import { useAirports } from './app/useAirports'
 import { LocationCameraIntent } from './app/locationCameraIntent'
 import { useMarineTraffic } from './app/useMarineTraffic'
@@ -26,6 +28,7 @@ import { visualViewportCssValues } from './app/visualViewport'
 import { preventCompactControlWheelZoom } from './app/controlZoom'
 import { AirportDetails } from './components/AirportDetails'
 import { HistoryModeNotice } from './components/HistoryModeNotice'
+import { JourneyDetails } from './components/JourneyDetails'
 import { InViewPanel } from './components/InViewPanel'
 import { LiveStatus } from './components/LiveStatus'
 import { PortDetails } from './components/PortDetails'
@@ -51,6 +54,7 @@ import {
   type LayerPreferences,
 } from './domain/layerPreferences'
 import type { MapCameraState } from './domain/mapCamera'
+import { captureAircraftJourney, type JourneySnapshot } from './domain/journey'
 import {
   createShareUrl,
   readBrowserShareState,
@@ -95,6 +99,9 @@ import { OpenWatersPhotoProvider } from './providers/vesselPhoto/openWatersPhoto
 import { StaticAirportsProvider } from './providers/airports/staticAirportsProvider'
 import { SameOriginAirportBoardProvider } from './providers/airportBoards/airportBoardProvider'
 import { AdsbLolFlightRouteProvider } from './providers/flightRoute/adsbLolFlightRouteProvider'
+import { OpenWatersJourneyProvider } from './providers/marine/marineJourneyProvider'
+import { DigitrafficJourneyProvider } from './providers/marine/portnetJourneyProvider'
+import { BundledMarineRouteProvider } from './providers/marine/marineRouteNetwork'
 import { StaticPortsProvider } from './providers/ports/staticPortsProvider'
 import { AwcMetarProvider } from './providers/weather/awcMetarProvider'
 import { filterTrafficByViewport } from './traffic/filter'
@@ -104,6 +111,8 @@ interface ViewRequest {
   id: number
   center: AppCenter
   camera?: MapCameraState
+  journey?: JourneySnapshot
+  cancelled?: boolean
 }
 
 const canRestoreFocus = (element: HTMLElement | null) =>
@@ -214,6 +223,30 @@ function App() {
       : `Home: ${APP_CONFIG.center.label}`,
   )
   const [mapCamera, setMapCamera] = useState<MapCameraState>()
+  const [journey, setJourney] = useState<JourneyOverview>()
+  const [journeyMessage, setJourneyMessage] = useState<string>()
+  const [journeyPreparing, setJourneyPreparing] = useState(false)
+  const [marineJourneyCapture] = useState(() => new MarineJourneyCapture(
+    new OpenWatersJourneyProvider(), new DigitrafficJourneyProvider(), new BundledMarineRouteProvider(),
+  ))
+  const journeyRevisionRef = useRef(0)
+  const clearJourney = useCallback(() => {
+    journeyRevisionRef.current += 1
+    marineJourneyCapture.cancel()
+    setJourneyPreparing(false)
+    setJourney(undefined)
+    setJourneyMessage(undefined)
+    setViewRequest(current => current.journey
+      ? { ...current, journey: undefined, cancelled: true }
+      : current)
+  }, [marineJourneyCapture])
+  const cancelJourneyPreparation = useCallback(() => {
+    if (!marineJourneyCapture.pending) return
+    journeyRevisionRef.current += 1
+    marineJourneyCapture.cancel()
+    setJourneyPreparing(false)
+    setJourneyMessage('Path preparation was cancelled. Select Show path to try again.')
+  }, [marineJourneyCapture])
   const [shareFeedback, setShareFeedback] = useState<{
     message: string
     manualUrl?: string
@@ -241,6 +274,19 @@ function App() {
   )
   const now = useNow()
   const online = useOnlineStatus()
+  useEffect(() => {
+    const pause = () => {
+      if (document.hidden || !navigator.onLine || !online) cancelJourneyPreparation()
+    }
+    pause()
+    document.addEventListener('visibilitychange', pause)
+    window.addEventListener('offline', pause)
+    return () => {
+      document.removeEventListener('visibilitychange', pause)
+      window.removeEventListener('offline', pause)
+    }
+  }, [cancelJourneyPreparation, online])
+  useEffect(() => () => marineJourneyCapture.cancel(), [marineJourneyCapture])
   const appShell = useAppShell()
   const setLayerPreference = useCallback(
     (key: keyof LayerPreferences, value: boolean) => {
@@ -383,8 +429,9 @@ function App() {
     (
       center: AppCenter,
       label: string,
-      options: { explicit?: boolean } = {},
+      options: { explicit?: boolean; camera?: MapCameraState } = {},
     ) => {
+      clearJourney()
       returnToLiveRef.current()
       cancelPlaceSearch()
       if (options.explicit !== false) {
@@ -404,9 +451,10 @@ function App() {
       setViewRequest((current) => ({
         id: current.id + 1,
         center: { ...center, label },
+        camera: options.camera,
       }))
     },
-    [cancelPlaceSearch, locationCameraIntent],
+    [cancelPlaceSearch, clearJourney, locationCameraIntent],
   )
 
   useEffect(() => {
@@ -1098,18 +1146,20 @@ function App() {
   }, [commitNavigation, currentAssessment])
 
   const handleUseLocation = useCallback(() => {
+    clearJourney()
     locationCameraIntent.requestLocationNavigation()
     cancelPlaceSearch()
     requestLocation()
-  }, [cancelPlaceSearch, locationCameraIntent, requestLocation])
+  }, [cancelPlaceSearch, clearJourney, locationCameraIntent, requestLocation])
 
   const handlePlaceSearch = useCallback(
     (query: string) => {
+      clearJourney()
       locationCameraIntent.beginExplicitViewIntent()
       setViewReady(true)
       searchPlaces(query)
     },
-    [locationCameraIntent, searchPlaces],
+    [clearJourney, locationCameraIntent, searchPlaces],
   )
 
   const handleLocationNavigate = useCallback(
@@ -1127,11 +1177,16 @@ function App() {
   )
 
   const handleManualViewChange = useCallback(() => {
+    cancelJourneyPreparation()
     locationCameraIntent.beginExplicitViewIntent()
     cancelPlaceSearch()
     setViewReady(true)
     setActiveLocationLabel('Custom view')
-  }, [cancelPlaceSearch, locationCameraIntent])
+    setJourney(manuallyExploreJourney)
+    setViewRequest(current => current.journey
+      ? { ...current, cancelled: true }
+      : current)
+  }, [cancelJourneyPreparation, cancelPlaceSearch, locationCameraIntent])
 
   const handleShare = useCallback(() => {
     if (!mapCamera) return
@@ -1202,6 +1257,7 @@ function App() {
 
   const selectTraffic = useCallback(
     (id: string | null, originId: string | null) => {
+      clearJourney()
       detailFocusOriginIdRef.current = id ? originId : null
       setSelectedOrbitalId(null)
       setSelectedPortId(null)
@@ -1209,7 +1265,7 @@ function App() {
       setSelectedWeatherId(null)
       setSelectedId(id)
     },
-    [],
+    [clearJourney],
   )
 
   const handleMapTrafficSelect = useCallback(
@@ -1228,16 +1284,18 @@ function App() {
   )
 
   const handleMapPortSelect = useCallback((id: string | null) => {
+    clearJourney()
     detailFocusOriginIdRef.current = null
     setSelectedId(null)
     setSelectedOrbitalId(null)
     setSelectedAirportId(null)
     setSelectedWeatherId(null)
     setSelectedPortId(id)
-  }, [])
+  }, [clearJourney])
 
   const selectAirport = useCallback(
     (id: string | null, originId: string | null) => {
+      clearJourney()
       detailFocusOriginIdRef.current = id ? originId : null
       airportSelectionGraceUntilRef.current = id
         ? Date.now() + APP_CONFIG.navigation.viewportSettleMs + 100
@@ -1248,7 +1306,7 @@ function App() {
       setSelectedWeatherId(null)
       setSelectedAirportId(id)
     },
-    [],
+    [clearJourney],
   )
   const handleMapAirportSelect = useCallback(
     (id: string | null) => selectAirport(id, null),
@@ -1262,6 +1320,7 @@ function App() {
 
   const selectWeather = useCallback(
     (id: string | null, originId: string | null) => {
+      clearJourney()
       detailFocusOriginIdRef.current = id ? originId : null
       setSelectedId(null)
       setSelectedOrbitalId(null)
@@ -1269,7 +1328,7 @@ function App() {
       setSelectedAirportId(null)
       setSelectedWeatherId(id)
     },
-    [],
+    [clearJourney],
   )
   const handleMapWeatherSelect = useCallback(
     (id: string | null) => selectWeather(id, null),
@@ -1283,6 +1342,7 @@ function App() {
 
   const selectOrbital = useCallback(
     (id: string | null, originId: string | null) => {
+      clearJourney()
       detailFocusOriginIdRef.current = id ? originId : null
       setSelectedId(null)
       setSelectedPortId(null)
@@ -1290,7 +1350,7 @@ function App() {
       setSelectedWeatherId(null)
       setSelectedOrbitalId(id)
     },
-    [],
+    [clearJourney],
   )
   const handleMapOrbitalSelect = useCallback(
     (id: string | null) => selectOrbital(id, null),
@@ -1341,9 +1401,61 @@ function App() {
   }, [focusAfterRender])
 
   const handleCloseTraffic = useCallback(() => {
+    clearJourney()
     setSelectedId(null)
     restoreDetailFocus()
-  }, [restoreDetailFocus])
+  }, [clearJourney, restoreDetailFocus])
+
+  const selectedMarineJourneyIdentity = selectedEntity?.kind === 'vessel'
+    ? marineJourneyIdentity(selectedEntity) : undefined
+  useEffect(() => {
+    if (marineJourneyCapture.pendingIdentity !== selectedMarineJourneyIdentity) cancelJourneyPreparation()
+  }, [cancelJourneyPreparation, marineJourneyCapture, selectedMarineJourneyIdentity])
+
+  const handleShowJourney = useCallback(async () => {
+    if (!selectedEntity || historyActive || !mapCamera || marineJourneyCapture.pending) return
+    locationCameraIntent.beginExplicitViewIntent()
+    cancelPlaceSearch()
+    const revision = ++journeyRevisionRef.current
+    const capturedAt = Date.now()
+    if (selectedEntity.kind === 'vessel') {
+      setJourneyPreparing(true)
+      setJourneyMessage('Loading up to 24 hours of received ship history...')
+    }
+    const capture = selectedEntity.kind === 'aircraft'
+      ? captureAircraftJourney(selectedEntity, flightRoute.state, liveTrail, revision, capturedAt)
+      : await marineJourneyCapture.request(selectedEntity, liveTrail, revision, capturedAt, online && navigator.onLine)
+    if (!capture || revision !== journeyRevisionRef.current || document.hidden) return
+    setJourneyPreparing(false)
+    if (capture.kind === 'unavailable') {
+      setJourneyMessage(capture.message)
+      return
+    }
+    setJourney({
+      snapshot: capture.snapshot, returnCamera: { ...mapCamera },
+      returnLabel: activeLocationLabel, fitPending: true,
+    })
+    setJourneyMessage(undefined)
+    setSelectedId(null)
+    setHoveredAircraftId(null)
+    setHoveredVesselId(null)
+    setActiveLocationLabel('Captured route overview')
+    setViewportReport(null)
+    setViewRequest(current => ({
+      id: current.id + 1, center: current.center, journey: capture.snapshot,
+    }))
+  }, [activeLocationLabel, cancelPlaceSearch, flightRoute.state, historyActive, liveTrail, locationCameraIntent, mapCamera, marineJourneyCapture, online, selectedEntity])
+
+  const handleJourneyFit = useCallback((revision: number, message: string) => {
+    setJourney(current => resolveJourneyFit(current, revision, message))
+  }, [])
+
+  const handleReturnJourney = useCallback(() => {
+    if (!journey) return
+    const { returnCamera: camera, returnLabel: label } = journey
+    restoreDetailFocus()
+    commitNavigation({ latitude: camera.latitude, longitude: camera.longitude, label }, label, { camera })
+  }, [commitNavigation, journey, restoreDetailFocus])
 
   const handleClosePort = useCallback(() => {
     setSelectedPortId(null)
@@ -1367,6 +1479,7 @@ function App() {
   }, [restoreDetailFocus])
 
   const handleEnterHistory = useCallback(() => {
+    clearJourney()
     setSelectedOrbitalId(null)
     enterHistory()
     globalThis.requestAnimationFrame(() => {
@@ -1374,7 +1487,11 @@ function App() {
         historyPlaybackControlRef.current?.focus()
       }
     })
-  }, [enterHistory])
+  }, [clearJourney, enterHistory])
+
+  useEffect(() => {
+    if (historyActive && journey) clearJourney()
+  }, [clearJourney, historyActive, journey])
 
   const handleReturnToLive = useCallback(() => {
     returnToLive()
@@ -1550,6 +1667,10 @@ function App() {
       <TrafficMap
         viewCenter={viewRequest.center}
         viewCamera={viewRequest.camera}
+        viewJourney={viewRequest.journey}
+        viewRequestCancelled={viewRequest.cancelled}
+        journeySnapshot={journey?.snapshot}
+        onJourneyFit={handleJourneyFit}
         viewLabel={activeLocationLabel}
         viewRadiusKm={APP_CONFIG.map.homeViewRadiusKm}
         maximumViewportRadiusKm={APP_CONFIG.map.maximumViewportRadiusKm}
@@ -1833,7 +1954,7 @@ function App() {
           settingsSummaryRef={settingsSummaryRef}
         />
 
-        {!historyActive && currentAssessment?.kind === 'ineligible' && (
+        {!historyActive && !journey && currentAssessment?.kind === 'ineligible' && (
           <div className="viewport-notice" role="status">
             <strong>
               {hasTrafficContext
@@ -1866,7 +1987,19 @@ function App() {
           />
         )}
 
-        {selectedEntity && (
+        {journey && (
+          <JourneyDetails
+            key={journey.snapshot.revision}
+            overview={journey}
+            theme={theme}
+            trafficPauseMessage={currentAssessment?.kind === 'ineligible' ? currentAssessment.message : undefined}
+            onHide={handleCloseTraffic}
+            onClose={handleCloseTraffic}
+            onReturn={handleReturnJourney}
+          />
+        )}
+
+        {selectedEntity && !journey && (
           <TrafficDetails
             entity={selectedEntity}
             aircraftMetadata={aircraftMetadata}
@@ -1885,6 +2018,9 @@ function App() {
             historical={historyActive}
             onRequestAircraftPhoto={aircraftPhoto.request}
             onRequestFlightRoute={flightRoute.request}
+            onShowJourney={!historyActive && mapCamera ? handleShowJourney : undefined}
+            journeyMessage={journeyMessage}
+            journeyPreparing={journeyPreparing}
             onClose={handleCloseTraffic}
           />
         )}

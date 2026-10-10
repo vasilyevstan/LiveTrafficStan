@@ -16,6 +16,7 @@ import {
 import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
 import type { Theme } from '../app/theme'
 import type { AppCenter } from '../config/appConfig'
+import type { JourneySnapshot } from '../domain/journey'
 import type { AircraftPhotoViewState } from '../domain/aircraftPhoto'
 import { vesselPhotoIdentity, type VesselPhotoViewState } from '../domain/vesselPhoto'
 import type { Airport } from '../domain/airports'
@@ -154,6 +155,8 @@ import {
   sampleMapViewport,
   withMapProjection,
 } from './mapProjection'
+import { chooseJourneyCamera, journeyFitPadding, journeyIsFramed, type JourneyCameraFit } from './journeyCamera'
+import { installJourneyStyle } from './journeyStyle'
 
 setWorkerUrl(maplibreWorkerUrl)
 
@@ -169,6 +172,10 @@ const EMPTY_ORBITAL_TRACK: readonly OrbitalTrackSegment[] = []
 interface TrafficMapProps {
   viewCenter: AppCenter
   viewCamera?: MapCameraState
+  viewJourney?: JourneySnapshot
+  viewRequestCancelled?: boolean
+  journeySnapshot?: JourneySnapshot
+  onJourneyFit?: (revision: number, message: string) => void
   viewLabel: string
   viewRadiusKm: number
   maximumViewportRadiusKm: number
@@ -358,6 +365,10 @@ const viewportSignature = (assessment: ViewportAssessment) => {
 export function TrafficMap({
   viewCenter,
   viewCamera,
+  viewJourney,
+  viewRequestCancelled = false,
+  journeySnapshot,
+  onJourneyFit,
   viewLabel,
   viewRadiusKm,
   maximumViewportRadiusKm,
@@ -433,6 +444,16 @@ export function TrafficMap({
   const viewRequestRef = useRef(viewRequestId)
   const viewCenterRef = useRef(viewCenter)
   const initialCameraRef = useRef(viewCamera)
+  const viewCameraRef = useRef(viewCamera)
+  const viewJourneyRef = useRef(viewJourney)
+  const viewRequestCancelledRef = useRef(viewRequestCancelled)
+  const journeySnapshotRef = useRef(journeySnapshot)
+  const journeyFitRef = useRef(onJourneyFit)
+  const pendingJourneyFitRef = useRef<{
+    snapshot: JourneySnapshot
+    fit: Extract<JourneyCameraFit, { kind: 'available' }>
+    requestId: number
+  } | undefined>(undefined)
   const initialInteractionGenerationRef = useRef(0)
   const projectionPreferenceRef = useRef(projectionPreference)
   const viewportLimitsRef = useRef({
@@ -556,6 +577,11 @@ export function TrafficMap({
     themeRef.current = theme
     viewRequestRef.current = viewRequestId
     viewCenterRef.current = viewCenter
+    viewCameraRef.current = viewCamera
+    viewJourneyRef.current = viewJourney
+    viewRequestCancelledRef.current = viewRequestCancelled
+    journeySnapshotRef.current = journeySnapshot
+    journeyFitRef.current = onJourneyFit
     viewportLimitsRef.current = {
       coordinatePrecision,
       maximumRadiusKm: maximumViewportRadiusKm,
@@ -575,6 +601,11 @@ export function TrafficMap({
     clusteringEnabled,
     coordinatePrecision,
     viewCenter,
+    viewCamera,
+    viewJourney,
+    viewRequestCancelled,
+    journeySnapshot,
+    onJourneyFit,
     viewRequestId,
     mapStyleUrl,
     maximumViewportRadiusKm,
@@ -795,6 +826,21 @@ export function TrafficMap({
   const reportViewport = useCallback((map: MapLibreMap) => {
     if (!loadedRef.current) return
 
+    const pending = pendingJourneyFitRef.current
+    if (pending) {
+      pendingJourneyFitRef.current = undefined
+      if (!viewRequestCancelledRef.current &&
+          pending.requestId === viewRequestRef.current &&
+          pending.snapshot.revision === journeySnapshotRef.current?.revision) {
+        journeyFitRef.current?.(
+          pending.snapshot.revision,
+          journeyIsFramed(map, pending.snapshot, pending.fit.padding)
+            ? 'Initial path framing complete. Explore freely; the captured position will not move.'
+            : 'Some route context is outside the visible map or globe surface. Explore manually or return to the local view.',
+        )
+      }
+    }
+
     let assessment: ViewportAssessment
     let orbitalViewport: OrbitalViewport
     let rawZoom: number | undefined
@@ -876,6 +922,35 @@ export function TrafficMap({
     (map: MapLibreMap, duration: number) => {
       clearPendingViewport()
       lastViewportSignatureRef.current = null
+      pendingJourneyFitRef.current = undefined
+      if (viewRequestCancelledRef.current) {
+        scheduleViewportReport(map, 0)
+        return
+      }
+      const journey = viewJourneyRef.current
+      if (journey) {
+        const fit = chooseJourneyCamera(map, journey, journeyFitPadding(map.getCanvas().getBoundingClientRect()))
+        if (fit.kind === 'unavailable') {
+          journeyFitRef.current?.(journey.revision, fit.message)
+          scheduleViewportReport(map, 0)
+          return
+        }
+        const fitDuration = prefersReducedMotion() ? 0 : duration
+        pendingJourneyFitRef.current = { snapshot: journey, fit, requestId: viewRequestRef.current }
+        map.easeTo({ ...fit.camera, pitch: 0, duration: fitDuration })
+        scheduleViewportReport(map, fitDuration + viewportSettleMsRef.current)
+        return
+      }
+      const camera = viewCameraRef.current
+      if (camera) {
+        map.easeTo({
+          center: [camera.longitude, camera.latitude], zoom: camera.zoom,
+          bearing: camera.bearing, pitch: camera.pitch,
+          duration: prefersReducedMotion() ? 0 : duration,
+        })
+        scheduleViewportReport(map, duration + viewportSettleMsRef.current)
+        return
+      }
       const currentView = viewCenterRef.current
       map.fitBounds(
         boundsAroundCenter(currentView, viewRadiusKm),
@@ -1051,6 +1126,7 @@ export function TrafficMap({
         starlinkState.shownIds,
       )
       lastStarlinkFeaturesRef.current = starlinkPoints.features
+      installJourneyStyle(map, journeySnapshotRef.current, activeTheme)
       loadedRef.current = true
       errorRef.current(
         fallbackActiveRef.current
@@ -1487,6 +1563,13 @@ export function TrafficMap({
     hideTrafficTooltipRef.current = hideTrafficTooltip
     const pointerOrigins = new Map<number, { x: number; y: number }>()
     let manualPointerMovement = false
+    const cancelJourneyFraming = () => {
+      pendingJourneyFitRef.current = undefined
+      if (viewJourneyRef.current) {
+        viewRequestCancelledRef.current = true
+        lastViewRequestRef.current = viewRequestRef.current
+      }
+    }
     const handlePointerDown = (event: PointerEvent) => {
       hideTrafficTooltip()
       interactionGenerationRef.current += 1
@@ -1509,6 +1592,7 @@ export function TrafficMap({
         ) >= 3
       ) {
         manualPointerMovement = true
+        cancelJourneyFraming()
         manualViewChangeRef.current()
       }
     }
@@ -1526,12 +1610,14 @@ export function TrafficMap({
       hideTrafficTooltip()
       interactionGenerationRef.current += 1
       clusterExpansionGenerationRef.current += 1
+      cancelJourneyFraming()
       manualViewChangeRef.current()
     }
     const handleDoubleClick = () => {
       hideTrafficTooltip()
       interactionGenerationRef.current += 1
       clusterExpansionGenerationRef.current += 1
+      cancelJourneyFraming()
       manualViewChangeRef.current()
     }
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -1549,6 +1635,7 @@ export function TrafficMap({
         hideTrafficTooltip()
         interactionGenerationRef.current += 1
         clusterExpansionGenerationRef.current += 1
+        cancelJourneyFraming()
         manualViewChangeRef.current()
       }
     }
@@ -2172,6 +2259,7 @@ export function TrafficMap({
       interactionGenerationRef.current += 1
       clusterExpansionGenerationRef.current += 1
       loadedRef.current = false
+      pendingJourneyFitRef.current = undefined
       clearPendingViewport()
       canvas.removeEventListener('pointerdown', handlePointerDown)
       canvas.removeEventListener('pointermove', handlePointerMove)
@@ -2660,6 +2748,18 @@ export function TrafficMap({
     if (!map || !loadedRef.current) return
     setTrafficSourceData(map, SOURCE_TRAIL, trailData(trailSegments))
   }, [trailSegments])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !loadedRef.current) return
+    const pending = pendingJourneyFitRef.current
+    if (pending && (viewRequestCancelled || pending.snapshot.revision !== journeySnapshot?.revision)) {
+      pendingJourneyFitRef.current = undefined
+      map.stop()
+      scheduleViewportReport(map, 0)
+    }
+    installJourneyStyle(map, journeySnapshot, theme)
+  }, [journeySnapshot, scheduleViewportReport, theme, viewRequestCancelled])
 
   useEffect(() => {
     if (lastViewRequestRef.current === viewRequestId) return

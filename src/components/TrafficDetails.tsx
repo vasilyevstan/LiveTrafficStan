@@ -76,6 +76,9 @@ interface TrafficDetailsProps {
   onRequestAircraftPhoto?: () => void
   onRequestVesselPhoto?: () => void
   onRequestFlightRoute?: () => void
+  onShowJourney?: () => void
+  journeyMessage?: string
+  journeyPreparing?: boolean
   onClose: () => void
 }
 
@@ -621,6 +624,9 @@ export function TrafficDetails({
   onRequestAircraftPhoto = () => undefined,
   onRequestVesselPhoto = () => undefined,
   onRequestFlightRoute = () => undefined,
+  onShowJourney,
+  journeyMessage,
+  journeyPreparing = false,
   onClose,
 }: TrafficDetailsProps) {
   const panelRef = useRef<HTMLElement>(null)
@@ -664,6 +670,15 @@ export function TrafficDetails({
           <h2 id="selected-traffic-title">{title}</h2>
         </div>
       </div>
+
+      {!historical && onShowJourney && (
+        <div className="journey-action">
+          <button type="button" onClick={onShowJourney} disabled={journeyPreparing}>
+            {journeyPreparing ? 'Loading path...' : 'Show path'}
+          </button>
+          {journeyMessage && <p className="metadata-status" role="status">{journeyMessage}</p>}
+        </div>
+      )}
 
       {vesselPhotoSelection?.kind === 'available' && (
         <VesselPhotoDetails

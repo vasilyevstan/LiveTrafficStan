@@ -52,6 +52,10 @@ Check these project invariants:
 - Mobile photo acceptance measures the whole image and source/license
   reachability after native inspector scrolling, not only decoded dimensions.
   Reuse the existing inspector-height bound and keep its scroll off the map.
+- The pinned inspector X needs its reserved right gutter throughout scrolling
+  body content, not just the heading. Test middle/end text, images and links
+  against the button rectangle; do not reopen the accepted gutter as a layout
+  defect when a new control merely missed the incumbent button styles.
 - Compact corner credits retain basemap attribution and the full-credit link;
   identical orbital-source credits deduplicate. Provider details and Sources
   keep complete named-source and image-rights context reachable.
@@ -60,6 +64,7 @@ Check these project invariants:
   data.
 - Home remains a session-only camera destination; the current MapLibre camera
   supplies the rounded enclosing-query center and actual display footprint.
+  A padding-adjusted camera center need not equal the unchanged Home target.
 - A valid shared camera initializes the existing MapLibre instance directly,
   skips only the Home fit, still publishes an initial settled viewport, and
   synchronously fences off automatic geolocation. Center keeps the separately
@@ -160,6 +165,10 @@ Check these project invariants:
   session state. Hiding the line does not pause collection, duration expansion
   does not fabricate missing points, and per-object plus aggregate caps remain
   deterministic across navigation and style changes.
+- Captured journeys are immutable non-live context, never normal trails or
+  counts. Fit actual geometry once; Hide/X stop only the owned pending fit,
+  Return restores the prior camera rather than Home, and manual movement never
+  refits. Preserve the 100 km live cutoff and truthful polar/globe limitations.
 - Theme, Center, location, and layer controls keep semantic buttons,
   truthful pressed state, keyboard focus, contrast, and usable mobile layout.
 - Check native browser magnification and visual-viewport pan/reload separately

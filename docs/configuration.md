@@ -409,6 +409,42 @@ and vessel hover/details never start or expose the photo path. See
 [Aircraft Photo Evaluation](aircraft-photo-evaluation.md) for the exact terms,
 deterministic evidence, failed live-CORS gate, and enablement requirements.
 
+## Captured journey overviews
+
+Show path is explicit in selected aircraft and ship details. Its captured
+inspector survives a fit beyond the live-traffic radius and clearly says
+**not live**. Solid lines join received positions; dashed warm/blue lines are
+past/remaining estimates. Missing sections are not bridged. The first received
+ship position is never called its departure. Hide/X do not move the map; Return
+to local view restores the saved camera without changing Home. A short inspector
+scrolls to its controls/provenance while retaining the X.
+
+All bounds are in `JOURNEY_CONFIG` in `src/config/appConfig.ts`, not new
+environment variables or provider overrides:
+
+| Boundary | Configured bound |
+| --- | --- |
+| Snapshot geometry | 4,096 total coordinates, at most 1,000 imported/received points |
+| Aircraft arc / framing | 128 points per arc; 160-degree longitude extent; Mercator latitude limit; zoom at most 12; rotation at most 60 degrees |
+| Open Waters track | One anonymous 24-hour window ending at the captured report second; 1,000 points; 256 KiB decoded; 10 seconds; no pagination |
+| Portnet | Exact MMSI and compatible reported IMO; 24-hour actual-event context; at most two exact coded references; 512 KiB per response; one 10-second total deadline |
+| Provider result cache | Eight fulfilled complete entries per provider, five-minute current-tab eligibility |
+| Retry | Explicit Retry-After; 60-second fallback for throttling/unavailability; no automatic retry loop |
+| Network asset | Fixed same-origin pinned `water-network.json`; 640 KiB decoded; SHA-256 validation; five-second load deadline; one fulfilled in-memory copy |
+| Network section | At most 512 points; endpoints within 5 km of graph nodes; gaps left open; disconnected or unsupported portions unavailable |
+
+Aircraft reuse the already accepted standing-route result without another
+Show path lookup. Ships contact `https://ais.openwaters.io` and
+`https://meri.digitraffic.fi` only on explicit capture, without credentials or
+referrer. URLs reveal the selected public MMSI/time window, not browser Home
+coordinates. No snapshot or imported history enters Web Storage, device history,
+the service-worker shell or a backend archive. The fixed public graph may use
+ordinary immutable HTTP caching; it is not included in the startup shell.
+
+No deployment flag, secret, paid source or new backend binding is added.
+Existing aircraft, orbital, marine-supplement and airport-board inputs remain
+independent. See [data provenance and limitations](data-sources-and-licensing.md#captured-ship-journeys).
+
 ## Selected-aircraft plausible route
 
 The browser route section is enabled by default and can be hidden with:

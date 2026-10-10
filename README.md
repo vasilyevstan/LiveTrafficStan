@@ -80,6 +80,17 @@ identity are not renamed or reset.
   and twelve ships are decluttered and faded between zoom 7 and 3; observations
   expire within two minutes. The labelled, read-only sample is not wider live
   coverage and never enters live counts, details, trails or history.
+- **Show path** in aircraft/ship details captures a session-only journey
+  overview. Warm-colored past and blue remaining sections distinguish the
+  journey phases; solid lines join received positions and dashed lines are
+  estimates. Aircraft reuse accepted plausible airport routes. Ships request
+  bounded received history and exact coded voyage context, with conservative
+  water-network illustrations only where supported. Gaps and missing endpoints
+  remain unknown. The map fits once, optionally rotating for available space;
+  wide views still pause live traffic. **Hide path** or X removes the overview
+  without moving; **Return to local view** restores the saved camera, not Home.
+  This is captured context, not a filed route, voyage prediction or navigation
+  guidance. See [journey bounds and controls](docs/configuration.md#captured-journey-overviews).
 - A 30 km session Home/Center framing plus privacy-safe one-shot browser
   location: already-granted permission and grants made while the page is open
   are used automatically; otherwise location is an explicit action with
@@ -578,6 +589,8 @@ operational thresholds, and examples.
 | Country allocations | michaeljfazio/MIDs, ibosoftnet ICAO24 transcription, Wikidata cross-check | Apache-2.0 and CC0 1.0 | Bundled deterministic local lookup |
 | Marine | Fintraffic Digitraffic | CC BY 4.0 | Direct regional REST and MQTT |
 | Supplemental marine | AISStream and Open Waters AIS | Documented service use / original per-source terms and credit | Optional shared server-side streams; normalized same-origin WebSocket |
+| Captured ship history / coded voyage | Open Waters / Digitraffic Portnet | Original source credits/terms; Digitraffic CC BY 4.0 | Explicit bounded anonymous browser GETs; session-only, never device history |
+| Shipping-network illustration | Searoute / Eurostat / ORNL; Natural Earth land exclusion | MPL-2.0 graph with preserved provenance; public-domain land geometry | One pinned same-origin graph loaded on demand; no arbitrary shore connectors |
 | Port context | Natural Earth Ports | Public domain | Immutable same-origin static asset, loaded only when enabled |
 | Airport context | OurAirports | Public domain | Immutable same-origin static asset, loaded only when enabled |
 | Weather observations | NOAA/NWS Aviation Weather Center | U.S. public domain unless marked otherwise | Strict same-origin Worker/Vite route, loaded only when METAR is enabled |

@@ -8,6 +8,7 @@ describe('provider errors', () => {
       parseRetryAfterMs('Thu, 01 Jan 1970 00:01:00 GMT', 10_000),
     ).toBe(50_000)
     expect(parseRetryAfterMs('invalid', 1_000)).toBeUndefined()
+    expect(parseRetryAfterMs('1e308', 1_000)).toBeUndefined()
   })
 
   it('preserves response status and retry guidance', async () => {
