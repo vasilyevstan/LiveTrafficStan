@@ -20,11 +20,11 @@ interface LocationSearchDetailsProps {
 const searchMessage = (state: PlaceSearchState) => {
   switch (state.phase) {
     case 'loading':
-      return `Searching for ${state.query}...`
+      return 'Searching Photon...'
     case 'results':
       return `${state.results.length} place result${state.results.length === 1 ? '' : 's'} found.`
     case 'empty':
-      return `No matching places found for ${state.query}.`
+      return 'No matching places found.'
     case 'error':
       return state.message
     case 'idle':
@@ -132,8 +132,7 @@ export function LocationSearchDetails({
       )}
 
       <p id="location-search-help" className="control-note control-note--muted">
-        Place text goes in the Photon URL with normal network metadata;
-        coordinates stay local.
+        Photon gets text in a URL + network metadata. Coordinates stay local.
       </p>
       <p className="control-note control-note--muted">
         <a

@@ -93,9 +93,12 @@ exceptions. Neither is tide-adjusted clearance or navigation guidance.
 A captured route overview is not live tracking. It deliberately survives beyond
 the 100 km live-traffic boundary while aircraft/ships remain paused. Use Return
 to local view to restore the prior camera, or Hide path/X to remove the snapshot
-without moving. Manual camera movement never requests another fit. A polar,
-over-wide, obscured or back-side globe path may remain available for manual
-exploration with an explicit framing limitation.
+without moving. Show path deliberately frames **north-up**; Return restores
+the original bearing as well as the previous center/zoom. Manual camera
+movement never requests another fit. A polar, over-wide, obscured or back-side
+globe path may remain available for manual exploration with an explicit
+framing limitation; that explicit action still turns north-up without moving
+the center or changing zoom/projection.
 
 Aircraft require an accepted exact-identity standing route. Unsupported
 callsigns, incompatible current positions or ambiguous multi-leg itineraries

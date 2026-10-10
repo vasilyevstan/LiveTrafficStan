@@ -78,8 +78,7 @@ export function WeatherObservationDetails({
       titleId="selected-weather-title"
       closeLabel="Close weather observation details"
       onClose={onClose}
-    >
-      <div className="details-panel__heading">
+      heading={
         <div>
           <p className="eyebrow">Selected METAR</p>
           <h2 id="selected-weather-title">
@@ -87,8 +86,8 @@ export function WeatherObservationDetails({
             {flightCategoryLabel(observation.flightCategory)}
           </h2>
         </div>
-      </div>
-
+      }
+    >
       <dl className="details-grid">
         <DetailRow label="Station" value={observation.siteName} />
         <DetailRow label="Report type" value={observation.reportType} />
@@ -133,18 +132,23 @@ export function WeatherObservationDetails({
         />
       </dl>
 
-      <p className="metadata-status">
-        {observation.rawObservation}
+      <p className="metadata-status">Observed weather, not a forecast or airport status.</p>
+      <p className="metadata-attribution">
+        <a href={source.apiUrl}>NOAA/NWS AWC</a> · public domain*
       </p>
-      <p className="metadata-status">
-        Observation only; not a forecast, airport status, route, or coverage
-        guarantee.
-      </p>
+      <details className="context-details">
+        <summary>Raw METAR &amp; source limits</summary>
+        <p className="metadata-status">{observation.rawObservation}</p>
+        <p className="metadata-status">
+          Observation only; not a forecast, airport status, route, or coverage
+          guarantee.
+        </p>
       <p className="metadata-attribution">
         <a href={source.apiUrl}>{source.name}</a> ·{' '}
         <a href={source.documentationUrl}>API documentation</a> ·{' '}
         <a href={source.termsUrl}>{source.licenseName}</a>.
       </p>
+      </details>
     </DetailsPanel>
   )
 }

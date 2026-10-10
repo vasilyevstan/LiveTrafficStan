@@ -470,9 +470,11 @@ Show path is explicit in selected aircraft and ship details. Its captured
 inspector survives a fit beyond the live-traffic radius and clearly says
 **not live**. Solid lines join received positions; dashed warm/blue lines are
 past/remaining estimates. Missing sections are not bridged. The first received
-ship position is never called its departure. Hide/X do not move the map; Return
-to local view restores the saved camera without changing Home. A short inspector
-scrolls to its controls/provenance while retaining the X.
+ship position is never called its departure. Show path frames north-up, with no
+rotation preference or orientation search. Hide/X do not move the map; Return
+to local view restores the saved camera, including its prior bearing, without
+changing Home. A short inspector keeps its compact identity/action header and
+X fixed while the full-width body scrolls to facts/provenance.
 
 All bounds are in `JOURNEY_CONFIG` in `src/config/appConfig.ts`, not new
 environment variables or provider overrides:
@@ -480,7 +482,7 @@ environment variables or provider overrides:
 | Boundary | Configured bound |
 | --- | --- |
 | Snapshot geometry | 4,096 total coordinates, at most 1,000 imported/received points |
-| Aircraft arc / framing | 128 points per arc; 160-degree longitude extent; Mercator latitude limit; zoom at most 12; rotation at most 60 degrees |
+| Aircraft arc / framing | 128 points per arc; 160-degree longitude extent; Mercator latitude limit; zoom at most 12; one north-up fit (bearing 0) |
 | Open Waters track | One anonymous 24-hour window ending at the captured report second; 1,000 points; 256 KiB decoded; 10 seconds; no pagination |
 | Portnet | Exact MMSI and compatible reported IMO; 24-hour actual-event context; at most two exact coded references; 512 KiB per response; one 10-second total deadline |
 | Provider result cache | Eight fulfilled complete entries per provider, five-minute current-tab eligibility |

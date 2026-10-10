@@ -1597,7 +1597,7 @@ function App() {
                   weatherResult.state.nextRequestAt,
                 )}.`
               : weatherDataset
-                ? `Retrieved ${formatTimestamp(weatherDataset.retrievedAt)}. Observations are not forecasts.`
+                ? `Fetched ${formatTimestamp(weatherDataset.retrievedAt)}. Not a forecast.`
                 : undefined
   const weatherEmptyMessage =
     weatherStationIds.length === 0

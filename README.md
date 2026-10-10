@@ -95,9 +95,10 @@ identity are not renamed or reset.
   estimates. Aircraft reuse accepted plausible airport routes. Ships request
   bounded received history and exact coded voyage context, with conservative
   water-network illustrations only where supported. Gaps and missing endpoints
-  remain unknown. The map fits once, optionally rotating for available space;
-  wide views still pause live traffic. **Hide path** or X removes the overview
-  without moving; **Return to local view** restores the saved camera, not Home.
+  remain unknown. The map fits once **north-up**; wide views still pause live
+  traffic. **Hide path** or X removes the overview without moving;
+  **Return to local view** restores the saved camera, including its original
+  bearing, not Home.
   This is captured context, not a filed route, voyage prediction or navigation
   guidance. See [journey bounds and controls](docs/configuration.md#captured-journey-overviews).
 - A 30 km session Home/Center framing plus privacy-safe one-shot browser
@@ -317,8 +318,12 @@ identity are not renamed or reset.
   remain a bottom mobile command dock. Selected details use a left desktop
   inspector below the card or a reserved mobile sheet. The card is inset
   16 px on desktops and 12 px on phones; the mobile dock remains 70 px tall.
-  Every object inspector has an accessible, top-right X that stays visible
-  while scrolling. Escape closes an inspector when focus is inside it;
+  Every object inspector has an accessible, 44px corner-attached X that stays
+  visible beside a compact identity header. **Show path** shares that header;
+  the body scrolls at full width without a close-button gutter.
+  Default menu explanations use purposeful two-line summaries; labelled
+  disclosures retain full names, sources, privacy and limitations.
+  Escape closes an inspector when focus is inside it;
   either action preserves the camera and returns focus to the existing
   selection control or visible More/Settings fallback.
   White Light and slate Dark surfaces share system typography and one accent.

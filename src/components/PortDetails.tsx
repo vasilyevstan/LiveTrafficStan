@@ -17,14 +17,17 @@ export function PortDetails({
       titleId="selected-port-title"
       closeLabel="Close port details"
       onClose={onClose}
-    >
-      <div className="details-panel__heading">
+      heading={
         <div>
           <p className="eyebrow">Selected port</p>
-          <h2 id="selected-port-title">{port.name}</h2>
+          <h2 id="selected-port-title" title={port.name}>{port.name}</h2>
         </div>
-      </div>
-
+      }
+    >
+      <p className="metadata-status">Generalized location; not a navigational port record.</p>
+      <details className="context-details">
+        <summary>Port source &amp; limits</summary>
+        <p className="metadata-status">{port.name}</p>
       <p className="metadata-status">
         Generalized, incomplete context; points may be up to 20 miles off. No
         facilities, status, berth, calls, destination, or ETA inferred.
@@ -34,6 +37,7 @@ export function PortDetails({
         <a href={source.termsUrl}>{source.licenseName}</a> ·{' '}
         {source.outputVersion}.
       </p>
+      </details>
     </DetailsPanel>
   )
 }

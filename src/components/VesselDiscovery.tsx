@@ -222,6 +222,9 @@ export function VesselDiscovery({
           RESET FILTERS
         </button>
       </div>
+      <p className="control-note control-note--muted">Yachts: known length ≥8 m. Speed filters still apply.</p>
+      <details className="context-details">
+        <summary>Yacht rules &amp; coverage</summary>
       <p className="control-note control-note--muted">
         Yachts: ≥8 m; reported-speed, maximum-length and normal freshness
         rules apply.{' '}
@@ -229,6 +232,7 @@ export function VesselDiscovery({
           ? MULTI_SOURCE_MARINE_CAPABILITIES.discoveryNote
           : 'Digitraffic is Class A only; Class B coverage is incomplete.'}
       </p>
+      </details>
 
       {totalVessels === 0 && (
         <p className="control-note" role="status">

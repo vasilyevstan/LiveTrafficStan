@@ -185,6 +185,9 @@ export function OrbitalContext({
                     } ≤${horizonMinutes}M`
               }`}
         </p>
+        <p>SGP4 geographic model; not live or optical visibility.</p>
+        <details className="context-details">
+          <summary>Catalog accounting</summary>
         <p>
           {counts.catalogCount} catalog · {counts.acceptedCount} accepted ·{' '}
           {counts.modeledNowCount} modeled now · {counts.catalogMatchCount}{' '}
@@ -208,7 +211,7 @@ export function OrbitalContext({
           </p>
         )}
         {selectedExceptionMessage && <p>{selectedExceptionMessage}</p>}
-        <p>SGP4 geographic model; not live or optical visibility.</p>
+        </details>
       </div>
 
       {view === 'nearby' ? (

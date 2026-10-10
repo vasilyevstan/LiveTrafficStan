@@ -114,7 +114,7 @@ export function StarlinkContext({
       </div>
 
       <p className="control-note">
-        Included with ORBITS. A bounded sample, not the full constellation.
+        Included with ORBITS; not the full constellation.
       </p>
       {!parentVisible && (
         <p className="control-note">
@@ -183,7 +183,8 @@ export function StarlinkContext({
             </div>
           </dl>
 
-          <div className="vessel-discovery__summary orbital-context__counts orbital-starlink__provenance">
+          <details className="context-details orbital-starlink__provenance">
+            <summary>Sample details</summary>
             <p>
               {sampleLabel} from{' '}
               {snapshot.starlink.populationCount.toLocaleString('en-US')}{' '}
@@ -211,7 +212,7 @@ export function StarlinkContext({
               Not the full constellation. SGP4 modeled, not live telemetry,
               optical visibility, or operational status.
             </p>
-          </div>
+          </details>
 
           <div className="vessel-discovery__summary orbital-starlink__page">
             <p>

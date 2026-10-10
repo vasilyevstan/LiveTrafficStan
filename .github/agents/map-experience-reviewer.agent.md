@@ -52,10 +52,15 @@ Check these project invariants:
 - Mobile photo acceptance measures the whole image and source/license
   reachability after native inspector scrolling, not only decoded dimensions.
   Reuse the existing inspector-height bound and keep its scroll off the map.
-- The pinned inspector X needs its reserved right gutter throughout scrolling
-  body content, not just the heading. Test middle/end text, images and links
-  against the button rectangle; do not reopen the accepted gutter as a layout
-  defect when a new control merely missed the incumbent button styles.
+- The 44px inspector X is corner-attached to a fixed compact identity/action
+  header. Reserve clearance only there; keep one full-width body scroller,
+  useful short-screen height and whole photos, without a full-height gutter.
+  Test middle/end text, images and links against the button rectangle.
+- Default explanatory copy fits at most two rendered lines at supported
+  widths. Native disclosures retain full names, rights, privacy and limits;
+  prove keyboard/touch access rather than silently clipping necessary text.
+- Show path makes one north-up fit. Return restores the prior bearing,
+  center and zoom; unavailable geometry must not force a projection change.
 - Compact corner credits retain basemap attribution and the full-credit link;
   identical orbital-source credits deduplicate. Provider details and Sources
   keep complete named-source and image-rights context reachable.
