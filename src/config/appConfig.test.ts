@@ -24,6 +24,8 @@ describe('createAppConfig', () => {
     })
     expect(config.defaultVesselLengthMeters).toBe(50)
     expect(config.navigation.coordinatePrecision).toBe(3)
+    expect(config.navigation.northResetToleranceDegrees).toBe(1)
+    expect(config.navigation.northResetDurationMs).toBe(250)
     expect(config.navigation.viewportSettleMs).toBe(350)
     expect(config.navigation.geolocationTimeoutMs).toBe(20_000)
     expect(config.geocoder.endpointBaseUrl).toBe(

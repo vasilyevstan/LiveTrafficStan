@@ -50,6 +50,8 @@ export interface AppConfig {
   navigation: {
     coordinatePrecision: number
     viewportSettleMs: number
+    northResetToleranceDegrees: number
+    northResetDurationMs: number
     geolocationTimeoutMs: number
     geolocationMaximumAgeMs: number
   }
@@ -432,6 +434,8 @@ export const createAppConfig = (
     navigation: {
       coordinatePrecision: 3,
       viewportSettleMs: 350,
+      northResetToleranceDegrees: 1,
+      northResetDurationMs: 250,
       geolocationTimeoutMs: 20_000,
       geolocationMaximumAgeMs: 5 * 60_000,
     },
