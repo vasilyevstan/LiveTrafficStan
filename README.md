@@ -105,6 +105,9 @@ identity are not renamed or reset.
   location: already-granted permission and grants made while the page is open
   are used automatically; otherwise location is an explicit action with
   Tallinn fallback.
+- A contextual **Reset north** compass appears beside Center after rotation.
+  It resets orientation without changing location, zoom or tilt, leaving
+  HISTORY and captured paths intact. Center still returns to session Home.
 - One explicit-submit location field accepts rounded decimal coordinates
   locally or named places through Photon. Malformed numeric pairs, including
   repeated dots or signs, stay local and show an input error rather than a

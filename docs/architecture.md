@@ -251,6 +251,14 @@ location-search model, and three stable native disclosures with the same `name`.
 desktop rail and a bottom mobile command dock. Center is always outside the
 menus and uses the existing session-Home callback, not another location
 request. Six mobile slots retain the existing dock height and touch targets.
+The contextual N/needle is a separate bearing-only **Reset north** companion
+to Center: adjacent on desktop, above its mobile slot, and in the otherwise
+hidden Center slot beside a historical inspector. When present it reserves
+only its row above desktop flyouts; a historical mobile inspector temporarily
+reserves the incumbent 70px hidden dock row, recovering that space on reset.
+The existing mobile map strip keeps panels clear without adding a dock slot.
+It uses existing settled camera
+reports, a wrapped 1-degree tolerance and a 44x44 target.
 Search remains in Settings. The floating card is 280x88 px, inset 16 px on
 desktop and 12 px on mobile. Its redundant brand subtitle is hidden;
 counts, freshness, and provider disclosure stay visible, with unchanged 44 px
@@ -1263,6 +1271,18 @@ older asynchronous geolocation callback may still update session Home, but it
 cannot steal the camera after a newer explicit intent. A successful explicit
 Use Location may move the view only while it remains the latest intent.
 Coordinate and place navigation never mutate Home.
+
+Reset north claims the existing explicit camera intent but does not call
+`commitNavigation` or advance the navigation/coverage `viewRequest.id`.
+Its one consumed orientation revision carries the current view-request ID;
+a newer navigation fences it. The existing MapLibre instance calls public
+`resetNorth`, with no rounded center/zoom/pitch reconstruction and no
+`resetNorthPitch`. Pending cluster expansion and journey framing are fenced,
+while selection remains subject only to ordinary viewport validity.
+HISTORY, captured snapshots, immutable Return cameras, labels and saved state
+are retained. Existing moveend/settle reporting publishes the changed
+footprint; style/resize cannot replay the command. No additional camera or
+provider scheduler is created.
 
 Programmatic view requests retain their target label. Trusted canvas wheel,
 double-click, supported map-keyboard input, or pointer movement beyond the

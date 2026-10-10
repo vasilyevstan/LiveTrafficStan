@@ -273,6 +273,33 @@ are persisted. A named-place or coordinate navigation changes only the current
 view; it never changes session Home, so Center still returns to the latest
 configured or rounded geolocated Home.
 
+## Compass / reset north
+
+The N/needle beside Center is a separate **Reset north** action, not Home.
+It appears when the settled, reported bearing is more than
+`navigation.northResetToleranceDegrees` (1 degree) from north after wrapping.
+It resets only bearing to 0, preserving the actual current center, zoom,
+pitch and projection. `navigation.northResetDurationMs` is 250 ms; reduced
+motion makes it immediate. No compass preference, sensor or device heading
+is acquired or saved.
+
+On mobile it occupies the map strip above Center, not a seventh dock slot.
+With an open historical inspector, it uses the otherwise hidden Center slot
+and reserves that existing 70px dock row below the inspector. The row is
+returned to the inspector as soon as the compass disappears; HISTORY controls
+and the remaining hidden dock actions keep their existing behavior.
+The control has a 44x44 target, an accessible Reset north name and the existing
+focus treatment. Focus returns to the map only while the activated compass
+still owns it, before north alignment removes the button. An open native
+credits popover retains its usual precedence over the map behind it.
+
+Reset does not leave HISTORY, discard a captured path, rewrite its saved
+Return camera, clear form input or change the current view label. It claims
+explicit camera ownership and fences obsolete automatic movement. Normal
+settled viewport filtering and provider cadence still apply: rotating a
+rectangular footprint may change which objects are in view. No forced fetch,
+MQTT reconnect, orbital refresh or navigation/coverage reset is introduced.
+
 ## Coordinate entry and named-place search
 
 The Location control submits only when the user activates **Go** or presses

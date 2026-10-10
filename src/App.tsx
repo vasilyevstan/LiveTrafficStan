@@ -53,7 +53,11 @@ import {
   updateLayerPreference,
   type LayerPreferences,
 } from './domain/layerPreferences'
-import type { MapCameraState } from './domain/mapCamera'
+import {
+  isNorthResetUseful,
+  type MapCameraState,
+  type NorthResetRequest,
+} from './domain/mapCamera'
 import { captureAircraftJourney, type JourneySnapshot } from './domain/journey'
 import {
   createShareUrl,
@@ -226,6 +230,7 @@ function App() {
       : `Home: ${APP_CONFIG.center.label}`,
   )
   const [mapCamera, setMapCamera] = useState<MapCameraState>()
+  const [northResetRequest, setNorthResetRequest] = useState<NorthResetRequest>()
   const [journey, setJourney] = useState<JourneyOverview>()
   const [journeyMessage, setJourneyMessage] = useState<string>()
   const [journeyPreparing, setJourneyPreparing] = useState(false)
@@ -1136,6 +1141,19 @@ function App() {
     )
   }, [commitNavigation, location.homeCenter])
 
+  const handleResetNorth = useCallback(() => {
+    locationCameraIntent.beginExplicitViewIntent()
+    cancelJourneyPreparation()
+    setJourney(manuallyExploreJourney)
+    setViewRequest(current => current.journey
+      ? { ...current, cancelled: true }
+      : current)
+    setNorthResetRequest(current => ({
+      revision: (current?.revision ?? 0) + 1,
+      viewRequestId: viewRequest.id,
+    }))
+  }, [cancelJourneyPreparation, locationCameraIntent, viewRequest.id])
+
   const handleResumeLiveTraffic = useCallback(() => {
     if (
       currentAssessment?.kind !== 'ineligible' ||
@@ -1673,6 +1691,8 @@ function App() {
     >
       <TrafficMap
         viewCenter={viewRequest.center}
+        northResetRequest={northResetRequest}
+        northResetDurationMs={APP_CONFIG.navigation.northResetDurationMs}
         viewCamera={viewRequest.camera}
         viewJourney={viewRequest.journey}
         viewRequestCancelled={viewRequest.cancelled}
@@ -1931,6 +1951,13 @@ function App() {
             !location.initialReady || mapError?.kind === 'initialization'
           }
           onCenter={handleCenter}
+          northResetBearing={
+            isNorthResetUseful(
+              mapCamera?.bearing,
+              APP_CONFIG.navigation.northResetToleranceDegrees,
+            ) ? mapCamera?.bearing : undefined
+          }
+          onResetNorth={handleResetNorth}
           locationAvailable={location.canRequest}
           locationLoading={location.locating}
           locationMessage={location.message}

@@ -134,6 +134,7 @@ const renderControls = (
       onEnterHistory={() => undefined}
       centerDisabled={false}
       onCenter={() => undefined}
+      onResetNorth={() => undefined}
       locationAvailable
       locationLoading={false}
       onUseLocation={() => undefined}
@@ -311,6 +312,22 @@ describe('TrafficControls', () => {
     expect(html).toContain('More: orbital discovery &amp; passes')
     expect(html).not.toContain('STARLINK ON')
     expect(html).not.toContain('STARLINK OFF')
+  })
+
+  it('keeps reset north separate from Center and available in HISTORY', () => {
+    const html = renderControls({
+      northResetBearing: 30,
+      playback: { mode: 'history-paused', range: { oldest: 0, newest: 1 }, speed: 1, cursor: 0 },
+    })
+    const button = html.match(/<button id="reset-north-button"[\s\S]*?<\/button>/)?.[0]
+    expect(button).toContain('aria-label="Reset north"')
+    expect(button).toContain('rotate(-30deg)')
+    expect(button).not.toContain('disabled')
+    expect(html.match(/id="reset-north-button"/g)).toHaveLength(1)
+    expect(html.indexOf('id="reset-north-button"')).toBeLessThan(
+      html.indexOf('id="traffic-controls-map-tools"'),
+    )
+    expect(renderControls()).not.toContain('id="reset-north-button"')
   })
 
   it('keeps the primary Center action outside disclosures and preserves its disabled state', () => {

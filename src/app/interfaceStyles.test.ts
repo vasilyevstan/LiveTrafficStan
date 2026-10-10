@@ -146,6 +146,14 @@ describe('interface presentation contracts', () => {
     expect(mobile).toMatch(/\.in-view-mobile-entry\s*\{\s*display: block;/)
   })
 
+  it('reserves the hidden dock row only for a useful historical compass', () => {
+    const mobile = styles.split('@container workspace (max-width: 760px) {')[1]
+    expect(mobile).toMatch(/\.details-panel--historical\s*\{[^}]*--historical-compass-height: 0px;[^}]*var\(--historical-compass-height\)/)
+    expect(mobile).toMatch(/\.interface-layer:has\(\.workspace-north\) \.details-panel--historical\s*\{\s*--historical-compass-height: 70px;/)
+    expect(mobile).toMatch(/\.interface-layer:has\(\.details-panel--historical\) \.control-stack\s*\{\s*visibility: hidden;/)
+    expect(mobile).toMatch(/\.interface-layer:has\(\.details-panel--historical\) \.workspace-north\s*\{\s*bottom: 0;\s*visibility: visible;/)
+  })
+
   it('gives In view search, result and paging controls 44 px minimum targets', () => {
     expect(styles).toMatch(/\.in-view-body \.control-options button,[^{]*\{\s*min-height: 44px;/)
     expect(styles).toMatch(/\.in-view input\[type='search'\]\s*\{\s*min-height: 44px;/)

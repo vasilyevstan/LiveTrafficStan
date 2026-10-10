@@ -315,6 +315,7 @@
 }
 
 .control-stack {
+  --workspace-orientation-note: 0px;
   --workspace-orbital-note: 0px;
   --workspace-operation-note: 0px;
   --workspace-settings-note: 0px;
@@ -336,6 +337,52 @@
   width: 76px;
   height: var(--control-stack-height);
   pointer-events: none;
+}
+
+.control-stack:has(.workspace-north) {
+  --workspace-orientation-note: 52px;
+}
+
+.workspace-orientation {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-width: 0;
+}
+
+.workspace-north {
+  position: absolute;
+  top: 0;
+  right: calc(100% + 12px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  width: 44px;
+  height: 44px;
+  padding: 4px;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  color: var(--button-text);
+  background: var(--panel-background);
+  box-shadow: 0 3px 12px var(--panel-shadow);
+  font-size: 0.65rem;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.workspace-north:hover {
+  color: var(--button-hover-text);
+  border-color: var(--button-hover-border);
+}
+
+.workspace-north .operation-icon {
+  width: 22px;
+  height: 22px;
+  fill: var(--accent-soft);
 }
 
 .workspace-navigation {
@@ -449,7 +496,7 @@
 
 .control-panel__urgent {
   position: absolute;
-  top: var(--workspace-orbital-note);
+  top: calc(var(--workspace-orientation-note) + var(--workspace-orbital-note));
   right: calc(100% + 12px);
   left: auto;
   display: grid;
@@ -464,11 +511,11 @@
 }
 
 .control-panel--settings .control-panel__urgent {
-  top: calc(var(--workspace-orbital-note) + var(--workspace-operation-note));
+  top: calc(var(--workspace-orientation-note) + var(--workspace-orbital-note) + var(--workspace-operation-note));
 }
 
 .control-panel__orbital-summary {
-  top: 0;
+  top: var(--workspace-orientation-note);
 }
 
 .control-stack:has(.control-panel__orbital-summary) {
@@ -584,7 +631,7 @@
 
 .control-panel__more-body {
   position: absolute;
-  top: var(--workspace-note-height);
+  top: calc(var(--workspace-orientation-note) + var(--workspace-note-height));
   right: calc(100% + 12px);
   bottom: 0;
   left: auto;
@@ -2089,6 +2136,22 @@
 }
 
 @container workspace (max-width: 760px) {
+  .control-stack:has(.workspace-north) {
+    --workspace-orientation-note: 0px;
+  }
+
+  .workspace-orientation {
+    flex: 1 1 0;
+    width: auto;
+  }
+
+  .workspace-north {
+    top: auto;
+    right: auto;
+    bottom: calc(100% + 12px);
+    left: -6px;
+  }
+
   .interface-layer > * {
     --workspace-header-bottom: 100px;
     --mobile-history-height: 128px;
@@ -2274,10 +2337,15 @@
   }
 
   .details-panel--historical {
+    --historical-compass-height: 0px;
     max-height: calc(
       var(--app-visual-viewport-height) - var(--workspace-header-bottom) -
-        var(--mobile-history-height) - 48px
+        var(--mobile-history-height) - 48px - var(--historical-compass-height)
     );
+  }
+
+  .interface-layer:has(.workspace-north) .details-panel--historical {
+    --historical-compass-height: 70px;
   }
 
   .details-grid {
@@ -2371,6 +2439,11 @@
 
   .interface-layer:has(.details-panel--historical) .control-stack {
     visibility: hidden;
+  }
+
+  .interface-layer:has(.details-panel--historical) .workspace-north {
+    bottom: 0;
+    visibility: visible;
   }
 
   .maplibregl-ctrl-bottom-right {

@@ -6,6 +6,11 @@ export interface MapCameraState {
   pitch: number
 }
 
+export interface NorthResetRequest {
+  revision: number
+  viewRequestId: number
+}
+
 export const MAP_CAMERA_LIMITS = {
   minimumLatitude: -90,
   maximumLatitude: 90,
@@ -74,6 +79,17 @@ const wrapLongitude = (longitude: number) => {
   const wrapped = ((((longitude + 180) % 360) + 360) % 360) - 180
   return wrapped === -180 && longitude > 0 ? 180 : wrapped
 }
+
+export const normalizeMapBearing = (bearing: number) =>
+  wrapLongitude(bearing)
+
+export const isNorthResetUseful = (
+  bearing: number | undefined,
+  toleranceDegrees: number,
+) =>
+  bearing !== undefined &&
+  Number.isFinite(bearing) &&
+  Math.abs(normalizeMapBearing(bearing)) > toleranceDegrees
 
 export const roundMapCameraState = (
   camera: MapCameraState,
