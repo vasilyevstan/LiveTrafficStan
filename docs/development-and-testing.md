@@ -124,6 +124,32 @@ only the source's exact complete empty text. Reuse accepted regional/UI/
 installed-update evidence; verify the corrected global path in a narrowed
 real-browser continuation rather than repeating the entire layout batch.
 
+Final production is application `7e0b4954740cee10875e617ba206af5c6ecbe791` /
+Worker `afd0d208-3d5e-42ca-af68-19b4fd357432`; both-origin strict smoke passed.
+The initial 03:19 UTC real regional batch rendered 6 /3-4 /1-2 labels in the
+three sizes and retained raw preferences/history/install identity. Its twelve
+EMODnet responses were valid complete JSON. This unchanged regional/UI
+evidence is reused for the GEBCO-only correction, not claimed freshly repeated.
+
+At 03:45 UTC, the corrected normal installed update retained raw state and
+six native 3x3/X1/Y1, FEATURE_COUNT=1 requests rendered six real global depths
+of 57, 67, 611, 711, 995 and 2,037m near Monterey. Both production windows
+recorded zero application exceptions, no board/geocoder requests and at most
+two concurrent numeric requests. The same-camera Center/global/Center
+deep-equality assertion also passed during completion.
+
+Retain the corrected observer's failed report: its final assertion mixed six
+old-document 1x1 requests with the six valid new-document 3x3 requests.
+Do not repeat an already completed REFRESH APP for a later observer error.
+Do not assume CDP viewport overrides survive detach; label collision placement
+can change rendered counts. Restore the measured viewport and test the required
+nonzero/bounded result rather than a frozen count. Completion made one normal
+additional cell read during viewport restoration, so no zero-request promise
+is made for that navigation. The screenshot and qualified acceptance receipt
+reuse successful milestones without another source edit, deployment or full
+layout matrix. The [release receipt](hosting-and-deployment.md#modeled-depth-production-receipt-2026-10-10)
+preserves the exact chain and compatible rollback.
+
 ### Captured journeys (#406)
 
 Focused suites cover exact flight identity/ordered airports/current-leg
