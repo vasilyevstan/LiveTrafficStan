@@ -28,7 +28,7 @@ export const normalizeEmodnetDepth = (value: unknown): number | null => {
 }
 
 export const normalizeGebcoDepth = (text: string, point: DepthCandidate): number | null => {
-  if (/^GetFeatureInfo results:\s*$/.test(text.trim())) return null
+  if (/^GetFeatureInfo results:\s*(?:Search returned no results\.\s*)?$/.test(text.trim())) return null
   const match = /^GetFeatureInfo results:\s+Layer 'GEBCO_LATEST_2'\s+Feature 0:\s+x = '(-?\d+(?:\.\d+)?)'\s+y = '(-?\d+(?:\.\d+)?)'\s+value_list = '(-?\d+(?:\.\d+)?|nan)'\s*$/i.exec(text.trim())
   if (!match) throw invalidDepth()
   const longitude = Number(match[1]), latitude = Number(match[2])
@@ -51,11 +51,14 @@ export const depthValueUrl = (source: DepthValueSource, point: DepthCandidate): 
     point.longitude + half, point.latitude + half,
   ].map(value => value.toFixed(BATHYMETRY_CONFIG.coordinatePrecision)).join(',')
   const layer = source === 'emodnet' ? 'emodnet:mean' : 'GEBCO_LATEST_2'
+  // GEBCO's one-pixel virtual image can miss valid cells; query its center pixel.
+  const imageSize = source === 'gebco' ? '3' : '1'
+  const pixel = source === 'gebco' ? '1' : '0'
   const params = new URLSearchParams({
     SERVICE: 'WMS', VERSION: '1.1.1', REQUEST: 'GetFeatureInfo',
     LAYERS: layer, QUERY_LAYERS: layer,
     STYLES: source === 'emodnet' ? 'atlas_land' : 'default',
-    SRS: 'EPSG:4326', BBOX: bbox, WIDTH: '1', HEIGHT: '1', X: '0', Y: '0',
+    SRS: 'EPSG:4326', BBOX: bbox, WIDTH: imageSize, HEIGHT: imageSize, X: pixel, Y: pixel,
     FORMAT: 'image/png', INFO_FORMAT: source === 'emodnet' ? 'application/json' : 'text/plain',
     FEATURE_COUNT: '1',
   })
