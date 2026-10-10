@@ -47,13 +47,23 @@ fringes and was rejected. Only the matched world-product pair is used.
 
 ### Actual numeric grid values
 
-The browser uses bounded one-pixel WMS 1.1.1 GetFeatureInfo, maximum twelve
+The browser uses bounded single-value WMS 1.1.1 GetFeatureInfo, maximum twelve
 stable candidates and two concurrent requests, after settled zoom 10+ views:
 
 | Service | Data and interpretation |
 | --- | --- |
 | `https://ows.emodnet-bathymetry.eu/wms`, `emodnet:mean` | Complete JSON FeatureCollection, at most one `Depth`; negative elevations become approximate positive metres below LAT. Current service is documented as DTM 2024. |
 | `https://wms.gebco.net/mapserv`, `GEBCO_LATEST_2` | Strict single-feature text with returned cell coordinates and `value_list`; current latest grid was 2026 at source review. Metres relative to nominal MSL, with shallow/coastal-source datum exceptions. |
+
+EMODnet uses a one-pixel virtual image. GEBCO queries pixel `(1,1)` in a
+`3x3` virtual image over the same one-grid-cell bounds, still requesting only
+one feature, not an image or nine values. The real Monterey check found
+GEBCO's `1x1` request returned its explicit `Search returned no results.`
+text at a valid ocean cell, while the center-pixel request returned `-854`
+at the matching native cell. A longitude-wrapping control stayed empty;
+no alternate-longitude workaround or extra fallback request was added.
+That exact complete empty form is valid no-data, never zero depth; malformed
+or additional content and mismatched coordinates still fail closed.
 
 [DTM 2024 metadata](https://sextant.ifremer.fr/geonetwork/srv/api/records/cf51df64-56f9-4a99-b1aa-36b8d7b743a1/formatters/xml)
 describes the 1/16-arc-minute EMODnet grid and LAT reference.

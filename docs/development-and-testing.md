@@ -110,6 +110,20 @@ accepted UI was not rebuilt or repeatedly inspected to erase an observer
 cleanup error. GPT-5.5's source and evidence passes found no remaining
 high-confidence UI/map regression after the 44px correction.
 
+Claude Opus 4.8 subsequently found no remaining high-confidence contract/
+lifecycle defect in the reviewed source. Its requested real EMODnet style
+and complete-JSON checks passed in production, including six Light/Dark
+regional layouts and the normal installed update with raw state retained.
+The same bounded production pass exposed a separate GEBCO transport defect:
+a one-pixel virtual image returned explicit no-data at a valid Monterey
+ocean cell. At identical geographic bounds, a 3x3 virtual image's center
+pixel returned the actual `-854` cell; longitude wrapping did not help.
+The focused regression preserves one returned feature, existing cell/byte/
+time/concurrency bounds and unchanged EMODnet parameters, and recognizes
+only the source's exact complete empty text. Reuse accepted regional/UI/
+installed-update evidence; verify the corrected global path in a narrowed
+real-browser continuation rather than repeating the entire layout batch.
+
 ### Captured journeys (#406)
 
 Focused suites cover exact flight identity/ordered airports/current-leg
