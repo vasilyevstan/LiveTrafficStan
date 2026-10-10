@@ -1830,7 +1830,7 @@ and returned to the saved local camera. Aircraft `200` provided one object
 without an eligible airline callsign; this window does not prove a real
 aircraft journey. No airport-board or geocoder request occurred.
 
-The [testing record](development-and-testing.md#captured-journey-overviews-406)
+The [testing record](development-and-testing.md#captured-journeys-406)
 separates actual production data from twelve local aircraft/ship fixtures,
 globe/dateline/polar, rotation, cancellation and orbital/Home evidence.
 GPT-5.5 and Claude Opus 4.8 resolved their scoped findings; all required local
