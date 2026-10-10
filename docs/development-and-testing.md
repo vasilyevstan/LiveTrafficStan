@@ -105,6 +105,25 @@ required correction gates passed with **176 suites / 1,573 tests**, candidate
 `index-BGCLjay2.js` and unchanged `index-vg9GFLql.css`. Reuse the unchanged
 core evidence instead of repeating inspector or live journey acquisition.
 
+The initial compact production window at **10:25:56 UTC** accepted six real
+MEGASTAR whole-photo/inspector layouts and 2x, bearing **38 -> 0 -> 38** with
+center/zoom restored, and six snapshot-preserving resize/theme views. Its
+explicit capture used one history GET, three Portnet reads and one graph
+asset, all 200. The retained failed report's 72 copy views exposed the two
+missed states; local enabled/other-permission fixtures were not evidence for
+those branches. No complete-voyage or real-aircraft capture is claimed.
+
+Final production **10:46:20-10:46:36 UTC** performed another genuine ordinary
+REFRESH APP from `index-aG8-cFcZ.js` to `index-BGCLjay2.js`. Raw preferences,
+history settings/database and install identity remained equal. The same
+twelve focused native copy views passed with no more than two rendered
+lines, full sample disclosure access, zero catalog/journey requests and zero
+application/browser exceptions. Native prompt permission and trusted touch/
+pointer input are qualified by explicit focus emulation, not physical-device
+proof. The current-document aircraft 503 was not hidden; both later strict
+origin smokes passed. Keep API header evidence tied to the current document
+generation while retaining predecessor responses.
+
 ### Modeled water depths (#412)
 
 Focused suites cover default-on legacy preferences and explicit saved/shared
