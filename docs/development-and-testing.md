@@ -92,6 +92,20 @@ recorded; their corrections did not become application fixes or repeated
 provider proof. Production installed-update evidence is recorded separately
 in the [deployment receipt](hosting-and-deployment.md).
 
+Actual production acceptance finished at `2026-10-10T20:50:31.416Z`:
+Light 390x568 touch and Dark 1280x900 Enter resets kept raw center, zoom
+and pitch exactly unchanged, retained Auto globe and one canvas, reached
+bearing 0 and returned focus to the canvas. Native fetch/WebSocket/clock and
+vector rendering were not response fixtures; zero orbital reads or runtime
+exceptions occurred. The normal installed REFRESH APP from `index-BGCLjay2.js`
+to `index-2lX6Irkf.js` retained raw preferences, history settings/database
+identity and root scope/controller. Its completed update was reused after
+an open credits disclosure obstructed observer theme setup. Only the exact
+observer-owned Flat preference was restored through normal trusted Auto globe
+input before a strict current-state recheck; no storage edit, repeated update,
+source fix or redeployment followed. Retain that qualification and both
+failure reports rather than calling the entire first observer run successful.
+
 ### Compact inspectors and concise menus (#420)
 
 The current shared inspector has a fixed compact identity/action header, a
