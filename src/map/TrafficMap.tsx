@@ -850,8 +850,8 @@ export function TrafficMap({
         journeyFitRef.current?.(
           pending.snapshot.revision,
           journeyIsFramed(map, pending.snapshot, pending.fit.padding)
-            ? 'Initial path framing complete. Explore freely; the captured position will not move.'
-            : 'Some route context is outside the visible map or globe surface. Explore manually or return to the local view.',
+            ? 'North-up view. Explore the captured path.'
+            : 'Part of the path is off-screen. Explore or return.',
         )
       }
     }
@@ -945,13 +945,14 @@ export function TrafficMap({
       }
       const journey = viewJourneyRef.current
       if (journey) {
+        const fitDuration = prefersReducedMotion() ? 0 : duration
         const fit = chooseJourneyCamera(map, journey, journeyFitPadding(map.getCanvas().getBoundingClientRect()))
         if (fit.kind === 'unavailable') {
           journeyFitRef.current?.(journey.revision, fit.message)
-          scheduleViewportReport(map, 0)
+          map.easeTo({ bearing: 0, duration: fitDuration })
+          scheduleViewportReport(map, fitDuration + viewportSettleMsRef.current)
           return
         }
-        const fitDuration = prefersReducedMotion() ? 0 : duration
         pendingJourneyFitRef.current = { snapshot: journey, fit, requestId: viewRequestRef.current }
         map.easeTo({ ...fit.camera, pitch: 0, duration: fitDuration })
         scheduleViewportReport(map, fitDuration + viewportSettleMsRef.current)

@@ -49,11 +49,15 @@ const persistenceLabel = (status: HistoryPersistenceStatus) => {
     case 'writing':
       return 'Saving provider observations locally.'
     case 'blocked':
+      return 'Local history storage is blocked.'
     case 'stale-tab':
+      return 'Another tab changed history. Retry to continue.'
     case 'quota-exceeded':
+      return 'Local history is full; recording paused.'
     case 'error':
+      return 'Local history unavailable. Retry to continue.'
     case 'deletion-failed':
-      return status.message ?? 'Private local history needs attention.'
+      return 'History deletion failed. Retry to finish.'
     case 'deletion-pending':
       return status.message ?? 'Deleting private local history.'
   }
@@ -128,7 +132,7 @@ export function HistoryControls({
           </select>
         </label>
         <p className="control-note control-note--muted">
-          Session observations only; longer durations do not backfill.
+          Session observations only; no backfill.
         </p>
       </fieldset>
 
@@ -174,7 +178,8 @@ export function HistoryControls({
 
         <p className="control-note" role="status">
           {statusLabel}
-          {' · '}
+        </p>
+        <p className="control-note">
           {historyStatus.recordCount} durable / {historyRecordCount} available
           {' · '}
           {formatLogicalBytes(historyStatus.logicalBytes)}
@@ -185,12 +190,6 @@ export function HistoryControls({
             {formatTimestamp(historyRange.newest)}.
           </p>
         )}
-        {historyStatus.message &&
-          historyStatus.message !== statusLabel && (
-            <p className="control-note control-note--muted">
-              {historyStatus.message}
-            </p>
-          )}
         {['blocked', 'stale-tab', 'error', 'deletion-failed'].includes(
           historyStatus.phase,
         ) &&
@@ -217,9 +216,18 @@ export function HistoryControls({
         )}
 
         <p className="control-note control-note--muted">
-          Local history: up to 60 min, origin-private, browser-evictable; no
-          export, sync, or backend.
+          Private on-device records; no upload or sync.
         </p>
+        <details className="context-details">
+          <summary>Storage details</summary>
+          {historyStatus.message && historyStatus.message !== statusLabel && (
+            <p className="control-note">{historyStatus.message}</p>
+          )}
+          <p className="control-note">
+            Local history: up to 60 min, origin-private, browser-evictable; no
+            export, sync, or backend.
+          </p>
+        </details>
       </fieldset>
     </>
   )

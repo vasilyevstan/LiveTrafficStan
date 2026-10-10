@@ -47,14 +47,13 @@ export function AirportDetails({
       titleId="selected-airport-title"
       closeLabel="Close airport details"
       onClose={onClose}
-    >
-      <div className="details-panel__heading">
+      heading={
         <div>
           <p className="eyebrow">Selected airport</p>
           <h2 id="selected-airport-title" title={airport.name}>{airport.name}</h2>
         </div>
-      </div>
-
+      }
+    >
       {board && <AirportBoard airportIcao={airport.icaoCode} {...board} />}
       {board && <h3 className="airport-facts-title">Airport facts</h3>}
       <dl className="details-grid">
@@ -71,16 +70,21 @@ export function AirportDetails({
         />
       </dl>
 
-      <p className="metadata-status">
-        Static, incomplete context; not for navigation. No status, schedule,
-        route, or aircraft link inferred.
-      </p>
+      <p className="metadata-status">Static airport facts; no live aircraft link.</p>
+      <details className="context-details">
+        <summary>Airport source &amp; limits</summary>
+        <p className="metadata-status">{airport.name}</p>
+        <p className="metadata-status">
+          Static, incomplete context; not for navigation. No status, schedule,
+          route, or aircraft link inferred.
+        </p>
       <p className="metadata-attribution">
         <a href={source.repositoryUrl}>{source.name}</a> ·{' '}
         {source.commit.slice(0, 12)} · {source.publishedAt.slice(0, 10)} ·{' '}
         <a href={source.termsUrl}>{source.licenseName}</a> ·{' '}
         {source.outputVersion}.
       </p>
+      </details>
     </DetailsPanel>
   )
 }

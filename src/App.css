@@ -1332,68 +1332,78 @@
   right: auto;
   left: 16px;
   z-index: 3;
+  display: flex;
+  flex-direction: column;
   width: min(370px, calc(var(--app-visual-viewport-width) - 32px));
   max-height: min(var(--app-visual-viewport-58), 620px);
-  overflow: auto;
-  overscroll-behavior: contain;
-  scroll-padding-top: 60px;
-  scrollbar-color: var(--button-border) transparent;
-  scrollbar-width: thin;
+  overflow: visible;
   padding: 18px;
   border-radius: 16px;
 }
 
 .details-panel__heading {
-  display: flex;
-  gap: 14px;
-  align-items: flex-start;
-  justify-content: space-between;
-  padding-bottom: 12px;
+  flex: 0 0 auto;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 44px 8px 0;
   border-bottom: 1px solid var(--divider);
 }
 
-.details-panel > :not(.details-panel__close-anchor) {
-  margin-right: 58px;
+.details-panel__body {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scroll-padding-block: 8px;
+  scrollbar-color: var(--button-border) transparent;
+  scrollbar-width: thin;
 }
 
 .details-panel__heading > div {
   min-width: 0;
 }
 
-.details-panel__close-anchor {
-  position: sticky;
-  top: 0;
-  z-index: 3;
+.details-panel__identity {
   display: flex;
-  justify-content: flex-end;
-  /* Keep the control pinned without reserving a row in short inspectors. */
-  height: 0;
-  pointer-events: none;
+  gap: 8px;
+  align-items: center;
 }
 
 .details-panel__close {
+  position: absolute;
+  top: -8px;
+  right: 0;
+  z-index: 3;
   display: grid;
   flex: 0 0 44px;
   place-items: center;
   width: 44px;
   height: 44px;
   padding: 0;
+  border-radius: 50%;
   background: var(--panel-background);
   pointer-events: auto;
 }
 
 .details-panel__heading .eyebrow {
-  margin-bottom: 5px;
-  color: var(--accent-line);
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .details-panel h2 {
+  min-width: 0;
+  flex: 1 1 auto;
   margin: 0;
   color: var(--detail-heading);
   font-size: 1.3rem;
   letter-spacing: -0.025em;
   line-height: 1.2;
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .close-button {
@@ -1415,14 +1425,35 @@
 }
 
 .journey-action {
-  margin-top: 12px;
+  flex: 0 0 auto;
+}
+
+.context-details {
+  margin-top: 8px;
+  color: var(--note-text);
+  font-size: 0.75rem;
+}
+
+.context-details > summary {
+  min-height: 44px;
+  padding-block: 12px;
+  cursor: pointer;
+}
+
+.context-details a {
+  color: var(--accent-line);
 }
 
 .journey-key {
-  display: grid;
-  gap: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
   color: var(--detail-text);
   font-size: 0.75rem;
+}
+
+.journey-key > :last-child {
+  flex-basis: 100%;
 }
 
 .journey-key i {
@@ -1582,10 +1613,6 @@
 }
 
 .details-panel--airport-board .details-panel__heading {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  padding-block: 6px 10px;
   background: var(--panel-background);
 }
 
@@ -2065,10 +2092,11 @@
   .interface-layer > * {
     --workspace-header-bottom: 100px;
     --mobile-history-height: 128px;
+    /* Include the pinned identity row without shrinking the scrolling body. */
     --mobile-detail-height: clamp(
-      128px,
-      calc(var(--app-visual-viewport-height) - 620px),
-      200px
+      184px,
+      calc(var(--app-visual-viewport-height) - 564px),
+      256px
     );
   }
 
@@ -2242,7 +2270,7 @@
 
   .vessel-photo__image {
     width: auto;
-    max-height: min(160px, calc(var(--mobile-detail-height) - 28px));
+    max-height: min(160px, calc(var(--mobile-detail-height) - 84px));
   }
 
   .details-panel--historical {
@@ -2430,7 +2458,7 @@
 
 @container workspace (max-width: 340px) {
   .interface-layer > * {
-    --mobile-detail-height: 104px;
+    --mobile-detail-height: 160px;
   }
 
   .control-panel .control-panel__primary button,

@@ -1,4 +1,4 @@
-import { LngLat, MercatorCoordinate, type Map as MapLibreMap, type PaddingOptions } from 'maplibre-gl'
+import { LngLat, type Map as MapLibreMap, type PaddingOptions } from 'maplibre-gl'
 import { JOURNEY_CONFIG } from '../config/appConfig'
 import { distanceKm } from '../domain/geo'
 import type { JourneySnapshot } from '../domain/journey'
@@ -92,7 +92,7 @@ export const chooseJourneyCamera = (
 ): JourneyCameraFit => {
   if (!padding) return {
     kind: 'unavailable',
-    message: 'Not enough unobscured map space to frame this path. Close a menu or enlarge the view.',
+    message: 'Not enough map space. Close a menu or enlarge the view.',
   }
   const points = journeyCoordinates(snapshot)
   const longitudes = points.map(point => unwrapLongitude(point.longitude, snapshot.position.longitude))
@@ -106,66 +106,29 @@ export const chooseJourneyCamera = (
       Math.max(Math.abs(south), Math.abs(north)) > JOURNEY_CONFIG.maximumFitLatitude) {
     return {
       kind: 'unavailable',
-      message: 'This polar or very wide path cannot be framed safely in the current projection. Explore the captured sections manually.',
+      message: 'Polar or wide path: explore the sections manually.',
     }
   }
   const bounds: [[number, number], [number, number]] = [[west, south], [east, north]]
-  const projected = points.map((point, index) =>
-    MercatorCoordinate.fromLngLat([longitudes[index]!, point.latitude]))
-  let longest = 0
-  let axis = 0
-  let offset = 0
-  for (const segment of snapshot.segments) {
-    const start = projected[offset]
-    const end = projected[offset + segment.points.length - 1]
-    offset += segment.points.length
-    if (!start || !end) continue
-    const length = Math.hypot(end.x - start.x, end.y - start.y)
-    if (length > longest) {
-      longest = length
-      axis = Math.atan2(end.x - start.x, start.y - end.y) * 180 / Math.PI
+  const unavailable: JourneyCameraFit = {
+    kind: 'unavailable', message: 'Path framing unavailable. Explore or return to local view.',
+  }
+  try {
+    const fitted = map.cameraForBounds(bounds, {
+      padding, bearing: 0, maxZoom: JOURNEY_CONFIG.maximumFitZoom,
+    })
+    if (!fitted?.center || fitted.zoom === undefined || !Number.isFinite(fitted.zoom)) {
+      return unavailable
     }
-  }
-  const clampAxis = (value: number) => {
-    const undirected = ((value + 270) % 180 + 180) % 180 - 90
-    return Math.max(-JOURNEY_CONFIG.maximumFitBearing, Math.min(JOURNEY_CONFIG.maximumFitBearing, undirected))
-  }
-  const anchor = MercatorCoordinate.fromLngLat([(west + east) / 2, (south + north) / 2])
-  let best: Extract<JourneyCameraFit, { kind: 'available' }> | undefined
-  for (const bearing of new Set([0, clampAxis(axis), clampAxis(axis + 90)])) {
-    const radians = bearing * Math.PI / 180
-    const cos = Math.cos(radians)
-    const sin = Math.sin(radians)
-    const rotated = projected.map(point => ({
-      x: anchor.x + cos * (point.x - anchor.x) + sin * (point.y - anchor.y),
-      y: anchor.y - sin * (point.x - anchor.x) + cos * (point.y - anchor.y),
-    }))
-    const southwest = new MercatorCoordinate(Math.min(...rotated.map(point => point.x)), Math.max(...rotated.map(point => point.y))).toLngLat()
-    const northeast = new MercatorCoordinate(Math.max(...rotated.map(point => point.x)), Math.min(...rotated.map(point => point.y))).toLngLat()
-    if (Math.max(Math.abs(southwest.lat), Math.abs(northeast.lat)) > JOURNEY_CONFIG.maximumFitLatitude) continue
-    try {
-      // Fit the actual rotated geometry, not its unrotated bounding-box diagonal.
-      // MapLibre owns zoom/padding; inverse rotation restores geographic coordinates.
-      const fitted = map.cameraForBounds([southwest, northeast], {
-        padding, bearing: 0, maxZoom: JOURNEY_CONFIG.maximumFitZoom,
-      })
-      if (!fitted?.center || fitted.zoom === undefined || !Number.isFinite(fitted.zoom)) continue
-      const center = MercatorCoordinate.fromLngLat(LngLat.convert(fitted.center))
-      const restored = new MercatorCoordinate(
-        anchor.x + cos * (center.x - anchor.x) - sin * (center.y - anchor.y),
-        anchor.y + sin * (center.x - anchor.x) + cos * (center.y - anchor.y),
-      ).toLngLat()
-      if (![restored.lng, restored.lat].every(Number.isFinite)) continue
-      if (!best || fitted.zoom > best.camera.zoom) best = {
-        kind: 'available', bounds, padding,
-        camera: { center: [restored.lng, restored.lat], zoom: fitted.zoom, bearing },
-      }
-    } catch {
-      // A projection may decline one orientation while another remains usable.
+    const center = LngLat.convert(fitted.center)
+    if (![center.lng, center.lat].every(Number.isFinite)) return unavailable
+    return {
+      kind: 'available', bounds, padding,
+      camera: { center: [center.lng, center.lat], zoom: fitted.zoom, bearing: 0 },
     }
+  } catch {
+    return unavailable
   }
-  if (best) return best
-  return { kind: 'unavailable', message: 'The map could not frame this path. Explore it manually or return to the local view.' }
 }
 
 export const journeyIsFramed = (

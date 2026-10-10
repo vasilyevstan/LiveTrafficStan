@@ -48,6 +48,17 @@ describe('airport board presentation', () => {
     expect(renderToStaticMarkup(<AirportBoardRows flights={[]} direction="arrivals" />)).toContain('No arrivals were returned')
   })
 
+  it('keeps a full long airport name behind a code-led native disclosure', () => {
+    const row = airportBoardFixture().arrivals![0]!
+    const name = 'A deliberately long fictional international airport name'
+    const html = renderToStaticMarkup(<AirportBoardRows flights={[{
+      ...row, otherAirport: { name, iata: 'HEL' },
+    }]} direction="arrivals" />)
+    expect(html).toContain('<summary>From <bdi>HEL</bdi></summary>')
+    expect(html).toContain(`<p>From <bdi>${name}</bdi> (HEL)</p>`)
+    expect(html).not.toContain(' open=""')
+  })
+
   it('anchors a cached board window to the original request rather than the current viewer time', () => {
     const snapshot = airportBoardFixture(now - 4 * 60_000)
     const html = render({ phase: 'ready', airportIcao: 'EETN', snapshot })

@@ -356,16 +356,24 @@ export function InViewPanel({
             )}
             {isShips && availability.available && rankedVessels.unrankedCount > 0 && (
               <p className="control-note">
-                {rankedVessels.unrankedCount} without reported {vesselRanking}; excluded from this ranking, not treated as zero.
+                {rankedVessels.unrankedCount} without reported {vesselRanking}; omitted, not zero.
               </p>
             )}
             <p className="control-note control-note--muted">
+              {isAircraft ? 'Observed aircraft, not cluster or last-local samples.'
+                : isShips ? 'Ranked observations; draught is not water depth.'
+                  : 'Modeled, not live or optical. Includes a Starlink sample.'}
+            </p>
+            <details className="context-details">
+              <summary>How this list works</summary>
+              <p className="control-note">
               {isAircraft
                 ? 'Individual observations, not cluster symbols or fading last-local samples.'
                 : isShips
                   ? `Up to ${VESSEL_RESULT_LIMIT} highest-ranked observed ships, not complete coverage. The map is unchanged; search and vessel filters are in More / Find. Reported draught is not water depth.`
                   : 'Modeled ground positions, not live telemetry or optical visibility. Includes a bounded Starlink sample, not the full constellation. Predicted passes are separate in More.'}
-            </p>
+              </p>
+            </details>
             {isShips && selectedVesselOutside && (
               <p className="control-note">
                 Selected outside this shortlist: {vesselResultLabel(selectedVesselOutside)}. Not added to the ranking.

@@ -200,10 +200,17 @@ function AircraftMetadataDetails({
       {source && (
         <p className="metadata-attribution">
           Snapshot {source.publishedAt.slice(0, 10)} ·{' '}
-          <a href={source.repositoryUrl}>Mictronics aircraft-database</a>{' '}
-          · <a href={source.licenseUrl}>ODC-By 1.0</a> · database age is not
-          aircraft verification.
+          <a href={source.repositoryUrl}>Mictronics</a>{' '}
+          · <a href={source.licenseUrl}>ODC-By 1.0</a>
         </p>
+      )}
+      {source && (
+        <details className="context-details">
+          <summary>Metadata source &amp; match</summary>
+          <p className="metadata-attribution">
+            Mictronics aircraft-database · database age is not aircraft verification.
+          </p>
+        </details>
       )}
     </section>
   )
@@ -425,12 +432,16 @@ function AircraftPhotoDetails({
         </>
       ) : (
         <>
-          <p className="metadata-status">
-            Planespotters receives ICAO24 {identity || 'unavailable'} plus
-            normal network metadata; its CDN serves the image. JSON cache:
-            this tab, 1 hour; image bytes not stored.{' '}
-            <a href={termsUrl}>Terms</a>.
-          </p>
+          <p className="metadata-status">Photo lookup sends ICAO24 to Planespotters.</p>
+          <details className="context-details">
+            <summary>Photo privacy &amp; terms</summary>
+            <p className="metadata-status">
+              Planespotters receives ICAO24 {identity || 'unavailable'} plus
+              normal network metadata; its CDN serves the image. JSON cache:
+              this tab, 1 hour; image bytes not stored.{' '}
+              <a href={termsUrl}>Terms</a>.
+            </p>
+          </details>
           {loading && (
             <p className="metadata-status" role="status">
               Loading photo…
@@ -518,6 +529,8 @@ function VesselPhotoDetails({
         />}
         {failed && <span className="metadata-status metadata-status--error">Image failed to load. Open its source page.</span>}
       </a>
+      <details className="context-details">
+        <summary>Photo credits &amp; license</summary>
       <p className="metadata-attribution vessel-photo__credit">
         {dynamic ? photo.artist : photo.rights.author} ·{' '}
         <a
@@ -537,10 +550,15 @@ function VesselPhotoDetails({
         </a> : license}
         {!dynamic && <> · {photo.asset.modificationNotice}</>}
       </p>
+      </details>
       <p className="metadata-status">
-        Historical reference only; not live confirmation of this AIS report.
-        {dynamic && photo.lookupKind === 'MMSI' && ' MMSIs can be reassigned; this is a provider category match, not verified hull identity.'}
+        Historical reference only; not live confirmation.
       </p>
+      {dynamic && photo.lookupKind === 'MMSI' && (
+        <p className="metadata-status">
+          MMSIs can be reassigned; not verified hull identity.
+        </p>
+      )}
     </section>
   )
 }
@@ -564,7 +582,7 @@ function DynamicVesselPhotoStatus({
         {!identity ? 'No usable IMO or ordinary MMSI for photo lookup.'
           : current.phase === 'loading' ? 'Loading vessel photo from Open Waters…'
             : current.phase === 'unavailable' ? `Open Waters returned no photo for ${identity.kind} ${identity.number}; no substitute shown.`
-              : 'Photos by vessel number from Open Waters / Wikimedia Commons.'}
+              : 'Vessel-number lookup: Open Waters / Wikimedia Commons.'}
       </p>
       {current.phase === 'error' && (
         <p className="metadata-status metadata-status--error" role="alert">
@@ -629,7 +647,7 @@ export function TrafficDetails({
   journeyPreparing = false,
   onClose,
 }: TrafficDetailsProps) {
-  const panelRef = useRef<HTMLElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (panelRef.current) panelRef.current.scrollTop = 0
   }, [entity.id])
@@ -660,24 +678,27 @@ export function TrafficDetails({
         entity.kind === 'aircraft' ? 'aircraft' : 'ship'
       } details`}
       onClose={onClose}
-    >
-      <div className="details-panel__heading">
+      heading={
         <div>
           <p className="eyebrow">
             {historical ? 'Historical ' : 'Selected '}
             {entity.kind === 'aircraft' ? 'aircraft' : 'ship'}
           </p>
-          <h2 id="selected-traffic-title">{title}</h2>
+          <div className="details-panel__identity">
+            <h2 id="selected-traffic-title" title={title}>{title}</h2>
+            {!historical && onShowJourney && (
+              <div className="journey-action">
+                <button type="button" onClick={onShowJourney} disabled={journeyPreparing}>
+                  {journeyPreparing ? 'Loading path...' : 'Show path'}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-
-      {!historical && onShowJourney && (
-        <div className="journey-action">
-          <button type="button" onClick={onShowJourney} disabled={journeyPreparing}>
-            {journeyPreparing ? 'Loading path...' : 'Show path'}
-          </button>
-          {journeyMessage && <p className="metadata-status" role="status">{journeyMessage}</p>}
-        </div>
+      }
+    >
+      {!historical && journeyMessage && (
+        <p className="metadata-status" role="status">{journeyMessage}</p>
       )}
 
       {vesselPhotoSelection?.kind === 'available' && (
@@ -898,7 +919,10 @@ export function TrafficDetails({
         <DetailRow label="Source" value={entity.provider} />
       </dl>
       {entity.kind === 'vessel' && entity.attribution && (
-        <p className="metadata-attribution">{entity.attribution}</p>
+        <details className="context-details">
+          <summary>Contributing source credits</summary>
+          <p className="metadata-attribution">{entity.attribution}</p>
+        </details>
       )}
       {presentation.kind === 'vessel' &&
         presentation.navigationConflict && (

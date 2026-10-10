@@ -42,8 +42,11 @@ describe('one-shot journey framing', () => {
     expect(fit.kind).toBe('available')
     if (fit.kind !== 'available') return
     expect(fit.bounds).toEqual([[179, 0], [181, 1]])
-    expect(map.cameraForBounds).toHaveBeenCalledTimes(3)
-    expect(Math.abs(fit.camera.bearing)).toBeLessThanOrEqual(60)
+    expect(map.cameraForBounds).toHaveBeenCalledExactlyOnceWith(
+      [[179, 0], [181, 1]],
+      { padding, bearing: 0, maxZoom: 12 },
+    )
+    expect(fit.camera.bearing).toBe(0)
   })
 
   it('declines polar, unsafe-wide or unsupported fits explicitly instead of changing projection', () => {
@@ -54,10 +57,10 @@ describe('one-shot journey framing', () => {
     expect(chooseJourneyCamera(map, polar, padding).kind).toBe('unavailable')
     const wide = { ...snapshot, endpoints: [{ latitude: 0, longitude: 0, label: 'Opposite', role: 'stop' as const }] }
     expect(chooseJourneyCamera(map, wide, padding).kind).toBe('unavailable')
-    expect(map.cameraForBounds).toHaveBeenCalledTimes(3)
+    expect(map.cameraForBounds).toHaveBeenCalledOnce()
   })
 
-  it('rotates an actual northwest-to-southeast path to use a tall unobscured map rectangle', () => {
+  it('keeps diagonal routes north-up instead of rotating to gain zoom', () => {
     const map = {
       cameraForBounds: vi.fn((value: LngLatBoundsLike) => {
         const bounds = LngLatBounds.convert(value)
@@ -77,12 +80,24 @@ describe('one-shot journey framing', () => {
     }
     const fit = chooseJourneyCamera(map, diagonal, padding)
     if (fit.kind !== 'available') throw new Error('Expected actual-geometry fit')
-    expect(fit.camera.bearing).toBeLessThan(-40)
-    expect(fit.camera.bearing).toBeGreaterThan(-50)
-    expect(fit.camera.zoom).toBeGreaterThan(map.cameraForBounds.mock.results[0]!.value.zoom + 0.7)
+    expect(fit.camera.bearing).toBe(0)
+    expect(map.cameraForBounds).toHaveBeenCalledOnce()
+    expect(fit.camera.zoom).toBe(map.cameraForBounds.mock.results[0]!.value.zoom)
     const center = LngLat.convert(fit.camera.center)
     expect(center.lng).toBeCloseTo(0)
     expect(center.lat).toBeCloseTo(0)
+  })
+
+  it('reports declined fits and cannot inherit an arbitrary fitted bearing', () => {
+    const map = {
+      cameraForBounds: vi.fn().mockReturnValue({ center: [180, 0.5], zoom: 6, bearing: 47 }),
+    }
+    const fit = chooseJourneyCamera(map, snapshot, padding)
+    expect(fit.kind === 'available' && fit.camera.bearing).toBe(0)
+    map.cameraForBounds.mockImplementation(() => { throw new Error('Unsupported fit') })
+    expect(chooseJourneyCamera(map, snapshot, padding)).toEqual({
+      kind: 'unavailable', message: 'Path framing unavailable. Explore or return to local view.',
+    })
   })
 
   it('checks actual projected visibility and rejects an occluded back-side globe point', () => {

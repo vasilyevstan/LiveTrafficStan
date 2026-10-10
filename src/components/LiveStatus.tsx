@@ -122,26 +122,27 @@ export function LiveStatus({
         <div className="live-status__providers">
           {!online && historicalAt === undefined && (
             <span>
-              Live traffic is unavailable while the browser is offline
+              Browser offline; live updates unavailable.
             </span>
           )}
           {historicalAt !== undefined && (
             <span>
               {online
-                ? 'Live acquisition continues in the background when eligible'
+                ? 'Eligible live acquisition continues in the background.'
                 : 'Browser offline; local playback remains available'}
             </span>
           )}
-          <span title={aircraftStatus.error}>
+          <div title={aircraftStatus.error}>
             {providerLabel('Aircraft', aircraftStatus)}
             {' · '}<a href="https://www.adsb.lol/" target="_blank" rel="noreferrer">ADSB.lol</a>
             {aircraftStatus.error && (
-              <span className="live-status__error">
-                {aircraftStatus.error}
-              </span>
+              <details className="context-details">
+                <summary>Aircraft error details</summary>
+                <span className="live-status__error">{aircraftStatus.error}</span>
+              </details>
             )}
-          </span>
-          <span title={marineStatus.error}>
+          </div>
+          <div title={marineStatus.error}>
             {providerLabel('Marine stream', marineStatus, 'connected')}
             <span className="live-status__sources">
               <a href="https://www.digitraffic.fi/en/marine-traffic/" target="_blank" rel="noreferrer">Digitraffic</a>
@@ -151,9 +152,12 @@ export function LiveStatus({
               </>}
             </span>
             {marineStatus.error && (
-              <span className="live-status__error">{marineStatus.error}</span>
+              <details className="context-details">
+                <summary>Marine error details</summary>
+                <span className="live-status__error">{marineStatus.error}</span>
+              </details>
             )}
-          </span>
+          </div>
           {orbitalSummary && (
             <span
               className="live-status__orbital"
@@ -162,7 +166,12 @@ export function LiveStatus({
               {orbitalSummary}
             </span>
           )}
-          <span>{marineCapabilities.coverage.label}</span>
+          <span>{marineCapabilities.coverage.kind === 'global-best-effort'
+            ? 'Best-effort receiver coverage.'
+            : 'Regional receiver coverage.'}</span>
+          <details className="context-details">
+            <summary>Sources &amp; data rights</summary>
+            <span>{marineCapabilities.coverage.label}</span>
           {marineCapabilities.coverage.kind === 'global-best-effort' && (
             <span>
               Open Waters network inputs: AISHub, Kystverket, BarentsWatch,
@@ -203,6 +212,7 @@ export function LiveStatus({
             {' '}(U.S. public domain unless marked otherwise).
             {' '}Modeled orbits: <a href="https://celestrak.org/" target="_blank" rel="noreferrer">CelesTrak</a>, not live telemetry.
           </span>
+          </details>
         </div>
       </details>
     </section>

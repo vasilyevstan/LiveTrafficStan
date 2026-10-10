@@ -4,17 +4,15 @@ import { DetailsPanel } from './DetailsPanel'
 import { closeDetailsOnEscape } from './detailsKeyboard'
 
 describe('DetailsPanel', () => {
-  it('keeps the labeled inspector and an icon-only close before its content', () => {
+  it('keeps the identity and icon-only close outside the scrollable body', () => {
     const html = renderToStaticMarkup(
       <DetailsPanel
         titleId="selected-test-title"
         closeLabel="Close ship details"
         className="details-panel--historical"
         onClose={() => undefined}
+        heading={<h2 id="selected-test-title">Selected ship</h2>}
       >
-        <div className="details-panel__heading">
-          <h2 id="selected-test-title">Selected ship</h2>
-        </div>
         <p>Existing details and attribution</p>
       </DetailsPanel>,
     )
@@ -25,9 +23,11 @@ describe('DetailsPanel', () => {
     expect(html).toContain('class="close-button details-panel__close"')
     expect(html).toContain('aria-hidden="true"')
     expect(html).not.toContain('>Close</button>')
-    expect(html.indexOf('details-panel__close-anchor')).toBeLessThan(
-      html.indexOf('details-panel__heading'),
+    expect(html.indexOf('details-panel__heading')).toBeLessThan(
+      html.indexOf('details-panel__body'),
     )
+    expect(html.indexOf('details-panel__close')).toBeLessThan(html.indexOf('details-panel__body'))
+    expect(html).not.toContain('details-panel__close-anchor')
     expect(html).toContain('Existing details and attribution')
   })
 

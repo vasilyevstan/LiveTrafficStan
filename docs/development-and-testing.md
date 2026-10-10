@@ -48,6 +48,51 @@ supplementary marine WebSocket; use the actual local Worker for those paths.
 | `npm run check:deploy` | Bundle the Worker and Static Assets without credentials or deployment |
 | `npm run preview:worker` | Build and run the actual local Cloudflare `workerd` boundary |
 
+### Compact inspectors and concise menus (#420)
+
+The current shared inspector has a fixed compact identity/action header, a
+44px corner-attached X and one full-width body scroller. Only the header
+reserves X clearance. General short mobile budgets add the height consumed by
+that header and compensate the photo cap; the airport-board special budget
+remains unchanged. Default helper/status prose is measured at at most two
+rendered lines. Complete names, sources, privacy and limitations remain in
+labelled native disclosures, not CSS line-clamping.
+
+Deterministic cases retain every inspector kind, Escape/focus and identity
+scroll reset, body/target/media budgets, exact airport codes plus complete
+names, truthful empty/partial captures and north-up camera safety. The final
+local gates passed with **176 suites / 1,572 tests** and all required data/build
+checks. The production-input candidate is `index-aG8-cFcZ.js` /
+`index-vg9GFLql.css`; the final layout detector returned no findings.
+
+Native local confirmation completed at **2026-10-10 10:04:06 UTC**: 36
+six-kind/size/theme inspector layouts, top/middle/end scrolling, trusted X and
+focused Escape, 2x magnification, 104 default-copy views and zero two-line,
+overlap or body-budget defects. Aircraft/ship bodies measure 105 px at 390x568
+and 81 px at 315x517, restoring the first inspection's 49/25 px body space.
+All six exact-IMO bundled-photo views reveal the whole image after native
+scrolling; 100/76 px mobile images fit those restored bodies.
+
+The same-source native continuation at **10:12:10 UTC** opens photo rights and
+depth privacy with trusted touch and full Provider source rights with native
+Enter. It measures usable 100x130 and 100x106 px map-drag bands on the two
+mobile sizes and actually pans through them. Keep fixture transport owned
+through the check, dispatch Enter's character as well as key events, and use
+the incumbent closed-attribution setup and hit-checked input helper. Earlier
+observer-only interruptions are retained, not counted as application defects.
+
+Aircraft bearing 38 and ship bearing -27 each become exactly 0 on Show path
+and return to their original center, zoom and bearing. The aircraft reuses one
+standing-route lookup; ship requests occur only on explicit capture. Six
+captured resize/theme views retain the same snapshot without refitting.
+There is one map/canvas and zero browser/application exceptions.
+
+These are real built MapLibre/vector tiles, native fetch/clocks/trusted inputs
+with local provider/route/depth protocols, callback selection and explicit
+focus emulation. They are not live-provider, native marker-picking or
+physical-device proof. The older rotation and full-gutter receipts below
+remain historical evidence for their original releases, not current policy.
+
 ### Modeled water depths (#412)
 
 Focused suites cover default-on legacy preferences and explicit saved/shared
@@ -67,7 +112,7 @@ the default fetch adapter must not call Window.fetch with the loader as `this`.
 Map tests cover pre-style startup, ocean-only sample gating, vector-readiness
 waiting, move/off/hidden/offline/unmount, separate optional-source errors and
 theme rehydration below existing operational/journey layers. UI tests retain
-the primary dock composition, existing inspector gutter and sole More scroll
+the primary dock composition, shared inspector shell and sole More scroll
 owner, with a full-width minimum-44px depth target. They do not substitute
 for rendered acceptance.
 
@@ -224,13 +269,16 @@ resize/theme added no history/context request or refit. Native scrolling
 reached the source/non-navigation tail, and Return restored the local camera.
 Aircraft returned `200`, but the one received aircraft had no eligible airline
 callsign for this bounded window: no real-aircraft journey is claimed.
-Aircraft geometry/rotation remains supported by the qualified local evidence
-above. Fetch/WebSocket/clocks and trusted controls were native, selection
+That original rotation evidence is historical; #420 now requires north-up.
+Fetch/WebSocket/clocks and trusted controls were native, selection
 setup used application callbacks, and focus emulation was explicit.
 No paid-board or geocoder request occurred. See the
 [production receipt](hosting-and-deployment.md#captured-journey-production-receipt-2026-10-10).
 
 ### Persistent inspector close (#400)
+
+This is the original release receipt. #420 above supersedes its full-height
+gutter topology without discarding the earlier close/focus acceptance.
 
 The shared shell and all five detail components retain content, accessible
 names and historical modifiers while replacing visible Close text with an

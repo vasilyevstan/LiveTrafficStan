@@ -218,7 +218,6 @@ export const JOURNEY_CONFIG = {
   maximumFitLongitudeSpan: 160,
   maximumFitLatitude: 85.05112878,
   maximumFitZoom: 12,
-  maximumFitBearing: 60,
   fitMarginPx: 20,
   minimumFitSizePx: 80,
   marineHistoryOrigin: 'https://ais.openwaters.io',
