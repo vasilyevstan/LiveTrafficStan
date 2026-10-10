@@ -24,7 +24,9 @@ import { boundsAroundCenter } from '../domain/geo'
 import {
   roundMapCameraState,
   type MapCameraState,
+  type NorthResetRequest,
 } from '../domain/mapCamera'
+import { consumeNorthReset } from './resetNorth'
 import type { Port } from '../domain/ports'
 import type { MapProjectionPreference } from '../domain/preferences'
 import type {
@@ -172,6 +174,8 @@ const EMPTY_ORBITAL_IDS: readonly string[] = []
 const EMPTY_ORBITAL_TRACK: readonly OrbitalTrackSegment[] = []
 
 interface TrafficMapProps {
+  northResetRequest?: NorthResetRequest
+  northResetDurationMs: number
   viewCenter: AppCenter
   viewCamera?: MapCameraState
   viewJourney?: JourneySnapshot
@@ -367,6 +371,8 @@ const viewportSignature = (assessment: ViewportAssessment) => {
 }
 
 export function TrafficMap({
+  northResetRequest,
+  northResetDurationMs,
   viewCenter,
   viewCamera,
   viewJourney,
@@ -446,6 +452,7 @@ export function TrafficMap({
   const viewportSettleTimerRef = useRef<number | null>(null)
   const lastViewportSignatureRef = useRef<string | null>(null)
   const lastViewRequestRef = useRef(viewRequestId)
+  const lastNorthResetRevisionRef = useRef(northResetRequest?.revision ?? 0)
   const initialViewRequestIdRef = useRef(viewRequestId)
   const viewRequestRef = useRef(viewRequestId)
   const viewCenterRef = useRef(viewCenter)
@@ -2787,6 +2794,33 @@ export function TrafficMap({
     }
     installJourneyStyle(map, journeySnapshot, theme)
   }, [journeySnapshot, scheduleViewportReport, theme, viewRequestCancelled])
+
+  useEffect(() => {
+    const map = mapRef.current
+    try {
+      const duration = consumeNorthReset(
+        northResetRequest, lastNorthResetRevisionRef, viewRequestId, map,
+        { durationMs: northResetDurationMs, reducedMotion: prefersReducedMotion() },
+        () => {
+          interactionGenerationRef.current += 1
+          clusterExpansionGenerationRef.current += 1
+          pendingJourneyFitRef.current = undefined
+          clearPendingViewport()
+          hideTrafficTooltipRef.current()
+        },
+      )
+      if (duration === undefined || !map) return
+      scheduleViewportReport(map, duration + viewportSettleMsRef.current)
+      if (document.activeElement?.id === 'reset-north-button') {
+        map.getCanvas().focus({ preventScroll: true })
+      }
+    } catch {
+      errorRef.current({
+        kind: 'runtime',
+        message: 'The map could not reset north. Try again.',
+      })
+    }
+  }, [clearPendingViewport, northResetDurationMs, northResetRequest, scheduleViewportReport, viewRequestId])
 
   useEffect(() => {
     if (lastViewRequestRef.current === viewRequestId) return

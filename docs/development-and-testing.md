@@ -48,6 +48,50 @@ supplementary marine WebSocket; use the actual local Worker for those paths.
 | `npm run check:deploy` | Bundle the Worker and Static Assets without credentials or deployment |
 | `npm run preview:worker` | Build and run the actual local Cloudflare `workerd` boundary |
 
+### Contextual compass / reset north (#428)
+
+Reset north is bearing-only, not Home or a navigation commit. Deterministic
+`mapCamera`, `resetNorth`, configuration, control and interface-style tests
+cover wrapped north boundaries, unavailable/nonfinite state, exact native
+`resetNorth({ duration })` arguments, reduced motion, one-time consumption,
+stale/missing-map fencing, surfaced failure and the contextual historical
+row. Existing camera-intent, HISTORY and immutable Return regressions remain.
+Required local gates passed with **177 suites / 1,601 tests**.
+
+Native Chrome 155 acceptance used the actual MapLibre/vector renderer:
+Light/Dark at 1280x900, 390x568 and 315x517, open More/Settings, keyboard
+rotation, Enter/Space reset, reduced motion, 2x page magnification, three
+pitched globe/dateline/high-latitude views, HISTORY and a captured aircraft
+path. Reset preserved the raw center within 2.51e-12 degrees longitude and
+9.4e-13 latitude; zoom/pitch deltas were zero and final bearing was zero.
+The required tolerances are 1e-8 degrees center, 1e-6 zoom/pitch and
+0.1 degree north. Return restored the original camera/bearing; a native
+map drag remained usable. Newer Center superseded a batched older reset,
+and theme/resize did not replay consumed work.
+
+The final focused historical confirmation finished at
+`2026-10-10T20:34:07.738Z`, using `index-2lX6Irkf.js` /
+`index-Cnzw5_2m.css`. Its four Light/Dark mobile layouts measured a 44x44
+compass, 17px inspector clearance, reachable X and 152/101px body scrollers.
+Each trusted reset retained the centered historical selection and returned
+the complete 70px reserved row to the inspector. No unresolved defect,
+runtime exception or orbital catalog read remained in that confirmation.
+
+Local traffic/route responses, MQTT and selection/mode setup are explicitly
+fixtures; fetch, clock, renderer and reset input are native. Device metrics
+and explicit focus emulation do not prove physical-device or OS hidden-state
+behavior. Each reset compares saved state; ordinary settled rotation can
+still change the full-canvas footprint, counts and valid selection. There is
+no new forced poll, acquisition path, provider reconnect or camera scheduler.
+
+Retained receipts include the initial six-layout evidence, corrected numerical
+Return/ownership chapter and final historical report. The original historical
+overlaps and a resumed report that lost those findings are **not accepted**.
+Observer-only recording-race and overly strict floating-point failures remain
+recorded; their corrections did not become application fixes or repeated
+provider proof. Production installed-update evidence is recorded separately
+in the [deployment receipt](hosting-and-deployment.md).
+
 ### Compact inspectors and concise menus (#420)
 
 The current shared inspector has a fixed compact identity/action header, a

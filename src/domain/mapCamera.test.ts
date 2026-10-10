@@ -1,10 +1,32 @@
 import { describe, expect, it } from 'vitest'
 import {
   isMapCameraState,
+  isNorthResetUseful,
+  normalizeMapBearing,
   roundMapCameraState,
 } from './mapCamera'
 
 describe('map camera state', () => {
+  it.each([undefined, Number.NaN, Infinity, -Infinity, 0, -0, 1, -1, 360, 359, -359])(
+    'hides reset north for unavailable or north-aligned bearing %s',
+    (bearing) => {
+      expect(isNorthResetUseful(bearing, 1)).toBe(false)
+    },
+  )
+
+  it.each([1.01, -1.01, 30, -30, 180, -180, 359 - 0.01, -359 + 0.01, 390])(
+    'shows reset north for useful wrapped bearing %s',
+    (bearing) => {
+      expect(isNorthResetUseful(bearing, 1)).toBe(true)
+    },
+  )
+
+  it('normalizes the compass needle without modifying camera state', () => {
+    expect(normalizeMapBearing(390)).toBe(30)
+    expect(normalizeMapBearing(-390)).toBe(-30)
+    expect(normalizeMapBearing(360)).toBe(0)
+  })
+
   it('validates MapLibre camera bounds', () => {
     expect(
       isMapCameraState({

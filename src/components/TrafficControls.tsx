@@ -10,6 +10,7 @@ import {
 import type { ThemePreference } from '../app/theme'
 import type { PlaceSearchState } from '../app/PlaceSearchController'
 import type { AppCenter } from '../config/appConfig'
+import { normalizeMapBearing } from '../domain/mapCamera'
 import { APP_CONFIG } from '../config/appConfig'
 import { depthSourceDescription, type BathymetryStatus } from '../domain/bathymetry'
 import type { Airport } from '../domain/airports'
@@ -136,6 +137,8 @@ interface TrafficControlsProps {
   onEnterHistory: () => void
   centerDisabled: boolean
   onCenter: () => void
+  northResetBearing?: number
+  onResetNorth: () => void
   locationAvailable: boolean
   locationLoading: boolean
   locationMessage?: string
@@ -338,6 +341,8 @@ export function TrafficControls({
   onEnterHistory,
   centerDisabled,
   onCenter,
+  northResetBearing,
+  onResetNorth,
   locationAvailable,
   locationLoading,
   locationMessage,
@@ -545,6 +550,7 @@ export function TrafficControls({
     </header>
     <div className="control-stack" aria-label="Map controls">
       <div className="workspace-dock">
+      <div className="workspace-orientation">
       <button
         id="center-map-button"
         className="workspace-center"
@@ -556,6 +562,27 @@ export function TrafficControls({
         <OperationIcon name="center" />
         CENTER
       </button>
+      {northResetBearing !== undefined && (
+        <button
+          id="reset-north-button"
+          className="workspace-north"
+          type="button"
+          aria-label="Reset north"
+          title="Reset north without changing location or tilt"
+          onClick={onResetNorth}
+        >
+          <span aria-hidden="true">N</span>
+          <svg
+            className="operation-icon"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+            style={{ transform: `rotate(${-normalizeMapBearing(northResetBearing)}deg)` }}
+          >
+            <path d="m12 3 5 17-5-3-5 3 5-17Z" />
+          </svg>
+        </button>
+      )}
+      </div>
       <aside
         className={`control-panel control-panel--operations${
           operationalPromotedAction ? ' control-panel--urgent' : ''
