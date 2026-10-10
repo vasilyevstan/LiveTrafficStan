@@ -343,6 +343,51 @@ technically satisfied.
 Public airport boards, airline sites, trackers, and widgets remain outside this
 contract and are not scraped.
 
+## Captured ship journeys
+
+An explicit Show path may request one anonymous recent track from
+`https://ais.openwaters.io/v1/vessels/{mmsi}/track` and regional coded voyage
+context from Digitraffic Portnet. Neither source supplies guaranteed complete
+voyages. Open Waters' root Feature `attribution` credits are retained alongside
+retrieval/report clocks, simplification, truncation, provider reception breaks
+and separately identified sparse time gaps. The selected source's underlying
+terms remain applicable; the app does not relabel the aggregated observations
+as public domain or solely Digitraffic.
+
+Portnet calls must match exact MMSI and compatible reported IMO, have an
+unambiguous recent actual departure and plausible actual/estimated chronology.
+The source explicitly warns about unmoderated and implausible clocks. A real
+Finneco II proof had 2015 actual events with 2026/2027 estimates; it did not
+establish a current voyage. Null LOCODE geometry can resolve only through the
+exact area code referenced by that call. No nearest port, averaged area, AIS
+destination geocoding or fuzzy match is substituted.
+
+Illustrative uncovered sections use the graph data (not the JavaScript npm
+package) from `johnx25bd/searoute`, commit
+`4fc696c55c4c31bdc4c8286ba76e3261d7bc5a0e`. The original 618,209-byte GeoJSON,
+modified source-form projection, full MPL-2.0 license and detailed NOTICE are
+co-located under `public/marine-routes/searoute-4fc696c5/`. The repository records
+Eurostat/EUPL and ORNL shipping-lane provenance; its linked GeoCommons mirror
+permits public download/view but supplies no separate formal data-license
+instrument. This is not a claim of unrestricted/public-domain upstream data.
+The independent application code remains Apache-2.0.
+
+The shipped 467,117-byte projection removes **821 known land-intersecting or
+land-touching edges**, retaining 6,825. The reproducible filter uses the same
+pinned Natural Earth v5.1.2 commit as port context, its public-domain 1:10m land
+polygons, Mercator segment intersections, polygon holes and antimeridian
+splitting. It shifts no point and adds no replacement connector. Generalized
+coastlines omit small islands/detail; excluding canals can disconnect valid
+waterways. Remaining node/endpoint gaps stay visible and are at most 5 km.
+This coarse network is **not** evidence of actual/future vessel travel, canal
+permission, shoreline precision, draught clearance or navigability.
+
+There is no new stream, polling, pagination, raw archive or paid account.
+History/port-call results are bounded session-only data and never enter the
+optional device history. Requests omit credentials/referrer and reveal only
+the explicit selected public identity and time window; no provider-retention
+guarantee is made. Only the immutable public graph uses ordinary HTTP caching.
+
 ## Airport arrival/departure boards: AeroDataBox
 
 When the checked airport-board deployment flag is enabled, TrackStan offers

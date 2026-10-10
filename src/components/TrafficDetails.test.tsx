@@ -341,6 +341,10 @@ describe('TrafficDetails aircraft metadata', () => {
   })
 
   it('shows a compact automatic route result only after enablement', () => {
+    const airports = [
+      { name: 'Tallinn Airport', code: 'TLL', icao: 'EETN', latitude: 59.4133, longitude: 24.8328 },
+      { name: 'Helsinki Airport', code: 'HEL', icao: 'EFHK', latitude: 60.3172, longitude: 24.9633 },
+    ]
     const disabledHtml = renderToStaticMarkup(
       <TrafficDetails
         entity={aircraft}
@@ -363,14 +367,9 @@ describe('TrafficDetails aircraft metadata', () => {
           route: {
             flightIcao: 'TST123',
             confidence: 'plausible',
-            departure: {
-              name: 'Tallinn Airport',
-              code: 'TLL',
-            },
-            arrival: {
-              name: 'Helsinki Airport',
-              code: 'HEL',
-            },
+            departure: airports[0]!,
+            arrival: airports[1]!,
+            airports,
             providerUpdatedAt: 1_800_000_000_000,
             source: {
               name: 'ADSB.lol',

@@ -64,3 +64,19 @@ https://www.wikidata.org/wiki/Wikidata:Licensing
 Country allocation rows are identifier-derived reference context only. They do
 not establish operator, owner, crew, route, location, current jurisdiction, or
 a live registry check.
+
+Optional shipping-network illustrations distributed under public/marine-routes
+derive from johnx25bd/searoute, pinned to commit
+4fc696c55c4c31bdc4c8286ba76e3261d7bc5a0e:
+https://github.com/johnx25bd/searoute
+
+The original and modified human-readable GeoJSON are distributed under the
+upstream MPL-2.0 license, with its full text and provenance NOTICE alongside
+the data. The network has Eurostat/EUPL and ORNL shipping-lane provenance;
+the co-located notice preserves the upstream data-rights qualifications.
+LiveTrafficStan's separate application code remains Apache-2.0.
+
+The modified network removes edges intersecting the public-domain Natural
+Earth 1:10m land polygons at the same v5.1.2 commit used for port context.
+This conservative exclusion is not a detailed shoreline, canal permission,
+draught clearance, predicted voyage or navigation-safety guarantee.

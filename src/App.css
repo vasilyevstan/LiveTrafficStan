@@ -796,6 +796,8 @@
 .control-panel__urgent button,
 .history-mode-notice button,
 .viewport-notice button,
+.journey-actions button,
+.journey-action button,
 .close-button {
   min-height: 36px;
   border: 1px solid var(--button-border);
@@ -851,6 +853,10 @@
 .history-mode-notice button:focus-visible,
 .viewport-notice button:hover,
 .viewport-notice button:focus-visible,
+.journey-actions button:hover,
+.journey-actions button:focus-visible,
+.journey-action button:hover,
+.journey-action button:focus-visible,
 .close-button:hover,
 .close-button:focus-visible {
   color: var(--button-hover-text);
@@ -884,6 +890,8 @@
 }
 
 .control-options button:disabled,
+.journey-actions button:disabled,
+.journey-action button:disabled,
 .control-panel__urgent button:disabled,
 .location-search__input-row button:disabled,
 .location-search__input-row input:disabled {
@@ -1386,6 +1394,38 @@
 .close-button {
   min-height: 44px;
   padding: 0 10px;
+}
+
+.journey-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.journey-actions button,
+.journey-action button {
+  min-height: 44px;
+  padding: 8px 12px;
+}
+
+.journey-action {
+  margin-top: 12px;
+}
+
+.journey-key {
+  display: grid;
+  gap: 8px;
+  color: var(--detail-text);
+  font-size: 0.75rem;
+}
+
+.journey-key i {
+  display: inline-block;
+  width: 20px;
+  margin-right: 8px;
+  border-top: 3px solid;
+  vertical-align: middle;
 }
 
 .stale-notice {
@@ -2422,6 +2462,8 @@
   .vessel-discovery button,
   .location-search__form button,
   .location-results button,
+  .journey-actions button,
+  .journey-action button,
   .close-button,
   .app-shell,
   .brand-panel,

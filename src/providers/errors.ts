@@ -17,7 +17,10 @@ export const parseRetryAfterMs = (
   if (!value) return undefined
 
   const seconds = Number(value)
-  if (Number.isFinite(seconds) && seconds >= 0) return seconds * 1_000
+  if (Number.isFinite(seconds) && seconds >= 0) {
+    const milliseconds = seconds * 1_000
+    return Number.isFinite(milliseconds) ? milliseconds : undefined
+  }
 
   const retryAt = Date.parse(value)
   if (!Number.isFinite(retryAt)) return undefined

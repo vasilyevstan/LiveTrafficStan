@@ -14,6 +14,11 @@ production platform:
   vessel-photo metadata route;
 - plausible route lookup calls ADSB.lol standing data directly from the
   browser once for a newly selected eligible live aircraft;
+- explicit captured ship journeys use anonymous bounded Open Waters history
+  and Digitraffic Portnet GETs, plus a pinned same-origin shipping graph.
+  Their scoped CSP/source rules require no new secret, Worker route, binding,
+  migration or production flag. Aircraft Show path reuses its accepted route.
+  The graph is immutable static context, not part of the shell startup cache;
 - eight reviewed exact-IMO vessel photographs remain versioned same-origin
   Static Assets. Other reported IMO/MMSI identities can use
   `/api/vessel-photos/{number}` with no secret or new binding; validated

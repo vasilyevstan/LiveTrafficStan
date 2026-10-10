@@ -58,6 +58,34 @@ requests, viewport eligibility, vessel filter membership, selection, or
 history changes at the same time, treat that as a regression rather than an
 expected unit conversion.
 
+## Show path is partial, unavailable or pauses live traffic
+
+A captured route overview is not live tracking. It deliberately survives beyond
+the 100 km live-traffic boundary while aircraft/ships remain paused. Use Return
+to local view to restore the prior camera, or Hide path/X to remove the snapshot
+without moving. Manual camera movement never requests another fit. A polar,
+over-wide, obscured or back-side globe path may remain available for manual
+exploration with an explicit framing limitation.
+
+Aircraft require an accepted exact-identity standing route. Unsupported
+callsigns, incompatible current positions or ambiguous multi-leg itineraries
+do not acquire invented origin/destination sections. Estimates are not filed
+or flown routes.
+
+Ship history can be empty, incomplete, simplified, throttled or unavailable.
+Provider reception breaks and large time gaps are left open. Portnet covers
+regional calls, and implausible/ancient/future clocks cannot establish a current
+departure. A coded port with no exact usable coordinates stays unknown.
+The coarse water graph can be too far from a port, disconnected after known
+land edges are excluded, or too large for a bounded illustration. No arbitrary
+shore connector or straight route across land fills those gaps.
+
+The inspector names source failures separately; they are not aircraft, live
+AIS or orbital outages. A fulfilled bounded source result can be reused, but
+there is no automatic history retry or refresh. Retry-After remains authoritative.
+Do not clear site data, relax the 5 km graph gap or enable a paid source to
+make a missing journey appear complete.
+
 ## Globe, Flat and paused wide views
 
 **Settings → Appearance → AUTO GLOBE / FLAT** selects projection independently

@@ -89,11 +89,21 @@ describe('AdsbLolFlightRouteProvider', () => {
         departure: {
           name: 'Tallinn Airport',
           code: 'TLL',
+          icao: 'EETN',
+          latitude: 59.4133,
+          longitude: 24.8328,
         },
         arrival: {
           name: 'Helsinki Airport',
           code: 'HEL',
+          icao: 'EFHK',
+          latitude: 60.3172,
+          longitude: 24.9633,
         },
+        airports: routePayload._airports.map(airport => ({
+          name: airport.name, code: airport.iata, icao: airport.icao,
+          latitude: airport.lat, longitude: airport.lon,
+        })),
         providerUpdatedAt: Date.parse(lastModified),
         source: {
           name: 'ADSB.lol',

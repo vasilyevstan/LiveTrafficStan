@@ -8,11 +8,13 @@ export class BoundedJsonError extends Error {
 export const readBoundedJson = async (
   response: Response,
   maximumBytes: number,
+  contentTypes: readonly string[] = ['application/json'],
+  expectedSha256?: string,
 ): Promise<unknown> => {
   const contentType = response.headers.get('Content-Type') ?? ''
   const contentLength = Number(response.headers.get('Content-Length'))
   if (
-    !contentType.toLowerCase().startsWith('application/json') ||
+    !contentTypes.includes(contentType.split(';', 1)[0]!.trim().toLowerCase()) ||
     (Number.isFinite(contentLength) && contentLength > maximumBytes) ||
     !response.body
   ) {
@@ -42,6 +44,11 @@ export const readBoundedJson = async (
   for (const chunk of chunks) {
     bytes.set(chunk, offset)
     offset += chunk.byteLength
+  }
+  if (expectedSha256) {
+    const digest = await crypto.subtle.digest('SHA-256', bytes)
+    const actual = [...new Uint8Array(digest)].map(value => value.toString(16).padStart(2, '0')).join('')
+    if (actual !== expectedSha256) throw new BoundedJsonError()
   }
   try {
     return JSON.parse(new TextDecoder('utf-8', { fatal: true, ignoreBOM: false }).decode(bytes))
