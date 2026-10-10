@@ -110,6 +110,24 @@ intervals between qualified resumes are not claimed. The required local gates
 passed with 171 suites / 1,535 tests. The two requested model reviews and
 shoreline exclusion proof are scoped evidence, not a guarantee of zero bugs.
 
+Production **01:37:17-01:37:31 UTC** used the retained installation's normal
+REFRESH APP, replacing `index-CcHJFLWJ.js` without resetting raw preferences,
+history/database or install identity. One real **AURELIE** capture made one
+Open Waters history GET and one Portnet GET, both `200`. It rendered 53
+received points in ten separate observed segments, preserved gaps and
+reported unknown endpoints/no current Portnet departure. No graph was loaded
+or straight-line ship estimate substituted. Six Light/Dark desktop/mobile
+captures retained that same immutable snapshot, one map and the 44 px X;
+resize/theme added no history/context request or refit. Native scrolling
+reached the source/non-navigation tail, and Return restored the local camera.
+Aircraft returned `200`, but the one received aircraft had no eligible airline
+callsign for this bounded window: no real-aircraft journey is claimed.
+Aircraft geometry/rotation remains supported by the qualified local evidence
+above. Fetch/WebSocket/clocks and trusted controls were native, selection
+setup used application callbacks, and focus emulation was explicit.
+No paid-board or geocoder request occurred. See the
+[production receipt](hosting-and-deployment.md#captured-journey-production-receipt-2026-10-10).
+
 ### Persistent inspector close (#400)
 
 The shared shell and all five detail components retain content, accessible

@@ -1799,7 +1799,56 @@ If a newer pull request reaches `main` while an older manual deployment is
 validating, the second equality check fails rather than silently promoting the
 older SHA.
 
+## Captured journey production receipt (2026-10-10)
+
+Implementation [#407](https://github.com/vasilyevstan/LiveTrafficStan/pull/407)
+and checked promotion [#408](https://github.com/vasilyevstan/LiveTrafficStan/pull/408)
+deliver application **`dc1144f182408687ff3fb06249b3c66398e57f74`**.
+Reviewed source `abf36a02fbfb06cbd3235eaec38bc615eea4fd4e` and dev
+`7aec342fe722cfcca2c8d64e49decccd486290a1` had identical trees.
+Feature/dev/promotion Validation 38013371897 /38013482982 /38013514985 and
+[exact-main Validation 38013588767](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/38013588767)
+passed. No ancestry repair or protection exception was needed.
+
+Serialized [deployment 38013676975](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/38013676975)
+passed and reported Worker **`0253b0ed-57f5-4cac-b85f-1e1708a9b307`** at
+**01:35:18.396 UTC**. Both origins passed strict-SHA smoke. Production serves
+`index-62M7Yu4v.js`, `index-G89IhxQ2.css`, shell `f39708f7820a3d662081`.
+Every existing private-aircraft/photo/route/orbital/Starlink/marine/
+airport-board input remains enabled. There is no new secret, binding,
+dependency, migration or live polling path.
+
+Normal **REFRESH APP** and real-provider acceptance at **01:37:17-01:37:31
+UTC** preserved raw preferences, history/database and installed-app identity.
+One AURELIE capture made one anonymous Open Waters history GET and one
+Portnet GET, both `200`, rendering 53 received points in ten separate
+observed segments. Unknown endpoints, old/inconsistent Portnet chronology
+and gaps remained explicit; no graph request or invented ship connector was
+made. Six Light/Dark desktop/mobile captures reused that snapshot without
+refit/refetch, retained the 44 px X and one map, reached credits after scrolling,
+and returned to the saved local camera. Aircraft `200` provided one object
+without an eligible airline callsign; this window does not prove a real
+aircraft journey. No airport-board or geocoder request occurred.
+
+The [testing record](development-and-testing.md#captured-journey-overviews-406)
+separates actual production data from twelve local aircraft/ship fixtures,
+globe/dateline/polar, rotation, cancellation and orbital/Home evidence.
+GPT-5.5 and Claude Opus 4.8 resolved their scoped findings; all required local
+gates passed with 171 suites /1,535 tests. Native renderer, transport/clocks
+and trusted controls are distinguished from callback selection and explicit
+focus emulation, not physical-device or native marker-picking evidence.
+
+The compatible predecessor is application
+`66743c394f6f89d613f6b06d373180435736db70`, Worker
+`0ebf42fc-4ee2-428b-9496-a374f4422408`, recorded below. Preserve all inputs and
+atomic secrets for the existing exact-version rollback; no new compatibility
+baseline or rollback exercise was needed. Later canonical/Wiki receipt commits
+do not redeploy or replace the running application. Default-on water depths
+remain separate approved work, not delivered by this release.
+
 ## Persistent inspector close production receipt (2026-10-09)
+
+This is the historical predecessor to the captured-journey release above.
 
 Implementation [#401](https://github.com/vasilyevstan/LiveTrafficStan/pull/401)
 and checked promotion [#402](https://github.com/vasilyevstan/LiveTrafficStan/pull/402)
