@@ -157,6 +157,8 @@ import {
 } from './mapProjection'
 import { chooseJourneyCamera, journeyFitPadding, journeyIsFramed, type JourneyCameraFit } from './journeyCamera'
 import { installJourneyStyle } from './journeyStyle'
+import type { BathymetryStatus } from '../domain/bathymetry'
+import { BathymetryRuntime } from './BathymetryRuntime'
 
 setWorkerUrl(maplibreWorkerUrl)
 
@@ -213,6 +215,8 @@ interface TrafficMapProps {
   portsVisible: boolean
   airportsVisible: boolean
   weatherVisible: boolean
+  depthsVisible: boolean
+  onBathymetryStatus: (status: BathymetryStatus) => void
   orbitalVisible: boolean
   starlinkVisible?: boolean
   clusteringEnabled: boolean
@@ -406,6 +410,8 @@ export function TrafficMap({
   portsVisible,
   airportsVisible,
   weatherVisible,
+  depthsVisible,
+  onBathymetryStatus,
   orbitalVisible,
   starlinkVisible = false,
   clusteringEnabled,
@@ -449,6 +455,9 @@ export function TrafficMap({
   const viewRequestCancelledRef = useRef(viewRequestCancelled)
   const journeySnapshotRef = useRef(journeySnapshot)
   const journeyFitRef = useRef(onJourneyFit)
+  const bathymetryRef = useRef<BathymetryRuntime | null>(null)
+  const depthsVisibleRef = useRef(depthsVisible)
+  const bathymetryStatusRef = useRef(onBathymetryStatus)
   const pendingJourneyFitRef = useRef<{
     snapshot: JourneySnapshot
     fit: Extract<JourneyCameraFit, { kind: 'available' }>
@@ -570,6 +579,12 @@ export function TrafficMap({
   const hoveredOrbitalIdentityRef = useRef<string | null>(null)
   const hideTrafficTooltipRef = useRef<() => void>(() => undefined)
   const refreshTrafficTooltipRef = useRef<() => void>(() => undefined)
+
+  useEffect(() => {
+    depthsVisibleRef.current = depthsVisible
+    bathymetryStatusRef.current = onBathymetryStatus
+    bathymetryRef.current?.setEnabled(depthsVisible, online)
+  }, [depthsVisible, online, onBathymetryStatus])
 
   useEffect(() => {
     desiredStyleUrlRef.current = mapStyleUrl
@@ -894,6 +909,7 @@ export function TrafficMap({
       )
     }
 
+    bathymetryRef.current?.setViewport(orbitalViewport, rawZoom)
     const signature = `${viewportSignature(assessment)}|${orbitalViewportSignature(
       orbitalViewport,
     )}|${rawZoom ?? 'unavailable'}`
@@ -997,6 +1013,7 @@ export function TrafficMap({
         activeTheme,
         appliedStyleUrlRef.current,
       )
+      bathymetryRef.current?.install(activeTheme)
       const aircraftFeatures = trafficFeatures(
         renderState.trafficContext
           ? sampleTrafficZoomContext(map, renderState.aircraft)
@@ -1400,6 +1417,10 @@ export function TrafficMap({
     if (!map) return
 
     mapRef.current = map
+    bathymetryRef.current = new BathymetryRuntime(
+      map, depthsVisibleRef.current, onlineRef.current,
+      status => bathymetryStatusRef.current(status),
+    )
     const touchTracker = new TouchInteractionTracker()
     const canvas = map.getCanvas()
     const hoverPopup = new Popup({
@@ -1934,6 +1955,7 @@ export function TrafficMap({
     }
 
     map.on('movestart', hideTrafficTooltip)
+    map.on('movestart', () => bathymetryRef.current?.moveStarted())
     map.on('style.load', hideTrafficTooltip)
     map.on('render', revalidateTrafficTooltip)
 
@@ -1943,6 +1965,7 @@ export function TrafficMap({
     })
 
     map.on('resize', () => {
+      bathymetryRef.current?.moveStarted()
       scheduleViewportReport(map)
       if (renderStateRef.current.trafficContext) scheduleRender()
     })
@@ -2227,6 +2250,7 @@ export function TrafficMap({
     })
 
     map.on('error', (event) => {
+      if (bathymetryRef.current?.handleError(event)) return
       if (event.error) {
         if (
           !loadedRef.current &&
@@ -2254,6 +2278,8 @@ export function TrafficMap({
     )
 
     return () => {
+      bathymetryRef.current?.dispose()
+      bathymetryRef.current = null
       styleGenerationRef.current += 1
       clusterOptionsGenerationRef.current += 1
       interactionGenerationRef.current += 1

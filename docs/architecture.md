@@ -163,6 +163,45 @@ obsolete work; hidden/offline transitions cancel pending acquisition. Ordinary
 aircraft cadence/backoff, marine connections and orbital deadlines stay owned
 by their existing independent controllers.
 
+## Modeled water-depth context
+
+`BathymetryRuntime` owns only depth imagery/values on the existing MapLibre
+instance. It consumes the already-settled full-canvas orbital viewport
+geometry and zoom, independently of the traffic 100 km contract. Stable
+source-cell candidates are generated in the domain layer; rendered ocean
+polygons and projected screen spacing gate up to twelve candidates. Values
+never enter traffic entities, freshness, counts, selection, trails, captured
+journeys, orbital workers or device history.
+
+`DepthValuesController` allows at most two physical requests, including
+superseded promises still settling, with revision/abort fencing and one
+eight-second batch deadline. Only complete validated values and explicit
+no-data enter its bounded TTL/LRU cache. Pan, disable, hidden/offline and
+unmount fence late results; source-specific Retry-After survives toggles.
+It has no polling or automatic retry timer.
+
+The native `modeled-depths` raster protocol reads a fixed matching `2020`
+world-image/land-mask pair, checks bounded PNG bytes and dimensions, subtracts
+land alpha in an OffscreenCanvas, and closes decoded images. It does not
+infer depth from color. The existing MapLibre image queue owns raster
+scheduling; fulfilled composed PNG buffers are copied from a bounded tab
+cache so consumer transfers cannot detach cached data. The default fetch
+adapter preserves the native Window receiver rather than invoking `fetch`
+as a tile-loader method.
+
+Persistent raster and GeoJSON sources install below operational overlays.
+Style reloads reinstall them idempotently and restore current data/visibility.
+Optional depth errors are consumed before the generic basemap fallback;
+unsupported image composition can leave numeric context usable. Static model
+context remains available in HISTORY but pauses network work while hidden,
+offline or disabled. No new renderer, worker, backend, camera loop or traffic
+acquisition path is introduced.
+
+The UI explicitly separates older shading (EMODnet 2018 / GEBCO 2019) from
+current service-grid numbers and their LAT/nominal-MSL datums. Default-on
+requested-area disclosure and [product rights](data-sources-and-licensing.md#modeled-water-depths-emodnet-and-gebco)
+are part of the feature contract.
+
 ## Source responsibilities
 
 | Area | Responsibility |
@@ -177,6 +216,7 @@ by their existing independent controllers.
 | `src/providers/ports/` | Bounded lazy same-origin port loading plus checksum, schema, and source-provenance validation |
 | `src/providers/airports/` | Bounded lazy same-origin airport loading plus checksum, schema, and source-provenance validation |
 | `src/providers/weather/` | Canonical same-origin AWC requests, bounded JSON validation, METAR/SPECI normalization, newest-report selection, and source provenance |
+| `src/providers/bathymetry/` | Fixed matched image/mask acquisition, bounded composition/cache and strict actual WMS grid-value normalization |
 | `src/providers/orbital/` | Strict same-origin snapshot reads, streamed byte bounds, exact schema/header/digest validation, ETag revalidation, and fulfilled current-tab caching |
 | `src/providers/geocoding/` | Photon request construction, response bounds, runtime GeoJSON validation, result normalization, and attribution identity |
 | `src/app/` | React hooks/controllers for provider and orbital lifecycle, unified preference persistence, place-search cancellation/cache, bounded selected-photo, selected-route, and exact-NORAD image tab caches, navigation intent, time ticks, offline state, and traffic-history orchestration |

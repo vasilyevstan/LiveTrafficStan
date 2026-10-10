@@ -50,6 +50,7 @@ const SHARE_KEYS = new Set([
   'airports',
   'clusters',
   'weather',
+  'depths',
   'orbits',
   'starlink',
   'vesselCategory',
@@ -211,6 +212,7 @@ export const parseShareFragment = (
     ['airports', 'airportsVisible'],
     ['clusters', 'clusteringEnabled'],
     ['weather', 'weatherVisible'],
+    ['depths', 'depthsVisible'],
     ['orbits', 'orbitalObjectsVisible'],
   ]
   for (const [parameter, key] of layerParameters) {
@@ -325,6 +327,7 @@ export const serializeShareFragment = (
     booleanValue(preferences.layers.clusteringEnabled),
   )
   params.set('weather', booleanValue(preferences.layers.weatherVisible))
+  params.set('depths', booleanValue(preferences.layers.depthsVisible))
   params.set(
     'orbits',
     booleanValue(preferences.layers.orbitalObjectsVisible),

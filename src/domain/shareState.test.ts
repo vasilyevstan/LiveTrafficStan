@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { defaultAppPreferences } from './preferences'
+import { defaultAppPreferences, mergeAppPreferenceOverrides } from './preferences'
 import {
   createShareUrl,
   MAXIMUM_SHARE_FRAGMENT_LENGTH,
@@ -16,6 +16,19 @@ const camera = {
 }
 
 describe('shared application state', () => {
+  it('round trips explicit depth choices and keeps legacy links compatible with saved off', () => {
+    const defaults = defaultAppPreferences()
+    expect(mergeAppPreferenceOverrides(defaults, parseShareFragment('#v=1&theme=dark')?.preferences).layers.depthsVisible).toBe(true)
+    const off = { ...defaults, layers: { ...defaults.layers, depthsVisible: false } }
+    expect(mergeAppPreferenceOverrides(off, parseShareFragment('#v=1&theme=dark')?.preferences).layers.depthsVisible).toBe(false)
+    const fragment = serializeShareFragment(camera, off, 3)
+    expect(fragment).toContain('depths=0')
+    expect(parseShareFragment(fragment)?.preferences?.layers?.depthsVisible).toBe(false)
+    expect(parseShareFragment('#v=1&depths=1')?.preferences?.layers?.depthsVisible).toBe(true)
+    expect(parseShareFragment('#v=1&depths=true')).toBeNull()
+    expect(parseShareFragment('#v=1&depths=1&depths=0')).toBeNull()
+  })
+
   it('round trips a canonical full camera and preference state', () => {
     const preferences = {
       ...defaultAppPreferences(),
@@ -56,6 +69,7 @@ describe('shared application state', () => {
           airportsVisible: false,
           clusteringEnabled: false,
           weatherVisible: false,
+          depthsVisible: true,
           orbitalObjectsVisible: false,
         },
         vesselFilters: {

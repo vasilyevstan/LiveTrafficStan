@@ -82,6 +82,10 @@ describe('PWA manifest and deployment headers', () => {
     expect(headers).not.toContain('*.planespotters.net')
     expect(headers).not.toContain('*.plnspttrs.net')
     expect(headers).not.toContain('*.wikimedia.org')
+    for (const origin of ['tiles.emodnet-bathymetry.eu', 'ows.emodnet-bathymetry.eu', 'wms.gebco.net']) {
+      expect(headers.split('; img-src')[0]).toContain(`https://${origin}`)
+    }
+    expect(headers).not.toMatch(/\*\.(?:emodnet-bathymetry\.eu|gebco\.net)/)
     expect(headers.split('; img-src')[0]).not.toContain('https://openwaters.io')
     expect(headers).toMatch(
       /\/sw\.js[\s\S]*must-revalidate[\s\S]*Service-Worker-Allowed: \//,

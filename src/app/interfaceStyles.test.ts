@@ -75,6 +75,10 @@ describe('interface presentation contracts', () => {
     )
   })
 
+  it('keeps the depth toggle full-width and at least a 44px target', () => {
+    expect(styles).toMatch(/#depths-layer-toggle\s*\{[^}]*grid-column: 1 \/ -1;[^}]*min-height: 44px;/)
+  })
+
   it('anchors interface and native map controls to the visual viewport, not the canvas', () => {
     expect(styles).toMatch(
       /\.interface-layer,\s*\.maplibregl-control-container\s*\{[^}]*top: var\(--app-visual-viewport-top\);[^}]*left: var\(--app-visual-viewport-left\);[^}]*width: var\(--app-visual-viewport-width\);[^}]*height: var\(--app-visual-viewport-height\);[^}]*container: workspace \/ size;/,

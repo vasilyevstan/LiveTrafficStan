@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_VESSEL_FILTERS } from '../domain/vesselFilters'
 import { EMPTY_ORBITAL_PREDICTION } from '../domain/orbital'
+import { INITIAL_BATHYMETRY_STATUS } from '../domain/bathymetry'
 import {
   DEFAULT_ORBITAL_DISCOVERY_FILTERS,
   type OrbitalDisplaySelection,
@@ -72,6 +73,9 @@ const renderControls = (
       onAirportSelect={() => undefined}
       onRetryAirports={() => undefined}
       weatherVisible={false}
+      depthsVisible
+      bathymetryStatus={INITIAL_BATHYMETRY_STATUS}
+      onDepthsVisibleChange={() => undefined}
       weatherLoading={false}
       weatherWaiting={false}
       weatherReady={false}
@@ -213,6 +217,7 @@ describe('TrafficControls', () => {
     expect(navigationPrimary).toContain('>AIRCRAFT<')
     expect(navigationPrimary).toContain('>SHIPS<')
     expect(navigationPrimary).toContain('>ORBITS<')
+    expect(navigationPrimary).not.toContain('>DEPTHS<')
     expect(navigationPrimary).not.toContain('control-options--three')
     expect(navigationPrimary).not.toContain('>AUTO<')
     expect(navigationPrimary).not.toContain('href=')
@@ -220,6 +225,11 @@ describe('TrafficControls', () => {
     expect(navigationMore).toContain('<span>More</span></summary>')
     expect(navigationMore).toContain('class="workspace-panel-title">Explore map')
     expect(navigationMore).toContain('<legend>Layers</legend>')
+    expect(navigationMore).toContain('id="depths-layer-toggle"')
+    expect(navigationMore).toContain('aria-describedby="depths-layer-status"')
+    expect(navigationMore).toContain('Approximate seabed models, not navigation')
+    expect(navigationMore).toContain('Shading: EMODnet 2018 / GEBCO 2019')
+    expect(navigationMore).toContain('requested map area')
     expect(navigationMore).toContain('>ORBITS</button>')
     expect(navigationMore).not.toContain('Traffic legend')
     expect(navigationMore).not.toContain('Band 1 · below 1,000 m')
