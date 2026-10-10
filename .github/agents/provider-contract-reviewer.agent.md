@@ -91,6 +91,14 @@ Check these project invariants:
   (100.008 km transport coverage) without widening display eligibility.
 - Successful empty results, unknown or regional coverage, updating, paused,
   stale, historical, offline, and provider failure states remain distinct.
+- Depths is authorized default-on model context, independent from live
+  observations/history. Preserve matched image/mask vintages, real numeric
+  values and LAT/MSL qualifications, fixed anonymous origins, cap2/12 and
+  fulfilled-only caches. No navigation/clearance inference or new scheduler.
+- GEBCO queries the center pixel of a 3x3 virtual image over one native cell,
+  with one returned feature; EMODnet retains 1x1. Preserve the exact complete
+  empty-text form and fail-closed coordinate/range checks. Reuse bounded real
+  evidence for both source tiers; one regional success is not global proof.
 - Geolocation is one-shot, permission-aware, rounded before provider use, and
   never persisted or included as personal data in headers/logs.
 - Strict valid decimal coordinates navigate locally and never reach Photon.

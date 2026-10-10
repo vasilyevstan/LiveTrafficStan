@@ -37,6 +37,13 @@ rendering remains mandatory: byte/schema tests did not expose Window.fetch's
 invalid receiver when stored as a class method, nor the inherited sub-44px
 target. Fix those demonstrated defects without redesigning other controls.
 
+Source proof must exercise the actual selected regional and global query
+forms, not infer global success from one regional value. GEBCO's one-pixel
+virtual image missed a valid western-ocean cell; its 3x3 center pixel returns
+one value over the same bounds. Recognize the exact complete no-data text
+without treating malformed/truncated responses as empty. The focused fix
+reuses accepted UI evidence rather than restarting a design/review cycle.
+
 ## ADSB.lol remains the sole aircraft provider
 
 The dated
