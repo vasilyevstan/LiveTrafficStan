@@ -28,25 +28,49 @@ describe('bounded bathymetry values', () => {
     expect(normalizeGebcoDepth(gebco('0'), point)).toBeNull()
     expect(normalizeGebcoDepth(gebco('nan'), point)).toBeNull()
     expect(normalizeGebcoDepth('GetFeatureInfo results:\n', point)).toBeNull()
+    expect(normalizeGebcoDepth('GetFeatureInfo results:\n\n  Search returned no results.\n', point)).toBeNull()
     for (const value of [gebco('-82', '10'), gebco('-82', '24.75', '95'), gebco('-99999'),
-      gebco().replace('GEBCO_LATEST_2', 'other'), `${gebco()}Feature 1:`, gebco('')]) {
+      gebco().replace('GEBCO_LATEST_2', 'other'), `${gebco()}Feature 1:`, gebco(''),
+      'GetFeatureInfo results:\n Search returned no results.\nFeature 0:',
+      'GetFeatureInfo results:\n Search returned no']) {
       expect(() => normalizeGebcoDepth(value, point)).toThrow()
     }
   })
 
-  it('uses only fixed anonymous one-pixel WMS requests with rounded cell bounds', async () => {
+  it('uses fixed anonymous single-value WMS requests with rounded cell bounds', async () => {
     const fetchImpl = vi.fn<typeof fetch>(async () => new Response(gebco(), { headers: { 'Content-Type': 'text/plain' } }))
     const signal = new AbortController().signal
     await expect(fetchDepthValue('gebco', point, signal, fetchImpl)).resolves.toBe(82)
     const [url, options] = fetchImpl.mock.calls[0]
     const request = new URL(String(url))
     expect(request.origin).toBe('https://wms.gebco.net')
-    expect(request.searchParams.get('WIDTH')).toBe('1')
+    expect(request.searchParams.get('WIDTH')).toBe('3')
+    expect(request.searchParams.get('HEIGHT')).toBe('3')
+    expect(request.searchParams.get('X')).toBe('1')
+    expect(request.searchParams.get('Y')).toBe('1')
     expect(request.searchParams.get('FEATURE_COUNT')).toBe('1')
     expect(request.searchParams.get('BBOX')).toMatch(/^-?\d+\.\d{4}(,-?\d+\.\d{4}){3}$/)
     expect(options).toEqual({ signal, credentials: 'omit', referrerPolicy: 'no-referrer', redirect: 'error' })
-    expect(depthValueUrl('emodnet', point)).toContain('https://ows.emodnet-bathymetry.eu/wms?')
+    const regional = new URL(depthValueUrl('emodnet', point))
+    expect(regional.origin).toBe('https://ows.emodnet-bathymetry.eu')
+    for (const field of ['WIDTH', 'HEIGHT', 'FEATURE_COUNT']) expect(regional.searchParams.get(field)).toBe('1')
+    for (const field of ['X', 'Y']) expect(regional.searchParams.get(field)).toBe('0')
     expect(() => depthValueUrl('gebco', { ...point, latitude: NaN })).toThrow()
+  })
+
+  it('accepts the actual western-ocean cell returned by the GEBCO center-pixel query', async () => {
+    const western = { id: 'gebco:13900:30420', longitude: -122.0813, latitude: 36.7521 }
+    const url = new URL(depthValueUrl('gebco', western))
+    expect(url.searchParams.get('BBOX')).toBe('-122.0834,36.7500,-122.0792,36.7542')
+    const fetchImpl = vi.fn<typeof fetch>(async input => {
+      const params = new URL(String(input)).searchParams
+      const text = params.get('WIDTH') === '3' && params.get('X') === '1'
+        ? gebco('-854', '-122.08125', '36.752083')
+        : 'GetFeatureInfo results:\n\n  Search returned no results.\n'
+      return new Response(text, { headers: { 'Content-Type': 'text/plain; charset=UTF-8' } })
+    })
+    await expect(fetchDepthValue('gebco', western, new AbortController().signal, fetchImpl)).resolves.toBe(854)
+    expect(fetchImpl).toHaveBeenCalledTimes(1)
   })
 
   it('rejects oversized, malformed, or wrong-media bodies and preserves rate-limit information', async () => {
