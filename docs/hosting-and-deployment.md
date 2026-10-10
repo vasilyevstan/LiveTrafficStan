@@ -1802,6 +1802,76 @@ If a newer pull request reaches `main` while an older manual deployment is
 validating, the second equality check fails rather than silently promoting the
 older SHA.
 
+## Compass reset north production receipt (2026-10-10)
+
+Implementation #429 and checked dev-to-main #430 deliver the currently
+running application **`2748f4dbd0cce5ad71b295ee25973ebddbf02907`**, Worker
+**`0d847e8a-c8d4-435a-8e0b-77cc7f80cae9`**, published at
+**2026-10-10T20:43:13Z**. It serves `index-2lX6Irkf.js`,
+`index-Cnzw5_2m.css` and shell `a19609ab669c520d5b30`. Later receipt/Wiki
+commits are documentation-only, not another application deployment.
+
+Accepted implementation `64f64efac9f3c6290f3dbe010aeebad3787cf730`,
+dev `e0d5e59f93964a1f23eeafb834d308add4d6a655` and application have the
+same tree. Feature/dev/release-head Validation
+38084430995 /38084553059 /38084615840 and
+[exact-main Validation 38084708449](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/38084708449)
+passed. No ancestry synchronization, protection change or new release
+machinery was needed for the application promotion.
+
+[Deployment 38084765704](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/38084765704)
+**published successfully but the Action failed**: its immediate strict smoke
+received private-aircraft `504`. The installed predecessor had already
+produced `200`/`503`. Both subsequent **unchanged full strict smokes** passed
+at the exact application SHA: workers.dev at 20:44:35 UTC and trackstan.xyz
+at 20:44:54 UTC. There was no redeploy, relaxed assertion, credential change
+or provider/infrastructure fix. Preserve the failed Action and partial state;
+this is not an uninterrupted aircraft-availability claim.
+
+The feature is a contextual 44px N/needle beside Center, using a wrapped
+settled 1-degree tolerance and native bearing-only reset: 250ms, or immediate
+under reduced motion. It preserves actual center/zoom/pitch/projection,
+HISTORY, valid selection, captured path and saved Return camera. A historical
+mobile inspector temporarily reserves its incumbent 70px hidden dock row,
+with measured 17px clearance and full row recovery after reset. It adds no
+provider, Worker route/binding, secret, dependency, preference/schema,
+persistence, location lookup or camera scheduler.
+
+Required local gates passed **177 suites /1,601 tests**, lint/typecheck and
+four data checks/build. Accepted local six-layout, keyboard/reduced-motion,
+2x, pitched globe/dateline/high-latitude, HISTORY/path/Return, map-drag and
+supersession evidence is retained. The final four historical mobile views
+kept their 44px X, centered selection and 152/101px body scrollers. Rejected
+overlap and observer recording/numerical/resume findings are not relabeled
+successful; see [the testing receipt](development-and-testing.md#contextual-compass--reset-north-428).
+
+The genuine installed **REFRESH APP** began at 20:45:30 UTC, replacing
+`index-BGCLjay2.js` with the accepted script while preserving raw preferences,
+history settings/database identity and root install scope/controller.
+After that completed update, an open native credits disclosure obstructed
+observer theme setup. The observer's own subsequent Flat setup was restored
+through normal trusted Auto globe input, strictly rechecked against baseline,
+and only remaining chapters resumed; no storage edit or second update.
+At **20:50:25-20:50:31 UTC**, actual Light 390x568 touch and Dark 1280x900
+Enter resets reached bearing 0, with exactly unchanged center/zoom/pitch,
+Auto globe, one vector map and canvas focus. Native transport/clock, zero
+orbital reads and zero runtime exceptions passed. Explicit focus/device
+emulation is qualified, not physical-device or OS hidden-state proof.
+
+Every prior production input remains: `artifact=application`,
+`aircraft_delivery=oci-private-relay`, aircraft photos, flight routes,
+curated/Starlink catalogs, marine supplementation and airport boards enabled.
+Atomic secrets, serialization and exact-current-main checks remain.
+The compatible rollback is prior application
+`d9fb33b00a9ce0e73123b7fe3d0b4c512ec30e47` /
+Worker `7dd064d4-f151-431e-8db7-6bf7772bc104`, with the same enabled inputs.
+No additional rollback drill or storage/install migration is claimed.
+
+Canonical/Wiki publication is independently verified documentation-only work.
+The [#428 receipt](https://github.com/vasilyevstan/LiveTrafficStan/issues/428)
+records its later exact SHAs and public byte verification. The earlier
+receipts below remain historical and compatible rollback evidence.
+
 ## Compact-inspector production receipt (2026-10-10)
 
 Implementation #421 and checked promotion #422 delivered the compact fixed
