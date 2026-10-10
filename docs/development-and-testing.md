@@ -48,6 +48,68 @@ supplementary marine WebSocket; use the actual local Worker for those paths.
 | `npm run check:deploy` | Bundle the Worker and Static Assets without credentials or deployment |
 | `npm run preview:worker` | Build and run the actual local Cloudflare `workerd` boundary |
 
+### Captured journeys (#406)
+
+Focused suites cover exact flight identity/ordered airports/current-leg
+plausibility, snapshot immutability, received gaps, near-antipodal omission,
+antimeridian splitting, polar/unsafe framing, actual-path rotation, source
+rehydration and captured-state transitions. Marine cases cover the exact
+Open Waters root attribution/array/time contract, bounded MIME/body/checksum
+reads, canonical identity/clock guards, exact coded Portnet coordinates,
+implausible events, A-B-A/abort fencing, fulfilled-only caching and backoff.
+One failed graph load cannot start another load for the second journey phase.
+
+`scripts/marine-route-land-filter.test.mjs` checks shoreline contact, interior
+segments, polygon holes, short dateline crossings and no-bridge output splits.
+`marineRoute.test.ts` verifies the shipped filtered graph's exact digest,
+topology bounds, near-node/disconnected/same-node rejection and unchanged input
+positions. The 10 MB Natural Earth input is maintainer-only, not a runtime
+dependency. To reproduce the projection, download the exact source URL pinned
+in `scripts/marine-route-land-filter.mjs` and run:
+
+```bash
+node scripts/marine-route-land-filter.mjs /path/to/pinned-ne_10m_land.geojson public/marine-routes/searoute-4fc696c5/water-network.json
+```
+
+Both input checksums must match; ordinary tests need no network or downloaded
+land file. Any later source/projection change needs a new immutable output
+version, not replacement of published bytes.
+
+Native browser acceptance uses the real map, provider normalizers, fetch,
+clocks and trusted controls with synthetic aircraft/history/Portnet protocols,
+mocked MQTT and explicit focus emulation. Selection setup via application
+callbacks is qualified, not native marker picking or physical-device proof.
+Keep exact per-phase receipts: default call-sign fixtures must contain a
+numeric flight number, an equatorial local view needs enough zoom to remain
+within 100 km, and the Home target is distinct from a padding-adjusted map
+camera center. These observer errors must not become application workarounds.
+Passed screenshots/unchanged-source phases can be reused after correcting the
+observer, without pretending unobserved network intervals were measured.
+
+The bounded acceptance covers both themes at 1280x900, 390x568 and 315x517;
+44 px X, scrollable provenance, two phase colors, preserved canvas, explicit
+Return/Hide, active-fit interruption, manual no-refit, style rehydration,
+HISTORY, globe/dateline/polar limitations, and already-enabled orbital
+independence. Synthetic evidence does not establish real voyage completeness;
+one separate bounded production observation is required for that release
+milestone.
+
+The 2026-10-10 local confirmation ended at **01:24:14 UTC** on
+`index-62M7Yu4v.js`: six aircraft and six ship Light/Dark captures passed.
+All six aircraft/ship fits completed; mobile aircraft fitting used a bounded
+60-degree rotation. Separate automatic-globe and antimeridian fits passed;
+the polar case explicitly declined without camera movement. Hide and X each
+interrupted an active fit, with no later resumption. Already-enabled ORBITS
+retained one curated read, one Starlink read and the same worker through
+Show path/theme changes; native Center preserved the Home target despite its
+padding-adjusted camera. Ship fixtures made eight history and eighteen Portnet
+requests across explicit captures, but loaded the graph once; empty/error
+states never retried automatically and pending close aborted the real request.
+The minimum attached-window aircraft spacing was 20,000.631 ms; unobserved
+intervals between qualified resumes are not claimed. The required local gates
+passed with 171 suites / 1,535 tests. The two requested model reviews and
+shoreline exclusion proof are scoped evidence, not a guarantee of zero bugs.
+
 ### Persistent inspector close (#400)
 
 The shared shell and all five detail components retain content, accessible

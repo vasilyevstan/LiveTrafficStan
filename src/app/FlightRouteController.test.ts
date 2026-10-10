@@ -43,6 +43,11 @@ const config = {
   rateLimitBackoffMaxMs: 5 * 60_000,
 }
 
+const airports = [
+  { name: 'Tallinn Airport', code: 'TLL', icao: 'EETN', latitude: 59.4133, longitude: 24.8328 },
+  { name: 'Helsinki Airport', code: 'HEL', icao: 'EFHK', latitude: 60.3172, longitude: 24.9633 },
+]
+
 const available = (
   flightIcao: string,
 ): Extract<FlightRouteLookupResult, { kind: 'available' }> => ({
@@ -50,8 +55,9 @@ const available = (
   route: {
     flightIcao,
     confidence: 'plausible',
-    departure: { name: 'Tallinn Airport', code: 'TLL' },
-    arrival: { name: 'Helsinki Airport', code: 'HEL' },
+    departure: airports[0]!,
+    arrival: airports[1]!,
+    airports,
     source: {
       name: 'ADSB.lol',
       websiteUrl: 'https://www.adsb.lol/',

@@ -1,5 +1,6 @@
 import type { Aircraft } from './traffic'
-import { isValidCoordinate } from './geo'
+import { distanceFromGeodesicSegmentKm, distanceKm, isValidCoordinate } from './geo'
+import { JOURNEY_CONFIG } from '../config/appConfig'
 
 export interface FlightRouteIdentity {
   callsign: string
@@ -12,6 +13,9 @@ export interface FlightRouteIdentity {
 export interface FlightRouteAirport {
   name: string
   code?: string
+  icao: string
+  latitude: number
+  longitude: number
 }
 
 export interface FlightRouteSource {
@@ -24,6 +28,7 @@ export interface FlightRouteRecord {
   confidence: 'plausible'
   departure: FlightRouteAirport
   arrival: FlightRouteAirport
+  airports: readonly FlightRouteAirport[]
   providerUpdatedAt?: number
   source: FlightRouteSource
 }
@@ -128,3 +133,17 @@ export const flightRouteIdentityKey = (identity: FlightRouteIdentity) =>
     identity.icao24,
     identity.registration ?? '',
   ].join('|')
+
+export const flightRouteLegIndices = (
+  airports: readonly FlightRouteAirport[],
+  position: Pick<Aircraft['position'], 'latitude' | 'longitude'>,
+) => airports.flatMap((start, index) => {
+  const end = airports[index + 1]
+  if (!end) return []
+  const tolerance = Math.max(
+    JOURNEY_CONFIG.minimumRouteToleranceKm,
+    distanceKm(start, end) * JOURNEY_CONFIG.routeDistanceToleranceRatio,
+  )
+  return distanceFromGeodesicSegmentKm(position, start, end) <= tolerance
+    ? [index] : []
+})

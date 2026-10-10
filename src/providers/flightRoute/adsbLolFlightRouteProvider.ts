@@ -4,8 +4,8 @@ import type {
   FlightRouteIdentity,
   FlightRouteLookupResult,
 } from '../../domain/flightRoute'
-import { normalizeFlightRouteCallsign } from '../../domain/flightRoute'
-import { distanceKm, isValidCoordinate } from '../../domain/geo'
+import { flightRouteLegIndices, normalizeFlightRouteCallsign } from '../../domain/flightRoute'
+import { isValidCoordinate } from '../../domain/geo'
 import { parseRetryAfterMs } from '../errors'
 import { isRecord } from '../guards'
 
@@ -44,9 +44,6 @@ const abortError = () =>
 
 const AIRPORT_ICAO = /^[A-Z0-9]{4}$/
 const AIRPORT_IATA = /^[A-Z0-9]{3}$/
-const EARTH_RADIUS_KM = 6_371
-const MINIMUM_ROUTE_TOLERANCE_KM = 50 * 1.852
-const ROUTE_DISTANCE_TOLERANCE_RATIO = 0.2
 const MAXIMUM_ROUTE_AIRPORTS = 16
 
 const validText = (
@@ -58,12 +55,6 @@ const validText = (
   value.length <= maximumLength &&
   value === value.trim()
 
-interface RouteAirport {
-  display: FlightRouteAirport
-  latitude: number
-  longitude: number
-}
-
 const normalizedCode = (
   value: unknown,
   pattern: RegExp,
@@ -73,7 +64,7 @@ const normalizedCode = (
   return pattern.test(normalized) ? normalized : undefined
 }
 
-const parseAirport = (value: unknown): RouteAirport | undefined => {
+const parseAirport = (value: unknown): FlightRouteAirport | undefined => {
   if (
     !isRecord(value) ||
     !validText(value.name, 160) ||
@@ -89,96 +80,12 @@ const parseAirport = (value: unknown): RouteAirport | undefined => {
   if (!icao) return undefined
 
   return {
-    display: {
-      name: value.name,
-      code: iata ?? icao,
-    },
+    name: value.name,
+    code: iata ?? icao,
+    icao,
     latitude: value.lat,
     longitude: value.lon,
   }
-}
-
-const toRadians = (degrees: number) => (degrees * Math.PI) / 180
-
-const initialBearing = (
-  from: Pick<RouteAirport, 'latitude' | 'longitude'>,
-  to: Pick<RouteAirport, 'latitude' | 'longitude'>,
-) => {
-  const fromLatitude = toRadians(from.latitude)
-  const toLatitude = toRadians(to.latitude)
-  const longitudeDelta = toRadians(to.longitude - from.longitude)
-  return Math.atan2(
-    Math.sin(longitudeDelta) * Math.cos(toLatitude),
-    Math.cos(fromLatitude) * Math.sin(toLatitude) -
-      Math.sin(fromLatitude) *
-        Math.cos(toLatitude) *
-        Math.cos(longitudeDelta),
-  )
-}
-
-const clamp = (value: number, minimum: number, maximum: number) =>
-  Math.min(maximum, Math.max(minimum, value))
-
-const isPositionNearSegment = (
-  position: Pick<RouteAirport, 'latitude' | 'longitude'>,
-  start: RouteAirport,
-  end: RouteAirport,
-) => {
-  const segmentDistanceKm = distanceKm(start, end)
-  const toleranceKm = Math.max(
-    MINIMUM_ROUTE_TOLERANCE_KM,
-    segmentDistanceKm * ROUTE_DISTANCE_TOLERANCE_RATIO,
-  )
-  if (
-    distanceKm(position, start) <= toleranceKm ||
-    distanceKm(position, end) <= toleranceKm
-  ) {
-    return true
-  }
-
-  if (segmentDistanceKm === 0) return false
-
-  const startToPosition =
-    distanceKm(start, position) / EARTH_RADIUS_KM
-  const bearingToPosition = initialBearing(start, position)
-  const bearingToEnd = initialBearing(start, end)
-  const bearingDelta = bearingToPosition - bearingToEnd
-  const crossTrackAngle = Math.asin(
-    clamp(
-      Math.sin(startToPosition) * Math.sin(bearingDelta),
-      -1,
-      1,
-    ),
-  )
-  const alongTrackKm =
-    Math.atan2(
-      Math.sin(startToPosition) * Math.cos(bearingDelta),
-      Math.cos(startToPosition),
-    ) * EARTH_RADIUS_KM
-
-  return (
-    alongTrackKm >= 0 &&
-    alongTrackKm <= segmentDistanceKm &&
-    Math.abs(crossTrackAngle) * EARTH_RADIUS_KM <= toleranceKm
-  )
-}
-
-const isPlausibleRoute = (
-  identity: FlightRouteIdentity,
-  airports: readonly RouteAirport[],
-) => {
-  const position = {
-    latitude: identity.latitude,
-    longitude: identity.longitude,
-  }
-  for (let index = 0; index < airports.length - 1; index += 1) {
-    const start = airports[index]
-    const end = airports[index + 1]
-    if (start && end && isPositionNearSegment(position, start, end)) {
-      return true
-    }
-  }
-  return false
 }
 
 const parseLookupResult = (
@@ -211,8 +118,10 @@ const parseLookupResult = (
   if (airports.some((airport) => airport === undefined)) {
     throw new FlightRouteProviderError('provider-error')
   }
-  const parsedAirports = airports as RouteAirport[]
-  if (!isPlausibleRoute(identity, parsedAirports)) {
+  const parsedAirports = airports.filter(
+    (airport): airport is FlightRouteAirport => airport !== undefined,
+  )
+  if (flightRouteLegIndices(parsedAirports, identity).length === 0) {
     return { kind: 'unavailable', reason: 'implausible' }
   }
 
@@ -227,8 +136,9 @@ const parseLookupResult = (
     route: {
       flightIcao: callsign,
       confidence: 'plausible',
-      departure: departure.display,
-      arrival: arrival.display,
+      departure,
+      arrival,
+      airports: parsedAirports,
       providerUpdatedAt,
       source: {
         name: config.sourceName,

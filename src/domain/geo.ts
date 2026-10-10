@@ -45,6 +45,41 @@ export const distanceKm = (
   )
 }
 
+export const initialBearingRadians = (
+  from: Pick<GeoPosition, 'latitude' | 'longitude'>,
+  to: Pick<GeoPosition, 'latitude' | 'longitude'>,
+) => {
+  const fromLatitude = toRadians(from.latitude)
+  const toLatitude = toRadians(to.latitude)
+  const longitudeDelta = toRadians(to.longitude - from.longitude)
+  return Math.atan2(
+    Math.sin(longitudeDelta) * Math.cos(toLatitude),
+    Math.cos(fromLatitude) * Math.sin(toLatitude) -
+      Math.sin(fromLatitude) * Math.cos(toLatitude) * Math.cos(longitudeDelta),
+  )
+}
+
+export const distanceFromGeodesicSegmentKm = (
+  point: Pick<GeoPosition, 'latitude' | 'longitude'>,
+  start: Pick<GeoPosition, 'latitude' | 'longitude'>,
+  end: Pick<GeoPosition, 'latitude' | 'longitude'>,
+) => {
+  const length = distanceKm(start, end)
+  const angularDistance = distanceKm(start, point) / EARTH_RADIUS_KM
+  const bearingDelta =
+    initialBearingRadians(start, point) - initialBearingRadians(start, end)
+  const along = Math.atan2(
+    Math.sin(angularDistance) * Math.cos(bearingDelta),
+    Math.cos(angularDistance),
+  ) * EARTH_RADIUS_KM
+  if (length === 0 || along < 0 || along > length) {
+    return Math.min(distanceKm(point, start), distanceKm(point, end))
+  }
+  return Math.abs(Math.asin(Math.max(-1, Math.min(
+    1, Math.sin(angularDistance) * Math.sin(bearingDelta),
+  )))) * EARTH_RADIUS_KM
+}
+
 export const boundsAroundCenter = (
   center: AppCenter,
   radiusKm: number,

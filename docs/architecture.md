@@ -126,6 +126,43 @@ tombstone solely to retire the namespace provisioned by the removed
 aviationstack design. No route class or binding exists at runtime, and the
 tombstone can be removed after Cloudflare confirms that deletion has applied.
 
+## Captured journey overviews
+
+An explicit Show path action captures an immutable `JourneySnapshot`, separate
+from live aircraft/vessels, counts, search, normal trails, metadata/photos,
+orbital state and optional device history. The shared `JourneyDetails` inspector
+uses the released pinned X and one outer scroll owner. `journeyStyle` maintains
+one persistent GeoJSON source and idempotent layers; style reload restores the
+same snapshot without fetching or moving the camera.
+
+Aircraft retain validated ordered airport coordinates from the incumbent
+standing-route result. Exact selected identity and one plausible current leg
+are required for estimates; ambiguous or incompatible legs keep useful observed
+portions only. Bounded geodesic estimates have no invented observation clocks.
+Ship acquisition lives in `MarineJourneyCapture`, not JSX: one bounded anonymous
+history GET and isolated exact-MMSI Portnet context, followed by at most two
+sections from a single fulfilled bundled-network load. A failure of that asset
+does not automatically retry for the second phase. Provider reception breaks
+and independent sparse time gaps remain distinct, unconnected segments.
+
+Show path claims explicit navigation intent before asynchronous work, fences
+old identity/revision callbacks and issues one existing view request. Public
+MapLibre Mercator conversion and `cameraForBounds` compare three or fewer
+actual-geometry orientations; `easeTo` applies the chosen center/zoom once,
+with no retained padding or second camera scheduler. The fit accounts for the
+visual viewport, inspector, controls and credits. Surface round trips reject
+globe back-side framing, and polar/over-wide geometry reports an explicit
+limitation. The traffic footprint remains the entire canvas with the original
+100 km bound.
+
+Manual movement cancels pending framing/preparation, not an already captured
+snapshot. Hide/X stop an owned pending fit and remove context without starting
+another movement. Return local restores the rounded pre-fit camera and label,
+not session Home. New selection, committed navigation, HISTORY and unmount fence
+obsolete work; hidden/offline transitions cancel pending acquisition. Ordinary
+aircraft cadence/backoff, marine connections and orbital deadlines stay owned
+by their existing independent controllers.
+
 ## Source responsibilities
 
 | Area | Responsibility |

@@ -1,0 +1,47 @@
+Shipping-network illustration data
+
+network.json is an unmodified copy of data/marnet_densified.json from
+https://github.com/johnx25bd/searoute
+commit 4fc696c55c4c31bdc4c8286ba76e3261d7bc5a0e.
+SHA-256: 994ad0a77fc64626121f679bba43c991c7658e60f6bcd6ca68867f8d479aff9e
+
+water-network.json is TrackStan's modified source-form projection, under the
+same MPL-2.0 license. It retains 6,825 edges and removes 821 edges that touch
+or intersect known land, including edges wholly inside land. Lines are split
+at exclusions; no replacement connector or endpoint shift is introduced.
+SHA-256: 78382d18434927b04d289d84294a8a3c3268e1d4f7cd3a873eaa1ba98c6cc771
+
+Land exclusion uses Natural Earth 1:10m land, v5.1.2, commit
+f1890d9f152c896d250a77557a5751a93d494776, geojson/ne_10m_land.geojson.
+Source SHA-256: 1ac90796408bc6ad6911d69448485d3c4dbf2190370080368a09976e1c9f7416
+Natural Earth data is public domain:
+https://www.naturalearthdata.com/about/terms-of-use/
+The reproducible projection is scripts/marine-route-land-filter.mjs in the
+application repository. It compares Mercator segments, respects polygon
+holes and splits antimeridian crossings. Generalized coastlines omit small
+islands and detail; conservatively removed canals may disconnect valid
+waterways. Passing this filter is not proof of real-world navigability.
+
+The upstream repository is distributed under Mozilla Public License 2.0.
+Its full license is co-located in LICENSE. This human-readable GeoJSON file
+is the source form of the distributed network; no upstream JavaScript
+implementation is included. TrackStan's independently written application
+code remains under its existing Apache-2.0 license.
+
+Upstream provenance: Eurostat searoute (EUPL-1.2), derived from the
+Oak Ridge National Labs CTA Transportation Network Group,
+"Global Shipping Lane Network, World, 2000", and European coastal shipping
+data added by Eurostat. The linked GeoCommons dataset-25 mirror declares
+download/view permission for everyone, but no separate formal data-license
+instrument. This notice does not claim a public-domain or CC dedication
+for those upstream data.
+
+Source and provenance:
+https://github.com/johnx25bd/searoute/tree/4fc696c55c4c31bdc4c8286ba76e3261d7bc5a0e
+https://github.com/eurostat/searoute
+https://github.com/geoiq/gc_data/blob/master/datasets/25.geojson
+
+Illustration only. The coarse network does not establish actual vessel
+routes, shoreline precision, canal access, navigability, draught clearance
+or a safe course. It contains disconnected fragments and omits waterways.
+Do not use it for navigation.
