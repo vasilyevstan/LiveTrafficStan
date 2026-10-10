@@ -21,5 +21,5 @@ export const resolveJourneyFit = (
 export const manuallyExploreJourney = (
   current: JourneyOverview | undefined,
 ): JourneyOverview | undefined => current?.fitPending
-  ? { ...current, fitPending: false, fitMessage: 'Automatic framing cancelled by map movement. Explore the captured path manually.' }
+  ? { ...current, fitPending: false, fitMessage: 'Framing cancelled. Explore or return to local view.' }
   : current

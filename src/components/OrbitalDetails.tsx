@@ -134,15 +134,22 @@ const OrbitalEnrichmentDetails = ({
       )}
       <p className="orbital-enrichment__purpose">
         <strong>{context.shortLabel}</strong>
-        {' — '}
-        {context.description}
       </p>
       {context.kind === 'community-metadata' && (
-        <p className="metadata-status">
-          Community-maintained historical facts, not a verified individual
-          mission or current operational status.
-        </p>
+        <p className="metadata-status">Community facts, not verified mission or status.</p>
       )}
+      <p className="metadata-attribution">
+        <a href={context.sourceUrl} target="_blank" rel="noopener noreferrer">{context.sourceName}</a>
+      </p>
+      <details className="context-details">
+        <summary>Context &amp; image credits</summary>
+        <p className="orbital-enrichment__purpose">{context.description}</p>
+        {context.kind === 'community-metadata' && (
+          <p className="metadata-status">
+            Community-maintained historical facts, not a verified individual
+            mission or current operational status.
+          </p>
+        )}
       <p className="metadata-attribution">
         {contextLabel}:{' '}
         <a
@@ -193,6 +200,8 @@ const OrbitalEnrichmentDetails = ({
           {image.asset.modificationNotice}
         </p>
       )}
+      {image && <p className="metadata-status">{image.rights.restrictions}</p>}
+      </details>
       {imagePhase === 'available' && image && (
         <>
           <p className="metadata-status">
@@ -200,9 +209,6 @@ const OrbitalEnrichmentDetails = ({
               ? 'Historical photograph'
               : 'Reviewed illustration'}
             ; not a live view of this modeled position.
-          </p>
-          <p className="metadata-status">
-            {image.rights.restrictions}
           </p>
         </>
       )}
@@ -216,7 +222,6 @@ const OrbitalEnrichmentDetails = ({
           {online
             ? 'Verified image failed to load.'
             : 'Verified image is unavailable offline unless already cached.'}{' '}
-          Modeled orbital data remains available.
         </p>
       )}
     </section>
@@ -261,14 +266,13 @@ export function OrbitalDetails({
       titleId="selected-orbital-title"
       closeLabel="Close orbital details"
       onClose={onClose}
-    >
-      <div className="details-panel__heading">
+      heading={
         <div>
           <p className="eyebrow">Selected orbit</p>
-          <h2 id="selected-orbital-title">{position.name}</h2>
+          <h2 id="selected-orbital-title" title={position.name}>{position.name}</h2>
         </div>
-      </div>
-
+      }
+    >
       {enrichment ? (
         <OrbitalEnrichmentDetails
           key={enrichment.identityKey}
@@ -290,25 +294,34 @@ export function OrbitalDetails({
             <>
               <p className="orbital-enrichment__purpose">
                 <strong>{starlinkConstellationContext.shortLabel}</strong>
-                {' — '}{starlinkConstellationContext.description}
               </p>
+              <details className="context-details">
+                <summary>Constellation context</summary>
+                <p className="orbital-enrichment__purpose">{starlinkConstellationContext.description}</p>
+                <p className="metadata-status">
+                  General service context, not a verified purpose or operational
+                  status for this individual object. Verified image unavailable;
+                  no substitute shown.
+                </p>
               <p className="metadata-attribution">
                 Source: <a href={starlinkConstellationContext.sourceUrl} target="_blank" rel="noopener noreferrer">
                   {starlinkConstellationContext.sourceName}
                 </a>
                 {' · '}retrieved {starlinkConstellationContext.sourceRetrievedAt}.
               </p>
+              </details>
             </>
           )}
           <p className="metadata-status">
             {starlink
-              ? 'General service context, not a verified purpose or operational status for this individual object. Verified image unavailable; no substitute shown.'
-              : 'No reviewed exact-NORAD purpose or image is bundled for this object. No substitute shown.'}
+              ? 'General service context; individual purpose unverified.'
+              : 'No reviewed exact-NORAD purpose or image; no substitute shown.'}
           </p>
         </section>
       )}
 
       <dl className="details-grid">
+        <DetailRow label="Name" value={position.name} />
         <DetailRow
           label="Catalog type"
           value={orbitalObjectTypeLabel(position.objectType)}
@@ -393,14 +406,25 @@ export function OrbitalDetails({
           target="_blank"
           rel="noopener noreferrer"
         >
-          Open N2YO reference for NORAD {position.noradCatalogId}
+          Open N2YO reference
         </a>
-        {' · '}external site; no N2YO content is loaded here.
       </p>
       <p className="metadata-status">
-        SGP4 model, not live. Crossing does not prove visibility, illumination,
-        or operational status.
+        SGP4 model, not live or optical visibility.
       </p>
+      <p className="metadata-attribution">
+        <a href={sourceWebsiteUrl}>{sourceName}</a> GP/SATCAT
+      </p>
+      <details className="context-details">
+        <summary>Orbital source &amp; model limits</summary>
+        <p className="metadata-status">
+          SGP4 model, not live. Crossing does not prove visibility, illumination,
+          or operational status.
+        </p>
+        <p className="metadata-status">
+          Open N2YO reference for NORAD {position.noradCatalogId} · external site;
+          no N2YO content is loaded here.
+        </p>
       <p className="metadata-attribution">
         <a href={sourceWebsiteUrl}>{sourceName}</a> GP/SATCAT ·{' '}
         <a href={sourceUsagePolicyUrl}>usage policy</a> ·{' '}
@@ -417,6 +441,7 @@ export function OrbitalDetails({
           <>retrieved {snapshot.retrievedAt}.</>
         )}
       </p>
+      </details>
     </DetailsPanel>
   )
 }

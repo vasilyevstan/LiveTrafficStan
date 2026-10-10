@@ -764,28 +764,52 @@ export function TrafficControls({
                 {depthsVisible ? (
                   <>
                     <p>
-                      Approximate seabed models, not navigation or tide/clearance information.
-                      {' '}{bathymetryStatus.imageryMessage}
+                      {bathymetryStatus.imagery === 'unavailable'
+                        ? 'No shading; not for navigation.'
+                        : bathymetryStatus.imagery === 'loading'
+                          ? 'Shading loading; not for navigation.'
+                          : bathymetryStatus.imagery === 'paused'
+                            ? 'Shading paused; not for navigation.'
+                            : 'Model depths; not for navigation.'}
                     </p>
                     <p>
+                      {bathymetryStatus.values.source === 'emodnet'
+                        ? 'EMODnet · m LAT'
+                        : bathymetryStatus.values.source === 'gebco'
+                          ? 'GEBCO · m MSL*'
+                          : 'Metre labels'}
+                      {' · '}
                       {bathymetryStatus.values.phase === 'zoom-in'
-                        ? 'Zoom in for sparse automatic metre labels.'
+                        ? 'zoom in.'
                         : bathymetryStatus.values.phase === 'loading'
-                          ? 'Loading approximate grid numbers...'
+                          ? 'loading.'
                           : bathymetryStatus.values.phase === 'empty'
-                            ? 'No underwater model values at the sampled ocean cells.'
-                            : bathymetryStatus.values.message ??
-                              `${bathymetryStatus.values.samples.length} sampled grid values. Labels avoid overlap.`}
-                      {' '}{depthSourceDescription(bathymetryStatus.values.source)}.
-                    </p>
-                    <p className="control-note--muted">
-                      Shading: EMODnet 2018 / GEBCO 2019. Numbers use newer service grids;
-                      colors and numbers are not the same survey or date.
+                            ? 'no cells.'
+                            : bathymetryStatus.values.phase === 'unavailable'
+                              ? 'unavailable.'
+                              : bathymetryStatus.values.phase === 'paused'
+                                ? 'paused.'
+                                : `${bathymetryStatus.values.samples.length} values${bathymetryStatus.values.phase === 'partial' ? ' · partial' : ''}.`}
                     </p>
                   </>
                 ) : (
-                  <p>Depths off. Enabling sends the requested map area to EMODnet and GEBCO; no Home coordinates are stored.</p>
+                  <p>Depths off. No depth requests.</p>
                 )}
+                <details className="context-details">
+                  <summary>Depth sources &amp; privacy</summary>
+                  <p>{bathymetryStatus.imageryMessage}</p>
+                  <p>{bathymetryStatus.values.message}</p>
+                  <p>{depthSourceDescription(bathymetryStatus.values.source)}.</p>
+                  <p>
+                    Shading: EMODnet 2018 / GEBCO 2019. Numbers use newer service grids;
+                    colors and numbers are not the same survey or date.
+                  </p>
+                  <p>
+                    Approximate seabed models, not navigation or tide/clearance information.
+                    Enabling sends the requested map area to EMODnet and GEBCO; no Home coordinates are stored.
+                  </p>
+                  <p>Depth requests disclose the viewed map area.</p>
+                </details>
               </div>
               {portsVisible &&
                 portsError &&
@@ -972,23 +996,18 @@ export function TrafficControls({
                 <li>
                   Depths: <a href="https://emodnet.ec.europa.eu/en/bathymetry">EMODnet</a>
                   {' / '}<a href="https://www.gebco.net/">GEBCO</a>.
-                  World Base Layer v1 shading (EMODnet 2018 / GEBCO 2019);
-                  automatic numbers from the regional EMODnet mean grid (LAT)
-                  or global GEBCO latest grid (nominal MSL, with coastal exceptions).
-                  Metres only; approximate models, not soundings or navigation.
+                  {' '}Modeled metres, not soundings.
                 </li>
                 <li>
                   Aircraft: <a href="https://www.adsb.lol/">ADSB.lol</a>.
                 </li>
                 <li>
-                  Marine: {marineProviderName}. Original contributing
-                  sources are credited in ship details and Provider details.
+                  Marine: {marineProviderName}.
                 </li>
                 <li>
                   Photos: <a href="https://www.planespotters.net/photo/api">Planespotters</a>
                   {' · '}<a href="https://openwaters.io/ais/">Open Waters</a>
                   {' / '}<a href="https://commons.wikimedia.org/">Wikimedia Commons</a>
-                  {' · '}individual image credits and licenses.
                 </li>
                 <li>
                   Ports:{' '}
@@ -1008,7 +1027,7 @@ export function TrafficControls({
                     <a href={APP_CONFIG.airportBoards.sourceUrl} target="_blank" rel="noopener" referrerPolicy="origin">
                       AeroDataBox
                     </a>
-                    {' · '}explicit on-demand loads, shared free allowance; not linked to live aircraft.
+                    {' · '}on-demand; shared free allowance.
                   </li>
                 )}
                 <li>
@@ -1016,14 +1035,33 @@ export function TrafficControls({
                   <a href="https://aviationweather.gov/data/api/">
                     NOAA/NWS AWC
                   </a>{' '}
-                  · public-domain observations · not forecasts or boards.
+                  · observations, not forecasts.
                 </li>
                 <li>
                   Orbits: <a href="https://celestrak.org/">CelesTrak</a>{' '}
-                  · SGP4 modeled, not live/optical. Symbols show payload,
-                  stage, debris, or unknown class.
+                  · SGP4 modeled, not live/optical.
                 </li>
               </ul>
+              <p className="control-note control-note--muted">
+                Depth requests disclose the viewed map area.
+              </p>
+              <details className="context-details">
+                <summary>Data use &amp; model limits</summary>
+                <p className="control-note">
+                  World Base Layer v1 shading (EMODnet 2018 / GEBCO 2019);
+                  automatic numbers from the regional EMODnet mean grid (LAT)
+                  or global GEBCO latest grid (nominal MSL, with coastal exceptions).
+                  Metres only; approximate models, not soundings or navigation.
+                </p>
+                <p className="control-note">
+                  Original contributing marine sources are credited in ship details and Provider details.
+                  Each photo carries its own artist, source and license.
+                </p>
+                <p className="control-note">
+                  Airport boards are explicit on-demand loads, not linked to live aircraft.
+                  METAR is public-domain observation data; not forecasts or boards.
+                  Orbital symbols retain exact payload, stage, debris or unknown class.
+                </p>
               <p className="control-note control-note--muted">
                 DEPTHS is on by default. Anonymous tile and value requests reveal the
                 requested map area to the named providers; their retention is not controlled by this app.
@@ -1032,6 +1070,7 @@ export function TrafficControls({
                 times are in details.
                 {' '}<a href="https://github.com/vasilyevstan/LiveTrafficStan/blob/main/docs/data-sources-and-licensing.md">Full data credits</a>.
               </p>
+              </details>
             </fieldset>
           </section>
         </div>

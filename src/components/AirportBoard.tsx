@@ -49,11 +49,23 @@ export const AirportBoardRows = memo(function AirportBoardRows({
               {AIRPORT_BOARD_STATUS_LABELS[flight.status]}
             </span>
           </div>
-          <p className="airport-board__destination">
-            {direction === 'arrivals' ? 'From ' : 'To '}
-            <bdi>{flight.otherAirport?.name ?? 'airport not reported'}</bdi>
-            {flight.otherAirport?.iata && <> ({flight.otherAirport.iata})</>}
-          </p>
+          {flight.otherAirport ? (
+            <details className="context-details airport-board__destination">
+              <summary>
+                {direction === 'arrivals' ? 'From ' : 'To '}
+                <bdi>{flight.otherAirport.iata ?? flight.otherAirport.icao ?? 'reported airport'}</bdi>
+              </summary>
+              <p>
+                {direction === 'arrivals' ? 'From ' : 'To '}
+                <bdi>{flight.otherAirport.name}</bdi>
+                {flight.otherAirport.iata && <> ({flight.otherAirport.iata})</>}
+              </p>
+            </details>
+          ) : (
+            <p className="airport-board__destination">
+              {direction === 'arrivals' ? 'From ' : 'To '}airport not reported
+            </p>
+          )}
           <dl className="airport-board__times">
             <div><dt>Scheduled</dt><dd><BoardTime value={flight.scheduled} /></dd></div>
             <div><dt>Revised</dt><dd><BoardTime value={flight.revised} /></dd></div>

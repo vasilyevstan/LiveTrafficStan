@@ -136,7 +136,7 @@ describe('InViewPanel', () => {
     const html = renderPanel({ vessels })
     expect(html).toContain('1 of 1 ranked · 2 in view')
     expect(html).toContain('Draught not reported')
-    expect(html).toContain('1 without reported length; excluded from this ranking, not treated as zero.')
+    expect(html).toContain('1 without reported length; omitted, not zero.')
     expect(html.match(/id="in-view-ships-result-/g)).toHaveLength(1)
   })
 

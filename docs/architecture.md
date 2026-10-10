@@ -131,7 +131,7 @@ tombstone can be removed after Cloudflare confirms that deletion has applied.
 An explicit Show path action captures an immutable `JourneySnapshot`, separate
 from live aircraft/vessels, counts, search, normal trails, metadata/photos,
 orbital state and optional device history. The shared `JourneyDetails` inspector
-uses the released pinned X and one outer scroll owner. `journeyStyle` maintains
+uses the shared fixed identity header, corner X and one body scroll owner. `journeyStyle` maintains
 one persistent GeoJSON source and idempotent layers; style reload restores the
 same snapshot without fetching or moving the camera.
 
@@ -147,18 +147,19 @@ and independent sparse time gaps remain distinct, unconnected segments.
 
 Show path claims explicit navigation intent before asynchronous work, fences
 old identity/revision callbacks and issues one existing view request. Public
-MapLibre Mercator conversion and `cameraForBounds` compare three or fewer
-actual-geometry orientations; `easeTo` applies the chosen center/zoom once,
-with no retained padding or second camera scheduler. The fit accounts for the
+MapLibre `cameraForBounds` makes one validated **north-up (bearing 0)** attempt;
+`easeTo` applies the chosen center/zoom once, with no retained padding or second
+camera scheduler. The fit accounts for the
 visual viewport, inspector, controls and credits. Surface round trips reject
 globe back-side framing, and polar/over-wide geometry reports an explicit
-limitation. The traffic footprint remains the entire canvas with the original
-100 km bound.
+limitation. An unavailable fit still makes the explicit view north-up without
+changing its center, zoom or projection. The traffic footprint remains the
+entire canvas with the original 100 km bound.
 
 Manual movement cancels pending framing/preparation, not an already captured
 snapshot. Hide/X stop an owned pending fit and remove context without starting
-another movement. Return local restores the rounded pre-fit camera and label,
-not session Home. New selection, committed navigation, HISTORY and unmount fence
+another movement. Return local restores the rounded pre-fit camera, original
+bearing and label, not session Home. New selection, committed navigation, HISTORY and unmount fence
 obsolete work; hidden/offline transitions cancel pending acquisition. Ordinary
 aircraft cadence/backoff, marine connections and orbital deadlines stay owned
 by their existing independent controllers.
@@ -348,18 +349,28 @@ while the playback controls stay reachable throughout. Mobile attribution opens
 above the command dock rather than beneath its buttons. None of these DOM/CSS
 positions changes the full-canvas viewport used by MapLibre or provider queries.
 
-All five detail components share `DetailsPanel`, including both aircraft and
-ships and historical traffic. Its direct-child sticky close anchor belongs
-to the whole scrolling inspector, not the shorter heading. The 44 by 44 px
-icon-only X has an opaque themed backplate and an object-specific accessible
-name. All inspector content reserves a right-side gutter, so scrolled text,
-images and attribution links never pass beneath the control; scroll padding
-preserves focus reachability.
-The existing airport-board sticky heading and traffic identity scroll reset
-remain. Unhandled Escape bubbles only within the focused inspector; existing
+All five detail components and captured journeys share `DetailsPanel`,
+including aircraft, ships and historical traffic. Its fixed identity header
+alone reserves clearance for the 44 by 44 px icon-only X, attached 8 px above
+the panel corner with an opaque themed backplate and object-specific accessible
+name. Show path shares the heading row. The full-width body is the sole scroll
+owner; there is no full-height close gutter or extra action ribbon.
+
+General mobile inspectors compensate for the fixed header with 184 px and
+160 px short-screen floors. The photo cap subtracts the same added header
+budget, preserving the incumbent whole-image size. The independently larger
+airport-board budget and traffic identity scroll reset remain.
+Unhandled Escape bubbles only within the focused inspector; existing
 App close callbacks still own selection clearing and visible focus return.
 The shell introduces no map, provider, persistence or document-wide keyboard
 lifecycle.
+
+Default menu/inspector explanatory text has a purpose and fits at most two
+rendered lines at supported widths. Full sources, licenses, privacy, counting
+rules and route limitations use labelled native disclosures, not silent
+line-clamping. Current failures and incomplete/paused states remain visible;
+facts and full identities remain in body fields or explicit name disclosures.
+This presentation changes no acquisition, filter, Home or history lifecycle.
 
 ## Provider boundaries
 

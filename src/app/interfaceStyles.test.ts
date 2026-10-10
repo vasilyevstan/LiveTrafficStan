@@ -63,20 +63,29 @@ describe('interface presentation contracts', () => {
     expect(styles).toContain('outline: 3px solid var(--focus-ring)')
   })
 
-  it('reserves the pinned close gutter for all inspector content', () => {
+  it('keeps the floating close over only a compact header and one full-width body scroller', () => {
     expect(styles).toMatch(
-      /\.details-panel > :not\(\.details-panel__close-anchor\)\s*\{[^}]*margin-right: 58px;/,
+      /\.details-panel__heading\s*\{[^}]*padding: 0 44px 8px 0;/,
     )
     expect(styles).toMatch(
-      /\.details-panel__close-anchor\s*\{[^}]*position: sticky;[^}]*top: 0;/,
+      /\.details-panel__body\s*\{[^}]*min-height: 0;[^}]*overflow: auto;/,
     )
     expect(styles).toMatch(
-      /\.details-panel__close\s*\{[^}]*width: 44px;[^}]*height: 44px;/,
+      /\.details-panel__close\s*\{[^}]*position: absolute;[^}]*width: 44px;[^}]*height: 44px;/,
     )
+    expect(styles).not.toContain('margin-right: 58px')
+    expect(styles).not.toContain('.details-panel__close-anchor')
   })
 
   it('keeps the depth toggle full-width and at least a 44px target', () => {
     expect(styles).toMatch(/#depths-layer-toggle\s*\{[^}]*grid-column: 1 \/ -1;[^}]*min-height: 44px;/)
+  })
+
+  it('preserves the previous mobile body and photo budget beneath the fixed identity row', () => {
+    expect(styles).toMatch(/--mobile-detail-height: clamp\(\s*184px,\s*calc\(var\(--app-visual-viewport-height\) - 564px\),\s*256px/)
+    expect(styles).toMatch(/@container workspace \(max-width: 340px\)[\s\S]*--mobile-detail-height: 160px;/)
+    expect(styles).toMatch(/\.vessel-photo__image\s*\{[^}]*max-height: min\(160px, calc\(var\(--mobile-detail-height\) - 84px\)\);/)
+    expect(styles).toMatch(/:has\(\.details-panel--airport-board\)[\s\S]*--mobile-detail-height: clamp\(\s*104px,/)
   })
 
   it('anchors interface and native map controls to the visual viewport, not the canvas', () => {

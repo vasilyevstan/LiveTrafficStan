@@ -193,7 +193,7 @@ describe('LiveStatus', () => {
 
     expect(html).toContain('<strong>OFFLINE</strong>')
     expect(html).toContain(
-      'Live traffic is unavailable while the browser is offline',
+      'Browser offline; live updates unavailable.',
     )
   })
 
