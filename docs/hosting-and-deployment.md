@@ -19,6 +19,9 @@ production platform:
   Their scoped CSP/source rules require no new secret, Worker route, binding,
   migration or production flag. Aircraft Show path reuses its accepted route.
   The graph is immutable static context, not part of the shell startup cache;
+- default-on modeled depths use fixed anonymous EMODnet/GEBCO browser
+  tile/value routes, bounded tab caches and an origin-specific static CSP.
+  They add no backend, credential, deployment flag or history persistence;
 - eight reviewed exact-IMO vessel photographs remain versioned same-origin
   Static Assets. Other reported IMO/MMSI identities can use
   `/api/vessel-photos/{number}` with no secret or new binding; validated
@@ -1799,7 +1802,58 @@ If a newer pull request reaches `main` while an older manual deployment is
 validating, the second equality check fails rather than silently promoting the
 older SHA.
 
-## Modeled-depth release boundary (#412)
+## Modeled-depth production receipt (2026-10-10)
+
+Initial implementation #413 and release #414 introduced depth context.
+The bounded real-source check then found and corrected GEBCO's one-pixel
+virtual-image query through #416 and checked promotion #417. Final application
+is **`7e0b4954740cee10875e617ba206af5c6ecbe791`**, Worker
+**`afd0d208-3d5e-42ca-af68-19b4fd357432`**, published at
+**03:42:39.462 UTC**. It serves `index-BKn_3kdg.js`,
+`index-BXOYQznj.css`, shell `ce842a2282cfc65f42bd`.
+
+[Exact-main Validation 38021389170](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/38021389170)
+and serialized [deployment 38021460033](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/38021460033)
+passed; both production origins passed the unchanged strict-SHA smoke.
+Reviewed correction `aeacc104ec2fcb81d19edb95e6cef076f6b05d47` and checked dev
+`acb75a09e8fa9e06d004bac3a63ce7c5b81c9d8d` have the same accepted tree.
+Correction/source/ancestry/dev/promotion checks 38021013451 /38021128049 /
+38021254952 /38021295941 passed. Local gates passed 176 suites /1,567 tests,
+lint/typecheck, required data checks, production build and secret-free dry run.
+
+GPT-5.5 accepted the scoped UI/map source and native evidence; Claude Opus
+4.8 accepted provider/privacy/bounds/lifecycle and the narrow GEBCO correction.
+The one real initial hosting-guide ancestry conflict required tree-neutral
+#415. The correction's four real history conflicts were resolved inside
+#416, not another workstream. Both necessary dev merge-method exceptions
+were immediately restored and equality-verified in finally paths, preserving
+every other rule and repository setting. No unchanged-source review repeated.
+
+Actual production acceptance is deliberately split:
+
+- **03:19 UTC, initial depth application:** normal REFRESH APP preserved raw
+  preferences/history/database/install identity. Actual matched imagery and
+  EMODnet JSON/`atlas_land` values passed six Light/Dark desktop/mobile
+  layouts plus 2x magnification, with 6 /3-4 /1-2 rendered labels, 44px depth
+  targets/map strip, one map and separate orbital ownership. Twelve regional
+  value responses covered approximately 58-92m. Its global check exposed the
+  real defect rather than being relabeled successful.
+- **03:45 UTC, corrected application:** another genuinely new normal update
+  preserved the same raw state. Six 3x3-center, single-feature GEBCO requests
+  produced six rendered Monterey values, **57-2,037m**, with one map,
+  water-only shading and at most two simultaneous value reads. No board or
+  geocoder request occurred. The later same-camera Center/global/Center
+  assertion passed without another update or source change.
+
+The corrected observer's final pixel assertion included six predecessor
+1x1 requests before the update. Its raw failed report and successful
+new-document measurements are retained together. Completion restored the
+recorded viewport after CDP detach; a changed/collision-placed label count
+and one normal additional cell read are not fixed-count/zero-request
+guarantees. No application JavaScript exception was recorded in either
+original production window. Native transport/renderer/clocks and trusted
+inputs are distinguished from explicit focus emulation, not physical-device
+or fresh native-hidden-state proof. See the [acceptance record](development-and-testing.md#modeled-water-depths-412).
 
 The depth slice changes browser source/UI/preferences and the static
 origin-specific CSP only. It adds no Worker route, binding, paid source,
@@ -1808,7 +1862,11 @@ credential, database migration or deployment input. Preserve
 curated orbital catalog, Starlink, marine supplementation and airport boards
 when deploying the exact checked main SHA.
 
-The compatible predecessor is application
+The immediate predecessor was initial depth application
+`f7e1caff624f2400f8d93382eae7af659bf7a870`, Worker
+`75cee82a-3388-442b-9655-d59a305e45ab`, deployment 38019922975; it has working
+regional depths but the documented global-query defect. For complete depth
+removal, the compatible journey predecessor is application
 `dc1144f182408687ff3fb06249b3c66398e57f74`, Worker
 `0253b0ed-57f5-4cac-b85f-1e1708a9b307`. The existing protected exact-version
 rollback removes depth UI/requests without changing Home, private history,
@@ -1817,10 +1875,10 @@ preference and can drop it on a later normal preference save; returning to
 the new version then uses default-on if the field is absent. No new rollback
 exercise is claimed by this boundary.
 
-Normal installed-app update, bounded real model-source rendering and public
-canonical/Wiki receipts are release acceptance, separate from local replay
-fixtures. Keep the following journey receipt as historical/rollback evidence,
-not a claim that documentation-only commits redeploy the application.
+Keep the following journey receipt as historical/rollback evidence. Later
+canonical/Wiki documentation commits do not redeploy or replace the running
+application SHA above. Local replay fixtures remain separate from these
+actual-source milestones.
 
 ## Captured journey production receipt (2026-10-10)
 

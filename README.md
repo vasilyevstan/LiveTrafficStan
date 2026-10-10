@@ -8,8 +8,8 @@ user accounts or a server-side vessel history archive.
 
 Public production: <https://trackstan.xyz>
 
-Current application: `dc1144f182408687ff3fb06249b3c66398e57f74`,
-with the [captured journey release](docs/hosting-and-deployment.md#captured-journey-production-receipt-2026-10-10).
+Current application: `7e0b4954740cee10875e617ba206af5c6ecbe791`,
+with the [modeled-depth release](docs/hosting-and-deployment.md#modeled-depth-production-receipt-2026-10-10).
 Later documentation-only commits do not replace that running source.
 
 The existing <https://livetrafficstan.syntal.workers.dev> address remains
