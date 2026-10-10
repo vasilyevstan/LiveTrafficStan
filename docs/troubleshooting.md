@@ -58,6 +58,36 @@ requests, viewport eligibility, vessel filter membership, selection, or
 history changes at the same time, treat that as a regression rather than an
 expected unit conversion.
 
+## Depth shading or numbers are missing
+
+Check **More → Layers → DEPTHS**. It defaults on, but an explicit saved off
+survives reloads and older share links. Enabling contacts the named public
+sources for the requested area. No account, key or paid plan is needed.
+
+Shading and numbers have independent status. Sparse numbers appear only at
+zoom 10 or closer, for supported local geometry and rendered ocean cells.
+The vector map must finish loading before it can identify ocean; a basemap
+fallback without water polygons cannot safely place numbers. Successful
+no-data, land, inland water and zero/positive elevation do not produce a
+`0 m` label. Native label collisions may show fewer than the maximum twelve.
+
+The image-composition path needs ImageBitmap and OffscreenCanvas. If the
+browser cannot compose imagery, its error stays local and numbers may still
+work. Missing depth tiles must not switch the basemap or restart traffic.
+While hidden, offline or disabled, depth requests pause and obsolete results
+cannot reappear. An interrupted numeric batch resumes only after settled
+movement or re-enabling; there is no retry polling timer.
+
+For source failure, move the view or switch DEPTHS off and on to retry.
+After throttling, wait for the source Retry-After period; toggling does not
+bypass it. Fulfilled tab caches can remain usable. Do not clear private
+history or reset the installed app to recover an optional model source.
+
+Different shades and numbers are not contradictory live measurements:
+shading contains EMODnet 2018 / GEBCO 2019, while numbers use newer service
+grids. Regional labels use LAT and global labels nominal MSL with coastal
+exceptions. Neither is tide-adjusted clearance or navigation guidance.
+
 ## Show path is partial, unavailable or pauses live traffic
 
 A captured route overview is not live tracking. It deliberately survives beyond

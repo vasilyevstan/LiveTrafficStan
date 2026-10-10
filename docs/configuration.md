@@ -409,6 +409,61 @@ and vessel hover/details never start or expose the photo path. See
 [Aircraft Photo Evaluation](aircraft-photo-evaluation.md) for the exact terms,
 deterministic evidence, failed live-CORS gate, and enablement requirements.
 
+## Modeled water depths
+
+**DEPTHS** is on by default in **More → Layers**, not another primary dock
+control. Ordinary zoom shows subdued seabed shading; zoom 10 or closer can
+show sparse automatic `~85 m LAT` / `~82 m MSL*` labels. These are positive
+approximate model depths, fixed in metres even with Aviation / Nautical
+presentation units. They are not spot soundings, tide-adjusted water depth,
+under-keel clearance, a safe route or navigation guidance.
+
+Shading uses the matching global EMODnet World Base Layer v1 `2020` color
+and land-only tiles. The product contains EMODnet 2018 around Europe and
+GEBCO 2019 elsewhere. The land alpha removes land from the imagery without
+changing the basemap. Numeric requests instead use the current regional
+EMODnet mean service or GEBCO `LATEST` service. Their different model vintages
+are intentional and visible; the palette is not a same-grid numeric legend.
+EMODnet values are metres relative to Lowest Astronomical Tide; GEBCO is
+nominal mean sea level, with coastal-source datum exceptions (`MSL*`).
+
+`BATHYMETRY_CONFIG` is centralized, with no endpoint/environment override:
+
+| Setting | Bound |
+| --- | --- |
+| Raster | Matched 256 x 256 PNG pair; maximum source zoom 12 |
+| Each input image | 512 KiB streamed cap; signature/dimensions checked before decoding |
+| Tile work | Existing MapLibre image queue, two matched HTTP images per tile |
+| Complete composed tile cache | 32 entries / 30 minutes, current tab only |
+| Automatic values | Zoom 10+, at most 12 stable geographic candidates and two concurrent reads |
+| Label spacing | At least 160 CSS pixels; native collision placement can show fewer |
+| Numeric response / deadline | 16 KiB; eight-second total batch deadline |
+| Complete numeric cache | 128 value/no-data entries / 20 minutes, current tab only |
+| Request rounding | Four decimal places for source grid cells, not a separate Home lookup |
+| Rate limits | Source `Retry-After`, otherwise 60 seconds; no retry polling timer |
+
+The entire local footprint must fit a supported regional box to select LAT
+values: Europe (-36 to 43 longitude, 15 to 90 latitude) or the Caribbean
+(-70 to -60, 11 to 19). Otherwise values use GEBCO. Boxes choose a provider,
+not guaranteed coverage. Actual rendered ocean polygons gate numeric samples;
+inland water, land, zero/positive elevations and valid no-data do not become
+zero-depth labels. Invalid/wide geometry can retain imagery without numbers.
+
+Moving the camera cancels obsolete values; existing settled reporting starts
+the latest batch. Off, hidden, offline and unmount cancel owned work. Themes
+rehydrate current data and reuse complete caches without moving the camera
+or restarting traffic/orbital providers. Static depths remain model context
+in HISTORY, not historical observations. No sample coordinates enter local
+preferences, device history, an application-shell cache or a backend archive.
+Default-on anonymous requests reveal the requested map area, which can
+coincide with Home; no separate Home location is sent.
+
+Legacy v1 preferences without `depthsVisible` default to true; explicit false
+survives. Share links accept only `depths=0|1`. A legacy link without this
+field does not overwrite an existing saved-off choice. Opening a link does
+not automatically persist its overrides. Depth-source failures remain local:
+see [depth troubleshooting](troubleshooting.md#depth-shading-or-numbers-are-missing).
+
 ## Captured journey overviews
 
 Show path is explicit in selected aircraft and ship details. Its captured
@@ -694,7 +749,7 @@ Navigation timing and privacy values are centralized in
 `src/config/appConfig.ts`.
 
 Layer preferences use one plain serializable boolean shape for aircraft,
-vessels, ports, airports, clustering, METAR, and the default-off orbital
+vessels, ports, airports, clustering, METAR, default-on depths, and the default-off orbital
 layer. It deliberately excludes provider state, loading/error state,
 observations, orbital catalog/clock/prediction state, cluster IDs, MapLibre
 objects, and selections. The shape is stored inside

@@ -14,6 +14,91 @@ This document records the data-provider checks made for LiveTrafficStan V1. Prov
 
 OpenFreeMap is free and open, requires no application key, and is directly compatible with MapLibre GL JS. Its public service is provided as-is without an uptime guarantee. The style URL is therefore configuration rather than an application-wide assumption.
 
+## Modeled water depths: EMODnet and GEBCO
+
+DEPTHS is enabled by default, using the public services below without an
+account, key, paid plan, new tileserver or proxy. Models are approximate
+seabed context, not live soundings, forecasts, tide corrections, clearance,
+navigability or a safe course. Preserve both source names and these limitations.
+
+### Matched global shading
+
+- [Official WMTS capabilities](https://tiles.emodnet-bathymetry.eu/wmts/1.0.0/WMTSCapabilities.xml)
+  advertise `baselayer` and `baselayer_land` with matching Web Mercator
+  matrices, a `2020` URL release and 256 x 256 PNG tiles.
+- Fixed image paths:
+  `https://tiles.emodnet-bathymetry.eu/2020/baselayer/web_mercator/{z}/{x}/{y}.png`
+  and the matching `/baselayer_land/` path. The app limits source zoom to 12
+  rather than treating further enlargement as new source detail.
+- [World Base Layer v1 metadata](https://sextant.ifremer.fr/geonetwork/srv/api/records/386fe2aa-84c4-4cea-9e22-fcba4d5f2e75/formatters/xml)
+  identifies EMODnet **2018** around Europe (about 100 m) and GEBCO **2019**
+  elsewhere (about 500 m), with a separate land compilation. The `2020`
+  URL is a product release, not a current survey year.
+- The app removes the matched land alpha from the colored image. It does not
+  recolor land, replace OpenFreeMap or derive numerical depth from image
+  colors. Browser CORS and actual alpha were verified, not inferred from
+  `TRANSPARENT=TRUE`.
+
+Raw EMODnet mean and GEBCO relief WMS images proved opaque over land.
+The separately published EMODnet `mean_multicolour` image has transparent
+land, but is not interchangeable with a single-band elevation layer.
+Combining GEBCO 2026 imagery with an older EMODnet land mask produced coastal
+fringes and was rejected. Only the matched world-product pair is used.
+
+### Actual numeric grid values
+
+The browser uses bounded one-pixel WMS 1.1.1 GetFeatureInfo, maximum twelve
+stable candidates and two concurrent requests, after settled zoom 10+ views:
+
+| Service | Data and interpretation |
+| --- | --- |
+| `https://ows.emodnet-bathymetry.eu/wms`, `emodnet:mean` | Complete JSON FeatureCollection, at most one `Depth`; negative elevations become approximate positive metres below LAT. Current service is documented as DTM 2024. |
+| `https://wms.gebco.net/mapserv`, `GEBCO_LATEST_2` | Strict single-feature text with returned cell coordinates and `value_list`; current latest grid was 2026 at source review. Metres relative to nominal MSL, with shallow/coastal-source datum exceptions. |
+
+[DTM 2024 metadata](https://sextant.ifremer.fr/geonetwork/srv/api/records/cf51df64-56f9-4a99-b1aa-36b8d7b743a1/formatters/xml)
+describes the 1/16-arc-minute EMODnet grid and LAT reference.
+[GEBCO's product documentation](https://www.gebco.net/data-products/gridded-bathymetry-data)
+describes its 15-arc-second global grid and vertical-datum limitations;
+the 2026 product DOI is `10.5285/4f68d5c7-45eb-f999-e063-7086abc036fa`.
+`LATEST` is mutable, not a pinned 2026 numeric endpoint.
+
+These newer numbers and older shaded imagery are **not the same survey/date**.
+Source selection is per entire local viewport, never mixed LAT/MSL numbers
+within one batch. Rendered ocean polygons exclude inland/dry areas. Complete
+empty JSON/text, explicit null/NaN and nonnegative elevations mean no printable
+underwater value, not zero depth; malformed or implausible data is an error.
+Labels remain in metres regardless of presentation-unit preference.
+The app does not use WCS or its observed inappropriate radiance-unit metadata
+to infer units; the authoritative bathymetric product descriptions apply.
+
+### Rights, attribution and privacy
+
+[EMODnet's composite-DTM documentation](https://www.emodnet-bathymetry.eu/composite-dtm)
+states that its harmonized DTM is available without restriction; this is
+distinct from the access/rights of underlying original surveys.
+The [EU catalogue record](https://data.europa.eu/api/hub/search/datasets/emodnet_bathymetry?locale=en)
+identifies public access and the European Commission reuse notice /
+[Decision 2011/833/EU](http://data.europa.eu/eli/dec/2011/833/oj).
+Retain product provenance and applicable third-party/source notices rather
+than treating access metadata as a blanket license for original survey data.
+
+GEBCO's primary grid product page identifies the grid as **public domain**,
+free of charge, with requested attribution and its
+[conditions/disclaimers](https://www.gebco.net/data-products/gridded-bathymetry/terms-of-use).
+It is not described here as CC BY 4.0. The app's Apache-2.0 source-code license
+does not replace the source products' terms. Layers/Sources and native map
+credits retain EMODnet/GEBCO; OpenFreeMap/OSM credits remain intact.
+
+Only the three fixed source origins are added to `connect-src`. Requests omit
+credentials/referrer and reject redirects; they necessarily reveal the
+requested map area, potentially including the currently viewed Home area.
+No extra browser location is attached. The app does not claim control over
+provider retention. Complete imagery/value caches are bounded and tab-only;
+no sample locations enter preferences, private history, the service-worker
+shell cache or a backend archive. Moving/disabling/hiding/offline/unmounting
+cancels obsolete work; Retry-After and eight-second deadlines are enforced.
+Optional-source errors do not become traffic or basemap outages.
+
 ## Place search: Photon
 
 - Public endpoint and service terms: <https://photon.komoot.io/>

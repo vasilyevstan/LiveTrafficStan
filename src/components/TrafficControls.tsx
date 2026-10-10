@@ -11,6 +11,7 @@ import type { ThemePreference } from '../app/theme'
 import type { PlaceSearchState } from '../app/PlaceSearchController'
 import type { AppCenter } from '../config/appConfig'
 import { APP_CONFIG } from '../config/appConfig'
+import { depthSourceDescription, type BathymetryStatus } from '../domain/bathymetry'
 import type { Airport } from '../domain/airports'
 import type { MapProjectionPreference } from '../domain/preferences'
 import type { DisplayAircraft, DisplayVessel } from '../domain/traffic'
@@ -84,6 +85,9 @@ interface TrafficControlsProps {
   onAirportSelect: (id: string) => void
   onRetryAirports: () => void
   weatherVisible: boolean
+  depthsVisible: boolean
+  bathymetryStatus: BathymetryStatus
+  onDepthsVisibleChange: (visible: boolean) => void
   weatherLoading: boolean
   weatherWaiting: boolean
   weatherReady: boolean
@@ -283,6 +287,9 @@ export function TrafficControls({
   onAirportSelect,
   onRetryAirports,
   weatherVisible,
+  depthsVisible,
+  bathymetryStatus,
+  onDepthsVisibleChange,
   weatherLoading,
   weatherWaiting,
   weatherReady,
@@ -741,6 +748,44 @@ export function TrafficControls({
                 >
                   {weatherVisible && weatherLoading ? 'METAR...' : 'METAR'}
                 </button>
+                <button
+                  id="depths-layer-toggle"
+                  type="button"
+                  className={depthsVisible ? 'is-active' : undefined}
+                  aria-pressed={depthsVisible}
+                  aria-busy={depthsVisible && bathymetryStatus.imagery === 'loading'}
+                  aria-describedby="depths-layer-status"
+                  onClick={() => onDepthsVisibleChange(!depthsVisible)}
+                >
+                  DEPTHS
+                </button>
+              </div>
+              <div id="depths-layer-status" className="control-note" role="status">
+                {depthsVisible ? (
+                  <>
+                    <p>
+                      Approximate seabed models, not navigation or tide/clearance information.
+                      {' '}{bathymetryStatus.imageryMessage}
+                    </p>
+                    <p>
+                      {bathymetryStatus.values.phase === 'zoom-in'
+                        ? 'Zoom in for sparse automatic metre labels.'
+                        : bathymetryStatus.values.phase === 'loading'
+                          ? 'Loading approximate grid numbers...'
+                          : bathymetryStatus.values.phase === 'empty'
+                            ? 'No underwater model values at the sampled ocean cells.'
+                            : bathymetryStatus.values.message ??
+                              `${bathymetryStatus.values.samples.length} sampled grid values. Labels avoid overlap.`}
+                      {' '}{depthSourceDescription(bathymetryStatus.values.source)}.
+                    </p>
+                    <p className="control-note--muted">
+                      Shading: EMODnet 2018 / GEBCO 2019. Numbers use newer service grids;
+                      colors and numbers are not the same survey or date.
+                    </p>
+                  </>
+                ) : (
+                  <p>Depths off. Enabling sends the requested map area to EMODnet and GEBCO; no Home coordinates are stored.</p>
+                )}
               </div>
               {portsVisible &&
                 portsError &&
@@ -925,6 +970,14 @@ export function TrafficControls({
               <legend>Sources</legend>
               <ul className="control-source-list">
                 <li>
+                  Depths: <a href="https://emodnet.ec.europa.eu/en/bathymetry">EMODnet</a>
+                  {' / '}<a href="https://www.gebco.net/">GEBCO</a>.
+                  World Base Layer v1 shading (EMODnet 2018 / GEBCO 2019);
+                  automatic numbers from the regional EMODnet mean grid (LAT)
+                  or global GEBCO latest grid (nominal MSL, with coastal exceptions).
+                  Metres only; approximate models, not soundings or navigation.
+                </li>
+                <li>
                   Aircraft: <a href="https://www.adsb.lol/">ADSB.lol</a>.
                 </li>
                 <li>
@@ -972,6 +1025,9 @@ export function TrafficControls({
                 </li>
               </ul>
               <p className="control-note control-note--muted">
+                DEPTHS is on by default. Anonymous tile and value requests reveal the
+                requested map area to the named providers; their retention is not controlled by this app.
+                {' '}
                 METAR sends visible ICAO IDs via this app; source/retrieval
                 times are in details.
                 {' '}<a href="https://github.com/vasilyevstan/LiveTrafficStan/blob/main/docs/data-sources-and-licensing.md">Full data credits</a>.

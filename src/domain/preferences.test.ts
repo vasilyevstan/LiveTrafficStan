@@ -11,6 +11,22 @@ import {
 } from './preferences'
 
 describe('application preferences', () => {
+  it('defaults legacy depths on without rewriting storage or losing explicit off', () => {
+    const raw = JSON.stringify({
+      version: 1, theme: 'dark', layers: { aircraftVisible: false, weatherVisible: true },
+    })
+    const storage = { getItem: vi.fn(() => raw), setItem: vi.fn(), removeItem: vi.fn() }
+    const loaded = readAppPreferences(storage).preferences
+    expect(loaded.layers).toMatchObject({ aircraftVisible: false, weatherVisible: true, depthsVisible: true })
+    expect(loaded.theme).toBe('dark')
+    expect(storage.setItem).not.toHaveBeenCalled()
+    const off = { ...loaded, layers: { ...loaded.layers, depthsVisible: false } }
+    expect(resolveAppPreferences(off)).toEqual(off)
+    expect(storeAppPreferences(storage, off)).toBe(true)
+    expect(storage.setItem).toHaveBeenCalledWith(APP_PREFERENCES_STORAGE_KEY, JSON.stringify(off))
+    expect(JSON.stringify(off)).not.toMatch(/latitude|longitude|samples|Home/)
+  })
+
   it('constructs a complete allowlisted schema from partial or invalid data', () => {
     expect(
       resolveAppPreferences({
@@ -44,6 +60,7 @@ describe('application preferences', () => {
         airportsVisible: false,
         clusteringEnabled: false,
         weatherVisible: false,
+        depthsVisible: true,
         orbitalObjectsVisible: false,
       },
       vesselFilters: {

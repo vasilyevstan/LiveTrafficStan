@@ -181,6 +181,33 @@ export const ZOOM_TRAFFIC_CONTEXT_CONFIG = {
   minimumSeparationPx: 64,
 } as const
 
+export const BATHYMETRY_CONFIG = {
+  tileOrigin: 'https://tiles.emodnet-bathymetry.eu',
+  tileVersion: '2020',
+  regionalValueUrl: 'https://ows.emodnet-bathymetry.eu/wms',
+  globalValueUrl: 'https://wms.gebco.net/mapserv',
+  maximumTileZoom: 12,
+  tileSize: 256,
+  maximumTileBytes: 512 * 1_024,
+  tileCacheEntries: 32,
+  tileCacheMs: 30 * 60_000,
+  minimumLabelZoom: 10,
+  minimumLabelSeparationPx: 160,
+  maximumLabels: 12,
+  maximumConcurrentValues: 2,
+  maximumValueBytes: 16 * 1_024,
+  requestTimeoutMs: 8_000,
+  valueCacheEntries: 128,
+  valueCacheMs: 20 * 60_000,
+  rateLimitFallbackMs: 60_000,
+  maximumDepthMeters: 12_000,
+  coordinatePrecision: 4,
+  regionalAreas: [
+    { west: -36, south: 15, east: 43, north: 90 },
+    { west: -70, south: 11, east: -60, north: 19 },
+  ],
+} as const
+
 export const JOURNEY_CONFIG = {
   maximumObservedPoints: 1_000,
   maximumGeometryPoints: 4_096,
