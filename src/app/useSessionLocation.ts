@@ -104,7 +104,7 @@ export const useSessionLocation = (
       }
       if (permission !== 'granted') {
         finishFallback(
-          'Choose Use location after granting access. Location is rounded and not saved.',
+          'Use location to request access. Rounded, not saved.',
         )
         return
       }
