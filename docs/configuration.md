@@ -285,8 +285,9 @@ is acquired or saved.
 
 On mobile it occupies the map strip above Center, not a seventh dock slot.
 With an open historical inspector, it uses the otherwise hidden Center slot
-and reserves that existing 70px dock row below the inspector. The row is
-returned to the inspector as soon as the compass disappears; HISTORY controls
+and reserves that existing 70px dock row below the inspector. North and a
+native fullscreen exit share that row; it is returned when neither remains.
+HISTORY controls
 and the remaining hidden dock actions keep their existing behavior.
 The control has a 44x44 target, an accessible Reset north name and the existing
 focus treatment. Focus returns to the map only while the activated compass
@@ -299,6 +300,30 @@ explicit camera ownership and fences obsolete automatic movement. Normal
 settled viewport filtering and provider cadence still apply: rotating a
 rectangular footprint may change which objects are in view. No forced fetch,
 MQTT reconnect, orbital refresh or navigation/coverage reset is introduced.
+
+## Native workspace fullscreen
+
+Use **Settings → View → Enter fullscreen**. The entire existing app-shell,
+including inspectors, HISTORY, captured paths and credits, becomes the native
+browser fullscreen element. A 44x44 exit companion appears beside Reset north;
+it remains outside disclosures and available when the historical rail is hidden.
+The browser's Escape, system and native exit overlays remain authoritative.
+
+Only the standard Fullscreen API is used. Capability checking decides
+availability, not the browser name. Desktop Safari and partial iPad support
+include standard APIs from 16.4; iPhone and some embedded contexts remain
+unavailable. A disabled entry explains unsupported or disallowed capability.
+Declined entry and failed exit have distinct local feedback; a failed exit
+keeps its action and the browser exit controls. No detailed rejection cause
+is inferred from the browser's error.
+
+There is no fullscreen preference, startup action, installation requirement,
+CSS imitation, F11 detection, automatic reentry or new provider setting.
+The browser can constrain page magnification in fullscreen; the application
+does not counter-scale text or lock orientation/keys. Entry/exit preserves
+camera, session Home and saved state, subject to normal resized-footprint
+filtering and eligibility. See the [native acceptance
+qualifications](development-and-testing.md#native-workspace-fullscreen-434).
 
 ## Coordinate entry and named-place search
 

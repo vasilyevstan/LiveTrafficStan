@@ -118,7 +118,7 @@ describe('interface presentation contracts', () => {
     expect(styles).toContain('.workspace-dock {')
     expect(styles).toContain('top: calc(var(--workspace-header-bottom) + 16px)')
     expect(styles).toContain('top: calc(var(--app-visual-viewport-height) - var(--control-stack-height) - 30px)')
-    expect(styles).toContain('bottom: calc(78px + var(--workspace-note-height))')
+    expect(styles).toContain('bottom: calc(78px + var(--workspace-note-height) + var(--workspace-fullscreen-clearance))')
     expect(styles).not.toContain('--mobile-controls-top')
     expect(styles).toContain('.interface-layer:has(.viewport-notice)')
     expect(styles).toContain('var(--workspace-notice-height) - var(--mobile-detail-height)')
@@ -146,12 +146,21 @@ describe('interface presentation contracts', () => {
     expect(mobile).toMatch(/\.in-view-mobile-entry\s*\{\s*display: block;/)
   })
 
-  it('reserves the hidden dock row only for a useful historical compass', () => {
+  it('reserves one hidden dock row only for a useful historical compass or fullscreen exit', () => {
     const mobile = styles.split('@container workspace (max-width: 760px) {')[1]
     expect(mobile).toMatch(/\.details-panel--historical\s*\{[^}]*--historical-compass-height: 0px;[^}]*var\(--historical-compass-height\)/)
-    expect(mobile).toMatch(/\.interface-layer:has\(\.workspace-north\) \.details-panel--historical\s*\{\s*--historical-compass-height: 70px;/)
+    expect(mobile).toMatch(/\.interface-layer:has\(\.workspace-north, \.workspace-fullscreen-exit\) \.details-panel--historical\s*\{\s*--historical-compass-height: 70px;/)
     expect(mobile).toMatch(/\.interface-layer:has\(\.details-panel--historical\) \.control-stack\s*\{\s*visibility: hidden;/)
-    expect(mobile).toMatch(/\.interface-layer:has\(\.details-panel--historical\) \.workspace-north\s*\{\s*bottom: 0;\s*visibility: visible;/)
+    expect(mobile).toMatch(/\.interface-layer:has\(\.details-panel--historical\) \.workspace-north,\s*\.interface-layer:has\(\.details-panel--historical\) \.workspace-fullscreen-exit\s*\{\s*bottom: 0;\s*visibility: visible;/)
+  })
+
+  it('gives fullscreen actions 44px targets and presence-only mobile flyout clearance', () => {
+    expect(styles).toMatch(/\.workspace-north,\s*\.workspace-fullscreen-exit\s*\{[^}]*width: 44px;[^}]*height: 44px;/)
+    expect(styles).toMatch(/#enter-fullscreen-button\s*\{[^}]*min-width: 44px;[^}]*min-height: 44px;/)
+    const mobile = styles.split('@container workspace (max-width: 760px) {')[1]
+    expect(mobile).toMatch(/\.control-stack:has\(\.workspace-fullscreen-exit\)\s*\{\s*--workspace-fullscreen-clearance: 52px;/)
+    expect(mobile).toMatch(/\.workspace-orientation:has\(\.workspace-north\) \.workspace-fullscreen-exit\s*\{\s*right: auto;\s*left: 46px;/)
+    expect(styles).toMatch(/@container workspace \(min-width: 761px\) and \(max-height: 500px\)[\s\S]*?\.control-stack:has\(\.workspace-fullscreen-exit\) :is\([^}]*min-height: 44px;/)
   })
 
   it('gives In view search, result and paging controls 44 px minimum targets', () => {

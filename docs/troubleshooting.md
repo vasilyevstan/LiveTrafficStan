@@ -119,6 +119,32 @@ there is no automatic history retry or refresh. Retry-After remains authoritativ
 Do not clear site data, relax the 5 km graph gap or enable a paid source to
 make a missing journey appear complete.
 
+## Fullscreen is unavailable, declined or exits unexpectedly
+
+Use **Settings → View → Enter fullscreen** for the entire workspace. The
+corner-contract companion beside Reset north exits; the inspector X still
+closes only that inspector. Browser Escape, swipe/system exit and native
+overlays remain browser-owned. While the shell owns fullscreen, app-local
+Escape does not also close details, disclosures or search.
+
+An unavailable entry means the standard capability is absent or disallowed;
+it does not imply a map or provider outage. iPhone and some embedded browsers
+do not support whole-element standard fullscreen; modern desktop Safari and
+some iPads do. Capability checking is authoritative. There is no CSS fallback
+or installation prompt.
+
+A declined entry is not active fullscreen. Retry through the visible action,
+which supplies browser user activation. A failed exit retains the exit
+companion and offers the browser's exit control; do not clear site data.
+The browser can leave fullscreen or reset page magnification itself, and
+the app never automatically reenters. F11/window fullscreen and standalone
+installation are separate browser modes.
+
+Full-canvas size changes may change local traffic counts or exceed the
+existing 100km eligibility limit. That is ordinary viewport filtering, not
+navigation, a lost Home, a new provider connection or a reason to reset
+preferences/history.
+
 ## Globe, Flat and paused wide views
 
 **Settings → Appearance → AUTO GLOBE / FLAT** selects projection independently

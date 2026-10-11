@@ -65,4 +65,16 @@ describe('DetailsPanel', () => {
     expect(event.preventDefault).not.toHaveBeenCalled()
     expect(event.stopPropagation).not.toHaveBeenCalled()
   })
+
+  it('leaves Escape to native workspace fullscreen without clearing details', () => {
+    const onClose = vi.fn()
+    const event = {
+      key: 'Escape', defaultPrevented: false,
+      preventDefault: vi.fn(), stopPropagation: vi.fn(),
+    }
+    closeDetailsOnEscape(event, onClose, true)
+    expect(onClose).not.toHaveBeenCalled()
+    expect(event.preventDefault).not.toHaveBeenCalled()
+    expect(event.stopPropagation).not.toHaveBeenCalled()
+  })
 })

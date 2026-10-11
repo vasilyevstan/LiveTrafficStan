@@ -8,6 +8,11 @@ import {
   type SyntheticEvent,
 } from 'react'
 import type { ThemePreference } from '../app/theme'
+import {
+  FULLSCREEN_UNAVAILABLE_MESSAGE,
+  workspaceOwnsFullscreen,
+  type FullscreenState,
+} from '../app/fullscreen'
 import type { PlaceSearchState } from '../app/PlaceSearchController'
 import type { AppCenter } from '../config/appConfig'
 import { normalizeMapBearing } from '../domain/mapCamera'
@@ -50,6 +55,9 @@ import { OrbitalContext } from './OrbitalContext'
 import { StarlinkContext } from './StarlinkContext'
 
 interface TrafficControlsProps {
+  fullscreen: FullscreenState
+  onEnterFullscreen: () => void
+  onExitFullscreen: () => void
   masthead?: ReactNode
   inView: ReactNode
   aircraftQuery: string
@@ -205,6 +213,8 @@ const operationIcons = {
   settings: 'M4 6h16M4 12h16M4 18h16M8 3v6m8 0v6m-6 0v6',
   inView: 'M4 5h4v4H4V5Zm7 2h9M4 15h4v4H4v-4Zm7 2h9',
   close: 'm6 6 12 12M18 6 6 18',
+  fullscreenEnter: 'M9 3H3v6m12-6h6v6M3 15v6h6m12-6v6h-6',
+  fullscreenExit: 'M3 9h6V3m6 0v6h6M9 21v-6H3m18 0h-6v6',
 } as const
 
 function OperationIcon({ name }: { name: keyof typeof operationIcons }) {
@@ -254,6 +264,9 @@ const handleDisclosureToggle = (
 }
 
 export function TrafficControls({
+  fullscreen,
+  onEnterFullscreen,
+  onExitFullscreen,
   marineProviderName = 'Digitraffic',
   masthead,
   inView,
@@ -582,6 +595,28 @@ export function TrafficControls({
           </svg>
         </button>
       )}
+      {fullscreen.active && (
+        <>
+          <button
+            id="exit-fullscreen-button"
+            className="workspace-fullscreen-exit"
+            type="button"
+            aria-label="Exit workspace fullscreen"
+            title="Exit fullscreen"
+            aria-busy={fullscreen.pending === 'exit'}
+            aria-disabled={fullscreen.pending !== null}
+            aria-describedby={fullscreen.message ? 'fullscreen-exit-status' : undefined}
+            onClick={onExitFullscreen}
+          >
+            <OperationIcon name="fullscreenExit" />
+          </button>
+          {fullscreen.message && (
+            <p id="fullscreen-exit-status" className="workspace-fullscreen-status" role="status">
+              {fullscreen.message}
+            </p>
+          )}
+        </>
+      )}
       </div>
       <aside
         className={`control-panel control-panel--operations${
@@ -681,7 +716,8 @@ export function TrafficControls({
           handleDisclosureToggle(event, focusedWithinMapToolsRef)
         }
         onKeyDown={(event) => {
-          if (event.key !== 'Escape' || !event.currentTarget.open) return
+          if (event.key !== 'Escape' || !event.currentTarget.open ||
+            workspaceOwnsFullscreen(event.currentTarget)) return
           event.preventDefault()
           event.stopPropagation()
           event.currentTarget.open = false
@@ -1149,7 +1185,8 @@ export function TrafficControls({
             handleDisclosureToggle(event, focusedWithinSettingsRef)
           }
           onKeyDown={(event) => {
-            if (event.key !== 'Escape' || !event.currentTarget.open) return
+            if (event.key !== 'Escape' || !event.currentTarget.open ||
+              workspaceOwnsFullscreen(event.currentTarget)) return
             event.preventDefault()
             event.stopPropagation()
             event.currentTarget.open = false
@@ -1257,6 +1294,25 @@ export function TrafficControls({
             <fieldset className="control-group">
               <legend>View</legend>
               <div className="control-options control-options--one">
+                {!fullscreen.active && (
+                  <button
+                    id="enter-fullscreen-button"
+                    type="button"
+                    disabled={!fullscreen.available}
+                    aria-label="Enter workspace fullscreen"
+                    aria-busy={fullscreen.pending === 'enter'}
+                    aria-disabled={fullscreen.pending !== null}
+                    aria-describedby={
+                      fullscreen.message || !fullscreen.available
+                        ? 'fullscreen-entry-status'
+                        : undefined
+                    }
+                    onClick={onEnterFullscreen}
+                  >
+                    <OperationIcon name="fullscreenEnter" />
+                    {fullscreen.pending === 'enter' ? 'ENTERING FULLSCREEN...' : 'ENTER FULLSCREEN'}
+                  </button>
+                )}
                 <button
                   type="button"
                   disabled={!locationAvailable || locationLoading}
@@ -1269,6 +1325,11 @@ export function TrafficControls({
                   {locationLoading ? 'LOCATING...' : 'USE LOCATION'}
                 </button>
               </div>
+              {!fullscreen.active && (fullscreen.message || !fullscreen.available) && (
+                <p id="fullscreen-entry-status" className="control-note" role="status">
+                  {fullscreen.message ?? FULLSCREEN_UNAVAILABLE_MESSAGE}
+                </p>
+              )}
               {locationMessage && (
                 <p
                   id="location-status"
@@ -1375,7 +1436,7 @@ export function TrafficControls({
           className="control-panel__more control-panel__in-view"
           name="traffic-control-panels"
           onKeyDown={(event) => {
-            if (event.key !== 'Escape') return
+            if (event.key !== 'Escape' || workspaceOwnsFullscreen(event.currentTarget)) return
             event.preventDefault()
             event.stopPropagation()
             closeInView()

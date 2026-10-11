@@ -41,6 +41,9 @@ const renderControls = (
 ) =>
   renderToStaticMarkup(
     <TrafficControls
+      fullscreen={{ available: true, active: false, pending: null }}
+      onEnterFullscreen={() => undefined}
+      onExitFullscreen={() => undefined}
       inView={<p>Current in-view results</p>}
       aircraftQuery=""
       aircraftResults={[]}
@@ -163,6 +166,48 @@ const renderControls = (
   )
 
 describe('TrafficControls', () => {
+  it('places native entry in Settings / View without adding a dock slot', () => {
+    const html = renderControls()
+    const view = html.match(/<legend>View<\/legend>([\s\S]*?)<\/fieldset>/)?.[1]
+    expect(view).toContain('id="enter-fullscreen-button"')
+    expect(view).toContain('aria-label="Enter workspace fullscreen"')
+    expect(view!.indexOf('ENTER FULLSCREEN')).toBeLessThan(view!.indexOf('USE LOCATION'))
+    expect(html).not.toContain('id="exit-fullscreen-button"')
+  })
+
+  it('keeps a single fullscreen exit outside disclosures beside the contextual north control', () => {
+    const html = renderControls({
+      fullscreen: { available: true, active: true, pending: null },
+      northResetBearing: 25,
+    })
+    expect(html).toContain('aria-label="Exit workspace fullscreen"')
+    expect(html.indexOf('id="exit-fullscreen-button"')).toBeLessThan(html.indexOf('id="traffic-controls-settings"'))
+    expect(html).not.toContain('id="enter-fullscreen-button"')
+    expect(html.match(/id="exit-fullscreen-button"/g)).toHaveLength(1)
+    expect(html).toContain('id="reset-north-button"')
+  })
+
+  it('discloses unavailable native support and keeps declined/exit feedback local', () => {
+    const unavailable = renderControls({
+      fullscreen: { available: false, active: false, pending: null },
+    })
+    expect(unavailable).toContain('Native fullscreen is unavailable here.')
+    expect(unavailable).toMatch(/id="enter-fullscreen-button"[^>]*disabled=""/)
+    const failure = renderControls({
+      fullscreen: { available: true, active: true, pending: null, message: 'Could not exit. Use the browser exit control.' },
+    })
+    expect(failure).toContain('id="fullscreen-exit-status"')
+    expect(failure).not.toContain('id="fullscreen-entry-status"')
+  })
+
+  it('shows a pending operation without removing the focused exit target', () => {
+    const html = renderControls({
+      fullscreen: { available: true, active: true, pending: 'exit' },
+    })
+    expect(html).toMatch(/id="exit-fullscreen-button"[^>]*aria-busy="true"[^>]*aria-disabled="true"/)
+    expect(html).not.toMatch(/id="exit-fullscreen-button"[^>]* disabled=/)
+  })
+
   it('keeps the ungranted-location hint attached to the explicit enabled action', () => {
     const message = 'Use location to request access. Rounded, not saved.'
     const html = renderControls({ locationMessage: message })
@@ -288,7 +333,7 @@ describe('TrafficControls', () => {
     expect(html.match(/>SHIPS</g)).toHaveLength(1)
     expect(html.match(/>TRAILS</g)).toHaveLength(1)
     expect(html.match(/>ORBITS</g)).toHaveLength(2)
-    expect(html.match(/class="operation-icon"/g)).toHaveLength(9)
+    expect(html.match(/class="operation-icon"/g)).toHaveLength(10)
     expect(html.match(/aria-label="Theme and trails"/g)).toHaveLength(1)
     expect(html.match(/>LIGHT</g)).toHaveLength(1)
   })

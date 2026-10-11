@@ -15,6 +15,7 @@ import {
 } from 'maplibre-gl'
 import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
 import type { Theme } from '../app/theme'
+import { workspaceOwnsFullscreen } from '../app/fullscreen'
 import type { AppCenter } from '../config/appConfig'
 import type { JourneySnapshot } from '../domain/journey'
 import type { AircraftPhotoViewState } from '../domain/aircraftPhoto'
@@ -1579,7 +1580,7 @@ export function TrafficMap({
         scheduleTrafficTooltipHide()
       })
       element.addEventListener('keydown', (event) => {
-        if (event.key !== 'Escape') return
+        if (event.key !== 'Escape' || workspaceOwnsFullscreen(element)) return
         event.preventDefault()
         event.stopPropagation()
         hideTrafficTooltip()
