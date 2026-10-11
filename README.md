@@ -108,6 +108,10 @@ identity are not renamed or reset.
 - A contextual **Reset north** compass appears beside Center after rotation.
   It resets orientation without changing location, zoom or tilt, leaving
   HISTORY and captured paths intact. Center still returns to session Home.
+- **Settings → View → Enter fullscreen** uses the browser's native fullscreen
+  for the entire workspace. Its contextual exit stays beside Reset north,
+  including HISTORY and captured paths. Unsupported browsers show an
+  unavailable action; no CSS fullscreen imitation or installation is used.
 - One explicit-submit location field accepts rounded decimal coordinates
   locally or named places through Photon. Malformed numeric pairs, including
   repeated dots or signs, stay local and show an input error rather than a
@@ -326,7 +330,7 @@ identity are not renamed or reset.
   the body scrolls at full width without a close-button gutter.
   Default menu explanations use purposeful two-line summaries; labelled
   disclosures retain full names, sources, privacy and limitations.
-  Escape closes an inspector when focus is inside it;
+  Outside native workspace fullscreen, Escape closes an inspector when focus is inside it;
   either action preserves the camera and returns focus to the existing
   selection control or visible More/Settings fallback.
   White Light and slate Dark surfaces share system typography and one accent.
@@ -340,6 +344,7 @@ identity are not renamed or reset.
   **Appearance**. **Center** stays outside menus in the main rail/dock.
   The search controls stay mounted when Settings is closed;
   Auto/Light/Dark and Trails remain under Appearance.
+  Native fullscreen is under **View**; the browser owns its Escape/system exit.
   The mobile zoom/tilt prompt, selected details, and HISTORY playback reserve
   their own space; closing historical details restores the same tool state.
   Visual-viewport-aware sizing, solid keyboard focus rings, non-color

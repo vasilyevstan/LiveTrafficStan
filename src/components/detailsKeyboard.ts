@@ -8,8 +8,9 @@ type CloseKeyEvent = Pick<
 export const closeDetailsOnEscape = (
   event: CloseKeyEvent,
   onClose: () => void,
+  workspaceFullscreen = false,
 ) => {
-  if (event.key !== 'Escape' || event.defaultPrevented) return
+  if (event.key !== 'Escape' || event.defaultPrevented || workspaceFullscreen) return
   event.preventDefault()
   event.stopPropagation()
   onClose()

@@ -316,6 +316,7 @@
 
 .control-stack {
   --workspace-orientation-note: 0px;
+  --workspace-fullscreen-clearance: 0px;
   --workspace-orbital-note: 0px;
   --workspace-operation-note: 0px;
   --workspace-settings-note: 0px;
@@ -339,8 +340,12 @@
   pointer-events: none;
 }
 
-.control-stack:has(.workspace-north) {
+.control-stack:has(.workspace-north, .workspace-fullscreen-exit) {
   --workspace-orientation-note: 52px;
+}
+
+.control-stack:has(.workspace-fullscreen-status) {
+  --workspace-orientation-note: 104px;
 }
 
 .workspace-orientation {
@@ -350,7 +355,8 @@
   min-width: 0;
 }
 
-.workspace-north {
+.workspace-north,
+.workspace-fullscreen-exit {
   position: absolute;
   top: 0;
   right: calc(100% + 12px);
@@ -374,9 +380,44 @@
   pointer-events: auto;
 }
 
-.workspace-north:hover {
+.workspace-north:hover,
+.workspace-fullscreen-exit:hover {
   color: var(--button-hover-text);
   border-color: var(--button-hover-border);
+}
+
+.workspace-orientation:has(.workspace-north) .workspace-fullscreen-exit {
+  right: calc(100% + 64px);
+}
+
+.workspace-fullscreen-exit[aria-disabled='true'],
+#enter-fullscreen-button[aria-disabled='true'] {
+  color: var(--button-disabled-text);
+  cursor: wait;
+}
+
+.workspace-fullscreen-status {
+  position: absolute;
+  top: 52px;
+  right: calc(100% + 12px);
+  width: min(228px, calc(var(--app-visual-viewport-width) - 104px));
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  color: var(--status-error);
+  background: var(--panel-background);
+  font-size: 0.75rem;
+  pointer-events: auto;
+}
+
+#enter-fullscreen-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 44px;
+  min-height: 44px;
 }
 
 .workspace-north .operation-icon {
@@ -2135,9 +2176,29 @@
   }
 }
 
+@container workspace (min-width: 761px) and (max-height: 500px) {
+  .control-stack:has(.workspace-fullscreen-exit) :is(
+    .workspace-center,
+    .control-panel__primary button,
+    .control-panel__more > summary
+  ) {
+    min-height: 44px;
+    gap: 2px;
+    padding: 2px;
+  }
+}
+
 @container workspace (max-width: 760px) {
-  .control-stack:has(.workspace-north) {
+  .control-stack:has(.workspace-north, .workspace-fullscreen-exit, .workspace-fullscreen-status) {
     --workspace-orientation-note: 0px;
+  }
+
+  .control-stack:has(.workspace-fullscreen-exit) {
+    --workspace-fullscreen-clearance: 52px;
+  }
+
+  .control-stack:has(.workspace-fullscreen-status) {
+    --workspace-fullscreen-clearance: 104px;
   }
 
   .workspace-orientation {
@@ -2145,10 +2206,23 @@
     width: auto;
   }
 
-  .workspace-north {
+  .workspace-north,
+  .workspace-fullscreen-exit {
     top: auto;
     right: auto;
     bottom: calc(100% + 12px);
+    left: -6px;
+  }
+
+  .workspace-orientation:has(.workspace-north) .workspace-fullscreen-exit {
+    right: auto;
+    left: 46px;
+  }
+
+  .workspace-fullscreen-status {
+    top: auto;
+    right: auto;
+    bottom: calc(100% + 64px);
     left: -6px;
   }
 
@@ -2269,7 +2343,7 @@
   .control-panel__more-body {
     top: 0;
     right: 0;
-    bottom: calc(78px + var(--workspace-note-height));
+    bottom: calc(78px + var(--workspace-note-height) + var(--workspace-fullscreen-clearance));
     left: 48px;
     width: auto;
     padding: 12px;
@@ -2279,18 +2353,18 @@
   .control-panel__urgent {
     top: auto;
     right: 0;
-    bottom: calc(76px + var(--workspace-settings-note));
+    bottom: calc(76px + var(--workspace-settings-note) + var(--workspace-fullscreen-clearance));
     left: 48px;
     width: auto;
   }
 
   .control-panel__orbital-summary {
-    bottom: calc(76px + var(--workspace-settings-note) + var(--workspace-operation-note));
+    bottom: calc(76px + var(--workspace-settings-note) + var(--workspace-operation-note) + var(--workspace-fullscreen-clearance));
   }
 
   .control-panel--settings .control-panel__urgent {
     top: auto;
-    bottom: 76px;
+    bottom: calc(76px + var(--workspace-fullscreen-clearance));
   }
 
   .interface-layer:has(.details-panel) .control-stack {
@@ -2344,8 +2418,12 @@
     );
   }
 
-  .interface-layer:has(.workspace-north) .details-panel--historical {
+  .interface-layer:has(.workspace-north, .workspace-fullscreen-exit) .details-panel--historical {
     --historical-compass-height: 70px;
+  }
+
+  .interface-layer:has(.workspace-fullscreen-status) .details-panel--historical {
+    --historical-compass-height: 122px;
   }
 
   .details-grid {
@@ -2441,8 +2519,14 @@
     visibility: hidden;
   }
 
-  .interface-layer:has(.details-panel--historical) .workspace-north {
+  .interface-layer:has(.details-panel--historical) .workspace-north,
+  .interface-layer:has(.details-panel--historical) .workspace-fullscreen-exit {
     bottom: 0;
+    visibility: visible;
+  }
+
+  .interface-layer:has(.details-panel--historical) .workspace-fullscreen-status {
+    bottom: 52px;
     visibility: visible;
   }
 

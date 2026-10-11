@@ -7,6 +7,7 @@ import {
 } from 'react'
 
 import type { PlaceSearchState } from '../app/PlaceSearchController'
+import { workspaceOwnsFullscreen } from '../app/fullscreen'
 import type { AppCenter } from '../config/appConfig'
 import { parseLocationInput } from '../domain/locationInput'
 import type { PlaceSearchResult } from '../providers/geocoding/photonProvider'
@@ -79,7 +80,7 @@ export function useLocationSearchModel({
   }
 
   const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
-    if (event.key !== 'Escape') return
+    if (event.key !== 'Escape' || workspaceOwnsFullscreen(event.currentTarget)) return
     event.preventDefault()
     onCancel()
     inputRef.current?.focus()
