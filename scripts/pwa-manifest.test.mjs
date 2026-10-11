@@ -97,4 +97,20 @@ describe('PWA manifest and deployment headers', () => {
       /\/icons\/\*[\s\S]*max-age=31536000, immutable/,
     )
   })
+
+  it('permits only the manual analytics collector and prevents edge HTML transformation', async () => {
+    const headers = await readFile(headersPath, 'utf8')
+    expect(headers.split('; img-src')[0]).toContain('https://cloudflareinsights.com')
+    expect(headers).not.toContain('*.cloudflareinsights.com')
+    expect(headers).not.toContain('script-src')
+    for (const path of ['/', '/index.html']) {
+      expect(headers).toContain(`${path}\n  Cache-Control: public, max-age=0, must-revalidate, no-transform`)
+    }
+    expect(headers).toContain('Referrer-Policy: strict-origin-when-cross-origin')
+    const bootstrap = await readFile(new URL('../src/main.tsx', import.meta.url), 'utf8')
+    expect(bootstrap).toContain("import.meta.env.MODE !== 'pwa-retire'")
+    expect(bootstrap.indexOf('installWebAnalytics(import.meta')).toBeGreaterThan(bootstrap.indexOf('createRoot('))
+    const html = await readFile(new URL('../index.html', import.meta.url), 'utf8')
+    expect(html).not.toContain('data-cf-beacon')
+  })
 })

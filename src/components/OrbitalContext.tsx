@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { ObjectResultButton } from './ObjectResultButton'
 import { formatTimestamp } from '../domain/format'
 import {
   orbitalFeatureId,
@@ -94,6 +95,7 @@ export function OrbitalContext({
   const [query, setQuery] = useState('')
   const [page, setPage] = useState(0)
   const restorePageFocusRef = useRef(false)
+  const catalogListRef = useRef<HTMLUListElement>(null)
   const horizonMinutes = Math.round(horizonMs / 60_000)
   const snapshot = state.snapshot
   const catalogResults = useMemo(
@@ -119,11 +121,7 @@ export function OrbitalContext({
     const first = catalogPage.rows[0]
     if (!first) return
     globalThis.requestAnimationFrame(() => {
-      document
-        .getElementById(
-          `orbital-catalog-result-${first.noradCatalogId}`,
-        )
-        ?.focus()
+      catalogListRef.current?.querySelector('button')?.focus()
     })
   }, [catalogPage.page, catalogPage.rows])
 
@@ -237,15 +235,13 @@ export function OrbitalContext({
                 const enrichment = position
                   ? orbitalEnrichmentForPosition(position)
                   : undefined
-                const originId = `orbital-context-result-${result.noradCatalogId}`
                 return (
                   <li key={result.id}>
-                    <button
-                      id={originId}
-                      type="button"
+                    <ObjectResultButton
+                      prefix="orbital-context-result"
                       aria-pressed={result.id === selectedId}
                       disabled={!position}
-                      onClick={() => onSelect(result.id, originId)}
+                      onSelect={(originId) => onSelect(result.id, originId)}
                     >
                       <strong>{result.name}</strong>
                       <span>
@@ -262,7 +258,7 @@ export function OrbitalContext({
                       <span className="orbital-context__purpose">
                         {orbitalEnrichmentSummary(enrichment)}
                       </span>
-                    </button>
+                    </ObjectResultButton>
                   </li>
                 )
               })}
@@ -357,19 +353,18 @@ export function OrbitalContext({
             <ul
               className="vessel-results orbital-results orbital-catalog-results"
               aria-label="Complete orbital catalog results"
+              ref={catalogListRef}
             >
               {catalogPage.rows.map((record) => {
                 const id = orbitalFeatureId(record.noradCatalogId)
                 const hasPosition = positionStatus(record, state)
-                const originId = `orbital-catalog-result-${record.noradCatalogId}`
                 return (
                   <li key={record.noradCatalogId}>
-                    <button
-                      id={originId}
-                      type="button"
+                    <ObjectResultButton
+                      prefix="orbital-catalog-result"
                       aria-pressed={id === selectedId}
                       aria-disabled={!hasPosition}
-                      onClick={() => {
+                      onSelect={(originId) => {
                         if (hasPosition) onSelect(id, originId)
                       }}
                     >
@@ -392,7 +387,7 @@ export function OrbitalContext({
                           .map(sourceGroupLabel)
                           .join(', ')}
                       </span>
-                    </button>
+                    </ObjectResultButton>
                   </li>
                 )
               })}

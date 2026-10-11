@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { ObjectResultButton } from './ObjectResultButton'
 import {
   AIRCRAFT_SEARCH_MAX_LENGTH,
   aircraftResultContext,
@@ -173,8 +174,8 @@ export function InViewPanel({
     focusPageRef.current = null
     const first = paged[targetKind].rows[0]
     if (!first) return
-    const target = document.getElementById(
-      `in-view-${targetKind}-result-${first.key}`,
+    const target = rootRef.current?.querySelector<HTMLElement>(
+      `#in-view-${targetKind}-panel .in-view-results button`,
     )
     if (target?.getClientRects().length) target.focus()
   }, [paged])
@@ -311,26 +312,22 @@ export function InViewPanel({
                   }
                 }}
               >
-                {page.rows.map((row) => {
-                  const originId = `in-view-${value}-result-${row.key}`
-                  return (
+                {page.rows.map((row) => (
                     <li key={row.key}>
-                      <button
-                        id={originId}
-                        type="button"
+                      <ObjectResultButton
+                        prefix={`in-view-${value}-result`}
                         title={row.title}
                         aria-pressed={selected === row.id}
                         disabled={!selectable}
                         onFocus={() => setFocusedKey(row.key)}
-                        onClick={() => onSelect(row.id, originId)}
+                        onSelect={(originId) => onSelect(row.id, originId)}
                       >
                         <strong>{row.label}</strong>
                         <span>{row.context}</span>
                         {row.detail && <span>{row.detail}</span>}
-                      </button>
+                      </ObjectResultButton>
                     </li>
-                  )
-                })}
+                ))}
               </ul>
             )}
             {page.pageCount > 1 && (

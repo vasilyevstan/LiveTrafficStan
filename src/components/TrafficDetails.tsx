@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { DetailsPanel } from './DetailsPanel'
 import {
   formatAge,
@@ -490,6 +490,7 @@ function VesselPhotoDetails({
 }: {
   photo: VesselReferencePhoto | DynamicVesselPhoto
 }) {
+  const headingId = useId()
   const [failed, setFailed] = useState(false)
   const dynamic = 'lookupNumber' in photo
   const number = dynamic ? photo.lookupNumber : photo.imo
@@ -499,9 +500,9 @@ function VesselPhotoDetails({
   return (
     <section
       className="vessel-photo"
-      aria-labelledby={`vessel-photo-heading-${number}`}
+      aria-labelledby={headingId}
     >
-      <h3 id={`vessel-photo-heading-${number}`}>
+      <h3 id={headingId}>
         Vessel photo
       </h3>
       <p className="metadata-status">

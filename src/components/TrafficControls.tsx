@@ -65,7 +65,7 @@ interface TrafficControlsProps {
   totalAircraft: number
   aircraftEmptyMessage: string
   onAircraftQueryChange: (query: string) => void
-  onAircraftSelect: (id: string) => void
+  onAircraftSelect: (id: string, originId: string) => void
   vesselFilters: VesselFilterState
   vesselResults: readonly DisplayVessel[]
   totalVessels: number
@@ -73,7 +73,7 @@ interface TrafficControlsProps {
   marineProviderName?: string
   units: UnitSystem
   onVesselFiltersChange: (filters: VesselFilterState) => void
-  onVesselSelect: (id: string) => void
+  onVesselSelect: (id: string, originId: string) => void
   aircraftVisible: boolean
   onAircraftVisibleChange: (visible: boolean) => void
   vesselsVisible: boolean
@@ -91,7 +91,7 @@ interface TrafficControlsProps {
   selectedAirportId: string | null
   airportsEmptyMessage: string
   onAirportsVisibleChange: (visible: boolean) => void
-  onAirportSelect: (id: string) => void
+  onAirportSelect: (id: string, originId: string) => void
   onRetryAirports: () => void
   weatherVisible: boolean
   depthsVisible: boolean
@@ -109,7 +109,7 @@ interface TrafficControlsProps {
   weatherCanRefresh: boolean
   weatherRetryUsesAirports: boolean
   onWeatherVisibleChange: (visible: boolean) => void
-  onWeatherSelect: (id: string) => void
+  onWeatherSelect: (id: string, originId: string) => void
   onRetryWeather: () => void
   onRefreshWeather: () => void
   orbitalVisible: boolean
@@ -1104,6 +1104,10 @@ export function TrafficControls({
                   Orbits: <a href="https://celestrak.org/">CelesTrak</a>{' '}
                   · SGP4 modeled, not live/optical.
                 </li>
+                <li>
+                  Site statistics: <a href="https://www.cloudflare.com/web-analytics/">Cloudflare</a>.
+                  {' '}Cookie-free; trackstan.xyz only.
+                </li>
               </ul>
               <p className="control-note control-note--muted">
                 Depth requests disclose the viewed map area.
@@ -1133,6 +1137,20 @@ export function TrafficControls({
                 times are in details.
                 {' '}<a href="https://github.com/vasilyevstan/LiveTrafficStan/blob/main/docs/data-sources-and-licensing.md">Full data credits</a>.
               </p>
+              </details>
+              <details className="context-details">
+                <summary>Visitor analytics &amp; privacy</summary>
+                <p className="control-note">
+                  On trackstan.xyz, Cloudflare measures page loads, referrers,
+                  country, browser, device and performance. No cookies,
+                  persistent visitor IDs or custom interaction events.
+                </p>
+                <p className="control-note">
+                  The official beacon sends per-page performance data.
+                  Shared coordinates, searches and private history are not
+                  analytics fields. Blocking analytics leaves the map usable.
+                  {' '}<a href="https://github.com/vasilyevstan/LiveTrafficStan/blob/main/docs/data-sources-and-licensing.md#visitor-analytics">Collection details</a>.
+                </p>
               </details>
             </fieldset>
           </section>

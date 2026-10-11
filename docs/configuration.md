@@ -33,6 +33,30 @@ Every `VITE_*` value is embedded in browser JavaScript. These variables are
 configuration, not a secret store. Never place API tokens, private endpoints,
 credentials, or personal information in them.
 
+## Fixed visitor analytics
+
+`WEB_ANALYTICS_CONFIG` in `src/config/appConfig.ts` contains the public
+Cloudflare installation token, enabled flag, exact production origin and
+official script URL. The token is intentionally browser-visible; it is not a
+management credential. There is no environment/hostname/collector override.
+Only an ordinary production build at exact `https://trackstan.xyz` installs
+one official beacon per document, with `spa:false`. Development, preview and
+the backup Workers origin remain unmeasured; PWA-retirement builds are excluded.
+There is no geographic exclusion, including for EU visitors.
+
+The collector is the only added `connect-src` host in `public/_headers`.
+Root and index HTML retain `no-transform` to suppress account-side automatic
+injection. Existing map/provider/image permissions and cache policies remain.
+The script and collector are external network-only resources, never added to
+the installed-app shell/cache.
+
+To disable this integration, set `WEB_ANALYTICS_CONFIG.enabled` to `false`,
+run the normal checks and release. **Keep `no-transform`** while the account
+automatic setting is enabled; otherwise an edge-injected beacon could replace
+the disabled manual one. There is no new local-storage preference, consent
+cookie, endpoint, Worker binding or scheduler. See
+[collection boundaries](data-sources-and-licensing.md#visitor-analytics).
+
 ## Worker deployment controls
 
 The production workflow passes Worker-only values separately from the browser

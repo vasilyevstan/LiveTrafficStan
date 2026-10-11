@@ -1344,13 +1344,11 @@ function App() {
     [selectTraffic],
   )
   const handleAircraftDiscoverySelect = useCallback(
-    (id: string) =>
-      selectTraffic(id, `aircraft-discovery-result-${id}`),
+    (id: string, originId: string) => selectTraffic(id, originId),
     [selectTraffic],
   )
   const handleVesselDiscoverySelect = useCallback(
-    (id: string) =>
-      selectTraffic(id, `vessel-discovery-result-${id}`),
+    (id: string, originId: string) => selectTraffic(id, originId),
     [selectTraffic],
   )
 
@@ -1384,8 +1382,7 @@ function App() {
     [selectAirport],
   )
   const handleAirportContextSelect = useCallback(
-    (id: string) =>
-      selectAirport(id, `airport-context-result-${id}`),
+    (id: string, originId: string) => selectAirport(id, originId),
     [selectAirport],
   )
 
@@ -1406,8 +1403,7 @@ function App() {
     [selectWeather],
   )
   const handleWeatherContextSelect = useCallback(
-    (id: string) =>
-      selectWeather(id, `weather-context-result-${id}`),
+    (id: string, originId: string) => selectWeather(id, originId),
     [selectWeather],
   )
 
