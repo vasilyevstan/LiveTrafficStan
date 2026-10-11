@@ -8,8 +8,8 @@ user accounts or a server-side vessel history archive.
 
 Public production: <https://trackstan.xyz>
 
-Current application: `2748f4dbd0cce5ad71b295ee25973ebddbf02907`,
-with the [contextual Reset north release](docs/hosting-and-deployment.md#compass-reset-north-production-receipt-2026-10-10).
+Current application: `96a71b9ce6959e3df7bcddb34b6401f6dee47929`,
+with the [native workspace fullscreen release](docs/hosting-and-deployment.md#native-workspace-fullscreen-production-receipt-2026-10-11).
 Later documentation-only commits do not replace that running source.
 
 The existing <https://livetrafficstan.syntal.workers.dev> address remains

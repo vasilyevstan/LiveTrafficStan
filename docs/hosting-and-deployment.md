@@ -1816,14 +1816,85 @@ The compatible predecessor is application
 `0d847e8a-c8d4-435a-8e0b-77cc7f80cae9`. Rollback removes the fullscreen
 action without altering saved preferences/history or provider infrastructure.
 No new rollback drill or production machinery is required for this slice.
-The actual checked promotion, deployed application/Worker, strict smokes,
-normal installed update and Wiki publication will be recorded below after
-acceptance. Documentation-only commits are not another application deployment.
+The actual checked promotion, deployed application/Worker, strict smokes and
+normal installed update are recorded below. Documentation-only commits and
+Wiki publication are not another application deployment.
+
+## Native workspace fullscreen production receipt (2026-10-11)
+
+Implementation #435 and checked dev-to-main #436 deliver application
+**`96a71b9ce6959e3df7bcddb34b6401f6dee47929`**, Worker
+**`2c9aed04-3e82-4fef-8154-ac52ea6e2d03`**, published at
+**2026-10-11T13:39:19Z**. It serves `index-CNbqw4Sm.js`,
+`index-BQuWWmR1.css` and shell `0e0c9a6c27f167155e96`. Later canonical
+receipt/Wiki commits are documentation-only, not the running application SHA.
+
+Accepted implementation `e8e3f8b5ffb43d11d96efa78b1962e16f397daa2`,
+final dev `f535d46736453a4adfbd12e620ab1a44278f15c0` and main have the same
+complete tree `f28a524f0e9d8987a3cae8a1286f103e94542f80`.
+Feature/initial-dev Validation 38143156406 /38143326003 passed.
+The one demonstrated hosting-documentation squash-history conflict required
+tree-neutral #437, exact-head Validation 38143616199. Its sole dev
+merge-method exception was immediately restored at 13:34:45 UTC; original
+configurable dev/main safeguards and repository merge/deletion settings
+were verified by deep equality. Exact-new-dev and actual release-PR
+Validation 38143734970 /38143739102 passed, followed by
+[exact-main Validation 38143846768](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/38143846768).
+
+Serialized [deployment 38143961058](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/38143961058)
+and its workers.dev strict smoke passed. The unchanged full strict smoke
+also passed on trackstan.xyz. All production inputs remain enabled:
+`artifact=application`, `aircraft_delivery=oci-private-relay`, aircraft
+photos, plausible routes, curated/Starlink catalogs, marine supplementation
+and airport boards. Exact-current-main checks, atomic protected secrets,
+production serialization and persistent dev remain unchanged. There was no
+cosmetic redeployment, provider/credential change or new rollback exercise.
+
+The feature uses the standard native Fullscreen API on the existing
+app-shell: Settings / View entry and a reachable 44px contextual Exit beside
+Reset north, including HISTORY/captured paths. No CSS imitation, automatic
+entry/reentry, vendor-prefixed layer, persistent field, seventh dock slot,
+orientation/keyboard lock, new provider, Worker route/binding, data asset,
+dependency or camera/resize controller. Ordinary MapLibre resize can change
+the full-canvas footprint, counts and valid selection; the existing 100km
+eligibility, cadence/backoff, marine connections and orbital deadlines remain.
+
+Required local gates passed **178 suites /1,624 tests**, lint/typecheck,
+four network-free data checks and production-input build. Qualified local
+Chrome 155 evidence covers ten Light/Dark desktop/mobile/short/landscape
+layouts, 30 open-panel checks, four historical inspectors, captured path/
+immutable Return, two pitched/rotated dateline globe views, real map drag,
+native API exit, actual entry rejection and synthetic exit-failure recovery.
+The focus/short-landscape defects were corrected together. Failed observer
+selectors/Escape attempts and nominal magnification are preserved, not
+relabelled successful. See [the testing receipt](development-and-testing.md#native-workspace-fullscreen-434).
+
+At **13:40:36-13:40:46 UTC**, ordinary installed **REFRESH APP** replaced
+`index-2lX6Irkf.js` with the final deployed script, preserving raw preferences,
+history settings/database identity and root scope/controller. Actual Light
+390x568 touch and Dark 1280x900 Space entry/exit asserted app-shell
+`fullscreenElement`, unchanged raw camera, one vector canvas, hit-testable
+44x44 Exit and focus return to the visible Settings summary. Native
+fetch/WebSocket/clock, zero orbital reads and zero runtime exceptions passed
+without response fixtures. The visible PARTIAL provider state is retained.
+Explicit focus/device emulation is not physical-device or OS-hidden proof.
+Physical Escape remains untested after macOS denied scoped keystroke input
+(1002); standard `document.exitFullscreen()` is proved. Chrome's native
+entry resets actual pre-entry page scale 2 to scale 1; no 2x-inside-fullscreen
+or application counter-scaling claim is made.
+
+The compatible rollback is the compass application
+`2748f4dbd0cce5ad71b295ee25973ebddbf02907`, Worker
+`0d847e8a-c8d4-435a-8e0b-77cc7f80cae9`, with the same enabled inputs.
+The [#434 receipt](https://github.com/vasilyevstan/LiveTrafficStan/issues/434)
+records final canonical/Wiki identities and public byte verification
+separately. The compass receipt below remains historical/rollback evidence,
+including its failed immediate aircraft smoke and later unchanged acceptance.
 
 ## Compass reset north production receipt (2026-10-10)
 
-Implementation #429 and checked dev-to-main #430 deliver the currently
-running application **`2748f4dbd0cce5ad71b295ee25973ebddbf02907`**, Worker
+Implementation #429 and checked dev-to-main #430 delivered the historical
+compass application **`2748f4dbd0cce5ad71b295ee25973ebddbf02907`**, Worker
 **`0d847e8a-c8d4-435a-8e0b-77cc7f80cae9`**, published at
 **2026-10-10T20:43:13Z**. It serves `index-2lX6Irkf.js`,
 `index-Cnzw5_2m.css` and shell `a19609ab669c520d5b30`. Later receipt/Wiki
