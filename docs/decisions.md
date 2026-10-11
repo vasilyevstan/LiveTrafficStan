@@ -1,5 +1,38 @@
 # Engineering Decisions
 
+## Mobile usability and search refinement plan (#449)
+
+This is a measured plan, **not released behavior**. The requested
+Impeccable/UI specialist reviewed source; native parent browser measurements
+cover 390x568 and 315x517 in Light/Dark. Default DEPTHS attribution is expanded
+initially and adds 62px/82px; combined brand/dock/credits cover
+33.25%/43.16%. A selected object leaves only 158px/131px for menus and
+105px/81px for inspector content. Preserve the already reachable 44px X;
+primary More/search/attribution controls still measure below 44px.
+
+The smallest direction is compact native attribution once, complete credits
+on demand, one expanded mobile task with compact retained inspector context,
+one task/results scroll owner and 44px primary targets. Reuse existing
+components/disclosures, selection and scroll state; do not create a new
+sheet system, renderer or provider lifecycle. Keep default guidance purposeful
+and within two rendered lines, without removing full object facts, errors,
+source/privacy attribution or caveats.
+
+Ship matching succeeds for an eligible received fixture in all four layouts.
+Location is place/coordinate navigation, not vessel lookup; Ships In view is
+a capped measurement-ranked shortlist, while text/filter discovery is in
+More -> Find. Link directly to that existing input and disclose its scope/
+active filters rather than adding global search or silently bypassing the
+50m/unknown-length/yacht rules. Aircraft text remains list-only; vessel text
+continues to filter map/counts; current orbital view and catalog/sample scopes
+stay distinct. Location Escape is a measured parent-bubbling defect to fix;
+touch Clear activation remains unresolved evidence for targeted acceptance.
+
+#449 retains the full ordered plan and prior-behavior acceptance. Desktop,
+one full-canvas MapLibre instance, Home/history/trails, focus, themes,
+fullscreen, cadence/connections, provider privacy and attribution are unchanged.
+Actual OS keyboard and physical-phone behavior are not claimed from emulation.
+
 ## Static-first V1
 
 LiveTrafficStan is a local-first browser application with no server database,

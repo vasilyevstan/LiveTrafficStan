@@ -57,6 +57,13 @@ the disabled manual one. There is no new local-storage preference, consent
 cookie, endpoint, Worker binding or scheduler. See
 [collection boundaries](data-sources-and-licensing.md#visitor-analytics).
 
+The client is installed in production, but new official manual reports
+currently receive `404` despite a matching token, hostname, Origin and Referer.
+Account read/statistics access is working; it does not resolve that ingestion
+failure. Follow [the exact runtime receipt](hosting-and-deployment.md#visitor-analytics-production-receipt-2026-10-11)
+and #448. Do not change the token, collector, referrer policy, provider
+configuration or protected credentials speculatively.
+
 ## Worker deployment controls
 
 The production workflow passes Worker-only values separately from the browser
