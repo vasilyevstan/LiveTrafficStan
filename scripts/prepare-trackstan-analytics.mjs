@@ -28,8 +28,10 @@ const validateSite = (site) => {
 export const prepareTrackstanAnalytics = async ({
   accountId,
   apiToken,
+  readOnly = false,
   fetchImpl = fetch,
 }) => {
+  if (typeof readOnly !== 'boolean') throw new Error('Analytics read-only mode must be an explicit boolean')
   if (!idPattern.test(accountId ?? '')) {
     throw new Error('CLOUDFLARE_ACCOUNT_ID is missing or invalid')
   }
@@ -120,11 +122,14 @@ export const prepareTrackstanAnalytics = async ({
   let site
   const created = matches.length === 0
   let updated = false
+  if (created && readOnly) {
+    throw new Error('No exact TrackStan analytics site exists; read-only mode cannot create one')
+  }
   if (created) {
     site = validateSite((await request(base, 'POST', { host: domain, auto_install: false })).result)
   } else {
     site = validateSite(matches[0])
-    if (site.auto_install) {
+    if (site.auto_install && !readOnly) {
       const originalId = site.site_tag
       const originalToken = site.site_token
       site = validateSite((await request(`${base}/${originalId}`, 'PUT', {
@@ -136,7 +141,7 @@ export const prepareTrackstanAnalytics = async ({
       updated = true
     }
   }
-  if (site.auto_install !== false) {
+  if (!readOnly && site.auto_install !== false) {
     throw new Error('Cloudflare did not confirm manual analytics installation; inspect before retrying')
   }
   if (created || updated) {
@@ -151,7 +156,10 @@ export const prepareTrackstanAnalytics = async ({
     }
     validateSite(confirmed[0])
   }
-  return { domain, siteId: site.site_tag, siteToken: site.site_token, autoInstall: false, created, updated }
+  return {
+    domain, siteId: site.site_tag, siteToken: site.site_token,
+    autoInstall: site.auto_install, created, updated, readOnly,
+  }
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
@@ -163,19 +171,23 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1
   ) {
     throw new Error('Analytics setup requires the protected exact-main workflow')
   }
+  const readOnly = process.env.ANALYTICS_READ_ONLY ?? 'false'
+  if (!['true', 'false'].includes(readOnly)) throw new Error('ANALYTICS_READ_ONLY must be true or false')
   const result = await prepareTrackstanAnalytics({
     accountId: process.env.CLOUDFLARE_ACCOUNT_ID,
     apiToken: process.env.CLOUDFLARE_API_TOKEN,
+    readOnly: readOnly === 'true',
   })
   console.log(JSON.stringify(result))
   await appendFile(
     process.env.GITHUB_STEP_SUMMARY,
     `## ${domain} Web Analytics\n\n` +
-    `${result.created ? 'Created' : result.updated ? 'Updated' : 'Reused'} exact site ` +
-    `\`${result.siteId}\` with automatic injection disabled.\n\n` +
+    `${result.readOnly ? 'Read' : result.created ? 'Created' : result.updated ? 'Updated' : 'Reused'} exact site ` +
+    `\`${result.siteId}\`; account automatic injection is ${result.autoInstall ? 'enabled' : 'disabled'}.\n\n` +
     `Public manual-installation token: \`${result.siteToken}\`.\n\n` +
     'This public token is intended for website source, not account administration. ' +
-    'Manual embedding controls collection; the client must use spa:false and no geographic exclusion. ' +
+    'Manual embedding requires automatic injection to be disabled or prevented by the documented no-transform header. ' +
+    'The client must use spa:false and no geographic exclusion. ' +
     'No DNS, Worker, billing, credential or unrelated site changes. ' +
     'This is site setup, not an application deployment or evidence of received visitor statistics.\n',
   )
