@@ -89,13 +89,26 @@ evidence, not an actual iPhone or iPad test.
 
 Actual page-scale measurements correct the earlier nominal 2x capture:
 before entry Chrome reports a 640x450 visual viewport at scale 2; native
-fullscreen resets it to 1280x900 at scale 1 and rejects further emulated
-page-scale changes while active. Camera values and the canvas remain unchanged,
+fullscreen resets it to 1280x900 at scale 1 and keeps scale 1 despite further
+emulated page-scale changes while active. Camera values and the canvas remain unchanged,
 and Exit stays hit-testable. This is browser-controlled scale, not proof of
 2x magnification inside fullscreen or application counter-scaling.
 
-Production, exact-SHA CI, installed update and public documentation receipts
-are recorded in the [fullscreen release boundary](hosting-and-deployment.md#native-workspace-fullscreen-release-boundary-434).
+The actual production installed update and native confirmation ran at
+**2026-10-11T13:40:36-13:40:46Z**, using final `index-CNbqw4Sm.js` /
+`index-BQuWWmR1.css`. Ordinary **REFRESH APP** replaced the controlled
+`index-2lX6Irkf.js` predecessor and retained raw preferences, history
+settings/database identity and root scope/controller. Light 390x568 trusted
+touch and Dark 1280x900 Space entry asserted native app-shell ownership,
+one vector canvas, unchanged raw camera and reachable 44x44 Exit. Exit
+returned focus to the visible Settings summary. Fetch/WebSocket/clock were
+native, with no response fixtures, runtime exceptions or orbital reads.
+The header's independent PARTIAL state is retained, not an uninterrupted
+aircraft-availability claim. Explicit focus/device emulation and the local
+physical-Escape/page-scale limitations above remain qualified.
+
+Exact-SHA CI, both-origin strict smokes and documentation/Wiki identities are
+recorded in the [fullscreen production receipt](hosting-and-deployment.md#native-workspace-fullscreen-production-receipt-2026-10-11).
 
 ### Contextual compass / reset north (#428)
 
