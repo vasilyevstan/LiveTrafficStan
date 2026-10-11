@@ -440,6 +440,10 @@ describe('TrafficControls', () => {
     expect(sources).toContain('Planespotters')
     expect(sources).toContain('Wikimedia Commons')
     expect(sources).toContain('Full data credits')
+    expect(sources).toContain('Cookie-free; trackstan.xyz only.')
+    expect(sources).toContain('Visitor analytics &amp; privacy')
+    expect(sources).toContain('No cookies, persistent visitor IDs or custom interaction events.')
+    expect(sources).toContain('#visitor-analytics')
   })
 
   it('shows modeled orbital status and selection only after explicit enable', () => {

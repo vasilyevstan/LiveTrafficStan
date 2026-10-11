@@ -48,6 +48,41 @@ supplementary marine WebSocket; use the actual local Worker for those paths.
 | `npm run check:deploy` | Bundle the Worker and Static Assets without credentials or deployment |
 | `npm run preview:worker` | Build and run the actual local Cloudflare `workerd` boundary |
 
+### Visitor analytics (#440)
+
+Bootstrap tests cover production/exact-origin/disabled gating, genuine-token
+shape, one document attempt, duplicate detection, official module attributes,
+`spa:false`, no retry and failure isolation. Shell/header regressions retain
+the same immutable installed-app scope while excluding the external script
+and collector from caching, and require root/index `no-transform`.
+The shared native result button and affected discovery/detail tests preserve
+labels, selected/disabled semantics and opaque DOM/ARIA relationships.
+
+Real-beacon acceptance must use the **actual official hosted script**, intercept
+collector POSTs before transmission, and inspect complete load/vitals bodies.
+Exercise fragment/query sentinels, native result selection, named/coordinate
+navigation, device-local history, sharing and menu actions. Require one
+document page ID, one map/script, no sensitive sentinels or object identities,
+opaque result interaction attribution, preserved close/page focus and a
+compact Sources row. Confirm backup-origin zero collection and a usable map
+when script/collector are blocked. Fixture-only/static-markup assertions are
+not proof of actual vendor payloads or rendered focus.
+
+The first real capture found selected aircraft identity in an INP selector;
+the POST was blocked. The remediation changes application DOM IDs, not vendor
+payloads, and retains exact keyed model selection. Observer failures (hidden
+input, CDP object serialization, foreground/focus and blocked-network
+diagnostics) are not accepted evidence and must not be recast as application
+success.
+
+Production acceptance separately verifies actual headers, byte-exact HTML,
+one primary-origin beacon, no backup-origin beacon, an ordinary installed
+update and bounded real ingestion. A collector `204` is not dashboard-data
+proof. The protected `web-analytics-statistics` operation makes one exact-site,
+exact-host 24-hour aggregate GraphQL read with existing credentials; zero,
+permission denial, rejected query and malformed data stay distinct. Do not
+export credentials or raw visitor records to obtain a receipt.
+
 ### Native workspace fullscreen (#434)
 
 The deterministic native-operation tests exercise missing/disabled APIs and

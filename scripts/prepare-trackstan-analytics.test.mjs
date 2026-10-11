@@ -158,6 +158,76 @@ describe('protected exact-site Web Analytics setup', () => {
     expect(fetchImpl).not.toHaveBeenCalled()
   })
 
+  it('verifies only bounded exact-host aggregate counts without an account write', async () => {
+    const now = Date.parse('2026-10-11T20:00:00Z')
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(response([{ ...site, auto_install: true }]))
+      .mockResolvedValueOnce(Response.json({ data: { viewer: { accounts: [{
+        rumPageloadEventsAdaptiveGroups: [{
+          count: 12, sum: { visits: 8 }, avg: { sampleInterval: 1 },
+          dimensions: { requestHost: 'trackstan.xyz' },
+        }],
+      }] } }, errors: null }))
+    const result = await run(fetchImpl, { readOnly: true, verifyStatistics: true, now })
+    expect(result).toMatchObject({
+      created: false, updated: false, readOnly: true, autoInstall: true,
+      statistics: {
+        from: '2026-10-10T20:00:00.000Z', to: '2026-10-11T20:00:00.000Z',
+        pageViews: 12, visits: 8, sampleInterval: 1,
+      },
+    })
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+    const [url, init] = fetchImpl.mock.calls[1]
+    expect(url).toBe('https://api.cloudflare.com/client/v4/graphql')
+    const { query } = JSON.parse(init.body)
+    expect(query).toContain(`siteTag: "${site.site_tag}", requestHost: "trackstan.xyz"`)
+    expect(query).toContain('limit: 1')
+    expect(query).toContain('datetime_lt:')
+    expect(query).not.toMatch(/mutation|refererHost|requestPath|countryName/)
+  })
+
+  it('distinguishes a complete empty statistics result from refused or absent data', async () => {
+    const fetchImpl = vi.fn().mockResolvedValueOnce(response([site]))
+      .mockResolvedValueOnce(Response.json({ data: { viewer: { accounts: [{ rumPageloadEventsAdaptiveGroups: [] }] } } }))
+    expect((await run(fetchImpl, { readOnly: true, verifyStatistics: true })).statistics).toMatchObject({
+      pageViews: 0, visits: 0, sampleInterval: null,
+    })
+  })
+
+  it.each([
+    Response.json({ errors: [{ message: 'private account does not have permission' }] }),
+    Response.json({ errors: [{ message: 'Cannot query field private field' }] }),
+    Response.json({ data: null }),
+    new Response('private diagnostic', { status: 403 }),
+  ])('fails explicitly on a rejected aggregate read without exposing or retrying it', async (payload) => {
+    const fetchImpl = vi.fn().mockResolvedValueOnce(response([site])).mockResolvedValueOnce(payload)
+    await expect(run(fetchImpl, { readOnly: true, verifyStatistics: true })).rejects.toThrow('Cloudflare analytics')
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+  })
+
+  it.each([
+    { count: 1, sum: { visits: 1 }, avg: { sampleInterval: 1 }, dimensions: { requestHost: 'other.example' } },
+    { count: -1, sum: { visits: 0 }, avg: { sampleInterval: 1 }, dimensions: { requestHost: 'trackstan.xyz' } },
+    { count: 1, sum: { visits: 2 }, avg: { sampleInterval: 1 }, dimensions: { requestHost: 'trackstan.xyz' } },
+    { count: 1, sum: { visits: 1 }, avg: { sampleInterval: 0 }, dimensions: { requestHost: 'trackstan.xyz' } },
+  ])('rejects incompatible host or aggregate numbers', async (group) => {
+    const fetchImpl = vi.fn().mockResolvedValueOnce(response([site]))
+      .mockResolvedValueOnce(Response.json({ data: { viewer: { accounts: [{ rumPageloadEventsAdaptiveGroups: [group] }] } } }))
+    await expect(run(fetchImpl, { readOnly: true, verifyStatistics: true })).rejects.toThrow('invalid exact-host counts')
+  })
+
+  it('rejects unsafe verification modes and clocks before any request', async () => {
+    for (const overrides of [
+      { verifyStatistics: true },
+      { readOnly: true, verifyStatistics: 'true' },
+      { readOnly: true, verifyStatistics: true, now: NaN },
+    ]) {
+      const fetchImpl = vi.fn()
+      await expect(run(fetchImpl, overrides)).rejects.toThrow()
+      expect(fetchImpl).not.toHaveBeenCalled()
+    }
+  })
+
   it('retains exact-main, validation, production serialization and exclusive DNS operation', () => {
     const workflow = readFileSync(new URL('../.github/workflows/prepare-trackstan-domain.yml', import.meta.url), 'utf8')
     expect(workflow).toContain('name: production')
@@ -170,7 +240,9 @@ describe('protected exact-site Web Analytics setup', () => {
     expect(workflow).toContain("if: inputs.operation != 'web-analytics'")
     expect(workflow).toContain("if: inputs.operation == 'web-analytics'")
     expect(workflow).toContain("inputs.operation != 'web-analytics-read'")
-    expect(workflow).toContain("ANALYTICS_READ_ONLY: ${{ inputs.operation == 'web-analytics-read' }}")
+    expect(workflow).toContain("ANALYTICS_READ_ONLY: ${{ inputs.operation != 'web-analytics' }}")
+    expect(workflow).toContain("ANALYTICS_VERIFY_STATISTICS: ${{ inputs.operation == 'web-analytics-statistics' }}")
+    expect(workflow).toContain("inputs.operation != 'web-analytics-statistics'")
     expect(workflow).not.toContain('pull_request_target')
   })
 })

@@ -325,9 +325,17 @@ describe('PWA shell generation', () => {
       'https://example.test/api/vessel-photos/8919805',
       'https://thumb.wikimedia.org/wikipedia/commons/a/ab/Test.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/a/ab/Test.jpg',
+      'https://static.cloudflareinsights.com/beacon.min.js',
+      'https://cloudflareinsights.com/cdn-cgi/rum',
     ]) {
       expect(classifyShellRequest({ ...input, requestUrl, mode: 'cors' })).toBe('bypass')
     }
+    expect(classifyShellRequest({
+      ...input,
+      method: 'POST',
+      requestUrl: 'https://cloudflareinsights.com/cdn-cgi/rum',
+      mode: 'cors',
+    })).toBe('bypass')
   })
 
   it('retains only the current and recorded active predecessor caches', () => {

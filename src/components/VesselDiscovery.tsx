@@ -22,6 +22,7 @@ import {
 } from '../domain/vesselFilters'
 import type { UnitSystem } from '../domain/units'
 import { APP_CONFIG } from '../config/appConfig'
+import { ObjectResultButton } from './ObjectResultButton'
 import { MULTI_SOURCE_MARINE_CAPABILITIES } from '../providers/marine/multiSourceCapabilities'
 
 interface VesselDiscoveryProps {
@@ -32,7 +33,7 @@ interface VesselDiscoveryProps {
   emptyMessage: string
   units: UnitSystem
   onFiltersChange: (filters: VesselFilterState) => void
-  onSelect: (id: string) => void
+  onSelect: (id: string, originId: string) => void
 }
 
 const maximumLengthLabel = (value: VesselMaximumLength) =>
@@ -248,15 +249,14 @@ export function VesselDiscovery({
         <ul className="vessel-results" aria-label="Matching vessels">
           {listedVessels.map((vessel) => (
             <li key={vessel.id}>
-              <button
-                id={`vessel-discovery-result-${vessel.id}`}
-                type="button"
+              <ObjectResultButton
+                prefix="vessel-discovery-result"
                 disabled={!vesselsVisible}
-                onClick={() => onSelect(vessel.id)}
+                onSelect={(originId) => onSelect(vessel.id, originId)}
               >
                 <strong>{vesselResultLabel(vessel)}</strong>
                 <span>{vesselResultContext(vessel)}</span>
-              </button>
+              </ObjectResultButton>
             </li>
           ))}
         </ul>

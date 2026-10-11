@@ -1,4 +1,5 @@
 import type { DisplayAircraft } from '../domain/traffic'
+import { ObjectResultButton } from './ObjectResultButton'
 import {
   AIRCRAFT_RESULT_LIMIT,
   AIRCRAFT_SEARCH_MAX_LENGTH,
@@ -14,7 +15,7 @@ interface AircraftDiscoveryProps {
   aircraftVisible: boolean
   emptyMessage: string
   onQueryChange: (query: string) => void
-  onSelect: (id: string) => void
+  onSelect: (id: string, originId: string) => void
 }
 
 export function AircraftDiscovery({
@@ -83,15 +84,14 @@ export function AircraftDiscovery({
         >
           {listedAircraft.map((entity) => (
             <li key={entity.id}>
-              <button
-                id={`aircraft-discovery-result-${entity.id}`}
-                type="button"
+              <ObjectResultButton
+                prefix="aircraft-discovery-result"
                 disabled={!aircraftVisible}
-                onClick={() => onSelect(entity.id)}
+                onSelect={(originId) => onSelect(entity.id, originId)}
               >
                 <strong>{aircraftResultLabel(entity)}</strong>
                 <span>{aircraftResultContext(entity)}</span>
-              </button>
+              </ObjectResultButton>
             </li>
           ))}
         </ul>

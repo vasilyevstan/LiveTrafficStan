@@ -4,13 +4,14 @@ import {
   weatherObservationSummary,
   type DisplayWeatherObservation,
 } from '../domain/weatherObservations'
+import { ObjectResultButton } from './ObjectResultButton'
 
 interface WeatherContextProps {
   observations: readonly DisplayWeatherObservation[]
   selectedObservationId: string | null
   emptyMessage: string
   now: number
-  onSelect: (id: string) => void
+  onSelect: (id: string, originId: string) => void
 }
 
 export function WeatherContext({
@@ -44,11 +45,10 @@ export function WeatherContext({
         >
           {listed.map((observation) => (
             <li key={observation.id}>
-              <button
-                id={`weather-context-result-${observation.id}`}
-                type="button"
+              <ObjectResultButton
+                prefix="weather-context-result"
                 aria-pressed={observation.id === selectedObservationId}
-                onClick={() => onSelect(observation.id)}
+                onSelect={(originId) => onSelect(observation.id, originId)}
               >
                 <strong>{weatherObservationSummary(observation)}</strong>
                 <span>
@@ -56,7 +56,7 @@ export function WeatherContext({
                   {formatAge(observation.observedAt, now)}
                   {observation.freshness === 'stale' ? ' · stale' : ''}
                 </span>
-              </button>
+              </ObjectResultButton>
             </li>
           ))}
         </ul>

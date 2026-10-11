@@ -6,6 +6,7 @@ const domain = 'trackstan.xyz'
 const idPattern = /^[0-9a-f]{32}$/
 const maximumBytes = 128 * 1024
 const maximumSites = 100
+const graphqlUrl = 'https://api.cloudflare.com/client/v4/graphql'
 
 const matchesDomain = (site) =>
   site?.ruleset?.zone_name === domain ||
@@ -29,9 +30,17 @@ export const prepareTrackstanAnalytics = async ({
   accountId,
   apiToken,
   readOnly = false,
+  verifyStatistics = false,
+  now = Date.now(),
   fetchImpl = fetch,
 }) => {
   if (typeof readOnly !== 'boolean') throw new Error('Analytics read-only mode must be an explicit boolean')
+  if (typeof verifyStatistics !== 'boolean' || (verifyStatistics && !readOnly)) {
+    throw new Error('Statistics verification requires explicit read-only mode')
+  }
+  if (!Number.isSafeInteger(now) || now < 86_400_000 || now > 8_640_000_000_000_000) {
+    throw new Error('Analytics verification time is invalid')
+  }
   if (!idPattern.test(accountId ?? '')) {
     throw new Error('CLOUDFLARE_ACCOUNT_ID is missing or invalid')
   }
@@ -41,6 +50,8 @@ export const prepareTrackstanAnalytics = async ({
   const base = `https://api.cloudflare.com/client/v4/accounts/${accountId}/rum/site_info`
   const deadline = AbortSignal.timeout(45_000)
   const request = async (url, method = 'GET', body) => {
+    const statistics = url === graphqlUrl
+    const operation = statistics ? 'statistics read' : method
     let response
     try {
       response = await fetchImpl(url, {
@@ -55,13 +66,13 @@ export const prepareTrackstanAnalytics = async ({
         signal: AbortSignal.any([deadline, AbortSignal.timeout(10_000)]),
       })
     } catch {
-      throw new Error(`Cloudflare analytics ${method} transport failed; inspect site state before retrying`)
+      throw new Error(`Cloudflare analytics ${operation} transport failed; inspect site state before retrying`)
     }
     if (!response.ok) {
       await response.body?.cancel()
       throw new Error(
-        `Cloudflare analytics ${method} failed with HTTP ${response.status}; ` +
-        `Account Settings ${method === 'GET' ? 'Read' : 'Write'} is required. No automatic retry.`,
+        `Cloudflare analytics ${operation} failed with HTTP ${response.status}; ` +
+        `${statistics ? 'Account Analytics Read' : `Account Settings ${method === 'GET' ? 'Read' : 'Write'}`} is required. No automatic retry.`,
       )
     }
     if (!response.body) throw new Error('Cloudflare analytics returned no response body')
@@ -78,7 +89,20 @@ export const prepareTrackstanAnalytics = async ({
     } catch {
       throw new Error('Cloudflare analytics returned malformed JSON')
     }
-    if (payload?.success !== true) {
+    if (statistics) {
+      if (payload?.errors != null && (!Array.isArray(payload.errors) || payload.errors.length > 0)) {
+        const messages = Array.isArray(payload.errors)
+          ? payload.errors.map((error) => typeof error?.message === 'string' ? error.message : '').join(' ')
+          : ''
+        const reason = /permission|not authorized|forbidden|access denied/i.test(messages)
+          ? 'permission denied; Account Analytics Read is required'
+          : /unknown (field|argument|type)|cannot query field/i.test(messages)
+            ? 'schema rejected the fixed query'
+            : 'query rejected'
+        throw new Error(`Cloudflare analytics statistics ${reason}; no counts verified. No automatic retry.`)
+      }
+      if (!payload?.data) throw new Error('Cloudflare analytics statistics returned no data')
+    } else if (payload?.success !== true) {
       throw new Error('Cloudflare rejected the analytics operation; inspect site state before retrying')
     }
     return payload
@@ -156,10 +180,45 @@ export const prepareTrackstanAnalytics = async ({
     }
     validateSite(confirmed[0])
   }
-  return {
+  const result = {
     domain, siteId: site.site_tag, siteToken: site.site_token,
     autoInstall: site.auto_install, created, updated, readOnly,
   }
+  if (verifyStatistics) {
+    const from = new Date(now - 86_400_000).toISOString()
+    const to = new Date(now).toISOString()
+    const payload = await request(graphqlUrl, 'POST', {
+      query: `query TrackstanVisitorCounts {
+        viewer { accounts(filter: {accountTag: "${accountId}"}) {
+          rumPageloadEventsAdaptiveGroups(limit: 1, filter: {
+            siteTag: "${site.site_tag}", requestHost: "${domain}",
+            datetime_geq: "${from}", datetime_lt: "${to}"
+          }) { count sum { visits } avg { sampleInterval } dimensions { requestHost } }
+        } }
+      }`,
+    })
+    const accounts = payload.data.viewer?.accounts
+    const groups = accounts?.[0]?.rumPageloadEventsAdaptiveGroups
+    if (!Array.isArray(accounts) || accounts.length !== 1 || !Array.isArray(groups) || groups.length > 1) {
+      throw new Error('Cloudflare analytics statistics returned incompatible account or aggregate data')
+    }
+    const group = groups[0]
+    if (group && (
+      group.dimensions?.requestHost !== domain ||
+      !Number.isSafeInteger(group.count) || group.count < 0 ||
+      !Number.isSafeInteger(group.sum?.visits) || group.sum.visits < 0 || group.sum.visits > group.count ||
+      !Number.isFinite(group.avg?.sampleInterval) || group.avg.sampleInterval < 1
+    )) {
+      throw new Error('Cloudflare analytics statistics returned invalid exact-host counts')
+    }
+    result.statistics = {
+      from, to,
+      pageViews: group ? group.count : 0,
+      visits: group ? group.sum.visits : 0,
+      sampleInterval: group ? group.avg.sampleInterval : null,
+    }
+  }
+  return result
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
@@ -172,11 +231,15 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1
     throw new Error('Analytics setup requires the protected exact-main workflow')
   }
   const readOnly = process.env.ANALYTICS_READ_ONLY ?? 'false'
-  if (!['true', 'false'].includes(readOnly)) throw new Error('ANALYTICS_READ_ONLY must be true or false')
+  const verifyStatistics = process.env.ANALYTICS_VERIFY_STATISTICS ?? 'false'
+  if (![readOnly, verifyStatistics].every((value) => ['true', 'false'].includes(value))) {
+    throw new Error('Analytics mode flags must be true or false')
+  }
   const result = await prepareTrackstanAnalytics({
     accountId: process.env.CLOUDFLARE_ACCOUNT_ID,
     apiToken: process.env.CLOUDFLARE_API_TOKEN,
     readOnly: readOnly === 'true',
+    verifyStatistics: verifyStatistics === 'true',
   })
   console.log(JSON.stringify(result))
   await appendFile(
@@ -189,6 +252,17 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1
     'Manual embedding requires automatic injection to be disabled or prevented by the documented no-transform header. ' +
     'The client must use spa:false and no geographic exclusion. ' +
     'No DNS, Worker, billing, credential or unrelated site changes. ' +
-    'This is site setup, not an application deployment or evidence of received visitor statistics.\n',
+    'Site discovery alone is not application deployment or evidence of received visitor statistics.\n',
   )
+  if (result.statistics) {
+    await appendFile(
+      process.env.GITHUB_STEP_SUMMARY,
+      `\n### Exact-host dashboard-backed counts\n\n` +
+      `UTC window: \`${result.statistics.from}\` to \`${result.statistics.to}\` (exclusive).\n\n` +
+      `${result.statistics.pageViews} page views; ${result.statistics.visits} visits; ` +
+      `average sampling interval: ${result.statistics.sampleInterval ?? 'no data'}.\n\n` +
+      'One bounded, read-only RUM aggregate query for the verified site and exact hostname. ' +
+      'Visits are not unique people. Zero counts do not prove ingestion; no raw pages, referrers or visitor records are exported.\n',
+    )
+  }
 }

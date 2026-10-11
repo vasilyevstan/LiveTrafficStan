@@ -25,6 +25,12 @@ identity are not renamed or reset.
 
 ## Current features
 
+- Free, cookie-free aggregate visitor statistics in Cloudflare Web Analytics
+  on `trackstan.xyz` only, including EU visitors. The official manual beacon
+  measures document loads/performance, not map/menu/search actions; the backup
+  origin remains unmeasured. No custom events, persistent visitor IDs, replay,
+  paid plan or custom dashboard. See
+  [collection boundaries and metric interpretation](docs/data-sources-and-licensing.md#visitor-analytics).
 - Live aircraft from [ADSB.lol](https://www.adsb.lol/) with approximately
   20-second refreshes.
 - Lazily loaded selected-aircraft model, configuration, and wake-category
