@@ -83,6 +83,54 @@ exact-host 24-hour aggregate GraphQL read with existing credentials; zero,
 permission denial, rejected query and malformed data stay distinct. Do not
 export credentials or raw visitor records to obtain a receipt.
 
+The accepted client passed **181 suites / 1,672 tests** plus lint, typecheck,
+the four required data checks and the production-flags build. Actual official
+beacon capture before transmission proved one document/map/script, opaque
+selected-aircraft INP attribution, absent private sentinels, opaque close-focus
+return, a 1.998-line Sources row at 390x568 and no backup beacon. This is
+controlled-state browser evidence, not production ingestion.
+
+The ordinary production **REFRESH APP** loaded the accepted new shell with
+one map, unchanged root service-worker/database identity and enabled history
+consent/epoch. Real prior observations remained readable: 193 of 201 prior
+full-row hashes still matched while recording continued and row/count revisions
+changed. No observation contents were exported. A stale pre-mobile preference
+baseline was invalidated by another same-origin observer intentionally turning
+DEPTHS on; that failed comparison is not byte-exact update preference evidence.
+An isolated current-shell reload retained the current raw preferences.
+Do not freeze coordination revisions or every actively rewritten row as an
+invented update invariant.
+
+Normal headed Chrome confirms one genuine-token manual beacon and one native
+page-load payload, but its actual collector POST is **404**, not `204`.
+Network extra-info identifies the HTTP failure behind Chrome's
+`MissingAllowOriginHeader` diagnostic. Token/Origin/Referer match; a valid
+OPTIONS response does not prove POST acceptance. The protected statistics
+read returned five page views/five visits, but cannot be attributed to these
+rejected manual reports. #448 remains open; no runtime-ingestion success,
+physical-device or dashboard-UI-login claim is made.
+
+### Mobile usability and search analysis (#449, planned)
+
+The requested Impeccable/UI specialist supplied source evidence; the parent
+provided one native touch/scroll browser batch at 390x568 and 315x517 in
+both themes. Default-DEPTHS attribution adds a 62px/82px popup, with combined
+brand/dock/credits occlusion of 33.25%/43.16%. Selection leaves menu
+158px/131px and inspector body 105px/81px, with roughly 78% combined UI
+occlusion. The existing inspector X remains 44px and reachable; More tasks
+are 36px, search/select 38px and attribution 24px.
+
+Eligible received ship-name matching works in all four layouts with zero
+Photon calls. Location Escape closes Settings in all four; touch Clear
+activation remains unresolved observer evidence, not proven broken matching.
+Full default-credit geometry was captured before that later Clear assertion
+failed; the full-credit run is not called wholly successful. OS-keyboard
+constraints are source-derived and physical phones were not tested.
+The [focused plan](decisions.md#mobile-usability-and-search-refinement-plan-449)
+requires one expanded mobile task, preserved selected context, one task/results
+scroll owner, 44px primary targets and explicit search scopes, without changing
+desktop behavior or provider lifecycles. These are not shipped UI changes.
+
 ### Native workspace fullscreen (#434)
 
 The deterministic native-operation tests exercise missing/disabled APIs and

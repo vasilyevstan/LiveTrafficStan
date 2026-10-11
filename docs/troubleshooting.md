@@ -29,6 +29,29 @@ release approval; a complete zero result is not proof of received events.
 Preserve the actual receipt and use authorized account dashboard access.
 Never log coordinate-bearing URLs or expose privileged tokens for diagnosis.
 
+### Current manual collector rejection (#448)
+
+The deployed primary integration currently receives **HTTP 404** from the
+official `cloudflareinsights.com/cdn-cgi/rum` collector. Chrome exposes it as
+`net::ERR_FAILED` / `MissingAllowOriginHeader`; network extra-info confirms
+the underlying status. Normal headed and headless Chrome use the matching
+public token, `Origin: https://trackstan.xyz` and
+`Referer: https://trackstan.xyz/`. The existing referrer/CSP headers and
+service-worker POST/cross-origin bypass are not the demonstrated cause.
+The exact account-side cause is not established.
+
+Account statistics access works: read-only run 38171783640 returned five
+page views/five visits for its exact-host 24-hour window. Those existing
+counts do **not** prove fresh manual ingestion. Inspect authorized
+**Web Analytics -> trackstan.xyz -> Manage site** and the official manual/global
+configuration, then use Cloudflare support if verified setup still rejects
+the official report. Do not repeat the denied manual-mode PUT, broaden/export
+credentials, patch the beacon or introduce a proxy/custom POST.
+Cloudflare's current docs support the existing module installation; changing
+to classic script on an inaccurate generated answer is not a fix.
+See [the full receipt](hosting-and-deployment.md#visitor-analytics-production-receipt-2026-10-11)
+and #448 before claiming recovery.
+
 ## The page loads but the map is blank
 
 Check the browser console and Network panel for the style, worker, vector tile,

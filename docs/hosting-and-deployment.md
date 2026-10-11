@@ -2669,8 +2669,8 @@ Cloudflare Web Analytics, not Worker invocation logs.
 ### Manual Web Analytics account setup (#440)
 
 The approved visitor-analytics work is separate from operational Worker
-metrics and is not live until its client integration and received statistics
-are verified. The existing **Prepare TrackStan domain** workflow also offers
+metrics. Its client is installed, but fresh manual ingestion remains blocked
+by the verified collector rejection below. The existing **Prepare TrackStan domain** workflow also offers
 the fixed `web-analytics` operation for `trackstan.xyz`. It uses the same
 exact-current-main validation, main-only production credentials and
 `production-deployment` serialization; it never runs the DNS operation.
@@ -2733,6 +2733,58 @@ prove analytics off while the account automatic setting remains enabled.
 Verify actual bytes/beacon count after either operation. Do not alter DNS,
 provider lifecycles, the installed-app shell or account permissions as part
 of analytics recovery.
+
+### Visitor analytics production receipt (2026-10-11)
+
+Current running application:
+**`4307ae00359aa450db0aaabc2eb39dca408d3e1b`**, Worker
+**`22db54e1-5a7e-459b-b051-025a3cfc1cdc`**. Implementation #446 and checked
+dev-to-main #447 retain accepted tree
+`32145140f84d48e867548e5fd51ccbe7ee984d36`. Exact-head/development/release/
+main Validation 38169891824, 38170568727, 38170627664 and 38170813939 passed.
+Serialized deployment
+[38171231016](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/38171231016)
+completed at `2026-10-11T20:13:51Z` with the strict backup-origin smoke;
+the subsequent primary strict smoke also passed.
+
+The application JS is `index-BHPYO_IB.js`, CSS remains
+`index-BQuWWmR1.css`, shell `127ee680f9aa937d06b3` contains 11 URLs /
+3,596,132 bytes. Root/index keep `no-transform`; no automatically transformed
+HTML is accepted. Application, OCI private aircraft relay, aircraft photos,
+plausible routes, curated/Starlink catalogs, marine supplement and airport
+boards retain all previously enabled deployment inputs. Secrets remain
+atomic/main-only; no provider route, binding, cadence or data migration changed.
+The preceding fullscreen application/Worker remains historical compatible
+rollback evidence, not the currently running release. Later documentation-only
+commits do not redeploy this application.
+
+Local required gates passed with **181 suites / 1,672 tests**. Actual official
+beacon capture blocked transmission and proved identity-safe selected-object
+INP attribution, one map/document/script and no private-state sentinels.
+Native production REFRESH APP loaded the new shell with real prior IndexedDB
+history still readable, unchanged root/database identity and consent epoch.
+Observer cross-tab preference changes and ongoing row revisions are qualified
+in [testing](development-and-testing.md#visitor-analytics-440), not asserted
+as byte equality of all actively changing state.
+
+Protected strictly read-only statistics run
+[38171783640](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/38171783640)
+returned **5 page views, 5 visits and sampling interval 1**, for exact
+`trackstan.xyz` from `2026-10-10T20:20:30.164Z` through
+`2026-10-11T20:20:30.164Z`. Account Analytics Read, live schema and real
+dashboard-backed aggregate data are established without a write or credential
+expansion. No visual dashboard login, unique-person count or populated
+referrer/country/browser/device breakdown is claimed.
+
+**Fresh manual ingestion is not accepted.** Both headed and headless native
+Chrome receive collector **404** with the exact public site token, Origin and
+Referer. The source/referrer/CSP/POST-bypass checks do not demonstrate an
+application mismatch. The exact account-side cause remains unknown; #448
+contains the detailed external blocker and smallest authorized manual-mode/
+support resolution. The five existing counts do not establish that these
+rejected reports were ingested. #440 stays open until that criterion is
+resolved; no speculative collector override, classic-script change, custom
+POST, proxy, credential expansion or repeated denied PUT is authorized.
 
 ## Rollback
 
