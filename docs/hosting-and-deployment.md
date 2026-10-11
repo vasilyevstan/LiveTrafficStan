@@ -2665,6 +2665,30 @@ claiming the platform observes none.
 No additional analytics service, log-export pipeline, synthetic provider poll,
 or continuous health service is added.
 
+### Manual Web Analytics account setup (#440)
+
+The approved visitor-analytics work is separate from operational Worker
+metrics and is not live until its client integration and received statistics
+are verified. The existing **Prepare TrackStan domain** workflow also offers
+the fixed `web-analytics` operation for `trackstan.xyz`. It uses the same
+exact-current-main validation, main-only production credentials and
+`production-deployment` serialization; it never runs the DNS operation.
+
+The operation reads the account's bounded site list, reuses an exact manual
+site, or creates/switches only that site to manual installation, then confirms
+any write with a fresh read. It returns only the site's public installation
+token and identity, not the account credential or other sites. Account
+Settings Read is required for discovery; creation or changing automatic
+injection requires Account Settings Write. A denial is reported, not retried
+or worked around by broadening the deployment token.
+
+Use the genuine public token in a checked client change with `spa:false`,
+exact production-origin gating and no geographic exclusion. Do not enable
+automatic and manual beacons together. Site setup alone is not application
+deployment, dashboard acceptance or proof of visitor counts. Local Wrangler
+login is not required for this protected operation; account access to view
+the resulting dashboard remains separate from the public token.
+
 ## Rollback
 
 Cloudflare versions contain Worker code, configuration, and Static Assets.
