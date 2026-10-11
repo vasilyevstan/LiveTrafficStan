@@ -21,7 +21,7 @@ describe('protected exact-site Web Analytics setup', () => {
     const fetchImpl = vi.fn().mockResolvedValue(response([other, site]))
     expect(await run(fetchImpl)).toEqual({
       domain: 'trackstan.xyz', siteId: site.site_tag, siteToken: site.site_token,
-      autoInstall: false, created: false, updated: false,
+      autoInstall: false, created: false, updated: false, readOnly: false,
     })
     expect(fetchImpl).toHaveBeenCalledOnce()
     const [url, init] = fetchImpl.mock.calls[0]
@@ -55,6 +55,28 @@ describe('protected exact-site Web Analytics setup', () => {
     expect(JSON.parse(fetchImpl.mock.calls[1][1].body)).toEqual({
       host: 'trackstan.xyz', auto_install: false, lite: false,
     })
+  })
+
+  it('reads the exact existing automatic site without any account write', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(response([{ ...site, auto_install: true }]))
+    expect(await run(fetchImpl, { readOnly: true })).toEqual({
+      domain: 'trackstan.xyz', siteId: site.site_tag, siteToken: site.site_token,
+      autoInstall: true, created: false, updated: false, readOnly: true,
+    })
+    expect(fetchImpl).toHaveBeenCalledOnce()
+    expect(fetchImpl.mock.calls[0][1].method).toBe('GET')
+  })
+
+  it('never creates a missing site in read-only mode', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(response([]))
+    await expect(run(fetchImpl, { readOnly: true })).rejects.toThrow('read-only mode cannot create')
+    expect(fetchImpl).toHaveBeenCalledOnce()
+  })
+
+  it('rejects an invalid read-only request before network work', async () => {
+    const fetchImpl = vi.fn()
+    await expect(run(fetchImpl, { readOnly: 'true' })).rejects.toThrow('explicit boolean')
+    expect(fetchImpl).not.toHaveBeenCalled()
   })
 
   it('follows bounded pagination before deciding whether the site exists', async () => {
@@ -147,6 +169,8 @@ describe('protected exact-site Web Analytics setup', () => {
     expect(workflow).toContain('test "$REMOVE_PARKING_RECORDS" = false')
     expect(workflow).toContain("if: inputs.operation != 'web-analytics'")
     expect(workflow).toContain("if: inputs.operation == 'web-analytics'")
+    expect(workflow).toContain("inputs.operation != 'web-analytics-read'")
+    expect(workflow).toContain("ANALYTICS_READ_ONLY: ${{ inputs.operation == 'web-analytics-read' }}")
     expect(workflow).not.toContain('pull_request_target')
   })
 })
