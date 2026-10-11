@@ -1,5 +1,34 @@
 # Troubleshooting
 
+## Visitor statistics are missing or look different from Worker requests
+
+Use the account **Web Analytics** dashboard and select `trackstan.xyz`.
+Worker invocation counts are hosting operations, not browser visits; asset,
+API and beacon requests are not extra TrackStan page views. Visits are not
+unique people. Map/menu/search/fullscreen actions stay in one document because
+the official manual beacon uses `spa:false`.
+
+Local development, preview, backup Workers and retirement builds intentionally
+have no beacon. On the primary production origin, check for one
+`#trackstan-web-analytics` module and official collector POSTs. Browser blockers,
+network errors and unsupported browsers can undercount; do not bypass blockers
+or add retries/a proxy. Vitals may report on leaving/hiding the document.
+Collector GET `405` is expected and is not an ingestion test.
+
+If an extra beacon appears, verify actual root/index `no-transform` headers
+and byte-exact deployed HTML. The account automatic setting is still true;
+the existing token could read the site but its manual-mode PUT returned 403.
+Do not retry that write or broaden credentials. Keep the header even when
+disabling the manual integration.
+
+The public site token does not authorize private dashboard/GraphQL reads.
+The existing protected `web-analytics-statistics` operation reports only
+validated 24-hour exact-host page-view/visit totals and sampling interval.
+A real Account Analytics Read denial is an access limitation, not a manual
+release approval; a complete zero result is not proof of received events.
+Preserve the actual receipt and use authorized account dashboard access.
+Never log coordinate-bearing URLs or expose privileged tokens for diagnosis.
+
 ## The page loads but the map is blank
 
 Check the browser console and Network panel for the style, worker, vector tile,

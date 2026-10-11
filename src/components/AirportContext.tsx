@@ -3,12 +3,13 @@ import {
   airportKindLabel,
   type Airport,
 } from '../domain/airports'
+import { ObjectResultButton } from './ObjectResultButton'
 
 interface AirportContextProps {
   airports: readonly Airport[]
   selectedAirportId: string | null
   emptyMessage: string
-  onSelect: (id: string) => void
+  onSelect: (id: string, originId: string) => void
 }
 
 const airportCodes = (airport: Airport) =>
@@ -49,11 +50,10 @@ export function AirportContext({
         >
           {listedAirports.map((airport) => (
             <li key={airport.id}>
-              <button
-                id={`airport-context-result-${airport.id}`}
-                type="button"
+              <ObjectResultButton
+                prefix="airport-context-result"
                 aria-pressed={airport.id === selectedAirportId}
-                onClick={() => onSelect(airport.id)}
+                onSelect={(originId) => onSelect(airport.id, originId)}
               >
                 <strong>{airport.name}</strong>
                 <span>
@@ -61,7 +61,7 @@ export function AirportContext({
                     .filter(Boolean)
                     .join(' · ')}
                 </span>
-              </button>
+              </ObjectResultButton>
             </li>
           ))}
         </ul>

@@ -168,6 +168,13 @@ export const DEFAULT_MAP_STYLE_URLS = {
   dark: 'https://tiles.openfreemap.org/styles/dark',
 } as const
 
+export const WEB_ANALYTICS_CONFIG = {
+  enabled: true,
+  origin: 'https://trackstan.xyz',
+  scriptUrl: 'https://static.cloudflareinsights.com/beacon.min.js',
+  siteToken: '482d2c4fae7d4140bf13a9f0411f7f88',
+}
+
 export const MAP_PROJECTION_CONFIG = {
   automaticProjection: { type: 'globe' } satisfies ProjectionSpecification,
   surfaceMarginPx: 1,

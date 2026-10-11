@@ -83,7 +83,8 @@ describe('VesselDiscovery', () => {
     expect(html).toContain('SHIPS layer hidden')
     expect(html).toContain('disabled=""')
     expect(html).toContain('Show the SHIPS layer')
-    expect(html).toContain('id="vessel-discovery-result-vessel:0"')
+    expect(html).toMatch(/id="vessel-discovery-result-[^"]+"/)
+    expect(html).not.toContain('id="vessel-discovery-result-vessel:0"')
     expect(html).toContain(
       `First ${VESSEL_RESULT_LIMIT} of ${vessels.length}`,
     )

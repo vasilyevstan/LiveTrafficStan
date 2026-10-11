@@ -2662,8 +2662,9 @@ station IDs. Cloudflare still processes ordinary request/network metadata as the
 configuration minimizes application-retained location data rather than
 claiming the platform observes none.
 
-No additional analytics service, log-export pipeline, synthetic provider poll,
-or continuous health service is added.
+No log-export pipeline, synthetic provider poll or continuous health service
+is added. The separately approved client-side visitor measurement below uses
+Cloudflare Web Analytics, not Worker invocation logs.
 
 ### Manual Web Analytics account setup (#440)
 
@@ -2702,6 +2703,36 @@ integration may use that header without Account Settings Write. Verify actual
 HTML/header output and a single beacon; do not mistake the account's unchanged
 automatic setting for proof of duplicate injection, or assume a logged-out
 local session blocks the protected read path.
+
+The successful read-only run
+[38168459124](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/38168459124)
+obtained the genuine exact-site public token without writing or exporting
+protected credentials. The checked client installs the official hosted module
+only at exact `https://trackstan.xyz`, globally including EU visitors, after
+React startup and outside React effects. `spa:false` avoids map operations
+becoming page views. The backup Workers origin and local/retirement builds
+are excluded. There is no custom dashboard, paid plan or analytics Worker.
+See [collection and vendor-trust details](data-sources-and-licensing.md#visitor-analytics).
+
+The fixed `web-analytics-statistics` operation is also strictly read-only.
+After exact-site discovery it sends one bounded GraphQL aggregate query for
+that site's ID, exact `requestHost: trackstan.xyz` and the previous 24 hours.
+It reports validated page-view/visit totals and average sampling interval,
+not raw visitor/page/referrer records. It reuses the existing protected token,
+45-second overall/10-second request deadlines, streamed 128 KiB body cap,
+exact-main check and production serialization. Account Analytics Read is
+distinct from Account Settings Read; HTTP/GraphQL denial, invalid data and a
+complete empty result remain explicit. There is no credential expansion,
+write, automatic retry or new workflow. A genuine positive aggregate result
+is dashboard-backed data evidence, not a visual dashboard-login receipt.
+
+Disable through `WEB_ANALYTICS_CONFIG.enabled=false` and a checked release,
+keeping `no-transform` to prevent edge injection. Normal version rollback
+remains available, but a predecessor without that header does not itself
+prove analytics off while the account automatic setting remains enabled.
+Verify actual bytes/beacon count after either operation. Do not alter DNS,
+provider lifecycles, the installed-app shell or account permissions as part
+of analytics recovery.
 
 ## Rollback
 

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { DetailsPanel } from './DetailsPanel'
 import {
   formatAge,
@@ -73,6 +73,7 @@ const OrbitalEnrichmentDetails = ({
   onImageFailed?: (path: string) => void
 }) => {
   const context = enrichment.context
+  const headingId = useId()
   const contextLabel = orbitalEnrichmentContextLabel(context)
   const image = enrichment.image
   const [decodeFailed, setDecodeFailed] = useState(false)
@@ -90,10 +91,10 @@ const OrbitalEnrichmentDetails = ({
   return (
     <section
       className="orbital-enrichment"
-      aria-labelledby={`orbital-enrichment-heading-${enrichment.noradCatalogId}`}
+      aria-labelledby={headingId}
     >
       <h3
-        id={`orbital-enrichment-heading-${enrichment.noradCatalogId}`}
+        id={headingId}
       >
         {image ? `${contextLabel} and image` : contextLabel}
       </h3>

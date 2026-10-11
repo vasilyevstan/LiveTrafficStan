@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { ObjectResultButton } from './ObjectResultButton'
 import { formatTimestamp } from '../domain/format'
 import {
   isStarlinkOrbitalCatalogSnapshot,
@@ -61,6 +62,7 @@ export function StarlinkContext({
 }: StarlinkContextProps) {
   const [page, setPage] = useState(0)
   const restorePageFocusRef = useRef(false)
+  const catalogListRef = useRef<HTMLUListElement>(null)
   const snapshot =
     state.snapshot &&
     isStarlinkOrbitalCatalogSnapshot(state.snapshot)
@@ -89,11 +91,7 @@ export function StarlinkContext({
     const first = catalogPage.rows[0]
     if (!first) return
     globalThis.requestAnimationFrame(() => {
-      document
-        .getElementById(
-          `starlink-catalog-result-${first.noradCatalogId}`,
-        )
-        ?.focus()
+      catalogListRef.current?.querySelector('button')?.focus()
     })
   }, [catalogPage.page, catalogPage.rows])
 
@@ -225,6 +223,7 @@ export function StarlinkContext({
           <ul
             className="vessel-results orbital-results orbital-catalog-results"
             aria-label={`${sampleLabel} results`}
+            ref={catalogListRef}
           >
             {catalogPage.rows.map((record) => {
               const id = orbitalFeatureId(
@@ -237,16 +236,13 @@ export function StarlinkContext({
               const crossing = state.prediction.results.find(
                 (candidate) => candidate.id === id,
               )
-              const originId =
-                `starlink-catalog-result-${record.noradCatalogId}`
               return (
                 <li key={record.noradCatalogId}>
-                  <button
-                    id={originId}
-                    type="button"
+                  <ObjectResultButton
+                    prefix="starlink-catalog-result"
                     aria-pressed={selectedId === id}
                     aria-disabled={!position}
-                    onClick={() => {
+                    onSelect={(originId) => {
                       if (position) onSelect(id, originId)
                     }}
                   >
@@ -269,7 +265,7 @@ export function StarlinkContext({
                               )}`
                             : 'Safe modeled position'}
                     </span>
-                  </button>
+                  </ObjectResultButton>
                 </li>
               )
             })}

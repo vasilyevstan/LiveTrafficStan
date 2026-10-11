@@ -2,6 +2,64 @@
 
 This document records the data-provider checks made for LiveTrafficStan V1. Provider behavior and terms can change, so the linked official documentation must be rechecked before any public deployment.
 
+## Visitor analytics
+
+TrackStan uses the free [Cloudflare Web Analytics](https://developers.cloudflare.com/web-analytics/)
+product for aggregate visitor statistics on **`https://trackstan.xyz` only**.
+The approved geographic scope includes EU visitors. The backup Workers origin,
+local development, previews and PWA-retirement builds do not install the beacon.
+There is no custom dashboard, paid analytics plan, tag manager, session replay,
+custom interaction event, persistent visitor identifier or analytics proxy.
+
+The official hosted module is
+`https://static.cloudflareinsights.com/beacon.min.js`; its manual collector is
+`https://cloudflareinsights.com/cdn-cgi/rum`. Cloudflare documents a cookie-free
+product without browser-storage or fingerprint-based visitor tracking.
+The dashboard is aggregate, but **transmission is per-page RUM data**, not just
+anonymous aggregate counters. Cloudflare receives ordinary request/network
+metadata and load/vitals payloads, including a per-page identifier, timing,
+browser/device information and performance attribution. Do not claim that
+the hosting/analytics provider never receives an IP address or that using a
+cookie-free product settles every operator privacy/legal obligation.
+
+The manual beacon uses `spa:false`. Map movements, selection, menus,
+Home/location/search, sharing, preference reset and fullscreen are not pages.
+Page URL/referrer reporting omits query strings and fragments; TrackStan adds
+no coordinates, submitted text, selected-object identity or device-local
+history as analytics fields. Result DOM IDs and relevant detail-heading ARIA
+IDs are opaque React IDs because Web Vitals attribution can include a DOM
+selector. Exact object IDs remain in models, keyed rendering and selection,
+not those selector strings. Review actual outbound payloads, including vitals
+attribution, rather than treating sanitized page URLs as sufficient proof.
+
+The hosted script is mutable and runs with normal page-script access.
+There is no supported immutable version/SRI promise here; TrackStan does not
+vendor, modify, proxy or monkey-patch it. This is an explicit vendor-trust
+boundary, not a guarantee that future vendor code cannot change collection.
+Blocking/offline failures receive one sanitized console warning and never
+block the map, traffic, search, history or installed-app update.
+
+Use Cloudflare's account **Web Analytics** dashboard for visits/page views,
+referrers, countries, browsers/devices and performance:
+
+- [Visits](https://developers.cloudflare.com/web-analytics/data-metrics/high-level-metrics/)
+  are direct/referrer-defined entries, **not unique people**; one visit can
+  contain several page views.
+- [Dimensions](https://developers.cloudflare.com/web-analytics/data-metrics/dimensions/)
+  support aggregate filtering. UTM tracking and custom events are not part of
+  this integration.
+- [Current retention/sampling](https://developers.cloudflare.com/web-analytics/faq/)
+  is six months of dashboard history, with received unsampled data retained
+  for seven days and older aggregation around 10% of original volume.
+  Adaptive sampling and blockers, old browsers or network failure can affect
+  counts; do not interpret them as an exact census.
+
+The existing account automatic-injection setting remains enabled: its PUT
+was denied. The origin's root/index `Cache-Control: no-transform` prevents
+automatic injection, leaving the single source-controlled manual beacon.
+The public installation token grants no account administration or dashboard
+access. See [setup, read verification and disabling](hosting-and-deployment.md#manual-web-analytics-account-setup-440).
+
 ## Map: OpenFreeMap
 
 - Style service: <https://tiles.openfreemap.org/styles/positron>
