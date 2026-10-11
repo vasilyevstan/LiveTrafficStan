@@ -15,6 +15,7 @@ on:
         options:
           - domain
           - web-analytics
+          - web-analytics-read
       remove_parking_records:
         description: Remove only the two known imported apex parking A values
         required: true
@@ -45,8 +46,8 @@ jobs:
           test "$GITHUB_REF" = refs/heads/main
           [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
           test "$GITHUB_SHA" = "$EXPECTED_SHA"
-          [[ "$OPERATION" == domain || "$OPERATION" == web-analytics ]]
-          if [[ "$OPERATION" == web-analytics ]]; then
+          [[ "$OPERATION" == domain || "$OPERATION" == web-analytics || "$OPERATION" == web-analytics-read ]]
+          if [[ "$OPERATION" != domain ]]; then
             test "$REMOVE_PARKING_RECORDS" = false
           fi
 
@@ -78,7 +79,7 @@ jobs:
           node-version: 24
 
       - name: Prepare fixed zone and optional parking cleanup
-        if: inputs.operation != 'web-analytics'
+        if: inputs.operation != 'web-analytics' && inputs.operation != 'web-analytics-read'
         env:
           EXPECTED_SHA: ${{ inputs.sha }}
           REMOVE_PARKING_RECORDS: ${{ inputs.remove_parking_records }}
@@ -87,9 +88,10 @@ jobs:
         run: node scripts/prepare-trackstan-zone.mjs
 
       - name: Prepare fixed manual Web Analytics site
-        if: inputs.operation == 'web-analytics'
+        if: inputs.operation == 'web-analytics' || inputs.operation == 'web-analytics-read'
         env:
           EXPECTED_SHA: ${{ inputs.sha }}
+          ANALYTICS_READ_ONLY: ${{ inputs.operation == 'web-analytics-read' }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: node scripts/prepare-trackstan-analytics.mjs

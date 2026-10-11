@@ -2689,6 +2689,20 @@ deployment, dashboard acceptance or proof of visitor counts. Local Wrangler
 login is not required for this protected operation; account access to view
 the resulting dashboard remains separate from the public token.
 
+The fixed `web-analytics-read` choice is strictly read-only: it obtains the
+existing exact site's public token and reports its real automatic-injection
+state, but cannot create or change a site. The first protected setup run
+([38167908210](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/38167908210))
+read the existing site successfully and received HTTP 403 on the attempted
+manual-mode PUT. No successful write or retry occurred.
+
+Cloudflare also documents `Cache-Control: no-transform` as an origin-side way
+to prevent automatic beacon injection. An explicitly checked manual client
+integration may use that header without Account Settings Write. Verify actual
+HTML/header output and a single beacon; do not mistake the account's unchanged
+automatic setting for proof of duplicate injection, or assume a logged-out
+local session blocks the protected read path.
+
 ## Rollback
 
 Cloudflare versions contain Worker code, configuration, and Static Assets.
