@@ -36,8 +36,10 @@ The hosted script is mutable and runs with normal page-script access.
 There is no supported immutable version/SRI promise here; TrackStan does not
 vendor, modify, proxy or monkey-patch it. This is an explicit vendor-trust
 boundary, not a guarantee that future vendor code cannot change collection.
-Blocking/offline failures receive one sanitized console warning and never
-block the map, traffic, search, history or installed-app update.
+Script-load failures receive one sanitized application console warning and
+never block the map, traffic, search, history or installed-app update.
+Collector failures may produce native/vendor network diagnostics; the
+application does not suppress them, retry them or provide another collector.
 
 Use Cloudflare's account **Web Analytics** dashboard for visits/page views,
 referrers, countries, browsers/devices and performance:
@@ -59,6 +61,13 @@ was denied. The origin's root/index `Cache-Control: no-transform` prevents
 automatic injection, leaving the single source-controlled manual beacon.
 The public installation token grants no account administration or dashboard
 access. See [setup, read verification and disabling](hosting-and-deployment.md#manual-web-analytics-account-setup-440).
+
+The client is deployed, but fresh official manual reports currently receive
+Cloudflare `404` in both normal headed and headless Chrome with the exact
+token, Origin and Referer. #448 records that external acceptance blocker.
+A protected read returned five page views/five visits in its documented
+24-hour window; this is real dashboard data, not proof that the new manual
+reports were accepted or that five different people visited.
 
 ## Map: OpenFreeMap
 

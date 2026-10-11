@@ -8,8 +8,8 @@ user accounts or a server-side vessel history archive.
 
 Public production: <https://trackstan.xyz>
 
-Current application: `96a71b9ce6959e3df7bcddb34b6401f6dee47929`,
-with the [native workspace fullscreen release](docs/hosting-and-deployment.md#native-workspace-fullscreen-production-receipt-2026-10-11).
+Current application: `4307ae00359aa450db0aaabc2eb39dca408d3e1b`,
+with the [analytics bootstrap and ingestion-status receipt](docs/hosting-and-deployment.md#visitor-analytics-production-receipt-2026-10-11).
 Later documentation-only commits do not replace that running source.
 
 The existing <https://livetrafficstan.syntal.workers.dev> address remains
@@ -25,11 +25,13 @@ identity are not renamed or reset.
 
 ## Current features
 
-- Free, cookie-free aggregate visitor statistics in Cloudflare Web Analytics
+- Source-controlled, cookie-free Cloudflare Web Analytics
   on `trackstan.xyz` only, including EU visitors. The official manual beacon
   measures document loads/performance, not map/menu/search actions; the backup
   origin remains unmeasured. No custom events, persistent visitor IDs, replay,
-  paid plan or custom dashboard. See
+  paid plan or custom dashboard. Account statistics access is verified, but
+  fresh manual reports currently receive Cloudflare `404`; #448 tracks that
+  external ingestion blocker. Existing counts are not fresh-ingestion proof. See
   [collection boundaries and metric interpretation](docs/data-sources-and-licensing.md#visitor-analytics).
 - Live aircraft from [ADSB.lol](https://www.adsb.lol/) with approximately
   20-second refreshes.
