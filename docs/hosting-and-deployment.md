@@ -1802,6 +1802,24 @@ If a newer pull request reaches `main` while an older manual deployment is
 validating, the second equality check fails rather than silently promoting the
 older SHA.
 
+## Native workspace fullscreen release boundary (#434)
+
+This is a browser-only workspace action, not a Worker, provider or deployment
+mode. The standard API owns entry/exit; there is no new secret, endpoint,
+binding, dependency, data asset, persistent schema or user-data migration.
+Preserve all current enabled production inputs: application artifact,
+`oci-private-relay`, aircraft photos, plausible routes, curated orbits,
+automatic Starlink sample, marine supplementation and airport boards.
+
+The compatible predecessor is application
+`2748f4dbd0cce5ad71b295ee25973ebddbf02907`, Worker
+`0d847e8a-c8d4-435a-8e0b-77cc7f80cae9`. Rollback removes the fullscreen
+action without altering saved preferences/history or provider infrastructure.
+No new rollback drill or production machinery is required for this slice.
+The actual checked promotion, deployed application/Worker, strict smokes,
+normal installed update and Wiki publication will be recorded below after
+acceptance. Documentation-only commits are not another application deployment.
+
 ## Compass reset north production receipt (2026-10-10)
 
 Implementation #429 and checked dev-to-main #430 deliver the currently

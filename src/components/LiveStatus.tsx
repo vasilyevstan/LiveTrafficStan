@@ -1,4 +1,5 @@
 import { formatAge, formatTimestamp } from '../domain/format'
+import { workspaceOwnsFullscreen } from '../app/fullscreen'
 import type { ProviderStatus } from '../domain/traffic'
 import type { MarineProviderCapabilities } from '../providers/types'
 
@@ -83,7 +84,8 @@ export function LiveStatus({
       <details
         className="live-status__disclosure"
         onKeyDown={(event) => {
-          if (event.key !== 'Escape' || !event.currentTarget.open) return
+          if (event.key !== 'Escape' || !event.currentTarget.open ||
+            workspaceOwnsFullscreen(event.currentTarget)) return
           event.preventDefault()
           event.stopPropagation()
           event.currentTarget.open = false

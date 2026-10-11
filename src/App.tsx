@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
 import { useAppPreferences } from './app/useAppPreferences'
 import { useAppShell } from './app/useAppShell'
+import { useFullscreen } from './app/useFullscreen'
 import { useAircraftTraffic } from './app/useAircraftTraffic'
 import { useAircraftMetadata } from './app/useAircraftMetadata'
 import { useAircraftPhoto } from './app/useAircraftPhoto'
@@ -263,6 +264,51 @@ function App() {
   const returnToLiveRef = useRef<() => void>(() => undefined)
   const mapToolsSummaryRef = useRef<HTMLElement>(null)
   const settingsSummaryRef = useRef<HTMLElement>(null)
+  const fullscreenEntryFocusRef = useRef<Element | null>(null)
+  const fullscreenExitFocusRef = useRef<HTMLElement | null>(null)
+  const restoreFullscreenFocus = useCallback((active: boolean) => {
+    const origin = document.activeElement
+    if (!active && origin instanceof HTMLElement && origin.id === 'exit-fullscreen-button') {
+      fullscreenExitFocusRef.current = origin
+    }
+  }, [])
+  const {
+    state: fullscreenState,
+    enter: requestFullscreen,
+    exit: exitFullscreen,
+  } = useFullscreen(appShellRef, restoreFullscreenFocus)
+  const enterFullscreen = useCallback(() => {
+    fullscreenEntryFocusRef.current = document.activeElement
+    requestFullscreen()
+  }, [requestFullscreen])
+  useLayoutEffect(() => {
+    const origin = fullscreenState.active
+      ? fullscreenEntryFocusRef.current
+      : fullscreenExitFocusRef.current
+    fullscreenEntryFocusRef.current = null
+    fullscreenExitFocusRef.current = null
+    if (!origin || (
+      document.activeElement !== origin &&
+      document.activeElement !== document.body &&
+      document.activeElement !== appShellRef.current
+    )) return
+    if (fullscreenState.active) {
+      const exit = appShellRef.current?.querySelector<HTMLElement>('#exit-fullscreen-button')
+      if (exit?.isConnected) exit.focus({ preventScroll: true })
+      return
+    }
+    const summary = settingsSummaryRef.current
+    const rect = summary?.getBoundingClientRect()
+    const viewport = window.visualViewport
+    const summaryVisible = canRestoreFocus(summary) && summary && rect &&
+      getComputedStyle(summary).visibility === 'visible' &&
+      rect.top >= (viewport?.offsetTop ?? 0) &&
+      rect.bottom <= (viewport?.offsetTop ?? 0) + (viewport?.height ?? window.innerHeight)
+    const target = summaryVisible
+      ? summary
+      : appShellRef.current?.querySelector<HTMLElement>('.maplibregl-canvas')
+    if (canRestoreFocus(target ?? null)) target?.focus({ preventScroll: true })
+  }, [fullscreenState.active])
   const historyPlaybackControlRef = useRef<HTMLInputElement>(null)
   const detailFocusOriginIdRef = useRef<string | null>(null)
   const appliedLocationRevisionRef = useRef(0)
@@ -1667,12 +1713,14 @@ function App() {
       passive: false,
     })
     window.addEventListener('resize', updateViewportVariables)
+    document.addEventListener('fullscreenchange', updateViewportVariables)
     visualViewport?.addEventListener('resize', updateViewportVariables)
     visualViewport?.addEventListener('scroll', updateViewportVariables)
 
     return () => {
       appShell.removeEventListener('wheel', preventCompactControlWheelZoom)
       window.removeEventListener('resize', updateViewportVariables)
+      document.removeEventListener('fullscreenchange', updateViewportVariables)
       visualViewport?.removeEventListener(
         'resize',
         updateViewportVariables,
@@ -1773,6 +1821,9 @@ function App() {
 
       <div className="interface-layer">
         <TrafficControls
+          fullscreen={fullscreenState}
+          onEnterFullscreen={enterFullscreen}
+          onExitFullscreen={exitFullscreen}
           marineProviderName={marineResult.capabilities.name}
           inView={
             <InViewPanel

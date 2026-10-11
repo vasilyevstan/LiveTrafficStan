@@ -259,6 +259,13 @@ reserves the incumbent 70px hidden dock row, recovering that space on reset.
 The existing mobile map strip keeps panels clear without adding a dock slot.
 It uses existing settled camera
 reports, a wrapped 1-degree tolerance and a 44x44 target.
+Native workspace fullscreen has its entry in **Settings → View** and a 44x44
+exit companion beside North while the app-shell owns it. The six-slot mobile
+dock is unchanged. North OR Exit reserves one 70px row beside historical
+details, not a row per button; error feedback receives only its extra space.
+Presence-scoped mobile flyout clearance keeps both companions reachable.
+In fullscreen-only short desktop/landscape views, existing rail targets
+compact to at least 44px rather than scrolling the exit offscreen.
 Search remains in Settings. The floating card is 280x88 px, inset 16 px on
 desktop and 12 px on mobile. Its redundant brand subtitle is hidden;
 counts, freshness, and provider disclosure stay visible, with unchanged 44 px
@@ -280,6 +287,36 @@ and the existing privacy/attribution copy together, followed by Appearance
 (Auto/Light/Dark and Trails), browser location, history setup, preferences,
 sharing, reset, and application state. No controls or disclosure identities
 are duplicated or remounted.
+
+`fullscreen.ts` owns one standard native operation at a time on the existing
+`main.app-shell`; `useFullscreen` is its React lifetime bridge. Availability
+requires a true capability flag and callable standard request/exit methods.
+Request is called synchronously from trusted activation, preserving transient
+user activation. Active state is only the live exact
+`document.fullscreenElement === appShell` comparison, never a resolved promise,
+window size, CSS class, installed mode or F11. Foreign fullscreen owners are
+neither replaced nor exited.
+
+`fullscreenchange` reconciles actual ownership. A native error event has no
+attempt identity: its matching revision-fenced promise owns error feedback,
+so a late unstructured event cannot fail a newer attempt. Synchronous throws,
+rejections, failed exit and unavailable support remain explicit. Disposal
+removes listeners and fences old work without exiting a newer owner.
+Entry focus is captured before native blur and restored to Exit after the
+React commit. A disappearing focused exit returns to a visible Settings
+summary or the map with `preventScroll`; another usable focus is left alone.
+Workspace-local inspector, disclosure, search and hover Escape handlers defer
+while this exact shell owns fullscreen; there is no global key interception.
+
+Fullscreen is not navigation. It does not commit a view, restore a camera,
+reset north, return Home, recreate the map/style or reset any provider.
+MapLibre's existing container ResizeObserver and settled viewport reporting
+handle actual size changes; App refreshes its existing visual-viewport
+variables on `fullscreenchange`. The resized full canvas may legitimately
+change counts, selection validity or 100km eligibility. Ordinary cadence,
+backoff, MQTT connections and orbital deadlines remain authoritative.
+There is no CSS fallback, prefix layer, persistence, new shortcut,
+orientation/keyboard lock or automatic reentry.
 
 **In view** is the third peer, below Settings on desktop and reached through
 an entry inside Settings on mobile. Its mobile wrapper has no dock layout

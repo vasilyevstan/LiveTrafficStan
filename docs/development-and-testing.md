@@ -48,6 +48,55 @@ supplementary marine WebSocket; use the actual local Worker for those paths.
 | `npm run check:deploy` | Bundle the Worker and Static Assets without credentials or deployment |
 | `npm run preview:worker` | Build and run the actual local Cloudflare `workerd` boundary |
 
+### Native workspace fullscreen (#434)
+
+The deterministic native-operation tests exercise missing/disabled APIs and
+capability flags, synchronous invocation and receivers, one in-flight lock,
+event/promise ordering, throw/rejection/retry, foreign ownership, failed exit,
+late errors and obsolete lifetimes. Native error events carry no attempt ID;
+the matching promise, not an unstructured late event, owns failure feedback.
+Control, inspector Escape and interface-budget regressions retain incumbent
+behavior outside workspace fullscreen.
+Required local source/data/build gates passed with **178 suites / 1,624 tests**.
+
+Chrome 155 acceptance asserted actual app-shell `fullscreenElement`, using
+trusted Enter/Space and pointer/touch input. Ten Light/Dark layouts cover
+1280x900, 390x844, 390x568, 315x517 and 844x390, with 30 open
+More/Settings/In view checks. Entry and Exit measure at least 44x44. Four
+short mobile historical inspectors retain X, a useful body scroller, selection
+and Return to Live. Captured path/immutable Return, two rotated/pitched
+dateline globe views, native browser API exit, a real map drag, actual
+no-activation entry rejection and a synthetic exit-failure/retry are covered.
+Each native transition retains raw center within 1e-8 degrees and
+zoom/pitch/bearing within 1e-6, one canvas and saved identity. There are no
+runtime exceptions or startup orbital reads in the bounded local receipt.
+
+The initial keyboard-focus loss and short-landscape rail obstruction were
+corrected together: focus restores after React commit and only the fullscreen
+short rail compacts. The ten accepted confirmation layouts are reused after
+an observer-only browser-Escape timeout; they are not repeatedly recaptured.
+Local traffic/route/MQTT data and selection/HISTORY setup are explicit
+fixtures. Renderer, standard fullscreen operations, fetch, clock and trusted
+input remain native. Device metrics/focus emulation are not physical-device
+or OS-hidden-state evidence.
+
+CDP renderer Escape preserved the inspector but did not invoke Chrome's
+browser accelerator. Scoped OS keystroke injection was denied by macOS
+with error 1002; permissions were not changed or bypassed. Unwrapped standard
+`document.exitFullscreen()` is verified instead. **Physical Escape is not
+claimed as tested.** Missing/disabled support is deterministic capability
+evidence, not an actual iPhone or iPad test.
+
+Actual page-scale measurements correct the earlier nominal 2x capture:
+before entry Chrome reports a 640x450 visual viewport at scale 2; native
+fullscreen resets it to 1280x900 at scale 1 and rejects further emulated
+page-scale changes while active. Camera values and the canvas remain unchanged,
+and Exit stays hit-testable. This is browser-controlled scale, not proof of
+2x magnification inside fullscreen or application counter-scaling.
+
+Production, exact-SHA CI, installed update and public documentation receipts
+are recorded in the [fullscreen release boundary](hosting-and-deployment.md#native-workspace-fullscreen-release-boundary-434).
+
 ### Contextual compass / reset north (#428)
 
 Reset north is bearing-only, not Home or a navigation commit. Deterministic

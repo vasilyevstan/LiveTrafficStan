@@ -1,5 +1,6 @@
 import type { ReactNode, Ref } from 'react'
 import { closeDetailsOnEscape } from './detailsKeyboard'
+import { workspaceOwnsFullscreen } from '../app/fullscreen'
 
 interface DetailsPanelProps {
   titleId: string
@@ -24,7 +25,9 @@ export function DetailsPanel({
     <aside
       className={`details-panel${className ? ` ${className}` : ''}`}
       aria-labelledby={titleId}
-      onKeyDown={(event) => closeDetailsOnEscape(event, onClose)}
+      onKeyDown={(event) =>
+        closeDetailsOnEscape(event, onClose, workspaceOwnsFullscreen(event.currentTarget))
+      }
     >
       <div className="details-panel__heading">{heading}</div>
       <button
