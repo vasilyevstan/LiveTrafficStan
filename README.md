@@ -29,9 +29,10 @@ identity are not renamed or reset.
   on `trackstan.xyz` only, including EU visitors. The official manual beacon
   measures document loads/performance, not map/menu/search actions; the backup
   origin remains unmeasured. No custom events, persistent visitor IDs, replay,
-  paid plan or custom dashboard. Account statistics access is verified, but
-  fresh manual reports currently receive Cloudflare `404`; #448 tracks that
-  external ingestion blocker. Existing counts are not fresh-ingestion proof. See
+  paid plan or custom dashboard. Manual collection is verified: after the
+  authorized account setup, a fresh official report returned `204` and new
+  exact-host data appeared in Cloudflare's statistics. #448 records the
+  resolved configuration/ingestion blocker. See
   [collection boundaries and metric interpretation](docs/data-sources-and-licensing.md#visitor-analytics).
 - Live aircraft from [ADSB.lol](https://www.adsb.lol/) with approximately
   20-second refreshes.

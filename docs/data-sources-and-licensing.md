@@ -56,18 +56,22 @@ referrers, countries, browsers/devices and performance:
   Adaptive sampling and blockers, old browsers or network failure can affect
   counts; do not interpret them as an exact census.
 
-The existing account automatic-injection setting remains enabled: its PUT
-was denied. The origin's root/index `Cache-Control: no-transform` prevents
-automatic injection, leaving the single source-controlled manual beacon.
+The account now uses manual JS installation (`autoInstall:false`), verified
+after authorized Manage site setup on 2026-10-13. The earlier protected PUT
+was denied and was not retried. The origin's root/index
+`Cache-Control: no-transform` remains an additional duplicate-injection guard,
+leaving the single source-controlled manual beacon.
 The public installation token grants no account administration or dashboard
 access. See [setup, read verification and disabling](hosting-and-deployment.md#manual-web-analytics-account-setup-440).
 
-The client is deployed, but fresh official manual reports currently receive
-Cloudflare `404` in both normal headed and headless Chrome with the exact
-token, Origin and Referer. #448 records that external acceptance blocker.
-A protected read returned five page views/five visits in its documented
-24-hour window; this is real dashboard data, not proof that the new manual
-reports were accepted or that five different people visited.
+Fresh manual collection is accepted as of 2026-10-13: a native official
+page-load POST returned `204` with the correct allow-origin, and a protected
+exact-host read subsequently returned **1 page view / 1 visit, sampling
+interval 1**, after an initial complete zero result. #448 preserves the
+earlier `404` evidence and resolution without a token/app change. The counts
+are dashboard-backed received data, not unique-person counts or proof of
+every dimension, country or physical device. See the dated runtime receipt
+for exact windows and the aggregation delay.
 
 ## Map: OpenFreeMap
 

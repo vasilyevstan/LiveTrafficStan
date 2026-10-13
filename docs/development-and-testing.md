@@ -101,14 +101,24 @@ An isolated current-shell reload retained the current raw preferences.
 Do not freeze coordination revisions or every actively rewritten row as an
 invented update invariant.
 
-Normal headed Chrome confirms one genuine-token manual beacon and one native
-page-load payload, but its actual collector POST is **404**, not `204`.
-Network extra-info identifies the HTTP failure behind Chrome's
-`MissingAllowOriginHeader` diagnostic. Token/Origin/Referer match; a valid
-OPTIONS response does not prove POST acceptance. The protected statistics
-read returned five page views/five visits, but cannot be attributed to these
-rejected manual reports. #448 remains open; no runtime-ingestion success,
-physical-device or dashboard-UI-login claim is made.
+The initial 2026-10-11/12 normal headed and headless samples received actual
+POST **404**, despite matching token/Origin/Referer. Network extra-info exposed
+that status behind `MissingAllowOriginHeader`; historical positive totals
+did not prove those reports were accepted. Preserve that qualified evidence.
+
+After authorized Manage site setup, normal headed Chrome on
+2026-10-13 at `05:37:38Z` produced one native official page-load POST returning
+**204**, with the correct allow-origin, one map/script, `spa:false`, unchanged
+token and no collector failure. Acceptance correlates status with **POST**;
+OPTIONS 200 is not ingestion proof, and duplicate CDP response events are
+not extra reports. Protected read 38352457075 confirmed `autoInstall:false`
+and a complete zero result at `05:38:59.599Z`. One delayed read,
+38352961950, returned **1 page view / 1 visit, sampling interval 1**, at
+`05:44:53.019Z`. This demonstrates new received exact-host data after
+aggregation, not a unique person or per-event attribution among other visits.
+#448 records the resolved blocker. No app/token/credential change,
+physical-device or dashboard-UI-login claim is made; unchanged source,
+privacy, provider and installed-update evidence is reused.
 
 ### Mobile usability and search analysis (#449, planned)
 

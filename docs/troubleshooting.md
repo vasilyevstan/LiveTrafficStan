@@ -16,10 +16,10 @@ or add retries/a proxy. Vitals may report on leaving/hiding the document.
 Collector GET `405` is expected and is not an ingestion test.
 
 If an extra beacon appears, verify actual root/index `no-transform` headers
-and byte-exact deployed HTML. The account automatic setting is still true;
-the existing token could read the site but its manual-mode PUT returned 403.
-Do not retry that write or broaden credentials. Keep the header even when
-disabling the manual integration.
+and byte-exact deployed HTML. Account manual mode (`autoInstall:false`) is
+verified as of 2026-10-13 after authorized Manage site setup. The earlier
+protected manual-mode PUT returned 403 and was not retried. Do not broaden
+credentials; retain the header even when disabling the manual integration.
 
 The public site token does not authorize private dashboard/GraphQL reads.
 The existing protected `web-analytics-statistics` operation reports only
@@ -29,28 +29,35 @@ release approval; a complete zero result is not proof of received events.
 Preserve the actual receipt and use authorized account dashboard access.
 Never log coordinate-bearing URLs or expose privileged tokens for diagnosis.
 
-### Current manual collector rejection (#448)
+### Resolved manual collector rejection (#448)
 
-The deployed primary integration currently receives **HTTP 404** from the
-official `cloudflareinsights.com/cdn-cgi/rum` collector. Chrome exposes it as
-`net::ERR_FAILED` / `MissingAllowOriginHeader`; network extra-info confirms
-the underlying status. Normal headed and headless Chrome use the matching
+The initial primary integration received **HTTP 404** from the official
+`cloudflareinsights.com/cdn-cgi/rum` collector. Chrome exposed it as
+`net::ERR_FAILED` / `MissingAllowOriginHeader`; network extra-info confirmed
+the underlying status. Normal headed and headless Chrome used the matching
 public token, `Origin: https://trackstan.xyz` and
 `Referer: https://trackstan.xyz/`. The existing referrer/CSP headers and
 service-worker POST/cross-origin bypass are not the demonstrated cause.
-The exact account-side cause is not established.
+The exact internal account-side rejection condition is not established.
 
-Account statistics access works: read-only run 38171783640 returned five
-page views/five visits for its exact-host 24-hour window. Those existing
-counts do **not** prove fresh manual ingestion. Inspect authorized
-**Web Analytics -> trackstan.xyz -> Manage site** and the official manual/global
-configuration, then use Cloudflare support if verified setup still rejects
-the official report. Do not repeat the denied manual-mode PUT, broaden/export
-credentials, patch the beacon or introduce a proxy/custom POST.
+After authorized **Manage site -> Enable with JS Snippet installation**
+setup on 2026-10-13, the same-token native POST returned **204** with the
+correct allow-origin. Read-only 38352457075 confirmed `autoInstall:false`;
+an initial complete zero result was followed by **1 page view / 1 visit,
+sampling interval 1** in delayed read 38352961950. Collection and received
+exact-host data are verified without an app redeployment.
+
+For a recurrence, inspect actual **POST** status, the account's manual/global
+configuration and collection/rules state. OPTIONS success or older totals
+do not prove a new report was received; allow a bounded aggregation interval
+before reading statistics. Use Cloudflare support with sanitized timestamp/
+CF-Ray if the verified official setup still rejects reports. Do not repeat
+denied writes, broaden/export credentials, patch the beacon or add a proxy/
+custom POST. Retain no-transform and one manual script.
 Cloudflare's current docs support the existing module installation; changing
 to classic script on an inaccurate generated answer is not a fix.
 See [the full receipt](hosting-and-deployment.md#visitor-analytics-production-receipt-2026-10-11)
-and #448 before claiming recovery.
+and #448 for the failed and successful receipts.
 
 ## The page loads but the map is blank
 
