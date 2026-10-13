@@ -15,6 +15,7 @@ import {
 } from './starlinkCatalog.js'
 
 export const ORBITAL_COORDINATOR_PATH = '/refresh'
+export const ORBITAL_COORDINATOR_STATUS_PATH = '/status'
 export const ORBITAL_COORDINATOR_STATE_SCHEMA_VERSION = 1
 export const ORBITAL_COORDINATOR_STATE_CONTRACT_VERSION = 1
 export const STARLINK_COORDINATOR_STATE_SCHEMA_VERSION = 1
@@ -53,6 +54,16 @@ type StarlinkRefreshStateRow = {
   sourceContractVersion: number
   lastStartedAtMs: number
   nextAllowedAtMs: number
+}
+
+interface OrbitalRefreshStatus {
+  kind: 'status'
+  phase: 'never-started' | 'in-progress' | 'blocked' | 'idle'
+  lastStartedAtMs: number | null
+  nextAllowedAtMs: number | null
+  blockedStatus: number | null
+  starlinkLastStartedAtMs: number | null
+  starlinkNextAllowedAtMs: number | null
 }
 
 const isSafeInteger = (value: unknown): value is number =>
@@ -150,6 +161,26 @@ class SqlOrbitalRefreshCoordinator implements OrbitalRefreshCoordinator {
       throw new Error('Invalid Starlink refresh state')
     }
     return rows[0] ? validateStarlinkState(rows[0]) : undefined
+  }
+
+  status(): OrbitalRefreshStatus {
+    const current = this.readState()
+    const starlink = this.readStarlinkState()
+    return {
+      kind: 'status',
+      phase: !current
+        ? 'never-started'
+        : current.attemptId !== null
+          ? 'in-progress'
+          : current.blockedStatus !== null
+            ? 'blocked'
+            : 'idle',
+      lastStartedAtMs: current?.lastStartedAtMs ?? null,
+      nextAllowedAtMs: current?.nextAllowedAtMs ?? null,
+      blockedStatus: current?.blockedStatus ?? null,
+      starlinkLastStartedAtMs: starlink?.lastStartedAtMs ?? null,
+      starlinkNextAllowedAtMs: starlink?.nextAllowedAtMs ?? null,
+    }
   }
 
   reserve(nowMs: number): Promise<OrbitalRefreshReservation> {
@@ -374,7 +405,7 @@ class SqlOrbitalRefreshCoordinator implements OrbitalRefreshCoordinator {
   }
 }
 
-const jsonResponse = (outcome: OrbitalRefreshOutcome, status: number) =>
+const jsonResponse = (outcome: OrbitalRefreshOutcome | OrbitalRefreshStatus, status: number) =>
   new Response(JSON.stringify(outcome), {
     status,
     headers: {
@@ -439,6 +470,15 @@ export class OrbitalCatalogCoordinator extends DurableObject<OrbitalCatalogEnvir
 
   async fetch(request: Request) {
     const url = new URL(request.url)
+    if (url.pathname === ORBITAL_COORDINATOR_STATUS_PATH && !url.search) {
+      if (request.method !== 'GET') {
+        return textResponse('Method not allowed', 405, { Allow: 'GET' })
+      }
+      if (this.initializationFailed) {
+        return textResponse('Coordinator storage is unavailable', 503)
+      }
+      return jsonResponse(this.coordinator.status(), 200)
+    }
     if (url.pathname !== ORBITAL_COORDINATOR_PATH || url.search) {
       return textResponse('Not found', 404)
     }
@@ -479,6 +519,7 @@ const readScheduledOutcome = async (response: Response) => {
     await response.body?.cancel().catch(() => undefined)
     throw new Error('Orbital catalog refresh outcome was invalid')
   }
+
   const contentLength = response.headers.get('Content-Length')
   if (
     contentLength !== null &&
@@ -536,6 +577,64 @@ const readScheduledOutcome = async (response: Response) => {
     throw new Error('Orbital catalog refresh outcome was invalid')
   }
   return outcome
+}
+
+export const withOrbitalRefreshStatus = async (
+  request: Request,
+  response: Response,
+  environment: OrbitalScheduledEnvironment,
+) => {
+  if (
+    request.method !== 'GET' ||
+    environment.ORBITAL_CATALOG_ENABLED !== 'true' ||
+    !environment.ORBITAL_CATALOG_COORDINATOR
+  ) return response
+
+  const headers = new Headers(response.headers)
+  const namespace = environment.ORBITAL_CATALOG_COORDINATOR
+  try {
+    const statusResponse = await namespace.get(
+      namespace.idFromName(ORBITAL_COORDINATOR_OBJECT_NAME),
+    ).fetch(new Request(
+      `https://orbital-catalog.internal${ORBITAL_COORDINATOR_STATUS_PATH}`,
+      { method: 'GET', signal: request.signal },
+    ))
+    if (!statusResponse.ok) throw new Error('Coordinator status unavailable')
+    const status = await readScheduledOutcome(statusResponse)
+    if (
+      status.kind !== 'status' ||
+      typeof status.phase !== 'string' ||
+      !['never-started', 'in-progress', 'blocked', 'idle'].includes(
+        status.phase,
+      )
+    ) throw new Error('Coordinator status invalid')
+    const fields = [
+      ['lastStartedAtMs', 'Last-Started'],
+      ['nextAllowedAtMs', 'Next-Allowed'],
+      ['blockedStatus', 'Blocked-Status'],
+      ['starlinkLastStartedAtMs', 'Starlink-Last-Started'],
+      ['starlinkNextAllowedAtMs', 'Starlink-Next-Allowed'],
+    ] as const
+    const values: Array<readonly [string, number]> = []
+    for (const [field, label] of fields) {
+      const value = status[field]
+      if (value === null) continue
+      if (!isSafeInteger(value)) throw new Error('Coordinator status invalid')
+      values.push([label, value])
+    }
+    headers.set('X-LiveTrafficStan-Orbital-Refresh-State', status.phase)
+    for (const [label, value] of values) {
+      headers.set(`X-LiveTrafficStan-Orbital-Refresh-${label}`, String(value))
+    }
+  } catch {
+    headers.set('X-LiveTrafficStan-Orbital-Refresh-State', 'unavailable')
+    console.warn('Orbital refresh status read unavailable')
+  }
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  })
 }
 
 const requireSuccessfulScheduledOutcome = (
