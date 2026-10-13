@@ -1009,6 +1009,18 @@ reviewed coordinator reset. Catalog schema 2 does not itself reset admission:
 the schema-1 coordinator row retains `lastStartedAt`, in-progress state,
 attempt sequence, `Retry-After`/`nextAllowedAt`, terminal block, and cadence.
 
+Both existing catalog GET routes expose bounded read-only producer diagnostics
+in `X-LiveTrafficStan-Orbital-Refresh-*` headers. `State` distinguishes
+`never-started`, `in-progress`, `blocked`, `idle`, and unavailable diagnostics;
+`Blocked-Status`, `Last-Started`, `Next-Allowed`, and the Starlink deadline
+headers describe the persisted gate without exposing attempt IDs. `idle`
+does not prove that a Cron trigger exists or has run. The maximum-safe-integer
+deadline is a fence, not a usable date. Inspection uses the existing named
+actor's private GET status method: it makes no provider request, reserves no
+attempt, changes no admission row, and cannot clear a lock or terminal block.
+Diagnostic failures are explicitly warned and marked unavailable without
+altering the valid catalog body, ETag, HTTP status or expiry rules.
+
 Rollback to a target with the orbital flag off must also remove the Cron
 through the checked rollback workflow. Do not delete the KV namespace to fix a
 trigger mismatch; compatible versions may still need its last complete

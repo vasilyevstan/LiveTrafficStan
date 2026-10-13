@@ -13,6 +13,7 @@ import {
 } from './orbitalCatalog.js'
 import {
   runScheduledOrbitalCatalogRefresh,
+  withOrbitalRefreshStatus,
   type OrbitalCatalogCoordinatorNamespace,
 } from './orbitalCatalogCoordinator.js'
 import {
@@ -136,13 +137,17 @@ const worker = {
     }
     if (pathname === ORBITAL_CATALOG_PATH) {
       return withReleaseSha(
-        await handleOrbitalCatalog(request, env),
+        await withOrbitalRefreshStatus(
+          request, await handleOrbitalCatalog(request, env), env,
+        ),
         env.RELEASE_SHA,
       )
     }
     if (pathname === STARLINK_CATALOG_PATH) {
       return withReleaseSha(
-        await handleStarlinkCatalog(request, env),
+        await withOrbitalRefreshStatus(
+          request, await handleStarlinkCatalog(request, env), env,
+        ),
         env.RELEASE_SHA,
       )
     }
