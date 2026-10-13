@@ -1021,6 +1021,16 @@ attempt, changes no admission row, and cannot clear a lock or terminal block.
 Diagnostic failures are explicitly warned and marked unavailable without
 altering the valid catalog body, ETag, HTTP status or expiry rules.
 
+The 2026-10-13 missing-Starlink investigation observed **blocked/HTTP 403**
+from the actual persisted producer state, not a guessed scheduler problem.
+The last shared start was `2026-10-12T14:17:53.618Z`, Starlink
+`14:17:58.562Z`; both held catalogs subsequently crossed 24-hour expiry.
+#457 records the external access/source-contract dependency and #454 the
+app validation. Switching layers, clearing browser data, changing token or
+resetting producer storage will not legitimately resolve that provider stop.
+An expired V2 snapshot can intentionally select compatible V1; do not call
+that a negotiation defect or treat either aged body as fresh model coverage.
+
 Rollback to a target with the orbital flag off must also remove the Cron
 through the checked rollback workflow. Do not delete the KV namespace to fix a
 trigger mismatch; compatible versions may still need its last complete

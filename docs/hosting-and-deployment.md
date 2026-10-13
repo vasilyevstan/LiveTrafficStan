@@ -2737,7 +2737,7 @@ of analytics recovery.
 
 ### Visitor analytics production receipt (2026-10-11)
 
-Current running application:
+Historical analytics application:
 **`4307ae00359aa450db0aaabc2eb39dca408d3e1b`**, Worker
 **`22db54e1-5a7e-459b-b051-025a3cfc1cdc`**. Implementation #446 and checked
 dev-to-main #447 retain accepted tree
@@ -2756,8 +2756,8 @@ plausible routes, curated/Starlink catalogs, marine supplement and airport
 boards retain all previously enabled deployment inputs. Secrets remain
 atomic/main-only; no provider route, binding, cadence or data migration changed.
 The preceding fullscreen application/Worker remains historical compatible
-rollback evidence, not the currently running release. Later documentation-only
-commits do not redeploy this application.
+rollback evidence. The later diagnostic release below retains identical
+client assets; documentation-only commits do not redeploy the application.
 
 Local required gates passed with **181 suites / 1,672 tests**. Actual official
 beacon capture blocked transmission and proved identity-safe selected-object
@@ -2811,6 +2811,43 @@ needed. The exact internal Cloudflare rejection condition is not established
 merely by recovery after the setup change. Existing source/privacy/provider/
 fullscreen/install evidence remains accepted; UI login, every dimension and
 physical-device/global-region coverage are not newly claimed.
+
+### Orbital diagnostics and production validation (2026-10-13)
+
+Current application/Worker source is
+**`7c188f184bdcb43c7016e46c2ae7a4f8e527f8ee`**, version
+**`0603e051-d438-4fa6-a5c0-25de8f09177d`**, through #455/#456 and serialized
+[deployment 38443144710](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/38443144710).
+Exact head/dev/release/main validation 38439938375 /38440761597 /
+38441659457 /38442360529 passed. Both origin smokes passed; all enabled
+production inputs and atomic/main-only secrets remain. No namespace, source
+contract, cadence, admission row, retry deadline or physical fence changed.
+The client JS/CSS and shell are byte-identical to the analytics predecessor,
+which remains compatible rollback evidence.
+
+The added private GET status method reads the existing producer actor, not
+an acquisition endpoint. Existing catalog GET headers now expose bounded
+public phases/timestamps/status numbers without attempt IDs or credentials.
+At `2026-10-13T18:06:03Z`, actual state was **blocked, upstream HTTP 403**,
+with the maximum-safe-integer fence. The shared attempt started
+`2026-10-12T14:17:53.618Z`, Starlink at `14:17:58.562Z`. Curated data from
+that cycle and Starlink GP from `00:17:56.445Z` are retained but expired.
+This establishes the upstream stop, not the exact vendor access rule.
+
+#454 records **181 suites /1,678 tests**, all existing data/build/dry-run
+checks, actual vector tiles, independent live aircraft/marine, same-canvas
+Dark/Light, native fullscreen/Escape, In view and four desktop/mobile
+layouts. An initial theme-observer timing ambiguity was resolved by a narrow
+settled native follow-up. Device-metric layouts are not physical-phone or
+exhaustive gesture/accessibility acceptance; known mobile work remains #449.
+
+**Satellite restoration is not accepted.** The UI correctly shows C/S
+UNAVAILABLE after hard expiry. #457 is the evidenced provider access/source-
+contract dependency. No manual GP/SATCAT probe, gate reset, identity rotation,
+proxy, timestamp rewrite or expiry extension was used. Current provider policy
+could not be retrieved; legitimate access/contract evidence is needed before
+reviewed recovery and a normal eligible scheduled event. Static/API smoke
+proves transport/contracts, not fresh modeled positions or selection.
 
 ## Rollback
 
