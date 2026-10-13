@@ -120,6 +120,20 @@ aggregation, not a unique person or per-event attribution among other visits.
 physical-device or dashboard-UI-login claim is made; unchanged source,
 privacy, provider and installed-update evidence is reused.
 
+### Production orbital validation (#454, upstream blocked)
+
+The later #454 whole-app validation repeats all existing checks with the
+read-only producer-state addition: **181 suites /1,678 tests**, every bundled
+data check, production-flags build and Worker dry run. Actual production
+desktop/mobile layouts retain one full canvas and real vector tiles, with
+independent aircraft/marine updates. Settled native Dark/Light, fullscreen/
+Escape and In view checks preserve the same canvas. The mechanical scan of
+App/CSS/controls/map returned no findings; that is not full WCAG or gesture
+certification. Rendered fresh satellite/selection acceptance is blocked by
+the actual upstream 403 in #457, not established by the passing suite or
+held cache HTTP 200. Client assets are unchanged, so prior unchanged-source
+privacy, image, lifecycle and installed-update evidence remains accepted.
+
 ### Mobile usability and search analysis (#449, planned)
 
 The requested Impeccable/UI specialist supplied source evidence; the parent

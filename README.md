@@ -8,9 +8,15 @@ user accounts or a server-side vessel history archive.
 
 Public production: <https://trackstan.xyz>
 
-Current application: `4307ae00359aa450db0aaabc2eb39dca408d3e1b`,
-with the [analytics bootstrap and ingestion-status receipt](docs/hosting-and-deployment.md#visitor-analytics-production-receipt-2026-10-11).
+Current application/Worker source: `7c188f184bdcb43c7016e46c2ae7a4f8e527f8ee`,
+with the [orbital diagnostic/runtime receipt](docs/hosting-and-deployment.md#orbital-diagnostics-and-production-validation-2026-10-13).
 Later documentation-only commits do not replace that running source.
+
+**Current orbital availability:** CelesTrak's recorded HTTP `403` stopped the
+shared producer; curated and Starlink catalogs are expired and their modeled
+positions are hidden. #454 records app validation and #457 the external
+access/source-contract blocker. Aircraft, vessels and analytics remain
+independent; passing tests or cache HTTP `200` do not prove fresh satellites.
 
 The existing <https://livetrafficstan.syntal.workers.dev> address remains
 available. Preferences, permissions, installed apps and private history are
