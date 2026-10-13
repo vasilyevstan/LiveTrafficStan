@@ -2669,8 +2669,9 @@ Cloudflare Web Analytics, not Worker invocation logs.
 ### Manual Web Analytics account setup (#440)
 
 The approved visitor-analytics work is separate from operational Worker
-metrics. Its client is installed, but fresh manual ingestion remains blocked
-by the verified collector rejection below. The existing **Prepare TrackStan domain** workflow also offers
+metrics. Its client and fresh manual collection are accepted following
+authorized account setup on 2026-10-13; the dated receipt below preserves
+the earlier rejection and recovery. The existing **Prepare TrackStan domain** workflow also offers
 the fixed `web-analytics` operation for `trackstan.xyz`. It uses the same
 exact-current-main validation, main-only production credentials and
 `production-deployment` serialization; it never runs the DNS operation.
@@ -2776,15 +2777,40 @@ dashboard-backed aggregate data are established without a write or credential
 expansion. No visual dashboard login, unique-person count or populated
 referrer/country/browser/device breakdown is claimed.
 
-**Fresh manual ingestion is not accepted.** Both headed and headless native
-Chrome receive collector **404** with the exact public site token, Origin and
-Referer. The source/referrer/CSP/POST-bypass checks do not demonstrate an
-application mismatch. The exact account-side cause remains unknown; #448
-contains the detailed external blocker and smallest authorized manual-mode/
-support resolution. The five existing counts do not establish that these
-rejected reports were ingested. #440 stays open until that criterion is
-resolved; no speculative collector override, classic-script change, custom
-POST, proxy, credential expansion or repeated denied PUT is authorized.
+The initial headed/headless native samples received collector **404** with
+matching token, Origin and Referer. The five historical counts did not prove
+those rejected reports were received. #448 retains that failed acceptance
+and the authorized account-resolution path; no collector override, script
+rewrite, custom POST, proxy, credential expansion or denied-PUT retry occurred.
+
+#### Manual collection acceptance (2026-10-13)
+
+After the user saved **Manage site -> Enable with JS Snippet installation**
+and confirmed the existing token, normal headed Chrome at
+`2026-10-13T05:37:38Z` sent one genuine official page-load POST. It returned
+**204**, `Access-Control-Allow-Origin: https://trackstan.xyz`, with CF-Ray
+`a49bfe576c221b5d-WAW`. The page had one map, one script, `spa:false`, the
+unchanged token and no collector/CORS failure. This is a native report,
+not an OPTIONS response, fabricated POST or intercepted success.
+
+Protected read-only
+[38352457075](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/38352457075)
+confirmed the same site/token and **`autoInstall:false`**, with zero writes.
+Its complete zero result covered `2026-10-12T05:38:59.599Z` through
+`2026-10-13T05:38:59.599Z`; a successful collector response alone was not
+treated as received-dashboard-data proof.
+After a bounded aggregation wait, read-only
+[38352961950](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/38352961950)
+returned **1 page view / 1 visit, sampling interval 1**, for exact
+`trackstan.xyz` from `2026-10-12T05:44:53.019Z` through
+`2026-10-13T05:44:53.019Z`. New received data and manual mode are now verified.
+
+#448's collection blocker is resolved; #440's remaining publication records
+use this receipt. No application/token/credential change or redeployment was
+needed. The exact internal Cloudflare rejection condition is not established
+merely by recovery after the setup change. Existing source/privacy/provider/
+fullscreen/install evidence remains accepted; UI login, every dimension and
+physical-device/global-region coverage are not newly claimed.
 
 ## Rollback
 
