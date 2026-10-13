@@ -7,11 +7,14 @@ import {
 } from './orbitalCatalog.js'
 import {
   ORBITAL_COORDINATOR_PATH,
+  ORBITAL_COORDINATOR_STATUS_PATH,
+  ORBITAL_COORDINATOR_OBJECT_NAME,
   ORBITAL_COORDINATOR_STATE_CONTRACT_VERSION,
   ORBITAL_COORDINATOR_STATE_SCHEMA_VERSION,
   STARLINK_COORDINATOR_STATE_CONTRACT_VERSION,
   STARLINK_COORDINATOR_STATE_SCHEMA_VERSION,
   OrbitalCatalogCoordinator,
+  withOrbitalRefreshStatus,
 } from './orbitalCatalogCoordinator.js'
 import {
   STARLINK_BOOTSTRAP_GP_RETRIEVED_AT_MS,
@@ -381,6 +384,120 @@ describe('orbital catalog coordinator', () => {
   afterEach(() => {
     vi.useRealTimers()
     vi.unstubAllGlobals()
+  })
+
+  it('reads a terminal fence and Starlink deadline without acquiring, modifying or exposing its attempt identity', async () => {
+    const storage = new FakeStorage()
+    storage.state = {
+      schemaVersion: ORBITAL_COORDINATOR_STATE_SCHEMA_VERSION,
+      sourceContractVersion: ORBITAL_COORDINATOR_STATE_CONTRACT_VERSION,
+      attemptSequence: 7,
+      attemptId: null,
+      lastStartedAtMs: nowMs,
+      nextAllowedAtMs: Number.MAX_SAFE_INTEGER,
+      blockedStatus: 403,
+      blockedAtMs: nowMs + 10,
+    }
+    storage.starlinkState = {
+      schemaVersion: STARLINK_COORDINATOR_STATE_SCHEMA_VERSION,
+      sourceContractVersion: STARLINK_COORDINATOR_STATE_CONTRACT_VERSION,
+      lastStartedAtMs: nowMs,
+      nextAllowedAtMs: nowMs + STARLINK_REFRESH_INTERVAL_MS,
+    }
+    const before = structuredClone([storage.state, storage.starlinkState])
+    const catalog = new MemoryKv()
+    const put = vi.spyOn(catalog, 'put')
+    const upstream = vi.fn()
+    vi.stubGlobal('fetch', upstream)
+    const coordinator = createCoordinator(storage, catalog, true)
+    const response = await coordinator.fetch(new Request(
+      `https://orbital.internal${ORBITAL_COORDINATOR_STATUS_PATH}`,
+    ))
+    expect(await response.json()).toEqual({
+      kind: 'status',
+      phase: 'blocked',
+      lastStartedAtMs: nowMs,
+      nextAllowedAtMs: Number.MAX_SAFE_INTEGER,
+      blockedStatus: 403,
+      starlinkLastStartedAtMs: nowMs,
+      starlinkNextAllowedAtMs: nowMs + STARLINK_REFRESH_INTERVAL_MS,
+    })
+    expect([storage.state, storage.starlinkState]).toEqual(before)
+    expect(put).not.toHaveBeenCalled()
+    expect(upstream).not.toHaveBeenCalled()
+    expect((await coordinator.fetch(new Request(
+      `https://orbital.internal${ORBITAL_COORDINATOR_STATUS_PATH}`,
+      { method: 'POST' },
+    ))).status).toBe(405)
+  })
+
+  it('does not initialize an admission row merely by inspecting an unused coordinator', async () => {
+    const storage = new FakeStorage()
+    const coordinator = createCoordinator(storage, new MemoryKv())
+    const response = await coordinator.fetch(new Request(
+      `https://orbital.internal${ORBITAL_COORDINATOR_STATUS_PATH}`,
+    ))
+    expect(await response.json()).toMatchObject({
+      kind: 'status', phase: 'never-started', lastStartedAtMs: null,
+    })
+    expect(storage.state).toBeUndefined()
+    expect(storage.starlinkState).toBeUndefined()
+  })
+
+  it.each([200, 304, 503])('preserves catalog status %i and only reads the existing named actor', async (statusCode) => {
+    const status = {
+      kind: 'status', phase: 'blocked', lastStartedAtMs: nowMs,
+      nextAllowedAtMs: Number.MAX_SAFE_INTEGER, blockedStatus: 403,
+      starlinkLastStartedAtMs: null, starlinkNextAllowedAtMs: null,
+    }
+    const inspect = vi.fn(async (input: Request) => {
+      expect(input.method).toBe('GET')
+      expect(new URL(input.url).pathname).toBe(ORBITAL_COORDINATOR_STATUS_PATH)
+      return jsonResponse(status)
+    })
+    const identity = vi.fn(() => 'existing-actor')
+    const result = await withOrbitalRefreshStatus(
+      new Request('https://app.example/api/orbits/catalog'),
+      new Response(statusCode === 304 ? null : 'original', {
+        status: statusCode, headers: { ETag: '"original-digest"' },
+      }),
+      {
+        ASSETS: { fetch: vi.fn() },
+        ORBITAL_CATALOG_ENABLED: 'true',
+        ORBITAL_CATALOG_COORDINATOR: {
+          idFromName: identity, get: () => ({ fetch: inspect }),
+        },
+      },
+    )
+    expect(result.status).toBe(statusCode)
+    expect(result.headers.get('etag')).toBe('"original-digest"')
+    expect(result.headers.get('x-livetrafficstan-orbital-refresh-state')).toBe('blocked')
+    expect(result.headers.get('x-livetrafficstan-orbital-refresh-blocked-status')).toBe('403')
+    expect(await result.text()).toBe(statusCode === 304 ? '' : 'original')
+    expect(identity).toHaveBeenCalledWith(ORBITAL_COORDINATOR_OBJECT_NAME)
+    expect(inspect).toHaveBeenCalledTimes(1)
+  })
+
+  it('reports unavailable diagnostics without relabeling valid catalog data as an acquisition success', async () => {
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    try {
+      const result = await withOrbitalRefreshStatus(
+        new Request('https://app.example/api/orbits/catalog'),
+        new Response('catalog'),
+        {
+          ASSETS: { fetch: vi.fn() }, ORBITAL_CATALOG_ENABLED: 'true',
+          ORBITAL_CATALOG_COORDINATOR: {
+            idFromName: () => 'existing-actor',
+            get: () => ({ fetch: async () => jsonResponse({ kind: 'status', phase: ['blocked'] }) }),
+          },
+        },
+      )
+      expect(result.headers.get('x-livetrafficstan-orbital-refresh-state')).toBe('unavailable')
+      expect(await result.text()).toBe('catalog')
+      expect(warning).toHaveBeenCalledWith('Orbital refresh status read unavailable')
+    } finally {
+      warning.mockRestore()
+    }
   })
 
   it('atomically admits only one concurrent scheduled delivery', async () => {
