@@ -120,7 +120,7 @@ aggregation, not a unique person or per-event attribution among other visits.
 physical-device or dashboard-UI-login claim is made; unchanged source,
 privacy, provider and installed-update evidence is reused.
 
-### Production orbital validation (#454, upstream blocked)
+### Production orbital validation (#454, historical upstream-blocked baseline)
 
 The later #454 whole-app validation repeats all existing checks with the
 read-only producer-state addition: **181 suites /1,678 tests**, every bundled
@@ -129,9 +129,9 @@ desktop/mobile layouts retain one full canvas and real vector tiles, with
 independent aircraft/marine updates. Settled native Dark/Light, fullscreen/
 Escape and In view checks preserve the same canvas. The mechanical scan of
 App/CSS/controls/map returned no findings; that is not full WCAG or gesture
-certification. Rendered fresh satellite/selection acceptance is blocked by
+certification. Rendered fresh satellite/selection acceptance was blocked by
 the actual upstream 403 in #457, not established by the passing suite or
-held cache HTTP 200. Client assets are unchanged, so prior unchanged-source
+held cache HTTP 200. That diagnostic left client assets unchanged, so prior
 privacy, image, lifecycle and installed-update evidence remains accepted.
 
 ### Reviewed orbital recovery (#454, #457)
@@ -157,6 +157,39 @@ markers and selection in the existing map. Inspect the actual unavailable
 state and compact controls in desktop/mobile Light/Dark layouts. Preserve one
 canvas, ordinary provider independence, selection/focus and installed state;
 neither fixture rendering nor expired HTTP `200` meets fresh-data acceptance.
+
+The reviewed recovery passed **181 suites /1,713 tests**, lint/typecheck,
+required bundled-data checks, Starlink required bootstrap, orbital enrichment,
+production-flags build and Worker dry run. Exact-main validation and serialized
+deployment passed; both production origins passed the strict smoke. The normal
+`2026-10-14T06:17Z` event then published 461 curated records and the 512-record
+Starlink sample from 11,100 completely paired GP/SATCAT records. Full existing
+snapshot/digest validators checked both public schema-2 bodies at `06:19:46Z`.
+The [runtime receipt](hosting-and-deployment.md#orbital-source-recovery-and-fresh-production-acceptance-2026-10-14)
+records clocks, identities and digests.
+
+Actual production Chrome used native input, unmodified responses and clocks.
+Six Light/Dark layouts at 1280x900, 390x568 and 315x517 retained one canvas
+through themes/resize, no horizontal overflow and no runtime exceptions.
+The batch made one cache read per catalog and no direct CelesTrak request.
+Native map clicks selected **STARLINK-4109 /53268** and, in the post-update
+follow-up, **CZ-2D R/B /28738** with their exact current snapshot identities.
+The narrow curated follow-up made no catalog request and retained its canvas.
+Queried point-feature totals are not global/visible population counts;
+unsafe-globe footprint counts remained unavailable.
+
+The first curated observer selected a projected feature without establishing
+a current front-surface screen hit. Its failed receipt is retained. A genuine
+ordinary **REFRESH APP** then created a new document, so the old observer's
+map reference was correctly gone. The final curated check read the new map
+and selected an exact unobscured screen hit without changing application code.
+An earlier ordinary reload had already loaded the new JavaScript; this is not
+a controlled-old-JavaScript upgrade proof. Native REFRESH APP retained exact
+current raw preferences, root registration scope and database names. This
+clean profile does not establish retained historical observation contents.
+Device/focus emulation is not physical-phone or OS-keyboard acceptance.
+Existing short actions and mobile attribution/panel occlusion remain #449;
+line-box measurements do not establish unobstructed mobile usability.
 
 ### Mobile usability and search analysis (#449, planned)
 
