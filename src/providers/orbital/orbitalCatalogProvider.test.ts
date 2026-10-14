@@ -193,6 +193,32 @@ describe('OrbitalCatalogProvider', () => {
     )
   })
 
+  it.each([true, false])('updates the source-stop hint across valid 200/304 responses (initially %s)', async (initiallyBlocked) => {
+    const states = [initiallyBlocked, !initiallyBlocked]
+    const fetchMock = vi.fn<typeof fetch>()
+    for (const [index, blocked] of states.entries()) {
+      fetchMock.mockResolvedValueOnce(
+        new Response(index === 0 ? JSON.stringify(snapshot) : null, {
+          status: index === 0 ? 200 : 304,
+          headers: {
+            ...headers(),
+            'X-LiveTrafficStan-Orbital-Refresh-State': blocked
+              ? 'blocked'
+              : 'idle',
+          },
+        }),
+      )
+    }
+    const provider = new OrbitalCatalogProvider(config, runtime(fetchMock))
+    const first = await provider.load(new AbortController().signal)
+    const second = await provider.load(new AbortController().signal)
+
+    expect(first.refreshBlocked === true).toBe(initiallyBlocked)
+    expect(second.refreshBlocked === true).toBe(!initiallyBlocked)
+    expect(second.snapshot).toBe(first.snapshot)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
   it('streams and validates the complete 512-record hard-cap snapshot', async () => {
     const hardCap = await hardCapSnapshot()
     const bytes = new TextEncoder().encode(JSON.stringify(hardCap))

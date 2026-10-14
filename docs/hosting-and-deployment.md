@@ -1046,8 +1046,9 @@ never accepts browser input. Its cadence-state schema is independent from the
 published catalog schema so a catalog-shape revision cannot discard admission,
 backoff, or terminal-block state. Catalog schema 2 does not reset or rename the
 class, namespace, binding, fixed coordinator object, SQLite table, or schema-1
-admission row. A reviewed admission-state reset would require a separately
-reviewed object-name change and would leave the previous object intact.
+admission row. A reviewed recovery must use that same identity and preserve
+the previous admission, physical fences and deadlines; never change the
+object name or delete its state to escape a source stop.
 
 One admitted event performs exactly this non-overlapping sequence:
 
@@ -1106,9 +1107,19 @@ cross-group conflicts preserve the prior snapshot and wait for the next normal
 event. If the
 coordinator cannot persist any provider outcome, the initial fail-closed gate
 remains at `Number.MAX_SAFE_INTEGER`; the event reports unavailable and no
-later Cron can contact CelesTrak until a reviewed coordinator reset. There is
+later Cron can contact CelesTrak until a reviewed same-identity recovery. There is
 no immediate retry, alternate group, provider fallback, or on-demand browser
 fetch.
+
+The October 14 amendment adds one small SQLite receipt table, not a new actor,
+binding, provider or recovery endpoint. Its fixed exact-stop predicate and
+atomic consumption/reservation permit one reviewed ordinary scheduled attempt.
+The receipt retains the previous row; a second denial reblocks and an
+inconclusive result keeps the main active-attempt fence, so a compatible old
+reader also remains stopped. Redeploying does not replenish authorization.
+Source validation is recorded before KV writes; only actual complete public
+snapshots prove publication. See the
+[reviewed recovery contract](orbital-data-source-evaluation.md#reviewed-recovery-of-the-october-12-stop).
 
 The public route is exactly:
 

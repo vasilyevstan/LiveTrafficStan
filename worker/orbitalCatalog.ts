@@ -63,6 +63,9 @@ export type OrbitalSourceGroup =
   | 'gnss'
   | 'science'
 
+export type OrbitalUpstreamSource =
+  `${OrbitalSourceGroup | 'starlink'}-${'gp' | 'satcat'}`
+
 export interface OrbitalCatalogSourceDefinition {
   group: OrbitalSourceGroup
   gpSourceUrl: string
@@ -213,8 +216,17 @@ export type OrbitalRefreshReservation =
   | { kind: 'blocked'; status: number }
 
 export type OrbitalRefreshCompletion =
-  | { kind: 'next'; nextAllowedAtMs: number }
-  | { kind: 'blocked'; status: number; blockedAtMs: number }
+  | {
+      kind: 'next'
+      nextAllowedAtMs: number
+      reviewedSourcesValidated?: boolean
+    }
+  | {
+      kind: 'blocked'
+      status: number
+      blockedAtMs: number
+      source?: OrbitalUpstreamSource
+    }
 
 export type StarlinkRefreshReservation =
   | {
@@ -314,6 +326,7 @@ class OrbitalCatalogUpstreamError extends Error {
   readonly status?: number
   readonly retryAtMs?: number
   readonly receivedAtMs?: number
+  readonly source?: OrbitalUpstreamSource
 
   constructor(
     message: string,
@@ -322,6 +335,7 @@ class OrbitalCatalogUpstreamError extends Error {
       status?: number
       retryAtMs?: number
       receivedAtMs?: number
+      source?: OrbitalUpstreamSource
     },
   ) {
     super(message)
@@ -329,6 +343,7 @@ class OrbitalCatalogUpstreamError extends Error {
     this.status = options.status
     this.retryAtMs = options.retryAtMs
     this.receivedAtMs = options.receivedAtMs
+    this.source = options.source
   }
 }
 
@@ -1882,6 +1897,7 @@ const fetchBoundedJson = async (
     timeoutMs: number
     maximumBytes: number
     maximumRecords: number
+    source: OrbitalUpstreamSource
   },
 ) => {
   const controller = new AbortController()
@@ -1917,6 +1933,7 @@ const fetchBoundedJson = async (
           kind: 'blocked',
           status: response.status,
           receivedAtMs,
+          source: options.source,
         },
       )
     }
@@ -1928,6 +1945,7 @@ const fetchBoundedJson = async (
           kind: 'blocked',
           status: response.status,
           receivedAtMs,
+          source: options.source,
         },
       )
     }
@@ -2130,6 +2148,7 @@ export const refreshOrbitalCatalog = async (
           ),
           maximumBytes: maximumUpstreamBytes,
           maximumRecords: ORBITAL_MAX_UPSTREAM_RECORDS,
+          source: `${source.group}-${url === source.gpSourceUrl ? 'gp' : 'satcat'}`,
         })
         aggregateBytes += response.decodedBytes
         if (aggregateBytes > maximumAggregateBytes) {
@@ -2192,6 +2211,7 @@ export const refreshOrbitalCatalog = async (
             kind: 'blocked',
             status: error.status,
             blockedAtMs: error.receivedAtMs ?? nowMs,
+            source: error.source,
           }))
         ) {
           return {
@@ -2313,6 +2333,7 @@ export const refreshOrbitalCatalog = async (
   let completion: OrbitalRefreshCompletion = {
     kind: 'next',
     nextAllowedAtMs: ordinaryNextAllowedAtMs,
+    reviewedSourcesValidated: starlinkPreparation.kind === 'ready',
   }
   let providerOutcome:
     | Exclude<
@@ -2329,6 +2350,7 @@ export const refreshOrbitalCatalog = async (
       kind: 'blocked',
       status: starlinkPreparation.status,
       blockedAtMs: starlinkPreparation.blockedAtMs,
+      source: starlinkPreparation.source,
     }
     providerOutcome = {
       kind: 'blocked',

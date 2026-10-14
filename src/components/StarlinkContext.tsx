@@ -129,8 +129,12 @@ export function StarlinkContext({
         <div className="control-note ports-status" role="status">
           <span>{status}</span>
           {['unavailable', 'clock-invalid'].includes(state.phase) && (
-            <button type="button" onClick={onRetry}>
-              RETRY STARLINK
+            <button
+              type="button"
+              title="Check the cached catalog; provider updates run on schedule."
+              onClick={onRetry}
+            >
+              RECHECK STARLINK
             </button>
           )}
         </div>

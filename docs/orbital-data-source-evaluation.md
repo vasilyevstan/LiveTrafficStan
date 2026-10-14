@@ -343,7 +343,7 @@ Status handling is fail-closed:
 
 If the coordinator cannot persist the outcome, it reports unavailable and
 retains its fail-closed in-progress gate. No later Cron contacts CelesTrak
-until a reviewed source-contract/coordinator reset. A successful KV put is the
+until a reviewed same-identity recovery. A successful KV put is the
 only publication commit; no fallible control write occurs afterward.
 
 The coordinator's durable state schema is versioned independently from the
@@ -351,8 +351,50 @@ published catalog schema. Schema 2 deliberately retains the existing
 schema-1 row, `lastStartedAt`, attempt sequence, in-progress fence,
 `Retry-After`/`nextAllowedAt`, terminal block, class, binding, namespace, and
 fixed object name. A catalog-shape revision must not silently discard provider
-admission. A reviewed coordinator reset uses a new fixed object name rather
-than mutating or deleting the prior Durable Object.
+admission. Never change the fixed object name or delete storage to escape a
+provider stop. A reviewed recovery must preserve the original state, physical
+fences, consumed authorization, and both source deadlines in the same actor.
+
+### Reviewed recovery of the October 12 stop
+
+The October 14 policy review retains CelesTrak rather than introducing an
+unqualified fallback. Its current GP documentation describes temporary
+rate-limit blocks as well as a separate accumulated-error firewall threshold.
+One recorded `403` does **not** establish a permanent firewall entry, the
+vendor's exact reason, or a violation by this application. Shared egress can
+aggregate unrelated clients; a fixed Durable Object does not guarantee a
+fixed egress IP. The policy requires stopping and investigating non-200
+responses, not blindly retrying them. Provider contact is appropriate if the
+reason remains unresolved, not an established prerequisite for this reviewed
+diagnostic attempt.
+
+The build-fixed amendment `reviewed-403-2026-10-14-v1` matches only the valid,
+completed `403` whose last shared start is `2026-10-12T14:17:53.618Z`, with the
+reviewed curated and Starlink configuration enabled. The ordinary scheduler
+waits for preserved curated and actual-Starlink not-before boundaries. In one
+SQLite transaction it records the complete previous admission row and consumes
+the amendment while reserving the normal next attempt. Duplicate events and
+redeployment cannot replenish that authorization. There is no recovery API or
+manual provider trigger.
+
+The attempt uses the unchanged sequence: up to ten curated requests followed
+by the due Starlink GP/SATCAT pair, stopping immediately on a terminal response.
+Only complete validation of both preparations marks the reviewed acquisition
+verified; this is persisted **before** publication and does not claim that a
+KV write succeeded. Another denial reblocks. An inconclusive attempt is held:
+its finite backoff guidance is retained in the receipt, while the main row
+keeps its active-attempt/maximum-safe-integer fence, including under rollback
+to a reader that does not know the receipt table. An outcome-write failure
+likewise cannot resume acquisition. Held or newly blocked work needs new
+evidence and review, not another deployment of the same amendment.
+
+New terminal observations log only the fixed source stage, HTTP status and
+receipt time. Read-only recovery diagnostics expose the receipt phase,
+finite guidance and last failing source stage. No denial body, IP, arbitrary
+header, credential or user location is retained. Cache rechecks cannot acquire
+provider data; neither clock safety nor the 24-hour hard expiry is relaxed.
+Restoration requires genuinely newer complete publications and rendered
+production positions, not merely a successful diagnostic or HTTP `200`.
 
 There is no group fallback, direct-browser fallback, alternate provider, edge
 cache miss fetch, or on-demand upstream request.
@@ -482,11 +524,12 @@ Space-Track is the authoritative upstream source, but it is not selected:
 - individual authenticated account;
 - credentials cannot be exposed in a public browser;
 - no suitable browser CORS was observed;
-- the current user agreement restricts transfer of received data or analysis
-  to other entities without prior approval.
+- onward public-display/redistribution terms need current account-level
+  verification; the October 14 anonymous review could not render the agreement.
 
 Using one account behind a public proxy would not resolve the onward-transfer
-or credential boundary.
+or credential boundary. Do not present an unverified current agreement as a
+confirmed prohibition or an already qualified fallback.
 
 ### SatNOGS
 
@@ -495,6 +538,14 @@ database rather than a general orbital catalog. It has limited rocket-body and
 debris coverage and no browser CORS in the observed API responses. SatNOGS
 Network schedules ground-station observations; it is not a current-position
 source.
+
+The October 14 recheck found fresh ISS TLE data, but that does not qualify a
+Starlink replacement. Exact NORAD `44713` returned empty TLE and satellite
+results; unsupported `search=STARLINK` returned an unfiltered page and is not
+evidence of Starlink search. The inspected satellite schema has no exact
+SATCAT `PAY`/`R/B`/`DEB` field, and practical six-digit identity support was
+not established. This does not prove there are no Starlinks anywhere in
+SatNOGS; it means this candidate has not met this application's contract.
 
 ### Launch Library 2 / The Space Devs
 
