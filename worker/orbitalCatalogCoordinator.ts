@@ -1,6 +1,8 @@
 import { DurableObject } from 'cloudflare:workers'
 import {
   refreshOrbitalCatalog,
+  ORBITAL_REFRESH_INTERVAL_MS,
+  ORBITAL_SOURCES,
   type OrbitalCatalogEnvironment,
   type OrbitalRefreshCompletion,
   type OrbitalRefreshCoordinator,
@@ -23,6 +25,12 @@ export const STARLINK_COORDINATOR_STATE_CONTRACT_VERSION = 1
 export const ORBITAL_COORDINATOR_OBJECT_NAME =
   'celestrak-visual-refresh-v2'
 export const ORBITAL_COORDINATOR_MAX_OUTCOME_BYTES = 16 * 1_024
+
+export const ORBITAL_REVIEWED_RECOVERY = {
+  id: 'reviewed-403-2026-10-14-v1',
+  lastStartedAtMs: 1_791_814_673_618,
+  blockedStatus: 403,
+} as const
 
 export interface OrbitalCatalogCoordinatorStub {
   fetch(request: Request): Promise<Response>
@@ -56,6 +64,22 @@ type StarlinkRefreshStateRow = {
   nextAllowedAtMs: number
 }
 
+type RecoveryStateRow = {
+  amendmentId: string
+  priorStateJson: string
+  attemptId: string
+  phase: 'admitted' | 'verified' | 'held' | 'blocked'
+  nextAllowedAtMs: number | null
+  failureSource: string | null
+}
+
+const recoveryPhases = new Set(['admitted', 'verified', 'held', 'blocked'])
+const upstreamSources = new Set<string>(
+  [...ORBITAL_SOURCES.map(({ group }) => group), 'starlink'].flatMap(
+    (group) => [`${group}-gp`, `${group}-satcat`],
+  ),
+)
+
 interface OrbitalRefreshStatus {
   kind: 'status'
   phase: 'never-started' | 'in-progress' | 'blocked' | 'idle'
@@ -64,6 +88,9 @@ interface OrbitalRefreshStatus {
   blockedStatus: number | null
   starlinkLastStartedAtMs: number | null
   starlinkNextAllowedAtMs: number | null
+  recoveryPhase?: RecoveryStateRow['phase']
+  recoveryNextAllowedAtMs?: number | null
+  failureSource?: string | null
 }
 
 const isSafeInteger = (value: unknown): value is number =>
@@ -118,9 +145,11 @@ const validateStarlinkState = (row: StarlinkRefreshStateRow) => {
 
 class SqlOrbitalRefreshCoordinator implements OrbitalRefreshCoordinator {
   private readonly storage: DurableObjectStorage
+  private readonly recoveryEnabled: boolean
 
-  constructor(storage: DurableObjectStorage) {
+  constructor(storage: DurableObjectStorage, recoveryEnabled: boolean) {
     this.storage = storage
+    this.recoveryEnabled = recoveryEnabled
   }
 
   private readState() {
@@ -163,13 +192,43 @@ class SqlOrbitalRefreshCoordinator implements OrbitalRefreshCoordinator {
     return rows[0] ? validateStarlinkState(rows[0]) : undefined
   }
 
+  private readRecovery() {
+    const rows = this.storage.sql.exec<RecoveryStateRow>(
+      `SELECT amendment_id AS amendmentId,
+              prior_state_json AS priorStateJson,
+              attempt_id AS attemptId,
+              phase,
+              next_allowed_at_ms AS nextAllowedAtMs,
+              failure_source AS failureSource
+       FROM orbital_refresh_recovery WHERE amendment_id = ?`,
+      ORBITAL_REVIEWED_RECOVERY.id,
+    ).toArray()
+    const row = rows[0]
+    if (
+      rows.length > 1 ||
+      (row && (
+        row.amendmentId !== ORBITAL_REVIEWED_RECOVERY.id ||
+        typeof row.priorStateJson !== 'string' ||
+        row.priorStateJson.length > 2_048 ||
+        !/^[1-9]\d*:[1-9]\d*$/.test(row.attemptId) ||
+        !recoveryPhases.has(row.phase) ||
+        (row.nextAllowedAtMs !== null && !isSafeInteger(row.nextAllowedAtMs)) ||
+        (row.failureSource !== null && !upstreamSources.has(row.failureSource))
+      ))
+    ) throw new Error('Invalid reviewed orbital recovery state')
+    return row
+  }
+
   status(): OrbitalRefreshStatus {
     const current = this.readState()
     const starlink = this.readStarlinkState()
+    const recovery = this.readRecovery()
     return {
       kind: 'status',
       phase: !current
         ? 'never-started'
+        : recovery?.phase === 'held'
+          ? 'blocked'
         : current.attemptId !== null
           ? 'in-progress'
           : current.blockedStatus !== null
@@ -180,6 +239,11 @@ class SqlOrbitalRefreshCoordinator implements OrbitalRefreshCoordinator {
       blockedStatus: current?.blockedStatus ?? null,
       starlinkLastStartedAtMs: starlink?.lastStartedAtMs ?? null,
       starlinkNextAllowedAtMs: starlink?.nextAllowedAtMs ?? null,
+      ...(recovery ? {
+        recoveryPhase: recovery.phase,
+        recoveryNextAllowedAtMs: recovery.nextAllowedAtMs,
+        failureSource: recovery.failureSource,
+      } : {}),
     }
   }
 
@@ -191,16 +255,30 @@ class SqlOrbitalRefreshCoordinator implements OrbitalRefreshCoordinator {
     return Promise.resolve(
       this.storage.transactionSync<OrbitalRefreshReservation>(() => {
         const current = this.readState()
-        if (current && current.blockedStatus !== null) {
+        const recovery = this.readRecovery()
+        const reviewedRecovery =
+          this.recoveryEnabled &&
+          !recovery &&
+          current?.attemptId === null &&
+          current.lastStartedAtMs === ORBITAL_REVIEWED_RECOVERY.lastStartedAtMs &&
+          current.blockedStatus === ORBITAL_REVIEWED_RECOVERY.blockedStatus
+        if (current && current.blockedStatus !== null && !reviewedRecovery) {
           return {
             kind: 'blocked',
             status: current.blockedStatus,
           }
         }
-        if (current && current.nextAllowedAtMs > nowMs) {
+        const nextAllowedAtMs = reviewedRecovery && current
+          ? Math.max(
+              current.lastStartedAtMs + ORBITAL_REFRESH_INTERVAL_MS,
+              this.readStarlinkState()?.nextAllowedAtMs ??
+                STARLINK_INITIAL_REFRESH_NOT_BEFORE_MS,
+            )
+          : current?.nextAllowedAtMs
+        if (nextAllowedAtMs !== undefined && nextAllowedAtMs > nowMs) {
           return {
             kind: 'not-due',
-            nextAllowedAtMs: current.nextAllowedAtMs,
+            nextAllowedAtMs,
           }
         }
 
@@ -209,6 +287,17 @@ class SqlOrbitalRefreshCoordinator implements OrbitalRefreshCoordinator {
           throw new Error('Invalid orbital refresh sequence')
         }
         const attemptId = `${nowMs}:${attemptSequence}`
+        if (reviewedRecovery && current) {
+          this.storage.sql.exec(
+            `INSERT INTO orbital_refresh_recovery (
+               amendment_id, prior_state_json, attempt_id, phase,
+               next_allowed_at_ms, failure_source
+             ) VALUES (?, ?, ?, 'admitted', NULL, NULL)`,
+            ORBITAL_REVIEWED_RECOVERY.id,
+            JSON.stringify(current),
+            attemptId,
+          )
+        }
         if (current) {
           this.storage.sql.exec(
             `UPDATE orbital_refresh_state
@@ -358,6 +447,16 @@ class SqlOrbitalRefreshCoordinator implements OrbitalRefreshCoordinator {
         if (!current || current.attemptId !== attemptId) {
           throw new Error('Obsolete orbital refresh attempt')
         }
+        const recovery = this.readRecovery()
+        if (recovery?.phase === 'held') {
+          throw new Error('Reviewed orbital recovery is held')
+        }
+        const completingRecovery = recovery?.attemptId === attemptId
+        if (
+          completion.kind === 'blocked' &&
+          completion.source !== undefined &&
+          !upstreamSources.has(completion.source)
+        ) throw new Error('Invalid orbital failure source')
 
         if (completion.kind === 'blocked') {
           if (
@@ -369,6 +468,22 @@ class SqlOrbitalRefreshCoordinator implements OrbitalRefreshCoordinator {
           ) {
             throw new Error('Invalid orbital blocked state')
           }
+          if (recovery) {
+            this.storage.sql.exec(
+              `UPDATE orbital_refresh_recovery
+               SET phase = ?, next_allowed_at_ms = ?, failure_source = ?
+               WHERE amendment_id = ?`,
+              completingRecovery ? 'blocked' : recovery.phase,
+              null,
+              completion.source ?? null,
+              ORBITAL_REVIEWED_RECOVERY.id,
+            )
+          }
+          console.warn('Orbital upstream access stopped', {
+            source: completion.source ?? 'unknown',
+            status: completion.status,
+            receivedAtMs: completion.blockedAtMs,
+          })
           this.storage.sql.exec(
             `UPDATE orbital_refresh_state
              SET
@@ -389,6 +504,19 @@ class SqlOrbitalRefreshCoordinator implements OrbitalRefreshCoordinator {
           completion.nextAllowedAtMs <= current.lastStartedAtMs
         ) {
           throw new Error('Invalid orbital next refresh time')
+        }
+        if (completingRecovery) {
+          const verified = completion.reviewedSourcesValidated === true
+          this.storage.sql.exec(
+            `UPDATE orbital_refresh_recovery
+             SET phase = ?, next_allowed_at_ms = ?, failure_source = ?
+             WHERE amendment_id = ?`,
+            verified ? 'verified' : 'held',
+            completion.nextAllowedAtMs,
+            null,
+            ORBITAL_REVIEWED_RECOVERY.id,
+          )
+          if (!verified) return
         }
         this.storage.sql.exec(
           `UPDATE orbital_refresh_state
@@ -439,7 +567,10 @@ export class OrbitalCatalogCoordinator extends DurableObject<OrbitalCatalogEnvir
     environment: OrbitalCatalogEnvironment,
   ) {
     super(state, environment)
-    this.coordinator = new SqlOrbitalRefreshCoordinator(state.storage)
+    this.coordinator = new SqlOrbitalRefreshCoordinator(
+      state.storage,
+      environment.STARLINK_CATALOG_ENABLED === 'true',
+    )
     try {
       state.storage.sql.exec(`
         CREATE TABLE IF NOT EXISTS orbital_refresh_state (
@@ -461,6 +592,16 @@ export class OrbitalCatalogCoordinator extends DurableObject<OrbitalCatalogEnvir
           source_contract_version INTEGER NOT NULL,
           last_started_at_ms INTEGER NOT NULL,
           next_allowed_at_ms INTEGER NOT NULL
+        )
+      `)
+      state.storage.sql.exec(`
+        CREATE TABLE IF NOT EXISTS orbital_refresh_recovery (
+          amendment_id TEXT PRIMARY KEY,
+          prior_state_json TEXT NOT NULL,
+          attempt_id TEXT NOT NULL,
+          phase TEXT NOT NULL,
+          next_allowed_at_ms INTEGER,
+          failure_source TEXT
         )
       `)
     } catch {
@@ -614,15 +755,31 @@ export const withOrbitalRefreshStatus = async (
       ['blockedStatus', 'Blocked-Status'],
       ['starlinkLastStartedAtMs', 'Starlink-Last-Started'],
       ['starlinkNextAllowedAtMs', 'Starlink-Next-Allowed'],
+      ['recoveryNextAllowedAtMs', 'Recovery-Next-Allowed'],
     ] as const
     const values: Array<readonly [string, number]> = []
     for (const [field, label] of fields) {
       const value = status[field]
-      if (value === null) continue
+      if (
+        value === null ||
+        (field === 'recoveryNextAllowedAtMs' && value === undefined)
+      ) continue
       if (!isSafeInteger(value)) throw new Error('Coordinator status invalid')
       values.push([label, value])
     }
     headers.set('X-LiveTrafficStan-Orbital-Refresh-State', status.phase)
+    if (status.recoveryPhase !== undefined) {
+      if (typeof status.recoveryPhase !== 'string' || !recoveryPhases.has(status.recoveryPhase)) {
+        throw new Error('Coordinator recovery status invalid')
+      }
+      headers.set('X-LiveTrafficStan-Orbital-Refresh-Recovery-State', status.recoveryPhase)
+    }
+    if (status.failureSource !== undefined && status.failureSource !== null) {
+      if (typeof status.failureSource !== 'string' || !upstreamSources.has(status.failureSource)) {
+        throw new Error('Coordinator failure source invalid')
+      }
+      headers.set('X-LiveTrafficStan-Orbital-Refresh-Last-Failure-Source', status.failureSource)
+    }
     for (const [label, value] of values) {
       headers.set(`X-LiveTrafficStan-Orbital-Refresh-${label}`, String(value))
     }

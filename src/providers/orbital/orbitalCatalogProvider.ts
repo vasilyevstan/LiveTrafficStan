@@ -38,7 +38,12 @@ export interface OrbitalCatalogLoadResult {
   snapshot: OrbitalCatalogSnapshot
   clock: OrbitalCatalogClock
   source: 'kv' | 'bootstrap'
+  refreshBlocked?: boolean
 }
+
+export const orbitalCatalogRefreshBlocked = (response: Response) =>
+  response.headers.get('X-LiveTrafficStan-Orbital-Refresh-State') ===
+  'blocked'
 
 export interface OrbitalCatalogRuntime {
   wallNow: () => number
@@ -635,6 +640,9 @@ export class OrbitalCatalogProvider {
           snapshot: this.fulfilled.snapshot,
           clock,
           source,
+          ...(orbitalCatalogRefreshBlocked(response)
+            ? { refreshBlocked: true }
+            : {}),
         }
       }
       if (response.redirected || source === undefined) {
@@ -658,7 +666,14 @@ export class OrbitalCatalogProvider {
       }
       ensureActive()
       this.fulfilled = { snapshot, etag }
-      return { snapshot, clock, source }
+      return {
+        snapshot,
+        clock,
+        source,
+        ...(orbitalCatalogRefreshBlocked(response)
+          ? { refreshBlocked: true }
+          : {}),
+      }
     } catch (error) {
       if (signal.aborted) throw abortError()
       if (error instanceof ProviderError) throw error

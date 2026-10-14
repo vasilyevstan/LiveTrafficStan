@@ -2,6 +2,7 @@ import type {
   OrbitalAssetBinding,
   OrbitalCatalogFetch,
   OrbitalKeyValueStore,
+  OrbitalUpstreamSource,
 } from './orbitalCatalog.js'
 
 export const STARLINK_CATALOG_PATH = '/api/orbits/starlink'
@@ -209,6 +210,7 @@ export type StarlinkRefreshPreparation =
       kind: 'blocked'
       status: number
       blockedAtMs: number
+      source?: OrbitalUpstreamSource
     }
   | {
       kind: 'retry-after'
@@ -236,6 +238,7 @@ class StarlinkCatalogUpstreamError extends Error {
   readonly status?: number
   readonly retryAtMs?: number
   readonly receivedAtMs?: number
+  readonly source?: OrbitalUpstreamSource
 
   constructor(
     message: string,
@@ -244,6 +247,7 @@ class StarlinkCatalogUpstreamError extends Error {
       status?: number
       retryAtMs?: number
       receivedAtMs?: number
+      source?: OrbitalUpstreamSource
     },
   ) {
     super(message)
@@ -251,6 +255,7 @@ class StarlinkCatalogUpstreamError extends Error {
     this.status = options.status
     this.retryAtMs = options.retryAtMs
     this.receivedAtMs = options.receivedAtMs
+    this.source = options.source
   }
 }
 
@@ -1966,6 +1971,7 @@ const fetchBoundedJson = async (
     timeoutMs: number
     maximumBytes: number
     maximumRecords: number
+    source: OrbitalUpstreamSource
   },
 ) => {
   const controller = new AbortController()
@@ -2000,6 +2006,7 @@ const fetchBoundedJson = async (
           kind: 'blocked',
           status: response.status,
           receivedAtMs,
+          source: options.source,
         },
       )
     }
@@ -2011,6 +2018,7 @@ const fetchBoundedJson = async (
           kind: 'blocked',
           status: response.status,
           receivedAtMs,
+          source: options.source,
         },
       )
     }
@@ -2187,6 +2195,10 @@ export const prepareStarlinkCatalogRefresh = async (
         totalTimeoutMs - (monotonicNow() - startedAtMs)
       if (remainingMs <= 0) throw totalTimeoutError()
       return fetchBoundedJson(url, {
+        source:
+          url === STARLINK_GP_SOURCE_URL
+            ? 'starlink-gp'
+            : 'starlink-satcat',
         fetchImpl,
         wallNowMs,
         timeoutMs: Math.min(perResponseTimeoutMs, remainingMs),
@@ -2236,6 +2248,7 @@ export const prepareStarlinkCatalogRefresh = async (
           kind: 'blocked',
           status: error.status,
           blockedAtMs: error.receivedAtMs ?? nowMs,
+          source: error.source,
         }
       }
       if (

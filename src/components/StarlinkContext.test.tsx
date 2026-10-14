@@ -159,6 +159,31 @@ const renderContext = (
   )
 
 describe('StarlinkContext', () => {
+  it('offers only a cache recheck when the producer is stopped and data expired', () => {
+    const html = renderContext({
+      state: {
+        phase: 'unavailable',
+        message: 'Source updates are paused; cached orbital data expired.',
+        acceptedCount: 0,
+        positions: [],
+        prediction: EMPTY_ORBITAL_PREDICTION,
+        snapshot,
+      },
+      counts: {
+        catalogCount: 1,
+        acceptedCount: 0,
+        modeledNowCount: 0,
+        catalogMatchCount: 1,
+        modeledMatchCount: 0,
+      },
+    })
+    expect(html).toContain('RECHECK STARLINK')
+    expect(html).toContain('Check the cached catalog; provider updates run on schedule.')
+    expect(html).not.toContain('RETRY STARLINK')
+    expect(html).not.toContain('Updating')
+    expect(html).not.toContain('<dt>In map</dt><dd>0</dd>')
+  })
+
   it('includes the sample with ORBITS, without an independent switch', () => {
     const html = renderContext({ parentVisible: false })
     expect(html).toContain('Included with ORBITS')

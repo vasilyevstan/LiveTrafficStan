@@ -101,6 +101,7 @@ export class OrbitalController {
   private filters = DEFAULT_ORBITAL_DISCOVERY_FILTERS
   private filterSignature = orbitalFiltersSignature(this.filters)
   private snapshot?: OrbitalCatalogSnapshot
+  private refreshBlocked = false
   private clock?: ClockAnchor
   private lastSuccessAt?: number
   private lastFetchPerformanceAt?: number
@@ -357,7 +358,7 @@ export class OrbitalController {
         snapshot: this.snapshot,
         lastSuccessAt: this.lastSuccessAt,
         message: this.online
-          ? 'The orbital catalog is too old to model safely.'
+          ? this.expiredCatalogMessage()
           : 'The retained orbital catalog expired while offline.',
       })
       if (this.online) void this.fetchCatalog(true)
@@ -368,6 +369,12 @@ export class OrbitalController {
     this.scheduleRevalidation()
     this.scheduleExpiry()
     this.updateOperationalPhase()
+  }
+
+  private expiredCatalogMessage() {
+    return this.refreshBlocked
+      ? 'Source updates are paused; cached orbital data expired.'
+      : 'The orbital catalog is too old to model safely.'
   }
 
   private modeledNow() {
@@ -593,6 +600,7 @@ export class OrbitalController {
     const catalogChanged =
       this.snapshot?.sha256 !== result.snapshot.sha256
     this.snapshot = result.snapshot
+    this.refreshBlocked = result.refreshBlocked === true
     this.lastSuccessAt = result.clock.serverTimeMs
     this.lastWarning = undefined
     if (skew > this.config.maximumClockSkewMs) {
@@ -630,7 +638,7 @@ export class OrbitalController {
         prediction: EMPTY_ORBITAL_PREDICTION,
         snapshot: result.snapshot,
         lastSuccessAt: this.lastSuccessAt,
-        message: 'The orbital catalog is too old to model safely.',
+        message: this.expiredCatalogMessage(),
       })
       this.scheduleRevalidation()
       return
