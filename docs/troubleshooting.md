@@ -1040,15 +1040,32 @@ and obtain evidence for that access problem before authorizing further work.
 The browser's **RECHECK** buttons only reread cached data. Expired positions
 stay hidden, and unavailable counts must not read zero or **Updating**.
 
-The 2026-10-13 missing-Starlink investigation observed **blocked/HTTP 403**
+The historical 2026-10-13 investigation observed **blocked/HTTP 403**
 from the actual persisted producer state, not a guessed scheduler problem.
 The last shared start was `2026-10-12T14:17:53.618Z`, Starlink
 `14:17:58.562Z`; both held catalogs subsequently crossed 24-hour expiry.
-#457 records the external access/source-contract dependency and #454 the
-app validation. Switching layers, clearing browser data, changing token or
-resetting producer storage will not legitimately resolve that provider stop.
+#457 records that source stop and its reviewed recovery; #454 records app
+validation. Switching layers, clearing browser data, changing token or
+resetting producer storage is not a legitimate provider-stop recovery.
 An expired V2 snapshot can intentionally select compatible V1; do not call
 that a negotiation defect or treat either aged body as fresh model coverage.
+
+**Recovery verified on 2026-10-14:** the ordinary `06:17Z` event completed
+with the same producer, then published 461 current curated records and the
+512-record Starlink sample from 11,100 paired source rows. Public schema/
+digest checks and native exact-NORAD selection passed for both sources.
+Producer status was `idle`, recovery `verified`, with finite normal
+deadlines. See the [full receipt](hosting-and-deployment.md#orbital-source-recovery-and-fresh-production-acceptance-2026-10-14).
+The old denial's exact vendor reason is still unknown; no replacement was
+needed and future provider availability is not guaranteed.
+
+If an older open tab still shows the old failure, use ordinary **REFRESH APP**
+when offered, or reload, then enable ORBITS and recheck the cache if necessary.
+Do not delete preferences, permissions or private history. A local view can
+have zero current objects even with healthy catalogs; the sample is bounded
+and object positions change. If a new producer stop occurs, retain its fixed
+source stage/status and preserved deadlines for review. Do not redeploy the
+already-consumed amendment or reset storage to replenish it.
 
 Rollback to a target with the orbital flag off must also remove the Cron
 through the checked rollback workflow. Do not delete the KV namespace to fix a

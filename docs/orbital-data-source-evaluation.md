@@ -396,6 +396,17 @@ provider data; neither clock safety nor the 24-hour hard expiry is relaxed.
 Restoration requires genuinely newer complete publications and rendered
 production positions, not merely a successful diagnostic or HTTP `200`.
 
+That acceptance passed on October 14. The ordinary `06:17Z` event admitted
+the same-identity amendment and validated both sources; public checks at
+`06:19:46Z` established new complete KV publications: 461 curated records
+and 512 shell-balanced Starlink records from 11,100 paired GP/SATCAT rows.
+Native production selection then identified STARLINK-4109 /53268 and
+CZ-2D R/B /28738 against those exact snapshots. The
+[release receipt](hosting-and-deployment.md#orbital-source-recovery-and-fresh-production-acceptance-2026-10-14)
+records full clocks/digests and qualified browser evidence. No replacement
+was needed. Recovery establishes current access, not the exact historical
+denial reason or permanent future access.
+
 There is no group fallback, direct-browser fallback, alternate provider, edge
 cache miss fetch, or on-demand upstream request.
 

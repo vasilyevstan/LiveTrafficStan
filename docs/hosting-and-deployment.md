@@ -2825,7 +2825,7 @@ physical-device/global-region coverage are not newly claimed.
 
 ### Orbital diagnostics and production validation (2026-10-13)
 
-Current application/Worker source is
+Historical application/Worker source for this diagnostic milestone was
 **`7c188f184bdcb43c7016e46c2ae7a4f8e527f8ee`**, version
 **`0603e051-d438-4fa6-a5c0-25de8f09177d`**, through #455/#456 and serialized
 [deployment 38443144710](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/38443144710).
@@ -2852,13 +2852,83 @@ layouts. An initial theme-observer timing ambiguity was resolved by a narrow
 settled native follow-up. Device-metric layouts are not physical-phone or
 exhaustive gesture/accessibility acceptance; known mobile work remains #449.
 
-**Satellite restoration is not accepted.** The UI correctly shows C/S
-UNAVAILABLE after hard expiry. #457 is the evidenced provider access/source-
-contract dependency. No manual GP/SATCAT probe, gate reset, identity rotation,
-proxy, timestamp rewrite or expiry extension was used. Current provider policy
-could not be retrieved; legitimate access/contract evidence is needed before
-reviewed recovery and a normal eligible scheduled event. Static/API smoke
-proves transport/contracts, not fresh modeled positions or selection.
+**Satellite restoration was not accepted at this milestone.** The UI correctly
+showed C/S UNAVAILABLE after hard expiry. #457 recorded the provider access/
+source-contract dependency. No manual GP/SATCAT probe, gate reset, identity
+rotation, proxy, timestamp rewrite or expiry extension was used. Policy
+retrieval failed during that diagnosis; the October 14 review and recovery
+below supersede that blocked state. Static/API smoke alone does not prove
+fresh modeled positions or selection.
+
+### Orbital source recovery and fresh production acceptance (2026-10-14)
+
+Current application/Worker source is
+**`40486a29b5e15ea3be6c0b9fd06180cd68743e2f`**, Worker
+**`24cfe6e4-7b15-4f04-a051-6bfe585ca6d7`**, through implementation #460,
+necessary tree-neutral ancestry #461 and checked dev-to-main release #462.
+Exact release/main validation 38520644510 /38520823579 passed, followed by
+serialized [deployment 38521086886](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/38521086886).
+Both strict origin smokes passed. All production inputs remain enabled,
+including private aircraft delivery, photos/routes, curated/Starlink,
+marine supplement and airport boards; secrets remain atomic and main-only.
+Client output is `index-81BCBiGX.js`, unchanged `index-BQuWWmR1.css`, shell
+`e6d6eb3c98d628f725b8`. Later receipt-only commits do not redeploy or replace
+this running source. Prior diagnostic/rollback receipts remain historical.
+
+Current primary-source policy review and two independent model discussions
+selected the smallest reviewed correction, not an unqualified replacement.
+The single-use amendment matches the exact completed October 12 stop, keeps
+the same producer and full prior admission row, and is consumed atomically
+with ordinary admission. Another denial reblocks; inconclusive work keeps
+the physical fence, including under older rollback readers. Browser RECHECK
+actions still cannot initiate acquisition. See the
+[source decision and recovery contract](orbital-data-source-evaluation.md#reviewed-recovery-of-the-october-12-stop).
+
+The normal `06:17Z` Cron consumed that amendment. Read-only status became
+`idle` / recovery `verified`; no blocked-status header remained. Full existing
+validators then checked both actual KV publications at `06:19:46Z`:
+
+| Publication | Complete records | Source retrieval (UTC) | Publication (UTC) |
+| --- | --- | --- | --- |
+| Curated schema 2 | 461 | `2026-10-14T06:17:20.153Z` | `06:17:25.469Z` |
+| Starlink schema 2 | 512 from 11,100 paired GP/SATCAT rows | GP `06:17:26.625Z`; SATCAT `06:17:27.136Z` | `06:17:27.136Z` |
+
+Curated canonical digest:
+`c717cf0b0d96d53a3287e168ddf623b2d8cfc5996e0df005a6d18b1c0e47ea08`;
+public body 238,943 bytes, SHA-256
+`0c770211d5df9037a95b4253acf4db8360a41faba5d6cb078a0a5e197cb3af0a`.
+Starlink canonical digest:
+`cb691da325518118722027e226608e43692c8312a12fe95ba17ddf3572e12e39`;
+public body 254,343 bytes, SHA-256
+`e548725e3d261acf131182b4026576786f6d22351448c0a597c13370ce05bc59`.
+Each of the four Starlink inclination bands contributes 128 records; this
+is not whole-constellation display. The curated live union changing from
+462 to 461 records is not an incomplete immutable-bootstrap rewrite.
+
+Preserved normal admission deadlines are `08:17:20.153Z` for shared work
+and `18:17:25.469Z` for actual Starlink work, both on October 14. These are
+not-before boundaries, not guaranteed event times. A Cron arriving seconds
+early is `not-due`; observe the next normal event, never force acquisition.
+`verified` alone describes validated preparation; the complete public-body
+checks above separately establish successful KV publication.
+
+Qualified native production acceptance selected **STARLINK-4109 /53268**
+at about `06:22Z` and **CZ-2D R/B /28738** at `06:29:03Z`. Current details
+show the exact source snapshot, SATCAT type and modeled-not-live caveats.
+Six desktop/mobile Light/Dark layouts retain one canvas through theme/resize,
+with one read per catalog and no direct CelesTrak work. A subsequent ordinary
+REFRESH APP retained current raw preferences, root scope and database names;
+its new document legitimately has a new map. The initial uncontrolled-old-
+document and failed observer assumptions remain qualified in
+[testing](development-and-testing.md#reviewed-orbital-recovery-454-457).
+No physical-phone, complete mobile-usability, historical-content retention
+or permanent-provider-availability claim is made.
+
+The source is functioning again; its exact earlier HTTP 403 reason remains
+unknown. Successful normal reacquisition does not retroactively prove a
+permanent ban, a self-inflicted policy violation or a mandatory contact step.
+No identity rotation, reset, format switch, forced attempt, timestamp rewrite,
+expiry extension, new credential or alternative-provider service was used.
 
 ## Rollback
 
