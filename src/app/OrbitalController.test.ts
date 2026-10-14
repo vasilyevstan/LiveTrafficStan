@@ -429,11 +429,11 @@ describe('OrbitalController', () => {
     controller.stop()
   })
 
-  it('never starts propagation from an already expired catalog', async () => {
+  it.each([false, true])('never starts propagation from an already expired catalog (source blocked: %s)', async (refreshBlocked) => {
     vi.useFakeTimers()
     const retrievedAt = Date.parse(snapshot.retrievedAt)
     vi.setSystemTime(retrievedAt + config.expireAfterMs + 1)
-    const expired = loadResult()
+    const expired = { ...loadResult(), refreshBlocked }
     expired.clock.serverTimeMs = Date.now()
     expired.clock.requestMidpointWallTimeMs = Date.now()
     expired.clock.responseWallTimeMs = Date.now()
@@ -457,12 +457,14 @@ describe('OrbitalController', () => {
     expect(states.at(-1)).toMatchObject({
       phase: 'unavailable',
       positions: [],
-      message: 'The orbital catalog is too old to model safely.',
+      message: refreshBlocked
+        ? 'Source updates are paused; cached orbital data expired.'
+        : 'The orbital catalog is too old to model safely.',
     })
     controller.stop()
   })
 
-  it('expires active modeled output at the hard-age boundary', async () => {
+  it.each([false, true])('expires active modeled output at the hard-age boundary (source blocked: %s)', async (refreshBlocked) => {
     vi.useFakeTimers()
     const now = Date.parse('2026-09-28T18:46:00.000Z')
     vi.setSystemTime(now)
@@ -470,7 +472,7 @@ describe('OrbitalController', () => {
       ...snapshot,
       retrievedAt: new Date(now).toISOString(),
     }
-    const initial = loadResult()
+    const initial = { ...loadResult(), refreshBlocked }
     initial.snapshot = currentSnapshot
     const pendingRefresh = new Promise<ReturnType<typeof loadResult>>(
       () => undefined,
@@ -519,7 +521,9 @@ describe('OrbitalController', () => {
     expect(states.at(-1)).toMatchObject({
       phase: 'unavailable',
       positions: [],
-      message: 'The orbital catalog is too old to model safely.',
+      message: refreshBlocked
+        ? 'Source updates are paused; cached orbital data expired.'
+        : 'The orbital catalog is too old to model safely.',
     })
     expect(provider.load).toHaveBeenCalledTimes(2)
     controller.stop()

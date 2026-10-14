@@ -999,13 +999,13 @@ provider request. A failed final write leaves both prior public
 representations. Do not accept a partial union or publish either member alone.
 
 A persisted `301`, other redirect, `403`, or `404` is an intentional blocked
-state. Recheck CelesTrak's current endpoint and usage policy before clearing the
-coordinator through a reviewed source-contract deployment; do not repeatedly
+state. Recheck CelesTrak's current endpoint and usage policy before authorizing
+a reviewed same-identity recovery; do not repeatedly
 invoke the object, delete its storage ad hoc, rotate Cloudflare identity, change
 group, or add a proxy/fallback. `429` and readable `5xx Retry-After` guidance
 must retain the later next-allowed time. Guidance longer than seven days, or an
 outcome-storage failure, intentionally leaves acquisition fail-closed until a
-reviewed coordinator reset. Catalog schema 2 does not itself reset admission:
+reviewed recovery. Catalog schema 2 does not itself reset admission:
 the schema-1 coordinator row retains `lastStartedAt`, in-progress state,
 attempt sequence, `Retry-After`/`nextAllowedAt`, terminal block, and cadence.
 
@@ -1020,6 +1020,25 @@ actor's private GET status method: it makes no provider request, reserves no
 attempt, changes no admission row, and cannot clear a lock or terminal block.
 Diagnostic failures are explicitly warned and marked unavailable without
 altering the valid catalog body, ETag, HTTP status or expiry rules.
+
+The October 14 reviewed amendment is single-use and matches only the completed
+October 12 `403` stop. It preserves the actor, previous row, admission sequence,
+cadence and actual-Starlink deadline. Only an eligible ordinary Cron can
+consume it. `Recovery-State` is `admitted`, `verified`, `held` or `blocked`;
+`Recovery-Next-Allowed` preserves finite guidance, and `Last-Failure-Source`
+identifies only a fixed group/GP/SATCAT stage. `verified` means both source
+preparations validated, not that KV publication succeeded. A held attempt
+keeps the main physical fence; a new denial reblocks, and redeployment never
+replenishes the amendment. Inspect the complete public catalog and rendered
+positions before declaring restoration.
+
+One `403` does not establish a permanent firewall block or its cause. Current
+CelesTrak documentation also describes temporary blocks. Do not rotate
+identities, change format speculatively, or switch to an unqualified provider.
+If this reviewed attempt remains denied, retain the exact fixed stage/status
+and obtain evidence for that access problem before authorizing further work.
+The browser's **RECHECK** buttons only reread cached data. Expired positions
+stay hidden, and unavailable counts must not read zero or **Updating**.
 
 The 2026-10-13 missing-Starlink investigation observed **blocked/HTTP 403**
 from the actual persisted producer state, not a guessed scheduler problem.

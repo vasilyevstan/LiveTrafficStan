@@ -134,6 +134,30 @@ the actual upstream 403 in #457, not established by the passing suite or
 held cache HTTP 200. Client assets are unchanged, so prior unchanged-source
 privacy, image, lifecycle and installed-update evidence remains accepted.
 
+### Reviewed orbital recovery (#454, #457)
+
+Deterministic coordinator regressions cover the exact completed-stop predicate,
+unrelated stops and in-progress exclusions, preserved curated/actual-Starlink
+boundaries, atomic receipt/reservation rollback, duplicate admission,
+reconstruction, another terminal denial with fixed-stage diagnostics,
+inconclusive holds with finite backoff, and outcome-write failure. Fixtures
+perform no provider reads. The main fence must remain safe for rollback code
+that does not understand the new receipt table.
+
+Client regressions preserve hard expiry and validate the blocked-refresh hint
+on both complete `200` and matching cached `304`, including transitions out of
+blocked state. Unavailable/paused/clock-invalid sources do not produce false
+empty-map or pending-pass counts. Cache actions are labelled **RECHECK**, not
+provider retries. These checks do not prove that CelesTrak access recovered.
+
+Production acceptance must wait for an eligible ordinary Cron without forcing
+acquisition, validate genuinely newer complete curated and exact schema-2
+Starlink snapshots and source clocks/digests, then observe real modeled
+markers and selection in the existing map. Inspect the actual unavailable
+state and compact controls in desktop/mobile Light/Dark layouts. Preserve one
+canvas, ordinary provider independence, selection/focus and installed state;
+neither fixture rendering nor expired HTTP `200` meets fresh-data acceptance.
+
 ### Mobile usability and search analysis (#449, planned)
 
 The requested Impeccable/UI specialist supplied source evidence; the parent

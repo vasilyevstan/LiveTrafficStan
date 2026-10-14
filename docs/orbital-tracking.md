@@ -411,6 +411,15 @@ The snapshot is:
 - unavailable after 24 hours;
 - retained during an ordinary refresh failure until the hard age is reached.
 
+When a cache-only response reports a stopped producer and the snapshot has
+expired, the interface says **Source updates are paused; cached orbital data
+expired.** Unavailable, clock-invalid or paused data does not claim an empty
+map or leave pass counts perpetually **Updating**. Safe retained positions
+can still be counted during an ordinary refresh or offline interval.
+**RECHECK ORBITS** and **RECHECK STARLINK** read the same-origin cache only;
+they cannot restart CelesTrak acquisition. A reviewed server recovery runs
+through the existing scheduler, independently of browser actions.
+
 Individual elements are accepted for propagation only from ten minutes in the
 future through 14 days old. These are client safety bounds, not accuracy
 guarantees.

@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import type {
-  ModeledOrbitalPosition,
-  OrbitalCatalogSnapshot,
-  OrbitalControllerState,
-  OrbitalObject,
+import {
+  EMPTY_ORBITAL_PREDICTION,
+  type ModeledOrbitalPosition,
+  type OrbitalCatalogSnapshot,
+  type OrbitalControllerState,
+  type OrbitalObject,
 } from './orbital'
 import {
   DEFAULT_ORBITAL_DISCOVERY_FILTERS,
@@ -288,6 +289,63 @@ describe('orbital discovery policy', () => {
       listedRowCount: 0,
     })
   })
+
+  it.each([
+    'disabled',
+    'loading',
+    'refreshing',
+    'unavailable',
+    'offline',
+    'clock-invalid',
+    'paused-hidden',
+    'paused-history',
+  ] as const)('does not claim empty map coverage or pending passes for %s without safe positions', (phase) => {
+    const viewport = { kind: 'world' } as const
+    const activeFilters = filters()
+    const counts = deriveOrbitalPopulationCounts(
+      {
+        phase,
+        acceptedCount: 0,
+        positions: [],
+        prediction: {
+          ...EMPTY_ORBITAL_PREDICTION,
+          mode: 'world',
+          viewportSignature: orbitalViewportSignature(viewport),
+          filtersSignature: orbitalFiltersSignature(activeFilters),
+        },
+      },
+      activeFilters,
+      selectOrbitalDisplay([], activeFilters, 4, null, limits),
+      viewport,
+    )
+
+    expect(counts.inFootprintCount).toBeUndefined()
+    expect(counts.shownInFootprintCount).toBeUndefined()
+    expect(counts.futureCrossingCount).toBeUndefined()
+  })
+
+  it.each(['ready', 'empty', 'stale', 'refreshing', 'offline'] as const)(
+    'preserves valid current map counts for %s',
+    (phase) => {
+      const positions = phase === 'empty' ? [] : [position(1)]
+      const activeFilters = filters()
+      const counts = deriveOrbitalPopulationCounts(
+        {
+          phase,
+          acceptedCount: positions.length,
+          positions,
+          prediction: EMPTY_ORBITAL_PREDICTION,
+        },
+        activeFilters,
+        selectOrbitalDisplay(positions, activeFilters, 4, null, limits),
+        { kind: 'world' },
+      )
+
+      expect(counts.inFootprintCount).toBe(positions.length)
+      expect(counts.shownInFootprintCount).toBe(positions.length)
+      expect(counts.futureCrossingCount).toBeUndefined()
+    },
+  )
 
   it('keeps catalog, model, footprint, shown, and pass counts distinct', () => {
     const records = [

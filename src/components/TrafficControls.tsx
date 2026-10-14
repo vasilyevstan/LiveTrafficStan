@@ -998,8 +998,12 @@ export function TrafficControls({
               <div className="control-note ports-status" role="status">
                 <span>{orbitalStatusMessage}</span>
                 {orbitalRetryAvailable && (
-                  <button type="button" onClick={onRetryOrbital}>
-                    RETRY ORBITS
+                  <button
+                    type="button"
+                    title="Check the cached catalog; provider updates run on schedule."
+                    onClick={onRetryOrbital}
+                  >
+                    RECHECK ORBITS
                   </button>
                 )}
               </div>

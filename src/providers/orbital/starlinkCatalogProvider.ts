@@ -6,9 +6,10 @@ import {
   type StarlinkOrbitalCatalogSnapshot,
 } from '../../domain/orbital'
 import { ProviderError, parseRetryAfterMs } from '../errors'
-import type {
-  OrbitalCatalogLoadResult,
-  OrbitalCatalogRuntime,
+import {
+  orbitalCatalogRefreshBlocked,
+  type OrbitalCatalogLoadResult,
+  type OrbitalCatalogRuntime,
 } from './orbitalCatalogProvider'
 
 export interface StarlinkCatalogProviderConfig {
@@ -949,6 +950,9 @@ export class StarlinkCatalogProvider {
           snapshot: this.fulfilled.snapshot,
           clock,
           source,
+          ...(orbitalCatalogRefreshBlocked(response)
+            ? { refreshBlocked: true }
+            : {}),
         }
       }
       if (response.redirected || source === undefined) {
@@ -974,7 +978,14 @@ export class StarlinkCatalogProvider {
       }
       ensureActive()
       this.fulfilled = { snapshot, etag }
-      return { snapshot, clock, source }
+      return {
+        snapshot,
+        clock,
+        source,
+        ...(orbitalCatalogRefreshBlocked(response)
+          ? { refreshBlocked: true }
+          : {}),
+      }
     } catch (error) {
       if (signal.aborted) throw abortError()
       if (error instanceof ProviderError) throw error

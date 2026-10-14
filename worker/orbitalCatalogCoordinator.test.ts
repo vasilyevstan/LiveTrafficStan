@@ -11,6 +11,7 @@ import {
   ORBITAL_COORDINATOR_OBJECT_NAME,
   ORBITAL_COORDINATOR_STATE_CONTRACT_VERSION,
   ORBITAL_COORDINATOR_STATE_SCHEMA_VERSION,
+  ORBITAL_REVIEWED_RECOVERY,
   STARLINK_COORDINATOR_STATE_CONTRACT_VERSION,
   STARLINK_COORDINATOR_STATE_SCHEMA_VERSION,
   OrbitalCatalogCoordinator,
@@ -112,6 +113,15 @@ type StarlinkStateRow = {
   nextAllowedAtMs: number
 }
 
+type RecoveryStateRow = {
+  amendmentId: string
+  priorStateJson: string
+  attemptId: string
+  phase: 'admitted' | 'verified' | 'held' | 'blocked'
+  nextAllowedAtMs: number | null
+  failureSource: string | null
+}
+
 class FakeCursor<Row> implements Iterable<Row> {
   private readonly rows: Row[]
 
@@ -131,8 +141,11 @@ class FakeCursor<Row> implements Iterable<Row> {
 class FakeStorage {
   state: StateRow | undefined
   starlinkState: StarlinkStateRow | undefined
+  recoveryState: RecoveryStateRow | undefined
   failOutcomeWrite = false
   failStarlinkReservation = false
+  failRecoveryWrite = false
+  failReservationWrite = false
 
   readonly sql = {
     exec: <Row,>(
@@ -141,6 +154,42 @@ class FakeStorage {
     ) => {
       const normalized = query.replace(/\s+/g, ' ').trim()
       if (normalized.startsWith('CREATE TABLE')) {
+        return new FakeCursor<Row>([])
+      }
+      if (normalized.startsWith('SELECT amendment_id')) {
+        return new FakeCursor<Row>(
+          this.recoveryState ? [{ ...this.recoveryState } as Row] : [],
+        )
+      }
+      if (normalized.startsWith('INSERT INTO orbital_refresh_recovery')) {
+        if (this.failRecoveryWrite || this.recoveryState) {
+          throw new Error('Recovery storage failed')
+        }
+        const [amendmentId, priorStateJson, attemptId] = bindings
+        if (
+          typeof amendmentId !== 'string' ||
+          typeof priorStateJson !== 'string' ||
+          typeof attemptId !== 'string'
+        ) throw new Error('Invalid recovery insert')
+        this.recoveryState = {
+          amendmentId, priorStateJson, attemptId, phase: 'admitted',
+          nextAllowedAtMs: null, failureSource: null,
+        }
+        return new FakeCursor<Row>([])
+      }
+      if (normalized.startsWith('UPDATE orbital_refresh_recovery')) {
+        if (this.failRecoveryWrite || !this.recoveryState) {
+          throw new Error('Recovery storage failed')
+        }
+        const [phase, nextAllowedAtMs, failureSource] = bindings
+        if (
+          (phase !== 'verified' && phase !== 'held' && phase !== 'blocked') ||
+          (nextAllowedAtMs !== null && typeof nextAllowedAtMs !== 'number') ||
+          (failureSource !== null && typeof failureSource !== 'string')
+        ) throw new Error('Invalid recovery update')
+        this.recoveryState = {
+          ...this.recoveryState, phase, nextAllowedAtMs, failureSource,
+        }
         return new FakeCursor<Row>([])
       }
       if (
@@ -196,6 +245,7 @@ class FakeStorage {
         normalized.startsWith('UPDATE orbital_refresh_state') &&
         normalized.includes('attempt_sequence = ?')
       ) {
+        if (this.failReservationWrite) throw new Error('Reservation failed')
         if (!this.state) throw new Error('Missing state')
         const [
           attemptSequence,
@@ -324,11 +374,15 @@ class FakeStorage {
     const starlinkState = this.starlinkState
       ? { ...this.starlinkState }
       : undefined
+    const recoveryState = this.recoveryState
+      ? { ...this.recoveryState }
+      : undefined
     try {
       return callback()
     } catch (error) {
       this.state = state
       this.starlinkState = starlinkState
+      this.recoveryState = recoveryState
       throw error
     }
   }
@@ -380,10 +434,229 @@ const createCoordinator = (
     },
   )
 
+const reviewedBlockedStorage = () => {
+  const storage = new FakeStorage()
+  const lastStartedAtMs = ORBITAL_REVIEWED_RECOVERY.lastStartedAtMs
+  storage.state = {
+    schemaVersion: 1,
+    sourceContractVersion: 1,
+    attemptSequence: 17,
+    attemptId: null,
+    lastStartedAtMs,
+    nextAllowedAtMs: Number.MAX_SAFE_INTEGER,
+    blockedStatus: 403,
+    blockedAtMs: lastStartedAtMs + 5_000,
+  }
+  storage.starlinkState = {
+    schemaVersion: 1,
+    sourceContractVersion: 1,
+    lastStartedAtMs: lastStartedAtMs + 5_000,
+    nextAllowedAtMs: lastStartedAtMs + 5_000 + STARLINK_REFRESH_INTERVAL_MS,
+  }
+  return storage
+}
+
 describe('orbital catalog coordinator', () => {
   afterEach(() => {
     vi.useRealTimers()
     vi.unstubAllGlobals()
+  })
+
+  it('atomically consumes the exact reviewed stop once and excludes duplicate physical attempts', async () => {
+    vi.useFakeTimers()
+    const now = Date.parse('2026-10-14T06:00:00Z')
+    vi.setSystemTime(now)
+    const storage = reviewedBlockedStorage()
+    const prior = { ...storage.state }
+    const priorStarlink = { ...storage.starlinkState }
+    const catalog = new MemoryKv()
+    let release: (() => void) | undefined
+    let started: (() => void) | undefined
+    const pending = new Promise<void>((resolve) => { release = resolve })
+    const beginning = new Promise<void>((resolve) => { started = resolve })
+    const fetchImpl = vi.fn(async (input) => {
+      if (fetchImpl.mock.calls.length === 1) {
+        started?.()
+        await pending
+      }
+      return sourceResponse(String(input))
+    })
+    vi.stubGlobal('fetch', fetchImpl)
+    const coordinator = createCoordinator(storage, catalog, true)
+    const first = coordinator.fetch(request())
+    await beginning
+
+    expect(JSON.parse(storage.recoveryState?.priorStateJson ?? '{}')).toEqual(prior)
+    expect(storage.state?.attemptSequence).toBe(18)
+    expect(storage.starlinkState).toEqual(priorStarlink)
+    expect(await (await coordinator.fetch(request())).json()).toEqual({
+      kind: 'not-due', nextAllowedAtMs: Number.MAX_SAFE_INTEGER,
+    })
+    expect(fetchImpl).toHaveBeenCalledTimes(1)
+
+    release?.()
+    expect(await (await first).json()).toMatchObject({
+      kind: 'published', starlink: { kind: 'published', recordCount: 512 },
+    })
+    expect(fetchImpl).toHaveBeenCalledTimes(12)
+    expect(storage.recoveryState?.phase).toBe('verified')
+    expect(storage.state).toMatchObject({
+      attemptSequence: 18, attemptId: null,
+      lastStartedAtMs: now, nextAllowedAtMs: now + ORBITAL_REFRESH_INTERVAL_MS,
+    })
+    expect(storage.starlinkState).toMatchObject({
+      lastStartedAtMs: now, nextAllowedAtMs: now + STARLINK_REFRESH_INTERVAL_MS,
+    })
+    const reconstructed = createCoordinator(storage, catalog, true)
+    expect(await (await reconstructed.fetch(request())).json()).toMatchObject({
+      kind: 'not-due',
+    })
+    expect(fetchImpl).toHaveBeenCalledTimes(12)
+  })
+
+  it.each(['different-stop', 'different-status', 'in-progress', 'starlink-off'] as const)(
+    'never amends an unreviewed or uncertain state: %s',
+    async (scenario) => {
+      vi.useFakeTimers()
+      vi.setSystemTime(Date.parse('2026-10-14T06:00:00Z'))
+      const storage = reviewedBlockedStorage()
+      if (!storage.state) throw new Error('Missing fixture state')
+      if (scenario === 'different-stop') storage.state.lastStartedAtMs -= 1
+      if (scenario === 'different-status') storage.state.blockedStatus = 404
+      if (scenario === 'in-progress') {
+        storage.state.attemptId = `${storage.state.lastStartedAtMs}:17`
+        storage.state.blockedStatus = null
+        storage.state.blockedAtMs = null
+      }
+      const prior = { ...storage.state }
+      const fetchImpl = vi.fn()
+      vi.stubGlobal('fetch', fetchImpl)
+      await createCoordinator(storage, new MemoryKv(), scenario !== 'starlink-off')
+        .fetch(request())
+
+      expect(storage.state).toEqual(prior)
+      expect(storage.recoveryState).toBeUndefined()
+      expect(fetchImpl).not.toHaveBeenCalled()
+    },
+  )
+
+  it.each(['curated', 'starlink'] as const)('preserves the %s not-before boundary before consuming authorization', async (boundary) => {
+    vi.useFakeTimers()
+    const storage = reviewedBlockedStorage()
+    const lastStarted = ORBITAL_REVIEWED_RECOVERY.lastStartedAtMs
+    const next = boundary === 'curated'
+      ? lastStarted + ORBITAL_REFRESH_INTERVAL_MS
+      : lastStarted + 5_000 + STARLINK_REFRESH_INTERVAL_MS
+    if (boundary === 'curated' && storage.starlinkState) {
+      storage.starlinkState.lastStartedAtMs -= STARLINK_REFRESH_INTERVAL_MS
+      storage.starlinkState.nextAllowedAtMs -= STARLINK_REFRESH_INTERVAL_MS
+    }
+    vi.setSystemTime(next - 1)
+    const fetchImpl = vi.fn()
+    vi.stubGlobal('fetch', fetchImpl)
+    const response = await createCoordinator(storage, new MemoryKv(), true).fetch(request())
+    expect(await response.json()).toEqual({ kind: 'not-due', nextAllowedAtMs: next })
+    expect(storage.recoveryState).toBeUndefined()
+    expect(storage.state?.blockedStatus).toBe(403)
+    expect(fetchImpl).not.toHaveBeenCalled()
+  })
+
+  it.each(['failRecoveryWrite', 'failReservationWrite'] as const)(
+    'rolls back authorization and reservation together on %s',
+    async (failure) => {
+      vi.useFakeTimers()
+      vi.setSystemTime(Date.parse('2026-10-14T06:00:00Z'))
+      const storage = reviewedBlockedStorage()
+      const prior = { ...storage.state }
+      storage[failure] = true
+      const fetchImpl = vi.fn()
+      vi.stubGlobal('fetch', fetchImpl)
+      const response = await createCoordinator(storage, new MemoryKv(), true).fetch(request())
+      expect(await response.json()).toMatchObject({ kind: 'unavailable' })
+      expect(storage.state).toEqual(prior)
+      expect(storage.recoveryState).toBeUndefined()
+      expect(fetchImpl).not.toHaveBeenCalled()
+    },
+  )
+
+  it('reblocks a renewed denial and cannot replenish authorization after reconstruction', async () => {
+    vi.useFakeTimers()
+    const now = Date.parse('2026-10-14T06:00:00Z')
+    vi.setSystemTime(now)
+    const storage = reviewedBlockedStorage()
+    const catalog = new MemoryKv()
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const fetchImpl = vi.fn(async (input) =>
+      String(input) === STARLINK_SATCAT_SOURCE_URL
+        ? new Response('PRIVATE-DENIAL 203.0.113.42', { status: 403 })
+        : sourceResponse(String(input)),
+    )
+    vi.stubGlobal('fetch', fetchImpl)
+    expect(await (await createCoordinator(storage, catalog, true).fetch(request())).json())
+      .toEqual({ kind: 'blocked', status: 403 })
+    expect(storage.recoveryState).toMatchObject({
+      phase: 'blocked', failureSource: 'starlink-satcat',
+    })
+    vi.setSystemTime(now + 24 * ORBITAL_REFRESH_INTERVAL_MS)
+    expect(await (await createCoordinator(storage, catalog, true).fetch(request())).json())
+      .toEqual({ kind: 'blocked', status: 403 })
+    expect(fetchImpl).toHaveBeenCalledTimes(12)
+    expect(JSON.stringify(warning.mock.calls)).not.toMatch(/PRIVATE-DENIAL|203\.0\.113\.42/)
+    warning.mockRestore()
+  })
+
+  it.each([false, true])('holds an inconclusive diagnostic without losing finite guidance (rate limited: %s)', async (limited) => {
+    vi.useFakeTimers()
+    const now = Date.parse('2026-10-14T06:00:00Z')
+    vi.setSystemTime(now)
+    const storage = reviewedBlockedStorage()
+    const catalog = new MemoryKv()
+    const fetchImpl = vi.fn(async () => limited
+      ? new Response(null, { status: 503, headers: { 'Retry-After': '10800' } })
+      : new Response('malformed', { headers: { 'Content-Type': 'application/json' } }))
+    vi.stubGlobal('fetch', fetchImpl)
+    const coordinator = createCoordinator(storage, catalog, true)
+    await coordinator.fetch(request())
+    expect(storage.recoveryState).toMatchObject({
+      phase: 'held',
+      nextAllowedAtMs: now + (limited ? 10_800_000 : ORBITAL_REFRESH_INTERVAL_MS),
+    })
+    expect(storage.state?.nextAllowedAtMs).toBe(Number.MAX_SAFE_INTEGER)
+    expect(storage.state?.attemptId).not.toBeNull()
+    const priorState = { ...storage.state }
+    const priorRecovery = { ...storage.recoveryState }
+    const status = await coordinator.fetch(new Request(
+      `https://orbital.internal${ORBITAL_COORDINATOR_STATUS_PATH}`,
+    ))
+    expect(await status.json()).toMatchObject({
+      phase: 'blocked',
+      recoveryPhase: 'held',
+      recoveryNextAllowedAtMs:
+        now + (limited ? 10_800_000 : ORBITAL_REFRESH_INTERVAL_MS),
+    })
+    expect(storage.state).toEqual(priorState)
+    expect(storage.recoveryState).toEqual(priorRecovery)
+    vi.setSystemTime(now + 24 * ORBITAL_REFRESH_INTERVAL_MS)
+    await createCoordinator(storage, catalog, true).fetch(request())
+    expect(fetchImpl).toHaveBeenCalledTimes(1)
+    expect(catalog.values.size).toBe(0)
+  })
+
+  it('retains the consumed authorization and physical fence when outcome persistence fails', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(Date.parse('2026-10-14T06:00:00Z'))
+    const storage = reviewedBlockedStorage()
+    storage.failOutcomeWrite = true
+    const catalog = new MemoryKv()
+    const fetchImpl = vi.fn(async (input) => sourceResponse(String(input)))
+    vi.stubGlobal('fetch', fetchImpl)
+    const result = await createCoordinator(storage, catalog, true).fetch(request())
+    expect(await result.json()).toMatchObject({ kind: 'unavailable' })
+    expect(storage.recoveryState?.phase).toBe('admitted')
+    expect(storage.state?.nextAllowedAtMs).toBe(Number.MAX_SAFE_INTEGER)
+    await createCoordinator(storage, catalog, true).fetch(request())
+    expect(fetchImpl).toHaveBeenCalledTimes(12)
+    expect(catalog.values.size).toBe(0)
   })
 
   it('reads a terminal fence and Starlink deadline without acquiring, modifying or exposing its attempt identity', async () => {
@@ -449,6 +722,8 @@ describe('orbital catalog coordinator', () => {
       kind: 'status', phase: 'blocked', lastStartedAtMs: nowMs,
       nextAllowedAtMs: Number.MAX_SAFE_INTEGER, blockedStatus: 403,
       starlinkLastStartedAtMs: null, starlinkNextAllowedAtMs: null,
+      recoveryPhase: 'blocked', recoveryNextAllowedAtMs: null,
+      failureSource: 'starlink-satcat',
     }
     const inspect = vi.fn(async (input: Request) => {
       expect(input.method).toBe('GET')
@@ -473,12 +748,17 @@ describe('orbital catalog coordinator', () => {
     expect(result.headers.get('etag')).toBe('"original-digest"')
     expect(result.headers.get('x-livetrafficstan-orbital-refresh-state')).toBe('blocked')
     expect(result.headers.get('x-livetrafficstan-orbital-refresh-blocked-status')).toBe('403')
+    expect(result.headers.get('x-livetrafficstan-orbital-refresh-recovery-state')).toBe('blocked')
+    expect(result.headers.get('x-livetrafficstan-orbital-refresh-last-failure-source')).toBe('starlink-satcat')
     expect(await result.text()).toBe(statusCode === 304 ? '' : 'original')
     expect(identity).toHaveBeenCalledWith(ORBITAL_COORDINATOR_OBJECT_NAME)
     expect(inspect).toHaveBeenCalledTimes(1)
   })
 
-  it('reports unavailable diagnostics without relabeling valid catalog data as an acquisition success', async () => {
+  it.each([
+    { kind: 'status', phase: ['blocked'] },
+    { kind: 'status', phase: 'idle' },
+  ])('reports malformed diagnostics without relabeling valid catalog data as an acquisition success', async (status) => {
     const warning = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     try {
       const result = await withOrbitalRefreshStatus(
@@ -488,7 +768,7 @@ describe('orbital catalog coordinator', () => {
           ASSETS: { fetch: vi.fn() }, ORBITAL_CATALOG_ENABLED: 'true',
           ORBITAL_CATALOG_COORDINATOR: {
             idFromName: () => 'existing-actor',
-            get: () => ({ fetch: async () => jsonResponse({ kind: 'status', phase: ['blocked'] }) }),
+            get: () => ({ fetch: async () => jsonResponse(status) }),
           },
         },
       )

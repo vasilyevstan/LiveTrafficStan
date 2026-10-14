@@ -166,6 +166,22 @@ const renderControls = (
   )
 
 describe('TrafficControls', () => {
+  it('labels an orbital recovery action as a cache recheck, not a provider retry', () => {
+    const html = renderControls({
+      orbitalVisible: true,
+      orbitalState: {
+        phase: 'unavailable',
+        message: 'Source updates are paused; cached orbital data expired.',
+        acceptedCount: 0,
+        positions: [],
+        prediction: EMPTY_ORBITAL_PREDICTION,
+      },
+    })
+    expect(html).toContain('RECHECK ORBITS')
+    expect(html).toContain('Check the cached catalog; provider updates run on schedule.')
+    expect(html).not.toContain('RETRY ORBITS')
+  })
+
   it('places native entry in Settings / View without adding a dock slot', () => {
     const html = renderControls()
     const view = html.match(/<legend>View<\/legend>([\s\S]*?)<\/fieldset>/)?.[1]

@@ -268,7 +268,14 @@ export const deriveOrbitalPopulationCounts = (
           : []
       })
     : []
+  const modeledDataAvailable =
+    state.phase === 'ready' ||
+    state.phase === 'empty' ||
+    state.phase === 'stale' ||
+    ((state.phase === 'refreshing' || state.phase === 'offline') &&
+      state.positions.length > 0)
   const mapCountsAvailable =
+    modeledDataAvailable &&
     display.available &&
     viewport !== undefined &&
     viewport.kind !== 'invalid'

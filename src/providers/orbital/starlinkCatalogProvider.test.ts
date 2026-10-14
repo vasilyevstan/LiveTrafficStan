@@ -276,6 +276,32 @@ describe('StarlinkCatalogProvider', () => {
     )
   })
 
+  it.each([true, false])('updates the source-stop hint across valid 200/304 responses (initially %s)', async (initiallyBlocked) => {
+    const value = await payload()
+    const fetchMock = vi.fn<typeof fetch>()
+    for (const [index, blocked] of [initiallyBlocked, !initiallyBlocked].entries()) {
+      fetchMock.mockResolvedValueOnce(
+        new Response(index === 0 ? JSON.stringify(value) : null, {
+          status: index === 0 ? 200 : 304,
+          headers: {
+            ...headers(value),
+            'X-LiveTrafficStan-Orbital-Refresh-State': blocked
+              ? 'blocked'
+              : 'idle',
+          },
+        }),
+      )
+    }
+    const provider = new StarlinkCatalogProvider(config, runtime(fetchMock))
+    const first = await provider.load(new AbortController().signal)
+    const second = await provider.load(new AbortController().signal)
+
+    expect(first.refreshBlocked === true).toBe(initiallyBlocked)
+    expect(second.refreshBlocked === true).toBe(!initiallyBlocked)
+    expect(second.snapshot).toBe(first.snapshot)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
   it('accepts the schema-1 predecessor representation during rollout without a second request', async () => {
     const value = await legacyPayload()
     const contract = config.compatibleContracts[0]
