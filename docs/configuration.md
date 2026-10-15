@@ -208,7 +208,8 @@ spread through components:
 | Starlink source and publication | Fixed official `starlink` GP then SATCAT pair; 6 MiB and 15,000 rows per response, 12 MiB aggregate, 60-second total deadline; one normalization and one final aligned schema-1/schema-2 bundle write |
 | Starlink cadence/sample | One actual-start SQLite reservation per 12 hours; schema 1 remains the exact 150-record `inclination-raan-systematic-v1` sample; schema 2 is exactly 512 records, 128 per fixed inclination band, selected by `inclination-shell-raan-phase-grid-v1`; no retry, truncation, rotation, viewport request, or completeness/representativeness claim |
 | Orbital catalog discovery | Query at most 64 characters; exact type/source-group filters; 20 rows per page |
-| In view | Collapsed peer below desktop Settings; mobile entry inside Settings, not another dock slot. Aircraft and current modeled orbits reuse local search and `orbital.discovery.pageSize` (20). Ships uses the existing `VESSEL_RESULT_LIMIT` (20) for a capped Longest/Deepest draught shortlist; ranking is component-local, not a saved preference or map filter. No additional acquisition or timing setting |
+| In view | Collapsed peer below desktop Settings; direct action in the five-slot mobile dock. Aircraft and current modeled orbits reuse local search and `orbital.discovery.pageSize` (20). Ships uses the existing `VESSEL_RESULT_LIMIT` (20) for a capped Longest/Deepest draught shortlist; ranking is component-local, not a saved preference or map filter |
+| Mobile workspace | Width <=760px, or coarse-pointer landscape <=1024x480; one expanded nonmodal surface and compact retained selection; no saved presentation state |
 | Orbital selected track | 15 minutes; at most 31 points before gap/dateline splitting |
 | Orbital reviewed image | 5-second total deadline; exact manifest byte count, media type, and SHA-256; one fulfilled Blob URL or terminal failure per immutable asset in the running tab |
 | Marine metadata refresh | 5 minutes |
@@ -386,6 +387,54 @@ network metadata such as the client IP address. Browser-derived Home
 coordinates are not sent to Photon. A root-relative
 `VITE_GEOCODER_ENDPOINT` is only a deployment substitution point; the checked
 Cloudflare Worker does not add a geocoder proxy.
+
+## Scoped object discovery
+
+Mobile **Find** offers Ships, Aircraft, Orbits, Airports, Ports and
+Places/coordinates. Desktop **More -> Find** keeps the current aircraft/ship
+controls; its additional discovery disclosure starts closed. The single
+Settings location input is reused for mobile Places.
+
+**In view** uses current filtered observations; **Received** reads already
+loaded Digitraffic metadata, including identities with no displayed position.
+It does not fetch, extend cache retention or bypass live vessel filters.
+Whole loaded static/orbital catalogs have 20-row pages and separate drafts;
+choosing a class or typing never loads/enables a catalog. **Load airports**,
+**Load ports** and **Enable ORBITS** retain their existing explicit semantics.
+
+**Outside view** submits one bounded operation. Ships allow name prefixes
+(two or more characters) or exact nine-digit MMSI, preserving leading zeros.
+Aircraft allow exact ICAO24, registration (including hyphens) or callsign.
+Free exact IMO and arbitrary aircraft-name lookup are unavailable.
+Ship results are always identity-only / **Position unavailable**. Aircraft
+positions are last reports, not live selections; original clocks must qualify
+before navigation is offered. Static and modeled points are labelled separately.
+Explicit navigation clears previous selection/trails, but never changes Home.
+
+`appConfig.ts` re-exports the browser-neutral `DISCOVERY_CONFIG` shared with
+the Worker. This avoids importing browser environment configuration into the
+server boundary. There is no endpoint override, new credential or polling flag.
+
+| Discovery bound | Value |
+| --- | --- |
+| Browser routes | Fixed POST `/api/find/aircraft` and `/api/find/ships`; no URL query |
+| Submitted body / decoded response | 2 KiB / 256 KiB |
+| Total operation deadline | 8 seconds, including streamed reads |
+| Query / ordinary text / credit | 100 codepoints / 256 / 2,048 |
+| Results / scanned source records | 50 / 500; truncation and rejected records are explicit |
+| Aircraft / ship local cooldown | 20 seconds / 5 seconds |
+| Unguided rate-limit fallback | 60 seconds; readable `Retry-After` takes precedence |
+| Received metadata age / scan bound | Original timestamps, 24 hours / 50,000 existing records |
+| Aircraft snapshot / position age | At most 10 minutes / 24 hours |
+| Future-clock tolerance | 120 seconds |
+| Navigable modeled-point age | At most 15 seconds, exact snapshot/owner/element identity |
+
+No typing/startup request, automatic retry, success cache or persisted
+query/result is added. The named upstream receives submitted text and ordinary
+transport metadata; a fixed POST keeps that text out of browser resource URLs.
+Aircraft lookup shares the private relay's existing persistent global
+20-second admission with viewport work. Busy/Retry-After is expected, not
+permission to bypass the relay or add requests.
 
 ## Aircraft endpoint and proxy
 

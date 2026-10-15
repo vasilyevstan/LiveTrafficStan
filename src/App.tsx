@@ -25,7 +25,7 @@ import { useWeatherObservations } from './app/useWeatherObservations'
 import { useOrbitalObjects } from './app/useOrbitalObjects'
 import { OrbitalEnrichmentImageLoader } from './app/OrbitalEnrichmentImageLoader'
 import { useOrbitalEnrichmentImage } from './app/useOrbitalEnrichmentImage'
-import { visualViewportCssValues } from './app/visualViewport'
+import { isCompactWorkspace, visualViewportCssValues } from './app/visualViewport'
 import { preventCompactControlWheelZoom } from './app/controlZoom'
 import { AirportDetails } from './components/AirportDetails'
 import { HistoryModeNotice } from './components/HistoryModeNotice'
@@ -34,6 +34,11 @@ import { InViewPanel } from './components/InViewPanel'
 import { LiveStatus } from './components/LiveStatus'
 import { PortDetails } from './components/PortDetails'
 import { TrafficControls } from './components/TrafficControls'
+import {
+  MobileInspectorContext,
+  type MobileWorkspaceTask,
+  type WorkspaceControlsHandle,
+} from './components/mobileWorkspace'
 import { TrafficDetails } from './components/TrafficDetails'
 import { WeatherObservationDetails } from './components/WeatherObservationDetails'
 import { OrbitalDetails } from './components/OrbitalDetails'
@@ -125,11 +130,23 @@ const canRestoreFocus = (element: HTMLElement | null) =>
   Boolean(
     element?.isConnected &&
       element.getClientRects().length > 0 &&
+      getComputedStyle(element).visibility === 'visible' &&
+      !element.closest('[inert]') &&
       !element.matches(':disabled, [aria-disabled="true"]'),
   )
 
 function App() {
   const appShellRef = useRef<HTMLElement>(null)
+  const workspaceControlsRef = useRef<WorkspaceControlsHandle>(null)
+  const [mobileWorkspace, setMobileWorkspace] = useState(() =>
+    typeof window !== 'undefined' && isCompactWorkspace(
+      window.visualViewport ?? { width: window.innerWidth, height: window.innerHeight },
+      window.matchMedia('(pointer: coarse)').matches,
+    ),
+  )
+  const [activeWorkspaceTask, setActiveWorkspaceTask] = useState<MobileWorkspaceTask | null>(null)
+  const [inspectorExpanded, setInspectorExpanded] = useState(true)
+  const [detailsReturnToTask, setDetailsReturnToTask] = useState(false)
   const [sharedState] = useState(() =>
     readBrowserShareState(APP_CONFIG.navigation.coordinatePrecision),
   )
@@ -1669,19 +1686,51 @@ function App() {
       : weatherResult.retry
 
   useEffect(() => {
+    setInspectorExpanded(true)
+    setDetailsReturnToTask(false)
+  }, [selectedId, selectedOrbitalId, selectedPortId, selectedAirportId, selectedWeatherId, journey?.snapshot.revision])
+
+  const expandInspector = useCallback(() => {
+    setDetailsReturnToTask(workspaceControlsRef.current?.suspendTask() ?? false)
+    setInspectorExpanded(true)
+  }, [])
+  const collapseInspector = useCallback(() => {
+    const restored = detailsReturnToTask && workspaceControlsRef.current?.resumeTask()
+    setDetailsReturnToTask(false)
+    if (!restored) setInspectorExpanded(false)
+  }, [detailsReturnToTask])
+  const handleWorkspaceTaskChange = useCallback((task: MobileWorkspaceTask | null) => {
+    setActiveWorkspaceTask(task)
+    if (task) setDetailsReturnToTask(false)
+  }, [])
+  const inspectorPresentation = {
+    mobile: mobileWorkspace,
+    compact: !inspectorExpanded || activeWorkspaceTask !== null,
+    identity: journey ? `journey:${journey.snapshot.revision}` :
+      selectedId ?? selectedOrbitalId ?? selectedPortId ?? selectedAirportId ?? selectedWeatherId,
+    returnToTask: detailsReturnToTask,
+    onExpand: expandInspector,
+    onCollapse: collapseInspector,
+  }
+
+  useEffect(() => {
     const appShell = appShellRef.current
     if (!appShell) return
 
+    let previousVisualHeight: number | undefined
+    let focusFrame: number | undefined
     const updateViewportVariables = () => {
+      const viewport = window.visualViewport ?? {
+        width: window.innerWidth,
+        height: window.innerHeight,
+        offsetLeft: 0,
+        offsetTop: 0,
+      }
       const values = visualViewportCssValues(
-        window.visualViewport ?? {
-          width: window.innerWidth,
-          height: window.innerHeight,
-          offsetLeft: 0,
-          offsetTop: 0,
-        },
+        viewport,
       )
       if (!values) return
+      setMobileWorkspace(isCompactWorkspace(viewport, window.matchMedia('(pointer: coarse)').matches))
       appShell.style.setProperty(
         '--app-visual-viewport-width',
         values.width,
@@ -1702,6 +1751,21 @@ function App() {
         '--app-visual-viewport-58',
         values.controlBudget,
       )
+      const active = document.activeElement
+      if (previousVisualHeight !== undefined && viewport.height < previousVisualHeight &&
+        active instanceof HTMLElement && active.matches('input, select, textarea') &&
+        active.closest('.control-panel__more-body, .details-panel__body')) {
+        if (focusFrame !== undefined) cancelAnimationFrame(focusFrame)
+        focusFrame = requestAnimationFrame(() => {
+          focusFrame = undefined
+          const focused = document.activeElement
+          if (focused instanceof HTMLElement && focused.matches('input, select, textarea') &&
+            focused.closest('.control-panel__more-body, .details-panel__body')) {
+            focused.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+          }
+        })
+      }
+      previousVisualHeight = viewport.height
     }
     const visualViewport = window.visualViewport
     updateViewportVariables()
@@ -1714,6 +1778,7 @@ function App() {
     visualViewport?.addEventListener('scroll', updateViewportVariables)
 
     return () => {
+      if (focusFrame !== undefined) cancelAnimationFrame(focusFrame)
       appShell.removeEventListener('wheel', preventCompactControlWheelZoom)
       window.removeEventListener('resize', updateViewportVariables)
       document.removeEventListener('fullscreenchange', updateViewportVariables)
@@ -1731,9 +1796,10 @@ function App() {
   return (
     <main
       ref={appShellRef}
-      className={`app-shell${historyActive ? ' app-shell--history' : ''}`}
+      className={`app-shell${historyActive ? ' app-shell--history' : ''}${mobileWorkspace ? ' app-shell--mobile-workspace' : ''}`}
     >
       <TrafficMap
+        compactAttribution={mobileWorkspace}
         viewCenter={viewRequest.center}
         northResetRequest={northResetRequest}
         northResetDurationMs={APP_CONFIG.navigation.northResetDurationMs}
@@ -1815,12 +1881,26 @@ function App() {
       />
       <div className="radar-shade" aria-hidden="true" />
 
-      <div className="interface-layer">
+      <MobileInspectorContext value={inspectorPresentation}>
+      <div
+        className="interface-layer"
+        data-workspace-task={activeWorkspaceTask ?? undefined}
+      >
         <TrafficControls
+          mobileWorkspace={mobileWorkspace}
+          workspaceHandleRef={workspaceControlsRef}
+          onWorkspaceTaskChange={handleWorkspaceTaskChange}
           fullscreen={fullscreenState}
           onEnterFullscreen={enterFullscreen}
           onExitFullscreen={exitFullscreen}
           marineProviderName={marineResult.capabilities.name}
+          discoveryPaused={historyActive || !online}
+          discoverMarineMetadata={marineResult.discoverMetadata}
+          catalogAirports={airports}
+          catalogPorts={ports}
+          portsReady={portsResult.state.phase === 'ready'}
+          airportSource={airportsResult.state.phase === 'ready' ? airportsResult.state.dataset.source : undefined}
+          portSource={portsResult.state.phase === 'ready' ? portsResult.state.dataset.source : undefined}
           inView={
             <InViewPanel
               aircraft={aircraftResults}
@@ -1850,6 +1930,7 @@ function App() {
               })}
               selectedVesselId={selectedId}
               onVesselSelect={selectTraffic}
+              onFindShips={() => workspaceControlsRef.current?.openShipFind()}
               orbits={orbitsInView}
               selectedOrbitalId={selectedOrbitalId}
               onOrbitalSelect={handleOrbitalContextSelect}
@@ -1871,6 +1952,7 @@ function App() {
                 </div>
               </div>
               <LiveStatus
+                compact={mobileWorkspace}
                 aircraftCount={aircraftVisible ? aircraft.length : 0}
                 vesselCount={vesselsVisible ? vessels.length : 0}
                 aircraftStatus={aircraftResult.status}
@@ -2184,6 +2266,7 @@ function App() {
           </div>
         )}
       </div>
+      </MobileInspectorContext>
     </main>
   )
 }

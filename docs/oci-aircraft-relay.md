@@ -27,7 +27,7 @@ active on the relay VM with four IPv6 QUIC connections and a dedicated
 `0400` token file. The Worker binding is checked into `wrangler.jsonc` and is
 used only when a protected deployment selects `oci-private-relay`.
 
-The current application source is
+The earlier #174 application source is
 `1afa175d8bb6b3f0636c2a02576cc82a35ced373`; it continues to use active
 relay source `18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8`, while
 `1f9a2fd322f141fe761d3bf00113e1ab60526e6c` remains the relay rollback target.
@@ -123,6 +123,9 @@ The relay is not a generic proxy. It accepts only:
 
 ```text
 GET /v2/point/{latitude}/{longitude}/{radiusNm}
+GET /v2/hex/{six-lowercase-hex-characters}
+GET /v2/reg/{canonical-registration}
+GET /v2/callsign/{canonical-callsign}
 ```
 
 The implementation:
@@ -130,7 +133,7 @@ The implementation:
 - requires a bearer token before starting upstream work;
 - accepts only canonical finite coordinates and integer radius 1-54 NM;
 - rejects query strings, other methods, encoded separators, and redirects;
-- constructs only the fixed ADSB.lol point URL;
+- constructs only the fixed ADSB.lol point or exact identifier URL;
 - forwards only `Accept: application/json` and the stable LiveTrafficStan
   `User-Agent`;
 - never forwards browser cookies, browser authorization, client IP, range,
@@ -144,12 +147,18 @@ The implementation:
 Cloudflare and OCI still process ordinary transport metadata. Rounded query
 coordinates transit Cloudflare and ADSB.lol, but the application does not
 persist them in relay state or application logs.
+Explicit browser identity lookup uses fixed POST `/api/find/aircraft`, not
+a query-bearing browser GET. Only its normalized identifier reaches the
+corresponding fixed private GET. Registrations retain meaningful hyphens;
+the allowlist rejects arbitrary routes, multi-value identifiers and encoded
+separators. No token, new egress identity or direct fallback is added.
 
 ## Global provider admission
 
 All tabs and Worker invocations share one provider admission boundary:
 
 - at most one upstream request is in flight;
+- viewport point and exact identifier requests share that same admission;
 - upstream requests start no more often than once every 20 seconds;
 - an excess request receives local `503` plus bounded `Retry-After` and does
   not reach ADSB.lol;
@@ -193,6 +202,11 @@ The root-owned environment file contains the relay authentication token and
 release SHA and has mode `0600`. The state file is owned by the dedicated
 service account and has mode `0600`. Neither belongs in Git, a workflow
 artifact, an issue, a command argument, or a log.
+
+For the identity-lookup extension, deploy the checked extended relay before
+the new Worker/browser. The old Worker's point route remains compatible.
+Application rollback can retain the extended relay; do not reset admission,
+rotate identities or restore an older relay while relying on new lookup routes.
 
 `deploy-release.sh` accepts an exact 40-character source SHA and SHA-256 values
 for the two modules and systemd unit. It downloads only those paths from that

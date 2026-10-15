@@ -176,7 +176,10 @@ const searchRank = (vessel: Vessel, normalizedQuery: string) => {
   return 2
 }
 
-const matchesSearch = (vessel: Vessel, normalizedQuery: string) => {
+export const matchesVesselIdentitySearch = (
+  vessel: Pick<Vessel, 'mmsi'> & Partial<Pick<Vessel, 'name' | 'callSign' | 'imo'>>,
+  normalizedQuery: string,
+) => {
   if (!normalizedQuery) return true
 
   return [
@@ -255,7 +258,7 @@ export const matchesVesselFilters = (
 ) => {
   const normalizedQuery = normalizeVesselSearchQuery(filters.query)
   return (
-    matchesSearch(vessel, normalizedQuery) &&
+    matchesVesselIdentitySearch(vessel, normalizedQuery) &&
     (filters.category === 'all' ||
       vessel.vesselCategory === filters.category) &&
     (filters.navigation === 'all' ||

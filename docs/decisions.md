@@ -2,7 +2,34 @@
 
 ## Mobile usability and search refinement plan (#449)
 
-This is a measured plan, **not released behavior**. The requested
+The approved implementation uses **Center, Layers, Find, In view, Settings**
+on phones, with one nonmodal expanded task or inspector and compact retained
+selection. Desktop defaults remain; additional discovery starts collapsed.
+The same inspector body and one Settings location input stay mounted.
+Details/Back restores task/query/scroll/focus; X deselects. Native credits
+initialize compact once and respect user choice.
+
+The user explicitly expanded the original existing-data-only scope. Find
+now separates current view, already received Digitraffic metadata, whole
+fulfilled catalogs and explicit anonymous outside-view lookup. No class/typing
+download or remote fallback is added. Ships use attributed Open Waters
+name-prefix/exact-MMSI identities; REST geometry is discarded and free exact
+IMO is unavailable. Aircraft use exact ADSB.lol hex/registration/callsign with
+original position clocks and the same persistent shared private admission.
+Remote results never become fake traffic/history.
+
+Fixed POST bodies keep submitted object text out of browser resource URLs.
+The existing Worker and neutral bounded contract/controller suffice: no new
+service, dependency, account, credentials, global UI store, second renderer,
+poller or camera scheduler. Requested GPT-6.1 Sol/source and Claude architecture
+deliberations agree on these ownership/truthfulness boundaries. Qualification
+does not imply blanket rights for every contributing marine feed.
+See [architecture](architecture.md#scoped-discovery-and-explicit-remote-operations)
+and [measured acceptance](development-and-testing.md#mobile-workspace-and-scoped-discovery-449).
+
+### Original measured baseline
+
+The requested
 Impeccable/UI specialist reviewed source; native parent browser measurements
 cover 390x568 and 315x517 in Light/Dark. Default DEPTHS attribution is expanded
 initially and adds 62px/82px; combined brand/dock/credits cover
@@ -22,7 +49,7 @@ Ship matching succeeds for an eligible received fixture in all four layouts.
 Location is place/coordinate navigation, not vessel lookup; Ships In view is
 a capped measurement-ranked shortlist, while text/filter discovery is in
 More -> Find. Link directly to that existing input and disclose its scope/
-active filters rather than adding global search or silently bypassing the
+active filters rather than silently bypassing the
 50m/unknown-length/yacht rules. Aircraft text remains list-only; vessel text
 continues to filter map/counts; current orbital view and catalog/sample scopes
 stay distinct. Location Escape is a measured parent-bubbling defect to fix;

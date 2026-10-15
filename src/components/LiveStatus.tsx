@@ -4,6 +4,7 @@ import type { ProviderStatus } from '../domain/traffic'
 import type { MarineProviderCapabilities } from '../providers/types'
 
 interface LiveStatusProps {
+  compact?: boolean
   aircraftCount: number
   vesselCount: number
   aircraftStatus: ProviderStatus
@@ -31,6 +32,7 @@ const providerLabel = (
 }
 
 export function LiveStatus({
+  compact = false,
   aircraftCount,
   vesselCount,
   aircraftStatus,
@@ -103,9 +105,9 @@ export function LiveStatus({
               <>
                 <span>{aircraftCount} aircraft</span>
                 <span title={marineCapabilities.coverage.label}>
-                  {vesselCount} ships shown ·{' '}
-                  {marineCapabilities.coverage.kind === 'global-best-effort'
-                    ? 'global sources' : 'regional source'}
+                  {compact ? `${vesselCount} ships` :
+                    `${vesselCount} ships shown · ${marineCapabilities.coverage.kind === 'global-best-effort'
+                      ? 'global sources' : 'regional source'}`}
                 </span>
               </>
             )}
@@ -113,11 +115,11 @@ export function LiveStatus({
           <span className="live-status__updated">
             <span>
               {historicalAt === undefined
-                ? `updated ${formatAge(latestUpdate || undefined, now)}`
+                ? `${compact ? '' : 'updated '}${formatAge(latestUpdate || undefined, now)}`
                 : `at ${formatTimestamp(historicalAt)}`}
             </span>
             <span className="live-status__disclosure-label">
-              Provider details
+              {compact ? 'Details' : 'Provider details'}
             </span>
           </span>
         </summary>

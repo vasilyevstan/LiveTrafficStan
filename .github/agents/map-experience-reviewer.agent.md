@@ -188,7 +188,12 @@ Check these project invariants:
   and 390x568 while the control panel remains scrollable and reachable.
 - Keep the accepted minimal controls compact and task-based: a 280 px floating
   brand/status card replaces the top bar. Do not reintroduce an edge-to-edge
-  header. Search, results and privacy text stay together in Settings;
+  header. Desktop location search/results/privacy remain together in Settings;
+  mobile Find/Places exposes that same mounted input/model. The mobile dock is
+  Center, Layers, Find, In view, Settings, with layer switches inside Layers.
+  Only one nonmodal task/full inspector expands; a task retains compact
+  selection and the same hidden/inert detail body. Details/Back preserves the
+  suspended task's query/scroll/valid focus; X still deselects.
   Center stays outside menus in the right desktop rail or mobile bottom
   dock. Desktop panels open inward and the inspector is opposite below the
   card; keep counts, freshness, coverage and Provider details visible.
@@ -208,7 +213,10 @@ Check these project invariants:
   bounds are distinct from the transparent stack's maximum-height budget.
   Use the current visual viewport and repeat final-row reachability with
   selected details at 315x517 and an 844-layout/517-visual-height mismatch.
-  More remains the sole orbital scroll owner; the task strip scrolls away.
+  The active task remains the sole orbital scroll owner; the task strip scrolls
+  away. Standard phone selection/task states meet <=65% measured overlay union,
+  a native-hit-tested 120x120 map region and >=160px useful body at 315x517 and
+  390x568; keyboard/explicit credit states keep focus and dismissal reachable.
 - The compact header retains mode, counts, regional qualification, and age.
   Provider details remains accessible on mobile and restores summary focus
   on Escape. Mobile historical details may replace the tool rail only while
