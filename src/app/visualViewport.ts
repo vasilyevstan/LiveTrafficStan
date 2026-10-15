@@ -1,9 +1,21 @@
+import { MOBILE_WORKSPACE_CONFIG } from '../config/appConfig'
+
 interface ViewportMeasurements {
   width: number
   height: number
   offsetLeft: number
   offsetTop: number
 }
+
+export const isCompactWorkspace = (
+  { width, height }: Pick<ViewportMeasurements, 'width' | 'height'>,
+  coarsePointer = false,
+) =>
+  Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0 &&
+  (width <= MOBILE_WORKSPACE_CONFIG.maximumWidthPx ||
+    (coarsePointer &&
+      width <= MOBILE_WORKSPACE_CONFIG.coarseLandscapeMaximumWidthPx &&
+      height <= MOBILE_WORKSPACE_CONFIG.coarseLandscapeMaximumHeightPx))
 
 export const visualViewportCssValues = ({
   width,

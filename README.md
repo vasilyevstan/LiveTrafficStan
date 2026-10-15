@@ -340,7 +340,9 @@ identity are not renamed or reset.
   existing buttons form a right desktop rail with inward-opening panels and
   remain a bottom mobile command dock. Selected details use a left desktop
   inspector below the card or a reserved mobile sheet. The card is inset
-  16 px on desktops and 12 px on phones; the mobile dock remains 70 px tall.
+  16 px on desktops. Phones use a compact status card and a five-action dock:
+  **Center, Layers, Find, In view, Settings**. Aircraft/Ships/ORBITS switches
+  are in mobile Layers; desktop controls keep their existing layout/defaults.
   Every object inspector has an accessible, 44px corner-attached X that stays
   visible beside a compact identity header. **Show path** shares that header;
   the body scrolls at full width without a close-button gutter.
@@ -353,7 +355,13 @@ identity are not renamed or reset.
   Counts, marine source scope, freshness, and traffic mode remain visible;
   **Provider details** opens independent provider messages on every screen size.
 - **More** (Explore map) and **Settings** (View & settings) open beside the
-  desktop rail or above the mobile dock. These stable native disclosures
+  desktop rail. On phones, one nonmodal task or full inspector occupies the
+  shared reading surface above the dock. Opening a task retains a compact
+  selected-object heading and X, without remounting its details.
+  **Details** replaces the task; **Back** restores its query, scroll and valid
+  focus. X still deselects. Complete native map credits start compact once and
+  remain available on demand, including across themes.
+  These stable native disclosures
   retain one scroll owner per panel and session-only
   Layers/Find/Context/Orbits/Sources views. **Settings** groups the single
   explicit-submit location input, results, and search privacy text before
@@ -372,14 +380,28 @@ identity are not renamed or reset.
   colored dots. The duplicate traffic legend is intentionally omitted.
   [Local refinement evidence](docs/development-and-testing.md#minimal-right-controls-local-evidence)
   is separate from the historical production release below.
-- **In view** opens below Settings in the desktop rail. On phones, choose
-  **Settings → Aircraft, ships & orbits in view**; the six-slot bottom dock stays
-  unchanged. Aircraft and Orbits have local search and 20-row pages, with
+- **Find** separates **In view**, **Received** ship metadata, loaded catalogs
+  and explicitly submitted **Outside view** lookup. Places/coordinates reuse
+  the single existing location input; Photon is not a ship/aircraft directory.
+  Airports, ports and the complete accepted curated/Starlink sample catalogs
+  are searchable only after their existing explicit load/enable action.
+  Choosing a class or typing does not download a catalog or perform lookup.
+  Outside-view ships use free Open Waters name-prefix/exact-MMSI lookup and
+  always say **Position unavailable**; REST metadata time is not position time.
+  Aircraft support exact ICAO24, registration or callsign, not arbitrary names.
+  Only qualified original aircraft positions offer **Go to last report**.
+  Navigation never creates a fake live object or changes Home. Desktop Find
+  retains its local defaults; additional discovery starts collapsed.
+  [Scopes, bounds and privacy](docs/configuration.md#scoped-object-discovery)
+  include partial coverage, the 50-result cap and unavailable free exact IMO.
+- **In view** opens below Settings in the desktop rail or directly from the
+  phone dock. Aircraft and Orbits have local search and 20-row pages, with
   complete individual counts rather than cluster-symbol counts. **Ships**
   shows a shortlist of up to 20 **Longest** or **Deepest draught** matches,
   not every vessel. Ranking uses reported measurements within the current
   vessel filters; the full in-view count, rankable population and unknown
-  measurements stay distinct. Ship search/filtering remains in **More → Find**.
+  measurements stay distinct. **Find ships** opens the existing search/filter
+  flow (desktop **More → Find**, mobile **Find**).
   Ranking does not change the ships on the map. Current
   modeled orbits deduplicate exact NORAD across both sources and distinguish
   shown objects from zoom-hidden matches. Paused traffic, partial sources,
@@ -1338,6 +1360,13 @@ monitoring, privacy, and rollback procedure.
 - Named place text is sent to Photon only after explicit submission. Photon is
   a fair-use public service with no availability guarantee; direct coordinate
   entry remains local and available during search failure or throttling.
+- Outside-view object lookup is receiver-dependent, not a complete global
+  registry. Ship matches are identity-only, with original contributing credits;
+  free exact IMO is unavailable. Aircraft lookup shares the private relay's
+  existing global 20-second admission with viewport polling and can be busy.
+  Fixed same-origin POST bodies keep submitted object text out of browser
+  resource URLs; the named upstream still receives the submitted identifier.
+  Queries/results are not persisted, polled or automatically retried.
 - Aircraft metadata is available only for an exact, non-conflicting selected
   ICAO24 record in the pinned snapshot. The snapshot becomes intentionally
   unavailable after its 45-day publication-age boundary until a reviewed new

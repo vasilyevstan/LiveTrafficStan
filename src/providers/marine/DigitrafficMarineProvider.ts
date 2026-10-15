@@ -2,6 +2,7 @@ import type { MqttClient } from 'mqtt'
 import type { AppConfig } from '../../config/appConfig'
 import { distanceKm } from '../../domain/geo'
 import type { ProviderStatus, Vessel } from '../../domain/traffic'
+import type { CachedMarineDiscovery } from '../../domain/objectDiscovery'
 import { errorMessage, responseError } from '../errors'
 import type { TrafficQuery } from '../types'
 import {
@@ -13,6 +14,7 @@ import {
   parseDigitrafficRestLocations,
   parseDigitrafficRestMetadata,
 } from './digitrafficNormalization'
+import { discoverDigitrafficMetadata } from './cachedMarineDiscovery'
 import {
   createMarineDiagnosticsCollector,
   type MarineDiagnosticMessageKind,
@@ -38,6 +40,7 @@ const UTF8_DECODER = new TextDecoder()
 export class DigitrafficMarineProvider {
   private readonly locations = new Map<number, MarineLocationRecord>()
   private readonly metadata = new Map<number, MarineMetadataRecord>()
+  private metadataLoaded = false
   private readonly warnedPayloadKinds = new Set<string>()
   private readonly config: AppConfig['marine']
   private query: TrafficQuery
@@ -171,6 +174,13 @@ export class DigitrafficMarineProvider {
 
     this.flush('immediate')
     this.requestLocationRefresh()
+  }
+
+  discoverMetadata(query: string, now = Date.now()): CachedMarineDiscovery {
+    return {
+      loaded: this.metadataLoaded,
+      result: discoverDigitrafficMetadata(this.metadata.values(), query, now),
+    }
   }
 
   private isActive() {
@@ -326,6 +336,7 @@ export class DigitrafficMarineProvider {
         return
       }
       for (const record of metadata) this.mergeMetadata(record)
+      this.metadataLoaded = true
       this.noteRestSuccess()
       this.scheduleFlush()
     } catch (error) {
@@ -510,6 +521,7 @@ export class DigitrafficMarineProvider {
   }
 
   private mergeMetadata(record: MarineMetadataRecord) {
+    this.metadataLoaded = true
     const current = this.metadata.get(record.mmsi)
     if (!current || record.timestamp >= current.timestamp) {
       this.metadata.set(record.mmsi, record)

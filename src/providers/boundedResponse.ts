@@ -9,6 +9,7 @@ export const readBoundedBytes = async (
   response: Response,
   maximumBytes: number,
   contentTypes: readonly string[],
+  signal?: AbortSignal,
 ): Promise<Uint8Array<ArrayBuffer>> => {
   const contentType = response.headers.get('Content-Type') ?? ''
   const contentLength = Number(response.headers.get('Content-Length'))
@@ -22,11 +23,18 @@ export const readBoundedBytes = async (
   }
 
   const reader = response.body.getReader()
+  const abort = () => { void reader.cancel(signal?.reason).catch(() => undefined) }
+  signal?.addEventListener('abort', abort, { once: true })
   const chunks: Uint8Array[] = []
   let totalBytes = 0
   try {
+    if (signal?.aborted) {
+      abort()
+      throw signal.reason ?? new DOMException('Request canceled', 'AbortError')
+    }
     while (true) {
       const { done, value } = await reader.read()
+      if (signal?.aborted) throw signal.reason ?? new DOMException('Request canceled', 'AbortError')
       if (done) break
       totalBytes += value.byteLength
       if (totalBytes > maximumBytes) {
@@ -36,6 +44,7 @@ export const readBoundedBytes = async (
       chunks.push(value)
     }
   } finally {
+    signal?.removeEventListener('abort', abort)
     reader.releaseLock()
   }
   const bytes = new Uint8Array(totalBytes)

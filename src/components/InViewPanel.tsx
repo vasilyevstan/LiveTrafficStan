@@ -39,6 +39,7 @@ interface InViewPanelProps {
   vesselAvailability: InViewAvailability
   selectedVesselId: string | null
   onVesselSelect: (id: string, originId: string) => void
+  onFindShips?: () => void
   orbits: OrbitalInView
   selectedOrbitalId: string | null
   onOrbitalSelect: (id: string, originId: string) => void
@@ -73,6 +74,7 @@ export function InViewPanel({
   vesselAvailability,
   selectedVesselId,
   onVesselSelect,
+  onFindShips,
   orbits,
   selectedOrbitalId,
   onOrbitalSelect,
@@ -299,6 +301,11 @@ export function InViewPanel({
                 ? `No ships in this view report a usable ${vesselRanking}.`
                 : 'No objects match this search.'}</p>}
             </div>
+            {isShips && onFindShips && (
+              <button className="in-view__find-ships" type="button" onClick={onFindShips}>
+                Find ships by name or ID
+              </button>
+            )}
             {page.rows.length > 0 && (
               <ul
                 className="vessel-results in-view-results"

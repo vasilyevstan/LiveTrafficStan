@@ -4,6 +4,7 @@ import {
   createMemoryAdmissionStateStore,
   MAXIMUM_RESPONSE_BYTES,
   parsePointPath,
+  parseIdentifierPath,
   parseRetryAfterMs,
 } from './relay.mjs'
 
@@ -30,6 +31,45 @@ const createHandler = async (options = {}) =>
   })
 
 describe('OCI aircraft relay', () => {
+  it.each([
+    ['/v2/hex/abc123', { by: 'hex', identifier: 'abc123' }],
+    ['/v2/reg/G-ABCD', { by: 'reg', identifier: 'G-ABCD' }],
+    ['/v2/callsign/TST123', { by: 'callsign', identifier: 'TST123' }],
+    ['/v2/hex/ABC123', undefined], ['/v2/hex/abc123,def456', undefined],
+    ['/v2/hex/%61bc123', undefined], ['/v2/reg/G%2DABCD', undefined],
+    ['/v2/reg/g-abcd', undefined], ['/v2/reg/G/ABCD', undefined],
+    ['/v2/callsign/TST-123', undefined], ['/v2/callsign/123456789', undefined],
+    ['/v2/name/AIRBUS', undefined], ['/v2/hex/abc123/extra', undefined],
+  ])('accepts only a canonical single identifier path %s', (path, expected) => {
+    expect(parseIdentifierPath(path)).toEqual(expected)
+  })
+
+  it('shares identifier/point admission and persistent backoff without storing identities', async () => {
+    let nowMs = 1_000
+    const stateStore = createMemoryAdmissionStateStore()
+    const fetchImpl = vi.fn(async () => new Response('{}', { headers: { 'Content-Type': 'application/json' } }))
+    const handler = await createHandler({ stateStore, fetchImpl, now: () => nowMs })
+    expect((await handler(authorizedRequest('/v2/hex/abc123'))).status).toBe(200)
+    expect(fetchImpl.mock.calls[0][0]).toBe('https://api.adsb.lol/v2/hex/abc123')
+    expect((await handler(authorizedRequest())).status).toBe(503)
+    expect((await handler(authorizedRequest('/v2/reg/G-ABCD'))).status).toBe(503)
+    const restarted = await createHandler({ stateStore, fetchImpl, now: () => nowMs })
+    expect((await restarted(authorizedRequest('/v2/callsign/TST123'))).status).toBe(503)
+    expect(Object.keys(stateStore.snapshot()).sort()).toEqual(['failureCount', 'nextAllowedAtMs'])
+    nowMs += 20_000
+    expect((await restarted(authorizedRequest())).status).toBe(200)
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+  })
+
+  it('authenticates and rejects identifier URL queries before provider work', async () => {
+    const fetchImpl = vi.fn()
+    const handler = await createHandler({ fetchImpl })
+    expect((await handler(new Request('http://relay.internal/v2/hex/abc123'))).status).toBe(401)
+    expect((await handler(authorizedRequest('/v2/hex/abc123?other=def456'))).status).toBe(400)
+    expect((await handler(authorizedRequest('/v2/reg/G-ABCD', { method: 'POST' }))).status).toBe(405)
+    expect(fetchImpl).not.toHaveBeenCalled()
+  })
+
   it('serves provider-free health with the exact release SHA', async () => {
     const fetchImpl = vi.fn()
     const handler = await createHandler({ fetchImpl })

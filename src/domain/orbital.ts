@@ -174,6 +174,12 @@ export interface OrbitalFeatureIdentity {
   canonicalId: string
 }
 
+export const preferOrbitalOwner = <Entry extends { id: string }>(
+  existing: Entry | undefined,
+  candidate: Entry,
+  selectedId: string | null,
+) => existing && candidate.id !== selectedId ? existing : candidate
+
 const orbitalNoradIdPattern = /^[1-9]\d{0,8}$/
 
 export const orbitalFeatureId = (

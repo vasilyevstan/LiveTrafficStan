@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { AppConfig } from '../config/appConfig'
 import type { TrafficProviderResult, Vessel } from '../domain/traffic'
+import type { CachedMarineDiscovery } from '../domain/objectDiscovery'
 import { DigitrafficMarineProvider } from '../providers/marine/DigitrafficMarineProvider'
 import { MultiSourceMarineProvider } from '../providers/marine/MultiSourceMarineProvider'
 import { MULTI_SOURCE_MARINE_CAPABILITIES } from '../providers/marine/multiSourceCapabilities'
@@ -148,8 +149,15 @@ export const useMarineTraffic = (
     }
   }, [config])
 
+  const discoverMetadata = useCallback((query: string, now = Date.now()): CachedMarineDiscovery =>
+    providerRef.current?.discoverMetadata(query, now) ?? {
+      loaded: false,
+      result: { objectClass: 'ships', retrievedAt: now, matches: [], truncated: false, rejectedRecords: 0 },
+    }, [])
+
   return {
     ...result,
+    discoverMetadata,
     capabilities: config.supplementEnabled
       ? MULTI_SOURCE_MARINE_CAPABILITIES : DIGITRAFFIC_MARINE_CAPABILITIES,
   }

@@ -1,0 +1,23 @@
+import { createContext } from 'react'
+
+export type MobileWorkspaceTask =
+  | 'layers' | 'find' | 'context' | 'orbits' | 'sources'
+  | 'settings' | 'places' | 'in-view'
+
+export interface WorkspaceControlsHandle {
+  suspendTask: () => boolean
+  resumeTask: () => boolean
+  openShipFind: () => void
+}
+
+export interface MobileInspectorPresentation {
+  mobile: boolean
+  compact: boolean
+  identity: string | null
+  returnToTask: boolean
+  onExpand: () => void
+  onCollapse: () => void
+}
+
+export const MobileInspectorContext =
+  createContext<MobileInspectorPresentation | undefined>(undefined)

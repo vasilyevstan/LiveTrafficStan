@@ -191,7 +191,64 @@ Device/focus emulation is not physical-phone or OS-keyboard acceptance.
 Existing short actions and mobile attribution/panel occlusion remain #449;
 line-box measurements do not establish unobstructed mobile usability.
 
-### Mobile usability and search analysis (#449, planned)
+### Mobile workspace and scoped discovery (#449)
+
+The implementation preserves desktop defaults and adds the approved
+five-action phone dock, one expanded nonmodal task/inspector, same mounted
+hidden/inert detail body, Details/Back scroll/focus restoration, scoped
+existing-data/catalog discovery and explicitly submitted free lookup.
+Required local gates pass with **190 suites / 1,863 tests**, affected
+aircraft metadata/country/photo/orbital/Starlink/airport/port integrity checks,
+production-input build and all-feature Worker dry run. The dry run uses a
+synthetic KV ID, no production secret and no deployment.
+
+Deterministic coverage includes peer-toggle races/presentation/identity,
+hidden focus and scroll, class-picker focus, owned Escape and native attribution;
+whole catalog and original-clock/source ownership; read-only metadata cache;
+fixed POST/body/stream bounds; aircraft `now`/`seen_pos` and identity-only ships;
+malformed/truncated/empty/source errors; A-B-A cancellation and persistent
+source cooldown/Retry-After. Private relay tests retain incumbent point,
+authentication, status/body/header bounds and restart-persistent admission.
+
+Chrome 155 with native input/focus emulation covers Light/Dark at 315x517,
+390x568, 390x844 and 844x390. Selected ship plus each task and full details
+meet the measured <=65% visible union and native-hit-tested 120x120 map region.
+At 315x517, selected+task union is **61.24%**, with **160px useful body**;
+full ship details are **61.42%**, with **162px useful body**. Modeled orbital
+details measure **61.24% / 162px** at 315 and **57.23% / 177px** at 390x568.
+Primary targets meet 44x44, with no horizontal overflow and one outer task
+scroller. Accepted aircraft/airport assertions and captures completed before
+a later observer failure; the final orbital-only continuation passed.
+
+Native Clear/result selection, same-body scroll/Details/Back, peer switching,
+singleton Places input/owned Escape, drag, credits/theme user choice, short
+visual height, actual 2x page scale, cancellation, last-report navigation,
+captured path/north-up/settled Return, HISTORY/Return to Live and actual
+app-shell fullscreen pass. Catalog opt-in, 20-row paging and final row 24,
+received metadata identity-only matching with zero lookup, and <=2 rendered
+lines of new guidance on both short phones are measured. Desktop local defaults
+and initially collapsed additional discovery are retained.
+
+The first inspection/confirmation exposed genuine picker-focus, 36px HISTORY,
+credit-icon/layout and responsive focus defects; these were corrected.
+Targeted continuations resolved observer-only response-header/content-type,
+DOM serialization, private `_data` assumptions, native SelectAll editing and
+animation-settling errors. An airport overlap selected higher-priority traffic
+in a later synthetic attempt; prior successful native airport assertions and
+captures are retained, not replaced by a false whole-run success.
+Vite StrictMode's initial create/remove is separate from one connected map,
+the same canvas and no post-ready replacement. Validated synthetic clocks/
+catalogs and staged cameras are not physical-phone, actual OS-keyboard,
+native-hidden-state or complete WCAG proof. Earlier failures remain preserved.
+
+One bounded real anonymous Open Waters milestone at **2026-10-15 00:31:10Z**
+ran the actual Worker handler/normalizer: one upstream GET, HTTP 200,
+50 attributed identities, explicit truncation, zero rejected records and
+zero retained positions. Only aggregate/schema evidence was kept, no raw
+provider archive. Real private-aircraft and deployed/update/publication
+acceptance are separate release milestones, not established by fixtures.
+
+### Original mobile usability and search analysis (#449, historical baseline)
 
 The requested Impeccable/UI specialist supplied source evidence; the parent
 provided one native touch/scroll browser batch at 390x568 and 315x517 in
@@ -210,7 +267,8 @@ constraints are source-derived and physical phones were not tested.
 The [focused plan](decisions.md#mobile-usability-and-search-refinement-plan-449)
 requires one expanded mobile task, preserved selected context, one task/results
 scroll owner, 44px primary targets and explicit search scopes, without changing
-desktop behavior or provider lifecycles. These are not shipped UI changes.
+desktop behavior or provider lifecycles. These measurements describe the
+predecessor, not the new implementation's layout.
 
 ### Native workspace fullscreen (#434)
 

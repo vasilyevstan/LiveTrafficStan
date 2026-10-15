@@ -247,10 +247,10 @@ restores summary focus. Presentation does not change provider state or polling.
 
 `TrafficControls` composes App's brand/status slot with navigation, one
 location-search model, and three stable native disclosures with the same `name`.
-**Center**, Aircraft, Ships, ORBITS, **More**, and **Settings** form a right
-desktop rail and a bottom mobile command dock. Center is always outside the
-menus and uses the existing session-Home callback, not another location
-request. Six mobile slots retain the existing dock height and touch targets.
+**Center**, Aircraft, Ships, ORBITS, **More**, and **Settings** retain their
+desktop rail. Mobile uses **Center, Layers, Find, In view, Settings**, with
+the existing layer switches inside Layers. Center always uses the existing
+session-Home callback, not another location request.
 The contextual N/needle is a separate bearing-only **Reset north** companion
 to Center: adjacent on desktop, above its mobile slot, and in the otherwise
 hidden Center slot beside a historical inspector. When present it reserves
@@ -260,14 +260,16 @@ The existing mobile map strip keeps panels clear without adding a dock slot.
 It uses existing settled camera
 reports, a wrapped 1-degree tolerance and a 44x44 target.
 Native workspace fullscreen has its entry in **Settings → View** and a 44x44
-exit companion beside North while the app-shell owns it. The six-slot mobile
-dock is unchanged. North OR Exit reserves one 70px row beside historical
+exit companion beside North while the app-shell owns it. North OR Exit
+reserves one companion row beside historical
 details, not a row per button; error feedback receives only its extra space.
 Presence-scoped mobile flyout clearance keeps both companions reachable.
 In fullscreen-only short desktop/landscape views, existing rail targets
 compact to at least 44px rather than scrolling the exit offscreen.
-Search remains in Settings. The floating card is 280x88 px, inset 16 px on
-desktop and 12 px on mobile. Its redundant brand subtitle is hidden;
+The single location model/input remains mounted in Settings: desktop keeps its
+placement, while mobile Find/Places exposes that same content, not a clone.
+The desktop floating card remains 280x88 px, inset 16 px; mobile compacts its
+status presentation. Its redundant brand subtitle is hidden;
 counts, freshness, and provider disclosure stay visible, with unchanged 44 px
 search/status targets. **More** opens the Explore
 map panel inward to the left of the rail
@@ -282,11 +284,35 @@ textual state and limitations remain in controls and selected details. The
 collapsed orbital summary is omitted while the detailed Orbits view is open,
 avoiding repeated information and preserving result space. The single mounted
 location input remains mounted inside Settings when any peer panel is closed.
-**Settings** opens View & settings with location input and search feedback,
+Desktop **Settings** opens View & settings with location input and search feedback,
 and the existing privacy/attribution copy together, followed by Appearance
 (Auto/Light/Dark and Trails), browser location, history setup, preferences,
 sharing, reset, and application state. No controls or disclosure identities
 are duplicated or remounted.
+
+`mobileWorkspace.ts` separates selected identity from inspector presentation.
+Only one expanded task or inspector uses the nonmodal mobile reading surface.
+An open task compacts selection without unmounting `DetailsPanel` or its
+metadata/photo/route hooks. Its hidden body is inert and removed from
+accessibility/focus exposure. Details suspends the actual native task; Back
+restores that task's draft, scroll and valid focus. X invokes the existing
+deselection callback. A new identity resets presentation, not provider timing.
+Native disclosures remain uncontrolled; toggle reconciliation reads actual
+open peers rather than trusting a stale event snapshot.
+
+The workspace uses the existing visual-viewport subscription and a deferred,
+cleanup-cancelled focus-scroll frame after responsive layout commits.
+Class-picker changes retain picker focus instead of forcing it into search.
+Compact layout means width at most 760px, or coarse-pointer landscape at most
+1024x480. The normal dock is 58px; very narrow magnified views wrap its five
+actions in order rather than shrinking targets/text. One body scroller,
+bounded surface width/height, 44px primary targets and a 4px surface gap leave
+the measured useful body and native map-drag region. Keyboard/explicitly
+expanded credits prioritize reachable reading and dismissal over map area.
+
+`InitiallyCompactAttributionControl` initializes native credits compact once.
+It respects user-open state through theme rehydration; the complete bounded
+credit surface and its own toggle remain reachable. No attribution is removed.
 
 `fullscreen.ts` owns one standard native operation at a time on the existing
 `main.app-shell`; `useFullscreen` is its React lifetime bridge. Availability
@@ -318,11 +344,9 @@ backoff, MQTT connections and orbital deadlines remain authoritative.
 There is no CSS fallback, prefix layer, persistence, new shortcut,
 orientation/keyboard lock or automatic reentry.
 
-**In view** is the third peer, below Settings on desktop and reached through
-an entry inside Settings on mobile. Its mobile wrapper has no dock layout
-box, so it adds no seventh slot. Explicit Close/Escape returns to the desktop
-summary or reopens Settings and focuses its actual mobile entry; opening
-another peer does not reopen Settings. `InViewPanel` is presentational, with
+**In view** is the third peer, below Settings on desktop and directly in the
+mobile dock. Explicit Close/Escape returns to its actual visible summary;
+opening another peer does not reopen Settings. `InViewPanel` is presentational, with
 no provider or map lifecycle. It reuses the shared aircraft query/row text
 and orbital ranking/pagination helpers. Aircraft and Orbits mount at most 20
 rows per page. Ships instead caps the entire shortlist at the existing
@@ -368,21 +392,23 @@ named size-container queries apply responsive layout to its visible size,
 not the unchanged layout viewport. No inverse scaling, camera adjustment or
 map resize is introduced for page magnification. Without `visualViewport`,
 the effect uses the layout dimensions and zero offsets, with CSS viewport-unit
-defaults before measurement. The expanded controls use at most 58% of the
-current visual viewport. Each
+defaults before measurement. Desktop retains the incumbent control budget; mobile uses the shared bounded
+reading surface described above. Each
 disclosure body is its only vertical scroll owner; the task selector scrolls
 away rather than covering short-view results, and orbital results remain fully
 expanded inside the outer scroll region, including `.in-view-results`.
-The mobile sheet leaves a 48 px map
-strip beside the control stack; the collapsed dock needs no scrolling.
+The standard mobile acceptance contract is a visible overlay union at most
+65%, at least 35% free map, and a hit-tested contiguous 120x120 drag region,
+with at least 160px useful body at 315x517 and 390x568. These product thresholds
+do not establish WCAG conformance. The collapsed dock needs no scrolling.
 Only compact closed header/dock surfaces prevent Ctrl-wheel page zoom and
 direct touch pinch. The native wheel listener belongs to the existing shell
 effect and is removed with it; ordinary or already-handled wheel events are
 untouched. Open panels permit magnification and retain their vertical scroll
 owner. Browser keyboard/menu zoom and MapLibre gestures are not intercepted.
-Live selected details occupy a left desktop inspector opposite the controls or a reserved mobile
-area below the floating card. `--workspace-header-bottom` reserves the card's
-bottom edge at 104 px on desktop or 100 px on mobile; the desktop rail is
+Live selected details occupy a left desktop inspector opposite the controls or
+the shared mobile surface. `--workspace-header-bottom` retains the desktop
+card clearance; the desktop rail is
 independently inset 16 px from the upper-right corner. A mobile
 ineligible-viewport prompt has its own row,
 so neither selection nor More can hide the zoom/tilt instruction. These
@@ -401,10 +427,9 @@ the panel corner with an opaque themed backplate and object-specific accessible
 name. Show path shares the heading row. The full-width body is the sole scroll
 owner; there is no full-height close gutter or extra action ribbon.
 
-General mobile inspectors compensate for the fixed header with 184 px and
-160 px short-screen floors. The photo cap subtracts the same added header
-budget, preserving the incumbent whole-image size. The independently larger
-airport-board budget and traffic identity scroll reset remain.
+Mobile inspectors share the task reading budget rather than stacking a full
+inspector above a full task. Desktop photo/airport-board behavior and the
+identity-based scroll reset remain.
 Unhandled Escape bubbles only within the focused inspector; existing
 App close callbacks still own selection clearing and visible focus return.
 The shell introduces no map, provider, persistence or document-wide keyboard
@@ -416,6 +441,36 @@ rules and route limitations use labelled native disclosures, not silent
 line-clamping. Current failures and incomplete/paused states remain visible;
 facts and full identities remain in body fields or explicit name disclosures.
 This presentation changes no acquisition, filter, Home or history lifecycle.
+
+### Scoped discovery and explicit remote operations
+
+`ObjectFind` presents one class/scope and separate ephemeral drafts. In-view
+aircraft matching remains list-only; vessel matching/typed filters still
+refine map/counts and the 20-ship shortlist. Received ship search reads the
+existing bounded Digitraffic metadata cache using its original timestamps,
+at most 24 hours, without fetching or prolonging cache life.
+`catalogDiscovery.ts` searches whole fulfilled airport/port assets and accepted
+curated/Starlink snapshots with 20-row pages, exact NORAD owner/clock checks,
+and no change to live filters. Missing catalogs require explicit existing
+Load/Enable actions; identity-only records never manufacture a location.
+
+`ObjectLookupController` is one explicit cancellable operation, not a poller.
+Its application-owned discovery DTO is separate from `TrafficEntity`.
+Class/scope/task changes, input, hidden/offline/HISTORY and unmount fence
+obsolete A-B-A results. Per-source cooldown/Retry-After survives cancellation;
+a late valid retry deadline can update operational backoff without publishing
+stale UI. There is no result cache, persisted draft, auto-retry or location bias.
+
+Fixed POST `/api/find/aircraft` and `/api/find/ships` send bounded `{by,q}`;
+submitted text cannot enter browser resource URLs or identity-bearing DOM IDs.
+The Worker validates method/origin/body and makes only reviewed fixed GETs.
+Aircraft exact hex/reg/callsign goes through the same private relay and
+persistent shared admission as point requests. Ships use anonymous Open Waters
+identity lookup with original source credits; all REST geometry is discarded.
+Only original qualified aircraft clocks (`now - seen_pos * 1000`) permit
+last-report navigation. Static/modeled/last-reported navigation reuses
+`commitNavigation`, clears old selection/trails and preserves Home, map,
+controllers and cadence; it never fabricates observations/history.
 
 ## Provider boundaries
 

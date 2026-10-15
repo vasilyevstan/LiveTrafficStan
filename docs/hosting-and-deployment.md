@@ -1715,7 +1715,9 @@ gh workflow run deploy-production.yml \
   -f aircraft_photo_enabled=true \
   -f flight_route_enabled=true \
   -f orbital_catalog_enabled=true \
-  -f starlink_catalog_enabled=true
+  -f starlink_catalog_enabled=true \
+  -f marine_supplement_enabled=true \
+  -f airport_boards_enabled=true
 ```
 
 The workflow:
@@ -1812,6 +1814,41 @@ URLs.
 If a newer pull request reaches `main` while an older manual deployment is
 validating, the second equality check fails rather than silently promoting the
 older SHA.
+
+## Mobile workspace and lookup release boundary (#449)
+
+This release keeps the existing Worker, Static Assets and private aircraft
+transport. Fixed same-origin POST `/api/find/aircraft` and `/api/find/ships`
+need no new binding, secret, account, cache, service or scheduled work.
+Anonymous Open Waters ships are identity-only with original credits; aircraft
+exact identifiers use the same selected delivery transport. The protected
+deployment must preserve private relay, photos, routes, curated/Starlink,
+marine supplementation and airport boards.
+
+Before publishing the browser's aircraft lookup, install the checked exact
+main relay source through the existing immutable/checksummed
+`deploy-release.sh`. Verify its exact provider-free health, expected service
+and prior release, without reading/exporting credentials. Preserve the same
+stable egress identity and persistent admission file: point and identifier
+work share one in-flight/20-second/Retry-After boundary. The old Worker remains
+compatible with the extended relay's point route during this ordering.
+Do not open a public relay, extract secrets or use a direct fallback.
+
+After exact-SHA CI and serialized deployment, measure the actual phone
+task/selection behavior and one ordinary installed update. Verify explicit
+lookup on the fixed POST URL, identity-only ships, qualified original aircraft
+position time, shared admission and unaffected ordinary reception; report
+source Busy/failure honestly rather than retrying until a chosen result appears.
+Reuse accepted unchanged source/UI evidence, not an extra whole-app audit.
+
+There is no presentation/query/history schema migration. Rollback restores the
+accepted predecessor Worker/Static Assets through the existing checked path;
+that predecessor continues to use the compatible point route on the extended
+relay. Restoring the older relay is optional only after the old browser/Worker
+contract is active, without clearing admission state. Cached/open new shells
+may remain until ordinary refresh and must receive a truthful lookup error,
+not a fabricated result. Record running application/relay identities separately
+from later documentation-only receipts and publish/verify the matching Wiki.
 
 ## Native workspace fullscreen release boundary (#434)
 

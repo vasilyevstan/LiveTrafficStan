@@ -670,6 +670,12 @@
   display: none;
 }
 
+.mobile-task-heading,
+.mobile-find-kind,
+.vessel-discovery__filter-options > summary {
+  display: none;
+}
+
 .control-panel__more-body {
   position: absolute;
   top: calc(var(--workspace-orientation-note) + var(--workspace-note-height));
@@ -2665,5 +2671,580 @@
   .details-panel,
   .map-error {
     transition: none;
+  }
+}
+
+.app-shell--mobile-workspace .interface-layer > * {
+  --mobile-dock-bottom: max(52px, calc(env(safe-area-inset-bottom) + 44px));
+  --mobile-dock-height: 58px;
+  --mobile-surface-gap: 4px;
+  --mobile-surface-width: min(460px, calc(var(--app-visual-viewport-width) - 16px));
+  --mobile-body-height: max(44px, min(
+    clamp(180px, calc(var(--app-visual-viewport-height) * 0.52 - 100px), 340px),
+    calc(var(--app-visual-viewport-height) - var(--mobile-surface-bottom) - 100px)
+  ));
+  --mobile-surface-bottom: calc(var(--mobile-dock-bottom) + var(--mobile-dock-height) + var(--mobile-surface-gap));
+  --workspace-header-bottom: 76px;
+}
+
+.app-shell--mobile-workspace .brand-panel {
+  top: 8px;
+  left: 8px;
+  width: min(280px, calc(var(--app-visual-viewport-width) - 16px));
+  padding: 0 10px;
+}
+
+.app-shell--mobile-workspace .brand-panel__title {
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  padding-right: 0;
+}
+
+.app-shell--mobile-workspace .radar-mark {
+  width: 18px;
+  height: 18px;
+  flex-basis: 18px;
+}
+
+.app-shell--mobile-workspace .live-status {
+  margin-top: 0;
+}
+
+.app-shell--mobile-workspace .live-status__disclosure summary {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  height: 44px;
+  min-height: 44px;
+  gap: 6px;
+  padding-top: 20px;
+}
+
+.app-shell--mobile-workspace .live-status__summary {
+  flex-wrap: nowrap;
+  font-size: 0.69rem;
+}
+
+.app-shell--mobile-workspace .live-status__coverage,
+.app-shell--mobile-workspace .live-status__summary > span + span::before {
+  display: none;
+}
+
+.app-shell--mobile-workspace .live-status__disclosure-label {
+  font-size: 0.65rem;
+}
+
+.app-shell--mobile-workspace .live-status__updated {
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.app-shell--mobile-workspace .control-stack,
+.app-shell--mobile-workspace .interface-layer:has(.details-panel) .control-stack,
+.app-shell--mobile-workspace .interface-layer:has(.history-mode-notice) .control-stack {
+  top: auto;
+  right: max(8px, env(safe-area-inset-right));
+  bottom: var(--mobile-dock-bottom);
+  left: max(8px, env(safe-area-inset-left));
+  width: auto;
+  height: var(--mobile-dock-height);
+  visibility: visible;
+}
+
+.app-shell--mobile-workspace .workspace-dock {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border-radius: 12px;
+}
+
+.app-shell--mobile-workspace :is(
+  .control-panel--operations, .control-panel--settings, .control-panel--in-view,
+  .control-panel__more, .control-panel__more[open]
+) {
+  display: contents;
+}
+
+.app-shell--mobile-workspace .workspace-orientation {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.app-shell--mobile-workspace #traffic-controls-map-tools-summary {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.app-shell--mobile-workspace .workspace-find {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+.app-shell--mobile-workspace #in-view-summary {
+  grid-column: 4;
+  grid-row: 1;
+}
+
+.app-shell--mobile-workspace #traffic-controls-settings-summary {
+  grid-column: 5;
+  grid-row: 1;
+}
+
+.app-shell--mobile-workspace :is(
+  .workspace-center, .workspace-find, .control-panel__more > summary
+) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  width: 100%;
+  min-width: 44px;
+  min-height: 56px;
+  margin: 0;
+  padding: 5px 2px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--button-text);
+  background: transparent;
+  font-size: 0.67rem;
+  font-weight: 600;
+  pointer-events: auto;
+}
+
+.app-shell--mobile-workspace .workspace-find[aria-expanded='true'] {
+  color: var(--button-active-text);
+  background: var(--button-active-background);
+}
+
+.app-shell--mobile-workspace :is(
+  .control-panel__primary, .control-panel__tasks, .workspace-panel-title,
+  .in-view-mobile-entry, .in-view__close
+) {
+  display: none;
+}
+
+.app-shell--mobile-workspace .control-panel__more-body {
+  top: auto;
+  right: 0;
+  bottom: calc(var(--mobile-dock-height) + var(--mobile-surface-gap));
+  left: auto;
+  width: var(--mobile-surface-width);
+  height: var(--mobile-body-height);
+  max-height: calc(var(--app-visual-viewport-height) - var(--mobile-surface-bottom) - 44px - 8px);
+  padding: 9px 12px;
+  border-radius: 0 0 12px 12px;
+}
+
+.app-shell--mobile-workspace .mobile-task-heading {
+  position: absolute;
+  right: 0;
+  bottom: calc(var(--mobile-dock-height) + var(--mobile-surface-gap) + var(--mobile-body-height));
+  left: auto;
+  display: flex;
+  align-items: center;
+  height: 44px;
+  width: var(--mobile-surface-width);
+  padding-left: 12px;
+  border: 1px solid var(--panel-border);
+  border-bottom: 0;
+  border-radius: 12px 12px 0 0;
+  color: var(--heading-text);
+  background: var(--panel-background);
+  pointer-events: auto;
+}
+
+.app-shell--mobile-workspace .control-panel__more:not([open]) > .mobile-task-heading {
+  display: none;
+}
+
+.app-shell--mobile-workspace .mobile-task-heading strong {
+  flex: 1 1 auto;
+}
+
+.app-shell--mobile-workspace .mobile-task-heading button {
+  display: grid;
+  flex: 0 0 44px;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.app-shell--mobile-workspace .mobile-find-kind {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+  color: var(--heading-text);
+  font-weight: 650;
+}
+
+.app-shell--mobile-workspace .mobile-find-kind select {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.app-shell--mobile-workspace .mobile-context-actions {
+  margin-block: 10px 16px;
+}
+
+.app-shell--mobile-workspace :is(
+  .control-options button, .vessel-discovery button,
+  .vessel-discovery select, .vessel-discovery input[type='search'],
+  .location-search__form button, .workspace-navigation input,
+  .location-results button, .vessel-results button,
+  .mobile-find-kind select, .in-view input[type='search'], .in-view__find-ships,
+  .control-panel__more-body button, .details-panel button, .history-mode-notice button
+) {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.app-shell--mobile-workspace :is(input[type='search'], select) {
+  font-size: 1rem;
+}
+
+.app-shell--mobile-workspace :is(.location-results, .vessel-results) {
+  max-height: none;
+  overflow: visible;
+}
+
+.app-shell--mobile-workspace .vessel-discovery__filter-options > summary {
+  display: block;
+  min-height: 44px;
+  padding-block: 12px;
+  color: var(--heading-text);
+}
+
+.app-shell--mobile-workspace #traffic-controls-settings[data-settings-mode='settings'] .workspace-location {
+  display: none;
+}
+
+.app-shell--mobile-workspace #traffic-controls-settings[data-settings-mode='places'] .control-panel__more-body > :not(.workspace-location) {
+  display: none;
+}
+
+.app-shell--mobile-workspace .details-panel {
+  top: auto;
+  right: max(8px, env(safe-area-inset-right));
+  bottom: var(--mobile-surface-bottom);
+  left: auto;
+  width: var(--mobile-surface-width);
+  max-height: none;
+  padding: 0;
+  border-radius: 12px;
+}
+
+.app-shell--mobile-workspace .details-panel__heading {
+  min-height: 44px;
+  padding: 0 96px 0 12px;
+}
+
+.app-shell--mobile-workspace .details-panel__identity {
+  flex-wrap: wrap;
+}
+
+.app-shell--mobile-workspace .details-panel h2 {
+  font-size: 1rem;
+}
+
+.app-shell--mobile-workspace .details-panel__body {
+  height: var(--mobile-body-height);
+  max-height: calc(var(--app-visual-viewport-height) - var(--mobile-surface-bottom) - 96px);
+  padding: 9px 12px;
+}
+
+.app-shell--mobile-workspace .details-panel__body[hidden] {
+  display: none;
+}
+
+.app-shell--mobile-workspace .details-panel__presentation {
+  position: absolute;
+  top: 0;
+  right: 44px;
+  width: 52px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  font-size: 0.72rem;
+}
+
+.app-shell--mobile-workspace .details-panel__close {
+  top: 0;
+  right: 0;
+}
+
+.app-shell--mobile-workspace .details-panel[data-compact] .details-panel__heading {
+  min-height: 44px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  border: 0;
+}
+
+.app-shell--mobile-workspace .details-panel[data-compact] .journey-action {
+  display: none;
+}
+
+.app-shell--mobile-workspace .interface-layer[data-workspace-task] .details-panel[data-compact] {
+  bottom: calc(var(--mobile-surface-bottom) + var(--mobile-body-height));
+  border-radius: 12px 12px 0 0;
+}
+
+.app-shell--mobile-workspace .interface-layer:has(.details-panel[data-compact]) .mobile-task-heading {
+  display: none;
+}
+
+.app-shell--mobile-workspace .workspace-north,
+.app-shell--mobile-workspace .workspace-fullscreen-exit {
+  top: auto;
+  right: auto;
+  bottom: calc(var(--mobile-dock-height) + var(--mobile-surface-gap));
+  left: 0;
+}
+
+.app-shell--mobile-workspace .workspace-orientation:has(.workspace-north) .workspace-fullscreen-exit {
+  left: 52px;
+}
+
+.app-shell--mobile-workspace :is(
+  .interface-layer[data-workspace-task],
+  .interface-layer:has(.details-panel:not([data-compact]))
+) :is(.workspace-north, .workspace-fullscreen-exit) {
+  bottom: calc(var(--mobile-dock-height) + var(--mobile-surface-gap) + var(--mobile-body-height) + 52px);
+}
+
+.app-shell--mobile-workspace .workspace-fullscreen-status {
+  top: auto;
+  right: 0;
+  bottom: calc(var(--mobile-dock-height) + var(--mobile-surface-gap) + var(--mobile-body-height) + 104px);
+  left: 0;
+  width: auto;
+}
+
+.app-shell--mobile-workspace .control-panel__urgent {
+  top: auto;
+  right: 0;
+  bottom: calc(var(--mobile-dock-height) + var(--mobile-surface-gap) + var(--mobile-body-height) + 52px);
+  left: 52px;
+  width: auto;
+}
+
+.app-shell--mobile-workspace .control-panel__orbital-summary {
+  display: none;
+}
+
+.app-shell--mobile-workspace .history-mode-notice {
+  top: auto;
+  bottom: var(--mobile-dock-bottom);
+  height: 128px;
+}
+
+.app-shell--mobile-workspace .interface-layer:has(.history-mode-notice) > * {
+  --mobile-surface-bottom: calc(var(--mobile-dock-bottom) + 136px);
+}
+
+.app-shell--mobile-workspace .interface-layer:has(.history-mode-notice) .workspace-dock {
+  visibility: hidden;
+}
+
+.app-shell--mobile-workspace .interface-layer:has(.history-mode-notice) :is(.workspace-north, .workspace-fullscreen-exit) {
+  visibility: visible;
+}
+
+.app-shell--mobile-workspace :is(.maplibregl-ctrl-attrib, .maplibregl-ctrl-attrib.maplibregl-compact-show) {
+  width: 44px;
+  min-height: 44px;
+  padding: 0;
+}
+
+.app-shell--mobile-workspace .maplibregl-ctrl-attrib-button {
+  width: 44px;
+  height: 44px;
+  background-size: 24px;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.app-shell--mobile-workspace .maplibregl-ctrl-attrib.maplibregl-compact-show .maplibregl-ctrl-attrib-inner {
+  position: absolute;
+  right: 0;
+  bottom: 52px;
+  width: min(360px, calc(var(--app-visual-viewport-width) - 20px));
+  max-height: calc(var(--app-visual-viewport-height) - 72px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 10px 12px;
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  background: var(--panel-background);
+  box-shadow: 0 3px 12px var(--panel-shadow);
+  font-size: 0.78rem;
+}
+
+@container workspace (max-width: 280px) {
+  .app-shell--mobile-workspace .interface-layer > * {
+    --mobile-dock-height: 116px;
+  }
+
+  .app-shell--mobile-workspace .workspace-dock {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+  }
+
+  .app-shell--mobile-workspace #in-view-summary {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .app-shell--mobile-workspace #traffic-controls-settings-summary {
+    grid-column: 2 / -1;
+    grid-row: 2;
+  }
+}
+
+.object-find-kind,
+.object-find-scope {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-block: 0 12px;
+  color: var(--heading-text);
+}
+
+.object-find :is(input, select),
+.object-find-kind select {
+  min-width: 0;
+  min-height: 44px;
+  flex: 1 1 auto;
+  padding: 8px 10px;
+  border: 1px solid var(--button-border);
+  border-radius: 8px;
+  color: var(--panel-text);
+  background: var(--button-background);
+  font-size: 1rem;
+}
+
+.object-find button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid var(--button-border);
+  border-radius: 8px;
+  color: var(--button-text);
+  background: var(--button-background);
+  cursor: pointer;
+}
+
+.object-find button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.object-find button:not(:disabled):hover {
+  color: var(--button-hover-text);
+  border-color: var(--button-hover-border);
+}
+
+.object-find-label {
+  display: block;
+  margin-block: 8px 6px;
+  color: var(--heading-text);
+}
+
+.object-find-input {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.object-find-heading-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.app-shell--mobile-workspace .object-find-heading-row > label {
+  min-width: 0;
+  margin: 0;
+}
+
+.object-find-heading-row label > span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.app-shell--mobile-workspace .object-find-heading-row select {
+  width: 100%;
+}
+
+.app-shell--mobile-workspace .object-find :is(.aircraft-discovery, .vessel-discovery) > legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+.object-find-submit {
+  width: 100%;
+}
+
+.object-find-results {
+  display: grid;
+  gap: 12px;
+  margin: 12px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.object-find-results li {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--panel-border);
+  overflow-wrap: anywhere;
+}
+
+.object-find-results li > span {
+  color: var(--subtle-text);
+  font-size: 0.78rem;
+}
+
+.object-find-results button {
+  width: 100%;
+}
+
+.object-find-extra > summary,
+.app-shell--mobile-workspace .context-details > summary {
+  min-height: 44px;
+  padding-block: 12px;
+}
+
+@media (min-width: 761px) and (max-height: 480px) {
+  .app-shell--mobile-workspace :is(.control-panel__more-body, .mobile-task-heading, .details-panel) {
+    left: auto;
+    width: min(460px, calc(var(--app-visual-viewport-width) * 0.58));
+  }
+
+  .app-shell--mobile-workspace :is(
+    .interface-layer[data-workspace-task],
+    .interface-layer:has(.details-panel:not([data-compact]))
+  ) :is(.workspace-north, .workspace-fullscreen-exit) {
+    bottom: calc(var(--mobile-dock-height) + var(--mobile-surface-gap));
   }
 }

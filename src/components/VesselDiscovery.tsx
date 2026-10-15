@@ -26,6 +26,7 @@ import { ObjectResultButton } from './ObjectResultButton'
 import { MULTI_SOURCE_MARINE_CAPABILITIES } from '../providers/marine/multiSourceCapabilities'
 
 interface VesselDiscoveryProps {
+  compactFilters?: boolean
   filters: VesselFilterState
   vessels: readonly DisplayVessel[]
   totalVessels: number
@@ -40,6 +41,7 @@ const maximumLengthLabel = (value: VesselMaximumLength) =>
   value === null ? 'No maximum' : `${value} m`
 
 export function VesselDiscovery({
+  compactFilters = false,
   filters,
   vessels,
   totalVessels,
@@ -85,6 +87,8 @@ export function VesselDiscovery({
         </button>
       </div>
 
+      <details className="vessel-discovery__filter-options" open={compactFilters ? undefined : true}>
+      <summary>Filters</summary>
       <div className="vessel-discovery__filters">
         <label>
           <span>Vessel type</span>
@@ -211,6 +215,7 @@ export function VesselDiscovery({
           <span>Include non-yachts with unknown length</span>
         </label>
       </div>
+      </details>
 
       <div className="vessel-discovery__summary">
         <p role="status">{status}</p>

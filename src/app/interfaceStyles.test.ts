@@ -81,11 +81,12 @@ describe('interface presentation contracts', () => {
     expect(styles).toMatch(/#depths-layer-toggle\s*\{[^}]*grid-column: 1 \/ -1;[^}]*min-height: 44px;/)
   })
 
-  it('preserves the previous mobile body and photo budget beneath the fixed identity row', () => {
-    expect(styles).toMatch(/--mobile-detail-height: clamp\(\s*184px,\s*calc\(var\(--app-visual-viewport-height\) - 564px\),\s*256px/)
-    expect(styles).toMatch(/@container workspace \(max-width: 340px\)[\s\S]*--mobile-detail-height: 160px;/)
-    expect(styles).toMatch(/\.vessel-photo__image\s*\{[^}]*max-height: min\(160px, calc\(var\(--mobile-detail-height\) - 84px\)\);/)
-    expect(styles).toMatch(/:has\(\.details-panel--airport-board\)[\s\S]*--mobile-detail-height: clamp\(\s*104px,/)
+  it('shares one mobile surface budget and keeps the compact body noninteractive', () => {
+    expect(styles).toMatch(/--mobile-body-height: max\(44px, min\(\s*clamp\(180px,[^;]*340px\)/)
+    expect(styles).toMatch(/\.app-shell--mobile-workspace \.control-panel__more-body\s*\{[^}]*height: var\(--mobile-body-height\)/)
+    expect(styles).toMatch(/\.app-shell--mobile-workspace \.details-panel__body\s*\{[^}]*height: var\(--mobile-body-height\)/)
+    expect(styles).toMatch(/\.app-shell--mobile-workspace \.details-panel__body\[hidden\]\s*\{\s*display: none;/)
+    expect(styles).toMatch(/\.app-shell--mobile-workspace \.interface-layer:has\(\.details-panel\[data-compact\]\) \.mobile-task-heading\s*\{\s*display: none;/)
   })
 
   it('anchors interface and native map controls to the visual viewport, not the canvas', () => {
@@ -132,26 +133,23 @@ describe('interface presentation contracts', () => {
     expect(styles).toMatch(/\.details-panel\s*\{[^}]*right: auto;[^}]*left: 16px;/)
   })
 
-  it('fits Center into the existing six-slot mobile dock', () => {
+  it('fits the five task-first actions into the mobile dock without changing desktop controls', () => {
     expect(styles).toMatch(/\.workspace-center\s*\{[^}]*min-width: 0;[^}]*min-height: 44px;/)
-    const mobile = styles.split('@container workspace (max-width: 760px) {')[1]
-    expect(mobile).toMatch(/\.workspace-center\s*\{[^}]*flex: 1 1 0;/)
-    expect(mobile).toMatch(/\.control-panel--operations\s*\{[^}]*flex: 4 1 0;/)
-    expect(mobile).toMatch(/\.control-panel--settings\s*\{[^}]*flex: 1 1 0;/)
-    expect(mobile).toMatch(/\.workspace-center,[\s\S]*?min-height: 56px;/)
-    expect(mobile).toMatch(
-      /\.control-panel--in-view,\s*\.control-panel__in-view\s*\{\s*display: contents;/,
-    )
-    expect(mobile).toMatch(/\.control-panel__in-view > summary\s*\{\s*display: none;/)
-    expect(mobile).toMatch(/\.in-view-mobile-entry\s*\{\s*display: block;/)
+    expect(styles).toMatch(/\.app-shell--mobile-workspace \.workspace-dock\s*\{[^}]*grid-template-columns: repeat\(5, minmax\(0, 1fr\)\)/)
+    for (const [selector, column] of [
+      ['.workspace-orientation', 1], ['#traffic-controls-map-tools-summary', 2],
+      ['.workspace-find', 3], ['#in-view-summary', 4], ['#traffic-controls-settings-summary', 5],
+    ]) {
+      expect(styles).toContain(`${selector} {\n  grid-column: ${column};`)
+    }
+    expect(styles).toContain('--mobile-dock-height: 58px')
+    expect(styles).toContain('min-height: 56px')
   })
 
-  it('reserves one hidden dock row only for a useful historical compass or fullscreen exit', () => {
-    const mobile = styles.split('@container workspace (max-width: 760px) {')[1]
-    expect(mobile).toMatch(/\.details-panel--historical\s*\{[^}]*--historical-compass-height: 0px;[^}]*var\(--historical-compass-height\)/)
-    expect(mobile).toMatch(/\.interface-layer:has\(\.workspace-north, \.workspace-fullscreen-exit\) \.details-panel--historical\s*\{\s*--historical-compass-height: 70px;/)
-    expect(mobile).toMatch(/\.interface-layer:has\(\.details-panel--historical\) \.control-stack\s*\{\s*visibility: hidden;/)
-    expect(mobile).toMatch(/\.interface-layer:has\(\.details-panel--historical\) \.workspace-north,\s*\.interface-layer:has\(\.details-panel--historical\) \.workspace-fullscreen-exit\s*\{\s*bottom: 0;\s*visibility: visible;/)
+  it('keeps HISTORY ownership and reachable orientation controls without showing the ordinary dock', () => {
+    expect(styles).toMatch(/\.app-shell--mobile-workspace \.interface-layer:has\(\.history-mode-notice\) \.workspace-dock\s*\{\s*visibility: hidden;/)
+    expect(styles).toMatch(/\.app-shell--mobile-workspace \.interface-layer:has\(\.history-mode-notice\) > \*\s*\{[^}]*--mobile-surface-bottom:/)
+    expect(styles).toContain(".interface-layer:has(.details-panel:not([data-compact]))")
   })
 
   it('gives fullscreen actions 44px targets and presence-only mobile flyout clearance', () => {
@@ -168,5 +166,14 @@ describe('interface presentation contracts', () => {
     expect(styles).toMatch(/\.in-view input\[type='search'\]\s*\{\s*min-height: 44px;/)
     expect(styles).toMatch(/\.in-view__close\s*\{[^}]*width: 44px;/)
     expect(styles).toMatch(/\.close-button\s*\{\s*min-height: 44px;/)
+  })
+
+  it('wraps magnified dock actions and bounds credits independently of the layout viewport', () => {
+    expect(styles).toContain('@container workspace (max-width: 280px)')
+    expect(styles).toContain('--mobile-dock-height: 116px')
+    expect(styles).toMatch(/\.workspace-dock\s*\{[^}]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);[^}]*grid-template-rows: repeat\(2, minmax\(0, 1fr\)\)/)
+    expect(styles).toMatch(/\.app-shell--mobile-workspace \.maplibregl-ctrl-attrib\.maplibregl-compact-show \.maplibregl-ctrl-attrib-inner\s*\{[^}]*position: absolute;[^}]*width: min\(360px,[^}]*overflow: auto;/)
+    expect(styles).toMatch(/\.app-shell--mobile-workspace \.maplibregl-ctrl-attrib-button\s*\{[^}]*background-repeat: no-repeat;/)
+    expect(styles).toContain('.control-panel__more-body button, .details-panel button, .history-mode-notice button')
   })
 })

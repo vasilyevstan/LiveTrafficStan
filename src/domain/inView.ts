@@ -1,4 +1,5 @@
 import type { ModeledOrbitalPosition, OrbitalControllerState } from './orbital'
+import { preferOrbitalOwner } from './orbital'
 import {
   orbitalCatalogPage,
   orbitalPositionInViewport,
@@ -230,7 +231,7 @@ export const deriveOrbitalInView = ({
       const existing = positions.get(position.noradCatalogId)
       // Match the map's curated-first ownership, retaining an explicit selection.
       positions.set(position.noradCatalogId, {
-        position: existing && position.id !== selectedId ? existing.position : position,
+        position: preferOrbitalOwner(existing?.position, position, selectedId),
         shown: Boolean(existing?.shown || shownIds.has(position.id)),
       })
     }
