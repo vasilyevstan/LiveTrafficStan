@@ -8,9 +8,19 @@ user accounts or a server-side vessel history archive.
 
 Public production: <https://trackstan.xyz>
 
-Current application/Worker source: `40486a29b5e15ea3be6c0b9fd06180cd68743e2f`,
-with the [orbital recovery/runtime receipt](docs/hosting-and-deployment.md#orbital-source-recovery-and-fresh-production-acceptance-2026-10-14).
+Current application/Worker source: `b54962f3cce89ea4757e4b47c829b895ebadc863`,
+with the [mobile workspace/search runtime receipt](docs/hosting-and-deployment.md#mobile-workspace-and-lookup-production-acceptance-2026-10-15).
 Later documentation-only commits do not replace that running source.
+
+**Mobile workspace/search released on 2026-10-15:** phones have **Center,
+Layers, Find, In view, Settings**, one expanded task/full inspector and
+compact retained selection. Real short-phone selected/task overlays measure
+61.24% at 315x517, down from the roughly 78% baseline, with a 160px useful
+body and native-hit-tested 120x120 map region. Explicit free ship lookup
+returns attributed identities with **Position unavailable**; exact aircraft
+lookup offers **Go to last report** only for qualified original position
+times. Desktop defaults stay intact. See [scopes and limits](docs/configuration.md#scoped-object-discovery)
+and [measured acceptance and qualifications](docs/development-and-testing.md#mobile-workspace-and-scoped-discovery-449).
 
 **Orbital recovery verified on 2026-10-14:** a normal scheduled event published
 fresh curated data and the bounded 512-record Starlink sample. Real production
@@ -28,7 +38,7 @@ The existing radar symbol is retained. `LiveTrafficStan` remains the GitHub
 repository, Worker and compatibility namespace; saved data and installed-app
 identity are not renamed or reset.
 
-![TrackStan Light interface with Center visible in the main map dock](https://github.com/user-attachments/assets/07c7ef28-7bb4-43be-bc39-945f741ca191)
+![Historical TrackStan Light interface before the five-action mobile workspace](https://github.com/user-attachments/assets/07c7ef28-7bb4-43be-bc39-945f741ca191)
 
 ## Current features
 

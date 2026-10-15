@@ -1850,6 +1850,57 @@ may remain until ordinary refresh and must receive a truthful lookup error,
 not a fabricated result. Record running application/relay identities separately
 from later documentation-only receipts and publish/verify the matching Wiki.
 
+## Mobile workspace and lookup production acceptance, 2026-10-15
+
+#465 and checked dev-to-main #466 deliver application
+**`b54962f3cce89ea4757e4b47c829b895ebadc863`**, Worker
+**`0b4841f3-8321-4c7e-9567-72f47dd6bf57`**, through serialized deployment
+**`38663282368`** at **01:02:12Z**. Exact feature/dev/ancestry/final-dev/
+promotion/main Validation `38661874237`, `38662066131`, `38662475648`,
+`38662691396`, `38662699026`, `38662956655` passed. Both production origins
+passed strict exact-release smokes. CLI inspection found no eligible pending
+environment gate; no safeguard or wait timer was bypassed.
+
+One real documentation-history conflict required tree-neutral #467.
+Pre-feature dev exactly equalled then-main; the resolved/merged tree exactly
+matched accepted `820f7c5e8ae60b140d11d94d9bcb7fa895ddb796`.
+The sole dev merge-method exception was immediately restored/deep-verified;
+main safeguards and repository settings stayed unchanged, including disabled
+automatic branch deletion. No unchanged-source specialist review was repeated.
+
+Before Worker publication, the existing OCI Run Command path activated the
+same exact-main relay from checksummed immutable files. Relay SHA256 is
+`9c040027124c0f69927b00ddf4c6f90031f9d56124ac25ec7a5c23254331428f`.
+Its expected previous release is
+`18082a1e78d5bb9b0c2565f1fe82ae675e1cc9a8`. Exact health and both services
+passed; admission remained byte-identical
+`{"nextAllowedAtMs":1792026010821,"failureCount":0}` and the maintenance
+timer remained disabled/inactive. Two startup connection-refused checks were
+followed by the deployment script's successful exact-health check; the
+physical operation completed with exit 0. No provider request, auth export,
+identity change, new resource or admission reset was part of this activation.
+
+The genuine old-shell **REFRESH APP** at 01:03:33-01:03:37Z loaded
+`index-DZq1uJMn.js`; CSS is `index-BrInOiYK.css`. Raw native-saved preferences,
+root install/controller identity and history database name/version remained;
+this clean profile does not establish historical observation-content retention.
+Seven production cases, including four short-phone/theme combinations,
+same-body Details/Back, two attributed identity-only ship matches and one
+qualified real aircraft lookup/navigation, pass with native input and one
+map. The 315x517 selected/task union is 61.24%, useful body 160px, with a
+120x120 unobscured hit-tested map region. Original clocks, partial/empty
+semantics, failed observer receipts and exact browser limits are retained in
+[testing](development-and-testing.md#mobile-workspace-and-scoped-discovery-449).
+
+All existing production inputs and atomic credentials remain enabled. The
+compatible predecessor is application
+`40486a29b5e15ea3be6c0b9fd06180cd68743e2f`, Worker
+`24cfe6e4-7b15-4f04-a051-6bfe585ca6d7`; use the canonical serialized rollback
+workflow without resetting state. The extended relay remains point-compatible.
+No new rollback drill or documentation deployment was performed. Later
+receipt-only commits and Wiki publication are not the running application SHA;
+#449 records final public byte verification separately.
+
 ## Native workspace fullscreen release boundary (#434)
 
 This is a browser-only workspace action, not a Worker, provider or deployment
