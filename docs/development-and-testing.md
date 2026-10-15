@@ -245,8 +245,63 @@ One bounded real anonymous Open Waters milestone at **2026-10-15 00:31:10Z**
 ran the actual Worker handler/normalizer: one upstream GET, HTTP 200,
 50 attributed identities, explicit truncation, zero rejected records and
 zero retained positions. Only aggregate/schema evidence was kept, no raw
-provider archive. Real private-aircraft and deployed/update/publication
-acceptance are separate release milestones, not established by fixtures.
+provider archive. This source-contract proof is separate from the deployed
+milestones below; fixtures do not establish production operation.
+
+#### Production and ordinary installed update, 2026-10-15
+
+Checked #465, required tree-neutral #467 and promotion #466 delivered
+`b54962f3cce89ea4757e4b47c829b895ebadc863`, Worker
+`0b4841f3-8321-4c7e-9567-72f47dd6bf57`, through deployment `38663282368`.
+Exact-main Validation `38662956655` and both strict origin smokes passed.
+The immutable relay was activated first, with exact health/checksums,
+expected previous release, both services active, unchanged admission bytes
+and the maintenance timer still disabled/inactive. No credential extraction,
+new identity, provider probe, admission reset or infrastructure resource.
+
+Native ordinary **REFRESH APP** at **01:03:33-01:03:37Z** replaced
+`index-81BCBiGX.js` with `index-DZq1uJMn.js`, retaining byte-exact native-saved
+theme/preferences, root registration/controller, and history database
+name/version 2. This clean profile does **not** prove retained historical
+observation contents. The new document legitimately creates its own one map.
+
+The bounded production batch plus aircraft-only continuation accepted seven
+cases on real transport/clocks, without fixtures or intercepted fetch:
+
+| Real selected ship, both themes | Maximum selected/task union | Minimum useful task body | Full details union / useful body |
+| --- | --- | --- | --- |
+| 315x517 | 61.24% | 160px | 61.42% / 162px |
+| 390x568 | 57.23% | 175px | 57.40% / 177px |
+
+All sixteen task measurements retain a native-hit-tested 120x120 map region,
+44px primary targets, one outer scroller, visible focus, no horizontal
+overflow and the same canvas. Native real-ship selection, same-body
+scroll/Details/Back and theme changes pass. Each measured view contains
+70-98 actually rendered vector-source features; the resumed observer recorded
+no new XYZ tile responses, so it makes no new-tile-download claim.
+
+One intended ship submission returned HTTP 200 and **two credited,
+identity-only matches**, no navigation and no typing request. An observer
+class-picker error also submitted one public aircraft identifier to the
+ship-name endpoint; that extra HTTP 200 is retained, not hidden or called an
+aircraft attempt. The corrected native picker commits one option before its
+peer transition. The sole actual aircraft POST returned one credited
+**AD3C78** match at **01:23:09.880Z**, with original position clock
+**01:23:09.256Z**, then native Go to last report committed navigation without
+creating live selection or replacing the map. Before submission a native wide
+view paused point reception and the full shared-admission interval was honored.
+
+Failed observer receipts remain: DOM-reference serialization, an anonymous
+peer lacking an ID, Enter without an effective native form submission, an
+invented zoom-5 pause threshold (the real 100km policy correctly paused at
+zoom 7.27), and the picker transition above. No application edit/redeployment
+was needed. Six completed mobile/ship cases were reused, not repeated during
+aircraft-only continuation. Between cases the incumbent peer-close setup is
+programmatic; measured task opening, selection, scrolling, Back, themes,
+submit and navigation use native input. Device/focus emulation is not
+physical iOS/Android, actual OS keyboard, native-hidden-state or full WCAG proof.
+Unchanged broad local/desktop/catalog/history/fullscreen evidence is reused.
+See the [runtime and rollback receipt](hosting-and-deployment.md#mobile-workspace-and-lookup-production-acceptance-2026-10-15).
 
 ### Original mobile usability and search analysis (#449, historical baseline)
 
