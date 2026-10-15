@@ -319,7 +319,7 @@ is acquired or saved.
 
 On mobile it occupies the map strip above Center, not a seventh dock slot.
 With an open historical inspector, it uses the otherwise hidden Center slot
-and reserves that existing 70px dock row below the inspector. North and a
+and reserves the current responsive dock row below the inspector. North and a
 native fullscreen exit share that row; it is returned when neither remains.
 HISTORY controls
 and the remaining hidden dock actions keep their existing behavior.

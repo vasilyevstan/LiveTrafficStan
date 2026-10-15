@@ -255,7 +255,7 @@ The contextual N/needle is a separate bearing-only **Reset north** companion
 to Center: adjacent on desktop, above its mobile slot, and in the otherwise
 hidden Center slot beside a historical inspector. When present it reserves
 only its row above desktop flyouts; a historical mobile inspector temporarily
-reserves the incumbent 70px hidden dock row, recovering that space on reset.
+reserves the current responsive hidden dock row, recovering that space on reset.
 The existing mobile map strip keeps panels clear without adding a dock slot.
 It uses existing settled camera
 reports, a wrapped 1-degree tolerance and a 44x44 target.
