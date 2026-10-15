@@ -26,6 +26,8 @@ import {
   type MarineRelayNamespace,
 } from './marineStream.js'
 import { handleVesselPhotos } from './vesselPhotos.js'
+import { handleObjectLookup } from './objectLookup.js'
+import { DISCOVERY_CONFIG } from '../src/config/discoveryConfig.js'
 import { VESSEL_PHOTO_CONFIG } from '../src/config/vesselPhotoConfig.js'
 import { AIRPORT_BOARD_CONFIG } from '../src/config/airportBoardConfig.js'
 import { handleAirportBoards, type AirportBoardEnvironment } from './airportBoards.js'
@@ -124,6 +126,11 @@ const withReleaseSha = (response: Response, releaseSha: string | undefined) => {
 const worker = {
   async fetch(request: Request, env: WorkerEnv) {
     const pathname = new URL(request.url).pathname
+    if (pathname === DISCOVERY_CONFIG.aircraftPath || pathname === DISCOVERY_CONFIG.shipsPath) {
+      return withReleaseSha(await handleObjectLookup(request, {
+        aircraftFetchImpl: aircraftFetch(env),
+      }), env.RELEASE_SHA)
+    }
     if (pathname === AIRPORT_BOARD_CONFIG.path) {
       return withReleaseSha(await handleAirportBoards(request, env), env.RELEASE_SHA)
     }

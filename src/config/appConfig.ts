@@ -25,6 +25,13 @@ export type { AppCenter } from '../domain/geo'
 export { MARINE_STREAM_CONFIG } from './marineStreamConfig'
 export { VESSEL_PHOTO_CONFIG } from './vesselPhotoConfig'
 export { AIRPORT_BOARD_CONFIG } from './airportBoardConfig'
+export { DISCOVERY_CONFIG } from './discoveryConfig'
+
+export const MOBILE_WORKSPACE_CONFIG = {
+  maximumWidthPx: 760,
+  coarseLandscapeMaximumWidthPx: 1024,
+  coarseLandscapeMaximumHeightPx: 480,
+} as const
 
 export interface FreshnessThresholds {
   staleAfterMs: number

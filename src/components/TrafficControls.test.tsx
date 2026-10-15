@@ -362,7 +362,7 @@ describe('TrafficControls', () => {
     expect(html).toContain(
       'class="control-panel__more control-panel__in-view" name="traffic-control-panels"',
     )
-    expect(html).not.toMatch(/<details[^>]*open=/)
+    expect(html).not.toMatch(/<details[^>]*name="traffic-control-panels"[^>]*open=/)
     expect(html).toContain('id="in-view-settings-entry"')
     expect(html).toContain('Aircraft, ships &amp; orbits in view')
     expect(html).toContain('aria-label="Aircraft, ships and orbits in view"')

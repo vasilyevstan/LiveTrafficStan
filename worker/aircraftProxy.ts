@@ -1,3 +1,5 @@
+import { BoundedResponseError, readBoundedBytes } from '../src/providers/boundedResponse.js'
+
 export const AIRCRAFT_PROXY_PREFIX = '/api/aircraft'
 export const ADSB_LOL_ORIGIN = 'https://api.adsb.lol'
 export const ADSB_LOL_USER_AGENT =
@@ -11,7 +13,7 @@ export type AircraftProxyFetch = (
   init?: RequestInit,
 ) => Promise<Response>
 
-interface AircraftProxyOptions {
+export interface AircraftProxyOptions {
   fetchImpl?: AircraftProxyFetch
   timeoutMs?: number
   maxResponseBytes?: number
@@ -127,49 +129,25 @@ const readBoundedBody = async (
   response: Response,
   maximumBytes: number,
   abort: () => void,
+  signal: AbortSignal,
 ) => {
-  const contentLength = response.headers.get('Content-Length')
-  if (contentLength) {
-    const declaredBytes = Number(contentLength)
-    if (Number.isFinite(declaredBytes) && declaredBytes > maximumBytes) {
+  const declaredBytes = Number(response.headers.get('Content-Length'))
+  if (Number.isFinite(declaredBytes) && declaredBytes > maximumBytes) {
+    abort()
+    throw new ResponseTooLargeError()
+  }
+  if (!response.body) return undefined
+  try {
+    const contentType = (response.headers.get('Content-Type') ?? '').split(';', 1)[0]!.trim().toLowerCase()
+    const body = await readBoundedBytes(response, maximumBytes, [contentType], signal)
+    return body.byteLength === 0 ? undefined : body
+  } catch (error) {
+    if (error instanceof BoundedResponseError) {
       abort()
       throw new ResponseTooLargeError()
     }
+    throw error
   }
-
-  if (!response.body) return undefined
-
-  const reader = response.body.getReader()
-  const chunks: Uint8Array[] = []
-  let totalBytes = 0
-
-  try {
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-      if (!value) continue
-
-      totalBytes += value.byteLength
-      if (totalBytes > maximumBytes) {
-        abort()
-        void reader.cancel()
-        throw new ResponseTooLargeError()
-      }
-      chunks.push(value)
-    }
-  } finally {
-    reader.releaseLock()
-  }
-
-  if (totalBytes === 0) return undefined
-
-  const body = new Uint8Array(totalBytes)
-  let offset = 0
-  for (const chunk of chunks) {
-    body.set(chunk, offset)
-    offset += chunk.byteLength
-  }
-  return body
 }
 
 export const handleAircraftProxy = async (
@@ -193,6 +171,16 @@ export const handleAircraftProxy = async (
     return textResponse('Invalid aircraft proxy parameters', 400)
   }
 
+  return forwardAircraftRequest(
+    request, `/v2/point/${point.latitude}/${point.longitude}/${point.radiusNm}`, options,
+  )
+}
+
+export const forwardAircraftRequest = async (
+  request: Request,
+  upstreamPath: string,
+  options: AircraftProxyOptions = {},
+) => {
   const fetchImpl = options.fetchImpl ?? fetch
   const timeoutMs = options.timeoutMs ?? AIRCRAFT_PROXY_TIMEOUT_MS
   const maxResponseBytes =
@@ -219,9 +207,7 @@ export const handleAircraftProxy = async (
     upstreamController.abort(new Error('Aircraft upstream timed out'))
   }, timeoutMs)
 
-  const upstreamUrl =
-    `${ADSB_LOL_ORIGIN}/v2/point/` +
-    `${point.latitude}/${point.longitude}/${point.radiusNm}`
+  const upstreamUrl = `${ADSB_LOL_ORIGIN}${upstreamPath}`
 
   try {
     const upstream = await fetchImpl(upstreamUrl, {
@@ -243,6 +229,7 @@ export const handleAircraftProxy = async (
       upstream,
       maxResponseBytes,
       () => upstreamController.abort(new ResponseTooLargeError()),
+      upstreamController.signal,
     )
     if (timedOut) return textResponse('Aircraft upstream timed out', 504)
     if (request.signal.aborted) {

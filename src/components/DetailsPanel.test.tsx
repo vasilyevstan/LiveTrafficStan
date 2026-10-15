@@ -2,8 +2,41 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
 import { DetailsPanel } from './DetailsPanel'
 import { closeDetailsOnEscape } from './detailsKeyboard'
+import { MobileInspectorContext } from './mobileWorkspace'
 
 describe('DetailsPanel', () => {
+  it('retains body content behind native hidden/inert while exposing real deselection and Details', () => {
+    const html = renderToStaticMarkup(
+      <MobileInspectorContext.Provider value={{
+        mobile: true, compact: true, identity: 'test:one', returnToTask: false,
+        onExpand: vi.fn(), onCollapse: vi.fn(),
+      }}>
+        <DetailsPanel titleId="test-title" closeLabel="Close ship details" onClose={vi.fn()} heading={<h2>Test ship</h2>}>
+          <button type="button">Same mounted data action</button>
+        </DetailsPanel>
+      </MobileInspectorContext.Provider>,
+    )
+    expect(html).toContain('data-compact="true"')
+    expect(html).toContain('aria-expanded="false"')
+    expect(html).toContain('>Details</button>')
+    expect(html).toMatch(/class="details-panel__body" hidden="" inert=""/)
+    expect(html).toContain('Same mounted data action')
+    expect(html).toContain('aria-label="Close ship details"')
+  })
+  it('exposes Back for a suspended task and ignores compact intent on desktop', () => {
+    for (const mobile of [true, false]) {
+      const html = renderToStaticMarkup(
+        <MobileInspectorContext.Provider value={{
+          mobile, compact: !mobile, identity: 'test:one', returnToTask: true,
+          onExpand: vi.fn(), onCollapse: vi.fn(),
+        }}>
+          <DetailsPanel titleId="test-title" closeLabel="Close details" onClose={vi.fn()} heading={<h2>Test</h2>}>Content</DetailsPanel>
+        </MobileInspectorContext.Provider>,
+      )
+      expect(html).not.toContain('hidden=""')
+      expect(html.includes('>Back</button>')).toBe(mobile)
+    }
+  })
   it('keeps the identity and icon-only close outside the scrollable body', () => {
     const html = renderToStaticMarkup(
       <DetailsPanel

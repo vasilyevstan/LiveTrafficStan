@@ -236,6 +236,55 @@ Nominatim directly would therefore require an operational control this
 static-first client does not have. Photon was the smaller compliant current
 choice; no geocoder proxy or credential was added.
 
+## Explicit object lookup: ADSB.lol and Open Waters
+
+Object discovery is separate from live reception and Photon place search.
+**In view** searches current filtered observations; **Received** searches
+already cached Digitraffic identities with their original metadata timestamps.
+Loaded airport/port/orbital catalogs retain their existing source rights and
+opt-in boundaries. Neither local nor catalog typing starts a new request.
+
+Explicit **Outside view** aircraft lookup uses only ADSB.lol's documented
+`/v2/hex/{icao24}`, `/v2/reg/{registration}` and `/v2/callsign/{callsign}`.
+It is partial receiver coverage, not an aircraft-name directory. Preserve
+ADSB.lol/ODbL attribution. Snapshot `now` is epoch milliseconds and `seen_pos`
+is seconds: only `now - seen_pos * 1000` establishes position time.
+Receipt time or ordinary `seen` is not a substitute. Missing/old positions
+remain identity-only; a qualified **Go to last report** is not a live selection.
+
+Anonymous Open Waters lookup uses the documented
+[`/v1/vessels`](https://openwaters.io/api/ais/) name-prefix search and exact
+MMSI route. The free service returns at most 50 identities; cap/truncation
+and partial receiver coverage are disclosed. Exact IMO lookup is not available
+on this anonymous path. No account, token, payment or scraping is added.
+REST `seen` can advance on static reports and is not an original position
+clock. Consequently **all ship lookup geometry is discarded**, and every
+match is labelled **Position unavailable**, without a navigation action.
+
+Each ship result requires nonempty original contributing-source attribution.
+Open Waters aggregates Digitraffic, AISHub, AISStream and station contributions;
+their individual rights/caveats continue to apply. This qualified transient
+identity lookup is not a blanket CC0/redistribution claim or a data-rights
+waiver. Known non-vessel kinds are excluded; malformed/unsupported or wholly
+invalid responses are not silently treated as successful empty searches.
+See the pinned source review in [Marine Provider Evaluation](marine-provider-evaluation.md).
+
+Browser POST `/api/find/aircraft` and `/api/find/ships` contains bounded
+`{by,q}` JSON. The browser URL and result DOM IDs do not contain submitted
+names/identities, avoiding resource-URL/selector analytics attribution.
+The fixed Worker GET still sends the submitted identifier to the named
+upstream, which processes ordinary transport metadata. No browser cookies,
+authorization, Home/view bias, arbitrary headers, query-bearing logs or
+shared result cache are forwarded/created. There is no retention guarantee
+for third parties. Queries/results stay ephemeral and do not enter live
+traffic, trails, freshness, counts, photos, metadata enrichment or history.
+
+Lookup has one active operation, finite body/result/deadline limits,
+cancellation and source-specific cooldown/Retry-After, without auto-retry.
+The same private aircraft relay identity and persistent global 20-second
+admission handle point and identifier work together. No direct fallback,
+new quota identity or extra traffic polling is introduced.
+
 ## Aircraft: ADSB.lol
 
 - API: <https://api.adsb.lol>

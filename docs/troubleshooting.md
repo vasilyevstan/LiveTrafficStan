@@ -259,9 +259,52 @@ indistinguishable and is ignored too. Use browser keyboard/menu zoom or an
 open information/settings panel for page magnification. Ordinary scrolling
 and map zoom remain available; this is not document-wide gesture blocking.
 
+## Find cannot locate a ship or aircraft
+
+First check the selected class and scope. Places/coordinates uses Photon,
+not a ship/aircraft directory. **In view** searches received, filtered and
+unexpired observations; the Ships **In view** panel is only a top-20 length/
+draught shortlist. A vessel outside the view or excluded by length/yacht/
+unknown-value filters is not evidence that name matching is broken.
+**Find ships** opens the normal search/filter flow.
+
+**Received** searches already loaded Digitraffic metadata from the last
+24 hours, without a new request. It can find identities absent from the map.
+**Outside view** requires explicit **Look up**: ship name prefix or exact MMSI,
+aircraft exact ICAO24/registration/callsign. There is no arbitrary aircraft-name
+directory, free exact ship IMO lookup or complete worldwide registry promise.
+Ships correctly say **Position unavailable**, even if the upstream REST object
+contains untimed geometry. Aircraft last reports navigate only when their
+original source clocks qualify; they do not become live selections.
+
+Typing/class changes never issue lookup or load a catalog. A missing airport,
+port or orbital catalog needs its existing explicit Load/Enable action.
+Successful empty, truncated, invalid/unavailable and Busy/Retry-After states
+are different. Aircraft lookup shares viewport polling's persistent relay
+admission; wait for the displayed deadline and submit again if needed.
+Do not switch endpoints, reset identity/backoff or repeatedly retry.
+Coordinate navigation and unrelated providers remain usable during lookup failure.
+
+## Phone menus or details leave too little map space
+
+Use the five actions **Center, Layers, Find, In view, Settings**. One expanded
+task shares space with full details. Opening a task keeps compact selection;
+**Details** reads the same inspector body and **Back** restores the task's
+query/scroll. X deselects; it is not merely a collapse button. Native map
+credits start compact, with complete attribution/caveats accessible on demand.
+
+Use the task body's single vertical scroll region for the last result.
+Expanded credits and a keyboard-shortened viewport prioritize readable content,
+focused input and Close/Back over map area. Browser magnification remains
+supported; very narrow visible widths wrap the dock rather than shrinking text.
+An older installed shell can retain the old six-slot layout until ordinary
+**Refresh app**. Do not clear preferences/history to obtain the update.
+Chromium emulation evidence does not prove physical iOS/Android keyboard behavior.
+
 ## Operations More stops before all orbital results
 
-Operations More is the only vertical scroll owner. On mobile, touch-drag,
+The active task body (desktop More, mobile Find/Layers) is the only vertical
+scroll owner. On mobile, touch-drag,
 wheel, Page Down, or Tab through the focusable region to reach the final
 orbital result.
 
@@ -1198,7 +1241,7 @@ failure:
   **Position unavailable**.
 
 For a list of current objects only, open **In view** below desktop Settings or
-**Settings → Aircraft, ships & orbits in view** on mobile. Aircraft counts are
+directly from the mobile dock. Aircraft counts are
 individual unexpired observations, even when the map clusters them. Orbits
 are current modeled positions, not future passes or optical visibility.
 Search is local, pages hold at most 20 rows, and **More** retains full orbital
@@ -1213,12 +1256,12 @@ some observations lack the selected measurement. Unknown, zero and invalid
 measurements are not guessed or ranked as zero. **Longest** and **Deepest
 draught** are independent rankings, not a tonnage/size score; reported
 draught is not water depth or a clearance estimate. The other matching ships
-remain on the map. Use **More → Find** for the existing ship search and filters;
+remain on the map. Use desktop **More → Find** or mobile **Find** for ship search and filters;
 they refine this shortlist too. A selected ship outside the shortlist stays
 selected and is labeled separately. Rank changes add no fetch or camera move.
 
 The drawer and its rows must not have competing vertical scroll areas.
-Close/Escape returns to the actual trigger; on mobile that reopens Settings.
+Close/Escape returns to the actual visible In view trigger.
 Opening another peer must not reopen Settings or move the camera. If a
 selected row expires, close-details focus falls back to a visible In view
 summary or Settings instead of an offscreen mobile summary.

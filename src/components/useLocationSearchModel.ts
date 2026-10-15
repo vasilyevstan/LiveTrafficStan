@@ -82,6 +82,7 @@ export function useLocationSearchModel({
   const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
     if (event.key !== 'Escape' || workspaceOwnsFullscreen(event.currentTarget)) return
     event.preventDefault()
+    event.stopPropagation()
     onCancel()
     inputRef.current?.focus()
   }

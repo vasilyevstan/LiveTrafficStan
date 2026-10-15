@@ -6,7 +6,6 @@ import type {
   Point,
 } from 'geojson'
 import {
-  AttributionControl,
   type GeoJSONSource,
   Map as MapLibreMap,
   Popup,
@@ -28,6 +27,7 @@ import {
   type NorthResetRequest,
 } from '../domain/mapCamera'
 import { consumeNorthReset } from './resetNorth'
+import { InitiallyCompactAttributionControl } from './InitiallyCompactAttributionControl'
 import type { Port } from '../domain/ports'
 import type { MapProjectionPreference } from '../domain/preferences'
 import type {
@@ -175,6 +175,7 @@ const EMPTY_ORBITAL_IDS: readonly string[] = []
 const EMPTY_ORBITAL_TRACK: readonly OrbitalTrackSegment[] = []
 
 interface TrafficMapProps {
+  compactAttribution?: boolean
   northResetRequest?: NorthResetRequest
   northResetDurationMs: number
   viewCenter: AppCenter
@@ -372,6 +373,7 @@ const viewportSignature = (assessment: ViewportAssessment) => {
 }
 
 export function TrafficMap({
+  compactAttribution = false,
   northResetRequest,
   northResetDurationMs,
   viewCenter,
@@ -487,6 +489,8 @@ export function TrafficMap({
   })
   const styleGenerationRef = useRef(0)
   const sourceDataGenerationRef = useRef(0)
+  const attributionControlRef = useRef<InitiallyCompactAttributionControl | null>(null)
+  const compactAttributionRef = useRef(compactAttribution)
   const clusterOptionsGenerationRef = useRef(0)
   const interactionGenerationRef = useRef(0)
   const clusterExpansionGenerationRef = useRef(0)
@@ -1310,6 +1314,11 @@ export function TrafficMap({
   }, [onSelect])
 
   useEffect(() => {
+    compactAttributionRef.current = compactAttribution
+    if (compactAttribution) attributionControlRef.current?.compactOnce()
+  }, [compactAttribution])
+
+  useEffect(() => {
     selectOrbitalRef.current = onSelectOrbital
   }, [onSelectOrbital])
 
@@ -1979,15 +1988,14 @@ export function TrafficMap({
       if (renderStateRef.current.trafficContext) scheduleRender()
     })
 
-    map.addControl(
-      new AttributionControl({
+    const attributionControl = new InitiallyCompactAttributionControl({
         compact: true,
         customAttribution: [
           '<a href="https://github.com/vasilyevstan/LiveTrafficStan/blob/main/docs/data-sources-and-licensing.md" target="_blank" rel="noreferrer">Data credits</a>',
         ],
-      }),
-      'bottom-right',
-    )
+      }, compactAttributionRef.current)
+    attributionControlRef.current = attributionControl
+    map.addControl(attributionControl, 'bottom-right')
 
     map.on('click', (event) => {
       hideTrafficTooltip()

@@ -79,6 +79,16 @@ export const parsePointPath = (pathname) => {
   return { latitude, longitude, radiusNm }
 }
 
+export const parseIdentifierPath = (pathname) => {
+  const match = /^\/v2\/(hex|reg|callsign)\/([^/]+)$/.exec(pathname)
+  if (!match) return undefined
+  const [, by, identifier] = match
+  const valid = by === 'hex' ? /^[a-f\d]{6}$/.test(identifier) :
+    by === 'reg' ? /^[A-Z\d][A-Z\d-]{0,15}$/.test(identifier) :
+      /^[A-Z\d]{1,8}$/.test(identifier)
+  return valid ? { by, identifier } : undefined
+}
+
 export const parseRetryAfterMs = (value, nowMs) => {
   if (!value) return undefined
 
@@ -369,7 +379,8 @@ export const createAircraftRelayHandler = async ({
     }
 
     const point = parsePointPath(url.pathname)
-    if (!point) return textResponse('Not found', 404)
+    const identifier = parseIdentifierPath(url.pathname)
+    if (!point && !identifier) return textResponse('Not found', 404)
     if (request.method !== 'GET') {
       return textResponse('Method not allowed', 405, { Allow: 'GET' })
     }
@@ -414,9 +425,9 @@ export const createAircraftRelayHandler = async ({
     }, timeoutMs)
 
     try {
-      const upstreamUrl =
-        `${ADSB_LOL_ORIGIN}/v2/point/` +
-        `${point.latitude}/${point.longitude}/${point.radiusNm}`
+      const upstreamUrl = point
+        ? `${ADSB_LOL_ORIGIN}/v2/point/${point.latitude}/${point.longitude}/${point.radiusNm}`
+        : `${ADSB_LOL_ORIGIN}/v2/${identifier.by}/${identifier.identifier}`
       const upstream = await fetchImpl(upstreamUrl, {
         method: 'GET',
         signal: upstreamController.signal,

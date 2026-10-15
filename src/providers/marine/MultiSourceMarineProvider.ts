@@ -1,6 +1,7 @@
 import { MARINE_STREAM_CONFIG } from '../../config/marineStreamConfig'
 import { distanceKm } from '../../domain/geo'
 import type { ProviderStatus, Vessel } from '../../domain/traffic'
+import type { CachedMarineDiscovery } from '../../domain/objectDiscovery'
 import type { TrafficQuery } from '../types'
 import {
   DigitrafficMarineProvider,
@@ -10,6 +11,7 @@ import { MarineStreamProvider } from './MarineStreamProvider'
 import { mergeMarineVessels } from './marineFusion'
 
 interface Controller {
+  discoverMetadata?(query: string, now?: number): CachedMarineDiscovery
   start(paused?: boolean): void
   stop(): void
   setPaused(paused: boolean): void
@@ -88,6 +90,13 @@ export class MultiSourceMarineProvider {
     this.digitraffic.updateQuery(query)
     this.supplement.updateQuery(query)
     this.publish()
+  }
+
+  discoverMetadata(query: string, now = Date.now()): CachedMarineDiscovery {
+    return this.digitraffic.discoverMetadata?.(query, now) ?? {
+      loaded: false,
+      result: { objectClass: 'ships', retrievedAt: now, matches: [], truncated: false, rejectedRecords: 0 },
+    }
   }
 
   private publish() {
