@@ -15,6 +15,7 @@ export interface WorkspaceControlsHandle {
 export interface MobileInspectorPresentation {
   mobile: boolean
   compact: boolean
+  forceCompact?: boolean
   identity: string | null
   returnToTask: boolean
   onExpand: () => void

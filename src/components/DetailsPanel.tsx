@@ -23,7 +23,7 @@ export function DetailsPanel({
   panelRef,
 }: DetailsPanelProps) {
   const presentation = useContext(MobileInspectorContext)
-  const compact = Boolean(presentation?.mobile && presentation.compact)
+  const compact = Boolean((presentation?.mobile || presentation?.forceCompact) && presentation?.compact)
   const bodyId = useId()
   const bodyRef = useRef<HTMLDivElement>(null)
   const presentationButtonRef = useRef<HTMLButtonElement>(null)
@@ -55,12 +55,13 @@ export function DetailsPanel({
       className={`details-panel${className ? ` ${className}` : ''}`}
       aria-labelledby={titleId}
       data-compact={compact || undefined}
+      data-force-compact={presentation?.forceCompact || undefined}
       onKeyDown={(event) =>
         closeDetailsOnEscape(event, onClose, workspaceOwnsFullscreen(event.currentTarget))
       }
     >
       <div className="details-panel__heading">{heading}</div>
-      {presentation?.mobile && (
+      {(presentation?.mobile || presentation?.forceCompact) && (
         <button
           ref={presentationButtonRef}
           type="button"

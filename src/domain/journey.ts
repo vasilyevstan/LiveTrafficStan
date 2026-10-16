@@ -48,14 +48,20 @@ const coordinate = (point: JourneyCoordinate): JourneyCoordinate =>
 export const geodesicJourneyArc = (
   from: JourneyCoordinate,
   to: JourneyCoordinate,
+  options: { maximumPoints: number; stepDegrees: number } = {
+    maximumPoints: JOURNEY_CONFIG.maximumArcPoints,
+    stepDegrees: JOURNEY_CONFIG.arcStepDegrees,
+  },
 ): readonly JourneyCoordinate[] | undefined => {
-  if (![from, to].every(p => isValidCoordinate(p.latitude, p.longitude))) return undefined
+  if (![from, to].every(p => isValidCoordinate(p.latitude, p.longitude)) ||
+      !Number.isInteger(options.maximumPoints) || options.maximumPoints < 2 ||
+      !Number.isFinite(options.stepDegrees) || options.stepDegrees <= 0) return undefined
   const angle = distanceKm(from, to) / 6_371
   if (angle >= Math.PI - 0.001) return undefined
   if (angle < 1e-10) return [coordinate(from), coordinate(to)]
   const count = Math.min(
-    JOURNEY_CONFIG.maximumArcPoints - 1,
-    Math.max(1, Math.ceil(angle * 180 / Math.PI / JOURNEY_CONFIG.arcStepDegrees)),
+    options.maximumPoints - 1,
+    Math.max(1, Math.ceil(angle * 180 / Math.PI / options.stepDegrees)),
   )
   const vector = (p: JourneyCoordinate) => {
     const lat = p.latitude * Math.PI / 180

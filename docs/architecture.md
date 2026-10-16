@@ -1388,12 +1388,53 @@ with its provider. Query changes replace the latest desired request or refilter
 the cache without creating another scheduler. Page visibility and viewport
 eligibility compose as pause reasons. Layer visibility remains display-only.
 
+## Local map tools and temporary input ownership
+
+`localMapGeometry` reuses the existing full-canvas assessment for explicit
+Flat/actual Mercator, level and eligible local views. The native passive
+scale and two-point ruler share that conservative support predicate without
+resizing the traffic footprint or adding provider/camera scheduling.
+
+App owns the ruler's ephemeral zero/one/two endpoints, phase and monotonic
+revision. Its synchronous ref advances with the pure reducer before React
+effects, so pending callbacks see an exit or new session immediately.
+`localRulerInteraction` checks actual public map geometry again at placement,
+unprojects pixels rather than assuming `getCenter()`, and checks the real
+visual-viewport center clearance. Movement, resize, style and projection reuse
+native events; no polling or additional resize observer is introduced.
+
+`localRulerStyle` installs one persistent GeoJSON source and three glyph-free
+line/halo/endpoint layers through the incumbent style path. Spherical distance
+and bounded arc sampling use existing geodesy, with whole-arc rejection,
+Mercator validation, antimeridian splitting and a total 128-coordinate cap.
+The 200 km pair limit is derived from the existing local-view diameter.
+The source never enters selectable traffic/context layer lists.
+
+Placement runs before every ordinary picking path. Existing pointer tracking
+distinguishes a real primary tap from drag/pinch, including final release
+displacement and the originating ruler revision. Corresponding click events
+remain suppressed across exit; a fresh normal pointer-down restores picking.
+Both pending cluster success/error callbacks and photo dwell require their
+captured ruler revision and a nonplacing phase, alongside existing identity,
+source, style and navigation generations. Double-click zoom is suspended
+temporarily and restores its exact prior enabled/disabled state on exit or
+disposal; its manual-camera-intent handler also yields while placing.
+
+The temporary strip uses existing task suspension/resumption, not a new
+workspace task or permanent dock slot. Inspector compaction keeps its same
+mounted hidden/inert body. Resume checks current task/focus ownership and
+rejects disconnected, disabled, hidden, inert or clipped old origins. Another
+task/full inspector wins over restoration; native fullscreen owns Escape
+before ruler cancellation. Navigation/HISTORY/map failure clear the state,
+while theme rehydration restores current geometry without refetching.
+Unmount removes listeners and fences late commands before removing the map.
+
 ## Portable preferences, explicit sharing, and units
 
 `livetrafficstan.preferences.v1` is the one complete allowlisted preference
 schema. It stores theme, projection, presentation units, layer flags, structured vessel
 filters without free text, and selected-trail visibility/duration. It excludes
-camera, browser Home/location, searches, selections, provider state,
+camera, browser Home/location, searches, selections, ruler endpoints/results, provider state,
 observations, history settings/data, and playback.
 
 Startup resolves each supported field from a valid explicit `#v=1&...`
