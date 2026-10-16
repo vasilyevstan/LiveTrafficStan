@@ -1083,6 +1083,17 @@ The one overwritten diagnostic lives in the same existing Durable Object,
 contains no provider body, arbitrary URL/header, coordinate or attempt ID,
 and cannot restart acquisition. It does not enable general Worker URL logs.
 
+The October 16 ordinary receipt established a `visual-gp` timeout exactly at
+the application's ten-second deadline, before any publication or due Starlink
+work. A timeout without an HTTP status does not establish a ban, quota, CPU
+limit, or KV fault. Classified nonterminal curated failures now continue to the
+independently due Starlink pair inside the same admitted attempt; no failed
+curated bytes are published. A top-level failed curated result may therefore
+coexist with `Last-Starlink-Outcome: published` and a fulfilled child put.
+Check each source's own clocks and public validation rather than treating
+either channel's success or failure as the other's. Global terminal responses,
+shared `Retry-After`, physical fences and hard expiry remain unchanged.
+
 The October 14 reviewed amendment is single-use and matches only the completed
 October 12 `403` stop. It preserves the actor, previous row, admission sequence,
 cadence and actual-Starlink deadline. Only an eligible ordinary Cron can
