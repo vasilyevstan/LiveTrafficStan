@@ -1245,8 +1245,12 @@ modeling and acceptance are documented in
 `STARLINK_CATALOG_ENABLED=true` is a protected deployment value and is
 effective only with `ORBITAL_CATALOG_ENABLED=true`. It reuses the same Cron,
 named SQLite Durable Object, KV namespace, and Worker deployment. No second
-trigger or provider-facing endpoint is created. After curated processing, the
-coordinator transactionally reserves a separate Starlink row at the actual GP
+trigger or provider-facing endpoint is created. A classified nonterminal
+curated preparation failure (including timeout or validation failure) retains
+the prior curated bundle but cannot starve due Starlink. Unexpected exceptions,
+terminal source responses, shared backoff, and admission/persistence failures
+do not gain this continuation. After the curated attempt, the coordinator
+transactionally reserves a separate Starlink row at the actual GP
 request start if at least 12 hours have elapsed and no global CelesTrak block
 or later `Retry-After` applies. If that row does not yet exist, the coordinator
 first seeds it from the pinned bootstrap GP retrieval at
@@ -1254,6 +1258,17 @@ first seeds it from the pinned bootstrap GP retrieval at
 without provider work, while the immutable bootstrap can already be served;
 an admission at or after the boundary replaces the seed with the actual request
 start and resumes ordinary 12-hour anchoring.
+
+The parent attempt remains active until both eligible preparations settle.
+It completes the same shared gate once before any final puts, and publishes
+only a fully ready preparation; a late validation/deadline failure never
+publishes constructed curated bytes. Curated failure with accepted Starlink
+returns a failed curated outcome plus the actual child result and
+`curated: not-attempted`, not a fictitious fulfilled curated put. Child
+terminal/backoff results remain authoritative globally and are recorded with
+their actual child clock. Reviewed recovery is verified only when both
+preparations validate. This adds no retry, source, scheduler, timeout change,
+or relaxation of the 24-hour hard expiry.
 
 The admitted sequence is the fixed official Starlink GP JSON followed by
 SATCAT JSON. Each response is exact `200` JSON, at most 6 MiB and 15,000 rows;

@@ -273,21 +273,24 @@ export type OrbitalStarlinkRefreshOutcome =
     }
 
 export interface OrbitalPublicationResults {
-  curated: 'fulfilled' | 'rejected'
+  curated: 'fulfilled' | 'rejected' | 'not-attempted'
   starlink?: 'fulfilled' | 'rejected'
+}
+
+type OrbitalProviderControlOutcome = (
+  | { kind: 'blocked'; status: number }
+  | { kind: 'rate-limited'; nextAllowedAtMs: number }
+  | { kind: 'deferred'; status: number; nextAllowedAtMs: number }
+) & {
+  publicationResults?: OrbitalPublicationResults
+  starlink?: OrbitalStarlinkRefreshOutcome
 }
 
 export type OrbitalRefreshOutcome =
   | { kind: 'disabled' }
   | { kind: 'unavailable'; reason: string }
   | { kind: 'not-due'; nextAllowedAtMs: number }
-  | { kind: 'blocked'; status: number }
-  | { kind: 'rate-limited'; nextAllowedAtMs: number }
-  | {
-      kind: 'deferred'
-      status: number
-      nextAllowedAtMs: number
-    }
+  | OrbitalProviderControlOutcome
   | (OrbitalRefreshFailure & {
       publicationResults?: OrbitalPublicationResults
       starlink?: OrbitalStarlinkRefreshOutcome
@@ -2124,8 +2127,9 @@ export const refreshOrbitalCatalog = async (
     }
   }
 
-  let publication: OrbitalCatalogPublication
-  let snapshot: OrbitalCatalogSnapshot
+  let curatedPreparation:
+    | { kind: 'ready'; publication: OrbitalCatalogPublication }
+    | OrbitalRefreshFailure
   try {
     const fetchImpl: OrbitalCatalogFetch =
       options.fetchImpl ??
@@ -2225,18 +2229,19 @@ export const refreshOrbitalCatalog = async (
         visualSource.satcatValue,
         retrievalTime,
       )
-    snapshot = await createOrbitalCatalogSnapshot(
+    const snapshot = await createOrbitalCatalogSnapshot(
       sourceValues,
       retrievalTime,
       publicationTime,
     )
-    publication = createOrbitalCatalogPublication(
+    const publication = createOrbitalCatalogPublication(
       legacySnapshot,
       snapshot,
     )
     if (monotonicNow() - startedAtMs > totalTimeoutMs) {
       throw totalTimeoutError()
     }
+    curatedPreparation = { kind: 'ready', publication }
   } catch (error) {
     if (error instanceof OrbitalCatalogUpstreamError) {
       if (
@@ -2282,42 +2287,33 @@ export const refreshOrbitalCatalog = async (
               nextAllowedAtMs,
             })
       }
-      if (
-        !(await complete({
-          kind: 'next',
-          nextAllowedAtMs: ordinaryNextAllowedAtMs,
-        }))
-      ) {
-        return finish({
-          kind: 'unavailable',
-          reason: 'Could not persist the provider outcome',
-        })
-      }
-      return finish({
+      curatedPreparation = {
         kind: 'failed',
         reason: error.message,
         ...(error.source ? { source: error.source } : {}),
         ...(error.status !== undefined ? { status: error.status } : {}),
-      })
+      }
+    } else {
+      if (!(error instanceof OrbitalCatalogValidationError)) {
+        if (!(await complete({
+          kind: 'next',
+          nextAllowedAtMs: ordinaryNextAllowedAtMs,
+        }))) {
+          return finish({
+            kind: 'unavailable',
+            reason: 'Could not persist the provider outcome',
+          })
+        }
+        return finish({
+          kind: 'failed',
+          reason: 'Orbital snapshot publication failed',
+        })
+      }
+      curatedPreparation = {
+        kind: 'failed',
+        reason: error.message,
+      }
     }
-    if (
-      !(await complete({
-        kind: 'next',
-        nextAllowedAtMs: ordinaryNextAllowedAtMs,
-      }))
-    ) {
-      return finish({
-        kind: 'unavailable',
-        reason: 'Could not persist the provider outcome',
-      })
-    }
-    if (error instanceof OrbitalCatalogValidationError) {
-      return finish({ kind: 'failed', reason: error.message })
-    }
-    return finish({
-      kind: 'failed',
-      reason: 'Orbital snapshot publication failed',
-    })
   }
 
   let starlinkPreparation: StarlinkRefreshPreparation = {
@@ -2375,18 +2371,11 @@ export const refreshOrbitalCatalog = async (
   let completion: OrbitalRefreshCompletion = {
     kind: 'next',
     nextAllowedAtMs: ordinaryNextAllowedAtMs,
-    reviewedSourcesValidated: starlinkPreparation.kind === 'ready',
+    reviewedSourcesValidated:
+      curatedPreparation.kind === 'ready' &&
+      starlinkPreparation.kind === 'ready',
   }
-  let providerOutcome:
-    | Exclude<
-        OrbitalRefreshOutcome,
-        | { kind: 'published' }
-        | { kind: 'disabled' }
-        | { kind: 'unavailable'; reason: string }
-        | { kind: 'not-due'; nextAllowedAtMs: number }
-        | { kind: 'failed'; reason: string }
-      >
-    | undefined
+  let providerOutcome: OrbitalProviderControlOutcome | undefined
   if (starlinkPreparation.kind === 'blocked') {
     completion = {
       kind: 'blocked',
@@ -2422,13 +2411,15 @@ export const refreshOrbitalCatalog = async (
     })
   }
 
-  const writes = [
-    {
+  const writes = curatedPreparation.kind === 'ready'
+    ? [{
       key: ORBITAL_CATALOG_KEY,
-      value: serializeOrbitalCatalogPublication(publication),
+      value: serializeOrbitalCatalogPublication(
+        curatedPreparation.publication,
+      ),
       label: 'orbital',
-    },
-  ]
+    }]
+    : []
   if (starlinkPreparation.kind === 'ready') {
     writes.push({
       key: STARLINK_CATALOG_PUBLICATION_KEY,
@@ -2479,9 +2470,32 @@ export const refreshOrbitalCatalog = async (
               }
             : starlinkPreparation.kind === 'failed'
               ? starlinkPreparation
-              : { kind: 'disabled' as const }
+              : starlinkPreparation.kind === 'blocked'
+                ? {
+                    kind: 'failed' as const,
+                    reason: 'Starlink upstream access stopped',
+                    status: starlinkPreparation.status,
+                    ...(starlinkPreparation.source
+                      ? { source: starlinkPreparation.source }
+                      : {}),
+                  }
+                : starlinkPreparation.kind === 'retry-after'
+                  ? {
+                      kind: 'failed' as const,
+                      reason: 'Starlink upstream requested a later retry',
+                      status: starlinkPreparation.status,
+                    }
+                  : { kind: 'disabled' as const }
       : undefined
-  if (failedWrites.length > 0) {
+  const publicationResults: OrbitalPublicationResults = {
+    curated: curatedPreparation.kind === 'ready'
+      ? failedWrites.includes('orbital') ? 'rejected' : 'fulfilled'
+      : 'not-attempted',
+    ...(starlinkPreparation.kind === 'ready'
+      ? { starlink: failedWrites.includes('Starlink') ? 'rejected' as const : 'fulfilled' as const }
+      : {}),
+  }
+  if (failedWrites.length > 0 && curatedPreparation.kind === 'ready') {
     return finish({
       kind: 'failed',
       reason:
@@ -2492,16 +2506,22 @@ export const refreshOrbitalCatalog = async (
               failedWrites[0] === 'Starlink'
             ? 'Starlink snapshot publication failed'
             : 'Catalog snapshot publication failed',
-      publicationResults: {
-        curated: failedWrites.includes('orbital') ? 'rejected' : 'fulfilled',
-        ...(starlinkPreparation.kind === 'ready'
-          ? { starlink: failedWrites.includes('Starlink') ? 'rejected' as const : 'fulfilled' as const }
-          : {}),
-      },
+      publicationResults,
       ...(starlink ? { starlink } : {}),
     })
   }
-  if (providerOutcome) return finish(providerOutcome)
+  if (providerOutcome) return finish({
+    ...providerOutcome,
+    publicationResults,
+    ...(starlink ? { starlink } : {}),
+  })
+  if (curatedPreparation.kind === 'failed') {
+    return finish({
+      ...curatedPreparation,
+      ...(starlink ? { publicationResults, starlink } : {}),
+    })
+  }
+  const snapshot = curatedPreparation.publication.schema2
   return finish({
     kind: 'published',
     recordCount: snapshot.recordCount,

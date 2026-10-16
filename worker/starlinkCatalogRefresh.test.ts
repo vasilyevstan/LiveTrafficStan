@@ -1,9 +1,12 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   ORBITAL_CATALOG_KEY,
   ORBITAL_REFRESH_INTERVAL_MS,
   ORBITAL_SOURCES,
+  ORBITAL_TOTAL_REFRESH_TIMEOUT_MS,
+  ORBITAL_UPSTREAM_TIMEOUT_MS,
   refreshOrbitalCatalog,
+  type OrbitalCatalogFetch,
   type OrbitalKeyValueStore,
   type OrbitalRefreshCompletion,
   type OrbitalRefreshCoordinator,
@@ -211,6 +214,8 @@ const environment = (store: EventKv) => ({
 })
 
 describe('shared curated and Starlink refresh attempt', () => {
+  afterEach(() => vi.useRealTimers())
+
   it('runs curated first, completes the shared gate, then publishes both keys', async () => {
     const events: string[] = []
     const store = new EventKv(events)
@@ -401,7 +406,14 @@ describe('shared curated and Starlink refresh attempt', () => {
         starlinkWallNow: () => nowMs,
         starlink: { monotonicNow: () => 0 },
       }),
-    ).resolves.toEqual({ kind: 'blocked', status: 403 })
+    ).resolves.toEqual({
+      kind: 'blocked', status: 403,
+      publicationResults: { curated: 'fulfilled' },
+      starlink: {
+        kind: 'failed', reason: 'Starlink upstream access stopped',
+        status: 403, source: 'starlink-gp',
+      },
+    })
     expect(coordinator.blockedStatus).toBe(403)
     expect(store.values.has(ORBITAL_CATALOG_KEY)).toBe(true)
     expect(
@@ -439,6 +451,10 @@ describe('shared curated and Starlink refresh attempt', () => {
     ).resolves.toEqual({
       kind: 'rate-limited',
       nextAllowedAtMs: starlinkStartMs + 10_800_000,
+      publicationResults: { curated: 'fulfilled' },
+      starlink: {
+        kind: 'failed', reason: 'Starlink upstream requested a later retry', status: 429,
+      },
     })
     expect(coordinator.nextAllowedAtMs).toBe(
       starlinkStartMs + 10_800_000,
@@ -493,6 +509,280 @@ describe('shared curated and Starlink refresh attempt', () => {
       nowMs + ORBITAL_REFRESH_INTERVAL_MS,
     )
   })
+
+  it.each([false, true])(
+    'does not let the production-shaped curated timeout starve due Starlink (put fails: %s)',
+    async (putFails) => {
+      vi.useFakeTimers()
+      vi.setSystemTime(nowMs)
+      const events: string[] = []
+      const store = new EventKv(events)
+      store.values.set(ORBITAL_CATALOG_KEY, 'prior-curated')
+      store.values.set(STARLINK_CATALOG_PUBLICATION_KEY, 'prior-starlink')
+      if (putFails) store.failPutKey = STARLINK_CATALOG_PUBLICATION_KEY
+      const coordinator = new EventCoordinator(events)
+      const complete = vi.spyOn(coordinator, 'complete')
+      const fetchImpl = vi.fn<OrbitalCatalogFetch>(async (input, init) => {
+        const url = String(input)
+        if (url !== ORBITAL_SOURCES[0].gpSourceUrl) return sourceResponse(url)
+        return new Promise<Response>((_resolve, reject) => {
+          const signal = init?.signal
+          if (!signal) throw new Error('Expected bounded request signal')
+          signal.addEventListener('abort', () => reject(signal.reason), { once: true })
+        })
+      })
+      const starlinkStartMs = nowMs + ORBITAL_UPSTREAM_TIMEOUT_MS
+      const pending = refreshOrbitalCatalog(environment(store), coordinator, {
+        fetchImpl, nowMs, monotonicNow: () => 0,
+        starlinkWallNow: () => starlinkStartMs,
+        starlink: { monotonicNow: () => 0 },
+      })
+      await vi.advanceTimersByTimeAsync(ORBITAL_UPSTREAM_TIMEOUT_MS - 1)
+      expect(fetchImpl).toHaveBeenCalledTimes(1)
+      expect(events).not.toContain('reserve-starlink')
+      await vi.advanceTimersByTimeAsync(1)
+      expect(await pending).toMatchObject({
+        kind: 'failed', reason: 'Orbital upstream timed out', source: 'visual-gp',
+        publicationResults: {
+          curated: 'not-attempted',
+          starlink: putFails ? 'rejected' : 'fulfilled',
+        },
+        starlink: putFails
+          ? { kind: 'failed', reason: 'Starlink snapshot publication failed' }
+          : { kind: 'published', recordCount: STARLINK_V2_SAMPLE_LIMIT },
+      })
+      expect(fetchImpl.mock.calls.map(([input]) => String(input))).toEqual([
+        ORBITAL_SOURCES[0].gpSourceUrl,
+        STARLINK_GP_SOURCE_URL,
+        STARLINK_SATCAT_SOURCE_URL,
+      ])
+      expect(store.values.get(ORBITAL_CATALOG_KEY)).toBe('prior-curated')
+      expect(store.values.get(STARLINK_CATALOG_PUBLICATION_KEY) === 'prior-starlink')
+        .toBe(putFails)
+      expect(events).not.toContain(`put:${ORBITAL_CATALOG_KEY}`)
+      expect(events.indexOf('complete:next')).toBeLessThan(
+        events.indexOf(`put:${STARLINK_CATALOG_PUBLICATION_KEY}`),
+      )
+      expect(complete).toHaveBeenCalledWith(expect.any(String), {
+        kind: 'next', nextAllowedAtMs: nowMs + ORBITAL_REFRESH_INTERVAL_MS,
+        reviewedSourcesValidated: false,
+      })
+      expect(coordinator.starlinkNextAllowedAtMs)
+        .toBe(starlinkStartMs + STARLINK_REFRESH_INTERVAL_MS)
+    },
+  )
+
+  it.each(['transient', 'malformed', 'validation'] as const)(
+    'continues only the independent Starlink preparation after curated %s failure',
+    async (failure) => {
+      const events: string[] = []
+      const store = new EventKv(events)
+      store.values.set(ORBITAL_CATALOG_KEY, 'prior-curated')
+      const coordinator = new EventCoordinator(events)
+      const fetchImpl = vi.fn<OrbitalCatalogFetch>(async (input) => {
+        const url = String(input)
+        if (url !== ORBITAL_SOURCES[0].gpSourceUrl) return sourceResponse(url)
+        if (failure === 'transient') return new Response(null, { status: 503 })
+        if (failure === 'malformed') return new Response('not json', {
+          headers: { 'Content-Type': 'application/json' },
+        })
+        return jsonResponse([gpRecord(80_000, { EPOCH: 'invalid' })])
+      })
+      expect(await refreshOrbitalCatalog(environment(store), coordinator, {
+        fetchImpl, nowMs, monotonicNow: () => 0,
+        starlinkWallNow: () => nowMs,
+        starlink: { monotonicNow: () => 0 },
+      })).toMatchObject({
+        kind: 'failed',
+        publicationResults: { curated: 'not-attempted', starlink: 'fulfilled' },
+        starlink: { kind: 'published', recordCount: STARLINK_V2_SAMPLE_LIMIT },
+      })
+      expect(store.values.get(ORBITAL_CATALOG_KEY)).toBe('prior-curated')
+      expect(events).not.toContain(`put:${ORBITAL_CATALOG_KEY}`)
+      expect(fetchImpl.mock.calls.slice(-2).map(([input]) => String(input))).toEqual([
+        STARLINK_GP_SOURCE_URL, STARLINK_SATCAT_SOURCE_URL,
+      ])
+    },
+  )
+
+  it('preserves both source cadences across repeated curated failures', async () => {
+    const store = new EventKv([])
+    const coordinator = new EventCoordinator([])
+    const fetchImpl = vi.fn<OrbitalCatalogFetch>(async (input) =>
+      String(input) === ORBITAL_SOURCES[0].gpSourceUrl
+        ? new Response(null, { status: 502 })
+        : sourceResponse(String(input)),
+    )
+    for (const offset of [0, ORBITAL_REFRESH_INTERVAL_MS, STARLINK_REFRESH_INTERVAL_MS]) {
+      const startMs = nowMs + offset
+      expect(await refreshOrbitalCatalog(environment(store), coordinator, {
+        fetchImpl, nowMs: startMs, monotonicNow: () => 0,
+        starlinkWallNow: () => startMs,
+        starlink: { monotonicNow: () => 0 },
+      })).toMatchObject({
+        kind: 'failed',
+        starlink: { kind: offset === ORBITAL_REFRESH_INTERVAL_MS ? 'not-due' : 'published' },
+      })
+      const count = fetchImpl.mock.calls.length
+      expect(await refreshOrbitalCatalog(environment(store), coordinator, {
+        fetchImpl, nowMs: startMs + ORBITAL_REFRESH_INTERVAL_MS - 1,
+      })).toEqual({
+        kind: 'not-due', nextAllowedAtMs: startMs + ORBITAL_REFRESH_INTERVAL_MS,
+      })
+      expect(fetchImpl).toHaveBeenCalledTimes(count)
+    }
+    expect(fetchImpl.mock.calls.filter(([input]) => String(input) === STARLINK_GP_SOURCE_URL))
+      .toHaveLength(2)
+    expect(coordinator.starlinkLastStartedAtMs).toBe(nowMs + STARLINK_REFRESH_INTERVAL_MS)
+    expect(store.values.has(ORBITAL_CATALOG_KEY)).toBe(false)
+  })
+
+  it.each(['disabled', 'not-due', 'storage'] as const)(
+    'does not create child requests after curated failure when Starlink is %s',
+    async (state) => {
+      const store = new EventKv([])
+      const coordinator = new EventCoordinator([])
+      const env = environment(store)
+      if (state === 'disabled') env.STARLINK_CATALOG_ENABLED = 'false'
+      if (state === 'not-due') coordinator.starlinkNextAllowedAtMs = nowMs + STARLINK_REFRESH_INTERVAL_MS
+      if (state === 'storage') coordinator.failStarlinkReserve = true
+      const fetchImpl = vi.fn<OrbitalCatalogFetch>(async () =>
+        new Response(null, { status: 503 }),
+      )
+      const outcome = await refreshOrbitalCatalog(env, coordinator, {
+        fetchImpl, nowMs, monotonicNow: () => 0, starlinkWallNow: () => nowMs,
+      })
+      expect(outcome).toMatchObject({ kind: 'failed', source: 'visual-gp', status: 503 })
+      if (state !== 'disabled') {
+        expect(outcome).toMatchObject({
+          starlink: { kind: state === 'not-due' ? 'not-due' : 'skipped' },
+        })
+      }
+      expect(fetchImpl).toHaveBeenCalledTimes(1)
+      expect(store.values.size).toBe(0)
+      expect(coordinator.starlinkLastStartedAtMs).toBeUndefined()
+      expect(coordinator.nextAllowedAtMs).toBe(nowMs + ORBITAL_REFRESH_INTERVAL_MS)
+    },
+  )
+
+  it.each([false, true])(
+    'never publishes a constructed curated snapshot after late deadline or unexpected failure (%s)',
+    async (unexpected) => {
+      const events: string[] = []
+      const store = new EventKv(events)
+      const coordinator = new EventCoordinator(events)
+      let elapsedMs = 0
+      let digestCount = 0
+      const digest = globalThis.crypto.subtle.digest.bind(globalThis.crypto.subtle)
+      const hash = vi.spyOn(globalThis.crypto.subtle, 'digest').mockImplementation(
+        async (algorithm, data) => {
+          const result = await digest(algorithm, data)
+          digestCount += 1
+          if (digestCount === 2) {
+            if (unexpected) throw new Error('PRIVATE unexpected crypto failure')
+            elapsedMs = ORBITAL_TOTAL_REFRESH_TIMEOUT_MS + 1
+          }
+          return result
+        },
+      )
+      try {
+        const fetchImpl = vi.fn<OrbitalCatalogFetch>(async (input) =>
+          sourceResponse(String(input)),
+        )
+        const outcome = await refreshOrbitalCatalog(environment(store), coordinator, {
+          fetchImpl, nowMs, monotonicNow: () => elapsedMs,
+          starlinkWallNow: () => nowMs + elapsedMs,
+          starlink: { monotonicNow: () => 0 },
+        })
+        expect(outcome).toMatchObject({
+          kind: 'failed',
+          reason: unexpected
+            ? 'Orbital snapshot publication failed'
+            : 'Orbital refresh exceeded its total deadline',
+          ...(!unexpected ? {
+            publicationResults: { curated: 'not-attempted', starlink: 'fulfilled' },
+            starlink: { kind: 'published' },
+          } : {}),
+        })
+        expect(store.values.has(ORBITAL_CATALOG_KEY)).toBe(false)
+        expect(store.values.has(STARLINK_CATALOG_PUBLICATION_KEY)).toBe(!unexpected)
+        expect(fetchImpl).toHaveBeenCalledTimes(ORBITAL_SOURCES.length * 2 + (unexpected ? 0 : 2))
+      } finally {
+        hash.mockRestore()
+      }
+    },
+  )
+
+  it.each([
+    [302, undefined, 'blocked'],
+    [403, undefined, 'blocked'],
+    [404, undefined, 'blocked'],
+    [429, undefined, 'rate-limited'],
+    [429, '10800', 'rate-limited'],
+    [503, '10800', 'deferred'],
+    [503, '691200', 'blocked'],
+  ] as const)(
+    'does not start Starlink after curated %s with Retry-After %s',
+    async (status, retryAfter, kind) => {
+      const events: string[] = []
+      const store = new EventKv(events)
+      const coordinator = new EventCoordinator(events)
+      const fetchImpl = vi.fn<OrbitalCatalogFetch>(async () =>
+        new Response(null, {
+          status, headers: retryAfter ? { 'Retry-After': retryAfter } : {},
+        }),
+      )
+      expect(await refreshOrbitalCatalog(environment(store), coordinator, {
+        fetchImpl, nowMs, monotonicNow: () => 0, starlinkWallNow: () => nowMs,
+      })).toMatchObject({ kind })
+      expect(fetchImpl).toHaveBeenCalledTimes(1)
+      expect(events).not.toContain('reserve-starlink')
+      expect(store.values.size).toBe(0)
+    },
+  )
+
+  it.each([
+    [302, undefined, 'blocked'],
+    [403, undefined, 'blocked'],
+    [404, undefined, 'blocked'],
+    [429, undefined, 'rate-limited'],
+    [429, '10800', 'rate-limited'],
+    [503, '10800', 'deferred'],
+    [503, '691200', 'blocked'],
+  ] as const)(
+    'preserves the global Starlink %s outcome after a curated transient failure',
+    async (status, retryAfter, kind) => {
+      const store = new EventKv([])
+      const coordinator = new EventCoordinator([])
+      const fetchImpl = vi.fn<OrbitalCatalogFetch>(async (input) =>
+        String(input) === ORBITAL_SOURCES[0].gpSourceUrl
+          ? new Response(null, { status: 502 })
+          : new Response(null, {
+              status, headers: retryAfter ? { 'Retry-After': retryAfter } : {},
+            }),
+      )
+      expect(await refreshOrbitalCatalog(environment(store), coordinator, {
+        fetchImpl, nowMs, monotonicNow: () => 0, starlinkWallNow: () => nowMs,
+        starlink: { monotonicNow: () => 0 },
+      })).toMatchObject({
+        kind,
+        publicationResults: { curated: 'not-attempted' },
+        starlink: { kind: 'failed', status },
+      })
+      expect(fetchImpl.mock.calls.map(([input]) => String(input))).toEqual([
+        ORBITAL_SOURCES[0].gpSourceUrl, STARLINK_GP_SOURCE_URL,
+      ])
+      expect(store.values.size).toBe(0)
+      expect(coordinator.starlinkNextAllowedAtMs).toBe(nowMs + STARLINK_REFRESH_INTERVAL_MS)
+      if (kind === 'blocked') {
+        expect(coordinator.blockedStatus).toBe(status)
+      } else {
+        expect(coordinator.nextAllowedAtMs).toBe(
+          nowMs + (retryAfter === '10800' ? 10_800_000 : ORBITAL_REFRESH_INTERVAL_MS),
+        )
+      }
+    },
+  )
 
   it('publishes curated data without provider work when the Starlink start gate fails', async () => {
     const events: string[] = []
@@ -598,7 +888,7 @@ describe('shared curated and Starlink refresh attempt', () => {
     },
   )
 
-  it('performs no final catalog puts after shared completion storage fails', async () => {
+  it.each([false, true])('performs no final puts after shared completion fails (curated failed: %s)', async (curatedFailed) => {
     const events: string[] = []
     const store = new EventKv(events)
     const coordinator = new EventCoordinator(events)
@@ -607,8 +897,9 @@ describe('shared curated and Starlink refresh attempt', () => {
     await expect(
       refreshOrbitalCatalog(environment(store), coordinator, {
         fetchImpl: vi.fn(async (input) =>
-          sourceResponse(String(input)),
-        ),
+          curatedFailed && String(input) === ORBITAL_SOURCES[0].gpSourceUrl
+            ? new Response(null, { status: 502 })
+            : sourceResponse(String(input))),
         nowMs,
         monotonicNow: () => 0,
         starlinkWallNow: () => nowMs,

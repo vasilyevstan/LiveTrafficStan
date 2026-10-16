@@ -1309,6 +1309,19 @@ inspection do not acquire, overwrite results, reset source gates or expose
 provider bodies, URLs, credentials or attempt identities. Optional diagnostic
 I/O failure is explicitly warned without changing publication or admission.
 
+Producer isolation regressions reproduce the October 16 ordinary receipt:
+`visual-gp` aborts at the existing ten-second deadline, then an overdue
+Starlink pair may validate and publish independently. They assert the exact
+three-request sequence, one shared completion before the child-only put,
+unchanged prior curated bytes, honest per-key results and retained child
+clocks across actor recreation. Repeated failed curated cycles preserve
+two-/twelve-hour admission; disabled/not-due/persistence and unexpected-error
+paths cannot add child work. Late post-construction deadline failure cannot
+publish curated bytes. Curated terminal/backoff stops forbid continuation;
+equivalent child responses still stop/defer the shared producer and replace
+the actual child receipt. Inconclusive reviewed work stays held, never
+verified merely because the other preparation succeeded.
+
 `npm run check:orbital-catalog` recomputes the schema-2 canonical digest and
 file checksum without network access, verifies the 462-record/239,460-byte
 bootstrap and 353,281-byte probe evidence, checks the two retained schema-1
