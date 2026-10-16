@@ -27,6 +27,7 @@ import {
   type NorthResetRequest,
 } from '../domain/mapCamera'
 import { consumeNorthReset } from './resetNorth'
+import { handleMapActionShortcut, type MapActionShortcut } from './mapShortcuts'
 import { InitiallyCompactAttributionControl } from './InitiallyCompactAttributionControl'
 import type { Port } from '../domain/ports'
 import type { MapProjectionPreference } from '../domain/preferences'
@@ -250,6 +251,7 @@ interface TrafficMapProps {
   ) => void
   onCameraChange: (camera: MapCameraState) => void
   onManualViewChange: () => void
+  onActionShortcut?: (action: MapActionShortcut) => boolean
   onMapError: (error: TrafficMapError | null) => void
 }
 
@@ -443,6 +445,7 @@ export function TrafficMap({
   onViewportChange,
   onCameraChange,
   onManualViewChange,
+  onActionShortcut,
   onMapError,
 }: TrafficMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -572,6 +575,7 @@ export function TrafficMap({
   const viewportChangeRef = useRef(onViewportChange)
   const cameraChangeRef = useRef(onCameraChange)
   const manualViewChangeRef = useRef(onManualViewChange)
+  const actionShortcutRef = useRef(onActionShortcut)
   const errorRef = useRef(onMapError)
   const unitsRef = useRef(units)
   const aircraftPhotoEnabledRef = useRef(aircraftPhotoEnabled)
@@ -1347,6 +1351,11 @@ export function TrafficMap({
   }, [onManualViewChange])
 
   useEffect(() => {
+    actionShortcutRef.current = onActionShortcut
+    return () => { actionShortcutRef.current = undefined }
+  }, [onActionShortcut])
+
+  useEffect(() => {
     errorRef.current = onMapError
   }, [onMapError])
 
@@ -1660,6 +1669,9 @@ export function TrafficMap({
       manualViewChangeRef.current()
     }
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (handleMapActionShortcut(
+        event, canvas, canvas.ownerDocument.activeElement, actionShortcutRef.current,
+      )) return
       if (
         [
           'ArrowDown',

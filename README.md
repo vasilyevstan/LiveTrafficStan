@@ -379,6 +379,11 @@ identity are not renamed or reset.
   The search controls stay mounted when Settings is closed;
   Auto/Light/Dark and Trails remain under Appearance.
   Native fullscreen is under **View**; the browser owns its Escape/system exit.
+  With the map canvas focused, unmodified **F** opens the current Find class,
+  scope and draft; **C** runs the available Center action. These are not
+  typing-field or browser-Find shortcuts. Hidden mobile HISTORY actions stay
+  unavailable. Find does not navigate, submit or discard a captured path;
+  Center retains its normal session-Home/navigation behavior.
   The mobile zoom/tilt prompt, selected details, and HISTORY playback reserve
   their own space; closing historical details restores the same tool state.
   Visual-viewport-aware sizing, solid keyboard focus rings, non-color

@@ -404,6 +404,16 @@ describe('TrafficControls', () => {
     expect(html.match(/id="center-map-button"/g)).toHaveLength(1)
   })
 
+  it('describes the canvas-only shortcuts on the existing actions without another command surface', () => {
+    const html = renderControls({ mobileWorkspace: true })
+    expect(html).toContain('id="map-action-shortcuts" class="control-note">Map focused: F Find, C Center.')
+    expect(html.match(/<button id="center-map-button"[^>]*>/)?.[0])
+      .toContain('aria-keyshortcuts="c" aria-describedby="map-action-shortcuts"')
+    expect(html.match(/<button id="mobile-find-button"[^>]*>/)?.[0])
+      .toContain('aria-keyshortcuts="f" aria-describedby="map-action-shortcuts"')
+    expect(html.match(/id="map-action-shortcuts"/g)).toHaveLength(1)
+  })
+
   it('composes status into the floating header without duplicating settings state', () => {
     const html = renderControls({
       masthead: <section aria-label="Traffic provider status">PARTIAL</section>,

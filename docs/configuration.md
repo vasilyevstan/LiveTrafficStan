@@ -293,7 +293,7 @@ position before starting provider queries. If permission changes to granted
 while the page remains open, one lookup updates the session home automatically.
 Otherwise it starts at the configured center and offers an explicit
 **Use location** action in Settings; prompt/denied settings are not overridden
-and no app-specific permission preference is stored. **Center** is always
+and no app-specific permission preference is stored. **Center** is normally
 visible in the main dock and returns to the existing session Home without
 requesting another position. The lookup remains bounded but allows up to
 20 seconds for a cold operating-system position; a timeout keeps the current Home and
@@ -306,6 +306,23 @@ there is no selectable traffic radius. Neither Home nor viewport coordinates
 are persisted. A named-place or coordinate navigation changes only the current
 view; it never changes session Home, so Center still returns to the latest
 configured or rounded geolocated Home.
+
+### Map-focused Find and Center
+
+With focus on the actual map canvas, unmodified **F** opens the existing Find
+task and focuses its current input, retaining the selected class, local/lookup
+scope and draft. It does not submit, load a catalog, claim camera ownership,
+move Home or clear selected/captured context. If that class has no usable
+input, focus stays on its class selector rather than enabling data.
+
+Unmodified **C** invokes the same currently available Center action and
+disabled predicate as the button, including its ordinary committed-navigation
+effects. Hidden mobile HISTORY controls remain unavailable through shortcuts.
+The keys do nothing in inputs, selects, inspectors or other focused controls;
+modified keys (including Ctrl/Cmd+F), repetition, IME composition and already
+handled events are ignored. Arrow/zoom keys and native fullscreen Escape keep
+their existing owners. The short reminder is in Settings / View; there is no
+saved shortcut preference or global keyboard listener.
 
 ## Compass / reset north
 
