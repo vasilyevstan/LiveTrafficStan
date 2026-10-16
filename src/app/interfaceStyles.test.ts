@@ -18,6 +18,14 @@ const contrast = (a: string, b: string) => {
 }
 
 describe('interface presentation contracts', () => {
+  it('keeps the native scale noninteractive, themed and wholly hidden in cramped layouts', () => {
+    expect(styles).toMatch(/\.maplibregl-ctrl\.local-map-scale\s*\{[^}]*pointer-events: none;[^}]*color: var\(--panel-text\)/)
+    expect(styles).toMatch(/\.local-map-scale\[hidden\]\s*\{\s*display: none;/)
+    expect(styles).toContain('@container workspace (max-width: 132px) or (max-height: 360px)')
+    expect(styles).toMatch(/\.app-shell--mobile-workspace \.local-map-scale\s*\{\s*margin-bottom: calc\(var\(--mobile-surface-bottom\) \+ 8px\)/)
+    expect(styles).toMatch(/\.app-shell--mobile-workspace:has\([^}]*\.workspace-north,[^}]*\.workspace-fullscreen-exit,[^}]*\.maplibregl-compact-show[^}]*\) \.local-map-scale\s*\{\s*display: none;/)
+  })
+
   for (const theme of ['light', 'dark']) {
     const block = palette.split(`:root[data-theme='${theme}'] {`)[1].split('}')[0]
     const tokens = Object.fromEntries(
