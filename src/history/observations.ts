@@ -1,3 +1,4 @@
+import { normalizeAircraftSquawk } from '../domain/aircraftSquawk'
 import {
   TRAFFIC_MARKER_ICONS,
   type Aircraft,
@@ -363,7 +364,7 @@ const projectAircraft = (
     category: entity.category,
     altitudeMeters: entity.altitudeMeters,
     verticalSpeedMps: entity.verticalSpeedMps,
-    squawk: entity.squawk,
+    squawk: normalizeAircraftSquawk(entity.squawk),
   })
 
 const projectVessel = (
@@ -640,7 +641,7 @@ export const historicalObservationToEntity = (
       category: observation.category,
       altitudeMeters: observation.altitudeMeters,
       verticalSpeedMps: observation.verticalSpeedMps,
-      squawk: observation.squawk,
+      squawk: normalizeAircraftSquawk(observation.squawk),
     }
   }
 

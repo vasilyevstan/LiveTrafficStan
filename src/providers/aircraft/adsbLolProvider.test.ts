@@ -57,6 +57,7 @@ describe('normalizeAdsbLolResponse', () => {
       registration: 'ES-ABC',
       aircraftType: 'A320',
       category: 'Large aircraft',
+      squawk: '7000',
       altitudeMeters: 3_048,
       courseDegrees: 91,
       headingDegrees: 94,
@@ -67,6 +68,59 @@ describe('normalizeAdsbLolResponse', () => {
 
     expect(result[0]?.speedKph).toBeCloseTo(185.2)
     expect(result[0]?.position.observedAt).toBe(receivedAt - 2_000)
+  })
+
+  it.each([
+    { squawk: '0042', expected: '0042' },
+    { squawk: '0000', expected: '0000' },
+    { squawk: '7000', expected: '7000' },
+    { squawk: '7777', expected: '7777' },
+    { squawk: '7500', expected: '7500' },
+    { squawk: '7600', expected: '7600' },
+    { squawk: '7700', expected: '7700' },
+    { squawk: ' 0042 \r\n', expected: '0042' },
+    { squawk: undefined, expected: undefined },
+    { squawk: null, expected: undefined },
+    { squawk: '', expected: undefined },
+    { squawk: ' \t ', expected: undefined },
+    { squawk: '042', expected: undefined },
+    { squawk: '00042', expected: undefined },
+    { squawk: '8888', expected: undefined },
+    { squawk: '12 3', expected: undefined },
+    { squawk: '+700', expected: undefined },
+    { squawk: '-700', expected: undefined },
+    { squawk: '7.00', expected: undefined },
+    { squawk: '7e03', expected: undefined },
+    { squawk: '7000\njunk', expected: undefined },
+    { squawk: '\uff17\uff10\uff10\uff10', expected: undefined },
+    { squawk: '\u0667\u0660\u0660\u0660', expected: undefined },
+    { squawk: 42, expected: undefined },
+    { squawk: [7, 0, 0, 0], expected: undefined },
+    { squawk: {}, expected: undefined },
+    { squawk: true, expected: undefined },
+  ])('normalizes only four octal digits from $squawk', ({ squawk, expected }) => {
+    const receivedAt = 1_800_000_000_000
+    const candidate = {
+      hex: 'abc123',
+      lat: 59.45,
+      lon: 24.8,
+      seen_pos: 2,
+      flight: 'TST123',
+      category: 'A3',
+      gs: 100,
+    }
+    const baseline = normalizeAdsbLolResponse(
+      { now: receivedAt, ac: [candidate] },
+      query,
+      receivedAt,
+    )
+    const result = normalizeAdsbLolResponse(
+      { now: receivedAt, ac: [{ ...candidate, squawk }] },
+      query,
+      receivedAt,
+    )
+
+    expect(result).toEqual([{ ...baseline[0], squawk: expected }])
   })
 
   it('uses a ground altitude and ignores entries outside the requested radius', () => {
