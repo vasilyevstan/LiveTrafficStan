@@ -246,6 +246,35 @@ export interface OrbitalRefreshCoordinator {
     attemptId: string,
     completion: OrbitalRefreshCompletion,
   ): Promise<void>
+  recordOutcome?(
+    attemptId: string,
+    outcome: OrbitalRefreshOutcome,
+  ): Promise<void>
+}
+
+export interface OrbitalRefreshFailure {
+  kind: 'failed'
+  reason: string
+  source?: OrbitalUpstreamSource
+  status?: number
+}
+
+export type OrbitalStarlinkRefreshOutcome =
+  | { kind: 'disabled' }
+  | { kind: 'not-due'; nextAllowedAtMs: number }
+  | { kind: 'skipped'; reason: string }
+  | OrbitalRefreshFailure
+  | {
+      kind: 'published'
+      recordCount: number
+      populationCount: number
+      digest: string
+      publishedAt: string
+    }
+
+export interface OrbitalPublicationResults {
+  curated: 'fulfilled' | 'rejected'
+  starlink?: 'fulfilled' | 'rejected'
 }
 
 export type OrbitalRefreshOutcome =
@@ -259,24 +288,16 @@ export type OrbitalRefreshOutcome =
       status: number
       nextAllowedAtMs: number
     }
-  | { kind: 'failed'; reason: string }
+  | (OrbitalRefreshFailure & {
+      publicationResults?: OrbitalPublicationResults
+      starlink?: OrbitalStarlinkRefreshOutcome
+    })
   | {
       kind: 'published'
       recordCount: number
       sha256: string
       retrievedAt: string
-      starlink?:
-        | { kind: 'disabled' }
-        | { kind: 'not-due'; nextAllowedAtMs: number }
-        | { kind: 'skipped'; reason: string }
-        | { kind: 'failed'; reason: string }
-        | {
-            kind: 'published'
-            recordCount: number
-            populationCount: number
-            digest: string
-            publishedAt: string
-          }
+      starlink?: OrbitalStarlinkRefreshOutcome
     }
 
 interface SnapshotDigestInput {
@@ -2025,12 +2046,20 @@ const fetchBoundedJson = async (
       options.maximumRecords,
     )
   } catch (error) {
-    if (error instanceof OrbitalCatalogUpstreamError) throw error
+    if (error instanceof OrbitalCatalogUpstreamError) {
+      throw new OrbitalCatalogUpstreamError(error.message, {
+        kind: error.kind,
+        status: error.status,
+        retryAtMs: error.retryAtMs,
+        receivedAtMs: error.receivedAtMs,
+        source: error.source ?? options.source,
+      })
+    }
     throw new OrbitalCatalogUpstreamError(
       timedOut
         ? 'Orbital upstream timed out'
         : 'Orbital upstream request failed',
-      { kind: 'transient' },
+      { kind: 'transient', source: options.source },
     )
   } finally {
     clearTimeout(timeout)
@@ -2078,6 +2107,14 @@ export const refreshOrbitalCatalog = async (
 
   const ordinaryNextAllowedAtMs =
     nowMs + ORBITAL_REFRESH_INTERVAL_MS
+  const finish = async (outcome: OrbitalRefreshOutcome) => {
+    try {
+      await coordinator.recordOutcome?.(reservation.attemptId, outcome)
+    } catch {
+      console.warn('Orbital refresh outcome diagnostic write unavailable')
+    }
+    return outcome
+  }
   const complete = async (completion: OrbitalRefreshCompletion) => {
     try {
       await coordinator.complete(reservation.attemptId, completion)
@@ -2214,12 +2251,12 @@ export const refreshOrbitalCatalog = async (
             source: error.source,
           }))
         ) {
-          return {
+          return finish({
             kind: 'unavailable',
             reason: 'Could not persist the provider outcome',
-          }
+          })
         }
-        return { kind: 'blocked', status: error.status }
+        return finish({ kind: 'blocked', status: error.status })
       }
       if (error.kind === 'retry-after') {
         const nextAllowedAtMs = Math.max(
@@ -2232,18 +2269,18 @@ export const refreshOrbitalCatalog = async (
             nextAllowedAtMs,
           }))
         ) {
-          return {
+          return finish({
             kind: 'unavailable',
             reason: 'Could not persist the provider outcome',
-          }
+          })
         }
-        return error.status === 429
+        return finish(error.status === 429
           ? { kind: 'rate-limited', nextAllowedAtMs }
           : {
               kind: 'deferred',
               status: error.status ?? 500,
               nextAllowedAtMs,
-            }
+            })
       }
       if (
         !(await complete({
@@ -2251,12 +2288,17 @@ export const refreshOrbitalCatalog = async (
           nextAllowedAtMs: ordinaryNextAllowedAtMs,
         }))
       ) {
-        return {
+        return finish({
           kind: 'unavailable',
           reason: 'Could not persist the provider outcome',
-        }
+        })
       }
-      return { kind: 'failed', reason: error.message }
+      return finish({
+        kind: 'failed',
+        reason: error.message,
+        ...(error.source ? { source: error.source } : {}),
+        ...(error.status !== undefined ? { status: error.status } : {}),
+      })
     }
     if (
       !(await complete({
@@ -2264,18 +2306,18 @@ export const refreshOrbitalCatalog = async (
         nextAllowedAtMs: ordinaryNextAllowedAtMs,
       }))
     ) {
-      return {
+      return finish({
         kind: 'unavailable',
         reason: 'Could not persist the provider outcome',
-      }
+      })
     }
     if (error instanceof OrbitalCatalogValidationError) {
-      return { kind: 'failed', reason: error.message }
+      return finish({ kind: 'failed', reason: error.message })
     }
-    return {
+    return finish({
       kind: 'failed',
       reason: 'Orbital snapshot publication failed',
-    }
+    })
   }
 
   let starlinkPreparation: StarlinkRefreshPreparation = {
@@ -2374,10 +2416,10 @@ export const refreshOrbitalCatalog = async (
   }
 
   if (!(await complete(completion))) {
-    return {
+    return finish({
       kind: 'unavailable',
       reason: 'Could not persist the provider outcome',
-    }
+    })
   }
 
   const writes = [
@@ -2404,25 +2446,15 @@ export const refreshOrbitalCatalog = async (
       ? [writes[index]?.label ?? 'catalog']
       : [],
   )
-  if (failedWrites.length > 0) {
-    return {
-      kind: 'failed',
-      reason:
-        failedWrites.length === 1 &&
-        failedWrites[0] === 'orbital'
-          ? 'Orbital snapshot publication failed'
-          : failedWrites.length === 1 &&
-              failedWrites[0] === 'Starlink'
-            ? 'Starlink snapshot publication failed'
-            : 'Catalog snapshot publication failed',
-    }
-  }
-  if (providerOutcome) return providerOutcome
-
   const starlink =
     environment.STARLINK_CATALOG_ENABLED === 'true'
       ? starlinkPreparation.kind === 'ready'
-        ? {
+        ? failedWrites.includes('Starlink')
+          ? {
+              kind: 'failed' as const,
+              reason: 'Starlink snapshot publication failed',
+            }
+          : {
             kind: 'published' as const,
             recordCount:
               starlinkPreparation.publication.schema2.recordCount,
@@ -2446,19 +2478,37 @@ export const refreshOrbitalCatalog = async (
                 reason: starlinkPreparation.reason,
               }
             : starlinkPreparation.kind === 'failed'
-              ? {
-                  kind: 'failed' as const,
-                  reason: starlinkPreparation.reason,
-                }
+              ? starlinkPreparation
               : { kind: 'disabled' as const }
       : undefined
-  return {
+  if (failedWrites.length > 0) {
+    return finish({
+      kind: 'failed',
+      reason:
+        failedWrites.length === 1 &&
+        failedWrites[0] === 'orbital'
+          ? 'Orbital snapshot publication failed'
+          : failedWrites.length === 1 &&
+              failedWrites[0] === 'Starlink'
+            ? 'Starlink snapshot publication failed'
+            : 'Catalog snapshot publication failed',
+      publicationResults: {
+        curated: failedWrites.includes('orbital') ? 'rejected' : 'fulfilled',
+        ...(starlinkPreparation.kind === 'ready'
+          ? { starlink: failedWrites.includes('Starlink') ? 'rejected' as const : 'fulfilled' as const }
+          : {}),
+      },
+      ...(starlink ? { starlink } : {}),
+    })
+  }
+  if (providerOutcome) return finish(providerOutcome)
+  return finish({
     kind: 'published',
     recordCount: snapshot.recordCount,
     sha256: snapshot.sha256,
     retrievedAt: snapshot.retrievedAt,
     ...(starlink ? { starlink } : {}),
-  }
+  })
 }
 
 const textResponse = (

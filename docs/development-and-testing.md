@@ -1299,6 +1299,16 @@ duplicates, missing joins, aggregate overflow, union count/type mismatch, or
 any schema conflict. Repeated tests use fixtures and the normalized bootstrap;
 they never loop against CelesTrak.
 
+Coordinator regressions distinguish idle admission from actual publication,
+retain fixed upstream stage/status and application-owned reasons, and report
+each independent KV put including partial or total failure. The one bounded
+receipt survives actor recreation; newer curated-only failures retain the
+last actual Starlink result and its own timestamps. Exact admitted-attempt
+identity fences delayed diagnostic callbacks. Not-due events and read-only
+inspection do not acquire, overwrite results, reset source gates or expose
+provider bodies, URLs, credentials or attempt identities. Optional diagnostic
+I/O failure is explicitly warned without changing publication or admission.
+
 `npm run check:orbital-catalog` recomputes the schema-2 canonical digest and
 file checksum without network access, verifies the 462-record/239,460-byte
 bootstrap and 353,281-byte probe evidence, checks the two retained schema-1
