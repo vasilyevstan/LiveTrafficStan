@@ -27,6 +27,16 @@ export { VESSEL_PHOTO_CONFIG } from './vesselPhotoConfig'
 export { AIRPORT_BOARD_CONFIG } from './airportBoardConfig'
 export { DISCOVERY_CONFIG } from './discoveryConfig'
 
+export const LOCAL_MAP_TOOLS_CONFIG = {
+  maximumPitchDegrees: 0.5,
+  scaleMaximumWidthPx: 100,
+  scaleMaximumRelativeError: 0.005,
+  scalePixelAllowancePx: 1,
+  rulerMaximumGeometryPoints: 128,
+  rulerArcStepDegrees: 0.05,
+  rulerCenterClearancePx: 120,
+} as const
+
 export const MOBILE_WORKSPACE_CONFIG = {
   maximumWidthPx: 760,
   coarseLandscapeMaximumWidthPx: 1024,

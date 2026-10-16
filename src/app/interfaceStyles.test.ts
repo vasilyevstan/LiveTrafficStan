@@ -18,6 +18,20 @@ const contrast = (a: string, b: string) => {
 }
 
 describe('interface presentation contracts', () => {
+  it('keeps the temporary ruler actions reachable, center reticle passive and desktop compact bodies hidden', () => {
+    expect(styles).toMatch(/\.ruler-reticle\s*\{[^}]*top: 50%;[^}]*left: 50%;[^}]*pointer-events: none;/)
+    expect(styles).toMatch(/\.ruler-placement-strip \.ruler-placement-actions button,[^}]*min-width: 44px;[^}]*min-height: 44px;/)
+    expect(styles).toMatch(/\.details-panel__body\[hidden\]\s*\{\s*display: none;/)
+    expect(styles).toMatch(/\.app-shell--mobile-workspace \.ruler-placement-strip\s*\{[^}]*top: 64px;[^}]*transform: none;/)
+  })
+  it('keeps the native scale noninteractive, themed and wholly hidden in cramped layouts', () => {
+    expect(styles).toMatch(/\.maplibregl-ctrl\.local-map-scale\s*\{[^}]*pointer-events: none;[^}]*color: var\(--panel-text\)/)
+    expect(styles).toMatch(/\.local-map-scale\[hidden\]\s*\{\s*display: none;/)
+    expect(styles).toContain('@container workspace (max-width: 132px) or (max-height: 360px)')
+    expect(styles).toMatch(/\.app-shell--mobile-workspace \.local-map-scale\s*\{\s*margin-bottom: calc\(var\(--mobile-surface-bottom\) \+ 8px\)/)
+    expect(styles).toMatch(/\.app-shell--mobile-workspace:has\([^}]*\.workspace-north,[^}]*\.workspace-fullscreen-exit,[^}]*\.maplibregl-compact-show[^}]*\) \.local-map-scale\s*\{\s*display: none;/)
+  })
+
   for (const theme of ['light', 'dark']) {
     const block = palette.split(`:root[data-theme='${theme}'] {`)[1].split('}')[0]
     const tokens = Object.fromEntries(

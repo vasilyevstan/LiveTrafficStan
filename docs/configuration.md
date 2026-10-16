@@ -153,6 +153,9 @@ spread through components:
 | --- | --- |
 | Initial Home framing | Comparable to a 30 km local view |
 | Maximum eligible enclosing radius | 100 km |
+| Local ruler endpoint/pair bound | Two session-only points; pair distance at most 200 km, derived from twice the existing 100 km local radius |
+| Local ruler rendered geometry | At most 128 coordinates; geodesic arc step 0.05 degrees |
+| Local ruler center clearance | Hit-tested 120x120 CSS px square at the actual canvas center |
 | Zoom-out sample bound | At most 12 aircraft and 12 ships from the last eligible view |
 | Zoom-out sample separation | At least 64 CSS pixels within each traffic kind |
 | Zoom-out sample opacity | 85% of normal freshness opacity at zoom 7; native linear fade to zero at zoom 3 |
@@ -293,7 +296,7 @@ position before starting provider queries. If permission changes to granted
 while the page remains open, one lookup updates the session home automatically.
 Otherwise it starts at the configured center and offers an explicit
 **Use location** action in Settings; prompt/denied settings are not overridden
-and no app-specific permission preference is stored. **Center** is always
+and no app-specific permission preference is stored. **Center** is normally
 visible in the main dock and returns to the existing session Home without
 requesting another position. The lookup remains bounded but allows up to
 20 seconds for a cold operating-system position; a timeout keeps the current Home and
@@ -306,6 +309,104 @@ there is no selectable traffic radius. Neither Home nor viewport coordinates
 are persisted. A named-place or coordinate navigation changes only the current
 view; it never changes session Home, so Center still returns to the latest
 configured or rounded geolocated Home.
+
+### Map-focused Find and Center
+
+With focus on the actual map canvas, unmodified **F** opens the existing Find
+task and focuses its current input, retaining the selected class, local/lookup
+scope and draft. It does not submit, load a catalog, claim camera ownership,
+move Home or clear selected/captured context. If that class has no usable
+input, focus stays on its class selector rather than enabling data.
+
+Unmodified **C** invokes the same currently available Center action and
+disabled predicate as the button, including its ordinary committed-navigation
+effects. Hidden mobile HISTORY controls remain unavailable through shortcuts.
+The keys do nothing in inputs, selects, inspectors or other focused controls;
+modified keys (including Ctrl/Cmd+F), repetition, IME composition and already
+handled events are ignored. Arrow/zoom keys and native fullscreen Escape keep
+their existing owners. The short reminder is in Settings / View; there is no
+saved shortcut preference or global keyboard listener.
+
+### Passive center scale
+
+One native MapLibre bar shows **approximate horizontal distance at the full
+canvas center**, not ground distance beneath its corner or a scale valid
+everywhere on the screen. It uses the existing metric (m/km) or
+aviation/nautical (NM) preference. It is not coverage, traveled distance, a
+route, clearance or navigational assurance.
+
+The bar is available only after movement settles, with explicit **Flat**
+preference, actual Mercator projection, positive canvas dimensions, pitch
+within 0.5 degrees of top-down, and the existing safely representable local
+footprint within the 100 km boundary. Auto globe, curved/transition, wide,
+unsafe and numerically failing views hide it; the control never changes
+projection, camera, Home or traffic acquisition to become available.
+
+`LOCAL_MAP_TOOLS_CONFIG` in `src/config/appConfig.ts` sets the native maximum
+width to 100 CSS px, maximum native/application spherical disagreement to
+0.5%, and rendered-bar rounding/stroke allowance to one CSS pixel plus 0.5%
+of the label's distance. The real native label, styled width and rendered
+center-segment distance are checked. A fractional nautical rounding result
+that exceeds the width bound is hidden, not squeezed into a misleading bar.
+No zero/NaN/stale substitute is shown.
+
+The noninteractive themed bar shares the existing visual-viewport, safe-area
+and mobile dock budget. HISTORY and map errors suppress it. Mobile tasks,
+selected inspectors, expanded credits and North/fullscreen companions take
+precedence; very cramped visible viewports hide the whole bar. It adds no
+dock entry, preference, provider request, polling clock or animation loop.
+Theme/style changes reuse the same native control and map.
+
+### Two-point local ruler
+
+**Settings / View / Measure distance** starts a fresh measurement and clears
+any prior result. The entry requires the same explicit Flat, actual Mercator,
+top-down-within-0.5-degrees and safe local footprint as the scale, with no map
+error or HISTORY. It never changes projection, tilt, zoom or Home to enable
+it. The scale is hidden during placement, including on desktop.
+
+Settings temporarily closes, retaining its scroll and valid focus origin.
+The placement strip has 44px-high **Set at center**, **Done** and **Cancel**
+actions. A genuine unmodified primary tap/click places point one, then two;
+dragging, pinch and ordinary map-keyboard movement do not place points.
+Alternatively, Tab to **Set at center** and activate it with Space/Enter.
+The reticle marks the actual full-canvas center, which can differ from the
+camera center after fit padding. When the second point disables that action,
+its still-owned focus moves to Done.
+
+**Done** restores normal map picking and the still-valid Settings origin,
+retaining one passive line/endpoints and an **Approximate surface distance**
+readout in View. **Clear measurement** removes it. **Cancel** or an owned
+canvas/strip Escape discards the draft; native fullscreen owns Escape first.
+Opening another task or explicitly expanding selected details cancels unfinished
+placement without reopening old Settings. The same selected detail body,
+identity and scroll remain mounted while temporarily compact.
+
+Results use the existing units preference: metric m/km or nautical NM, at most
+three significant digits. Equal valid endpoints are 0 m / 0 NM, not missing
+data. The pair is limited to 200 km: a conservative local-diameter restriction
+derived from twice the existing 100 km eligible-view radius, not a new provider
+radius or a separately configurable global ruler. Both endpoints and the
+complete spherical arc must remain valid within Mercator latitude limits.
+Invalid pairs clear the draft with feedback rather than joining around bad
+vertices. This is approximate surface distance, not a route, traveled path,
+bearing, ETA, clearance or operational-navigation tool.
+
+`LOCAL_MAP_TOOLS_CONFIG` sets 128 total rendered coordinates, a 0.05-degree
+arc step and 120 CSS px center clearance. Placement rechecks the live pose,
+movement and a hit-tested center square; an obscured or magnified-offscreen
+center disables placement with a visible reason and usable Cancel. Short
+landscape layouts can require revealing that region. Safe movement keeps
+the first point. Unsafe/wide/pitched/Auto geometry clears endpoints and
+results; supported recovery starts empty. Transient theme/style loading
+temporarily disables placement but preserves valid geometry for rehydration.
+
+Committed navigation, Show path/Return requests, HISTORY, map failure and
+unmount clear the session. Theme, ordinary safe pan and units changes do not.
+Endpoints/results never enter preferences, links, provider payloads, traffic
+counts, trails, metadata, photos or private history. The tool adds no request,
+timer, persistence, worker or map instance. Removing it needs no saved-state
+migration.
 
 ## Compass / reset north
 

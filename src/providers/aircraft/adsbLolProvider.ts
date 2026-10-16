@@ -1,3 +1,4 @@
+import { normalizeAircraftSquawk } from '../../domain/aircraftSquawk'
 import { distanceKm, isValidCoordinate } from '../../domain/geo'
 import type { Aircraft } from '../../domain/traffic'
 import { ProviderError, parseRetryAfterMs } from '../errors'
@@ -196,7 +197,7 @@ export const normalizeAdsbLolResponse = (
       registration: nonEmptyString(candidate.r),
       aircraftType: nonEmptyString(candidate.t),
       category: visual.label,
-      squawk: nonEmptyString(candidate.squawk),
+      squawk: normalizeAircraftSquawk(candidate.squawk),
       markerIcon: visual.icon,
       markerScale: visual.scale,
     })

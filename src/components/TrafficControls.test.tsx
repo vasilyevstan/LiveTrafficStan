@@ -166,6 +166,26 @@ const renderControls = (
   )
 
 describe('TrafficControls', () => {
+  it('keeps ruler entry/readout/Clear in View without adding a permanent task', () => {
+    const html = renderControls({
+      rulerAvailable: true, rulerDistance: '12.3 km',
+      onStartRuler: () => undefined, onClearRuler: () => undefined,
+    })
+    const view = html.match(/<legend>View<\/legend>([\s\S]*?)<\/fieldset>/)?.[1]
+    expect(view).toContain('id="measure-distance-button"')
+    expect(view).toContain('Approximate surface distance: <output>12.3 km</output>')
+    expect(view).toContain('id="clear-distance-button"')
+    expect(html.match(/id="measure-distance-button"/g)).toHaveLength(1)
+    expect(html).not.toContain('data-workspace-task="ruler"')
+  })
+  it('keeps unsupported ruler entry disabled with a specific explanation', () => {
+    const html = renderControls({
+      rulerMessage: 'Use a local, level Flat view.', onStartRuler: () => undefined,
+    })
+    expect(html).toMatch(/id="measure-distance-button"[^>]*disabled=""/)
+    expect(html).toContain('Use a local, level Flat view.')
+    expect(html).not.toContain('id="clear-distance-button"')
+  })
   it('labels an orbital recovery action as a cache recheck, not a provider retry', () => {
     const html = renderControls({
       orbitalVisible: true,
@@ -402,6 +422,16 @@ describe('TrafficControls', () => {
       html.indexOf('<details'),
     )
     expect(html.match(/id="center-map-button"/g)).toHaveLength(1)
+  })
+
+  it('describes the canvas-only shortcuts on the existing actions without another command surface', () => {
+    const html = renderControls({ mobileWorkspace: true })
+    expect(html).toContain('id="map-action-shortcuts" class="control-note">Map focused: F Find, C Center.')
+    expect(html.match(/<button id="center-map-button"[^>]*>/)?.[0])
+      .toContain('aria-keyshortcuts="c" aria-describedby="map-action-shortcuts"')
+    expect(html.match(/<button id="mobile-find-button"[^>]*>/)?.[0])
+      .toContain('aria-keyshortcuts="f" aria-describedby="map-action-shortcuts"')
+    expect(html.match(/id="map-action-shortcuts"/g)).toHaveLength(1)
   })
 
   it('composes status into the floating header without duplicating settings state', () => {

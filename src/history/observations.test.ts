@@ -70,6 +70,88 @@ describe('historical observation projection', () => {
     expect(validateHistoricalObservation(projected)).toEqual(projected)
   })
 
+  it.each([
+    { squawk: '0000', expected: '0000' },
+    { squawk: '0042', expected: '0042' },
+    { squawk: ' 7000 ', expected: '7000' },
+    { squawk: '7500', expected: '7500' },
+    { squawk: '7600', expected: '7600' },
+    { squawk: '7700', expected: '7700' },
+    { squawk: '8888', expected: undefined },
+    { squawk: '042', expected: undefined },
+    { squawk: '00042', expected: undefined },
+    { squawk: '12 3', expected: undefined },
+  ])('normalizes squawk $squawk in new history projections', ({ squawk, expected }) => {
+    const projected = projectHistoricalObservation(
+      { ...aircraft, squawk },
+      context,
+    )
+    const baseline = projectHistoricalObservation(
+      { ...aircraft, squawk: expected },
+      context,
+    )
+    const withoutSquawk = projectHistoricalObservation(aircraft, context)
+
+    expect(projected).toEqual(baseline)
+    if (!projected || projected.kind !== 'aircraft' || !withoutSquawk) {
+      throw new Error('Expected an aircraft observation')
+    }
+    expect(projected.squawk).toBe(expected)
+    expect(validateHistoricalObservation(projected)).toEqual(projected)
+    expect(
+      historicalObservationToEntity(projected, aircraft.position.observedAt),
+    ).toEqual({
+      ...historicalObservationToEntity(
+        withoutSquawk,
+        aircraft.position.observedAt,
+      ),
+      squawk: expected,
+    })
+  })
+
+  it('keeps malformed legacy squawk bytes while omitting the field from playback', () => {
+    const baseline = projectHistoricalObservation(
+      { ...aircraft, squawk: '7000' },
+      context,
+    )
+    if (!baseline || baseline.kind !== 'aircraft') {
+      throw new Error('Expected an aircraft observation')
+    }
+    const legacy = { ...baseline, squawk: '8888' }
+    const original = JSON.stringify(legacy)
+
+    expect(new TextEncoder().encode(original).byteLength).toBe(legacy.logicalBytes)
+    expect(validateHistoricalObservation(legacy)).toBe(legacy)
+    expect(historicalObservationToEntity(legacy, 10_000)).toEqual({
+      ...historicalObservationToEntity(baseline, 10_000),
+      squawk: undefined,
+    })
+    expect(JSON.stringify(legacy)).toBe(original)
+  })
+
+  it('preserves raw legacy squawk through unrelated existing row repair', () => {
+    const baseline = projectHistoricalObservation(
+      { ...aircraft, squawk: '7000' },
+      context,
+    )
+    if (!baseline || baseline.kind !== 'aircraft') {
+      throw new Error('Expected an aircraft observation')
+    }
+    const canonical = { ...baseline, squawk: '8888' }
+    const legacy = { ...canonical, logicalBytes: 1, destination: 'FORBIDDEN' }
+    const original = JSON.stringify(legacy)
+    const repaired = validateHistoricalObservation(legacy)
+
+    expect(repaired).toEqual(canonical)
+    expect(repaired?.logicalBytes).toBe(baseline.logicalBytes)
+    if (!repaired) throw new Error('Expected a repaired observation')
+    expect(historicalObservationToEntity(repaired, 10_000)).toEqual({
+      ...historicalObservationToEntity(baseline, 10_000),
+      squawk: undefined,
+    })
+    expect(JSON.stringify(legacy)).toBe(original)
+  })
+
   it('excludes vessel destination and ETA and gates future metadata', () => {
     const projected = projectHistoricalObservation(
       { ...vessel, name: 'Meri 🚢' },

@@ -74,6 +74,25 @@ The current aircraft integration requires:
 - exact client-side filtering to the visible viewport polygon;
 - no route, operator, or category inference from movement.
 
+### Reported squawk normalization
+
+Squawk is optional reported data, not an emergency determination. The adapter
+accepts strings only, trims outer whitespace and preserves exactly four ASCII
+octal digits (`0` through `7`), including leading zeros and `0000`. Invalid
+length, alphabet or type makes only that field unavailable; the rest of an
+otherwise valid aircraft and provider response remains usable. Do not pad,
+coerce numbers, infer a code or attach an incident meaning to `7500`, `7600`
+or `7700`.
+
+The same pure validation applies when writing new aircraft history
+observations and reconstructing them for display. Legacy rows can retain a
+raw provider string: their stored-row validation, canonical bytes, existing
+repair behavior, identity and schema/normalization versions are unchanged.
+Malformed legacy squawk is omitted only from the displayed entity, never a
+reason to delete or rewrite the observation. Deterministic adapter/history
+tests cover valid zeros, malformed values and that compatibility boundary;
+no live malformed-provider specimen is needed.
+
 ## Technical and operational matrix
 
 | Criterion | ADSB.lol | Airplanes.live | OpenSky |

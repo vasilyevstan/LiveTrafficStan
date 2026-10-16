@@ -72,6 +72,11 @@ interface TrafficControlsProps {
   mobileWorkspace?: boolean
   workspaceHandleRef?: Ref<WorkspaceControlsHandle>
   onWorkspaceTaskChange?: (task: MobileWorkspaceTask | null) => void
+  rulerAvailable?: boolean
+  rulerMessage?: string
+  rulerDistance?: string
+  onStartRuler?: () => void
+  onClearRuler?: () => void
   fullscreen: FullscreenState
   onEnterFullscreen: () => void
   onExitFullscreen: () => void
@@ -298,6 +303,11 @@ export function TrafficControls({
   mobileWorkspace = false,
   workspaceHandleRef,
   onWorkspaceTaskChange,
+  rulerAvailable = false,
+  rulerMessage,
+  rulerDistance,
+  onStartRuler,
+  onClearRuler,
   fullscreen,
   onEnterFullscreen,
   onExitFullscreen,
@@ -420,6 +430,8 @@ export function TrafficControls({
   mapToolsSummaryRef,
   settingsSummaryRef,
 }: TrafficControlsProps) {
+  const centerButtonRef = useRef<HTMLButtonElement>(null)
+  const findFocusFrameRef = useRef<number | null>(null)
   const mapToolsDetailsRef = useRef<HTMLDetailsElement>(null)
   const mapToolsBodyRef = useRef<HTMLDivElement>(null)
   const settingsDetailsRef = useRef<HTMLDetailsElement>(null)
@@ -476,6 +488,18 @@ export function TrafficControls({
     suspendedTaskRef.current = null
     reconcileTask()
   }, [mobileWorkspace, playback.mode, reconcileTask])
+  useEffect(() => () => {
+    if (findFocusFrameRef.current !== null) {
+      globalThis.cancelAnimationFrame(findFocusFrameRef.current)
+    }
+  }, [])
+  const visibleControl = (element: HTMLElement | null | undefined): element is HTMLElement =>
+    Boolean(element?.isConnected && element.getClientRects().length &&
+      !element.closest('[hidden], [inert], details:not([open])') &&
+      getComputedStyle(element).visibility === 'visible')
+  const mapShortcutsAvailable = () =>
+    !(mobileWorkspace && playback.mode !== 'live') &&
+    visibleControl(centerButtonRef.current)
   useImperativeHandle(workspaceHandleRef, () => ({
     suspendTask: () => {
       const details = [mapToolsDetailsRef.current, settingsDetailsRef.current, inViewDetailsRef.current]
@@ -499,17 +523,38 @@ export function TrafficControls({
       const previous = suspendedTaskRef.current
       suspendedTaskRef.current = null
       if (!previous?.details.isConnected) return false
+      if ([mapToolsDetailsRef.current, settingsDetailsRef.current, inViewDetailsRef.current]
+        .some(peer => peer?.open && peer !== previous.details)) return false
+      const summary = previous.details.querySelector<HTMLElement>('summary')
+      if (!summary?.getClientRects().length || getComputedStyle(summary).visibility !== 'visible' ||
+          summary.closest('[hidden], [inert]')) return false
       openTask(previous.details)
       reconcileTask()
+      const focusOrigin = document.activeElement
       globalThis.requestAnimationFrame(() => {
-        if (!previous.details.open) return
+        if (!previous.details.isConnected || !previous.details.open ||
+            document.activeElement !== focusOrigin && document.activeElement !== document.body) return
         if (previous.body) previous.body.scrollTop = previous.scrollTop
         const focus = previous.focus
-        const target = focus instanceof HTMLElement && focus.isConnected &&
-          previous.body?.contains(focus) && focus.getClientRects().length
-          ? focus : previous.details.querySelector<HTMLElement>('summary')
-        target?.focus({ preventScroll: true })
+        const bodyRect = previous.body?.getBoundingClientRect()
+        const focusRect = focus instanceof HTMLElement ? focus.getBoundingClientRect() : undefined
+        const withinBody = bodyRect && focusRect && focusRect.top >= bodyRect.top &&
+          focusRect.bottom <= bodyRect.bottom && focusRect.left >= bodyRect.left && focusRect.right <= bodyRect.right
+        const target = focus instanceof HTMLElement && visibleControl(focus) &&
+          withinBody && !focus.matches(':disabled, [aria-disabled="true"]') && previous.body?.contains(focus)
+          ? focus : summary
+        if (visibleControl(target)) target.focus({ preventScroll: true })
       })
+      return true
+    },
+    openFind: () => {
+      if (!mapShortcutsAvailable()) return false
+      openFind()
+      return true
+    },
+    center: () => {
+      if (centerDisabled || !mapShortcutsAvailable()) return false
+      onCenter()
       return true
     },
     openShipFind: () => {
@@ -649,6 +694,7 @@ export function TrafficControls({
     })
   }
   function openFind(kind: FindKind = findKind, focusTarget: 'search' | 'class' = 'search') {
+    const focusOrigin = document.activeElement
     setFindKind(kind)
     if (kind === 'places') {
       setSettingsMode('places')
@@ -659,15 +705,24 @@ export function TrafficControls({
       openTask(mapToolsDetailsRef.current)
       onWorkspaceTaskChange?.('find')
     }
-    globalThis.requestAnimationFrame(() => {
+    if (findFocusFrameRef.current !== null) {
+      globalThis.cancelAnimationFrame(findFocusFrameRef.current)
+    }
+    findFocusFrameRef.current = globalThis.requestAnimationFrame(() => {
+      findFocusFrameRef.current = null
+      const details = kind === 'places' ? settingsDetailsRef.current : mapToolsDetailsRef.current
+      if (!details?.isConnected || !details.open) return
+      if (document.activeElement !== focusOrigin && document.activeElement !== document.body) return
       const body = kind === 'places' ? settingsBodyRef.current : mapToolsBodyRef.current
+      const scopedInput = [...(body?.querySelectorAll<HTMLInputElement>('.object-find input[type="search"]') ?? [])]
+        .find(visibleControl)
       const target = focusTarget === 'class' ? body?.querySelector<HTMLSelectElement>('select[aria-label="Find object class"]') :
         kind === 'places' ? locationSearchInputRef.current :
-        [...(mapToolsBodyRef.current?.querySelectorAll<HTMLInputElement>('input[type="search"]') ?? [])]
-          .find((input) => input.getClientRects().length)
-      if (target instanceof HTMLElement && target.getClientRects().length) {
-        target.focus()
-      }
+        scopedInput ?? [...(body?.querySelectorAll<HTMLInputElement>('input[type="search"]') ?? [])]
+          .find(visibleControl)
+      const fallback = body?.querySelector<HTMLSelectElement>('select[aria-label="Find object class"]')
+      if (visibleControl(target)) target.focus()
+      else if (visibleControl(fallback)) fallback.focus()
     })
   }
   const findKindSelect = (
@@ -745,12 +800,15 @@ export function TrafficControls({
       <div className="workspace-dock">
       <div className="workspace-orientation">
       <button
+        ref={centerButtonRef}
         id="center-map-button"
         className="workspace-center"
         type="button"
         disabled={centerDisabled}
         onClick={onCenter}
         title="Center on session Home"
+        aria-keyshortcuts="c"
+        aria-describedby="map-action-shortcuts"
       >
         <OperationIcon name="center" />
         CENTER
@@ -970,6 +1028,8 @@ export function TrafficControls({
                 className={mapToolTask === task ? 'is-active' : undefined}
                 aria-pressed={mapToolTask === task}
                 aria-controls={`map-tools-panel-${task}`}
+                aria-keyshortcuts={task === 'find' ? 'f' : undefined}
+                aria-describedby={task === 'find' ? 'map-action-shortcuts' : undefined}
                 onClick={() => selectMapToolTask(task)}
               >
                 {label}
@@ -1430,6 +1490,8 @@ export function TrafficControls({
           type="button"
           aria-controls={findKind === 'places' ? 'traffic-controls-settings' : 'traffic-controls-map-tools'}
           aria-expanded={openWorkspaceTask === 'find' || openWorkspaceTask === 'places'}
+          aria-keyshortcuts="f"
+          aria-describedby="map-action-shortcuts"
           onClick={() => {
             if (openWorkspaceTask === 'find' || openWorkspaceTask === 'places') {
               if (mapToolsDetailsRef.current) mapToolsDetailsRef.current.open = false
@@ -1610,10 +1672,14 @@ export function TrafficControls({
               <p className="control-note">
                 Auto globe changes smoothly with map zoom.
               </p>
+              <p className="control-note">
+                Scale: approximate center distance; local, level Flat views only.
+              </p>
             </fieldset>
 
             <fieldset className="control-group">
               <legend>View</legend>
+              <p id="map-action-shortcuts" className="control-note">Map focused: F Find, C Center.</p>
               <div className="control-options control-options--one">
                 {!fullscreen.active && (
                   <button
@@ -1646,6 +1712,25 @@ export function TrafficControls({
                   {locationLoading ? 'LOCATING...' : 'USE LOCATION'}
                 </button>
               </div>
+              {onStartRuler && (
+                <>
+                  <div className="control-options control-options--one">
+                    <button id="measure-distance-button" type="button"
+                      disabled={!rulerAvailable} aria-describedby="ruler-view-status"
+                      onClick={onStartRuler}
+                    >MEASURE DISTANCE</button>
+                  </div>
+                  <p id="ruler-view-status" className="control-note">
+                    {rulerDistance ? <>Approximate surface distance: <output>{rulerDistance}</output></>
+                      : rulerMessage ?? 'Two local points. No route or navigation claim.'}
+                  </p>
+                  {rulerDistance && (
+                    <div className="control-options control-options--one">
+                      <button id="clear-distance-button" type="button" onClick={onClearRuler}>CLEAR MEASUREMENT</button>
+                    </div>
+                  )}
+                </>
+              )}
               {!fullscreen.active && (fullscreen.message || !fullscreen.available) && (
                 <p id="fullscreen-entry-status" className="control-note" role="status">
                   {fullscreen.message ?? FULLSCREEN_UNAVAILABLE_MESSAGE}

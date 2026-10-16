@@ -51,6 +51,37 @@ const availableMetadata: AircraftMetadataViewState = {
   },
 }
 
+describe('TrafficDetails reported squawk', () => {
+  it.each(['0000', '0042', '7000', '7500', '7600', '7700'])(
+    'displays normalized code %s without interpreting it',
+    (squawk) => {
+      const html = renderToStaticMarkup(
+        <TrafficDetails
+          entity={{ ...aircraft, squawk }}
+          aircraftMetadata={{ phase: 'idle' }}
+          now={1_800_000_001_000}
+          units="metric"
+          onClose={() => undefined}
+        />,
+      )
+      expect(html).toContain(`<dt>Squawk</dt><dd>${squawk}</dd>`)
+    },
+  )
+
+  it('omits the row when normalized squawk is unavailable', () => {
+    const html = renderToStaticMarkup(
+      <TrafficDetails
+        entity={aircraft}
+        aircraftMetadata={{ phase: 'idle' }}
+        now={1_800_000_001_000}
+        units="metric"
+        onClose={() => undefined}
+      />,
+    )
+    expect(html).not.toContain('<dt>Squawk</dt>')
+  })
+})
+
 describe('TrafficDetails dynamic vessel photos', () => {
   const vessel: DisplayVessel = {
     id: 'vessel:230123456', kind: 'vessel', provider: 'Open Waters',

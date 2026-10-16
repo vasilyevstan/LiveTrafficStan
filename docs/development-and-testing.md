@@ -48,6 +48,164 @@ supplementary marine WebSocket; use the actual local Worker for those paths.
 | `npm run check:deploy` | Bundle the Worker and Static Assets without credentials or deployment |
 | `npm run preview:worker` | Build and run the actual local Cloudflare `workerd` boundary |
 
+### Reported squawk and legacy history (#470)
+
+Adapter fixtures require string-only outer trim followed by exactly four
+ASCII octal digits. Preserve `0000`, leading zeros and ordinary reported
+`7500`/`7600`/`7700` strings without emergency interpretation. Invalid optional
+codes must leave every other normalized aircraft field unchanged; malformed
+live-provider specimens are not needed for this deterministic contract.
+
+The shared helper also protects new history projections and historical
+entity reconstruction. Keep the raw legacy stored-row validator and existing
+repair behavior unchanged: a canonical row with a malformed string remains
+byte-identical and readable. An unrelated repair must retain that raw string
+and the pre-change repaired byte count; only its displayed entity omits the
+field. No schema/normalization-version bump, row deletion or history migration.
+Component tests cover verbatim valid display and absent-row behavior, not
+rendered gesture/focus claims.
+
+### Passive native center scale (#471)
+
+`localMapGeometry.test.ts` checks the existing full-canvas eligibility path,
+explicit Flat/known Mercator, the 0.5-degree pitch boundary, wrapped longitude,
+high latitude/rotation, positive dimensions before sampling, and invalid,
+wide or degenerate footprints. `LocalScaleControl.test.ts` checks one native
+instance, startup before a style exists, movement suppression, style/projection/
+unit changes, labels and real bar-width validation, the 0.5% spherical bound,
+zero/nonfinite precision failures, native rounding overflow, responsive whole-
+bar hiding, and removal of both native and wrapper listeners. It does not
+reach into native private fields or implement a replacement scale.
+
+Native acceptance must compare the real rounded label and measured bar width
+against public center-segment unprojection and `distanceKm`. Maximum native
+spherical disagreement is 0.5%; bar/label allowance is one CSS pixel at the
+full segment's distance-per-pixel plus 0.5% of label distance. This covers
+native width rounding and the one-pixel endpoint stroke, not area-wide
+accuracy. Measure actual rectangles, readable themed text and pass-through
+map hit testing in desktop/short-phone Light/Dark, unit/projection/pitch/wide/
+wrapped/high-latitude changes, resize, tasks/details/credits, HISTORY,
+fullscreen and magnified visible viewports. Require one connected canvas
+and one surviving native scale across transitions. Unsupported states must
+hide the whole value without changing camera, provider lifecycle or Home.
+
+Local native receipt on 2026-10-16, 06:56:00-06:56:15 UTC: all eight grouped
+checkpoints passed in Chrome 155.0.8059.80. Thirteen real numeric measurements
+covered both themes at 1280x900 and 315x517, wrapped/rotated views at 59 and
+±80 degrees latitude, NM, native keyboard pan, 2x visible-viewport scaling,
+844x390, actual workspace fullscreen and restoration. Maximum spherical
+disagreement was 0.000139%; maximum label/bar error was 0.296 m, below the
+documented per-measurement allowance. Actual bars were 50.859-95.391 CSS px,
+nonintercepting and clear of measured dock, inspector and attribution bounds.
+Auto, pitch, wide and collapsed-canvas cases hid the value; mobile task,
+selected details, credits, HISTORY and fullscreen companion cases passed.
+
+There was one connected canvas and one control; post-ready constructor
+counts stayed fixed across all changes (the two initial StrictMode setup
+generations are not one lifetime constructor). The 15-second window made
+one ordinary aircraft poll and one fixture MQTT connection, no object lookup,
+Photon or orbital request, and no runtime exceptions. Traffic was synthetic;
+basemap vectors and keyboard/API fullscreen behavior were real. Device/focus
+emulation and public camera staging are not physical-phone, OS-keyboard,
+exhaustive accessibility or new real-provider proof.
+
+Preserve the preceding failed receipts: an observer imported MapLibre before
+the document element existed; after correcting that preflight, the actual
+new control exposed a startup bug by asking an unstyled map for its projection.
+The public style-existence guard and deterministic startup regression fix
+that bug. The final batch passed without weakening geometry or numeric bounds.
+
+### Two-point local ruler (#473)
+
+`localRuler.test.ts` covers revisioned transitions, whole-arc validity, known/
+zero distances, the derived 200 km local-diameter bound, significant digits,
+units and deferred success/error fencing after exit. `journey.test.ts` retains
+the original default sampling contract while checking bounded optional arc
+sampling. Interaction tests cover live pose/actual-center unprojection,
+movement, invalid pixels, 81-point center hit testing, disabled geometry,
+transient style loading, exact prior double-click restoration, Escape and
+idempotent listener/late-command cleanup. Style tests cover whole-input
+rejection, wrapped segments, the total 128-coordinate budget and idempotent
+source/paint/data rehydration. Existing strip, inspector, controls and CSS
+tests retain target/hidden-body/entry contracts. Static rendering alone is
+not proof of native focus or gestures.
+
+Local Chrome 155.0.8059.80 acceptance on 2026-10-16, 07:46-07:55 UTC completed
+the thirteen grouped contracts using the original batch, narrow keyboard
+confirmation and a final held-cluster technical check on the same accepted
+page. Light/Dark at 1280x900 and 315x517 measured every strip action at 44 CSS
+px high and at least 75 CSS px wide. All 81 samples of the actual-center
+120x120 square hit the map, including compact selected and captured contexts;
+credits remained hit-testable with no horizontal overflow. The ordinary
+1.227710864 km pair displayed 1.23 km. Wrapped/style-restored geometry used
+six coordinates; deterministic tests enforce the full 128-coordinate bound.
+
+Trusted pointer/touch versus drag/pinch, keyboard pan/center placement,
+double-click suppression and prior-disabled restoration passed. A deliberately
+padded camera proved that placement uses the actual canvas center; two equal
+points gave 0 m and then 0 NM without changing endpoints. Owned focus moved
+to Done and keyboard completion restored Settings. The selected body stayed
+identical with its 150px scroll; normal picking and newer-task focus resumed.
+Auto/pitch/unsafe recovery cleared points, while theme/dateline restoration
+preserved them. In 844x390 and actual 2x page scale, an obscured center correctly
+disabled placement while Cancel stayed reachable; do not claim a clear center
+in those layouts. Native fullscreen deferred renderer Escape and exited through
+the existing native action. Center/HISTORY/Return cleared the ruler. Captured
+Return matched its stored three-decimal coordinates, two-decimal zoom and
+one-decimal pitch/bearing, not an invented raw-camera promise.
+
+Preserve the observer failures: Enter initially omitted its native character
+event; the cluster setup initially left the wrong task tab active, then used
+zoom 11 despite the existing maximum cluster zoom 10. A first lower-zoom
+click raced the source/paint transition and picked an individual. After a
+public style/source-loaded and paint barrier, actual held cluster success
+and error callbacks both settled after ruler entry/exit without moving the
+camera or reporting a stale error. No application edit was needed for those
+observer corrections; accepted layout cases were not repeated.
+
+Post-ready map/control construction counts stayed fixed, with one connected
+canvas and one ruler source/three layers. There were no runtime exceptions,
+lookup/Photon/orbital requests or persisted ruler state. Ordinary aircraft
+polling, MQTT fixtures and legitimate navigation/HISTORY transitions remain
+separate from presentation work. Traffic/history were bounded synthetic
+fixtures; real vector tiles and native input/API fullscreen were used.
+Device/focus emulation is not physical iOS/Android, an actual OS keyboard,
+physical browser Escape, exhaustive accessibility or new real-provider proof.
+All required local gates passed: 197 suites / 2,022 tests, four data checks,
+lint, typecheck and build.
+
+### Map-focused action shortcuts (#472)
+
+`mapShortcuts.test.ts` covers exact F/C dispatch, original and current canvas
+focus, modifiers/browser Find, repetition, composition, prevented events,
+unavailable/current/removed handles and consumption only after an action is
+handled. The existing canvas listener owns cleanup; its live callback delegates
+to the typed controls handle, not a document listener, click simulation or
+second navigation path. Find focus work cancels superseded/unmounted frames
+and checks its still-open task and actually visible input.
+
+Native acceptance must send real key/character events after map focus, not
+invoke the handle directly. Check current class/scope/draft and absence of a
+stray F, unchanged Find camera/selection/captured Return, no submit/catalog or
+extra acquisition, and C equivalence to the existing Center action. Include
+desktop/narrow Light/Dark, typing-field focus, hidden mobile HISTORY actions
+and native fullscreen. Natural provider polling is not a shortcut request.
+Static markup/key fakes do not prove rendered focus; emulation does not prove
+physical-phone/OS-keyboard behavior.
+
+Local Chrome 155 acceptance on 2026-10-16 proved native F/C at 1280x900 and
+315x517 in Light/Dark, retained outside-view class/scope/draft with no stray F,
+typing-field exclusion, C/button camera equivalence, hidden mobile HISTORY
+and native fullscreen ownership. Selected-body and captured-path F retained
+their mounted context and camera, with zero lookup/Photon/catalog requests.
+The observer initially assumed desktop Home framing on phones, serialized a
+DOM node and required raw-exact Return; those failed observations are retained.
+Actual Return uses the unchanged configured coordinate precision, zoom to two
+decimals and bearing/pitch to one, not a raw-camera guarantee. A later retry
+found the finite fixture positions expired; it is not a live-provider failure.
+Native keys/tab focus, real vector rendering and one post-ready canvas were
+measured; traffic/track transport and device/focus were explicitly simulated.
+
 ### Visitor analytics (#440)
 
 Bootstrap tests cover production/exact-origin/disabled gating, genuine-token

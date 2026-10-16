@@ -5,6 +5,23 @@ import { closeDetailsOnEscape } from './detailsKeyboard'
 import { MobileInspectorContext } from './mobileWorkspace'
 
 describe('DetailsPanel', () => {
+  it('supports narrowly forced desktop compaction without unmounting selected content', () => {
+    const html = renderToStaticMarkup(
+      <MobileInspectorContext.Provider value={{
+        mobile: false, compact: true, forceCompact: true, identity: 'captured:test', returnToTask: false,
+        onExpand: vi.fn(), onCollapse: vi.fn(),
+      }}>
+        <DetailsPanel titleId="test-title" closeLabel="Close captured overview" onClose={vi.fn()} heading={<h2>Captured overview</h2>}>
+          <button>Retained captured context</button>
+        </DetailsPanel>
+      </MobileInspectorContext.Provider>,
+    )
+    expect(html).toContain('data-force-compact="true"')
+    expect(html).toContain('data-compact="true"')
+    expect(html).toMatch(/class="details-panel__body" hidden="" inert=""/)
+    expect(html).toContain('Retained captured context')
+    expect(html).toContain('>Details</button>')
+  })
   it('retains body content behind native hidden/inert while exposing real deselection and Details', () => {
     const html = renderToStaticMarkup(
       <MobileInspectorContext.Provider value={{
