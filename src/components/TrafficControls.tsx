@@ -1651,6 +1651,9 @@ export function TrafficControls({
               <p className="control-note">
                 Auto globe changes smoothly with map zoom.
               </p>
+              <p className="control-note">
+                Scale: approximate center distance; local, level Flat views only.
+              </p>
             </fieldset>
 
             <fieldset className="control-group">

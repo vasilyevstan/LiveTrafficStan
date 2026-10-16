@@ -384,6 +384,10 @@ identity are not renamed or reset.
   typing-field or browser-Find shortcuts. Hidden mobile HISTORY actions stay
   unavailable. Find does not navigate, submit or discard a captured path;
   Center retains its normal session-Home/navigation behavior.
+  A quiet scale in settled, local, level **Flat** views shows approximate
+  horizontal distance at the canvas center in m/km or NM, not distance beneath
+  its corner or uniform screen-wide scale. Unsupported geometry and occupied
+  mobile corners hide it; it never changes the camera or requests data.
   The mobile zoom/tilt prompt, selected details, and HISTORY playback reserve
   their own space; closing historical details restores the same tool state.
   Visual-viewport-aware sizing, solid keyboard focus rings, non-color

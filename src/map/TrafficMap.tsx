@@ -29,6 +29,7 @@ import {
 import { consumeNorthReset } from './resetNorth'
 import { handleMapActionShortcut, type MapActionShortcut } from './mapShortcuts'
 import { InitiallyCompactAttributionControl } from './InitiallyCompactAttributionControl'
+import { LocalScaleControl } from './LocalScaleControl'
 import type { Port } from '../domain/ports'
 import type { MapProjectionPreference } from '../domain/preferences'
 import type {
@@ -198,6 +199,7 @@ interface TrafficMapProps {
   theme: Theme
   projectionPreference: MapProjectionPreference
   units: UnitSystem
+  scaleSuppressed?: boolean
   aircraft: readonly DisplayAircraft[]
   vessels: readonly DisplayVessel[]
   trafficContext?: boolean
@@ -397,6 +399,7 @@ export function TrafficMap({
   theme,
   projectionPreference,
   units,
+  scaleSuppressed = false,
   aircraft,
   vessels,
   trafficContext = false,
@@ -493,6 +496,12 @@ export function TrafficMap({
   const styleGenerationRef = useRef(0)
   const sourceDataGenerationRef = useRef(0)
   const attributionControlRef = useRef<InitiallyCompactAttributionControl | null>(null)
+  const scaleControlRef = useRef<LocalScaleControl | null>(null)
+  const scalePresentationRef = useRef({
+    projection: projectionPreference,
+    units,
+    suppressed: scaleSuppressed,
+  })
   const compactAttributionRef = useRef(compactAttribution)
   const clusterOptionsGenerationRef = useRef(0)
   const interactionGenerationRef = useRef(0)
@@ -1314,6 +1323,15 @@ export function TrafficMap({
   }, [projectionPreference, scheduleViewportReport])
 
   useEffect(() => {
+    scalePresentationRef.current = {
+      projection: projectionPreference,
+      units,
+      suppressed: scaleSuppressed,
+    }
+    scaleControlRef.current?.setPresentation(scalePresentationRef.current)
+  }, [projectionPreference, scaleSuppressed, units])
+
+  useEffect(() => {
     selectRef.current = onSelect
   }, [onSelect])
 
@@ -2008,6 +2026,12 @@ export function TrafficMap({
       }, compactAttributionRef.current)
     attributionControlRef.current = attributionControl
     map.addControl(attributionControl, 'bottom-right')
+    const scaleControl = new LocalScaleControl(
+      viewportLimitsRef.current,
+      scalePresentationRef.current,
+    )
+    scaleControlRef.current = scaleControl
+    map.addControl(scaleControl, 'bottom-left')
 
     map.on('click', (event) => {
       hideTrafficTooltip()
@@ -2334,6 +2358,7 @@ export function TrafficMap({
         window.cancelAnimationFrame(frameRef.current)
         frameRef.current = null
       }
+      scaleControlRef.current = null
       map.remove()
       mapRef.current = null
     }

@@ -58,6 +58,28 @@
   z-index: 7;
 }
 
+.maplibregl-ctrl.local-map-scale {
+  pointer-events: none;
+  margin: 0 0 12px 12px;
+  border: 1px solid var(--panel-text);
+  border-top: 0;
+  background: var(--panel-background);
+  color: var(--panel-text);
+  font: inherit;
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.local-map-scale[hidden] {
+  display: none;
+}
+
+@container workspace (max-width: 132px) or (max-height: 360px) {
+  .local-map-scale {
+    display: none;
+  }
+}
+
 .brand-panel:not(:has(details[open])),
 .workspace-dock:not(:has(details[open])) {
   touch-action: pan-x pan-y;
@@ -2674,7 +2696,8 @@
   }
 }
 
-.app-shell--mobile-workspace .interface-layer > * {
+.app-shell--mobile-workspace .interface-layer > *,
+.app-shell--mobile-workspace .local-map-scale {
   --mobile-dock-bottom: max(52px, calc(env(safe-area-inset-bottom) + 44px));
   --mobile-dock-height: 58px;
   --mobile-surface-gap: 4px;
@@ -2685,6 +2708,18 @@
   ));
   --mobile-surface-bottom: calc(var(--mobile-dock-bottom) + var(--mobile-dock-height) + var(--mobile-surface-gap));
   --workspace-header-bottom: 76px;
+}
+
+.app-shell--mobile-workspace .local-map-scale {
+  margin-bottom: calc(var(--mobile-surface-bottom) + 8px);
+}
+
+.app-shell--mobile-workspace:has(
+  .workspace-north,
+  .workspace-fullscreen-exit,
+  .maplibregl-compact-show
+) .local-map-scale {
+  display: none;
 }
 
 .app-shell--mobile-workspace .brand-panel {
@@ -3091,7 +3126,8 @@
 }
 
 @container workspace (max-width: 280px) {
-  .app-shell--mobile-workspace .interface-layer > * {
+  .app-shell--mobile-workspace .interface-layer > *,
+  .app-shell--mobile-workspace .local-map-scale {
     --mobile-dock-height: 116px;
   }
 

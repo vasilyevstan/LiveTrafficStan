@@ -1703,11 +1703,12 @@ function App() {
     setActiveWorkspaceTask(task)
     if (task) setDetailsReturnToTask(false)
   }, [])
+  const inspectorIdentity = journey ? `journey:${journey.snapshot.revision}` :
+    selectedId ?? selectedOrbitalId ?? selectedPortId ?? selectedAirportId ?? selectedWeatherId
   const inspectorPresentation = {
     mobile: mobileWorkspace,
     compact: !inspectorExpanded || activeWorkspaceTask !== null,
-    identity: journey ? `journey:${journey.snapshot.revision}` :
-      selectedId ?? selectedOrbitalId ?? selectedPortId ?? selectedAirportId ?? selectedWeatherId,
+    identity: inspectorIdentity,
     returnToTask: detailsReturnToTask,
     onExpand: expandInspector,
     onCollapse: collapseInspector,
@@ -1825,6 +1826,10 @@ function App() {
         theme={theme}
         projectionPreference={projectionPreference}
         units={units}
+        scaleSuppressed={
+          mapError !== null || historyActive ||
+          (mobileWorkspace && (activeWorkspaceTask !== null || inspectorIdentity !== null))
+        }
         aircraft={trafficContext ? contextAircraft : aircraft}
         vessels={trafficContext ? contextVessels : vessels}
         trafficContext={trafficContext}

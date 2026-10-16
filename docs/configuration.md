@@ -324,6 +324,36 @@ handled events are ignored. Arrow/zoom keys and native fullscreen Escape keep
 their existing owners. The short reminder is in Settings / View; there is no
 saved shortcut preference or global keyboard listener.
 
+### Passive center scale
+
+One native MapLibre bar shows **approximate horizontal distance at the full
+canvas center**, not ground distance beneath its corner or a scale valid
+everywhere on the screen. It uses the existing metric (m/km) or
+aviation/nautical (NM) preference. It is not coverage, traveled distance, a
+route, clearance or navigational assurance.
+
+The bar is available only after movement settles, with explicit **Flat**
+preference, actual Mercator projection, positive canvas dimensions, pitch
+within 0.5 degrees of top-down, and the existing safely representable local
+footprint within the 100 km boundary. Auto globe, curved/transition, wide,
+unsafe and numerically failing views hide it; the control never changes
+projection, camera, Home or traffic acquisition to become available.
+
+`LOCAL_MAP_TOOLS_CONFIG` in `src/config/appConfig.ts` sets the native maximum
+width to 100 CSS px, maximum native/application spherical disagreement to
+0.5%, and rendered-bar rounding/stroke allowance to one CSS pixel plus 0.5%
+of the label's distance. The real native label, styled width and rendered
+center-segment distance are checked. A fractional nautical rounding result
+that exceeds the width bound is hidden, not squeezed into a misleading bar.
+No zero/NaN/stale substitute is shown.
+
+The noninteractive themed bar shares the existing visual-viewport, safe-area
+and mobile dock budget. HISTORY and map errors suppress it. Mobile tasks,
+selected inspectors, expanded credits and North/fullscreen companions take
+precedence; very cramped visible viewports hide the whole bar. It adds no
+dock entry, preference, provider request, polling clock or animation loop.
+Theme/style changes reuse the same native control and map.
+
 ## Compass / reset north
 
 The N/needle beside Center is a separate **Reset north** action, not Home.

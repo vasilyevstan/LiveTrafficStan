@@ -65,6 +65,56 @@ field. No schema/normalization-version bump, row deletion or history migration.
 Component tests cover verbatim valid display and absent-row behavior, not
 rendered gesture/focus claims.
 
+### Passive native center scale (#471)
+
+`localMapGeometry.test.ts` checks the existing full-canvas eligibility path,
+explicit Flat/known Mercator, the 0.5-degree pitch boundary, wrapped longitude,
+high latitude/rotation, positive dimensions before sampling, and invalid,
+wide or degenerate footprints. `LocalScaleControl.test.ts` checks one native
+instance, startup before a style exists, movement suppression, style/projection/
+unit changes, labels and real bar-width validation, the 0.5% spherical bound,
+zero/nonfinite precision failures, native rounding overflow, responsive whole-
+bar hiding, and removal of both native and wrapper listeners. It does not
+reach into native private fields or implement a replacement scale.
+
+Native acceptance must compare the real rounded label and measured bar width
+against public center-segment unprojection and `distanceKm`. Maximum native
+spherical disagreement is 0.5%; bar/label allowance is one CSS pixel at the
+full segment's distance-per-pixel plus 0.5% of label distance. This covers
+native width rounding and the one-pixel endpoint stroke, not area-wide
+accuracy. Measure actual rectangles, readable themed text and pass-through
+map hit testing in desktop/short-phone Light/Dark, unit/projection/pitch/wide/
+wrapped/high-latitude changes, resize, tasks/details/credits, HISTORY,
+fullscreen and magnified visible viewports. Require one connected canvas
+and one surviving native scale across transitions. Unsupported states must
+hide the whole value without changing camera, provider lifecycle or Home.
+
+Local native receipt on 2026-10-16, 06:56:00-06:56:15 UTC: all eight grouped
+checkpoints passed in Chrome 155.0.8059.80. Thirteen real numeric measurements
+covered both themes at 1280x900 and 315x517, wrapped/rotated views at 59 and
+±80 degrees latitude, NM, native keyboard pan, 2x visible-viewport scaling,
+844x390, actual workspace fullscreen and restoration. Maximum spherical
+disagreement was 0.000139%; maximum label/bar error was 0.296 m, below the
+documented per-measurement allowance. Actual bars were 50.859-95.391 CSS px,
+nonintercepting and clear of measured dock, inspector and attribution bounds.
+Auto, pitch, wide and collapsed-canvas cases hid the value; mobile task,
+selected details, credits, HISTORY and fullscreen companion cases passed.
+
+There was one connected canvas and one control; post-ready constructor
+counts stayed fixed across all changes (the two initial StrictMode setup
+generations are not one lifetime constructor). The 15-second window made
+one ordinary aircraft poll and one fixture MQTT connection, no object lookup,
+Photon or orbital request, and no runtime exceptions. Traffic was synthetic;
+basemap vectors and keyboard/API fullscreen behavior were real. Device/focus
+emulation and public camera staging are not physical-phone, OS-keyboard,
+exhaustive accessibility or new real-provider proof.
+
+Preserve the preceding failed receipts: an observer imported MapLibre before
+the document element existed; after correcting that preflight, the actual
+new control exposed a startup bug by asking an unstyled map for its projection.
+The public style-existence guard and deterministic startup regression fix
+that bug. The final batch passed without weakening geometry or numeric bounds.
+
 ### Map-focused action shortcuts (#472)
 
 `mapShortcuts.test.ts` covers exact F/C dispatch, original and current canvas
