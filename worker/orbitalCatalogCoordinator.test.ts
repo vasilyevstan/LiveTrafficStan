@@ -9,6 +9,7 @@ import {
   ORBITAL_COORDINATOR_PATH,
   ORBITAL_COORDINATOR_STATUS_PATH,
   ORBITAL_COORDINATOR_OBJECT_NAME,
+  ORBITAL_COORDINATOR_LAST_OUTCOME_KEY,
   ORBITAL_COORDINATOR_STATE_CONTRACT_VERSION,
   ORBITAL_COORDINATOR_STATE_SCHEMA_VERSION,
   ORBITAL_REVIEWED_RECOVERY,
@@ -139,6 +140,7 @@ class FakeCursor<Row> implements Iterable<Row> {
 }
 
 class FakeStorage {
+  readonly values = new Map<string, unknown>()
   state: StateRow | undefined
   starlinkState: StarlinkStateRow | undefined
   recoveryState: RecoveryStateRow | undefined
@@ -146,6 +148,18 @@ class FakeStorage {
   failStarlinkReservation = false
   failRecoveryWrite = false
   failReservationWrite = false
+  failDiagnosticWrite = false
+  failDiagnosticRead = false
+
+  async get(key: string) {
+    if (this.failDiagnosticRead) throw new Error('Diagnostic read failed')
+    return this.values.get(key)
+  }
+
+  async put(key: string, value: unknown) {
+    if (this.failDiagnosticWrite) throw new Error('Diagnostic write failed')
+    this.values.set(key, structuredClone(value))
+  }
 
   readonly sql = {
     exec: <Row,>(
@@ -460,6 +474,236 @@ describe('orbital catalog coordinator', () => {
   afterEach(() => {
     vi.useRealTimers()
     vi.unstubAllGlobals()
+  })
+
+  it('retains a transient source failure across actor recreation without confusing idle with publication', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(nowMs)
+    const storage = new FakeStorage()
+    const catalog = new MemoryKv()
+    const upstream = vi.fn(async () => new Response('PRIVATE PROVIDER BODY', {
+      status: 502,
+    }))
+    vi.stubGlobal('fetch', upstream)
+    const coordinator = createCoordinator(storage, catalog)
+    const response = await coordinator.fetch(request())
+    expect(await response.json()).toEqual({
+      kind: 'failed', reason: 'Orbital upstream request failed',
+      source: 'visual-gp', status: 502,
+    })
+    expect(storage.state?.attemptId).toBeNull()
+    expect(storage.state?.nextAllowedAtMs).toBe(nowMs + ORBITAL_REFRESH_INTERVAL_MS)
+    expect(catalog.values.size).toBe(0)
+
+    const recreated = createCoordinator(storage, catalog)
+    const result = await withOrbitalRefreshStatus(
+      new Request('https://app.example/api/orbits/catalog'),
+      new Response('unchanged catalog', { status: 200, headers: { ETag: '"same"' } }),
+      {
+        ASSETS: { fetch: vi.fn() }, ORBITAL_CATALOG_ENABLED: 'true',
+        ORBITAL_CATALOG_COORDINATOR: {
+          idFromName: () => 'existing',
+          get: () => ({ fetch: (input) => recreated.fetch(input) }),
+        },
+      },
+    )
+    expect(result.headers.get('x-livetrafficstan-orbital-refresh-state')).toBe('idle')
+    expect(result.headers.get('x-livetrafficstan-orbital-refresh-last-outcome')).toBe('failed')
+    expect(result.headers.get('x-livetrafficstan-orbital-refresh-last-outcome-reason')).toBe('Orbital upstream request failed')
+    expect(result.headers.get('x-livetrafficstan-orbital-refresh-last-outcome-source')).toBe('visual-gp')
+    expect(result.headers.get('x-livetrafficstan-orbital-refresh-last-outcome-status')).toBe('502')
+    expect(result.headers.get('etag')).toBe('"same"')
+    expect(await result.text()).toBe('unchanged catalog')
+    expect(upstream).toHaveBeenCalledTimes(1)
+    const stored = JSON.stringify(storage.values.get(ORBITAL_COORDINATOR_LAST_OUTCOME_KEY))
+    expect(stored).not.toContain('PRIVATE')
+    expect(stored).not.toContain('attemptId')
+    expect(stored).not.toContain('https:')
+  })
+
+  it('records Starlink failure separately from successful curated publication', async () => {
+    vi.useFakeTimers()
+    const startedAtMs = Date.parse('2026-10-16T20:17:00Z')
+    vi.setSystemTime(startedAtMs)
+    const storage = new FakeStorage()
+    const catalog = new MemoryKv()
+    vi.stubGlobal('fetch', vi.fn(async (input) =>
+      String(input) === STARLINK_GP_SOURCE_URL
+        ? new Response('PRIVATE DENIAL', { status: 503 })
+        : sourceResponse(String(input)),
+    ))
+    const coordinator = createCoordinator(storage, catalog, true)
+    expect(await (await coordinator.fetch(request())).json()).toMatchObject({
+      kind: 'published',
+      starlink: {
+        kind: 'failed', source: 'starlink-gp', status: 503,
+        reason: 'Starlink upstream request failed',
+      },
+    })
+    expect(catalog.values.has(ORBITAL_CATALOG_KEY)).toBe(true)
+    expect(catalog.values.has(STARLINK_CATALOG_PUBLICATION_KEY)).toBe(false)
+    expect(storage.values.get(ORBITAL_COORDINATOR_LAST_OUTCOME_KEY)).toEqual({
+      kind: 'published', startedAtMs, completedAtMs: startedAtMs,
+      curatedPublication: 'fulfilled', starlinkPublication: 'not-attempted',
+      starlinkKind: 'failed', starlinkReason: 'Starlink upstream request failed',
+      starlinkSource: 'starlink-gp', starlinkStatus: 503,
+      starlinkStartedAtMs: startedAtMs, starlinkCompletedAtMs: startedAtMs,
+    })
+    expect(storage.starlinkState?.nextAllowedAtMs).toBe(startedAtMs + STARLINK_REFRESH_INTERVAL_MS)
+  })
+
+  it('does not overwrite the last admitted result on early duplicate events', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(nowMs)
+    const storage = new FakeStorage()
+    const catalog = new MemoryKv()
+    const upstream = vi.fn(async (input) => sourceResponse(String(input)))
+    vi.stubGlobal('fetch', upstream)
+    const coordinator = createCoordinator(storage, catalog)
+    expect(await (await coordinator.fetch(request())).json()).toMatchObject({ kind: 'published' })
+    const original = structuredClone(storage.values.get(ORBITAL_COORDINATOR_LAST_OUTCOME_KEY))
+    vi.setSystemTime(nowMs + 60_000)
+    expect(await (await coordinator.fetch(request())).json()).toMatchObject({ kind: 'not-due' })
+    expect(storage.values.get(ORBITAL_COORDINATOR_LAST_OUTCOME_KEY)).toEqual(original)
+    expect(upstream).toHaveBeenCalledTimes(10)
+  })
+
+  it('retains the last actual Starlink result when a newer curated failure prevents child work', async () => {
+    vi.useFakeTimers()
+    const startedAtMs = Date.parse('2026-10-16T20:17:00Z')
+    vi.setSystemTime(startedAtMs)
+    const storage = new FakeStorage()
+    const catalog = new MemoryKv()
+    const upstream = vi.fn(async (input) =>
+      String(input) === STARLINK_GP_SOURCE_URL
+        ? new Response(null, { status: 503 })
+        : sourceResponse(String(input)),
+    )
+    vi.stubGlobal('fetch', upstream)
+    const coordinator = createCoordinator(storage, catalog, true)
+    await coordinator.fetch(request())
+    vi.setSystemTime(startedAtMs + ORBITAL_REFRESH_INTERVAL_MS)
+    upstream.mockImplementation(async () => new Response(null, { status: 502 }))
+    await coordinator.fetch(request())
+    expect(storage.values.get(ORBITAL_COORDINATOR_LAST_OUTCOME_KEY)).toMatchObject({
+      kind: 'failed', startedAtMs: startedAtMs + ORBITAL_REFRESH_INTERVAL_MS,
+      curatedPublication: 'not-attempted', source: 'visual-gp', status: 502,
+      starlinkKind: 'failed', starlinkSource: 'starlink-gp', starlinkStatus: 503,
+      starlinkPublication: 'not-attempted',
+      starlinkStartedAtMs: startedAtMs, starlinkCompletedAtMs: startedAtMs,
+    })
+    expect(storage.starlinkState?.lastStartedAtMs).toBe(startedAtMs)
+  })
+
+  it('fences an obsolete diagnostic callback after a newer admitted attempt completes', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(nowMs)
+    const storage = new FakeStorage()
+    const catalog = new MemoryKv()
+    vi.stubGlobal('fetch', vi.fn(async (input) => sourceResponse(String(input))))
+    let releaseRead = () => {}
+    const gate = new Promise<void>((resolve) => { releaseRead = resolve })
+    let markReading = () => {}
+    const reading = new Promise<void>((resolve) => { markReading = resolve })
+    const read = vi.spyOn(storage, 'get').mockImplementationOnce(async () => {
+      markReading()
+      await gate
+      return undefined
+    })
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const coordinator = createCoordinator(storage, catalog)
+    const first = coordinator.fetch(request())
+    try {
+      await reading
+      vi.setSystemTime(nowMs + ORBITAL_REFRESH_INTERVAL_MS)
+      expect(await (await coordinator.fetch(request())).json()).toMatchObject({ kind: 'published' })
+      releaseRead()
+      expect(await (await first).json()).toMatchObject({ kind: 'published' })
+      expect(storage.values.get(ORBITAL_COORDINATOR_LAST_OUTCOME_KEY)).toMatchObject({
+        kind: 'published', startedAtMs: nowMs + ORBITAL_REFRESH_INTERVAL_MS,
+      })
+      expect(warning).toHaveBeenCalledWith('Orbital refresh outcome diagnostic write unavailable')
+    } finally {
+      releaseRead()
+      read.mockRestore()
+      warning.mockRestore()
+    }
+  })
+
+  it.each(['curated', 'starlink', 'both'])(
+    'records settled publication results when %s storage fails without exposing its exception',
+    async (failed) => {
+      vi.useFakeTimers()
+      const startedAtMs = Date.parse('2026-10-16T20:17:00Z')
+      vi.setSystemTime(startedAtMs)
+      const storage = new FakeStorage()
+      const catalog = new MemoryKv()
+      vi.spyOn(catalog, 'put').mockImplementation(async (key, value) => {
+        if (failed === 'both' ||
+          (failed === 'curated' && key === ORBITAL_CATALOG_KEY) ||
+          (failed === 'starlink' && key === STARLINK_CATALOG_PUBLICATION_KEY)
+        ) throw new Error('PRIVATE STORAGE ERROR https://private.example')
+        catalog.values.set(key, value)
+      })
+      vi.stubGlobal('fetch', vi.fn(async (input) => sourceResponse(String(input))))
+      const coordinator = createCoordinator(storage, catalog, true)
+      expect(await (await coordinator.fetch(request())).json()).toMatchObject({ kind: 'failed' })
+      const diagnostic = storage.values.get(ORBITAL_COORDINATOR_LAST_OUTCOME_KEY)
+      expect(diagnostic).toMatchObject({
+        kind: 'failed',
+        curatedPublication: failed === 'curated' || failed === 'both' ? 'rejected' : 'fulfilled',
+        starlinkPublication: failed === 'starlink' || failed === 'both' ? 'rejected' : 'fulfilled',
+        starlinkKind: failed === 'curated' ? 'published' : 'failed',
+        starlinkStartedAtMs: startedAtMs,
+      })
+      expect(JSON.stringify(diagnostic)).not.toContain('PRIVATE')
+      expect(JSON.stringify(diagnostic)).not.toContain('https:')
+      expect(storage.state?.nextAllowedAtMs).toBe(startedAtMs + ORBITAL_REFRESH_INTERVAL_MS)
+      expect(storage.starlinkState?.nextAllowedAtMs).toBe(startedAtMs + STARLINK_REFRESH_INTERVAL_MS)
+    },
+  )
+
+  it('keeps acquisition gates and successful publication when optional diagnostic storage fails', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(nowMs)
+    const storage = new FakeStorage()
+    storage.failDiagnosticWrite = true
+    const catalog = new MemoryKv()
+    vi.stubGlobal('fetch', vi.fn(async (input) => sourceResponse(String(input))))
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    try {
+      const coordinator = createCoordinator(storage, catalog)
+      expect(await (await coordinator.fetch(request())).json()).toMatchObject({ kind: 'published' })
+      expect(catalog.values.has(ORBITAL_CATALOG_KEY)).toBe(true)
+      expect(storage.state?.nextAllowedAtMs).toBe(nowMs + ORBITAL_REFRESH_INTERVAL_MS)
+      expect(warning).toHaveBeenCalledWith('Orbital refresh outcome diagnostic write unavailable')
+    } finally {
+      warning.mockRestore()
+    }
+  })
+
+  it('rejects malformed or private outcome diagnostics without acquiring or rewriting state', async () => {
+    const storage = new FakeStorage()
+    storage.values.set(ORBITAL_COORDINATOR_LAST_OUTCOME_KEY, {
+      kind: 'failed', startedAtMs: nowMs, completedAtMs: nowMs,
+      source: 'https://private.example/?lat=59.12345', reason: 'PRIVATE\nBODY',
+    })
+    const upstream = vi.fn()
+    vi.stubGlobal('fetch', upstream)
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    try {
+      const coordinator = createCoordinator(storage, new MemoryKv())
+      const result = await coordinator.fetch(new Request(
+        `https://orbital.internal${ORBITAL_COORDINATOR_STATUS_PATH}`,
+      ))
+      expect(result.status).toBe(503)
+      expect(await result.text()).not.toContain('PRIVATE')
+      expect(storage.state).toBeUndefined()
+      expect(upstream).not.toHaveBeenCalled()
+      expect(warning).toHaveBeenCalledWith('Orbital refresh outcome diagnostic read unavailable')
+    } finally {
+      warning.mockRestore()
+    }
   })
 
   it('atomically consumes the exact reviewed stop once and excludes duplicate physical attempts', async () => {

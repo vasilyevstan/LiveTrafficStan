@@ -25,6 +25,8 @@ export const STARLINK_COORDINATOR_STATE_CONTRACT_VERSION = 1
 export const ORBITAL_COORDINATOR_OBJECT_NAME =
   'celestrak-visual-refresh-v2'
 export const ORBITAL_COORDINATOR_MAX_OUTCOME_BYTES = 16 * 1_024
+export const ORBITAL_COORDINATOR_LAST_OUTCOME_KEY =
+  'orbital:last-admitted-outcome:v1'
 
 export const ORBITAL_REVIEWED_RECOVERY = {
   id: 'reviewed-403-2026-10-14-v1',
@@ -91,6 +93,128 @@ interface OrbitalRefreshStatus {
   recoveryPhase?: RecoveryStateRow['phase']
   recoveryNextAllowedAtMs?: number | null
   failureSource?: string | null
+  lastOutcome?: OrbitalLastOutcome
+}
+
+interface OrbitalLastOutcome {
+  kind: Exclude<OrbitalRefreshOutcome['kind'], 'disabled' | 'not-due'>
+  startedAtMs: number
+  completedAtMs: number
+  reason?: string
+  source?: string
+  status?: number
+  starlinkKind?: string
+  starlinkReason?: string
+  starlinkSource?: string
+  starlinkStatus?: number
+  curatedPublication: 'fulfilled' | 'rejected' | 'not-attempted'
+  starlinkPublication?: 'fulfilled' | 'rejected' | 'not-attempted'
+  starlinkStartedAtMs?: number
+  starlinkCompletedAtMs?: number
+}
+
+const outcomeKinds = new Set([
+  'published', 'failed', 'blocked', 'rate-limited', 'deferred', 'unavailable',
+])
+const starlinkOutcomeKinds = new Set([
+  'published', 'failed', 'skipped', 'not-due', 'disabled',
+])
+const outcomeFields = new Set([
+  'kind', 'startedAtMs', 'completedAtMs', 'reason', 'source', 'status',
+  'starlinkKind', 'starlinkReason', 'starlinkSource', 'starlinkStatus',
+  'curatedPublication', 'starlinkPublication',
+  'starlinkStartedAtMs', 'starlinkCompletedAtMs',
+])
+const publicationKinds = new Set(['fulfilled', 'rejected', 'not-attempted'])
+
+function validateLastOutcome(value: unknown): asserts value is OrbitalLastOutcome {
+  if (
+    !isRecord(value) ||
+    Object.keys(value).some((field) => !outcomeFields.has(field)) ||
+    typeof value.kind !== 'string' ||
+    !outcomeKinds.has(value.kind) ||
+    !isSafeInteger(value.startedAtMs) ||
+    !isSafeInteger(value.completedAtMs) ||
+    value.startedAtMs === 0 ||
+    value.completedAtMs < value.startedAtMs ||
+    typeof value.curatedPublication !== 'string' ||
+    !publicationKinds.has(value.curatedPublication) ||
+    (value.starlinkPublication !== undefined &&
+      (typeof value.starlinkPublication !== 'string' ||
+        !publicationKinds.has(value.starlinkPublication))) ||
+    (value.starlinkStartedAtMs !== undefined &&
+      (!isSafeInteger(value.starlinkStartedAtMs) ||
+        !isSafeInteger(value.starlinkCompletedAtMs) ||
+        value.starlinkCompletedAtMs < value.starlinkStartedAtMs ||
+        value.starlinkCompletedAtMs > value.completedAtMs)) ||
+    (value.starlinkKind !== undefined &&
+      (typeof value.starlinkKind !== 'string' ||
+        !starlinkOutcomeKinds.has(value.starlinkKind)))
+  ) throw new Error('Invalid orbital refresh outcome diagnostic')
+  for (const field of ['reason', 'starlinkReason']) {
+    const reason = value[field]
+    if (
+      reason !== undefined &&
+      (typeof reason !== 'string' ||
+        !/^[A-Za-z0-9][A-Za-z0-9 _.,:/'()-]{0,159}$/.test(reason))
+    ) throw new Error('Invalid orbital refresh outcome reason')
+  }
+  for (const field of ['source', 'starlinkSource']) {
+    const source = value[field]
+    if (source !== undefined &&
+      (typeof source !== 'string' || !upstreamSources.has(source))
+    ) throw new Error('Invalid orbital refresh outcome source')
+  }
+  for (const field of ['status', 'starlinkStatus']) {
+    const status = value[field]
+    if (status !== undefined &&
+      (typeof status !== 'number' || !Number.isInteger(status) ||
+        status < 100 || status > 599)
+    ) throw new Error('Invalid orbital refresh outcome status')
+  }
+}
+
+const lastOutcomeDiagnostic = (
+  outcome: Exclude<OrbitalRefreshOutcome, { kind: 'disabled' | 'not-due' }>,
+  startedAtMs: number,
+): OrbitalLastOutcome => {
+  const diagnostic: OrbitalLastOutcome = {
+    kind: outcome.kind,
+    startedAtMs,
+    completedAtMs: Date.now(),
+    curatedPublication: outcome.kind === 'published'
+      ? 'fulfilled'
+      : 'publicationResults' in outcome && outcome.publicationResults
+        ? outcome.publicationResults.curated
+        : 'not-attempted',
+  }
+  if ('reason' in outcome) diagnostic.reason = outcome.reason
+  if ('source' in outcome) diagnostic.source = outcome.source
+  if ('status' in outcome) diagnostic.status = outcome.status
+  if (
+    'starlink' in outcome &&
+    outcome.starlink &&
+    (outcome.starlink.kind === 'published' || outcome.starlink.kind === 'failed')
+  ) {
+    diagnostic.starlinkKind = outcome.starlink.kind
+    diagnostic.starlinkPublication =
+      outcome.starlink.kind === 'published'
+        ? 'fulfilled'
+        : 'publicationResults' in outcome && outcome.publicationResults?.starlink
+          ? outcome.publicationResults.starlink
+          : 'not-attempted'
+    if ('reason' in outcome.starlink) {
+      diagnostic.starlinkReason = outcome.starlink.reason
+    }
+    if ('source' in outcome.starlink) {
+      diagnostic.starlinkSource = outcome.starlink.source
+    }
+    if ('status' in outcome.starlink) {
+      diagnostic.starlinkStatus = outcome.starlink.status
+    }
+  }
+  validateLastOutcome(diagnostic)
+  return diagnostic
 }
 
 const isSafeInteger = (value: unknown): value is number =>
@@ -150,6 +274,36 @@ class SqlOrbitalRefreshCoordinator implements OrbitalRefreshCoordinator {
   constructor(storage: DurableObjectStorage, recoveryEnabled: boolean) {
     this.storage = storage
     this.recoveryEnabled = recoveryEnabled
+  }
+
+  async recordOutcome(attemptId: string, outcome: OrbitalRefreshOutcome) {
+    if (outcome.kind === 'disabled' || outcome.kind === 'not-due') return
+    const previous = await this.storage.get(ORBITAL_COORDINATOR_LAST_OUTCOME_KEY)
+    if (previous !== undefined) validateLastOutcome(previous)
+    const current = this.readState()
+    if (!current ||
+      `${current.lastStartedAtMs}:${current.attemptSequence}` !== attemptId
+    ) throw new Error('Obsolete orbital refresh outcome diagnostic')
+    const diagnostic = lastOutcomeDiagnostic(outcome, current.lastStartedAtMs)
+    const retained = previous ? {
+      starlinkKind: previous.starlinkKind,
+      starlinkReason: previous.starlinkReason,
+      starlinkSource: previous.starlinkSource,
+      starlinkStatus: previous.starlinkStatus,
+      starlinkPublication: previous.starlinkPublication,
+      starlinkStartedAtMs: previous.starlinkStartedAtMs,
+      starlinkCompletedAtMs: previous.starlinkCompletedAtMs,
+    } : {}
+    const value = {
+      ...retained,
+      ...diagnostic,
+      ...(diagnostic.starlinkKind ? {
+        starlinkStartedAtMs: this.readStarlinkState()?.lastStartedAtMs,
+        starlinkCompletedAtMs: diagnostic.completedAtMs,
+      } : {}),
+    }
+    validateLastOutcome(value)
+    await this.storage.put(ORBITAL_COORDINATOR_LAST_OUTCOME_KEY, value)
   }
 
   private readState() {
@@ -560,6 +714,7 @@ const textResponse = (
 
 export class OrbitalCatalogCoordinator extends DurableObject<OrbitalCatalogEnvironment> {
   private readonly coordinator: SqlOrbitalRefreshCoordinator
+  private readonly outcomeStorage: DurableObjectStorage
   private initializationFailed = false
 
   constructor(
@@ -567,6 +722,7 @@ export class OrbitalCatalogCoordinator extends DurableObject<OrbitalCatalogEnvir
     environment: OrbitalCatalogEnvironment,
   ) {
     super(state, environment)
+    this.outcomeStorage = state.storage
     this.coordinator = new SqlOrbitalRefreshCoordinator(
       state.storage,
       environment.STARLINK_CATALOG_ENABLED === 'true',
@@ -618,7 +774,20 @@ export class OrbitalCatalogCoordinator extends DurableObject<OrbitalCatalogEnvir
       if (this.initializationFailed) {
         return textResponse('Coordinator storage is unavailable', 503)
       }
-      return jsonResponse(this.coordinator.status(), 200)
+      const status = this.coordinator.status()
+      try {
+        const lastOutcome = await this.outcomeStorage.get(
+          ORBITAL_COORDINATOR_LAST_OUTCOME_KEY,
+        )
+        if (lastOutcome !== undefined) {
+          validateLastOutcome(lastOutcome)
+          status.lastOutcome = lastOutcome
+        }
+      } catch {
+        console.warn('Orbital refresh outcome diagnostic read unavailable')
+        return textResponse('Coordinator outcome diagnostic is unavailable', 503)
+      }
+      return jsonResponse(status, 200)
     }
     if (url.pathname !== ORBITAL_COORDINATOR_PATH || url.search) {
       return textResponse('Not found', 404)
@@ -782,6 +951,31 @@ export const withOrbitalRefreshStatus = async (
     }
     for (const [label, value] of values) {
       headers.set(`X-LiveTrafficStan-Orbital-Refresh-${label}`, String(value))
+    }
+    if (status.lastOutcome !== undefined) {
+      validateLastOutcome(status.lastOutcome)
+      const outcomeLabels = [
+        ['kind', 'Last-Outcome'],
+        ['startedAtMs', 'Last-Outcome-Started'],
+        ['completedAtMs', 'Last-Outcome-Completed'],
+        ['reason', 'Last-Outcome-Reason'],
+        ['source', 'Last-Outcome-Source'],
+        ['status', 'Last-Outcome-Status'],
+        ['starlinkKind', 'Last-Starlink-Outcome'],
+        ['starlinkReason', 'Last-Starlink-Reason'],
+        ['starlinkSource', 'Last-Starlink-Source'],
+        ['starlinkStatus', 'Last-Starlink-Status'],
+        ['curatedPublication', 'Last-Curated-Publication'],
+        ['starlinkPublication', 'Last-Starlink-Publication'],
+        ['starlinkStartedAtMs', 'Last-Starlink-Started'],
+        ['starlinkCompletedAtMs', 'Last-Starlink-Completed'],
+      ] as const
+      for (const [field, label] of outcomeLabels) {
+        const value = status.lastOutcome[field]
+        if (value !== undefined) {
+          headers.set(`X-LiveTrafficStan-Orbital-Refresh-${label}`, String(value))
+        }
+      }
     }
   } catch {
     headers.set('X-LiveTrafficStan-Orbital-Refresh-State', 'unavailable')

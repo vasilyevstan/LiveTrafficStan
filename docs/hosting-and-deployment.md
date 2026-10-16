@@ -1097,6 +1097,18 @@ coordinator stores only its schema, attempt sequence, cadence, and blocked
 status. It contains no coordinates, user data, raw payload, digest, or provider
 body.
 
+The same SQLite-backed Durable Object keeps one bounded last-admitted-outcome
+value, separate from its admission/recovery rows. It is written after the
+actual preparation/publication result and survives actor recreation, without
+changing either cadence, blocked state, physical fence or rollback identity.
+It records only fixed outcome/stage, bounded application reason, status and
+start/completion times. Early duplicate events leave it untouched. Optional
+diagnostic storage failure is explicitly warned and cannot revoke a published
+snapshot or relax admission. The existing cache-only routes expose this
+receipt in `X-LiveTrafficStan-Orbital-Refresh-Last-*` headers; no new public
+endpoint, provider acquisition, credential, general request logging or
+observability service is introduced.
+
 `429` and readable `Retry-After` guidance on `5xx` extend the next-allowed
 time. Guidance is bounded to seven days; a longer value enters an
 operator-reviewed blocked state rather than creating an unsafe or
