@@ -8,9 +8,17 @@ user accounts or a server-side vessel history archive.
 
 Public production: <https://trackstan.xyz>
 
-Current application/Worker source: `b54962f3cce89ea4757e4b47c829b895ebadc863`,
-with the [mobile workspace/search runtime receipt](docs/hosting-and-deployment.md#mobile-workspace-and-lookup-production-acceptance-2026-10-15).
+Current application/Worker source: `306bb692b812c194d332bed2b190367e931f17a6`,
+with the [local map tools runtime receipt](docs/hosting-and-deployment.md#local-map-tools-production-acceptance-2026-10-16).
 Later documentation-only commits do not replace that running source.
+
+**Local map tools released on 2026-10-16:** with the map focused, **F** opens
+Find and **C** performs the available Center action. Explicit Flat/top-down
+local views gain an approximate center scale and **Settings -> View ->
+Measure distance**, a session-only two-point surface ruler. Neither is a
+route or navigation instrument. Reported aircraft squawk is now restricted
+to four ASCII octal digits without rewriting legacy history. See
+[measured acceptance and limits](docs/development-and-testing.md#local-map-tools-shared-production-acceptance-470-473).
 
 **Mobile workspace/search released on 2026-10-15:** phones have **Center,
 Layers, Find, In view, Settings**, one expanded task/full inspector and
