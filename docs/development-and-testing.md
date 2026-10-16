@@ -206,6 +206,57 @@ found the finite fixture positions expired; it is not a live-provider failure.
 Native keys/tab focus, real vector rendering and one post-ready canvas were
 measured; traffic/track transport and device/focus were explicitly simulated.
 
+### Local map tools shared production acceptance (#470-#473)
+
+The four focused changes #475/#476/#477/#478 ship through checked release
+#479 as application **`306bb692b812c194d332bed2b190367e931f17a6`**, Worker
+**`4255f6bc-6bc4-46e8-a0be-72fddb9805a6`**. The complete ruler head
+`d4961e7c5b033684656b163c28006c0d130c6b67` passed exact-head Validation
+`38870889256`; the first head's missing staged map integration was caught by
+TypeScript and corrected without changing the locally accepted implementation.
+Promotion/main checks `38871401504` / `38871581875` passed. Required local gates
+passed **197 suites / 2,022 tests**, lint/typecheck, the four mandatory data
+checks and build. The production-input bundle matches the published assets.
+
+Deployment `38871737916` published at **2026-10-16 08:09:52Z**, then failed
+its immediate orbital release-SHA assertion. Preserve that failed Action.
+Both later, unchanged full strict-origin smokes passed with the same expected
+SHA and all enabled inputs; there was no redeploy, relaxed assertion, provider
+acquisition override or relay change. The transient mismatch's specific
+mechanism was not established. This is not an all-green deployment Action.
+
+Native ordinary **REFRESH APP** at **08:14:57-08:15:00Z** upgraded the genuine
+`b54962f3` predecessor to `index-DNAs5cZj.js`, preserving byte-exact
+native-saved preferences, root SW scope/controller and history database
+name/version 2. This clean profile does not prove historical observation
+contents. Intentional test preference changes came only after that comparison.
+
+Seven deployed native checkpoints at **08:15:00-08:15:10Z** passed actual F
+focus/no stray character/unchanged camera; native scale math; and ruler
+placement/Done/retention/Clear in Light/Dark at 1280x900 and 315x517. The
+5 km scale bar measured 63.234 CSS px and 4,999.693 m across the actual canvas
+center: 0.307 m error, within the existing pixel-plus-0.5% allowance.
+The 3.953303 km pair displayed 3.95 km; four rendered coordinates remain
+within the 128-coordinate bound. All 81 center-square samples hit the map;
+every action was 44px high and at least 75.14px wide, with no horizontal
+overflow. NM presentation retained identical geometry. One surviving canvas
+rendered 87 vector-source features; no ruler storage, runtime exception or
+lookup/Photon/orbital request was observed in this window.
+
+The narrow **08:17:21-08:17:23Z** continuation displaced the public test view
+by 0.04/0.02 degrees, +0.4 zoom and 31-degree bearing. Trusted C returned to
+the actual native Center-button reference within 1e-8 degrees and 1e-6
+zoom/bearing/pitch, preserving the same canvas. Accepted local gesture,
+selection, style, HISTORY, captured Return and stale-callback evidence above
+was reused rather than rerun. Real transport/clocks were not intercepted;
+the final synchronous navigation snapshot was Updating/Paused with zero
+traffic and an aircraft 503 message, not proof of continuously healthy
+providers or fresh rendered traffic. The later genuine background-pause read
+retained 4 aircraft and 55 ships; counts alone are not freshness proof.
+Explicit device/focus emulation is not
+physical-phone, OS-keyboard, physical browser Escape or full WCAG proof.
+See [runtime and rollback](hosting-and-deployment.md#local-map-tools-production-acceptance-2026-10-16).
+
 ### Visitor analytics (#440)
 
 Bootstrap tests cover production/exact-origin/disabled gating, genuine-token

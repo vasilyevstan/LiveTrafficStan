@@ -1815,6 +1815,48 @@ If a newer pull request reaches `main` while an older manual deployment is
 validating, the second equality check fails rather than silently promoting the
 older SHA.
 
+## Local map tools production acceptance, 2026-10-16
+
+Focused #475/#476/#477/#478 and checked dev-to-main #479 publish application
+**`306bb692b812c194d332bed2b190367e931f17a6`**, Worker
+**`4255f6bc-6bc4-46e8-a0be-72fddb9805a6`**, through serialized deployment
+**`38871737916`** at **08:09:52Z**. Exact promotion/main Validation
+`38871401504` / `38871581875` passed. No ancestry repair, merge exception,
+protection change or eligible pending environment approval was needed.
+Persistent dev and disabled automatic merged-branch deletion remain intact.
+
+Publication succeeded, but the immediate smoke failed the orbital response's
+release-SHA assertion. The failed Action/log remains evidence, not a successful
+deployment job. Both subsequent full strict-origin smokes passed against the
+unchanged source and inputs. No assertion was weakened and no redeploy,
+provider override or infrastructure change followed; the specific transient
+mismatch mechanism remains unknown.
+
+Assets are `index-DNAs5cZj.js` / `index-D8ShBdFB.css`, installed shell
+`805094e97765618b154a` (11 URLs / 3,666,988 bytes). All prior private-aircraft,
+photos/routes, curated/Starlink, marine and airport-board choices and atomic
+credentials remain enabled. The unchanged immutable OCI relay remains
+**`b54962f3cce89ea4757e4b47c829b895ebadc863`**; this browser/domain-only
+release required no relay activation, admission reset or credential change.
+
+The genuine predecessor's normal **REFRESH APP** at 08:14:57-08:15:00Z
+retained exact raw native-saved preferences, root SW/controller and history
+database identity/version, not historical observation-content proof.
+Seven deployed native checks plus a narrow non-Home C confirmation pass
+the changed desktop/short-phone Light/Dark behavior on one vector map.
+Required local gates passed 197 suites / 2,022 tests and all mandatory
+lint/typecheck/data/build checks. The precise measured geometry, provider
+snapshot and browser qualifications are in
+[testing](development-and-testing.md#local-map-tools-shared-production-acceptance-470-473).
+
+Compatible rollback is the accepted predecessor application/relay
+`b54962f3cce89ea4757e4b47c829b895ebadc863`, Worker
+`0b4841f3-8321-4c7e-9567-72f47dd6bf57`, through the existing serialized
+rollback workflow with every production input preserved. There is no
+preference/history migration or new backend contract. No extra rollback drill
+or documentation redeployment is required. Later canonical receipt commits
+and Wiki publication are not the running application SHA.
+
 ## Mobile workspace and lookup release boundary (#449)
 
 This release keeps the existing Worker, Static Assets and private aircraft
