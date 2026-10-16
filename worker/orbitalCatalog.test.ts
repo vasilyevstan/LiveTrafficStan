@@ -1218,6 +1218,7 @@ describe('scheduled curated orbital refresh', () => {
     ).resolves.toEqual({
       kind: 'failed',
       reason: 'Orbital snapshot publication failed',
+      publicationResults: { curated: 'rejected' },
     })
     expect(failedStore.puts).toHaveLength(0)
     expect(failedStore.values.get(ORBITAL_CATALOG_KEY)).toBe(

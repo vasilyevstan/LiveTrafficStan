@@ -100,7 +100,9 @@ class EventKv implements OrbitalKeyValueStore {
 
   async put(key: string, value: string) {
     this.events.push(`put:${key}`)
-    if (key === this.failPutKey) throw new Error('put failed')
+    if (key === this.failPutKey || this.failPutKey === 'both') {
+      throw new Error('put failed')
+    }
     this.values.set(key, value)
   }
 }
@@ -539,6 +541,7 @@ describe('shared curated and Starlink refresh attempt', () => {
       STARLINK_CATALOG_PUBLICATION_KEY,
       'Starlink snapshot publication failed',
     ],
+    ['both', 'both', 'Catalog snapshot publication failed'],
   ])(
     'attempts independent final puts when the %s put fails',
     async (_label, failedKey, reason) => {
@@ -562,26 +565,36 @@ describe('shared curated and Starlink refresh attempt', () => {
           starlinkWallNow: () => nowMs,
           starlink: { monotonicNow: () => 0 },
         }),
-      ).resolves.toEqual({ kind: 'failed', reason })
+      ).resolves.toEqual({
+        kind: 'failed',
+        reason,
+        publicationResults: {
+          curated: failedKey === ORBITAL_CATALOG_KEY || failedKey === 'both'
+            ? 'rejected' : 'fulfilled',
+          starlink: failedKey === STARLINK_CATALOG_PUBLICATION_KEY || failedKey === 'both'
+            ? 'rejected' : 'fulfilled',
+        },
+        starlink: failedKey === STARLINK_CATALOG_PUBLICATION_KEY || failedKey === 'both'
+          ? { kind: 'failed', reason: 'Starlink snapshot publication failed' }
+          : {
+              kind: 'published', recordCount: 512, populationCount: 512,
+              digest: expect.stringMatching(/^[0-9a-f]{64}$/),
+              publishedAt: new Date(nowMs).toISOString(),
+            },
+      })
 
       expect(events).toContain(`put:${ORBITAL_CATALOG_KEY}`)
       expect(events).toContain(
         `put:${STARLINK_CATALOG_PUBLICATION_KEY}`,
       )
-      expect(store.values.get(failedKey)).toBe(
-        failedKey === ORBITAL_CATALOG_KEY
-          ? 'prior-curated'
-          : 'prior-starlink',
-      )
-      const successfulKey =
-        failedKey === ORBITAL_CATALOG_KEY
-          ? STARLINK_CATALOG_PUBLICATION_KEY
-          : ORBITAL_CATALOG_KEY
-      expect(store.values.get(successfulKey)).not.toBe(
-        successfulKey === ORBITAL_CATALOG_KEY
-          ? 'prior-curated'
-          : 'prior-starlink',
-      )
+      for (const key of [ORBITAL_CATALOG_KEY, STARLINK_CATALOG_PUBLICATION_KEY]) {
+        const prior = key === ORBITAL_CATALOG_KEY ? 'prior-curated' : 'prior-starlink'
+        if (failedKey === key || failedKey === 'both') {
+          expect(store.values.get(key)).toBe(prior)
+        } else {
+          expect(store.values.get(key)).not.toBe(prior)
+        }
+      }
     },
   )
 

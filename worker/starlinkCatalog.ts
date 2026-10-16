@@ -2,6 +2,7 @@ import type {
   OrbitalAssetBinding,
   OrbitalCatalogFetch,
   OrbitalKeyValueStore,
+  OrbitalRefreshFailure,
   OrbitalUpstreamSource,
 } from './orbitalCatalog.js'
 
@@ -217,7 +218,7 @@ export type StarlinkRefreshPreparation =
       status: number
       retryAtMs?: number
     }
-  | { kind: 'failed'; reason: string }
+  | OrbitalRefreshFailure
 
 type UnknownRecord = Record<string, unknown>
 
@@ -2102,12 +2103,20 @@ const fetchBoundedJson = async (
       retrievedAtMs: options.wallNowMs(),
     }
   } catch (error) {
-    if (error instanceof StarlinkCatalogUpstreamError) throw error
+    if (error instanceof StarlinkCatalogUpstreamError) {
+      throw new StarlinkCatalogUpstreamError(error.message, {
+        kind: error.kind,
+        status: error.status,
+        retryAtMs: error.retryAtMs,
+        receivedAtMs: error.receivedAtMs,
+        source: error.source ?? options.source,
+      })
+    }
     throw new StarlinkCatalogUpstreamError(
       timedOut
         ? 'Starlink upstream timed out'
         : 'Starlink upstream request failed',
-      { kind: 'transient' },
+      { kind: 'transient', source: options.source },
     )
   } finally {
     clearTimeout(timeout)
@@ -2261,7 +2270,12 @@ export const prepareStarlinkCatalogRefresh = async (
           retryAtMs: error.retryAtMs,
         }
       }
-      return { kind: 'failed', reason: error.message }
+      return {
+        kind: 'failed',
+        reason: error.message,
+        ...(error.source ? { source: error.source } : {}),
+        ...(error.status !== undefined ? { status: error.status } : {}),
+      }
     }
     if (error instanceof StarlinkCatalogValidationError) {
       return { kind: 'failed', reason: error.message }

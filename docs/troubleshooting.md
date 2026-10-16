@@ -1064,6 +1064,25 @@ attempt, changes no admission row, and cannot clear a lock or terminal block.
 Diagnostic failures are explicitly warned and marked unavailable without
 altering the valid catalog body, ETag, HTTP status or expiry rules.
 
+`Last-Outcome`, `Last-Outcome-Started`, and `Last-Outcome-Completed` describe
+the most recent admitted attempt whose result was recorded, separately from
+the admission `State`. Optional `Last-Outcome-Reason`, `-Source`, and `-Status`
+identify the bounded application error, fixed GP/SATCAT stage and upstream
+HTTP status. `Last-Starlink-Outcome`, `-Reason`, `-Source`, and `-Status`
+distinguish Starlink failure from a successful curated publication. These
+fields are absent before the first recorded result; an older outcome start
+does not describe a newer active attempt. Duplicate/not-due events do not
+overwrite it. `Last-Curated-Publication` and `Last-Starlink-Publication`
+distinguish fulfilled/rejected KV puts from work not attempted. The retained
+last actual Starlink result has separate `Last-Starlink-Started` and
+`Last-Starlink-Completed` clocks; a later curated-only failure does not erase
+that evidence or turn it into a new Starlink attempt. A `published` receipt
+still requires checking the complete
+public snapshot and source clocks; `idle` alone is not publication success.
+The one overwritten diagnostic lives in the same existing Durable Object,
+contains no provider body, arbitrary URL/header, coordinate or attempt ID,
+and cannot restart acquisition. It does not enable general Worker URL logs.
+
 The October 14 reviewed amendment is single-use and matches only the completed
 October 12 `403` stop. It preserves the actor, previous row, admission sequence,
 cadence and actual-Starlink deadline. Only an eligible ordinary Cron can

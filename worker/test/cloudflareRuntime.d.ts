@@ -3,6 +3,8 @@ interface DurableObjectSqlCursor<Row> extends Iterable<Row> {
 }
 
 interface DurableObjectStorage {
+  get(key: string): Promise<unknown>
+  put(key: string, value: unknown): Promise<void>
   readonly sql: {
     exec<Row>(
       query: string,
