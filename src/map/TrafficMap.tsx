@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useImperativeHandle, useRef, type Ref } from 'react'
 import type {
   Feature,
   FeatureCollection,
@@ -30,6 +30,10 @@ import { consumeNorthReset } from './resetNorth'
 import { handleMapActionShortcut, type MapActionShortcut } from './mapShortcuts'
 import { InitiallyCompactAttributionControl } from './InitiallyCompactAttributionControl'
 import { LocalScaleControl } from './LocalScaleControl'
+import { EMPTY_LOCAL_RULER, rulerAllowsDeferredInteraction, type LocalRulerState, type LocalRulerAvailability } from '../domain/localRuler'
+import type { Coordinates } from '../domain/center'
+import { createLocalRulerInteraction, isRulerPlacementTap, rulerCenterIsUsable, type LocalRulerHandle } from './localRulerInteraction'
+import { installLocalRulerStyle } from './localRulerStyle'
 import type { Port } from '../domain/ports'
 import type { MapProjectionPreference } from '../domain/preferences'
 import type {
@@ -200,6 +204,15 @@ interface TrafficMapProps {
   projectionPreference: MapProjectionPreference
   units: UnitSystem
   scaleSuppressed?: boolean
+  ruler?: {
+    state: LocalRulerState
+    read: () => LocalRulerState
+    disabled: boolean
+    handleRef: Ref<LocalRulerHandle>
+    onPoint: (point: Coordinates) => void
+    onAvailability: (availability: LocalRulerAvailability) => void
+    onCancel: () => void
+  }
   aircraft: readonly DisplayAircraft[]
   vessels: readonly DisplayVessel[]
   trafficContext?: boolean
@@ -400,6 +413,7 @@ export function TrafficMap({
   projectionPreference,
   units,
   scaleSuppressed = false,
+  ruler,
   aircraft,
   vessels,
   trafficContext = false,
@@ -497,11 +511,18 @@ export function TrafficMap({
   const sourceDataGenerationRef = useRef(0)
   const attributionControlRef = useRef<InitiallyCompactAttributionControl | null>(null)
   const scaleControlRef = useRef<LocalScaleControl | null>(null)
+  const localRulerRef = useRef(ruler)
+  const localRulerInteractionRef = useRef<ReturnType<typeof createLocalRulerInteraction> | null>(null)
   const scalePresentationRef = useRef({
     projection: projectionPreference,
     units,
     suppressed: scaleSuppressed,
   })
+  useImperativeHandle(ruler?.handleRef, () => ({
+    setPointAtCenter: () => localRulerInteractionRef.current?.center() ?? false,
+    focusMap: () => mapRef.current?.getCanvas().focus({ preventScroll: true }),
+    refresh: () => localRulerInteractionRef.current?.refresh() ?? 'unsupported',
+  }), [])
   const compactAttributionRef = useRef(compactAttribution)
   const clusterOptionsGenerationRef = useRef(0)
   const interactionGenerationRef = useRef(0)
@@ -1170,6 +1191,7 @@ export function TrafficMap({
       )
       lastStarlinkFeaturesRef.current = starlinkPoints.features
       installJourneyStyle(map, journeySnapshotRef.current, activeTheme)
+      installLocalRulerStyle(map, localRulerRef.current?.read().points ?? EMPTY_LOCAL_RULER.points, activeTheme)
       loadedRef.current = true
       errorRef.current(
         fallbackActiveRef.current
@@ -1330,6 +1352,21 @@ export function TrafficMap({
     }
     scaleControlRef.current?.setPresentation(scalePresentationRef.current)
   }, [projectionPreference, scaleSuppressed, units])
+
+  useEffect(() => {
+    localRulerRef.current = ruler
+    localRulerInteractionRef.current?.sync()
+    if (ruler?.read().phase === 'placing') hideTrafficTooltipRef.current()
+    const map = mapRef.current
+    if (map) {
+      const canvas = map.getCanvas()
+      if (ruler?.read().phase === 'placing') canvas.style.cursor = 'crosshair'
+      else if (canvas.style.cursor === 'crosshair') canvas.style.cursor = ''
+    }
+    if (map && loadedRef.current) {
+      installLocalRulerStyle(map, ruler?.read().points ?? EMPTY_LOCAL_RULER.points, theme)
+    }
+  }, [projectionPreference, ruler, theme])
 
   useEffect(() => {
     selectRef.current = onSelect
@@ -1534,10 +1571,12 @@ export function TrafficMap({
 
       clearTrafficPhotoHover()
       pendingTrafficPhotoId = entity.id
+      const rulerRevision = readLocalRuler().revision
       trafficPhotoDwellTimer = window.setTimeout(() => {
         trafficPhotoDwellTimer = undefined
         pendingTrafficPhotoId = null
         if (
+          !rulerAllowsDeferredInteraction(readLocalRuler(), rulerRevision) ||
           hoveredTrafficIdRef.current !== entity.id ||
           !lastHoverPoint
         ) {
@@ -1627,8 +1666,11 @@ export function TrafficMap({
       }
     }
     hideTrafficTooltipRef.current = hideTrafficTooltip
-    const pointerOrigins = new Map<number, { x: number; y: number }>()
+    const readLocalRuler = () => localRulerRef.current?.read() ?? EMPTY_LOCAL_RULER
+    const pointerOrigins = new Map<number, { x: number; y: number; rulerRevision: number }>()
     let manualPointerMovement = false
+    let multiplePointerGesture = false
+    let suppressRulerClick = false
     const cancelJourneyFraming = () => {
       pendingJourneyFitRef.current = undefined
       if (viewJourneyRef.current) {
@@ -1637,6 +1679,14 @@ export function TrafficMap({
       }
     }
     const handlePointerDown = (event: PointerEvent) => {
+      localRulerInteractionRef.current?.sync()
+      const currentRuler = readLocalRuler()
+      if (currentRuler.phase === 'placing' && event.isPrimary) {
+        pointerOrigins.clear()
+        manualPointerMovement = false
+        multiplePointerGesture = false
+      }
+      suppressRulerClick = currentRuler.phase === 'placing'
       hideTrafficTooltip()
       interactionGenerationRef.current += 1
       clusterExpansionGenerationRef.current += 1
@@ -1644,7 +1694,9 @@ export function TrafficMap({
       pointerOrigins.set(event.pointerId, {
         x: event.clientX,
         y: event.clientY,
+        rulerRevision: currentRuler.revision,
       })
+      if (pointerOrigins.size > 1) multiplePointerGesture = true
     }
     const handlePointerMove = (event: PointerEvent) => {
       touchTracker.pointerMove(event)
@@ -1663,14 +1715,36 @@ export function TrafficMap({
       }
     }
     const handlePointerUp = (event: PointerEvent) => {
+      const currentRuler = readLocalRuler()
+      const origin = pointerOrigins.get(event.pointerId)
+      const place = currentRuler.phase === 'placing' && isRulerPlacementTap(event, {
+        originRevision: origin?.rulerRevision,
+        revision: currentRuler.revision,
+        pointerCount: pointerOrigins.size,
+        moved: manualPointerMovement || !origin || Math.hypot(event.clientX - origin.x, event.clientY - origin.y) >= 3,
+        multiple: multiplePointerGesture,
+      })
       touchTracker.pointerUp(event)
       pointerOrigins.delete(event.pointerId)
-      if (pointerOrigins.size === 0) manualPointerMovement = false
+      if (pointerOrigins.size === 0) {
+        manualPointerMovement = false
+        multiplePointerGesture = false
+      }
+      if (place) {
+        const rect = canvas.getBoundingClientRect()
+        localRulerInteractionRef.current?.place([
+          (event.clientX - rect.left) * canvas.clientWidth / rect.width,
+          (event.clientY - rect.top) * canvas.clientHeight / rect.height,
+        ])
+      }
     }
     const handlePointerCancel = (event: PointerEvent) => {
       touchTracker.pointerCancel(event)
       pointerOrigins.delete(event.pointerId)
-      if (pointerOrigins.size === 0) manualPointerMovement = false
+      if (pointerOrigins.size === 0) {
+        manualPointerMovement = false
+        multiplePointerGesture = false
+      }
     }
     const handleWheel = () => {
       hideTrafficTooltip()
@@ -1680,6 +1754,8 @@ export function TrafficMap({
       manualViewChangeRef.current()
     }
     const handleDoubleClick = () => {
+      localRulerInteractionRef.current?.sync()
+      if (readLocalRuler().phase === 'placing') return
       hideTrafficTooltip()
       interactionGenerationRef.current += 1
       clusterExpansionGenerationRef.current += 1
@@ -1687,6 +1763,7 @@ export function TrafficMap({
       manualViewChangeRef.current()
     }
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (localRulerInteractionRef.current?.escape(event, workspaceOwnsFullscreen(canvas))) return
       if (handleMapActionShortcut(
         event, canvas, canvas.ownerDocument.activeElement, actionShortcutRef.current,
       )) return
@@ -1837,6 +1914,10 @@ export function TrafficMap({
       )
     }
     refreshTrafficTooltipRef.current = () => {
+      if (readLocalRuler().phase === 'placing') {
+        hideTrafficTooltip()
+        return
+      }
       if (!hoverPopup.isOpen()) return
       const hoveredTrafficId = hoveredTrafficIdRef.current
       if (hoveredTrafficId) {
@@ -1932,6 +2013,7 @@ export function TrafficMap({
       const sourceDataGeneration = sourceDataGenerationRef.current
       const clusterOptionsGeneration = clusterOptionsGenerationRef.current
       const interactionGeneration = interactionGenerationRef.current
+      const rulerRevision = readLocalRuler().revision
       const requestedView = viewRequestRef.current
       const source = map.getSource(target.sourceId)
       if (!source) return
@@ -1946,6 +2028,7 @@ export function TrafficMap({
               : viewState.vesselsVisible
           if (
             mapRef.current !== map ||
+            !rulerAllowsDeferredInteraction(readLocalRuler(), rulerRevision) ||
             !loadedRef.current ||
             !clusteringEnabledRef.current ||
             !layerVisible ||
@@ -1978,6 +2061,7 @@ export function TrafficMap({
               ? viewState.aircraftVisible
               : viewState.vesselsVisible
           if (
+            !rulerAllowsDeferredInteraction(readLocalRuler(), rulerRevision) ||
             expansionGeneration !== clusterExpansionGenerationRef.current ||
             mapRef.current !== map ||
             !loadedRef.current ||
@@ -2032,9 +2116,32 @@ export function TrafficMap({
     )
     scaleControlRef.current = scaleControl
     map.addControl(scaleControl, 'bottom-left')
+    localRulerInteractionRef.current = createLocalRulerInteraction({
+      map,
+      read: readLocalRuler,
+      projection: () => projectionPreferenceRef.current,
+      limits: () => viewportLimitsRef.current,
+      disabled: () => localRulerRef.current?.disabled ?? true,
+      centerUsable: () => {
+        const document = canvas.ownerDocument
+        const view = document.defaultView
+        return rulerCenterIsUsable(canvas.getBoundingClientRect(), view?.visualViewport ?? {
+          offsetLeft: 0, offsetTop: 0,
+          width: view?.innerWidth ?? canvas.clientWidth,
+          height: view?.innerHeight ?? canvas.clientHeight,
+        }, (x, y) => document.elementFromPoint(x, y) === canvas)
+      },
+      onPoint: point => localRulerRef.current?.onPoint(point),
+      onAvailability: availability => localRulerRef.current?.onAvailability(availability),
+      onCancel: () => localRulerRef.current?.onCancel(),
+    })
 
     map.on('click', (event) => {
       hideTrafficTooltip()
+      if (readLocalRuler().phase === 'placing' || suppressRulerClick) {
+        suppressRulerClick = false
+        return
+      }
       const touchFallbackAllowed = touchTracker.consumeClick(
         event.originalEvent,
       )
@@ -2225,6 +2332,11 @@ export function TrafficMap({
     })
 
     map.on('mousemove', (event) => {
+      if (readLocalRuler().phase === 'placing') {
+        hideTrafficTooltip()
+        canvas.style.cursor = 'crosshair'
+        return
+      }
       const trafficLayers = activeTrafficLayers()
       const layers = [
         ...trafficLayers,
@@ -2359,6 +2471,8 @@ export function TrafficMap({
         frameRef.current = null
       }
       scaleControlRef.current = null
+      localRulerInteractionRef.current?.dispose()
+      localRulerInteractionRef.current = null
       map.remove()
       mapRef.current = null
     }
