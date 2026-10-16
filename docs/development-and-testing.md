@@ -48,6 +48,23 @@ supplementary marine WebSocket; use the actual local Worker for those paths.
 | `npm run check:deploy` | Bundle the Worker and Static Assets without credentials or deployment |
 | `npm run preview:worker` | Build and run the actual local Cloudflare `workerd` boundary |
 
+### Reported squawk and legacy history (#470)
+
+Adapter fixtures require string-only outer trim followed by exactly four
+ASCII octal digits. Preserve `0000`, leading zeros and ordinary reported
+`7500`/`7600`/`7700` strings without emergency interpretation. Invalid optional
+codes must leave every other normalized aircraft field unchanged; malformed
+live-provider specimens are not needed for this deterministic contract.
+
+The shared helper also protects new history projections and historical
+entity reconstruction. Keep the raw legacy stored-row validator and existing
+repair behavior unchanged: a canonical row with a malformed string remains
+byte-identical and readable. An unrelated repair must retain that raw string
+and the pre-change repaired byte count; only its displayed entity omits the
+field. No schema/normalization-version bump, row deletion or history migration.
+Component tests cover verbatim valid display and absent-row behavior, not
+rendered gesture/focus claims.
+
 ### Visitor analytics (#440)
 
 Bootstrap tests cover production/exact-origin/disabled gating, genuine-token
