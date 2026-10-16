@@ -30,6 +30,7 @@ import { preventCompactControlWheelZoom } from './app/controlZoom'
 import { AirportDetails } from './components/AirportDetails'
 import { HistoryModeNotice } from './components/HistoryModeNotice'
 import { JourneyDetails } from './components/JourneyDetails'
+import { LocalRulerPlacement } from './components/LocalRulerPlacement'
 import { InViewPanel } from './components/InViewPanel'
 import { LiveStatus } from './components/LiveStatus'
 import { PortDetails } from './components/PortDetails'
@@ -66,6 +67,15 @@ import {
 } from './domain/mapCamera'
 import { captureAircraftJourney, type JourneySnapshot } from './domain/journey'
 import {
+  EMPTY_LOCAL_RULER,
+  formatLocalRulerDistance,
+  reduceLocalRuler,
+  rulerAvailabilityMessage,
+  type LocalRulerAction,
+  type LocalRulerAvailability,
+} from './domain/localRuler'
+import type { Coordinates } from './domain/center'
+import {
   createShareUrl,
   readBrowserShareState,
 } from './domain/shareState'
@@ -98,6 +108,7 @@ import {
   type TrafficMapError,
 } from './map/mapInitialization'
 import { TrafficMap } from './map/TrafficMap'
+import type { LocalRulerHandle } from './map/localRulerInteraction'
 import {
   trafficZoomContextEntities,
   trafficZoomContextViewport,
@@ -138,6 +149,54 @@ const canRestoreFocus = (element: HTMLElement | null) =>
 function App() {
   const appShellRef = useRef<HTMLElement>(null)
   const workspaceControlsRef = useRef<WorkspaceControlsHandle>(null)
+  const rulerMapRef = useRef<LocalRulerHandle>(null)
+  const rulerPanelRef = useRef<HTMLElement>(null)
+  const rulerTaskOriginRef = useRef(false)
+  const [localRuler, setLocalRuler] = useState(EMPTY_LOCAL_RULER)
+  const localRulerRef = useRef(EMPTY_LOCAL_RULER)
+  const [rulerAvailability, setRulerAvailability] = useState<LocalRulerAvailability>('unsupported')
+  const dispatchLocalRuler = useCallback((action: LocalRulerAction) => {
+    const previous = localRulerRef.current
+    const next = reduceLocalRuler(previous, action)
+    if (next === previous) return
+    localRulerRef.current = next
+    setLocalRuler(next)
+  }, [])
+  const readLocalRuler = useCallback(() => localRulerRef.current, [])
+  const clearLocalRuler = useCallback(() => {
+    rulerTaskOriginRef.current = false
+    dispatchLocalRuler({ type: 'clear' })
+  }, [dispatchLocalRuler])
+  const cancelLocalRuler = useCallback(() => {
+    if (localRulerRef.current.phase !== 'placing') return
+    const restoreTask = rulerTaskOriginRef.current
+    rulerTaskOriginRef.current = false
+    const active = document.activeElement
+    const ownedFocus = active === document.body || active?.matches('.maplibregl-canvas') ||
+      Boolean(active && rulerPanelRef.current?.contains(active))
+    dispatchLocalRuler({ type: 'cancel' })
+    if (restoreTask && workspaceControlsRef.current?.resumeTask()) return
+    if (ownedFocus) rulerMapRef.current?.focusMap()
+  }, [dispatchLocalRuler])
+  const finishLocalRuler = useCallback(() => {
+    if (localRulerRef.current.phase !== 'placing' || localRulerRef.current.points.length !== 2) return
+    const restoreTask = rulerTaskOriginRef.current
+    rulerTaskOriginRef.current = false
+    dispatchLocalRuler({ type: 'done' })
+    if (restoreTask && workspaceControlsRef.current?.resumeTask()) return
+    rulerMapRef.current?.focusMap()
+  }, [dispatchLocalRuler])
+  const handleRulerPoint = useCallback((point: Coordinates) => {
+    dispatchLocalRuler({ type: 'place', point })
+  }, [dispatchLocalRuler])
+  const handleRulerAvailability = useCallback((availability: LocalRulerAvailability) => {
+    setRulerAvailability(availability)
+    if (availability === 'unsupported') dispatchLocalRuler({ type: 'unsupported' })
+    if (availability === 'available') dispatchLocalRuler({ type: 'supported' })
+  }, [dispatchLocalRuler])
+  useEffect(() => () => {
+    localRulerRef.current = reduceLocalRuler(localRulerRef.current, { type: 'clear' })
+  }, [])
   const [mobileWorkspace, setMobileWorkspace] = useState(() =>
     typeof window !== 'undefined' && isCompactWorkspace(
       window.visualViewport ?? { width: window.innerWidth, height: window.innerHeight },
@@ -218,6 +277,10 @@ function App() {
     null,
   )
   const [mapError, setMapError] = useState<TrafficMapError | null>(null)
+  const handleMapError = useCallback((error: TrafficMapError | null) => {
+    if (error) clearLocalRuler()
+    setMapError(error)
+  }, [clearLocalRuler])
   const [bathymetryStatus, setBathymetryStatus] = useState<BathymetryStatus>(INITIAL_BATHYMETRY_STATUS)
   const [viewportReport, setViewportReport] = useState<{
     assessment: ViewportAssessment
@@ -506,6 +569,7 @@ function App() {
       label: string,
       options: { explicit?: boolean; camera?: MapCameraState } = {},
     ) => {
+      clearLocalRuler()
       clearJourney()
       returnToLiveRef.current()
       cancelPlaceSearch()
@@ -529,7 +593,7 @@ function App() {
         camera: options.camera,
       }))
     },
-    [cancelPlaceSearch, clearJourney, locationCameraIntent],
+    [cancelPlaceSearch, clearJourney, clearLocalRuler, locationCameraIntent],
   )
 
   useEffect(() => {
@@ -1498,6 +1562,7 @@ function App() {
 
   const handleShowJourney = useCallback(async () => {
     if (!selectedEntity || historyActive || !mapCamera || marineJourneyCapture.pending) return
+    clearLocalRuler()
     locationCameraIntent.beginExplicitViewIntent()
     cancelPlaceSearch()
     const revision = ++journeyRevisionRef.current
@@ -1528,7 +1593,7 @@ function App() {
     setViewRequest(current => ({
       id: current.id + 1, center: current.center, journey: capture.snapshot,
     }))
-  }, [activeLocationLabel, cancelPlaceSearch, flightRoute.state, historyActive, liveTrail, locationCameraIntent, mapCamera, marineJourneyCapture, online, selectedEntity])
+  }, [activeLocationLabel, cancelPlaceSearch, clearLocalRuler, flightRoute.state, historyActive, liveTrail, locationCameraIntent, mapCamera, marineJourneyCapture, online, selectedEntity])
 
   const handleJourneyFit = useCallback((revision: number, message: string) => {
     setJourney(current => resolveJourneyFit(current, revision, message))
@@ -1563,6 +1628,7 @@ function App() {
   }, [restoreDetailFocus])
 
   const handleEnterHistory = useCallback(() => {
+    clearLocalRuler()
     clearJourney()
     setSelectedOrbitalId(null)
     enterHistory()
@@ -1571,11 +1637,12 @@ function App() {
         historyPlaybackControlRef.current?.focus()
       }
     })
-  }, [clearJourney, enterHistory])
+  }, [clearJourney, clearLocalRuler, enterHistory])
 
   useEffect(() => {
     if (historyActive && journey) clearJourney()
-  }, [clearJourney, historyActive, journey])
+    if (historyActive) clearLocalRuler()
+  }, [clearJourney, clearLocalRuler, historyActive, journey])
 
   const handleReturnToLive = useCallback(() => {
     returnToLive()
@@ -1691,28 +1758,53 @@ function App() {
   }, [selectedId, selectedOrbitalId, selectedPortId, selectedAirportId, selectedWeatherId, journey?.snapshot.revision])
 
   const expandInspector = useCallback(() => {
+    if (localRulerRef.current.phase === 'placing') clearLocalRuler()
     setDetailsReturnToTask(workspaceControlsRef.current?.suspendTask() ?? false)
     setInspectorExpanded(true)
-  }, [])
+  }, [clearLocalRuler])
   const collapseInspector = useCallback(() => {
     const restored = detailsReturnToTask && workspaceControlsRef.current?.resumeTask()
     setDetailsReturnToTask(false)
     if (!restored) setInspectorExpanded(false)
   }, [detailsReturnToTask])
   const handleWorkspaceTaskChange = useCallback((task: MobileWorkspaceTask | null) => {
+    if (task && localRulerRef.current.phase === 'placing') clearLocalRuler()
     setActiveWorkspaceTask(task)
     if (task) setDetailsReturnToTask(false)
-  }, [])
+  }, [clearLocalRuler])
+  const startLocalRuler = useCallback(() => {
+    if (historyActive || mapError) return
+    const availability = rulerMapRef.current?.refresh() ?? 'unsupported'
+    setRulerAvailability(availability)
+    if (availability !== 'available') return
+    rulerTaskOriginRef.current = workspaceControlsRef.current?.suspendTask() ?? false
+    dispatchLocalRuler({ type: 'start' })
+    rulerMapRef.current?.focusMap()
+  }, [dispatchLocalRuler, historyActive, mapError])
+  const rulerBinding = useMemo(() => ({
+    state: localRuler,
+    read: readLocalRuler,
+    disabled: historyActive || mapError !== null,
+    handleRef: rulerMapRef,
+    onPoint: handleRulerPoint,
+    onAvailability: handleRulerAvailability,
+    onCancel: cancelLocalRuler,
+  }), [cancelLocalRuler, handleRulerAvailability, handleRulerPoint, historyActive, localRuler, mapError, readLocalRuler])
+  const rulerDistance = formatLocalRulerDistance(localRuler.points, units)
   const inspectorIdentity = journey ? `journey:${journey.snapshot.revision}` :
     selectedId ?? selectedOrbitalId ?? selectedPortId ?? selectedAirportId ?? selectedWeatherId
   const inspectorPresentation = {
     mobile: mobileWorkspace,
-    compact: !inspectorExpanded || activeWorkspaceTask !== null,
+    compact: localRuler.phase === 'placing' || !inspectorExpanded || activeWorkspaceTask !== null,
+    forceCompact: localRuler.phase === 'placing',
     identity: inspectorIdentity,
     returnToTask: detailsReturnToTask,
     onExpand: expandInspector,
     onCollapse: collapseInspector,
   }
+  useLayoutEffect(() => {
+    rulerMapRef.current?.refresh()
+  }, [activeWorkspaceTask, inspectorExpanded, inspectorIdentity, localRuler, mobileWorkspace])
 
   useEffect(() => {
     const appShell = appShellRef.current
@@ -1767,6 +1859,7 @@ function App() {
         })
       }
       previousVisualHeight = viewport.height
+      rulerMapRef.current?.refresh()
     }
     const visualViewport = window.visualViewport
     updateViewportVariables()
@@ -1826,8 +1919,9 @@ function App() {
         theme={theme}
         projectionPreference={projectionPreference}
         units={units}
+        ruler={rulerBinding}
         scaleSuppressed={
-          mapError !== null || historyActive ||
+          mapError !== null || historyActive || localRuler.phase === 'placing' ||
           (mobileWorkspace && (activeWorkspaceTask !== null || inspectorIdentity !== null))
         }
         aircraft={trafficContext ? contextAircraft : aircraft}
@@ -1886,19 +1980,39 @@ function App() {
           const controls = workspaceControlsRef.current
           return (action === 'find' ? controls?.openFind() : controls?.center()) ?? false
         }}
-        onMapError={setMapError}
+        onMapError={handleMapError}
       />
       <div className="radar-shade" aria-hidden="true" />
+      {localRuler.phase === 'placing' && (rulerAvailability === 'available' || rulerAvailability === 'moving') && (
+        <svg className="ruler-reticle" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" strokeWidth="1.5" aria-hidden="true" focusable="false">
+          <path d="M12 4v6m0 4v6M4 12h6m4 0h6" />
+        </svg>
+      )}
 
       <MobileInspectorContext value={inspectorPresentation}>
       <div
         className="interface-layer"
         data-workspace-task={activeWorkspaceTask ?? undefined}
       >
+        {localRuler.phase === 'placing' && (
+          <LocalRulerPlacement state={localRuler} availability={rulerAvailability}
+            distance={rulerDistance} panelRef={rulerPanelRef}
+            onCenter={() => rulerMapRef.current?.setPointAtCenter()}
+            onDone={finishLocalRuler} onCancel={cancelLocalRuler}
+          />
+        )}
         <TrafficControls
           mobileWorkspace={mobileWorkspace}
           workspaceHandleRef={workspaceControlsRef}
           onWorkspaceTaskChange={handleWorkspaceTaskChange}
+          rulerAvailable={!historyActive && mapError === null && rulerAvailability === 'available'}
+          rulerMessage={historyActive ? 'Distance ruler is unavailable in HISTORY.'
+            : mapError ? 'Distance ruler is unavailable while the map recovers.'
+              : rulerAvailabilityMessage(rulerAvailability)}
+          rulerDistance={localRuler.phase === 'retained' ? rulerDistance : undefined}
+          onStartRuler={startLocalRuler}
+          onClearRuler={clearLocalRuler}
           fullscreen={fullscreenState}
           onEnterFullscreen={enterFullscreen}
           onExitFullscreen={exitFullscreen}

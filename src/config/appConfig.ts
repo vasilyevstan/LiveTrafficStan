@@ -32,6 +32,9 @@ export const LOCAL_MAP_TOOLS_CONFIG = {
   scaleMaximumWidthPx: 100,
   scaleMaximumRelativeError: 0.005,
   scalePixelAllowancePx: 1,
+  rulerMaximumGeometryPoints: 128,
+  rulerArcStepDegrees: 0.05,
+  rulerCenterClearancePx: 120,
 } as const
 
 export const MOBILE_WORKSPACE_CONFIG = {

@@ -388,6 +388,14 @@ identity are not renamed or reset.
   horizontal distance at the canvas center in m/km or NM, not distance beneath
   its corner or uniform screen-wide scale. Unsupported geometry and occupied
   mobile corners hide it; it never changes the camera or requests data.
+  **Settings / View / Measure distance** starts a two-point local ruler in
+  the same supported Flat geometry. Tap two points, or Tab to **Set at center**
+  and use the actual-center reticle. **Done** retains the approximate surface
+  distance and line; **Cancel** discards the draft; View provides **Clear
+  measurement**. The temporary strip replaces Settings while placing and
+  compacts, rather than remounts, selected details. It adds no provider request
+  or saved coordinates. Navigation, HISTORY or unsupported geometry clears it.
+  See [local bounds and exit behavior](docs/configuration.md#two-point-local-ruler).
   The mobile zoom/tilt prompt, selected details, and HISTORY playback reserve
   their own space; closing historical details restores the same tool state.
   Visual-viewport-aware sizing, solid keyboard focus rings, non-color

@@ -166,6 +166,26 @@ const renderControls = (
   )
 
 describe('TrafficControls', () => {
+  it('keeps ruler entry/readout/Clear in View without adding a permanent task', () => {
+    const html = renderControls({
+      rulerAvailable: true, rulerDistance: '12.3 km',
+      onStartRuler: () => undefined, onClearRuler: () => undefined,
+    })
+    const view = html.match(/<legend>View<\/legend>([\s\S]*?)<\/fieldset>/)?.[1]
+    expect(view).toContain('id="measure-distance-button"')
+    expect(view).toContain('Approximate surface distance: <output>12.3 km</output>')
+    expect(view).toContain('id="clear-distance-button"')
+    expect(html.match(/id="measure-distance-button"/g)).toHaveLength(1)
+    expect(html).not.toContain('data-workspace-task="ruler"')
+  })
+  it('keeps unsupported ruler entry disabled with a specific explanation', () => {
+    const html = renderControls({
+      rulerMessage: 'Use a local, level Flat view.', onStartRuler: () => undefined,
+    })
+    expect(html).toMatch(/id="measure-distance-button"[^>]*disabled=""/)
+    expect(html).toContain('Use a local, level Flat view.')
+    expect(html).not.toContain('id="clear-distance-button"')
+  })
   it('labels an orbital recovery action as a cache recheck, not a provider retry', () => {
     const html = renderControls({
       orbitalVisible: true,

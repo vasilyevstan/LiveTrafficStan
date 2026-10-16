@@ -115,6 +115,65 @@ new control exposed a startup bug by asking an unstyled map for its projection.
 The public style-existence guard and deterministic startup regression fix
 that bug. The final batch passed without weakening geometry or numeric bounds.
 
+### Two-point local ruler (#473)
+
+`localRuler.test.ts` covers revisioned transitions, whole-arc validity, known/
+zero distances, the derived 200 km local-diameter bound, significant digits,
+units and deferred success/error fencing after exit. `journey.test.ts` retains
+the original default sampling contract while checking bounded optional arc
+sampling. Interaction tests cover live pose/actual-center unprojection,
+movement, invalid pixels, 81-point center hit testing, disabled geometry,
+transient style loading, exact prior double-click restoration, Escape and
+idempotent listener/late-command cleanup. Style tests cover whole-input
+rejection, wrapped segments, the total 128-coordinate budget and idempotent
+source/paint/data rehydration. Existing strip, inspector, controls and CSS
+tests retain target/hidden-body/entry contracts. Static rendering alone is
+not proof of native focus or gestures.
+
+Local Chrome 155.0.8059.80 acceptance on 2026-10-16, 07:46-07:55 UTC completed
+the thirteen grouped contracts using the original batch, narrow keyboard
+confirmation and a final held-cluster technical check on the same accepted
+page. Light/Dark at 1280x900 and 315x517 measured every strip action at 44 CSS
+px high and at least 75 CSS px wide. All 81 samples of the actual-center
+120x120 square hit the map, including compact selected and captured contexts;
+credits remained hit-testable with no horizontal overflow. The ordinary
+1.227710864 km pair displayed 1.23 km. Wrapped/style-restored geometry used
+six coordinates; deterministic tests enforce the full 128-coordinate bound.
+
+Trusted pointer/touch versus drag/pinch, keyboard pan/center placement,
+double-click suppression and prior-disabled restoration passed. A deliberately
+padded camera proved that placement uses the actual canvas center; two equal
+points gave 0 m and then 0 NM without changing endpoints. Owned focus moved
+to Done and keyboard completion restored Settings. The selected body stayed
+identical with its 150px scroll; normal picking and newer-task focus resumed.
+Auto/pitch/unsafe recovery cleared points, while theme/dateline restoration
+preserved them. In 844x390 and actual 2x page scale, an obscured center correctly
+disabled placement while Cancel stayed reachable; do not claim a clear center
+in those layouts. Native fullscreen deferred renderer Escape and exited through
+the existing native action. Center/HISTORY/Return cleared the ruler. Captured
+Return matched its stored three-decimal coordinates, two-decimal zoom and
+one-decimal pitch/bearing, not an invented raw-camera promise.
+
+Preserve the observer failures: Enter initially omitted its native character
+event; the cluster setup initially left the wrong task tab active, then used
+zoom 11 despite the existing maximum cluster zoom 10. A first lower-zoom
+click raced the source/paint transition and picked an individual. After a
+public style/source-loaded and paint barrier, actual held cluster success
+and error callbacks both settled after ruler entry/exit without moving the
+camera or reporting a stale error. No application edit was needed for those
+observer corrections; accepted layout cases were not repeated.
+
+Post-ready map/control construction counts stayed fixed, with one connected
+canvas and one ruler source/three layers. There were no runtime exceptions,
+lookup/Photon/orbital requests or persisted ruler state. Ordinary aircraft
+polling, MQTT fixtures and legitimate navigation/HISTORY transitions remain
+separate from presentation work. Traffic/history were bounded synthetic
+fixtures; real vector tiles and native input/API fullscreen were used.
+Device/focus emulation is not physical iOS/Android, an actual OS keyboard,
+physical browser Escape, exhaustive accessibility or new real-provider proof.
+All required local gates passed: 197 suites / 2,022 tests, four data checks,
+lint, typecheck and build.
+
 ### Map-focused action shortcuts (#472)
 
 `mapShortcuts.test.ts` covers exact F/C dispatch, original and current canvas

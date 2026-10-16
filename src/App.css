@@ -74,6 +74,84 @@
   display: none;
 }
 
+.ruler-reticle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 2;
+  width: 24px;
+  height: 24px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  color: var(--panel-text);
+  background: var(--panel-background);
+  border: 1px solid var(--panel-border);
+  border-radius: 50%;
+}
+
+.ruler-placement-strip {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  z-index: 4;
+  display: grid;
+  gap: 8px;
+  width: min(400px, calc(var(--app-visual-viewport-width) - 32px));
+  padding: 10px 12px;
+  transform: translateX(-50%);
+  pointer-events: auto;
+  color: var(--panel-text);
+  background: var(--panel-background);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  box-shadow: 0 3px 12px var(--panel-shadow);
+}
+
+.ruler-placement-strip p {
+  min-height: 36px;
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 18px;
+}
+
+.ruler-placement-strip .ruler-placement-actions {
+  grid-template-columns: 1.5fr 1fr 1fr;
+  margin: 0;
+}
+
+.ruler-placement-strip .ruler-placement-actions button,
+#measure-distance-button,
+#clear-distance-button {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.details-panel__body[hidden] {
+  display: none;
+}
+
+.details-panel[data-force-compact] .journey-action {
+  display: none;
+}
+
+.details-panel[data-force-compact] .details-panel__heading {
+  padding-right: 96px;
+}
+
+.app-shell:not(.app-shell--mobile-workspace) .details-panel[data-force-compact] .details-panel__presentation {
+  position: absolute;
+  top: 8px;
+  right: 52px;
+  width: 52px;
+  min-height: 44px;
+}
+
+@container workspace (max-width: 1000px) {
+  .ruler-placement-strip {
+    top: calc(var(--workspace-header-bottom) + 8px);
+  }
+}
+
 @container workspace (max-width: 132px) or (max-height: 360px) {
   .local-map-scale {
     display: none;
@@ -2708,6 +2786,14 @@
   ));
   --mobile-surface-bottom: calc(var(--mobile-dock-bottom) + var(--mobile-dock-height) + var(--mobile-surface-gap));
   --workspace-header-bottom: 76px;
+}
+
+.app-shell--mobile-workspace .ruler-placement-strip {
+  top: 64px;
+  right: 8px;
+  left: 8px;
+  width: auto;
+  transform: none;
 }
 
 .app-shell--mobile-workspace .local-map-scale {
