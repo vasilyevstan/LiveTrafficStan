@@ -1877,6 +1877,10 @@ function App() {
         onViewportChange={handleViewportChange}
         onCameraChange={setMapCamera}
         onManualViewChange={handleManualViewChange}
+        onActionShortcut={(action) => {
+          const controls = workspaceControlsRef.current
+          return (action === 'find' ? controls?.openFind() : controls?.center()) ?? false
+        }}
         onMapError={setMapError}
       />
       <div className="radar-shade" aria-hidden="true" />

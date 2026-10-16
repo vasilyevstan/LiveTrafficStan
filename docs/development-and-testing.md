@@ -65,6 +65,38 @@ field. No schema/normalization-version bump, row deletion or history migration.
 Component tests cover verbatim valid display and absent-row behavior, not
 rendered gesture/focus claims.
 
+### Map-focused action shortcuts (#472)
+
+`mapShortcuts.test.ts` covers exact F/C dispatch, original and current canvas
+focus, modifiers/browser Find, repetition, composition, prevented events,
+unavailable/current/removed handles and consumption only after an action is
+handled. The existing canvas listener owns cleanup; its live callback delegates
+to the typed controls handle, not a document listener, click simulation or
+second navigation path. Find focus work cancels superseded/unmounted frames
+and checks its still-open task and actually visible input.
+
+Native acceptance must send real key/character events after map focus, not
+invoke the handle directly. Check current class/scope/draft and absence of a
+stray F, unchanged Find camera/selection/captured Return, no submit/catalog or
+extra acquisition, and C equivalence to the existing Center action. Include
+desktop/narrow Light/Dark, typing-field focus, hidden mobile HISTORY actions
+and native fullscreen. Natural provider polling is not a shortcut request.
+Static markup/key fakes do not prove rendered focus; emulation does not prove
+physical-phone/OS-keyboard behavior.
+
+Local Chrome 155 acceptance on 2026-10-16 proved native F/C at 1280x900 and
+315x517 in Light/Dark, retained outside-view class/scope/draft with no stray F,
+typing-field exclusion, C/button camera equivalence, hidden mobile HISTORY
+and native fullscreen ownership. Selected-body and captured-path F retained
+their mounted context and camera, with zero lookup/Photon/catalog requests.
+The observer initially assumed desktop Home framing on phones, serialized a
+DOM node and required raw-exact Return; those failed observations are retained.
+Actual Return uses the unchanged configured coordinate precision, zoom to two
+decimals and bearing/pitch to one, not a raw-camera guarantee. A later retry
+found the finite fixture positions expired; it is not a live-provider failure.
+Native keys/tab focus, real vector rendering and one post-ready canvas were
+measured; traffic/track transport and device/focus were explicitly simulated.
+
 ### Visitor analytics (#440)
 
 Bootstrap tests cover production/exact-origin/disabled gating, genuine-token

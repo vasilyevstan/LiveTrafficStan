@@ -7,6 +7,8 @@ export type MobileWorkspaceTask =
 export interface WorkspaceControlsHandle {
   suspendTask: () => boolean
   resumeTask: () => boolean
+  openFind: () => boolean
+  center: () => boolean
   openShipFind: () => void
 }
 
