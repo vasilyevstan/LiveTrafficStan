@@ -343,6 +343,34 @@ the actual upstream 403 in #457, not established by the passing suite or
 held cache HTTP 200. That diagnostic left client assets unchanged, so prior
 privacy, image, lifecycle and installed-update evidence remains accepted.
 
+### Protected Space-Track protocol qualification (#488)
+
+`Qualify Space-Track basic data` is a manually dispatched exact-current-`main`
+operation, serialized with existing production operations. Its two credentials
+are `SPACE_TRACK_USERNAME` and `SPACE_TRACK_PASSWORD` environment secrets in
+`production`, available only to the probe step after checkout, tests, prior-run
+backoff and a fresh main-SHA check. Never supply values in chat, arguments,
+repository files, workflow outputs or cookie jars.
+
+The operation makes one fixed HTTPS login POST and at most one GP query for
+NORAD `25544`, using manual redirect rejection, scoped memory-only cookies,
+10-second response/25-second total deadlines, and 16/64 KiB response caps.
+There is no SATCAT request: official guidance permits GP retrieval once per
+hour and SATCAT once per day after 17:00 UTC. Failed runs preserve at least
+one-hour backoff and longer readable guidance; terminal/unknown guidance
+requires investigation. Reuse a passed receipt rather than probing again.
+Job reruns are rejected; later dispatches inspect all attempts of preceding
+runs and refuse unknown or expired evidence rather than assuming it is safe.
+
+The artifact contains only controlled status/format, cookie-scope booleans,
+exact identity and public payload-type checks, and native field-type/format
+classifications. No credentials, cookies, account identifiers or raw provider
+body are saved. A passing result qualifies only this basic-record protocol
+from the runner. It is not a full Starlink, group-membership, Cloudflare-egress,
+fresh-publication or rendered-map acceptance claim, and it does not activate
+Space-Track. All existing CelesTrak producer state and source clocks remain
+untouched.
+
 ### Reviewed orbital recovery (#454, #457)
 
 Deterministic coordinator regressions cover the exact completed-stop predicate,
