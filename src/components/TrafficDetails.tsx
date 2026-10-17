@@ -878,9 +878,19 @@ export function TrafficDetails({
               }
             />
             <DetailRow
-              label="Course / heading"
+              label="Heading (bow)"
               value={
-                direction === undefined ? undefined : formatHeading(direction)
+                entity.headingDegrees === undefined
+                  ? undefined
+                  : formatHeading(entity.headingDegrees)
+              }
+            />
+            <DetailRow
+              label="Course over ground"
+              value={
+                entity.courseDegrees === undefined
+                  ? undefined
+                  : formatHeading(entity.courseDegrees)
               }
             />
             <DetailRow

@@ -107,11 +107,13 @@ describe('traffic presentation', () => {
     const moving = vessel({
       speedKph: ONE_KNOT_KPH,
       courseDegrees: 123,
+      headingDegrees: 45,
       navigationCategory: 'moored',
     })
     const stopped = vessel({
       speedKph: ONE_KNOT_KPH - 0.001,
       courseDegrees: 123,
+      headingDegrees: 45,
     })
 
     expect(trafficPresentation(moving)).toMatchObject({
