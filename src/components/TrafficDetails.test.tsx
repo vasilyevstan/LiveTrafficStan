@@ -27,6 +27,15 @@ const aircraft: DisplayAircraft = {
   freshness: 'live',
 }
 
+const vessel: DisplayVessel = {
+  id: 'vessel:230123456', kind: 'vessel', provider: 'Open Waters',
+  mmsi: 230123456, imo: 8919805, vesselCategory: 'passenger',
+  navigationCategory: 'underway', name: 'TEST VESSEL',
+  position: { latitude: 59.4, longitude: 24.7, observedAt: 1_800_000_000_000 },
+  receivedAt: 1_800_000_000_000, markerIcon: 'vessel-passenger',
+  markerScale: 1, freshness: 'live',
+}
+
 const availableMetadata: AircraftMetadataViewState = {
   phase: 'available',
   identityKey: '511123|ES-ABC|A320',
@@ -82,15 +91,90 @@ describe('TrafficDetails reported squawk', () => {
   })
 })
 
+describe('TrafficDetails reported directions', () => {
+  const render = (entity: DisplayAircraft | DisplayVessel, historical = false) =>
+    renderToStaticMarkup(
+      <TrafficDetails
+        entity={entity}
+        aircraftMetadata={{ phase: 'idle' }}
+        now={1_800_000_001_000}
+        units="metric"
+        historical={historical}
+        onClose={() => undefined}
+      />,
+    )
+
+  describe.each([false, true])('vessel historical=%s', (historical) => {
+    it.each([
+      ['different values', 45, 80],
+      ['equal values', 45, 45],
+      ['heading only', 45, undefined],
+      ['course only', undefined, 80],
+      ['neither value', undefined, undefined],
+      ['both zero', 0, 0],
+      ['zero heading', 0, 80],
+      ['zero course', 45, 0],
+    ] as const)(
+      'keeps independent reported fields for %s',
+      (_name, headingDegrees, courseDegrees) => {
+        const html = render(
+          { ...vessel, headingDegrees, courseDegrees },
+          historical,
+        )
+
+        if (headingDegrees === undefined) {
+          expect(html).not.toContain('<dt>Heading (bow)</dt>')
+        } else {
+          expect(html).toContain(
+            `<dt>Heading (bow)</dt><dd>${headingDegrees} deg</dd>`,
+          )
+        }
+        if (courseDegrees === undefined) {
+          expect(html).not.toContain('<dt>Course over ground</dt>')
+        } else {
+          expect(html).toContain(
+            `<dt>Course over ground</dt><dd>${courseDegrees} deg</dd>`,
+          )
+        }
+        expect(html).not.toContain('<dt>Course / heading</dt>')
+        expect(html).not.toContain('<dt>Direction</dt>')
+      },
+    )
+  })
+
+  it('keeps reported directions when the vessel is stopped', () => {
+    const html = render({
+      ...vessel,
+      speedKph: 0,
+      headingDegrees: 45,
+      courseDegrees: 80,
+    })
+    expect(html).toContain('<dt>Heading (bow)</dt><dd>45 deg</dd>')
+    expect(html).toContain('<dt>Course over ground</dt><dd>80 deg</dd>')
+  })
+
+  it.each([
+    ['course first', 45, 80, 80],
+    ['heading fallback', 45, undefined, 45],
+    ['neither value', undefined, undefined, undefined],
+    ['zero course', 45, 0, 0],
+    ['zero heading fallback', 0, undefined, 0],
+  ] as const)(
+    'preserves aircraft Direction for %s',
+    (_name, headingDegrees, courseDegrees, direction) => {
+      const html = render({ ...aircraft, headingDegrees, courseDegrees })
+      if (direction === undefined) {
+        expect(html).not.toContain('<dt>Direction</dt>')
+      } else {
+        expect(html).toContain(`<dt>Direction</dt><dd>${direction} deg</dd>`)
+      }
+      expect(html).not.toContain('<dt>Heading (bow)</dt>')
+      expect(html).not.toContain('<dt>Course over ground</dt>')
+    },
+  )
+})
+
 describe('TrafficDetails dynamic vessel photos', () => {
-  const vessel: DisplayVessel = {
-    id: 'vessel:230123456', kind: 'vessel', provider: 'Open Waters',
-    mmsi: 230123456, imo: 8919805, vesselCategory: 'passenger',
-    navigationCategory: 'underway', name: 'TEST VESSEL',
-    position: { latitude: 59.4, longitude: 24.7, observedAt: 1_800_000_000_000 },
-    receivedAt: 1_800_000_000_000, markerIcon: 'vessel-passenger',
-    markerScale: 1, freshness: 'live',
-  }
   const state: Extract<VesselPhotoViewState, { phase: 'available' }> = {
     phase: 'available', identityKey: 'vessel:230123456|IMO|8919805',
     photo: {

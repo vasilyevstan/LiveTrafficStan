@@ -165,7 +165,10 @@ identity are not renamed or reset.
   callsign, MMSI, or IMO; typed category, navigation, reported-speed, and
   inclusive length filters; explicit unknown-value handling; and a reset to
   the released 50 metre minimum. Selected ship speed is shown in both km/h and
-  knots. Reported sailing vessels and pleasure craft with a known length of
+  knots. **Heading (bow)** and **Course over ground** are reported independently;
+  unreported direction fields are omitted, while zero remains valid. The same
+  distinction applies to historical vessel details. Reported sailing vessels
+  and pleasure craft with a known length of
   at least 8 metres receive dedicated yacht icons and honor the same speed
   filters as other ships. Any reported speed includes stopped and unknown-speed
   yachts; reports become stale after two minutes and expire after ten.

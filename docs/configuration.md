@@ -280,6 +280,17 @@ below means `< 1.852 km/h`, while one knot or faster means `>= 1.852 km/h`.
 Zero is a known reported speed. Minimum and maximum lengths are inclusive, and
 missing length passes only when **Include unknown length** is selected.
 
+Selected-vessel details distinguish **Heading (bow)**, the reported bow
+direction, from **Course over ground**, the reported direction of travel over
+ground. Each uses its own normalized value and the existing whole-degree
+`deg` formatting. An unreported value omits only its own row; zero is valid,
+and equal reported values still appear under both labels. Neither field is
+inferred from speed or trail positions, including when stopped. This applies
+to historical details without changing stored observations. It does not
+change marker rotation: moving vessels retain course-first orientation, and
+slow/stopped or unknown-motion vessels remain north-up. Aircraft **Direction**
+keeps its existing course-first heading fallback.
+
 ## Changing the center
 
 For example, a local Tallinn-area variant can use:

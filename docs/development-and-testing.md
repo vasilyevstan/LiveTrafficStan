@@ -48,6 +48,38 @@ supplementary marine WebSocket; use the actual local Worker for those paths.
 | `npm run check:deploy` | Bundle the Worker and Static Assets without credentials or deployment |
 | `npm run preview:worker` | Build and run the actual local Cloudflare `workerd` boundary |
 
+### Independent reported vessel directions (#505)
+
+`TrafficDetails.test.tsx` checks separate **Heading (bow)** and **Course over
+ground** rows for different/equal values, heading only, course only, neither,
+and zero in either field, in both live and historical details. Missing fields
+are omitted independently, not replaced by one another or by placeholders.
+Stopped vessels retain reported values. Aircraft **Direction** keeps its
+course-first fallback and zero handling; `trafficPresentation.test.ts` uses
+contrasting vessel heading/course values to retain moving-marker course-first
+rotation and stopped north-up behavior. No normalization or history migration
+is involved.
+
+Rendered acceptance uses controlled normalized vessel reports on desktop and
+a 315x517 phone-sized viewport in Light/Dark. Check actual labels/values,
+omission, wrapping, horizontal overflow, inspector scrolling/close and one
+retained map rather than treating static markup as layout evidence. Ordinary
+selection-driven photo lookup and provider polling remain permitted; these
+display fields add no acquisition path or render-triggered request.
+
+The October 17 local batch accepted eight native-selection cases: distinct
+45/80-degree values at 1280x900 and 315x517 in both themes, then heading-only,
+course-only, zero and unavailable values. The existing body retained 431/180px
+of scrollable height, a hit-tested 44x44 close action, one same map/canvas and
+no horizontal overflow. Native wheel input moved the body in the remaining
+six cases; those cases also verified actual rendered basemap vector features.
+This is emulated touch/device evidence, not physical-phone acceptance.
+Preserved observer failures concern a row-padding visibility assertion and a
+session-wide mocked-MQTT construction total (four versus one across observer
+detach/resize/staging). They do not establish provider lifecycle invariance:
+reuse the unchanged deterministic provider coverage rather than claiming
+constant connections or zero ordinary polling from this UI batch.
+
 ### Reported squawk and legacy history (#470)
 
 Adapter fixtures require string-only outer trim followed by exactly four
