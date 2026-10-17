@@ -1139,11 +1139,14 @@ or relationships to visible aircraft.
 
 ## Native Space-Track GP-only source (schema 3)
 
-Issue #488 adds an explicit server-side `ORBITAL_CATALOG_SOURCE=space-track`
-mode. This section describes the implementation, **not a production activation
-receipt**. The deployment workflow retains `celestrak` as its default until
-fresh native publications for both topics and both origins, plus rendered
-browser acceptance, establish the new source. No account credential is public.
+Production uses server-side `ORBITAL_CATALOG_SOURCE=space-track` as the primary
+orbital source and checked deployment default. Issue #488's ordinary complete
+curated and Starlink publications passed on both origins on 2026-10-17,
+followed by actual desktop/narrow marker selection and source/type acceptance.
+The [production receipt](hosting-and-deployment.md#native-orbital-primary-production-acceptance-2026-10-17)
+records exact generations and evidence limits. CelesTrak remains an explicit
+legacy selection, never automatic acquisition failover. No account credential
+is public.
 
 The official [basic SSA redistribution authorization](https://www.space-track.org/documentation#/odr)
 (`odr_redistBasicSSAInfoDetails`, verified 2026-10-17) gives express blanket
