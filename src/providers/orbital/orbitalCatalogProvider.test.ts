@@ -2,9 +2,9 @@ import { describe, expect, it, vi } from 'vitest'
 import snapshotFixture from '../../../public/orbital-data/curated-2026-09-30-v1/catalog.json'
 import {
   orbitalSnapshotDigestInput,
-  type OrbitalCatalogSnapshot,
   type OrbitalSourceGroup,
 } from '../../domain/orbital'
+import type { OrbitalCatalogSnapshot } from '../../../worker/orbitalCatalog'
 import {
   OrbitalCatalogProvider,
   type OrbitalCatalogProviderConfig,

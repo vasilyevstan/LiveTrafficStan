@@ -271,7 +271,7 @@ export function ObjectFind(props: ObjectFindProps) {
         <details className="context-details"><summary>Catalog source &amp; limits</summary>
           {kind === 'airports' ? <p>OurAirports · {props.airportSource?.licenseName ?? 'Public domain'} · snapshot {props.airportSource?.publishedAt ?? 'date unavailable'}. Large and medium airports only; static, not airport operations.</p> :
             kind === 'ports' ? <p>Natural Earth · {props.portSource?.licenseName ?? 'Public domain'} · snapshot {props.portSource?.publishedAt ?? 'date unavailable'}. Generalized ports, not berth or navigation information.</p> :
-              <p>CelesTrak · curated catalog and bounded Starlink sample, not the complete constellation. Modeled, not live or optical. Find does not change map filters.</p>}
+              <p>Curated catalog and bounded Starlink sample, not the complete constellation. Modeled, not live or optical. Find does not change map filters.</p>}
         </details>
       </>
     )

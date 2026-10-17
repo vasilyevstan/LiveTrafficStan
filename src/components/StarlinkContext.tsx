@@ -205,11 +205,20 @@ export function StarlinkContext({
               {formatTimestamp(
                 Date.parse(snapshot.starlink.sources.gp.retrievedAt),
               )}
-              {' · '}SATCAT{' '}
-              {formatTimestamp(
-                Date.parse(snapshot.starlink.sources.satcat.retrievedAt),
+              {snapshot.starlink.sources.satcat && (
+                <>
+                  {' · '}SATCAT{' '}
+                  {formatTimestamp(Date.parse(snapshot.starlink.sources.satcat.retrievedAt))}
+                </>
               )}
             </p>
+            {snapshot.sourceProvider === 'space-track' && (
+              <p>
+                <a href="https://www.space-track.org/">Space-Track.org / USSPACECOM</a>{' '}
+                GP-reported public, undecayed Starlink payloads with element epochs
+                within the source query&apos;s ten-day window.
+              </p>
+            )}
             <p>
               Not the full constellation. SGP4 modeled, not live telemetry,
               optical visibility, or operational status.

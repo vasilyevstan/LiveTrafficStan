@@ -602,7 +602,7 @@ export const createAppConfig = (
     orbital: {
       endpointPath: '/api/orbits/catalog',
       acceptMediaType:
-        'application/vnd.livetrafficstan.orbital-catalog+json;version=2',
+        'application/vnd.livetrafficstan.orbital-catalog+json;version=3, application/vnd.livetrafficstan.orbital-catalog+json;version=2;q=0.9',
       schemaVersion: 2,
       sourceContractVersion: 2,
       catalogId: 'celestrak-curated-v1',
@@ -671,7 +671,7 @@ export const createAppConfig = (
     starlink: {
       endpointPath: DEFAULTS.starlinkEndpoint,
       acceptMediaType:
-        'application/vnd.livetrafficstan.starlink-catalog+json;version=2, application/vnd.livetrafficstan.starlink-catalog+json;version=1;q=0.9',
+        'application/vnd.livetrafficstan.starlink-catalog+json;version=3, application/vnd.livetrafficstan.starlink-catalog+json;version=2;q=0.9, application/vnd.livetrafficstan.starlink-catalog+json;version=1;q=0.8',
       schemaVersion: 2,
       sourceContractVersion: 2,
       catalogId: 'celestrak-starlink-shell-balanced-v1',
@@ -682,6 +682,17 @@ export const createAppConfig = (
       sampleLimit: 512,
       sampleAlgorithm: 'inclination-shell-raan-phase-grid-v1',
       compatibleContracts: [
+        {
+          mediaType:
+            'application/vnd.livetrafficstan.starlink-catalog+json;version=3',
+          schemaVersion: 3,
+          sourceContractVersion: 3,
+          catalogId: 'space-track-starlink-shell-balanced-v1',
+          sampleLimit: 512,
+          sampleAlgorithm: 'inclination-shell-raan-phase-grid-v1',
+          maximumRecords: 512,
+          shellBalanced: true,
+        },
         {
           mediaType:
             'application/vnd.livetrafficstan.starlink-catalog+json;version=1',

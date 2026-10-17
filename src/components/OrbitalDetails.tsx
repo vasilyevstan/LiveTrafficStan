@@ -245,6 +245,10 @@ export function OrbitalDetails({
   onImageFailed,
   onClose,
 }: OrbitalDetailsProps) {
+  const nativeGp = snapshot.sourceProvider === 'space-track'
+  const dataSourceName = nativeGp ? 'Space-Track.org / USSPACECOM' : sourceName
+  const dataSourceUrl = nativeGp ? 'https://www.space-track.org/' : sourceWebsiteUrl
+  const dataFormat = nativeGp ? 'GP data/type' : 'GP/SATCAT'
   const starlink =
     orbitalFeatureOwner(position.id) === 'starlink' ||
     isStarlinkOrbitalCatalogSnapshot(snapshot)
@@ -414,7 +418,7 @@ export function OrbitalDetails({
         SGP4 model, not live or optical visibility.
       </p>
       <p className="metadata-attribution">
-        <a href={sourceWebsiteUrl}>{sourceName}</a> GP/SATCAT
+        <a href={dataSourceUrl}>{dataSourceName}</a> {dataFormat}
       </p>
       <details className="context-details">
         <summary>Orbital source &amp; model limits</summary>
@@ -427,21 +431,33 @@ export function OrbitalDetails({
           no N2YO content is loaded here.
         </p>
       <p className="metadata-attribution">
-        <a href={sourceWebsiteUrl}>{sourceName}</a> GP/SATCAT ·{' '}
-        <a href={sourceUsagePolicyUrl}>usage policy</a> ·{' '}
+        <a href={dataSourceUrl}>{dataSourceName}</a> {dataFormat} ·{' '}
+        <a href={nativeGp ? 'https://www.space-track.org/documentation#/odr' : sourceUsagePolicyUrl}>
+          {nativeGp ? 'basic-data use' : 'usage policy'}
+        </a> ·{' '}
         {isStarlinkOrbitalCatalogSnapshot(snapshot) ? (
           <>
             {snapshot.starlink.sampleAlgorithm.includes('shell')
               ? 'shell-balanced sample'
               : 'systematic sample'}
             , not the full constellation · GP retrieved{' '}
-            {snapshot.starlink.sources.gp.retrievedAt} · SATCAT retrieved{' '}
-            {snapshot.starlink.sources.satcat.retrievedAt}.
+            {snapshot.starlink.sources.gp.retrievedAt}
+            {snapshot.starlink.sources.satcat && (
+              <> · SATCAT retrieved {snapshot.starlink.sources.satcat.retrievedAt}</>
+            )}.
           </>
         ) : (
           <>retrieved {snapshot.retrievedAt}.</>
         )}
       </p>
+      {snapshot.curationReference && (
+        <p className="metadata-status">
+          Curated groups use a dated <a href="https://celestrak.org/">CelesTrak</a>{' '}
+          membership reference from {snapshot.curationReference.retrievedAt}.
+          Membership additions and removals require a reviewed reference update;
+          GP elements and reported types refresh independently.
+        </p>
+      )}
       </details>
     </DetailsPanel>
   )

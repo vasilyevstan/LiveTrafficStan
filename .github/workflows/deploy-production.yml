@@ -35,15 +35,23 @@ on:
         default: true
         type: boolean
       orbital_catalog_enabled:
-        description: Enable the scheduled CelesTrak orbital catalog
+        description: Enable the scheduled orbital catalog
         required: true
         default: false
         type: boolean
       starlink_catalog_enabled:
-        description: Enable the scheduled CelesTrak Starlink sample
+        description: Enable the scheduled Starlink sample
         required: true
         default: false
         type: boolean
+      orbital_source:
+        description: Orbital acquisition provider; no automatic source fallback
+        required: true
+        default: celestrak
+        type: choice
+        options:
+          - celestrak
+          - space-track
       marine_supplement_enabled:
         description: Enable AISStream and Open Waters alongside Digitraffic
         required: true
@@ -200,6 +208,7 @@ jobs:
           NAMESPACE_ID: ${{ steps.orbital-kv.outputs.namespace-id }}
           ORBITAL_ENABLED: ${{ inputs.orbital_catalog_enabled }}
           STARLINK_ENABLED: ${{ inputs.starlink_catalog_enabled }}
+          ORBITAL_SOURCE: ${{ inputs.orbital_source }}
           MARINE_ENABLED: ${{ inputs.marine_supplement_enabled }}
           AIRPORT_BOARDS_ENABLED: ${{ inputs.airport_boards_enabled }}
         run: |
@@ -209,6 +218,7 @@ jobs:
               --output "$RUNNER_TEMP/wrangler-production.jsonc" \
               --orbital-enabled true \
               --starlink-enabled "$STARLINK_ENABLED" \
+              --orbital-source "$ORBITAL_SOURCE" \
               --marine-enabled "$MARINE_ENABLED" \
               --airport-boards-enabled "$AIRPORT_BOARDS_ENABLED" \
               --namespace-id "$NAMESPACE_ID"
@@ -218,6 +228,7 @@ jobs:
               --output "$RUNNER_TEMP/wrangler-production.jsonc" \
               --orbital-enabled false \
               --starlink-enabled false \
+              --orbital-source "$ORBITAL_SOURCE" \
               --marine-enabled "$MARINE_ENABLED" \
               --airport-boards-enabled "$AIRPORT_BOARDS_ENABLED"
           fi
@@ -243,10 +254,14 @@ jobs:
           --outdir "$RUNNER_TEMP/worker-dry-run"
 
       - name: Prepare production secrets file
-        if: inputs.aircraft_delivery == 'oci-private-relay' || inputs.marine_supplement_enabled || inputs.airport_boards_enabled
+        if: inputs.aircraft_delivery == 'oci-private-relay' || inputs.marine_supplement_enabled || inputs.airport_boards_enabled || (inputs.orbital_catalog_enabled && inputs.orbital_source == 'space-track')
         env:
           AIRCRAFT_DELIVERY: ${{ inputs.aircraft_delivery }}
           AIRCRAFT_RELAY_AUTH_TOKEN: ${{ secrets.AIRCRAFT_RELAY_AUTH_TOKEN }}
+          ORBITAL_ENABLED: ${{ inputs.orbital_catalog_enabled }}
+          ORBITAL_SOURCE: ${{ inputs.orbital_source }}
+          SPACE_TRACK_USERNAME: ${{ inputs.orbital_catalog_enabled && inputs.orbital_source == 'space-track' && secrets.SPACE_TRACK_USERNAME || '' }}
+          SPACE_TRACK_PASSWORD: ${{ inputs.orbital_catalog_enabled && inputs.orbital_source == 'space-track' && secrets.SPACE_TRACK_PASSWORD || '' }}
           MARINE_ENABLED: ${{ inputs.marine_supplement_enabled }}
           AISSTREAM_API_KEY: ${{ secrets.AISSTREAM_API_KEY }}
           OPENWATERS_AIS_TOKEN: ${{ secrets.OPENWATERS_AIS_TOKEN }}
@@ -276,10 +291,10 @@ jobs:
             --var STARLINK_CATALOG_ENABLED:${{ inputs.starlink_catalog_enabled }}
             --var MARINE_SUPPLEMENT_ENABLED:${{ inputs.marine_supplement_enabled }}
             --var AIRPORT_BOARDS_ENABLED:${{ inputs.airport_boards_enabled }}
-            ${{ (inputs.aircraft_delivery == 'oci-private-relay' || inputs.marine_supplement_enabled || inputs.airport_boards_enabled) && format('--secrets-file {0}/wrangler-production-secrets.json', runner.temp) || '' }}
+            ${{ (inputs.aircraft_delivery == 'oci-private-relay' || inputs.marine_supplement_enabled || inputs.airport_boards_enabled || (inputs.orbital_catalog_enabled && inputs.orbital_source == 'space-track')) && format('--secrets-file {0}/wrangler-production-secrets.json', runner.temp) || '' }}
 
       - name: Remove production secrets file
-        if: always() && (inputs.aircraft_delivery == 'oci-private-relay' || inputs.marine_supplement_enabled || inputs.airport_boards_enabled)
+        if: always()
         env:
           SECRETS_FILE: ${{ runner.temp }}/wrangler-production-secrets.json
         run: rm -f "$SECRETS_FILE"
@@ -309,6 +324,7 @@ jobs:
             echo "- Flight route lookup enabled: \`${{ inputs.flight_route_enabled }}\`"
             echo "- Orbital catalog enabled: \`${{ inputs.orbital_catalog_enabled }}\`"
             echo "- Starlink catalog enabled: \`${{ inputs.starlink_catalog_enabled }}\`"
+            echo "- Orbital acquisition source: \`${{ inputs.orbital_source }}\`"
             echo "- Marine supplement enabled: \`${{ inputs.marine_supplement_enabled }}\`"
             echo "- Airport boards enabled: \`${{ inputs.airport_boards_enabled }}\`"
             echo "- Orbital KV namespace: \`${{ steps.orbital-kv.outputs.namespace-id || 'none' }}\`"

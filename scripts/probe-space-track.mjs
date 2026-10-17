@@ -3,8 +3,14 @@ import { isAbsolute, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseRetryAfterMs } from '../src/providers/errors.ts'
 import { readBoundedJsonFile } from './read-bounded-json-file.mjs'
+import {
+  SPACE_TRACK_LOGIN_URL,
+  SpaceTrackProtocolError as ProbeError,
+  spaceTrackLoginAcknowledgment,
+  spaceTrackSessionCookies,
+} from '../worker/spaceTrackProtocol.ts'
 
-export const SPACE_TRACK_LOGIN_URL = 'https://www.space-track.org/ajaxauth/login'
+export { SPACE_TRACK_LOGIN_URL }
 export const SPACE_TRACK_PROBE_URL =
   'https://www.space-track.org/basicspacedata/query/class/gp/' +
   'NORAD_CAT_ID/25544/DECAY_DATE/null-val/EPOCH/%3Enow-10/format/json'
@@ -12,7 +18,6 @@ export const SPACE_TRACK_PROBE_INTERVAL_MS = 60 * 60 * 1_000
 export const SPACE_TRACK_LOGIN_INTERVAL_MS = 60 * 1_000
 const LOGIN_MAX_BYTES = 16 * 1_024
 const GP_MAX_BYTES = 64 * 1_024
-const COOKIE_MAX_BYTES = 4 * 1_024
 const RESPONSE_TIMEOUT_MS = 10_000
 const TOTAL_TIMEOUT_MS = 25_000
 const USER_AGENT =
@@ -30,13 +35,6 @@ const TEXT_FIELDS = [
 const NUMERIC_FIELDS = FIELDS.filter(field =>
   !TEXT_FIELDS.includes(field) && field !== 'DECAY_DATE',
 )
-
-class ProbeError extends Error {
-  constructor(code) {
-    super(code)
-    this.code = code
-  }
-}
 
 const object = value =>
   value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -93,73 +91,6 @@ export function assertSpaceTrackProbeBackoff(receipt, now = Date.now()) {
     rateBasis: unspentLegacyGpBudget
       ? 'legacy-no-gp-request' : receipt.gpRequested ? 'gp-requested' : 'authentication-only',
   }
-}
-
-function sessionCookies(headers, now) {
-  const values = headers.getSetCookie()
-  if (values.length === 0 || values.length > 8) {
-    throw new ProbeError('authentication-cookie-invalid')
-  }
-  const pairs = []
-  const names = new Set()
-  for (const value of values) {
-    if (Buffer.byteLength(value) > COOKIE_MAX_BYTES) {
-      throw new ProbeError('authentication-cookie-oversized')
-    }
-    const [pair, ...attributes] = value.split(';').map(part => part.trim())
-    const separator = pair.indexOf('=')
-    const name = pair.slice(0, separator)
-    const cookieValue = pair.slice(separator + 1)
-    const octets = cookieValue.startsWith('"') && cookieValue.endsWith('"')
-      ? cookieValue.slice(1, -1) : cookieValue
-    if (
-      separator < 1 ||
-      !/^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/.test(name) ||
-      !cookieValue ||
-      !/^[\x21\x23-\x2b\x2d-\x3a\x3c-\x5b\x5d-\x7e]+$/.test(octets) ||
-      names.has(name)
-    ) {
-      throw new ProbeError('authentication-cookie-invalid')
-    }
-    names.add(name)
-    let path = '/ajaxauth'
-    let scoped = true
-    let maxAge
-    let expiresAt
-    for (const attribute of attributes) {
-      const equals = attribute.indexOf('=')
-      const key = (equals < 0 ? attribute : attribute.slice(0, equals)).toLowerCase()
-      const entry = equals < 0 ? '' : attribute.slice(equals + 1)
-      if (key === 'domain') {
-        const domain = entry.toLowerCase().replace(/^\./, '')
-        if (!['space-track.org', 'www.space-track.org'].includes(domain)) {
-          scoped = false
-        }
-      }
-      if (key === 'path') path = entry
-      if (key === 'max-age') maxAge = /^-?\d+$/.test(entry) ? Number(entry) : NaN
-      if (key === 'expires') {
-        expiresAt = Date.parse(entry)
-      }
-    }
-    const targetPath = new URL(SPACE_TRACK_PROBE_URL).pathname
-    if (
-      !scoped || !path.startsWith('/') ||
-      (targetPath !== path && !targetPath.startsWith(
-        path.endsWith('/') ? path : `${path}/`,
-      )) ||
-      (maxAge !== undefined
-        ? !Number.isFinite(maxAge) || maxAge <= 0
-        : expiresAt !== undefined && (!Number.isFinite(expiresAt) || expiresAt <= now))
-    ) continue
-    pairs.push(pair)
-  }
-  if (pairs.length === 0) throw new ProbeError('authentication-cookie-scope-invalid')
-  const cookie = pairs.join('; ')
-  if (Buffer.byteLength(cookie) > COOKIE_MAX_BYTES) {
-    throw new ProbeError('authentication-cookie-oversized')
-  }
-  return cookie
 }
 
 export async function probeSpaceTrack({
@@ -302,29 +233,16 @@ export async function probeSpaceTrack({
     const loginText = login.text.trim()
     receipt.login.format = loginText ? 'json' : 'empty'
     receipt.login.acknowledgment = loginText ? 'unrecognized' : 'empty-body'
-    if (loginText) {
-      let result
-      try {
-        result = JSON.parse(loginText)
-      } catch {
+    try {
+      receipt.login.acknowledgment = spaceTrackLoginAcknowledgment(login.text)
+    } catch (error) {
+      receipt.requiresReview = true
+      if (error instanceof ProbeError && error.code === 'authentication-response-unrecognized') {
         receipt.login.format = /^\s*</.test(loginText) ? 'html' : 'other'
-        receipt.requiresReview = true
-        throw new ProbeError('authentication-response-unrecognized')
       }
-      if (object(result) && result.Login === 'Success') {
-        receipt.login.acknowledgment = 'explicit-success'
-      } else if (object(result) && Object.keys(result).length === 0) {
-        receipt.login.acknowledgment = 'empty-object'
-      } else if (Array.isArray(result) && result.length === 0) {
-        receipt.login.acknowledgment = 'empty-array'
-      } else if (result === '') {
-        receipt.login.acknowledgment = 'empty-string'
-      } else {
-        receipt.requiresReview = true
-        throw new ProbeError('authentication-not-confirmed')
-      }
+      throw error
     }
-    const cookie = sessionCookies(login.response.headers, now())
+    const cookie = spaceTrackSessionCookies(login.response.headers, now(), SPACE_TRACK_PROBE_URL)
     receipt.login.cookieScopeAccepted = true
     receipt.gpRequested = true
     receipt.gpRequestedAt = new Date(now()).toISOString()

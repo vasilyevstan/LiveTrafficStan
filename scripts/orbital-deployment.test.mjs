@@ -43,7 +43,7 @@ const workRoot = join(
   'orbital-deployment',
 )
 
-const prepare = (enabled, starlinkEnabled = false, marineEnabled = false, airportBoardsEnabled = false) => {
+const prepare = (enabled, starlinkEnabled = false, marineEnabled = false, airportBoardsEnabled = false, source = 'celestrak') => {
   const directory = join(workRoot, randomUUID())
   mkdirSync(directory, { recursive: true })
   const output = join(directory, 'wrangler.jsonc')
@@ -61,6 +61,8 @@ const prepare = (enabled, starlinkEnabled = false, marineEnabled = false, airpor
     String(marineEnabled),
     '--airport-boards-enabled',
     String(airportBoardsEnabled),
+    '--orbital-source',
+    source,
   ]
   if (enabled) {
     args.push(
@@ -129,6 +131,19 @@ describe('orbital Cloudflare deployment configuration', () => {
 
   it('rejects Starlink without the curated orbital deployment', () => {
     expect(() => prepare(false, true)).toThrow()
+  })
+
+  it('keeps the same physical resources with half-hour eligibility ticks only for the native primary source', () => {
+    const legacy = prepare(true, true)
+    const native = prepare(true, true, false, false, 'space-track')
+    expect(native.durable_objects).toEqual(legacy.durable_objects)
+    expect(native.kv_namespaces).toEqual(legacy.kv_namespaces)
+    expect(native.exports).toEqual(legacy.exports)
+    expect(native.triggers.crons).toEqual(['17,47 * * * *'])
+    expect(native.vars.ORBITAL_CATALOG_SOURCE).toBe('space-track')
+    expect(legacy.vars.ORBITAL_CATALOG_SOURCE).toBe('celestrak')
+    expect(prepare(false, false, false, false, 'space-track').triggers.crons).toEqual([])
+    expect(() => prepare(true, true, false, false, 'unknown')).toThrow()
   })
 
   it.each([

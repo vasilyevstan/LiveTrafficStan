@@ -1427,7 +1427,8 @@ export function TrafficControls({
                   · observations, not forecasts.
                 </li>
                 <li>
-                  Orbits: <a href="https://celestrak.org/">CelesTrak</a>{' '}
+                  Orbits: <a href="https://celestrak.org/">CelesTrak</a>
+                  {' · '}<a href="https://www.space-track.org/">Space-Track.org / USSPACECOM</a>{' '}
                   · SGP4 modeled, not live/optical.
                 </li>
                 <li>

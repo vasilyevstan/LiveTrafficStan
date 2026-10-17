@@ -20,6 +20,7 @@ import {
   handleStarlinkCatalog,
   STARLINK_CATALOG_PATH,
 } from './starlinkCatalog.js'
+import { handleSpaceTrackCatalog } from './spaceTrackCatalog.js'
 import {
   handleMarineStream,
   MARINE_STREAM_PATH,
@@ -55,6 +56,9 @@ export interface WorkerEnv extends AirportBoardEnvironment {
   ORBITAL_CATALOG_COORDINATOR?: OrbitalCatalogCoordinatorNamespace
   ORBITAL_CATALOG_ENABLED?: string
   STARLINK_CATALOG_ENABLED?: string
+  ORBITAL_CATALOG_SOURCE?: string
+  SPACE_TRACK_USERNAME?: string
+  SPACE_TRACK_PASSWORD?: string
   MARINE_SUPPLEMENT_ENABLED?: string
   MARINE_TRAFFIC_RELAY?: MarineRelayNamespace
   AISSTREAM_API_KEY?: string
@@ -145,7 +149,8 @@ const worker = {
     if (pathname === ORBITAL_CATALOG_PATH) {
       return withReleaseSha(
         await withOrbitalRefreshStatus(
-          request, await handleOrbitalCatalog(request, env), env,
+          request, await handleSpaceTrackCatalog(request, env, 'curated') ??
+            await handleOrbitalCatalog(request, env), env,
         ),
         env.RELEASE_SHA,
       )
@@ -153,7 +158,8 @@ const worker = {
     if (pathname === STARLINK_CATALOG_PATH) {
       return withReleaseSha(
         await withOrbitalRefreshStatus(
-          request, await handleStarlinkCatalog(request, env), env,
+          request, await handleSpaceTrackCatalog(request, env, 'starlink') ??
+            await handleStarlinkCatalog(request, env), env,
         ),
         env.RELEASE_SHA,
       )

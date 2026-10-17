@@ -4,9 +4,14 @@ import {
   type OrbitalCatalogSource,
   type OrbitalCatalogSnapshot,
   type OrbitalObject,
-  type OrbitalObjectType,
   type OrbitalSourceGroup,
 } from '../../domain/orbital'
+import { parseOrbitalObjectRecord } from '../../domain/orbitalRecord'
+import {
+  SPACE_TRACK_CURATED_MEDIA_TYPE,
+  parseSpaceTrackSnapshot,
+  spaceTrackApplicationSnapshot,
+} from './spaceTrackCatalogContract'
 import { ProviderError, parseRetryAfterMs } from '../errors'
 
 export interface OrbitalCatalogSourceConfig {
@@ -81,29 +86,6 @@ const sourceKeys = [
   'satcatSourceUrl',
 ] as const
 
-const recordKeys = [
-  'argumentOfPericenter',
-  'bstar',
-  'classificationType',
-  'displayOrder',
-  'eccentricity',
-  'elementSetNumber',
-  'ephemerisType',
-  'epoch',
-  'inclination',
-  'internationalDesignator',
-  'meanAnomaly',
-  'meanMotion',
-  'meanMotionDdot',
-  'meanMotionDot',
-  'name',
-  'noradCatalogId',
-  'objectType',
-  'revolutionAtEpoch',
-  'rightAscensionOfAscendingNode',
-  'sourceGroups',
-] as const
-
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
 
@@ -118,17 +100,6 @@ const exactKeys = (
     actual.every((key, index) => key === sortedExpected[index])
   )
 }
-
-const boundedString = (
-  value: unknown,
-  minimumLength: number,
-  maximumLength: number,
-) =>
-  typeof value === 'string' &&
-  value.length >= minimumLength &&
-  value.length <= maximumLength
-    ? value
-    : undefined
 
 const finiteNumber = (
   value: unknown,
@@ -152,11 +123,6 @@ const integerNumber = (
     ? number
     : undefined
 }
-
-const objectType = (value: unknown): OrbitalObjectType | undefined =>
-  value === 'PAY' || value === 'R/B' || value === 'DEB' || value === 'UNK'
-    ? value
-    : undefined
 
 const parseSource = (
   value: unknown,
@@ -190,144 +156,11 @@ const parseSource = (
   }
 }
 
-const parseSourceGroups = (
-  value: unknown,
-  config: OrbitalCatalogProviderConfig,
-) => {
-  if (
-    !Array.isArray(value) ||
-    value.length === 0 ||
-    value.length > config.sources.length
-  ) {
-    return undefined
-  }
-  const groups: OrbitalSourceGroup[] = []
-  let previousIndex = -1
-  for (const candidate of value) {
-    const index = config.sources.findIndex(
-      ({ group }) => group === candidate,
-    )
-    if (index <= previousIndex) return undefined
-    previousIndex = index
-    groups.push(config.sources[index].group)
-  }
-  return groups
-}
-
 const parseObject = (
   value: unknown,
   config: OrbitalCatalogProviderConfig,
-): OrbitalObject | undefined => {
-  if (!isRecord(value) || !exactKeys(value, recordKeys)) return undefined
-  const noradCatalogId =
-    typeof value.noradCatalogId === 'string' &&
-    /^[1-9]\d{0,8}$/.test(value.noradCatalogId)
-      ? value.noradCatalogId
-      : undefined
-  const name = boundedString(value.name, 1, 120)
-  const internationalDesignator = boundedString(
-    value.internationalDesignator,
-    0,
-    24,
-  )
-  const parsedType = objectType(value.objectType)
-  const epoch =
-    typeof value.epoch === 'string' &&
-    parseOrbitalTimestamp(value.epoch) !== undefined
-      ? value.epoch
-      : undefined
-  const meanMotion = finiteNumber(value.meanMotion, 0, 20)
-  const eccentricity = finiteNumber(value.eccentricity, 0, 0.99999999)
-  const inclination = finiteNumber(value.inclination, 0, 180)
-  const rightAscensionOfAscendingNode = finiteNumber(
-    value.rightAscensionOfAscendingNode,
-    0,
-    360,
-  )
-  const argumentOfPericenter = finiteNumber(
-    value.argumentOfPericenter,
-    0,
-    360,
-  )
-  const meanAnomaly = finiteNumber(value.meanAnomaly, 0, 360)
-  const ephemerisType = integerNumber(value.ephemerisType, 0, 99)
-  const classificationType =
-    typeof value.classificationType === 'string' &&
-    /^[A-Z]$/.test(value.classificationType)
-      ? value.classificationType
-      : undefined
-  const elementSetNumber = integerNumber(
-    value.elementSetNumber,
-    0,
-    999_999,
-  )
-  const revolutionAtEpoch = integerNumber(
-    value.revolutionAtEpoch,
-    0,
-    99_999_999,
-  )
-  const bstar = finiteNumber(value.bstar, -10, 10)
-  const meanMotionDot = finiteNumber(value.meanMotionDot, -10, 10)
-  const meanMotionDdot = finiteNumber(value.meanMotionDdot, -10, 10)
-  const sourceGroups = parseSourceGroups(value.sourceGroups, config)
-  const expectedDisplayOrder =
-    noradCatalogId && sourceGroups
-      ? config.sources.findIndex(
-          ({ group }) => group === sourceGroups[0],
-        ) *
-          1_000_000_000 +
-        Number(noradCatalogId)
-      : undefined
-
-  if (
-    noradCatalogId === undefined ||
-    name === undefined ||
-    internationalDesignator === undefined ||
-    parsedType === undefined ||
-    epoch === undefined ||
-    meanMotion === undefined ||
-    eccentricity === undefined ||
-    inclination === undefined ||
-    rightAscensionOfAscendingNode === undefined ||
-    argumentOfPericenter === undefined ||
-    meanAnomaly === undefined ||
-    ephemerisType === undefined ||
-    classificationType === undefined ||
-    elementSetNumber === undefined ||
-    revolutionAtEpoch === undefined ||
-    bstar === undefined ||
-    meanMotionDot === undefined ||
-    meanMotionDdot === undefined ||
-    sourceGroups === undefined ||
-    expectedDisplayOrder === undefined ||
-    value.displayOrder !== expectedDisplayOrder
-  ) {
-    return undefined
-  }
-
-  return {
-    noradCatalogId,
-    name,
-    internationalDesignator,
-    objectType: parsedType,
-    epoch,
-    meanMotion,
-    eccentricity,
-    inclination,
-    rightAscensionOfAscendingNode,
-    argumentOfPericenter,
-    meanAnomaly,
-    ephemerisType,
-    classificationType,
-    elementSetNumber,
-    revolutionAtEpoch,
-    bstar,
-    meanMotionDot,
-    meanMotionDdot,
-    sourceGroups,
-    displayOrder: expectedDisplayOrder,
-  }
-}
+): OrbitalObject | undefined =>
+  parseOrbitalObjectRecord(value, config.sources.map(({ group }) => group))
 
 const digest = async (value: string) => {
   const bytes = new TextEncoder().encode(value)
@@ -343,9 +176,8 @@ const readBoundedJson = async (
 ) => {
   const contentType = response.headers.get('Content-Type') ?? ''
   if (
-    !/^application\/json(?:\s*;\s*charset=utf-8)?$/i.test(
-      contentType.trim(),
-    )
+    !/^application\/json(?:\s*;\s*charset=utf-8)?$/i.test(contentType.trim()) &&
+    contentType.trim().toLowerCase() !== SPACE_TRACK_CURATED_MEDIA_TYPE
   ) {
     await response.body?.cancel()
     throw new ProviderError('Orbital catalog returned an invalid content type')
@@ -391,6 +223,9 @@ const parseSnapshot = async (
   value: unknown,
   config: OrbitalCatalogProviderConfig,
 ) => {
+  if (isRecord(value) && value.schemaVersion === 3) {
+    return spaceTrackApplicationSnapshot(await parseSpaceTrackSnapshot(value, 'curated'))
+  }
   if (!isRecord(value) || !exactKeys(value, topLevelKeys)) {
     throw new ProviderError('Orbital catalog schema is invalid')
   }
@@ -629,7 +464,7 @@ export class OrbitalCatalogProvider {
           response.headers.get('ETag') !== this.fulfilled.etag ||
           source === undefined ||
           responseDigest !== this.fulfilled.snapshot.sha256 ||
-          responseSchema !== this.config.schemaVersion ||
+          responseSchema !== this.fulfilled.snapshot.schemaVersion ||
           responseRetrievedAt !== this.fulfilled.snapshot.retrievedAt
         ) {
           throw new ProviderError(

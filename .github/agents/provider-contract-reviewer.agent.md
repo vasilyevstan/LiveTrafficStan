@@ -172,6 +172,19 @@ Check these project invariants:
   fixed source/group, canonical IDs/order, headers, schema, and SHA-256 before
   fulfilled current-tab caching. Abort, timeout, partial, malformed, oversized,
   mixed-generation, or digest-failing work cannot seed cache or output.
+- Native Space-Track schema 3 uses basic GP only, server-owned scoped session
+  cookies, strict numeric-string and UTC-unzoned conversion, real GP type, and
+  no invented SATCAT metadata. Preserve the original physical DO/SQL identities
+  and two-/twelve-hour floors; one admitted attempt acquires one GP topic, not
+  both. Independent qualification must be retired at production handoff.
+- Keep successful publication distinct from optional diagnostic storage I/O.
+  A new actual child outcome replaces its whole receipt, clearing absent old
+  status/source/reason fields; retain the child slot only when no new child
+  attempt occurred. The physical publication lock stays held until KV settles.
+- Production credential-file cleanup runs under unconditional `always()`,
+  including newly added credential-only feature combinations and failed
+  deployments. A successful one-row qualification never proves full native
+  population, Worker publication, or rendered-map acceptance.
 - Orbital modeled time is anchored to the same-origin response clock plus a
   monotonic clock. Initial skew, later wall-clock jumps, six-hour stale state,
   and 24-hour hard expiry remain distinct; hard expiry destroys modeled output

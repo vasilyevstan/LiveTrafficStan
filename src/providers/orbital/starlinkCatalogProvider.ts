@@ -1,4 +1,5 @@
 import {
+  STARLINK_ORBITAL_SHELLS,
   parseOrbitalTimestamp,
   type OrbitalObject,
   type OrbitalObjectType,
@@ -6,6 +7,10 @@ import {
   type StarlinkOrbitalCatalogSnapshot,
 } from '../../domain/orbital'
 import { ProviderError, parseRetryAfterMs } from '../errors'
+import {
+  parseSpaceTrackSnapshot,
+  spaceTrackApplicationSnapshot,
+} from './spaceTrackCatalogContract'
 import {
   orbitalCatalogRefreshBlocked,
   type OrbitalCatalogLoadResult,
@@ -137,28 +142,7 @@ const shellKeys = [
   'sampleCount',
 ] as const
 
-const shellDefinitions = [
-  {
-    id: 'inclination-lt-48',
-    inclinationMinimumDegrees: 0,
-    inclinationMaximumDegreesExclusive: 48,
-  },
-  {
-    id: 'inclination-48-lt-60',
-    inclinationMinimumDegrees: 48,
-    inclinationMaximumDegreesExclusive: 60,
-  },
-  {
-    id: 'inclination-60-lt-85',
-    inclinationMinimumDegrees: 60,
-    inclinationMaximumDegreesExclusive: 85,
-  },
-  {
-    id: 'inclination-gte-85',
-    inclinationMinimumDegrees: 85,
-    inclinationMaximumDegreesExclusive: null,
-  },
-] as const
+const shellDefinitions = STARLINK_ORBITAL_SHELLS
 
 const recordKeys = [
   'argumentOfPericenter',
@@ -201,7 +185,9 @@ const catalogContracts = (
   config: StarlinkCatalogProviderConfig,
 ): readonly StarlinkCatalogContractConfig[] => [
   {
-    mediaType: config.acceptMediaType.split(',')[0]?.trim() ?? '',
+    mediaType: config.acceptMediaType.split(',')
+      .map((entry) => entry.trim().split(';q=', 1)[0])
+      .find((entry) => entry.endsWith(`;version=${config.schemaVersion}`)) ?? '',
     schemaVersion: config.schemaVersion,
     sourceContractVersion: config.sourceContractVersion,
     catalogId: config.catalogId,
@@ -549,6 +535,9 @@ const parseSnapshot = async (
   config: StarlinkCatalogProviderConfig,
   contract: StarlinkCatalogContractConfig,
 ) => {
+  if (contract.schemaVersion === 3) {
+    return spaceTrackApplicationSnapshot(await parseSpaceTrackSnapshot(value, 'starlink'))
+  }
   if (
     !isRecord(value) ||
     !exactKeys(
