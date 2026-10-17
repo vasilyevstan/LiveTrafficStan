@@ -356,9 +356,10 @@ The operation makes one fixed HTTPS login POST and at most one GP query for
 NORAD `25544`, using manual redirect rejection, scoped memory-only cookies,
 10-second response/25-second total deadlines, and 16/64 KiB response caps.
 There is no SATCAT request: official guidance permits GP retrieval once per
-hour and SATCAT once per day after 17:00 UTC. Failed runs preserve at least
-one-hour backoff and longer readable guidance; terminal/unknown guidance
-requires investigation. Reuse a passed receipt rather than probing again.
+hour and SATCAT once per day after 17:00 UTC. A GP request consumes at least
+one-hour backoff; authentication-only attempts retain a one-minute cooldown.
+Longer readable provider guidance is always preserved, and terminal/unknown
+guidance requires investigation. Reuse a passed receipt rather than probing again.
 Job reruns are rejected; later dispatches inspect all attempts of preceding
 runs and refuse unknown or expired evidence rather than assuming it is safe.
 
@@ -370,6 +371,20 @@ from the runner. It is not a full Starlink, group-membership, Cloudflare-egress,
 fresh-publication or rendered-map acceptance claim, and it does not activate
 Space-Track. All existing CelesTrak producer state and source clocks remain
 untouched.
+
+The first protected qualification (`39029000571`) reached login HTTP `200`
+with two bytes of valid JSON, then the original helper stopped before cookie
+inspection or any GP request. It required an unverified `Login: Success`
+property; this is not evidence of bad credentials. The
+[published client](https://github.com/python-astrodynamics/spacetrack/blob/572bf7273274239db7fc4c5d5a27fec02242b1a2/src/spacetrack/base.py#L453-L477)
+also permits successful acknowledgments without that property. Two-byte JSON
+does not establish the exact body or authentication success. Empty object/array/
+string acknowledgments are not authentication proof either: scoped cookies
+and the exact protected GP response must still pass. Receipt version 2 ties
+the hourly floor to `gpRequested`. Its narrowly checked v1 migration covers
+only that two-byte `200`, no-GP, no-guidance outcome with exactly the old
+synthetic one-hour default. The old receipt is retained, not rewritten;
+every other old deadline and provider instruction remains authoritative.
 
 ### Reviewed orbital recovery (#454, #457)
 

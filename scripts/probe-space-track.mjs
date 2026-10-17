@@ -9,6 +9,7 @@ export const SPACE_TRACK_PROBE_URL =
   'https://www.space-track.org/basicspacedata/query/class/gp/' +
   'NORAD_CAT_ID/25544/DECAY_DATE/null-val/EPOCH/%3Enow-10/format/json'
 export const SPACE_TRACK_PROBE_INTERVAL_MS = 60 * 60 * 1_000
+export const SPACE_TRACK_LOGIN_INTERVAL_MS = 60 * 1_000
 const LOGIN_MAX_BYTES = 16 * 1_024
 const GP_MAX_BYTES = 64 * 1_024
 const COOKIE_MAX_BYTES = 4 * 1_024
@@ -43,16 +44,20 @@ const object = value =>
 export function assertSpaceTrackProbeBackoff(receipt, now = Date.now()) {
   if (
     !object(receipt) ||
-    receipt.receiptVersion !== 1 ||
+    ![1, 2].includes(receipt.receiptVersion) ||
     receipt.provider !== 'space-track' ||
     receipt.purpose !== 'fixed-25544-gp-contract' ||
     !['passed', 'failed'].includes(receipt.outcome) ||
+    typeof receipt.startedAt !== 'string' ||
+    typeof receipt.completedAt !== 'string' ||
     !Number.isFinite(Date.parse(receipt.startedAt)) ||
     !Number.isFinite(Date.parse(receipt.completedAt)) ||
     Date.parse(receipt.completedAt) < Date.parse(receipt.startedAt) ||
     !Number.isSafeInteger(receipt.nextAllowedAtMs) ||
-    receipt.nextAllowedAtMs <
-      Date.parse(receipt.completedAt) + SPACE_TRACK_PROBE_INTERVAL_MS ||
+    receipt.nextAllowedAtMs < Date.parse(receipt.completedAt) + (
+      receipt.receiptVersion === 1 || receipt.gpRequested
+        ? SPACE_TRACK_PROBE_INTERVAL_MS : SPACE_TRACK_LOGIN_INTERVAL_MS
+    ) ||
     !Number.isSafeInteger(receipt.requestCount) ||
     receipt.requestCount < 0 || receipt.requestCount > 2 ||
     typeof receipt.gpRequested !== 'boolean' ||
@@ -66,8 +71,27 @@ export function assertSpaceTrackProbeBackoff(receipt, now = Date.now()) {
   if (receipt.requiresReview) {
     throw new ProbeError('previous-attempt-requires-investigation')
   }
-  if (now < receipt.nextAllowedAtMs) {
+  const completedAt = Date.parse(receipt.completedAt)
+  const unspentLegacyGpBudget = (
+    receipt.receiptVersion === 1 &&
+    receipt.code === 'authentication-not-confirmed' &&
+    receipt.requestCount === 1 && receipt.gpRequested === false &&
+    !Object.hasOwn(receipt, 'gpRequestedAt') &&
+    object(receipt.gp) && Object.keys(receipt.gp).length === 0 &&
+    object(receipt.login) && receipt.login.status === 200 &&
+    receipt.login.format === 'json' && receipt.login.decodedBytes === 2 &&
+    receipt.login.retryAfterPresent !== true &&
+    receipt.nextAllowedAtMs === completedAt + SPACE_TRACK_PROBE_INTERVAL_MS
+  )
+  const nextAllowedAtMs = unspentLegacyGpBudget
+    ? completedAt + SPACE_TRACK_LOGIN_INTERVAL_MS : receipt.nextAllowedAtMs
+  if (now < nextAllowedAtMs) {
     throw new ProbeError('previous-attempt-backoff-active')
+  }
+  return {
+    nextAllowedAtMs,
+    rateBasis: unspentLegacyGpBudget
+      ? 'legacy-no-gp-request' : receipt.gpRequested ? 'gp-requested' : 'authentication-only',
   }
 }
 
@@ -148,7 +172,7 @@ export async function probeSpaceTrack({
 }) {
   const startedAtMs = now()
   const receipt = {
-    receiptVersion: 1,
+    receiptVersion: 2,
     provider: 'space-track',
     attribution: 'Space-Track.org / USSPACECOM',
     source: 'https://www.space-track.org/',
@@ -156,7 +180,7 @@ export async function probeSpaceTrack({
     startedAt: new Date(startedAtMs).toISOString(),
     outcome: 'failed',
     code: 'not-started',
-    nextAllowedAtMs: startedAtMs + SPACE_TRACK_PROBE_INTERVAL_MS,
+    nextAllowedAtMs: startedAtMs + SPACE_TRACK_LOGIN_INTERVAL_MS,
     requiresReview: false,
     requestCount: 0,
     gpRequested: false,
@@ -277,15 +301,26 @@ export async function probeSpaceTrack({
     )
     const loginText = login.text.trim()
     receipt.login.format = loginText ? 'json' : 'empty'
+    receipt.login.acknowledgment = loginText ? 'unrecognized' : 'empty-body'
     if (loginText) {
       let result
       try {
         result = JSON.parse(loginText)
       } catch {
         receipt.login.format = /^\s*</.test(loginText) ? 'html' : 'other'
+        receipt.requiresReview = true
         throw new ProbeError('authentication-response-unrecognized')
       }
-      if (!object(result) || result.Login !== 'Success') {
+      if (object(result) && result.Login === 'Success') {
+        receipt.login.acknowledgment = 'explicit-success'
+      } else if (object(result) && Object.keys(result).length === 0) {
+        receipt.login.acknowledgment = 'empty-object'
+      } else if (Array.isArray(result) && result.length === 0) {
+        receipt.login.acknowledgment = 'empty-array'
+      } else if (result === '') {
+        receipt.login.acknowledgment = 'empty-string'
+      } else {
+        receipt.requiresReview = true
         throw new ProbeError('authentication-not-confirmed')
       }
     }
@@ -293,6 +328,10 @@ export async function probeSpaceTrack({
     receipt.login.cookieScopeAccepted = true
     receipt.gpRequested = true
     receipt.gpRequestedAt = new Date(now()).toISOString()
+    receipt.nextAllowedAtMs = Math.max(
+      receipt.nextAllowedAtMs,
+      now() + SPACE_TRACK_PROBE_INTERVAL_MS,
+    )
     const gp = await request(
       SPACE_TRACK_PROBE_URL,
       {
@@ -378,7 +417,8 @@ export async function probeSpaceTrack({
     receipt.completedAt = new Date(now()).toISOString()
     receipt.nextAllowedAtMs = Math.max(
       receipt.nextAllowedAtMs,
-      now() + SPACE_TRACK_PROBE_INTERVAL_MS,
+      now() + (receipt.gpRequested
+        ? SPACE_TRACK_PROBE_INTERVAL_MS : SPACE_TRACK_LOGIN_INTERVAL_MS),
     )
   }
   return receipt
@@ -394,7 +434,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1
   }
   if (mode === '--check-prior') {
     const { value } = await readBoundedJsonFile(path, 16 * 1_024, 'Previous probe receipt')
-    assertSpaceTrackProbeBackoff(value)
+    console.log(JSON.stringify(assertSpaceTrackProbeBackoff(value)))
   } else {
     if (
       process.env.GITHUB_REF !== 'refs/heads/main' ||
