@@ -530,17 +530,38 @@ Visible attribution must state, in substance:
 
 ### Space-Track.org
 
-Space-Track is the authoritative upstream source, but it is not selected:
+Space-Track is the authoritative upstream candidate. It is not yet the running
+source. On 2026-10-17 the official
+[Data Requests documentation](https://www.space-track.org/documentation#/odr),
+**Redistribution of Basic SSA Information**, was verified directly from its
+live HTML. USSPACECOM explicitly grants blanket redistribution approval for
+basic TLE/OMM, SATCAT, and published analysis with appropriate citation. An
+individual Orbital Data Request is not required for that basic scope.
+The generic signup agreement must be read with this specific authorization;
+the earlier anonymous review and generic warning did not establish a prohibition.
+Keep visible Space-Track.org/USSPACECOM attribution if this source is adopted.
+Advanced services are outside this decision.
 
-- individual authenticated account;
-- credentials cannot be exposed in a public browser;
-- no suitable browser CORS was observed;
-- onward public-display/redistribution terms need current account-level
-  verification; the October 14 anonymous review could not render the agreement.
+The account is authenticated and credentials must remain protected and
+server-only. Browser CORS is not a blocker for the existing same-origin
+architecture. Issue #489 resolves only permission qualification; #488 still
+requires actual protocol, source coverage, provenance and production proof.
 
-Using one account behind a public proxy would not resolve the onward-transfer
-or credential boundary. Do not present an unverified current agreement as a
-confirmed prohibition or an already qualified fallback.
+The official API guidance also limits GP retrieval to once per hour and
+SATCAT to once per day after 17:00 UTC, in addition to the general limits of
+fewer than 30 requests per minute and 300 per hour. Do not translate the
+current ten-plus-two CelesTrak reads into equivalent Space-Track requests.
+The bounded protected qualification therefore makes one login and at most
+one fixed GP request for NORAD `25544`, and **no SATCAT query**. It reports
+only sanitized status, exact-identity/type checks, and native field types;
+it neither changes production source selection nor publishes positions.
+
+Dynamic replacements for CelesTrak's five curated group memberships and the
+complete Starlink population are not established by a single-record probe.
+Space-Track is a primary-source candidate only after those contracts,
+appropriate citation, preserved source floors and expiry, and genuinely fresh
+complete public/browser behavior pass. Do not introduce automatic fallback
+or claim that GitHub-runner reachability proves Cloudflare Worker reachability.
 
 ### SatNOGS
 
