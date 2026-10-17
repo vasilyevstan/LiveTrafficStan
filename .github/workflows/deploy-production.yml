@@ -47,7 +47,7 @@ on:
       orbital_source:
         description: Orbital acquisition provider; no automatic source fallback
         required: true
-        default: celestrak
+        default: space-track
         type: choice
         options:
           - celestrak

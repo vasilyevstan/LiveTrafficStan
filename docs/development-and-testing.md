@@ -363,7 +363,35 @@ fixture preserves the server's required `Vary: Accept`; omitting that header
 correctly fails curated negotiation and is a harness error, not a source outage.
 This evidence does not substitute for the later production-source matrix.
 
-The later #454 whole-app validation repeats all existing checks with the
+#### Native production-source acceptance, 2026-10-17
+
+The ordinary native producer completed both topics on both origins:
+461 curated records at `16:47:29.803Z`, and 512 sampled records from all
+11,150 validated Starlink rows at `14:47:30.799Z`. The single bounded observer
+passed the actual complete shared schema-3/provenance/digest/HTTP-clock
+validator and matching-origin checks at `16:48:30Z`, then exited successfully.
+The [runtime receipt](hosting-and-deployment.md#native-orbital-primary-production-acceptance-2026-10-17)
+records source/snapshot digests, exact running SHA and preserved clocks.
+
+Actual Chrome 155 loaded real same-origin schema-3 responses without fixture
+interception or browser GP access. Native mouse at 1280x900 and emulated touch
+at 320x568 selected EGS (AJISAI) /16908 and STARLINK-5535 /56356 with the correct
+catalog owner, GP/type attribution and modeled/not-optical caveats. Curated
+reference limitations remained visible. Every case retained one canvas,
+document width exactly 1280/320 and zero runtime exceptions. Each context
+loaded each topic once; selection/resizing added no catalog request.
+
+Preserve the observer-only failures: a dense world-view curated target first
+hit a nearby Starlink marker; the corrected curated cases passed before the
+overrestricted world-view Starlink target found no clear hit. Those accepted
+curated cases were reused, and only the remaining Starlink cases were completed
+in a clear regional view at zoom 3. No application picking workaround, source
+change or repeated GP acquisition was made. This is emulated touch, not
+physical-device/OS-keyboard proof or a new full theme/accessibility audit.
+The independent aircraft 504 in #500 still prevents claiming a successful
+full-app smoke; the failed deployment and follow-up receipts remain explicit.
+
+The historical #454 whole-app diagnostic repeated all existing checks with the
 read-only producer-state addition: **181 suites /1,678 tests**, every bundled
 data check, production-flags build and Worker dry run. Actual production
 desktop/mobile layouts retain one full canvas and real vector tiles, with

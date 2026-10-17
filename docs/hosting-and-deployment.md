@@ -32,7 +32,8 @@ production platform:
   backend is added. Private aircraft delivery uses one protected
   Worker-to-relay bearer secret and one fixed VPC Service binding. Orbital
   activation adds one dedicated bounded KV namespace, one SQLite-backed
-  Durable Object coordinator, and one two-hour Cron.
+  Durable Object coordinator, and one existing Cron. Native mode checks
+  eligibility at minutes 17/47 while preserving two-hour parent admission.
 - marine supplementation adds one demand-driven SQLite Durable Object with
   one private AISStream connection and one Open Waters connection. Only
   operational quota/retry state is persisted; live vessel records remain
@@ -1050,11 +1051,66 @@ admission row. A reviewed recovery must use that same identity and preserve
 the previous admission, physical fences and deadlines; never change the
 object name or delete its state to escape a source stop.
 
+### Native orbital primary production acceptance (2026-10-17)
+
+#497, required tree-neutral ancestry #499, and checked promotion #498 deliver
+running application **`1352c6e586366084b09bcb9cefa2a5cf5f9c8065`**, Worker
+**`c207eeee-e817-4a9f-bbc7-49daaab85504`**, published by
+[deployment 39041403972](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/39041403972)
+at **14:36:50 UTC**. Exact-main Validation **39040992159** passed. The existing
+private aircraft/photo/route/orbital/Starlink/marine/airport-board inputs and
+atomic secrets were preserved; only orbital acquisition selected Space-Track.
+The immutable OCI relay remains `b54962f3cce89ea4757e4b47c829b895ebadc863`.
+
+The ordinary native producer published these complete generations. A single
+bounded cache-only observer validated schema, complete source provenance,
+canonical digest, response clock, ETag and matching digests on both public
+origins at 16:48:30 UTC; it did not trigger acquisition.
+
+| Topic | Retrieved/published UTC | Validated source / published records | Snapshot SHA-256 |
+| --- | --- | --- | --- |
+| Starlink | `2026-10-17T14:47:30.799Z` | 11,150 / 512 (128 per shell) | `25859060d65b1d5eca08d60132559e8dbabea6ccf97bd56c08d399cd1f2b8fd8` |
+| Curated | `2026-10-17T16:47:29.803Z` | 461 / 461 | `20fb29c3839839f8dd894aba089c93c39f3484bfda0f5adf2c7acf5e8bc8c398` |
+
+The Starlink source response was 5,693,286 decoded bytes, digest
+`e8021613dd4451ca63b10daa034b00001be4e805a5b636770c8961116b667b94`;
+curated was 234,466 bytes, digest
+`45cd19a0194293fe6c6dc7821e93bcac50106e66d0fd0dbb3ff1d3ae309b43a3`.
+The original two-hour parent and twelve-hour actual-Starlink floors remained
+authoritative. The independent qualification workflow was disabled before
+handoff; no forced GP read, SATCAT read, identity reset, expiry extension,
+new resource or OCI change occurred.
+
+Actual Chrome 155, without fixture interception, selected EGS (AJISAI) /16908
+and STARLINK-5535 /56356 using mouse at 1280x900 and emulated touch at 320x568.
+Both native snapshot identities, GP/type attribution, dated-curation limitation
+and modeled/not-optical caveats were verified on one canvas, without document
+horizontal overflow or runtime exceptions. Each browser context made one
+initial same-origin request per topic; selection/resizing made no extra read.
+This is not physical-phone or a new exhaustive whole-app/theme acceptance.
+Existing tabs requesting legacy formats may need the ordinary **REFRESH APP**
+action to load the new schema-3 client. Do not clear preferences or history;
+refreshing the browser cache cannot force a producer acquisition.
+
+The deployment Action **remains failed** because its later private-aircraft
+smoke returned 504. Both unchanged full-origin follow-ups passed exact static
+byte matching but encountered the same aircraft 504. Independent #500 records
+the unknown failing hop; orbital acceptance does not relabel that outage as
+healthy. The local pre-rebuild artifact mismatch and browser targeting failures
+remain preserved, not counted as provider defects or silently removed.
+
+Space-Track is now the deployment default; a later workflow/documentation-only
+commit does not redeploy this running application. Rollback can revert that
+default or explicitly select `celestrak` through the checked workflow, retaining
+all production inputs and atomic credentials. It never clears persisted
+source/physical/retry fences or promises fresh legacy data while CelesTrak is
+unreachable. No additional rollback exercise is claimed.
+
 ### Native GP source selection without another acquisition authority (#488)
 
-The checked deployment input `orbital_source` selects `celestrak` or
-`space-track`; selection is not an automatic provider failover. The new mode
-keeps the exact original named DO, SQLite tables, state versions, global
+The checked deployment input `orbital_source` defaults to `space-track` and
+retains explicit `celestrak`; selection is not an automatic provider failover.
+Native mode keeps the exact original named DO, SQLite tables, state versions, global
 two-hour admission, actual Starlink twelve-hour row, terminal stops,
 `Retry-After`, and physical active-attempt fence. It does not apply a historical
 CelesTrak-specific recovery authorization to a different provider.
