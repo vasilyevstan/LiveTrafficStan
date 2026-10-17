@@ -29,6 +29,10 @@ if (orbitalEnabled !== 'true' && orbitalEnabled !== 'false') {
   throw new Error('--orbital-enabled must be true or false')
 }
 const starlinkEnabled = required('starlink-enabled')
+const orbitalSource = args.get('orbital-source') ?? 'celestrak'
+if (!['celestrak', 'space-track'].includes(orbitalSource)) {
+  throw new Error('--orbital-source must be celestrak or space-track')
+}
 const marineEnabled = args.get('marine-enabled') ?? 'false'
 const airportBoardsEnabled = args.get('airport-boards-enabled') ?? 'false'
 if (airportBoardsEnabled !== 'true' && airportBoardsEnabled !== 'false') {
@@ -56,8 +60,10 @@ if (config.assets?.directory) {
   )
 }
 config.triggers = {
-  crons: orbitalEnabled === 'true' ? ['17 */2 * * *'] : [],
+  crons: orbitalEnabled === 'true'
+    ? [orbitalSource === 'space-track' ? '17,47 * * * *' : '17 */2 * * *'] : [],
 }
+config.vars = { ...config.vars, ORBITAL_CATALOG_SOURCE: orbitalSource }
 const bindings = (config.durable_objects?.bindings ?? []).filter((binding) =>
   binding.name !== 'ORBITAL_CATALOG_COORDINATOR' &&
   binding.name !== 'MARINE_TRAFFIC_RELAY' &&
@@ -114,5 +120,6 @@ else delete config.durable_objects
 await writeFile(outputPath, `${JSON.stringify(config, null, 2)}\n`)
 console.log(
   `Prepared ${outputPath} with orbital catalog ${orbitalEnabled} ` +
-    `and Starlink catalog ${starlinkEnabled}; marine supplement ${marineEnabled}; airport boards ${airportBoardsEnabled}`,
+    `and Starlink catalog ${starlinkEnabled}; orbital source ${orbitalSource}; ` +
+    `marine supplement ${marineEnabled}; airport boards ${airportBoardsEnabled}`,
 )

@@ -43,6 +43,35 @@ const snapshot: OrbitalCatalogSnapshot = {
 }
 
 describe('OrbitalDetails', () => {
+  it('attributes native GP/type separately from the dated CelesTrak membership reference without claiming SATCAT', () => {
+    const native: OrbitalCatalogSnapshot = {
+      ...snapshot, schemaVersion: 3, sourceContractVersion: 3,
+      catalogId: 'space-track-curated-v1', sourceProvider: 'space-track',
+      curationReference: {
+        id: 'curated-reference-2026-10-17-v1',
+        retrievedAt: '2026-10-17T12:17:07.523Z', sha256: 'b'.repeat(64),
+      },
+    }
+    const html = renderToStaticMarkup(
+      <OrbitalDetails
+        position={position} snapshot={native}
+        sourceName="CelesTrak" sourceWebsiteUrl="https://celestrak.org/"
+        sourceUsagePolicyUrl="https://celestrak.org/usage-policy.php"
+        now={position.modeledFor} online units="metric"
+        imageState={{ phase: 'unavailable' }}
+        mapDisplay={{ available: true, selectedException: false }}
+        onClose={() => undefined}
+      />,
+    )
+    expect(html).toContain('Space-Track.org / USSPACECOM')
+    expect(html).toContain('GP data/type')
+    expect(html).toContain('https://www.space-track.org/documentation#/odr')
+    expect(html).toContain('2026-10-17T12:17:07.523Z')
+    expect(html).toContain('Membership additions and removals require a reviewed reference update')
+    expect(html).toContain('SGP4 model, not live or optical visibility')
+    expect(html).not.toContain('GP/SATCAT')
+    expect(html).not.toContain('SATCAT retrieved')
+  })
   it('labels modeled data, exact catalog type, provenance, and limits', () => {
     const html = renderToStaticMarkup(
       <OrbitalDetails

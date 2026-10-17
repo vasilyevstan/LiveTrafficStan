@@ -1050,7 +1050,56 @@ admission row. A reviewed recovery must use that same identity and preserve
 the previous admission, physical fences and deadlines; never change the
 object name or delete its state to escape a source stop.
 
-One admitted event performs exactly this non-overlapping sequence:
+### Native GP source selection without another acquisition authority (#488)
+
+The checked deployment input `orbital_source` selects `celestrak` or
+`space-track`; selection is not an automatic provider failover. The new mode
+keeps the exact original named DO, SQLite tables, state versions, global
+two-hour admission, actual Starlink twelve-hour row, terminal stops,
+`Retry-After`, and physical active-attempt fence. It does not apply a historical
+CelesTrak-specific recovery authorization to a different provider.
+
+The already-qualified one-point GP read completed at
+`2026-10-17T12:02:12.070Z`; the new mode's initial not-before instant is
+`13:02:12.070Z`, composed with, never substituted for, preserved operational
+deadlines. Each admitted attempt does one bounded login before reserving any
+actual Starlink GP start. A due Starlink topic takes priority; otherwise the
+attempt requests curated reference IDs. Only **one GP batch/topic** is acquired
+and published per attempt. A selected failed child cannot fall through to
+another GP query. Starlink-only success explicitly records curated
+`not-attempted`, not fulfillment.
+
+The existing Cron uses `17,47 * * * *` eligibility ticks only in native mode;
+legacy mode retains `17 */2 * * *`. Not-due ticks perform zero provider reads.
+The unchanged native floors, not Cron frequency, admit acquisition. Under
+timely scheduling/successful bounded work, this avoids a due Starlink slot
+pushing the next curated snapshot beyond its six-hour stale boundary;
+approximate 2.5-hour parent/five-hour curated/14.5-hour Starlink intervals are
+nominal bounds, not a platform availability guarantee. Six/eighteen-hour stale
+and twenty-four-hour hard-expiry behavior is unchanged.
+
+The same root physical lock remains active through the final KV write;
+obsolete work is checked before publication and completion follows the write.
+Readable provider guidance survives body/validation errors. Unknown
+authentication or retry guidance holds future admission for investigation
+without inventing an upstream HTTP 403. The actual diagnostic remains one
+bounded overwritten receipt, not another quota ledger.
+
+`SPACE_TRACK_USERNAME` and `SPACE_TRACK_PASSWORD` are selected only for enabled
+native orbital acquisition, in the same owner-only atomic `--secrets-file` as
+the existing necessary relay/marine/board credentials. No standalone secret
+mutation, browser secret, new service, paid resource, OCI/network change, or
+manual personal approval is required. Retire the independent
+`qualify-space-track.yml` workflow at production handoff so the DO is the sole
+application GP acquisition owner; reuse its successful receipt rather than
+probing again.
+
+Native namespaces/schema 3 do not replace legacy keys/bootstrap bytes.
+Configuration rollback selects the old source path but **never clears a
+persisted terminal/held source fence**; a real stop needs a cause-specific
+reviewed treatment, not a clock reset or another actor identity.
+
+In the retained CelesTrak mode, one admitted event performs exactly this non-overlapping sequence:
 
 | Order | Group | GP | SATCAT |
 | --- | --- | --- | --- |

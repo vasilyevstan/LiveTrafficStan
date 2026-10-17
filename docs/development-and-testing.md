@@ -331,6 +331,38 @@ privacy, provider and installed-update evidence is reused.
 
 ### Production orbital validation (#454, historical upstream-blocked baseline)
 
+For native schema-3 qualification (#488), reuse the accepted authenticated
+one-point receipt: it is not proof of a complete population or Worker egress.
+Deterministic native cases cover strict numeric strings/unzoned UTC, complete
+pinned ID sets, declared population/overflow/shell bounds, real GP-only
+provenance, Workers cookie APIs, bounded/ignored cancellation, shared
+`Retry-After` through invalid bodies, authentication before the actual child
+clock, exact two-/twelve-hour boundaries, one-topic publication, obsolete
+callbacks, and the physical KV-write hold. Actual schema-3 200/304 codecs and
+legacy 2/1 compatibility are exercised without source acquisition.
+
+Production promotion additionally requires complete genuinely fresh native
+curated and Starlink snapshots on **both** origins, exact selected source and
+application SHA, honest per-topic native outcome/publication headers, and a
+rendered desktop/narrow-browser check of modeled points, selection, detail
+provenance and caveats. A readable cache, new asset, fixture, one valid source
+row, or historical recovery receipt cannot substitute for that outcome.
+Disable the independent qualification owner before native acquisition starts;
+continue observing ordinary eligible slots without forcing clocks or
+repeating GP probes.
+
+The native implementation's bounded local browser matrix used producer-built
+schema-3 fixtures with 461 curated/512 sampled records, not live provider data.
+Actual MapLibre points and pointer selection were checked for both source owners
+at 1280x900 and 320x568 CSS pixels: one canvas, native GP/type and
+Space-Track.org / USSPACECOM provenance, no false SATCAT text, exact selected
+catalog owner, no runtime exception, and document width exactly 1280/320.
+Curated reference limitations remained explicit. Resizing/selection added no
+catalog request beyond the initial development Strict Mode mounts. The
+fixture preserves the server's required `Vary: Accept`; omitting that header
+correctly fails curated negotiation and is a harness error, not a source outage.
+This evidence does not substitute for the later production-source matrix.
+
 The later #454 whole-app validation repeats all existing checks with the
 read-only producer-state addition: **181 suites /1,678 tests**, every bundled
 data check, production-flags build and Worker dry run. Actual production

@@ -192,8 +192,15 @@ identity are not renamed or reset.
   Center. It uses explicit ICAO codes from the pinned airport projection,
   shows observation and retrieval age, expires old reports, and remains
   independent of traffic providers and static airport context.
-- A default-off modeled orbital layer in this source, backed by CelesTrak's
-  reviewed `visual`, `stations`, `weather`, `gnss`, and `science` groups. It
+- A default-off modeled orbital layer in this source, with a checked server-side
+  source choice: Space-Track GP-only schema 3 or the retained CelesTrak GP/SATCAT
+  schemas 1/2. Space-Track mode preserves the reviewed `visual`, `stations`,
+  `weather`, `gnss`, and `science` membership from a dated, exact-ID reference;
+  it obtains fresh elements and reported types directly from GP. Membership
+  additions/removals require a reviewed reference update, while its explicit
+  Starlink population query remains dynamic. There is no acquisition failover.
+  See [the native source contract](docs/data-sources-and-licensing.md#native-space-track-gp-only-source-schema-3).
+  It
   propagates current
   payload, rocket-body, debris, and unknown subpoints locally with SGP4,
   identifies ground tracks that cross a safe local map view within 90 minutes,
@@ -209,7 +216,7 @@ identity are not renamed or reset.
   Catalog discovery. Search and exact type/source-group filters are local to
   the accepted snapshot; no camera, search, filter, selection, or theme change
   starts another catalog request.
-  Exact SATCAT type, element epoch, snapshot age, and limitations remain
+  Exact source-reported GP or SATCAT type, element epoch, snapshot age, and limitations remain
   visible; these are modeled positions, not live telemetry or optical
   visibility predictions. Exact NORAD `20580` (Hubble) and `25544` (ISS) use
   the same reviewed identity boundary for larger labeled map symbols and also
@@ -278,7 +285,7 @@ identity are not renamed or reset.
   added. The UI reports source population, sample, modeled, in-map, shown, and
   pass counts rather than presenting either sample as the full constellation.
   It reuses the existing 192/384/512 world/mid/local display tiers. One existing
-  CelesTrak Durable Object owns both schedules: curated acquisition remains
+  Durable Object owns both schedules. In CelesTrak mode, curated acquisition remains
   first, while a second SQLite row admits the paired Starlink read at most once
   per 12 hours at the actual GP request start. A fresh production row is seeded
   from the pinned bootstrap GP retrieval time, so the immutable sample may be
@@ -524,7 +531,7 @@ AIRPORTS toggle -> pinned same-origin OurAirports projection -> map + airport de
 METAR toggle -> qualifying airport ICAO codes -> same-origin AWC proxy
              -> current observations -> map + weather details
 
-ORBITS toggle -> same-origin complete CelesTrak snapshot -> dedicated SGP4 worker
+ORBITS toggle -> same-origin complete source-qualified snapshot -> dedicated SGP4 worker
               -> complete safe modeled-point source
               -> local zoom/type/group display filter + selected exception
               -> Nearby crossings + complete Catalog discovery + selected track

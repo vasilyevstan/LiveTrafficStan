@@ -6,6 +6,13 @@ if (!output || !isAbsolute(output)) {
   throw new Error('An absolute production secrets path is required')
 }
 const secrets = {}
+if (process.env.ORBITAL_ENABLED === 'true' && process.env.ORBITAL_SOURCE === 'space-track') {
+  for (const [name, maximum] of [['SPACE_TRACK_USERNAME', 320], ['SPACE_TRACK_PASSWORD', 4_096]]) {
+    const value = process.env[name]
+    if (!value || value.length > maximum) throw new Error(`Missing or invalid ${name}`)
+    secrets[name] = value
+  }
+}
 if (process.env.AIRCRAFT_DELIVERY === 'oci-private-relay') {
   const token = process.env.AIRCRAFT_RELAY_AUTH_TOKEN
   if (!token || token.length < 32) {
