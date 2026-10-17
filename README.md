@@ -8,9 +8,19 @@ user accounts or a server-side vessel history archive.
 
 Public production: <https://trackstan.xyz>
 
-Current application/Worker source: `306bb692b812c194d332bed2b190367e931f17a6`,
-with the [local map tools runtime receipt](docs/hosting-and-deployment.md#local-map-tools-production-acceptance-2026-10-16).
+Current application/Worker source: `1352c6e586366084b09bcb9cefa2a5cf5f9c8065`,
+Worker `c207eeee-e817-4a9f-bbc7-49daaab85504`, with the
+[native orbital primary receipt](docs/hosting-and-deployment.md#native-orbital-primary-production-acceptance-2026-10-17).
 Later documentation-only commits do not replace that running source.
+
+**Orbital source restored on 2026-10-17:** Space-Track GP is the production
+primary and checked deployment default. Ordinary scheduled acquisitions
+published 461 curated records and a 512-object sample from 11,150 validated
+Starlink records on both origins; real desktop/narrow marker selection and
+native source/type attribution passed. ORBITS remains modeled, not live or
+full-constellation coverage. The separate aircraft-relay HTTP 504 remains
+tracked in [#500](https://github.com/vasilyevstan/LiveTrafficStan/issues/500);
+this is not a claim that every provider is healthy.
 
 **Local map tools released on 2026-10-16:** with the map focused, **F** opens
 Find and **C** performs the available Center action. Explicit Flat/top-down
@@ -193,9 +203,10 @@ identity are not renamed or reset.
   shows observation and retrieval age, expires old reports, and remains
   independent of traffic providers and static airport context.
 - A default-off modeled orbital layer in this source, with a checked server-side
-  source choice: Space-Track GP-only schema 3 or the retained CelesTrak GP/SATCAT
-  schemas 1/2. Space-Track mode preserves the reviewed `visual`, `stations`,
-  `weather`, `gnss`, and `science` membership from a dated, exact-ID reference;
+  source choice: production-primary Space-Track GP-only schema 3 or explicitly
+  selected legacy CelesTrak GP/SATCAT schemas 1/2. Space-Track mode preserves
+  the reviewed `visual`, `stations`, `weather`, `gnss`, and `science` membership
+  from a dated, exact-ID reference;
   it obtains fresh elements and reported types directly from GP. Membership
   additions/removals require a reviewed reference update, while its explicit
   Starlink population query remains dynamic. There is no acquisition failover.

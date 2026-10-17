@@ -17,6 +17,14 @@ const secretsScript = readFileSync(
 )
 
 describe('production deployment workflow', () => {
+  it('defaults to the production-qualified native source while retaining explicit legacy rollback', () => {
+    const source = workflow.match(/      orbital_source:([\s\S]*?)(?=\n      \w+:)/)?.[1]
+    expect(source).toContain('default: space-track')
+    expect(source).toContain('          - celestrak')
+    expect(source).toContain('          - space-track')
+    expect(source).toContain('no automatic source fallback')
+    expect(workflow).toContain('--orbital-source "$ORBITAL_SOURCE"')
+  })
   it('always removes the fixed plaintext secrets file for native-only success and failure as well as old selections', () => {
     const cleanup = workflow.match(/- name: Remove production secrets file([\s\S]*?)(?=\n      - name:)/)?.[1]
     expect(cleanup).toBeDefined()
