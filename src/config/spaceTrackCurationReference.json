@@ -1,0 +1,2781 @@
+{
+  "schemaVersion": 1,
+  "id": "curated-reference-2026-10-17-v1",
+  "sourceCatalogId": "celestrak-curated-v1",
+  "retrievedAt": "2026-10-17T12:17:07.523Z",
+  "sha256": "d062e417f365701d3ef2951e400a9196700c514ced47960305f010681d0da5c0",
+  "records": [
+    {
+      "noradCatalogId": "694",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "733",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "877",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "2802",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "3230",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "3597",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "3669",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "4327",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "5118",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "5560",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "5730",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "6153",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "6155",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "8459",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "10114",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "10967",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "11267",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "11574",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "11672",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "12139",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "12465",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "12904",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "13068",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "13154",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "13403",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "13553",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "13819",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "14208",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "14699",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "14820",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "15483",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "15772",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "15945",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "16182",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "16496",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "16719",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "16792",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "16882",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "16908",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "17567",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "17589",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "17590",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "17912",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "17973",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "18153",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "18187",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "18749",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "18958",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "19046",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "19120",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "19210",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "19257",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "19573",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "19574",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "19650",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "20261",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "20262",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "20323",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "20443",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "20465",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "20466",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "20511",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "20580",
+      "sourceGroups": [
+        "visual",
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "20625",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "20663",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "20666",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "20775",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "21088",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "21397",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "21422",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "21423",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "21574",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "21610",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "21819",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "21876",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "21938",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "21949",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "22219",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "22220",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "22236",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "22285",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "22286",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "22566",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "22626",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "22803",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "22830",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "23087",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "23088",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "23343",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "23405",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "23561",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "23705",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "23802",
+      "sourceGroups": [
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "24298",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "24883",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "25400",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "25407",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "25544",
+      "sourceGroups": [
+        "visual",
+        "stations"
+      ]
+    },
+    {
+      "noradCatalogId": "25560",
+      "sourceGroups": [
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "25732",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "25860",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "25861",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "25867",
+      "sourceGroups": [
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "25876",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "25977",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "25989",
+      "sourceGroups": [
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "25994",
+      "sourceGroups": [
+        "visual",
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "26070",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "26407",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "26474",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "26998",
+      "sourceGroups": [
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "27386",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "27422",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "27424",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "27432",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "27597",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "27601",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "27640",
+      "sourceGroups": [
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "27651",
+      "sourceGroups": [
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "27663",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "27843",
+      "sourceGroups": [
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "27858",
+      "sourceGroups": [
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "28054",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "28059",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "28190",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "28353",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "28415",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "28474",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "28480",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "28485",
+      "sourceGroups": [
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "28499",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "28738",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "28874",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "28899",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "28912",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "28931",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "28932",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "29228",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "29479",
+      "sourceGroups": [
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "29486",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "29505",
+      "sourceGroups": [
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "29506",
+      "sourceGroups": [
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "29507",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "29522",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "29601",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "31114",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "31598",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "31792",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "31793",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "32260",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "32275",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "32384",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "32393",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "32395",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "32711",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "32958",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "33053",
+      "sourceGroups": [
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "33504",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "35491",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "35752",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "35951",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "36086",
+      "sourceGroups": [
+        "stations"
+      ]
+    },
+    {
+      "noradCatalogId": "36111",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "36112",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "36395",
+      "sourceGroups": [
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "36402",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "36411",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "36508",
+      "sourceGroups": [
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "36585",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "36828",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "37210",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "37214",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "37256",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "37384",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "37389",
+      "sourceGroups": [
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "37605",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "37731",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "37763",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "37846",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "37847",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "37849",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "37867",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "37868",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "37869",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "37948",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "37951",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "38091",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "38250",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "38251",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "38337",
+      "sourceGroups": [
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "38341",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "38358",
+      "sourceGroups": [
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "38552",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "38652",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "38771",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "38775",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "38779",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "38833",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "38857",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "38953",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "38977",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "39089",
+      "sourceGroups": [
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "39091",
+      "sourceGroups": [
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "39155",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "39166",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "39197",
+      "sourceGroups": [
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "39199",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "39216",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "39253",
+      "sourceGroups": [
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "39260",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "39265",
+      "sourceGroups": [
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "39358",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "39422",
+      "sourceGroups": [
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "39451",
+      "sourceGroups": [
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "39452",
+      "sourceGroups": [
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "39453",
+      "sourceGroups": [
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "39533",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "39617",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "39620",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "39635",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "39679",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "39727",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "39741",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "39766",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "40001",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "40020",
+      "sourceGroups": [
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "40059",
+      "sourceGroups": [
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "40069",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "40105",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "40119",
+      "sourceGroups": [
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "40128",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "40129",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "40267",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "40269",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "40294",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "40315",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "40367",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "40482",
+      "sourceGroups": [
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "40483",
+      "sourceGroups": [
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "40484",
+      "sourceGroups": [
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "40485",
+      "sourceGroups": [
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "40534",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "40544",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "40545",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "40549",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "40730",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "40732",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "40748",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "40749",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "40890",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "40930",
+      "sourceGroups": [
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "40938",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "41019",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "41028",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "41038",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "41105",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "41173",
+      "sourceGroups": [
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "41174",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "41175",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "41241",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "41328",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "41330",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "41335",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "41337",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "41434",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "41469",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "41549",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "41550",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "41586",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "41589",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "41752",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "41784",
+      "sourceGroups": [
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "41836",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "41859",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "41860",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "41861",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "41862",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "41866",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "41882",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "41884",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "41885",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "41886",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "41887",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "41888",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "41890",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "41891",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "42709",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "42738",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "42758",
+      "sourceGroups": [
+        "visual",
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "42831",
+      "sourceGroups": [
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "42917",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "42939",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "42965",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "43001",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "43002",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "43010",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "43013",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "43055",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "43056",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "43057",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "43058",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "43107",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "43108",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "43194",
+      "sourceGroups": [
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "43207",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "43208",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "43226",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "43245",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "43246",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "43286",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "43437",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "43491",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "43508",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "43539",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "43564",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "43565",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "43566",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "43567",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "43581",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "43582",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "43602",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "43603",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "43622",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "43623",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "43641",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "43647",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "43648",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "43682",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "43683",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "43687",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "43689",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "43706",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "43707",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "43823",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "43873",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "44204",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "44231",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "44299",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "44337",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "44387",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "44506",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "44542",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "44543",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "44624",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "44709",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "44793",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "44794",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "44850",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "44864",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "44865",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "45344",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "45358",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "45807",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "45854",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "46114",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "46265",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "46495",
+      "sourceGroups": [
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "46805",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "46826",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "47719",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "48274",
+      "sourceGroups": [
+        "visual",
+        "stations"
+      ]
+    },
+    {
+      "noradCatalogId": "48859",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "48865",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "49008",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "49044",
+      "sourceGroups": [
+        "stations"
+      ]
+    },
+    {
+      "noradCatalogId": "49271",
+      "sourceGroups": [
+        "stations"
+      ]
+    },
+    {
+      "noradCatalogId": "49336",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "49809",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "49810",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "49954",
+      "sourceGroups": [
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "51850",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "52794",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "52984",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "53239",
+      "sourceGroups": [
+        "stations"
+      ]
+    },
+    {
+      "noradCatalogId": "54031",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "54039",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "54149",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "54216",
+      "sourceGroups": [
+        "stations"
+      ]
+    },
+    {
+      "noradCatalogId": "54234",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "54377",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "54743",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "55268",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "55973",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "55974",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "55975",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "55976",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "56232",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "56564",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "56759",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "57166",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "57399",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "57400",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "57401",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "57402",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "57490",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "57517",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "57800",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "58645",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "58646",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "58647",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "58648",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "58654",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "58655",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "58660",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "58661",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "58662",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "58663",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "58700",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "58701",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "58702",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "58703",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "58990",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "59051",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "59588",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "59598",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "59600",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "60133",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "61045",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "61046",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "61047",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "61048",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "61049",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "61182",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "61183",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "61186",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "61187",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "62339",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "62876",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "63130",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "64202",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "64723",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "65159",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "65590",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "65815",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "66004",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "66515",
+      "sourceGroups": [
+        "visual",
+        "stations"
+      ]
+    },
+    {
+      "noradCatalogId": "66906",
+      "sourceGroups": [
+        "stations"
+      ]
+    },
+    {
+      "noradCatalogId": "67160",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "67162",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "67232",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "67588",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "67683",
+      "sourceGroups": [
+        "stations"
+      ]
+    },
+    {
+      "noradCatalogId": "67685",
+      "sourceGroups": [
+        "stations"
+      ]
+    },
+    {
+      "noradCatalogId": "67686",
+      "sourceGroups": [
+        "stations"
+      ]
+    },
+    {
+      "noradCatalogId": "67687",
+      "sourceGroups": [
+        "stations"
+      ]
+    },
+    {
+      "noradCatalogId": "67688",
+      "sourceGroups": [
+        "stations"
+      ]
+    },
+    {
+      "noradCatalogId": "68791",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "68837",
+      "sourceGroups": [
+        "stations"
+      ]
+    },
+    {
+      "noradCatalogId": "69049",
+      "sourceGroups": [
+        "stations"
+      ]
+    },
+    {
+      "noradCatalogId": "69123",
+      "sourceGroups": [
+        "science"
+      ]
+    },
+    {
+      "noradCatalogId": "69180",
+      "sourceGroups": [
+        "stations"
+      ]
+    },
+    {
+      "noradCatalogId": "69589",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "69590",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "69591",
+      "sourceGroups": [
+        "visual"
+      ]
+    },
+    {
+      "noradCatalogId": "100057",
+      "sourceGroups": [
+        "stations"
+      ]
+    },
+    {
+      "noradCatalogId": "100460",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "100530",
+      "sourceGroups": [
+        "weather"
+      ]
+    },
+    {
+      "noradCatalogId": "100712",
+      "sourceGroups": [
+        "stations"
+      ]
+    },
+    {
+      "noradCatalogId": "100744",
+      "sourceGroups": [
+        "gnss"
+      ]
+    },
+    {
+      "noradCatalogId": "100882",
+      "sourceGroups": [
+        "stations"
+      ]
+    },
+    {
+      "noradCatalogId": "101031",
+      "sourceGroups": [
+        "stations"
+      ]
+    }
+  ]
+}

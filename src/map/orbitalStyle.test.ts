@@ -34,6 +34,13 @@ import {
 } from './orbitalStyle'
 import { LAYER_SELECTED_TRAIL } from './trafficStyle'
 
+it('credits native GP and legacy/reference sources without presenting modeled positions as live data', () => {
+  expect(STARLINK_SOURCE_ATTRIBUTION).toContain('https://www.space-track.org/')
+  expect(STARLINK_SOURCE_ATTRIBUTION).toContain('Space-Track.org / USSPACECOM')
+  expect(STARLINK_SOURCE_ATTRIBUTION).toContain('https://celestrak.org/')
+  expect(STARLINK_SOURCE_ATTRIBUTION).toContain('SGP4 · not live')
+})
+
 const position: ModeledOrbitalPosition = {
   id: 'orbital:694',
   noradCatalogId: '694',

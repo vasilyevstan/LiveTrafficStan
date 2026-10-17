@@ -214,7 +214,8 @@ export function LiveStatus({
             {' '}Both are public domain. Weather observations:{' '}
             <a href="https://aviationweather.gov/data/api/" target="_blank" rel="noreferrer">NOAA/NWS Aviation Weather Center</a>
             {' '}(U.S. public domain unless marked otherwise).
-            {' '}Modeled orbits: <a href="https://celestrak.org/" target="_blank" rel="noreferrer">CelesTrak</a>, not live telemetry.
+            {' '}Modeled orbits: <a href="https://celestrak.org/" target="_blank" rel="noreferrer">CelesTrak</a>
+            {' · '}<a href="https://www.space-track.org/" target="_blank" rel="noreferrer">Space-Track.org / USSPACECOM</a>, not live telemetry.
           </span>
           </details>
         </div>

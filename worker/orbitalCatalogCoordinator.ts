@@ -15,6 +15,8 @@ import {
   STARLINK_INITIAL_REFRESH_NOT_BEFORE_MS,
   STARLINK_REFRESH_INTERVAL_MS,
 } from './starlinkCatalog.js'
+import { refreshSpaceTrackCatalog } from './spaceTrackRefresh.js'
+import { SPACE_TRACK_GP_INITIAL_NOT_BEFORE_MS } from '../src/providers/orbital/spaceTrackCatalogContract.ts'
 
 export const ORBITAL_COORDINATOR_PATH = '/refresh'
 export const ORBITAL_COORDINATOR_STATUS_PATH = '/status'
@@ -182,11 +184,9 @@ const lastOutcomeDiagnostic = (
     kind: outcome.kind,
     startedAtMs,
     completedAtMs: Date.now(),
-    curatedPublication: outcome.kind === 'published'
-      ? 'fulfilled'
-      : 'publicationResults' in outcome && outcome.publicationResults
-        ? outcome.publicationResults.curated
-        : 'not-attempted',
+    curatedPublication: 'publicationResults' in outcome && outcome.publicationResults
+      ? outcome.publicationResults.curated
+      : outcome.kind === 'published' ? 'fulfilled' : 'not-attempted',
   }
   if ('reason' in outcome) diagnostic.reason = outcome.reason
   if ('source' in outcome) diagnostic.source = outcome.source
@@ -270,10 +270,19 @@ const validateStarlinkState = (row: StarlinkRefreshStateRow) => {
 class SqlOrbitalRefreshCoordinator implements OrbitalRefreshCoordinator {
   private readonly storage: DurableObjectStorage
   private readonly recoveryEnabled: boolean
+  private readonly sourceNotBeforeMs: number
 
-  constructor(storage: DurableObjectStorage, recoveryEnabled: boolean) {
+  constructor(storage: DurableObjectStorage, recoveryEnabled: boolean, sourceNotBeforeMs = 0) {
     this.storage = storage
     this.recoveryEnabled = recoveryEnabled
+    this.sourceNotBeforeMs = sourceNotBeforeMs
+  }
+
+  assertCurrent(attemptId: string): Promise<void> {
+    const current = this.readState()
+    return current?.attemptId === attemptId
+      ? Promise.resolve()
+      : Promise.reject(new Error('Obsolete orbital refresh attempt'))
   }
 
   async recordOutcome(attemptId: string, outcome: OrbitalRefreshOutcome) {
@@ -285,7 +294,7 @@ class SqlOrbitalRefreshCoordinator implements OrbitalRefreshCoordinator {
       `${current.lastStartedAtMs}:${current.attemptSequence}` !== attemptId
     ) throw new Error('Obsolete orbital refresh outcome diagnostic')
     const diagnostic = lastOutcomeDiagnostic(outcome, current.lastStartedAtMs)
-    const retained = previous ? {
+    const retained = previous && diagnostic.starlinkKind === undefined ? Object.fromEntries(Object.entries({
       starlinkKind: previous.starlinkKind,
       starlinkReason: previous.starlinkReason,
       starlinkSource: previous.starlinkSource,
@@ -293,7 +302,7 @@ class SqlOrbitalRefreshCoordinator implements OrbitalRefreshCoordinator {
       starlinkPublication: previous.starlinkPublication,
       starlinkStartedAtMs: previous.starlinkStartedAtMs,
       starlinkCompletedAtMs: previous.starlinkCompletedAtMs,
-    } : {}
+    }).filter(([, value]) => value !== undefined)) : {}
     const value = {
       ...retained,
       ...diagnostic,
@@ -385,7 +394,7 @@ class SqlOrbitalRefreshCoordinator implements OrbitalRefreshCoordinator {
           ? 'blocked'
         : current.attemptId !== null
           ? 'in-progress'
-          : current.blockedStatus !== null
+          : current.blockedStatus !== null || current.nextAllowedAtMs === Number.MAX_SAFE_INTEGER
             ? 'blocked'
             : 'idle',
       lastStartedAtMs: current?.lastStartedAtMs ?? null,
@@ -422,14 +431,15 @@ class SqlOrbitalRefreshCoordinator implements OrbitalRefreshCoordinator {
             status: current.blockedStatus,
           }
         }
-        const nextAllowedAtMs = reviewedRecovery && current
+        const operationalNextAllowedAtMs = reviewedRecovery && current
           ? Math.max(
               current.lastStartedAtMs + ORBITAL_REFRESH_INTERVAL_MS,
               this.readStarlinkState()?.nextAllowedAtMs ??
                 STARLINK_INITIAL_REFRESH_NOT_BEFORE_MS,
             )
           : current?.nextAllowedAtMs
-        if (nextAllowedAtMs !== undefined && nextAllowedAtMs > nowMs) {
+        const nextAllowedAtMs = Math.max(operationalNextAllowedAtMs ?? 0, this.sourceNotBeforeMs)
+        if (nextAllowedAtMs > nowMs) {
           return {
             kind: 'not-due',
             nextAllowedAtMs,
@@ -725,7 +735,9 @@ export class OrbitalCatalogCoordinator extends DurableObject<OrbitalCatalogEnvir
     this.outcomeStorage = state.storage
     this.coordinator = new SqlOrbitalRefreshCoordinator(
       state.storage,
-      environment.STARLINK_CATALOG_ENABLED === 'true',
+      environment.STARLINK_CATALOG_ENABLED === 'true' &&
+        environment.ORBITAL_CATALOG_SOURCE !== 'space-track',
+      environment.ORBITAL_CATALOG_SOURCE === 'space-track' ? SPACE_TRACK_GP_INITIAL_NOT_BEFORE_MS : 0,
     )
     try {
       state.storage.sql.exec(`
@@ -805,10 +817,13 @@ export class OrbitalCatalogCoordinator extends DurableObject<OrbitalCatalogEnvir
       )
     }
 
-    const outcome = await refreshOrbitalCatalog(
-      this.env,
-      this.coordinator,
-    )
+    if (
+      this.env.ORBITAL_CATALOG_SOURCE !== undefined &&
+      !['celestrak', 'space-track'].includes(this.env.ORBITAL_CATALOG_SOURCE)
+    ) return jsonResponse({ kind: 'unavailable', reason: 'Orbital source configuration is invalid' }, 503)
+    const outcome = this.env.ORBITAL_CATALOG_SOURCE === 'space-track'
+      ? await refreshSpaceTrackCatalog(this.env, this.coordinator)
+      : await refreshOrbitalCatalog(this.env, this.coordinator)
     return jsonResponse(
       outcome,
       outcome.kind === 'unavailable' ? 503 : 200,

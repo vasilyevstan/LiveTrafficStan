@@ -17,6 +17,16 @@ const secretsScript = readFileSync(
 )
 
 describe('production deployment workflow', () => {
+  it('always removes the fixed plaintext secrets file for native-only success and failure as well as old selections', () => {
+    const cleanup = workflow.match(/- name: Remove production secrets file([\s\S]*?)(?=\n      - name:)/)?.[1]
+    expect(cleanup).toBeDefined()
+    expect(cleanup).toContain('if: always()')
+    expect(cleanup).not.toContain('if: always() &&')
+    expect(cleanup).toContain('SECRETS_FILE: ${{ runner.temp }}/wrangler-production-secrets.json')
+    expect(cleanup).toContain('run: rm -f "$SECRETS_FILE"')
+    expect(workflow).toContain("inputs.orbital_catalog_enabled && inputs.orbital_source == 'space-track'")
+    expect(workflow).not.toContain('VITE_SPACE_TRACK_PASSWORD')
+  })
   it('uses a fixed aircraft delivery choice and records it in smoke', () => {
     expect(workflow).toContain('aircraft_delivery:')
     expect(workflow).toContain('          - worker-proxy')

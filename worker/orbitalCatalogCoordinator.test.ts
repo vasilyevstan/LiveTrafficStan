@@ -29,6 +29,9 @@ import {
   STARLINK_SATCAT_SOURCE_URL,
   STARLINK_V2_SAMPLE_LIMIT,
 } from './starlinkCatalog.js'
+import { SPACE_TRACK_GP_INITIAL_NOT_BEFORE_MS } from '../src/providers/orbital/spaceTrackCatalogContract.ts'
+import { SPACE_TRACK_STARLINK_KEY } from './spaceTrackCatalog.ts'
+import { SPACE_TRACK_LOGIN_URL } from './spaceTrackProtocol.ts'
 
 const nowMs = Date.parse('2026-09-28T18:45:00.000Z')
 
@@ -437,6 +440,7 @@ const createCoordinator = (
   storage: FakeStorage,
   catalog: MemoryKv,
   starlinkEnabled = false,
+  source: 'celestrak' | 'space-track' = 'celestrak',
 ) =>
   new OrbitalCatalogCoordinator(
     { storage } as unknown as DurableObjectState,
@@ -444,6 +448,11 @@ const createCoordinator = (
       ASSETS: { fetch: vi.fn() },
       ORBITAL_CATALOG: catalog,
       ORBITAL_CATALOG_ENABLED: 'true',
+      ORBITAL_CATALOG_SOURCE: source,
+      ...(source === 'space-track' ? {
+        SPACE_TRACK_USERNAME: 'protected-user',
+        SPACE_TRACK_PASSWORD: 'protected-password',
+      } : {}),
       ...(starlinkEnabled
         ? { STARLINK_CATALOG_ENABLED: 'true' }
         : {}),
@@ -472,10 +481,136 @@ const reviewedBlockedStorage = () => {
   return storage
 }
 
+const previousChildFailure = (at: number) => ({
+  kind: 'failed',
+  startedAtMs: at - STARLINK_REFRESH_INTERVAL_MS - 60_000,
+  completedAtMs: at - STARLINK_REFRESH_INTERVAL_MS - 30_000,
+  reason: 'Previous CelesTrak acquisition failed',
+  curatedPublication: 'not-attempted',
+  starlinkKind: 'failed',
+  starlinkReason: 'Previous CelesTrak GP returned HTTP 522',
+  starlinkSource: 'starlink-gp',
+  starlinkStatus: 522,
+  starlinkPublication: 'not-attempted',
+  starlinkStartedAtMs: at - STARLINK_REFRESH_INTERVAL_MS - 50_000,
+  starlinkCompletedAtMs: at - STARLINK_REFRESH_INTERVAL_MS - 30_000,
+})
+
 describe('orbital catalog coordinator', () => {
   afterEach(() => {
     vi.useRealTimers()
     vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+  })
+
+  it('composes the qualification not-before instant with preserved native operational clocks', async () => {
+    vi.useFakeTimers()
+    const initial = SPACE_TRACK_GP_INITIAL_NOT_BEFORE_MS
+    const fetchImpl = vi.fn()
+    vi.stubGlobal('fetch', fetchImpl)
+    const empty = new FakeStorage()
+    vi.setSystemTime(initial - 1)
+    expect(await (await createCoordinator(empty, new MemoryKv(), true, 'space-track').fetch(request())).json())
+      .toEqual({ kind: 'not-due', nextAllowedAtMs: initial })
+    expect(empty.state).toBeUndefined()
+    const preserved = new FakeStorage()
+    preserved.state = {
+      schemaVersion: 1, sourceContractVersion: 1, attemptSequence: 8, attemptId: null,
+      lastStartedAtMs: initial - ORBITAL_REFRESH_INTERVAL_MS / 2,
+      nextAllowedAtMs: initial + ORBITAL_REFRESH_INTERVAL_MS / 2,
+      blockedStatus: null, blockedAtMs: null,
+    }
+    const before = { ...preserved.state }
+    vi.setSystemTime(initial)
+    expect(await (await createCoordinator(preserved, new MemoryKv(), true, 'space-track').fetch(request())).json())
+      .toEqual({ kind: 'not-due', nextAllowedAtMs: before.nextAllowedAtMs })
+    expect(preserved.state).toEqual(before)
+    expect(fetchImpl).not.toHaveBeenCalled()
+  })
+
+  it('does not apply the historical CelesTrak recovery authorization to a different selected source', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(SPACE_TRACK_GP_INITIAL_NOT_BEFORE_MS + ORBITAL_REFRESH_INTERVAL_MS)
+    const storage = reviewedBlockedStorage()
+    const prior = structuredClone(storage.state)
+    const child = structuredClone(storage.starlinkState)
+    const fetchImpl = vi.fn()
+    vi.stubGlobal('fetch', fetchImpl)
+    const response = await createCoordinator(storage, new MemoryKv(), true, 'space-track').fetch(request())
+    expect(await response.json()).toEqual({ kind: 'blocked', status: 403 })
+    expect(storage.state).toEqual(prior)
+    expect(storage.starlinkState).toEqual(child)
+    expect(storage.recoveryState).toBeUndefined()
+    expect(fetchImpl).not.toHaveBeenCalled()
+  })
+
+  it('records native Starlink-only fulfillment without rewriting the curated publication fact', async () => {
+    vi.useFakeTimers()
+    const at = SPACE_TRACK_GP_INITIAL_NOT_BEFORE_MS + ORBITAL_REFRESH_INTERVAL_MS
+    vi.setSystemTime(at)
+    const storage = new FakeStorage()
+    storage.values.set(ORBITAL_COORDINATOR_LAST_OUTCOME_KEY, previousChildFailure(at))
+    const catalog = new MemoryKv()
+    const native = starlinkGpRecords.map((record) => ({
+      ...record,
+      OBJECT_NAME: `STARLINK-${record.NORAD_CAT_ID}`,
+      OBJECT_TYPE: 'PAYLOAD',
+      EPOCH: new Date(at - 60_000).toISOString().replace('Z', ''),
+      DECAY_DATE: null,
+    }))
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL) => String(input) === SPACE_TRACK_LOGIN_URL
+      ? new Response('""', { headers: { 'Set-Cookie': 'session=private; Path=/; Secure' } })
+      : Response.json(native))
+    vi.stubGlobal('fetch', fetchImpl)
+    const response = await createCoordinator(storage, catalog, true, 'space-track').fetch(request())
+    expect(await response.json()).toMatchObject({
+      kind: 'published', publicationResults: { curated: 'not-attempted', starlink: 'fulfilled' },
+    })
+    expect(storage.values.get(ORBITAL_COORDINATOR_LAST_OUTCOME_KEY)).toMatchObject({
+      kind: 'published', curatedPublication: 'not-attempted', starlinkPublication: 'fulfilled',
+      starlinkKind: 'published', starlinkStartedAtMs: at,
+    })
+    expect([...catalog.values.keys()]).toEqual([SPACE_TRACK_STARLINK_KEY])
+    expect(storage.state?.nextAllowedAtMs).toBe(at + ORBITAL_REFRESH_INTERVAL_MS)
+    expect(storage.starlinkState?.nextAllowedAtMs).toBe(at + STARLINK_REFRESH_INTERVAL_MS)
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+    const replacement = storage.values.get(ORBITAL_COORDINATOR_LAST_OUTCOME_KEY)
+    expect(replacement).not.toHaveProperty('starlinkStatus')
+    expect(replacement).not.toHaveProperty('starlinkSource')
+    expect(replacement).not.toHaveProperty('starlinkReason')
+    vi.setSystemTime(at + ORBITAL_REFRESH_INTERVAL_MS)
+    fetchImpl.mockImplementation(async (input) => String(input) === SPACE_TRACK_LOGIN_URL
+      ? new Response('""', { headers: { 'Set-Cookie': 'session=private; Path=/' } })
+      : Response.json([]))
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    await createCoordinator(storage, catalog, true, 'space-track').fetch(request())
+    expect(storage.values.get(ORBITAL_COORDINATOR_LAST_OUTCOME_KEY)).toMatchObject({
+      starlinkKind: 'published', starlinkPublication: 'fulfilled', starlinkStartedAtMs: at,
+    })
+    expect(storage.values.get(ORBITAL_COORDINATOR_LAST_OUTCOME_KEY)).not.toHaveProperty('starlinkStatus')
+  })
+
+  it('replaces an old HTTP child failure with a new native no-HTTP failure without inheriting its status or source', async () => {
+    vi.useFakeTimers()
+    const at = SPACE_TRACK_GP_INITIAL_NOT_BEFORE_MS + ORBITAL_REFRESH_INTERVAL_MS
+    vi.setSystemTime(at)
+    const storage = new FakeStorage()
+    storage.values.set(ORBITAL_COORDINATOR_LAST_OUTCOME_KEY, previousChildFailure(at))
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input) === SPACE_TRACK_LOGIN_URL) {
+        return new Response('""', { headers: { 'Set-Cookie': 'session=private; Path=/' } })
+      }
+      throw new Error('Network unavailable')
+    }))
+    await createCoordinator(storage, new MemoryKv(), true, 'space-track').fetch(request())
+    const replacement = storage.values.get(ORBITAL_COORDINATOR_LAST_OUTCOME_KEY)
+    expect(replacement).toMatchObject({
+      starlinkKind: 'failed', starlinkStartedAtMs: at,
+      starlinkReason: 'Space-Track Starlink GP acquisition or publication failed',
+    })
+    expect(replacement).not.toHaveProperty('starlinkStatus')
+    expect(replacement).not.toHaveProperty('starlinkSource')
   })
 
   it('retains a transient source failure across actor recreation without confusing idle with publication', async () => {

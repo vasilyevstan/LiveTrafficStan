@@ -11,7 +11,7 @@ import {
 
 const config = createAppConfig({}).starlink
 const primaryMediaType =
-  config.acceptMediaType.split(',')[0]?.trim() ?? ''
+  `application/vnd.livetrafficstan.starlink-catalog+json;version=${config.schemaVersion}`
 
 const record = (
   id: number,
@@ -140,7 +140,7 @@ const legacyPayload = async () => {
     digest: _digest,
     ...shared
   } = current
-  const contract = config.compatibleContracts[0]
+  const contract = config.compatibleContracts.find((candidate) => candidate.schemaVersion === 1)
   if (!contract) throw new Error('Missing schema-1 contract')
   const records = shared.records.slice(0, contract.sampleLimit)
   return signed({
@@ -304,7 +304,7 @@ describe('StarlinkCatalogProvider', () => {
 
   it('accepts the schema-1 predecessor representation during rollout without a second request', async () => {
     const value = await legacyPayload()
-    const contract = config.compatibleContracts[0]
+    const contract = config.compatibleContracts.find((candidate) => candidate.schemaVersion === 1)
     if (!contract) throw new Error('Missing schema-1 contract')
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
       new Response(JSON.stringify(value), {

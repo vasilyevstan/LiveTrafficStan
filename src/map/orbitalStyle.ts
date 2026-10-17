@@ -57,7 +57,7 @@ export const STARLINK_LAYER_IDS = [
 ] as const
 
 const ORBITAL_SOURCE_ATTRIBUTION =
-  '<a href="https://celestrak.org/" target="_blank" rel="noreferrer">CelesTrak</a> · SGP4 · not live'
+  '<a href="https://www.space-track.org/" target="_blank" rel="noreferrer">Space-Track.org / USSPACECOM</a> · <a href="https://celestrak.org/" target="_blank" rel="noreferrer">CelesTrak</a> · SGP4 · not live'
 
 export const STARLINK_SOURCE_ATTRIBUTION =
   ORBITAL_SOURCE_ATTRIBUTION

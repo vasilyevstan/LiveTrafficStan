@@ -208,6 +208,9 @@ export interface OrbitalCatalogEnvironment {
   ORBITAL_CATALOG?: OrbitalKeyValueStore
   ORBITAL_CATALOG_ENABLED?: string
   STARLINK_CATALOG_ENABLED?: string
+  ORBITAL_CATALOG_SOURCE?: string
+  SPACE_TRACK_USERNAME?: string
+  SPACE_TRACK_PASSWORD?: string
 }
 
 export type OrbitalRefreshReservation =
@@ -284,6 +287,7 @@ type OrbitalProviderControlOutcome = (
 ) & {
   publicationResults?: OrbitalPublicationResults
   starlink?: OrbitalStarlinkRefreshOutcome
+  reason?: string
 }
 
 export type OrbitalRefreshOutcome =
@@ -301,6 +305,9 @@ export type OrbitalRefreshOutcome =
       sha256: string
       retrievedAt: string
       starlink?: OrbitalStarlinkRefreshOutcome
+      publicationResults?: OrbitalPublicationResults
+      reason?: string
+      status?: number
     }
 
 interface SnapshotDigestInput {
@@ -989,7 +996,7 @@ const sourceSatcatRecord = (
   }
 }
 
-const sourceGpRecord = (
+export const sourceGpRecord = (
   value: unknown,
   type: OrbitalObjectType,
 ) => {
@@ -2769,7 +2776,11 @@ export const handleOrbitalCatalog = async (
   }
   const nowMs = options.nowMs ?? Date.now()
   const wantsSchemaV2 =
-    request.headers.get('Accept') === ORBITAL_CATALOG_V2_ACCEPT
+    request.headers.get('Accept')?.split(',').some((entry) => {
+      const [type, quality] = entry.trim().split(';q=')
+      return type === ORBITAL_CATALOG_V2_ACCEPT &&
+        (quality === undefined || (/^(?:0(?:\.\d{0,3})?|1(?:\.0{0,3})?)$/.test(quality) && Number(quality) > 0))
+    }) === true
 
   if (!wantsSchemaV2) {
     const [

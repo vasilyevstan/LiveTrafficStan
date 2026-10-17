@@ -1,3 +1,4 @@
+import { STARLINK_ORBITAL_SHELLS } from '../src/domain/orbital.ts'
 import type {
   OrbitalAssetBinding,
   OrbitalCatalogFetch,
@@ -875,28 +876,7 @@ export const starlinkSystematicSampleIndices = (
 const normalizedRaan = (value: number) =>
   ((value % 360) + 360) % 360
 
-const STARLINK_SHELL_DEFINITIONS = [
-  {
-    id: 'inclination-lt-48',
-    inclinationMinimumDegrees: 0,
-    inclinationMaximumDegreesExclusive: 48,
-  },
-  {
-    id: 'inclination-48-lt-60',
-    inclinationMinimumDegrees: 48,
-    inclinationMaximumDegreesExclusive: 60,
-  },
-  {
-    id: 'inclination-60-lt-85',
-    inclinationMinimumDegrees: 60,
-    inclinationMaximumDegreesExclusive: 85,
-  },
-  {
-    id: 'inclination-gte-85',
-    inclinationMinimumDegrees: 85,
-    inclinationMaximumDegreesExclusive: null,
-  },
-] as const satisfies readonly Omit<
+const STARLINK_SHELL_DEFINITIONS = STARLINK_ORBITAL_SHELLS satisfies readonly Omit<
   StarlinkSamplingShell,
   'populationCount' | 'sampleCount'
 >[]

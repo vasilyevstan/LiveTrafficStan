@@ -1137,7 +1137,64 @@ the points as static reference context and does not infer current scheduled
 service, operating status, navigation authority, routes, arrivals, departures,
 or relationships to visible aircraft.
 
-## Orbital objects: CelesTrak GP/OMM and SATCAT
+## Native Space-Track GP-only source (schema 3)
+
+Issue #488 adds an explicit server-side `ORBITAL_CATALOG_SOURCE=space-track`
+mode. This section describes the implementation, **not a production activation
+receipt**. The deployment workflow retains `celestrak` as its default until
+fresh native publications for both topics and both origins, plus rendered
+browser acceptance, establish the new source. No account credential is public.
+
+The official [basic SSA redistribution authorization](https://www.space-track.org/documentation#/odr)
+(`odr_redistBasicSSAInfoDetails`, verified 2026-10-17) gives express blanket
+approval for transferring basic SSA data/services, including TLE/OMM and
+SATCAT, with appropriate citation, including analysis. The verified section
+SHA-256 is `983ffb6f23c811f4dcfa766b599df114b172535f8cbaf34b40f840516e63b6b7`.
+This resolves #489's earlier generic signup-agreement reading; it does not
+authorize advanced services or credential sharing. Current official website
+access policy is no charge, not a permanent pricing guarantee. Visible
+Space-Track.org / USSPACECOM credit accompanies native modeled results.
+
+Only the fixed authenticated GP class is used. A bounded form POST establishes
+a scoped, memory-only session; at most one subsequent fixed GP request returns
+the nineteen selected public fields. Numeric strings are validated before
+conversion, UTC-unzoned epochs are interpreted explicitly as UTC, and
+`OBJECT_TYPE` supplies the reported application type. Unsupported reported
+types remain unknown; no name, orbit, mission, or membership inference is added.
+There is **no SATCAT request, fabricated SATCAT URL/count, advanced-data request,
+browser login, cookie persistence, credential-bearing URL, or arbitrary proxy**.
+
+Curated membership is pinned in `src/config/spaceTrackCurationReference.json`:
+461 exact NORAD IDs and ordered memberships from the validated CelesTrak
+snapshot retrieved `2026-10-17T12:17:07.523Z`, source digest
+`d062e417f365701d3ef2951e400a9196700c514ced47960305f010681d0da5c0`.
+Only identity, membership, reference date, and provenance are retained: old
+names, elements, and types are not carried forward. Every pinned ID must have
+one complete valid native GP row before publication. Additions/removals require
+a reviewed reference revision; this is not automatic CelesTrak group expansion.
+
+The separate Starlink GP predicate requests public, undecayed `PAYLOAD` rows
+whose names contain `STARLINK` and whose epochs satisfy the source's ten-day
+window. Every returned row is validated, not just the eventual sample; a bounded
+30-second transfer allowance applies to the epoch lower-bound check. The
+explicit 15,001-row overflow sentinel rejects populations above 15,000 instead
+of silently sampling a truncated response. The unchanged four-band,
+128-per-band inclination/RAAN/phase algorithm publishes 512 objects. Its
+population is the declared native predicate, not an assertion of equivalence
+to CelesTrak's group or the entire constellation.
+
+Curated responses remain bounded at 512 KiB/512 rows; the single native
+Starlink response uses the original 12 MiB aggregate budget as its response cap.
+Normalized publications remain at most 512 records/512 KiB. New catalog IDs,
+version-3 media types, and `orbital:space-track:{curated|starlink}:v3` keys retain
+real GP-only provenance. Browsers still use only the literal same-origin
+`GET /api/orbits/catalog` and `GET /api/orbits/starlink`, never Space-Track.
+They validate native schema 3 and complete source-qualified legacy snapshots
+for rolling compatibility. A missing native key may temporarily use a whole
+legacy cached snapshot; a corrupt native key returns unavailable. There is no
+record mixing, refreshed timestamp on old data, or acquisition fallback.
+
+## Legacy orbital source: CelesTrak GP/OMM and SATCAT (schemas 1/2)
 
 Issue #162 selected CelesTrak's bounded `visual` group for the released
 modeled layer. Issue #211's infrastructure contract expands the reviewed

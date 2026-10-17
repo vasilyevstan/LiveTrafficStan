@@ -1,5 +1,11 @@
 export type OrbitalObjectType = 'PAY' | 'R/B' | 'DEB' | 'UNK'
 export type OrbitalChannel = 'curated' | 'starlink'
+export const STARLINK_ORBITAL_SHELLS = [
+  { id: 'inclination-lt-48', inclinationMinimumDegrees: 0, inclinationMaximumDegreesExclusive: 48 },
+  { id: 'inclination-48-lt-60', inclinationMinimumDegrees: 48, inclinationMaximumDegreesExclusive: 60 },
+  { id: 'inclination-60-lt-85', inclinationMinimumDegrees: 60, inclinationMaximumDegreesExclusive: 85 },
+  { id: 'inclination-gte-85', inclinationMinimumDegrees: 85, inclinationMaximumDegreesExclusive: null },
+] as const
 export type OrbitalSourceGroup =
   | 'visual'
   | 'stations'
@@ -11,9 +17,9 @@ export type OrbitalSourceGroup =
 export interface OrbitalCatalogSource {
   group: OrbitalSourceGroup
   gpSourceUrl: string
-  satcatSourceUrl: string
+  satcatSourceUrl?: string
   gpRecordCount: number
-  satcatRecordCount: number
+  satcatRecordCount?: number
 }
 
 export interface OrbitalObject {
@@ -49,6 +55,12 @@ export interface OrbitalCatalogSnapshot {
   recordCount: number
   sha256: string
   records: readonly OrbitalObject[]
+  sourceProvider?: 'space-track'
+  curationReference?: {
+    id: string
+    retrievedAt: string
+    sha256: string
+  }
 }
 
 export interface StarlinkCatalogSourceMetadata {
@@ -62,10 +74,10 @@ export interface StarlinkCatalogSourceMetadata {
 export interface StarlinkOrbitalCatalogMetadata {
   sources: {
     gp: StarlinkCatalogSourceMetadata
-    satcat: StarlinkCatalogSourceMetadata
+    satcat?: StarlinkCatalogSourceMetadata
   }
   populationCount: number
-  extraSatcatCount: number
+  extraSatcatCount?: number
   sampleLimit: number
   sampleAlgorithm: string
   samplingReferenceTime?: string
