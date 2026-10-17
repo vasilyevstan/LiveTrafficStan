@@ -542,8 +542,8 @@ the earlier anonymous review and generic warning did not establish a prohibition
 Keep visible Space-Track.org/USSPACECOM attribution if this source is adopted.
 Advanced services are outside this decision.
 
-The account is authenticated and credentials must remain protected and
-server-only. Browser CORS is not a blocker for the existing same-origin
+Space-Track requires authenticated account access, with credentials protected
+and server-only. Browser CORS is not a blocker for the existing same-origin
 architecture. Issue #489 resolves only permission qualification; #488 still
 requires actual protocol, source coverage, provenance and production proof.
 

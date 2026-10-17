@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   SPACE_TRACK_LOGIN_URL,
+  SPACE_TRACK_LOGIN_INTERVAL_MS,
   SPACE_TRACK_PROBE_INTERVAL_MS,
   SPACE_TRACK_PROBE_URL,
   assertSpaceTrackProbeBackoff,
@@ -96,6 +97,41 @@ describe('one bounded Space-Track GP qualification', () => {
       NORAD_CAT_ID: 'number', MEAN_MOTION: 'number', BSTAR: 'string',
     })
   })
+
+  it.each([
+    [{}, 'empty-object'], [[], 'empty-array'], ['', 'empty-string'],
+  ])('requires protected GP proof after an empty JSON acknowledgment (%j)', async (ack, kind) => {
+    const response = login()
+    const makeLogin = () => new Response(JSON.stringify(ack), { headers: response.headers })
+    const fetchImpl = vi.fn().mockResolvedValueOnce(makeLogin()).mockResolvedValueOnce(gp())
+    const passed = await probe(fetchImpl)
+    expect(passed).toMatchObject({
+      outcome: 'passed', requestCount: 2,
+      login: { acknowledgment: kind, cookieScopeAccepted: true },
+      gp: { identityMatched: true, payloadTypeMatched: true },
+    })
+    const failed = await probe(vi.fn().mockResolvedValueOnce(makeLogin())
+      .mockResolvedValueOnce(gp([])))
+    expect(failed).toMatchObject({ outcome: 'failed', gpRequested: true })
+    expect(failed.nextAllowedAtMs).toBe(now + SPACE_TRACK_PROBE_INTERVAL_MS)
+  })
+
+  it.each([null, 10, true, { message: 'private-user' }])(
+    'does not treat nonempty or numeric JSON as a recognized acknowledgment (%j)',
+    async acknowledgment => {
+      const response = login()
+      const fetchImpl = vi.fn().mockResolvedValueOnce(new Response(
+        JSON.stringify(acknowledgment), { headers: response.headers },
+      ))
+      const result = await probe(fetchImpl)
+      expect(result).toMatchObject({
+        outcome: 'failed', requiresReview: true, gpRequested: false,
+        login: { acknowledgment: 'unrecognized' },
+      })
+      expect(fetchImpl).toHaveBeenCalledTimes(1)
+      expect(JSON.stringify(result)).not.toContain('private-user')
+    },
+  )
 
   it('keeps multiple cookie headers separate and applies domain, path and expiry scope', async () => {
     const response = login()
@@ -245,6 +281,7 @@ describe('one bounded Space-Track GP qualification', () => {
     ))
     expect(result.code).toBe('probe-request-failed')
     expect(JSON.stringify(result)).not.toMatch(/private-user|private-pass|private-session/)
+    expect(result.nextAllowedAtMs).toBe(now + SPACE_TRACK_LOGIN_INTERVAL_MS)
   })
 })
 
@@ -259,6 +296,42 @@ describe('qualification evidence and protected workflow', () => {
     expect(() => assertSpaceTrackProbeBackoff({ ...failed, requiresReview: true }, failed.nextAllowedAtMs))
       .toThrow('requires-investigation')
     expect(() => assertSpaceTrackProbeBackoff({})).toThrow('receipt-invalid')
+  })
+
+  it('migrates only the evidenced old two-byte JSON reply that made no GP request', async () => {
+    const failed = await probe(vi.fn().mockResolvedValueOnce(new Response('{"Login":"Failed"}')))
+    const legacy = {
+      ...failed,
+      receiptVersion: 1,
+      code: 'authentication-not-confirmed',
+      requiresReview: false,
+      nextAllowedAtMs: now + SPACE_TRACK_PROBE_INTERVAL_MS,
+      login: { status: 200, decodedBytes: 2, format: 'json' },
+    }
+    expect(assertSpaceTrackProbeBackoff(legacy, now + SPACE_TRACK_LOGIN_INTERVAL_MS))
+      .toEqual({
+        nextAllowedAtMs: now + SPACE_TRACK_LOGIN_INTERVAL_MS,
+        rateBasis: 'legacy-no-gp-request',
+      })
+    expect(() => assertSpaceTrackProbeBackoff(legacy, now)).toThrow('backoff-active')
+    for (const changed of [
+      { gpRequested: true },
+      { requestCount: 2 },
+      { gpRequestedAt: new Date(now).toISOString() },
+      { gp: { status: 200 } },
+      { code: 'provider-deferred' },
+      { login: { ...legacy.login, retryAfterPresent: true } },
+      { login: { ...legacy.login, status: 403 } },
+      { login: { ...legacy.login, decodedBytes: 20 } },
+      { nextAllowedAtMs: legacy.nextAllowedAtMs + 1 },
+    ]) {
+      expect(() => assertSpaceTrackProbeBackoff(
+        { ...legacy, ...changed }, now + SPACE_TRACK_LOGIN_INTERVAL_MS,
+      )).toThrow()
+    }
+    expect(() => assertSpaceTrackProbeBackoff(
+      { ...legacy, requiresReview: true }, now + SPACE_TRACK_LOGIN_INTERVAL_MS,
+    )).toThrow('requires-investigation')
   })
 
   it('scopes secrets to one exact-main serialized probe, with no app deployment or SATCAT request', () => {
