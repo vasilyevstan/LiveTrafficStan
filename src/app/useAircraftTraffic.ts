@@ -17,24 +17,28 @@ const initialResult = (): TrafficProviderResult<Aircraft> => ({
 export const useAircraftTraffic = (
   query: TrafficQuery | null,
   config: AppConfig['aircraft'],
+  intentionallyPaused = false,
 ) => {
   const [result, setResult] =
     useState<TrafficProviderResult<Aircraft>>(initialResult)
   const controllerRef = useRef<AircraftTrafficController | undefined>(undefined)
   const queryRef = useRef<TrafficQuery | null>(query)
+  const intentionalPauseRef = useRef(intentionallyPaused)
   const startControllerRef = useRef<
     ((initialQuery: TrafficQuery) => void) | undefined
   >(undefined)
 
   useEffect(() => {
+    const previousQuery = queryRef.current
     queryRef.current = query
+    intentionalPauseRef.current = intentionallyPaused
     const controller = controllerRef.current
 
     if (controller) {
-      if (query) controller.updateQuery(query)
-      controller.setPaused(
-        shouldPauseTraffic(query, document.hidden, navigator.onLine),
-      )
+      const paused = shouldPauseTraffic(query, document.hidden, navigator.onLine, intentionallyPaused)
+      if (paused) controller.setPaused(true)
+      if (query && query !== previousQuery) controller.updateQuery(query)
+      if (!paused) controller.setPaused(false)
       return
     }
 
@@ -50,7 +54,7 @@ export const useAircraftTraffic = (
         },
       }))
     }
-  }, [query])
+  }, [query, intentionallyPaused])
 
   useEffect(() => {
     let disposed = false
@@ -73,6 +77,7 @@ export const useAircraftTraffic = (
           queryRef.current,
           document.hidden,
           navigator.onLine,
+          intentionalPauseRef.current,
         ),
       )
     }
@@ -86,6 +91,7 @@ export const useAircraftTraffic = (
           queryRef.current,
           document.hidden,
           navigator.onLine,
+          intentionalPauseRef.current,
         ),
       )
     }

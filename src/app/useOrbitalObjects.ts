@@ -42,6 +42,7 @@ export const useOrbitalObjects = (
   filters: OrbitalDiscoveryFilters,
   config: AppConfig['orbital'],
   starlinkOptions?: StarlinkOrbitalHookOptions,
+  capturePauseRevision?: number,
 ) => {
   const [state, setState] = useState<OrbitalControllerState>(initialState)
   const [starlinkState, setStarlinkState] =
@@ -52,6 +53,11 @@ export const useOrbitalObjects = (
   const starlinkConfig =
     starlinkOptions?.config ?? APP_CONFIG.starlink
   const starlinkEnabled = starlinkOptions?.enabled ?? false
+  const capturePauseRef = useRef(capturePauseRevision)
+
+  useEffect(() => {
+    capturePauseRef.current = capturePauseRevision
+  }, [capturePauseRevision])
 
   useEffect(() => {
     const workerHub = new OrbitalWorkerHub()
@@ -69,6 +75,8 @@ export const useOrbitalObjects = (
     })
     controllerRef.current = controller
     starlinkControllerRef.current = starlinkController
+    controller.setCapturePause(capturePauseRef.current)
+    starlinkController.setCapturePause(capturePauseRef.current)
     controller.start()
     starlinkController.start()
     starlinkController.setFilters(DEFAULT_ORBITAL_DISCOVERY_FILTERS)
@@ -92,22 +100,18 @@ export const useOrbitalObjects = (
   }, [config, starlinkConfig])
 
   useEffect(() => {
-    controllerRef.current?.setEnabled(enabled)
-  }, [enabled])
-
-  useEffect(() => {
-    starlinkControllerRef.current?.setEnabled(starlinkEnabled)
-  }, [starlinkEnabled])
-
-  useEffect(() => {
-    controllerRef.current?.setHistoryActive(historyActive)
-    starlinkControllerRef.current?.setHistoryActive(historyActive)
-  }, [historyActive])
-
-  useEffect(() => {
-    controllerRef.current?.setOnline(online)
-    starlinkControllerRef.current?.setOnline(online)
-  }, [online])
+    for (const [controller, channelEnabled] of [
+      [controllerRef.current, enabled],
+      [starlinkControllerRef.current, starlinkEnabled],
+    ] as const) {
+      // Enter capture before other inputs; release only after other pauses apply.
+      if (capturePauseRevision !== undefined) controller?.setCapturePause(capturePauseRevision)
+      controller?.setEnabled(channelEnabled)
+      controller?.setHistoryActive(historyActive)
+      controller?.setOnline(online)
+      if (capturePauseRevision === undefined) controller?.setCapturePause(undefined)
+    }
+  }, [capturePauseRevision, enabled, starlinkEnabled, historyActive, online])
 
   useEffect(() => {
     const committedViewport = viewport ?? WAITING_FOR_VIEWPORT
@@ -130,10 +134,15 @@ export const useOrbitalObjects = (
   }, [filters])
 
   const retry = useCallback(() => controllerRef.current?.retry(), [])
+  const acceptedPositionForCapture = useCallback((id: string) => {
+    const selected = parseOrbitalFeatureId(id)
+    return (selected?.owner === 'starlink' ? starlinkControllerRef : controllerRef)
+      .current?.acceptedPositionForCapture(id)
+  }, [])
   const retryStarlink = useCallback(
     () => starlinkControllerRef.current?.retry(),
     [],
   )
 
-  return { state, retry, starlinkState, retryStarlink }
+  return { state, retry, starlinkState, retryStarlink, acceptedPositionForCapture }
 }

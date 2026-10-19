@@ -5,6 +5,7 @@ import {
   type OrbitalControllerPhase,
   type OrbitalControllerState,
 } from '../domain/orbital'
+import type { CapturedOrbitalView } from '../domain/orbitalView'
 import {
   DEFAULT_ORBITAL_DISCOVERY_FILTERS,
   orbitalFiltersSignature,
@@ -90,6 +91,7 @@ export class OrbitalController {
   private enabled = false
   private pageVisible = true
   private historyActive = false
+  private capturePauseRevision?: number
   private online = true
   private viewport: OrbitalViewport = {
     kind: 'invalid',
@@ -178,6 +180,35 @@ export class OrbitalController {
     this.reconcile()
   }
 
+  acceptedPositionForCapture(id: string): Pick<CapturedOrbitalView, 'position' | 'snapshot'> | undefined {
+    const now = this.modeledNow()
+    const snapshot = this.snapshot
+    if (!this.active() || !snapshot || now === undefined ||
+      this.snapshotAge(now) > this.config.expireAfterMs) return undefined
+    const position = this.state.positions.find(position =>
+      position.id === id && position.snapshotSha256 === snapshot.sha256 &&
+      position.snapshotRetrievedAt === parseOrbitalTimestamp(snapshot.retrievedAt),
+    )
+    return position ? {
+      position: Object.freeze({ ...position, sourceGroups: [...position.sourceGroups] }),
+      snapshot,
+    } : undefined
+  }
+
+  setCapturePause(revision: number | undefined) {
+    if (this.capturePauseRevision === revision) return
+    this.capturePauseRevision = revision
+    if (revision !== undefined) {
+      this.fetchGeneration += 1
+      this.fetchController?.abort()
+      this.fetchController = undefined
+      this.fetching = false
+      this.clearTimers()
+      this.destroyWorker()
+    }
+    this.reconcile()
+  }
+
   setOnline(online: boolean) {
     if (this.online === online) return
     this.online = online
@@ -189,6 +220,7 @@ export class OrbitalController {
     if (signature === this.viewportSignature) return
     this.viewport = viewport
     this.viewportSignature = signature
+    if (this.capturePauseRevision !== undefined) return
     this.setState({
       ...this.state,
       prediction: waitingPrediction('Calculating upcoming crossings.'),
@@ -199,6 +231,7 @@ export class OrbitalController {
   setSelectedId(id: string | null) {
     if (this.selectedId === id) return
     this.selectedId = id
+    if (this.capturePauseRevision !== undefined) return
     this.setState({
       ...this.state,
       prediction: {
@@ -214,6 +247,7 @@ export class OrbitalController {
     if (signature === this.filterSignature) return
     this.filters = filters
     this.filterSignature = signature
+    if (this.capturePauseRevision !== undefined) return
     this.setState({
       ...this.state,
       prediction: waitingPrediction(
@@ -229,6 +263,10 @@ export class OrbitalController {
   }
 
   private active() {
+    return this.observingClock() && this.capturePauseRevision === undefined
+  }
+
+  private observingClock() {
     return (
       this.running &&
       this.enabled &&
@@ -294,6 +332,8 @@ export class OrbitalController {
           ? 'Modeled orbital objects are hidden during historical playback.'
           : phase === 'paused-hidden'
             ? 'Modeled orbital objects are paused while the page is hidden.'
+            : phase === 'paused-capture'
+              ? 'Orbital acquisition and modeling are paused during the captured view.'
             : undefined,
     })
   }
@@ -314,6 +354,10 @@ export class OrbitalController {
     }
 
     if (!this.snapshot || !this.clock) {
+      if (this.capturePauseRevision !== undefined) {
+        this.pause('paused-capture')
+        return
+      }
       if (!this.online) {
         this.setState({
           phase: 'offline',
@@ -362,6 +406,23 @@ export class OrbitalController {
           : 'The retained orbital catalog expired while offline.',
       })
       if (this.online) void this.fetchCatalog(true)
+      return
+    }
+
+    if (this.capturePauseRevision !== undefined) {
+      const message = snapshotAge > this.config.staleAfterMs
+        ? 'Orbital acquisition and modeling are paused; the retained catalog is stale.'
+        : 'Orbital acquisition and modeling are paused during the captured view.'
+      if (this.state.phase !== 'paused-capture' ||
+        this.state.capturePauseRevision !== this.capturePauseRevision || this.state.message !== message) {
+        this.setState({
+          ...this.state,
+          phase: 'paused-capture',
+          prediction: EMPTY_ORBITAL_PREDICTION,
+          message,
+        })
+      }
+      this.scheduleExpiry()
       return
     }
 
@@ -457,7 +518,7 @@ export class OrbitalController {
 
   private scheduleExpiry() {
     this.clearTimer('expiryTimer')
-    if (!this.active() || !this.snapshot || !this.clock) return
+    if (!this.observingClock() || !this.snapshot || !this.clock) return
     const modeledNow = this.modeledNow()
     if (modeledNow === undefined) return
     const delay =
@@ -465,7 +526,9 @@ export class OrbitalController {
     this.expiryTimer = this.runtime.setTimeout(() => {
       this.expiryTimer = undefined
       this.reconcile()
-    }, Math.max(0, delay + 1))
+    }, Math.max(0, this.capturePauseRevision === undefined
+      ? delay + 1
+      : Math.min(delay + 1, this.config.positionIntervalMs)))
   }
 
   private async fetchCatalog(force: boolean) {
@@ -929,6 +992,8 @@ export class OrbitalController {
   }
 
   private setState(state: OrbitalControllerState) {
+    if (this.capturePauseRevision === undefined) delete state.capturePauseRevision
+    else state.capturePauseRevision = this.capturePauseRevision
     this.state = state
     this.onState(state)
   }

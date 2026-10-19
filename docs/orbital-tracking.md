@@ -37,6 +37,11 @@ sample. Issue #386 removes its independent switch and includes the sample
 whenever ORBITS is effective. This does not expand the curated catalog or claim
 full-constellation coverage. ORBITS remains opt-in and the parent lifecycle.
 
+Issue #508 adds a **development-only captured orbital view** to this source.
+Its local acceptance is complete, but this is not a production activation
+receipt. The existing running application's identity and source receipts
+remain unchanged.
+
 ## User experience
 
 The **ORBITS** preference defaults off and remembers explicit visibility.
@@ -338,6 +343,90 @@ pass:
 Only a fully validated response enters the current-tab fulfilled cache. A
 failed, aborted, partial, malformed, oversized, or digest-mismatched response
 does not replace it.
+
+## Captured orbital views (development, #508)
+
+Select an object with an already accepted current modeled position, then
+choose **View from here** in its details. Curated and the existing bounded
+Starlink sample qualify independently; identity-only catalog results cannot
+fetch or propagate merely to enable entry. Payload, rocket-body, debris and
+unknown source-reported types are not given inferred attitudes or missions.
+
+The view starts Earth-facing/nadir and north-up. Drag with a mouse or one
+finger, or focus the map and use arrow keys, to change orientation while
+keeping the captured geographic eye and height fixed. Ordinary pan, wheel
+zoom and map orbiting are suspended. Looking is bounded to 59 degrees from
+nadir. An unsafe requested orientation keeps the last valid pose and explains
+the limit; it never moves or lowers the eye to make the request succeed.
+
+Entry is available only in **Auto** projection. Flat remains selected if the
+user chose it, with an explicit unavailable reason. The current native
+Mercator latitude limit, approximately 85.051129 degrees north/south, excludes
+unrepresentable nadir entry. Further native zoom/pitch/target checks can reject
+a pose without moving the camera. The height comes from the accepted
+`altitudeKm`, explicitly converted to meters: SGP4's geodetic height on the
+renderer's spherical Earth is an approximation, not a physical optical camera
+placement. There is no live follow, spacecraft attitude, camera feed, terrain,
+cloud, illumination or visibility simulation.
+
+The existing inspector shows the object, **Captured model**, fixed UTC model
+time and height. On phones it starts compact, with an always-visible
+**Return** and X; Details opens the same scrollable body. **Model & source**
+retains the full name, exact reported type, NORAD, element epoch, catalog
+retrieval time and digest, provider credit and applicable membership reference.
+These timestamps describe the copied position and its actual owning snapshot,
+not a fresh observation.
+
+### Pause, validity and Return
+
+Entry atomically copies the accepted position and its owning snapshot before
+ordinary selection is cleared. Both existing orbital controllers acknowledge
+the exact capture revision before native placement. They abort/fence reads,
+stop propagation/prediction and release their shared worker, while preserving
+catalogs, authoritative clock anchors, caches and acquisition/retry deadlines.
+The existing expiry timer checks clock/age validity while visible; there is
+no new scheduler or periodic camera correction. Curated retains its
+2h/6h/24h revalidation/stale/expiry rules; Starlink retains 12h/18h/24h.
+Stale and offline alone do not invalidate a still-safe captured model.
+
+Aircraft and marine controllers compose the intentional pause with their
+existing hidden/offline/viewport gates. Their ordinary query remains intact;
+capture does not reset aircraft cadence/Retry-After or marine REST/reconnect
+deadlines. Operational overlays, picking, trails, ruler and optional
+selected/hover work yield to the capture. Captured camera poses do not become
+traffic queries, crossing viewports, Home, ordinary navigation labels or share
+state. Saved layer preferences are unchanged, and Share is unavailable.
+Normal atlas tiles can still load for the displayed Earth area.
+
+**Return**, X and canvas-owned Escape restore the complete pre-entry raw
+camera and exact previous handler-enabled states, not a rounded share pose or
+Home. When the workspace owns native fullscreen, Escape exits fullscreen
+first and does not also Return. Find can open without moving the eye. Center,
+committed navigation, a new location action, HISTORY, ORBITS-off or projection
+change ends capture; newer navigation takes precedence over old restoration.
+Old location callbacks may update session Home silently, never steal the eye.
+Cancelled selection, ruler and journey commands are not resurrected.
+
+Hiding retains the immutable capture independently of controller output.
+Visibility resume validates before revealing the scene. Invalid authoritative
+time, 24-hour hard expiry or loss/change of the owning generation automatically
+Returns once with a reason. Offline may retain the scene, but uncached tiles
+remain unavailable and expiry still ends it. Expiry of the other channel does
+not by itself invalidate this captured owner.
+
+Renderer errors clean up input and pending callbacks. If native restoration
+itself fails, the existing map-error surface explicitly says the previous
+camera **could not be restored** and offers Center/reload recovery; it does
+not claim a successful Return. Capture is session-only, with no storage,
+recording, history entry or share-link representation.
+
+The accepted scope adds no renderer, dependency, provider, endpoint, worker,
+dataset or deployment setting. See [architecture](architecture.md#captured-orbital-camera-ownership-development-508),
+[bounds](configuration.md#captured-orbital-view-development-508),
+[browser and weight evidence](development-and-testing.md#captured-orbital-view-508-development-acceptance)
+and [recovery](troubleshooting.md#captured-orbital-view-is-unavailable-or-returns-development-508).
+Aircraft/ship viewpoints remain omitted after their separate failed
+precision/usefulness assessment; Flat is not rescued with another mode.
 
 ## Browser model boundary
 

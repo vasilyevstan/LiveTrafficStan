@@ -1137,6 +1137,32 @@ the points as static reference context and does not infer current scheduled
 service, operating status, navigation authority, routes, arrivals, departures,
 or relationships to visible aircraft.
 
+## Captured orbital map illustrations (development, #508)
+
+View from here reuses one already accepted, exactly owner-qualified modeled
+position and its actual snapshot. It does not request new GP, SATCAT, catalog,
+image, mission, terrain, cloud or optical data. Existing Space-Track.org /
+USSPACECOM or legacy CelesTrak source credit, exact reported type, element
+epoch, retrieval time and source-policy links remain in Model & source;
+native membership-reference credit remains separate from fresh GP provenance.
+The ordinary OpenFreeMap/OpenMapTiles/OpenStreetMap attribution stays visible.
+This adds no source right or accuracy guarantee.
+
+The copied SGP4 geodetic height is used with a spherical Earth renderer.
+The result is a captured approximate Earth-facing map, not spacecraft
+attitude, live telemetry, an optical observation, camera imagery, illumination
+or navigational clearance. Starlink remains a bounded sample, not the full
+constellation. No modeled position becomes aircraft/marine traffic, a trail,
+photo, enrichment match or recorded history.
+
+The capture has no persistence, share representation or custom analytics
+event. It adds no object/provider lookup; ordinary map tiles can still
+disclose the displayed geographic area to the incumbent map host. Existing
+independent page analytics retain their documented trust boundary.
+There is no provider/account/credential, backend publication, acquisition
+cadence or licensing change. This is accepted development behavior, not
+production activation. See [usage and validity](orbital-tracking.md#captured-orbital-views-development-508).
+
 ## Native Space-Track GP-only source (schema 3)
 
 Production uses server-side `ORBITAL_CATALOG_SOURCE=space-track` as the primary
