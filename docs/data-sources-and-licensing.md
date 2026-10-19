@@ -1137,7 +1137,7 @@ the points as static reference context and does not infer current scheduled
 service, operating status, navigation authority, routes, arrivals, departures,
 or relationships to visible aircraft.
 
-## Captured orbital map illustrations (development, #508)
+## Captured orbital map illustrations (#508)
 
 View from here reuses one already accepted, exactly owner-qualified modeled
 position and its actual snapshot. It does not request new GP, SATCAT, catalog,
@@ -1160,8 +1160,9 @@ event. It adds no object/provider lookup; ordinary map tiles can still
 disclose the displayed geographic area to the incumbent map host. Existing
 independent page analytics retain their documented trust boundary.
 There is no provider/account/credential, backend publication, acquisition
-cadence or licensing change. This is accepted development behavior, not
-production activation. See [usage and validity](orbital-tracking.md#captured-orbital-views-development-508).
+cadence or licensing change. #510 deploys this presentation without changing
+the native GP source. See [usage and validity](orbital-tracking.md#captured-orbital-views-508)
+and the [production receipt](hosting-and-deployment.md#captured-orbital-view-production-receipt-2026-10-19).
 
 ## Native Space-Track GP-only source (schema 3)
 

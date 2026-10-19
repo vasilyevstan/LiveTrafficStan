@@ -819,9 +819,11 @@ not just selected details. The record cap remains 16. Context makes no network
 request, adds no normalized orbital field, and never changes catalog freshness.
 The N2YO reference is a normal explicit external link, not a fetch or embed.
 
-## Captured orbital camera ownership (development, #508)
+## Captured orbital camera ownership (#508)
 
-This accepted development addition is not a production deployment receipt.
+This ownership contract is deployed through #510; the
+[production receipt](hosting-and-deployment.md#captured-orbital-view-production-receipt-2026-10-19)
+records its exact runtime separately from implementation evidence.
 `orbitalView.ts` carries a readonly capture revision, ordinary navigation
 request identity, copied accepted position and its actual owning snapshot.
 The shared `OrbitalController.acceptedPositionForCapture` validates exact
@@ -863,7 +865,7 @@ without modifying preferences. Depth move/style callbacks cannot acquire from
 captured poses. The immutable view survives hidden-controller output removal,
 but invalid owning clock, hard age or generation ends it once. There is no
 new scheduler, worker, provider, persistence or generic multi-object mode
-framework. [Usage and recovery](orbital-tracking.md#captured-orbital-views-development-508)
+framework. [Usage and recovery](orbital-tracking.md#captured-orbital-views-508)
 and [measured evidence](development-and-testing.md#captured-orbital-view-508-development-acceptance)
 define the supported boundaries.
 

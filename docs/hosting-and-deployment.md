@@ -62,6 +62,57 @@ credentials and the private-relay secret. Observability remains disabled and
 no paid fallback is enabled. Orbital activation uses the included free KV and
 SQLite Durable Object allocations; R2 is not used.
 
+### Captured orbital view production receipt (2026-10-19)
+
+Running application **`c4fb12b84cdc63091343ff936aaf5262ece8fc8c`**, Worker
+**`103ccb4a-2354-4c8c-8b03-9536c2db9fca`**, was published at
+**16:44:47 UTC** by
+[deployment 39287736584](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/39287736584).
+Checked #509, required zero-tree ancestry #511 and promotion #510 deliver
+the accepted captured orbital view. Exact feature/dev Validation
+39180602115 /39180770637, ancestry 39281034476, new-dev/promotion
+39284375400 /39284383432 and main **39286722145** pass.
+GitHub's published Actions incident delayed runner/check availability; it
+was not a personal-approval gate. The sole temporary dev merge-method
+addition was immediately restored/deep-verified. Main protections, repository
+settings and persistent dev were preserved.
+
+The deployment keeps `application`, `oci-private-relay`, photos, routes,
+both orbital catalogs, `orbital_source=space-track`, marine supplementation
+and airport boards enabled. It preserves atomic protected secrets,
+coordinator/KV identities, source locks, physical/retry fences and acquisition
+floors. Temporary secrets cleanup and the unchanged strict backup-origin
+smoke pass; the same strict primary-origin smoke also passes. These are
+bounded release observations, not an uptime guarantee or diagnosis of the
+historical independent aircraft failures in #500.
+
+Real production Chrome 155 selected ATLAS CENTAUR 2 R/B /694 on Light
+1280x900 and STARLINK-1274 /45387 on Dark 315x517. Both native owners show
+**View from here**, accept mouse/touch/arrow look input at a fixed captured
+eye, retain one canvas and a 120x120 hit-tested map region, and restore the
+raw camera/eight prior handler states through a reachable 44px Return.
+No fixture transport, fabricated model time or forced GP acquisition was used.
+The same original profile retained raw saved preferences, history database
+identity and root SW scope; trusted REFRESH APP activated its waiting shell
+and genuinely reloaded. Its original tab had disappeared during the platform
+wait, so uninterrupted-original-tab and historical-content proof are not
+claimed. Physical-device/OS-keyboard and SGP4/optical accuracy remain outside
+this evidence. [Local proof and observer limits](development-and-testing.md#captured-orbital-view-508-development-acceptance)
+remain separate.
+
+Assets are `index-CoXsQ8Mp.js` / `index-EDYXpE4j.css`, shell
+`66cd2391583bbffad6b3`, matching the accepted production-input build.
+Use **ORBITS -> select a modeled object -> Details -> View from here** in
+Auto; old tabs can use Settings / REFRESH APP without deleting site data.
+Looking is a captured approximate Earth-facing map, not live follow or
+spacecraft imagery. The previous accepted #507 application is
+`e61968999d8021ee1790700d32f68bcda17e12b9`, Worker
+`5bfa1ae5-6e09-4272-8ac1-3025e924a0df`; use the existing protected
+previous-version rollback if a regression requires it. No new rollback drill,
+data migration, provider reset or relay change occurred.
+Later documentation-only commits do not replace the running application SHA;
+earlier dated receipts below remain historical/rollback evidence.
+
 ### TrackStan public identity (#354)
 
 TrackStan is the user-facing application name, including the compact

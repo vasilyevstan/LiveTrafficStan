@@ -193,7 +193,7 @@ spread through components:
 | METAR client and Worker deadline / response cap | 8 seconds / 256 KiB |
 | METAR stale / expiry | 75 minutes / 120 minutes |
 | Orbital layer | Off by default; explicit enable only |
-| Captured orbital view (development, #508) | Auto only; already accepted curated/Starlink position; no environment, preference or share setting |
+| Captured orbital view (#508) | Auto only; already accepted curated/Starlink position; no environment, preference or share setting |
 | Captured look range / input | 59 degrees from nadir; 0.2 degrees per CSS pointer pixel; 6 degrees per arrow key |
 | Captured readiness | Five-second bound for native entry/style/resize handoff; no periodic camera correction |
 | Browser orbital request | Literal same-origin `GET /api/orbits/catalog`; fixed schema-2 vendor `Accept`; 5-second deadline; 512 KiB / 512-record complete-response limit |
@@ -294,7 +294,7 @@ change marker rotation: moving vessels retain course-first orientation, and
 slow/stopped or unknown-motion vessels remain north-up. Aircraft **Direction**
 keeps its existing course-first heading fallback.
 
-## Captured orbital view (development, #508)
+## Captured orbital view (#508)
 
 `ORBITAL_VIEW_CONFIG` centralizes `maximumLookPitchDegrees` (59),
 `pointerDegreesPerPixel` (0.2), `keyboardStepDegrees` (6) and
@@ -311,8 +311,8 @@ plus 1ms and the existing position interval while visible; capture does not
 change either channel's 2h/12h revalidation or 24h expiry boundary.
 Return resumes through existing reconciliation and can legitimately refresh
 only when the original acquisition/retry deadline permits.
-See [the complete experience](orbital-tracking.md#captured-orbital-views-development-508).
-This source addition is not yet a production activation.
+See [the complete experience](orbital-tracking.md#captured-orbital-views-508)
+and [#510's actual production receipt](hosting-and-deployment.md#captured-orbital-view-production-receipt-2026-10-19).
 
 ## Changing the center
 

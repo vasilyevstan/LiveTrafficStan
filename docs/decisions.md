@@ -635,10 +635,17 @@ framework.
 The accepted local result adds 0.7792% matched initial-JS gzip weight with no
 dependency, renderer, provider, endpoint, worker, scheduler or persistence.
 Corrective phone union stays below 29%, with a 120x120 hit-tested map region
-and 180/195px expanded reading. This is development acceptance, not a
-production rollout or physical-device claim. [Evidence and preserved failures](development-and-testing.md#captured-orbital-view-508-development-acceptance)
-and [usage/limits](orbital-tracking.md#captured-orbital-views-development-508)
+and 180/195px expanded reading. These are local fixture measurements, not
+physical-device claims. [Evidence and preserved failures](development-and-testing.md#captured-orbital-view-508-development-acceptance),
+[usage/limits](orbital-tracking.md#captured-orbital-views-508) and
+[#510's separate production receipt](hosting-and-deployment.md#captured-orbital-view-production-receipt-2026-10-19)
 are canonical; no additional broad review or optimization machinery is needed.
+
+When public availability is the requested outcome, a checked dev merge is
+implementation evidence, not a usable tryout. Continue through the existing
+checked release, deployment and actual public action/update acceptance, or
+state the concrete blocker. Do not silently stop at dev or invent another
+personal-approval gate; retain all technical safeguards.
 
 ## Digitraffic MQTT plus REST metadata
 
