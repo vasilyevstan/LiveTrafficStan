@@ -50,12 +50,36 @@ supplementary marine WebSocket; use the actual local Worker for those paths.
 
 ### Captured orbital view (#508, development acceptance)
 
-The Auto-only captured-view implementation is locally accepted, not deployed
-production behavior. The approved proof-first gate omitted aircraft/ship
+The Auto-only captured-view implementation is released through #510. The
+local fixture evidence below remains distinct from the
+[actual production receipt](hosting-and-deployment.md#captured-orbital-view-production-receipt-2026-10-19).
+The approved proof-first gate omitted aircraft/ship
 viewpoints and Flat rather than adding another renderer or weakening the
 fixed-eye contract. GPT-6.1 Sol, Claude Opus 5.5 and GPT-5.5 contributed
 source/architecture/clock planning; native measurements, not model agreement,
 decide acceptance.
+
+Actual production Chrome 155, without fixture interception, selected
+ATLAS CENTAUR 2 R/B /694 at 1280x900 Light and STARLINK-1274 /45387 at
+315x517 Dark from their native Space-Track owners. Trusted mouse/touch/arrows,
+the visible entry and 44px Return, a hit-tested 120x120 map region, fixed
+captured eye, exact raw camera/handler Return and the same canvas pass.
+Both meet the one-meter virtual-eye gate; this is not SGP4 accuracy,
+physical-phone/GPU or OS-keyboard proof. Captured holds add no catalog read.
+
+The original owned page disappeared during the GitHub platform wait.
+Reopening the same original browser profile retained native-saved preferences,
+history database name/version and root SW identity. A subsequent trusted
+**REFRESH APP** activated its waiting shell and changed the native document
+time origin. No storage clearing or SW unregistration occurred; this is not
+an uninterrupted-original-tab or historical-content claim. Preserve the
+vanished-target, cyclic-CDP-value and wrong-channel observer failures; accepted
+update/curated evidence was reused while only Starlink was completed.
+
+Public tryout acceptance requires the deployed exact application and usable
+public action, not a dev merge or fixture transport. An ancestry/docs commit
+alone does not invalidate accepted source reviews or justify repeating the
+renderer matrix; required exact-SHA CI still runs.
 
 Deterministic cases cover exact owner/model-time/snapshot capture, copied
 positions, invalid/unsupported geometry, units and reported types, keyed
@@ -129,9 +153,9 @@ capture and explicitly reports **could not be restored**, never successful
 Return. Earlier fixture/header/epoch/CDP and HMR-entry-marker failures are
 observer limitations, not application evidence. Reuse unchanged renderer and
 lifecycle receipts rather than repeat accepted reviews or visual polishing.
-See [usage](orbital-tracking.md#captured-orbital-views-development-508),
-[ownership](architecture.md#captured-orbital-camera-ownership-development-508)
-and [bounds](configuration.md#captured-orbital-view-development-508).
+See [usage](orbital-tracking.md#captured-orbital-views-508),
+[ownership](architecture.md#captured-orbital-camera-ownership-508)
+and [bounds](configuration.md#captured-orbital-view-508).
 
 ### Independent reported vessel directions (#505)
 

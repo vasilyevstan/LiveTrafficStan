@@ -21,7 +21,7 @@ This is cataloged orbital-object context, not another live-traffic provider:
 
 The browser implementation and scheduled catalog infrastructure first became
 active at source `e2b2afaa04466116719310d6286441f8e6ba60ca`; the
-[release receipt](hosting-and-deployment.md#in-view-production-receipt-2026-10-09)
+[release receipt](hosting-and-deployment.md#captured-orbital-view-production-receipt-2026-10-19)
 identifies the current application. The layer
 remains a default-off user preference, while the protected Worker deployment
 sets `ORBITAL_CATALOG_ENABLED=true`, serves the same-origin catalog route, and
@@ -37,17 +37,21 @@ sample. Issue #386 removes its independent switch and includes the sample
 whenever ORBITS is effective. This does not expand the curated catalog or claim
 full-constellation coverage. ORBITS remains opt-in and the parent lifecycle.
 
-Issue #508 adds a **development-only captured orbital view** to this source.
-Its local acceptance is complete, but this is not a production activation
-receipt. The existing running application's identity and source receipts
-remain unchanged.
+Issue #508's **captured orbital view** is deployed through #510 as application
+`c4fb12b84cdc63091343ff936aaf5262ece8fc8c`. Enable ORBITS, select an object
+with an accepted modeled position and choose **View from here** in Details;
+phones may need Details expanded first. Auto projection is required.
+Existing tabs can use Settings / **REFRESH APP**; do not clear site data.
+The [production receipt](hosting-and-deployment.md#captured-orbital-view-production-receipt-2026-10-19)
+separates this runtime and actual native-provider acceptance from local
+fixture evidence and later documentation-only commits.
 
 ## User experience
 
 The **ORBITS** preference defaults off and remembers explicit visibility.
-Its single toggle appears in the primary rail/mobile dock beside
-**AIRCRAFT** and **SHIPS**, while the
-detailed result list and attribution remain under **Operations -> More**. It
+Its single toggle appears beside **AIRCRAFT** and **SHIPS** in the desktop
+rail, or inside **Layers** on phones. The detailed result list and
+attribution remain in the existing orbital discovery surface. It
 adds one fragment field, `orbits=0|1`. The preference stores only visibility.
 Catalog bytes, modeled positions, crossings, selected object, track, clock
 anchor, camera, and Home remain session-only.
@@ -344,7 +348,7 @@ Only a fully validated response enters the current-tab fulfilled cache. A
 failed, aborted, partial, malformed, oversized, or digest-mismatched response
 does not replace it.
 
-## Captured orbital views (development, #508)
+## Captured orbital views (#508)
 
 Select an object with an already accepted current modeled position, then
 choose **View from here** in its details. Curated and the existing bounded
@@ -421,10 +425,10 @@ not claim a successful Return. Capture is session-only, with no storage,
 recording, history entry or share-link representation.
 
 The accepted scope adds no renderer, dependency, provider, endpoint, worker,
-dataset or deployment setting. See [architecture](architecture.md#captured-orbital-camera-ownership-development-508),
-[bounds](configuration.md#captured-orbital-view-development-508),
+dataset or deployment setting. See [architecture](architecture.md#captured-orbital-camera-ownership-508),
+[bounds](configuration.md#captured-orbital-view-508),
 [browser and weight evidence](development-and-testing.md#captured-orbital-view-508-development-acceptance)
-and [recovery](troubleshooting.md#captured-orbital-view-is-unavailable-or-returns-development-508).
+and [recovery](troubleshooting.md#captured-orbital-view-is-unavailable-or-returns-508).
 Aircraft/ship viewpoints remain omitted after their separate failed
 precision/usefulness assessment; Flat is not rescued with another mode.
 
