@@ -220,6 +220,7 @@ export const createOrbitalWorkerDispatcher = (
         positions: operations.modelPositions(
           state.catalog,
           message.modeledFor,
+          message.selectedId,
         ),
       })
     } catch (error) {

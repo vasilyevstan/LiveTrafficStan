@@ -62,9 +62,32 @@ credentials and the private-relay secret. Observability remains disabled and
 no paid fallback is enabled. Orbital activation uses the included free KV and
 SQLite Durable Object allocations; R2 is not used.
 
+### Moving 3D orbital release boundary (#514)
+
+The moving refinement upgrades the existing View from here action with
+normal-speed selected-only modeling, a curved-horizon view and compact
+Pause/Play. Use **ORBITS -> select a modeled object -> Details -> View from
+here** in Auto. Existing tabs can use Settings / **REFRESH APP** without
+clearing preferences or private history. Reduced motion starts paused.
+
+There is no provider, endpoint, production flag, binding, credential, dataset
+or storage migration. Preserve `application`, `oci-private-relay`, photos,
+routes, both orbital catalogs, `orbital_source=space-track`, marine supplement
+and airport boards, exact-current-main CI, serialization and atomic secrets.
+Keep coordinator identities, physical/source/retry fences and producer floors.
+The compatible predecessor is the captured-only application/Worker below;
+use the existing previous-version rollback, without a new rollback drill.
+
+The [#514 delivery receipt](https://github.com/vasilyevstan/LiveTrafficStan/issues/514)
+records exact checked source/application/Worker identities, actual deployment,
+public native motion/Return and ordinary installed-update acceptance, plus
+canonical/Wiki publication. A development merge or local fixture is not that
+public outcome. Runtime identity is distinct from documentation-only commits;
+the dated captured-only receipt below remains historical/rollback evidence.
+
 ### Captured orbital view production receipt (2026-10-19)
 
-Running application **`c4fb12b84cdc63091343ff936aaf5262ece8fc8c`**, Worker
+The captured-only application **`c4fb12b84cdc63091343ff936aaf5262ece8fc8c`**, Worker
 **`103ccb4a-2354-4c8c-8b03-9536c2db9fca`**, was published at
 **16:44:47 UTC** by
 [deployment 39287736584](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/39287736584).

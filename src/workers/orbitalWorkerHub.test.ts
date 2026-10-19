@@ -177,6 +177,27 @@ const messages = (worker: OrbitalWorkerLike) => {
 }
 
 describe('OrbitalWorkerHub', () => {
+  it('canonicalizes selected-only positions by owner and preserves ordinary unfiltered requests', () => {
+    const physical = new FakePhysicalWorker()
+    const hub = new OrbitalWorkerHub(() => physical)
+    const curated = hub.createChannel('curated')
+    const starlink = hub.createChannel('starlink')
+    const request = {
+      type: 'positions' as const, catalogRevision: 1, requestId: 1, modeledFor: 3,
+    }
+    curated.postMessage(request)
+    starlink.postMessage(request)
+    starlink.postMessage({ ...request, selectedId: 'orbital:starlink:694' })
+    curated.postMessage({ ...request, selectedId: 'orbital:694' })
+    curated.postMessage({ ...request, selectedId: 'orbital:starlink:694' })
+    starlink.postMessage({ ...request, selectedId: 'orbital:694' })
+    expect(physical.messages.map(({ message }) => message)).toEqual([
+      request, request, { ...request, selectedId: 'orbital:694' }, { ...request, selectedId: 'orbital:694' },
+      { ...request, selectedId: null }, { ...request, selectedId: null },
+    ])
+    hub.dispose()
+  })
+
   it('shares one physical worker, isolates channels, and transforms Starlink IDs', () => {
     const physicalWorkers: FakePhysicalWorker[] = []
     const hub = new OrbitalWorkerHub(() => {
@@ -385,6 +406,25 @@ const deferred = () => {
 }
 
 describe('orbital physical worker channels', () => {
+  it('passes selected and explicit no-match positions through the existing dispatcher', () => {
+    const prepared: PreparedOrbitalCatalog = { snapshot, objects: [], limits }
+    const modelPositions = vi.fn(() => [])
+    const dispatcher = createOrbitalWorkerDispatcher(() => undefined, {
+      prepareCatalog: () => prepared, modelPositions,
+    })
+    dispatcher.handleMessage({
+      channel: 'starlink',
+      message: { type: 'load-catalog', catalogRevision: 1, snapshot, limits },
+    })
+    for (const selectedId of [undefined, 'orbital:694', null]) {
+      dispatcher.handleMessage({
+        channel: 'starlink',
+        message: { type: 'positions', catalogRevision: 1, requestId: 1, modeledFor: 3, selectedId },
+      })
+      expect(modelPositions).toHaveBeenLastCalledWith(prepared, 3, selectedId)
+    }
+  })
+
   it('coalesces predictions per channel without cancelling the other channel', async () => {
     const responses: OrbitalPhysicalWorkerResponse[] = []
     const gates = new Map([

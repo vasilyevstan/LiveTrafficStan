@@ -821,7 +821,8 @@ The N2YO reference is a normal explicit external link, not a fetch or embed.
 
 ## Captured orbital camera ownership (#508)
 
-This ownership contract is deployed through #510; the
+The original captured-only ownership contract was deployed through #510; #514
+extends it with selected-only motion and Pause/Play. The historical
 [production receipt](hosting-and-deployment.md#captured-orbital-view-production-receipt-2026-10-19)
 records its exact runtime separately from implementation evidence.
 `orbitalView.ts` carries a readonly capture revision, ordinary navigation
@@ -837,21 +838,40 @@ controllers. Keyed `capturePauseRevision` acknowledgements and the matching
 owning snapshot/`paused-capture` state gate placement. Enter capture before
 other pause-input changes; release it after those changes so simultaneous
 HISTORY/hidden/layer-off transitions cannot briefly acquire or recreate work.
-Late fetch/worker output remains revision-fenced. Both worker channels stop;
-the original expiry timer alone observes visible clock/expiry validity at
-the existing position cadence, retaining separate 2h/12h request boundaries.
+Late fetch/worker output remains revision-fenced. Ordinary acquisition and
+prediction remain paused. Only the owning channel receives the selected
+positions input during Play; `viewPosition` is separate from ordinary positions.
+The hub canonicalizes public owner-specific Starlink IDs before selected-only
+SGP4; an explicit no-match never expands to the whole catalog. Selected output
+must match identity, digest, retrieval and requested modeled time exactly.
+Pause/hidden release unnecessary selected work; Return restarts ordinary
+positions/prediction through existing reconciliation. The original expiry
+timer retains clock/age checks and separate 2h/12h acquisition deadlines.
 
 `capturedOrbitalCamera.ts` attaches only while captured to the single native
 map/canvas. Public coordinate/FromTo APIs and small spherical geometry compute
 an orientation-only eye; production does not use private transform mutations.
 Entry, style restoration and real resize use a bounded two-render handoff,
 hidden until ready with one five-second deadline. This handles native Auto
-transform changes without an animation or continuing correction loop.
+transform changes without a continuing correction loop.
 Unsupported geometry remains unsupported rather than clamped or projected
 silently into Flat.
 
+An active-only rAF interpolates between two validated selected positions,
+with wrapped longitude and a one-second presentation delay. It never runs
+SGP4 per frame or extrapolates. Pause freezes/reports the actual painted pose;
+resume obtains current output and resets an obsolete bracket. Per-second
+pose reporting avoids React updates and live announcements on every frame.
+Hidden/readiness loss, disposal and Pause cancel rAF. A five-second selected
+update stall Returns explicitly. Reduced-motion observation exists only
+inside the attachment.
+
 The attachment snapshots raw center/zoom/bearing/pitch/roll/elevation/padding,
-eight input-handler states and changed canvas attributes. Canvas-local input
+eight input-handler states, the original native maximum pitch and changed
+canvas attributes. A temporary 80-degree native limit supports the horizon;
+the 79-degree look bound retains one-degree numerical headroom. Every exit,
+including newer navigation without camera restoration, restores that limit.
+Canvas-local input
 owns look-around and Escape; fullscreen retains priority. Disposal fences
 render/timer/input callbacks and restores exact prior states even when native
 placement fails. A failed restoration reports through the existing map-error

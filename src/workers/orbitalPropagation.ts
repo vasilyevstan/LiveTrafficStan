@@ -167,8 +167,11 @@ const modelPosition = (
 export const modelOrbitalPositions = (
   catalog: PreparedOrbitalCatalog,
   modeledFor: number,
+  selectedId?: string | null,
 ) =>
   catalog.objects.flatMap((prepared) => {
+    if (selectedId !== undefined &&
+      orbitalFeatureId(prepared.object.noradCatalogId) !== selectedId) return []
     const position = modelPosition(prepared, catalog, modeledFor)
     return position ? [position] : []
   })

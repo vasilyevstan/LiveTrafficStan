@@ -1,6 +1,6 @@
 import { LngLat, MercatorCoordinate, type JumpToOptions, type Map as MapLibreMap } from 'maplibre-gl'
 import { ORBITAL_VIEW_CONFIG } from '../config/appConfig'
-import { orbitalViewUnavailableReason, ORBITAL_VIEW_MAXIMUM_LATITUDE, type CapturedOrbitalView } from '../domain/orbitalView'
+import { interpolateOrbitalViewPosition, orbitalViewUnavailableReason, ORBITAL_VIEW_MAXIMUM_LATITUDE, type CapturedOrbitalView } from '../domain/orbitalView'
 import type { ModeledOrbitalPosition } from '../domain/orbital'
 import { workspaceOwnsFullscreen } from '../app/fullscreen'
 
@@ -54,6 +54,8 @@ interface CapturedCameraCallbacks {
   onRestoreFailure: (message: string) => void
   onReady: (ready: boolean) => void
   onNotice: (message: string | undefined) => void
+  onPosition?: (position: Readonly<ModeledOrbitalPosition>) => void
+  onPause?: () => void
 }
 
 export const createCapturedOrbitalCamera = (
@@ -63,6 +65,7 @@ export const createCapturedOrbitalCamera = (
 ) => {
   const canvas = map.getCanvas()
   map.stop()
+  const previousMaximumPitch = map.getMaxPitch()
   const center = map.getCenter()
   const previousCamera: JumpToOptions = {
     center: [center.lng, center.lat], zoom: map.getZoom(), bearing: map.getBearing(),
@@ -81,18 +84,42 @@ export const createCapturedOrbitalCamera = (
   let restoreFailure: string | undefined
   let ready = false
   let needsReapply = true
+  let orientationInitialized = false
   let yaw = 0
-  let pitch = 0
+  let pitch: number = ORBITAL_VIEW_CONFIG.initialLookPitchDegrees
+  let currentPosition = view.position
+  let previousPosition = currentPosition
+  let latestPosition = currentPosition
+  let lastAcceptedFor = currentPosition.modeledFor
+  let receivedAt = performance.now()
+  let waitingForPosition = true
+  let playing = false
+  let frame: number | undefined
+  let reportedSecond: number | undefined
   let pointer: { id: number; x: number; y: number } | undefined
   let renderCallback: (() => void) | undefined
   let deadline: number | undefined
   let notice: string | undefined
+  const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')
+  const motionPreferenceChanged = () => {
+    if (reducedMotion?.matches) callbacks.onPause?.()
+  }
+  const stopFrame = () => {
+    if (frame !== undefined) window.cancelAnimationFrame(frame)
+    frame = undefined
+  }
+  const reportPosition = (force = false) => {
+    const second = Math.floor(currentPosition.modeledFor / 1_000)
+    if (!force && reportedSecond === second) return
+    reportedSecond = second
+    callbacks.onPosition?.(currentPosition)
+  }
 
   for (const { handler } of handlers) handler.disable()
   canvas.style.touchAction = 'pinch-zoom'
   canvas.style.cursor = 'grab'
   canvas.style.visibility = 'hidden'
-  canvas.setAttribute('aria-label', `Captured modeled view from ${view.position.name}. Drag or use arrow keys to look; the eye stays fixed. Escape returns to the map.`)
+  canvas.setAttribute('aria-label', `Modeled 3D view from ${view.position.name}. Drag or use arrow keys to look. Pause holds the view. Escape returns to the map.`)
 
   const clearHandoff = () => {
     if (renderCallback) map.off('render', renderCallback)
@@ -101,6 +128,8 @@ export const createCapturedOrbitalCamera = (
     deadline = undefined
   }
   const hide = () => {
+    stopFrame()
+    waitingForPosition = true
     clearHandoff()
     needsReapply = true
     canvas.style.visibility = 'hidden'
@@ -109,7 +138,9 @@ export const createCapturedOrbitalCamera = (
   const exit = (restore: boolean) => {
     if (disposed) return restoreFailure
     disposed = true
+    stopFrame()
     clearHandoff()
+    reducedMotion?.removeEventListener('change', motionPreferenceChanged)
     map.off('resize', reapply)
     map.off('style.load', reapply)
     document.removeEventListener('visibilitychange', visibilityChanged)
@@ -133,13 +164,12 @@ export const createCapturedOrbitalCamera = (
     canvas.style.cursor = previousCursor
     if (previousLabel === null) canvas.removeAttribute('aria-label')
     else canvas.setAttribute('aria-label', previousLabel)
-    if (restore) {
-      try {
-        map.jumpTo(previousCamera)
-      } catch (error) {
-        restoreFailure = `The previous camera could not be restored: ${error instanceof Error ? error.message : 'native camera error'}. Captured view ended. Use Center or reload the map to recover.`
-        callbacks.onRestoreFailure(restoreFailure)
-      }
+    try {
+      map.setMaxPitch(previousMaximumPitch)
+      if (restore) map.jumpTo(previousCamera)
+    } catch (error) {
+      restoreFailure = `The previous camera could not be restored: ${error instanceof Error ? error.message : 'native camera error'}. Modeled view ended. Use Center or reload the map to recover.`
+      callbacks.onRestoreFailure(restoreFailure)
     }
     return restoreFailure
   }
@@ -154,13 +184,49 @@ export const createCapturedOrbitalCamera = (
     map.once('render', renderCallback)
   }
   const apply = () => {
-    const options = orbitalEyeCameraOptions(map, view.position, yaw, pitch)
+    const options = orbitalEyeCameraOptions(map, currentPosition, yaw, pitch)
     if (!options) return false
     map.jumpTo(options)
     return true
   }
+  function animate(now: number) {
+    frame = undefined
+    if (disposed || !playing || !ready || renderCallback || document.hidden) return
+    if (now - receivedAt > ORBITAL_VIEW_CONFIG.readinessTimeoutMs) {
+      fail('The selected model stopped updating. Returned to the previous map.')
+      return
+    }
+    const modeledFor = Math.max(previousPosition.modeledFor, Math.min(
+      latestPosition.modeledFor,
+      latestPosition.modeledFor + now - receivedAt - ORBITAL_VIEW_CONFIG.interpolationDelayMs,
+    ))
+    const position = interpolateOrbitalViewPosition(previousPosition, latestPosition, modeledFor)
+    if (!position) {
+      fail('The selected model changed unexpectedly. Returned to the previous map.')
+      return
+    }
+    try {
+      if (currentPosition.modeledFor !== position.modeledFor) {
+        currentPosition = position
+        if (!apply()) {
+          fail('This position cannot preserve the modeled eye. Returned to the previous map.')
+          return
+        }
+        reportPosition()
+      }
+      frame = window.requestAnimationFrame(animate)
+    } catch (error) {
+      fail(`Modeled view failed: ${error instanceof Error ? error.message : 'native camera error'}. Returned to the previous map.`)
+    }
+  }
+  const startFrame = () => {
+    if (!disposed && playing && ready && !renderCallback && !document.hidden && frame === undefined) {
+      frame = window.requestAnimationFrame(animate)
+    }
+  }
   function reapply() {
     if (disposed || !ready || document.hidden) return
+    stopFrame()
     clearHandoff()
     needsReapply = false
     canvas.style.visibility = 'hidden'
@@ -169,6 +235,11 @@ export const createCapturedOrbitalCamera = (
       fail('The captured map view did not become ready. Returned to the previous map.')
     }, ORBITAL_VIEW_CONFIG.readinessTimeoutMs)
     try {
+      if (!orientationInitialized) {
+        map.setMaxPitch(ORBITAL_VIEW_CONFIG.nativeMaximumPitchDegrees)
+        if (!orbitalEyeCameraOptions(map, currentPosition, yaw, pitch)) yaw = 180
+        orientationInitialized = true
+      }
       // Auto may replace its native transform on the first rendered placement.
       afterRender(() => {
         try {
@@ -177,6 +248,8 @@ export const createCapturedOrbitalCamera = (
             deadline = undefined
             canvas.style.visibility = previousVisibility
             callbacks.onReady(true)
+            reportPosition(true)
+            startFrame()
             if (document.activeElement === document.body) canvas.focus({ preventScroll: true })
           })
           if (!apply()) fail('This canvas cannot preserve the captured eye. Returned to the previous map.')
@@ -192,8 +265,8 @@ export const createCapturedOrbitalCamera = (
   const update = (nextYaw: number, nextPitch: number) => {
     if (disposed || !ready || renderCallback || document.hidden) return
     const boundedPitch = Math.max(0, Math.min(ORBITAL_VIEW_CONFIG.maximumLookPitchDegrees, nextPitch))
-    const options = orbitalEyeCameraOptions(map, view.position, nextYaw, boundedPitch)
-    const nextNotice = options ? undefined : 'View limit reached; the captured eye has not moved.'
+    const options = orbitalEyeCameraOptions(map, currentPosition, nextYaw, boundedPitch)
+    const nextNotice = options ? undefined : 'View limit reached; look back toward Earth.'
     if (notice !== nextNotice) {
       notice = nextNotice
       callbacks.onNotice(notice)
@@ -201,7 +274,11 @@ export const createCapturedOrbitalCamera = (
     if (!options) return
     yaw = ((nextYaw % 360) + 360) % 360
     pitch = boundedPitch
-    map.jumpTo(options)
+    try {
+      map.jumpTo(options)
+    } catch (error) {
+      fail(`Modeled view failed: ${error instanceof Error ? error.message : 'native camera error'}. Returned to the previous map.`)
+    }
   }
   const block = (event: Event) => {
     event.preventDefault()
@@ -263,10 +340,40 @@ export const createCapturedOrbitalCamera = (
   canvas.addEventListener('dblclick', block, { capture: true })
   canvas.addEventListener('contextmenu', block, { capture: true })
   document.addEventListener('visibilitychange', visibilityChanged)
+  reducedMotion?.addEventListener('change', motionPreferenceChanged)
   map.on('resize', reapply)
   map.on('style.load', reapply)
   return {
     exit,
+    setPlayback(nextPlaying: boolean, position?: Readonly<ModeledOrbitalPosition>) {
+      if (disposed) return
+      if (playing !== nextPlaying) {
+        playing = nextPlaying
+        stopFrame()
+        waitingForPosition = true
+        receivedAt = performance.now()
+        if (!playing) reportPosition(true)
+      }
+      if (playing && position && position.modeledFor > lastAcceptedFor) {
+        if (position.id !== view.position.id ||
+          position.snapshotSha256 !== view.position.snapshotSha256 ||
+          position.snapshotRetrievedAt !== view.position.snapshotRetrievedAt ||
+          position.elementEpoch !== view.position.elementEpoch ||
+          orbitalViewUnavailableReason(position, 'auto')) {
+          fail('The selected model no longer matches this view. Returned to the previous map.')
+          return
+        }
+        const fresh = waitingForPosition ||
+          position.modeledFor - latestPosition.modeledFor > ORBITAL_VIEW_CONFIG.readinessTimeoutMs
+        previousPosition = fresh ? position : latestPosition
+        latestPosition = position
+        if (fresh && (!ready || needsReapply || renderCallback)) currentPosition = position
+        lastAcceptedFor = position.modeledFor
+        receivedAt = performance.now()
+        waitingForPosition = false
+      }
+      startFrame()
+    },
     setReady(nextReady: boolean) {
       if (disposed) return
       const changed = ready !== nextReady

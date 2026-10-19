@@ -170,6 +170,7 @@ export interface OrbitalControllerState {
   lastSuccessAt?: number
   message?: string
   capturePauseRevision?: number
+  viewPosition?: ModeledOrbitalPosition
 }
 
 export const EMPTY_ORBITAL_PREDICTION: OrbitalPrediction = {

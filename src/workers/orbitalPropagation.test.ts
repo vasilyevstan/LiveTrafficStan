@@ -92,6 +92,18 @@ describe('orbital SGP4 propagation', () => {
     ).toEqual([])
   })
 
+  it('propagates only the exact selected canonical ID and never treats a mismatch as all objects', () => {
+    const records = [object, { ...object, noradCatalogId: '695', displayOrder: 695 }]
+    const catalog = prepareOrbitalCatalog({ ...snapshot(), records, recordCount: records.length }, limits)
+    const ordinary = modelOrbitalPositions(catalog, epoch)
+    expect(ordinary).toHaveLength(2)
+    expect(modelOrbitalPositions(catalog, epoch, 'orbital:695')).toEqual([ordinary[1]])
+    expect(modelOrbitalPositions(catalog, epoch, 'orbital:starlink:695')).toEqual([])
+    expect(modelOrbitalPositions(catalog, epoch, 'orbital:696')).toEqual([])
+    expect(modelOrbitalPositions(catalog, epoch, null)).toEqual([])
+    expect(modelOrbitalPositions(catalog, epoch, undefined)).toEqual(ordinary)
+  })
+
   it('reports current and future local crossings with bounded detail', () => {
     const catalog = prepareOrbitalCatalog(snapshot(), limits)
     const futureTime = epoch + 10 * 60_000

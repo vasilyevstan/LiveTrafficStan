@@ -607,6 +607,20 @@ and worker execution remain absent before enable.
 
 ## Captured orbital views use a qualified Auto-only subset (#508)
 
+The #514 moving refinement keeps that same qualified subset and single map.
+It adds oblique 72-degree entry, normal-speed selected-only 1Hz propagation,
+bounded display interpolation and compact Pause/Play, not an external scene
+engine or a whole-catalog live-follow pipeline. A paused displayed pose remains
+independent from authoritative source age. Reduced-motion entry is paused;
+geostationary stillness is truthful, not a reason to invent movement.
+The maximum look angle is 79 with a temporary native limit of 80, preserving
+numerical headroom and restoring the exact old limit on every exit.
+Matched initial JS increases by 1,597 default-gzip bytes (0.2748%) over the
+released captured view, below the agreed 1% incremental ceiling. Actual
+integrated motion/layout/Return and stale/offline/expiry evidence is recorded
+in [the moving acceptance](development-and-testing.md#moving-3d-orbital-view-514).
+The following original #508 decisions and receipts remain historical.
+
 The proof-first orbital assessment is separate from the earlier aircraft/ship
 NO-GO: aircraft failed fixed-eye precision across relevant native Auto poses
 and resize, while assumed-height ships failed usefulness despite valid

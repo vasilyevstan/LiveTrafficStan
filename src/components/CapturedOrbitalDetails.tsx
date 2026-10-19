@@ -1,7 +1,7 @@
 import { useId } from 'react'
 import { DetailsPanel } from './DetailsPanel'
 import { formatAltitude } from '../domain/format'
-import { orbitalFeatureOwner, orbitalObjectTypeLabel } from '../domain/orbital'
+import { orbitalFeatureOwner, orbitalObjectTypeLabel, type ModeledOrbitalPosition } from '../domain/orbital'
 import type { CapturedOrbitalView } from '../domain/orbitalView'
 import type { UnitSystem } from '../domain/units'
 import { APP_CONFIG } from '../config/appConfig'
@@ -9,16 +9,20 @@ import { APP_CONFIG } from '../config/appConfig'
 interface Props {
   view: CapturedOrbitalView
   ready: boolean
+  playing: boolean
+  position?: Readonly<ModeledOrbitalPosition>
   notice?: string
   statusMessage?: string
   online: boolean
   units: UnitSystem
   onReturn: () => void
+  onTogglePlaying: () => void
 }
 
-export function CapturedOrbitalDetails({ view, ready, notice, statusMessage, online, units, onReturn }: Props) {
+export function CapturedOrbitalDetails({ view, ready, playing, position: displayedPosition, notice, statusMessage, online, units, onReturn, onTogglePlaying }: Props) {
   const titleId = useId()
-  const { position, snapshot } = view
+  const { snapshot } = view
+  const position = displayedPosition ?? view.position
   const modeledAt = new Date(position.modeledFor).toISOString()
   const nativeGp = snapshot.sourceProvider === 'space-track'
   return (
@@ -29,24 +33,29 @@ export function CapturedOrbitalDetails({ view, ready, notice, statusMessage, onl
       onClose={onReturn}
       heading={
         <div className="orbital-view-heading">
-          <h2 id={titleId} title={`Captured modeled view from ${position.name}`}>From {position.name}</h2>
+          <h2 id={titleId} title={`Modeled 3D view from ${position.name}`}>From {position.name}</h2>
           <p className="metadata-status" role="status">
-            {!ready ? 'Preparing captured view...' : notice ?? <>
-              Captured model <time dateTime={modeledAt} title={modeledAt}>{modeledAt.slice(11, 19)} UTC</time>
+            {!ready ? 'Preparing modeled view...' : notice ?? <span aria-live="off">
+              {playing ? 'Modeled' : 'Paused'} <time dateTime={modeledAt} title={modeledAt}>{modeledAt.slice(11, 19)} UTC</time>
               {' · '}{formatAltitude(position.altitudeKm * 1_000, units)}
-            </>}
+            </span>}
           </p>
-          <button type="button" className="orbital-view-return" onClick={onReturn}>Return</button>
+          <div className="orbital-view-actions">
+            <button type="button" className="orbital-view-return" disabled={!ready} onClick={onTogglePlaying}>
+              {playing ? 'Pause' : 'Play'}
+            </button>
+            <button type="button" className="orbital-view-return" onClick={onReturn}>Return</button>
+          </div>
         </div>
       }
     >
-      <p className="metadata-status">Drag or use arrows to look. The eye stays fixed.</p>
-      <p className="metadata-status">Captured Earth-facing map model, not live or optical. No spacecraft attitude is inferred.</p>
+      <p className="metadata-status">Drag or use arrows to look. Pause holds the view.</p>
+      <p className="metadata-status">Earth-facing map model, not live or optical. No spacecraft attitude is inferred.</p>
       <details className="context-details">
         <summary>Model &amp; source</summary>
         <dl className="details-grid">
           <div className="detail-row"><dt>Object</dt><dd>{position.name}</dd></div>
-          <div className="detail-row"><dt>Captured model</dt><dd>{modeledAt}</dd></div>
+          <div className="detail-row"><dt>Modeled time</dt><dd>{modeledAt}</dd></div>
           <div className="detail-row"><dt>Catalog type</dt><dd>{orbitalObjectTypeLabel(position.objectType)} ({position.objectType})</dd></div>
           <div className="detail-row"><dt>NORAD</dt><dd>{position.noradCatalogId}</dd></div>
           <div className="detail-row"><dt>Element epoch</dt><dd>{new Date(position.elementEpoch).toISOString()}</dd></div>
@@ -58,7 +67,8 @@ export function CapturedOrbitalDetails({ view, ready, notice, statusMessage, onl
         <p className="metadata-status">
           {orbitalFeatureOwner(position.id) === 'starlink' ? 'Bounded Starlink sample, not the full constellation. ' : ''}
           Approximate spherical Earth map, not a camera feed or terrain/visibility model.
-          Session-only; no follow, recording or share link.
+          Normal-speed modeled motion; geostationary objects may appear still.
+          Session-only; no recording or share link.
         </p>
         <p className="metadata-attribution">
           SGP4 · <a href={nativeGp ? 'https://www.space-track.org/' : APP_CONFIG.orbital.sourceWebsiteUrl}>

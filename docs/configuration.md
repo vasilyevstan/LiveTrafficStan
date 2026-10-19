@@ -194,8 +194,9 @@ spread through components:
 | METAR stale / expiry | 75 minutes / 120 minutes |
 | Orbital layer | Off by default; explicit enable only |
 | Captured orbital view (#508) | Auto only; already accepted curated/Starlink position; no environment, preference or share setting |
-| Captured look range / input | 59 degrees from nadir; 0.2 degrees per CSS pointer pixel; 6 degrees per arrow key |
-| Captured readiness | Five-second bound for native entry/style/resize handoff; no periodic camera correction |
+| Orbital view look range / input (#514) | Initial 72 / maximum 79 degrees from nadir; temporary native maximum 80, exactly restored; 0.2 degrees per CSS pointer pixel; 6 degrees per arrow key |
+| Orbital view motion | Selected-only existing 1-second model cadence; 1-second presentation delay; no extrapolation; reduced motion starts paused |
+| Captured readiness | Five-second entry/style/resize and selected-update-stall bounds; no periodic camera correction |
 | Browser orbital request | Literal same-origin `GET /api/orbits/catalog`; fixed schema-2 vendor `Accept`; 5-second deadline; 512 KiB / 512-record complete-response limit |
 | Orbital route compatibility | Missing/other `Accept` receives the newest valid schema 1 from the current bundle, retained v1 KV, or immutable v1/v2 assets; exact vendor media type receives schema 2; equal-time digest conflicts fail closed; distinct ETags and `Vary: Accept` |
 | Curated scheduler sources | Ordered `visual`, `stations`, `weather`, `gnss`, `science`; GP then SATCAT for each group |
@@ -296,7 +297,9 @@ keeps its existing course-first heading fallback.
 
 ## Captured orbital view (#508)
 
-`ORBITAL_VIEW_CONFIG` centralizes `maximumLookPitchDegrees` (59),
+`ORBITAL_VIEW_CONFIG` centralizes `initialLookPitchDegrees` (72),
+`maximumLookPitchDegrees` (79), `nativeMaximumPitchDegrees` (80),
+`interpolationDelayMs` (1,000),
 `pointerDegreesPerPixel` (0.2), `keyboardStepDegrees` (6) and
 `readinessTimeoutMs` (5,000). The mathematical native latitude limit in
 `orbitalView.ts` is `atan(sinh(pi))`, approximately 85.051129 degrees;
@@ -311,6 +314,11 @@ plus 1ms and the existing position interval while visible; capture does not
 change either channel's 2h/12h revalidation or 24h expiry boundary.
 Return resumes through existing reconciliation and can legitimately refresh
 only when the original acquisition/retry deadline permits.
+Play uses the existing selected-only model interval, not a new catalog timer.
+Pause freezes the displayed pose/time without freezing authoritative expiry;
+five seconds without selected output Returns. The temporary native pitch
+limit is restored on all exits. Keep numerical headroom below it: a native
+FromTo result can exceed its requested pitch by floating-point roundoff.
 See [the complete experience](orbital-tracking.md#captured-orbital-views-508)
 and [#510's actual production receipt](hosting-and-deployment.md#captured-orbital-view-production-receipt-2026-10-19).
 
