@@ -350,16 +350,21 @@ does not replace it.
 
 ## Captured orbital views (#508)
 
+**Moving 3D upgrade (#514).** The original captured-only release is retained
+as historical evidence; the same entry now supports normal-speed modeled
+motion and explicit Pause/Play, without another renderer or permanent toolbar.
+
 Select an object with an already accepted current modeled position, then
 choose **View from here** in its details. Curated and the existing bounded
 Starlink sample qualify independently; identity-only catalog results cannot
 fetch or propagate merely to enable entry. Payload, rocket-body, debris and
 unknown source-reported types are not given inferred attitudes or missions.
 
-The view starts Earth-facing/nadir and north-up. Drag with a mouse or one
-finger, or focus the map and use arrow keys, to change orientation while
-keeping the captured geographic eye and height fixed. Ordinary pan, wheel
-zoom and map orbiting are suspended. Looking is bounded to 59 degrees from
+The view starts obliquely Earth-facing, 72 degrees from nadir, with a curved
+horizon. The eye advances with the selected model at normal speed. Drag with
+a mouse or one finger, or focus the map and use arrow keys, to change only
+orientation, not the current modeled eye or height. Ordinary pan, wheel
+zoom and map orbiting are suspended. Looking is bounded to 79 degrees from
 nadir. An unsafe requested orientation keeps the last valid pose and explains
 the limit; it never moves or lowers the eye to make the request succeed.
 
@@ -370,15 +375,20 @@ unrepresentable nadir entry. Further native zoom/pitch/target checks can reject
 a pose without moving the camera. The height comes from the accepted
 `altitudeKm`, explicitly converted to meters: SGP4's geodetic height on the
 renderer's spherical Earth is an approximation, not a physical optical camera
-placement. There is no live follow, spacecraft attitude, camera feed, terrain,
+placement. There is no live telemetry, spacecraft attitude, camera feed, terrain,
 cloud, illumination or visibility simulation.
 
-The existing inspector shows the object, **Captured model**, fixed UTC model
-time and height. On phones it starts compact, with an always-visible
-**Return** and X; Details opens the same scrollable body. **Model & source**
+The existing inspector shows the object, **Modeled** or **Paused**, the actual
+displayed UTC model time and height. **Pause** freezes that displayed pose;
+**Play** uses a fresh current model, never replays missed time. Reduced-motion
+users start paused; changing to reduced motion pauses an active ride, while
+explicit Play remains available. Geostationary objects may genuinely appear
+almost still. Ocean-only map content is possible, not missing camera imagery.
+On phones it starts compact, with always-visible **Pause/Play**, **Return**
+and X; Details opens the same scrollable body. **Model & source**
 retains the full name, exact reported type, NORAD, element epoch, catalog
 retrieval time and digest, provider credit and applicable membership reference.
-These timestamps describe the copied position and its actual owning snapshot,
+These timestamps describe the displayed model and its actual owning snapshot,
 not a fresh observation.
 
 ### Pause, validity and Return
@@ -386,10 +396,16 @@ not a fresh observation.
 Entry atomically copies the accepted position and its owning snapshot before
 ordinary selection is cleared. Both existing orbital controllers acknowledge
 the exact capture revision before native placement. They abort/fence reads,
-stop propagation/prediction and release their shared worker, while preserving
+stop ordinary whole-catalog propagation/prediction, while preserving
 catalogs, authoritative clock anchors, caches and acquisition/retry deadlines.
 The existing expiry timer checks clock/age validity while visible; there is
-no new scheduler or periodic camera correction. Curated retains its
+no new acquisition scheduler or periodic camera correction. During Play, the
+existing shared worker models only the selected exact owner/identity/snapshot
+at its existing one-second cadence. Two accepted poses are interpolated for
+painting with a one-second presentation delay; there is no extrapolation or
+per-frame SGP4. Pause and hidden release unnecessary selected worker work and
+stop animation. Five seconds without a selected update Returns with a reason.
+Curated retains its
 2h/6h/24h revalidation/stale/expiry rules; Starlink retains 12h/18h/24h.
 Stale and offline alone do not invalidate a still-safe captured model.
 
@@ -403,7 +419,7 @@ state. Saved layer preferences are unchanged, and Share is unavailable.
 Normal atlas tiles can still load for the displayed Earth area.
 
 **Return**, X and canvas-owned Escape restore the complete pre-entry raw
-camera and exact previous handler-enabled states, not a rounded share pose or
+camera, native pitch limit and exact previous handler-enabled states, not a rounded share pose or
 Home. When the workspace owns native fullscreen, Escape exits fullscreen
 first and does not also Return. Find can open without moving the eye. Center,
 committed navigation, a new location action, HISTORY, ORBITS-off or projection
@@ -411,8 +427,9 @@ change ends capture; newer navigation takes precedence over old restoration.
 Old location callbacks may update session Home silently, never steal the eye.
 Cancelled selection, ruler and journey commands are not resurrected.
 
-Hiding retains the immutable capture independently of controller output.
-Visibility resume validates before revealing the scene. Invalid authoritative
+Hiding retains the captured identity/snapshot independently of controller output
+and stops motion. Visibility resume validates and obtains a fresh selected
+pose before revealing a playing scene. Invalid authoritative
 time, 24-hour hard expiry or loss/change of the owning generation automatically
 Returns once with a reason. Offline may retain the scene, but uncached tiles
 remain unavailable and expiry still ends it. Expiry of the other channel does

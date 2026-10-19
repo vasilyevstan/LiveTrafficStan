@@ -91,7 +91,7 @@ import {
 import type { ViewportAssessment } from './domain/viewport'
 import { INITIAL_BATHYMETRY_STATUS, type BathymetryStatus } from './domain/bathymetry'
 import type { OrbitalViewport } from './domain/orbitalViewport'
-import { orbitalFeatureOwner } from './domain/orbital'
+import { orbitalFeatureOwner, type ModeledOrbitalPosition } from './domain/orbital'
 import { orbitalViewUnavailableReason, type CapturedOrbitalView } from './domain/orbitalView'
 import { orbitalEnrichmentForPosition } from './domain/orbitalEnrichment'
 import {
@@ -261,6 +261,9 @@ function App() {
   const capturedOrbitalViewRef = useRef<CapturedOrbitalView | undefined>(undefined)
   const capturedOrbitalRevisionRef = useRef(0)
   const [capturedOrbitalReady, setCapturedOrbitalReady] = useState(false)
+  const [capturedOrbitalPlaying, setCapturedOrbitalPlaying] = useState(false)
+  const [capturedOrbitalDisplayedPosition, setCapturedOrbitalDisplayedPosition] =
+    useState<Readonly<ModeledOrbitalPosition>>()
   const [orbitalViewMessage, setOrbitalViewMessage] = useState<string>()
   const finishCapturedOrbitalView = useCallback((revision?: number, reason?: string) => {
     const view = capturedOrbitalViewRef.current
@@ -271,6 +274,8 @@ function App() {
     capturedOrbitalViewRef.current = undefined
     setCapturedOrbitalView(undefined)
     setCapturedOrbitalReady(false)
+    setCapturedOrbitalPlaying(false)
+    setCapturedOrbitalDisplayedPosition(undefined)
     setOrbitalViewMessage(reason)
     if (ownedFocus) globalThis.requestAnimationFrame(() => {
       if (!capturedOrbitalViewRef.current && document.activeElement === document.body) {
@@ -283,6 +288,18 @@ function App() {
   }, [])
   const handleCapturedOrbitalNotice = useCallback((revision: number, message: string | undefined) => {
     if (capturedOrbitalViewRef.current?.revision === revision) setOrbitalViewMessage(message)
+  }, [])
+  const handleCapturedOrbitalPosition = useCallback((revision: number, position: Readonly<ModeledOrbitalPosition>) => {
+    const view = capturedOrbitalViewRef.current
+    if (view?.revision === revision && view.position.id === position.id) {
+      setCapturedOrbitalDisplayedPosition(position)
+    }
+  }, [])
+  const handleCapturedOrbitalPause = useCallback((revision: number) => {
+    if (capturedOrbitalViewRef.current?.revision === revision) setCapturedOrbitalPlaying(false)
+  }, [])
+  const toggleCapturedOrbitalPlaying = useCallback((revision: number) => {
+    if (capturedOrbitalViewRef.current?.revision === revision) setCapturedOrbitalPlaying(playing => !playing)
   }, [])
   const returnFromCapturedOrbitalView = useCallback(() => finishCapturedOrbitalView(), [finishCapturedOrbitalView])
   const [orbitalFilters, setOrbitalFilters] =
@@ -750,6 +767,7 @@ function App() {
       config: APP_CONFIG.starlink,
     },
     capturedOrbitalView?.revision,
+    capturedOrbitalPlaying ? capturedOrbitalView?.position.id : undefined,
   )
   const orbitalState = orbitalResult.state
   const starlinkState = orbitalResult.starlinkState
@@ -763,6 +781,7 @@ function App() {
     capturedOrbitalState.snapshot.catalogId === capturedOrbitalView.snapshot.catalogId)
   const capturedOrbitalAcknowledged = Boolean(capturedOrbitalView && capturedGenerationMatches &&
     capturedOrbitalState?.phase === 'paused-capture' &&
+    (!capturedOrbitalPlaying || capturedOrbitalState.viewPosition?.id === capturedOrbitalView.position.id) &&
     orbitalState.capturePauseRevision === capturedOrbitalView.revision &&
     starlinkState.capturePauseRevision === capturedOrbitalView.revision)
   useEffect(() => {
@@ -1725,6 +1744,8 @@ function App() {
     capturedOrbitalViewRef.current = view
     setCapturedOrbitalView(view)
     setCapturedOrbitalReady(false)
+    setCapturedOrbitalDisplayedPosition(view.position)
+    setCapturedOrbitalPlaying(!window.matchMedia('(prefers-reduced-motion: reduce)').matches)
     setOrbitalViewMessage(undefined)
     setInspectorExpanded(false)
   }, [
@@ -2005,9 +2026,13 @@ function App() {
       <TrafficMap
         capturedOrbitalView={capturedOrbitalView}
         capturedOrbitalViewAcknowledged={capturedOrbitalAcknowledged}
+        capturedOrbitalPlaying={capturedOrbitalPlaying}
+        capturedOrbitalPosition={capturedOrbitalState?.viewPosition}
         onCapturedOrbitalViewEnd={finishCapturedOrbitalView}
         onCapturedOrbitalViewReady={handleCapturedOrbitalReady}
         onCapturedOrbitalViewNotice={handleCapturedOrbitalNotice}
+        onCapturedOrbitalViewPosition={handleCapturedOrbitalPosition}
+        onCapturedOrbitalViewPause={handleCapturedOrbitalPause}
         compactAttribution={mobileWorkspace}
         viewCenter={viewRequest.center}
         northResetRequest={northResetRequest}
@@ -2418,11 +2443,14 @@ function App() {
             key={capturedOrbitalView.revision}
             view={capturedOrbitalView}
             ready={capturedOrbitalReady}
+            playing={capturedOrbitalPlaying}
+            position={capturedOrbitalDisplayedPosition}
             notice={orbitalViewMessage}
             statusMessage={capturedOrbitalState?.message}
             online={online}
             units={units}
             onReturn={returnFromCapturedOrbitalView}
+            onTogglePlaying={() => toggleCapturedOrbitalPlaying(capturedOrbitalView.revision)}
           />
         )}
 

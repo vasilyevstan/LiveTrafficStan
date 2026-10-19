@@ -168,6 +168,15 @@ const flush = async () => {
   await Promise.resolve()
 }
 
+const acceptCatalog = (worker: FakeWorker) => {
+  const load = worker.messages.find(message => message.type === 'load-catalog')
+  if (load?.type !== 'load-catalog') throw Error('Expected catalog load')
+  worker.emit({ type: 'catalog-loaded', catalogRevision: load.catalogRevision, acceptedCount: 1 })
+  const request = worker.messages.find(message => message.type === 'positions')
+  if (request?.type !== 'positions') throw Error('Expected positions request')
+  return request
+}
+
 afterEach(() => {
   vi.useRealTimers()
 })
@@ -196,11 +205,7 @@ describe('OrbitalController', () => {
     controller.start()
     controller.setEnabled(true)
     await flush()
-    const load = workers[0].messages[0]
-    if (load.type !== 'load-catalog') throw Error('Expected catalog load')
-    workers[0].emit({ type: 'catalog-loaded', catalogRevision: load.catalogRevision, acceptedCount: 1 })
-    const request = workers[0].messages.find(message => message.type === 'positions')
-    if (request?.type !== 'positions') throw Error('Expected positions request')
+    const request = acceptCatalog(workers[0])
     workers[0].emit({
       type: 'positions', catalogRevision: request.catalogRevision,
       requestId: request.requestId, positions: [position(request.modeledFor)],
@@ -244,12 +249,125 @@ describe('OrbitalController', () => {
     expect(vi.getTimerCount()).toBe(0)
   })
 
-  it.each([['curated', config], ['starlink', createAppConfig({}).starlink]] as const)(
-    'retains the %s original revalidation deadline across capture',
-    async (_owner, channelConfig) => {
+  it('models only the selected pose at the existing cadence, pauses/resumes cleanly and restarts ordinary predictions on Return', async () => {
+    const { controller, provider, states, workers } = await captureFixture()
+    const ordinary = states.at(-1)?.positions
+    controller.setCapturePause(21, 'orbital:694')
+    expect(workers[0].terminated).toBe(true)
+    const ride = workers[1]
+    const first = acceptCatalog(ride)
+    expect(first.selectedId).toBe('orbital:694')
+    const response: OrbitalWorkerResponse = {
+      type: 'positions', catalogRevision: first.catalogRevision, requestId: first.requestId,
+      positions: [{ ...position(first.modeledFor), latitude: 11 }],
+    }
+    ride.emit(response)
+    expect(states.at(-1)).toMatchObject({
+      phase: 'paused-capture', capturePauseRevision: 21, viewPosition: { latitude: 11 },
+    })
+    expect(states.at(-1)?.positions).toBe(ordinary)
+    controller.retry()
+    controller.setViewport({ kind: 'world' })
+    controller.setSelectedId('orbital:695')
+    await vi.advanceTimersByTimeAsync(config.positionIntervalMs - 1)
+    expect(ride.messages.filter(message => message.type === 'positions')).toHaveLength(1)
+    await vi.advanceTimersByTimeAsync(1)
+    expect(ride.messages.filter(message => message.type === 'positions')).toHaveLength(2)
+    expect(ride.messages.filter(message => message.type === 'prediction')).toEqual([])
+    expect(provider.load).toHaveBeenCalledTimes(1)
+
+    controller.setCapturePause(21)
+    expect(ride.terminated).toBe(true)
+    expect(states.at(-1)?.viewPosition).toBeUndefined()
+    await vi.advanceTimersByTimeAsync(config.positionIntervalMs * 3)
+    expect(workers).toHaveLength(2)
+    expect(provider.load).toHaveBeenCalledTimes(1)
+
+    controller.setCapturePause(21, 'orbital:694')
+    const resumed = workers[2]
+    const fresh = acceptCatalog(resumed)
+    expect(fresh.modeledFor).toBeGreaterThan(first.modeledFor)
+    resumed.emit(response)
+    expect(states.at(-1)?.viewPosition).toBeUndefined()
+    resumed.emit({
+      type: 'positions', catalogRevision: fresh.catalogRevision, requestId: fresh.requestId,
+      positions: [position(fresh.modeledFor)],
+    })
+    expect(states.at(-1)?.viewPosition?.modeledFor).toBe(fresh.modeledFor)
+
+    controller.setCapturePause(undefined)
+    expect(resumed.terminated).toBe(true)
+    const returned = workers[3]
+    expect(acceptCatalog(returned)).not.toHaveProperty('selectedId')
+    expect(returned.messages.filter(message => message.type === 'prediction')).toHaveLength(1)
+    expect(states.at(-1)?.viewPosition).toBeUndefined()
+    expect(states.at(-1)?.capturePauseRevision).toBeUndefined()
+    expect(provider.load).toHaveBeenCalledTimes(1)
+    controller.stop()
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it.each(['empty', 'identity', 'digest', 'retrieval', 'time', 'multiple'] as const)(
+    'fails explicitly rather than accepting a mismatched selected-only response: %s',
+    async mismatch => {
+      const { controller, workers, states, provider } = await captureFixture()
+      controller.setCapturePause(22, 'orbital:694')
+      const worker = workers[1]
+      const request = acceptCatalog(worker)
+      const selected = position(request.modeledFor)
+      let positions = [selected]
+      if (mismatch === 'empty') positions = []
+      else if (mismatch === 'identity') selected.id = 'orbital:695'
+      else if (mismatch === 'digest') selected.snapshotSha256 = 'b'.repeat(64)
+      else if (mismatch === 'retrieval') selected.snapshotRetrievedAt += 1
+      else if (mismatch === 'time') selected.modeledFor += 1
+      else positions = [selected, { ...selected }]
+      worker.emit({
+        type: 'positions', catalogRevision: request.catalogRevision, requestId: request.requestId, positions,
+      })
+      expect(states.at(-1)?.phase).toBe('unavailable')
+      expect(states.at(-1)?.message).toContain('could not be modeled')
+      expect(states.at(-1)?.message).not.toContain('Returned')
+      expect(states.at(-1)?.viewPosition).toBeUndefined()
+      expect(worker.terminated).toBe(true)
+      expect(provider.load).toHaveBeenCalledTimes(1)
+      controller.stop()
+    },
+  )
+
+  it('stops selected work while hidden, clears stale readiness and resumes only with a fresh selected result', async () => {
+    const { controller, states, workers, provider } = await captureFixture()
+    controller.setCapturePause(23, 'orbital:694')
+    const request = acceptCatalog(workers[1])
+    workers[1].emit({
+      type: 'positions', catalogRevision: request.catalogRevision, requestId: request.requestId,
+      positions: [position(request.modeledFor)],
+    })
+    expect(states.at(-1)?.viewPosition).toBeDefined()
+    controller.setPageVisible(false)
+    expect(workers[1].terminated).toBe(true)
+    expect(states.at(-1)?.viewPosition).toBeUndefined()
+    expect(vi.getTimerCount()).toBe(0)
+    await vi.advanceTimersByTimeAsync(30_000)
+    controller.setPageVisible(true)
+    expect(states.at(-1)?.viewPosition).toBeUndefined()
+    const resumed = acceptCatalog(workers[2])
+    expect(resumed.selectedId).toBe('orbital:694')
+    expect(resumed.modeledFor).toBe(request.modeledFor + 30_000)
+    expect(workers[2].messages.some(message => message.type === 'prediction')).toBe(false)
+    expect(provider.load).toHaveBeenCalledTimes(1)
+    controller.stop()
+  })
+
+  it.each([
+    ['curated', false, config], ['curated', true, config],
+    ['starlink', false, createAppConfig({}).starlink], ['starlink', true, createAppConfig({}).starlink],
+  ] as const)(
+    'retains the %s original revalidation deadline across capture (moving: %s)',
+    async (_owner, moving, channelConfig) => {
       const { controller, provider } = await captureFixture({ config: channelConfig })
       const startedAt = Date.now()
-      controller.setCapturePause(1)
+      controller.setCapturePause(1, moving ? 'orbital:694' : undefined)
       vi.setSystemTime(startedAt + channelConfig.revalidationIntervalMs - 1_000)
       controller.setCapturePause(undefined)
       await vi.advanceTimersByTimeAsync(999)
@@ -260,15 +378,16 @@ describe('OrbitalController', () => {
     },
   )
 
-  it('observes captured clock jumps on the existing interval without fetching or propagating', async () => {
+  it.each([false, true])('observes captured clock jumps on the existing interval without fetching (moving: %s)', async moving => {
     let skew = 0
     const { controller, provider, states, workers } = await captureFixture({ wallSkew: () => skew })
-    controller.setCapturePause(7)
+    controller.setCapturePause(7, moving ? 'orbital:694' : undefined)
     skew = config.maximumWallClockJumpMs + 1
     await vi.advanceTimersByTimeAsync(config.positionIntervalMs)
     expect(states.at(-1)).toMatchObject({ phase: 'clock-invalid', capturePauseRevision: 7 })
     expect(provider.load).toHaveBeenCalledTimes(1)
-    expect(workers).toHaveLength(1)
+    expect(workers).toHaveLength(moving ? 2 : 1)
+    expect(workers.every(worker => worker.terminated)).toBe(true)
     expect(vi.getTimerCount()).toBe(0)
     controller.stop()
   })
@@ -313,16 +432,25 @@ describe('OrbitalController', () => {
     controller.stop()
   })
 
-  it('does not mistake offline for invalidity, but fails closed on hard expiry while captured offline', async () => {
-    const { controller, provider, states } = await captureFixture({
+  it.each([false, true])('retains a safe offline view, then fails closed on hard expiry (moving: %s)', async moving => {
+    const { controller, provider, states, workers } = await captureFixture({
       config: { ...config, staleAfterMs: 2_000, expireAfterMs: 3_000 },
     })
-    controller.setCapturePause(9)
+    controller.setCapturePause(9, moving ? 'orbital:694' : undefined)
+    if (moving) {
+      const request = acceptCatalog(workers[1])
+      workers[1].emit({
+        type: 'positions', catalogRevision: request.catalogRevision, requestId: request.requestId,
+        positions: [position(request.modeledFor)],
+      })
+    }
     controller.setOnline(false)
     expect(states.at(-1)).toMatchObject({ phase: 'paused-capture', capturePauseRevision: 9 })
+    if (moving) expect(states.at(-1)?.viewPosition).toBeDefined()
     await vi.advanceTimersByTimeAsync(2_001)
     expect(states.at(-1)).toMatchObject({ phase: 'offline', capturePauseRevision: 9, positions: [] })
     expect(provider.load).toHaveBeenCalledTimes(1)
+    expect(workers.every(worker => worker.terminated)).toBe(true)
     expect(vi.getTimerCount()).toBe(0)
     controller.stop()
   })

@@ -1,5 +1,6 @@
 import type { ModeledOrbitalPosition, OrbitalCatalogSnapshot } from './orbital'
 import type { MapProjectionPreference } from './preferences'
+import { normalizeOrbitalLongitude, unwrapOrbitalLongitude } from './orbitalViewport'
 
 export interface CapturedOrbitalView {
   readonly revision: number
@@ -9,6 +10,34 @@ export interface CapturedOrbitalView {
 }
 
 export const ORBITAL_VIEW_MAXIMUM_LATITUDE = Math.atan(Math.sinh(Math.PI)) * 180 / Math.PI
+
+export const interpolateOrbitalViewPosition = (
+  first: Readonly<ModeledOrbitalPosition>,
+  last: Readonly<ModeledOrbitalPosition>,
+  modeledFor: number,
+): Readonly<ModeledOrbitalPosition> | undefined => {
+  if (first.id !== last.id || first.owner !== last.owner ||
+    first.noradCatalogId !== last.noradCatalogId || first.snapshotSha256 !== last.snapshotSha256 ||
+    first.snapshotRetrievedAt !== last.snapshotRetrievedAt || first.elementEpoch !== last.elementEpoch ||
+    !Number.isFinite(modeledFor) || !Number.isFinite(first.modeledFor) ||
+    !Number.isFinite(last.modeledFor) || !Number.isFinite(first.velocityKmPerSecond) ||
+    !Number.isFinite(last.velocityKmPerSecond) || modeledFor < first.modeledFor ||
+    modeledFor > last.modeledFor || last.modeledFor < first.modeledFor ||
+    orbitalViewUnavailableReason(first, 'auto') || orbitalViewUnavailableReason(last, 'auto')) return undefined
+  if (modeledFor === last.modeledFor) return last
+  if (modeledFor === first.modeledFor) return first
+  const fraction = (modeledFor - first.modeledFor) / (last.modeledFor - first.modeledFor)
+  return {
+    ...last,
+    modeledFor,
+    latitude: first.latitude + (last.latitude - first.latitude) * fraction,
+    longitude: normalizeOrbitalLongitude(first.longitude +
+      (unwrapOrbitalLongitude(last.longitude, first.longitude) - first.longitude) * fraction),
+    altitudeKm: first.altitudeKm + (last.altitudeKm - first.altitudeKm) * fraction,
+    velocityKmPerSecond: first.velocityKmPerSecond +
+      (last.velocityKmPerSecond - first.velocityKmPerSecond) * fraction,
+  }
+}
 
 export const orbitalViewUnavailableReason = (
   position: Readonly<ModeledOrbitalPosition> | undefined,

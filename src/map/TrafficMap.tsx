@@ -185,9 +185,13 @@ const EMPTY_ORBITAL_TRACK: readonly OrbitalTrackSegment[] = []
 interface TrafficMapProps {
   capturedOrbitalView?: CapturedOrbitalView
   capturedOrbitalViewAcknowledged?: boolean
+  capturedOrbitalPlaying?: boolean
+  capturedOrbitalPosition?: Readonly<ModeledOrbitalPosition>
   onCapturedOrbitalViewEnd?: (revision: number, reason?: string) => void
   onCapturedOrbitalViewReady?: (revision: number, ready: boolean) => void
   onCapturedOrbitalViewNotice?: (revision: number, message: string | undefined) => void
+  onCapturedOrbitalViewPosition?: (revision: number, position: Readonly<ModeledOrbitalPosition>) => void
+  onCapturedOrbitalViewPause?: (revision: number) => void
   compactAttribution?: boolean
   northResetRequest?: NorthResetRequest
   northResetDurationMs: number
@@ -399,9 +403,13 @@ const viewportSignature = (assessment: ViewportAssessment) => {
 export function TrafficMap({
   capturedOrbitalView,
   capturedOrbitalViewAcknowledged = false,
+  capturedOrbitalPlaying = false,
+  capturedOrbitalPosition,
   onCapturedOrbitalViewEnd,
   onCapturedOrbitalViewReady,
   onCapturedOrbitalViewNotice,
+  onCapturedOrbitalViewPosition,
+  onCapturedOrbitalViewPause,
   compactAttribution = false,
   northResetRequest,
   northResetDurationMs,
@@ -488,6 +496,7 @@ export function TrafficMap({
   const capturedCallbacksRef = useRef({
     end: onCapturedOrbitalViewEnd, ready: onCapturedOrbitalViewReady,
     notice: onCapturedOrbitalViewNotice,
+    position: onCapturedOrbitalViewPosition, pause: onCapturedOrbitalViewPause,
   })
   const loadedRef = useRef(false)
   const frameRef = useRef<number | null>(null)
@@ -3016,6 +3025,7 @@ export function TrafficMap({
     capturedCallbacksRef.current = {
       end: onCapturedOrbitalViewEnd, ready: onCapturedOrbitalViewReady,
       notice: onCapturedOrbitalViewNotice,
+      position: onCapturedOrbitalViewPosition, pause: onCapturedOrbitalViewPause,
     }
     const current = capturedCameraRef.current
     if (current && current.revision !== nextView?.revision) {
@@ -3028,6 +3038,7 @@ export function TrafficMap({
   }, [
     capturedOrbitalView, onCapturedOrbitalViewEnd, onCapturedOrbitalViewReady,
     onCapturedOrbitalViewNotice, scheduleViewportReport, viewRequestId,
+    onCapturedOrbitalViewPosition, onCapturedOrbitalViewPause,
   ])
 
   useEffect(() => {
@@ -3052,9 +3063,12 @@ export function TrafficMap({
           onRestoreFailure: message => errorRef.current({ kind: 'runtime', message }),
           onReady: ready => capturedCallbacksRef.current.ready?.(view.revision, ready),
           onNotice: message => capturedCallbacksRef.current.notice?.(view.revision, message),
+          onPosition: position => capturedCallbacksRef.current.position?.(view.revision, position),
+          onPause: () => capturedCallbacksRef.current.pause?.(view.revision),
         }),
       }
     }
+    capturedCameraRef.current.camera.setPlayback(capturedOrbitalPlaying, capturedOrbitalPosition)
     capturedCameraRef.current.camera.setReady(capturedOrbitalViewAcknowledged && loadedRef.current)
   })
 
@@ -3071,7 +3085,7 @@ export function TrafficMap({
     <div
       ref={containerRef}
       className="traffic-map"
-      aria-label={capturedOrbitalView ? `Captured modeled orbital view from ${capturedOrbitalView.position.name}` : `${
+      aria-label={capturedOrbitalView ? `Modeled 3D orbital view from ${capturedOrbitalView.position.name}` : `${
         interpolateTraffic ? 'Live' : 'Historical'
       } traffic map: ${viewLabel}`}
     />

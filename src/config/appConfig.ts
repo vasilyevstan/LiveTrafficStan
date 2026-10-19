@@ -44,7 +44,10 @@ export const MOBILE_WORKSPACE_CONFIG = {
 } as const
 
 export const ORBITAL_VIEW_CONFIG = {
-  maximumLookPitchDegrees: 59,
+  initialLookPitchDegrees: 72,
+  maximumLookPitchDegrees: 79,
+  nativeMaximumPitchDegrees: 80,
+  interpolationDelayMs: 1_000,
   pointerDegreesPerPixel: 0.2,
   keyboardStepDegrees: 6,
   readinessTimeoutMs: 5_000,

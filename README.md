@@ -248,17 +248,21 @@ identity are not renamed or reset.
   image uses one bounded same-origin load whose media type, byte count, and
   SHA-256 are validated before a session Blob URL can appear in details or a
   later tooltip.
-- **Captured orbital view (#508, released in #510):** an accepted curated or
+- **Moving 3D orbital view (#514; original capture #508/#510):** an accepted curated or
   bounded-sample Starlink object offers **View from here** in Auto projection.
   Enable ORBITS (in Layers on phones), select a modeled object and open Details.
-  It captures one modeled geographic eye, height and time, starts facing
-  Earth, and permits orientation-only mouse/touch/arrow look-around.
+  It starts obliquely toward Earth's curved horizon and advances at normal
+  modeled speed. Drag or use arrows to look; **Pause** freezes the displayed
+  eye/time, and **Play** resumes from the current model without replay.
+  Reduced-motion users start paused; geostationary objects may appear still.
   **Return**, X or canvas-owned Escape restores the previous map; native
   fullscreen retains Escape precedence. Flat and unsupported poses are
   explicitly unavailable, never silently changed or clamped. Acquisition
-  and orbital modeling pause while authoritative clock/expiry checks remain;
+  and crossing prediction pause; only the selected object is modeled at the
+  existing one-second cadence, with bounded display-only interpolation.
+  Authoritative clock/expiry checks remain;
   offline alone can retain a valid capture. This is an approximate spherical
-  Earth map, not live follow, spacecraft attitude, optical visibility or a
+  Earth map, not live telemetry, spacecraft attitude, optical visibility or a
   camera feed. It adds no dependency, provider, worker, saved state or share
   field. Existing tabs can use Settings / **REFRESH APP** without clearing
   saved preferences or private history. See [usage and limits](docs/orbital-tracking.md#captured-orbital-views-508),

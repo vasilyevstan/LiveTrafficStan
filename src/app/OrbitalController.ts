@@ -92,6 +92,7 @@ export class OrbitalController {
   private pageVisible = true
   private historyActive = false
   private capturePauseRevision?: number
+  private capturedPositionId?: string
   private online = true
   private viewport: OrbitalViewport = {
     kind: 'invalid',
@@ -119,6 +120,7 @@ export class OrbitalController {
   private predictionRequestId = 0
   private predictionInFlightId?: number
   private lastPositionRequestAt?: number
+  private lastPositionModeledFor?: number
   private lastPredictionRequestAt?: number
   private positionTimer?: unknown
   private predictionTimer?: unknown
@@ -195,16 +197,19 @@ export class OrbitalController {
     } : undefined
   }
 
-  setCapturePause(revision: number | undefined) {
-    if (this.capturePauseRevision === revision) return
+  setCapturePause(revision: number | undefined, positionId?: string) {
+    const nextPositionId = revision === undefined ? undefined : positionId
+    if (this.capturePauseRevision === revision && this.capturedPositionId === nextPositionId) return
+    this.state = { ...this.state, viewPosition: undefined }
     this.capturePauseRevision = revision
+    this.capturedPositionId = nextPositionId
+    this.clearTimers()
+    this.destroyWorker()
     if (revision !== undefined) {
       this.fetchGeneration += 1
       this.fetchController?.abort()
       this.fetchController = undefined
       this.fetching = false
-      this.clearTimers()
-      this.destroyWorker()
     }
     this.reconcile()
   }
@@ -266,6 +271,11 @@ export class OrbitalController {
     return this.observingClock() && this.capturePauseRevision === undefined
   }
 
+  private modelingActive() {
+    return this.observingClock() &&
+      (this.capturePauseRevision === undefined || this.capturedPositionId !== undefined)
+  }
+
   private observingClock() {
     return (
       this.running &&
@@ -310,6 +320,7 @@ export class OrbitalController {
     this.positionReady = false
     this.predictionInFlightId = undefined
     this.lastPositionRequestAt = undefined
+    this.lastPositionModeledFor = undefined
     this.lastPredictionRequestAt = undefined
   }
 
@@ -410,9 +421,11 @@ export class OrbitalController {
     }
 
     if (this.capturePauseRevision !== undefined) {
-      const message = snapshotAge > this.config.staleAfterMs
-        ? 'Orbital acquisition and modeling are paused; the retained catalog is stale.'
-        : 'Orbital acquisition and modeling are paused during the captured view.'
+      const message = this.capturedPositionId
+        ? `Only the selected orbital view is modeled; acquisition and crossings are paused.${snapshotAge > this.config.staleAfterMs ? ' The retained catalog is stale.' : ''}`
+        : snapshotAge > this.config.staleAfterMs
+          ? 'Orbital acquisition and modeling are paused; the retained catalog is stale.'
+          : 'Orbital acquisition and modeling are paused during the captured view.'
       if (this.state.phase !== 'paused-capture' ||
         this.state.capturePauseRevision !== this.capturePauseRevision || this.state.message !== message) {
         this.setState({
@@ -422,6 +435,7 @@ export class OrbitalController {
           message,
         })
       }
+      if (this.capturedPositionId) this.ensureWorker()
       this.scheduleExpiry()
       return
     }
@@ -728,7 +742,7 @@ export class OrbitalController {
   }
 
   private ensureWorker(reload = false) {
-    if (!this.active() || !this.snapshot || !this.clock) return
+    if (!this.modelingActive() || !this.snapshot || !this.clock) return
     if (!this.worker) {
       try {
         this.worker = this.workerFactory()
@@ -752,7 +766,7 @@ export class OrbitalController {
       }
       reload = true
     }
-    if (!reload && this.workerLoaded) return
+    if (!reload) return
 
     this.workerLoaded = false
     this.positionReady = false
@@ -785,7 +799,7 @@ export class OrbitalController {
   ) => {
     const message = event.data
     if (
-      !this.active() ||
+      !this.modelingActive() ||
       message.catalogRevision !== this.catalogRevision
     ) {
       return
@@ -833,6 +847,20 @@ export class OrbitalController {
       message.type === 'positions' &&
       message.requestId === this.positionRequestId
     ) {
+      if (this.capturePauseRevision !== undefined) {
+        const position = message.positions[0]
+        if (message.positions.length !== 1 || !position ||
+          position.id !== this.capturedPositionId ||
+          position.snapshotSha256 !== this.snapshot?.sha256 ||
+          position.snapshotRetrievedAt !== parseOrbitalTimestamp(this.snapshot?.retrievedAt) ||
+          position.modeledFor !== this.lastPositionModeledFor) {
+          this.failWorker('The selected object could not be modeled from the captured catalog.')
+          return
+        }
+        this.setState({ ...this.state, phase: 'paused-capture', viewPosition: position })
+        this.schedulePositions()
+        return
+      }
       this.positionReady = true
       this.setState({
         ...this.state,
@@ -871,7 +899,7 @@ export class OrbitalController {
   }
 
   private failWorker(message: string) {
-    if (!this.active() || !this.worker) return
+    if (!this.modelingActive() || !this.worker) return
     this.clearTimers()
     this.destroyWorker()
     this.setState({
@@ -887,9 +915,9 @@ export class OrbitalController {
 
   private requestPositions(immediate = false) {
     this.clearTimer('positionTimer')
-    if (!this.active() || !this.workerLoaded || !this.worker) return
+    if (!this.modelingActive() || !this.workerLoaded || !this.worker) return
     const modeledFor = this.modeledNow()
-    if (modeledFor === undefined) {
+    if (modeledFor === undefined || this.snapshotAge(modeledFor) > this.config.expireAfterMs) {
       this.reconcile()
       return
     }
@@ -912,18 +940,20 @@ export class OrbitalController {
     }
 
     this.lastPositionRequestAt = now
+    this.lastPositionModeledFor = modeledFor
     this.positionRequestId += 1
     this.worker.postMessage({
       type: 'positions',
       catalogRevision: this.catalogRevision,
       requestId: this.positionRequestId,
       modeledFor,
+      ...(this.capturedPositionId ? { selectedId: this.capturedPositionId } : {}),
     })
   }
 
   private schedulePositions() {
     this.clearTimer('positionTimer')
-    if (!this.active()) return
+    if (!this.modelingActive()) return
     const elapsed =
       this.lastPositionRequestAt === undefined
         ? this.config.positionIntervalMs

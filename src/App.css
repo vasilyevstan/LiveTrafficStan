@@ -1647,6 +1647,11 @@
   padding: 6px 10px;
 }
 
+.orbital-view-actions {
+  display: flex;
+  gap: 6px;
+}
+
 .journey-actions button,
 .journey-action button {
   min-height: 44px;

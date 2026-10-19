@@ -83,7 +83,8 @@ const physicalRequest = (
   channel: OrbitalChannel,
   request: OrbitalWorkerRequest,
 ): OrbitalWorkerRequest => {
-  if (request.type !== 'prediction') return request
+  if (request.type !== 'prediction' && request.type !== 'positions') return request
+  if (request.type === 'positions' && request.selectedId === undefined) return request
   const selected = parseOrbitalFeatureId(request.selectedId)
   return {
     ...request,

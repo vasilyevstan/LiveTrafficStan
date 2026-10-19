@@ -189,7 +189,14 @@ not switch projection, fetch another position or clamp height. Identity-only
 catalog results cannot supply an eye. A water-only scene can be the actual
 map beneath an ocean subpoint, not missing spacecraft imagery.
 
-Drag/arrow input changes orientation, not position or height. A view-limit
+The moving upgrade is #514. Use **Pause** to hold the displayed pose/time and
+**Play** to resume from the current accepted model. Reduced-motion users
+start paused and may explicitly Play. Geostationary objects may appear still;
+the ordinary map has no cloud, terrain or photographic camera pipeline.
+An initial brief **Preparing modeled view** waits for current selected output.
+Hidden tabs stop work; a returning playing tab validates before showing it.
+
+Drag/arrow input changes orientation, not the current modeled position or height. A view-limit
 notice retains the previous valid pose. Return and X remain reachable even
 when the phone inspector is compact; canvas Escape Returns unless native
 workspace fullscreen owns it. Find does not move the camera; Center is new
@@ -202,6 +209,9 @@ to keep a captured scene alive. If native restoration also fails, **could not
 be restored** is a map recovery error: capture ends, input is cleaned up,
 and Center or a page reload can recover. It is not a successful Return or
 an orbital-provider authentication failure. No site-data deletion is needed.
+**Stopped updating** is an explicit five-second selected-model timeout, not
+evidence of a provider authentication failure. Return remains available
+without resetting Home, preferences or private history.
 See [the supported contract](orbital-tracking.md#captured-orbital-views-508)
 and [actual production evidence](hosting-and-deployment.md#captured-orbital-view-production-receipt-2026-10-19).
 
