@@ -1148,8 +1148,14 @@ native membership-reference credit remains separate from fresh GP provenance.
 The ordinary OpenFreeMap/OpenMapTiles/OpenStreetMap attribution stays visible.
 This adds no source right or accuracy guarantee.
 
+The #514 moving upgrade propagates only that selected accepted object at the
+existing one-second cadence and interpolates accepted poses for display.
+It does not acquire newer elements or extend their lifetime. Pause freezes
+the displayed model time, not source clocks or expiry. The Earth-facing
+motion is modeled, not a live observation or telemetry stream.
+
 The copied SGP4 geodetic height is used with a spherical Earth renderer.
-The result is a captured approximate Earth-facing map, not spacecraft
+The result is an approximate Earth-facing map, not spacecraft
 attitude, live telemetry, an optical observation, camera imagery, illumination
 or navigational clearance. Starlink remains a bounded sample, not the full
 constellation. No modeled position becomes aircraft/marine traffic, a trail,

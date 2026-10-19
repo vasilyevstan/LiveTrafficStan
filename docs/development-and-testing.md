@@ -48,6 +48,62 @@ supplementary marine WebSocket; use the actual local Worker for those paths.
 | `npm run check:deploy` | Bundle the Worker and Static Assets without credentials or deployment |
 | `npm run preview:worker` | Build and run the actual local Cloudflare `workerd` boundary |
 
+### Moving 3D orbital view (#514)
+
+Required local gates pass **202 files / 2,235 tests**, lint, typecheck, all four
+required data checks and the matched production-input build. Deterministic
+coverage adds selected-only propagation/hub canonicalization, no-match safety,
+exact selected output, Pause/resume/A-B-A/late-work fencing, ordinary Return
+prediction restart, both channel deadlines, hidden/offline/clock/hard expiry,
+wrapped interpolation, active-only rAF/reduced-motion cleanup and native
+pitch-limit restoration. Existing ordinary behavior remains covered.
+
+Six accepted Chrome 155 / MapLibre 6.10.0 cases use the actual App and bundled
+SGP4 worker, re-signed public catalog fixtures and incumbent vector tiles:
+1280x900, 315x517 and 390x568, both themes and both owners. Trusted mouse,
+emulated touch and arrows pass, including the upper look limit. Four seconds
+of normal-speed motion advances projected ground features by 10.28-25.63px.
+The virtual-eye error is below 0.000001m in position and height; that measures
+renderer placement, not SGP4 or optical accuracy. Every raw Return has zero
+measured center/zoom/bearing/pitch/roll/elevation/padding error and exact old
+handler/native-pitch states. One current canvas remains.
+
+Selected requests remain at least 990ms apart with only the canonical selected
+identity. No acquisition or crossing prediction occurs during the ride.
+Settled Pause has zero additional paints, camera jumps, model work or reads.
+Fresh Play, style, actual resize, native tab hide/show, reduced-motion
+change/entry and explicit Play opt-in pass. A clock jump and selected-worker
+stall Return with reasons. A separate near-24h fixture keeps moving while
+stale/offline, then hard-expiry Returns exactly without offline acquisition.
+
+Compact overlay union is 12.95% desktop, 31.25% at315x517 and25.98% at390x568;
+expanded phone reading is60.81%/55.75%, with180/195px bodies. Every case keeps
+a120x120 hit-tested map region,44px actions, reachable full caveats/credits
+and no horizontal overflow. Active render intervals record19.6ms p95 and
+635.8ms maximum across the observed transitions. This is desktop emulation,
+not physical-phone/GPU, OS-keyboard or a sustained-performance guarantee.
+
+Preserve the initial observer failures: hidden startup, an unfiltered
+controller read, and a fixture observer lost between connections. The first
+real look-limit finding exposed lost numerical headroom;79-degree look under
+an80-degree native maximum fixes it. Reuse the accepted curated/style/resize/
+native-tab-hide/reduced-motion case. Only unfinished cases were restarted
+after native OS occlusion correctly triggered paused-hidden, using an owned
+Chrome with occlusion/background throttling disabled. These are not
+uninterrupted-document or physical-device claims.
+
+Matched inputs remain `/api/aircraft`, photos, routes, marine supplement and
+airport boards enabled. Parse the HTML initial module/static-import closure
+and use Node's default `gzipSync`, not Vite's console estimate or level9.
+Initial JS is **582,743 bytes**, against the released581,146-byte baseline:
+**+1,597 /0.2748%**, below the586,957-byte incremental1% ceiling. There are
+no static-import chunks. CSS is146,286 raw /21,475 gzip bytes. Local artifacts
+are `index--m9tDhcb.js`, `index-CjxiLX1e.css`, shell `ba9524da22eea484e75a`.
+No dependency, renderer, physical worker, provider, endpoint, dataset,
+storage migration or production setting is added. Actual public acceptance
+and exact release identities belong to the [#514 delivery receipt](https://github.com/vasilyevstan/LiveTrafficStan/issues/514),
+not this fixture evidence.
+
 ### Captured orbital view (#508, development acceptance)
 
 The Auto-only captured-view implementation is released through #510. The

@@ -21,15 +21,17 @@ const view: CapturedOrbitalView = {
 }
 
 describe('CapturedOrbitalDetails', () => {
-  it('labels the frozen model, exact type and identity, altitude and provenance without live/attitude claims', () => {
+  it('labels the displayed moving model, exact type and identity and source without live/attitude claims', () => {
     const html = renderToStaticMarkup(
-      <CapturedOrbitalDetails view={view} ready online units="metric" onReturn={() => undefined} />,
+      <CapturedOrbitalDetails view={view} ready playing online units="metric"
+        onReturn={() => undefined} onTogglePlaying={() => undefined}
+        position={{ ...view.position, modeledFor: 4_000, altitudeKm: 551 }} />,
     )
-    expect(html).toContain('550,000 m')
-    expect(html).toContain('1970-01-01T00:00:03.000Z')
+    expect(html).toContain('551,000 m')
+    expect(html).toContain('1970-01-01T00:00:04.000Z')
     expect(html).toContain('Debris')
     expect(html).toContain('(DEB)')
-    expect(html).toMatch(/role="status">Captured model <time/)
+    expect(html).toMatch(/role="status"><span aria-live="off">Modeled <time/)
     expect(html).toContain('Element epoch')
     expect(html).toContain('Catalog retrieved')
     expect(html).toContain('Space-Track.org / USSPACECOM')
@@ -38,26 +40,42 @@ describe('CapturedOrbitalDetails', () => {
     expect(html).toContain('not the full constellation')
     expect(html).toContain('aria-label="Return to map"')
     expect(html).not.toContain('id="orbital:')
-    expect(html).not.toContain('Preparing captured view')
+    expect(html).toContain('>Pause</button>')
+    expect(html).not.toContain('eye stays fixed')
+    expect(html).not.toContain('no follow')
+    expect(html).not.toContain('Preparing modeled view')
   })
 
-  it('keeps Return and preparation/limit feedback outside a collapsed mobile body', () => {
+  it('keeps playback, Return and preparation/limit feedback outside a collapsed mobile body', () => {
     for (const [ready, notice, expected] of [
-      [false, undefined, 'Preparing captured view...'],
-      [true, 'View limit reached; the captured eye has not moved.', 'View limit reached'],
+      [false, undefined, 'Preparing modeled view...'],
+      [true, 'View limit reached; look back toward Earth.', 'View limit reached'],
     ] as const) {
       const html = renderToStaticMarkup(
         <MobileInspectorContext value={{
           mobile: true, compact: true, identity: 'capture:1', returnToTask: false,
           onExpand: () => undefined, onCollapse: () => undefined,
         }}>
-          <CapturedOrbitalDetails view={view} ready={ready} notice={notice} online units="metric" onReturn={() => undefined} />
+          <CapturedOrbitalDetails view={view} ready={ready} playing={false} notice={notice} online units="metric"
+            onReturn={() => undefined} onTogglePlaying={() => undefined} />
         </MobileInspectorContext>,
       )
       const bodyAt = html.indexOf('class="details-panel__body"')
       expect(html.slice(0, bodyAt)).toContain(expected)
       expect(html.slice(0, bodyAt)).toContain('orbital-view-return')
+      expect(html.slice(0, bodyAt)).toContain('>Play</button>')
+      expect(html.slice(0, bodyAt)).toMatch(ready ? /class="orbital-view-return">Play/ : /disabled="">Play/)
       expect(html.slice(bodyAt)).toContain('hidden=""')
     }
+  })
+
+  it('distinguishes paused model time while retaining normal-speed and geostationary caveats', () => {
+    const html = renderToStaticMarkup(
+      <CapturedOrbitalDetails view={view} ready playing={false} online units="metric"
+        onReturn={() => undefined} onTogglePlaying={() => undefined} />,
+    )
+    expect(html).toContain('>Paused <time')
+    expect(html).toContain('Normal-speed modeled motion; geostationary objects may appear still')
+    expect(html).toContain('Modeled time')
   })
 })

@@ -22,9 +22,25 @@ const geometry = () => ({
 })
 
 describe('captured orbital camera cleanup', () => {
+  let now = 0
+  let frameId = 0
+  const frames = new Map<number, FrameRequestCallback>()
+  const motionPreference = Object.assign(new EventTarget(), { matches: false })
   beforeEach(() => {
     vi.useFakeTimers()
-    vi.stubGlobal('window', { setTimeout, clearTimeout })
+    now = 0
+    frameId = 0
+    frames.clear()
+    motionPreference.matches = false
+    vi.stubGlobal('performance', { now: () => now })
+    vi.stubGlobal('window', {
+      setTimeout, clearTimeout, matchMedia: () => motionPreference,
+      requestAnimationFrame: (callback: FrameRequestCallback) => {
+        frames.set(++frameId, callback)
+        return frameId
+      },
+      cancelAnimationFrame: (id: number) => frames.delete(id),
+    })
     vi.stubGlobal('document', Object.assign(new EventTarget(), { hidden: false, body: {}, activeElement: null }))
   })
   afterEach(() => {
@@ -54,8 +70,11 @@ describe('captured orbital camera cleanup', () => {
     }
     const jumpTo = vi.fn<MapLibreMap['jumpTo']>().mockReturnThis()
     const once = vi.fn<(type: string, callback: () => void) => void>()
+    let maximumPitch = 60
     const map = {
       ...geometry(), ...handlers, jumpTo, once,
+      getMaxPitch: () => maximumPitch,
+      setMaxPitch: vi.fn((value: number) => { maximumPitch = value }),
       on: vi.fn<MapLibreMap['on']>(), off: vi.fn<MapLibreMap['off']>(),
       stop: vi.fn<MapLibreMap['stop']>(), getCanvas: () => canvas,
       getCenter: () => new LngLat(24.123456789, 59.654321987),
@@ -74,6 +93,7 @@ describe('captured orbital camera cleanup', () => {
     const callbacks = {
       onReturn: vi.fn(), onFailure: vi.fn(), onRestoreFailure: vi.fn(),
       onReady: vi.fn(), onNotice: vi.fn(),
+      onPosition: vi.fn(), onPause: vi.fn(),
     }
     const camera = createCapturedOrbitalCamera(map, view, callbacks)
     const expectRestoredInput = () => {
@@ -82,9 +102,24 @@ describe('captured orbital camera cleanup', () => {
       )
       expect(canvas.style).toEqual({ visibility: 'visible', touchAction: 'none', cursor: '' })
       expect(canvas.getAttribute('aria-label')).toBe('Ordinary map')
+      expect(map.getMaxPitch()).toBe(60)
+      expect(frames.size).toBe(0)
       expect(vi.getTimerCount()).toBe(0)
     }
-    return { camera, canvas, callbacks, jumpTo, once, expectRestoredInput }
+    const renderReady = () => {
+      for (let index = 0; index < 2; index += 1) {
+        const render = once.mock.calls.at(-1)
+        if (!render) throw Error('Expected readiness render')
+        render[1]()
+      }
+    }
+    const tick = (milliseconds: number) => {
+      now += milliseconds
+      const pending = [...frames.values()]
+      frames.clear()
+      for (const callback of pending) callback(now)
+    }
+    return { camera, canvas, callbacks, jumpTo, once, map, renderReady, tick, expectRestoredInput }
   }
 
   it('restores the exact raw camera and disabled handlers when native entry fails', () => {
@@ -138,6 +173,83 @@ describe('captured orbital camera cleanup', () => {
     expect(callbacks.onRestoreFailure).not.toHaveBeenCalled()
     expectRestoredInput()
   })
+
+  it('starts obliquely, interpolates accepted poses without handoffs, and pauses the exact displayed pose', () => {
+    const { camera, map, renderReady, tick, once, jumpTo, callbacks, expectRestoredInput } = fixture()
+    const first = { ...position, modeledFor: 4_000 }
+    camera.setPlayback(true, first)
+    camera.setReady(true)
+    renderReady()
+    expect(map.getMaxPitch()).toBe(80)
+    expect(LngLat.convert(vi.mocked(map.calculateCameraOptionsFromTo).mock.calls[0][2]).lat).toBeGreaterThan(0)
+    const handoffs = once.mock.calls.length
+    camera.setPlayback(true, { ...position, modeledFor: 5_000, longitude: 0.1, altitudeKm: 402 })
+    tick(500)
+    const paint = vi.mocked(map.calculateCameraOptionsFromTo).mock.calls.at(-1)
+    expect(paint?.[1]).toBe(401_000)
+    expect(LngLat.convert(paint?.[0] ?? [0, 0]).lng).toBeCloseTo(0.05, 9)
+    expect(callbacks.onPosition).toHaveBeenCalledTimes(1)
+    expect(once.mock.calls).toHaveLength(handoffs)
+    const paints = jumpTo.mock.calls.length
+    camera.setPlayback(false)
+    expect(callbacks.onPosition.mock.calls.at(-1)?.[0]).toMatchObject({ modeledFor: 4_500, altitudeKm: 401 })
+    tick(30_000)
+    expect(jumpTo).toHaveBeenCalledTimes(paints)
+    expect(frames.size).toBe(0)
+    camera.setPlayback(true, { ...position, modeledFor: 35_000, longitude: 1 })
+    camera.setReady(true)
+    tick(0)
+    camera.setPlayback(false)
+    expect(callbacks.onPosition.mock.calls.at(-1)?.[0]).toMatchObject({ modeledFor: 35_000, longitude: 1 })
+    camera.exit(true)
+    expectRestoredInput()
+  })
+
+  it('stops active animation while hidden and never replays hidden time on validated resume', () => {
+    const { camera, renderReady, tick, callbacks, expectRestoredInput } = fixture()
+    camera.setPlayback(true, { ...position, modeledFor: 4_000 })
+    camera.setReady(true)
+    renderReady()
+    Object.assign(document, { hidden: true })
+    document.dispatchEvent(new Event('visibilitychange'))
+    expect(frames.size).toBe(0)
+    camera.setReady(false)
+    tick(30_000)
+    Object.assign(document, { hidden: false })
+    camera.setPlayback(true, { ...position, modeledFor: 34_000, longitude: 1 })
+    camera.setReady(true)
+    renderReady()
+    expect(callbacks.onPosition.mock.calls.at(-1)?.[0]).toMatchObject({ modeledFor: 34_000, longitude: 1 })
+    camera.exit(false)
+    expectRestoredInput()
+  })
+
+  it('returns once when selected modeling stalls and ignores obsolete frame/model callbacks', () => {
+    const { camera, renderReady, tick, callbacks, jumpTo, expectRestoredInput } = fixture()
+    camera.setPlayback(true, { ...position, modeledFor: 4_000 })
+    camera.setReady(true)
+    renderReady()
+    const frame = [...frames.values()][0]
+    tick(5_001)
+    expect(callbacks.onFailure).toHaveBeenCalledExactlyOnceWith(expect.stringContaining('stopped updating'))
+    const paints = jumpTo.mock.calls.length
+    frame(6_000)
+    camera.setPlayback(true, { ...position, modeledFor: 9_000 })
+    expect(jumpTo).toHaveBeenCalledTimes(paints)
+    expectRestoredInput()
+  })
+
+  it('rejects a different source generation and removes the active-only reduced-motion listener', () => {
+    const { camera, callbacks, expectRestoredInput } = fixture()
+    motionPreference.matches = true
+    motionPreference.dispatchEvent(new Event('change'))
+    expect(callbacks.onPause).toHaveBeenCalledTimes(1)
+    camera.setPlayback(true, { ...position, modeledFor: 4_000, snapshotSha256: 'b'.repeat(64) })
+    expect(callbacks.onFailure).toHaveBeenCalledExactlyOnceWith(expect.stringContaining('no longer matches'))
+    motionPreference.dispatchEvent(new Event('change'))
+    expect(callbacks.onPause).toHaveBeenCalledTimes(1)
+    expectRestoredInput()
+  })
 })
 
 describe('captured orbital camera geometry', () => {
@@ -163,6 +275,13 @@ describe('captured orbital camera geometry', () => {
     expect(ground).toBe(0)
     expect(LngLat.convert(target).lat).toBeCloseTo(expected, 8)
     expect(LngLat.convert(target).lng).toBe(0)
+  })
+
+  it('keeps a one-degree native headroom at the look limit instead of rejecting floating-point pitch overshoot', () => {
+    const map = { ...geometry(), getMaxPitch: () => 80 }
+    map.calculateCameraOptionsFromTo.mockReturnValue({ center: [0, 0], zoom: 4, pitch: 79 + 1e-10 })
+    expect(orbitalEyeCameraOptions(map, position, 0, 79)).toBeDefined()
+    expect(orbitalEyeCameraOptions(map, position, 0, 80)).toBeUndefined()
   })
 
   it('keeps wrapped longitude rather than moving or clamping the captured origin', () => {

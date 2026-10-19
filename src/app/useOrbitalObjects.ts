@@ -43,6 +43,7 @@ export const useOrbitalObjects = (
   config: AppConfig['orbital'],
   starlinkOptions?: StarlinkOrbitalHookOptions,
   capturePauseRevision?: number,
+  capturedPositionId?: string,
 ) => {
   const [state, setState] = useState<OrbitalControllerState>(initialState)
   const [starlinkState, setStarlinkState] =
@@ -53,11 +54,11 @@ export const useOrbitalObjects = (
   const starlinkConfig =
     starlinkOptions?.config ?? APP_CONFIG.starlink
   const starlinkEnabled = starlinkOptions?.enabled ?? false
-  const capturePauseRef = useRef(capturePauseRevision)
+  const capturePauseRef = useRef({ revision: capturePauseRevision, positionId: capturedPositionId })
 
   useEffect(() => {
-    capturePauseRef.current = capturePauseRevision
-  }, [capturePauseRevision])
+    capturePauseRef.current = { revision: capturePauseRevision, positionId: capturedPositionId }
+  }, [capturePauseRevision, capturedPositionId])
 
   useEffect(() => {
     const workerHub = new OrbitalWorkerHub()
@@ -75,8 +76,10 @@ export const useOrbitalObjects = (
     })
     controllerRef.current = controller
     starlinkControllerRef.current = starlinkController
-    controller.setCapturePause(capturePauseRef.current)
-    starlinkController.setCapturePause(capturePauseRef.current)
+    const capture = capturePauseRef.current
+    const owner = parseOrbitalFeatureId(capture.positionId)?.owner
+    controller.setCapturePause(capture.revision, owner === 'curated' ? capture.positionId : undefined)
+    starlinkController.setCapturePause(capture.revision, owner === 'starlink' ? capture.positionId : undefined)
     controller.start()
     starlinkController.start()
     starlinkController.setFilters(DEFAULT_ORBITAL_DISCOVERY_FILTERS)
@@ -100,18 +103,21 @@ export const useOrbitalObjects = (
   }, [config, starlinkConfig])
 
   useEffect(() => {
-    for (const [controller, channelEnabled] of [
-      [controllerRef.current, enabled],
-      [starlinkControllerRef.current, starlinkEnabled],
+    const owner = parseOrbitalFeatureId(capturedPositionId)?.owner
+    for (const [controller, channelEnabled, channel] of [
+      [controllerRef.current, enabled, 'curated'],
+      [starlinkControllerRef.current, starlinkEnabled, 'starlink'],
     ] as const) {
       // Enter capture before other inputs; release only after other pauses apply.
-      if (capturePauseRevision !== undefined) controller?.setCapturePause(capturePauseRevision)
+      if (capturePauseRevision !== undefined) controller?.setCapturePause(
+        capturePauseRevision, owner === channel ? capturedPositionId : undefined,
+      )
       controller?.setEnabled(channelEnabled)
       controller?.setHistoryActive(historyActive)
       controller?.setOnline(online)
       if (capturePauseRevision === undefined) controller?.setCapturePause(undefined)
     }
-  }, [capturePauseRevision, enabled, starlinkEnabled, historyActive, online])
+  }, [capturePauseRevision, capturedPositionId, enabled, starlinkEnabled, historyActive, online])
 
   useEffect(() => {
     const committedViewport = viewport ?? WAITING_FOR_VIEWPORT

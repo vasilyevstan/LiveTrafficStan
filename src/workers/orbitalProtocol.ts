@@ -31,6 +31,7 @@ export type OrbitalWorkerRequest =
       catalogRevision: number
       requestId: number
       modeledFor: number
+      selectedId?: string | null
     }
   | {
       type: 'prediction'
