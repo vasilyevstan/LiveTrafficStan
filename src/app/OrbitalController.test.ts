@@ -17,7 +17,7 @@ import type {
   OrbitalWorkerResponse,
 } from '../workers/orbitalProtocol'
 import { ProviderError } from '../providers/errors'
-import { OrbitalController } from './OrbitalController'
+import { OrbitalController, type OrbitalControllerConfig } from './OrbitalController'
 
 const snapshot = snapshotFixture as OrbitalCatalogSnapshot
 const config = createAppConfig({}).orbital
@@ -173,6 +173,174 @@ afterEach(() => {
 })
 
 describe('OrbitalController', () => {
+  const captureFixture = async (
+    options: { config?: OrbitalControllerConfig; wallSkew?: () => number } = {},
+  ) => {
+    vi.useFakeTimers()
+    vi.setSystemTime(Date.parse(snapshot.retrievedAt) + 1_000)
+    const provider = { load: vi.fn(async () => loadResult()) }
+    const states: OrbitalControllerState[] = []
+    const workers: FakeWorker[] = []
+    const controller = new OrbitalController({
+      provider,
+      config: options.config ?? config,
+      runtime: { ...runtime, wallNow: () => Date.now() + (options.wallSkew?.() ?? 0) },
+      onState: state => states.push(state),
+      workerFactory: () => {
+        const worker = new FakeWorker()
+        workers.push(worker)
+        return worker
+      },
+      onWarning: vi.fn(),
+    })
+    controller.start()
+    controller.setEnabled(true)
+    await flush()
+    const load = workers[0].messages[0]
+    if (load.type !== 'load-catalog') throw Error('Expected catalog load')
+    workers[0].emit({ type: 'catalog-loaded', catalogRevision: load.catalogRevision, acceptedCount: 1 })
+    const request = workers[0].messages.find(message => message.type === 'positions')
+    if (request?.type !== 'positions') throw Error('Expected positions request')
+    workers[0].emit({
+      type: 'positions', catalogRevision: request.catalogRevision,
+      requestId: request.requestId, positions: [position(request.modeledFor)],
+    })
+    return { controller, provider, states, workers, request }
+  }
+
+  it('copies the accepted exact identity before keyed pause, stops work and fences old worker output', async () => {
+    const { controller, provider, states, workers, request } = await captureFixture()
+    const captured = controller.acceptedPositionForCapture('orbital:694')
+    expect(captured?.position).toEqual(position(request.modeledFor))
+    expect(captured?.position).not.toBe(states.at(-1)?.positions[0])
+    expect(captured?.position.sourceGroups).not.toBe(states.at(-1)?.positions[0].sourceGroups)
+    expect(captured?.snapshot).toBe(states.at(-1)?.snapshot)
+    expect(controller.acceptedPositionForCapture('orbital:starlink:694')).toBeUndefined()
+    const messageCount = workers[0].messages.length
+    controller.setCapturePause(41)
+    expect(states.at(-1)).toMatchObject({ phase: 'paused-capture', capturePauseRevision: 41 })
+    expect(workers[0].terminated).toBe(true)
+    expect(controller.acceptedPositionForCapture('orbital:694')).toBeUndefined()
+    controller.retry()
+    controller.setSelectedId('orbital:694')
+    controller.setViewport({ kind: 'world' })
+    workers[0].emit({
+      type: 'positions', catalogRevision: request.catalogRevision, requestId: request.requestId,
+      positions: [{ ...position(request.modeledFor), latitude: 75 }],
+    })
+    await vi.advanceTimersByTimeAsync(config.positionIntervalMs * 3)
+    expect(provider.load).toHaveBeenCalledTimes(1)
+    expect(workers).toHaveLength(1)
+    expect(workers[0].messages).toHaveLength(messageCount)
+    expect(states.at(-1)?.positions[0]?.latitude).toBe(10)
+    expect(vi.getTimerCount()).toBe(1)
+    controller.setCapturePause(42)
+    expect(states.at(-1)?.capturePauseRevision).toBe(42)
+    controller.setCapturePause(undefined)
+    expect(states.at(-1)?.capturePauseRevision).toBeUndefined()
+    expect(provider.load).toHaveBeenCalledTimes(1)
+    expect(workers).toHaveLength(2)
+    controller.stop()
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it.each([['curated', config], ['starlink', createAppConfig({}).starlink]] as const)(
+    'retains the %s original revalidation deadline across capture',
+    async (_owner, channelConfig) => {
+      const { controller, provider } = await captureFixture({ config: channelConfig })
+      const startedAt = Date.now()
+      controller.setCapturePause(1)
+      vi.setSystemTime(startedAt + channelConfig.revalidationIntervalMs - 1_000)
+      controller.setCapturePause(undefined)
+      await vi.advanceTimersByTimeAsync(999)
+      expect(provider.load).toHaveBeenCalledTimes(1)
+      await vi.advanceTimersByTimeAsync(1)
+      expect(provider.load).toHaveBeenCalledTimes(2)
+      controller.stop()
+    },
+  )
+
+  it('observes captured clock jumps on the existing interval without fetching or propagating', async () => {
+    let skew = 0
+    const { controller, provider, states, workers } = await captureFixture({ wallSkew: () => skew })
+    controller.setCapturePause(7)
+    skew = config.maximumWallClockJumpMs + 1
+    await vi.advanceTimersByTimeAsync(config.positionIntervalMs)
+    expect(states.at(-1)).toMatchObject({ phase: 'clock-invalid', capturePauseRevision: 7 })
+    expect(provider.load).toHaveBeenCalledTimes(1)
+    expect(workers).toHaveLength(1)
+    expect(vi.getTimerCount()).toBe(0)
+    controller.stop()
+  })
+
+  it.each(['history', 'hidden', 'disabled'] as const)(
+    'does not acquire or recreate a worker when capture releases into %s',
+    async pause => {
+      const { controller, provider, states, workers } = await captureFixture()
+      controller.setCapturePause(17)
+      if (pause === 'history') controller.setHistoryActive(true)
+      else if (pause === 'hidden') controller.setPageVisible(false)
+      else controller.setEnabled(false)
+      controller.setCapturePause(undefined)
+      expect(states.at(-1)?.phase).toBe(
+        pause === 'history' ? 'paused-history' : pause === 'hidden' ? 'paused-hidden' : 'disabled',
+      )
+      expect(provider.load).toHaveBeenCalledTimes(1)
+      expect(workers).toHaveLength(1)
+      expect(workers[0].terminated).toBe(true)
+      expect(vi.getTimerCount()).toBe(0)
+      controller.stop()
+    },
+  )
+
+  it('fences a catalog refresh that ignores cancellation after an accepted capture', async () => {
+    const { controller, provider, states, workers } = await captureFixture()
+    let completeRefresh: ((value: ReturnType<typeof loadResult>) => void) | undefined
+    provider.load.mockReturnValueOnce(new Promise(resolve => { completeRefresh = resolve }))
+    controller.retry()
+    expect(provider.load).toHaveBeenCalledTimes(2)
+    expect(controller.acceptedPositionForCapture('orbital:694')).toBeDefined()
+    controller.setCapturePause(23)
+    if (!completeRefresh) throw Error('The deferred refresh did not start')
+    completeRefresh({ ...loadResult(), snapshot: { ...snapshot, sha256: 'b'.repeat(64) } })
+    await flush()
+    expect(states.at(-1)).toMatchObject({
+      phase: 'paused-capture', capturePauseRevision: 23,
+      snapshot: { sha256: snapshot.sha256 },
+    })
+    expect(workers).toHaveLength(1)
+    expect(workers[0].terminated).toBe(true)
+    controller.stop()
+  })
+
+  it('does not mistake offline for invalidity, but fails closed on hard expiry while captured offline', async () => {
+    const { controller, provider, states } = await captureFixture({
+      config: { ...config, staleAfterMs: 2_000, expireAfterMs: 3_000 },
+    })
+    controller.setCapturePause(9)
+    controller.setOnline(false)
+    expect(states.at(-1)).toMatchObject({ phase: 'paused-capture', capturePauseRevision: 9 })
+    await vi.advanceTimersByTimeAsync(2_001)
+    expect(states.at(-1)).toMatchObject({ phase: 'offline', capturePauseRevision: 9, positions: [] })
+    expect(provider.load).toHaveBeenCalledTimes(1)
+    expect(vi.getTimerCount()).toBe(0)
+    controller.stop()
+  })
+
+  it('retains the capture acknowledgement while hidden and validates before resuming a visible scene', async () => {
+    let skew = 0
+    const { controller, states, provider } = await captureFixture({ wallSkew: () => skew })
+    controller.setCapturePause(11)
+    controller.setPageVisible(false)
+    expect(states.at(-1)).toMatchObject({ phase: 'paused-hidden', capturePauseRevision: 11 })
+    expect(vi.getTimerCount()).toBe(0)
+    skew = config.maximumWallClockJumpMs + 1
+    controller.setPageVisible(true)
+    expect(states.at(-1)).toMatchObject({ phase: 'clock-invalid', capturePauseRevision: 11 })
+    expect(provider.load).toHaveBeenCalledTimes(1)
+    controller.stop()
+  })
+
   it('fetches only after enable and does not refetch for view, selection, or hide/show', async () => {
     vi.useFakeTimers()
     vi.setSystemTime(Date.parse('2026-09-28T18:46:00.000Z'))

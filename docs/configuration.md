@@ -193,6 +193,9 @@ spread through components:
 | METAR client and Worker deadline / response cap | 8 seconds / 256 KiB |
 | METAR stale / expiry | 75 minutes / 120 minutes |
 | Orbital layer | Off by default; explicit enable only |
+| Captured orbital view (development, #508) | Auto only; already accepted curated/Starlink position; no environment, preference or share setting |
+| Captured look range / input | 59 degrees from nadir; 0.2 degrees per CSS pointer pixel; 6 degrees per arrow key |
+| Captured readiness | Five-second bound for native entry/style/resize handoff; no periodic camera correction |
 | Browser orbital request | Literal same-origin `GET /api/orbits/catalog`; fixed schema-2 vendor `Accept`; 5-second deadline; 512 KiB / 512-record complete-response limit |
 | Orbital route compatibility | Missing/other `Accept` receives the newest valid schema 1 from the current bundle, retained v1 KV, or immutable v1/v2 assets; exact vendor media type receives schema 2; equal-time digest conflicts fail closed; distinct ETags and `Vary: Accept` |
 | Curated scheduler sources | Ordered `visual`, `stations`, `weather`, `gnss`, `science`; GP then SATCAT for each group |
@@ -290,6 +293,26 @@ to historical details without changing stored observations. It does not
 change marker rotation: moving vessels retain course-first orientation, and
 slow/stopped or unknown-motion vessels remain north-up. Aircraft **Direction**
 keeps its existing course-first heading fallback.
+
+## Captured orbital view (development, #508)
+
+`ORBITAL_VIEW_CONFIG` centralizes `maximumLookPitchDegrees` (59),
+`pointerDegreesPerPixel` (0.2), `keyboardStepDegrees` (6) and
+`readinessTimeoutMs` (5,000). The mathematical native latitude limit in
+`orbitalView.ts` is `atan(sinh(pi))`, approximately 85.051129 degrees;
+it is geometry, not an adjustable coverage or provider bound.
+Accepted source altitude/clock/element limits remain the existing orbital
+contract, with explicit km-to-meter conversion and further native pose checks.
+
+There is no enable flag, endpoint override, renderer setting, saved mode,
+share field or production input. Auto entry never changes a Flat preference.
+The existing orbital expiry timer uses the shorter of time-to-hard-expiry
+plus 1ms and the existing position interval while visible; capture does not
+change either channel's 2h/12h revalidation or 24h expiry boundary.
+Return resumes through existing reconciliation and can legitimately refresh
+only when the original acquisition/retry deadline permits.
+See [the complete experience](orbital-tracking.md#captured-orbital-views-development-508).
+This source addition is not yet a production activation.
 
 ## Changing the center
 

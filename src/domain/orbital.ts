@@ -158,6 +158,7 @@ export type OrbitalControllerPhase =
   | 'clock-invalid'
   | 'paused-hidden'
   | 'paused-history'
+  | 'paused-capture'
   | 'empty'
 
 export interface OrbitalControllerState {
@@ -168,6 +169,7 @@ export interface OrbitalControllerState {
   snapshot?: OrbitalCatalogSnapshot
   lastSuccessAt?: number
   message?: string
+  capturePauseRevision?: number
 }
 
 export const EMPTY_ORBITAL_PREDICTION: OrbitalPrediction = {

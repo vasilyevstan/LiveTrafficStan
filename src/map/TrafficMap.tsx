@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useImperativeHandle, useRef, type Ref } from 'react'
+import { useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, type Ref } from 'react'
 import type {
   Feature,
   FeatureCollection,
@@ -168,6 +168,8 @@ import { chooseJourneyCamera, journeyFitPadding, journeyIsFramed, type JourneyCa
 import { installJourneyStyle } from './journeyStyle'
 import type { BathymetryStatus } from '../domain/bathymetry'
 import { BathymetryRuntime } from './BathymetryRuntime'
+import { createCapturedOrbitalCamera } from './capturedOrbitalCamera'
+import type { CapturedOrbitalView } from '../domain/orbitalView'
 
 setWorkerUrl(maplibreWorkerUrl)
 
@@ -181,6 +183,11 @@ const EMPTY_ORBITAL_IDS: readonly string[] = []
 const EMPTY_ORBITAL_TRACK: readonly OrbitalTrackSegment[] = []
 
 interface TrafficMapProps {
+  capturedOrbitalView?: CapturedOrbitalView
+  capturedOrbitalViewAcknowledged?: boolean
+  onCapturedOrbitalViewEnd?: (revision: number, reason?: string) => void
+  onCapturedOrbitalViewReady?: (revision: number, ready: boolean) => void
+  onCapturedOrbitalViewNotice?: (revision: number, message: string | undefined) => void
   compactAttribution?: boolean
   northResetRequest?: NorthResetRequest
   northResetDurationMs: number
@@ -390,6 +397,11 @@ const viewportSignature = (assessment: ViewportAssessment) => {
 }
 
 export function TrafficMap({
+  capturedOrbitalView,
+  capturedOrbitalViewAcknowledged = false,
+  onCapturedOrbitalViewEnd,
+  onCapturedOrbitalViewReady,
+  onCapturedOrbitalViewNotice,
   compactAttribution = false,
   northResetRequest,
   northResetDurationMs,
@@ -467,6 +479,16 @@ export function TrafficMap({
 }: TrafficMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MapLibreMap | null>(null)
+  const capturedViewRef = useRef(capturedOrbitalView)
+  const capturedCameraRef = useRef<{
+    revision: number
+    viewRequestId: number
+    camera: ReturnType<typeof createCapturedOrbitalCamera>
+  } | undefined>(undefined)
+  const capturedCallbacksRef = useRef({
+    end: onCapturedOrbitalViewEnd, ready: onCapturedOrbitalViewReady,
+    notice: onCapturedOrbitalViewNotice,
+  })
   const loadedRef = useRef(false)
   const frameRef = useRef<number | null>(null)
   const lastFrameRef = useRef(0)
@@ -629,8 +651,8 @@ export function TrafficMap({
   useEffect(() => {
     depthsVisibleRef.current = depthsVisible
     bathymetryStatusRef.current = onBathymetryStatus
-    bathymetryRef.current?.setEnabled(depthsVisible, online)
-  }, [depthsVisible, online, onBathymetryStatus])
+    bathymetryRef.current?.setEnabled(depthsVisible, online, capturedOrbitalView !== undefined)
+  }, [depthsVisible, online, onBathymetryStatus, capturedOrbitalView])
 
   useEffect(() => {
     desiredStyleUrlRef.current = mapStyleUrl
@@ -885,7 +907,7 @@ export function TrafficMap({
   }, [])
 
   const reportViewport = useCallback((map: MapLibreMap) => {
-    if (!loadedRef.current) return
+    if (!loadedRef.current || capturedViewRef.current) return
 
     const pending = pendingJourneyFitRef.current
     if (pending) {
@@ -972,6 +994,7 @@ export function TrafficMap({
   const scheduleViewportReport = useCallback(
     (map: MapLibreMap, delayMs = viewportSettleMsRef.current) => {
       clearPendingViewport()
+      if (capturedViewRef.current) return
       viewportSettleTimerRef.current = window.setTimeout(() => {
         viewportSettleTimerRef.current = null
         reportViewport(map)
@@ -2137,6 +2160,7 @@ export function TrafficMap({
     })
 
     map.on('click', (event) => {
+      if (capturedViewRef.current) return
       hideTrafficTooltip()
       if (readLocalRuler().phase === 'placing' || suppressRulerClick) {
         suppressRulerClick = false
@@ -2332,6 +2356,7 @@ export function TrafficMap({
     })
 
     map.on('mousemove', (event) => {
+      if (capturedViewRef.current) return
       if (readLocalRuler().phase === 'placing') {
         hideTrafficTooltip()
         canvas.style.cursor = 'crosshair'
@@ -2443,6 +2468,8 @@ export function TrafficMap({
     )
 
     return () => {
+      capturedCameraRef.current?.camera.exit(false)
+      capturedCameraRef.current = undefined
       bathymetryRef.current?.dispose()
       bathymetryRef.current = null
       styleGenerationRef.current += 1
@@ -2982,6 +3009,55 @@ export function TrafficMap({
     }
   }, [clearPendingViewport, northResetDurationMs, northResetRequest, scheduleViewportReport, viewRequestId])
 
+  useLayoutEffect(() => {
+    const obsolete = capturedOrbitalView && capturedOrbitalView.viewRequestId !== viewRequestId
+    const nextView = obsolete ? undefined : capturedOrbitalView
+    capturedViewRef.current = nextView
+    capturedCallbacksRef.current = {
+      end: onCapturedOrbitalViewEnd, ready: onCapturedOrbitalViewReady,
+      notice: onCapturedOrbitalViewNotice,
+    }
+    const current = capturedCameraRef.current
+    if (current && current.revision !== nextView?.revision) {
+      const restore = current.viewRequestId === viewRequestId
+      current.camera.exit(restore)
+      capturedCameraRef.current = undefined
+      if (restore && mapRef.current) scheduleViewportReport(mapRef.current)
+    }
+    if (obsolete) onCapturedOrbitalViewEnd?.(capturedOrbitalView.revision)
+  }, [
+    capturedOrbitalView, onCapturedOrbitalViewEnd, onCapturedOrbitalViewReady,
+    onCapturedOrbitalViewNotice, scheduleViewportReport, viewRequestId,
+  ])
+
+  useEffect(() => {
+    const view = capturedViewRef.current
+    const map = mapRef.current
+    if (!view || !map) return
+    if (!capturedCameraRef.current) {
+      clearPendingViewport()
+      pendingJourneyFitRef.current = undefined
+      interactionGenerationRef.current += 1
+      clusterExpansionGenerationRef.current += 1
+      hideTrafficTooltipRef.current()
+      if (frameRef.current !== null) {
+        window.cancelAnimationFrame(frameRef.current)
+        frameRef.current = null
+      }
+      capturedCameraRef.current = {
+        revision: view.revision, viewRequestId: view.viewRequestId,
+        camera: createCapturedOrbitalCamera(map, view, {
+          onReturn: () => capturedCallbacksRef.current.end?.(view.revision),
+          onFailure: message => capturedCallbacksRef.current.end?.(view.revision, message),
+          onRestoreFailure: message => errorRef.current({ kind: 'runtime', message }),
+          onReady: ready => capturedCallbacksRef.current.ready?.(view.revision, ready),
+          onNotice: message => capturedCallbacksRef.current.notice?.(view.revision, message),
+        }),
+      }
+    }
+    capturedCameraRef.current.camera.setReady(capturedOrbitalViewAcknowledged && loadedRef.current)
+  })
+
   useEffect(() => {
     if (lastViewRequestRef.current === viewRequestId) return
     const map = mapRef.current
@@ -2995,7 +3071,7 @@ export function TrafficMap({
     <div
       ref={containerRef}
       className="traffic-map"
-      aria-label={`${
+      aria-label={capturedOrbitalView ? `Captured modeled orbital view from ${capturedOrbitalView.position.name}` : `${
         interpolateTraffic ? 'Live' : 'Historical'
       } traffic map: ${viewLabel}`}
     />

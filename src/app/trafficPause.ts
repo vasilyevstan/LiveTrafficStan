@@ -4,4 +4,5 @@ export const shouldPauseTraffic = (
   query: TrafficQuery | null,
   hidden: boolean,
   online: boolean,
-) => !online || hidden || query === null
+  intentionallyPaused = false,
+) => !online || hidden || query === null || intentionallyPaused

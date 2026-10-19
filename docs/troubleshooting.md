@@ -178,6 +178,30 @@ there is no automatic history retry or refresh. Retry-After remains authoritativ
 Do not clear site data, relax the 5 km graph gap or enable a paid source to
 make a missing journey appear complete.
 
+## Captured orbital view is unavailable or returns (development, #508)
+
+This accepted development feature is not yet a production activation.
+View from here needs an already accepted modeled position and **Auto**
+projection. A Flat or unsafe/polar pose gets an explicit reason; entry does
+not switch projection, fetch another position or clamp height. Identity-only
+catalog results cannot supply an eye. A water-only scene can be the actual
+map beneath an ocean subpoint, not missing spacecraft imagery.
+
+Drag/arrow input changes orientation, not position or height. A view-limit
+notice retains the previous valid pose. Return and X remain reachable even
+when the phone inspector is compact; canvas Escape Returns unless native
+workspace fullscreen owns it. Find does not move the camera; Center is new
+ordinary navigation, not restoration of the old pose.
+
+Offline alone can retain a still-valid capture, but uncached tiles cannot
+appear. Invalid device time, hard catalog expiry or owning-generation loss
+automatically Returns with an explanation. Do not refresh provider data just
+to keep a captured scene alive. If native restoration also fails, **could not
+be restored** is a map recovery error: capture ends, input is cleaned up,
+and Center or a page reload can recover. It is not a successful Return or
+an orbital-provider authentication failure. No site-data deletion is needed.
+See [the supported contract](orbital-tracking.md#captured-orbital-views-development-508).
+
 ## Fullscreen is unavailable, declined or exits unexpectedly
 
 Use **Settings → View → Enter fullscreen** for the entire workspace. The

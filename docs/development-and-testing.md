@@ -48,6 +48,91 @@ supplementary marine WebSocket; use the actual local Worker for those paths.
 | `npm run check:deploy` | Bundle the Worker and Static Assets without credentials or deployment |
 | `npm run preview:worker` | Build and run the actual local Cloudflare `workerd` boundary |
 
+### Captured orbital view (#508, development acceptance)
+
+The Auto-only captured-view implementation is locally accepted, not deployed
+production behavior. The approved proof-first gate omitted aircraft/ship
+viewpoints and Flat rather than adding another renderer or weakening the
+fixed-eye contract. GPT-6.1 Sol, Claude Opus 5.5 and GPT-5.5 contributed
+source/architecture/clock planning; native measurements, not model agreement,
+decide acceptance.
+
+Deterministic cases cover exact owner/model-time/snapshot capture, copied
+positions, invalid/unsupported geometry, units and reported types, keyed
+pause acknowledgements, stale/expiry/clock behavior, hidden resume, offline
+retention and obsolete worker/fetch output. They retain the distinct curated
+2h and Starlink 12h acquisition boundaries. Releasing capture into HISTORY,
+hidden or disabled state cannot briefly acquire or create a worker.
+Traffic pause tests retain ordinary queries, cadence/backoff and marine
+deadlines. Native-attachment doubles additionally cover exact raw/handler
+restoration after placement failure, failure of both placement and restoration,
+manual Return restoration failure and cancelled pending acknowledgement.
+Late native renders/timers cannot revive disposed input or issue another Return.
+
+The final required local gates pass **201 files / 2,197 tests**, lint,
+typecheck, aircraft-metadata, country-allocation, vessel-photo and orbital
+catalog checks and the matched-input production build. Existing CI adds its
+unchanged Starlink/enrichment/ports/airports and Worker/PWA checks.
+
+The bounded integrated Chrome 155 / MapLibre 6.10.0 batch used the actual
+App, bundled SGP4 worker and incumbent vector tiles, re-signed complete
+bundled catalog fixtures, empty traffic fixtures and an unavailable MQTT
+fixture. Six cases cover Light/Dark desktop 1280x900, 315x517 and 390x568,
+curated LEO/rocket-body/high-orbit context and the bounded Starlink sample.
+Native mouse, emulated touch and arrow inputs are trusted. Worst accepted
+first-round virtual-eye error is below 0.083m horizontally and 0.000001m in
+height; corrected confirmation is below 0.011m horizontally. These measure
+the renderer's eye, not SGP4 position accuracy. Every final raw Return has
+zero measured center/zoom/bearing/pitch/roll/elevation/padding error and exact
+previous handler states, with one unchanged current map/canvas.
+
+Final compact overlay union is 12.95% desktop, 28.56% at 315x517 and 25.98%
+at 390x568, below the approved 65% ceiling. Each case retains a hit-tested
+120x120 CSS map region, reachable 44px Return/X and no horizontal overflow.
+Phone entry starts compact; expanded reading retains a native-scrollable
+180/195px body with the full object identity, model caveats and source credits;
+expanded phone overlay union is 58.12%/55.75%, also below the same ceiling.
+The confirmation includes both themes and both owners; it is not physical
+phone/GPU, OS-keyboard or production acceptance. Browser magnification is not
+newly qualified by this batch.
+
+Accepted lifecycle receipts cover style/theme, real resize, hide/show,
+Find focus without camera movement, older geolocation updating Home silently,
+native fullscreen Escape precedence and newer C/Center navigation winning
+over old Return. A 60,001ms wall-clock jump Returns with a reason. A separate
+near-24h fixture proves native offline retains a valid capture, followed by
+hard-expiry Return, zero raw restoration error and no new source acquisition
+through that offline expiry. Existing deterministic cases cover both owners.
+
+The captured 16-second hold records zero source acquisitions. Its initial
+35 render frames are tile/paint settling, not zero active rendering; a later
+settled 2.5-second sample records zero frames, camera jumps and worker messages.
+Normal atlas tile requests remain expected. No continuing camera-correction
+loop, new renderer, dependency, worker, dataset or scheduler is added.
+
+Matched public build inputs are `/api/aircraft`, aircraft photos, plausible
+routes, marine supplement and airport boards enabled. Measure the HTML initial
+module plus static imports with the same Node `gzipSync` default level, not
+Vite's differently computed console estimate. Initial JS grows from
+576,653 to **581,146 gzip bytes**, +4,493 bytes (**0.7792%**, below 1%;
+maximum integer budget 582,419). Final CSS is 146,243 raw /21,466 gzip bytes;
+JS has no static-import chunk. Worker and lazy MQTT chunks are unchanged.
+The measured build is `index-CoXsQ8Mp.js`, `index-EDYXpE4j.css`, shell
+`66cd2391583bbffad6b3`; these are local production-input artifacts, not a
+running deployment identity.
+
+Preserve the first-round failures: inspector-reset reopened the phone body,
+capture controls missed incumbent styling, and double placement/restoration
+failure stranded capture without a recovery message. One coherent corrective
+batch and bounded confirmation resolve them; double-fault injection now ends
+capture and explicitly reports **could not be restored**, never successful
+Return. Earlier fixture/header/epoch/CDP and HMR-entry-marker failures are
+observer limitations, not application evidence. Reuse unchanged renderer and
+lifecycle receipts rather than repeat accepted reviews or visual polishing.
+See [usage](orbital-tracking.md#captured-orbital-views-development-508),
+[ownership](architecture.md#captured-orbital-camera-ownership-development-508)
+and [bounds](configuration.md#captured-orbital-view-development-508).
+
 ### Independent reported vessel directions (#505)
 
 `TrafficDetails.test.tsx` checks separate **Heading (bow)** and **Course over

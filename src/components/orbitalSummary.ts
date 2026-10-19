@@ -31,6 +31,9 @@ export const formatOrbitalSummary = ({
   starlink,
 }: OrbitalSummaryOptions) => {
   if (!visible) return undefined
+  if (state.phase === 'paused-capture' || starlink?.state.phase === 'paused-capture') {
+    return 'ORBITS · PAUSED FOR CAPTURED VIEW'
+  }
   if (historyActive || state.phase === 'paused-history') {
     return 'ORBITS · HIDDEN IN HISTORY'
   }

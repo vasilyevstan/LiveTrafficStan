@@ -819,6 +819,54 @@ not just selected details. The record cap remains 16. Context makes no network
 request, adds no normalized orbital field, and never changes catalog freshness.
 The N2YO reference is a normal explicit external link, not a fetch or embed.
 
+## Captured orbital camera ownership (development, #508)
+
+This accepted development addition is not a production deployment receipt.
+`orbitalView.ts` carries a readonly capture revision, ordinary navigation
+request identity, copied accepted position and its actual owning snapshot.
+The shared `OrbitalController.acceptedPositionForCapture` validates exact
+owner/ID, digest, retrieval identity and authoritative time atomically.
+App must not combine a controller position with an older React snapshot.
+Curated and `orbital:starlink:<NORAD>` identities never borrow each other's
+clock or generation.
+
+`useOrbitalObjects` applies the capture pause to both existing channel
+controllers. Keyed `capturePauseRevision` acknowledgements and the matching
+owning snapshot/`paused-capture` state gate placement. Enter capture before
+other pause-input changes; release it after those changes so simultaneous
+HISTORY/hidden/layer-off transitions cannot briefly acquire or recreate work.
+Late fetch/worker output remains revision-fenced. Both worker channels stop;
+the original expiry timer alone observes visible clock/expiry validity at
+the existing position cadence, retaining separate 2h/12h request boundaries.
+
+`capturedOrbitalCamera.ts` attaches only while captured to the single native
+map/canvas. Public coordinate/FromTo APIs and small spherical geometry compute
+an orientation-only eye; production does not use private transform mutations.
+Entry, style restoration and real resize use a bounded two-render handoff,
+hidden until ready with one five-second deadline. This handles native Auto
+transform changes without an animation or continuing correction loop.
+Unsupported geometry remains unsupported rather than clamped or projected
+silently into Flat.
+
+The attachment snapshots raw center/zoom/bearing/pitch/roll/elevation/padding,
+eight input-handler states and changed canvas attributes. Canvas-local input
+owns look-around and Escape; fullscreen retains priority. Disposal fences
+render/timer/input callbacks and restores exact prior states even when native
+placement fails. A failed restoration reports through the existing map-error
+surface and ends capture truthfully rather than stranding its owner.
+New explicit navigation releases ownership without applying the old camera.
+
+App retains the ordinary query/navigation/Home/share camera and mounted traffic
+controllers. Existing intentional-pause composition preserves all cadence,
+Retry-After and marine deadlines; effective overlay/optional-work inputs yield
+without modifying preferences. Depth move/style callbacks cannot acquire from
+captured poses. The immutable view survives hidden-controller output removal,
+but invalid owning clock, hard age or generation ends it once. There is no
+new scheduler, worker, provider, persistence or generic multi-object mode
+framework. [Usage and recovery](orbital-tracking.md#captured-orbital-views-development-508)
+and [measured evidence](development-and-testing.md#captured-orbital-view-508-development-acceptance)
+define the supported boundaries.
+
 ## Lifecycle and failure isolation
 
 Aircraft and marine providers have separate state, cancellation, and error

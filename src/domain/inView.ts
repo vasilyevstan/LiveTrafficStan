@@ -175,6 +175,7 @@ const sourceMessage = (source: OrbitalInViewSource, label: string) => {
     case 'offline': return `${label}: offline.`
     case 'paused-hidden': return `${label}: paused while hidden.`
     case 'paused-history': return `${label}: hidden in HISTORY.`
+    case 'paused-capture': return `${label}: paused for the captured view.`
     case 'clock-invalid': return `${label}: check the device clock.`
     case 'unavailable': return `${label}: unavailable. Use More for source details and retry.`
   }

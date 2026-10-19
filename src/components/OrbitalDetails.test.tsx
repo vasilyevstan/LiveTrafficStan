@@ -43,6 +43,20 @@ const snapshot: OrbitalCatalogSnapshot = {
 }
 
 describe('OrbitalDetails', () => {
+  it('offers captured entry only when requested and explains unsupported Flat without changing projection', () => {
+    const html = renderToStaticMarkup(
+      <OrbitalDetails
+        position={position} snapshot={snapshot} sourceName="CelesTrak"
+        sourceWebsiteUrl="https://celestrak.org/" sourceUsagePolicyUrl="https://celestrak.org/usage-policy.php"
+        now={position.modeledFor} online units="metric" imageState={{ phase: 'unavailable' }}
+        mapDisplay={{ available: true, selectedException: false }} onClose={() => undefined}
+        onViewFromHere={() => undefined}
+        viewFromHereUnavailable="View from here is available in Auto projection, not Flat."
+      />,
+    )
+    expect(html).toContain('not Flat')
+    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>View from here<\/button>/)
+  })
   it('attributes native GP/type separately from the dated CelesTrak membership reference without claiming SATCAT', () => {
     const native: OrbitalCatalogSnapshot = {
       ...snapshot, schemaVersion: 3, sourceContractVersion: 3,
