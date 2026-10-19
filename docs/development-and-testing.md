@@ -48,6 +48,73 @@ supplementary marine WebSocket; use the actual local Worker for those paths.
 | `npm run check:deploy` | Bundle the Worker and Static Assets without credentials or deployment |
 | `npm run preview:worker` | Build and run the actual local Cloudflare `workerd` boundary |
 
+### Lightweight map detail (#518)
+
+`basemapCartography.test.ts` retains default/custom/shared-theme preservation,
+label/vessel contrast and unchanged source/road semantics, adding exact
+existing-source class filters, bounded numeric height/base guards, close-zoom
+height expressions and idempotent detail rehydration. `basemapRelief.test.ts`
+covers zero work while off, one native coarse DEM source, below-water
+hillshade ordering, theme/style rehydration, removal ordering, activation
+revisions, late errors, isolated failure, explicit retry and disposal.
+Controls tests retain the current dock and expose truthful off/on/unavailable/
+unsupported relief copy with source/privacy detail.
+
+Use a bounded real-browser comparison, not layer presence as visual proof.
+The October 19 renderer trial uses actual OpenFreeMap and Mapzen tiles,
+desktop and 315x517 Light/Dark, and the shipped captured-camera attachment
+with synthetic orbital positions. Dedicated-worker network observation
+establishes vector transfers; page observation establishes DEM transfers.
+The first Alpine candidate added approximately 5.75 MB of relief. One
+source-zoom correction, to 7, reduced its desktop/phone scene to approximately
+0.73/0.20 MB while retaining useful coarse mountain shading. Orbital
+entry/brief movement/Return added approximately 2.85/1.00 MB. These are
+scene-specific cold-transfer observations, not universal tile budgets.
+Native frame p95 stayed approximately 17-19 ms. The initial one-second
+orbital endpoint wait appears in baseline and candidate maxima; do not
+describe p95 alone as uninterrupted animation.
+
+The renderer trial has one canvas, no native terrain, zero renderer/runtime
+errors and raw orbital Return under the incumbent precision limits. A first
+observer assertion compared camera JSON bytes and rejected a harmless
+floating-point longitude wrap; retained failure evidence was corrected to
+record actual deltas. Accepted unchanged building cases were reused.
+Desktop Chrome emulation is not physical-phone/GPU evidence.
+
+Final integrated acceptance uses the actual App under the exact production
+CSP, native vectors/DEM tiles, synthetic aircraft and re-signed orbital
+fixtures. Eight desktop/315x517 Light/Dark scenes show the real mountain
+shading and 119/41 rendered close-zoom building features. Native aircraft
+selection survives relief off/on and a theme change. Two captured-view cases
+inject actual DEM request failure: only relief becomes unavailable; capture
+continues, explicit retry/style rehydration succeeds, and all raw Return
+deltas are zero, including padding, eight handlers and maximum pitch.
+
+One UI correction pairs DEPTHS and RELIEF as 44px controls instead of adding
+another full row. Four final theme/size cases measure 158.5x44 desktop and
+134x44 phone targets for both. The complete visible-panel overlay union,
+including absolute task bodies, is 20.13% desktop /60.87% phone, below 65%,
+with a hit-tested 120x120 map region. One outer scroller, 93px native phone
+touch scrolling, one-line relief status, retained compact credits, explicit
+credited reading/44px close, one canvas, no horizontal overflow and zero CSP/
+unhandled runtime errors pass. Expanded credits intentionally take reading
+priority; close them before changing a covered layer control.
+
+Native startup/reload adds zero DEM requests; ordinary source/camera/provider
+work remains distinct. Saved preferences do not gain a relief field. Initial
+observer assumptions about desktop credits, first eligible-view controller
+initialization, millisecond fixture clocks, canceled CDP interception IDs and
+session-scoped emulation are retained as qualified failures, not application
+fixes. Accepted unchanged source/Return cases were reused for the UI correction.
+Phone emulation is not physical-device/GPU acceptance.
+
+All required local gates pass 203 suites /2,255 tests. Matched production-input
+initial JS is 584,609 Node-default-gzip bytes versus 582,743: +1,866 /0.3202%,
+below the 1% lightweight bound. CSS is the existing stylesheet with one
+two-control selector adjustment. No dependency, renderer, backend, worker,
+provider scheduler or persistent field is added. The [#518 delivery receipt](https://github.com/vasilyevstan/LiveTrafficStan/issues/518)
+records separate actual public availability and Wiki publication.
+
 ### Moving 3D orbital view (#514)
 
 Required local gates pass **202 files / 2,235 tests**, lint, typecheck, all four

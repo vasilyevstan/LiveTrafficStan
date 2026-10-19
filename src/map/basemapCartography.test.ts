@@ -1,8 +1,9 @@
 import type { StyleSpecification } from 'maplibre-gl'
 import { describe, expect, it, vi } from 'vitest'
-import { DEFAULT_MAP_STYLE_URLS } from '../config/appConfig'
+import { BASEMAP_DETAIL_CONFIG, DEFAULT_MAP_STYLE_URLS } from '../config/appConfig'
 import {
   applyBasemapCartography,
+  LAYER_BASEMAP_BUILDINGS,
   needsBasemapStyleReset,
 } from './basemapCartography'
 import { trafficIconTreatment } from './icons'
@@ -59,11 +60,18 @@ const style = (): StyleSpecification => ({
   ],
 })
 
-const fakeMap = (base = style()) => ({
-  getStyle: () => base,
-  setPaintProperty: vi.fn(),
-  setLayerZoomRange: vi.fn(),
-})
+const fakeMap = (base = style()) => {
+  const added = new Map<string, StyleSpecification['layers'][number]>()
+  return {
+    getStyle: () => base,
+    getLayer: (id: string) => added.get(id) ?? base.layers.find(layer => layer.id === id),
+    addLayer: vi.fn((layer: StyleSpecification['layers'][number], _before?: string) => {
+      added.set(layer.id, layer)
+    }),
+    setPaintProperty: vi.fn(),
+    setLayerZoomRange: vi.fn(),
+  }
+}
 
 const luminance = (hex: string) => {
   const channels = [1, 3, 5].map((offset) => {
@@ -130,6 +138,7 @@ describe('atlas basemap cartography', () => {
     applyBasemapCartography(map, 'light', url)
     expect(map.setPaintProperty).not.toHaveBeenCalled()
     expect(map.setLayerZoomRange).not.toHaveBeenCalled()
+    expect(map.addLayer).not.toHaveBeenCalled()
   })
 
   it('does not recolor a different vector source with matching layer names', () => {
@@ -175,5 +184,55 @@ describe('atlas basemap cartography', () => {
     expect(
       contrast(trafficIconTreatment(theme).vesselFill, water),
     ).toBeGreaterThanOrEqual(3)
+  })
+
+  it('adds only existing-source land classes and bounded height-backed buildings below labels', () => {
+    const map = fakeMap()
+    applyBasemapCartography(map, 'light', DEFAULT_MAP_STYLE_URLS.light)
+    const added = map.addLayer.mock.calls.map(([layer]) => layer)
+    expect(added).toHaveLength(6)
+    expect(added.every(layer => 'source' in layer && layer.source === 'openmaptiles')).toBe(true)
+    for (const kind of ['grass', 'farmland', 'rock', 'sand', 'wetland']) {
+      expect(added).toContainEqual(expect.objectContaining({
+        id: `basemap-detail-landcover-${kind}`, type: 'fill',
+        'source-layer': 'landcover', minzoom: BASEMAP_DETAIL_CONFIG.landcoverMinimumZoom,
+        filter: ['==', ['get', 'class'], kind],
+      }))
+    }
+    const building = added.find(layer => layer.id === LAYER_BASEMAP_BUILDINGS)
+    expect(building).toMatchObject({
+      type: 'fill-extrusion', 'source-layer': 'building',
+      minzoom: BASEMAP_DETAIL_CONFIG.buildingsMinimumZoom,
+      paint: {
+        'fill-extrusion-height': ['interpolate', ['linear'], ['zoom'], 14.5, 0, 15.5,
+          ['number', ['get', 'render_height'], 0]],
+        'fill-extrusion-base': ['interpolate', ['linear'], ['zoom'], 14.5, 0, 15.5,
+          ['number', ['get', 'render_min_height'], 0]],
+      },
+    })
+    expect(building && 'filter' in building && building.filter).toEqual(['all',
+      ['!=', ['get', 'hide_3d'], true],
+      ['==', ['typeof', ['get', 'render_height']], 'number'],
+      ['>', ['number', ['get', 'render_height'], 0], 5],
+      ['<', ['number', ['get', 'render_height'], 0], 1_000],
+      ['any', ['!', ['has', 'render_min_height']],
+        ['all', ['==', ['typeof', ['get', 'render_min_height']], 'number'],
+          ['>=', ['number', ['get', 'render_min_height'], 0], 0],
+          ['<', ['number', ['get', 'render_min_height'], 0],
+            ['number', ['get', 'render_height'], 0]]]],
+    ])
+    expect(map.addLayer).toHaveBeenCalledWith(building, 'water_label')
+  })
+
+  it('rehydrates detail colors without duplicate layers or changing camera/source data', () => {
+    const map = fakeMap()
+    applyBasemapCartography(map, 'light', DEFAULT_MAP_STYLE_URLS.light)
+    const count = map.addLayer.mock.calls.length
+    applyBasemapCartography(map, 'dark', DEFAULT_MAP_STYLE_URLS.dark)
+    applyBasemapCartography(map, 'light', DEFAULT_MAP_STYLE_URLS.light)
+    expect(map.addLayer).toHaveBeenCalledTimes(count)
+    expect(map.setPaintProperty).toHaveBeenLastCalledWith(
+      LAYER_BASEMAP_BUILDINGS, 'fill-extrusion-color', '#c6b399',
+    )
   })
 })

@@ -62,6 +62,32 @@ credentials and the private-relay secret. Observability remains disabled and
 no paid fallback is enabled. Orbital activation uses the included free KV and
 SQLite Durable Object allocations; R2 is not used.
 
+### Lightweight map-detail release boundary (#518)
+
+The automatic land-cover fills and close-zoom building extrusions reuse
+OpenFreeMap's existing vectors. The only added external contact is the explicit,
+off-on-reload RELIEF layer, using a fixed public Mapzen/AWS Terrarium path
+already allowed narrowly by the browser CSP. No account, paid tier, new
+dependency, renderer, backend endpoint, binding, secret or producer is added.
+Source errors stay local to relief; aircraft, marine and orbital admission,
+source/retry fences, catalogs, cadence and captured Return remain unchanged.
+
+Deploy with the existing serialized exact-current-main application workflow.
+Preserve `oci-private-relay`, aircraft photos, flight routes, both orbital
+catalogs, `orbital_source=space-track`, marine supplement and airport boards,
+with atomic protected secrets. No new production flag or saved-data migration
+is required. Existing tabs use ordinary Settings / REFRESH APP.
+
+The compatible predecessor is application
+`d5d38b3a4a696f87cc2ef5c4c1c1a1f56d8d8325`, Worker
+`9808dd9b-4d78-4a72-aa60-c34ff757f059`. The existing previous-version rollback
+removes the additional source/layers/control without changing saved preferences
+or private history. No new rollback exercise is necessary for these display
+changes. The [#518 delivery receipt](https://github.com/vasilyevstan/LiveTrafficStan/issues/518)
+records the actual resulting source, Worker, required gates and public
+acceptance; this boundary does not invent an unobserved deployment identity.
+The preceding release receipts below remain historical evidence.
+
 ### Moving 3D orbital release boundary (#514)
 
 The moving refinement upgrades the existing View from here action with

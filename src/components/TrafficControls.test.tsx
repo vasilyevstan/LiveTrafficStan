@@ -79,6 +79,9 @@ const renderControls = (
       depthsVisible
       bathymetryStatus={INITIAL_BATHYMETRY_STATUS}
       onDepthsVisibleChange={() => undefined}
+      reliefVisible={false}
+      reliefStatus="off"
+      onReliefVisibleChange={() => undefined}
       weatherLoading={false}
       weatherWaiting={false}
       weatherReady={false}
@@ -166,6 +169,31 @@ const renderControls = (
   )
 
 describe('TrafficControls', () => {
+  it('keeps optional session relief in Layers without a permanent dock action', () => {
+    const html = renderControls()
+    expect(html).toMatch(/id="relief-layer-toggle"[^>]*aria-pressed="false"/)
+    expect(html).toContain('Relief off. No relief requests.')
+    expect(html).toContain('Relief is optional and off on reload.')
+    expect(html).toContain('tile URLs disclose the viewed map area.')
+    expect(html).toContain('Mapzen terrain contributors and licenses')
+    expect(html.match(/id="relief-layer-toggle"/g)).toHaveLength(1)
+    expect(html).not.toContain('data-workspace-task="relief"')
+  })
+
+  it.each([
+    ['enabled', 'Relief on. Coarse land shading.'],
+    ['unavailable', 'Relief unavailable. Toggle off/on to retry.'],
+    ['unsupported', 'Relief unavailable with this map style.'],
+  ] as const)('keeps %s relief status separate from depth and traffic state', (reliefStatus, message) => {
+    const html = renderControls({
+      reliefVisible: true, reliefStatus,
+      bathymetryStatus: { ...INITIAL_BATHYMETRY_STATUS, imagery: 'ready' },
+    })
+    expect(html).toMatch(/id="relief-layer-toggle"[^>]*aria-pressed="true"/)
+    expect(html).toContain(message)
+    expect(html).toContain('Model depths; not for navigation.')
+  })
+
   it('keeps ruler entry/readout/Clear in View without adding a permanent task', () => {
     const html = renderControls({
       rulerAvailable: true, rulerDistance: '12.3 km',

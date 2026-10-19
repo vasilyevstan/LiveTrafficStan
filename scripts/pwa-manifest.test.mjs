@@ -86,6 +86,10 @@ describe('PWA manifest and deployment headers', () => {
       expect(headers.split('; img-src')[0]).toContain(`https://${origin}`)
     }
     expect(headers).not.toMatch(/\*\.(?:emodnet-bathymetry\.eu|gebco\.net)/)
+    expect(headers.match(/https:\/\/s3\.amazonaws\.com[^\s;]*/g)).toEqual([
+      'https://s3.amazonaws.com/elevation-tiles-prod/',
+    ])
+    expect(headers).not.toContain('*.amazonaws.com')
     expect(headers.split('; img-src')[0]).not.toContain('https://openwaters.io')
     expect(headers).toMatch(
       /\/sw\.js[\s\S]*must-revalidate[\s\S]*Service-Worker-Allowed: \//,

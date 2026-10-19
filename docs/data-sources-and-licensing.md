@@ -85,6 +85,57 @@ for exact windows and the aggregation delay.
 
 OpenFreeMap is free and open, requires no application key, and is directly compatible with MapLibre GL JS. Its public service is provided as-is without an uptime guarantee. The style URL is therefore configuration rather than an application-wide assumption.
 
+### Existing-vector map detail
+
+Grass, farmland, rock, sand, wetland and close-zoom building geometry reuse
+the same OpenFreeMap/OpenMapTiles source and its existing attribution. Building
+heights may be derived from OSM levels; they are approximate cartographic
+context, not surveyed heights. Unknown/ambiguous default heights and hidden
+outlines are not extruded. No new lookup, feed, dataset download or imagery
+service is added for these vector details.
+
+## Optional land relief: Mapzen Terrain Tiles
+
+- Registry: [AWS Open Data Terrain Tiles](https://registry.opendata.aws/terrain-tiles/).
+- Documentation: [Tilezen/Joerd](https://github.com/tilezen/joerd/tree/master/docs).
+- Fixed public browser tile path:
+  `https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png`.
+- Rights: [required source attribution and licenses](https://github.com/tilezen/joerd/blob/master/docs/attribution.md)
+  and [underlying datasets/resolution/known issues](https://github.com/tilezen/joerd/blob/master/docs/data-sources.md).
+- No account, application key, paid service, proxy or upstream credentials.
+  An actual public GET with Origin returned HTTP 200 and
+  `Access-Control-Allow-Origin: *` on October 19, 2026.
+
+RELIEF is an explicit session-only opt-in in Layers, off on reload. The
+browser loads coarse 256 px Terrarium DEM tiles only for native hillshading,
+with a source maximum zoom of 7. Terrain geometry is not enabled, no numeric
+height/depth values are inferred from shading, and no navigation, optical
+accuracy or surveyed-building claim is made. It is separate from DEPTHS.
+The dataset combines older source products: the documented v1/v1.1 builds
+date to 2016/2017, with no promise of regular global updates. Tile URLs reveal
+the requested map area to AWS. No browser credentials, personal headers,
+Home coordinate payload, application persistence, backend archive or shell
+cache is added. Native HTTP caching and in-memory map tile handling remain.
+
+The map's relief credit links to the complete contributor/license notice;
+OpenFreeMap/OpenMapTiles/OpenStreetMap and other existing credits remain.
+Underlying terrain rights are not the application's Apache-2.0 license and
+are not a blanket CC0 claim. Required contributor credit includes ArcticDEM
+(NSF awards 1043681, 1559691, 1542736; DigitalGlobe-derived DEMs), Geoscience
+Australia/Commonwealth of Australia 2017, Austria's open DGM, Canada under
+the Open Government Licence, EU-funded Copernicus EU-DEM, NOAA ETOPO1,
+INEGI Continental relief 2016, New Zealand LINZ/Crown copyright 2011,
+Kartverket, the UK Environment Agency 2015, and USGS 3DEP/GMTED2010/SRTM.
+The linked official attribution page provides the exact required notices
+and individual license links. Preserve that accessible notice when using
+the public tiles; do not relabel their source or imply current survey data.
+
+Native source errors are isolated from traffic and the basemap error path.
+An unavailable activation does not silently substitute another terrain
+service or automatically retry on theme/style changes. Only explicit
+off/on starts a new activation. The public endpoint is as-is, not an
+application SLA or proof of physical-device performance.
+
 ## Modeled water depths: EMODnet and GEBCO
 
 DEPTHS is enabled by default, using the public services below without an

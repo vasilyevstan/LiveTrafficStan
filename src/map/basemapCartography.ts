@@ -1,6 +1,6 @@
-import type { LayerSpecification, Map as MapLibreMap } from 'maplibre-gl'
+import type { ExpressionSpecification, LayerSpecification, Map as MapLibreMap } from 'maplibre-gl'
 import type { Theme } from '../app/theme'
-import { DEFAULT_MAP_STYLE_URLS } from '../config/appConfig'
+import { BASEMAP_DETAIL_CONFIG, DEFAULT_MAP_STYLE_URLS } from '../config/appConfig'
 
 const PALETTES = {
   light: {
@@ -20,6 +20,11 @@ const PALETTES = {
     text: '#1f332d',
     secondaryText: '#283f38',
     waterText: '#2c5264',
+    grass: '#d0dab2',
+    farmland: '#e1d6aa',
+    rock: '#c7c3b5',
+    sand: '#e7d4a7',
+    wetland: '#adc9b8',
   },
   dark: {
     land: '#263a3d',
@@ -38,6 +43,11 @@ const PALETTES = {
     text: '#e4e7d9',
     secondaryText: '#cad8cd',
     waterText: '#b3d2df',
+    grass: '#3a5141',
+    farmland: '#50513b',
+    rock: '#58605b',
+    sand: '#71634a',
+    wetland: '#335857',
   },
 } as const
 
@@ -49,7 +59,12 @@ type Paint = readonly (readonly [
 type BasemapMap = Pick<
   MapLibreMap,
   'getStyle' | 'setPaintProperty' | 'setLayerZoomRange'
->
+> & {
+  getLayer: (id: string) => unknown
+  addLayer: (layer: LayerSpecification, before?: string) => void
+}
+
+export const LAYER_BASEMAP_BUILDINGS = 'basemap-detail-buildings'
 
 export const needsBasemapStyleReset = (
   styleUrl: string,
@@ -156,4 +171,53 @@ export const applyBasemapCartography = (
       map.setLayerZoomRange(layer.id, 5, layer.maxzoom ?? 24)
     }
   }
+
+  const layers = map.getStyle().layers
+  if (map.getStyle().sources.openmaptiles?.type !== 'vector') return
+  const colors = PALETTES[theme]
+  const beforeLandcover = layers.find(layer =>
+    'source-layer' in layer && layer.source === 'openmaptiles' &&
+    layer['source-layer'] === 'landcover')?.id
+  for (const kind of ['grass', 'farmland', 'rock', 'sand', 'wetland'] as const) {
+    const id = `basemap-detail-landcover-${kind}`
+    if (!map.getLayer(id)) map.addLayer({
+      id, type: 'fill', source: 'openmaptiles', 'source-layer': 'landcover',
+      minzoom: BASEMAP_DETAIL_CONFIG.landcoverMinimumZoom,
+      filter: ['==', ['get', 'class'], kind],
+      paint: { 'fill-color': colors[kind], 'fill-opacity': 0.6 },
+    }, beforeLandcover)
+    map.setPaintProperty(id, 'fill-color', colors[kind])
+  }
+
+  if (!layers.some(layer => 'source-layer' in layer &&
+    layer.source === 'openmaptiles' && layer['source-layer'] === 'building')) return
+  if (!map.getLayer(LAYER_BASEMAP_BUILDINGS)) {
+    const height: ExpressionSpecification = ['number', ['get', 'render_height'], 0]
+    const base: ExpressionSpecification = ['number', ['get', 'render_min_height'], 0]
+    map.addLayer({
+      id: LAYER_BASEMAP_BUILDINGS, type: 'fill-extrusion',
+      source: 'openmaptiles', 'source-layer': 'building',
+      minzoom: BASEMAP_DETAIL_CONFIG.buildingsMinimumZoom,
+      filter: ['all',
+        ['!=', ['get', 'hide_3d'], true],
+        ['==', ['typeof', ['get', 'render_height']], 'number'],
+        ['>', height, BASEMAP_DETAIL_CONFIG.unknownBuildingHeightMeters],
+        ['<', height, BASEMAP_DETAIL_CONFIG.maximumBuildingHeightMeters],
+        ['any', ['!', ['has', 'render_min_height']],
+          ['all', ['==', ['typeof', ['get', 'render_min_height']], 'number'],
+            ['>=', base, 0], ['<', base, height]]],
+      ],
+      paint: {
+        'fill-extrusion-color': colors.building,
+        'fill-extrusion-height': ['interpolate', ['linear'], ['zoom'],
+          BASEMAP_DETAIL_CONFIG.buildingsMinimumZoom, 0,
+          BASEMAP_DETAIL_CONFIG.buildingsFullHeightZoom, height],
+        'fill-extrusion-base': ['interpolate', ['linear'], ['zoom'],
+          BASEMAP_DETAIL_CONFIG.buildingsMinimumZoom, 0,
+          BASEMAP_DETAIL_CONFIG.buildingsFullHeightZoom, base],
+        'fill-extrusion-opacity': 0.88,
+      },
+    }, layers.find(layer => layer.type === 'symbol')?.id)
+  }
+  map.setPaintProperty(LAYER_BASEMAP_BUILDINGS, 'fill-extrusion-color', colors.building)
 }
