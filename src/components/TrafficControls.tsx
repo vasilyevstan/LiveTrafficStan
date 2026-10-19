@@ -663,6 +663,7 @@ export function TrafficControls({
       case 'offline':
       case 'paused-hidden':
       case 'paused-history':
+      case 'paused-capture':
         return orbitalState.message
       case 'empty':
         return (
@@ -1356,6 +1357,7 @@ export function TrafficControls({
                 'clock-invalid',
                 'paused-hidden',
                 'paused-history',
+                'paused-capture',
               ].includes(orbitalState.phase) && (
                 <OrbitalContext
                   state={orbitalState}

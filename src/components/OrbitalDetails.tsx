@@ -43,6 +43,8 @@ interface OrbitalDetailsProps {
   onImageLoaded?: (path: string, url: string) => void
   onImageFailed?: (path: string) => void
   onClose: () => void
+  onViewFromHere?: () => void
+  viewFromHereUnavailable?: string
 }
 
 const DetailRow = ({
@@ -244,7 +246,10 @@ export function OrbitalDetails({
   onImageLoaded,
   onImageFailed,
   onClose,
+  onViewFromHere,
+  viewFromHereUnavailable,
 }: OrbitalDetailsProps) {
+  const viewReasonId = useId()
   const nativeGp = snapshot.sourceProvider === 'space-track'
   const dataSourceName = nativeGp ? 'Space-Track.org / USSPACECOM' : sourceName
   const dataSourceUrl = nativeGp ? 'https://www.space-track.org/' : sourceWebsiteUrl
@@ -278,6 +283,15 @@ export function OrbitalDetails({
         </div>
       }
     >
+      {onViewFromHere && (
+        <div className="journey-actions">
+          <button type="button" className="orbital-view-entry" onClick={onViewFromHere} disabled={Boolean(viewFromHereUnavailable)}
+            aria-describedby={viewFromHereUnavailable ? viewReasonId : undefined}>
+            View from here
+          </button>
+          {viewFromHereUnavailable && <p id={viewReasonId} className="metadata-status">{viewFromHereUnavailable}</p>}
+        </div>
+      )}
       {enrichment ? (
         <OrbitalEnrichmentDetails
           key={enrichment.identityKey}

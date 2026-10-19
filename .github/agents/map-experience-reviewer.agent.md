@@ -151,6 +151,16 @@ Check these project invariants:
   retain it; layer hide, committed navigation, HISTORY, expiry, or another
   mutually exclusive selection clears it synchronously. Current orbital
   context/details cannot flash during the first HISTORY render.
+- Explicit captured orbital View from here is separate from selection: Auto
+  only, fixed geographic eye/height, no follow or silent Flat override.
+  Reuse accepted native evidence; geometry/API success is not eye proof.
+  Entry/style/resize use only the bounded render handoff, never correction
+  loops. Return restores raw camera/handler states; newer navigation wins.
+- Capture clears ordinary selection, so inspector-reset effects must not
+  reopen the compact phone body. Keep time/height and 44px Return/X reachable.
+  Fullscreen owns Escape first. Placement plus restoration failure must end
+  capture with truthful recovery, clean input and fence late callbacks, not
+  claim Returned or leave the owner stranded.
 - Generalized port points remain zoom-ranked, visually neutral, below traffic,
   and absent above their documented maximum zoom. Selection does not imply a
   facility, port call, destination, ETA, nearby vessel, or operational status.

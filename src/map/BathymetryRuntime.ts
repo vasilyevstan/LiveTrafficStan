@@ -22,6 +22,7 @@ export class BathymetryRuntime {
   private status: BathymetryStatus = INITIAL_BATHYMETRY_STATUS
   private visible: boolean
   private online: boolean
+  private capturePaused = false
   private active = false
   private moving = false
   private dirty = true
@@ -54,9 +55,10 @@ export class BathymetryRuntime {
     this.dirty = true
   }
 
-  setEnabled(visible: boolean, online: boolean) {
+  setEnabled(visible: boolean, online: boolean, capturePaused = false) {
     this.visible = visible
     this.online = online
+    this.capturePaused = capturePaused
     this.updateActive()
   }
 
@@ -70,6 +72,7 @@ export class BathymetryRuntime {
   }
 
   moveStarted() {
+    if (this.capturePaused) return
     this.moving = true
     this.dirty = true
     this.values.pause('paused', 'Depth numbers resume after the map settles.')
@@ -104,13 +107,15 @@ export class BathymetryRuntime {
   }
 
   private updateActive = () => {
-    const active = this.visible && this.online && !document.hidden
+    const active = this.visible && this.online && !document.hidden && !this.capturePaused
     if (active === this.active || this.disposed) return
     this.active = active
     this.tiles.setEnabled(active)
     setBathymetryVisibility(this.map, active, active && !this.moving)
     this.dirty = true
-    if (!active) this.values.pause('paused', 'Depth requests are paused while hidden or offline.')
+    if (!active) this.values.pause('paused', this.capturePaused
+      ? 'Depth requests are paused during the captured orbital view.'
+      : 'Depth requests are paused while hidden or offline.')
     else {
       this.map.getSource<RasterTileSource>(SOURCE_DEPTH_RASTER)?.setTiles([DEPTH_TILE_TEMPLATE])
       this.refreshValues()

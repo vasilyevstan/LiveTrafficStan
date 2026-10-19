@@ -299,6 +299,7 @@ describe('orbital discovery policy', () => {
     'clock-invalid',
     'paused-hidden',
     'paused-history',
+    'paused-capture',
   ] as const)('does not claim empty map coverage or pending passes for %s without safe positions', (phase) => {
     const viewport = { kind: 'world' } as const
     const activeFilters = filters()

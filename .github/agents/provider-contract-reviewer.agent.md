@@ -193,6 +193,13 @@ Check these project invariants:
   theme, style, prediction, and ordinary hide/show never refetch or reset the
   two-hour boundary; changed snapshots clear prior-generation positions and
   predictions before publishing the new identity.
+- Captured orbital views atomically copy the accepted point and its actual
+  owner/snapshot, then await both keyed pause acknowledgements before placement.
+  Stop acquisition and both worker channels while the original expiry timer
+  observes clock/hard age; retain distinct curated 2h and Starlink 12h gates.
+  Offline alone may retain valid capture; hidden validates before reappearance.
+  Release into HISTORY/hidden/disabled must not briefly acquire or create work.
+  Keep normal traffic queries/deadlines, source attribution and no persistence.
 - The dedicated SGP4 worker is created only for an active accepted catalog,
   observes load/runtime/message failures, and is destroyed for layer-off,
   hidden, HISTORY, expiry, and unmount. Prediction requests coalesce to one

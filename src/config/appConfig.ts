@@ -43,6 +43,13 @@ export const MOBILE_WORKSPACE_CONFIG = {
   coarseLandscapeMaximumHeightPx: 480,
 } as const
 
+export const ORBITAL_VIEW_CONFIG = {
+  maximumLookPitchDegrees: 59,
+  pointerDegreesPerPixel: 0.2,
+  keyboardStepDegrees: 6,
+  readinessTimeoutMs: 5_000,
+} as const
+
 export interface FreshnessThresholds {
   staleAfterMs: number
   expireAfterMs: number

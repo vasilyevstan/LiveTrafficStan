@@ -605,6 +605,41 @@ Changing that global shell contract for one optional feature was rejected
 because it would add new cache machinery while provider requests, CPU work,
 and worker execution remain absent before enable.
 
+## Captured orbital views use a qualified Auto-only subset (#508)
+
+The proof-first orbital assessment is separate from the earlier aircraft/ship
+NO-GO: aircraft failed fixed-eye precision across relevant native Auto poses
+and resize, while assumed-height ships failed usefulness despite valid
+placement. Do not revive them merely because orbital heights qualify.
+Source/architecture/clock discussion used GPT-6.1 Sol, Claude Opus 5.5 and
+GPT-5.5; actual native renderer, integrated lifecycle and weight gates decide
+the result.
+
+Auto supports useful fixed-eye Earth views across the accepted orbital range.
+Flat MEO still displaces the eye under native constraints; omit Flat rather
+than adding a second eligibility subsystem, another renderer, a silent
+projection change or a fake/clamped height. The spherical renderer/geodetic
+height mismatch is disclosed, not marketed as physical optical precision.
+Native high-altitude first-placement constraints require a bounded public
+two-render handoff, not per-frame correction.
+
+Capture owns an immutable accepted point and its actual snapshot, independent
+of ordinary selection. Two keyed controller acknowledgements precede camera
+placement. The existing expiry timer retains authoritative validity while
+acquisition/modeling/worker work pauses; ordinary queries, Home and original
+provider deadlines survive. Raw Return, newer-navigation precedence,
+fullscreen Escape and truthful restoration-failure recovery are mandatory.
+Use the incumbent compact inspector, not a permanent HUD or generic mode
+framework.
+
+The accepted local result adds 0.7792% matched initial-JS gzip weight with no
+dependency, renderer, provider, endpoint, worker, scheduler or persistence.
+Corrective phone union stays below 29%, with a 120x120 hit-tested map region
+and 180/195px expanded reading. This is development acceptance, not a
+production rollout or physical-device claim. [Evidence and preserved failures](development-and-testing.md#captured-orbital-view-508-development-acceptance)
+and [usage/limits](orbital-tracking.md#captured-orbital-views-development-508)
+are canonical; no additional broad review or optimization machinery is needed.
+
 ## Digitraffic MQTT plus REST metadata
 
 Digitraffic explicitly recommends five-minute REST polling, which is too infrequent for smoothly updated live vessel positions. V1 uses the provider's MQTT-over-WebSocket feed for live location and metadata messages.

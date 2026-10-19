@@ -220,7 +220,7 @@ describe('current orbital in-view population', () => {
     })
   })
 
-  it.each(['loading', 'disabled', 'unavailable', 'clock-invalid', 'paused-hidden', 'paused-history'] as const)(
+  it.each(['loading', 'disabled', 'unavailable', 'clock-invalid', 'paused-hidden', 'paused-history', 'paused-capture'] as const)(
     'does not reuse unsafe %s source positions, while keeping the other source usable',
     (phase) => {
       const result = model({

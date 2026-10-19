@@ -248,6 +248,19 @@ identity are not renamed or reset.
   image uses one bounded same-origin load whose media type, byte count, and
   SHA-256 are validated before a session Blob URL can appear in details or a
   later tooltip.
+- **Development only, not yet deployed (#508):** an accepted curated or
+  bounded-sample Starlink object offers **View from here** in Auto projection.
+  It captures one modeled geographic eye, height and time, starts facing
+  Earth, and permits orientation-only mouse/touch/arrow look-around.
+  **Return**, X or canvas-owned Escape restores the previous map; native
+  fullscreen retains Escape precedence. Flat and unsupported poses are
+  explicitly unavailable, never silently changed or clamped. Acquisition
+  and orbital modeling pause while authoritative clock/expiry checks remain;
+  offline alone can retain a valid capture. This is an approximate spherical
+  Earth map, not live follow, spacecraft attitude, optical visibility or a
+  camera feed. It adds no dependency, provider, worker, saved state or share
+  field. See [usage and limits](docs/orbital-tracking.md#captured-orbital-views-development-508)
+  and [measured acceptance](docs/development-and-testing.md#captured-orbital-view-508-development-acceptance).
 - Issue #211 defines the coordinated source and browser contract:
   schema 2 catalog `celestrak-curated-v1`, ordered groups `visual`, `stations`,
   `weather`, `gnss`, and `science`, 462 unique records (369 payloads, 91

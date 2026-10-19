@@ -43,6 +43,7 @@ import {
 import { TrafficDetails } from './components/TrafficDetails'
 import { WeatherObservationDetails } from './components/WeatherObservationDetails'
 import { OrbitalDetails } from './components/OrbitalDetails'
+import { CapturedOrbitalDetails } from './components/CapturedOrbitalDetails'
 import { formatOrbitalSummary } from './components/orbitalSummary'
 import {
   APP_CONFIG,
@@ -91,6 +92,7 @@ import type { ViewportAssessment } from './domain/viewport'
 import { INITIAL_BATHYMETRY_STATUS, type BathymetryStatus } from './domain/bathymetry'
 import type { OrbitalViewport } from './domain/orbitalViewport'
 import { orbitalFeatureOwner } from './domain/orbital'
+import { orbitalViewUnavailableReason, type CapturedOrbitalView } from './domain/orbitalView'
 import { orbitalEnrichmentForPosition } from './domain/orbitalEnrichment'
 import {
   DEFAULT_ORBITAL_DISCOVERY_FILTERS,
@@ -136,6 +138,8 @@ interface ViewRequest {
   journey?: JourneySnapshot
   cancelled?: boolean
 }
+
+const EMPTY_VIEW_OUTPUT = [] as const
 
 const canRestoreFocus = (element: HTMLElement | null) =>
   Boolean(
@@ -253,6 +257,34 @@ function App() {
   const [selectedOrbitalId, setSelectedOrbitalId] = useState<string | null>(
     null,
   )
+  const [capturedOrbitalView, setCapturedOrbitalView] = useState<CapturedOrbitalView>()
+  const capturedOrbitalViewRef = useRef<CapturedOrbitalView | undefined>(undefined)
+  const capturedOrbitalRevisionRef = useRef(0)
+  const [capturedOrbitalReady, setCapturedOrbitalReady] = useState(false)
+  const [orbitalViewMessage, setOrbitalViewMessage] = useState<string>()
+  const finishCapturedOrbitalView = useCallback((revision?: number, reason?: string) => {
+    const view = capturedOrbitalViewRef.current
+    if (!view || revision !== undefined && view.revision !== revision) return
+    const active = document.activeElement
+    const ownedFocus = active === document.body || active?.matches('.maplibregl-canvas') ||
+      active?.closest('.details-panel--orbital-view')
+    capturedOrbitalViewRef.current = undefined
+    setCapturedOrbitalView(undefined)
+    setCapturedOrbitalReady(false)
+    setOrbitalViewMessage(reason)
+    if (ownedFocus) globalThis.requestAnimationFrame(() => {
+      if (!capturedOrbitalViewRef.current && document.activeElement === document.body) {
+        rulerMapRef.current?.focusMap()
+      }
+    })
+  }, [])
+  const handleCapturedOrbitalReady = useCallback((revision: number, ready: boolean) => {
+    if (capturedOrbitalViewRef.current?.revision === revision) setCapturedOrbitalReady(ready)
+  }, [])
+  const handleCapturedOrbitalNotice = useCallback((revision: number, message: string | undefined) => {
+    if (capturedOrbitalViewRef.current?.revision === revision) setOrbitalViewMessage(message)
+  }, [])
+  const returnFromCapturedOrbitalView = useCallback(() => finishCapturedOrbitalView(), [finishCapturedOrbitalView])
   const [orbitalFilters, setOrbitalFilters] =
     useState<OrbitalDiscoveryFilters>(
       DEFAULT_ORBITAL_DISCOVERY_FILTERS,
@@ -278,9 +310,14 @@ function App() {
   )
   const [mapError, setMapError] = useState<TrafficMapError | null>(null)
   const handleMapError = useCallback((error: TrafficMapError | null) => {
-    if (error) clearLocalRuler()
+    if (error) {
+      clearLocalRuler()
+      const captured = capturedOrbitalViewRef.current
+      if (captured) finishCapturedOrbitalView(captured.revision,
+        error.kind === 'runtime' ? error.message : 'The basemap became unavailable. Returned to the previous map.')
+    }
     setMapError(error)
-  }, [clearLocalRuler])
+  }, [clearLocalRuler, finishCapturedOrbitalView])
   const [bathymetryStatus, setBathymetryStatus] = useState<BathymetryStatus>(INITIAL_BATHYMETRY_STATUS)
   const [viewportReport, setViewportReport] = useState<{
     assessment: ViewportAssessment
@@ -465,10 +502,11 @@ function App() {
   )
   const setOrbitalObjectsVisible = useCallback(
     (visible: boolean) => {
+      if (!visible) finishCapturedOrbitalView()
       if (!visible) setSelectedOrbitalId(null)
       setLayerPreference('orbitalObjectsVisible', visible)
     },
-    [setLayerPreference],
+    [finishCapturedOrbitalView, setLayerPreference],
   )
   const setTrailPreferences = useCallback(
     (trail: typeof trailPreferences) => {
@@ -496,12 +534,13 @@ function App() {
   )
   const setProjectionPreference = useCallback(
     (nextProjection: typeof projectionPreference) => {
+      if (nextProjection !== 'auto') finishCapturedOrbitalView()
       updatePreferences((current) => ({
         ...current,
         projection: nextProjection,
       }))
     },
-    [updatePreferences],
+    [finishCapturedOrbitalView, updatePreferences],
   )
   const setVesselFilters = useCallback(
     (nextFilters: typeof vesselFilters) => {
@@ -569,6 +608,8 @@ function App() {
       label: string,
       options: { explicit?: boolean; camera?: MapCameraState } = {},
     ) => {
+      finishCapturedOrbitalView()
+      setOrbitalViewMessage(undefined)
       clearLocalRuler()
       clearJourney()
       returnToLiveRef.current()
@@ -593,7 +634,7 @@ function App() {
         camera: options.camera,
       }))
     },
-    [cancelPlaceSearch, clearJourney, clearLocalRuler, locationCameraIntent],
+    [cancelPlaceSearch, clearJourney, clearLocalRuler, finishCapturedOrbitalView, locationCameraIntent],
   )
 
   useEffect(() => {
@@ -663,8 +704,8 @@ function App() {
         : null,
     [activeViewport],
   )
-  const aircraftResult = useAircraftTraffic(trafficQuery, APP_CONFIG.aircraft)
-  const marineResult = useMarineTraffic(trafficQuery, APP_CONFIG.marine)
+  const aircraftResult = useAircraftTraffic(trafficQuery, APP_CONFIG.aircraft, capturedOrbitalView !== undefined)
+  const marineResult = useMarineTraffic(trafficQuery, APP_CONFIG.marine, capturedOrbitalView !== undefined)
   const liveViewportAircraft = useMemo(
     () =>
       activeViewport
@@ -708,9 +749,31 @@ function App() {
       enabled: orbitalObjectsVisible && !historyActive,
       config: APP_CONFIG.starlink,
     },
+    capturedOrbitalView?.revision,
   )
   const orbitalState = orbitalResult.state
   const starlinkState = orbitalResult.starlinkState
+  const acceptedOrbitalPositionForCapture = orbitalResult.acceptedPositionForCapture
+  const capturedOrbitalState = capturedOrbitalView && (
+    orbitalFeatureOwner(capturedOrbitalView.position.id) === 'starlink' ? starlinkState : orbitalState
+  )
+  const capturedGenerationMatches = Boolean(capturedOrbitalView && capturedOrbitalState?.snapshot &&
+    capturedOrbitalState.snapshot.sha256 === capturedOrbitalView.snapshot.sha256 &&
+    capturedOrbitalState.snapshot.retrievedAt === capturedOrbitalView.snapshot.retrievedAt &&
+    capturedOrbitalState.snapshot.catalogId === capturedOrbitalView.snapshot.catalogId)
+  const capturedOrbitalAcknowledged = Boolean(capturedOrbitalView && capturedGenerationMatches &&
+    capturedOrbitalState?.phase === 'paused-capture' &&
+    orbitalState.capturePauseRevision === capturedOrbitalView.revision &&
+    starlinkState.capturePauseRevision === capturedOrbitalView.revision)
+  useEffect(() => {
+    if (!capturedOrbitalView || !capturedOrbitalState ||
+      capturedOrbitalState.capturePauseRevision !== capturedOrbitalView.revision) return
+    if (capturedGenerationMatches && ['paused-capture', 'paused-hidden'].includes(capturedOrbitalState.phase)) return
+    finishCapturedOrbitalView(capturedOrbitalView.revision,
+      capturedGenerationMatches
+        ? `${capturedOrbitalState.message ?? 'The captured model is no longer valid.'} Returned to the previous map.`
+        : 'The captured catalog generation changed. Returned to the previous map.')
+  }, [capturedGenerationMatches, capturedOrbitalState, capturedOrbitalView, finishCapturedOrbitalView])
   const selectedOrbitalOwner = orbitalFeatureOwner(selectedOrbitalId)
   const orbitalDiscovery = useMemo(() => {
     const display = selectOrbitalDisplay(
@@ -1058,14 +1121,14 @@ function App() {
     orbitalEnrichmentImageLoader,
   )
   const aircraftMetadata = useAircraftMetadata(
-    !historyActive && selectedEntity?.kind === 'aircraft'
+    !capturedOrbitalView && !historyActive && selectedEntity?.kind === 'aircraft'
       ? selectedEntity
       : undefined,
     aircraftMetadataProvider,
     displayNow,
   )
   const aircraftPhotoFeatureEnabled =
-    APP_CONFIG.aircraftPhoto.enabled && !historyActive
+    APP_CONFIG.aircraftPhoto.enabled && !historyActive && !capturedOrbitalView
   const aircraftPhotoEnabled =
     aircraftPhotoFeatureEnabled && selectedEntity?.kind === 'aircraft'
   const aircraftPhoto = useAircraftPhoto(
@@ -1083,15 +1146,16 @@ function App() {
     },
   )
   const vesselPhoto = useVesselPhoto(
-    !historyActive && selectedEntity?.kind === 'vessel' ? selectedEntity : undefined,
+    !capturedOrbitalView && !historyActive && selectedEntity?.kind === 'vessel' ? selectedEntity : undefined,
     vesselPhotoProvider,
   )
   const hoveredVesselPhoto = useVesselPhoto(
-    !historyActive ? hoveredVessel : undefined,
+    !capturedOrbitalView && !historyActive ? hoveredVessel : undefined,
     vesselPhotoProvider,
   )
   const flightRouteEnabled =
     APP_CONFIG.flightRoute.enabled &&
+    !capturedOrbitalView &&
     !historyActive &&
     selectedEntity?.kind === 'aircraft'
   const flightRoute = useFlightRoute(
@@ -1298,11 +1362,12 @@ function App() {
   }, [commitNavigation, currentAssessment])
 
   const handleUseLocation = useCallback(() => {
+    finishCapturedOrbitalView()
     clearJourney()
     locationCameraIntent.requestLocationNavigation()
     cancelPlaceSearch()
     requestLocation()
-  }, [cancelPlaceSearch, clearJourney, locationCameraIntent, requestLocation])
+  }, [cancelPlaceSearch, clearJourney, finishCapturedOrbitalView, locationCameraIntent, requestLocation])
 
   const handlePlaceSearch = useCallback(
     (query: string) => {
@@ -1329,6 +1394,7 @@ function App() {
   )
 
   const handleManualViewChange = useCallback(() => {
+    if (capturedOrbitalViewRef.current) return
     cancelJourneyPreparation()
     locationCameraIntent.beginExplicitViewIntent()
     cancelPlaceSearch()
@@ -1370,6 +1436,7 @@ function App() {
   }, [mapCamera, preferences])
 
   const handleResetPreferences = useCallback(() => {
+    finishCapturedOrbitalView()
     resetPreferences()
     setShareFeedback(undefined)
     const url = new URL(window.location.href)
@@ -1380,7 +1447,7 @@ function App() {
       '',
       `${url.pathname}${url.search}`,
     )
-  }, [resetPreferences])
+  }, [finishCapturedOrbitalView, resetPreferences])
 
   const focusAfterRender = useCallback(
     (
@@ -1409,6 +1476,7 @@ function App() {
 
   const selectTraffic = useCallback(
     (id: string | null, originId: string | null) => {
+      finishCapturedOrbitalView()
       clearJourney()
       detailFocusOriginIdRef.current = id ? originId : null
       setSelectedOrbitalId(null)
@@ -1417,7 +1485,7 @@ function App() {
       setSelectedWeatherId(null)
       setSelectedId(id)
     },
-    [clearJourney],
+    [clearJourney, finishCapturedOrbitalView],
   )
 
   const handleMapTrafficSelect = useCallback(
@@ -1434,6 +1502,7 @@ function App() {
   )
 
   const handleMapPortSelect = useCallback((id: string | null) => {
+    finishCapturedOrbitalView()
     clearJourney()
     detailFocusOriginIdRef.current = null
     setSelectedId(null)
@@ -1441,10 +1510,11 @@ function App() {
     setSelectedAirportId(null)
     setSelectedWeatherId(null)
     setSelectedPortId(id)
-  }, [clearJourney])
+  }, [clearJourney, finishCapturedOrbitalView])
 
   const selectAirport = useCallback(
     (id: string | null, originId: string | null) => {
+      finishCapturedOrbitalView()
       clearJourney()
       detailFocusOriginIdRef.current = id ? originId : null
       airportSelectionGraceUntilRef.current = id
@@ -1456,7 +1526,7 @@ function App() {
       setSelectedWeatherId(null)
       setSelectedAirportId(id)
     },
-    [clearJourney],
+    [clearJourney, finishCapturedOrbitalView],
   )
   const handleMapAirportSelect = useCallback(
     (id: string | null) => selectAirport(id, null),
@@ -1469,6 +1539,7 @@ function App() {
 
   const selectWeather = useCallback(
     (id: string | null, originId: string | null) => {
+      finishCapturedOrbitalView()
       clearJourney()
       detailFocusOriginIdRef.current = id ? originId : null
       setSelectedId(null)
@@ -1477,7 +1548,7 @@ function App() {
       setSelectedAirportId(null)
       setSelectedWeatherId(id)
     },
-    [clearJourney],
+    [clearJourney, finishCapturedOrbitalView],
   )
   const handleMapWeatherSelect = useCallback(
     (id: string | null) => selectWeather(id, null),
@@ -1490,6 +1561,7 @@ function App() {
 
   const selectOrbital = useCallback(
     (id: string | null, originId: string | null) => {
+      finishCapturedOrbitalView()
       clearJourney()
       detailFocusOriginIdRef.current = id ? originId : null
       setSelectedId(null)
@@ -1498,7 +1570,7 @@ function App() {
       setSelectedWeatherId(null)
       setSelectedOrbitalId(id)
     },
-    [clearJourney],
+    [clearJourney, finishCapturedOrbitalView],
   )
   const handleMapOrbitalSelect = useCallback(
     (id: string | null) => selectOrbital(id, null),
@@ -1627,7 +1699,42 @@ function App() {
     restoreDetailFocus()
   }, [restoreDetailFocus])
 
+  const handleCaptureOrbitalView = useCallback(() => {
+    if (!selectedOrbitalId || historyActive || mapError) return
+    const source = acceptedOrbitalPositionForCapture(selectedOrbitalId)
+    const reason = orbitalViewUnavailableReason(source?.position, projectionPreference)
+    if (!source || reason) {
+      setOrbitalViewMessage(reason ?? 'The accepted modeled position changed. Select the object again.')
+      return
+    }
+    const view: CapturedOrbitalView = Object.freeze({
+      ...source, revision: ++capturedOrbitalRevisionRef.current, viewRequestId: viewRequest.id,
+    })
+    locationCameraIntent.beginExplicitViewIntent()
+    cancelPlaceSearch()
+    clearLocalRuler()
+    clearJourney()
+    detailFocusOriginIdRef.current = null
+    setSelectedId(null)
+    setSelectedOrbitalId(null)
+    setSelectedPortId(null)
+    setSelectedAirportId(null)
+    setSelectedWeatherId(null)
+    setHoveredAircraftId(null)
+    setHoveredVesselId(null)
+    capturedOrbitalViewRef.current = view
+    setCapturedOrbitalView(view)
+    setCapturedOrbitalReady(false)
+    setOrbitalViewMessage(undefined)
+    setInspectorExpanded(false)
+  }, [
+    cancelPlaceSearch, clearJourney, clearLocalRuler, historyActive, locationCameraIntent,
+    mapError, acceptedOrbitalPositionForCapture, projectionPreference, selectedOrbitalId,
+    viewRequest.id,
+  ])
+
   const handleEnterHistory = useCallback(() => {
+    finishCapturedOrbitalView()
     clearLocalRuler()
     clearJourney()
     setSelectedOrbitalId(null)
@@ -1637,7 +1744,7 @@ function App() {
         historyPlaybackControlRef.current?.focus()
       }
     })
-  }, [clearJourney, clearLocalRuler, enterHistory])
+  }, [clearJourney, clearLocalRuler, enterHistory, finishCapturedOrbitalView])
 
   useEffect(() => {
     if (historyActive && journey) clearJourney()
@@ -1667,7 +1774,9 @@ function App() {
       counts: starlinkCounts,
     },
   })
-  const mapSubtitle = historyActive
+  const mapSubtitle = capturedOrbitalView
+    ? 'Captured orbital view'
+    : historyActive
     ? 'Historical traffic area'
     : !viewReady
       ? 'Preparing map view'
@@ -1753,9 +1862,9 @@ function App() {
       : weatherResult.retry
 
   useEffect(() => {
-    setInspectorExpanded(true)
+    setInspectorExpanded(capturedOrbitalView === undefined)
     setDetailsReturnToTask(false)
-  }, [selectedId, selectedOrbitalId, selectedPortId, selectedAirportId, selectedWeatherId, journey?.snapshot.revision])
+  }, [capturedOrbitalView, selectedId, selectedOrbitalId, selectedPortId, selectedAirportId, selectedWeatherId, journey?.snapshot.revision])
 
   const expandInspector = useCallback(() => {
     if (localRulerRef.current.phase === 'placing') clearLocalRuler()
@@ -1773,7 +1882,7 @@ function App() {
     if (task) setDetailsReturnToTask(false)
   }, [clearLocalRuler])
   const startLocalRuler = useCallback(() => {
-    if (historyActive || mapError) return
+    if (capturedOrbitalViewRef.current || historyActive || mapError) return
     const availability = rulerMapRef.current?.refresh() ?? 'unsupported'
     setRulerAvailability(availability)
     if (availability !== 'available') return
@@ -1784,14 +1893,14 @@ function App() {
   const rulerBinding = useMemo(() => ({
     state: localRuler,
     read: readLocalRuler,
-    disabled: historyActive || mapError !== null,
+    disabled: capturedOrbitalView !== undefined || historyActive || mapError !== null,
     handleRef: rulerMapRef,
     onPoint: handleRulerPoint,
     onAvailability: handleRulerAvailability,
     onCancel: cancelLocalRuler,
-  }), [cancelLocalRuler, handleRulerAvailability, handleRulerPoint, historyActive, localRuler, mapError, readLocalRuler])
+  }), [cancelLocalRuler, capturedOrbitalView, handleRulerAvailability, handleRulerPoint, historyActive, localRuler, mapError, readLocalRuler])
   const rulerDistance = formatLocalRulerDistance(localRuler.points, units)
-  const inspectorIdentity = journey ? `journey:${journey.snapshot.revision}` :
+  const inspectorIdentity = capturedOrbitalView ? `captured-orbit:${capturedOrbitalView.revision}` : journey ? `journey:${journey.snapshot.revision}` :
     selectedId ?? selectedOrbitalId ?? selectedPortId ?? selectedAirportId ?? selectedWeatherId
   const inspectorPresentation = {
     mobile: mobileWorkspace,
@@ -1891,8 +2000,14 @@ function App() {
     <main
       ref={appShellRef}
       className={`app-shell${historyActive ? ' app-shell--history' : ''}${mobileWorkspace ? ' app-shell--mobile-workspace' : ''}`}
+      data-orbital-view={capturedOrbitalView ? capturedOrbitalReady ? 'captured' : 'preparing' : undefined}
     >
       <TrafficMap
+        capturedOrbitalView={capturedOrbitalView}
+        capturedOrbitalViewAcknowledged={capturedOrbitalAcknowledged}
+        onCapturedOrbitalViewEnd={finishCapturedOrbitalView}
+        onCapturedOrbitalViewReady={handleCapturedOrbitalReady}
+        onCapturedOrbitalViewNotice={handleCapturedOrbitalNotice}
         compactAttribution={mobileWorkspace}
         viewCenter={viewRequest.center}
         northResetRequest={northResetRequest}
@@ -1921,48 +2036,48 @@ function App() {
         units={units}
         ruler={rulerBinding}
         scaleSuppressed={
-          mapError !== null || historyActive || localRuler.phase === 'placing' ||
+          capturedOrbitalView !== undefined || mapError !== null || historyActive || localRuler.phase === 'placing' ||
           (mobileWorkspace && (activeWorkspaceTask !== null || inspectorIdentity !== null))
         }
-        aircraft={trafficContext ? contextAircraft : aircraft}
-        vessels={trafficContext ? contextVessels : vessels}
+        aircraft={capturedOrbitalView ? EMPTY_VIEW_OUTPUT : trafficContext ? contextAircraft : aircraft}
+        vessels={capturedOrbitalView ? EMPTY_VIEW_OUTPUT : trafficContext ? contextVessels : vessels}
         trafficContext={trafficContext}
         ports={ports}
         airports={airports}
         weatherObservations={weatherObservations}
-        orbitalPositions={orbitalState.positions}
+        orbitalPositions={capturedOrbitalView ? EMPTY_VIEW_OUTPUT : orbitalState.positions}
         orbitalShownIds={orbitalDisplay.shownIds}
         orbitalTrackSegments={orbitalState.prediction.trackSegments}
-        starlinkPositions={starlinkState.positions}
+        starlinkPositions={capturedOrbitalView ? EMPTY_VIEW_OUTPUT : starlinkState.positions}
         starlinkShownIds={starlinkDisplay.shownIds}
         starlinkTrackSegments={
           starlinkState.prediction.trackSegments
         }
         orbitalImageUrls={loadedOrbitalImageUrls}
-        trailSegments={trailSegments}
+        trailSegments={capturedOrbitalView ? EMPTY_VIEW_OUTPUT : trailSegments}
         selectedId={selectedId}
         selectedOrbitalId={selectedOrbitalId}
         selectedPortId={selectedPortId}
         selectedAirportId={selectedAirportId}
         selectedWeatherId={selectedWeatherId}
-        aircraftVisible={aircraftVisible}
-        vesselsVisible={vesselsVisible}
-        portsVisible={portsVisible}
-        airportsVisible={airportsVisible}
-        weatherVisible={weatherVisible}
+        aircraftVisible={aircraftVisible && !capturedOrbitalView}
+        vesselsVisible={vesselsVisible && !capturedOrbitalView}
+        portsVisible={portsVisible && !capturedOrbitalView}
+        airportsVisible={airportsVisible && !capturedOrbitalView}
+        weatherVisible={weatherVisible && !capturedOrbitalView}
         depthsVisible={depthsVisible}
         onBathymetryStatus={setBathymetryStatus}
-        orbitalVisible={orbitalObjectsVisible && !historyActive}
-        starlinkVisible={orbitalObjectsVisible && !historyActive}
+        orbitalVisible={orbitalObjectsVisible && !historyActive && !capturedOrbitalView}
+        starlinkVisible={orbitalObjectsVisible && !historyActive && !capturedOrbitalView}
         clusteringEnabled={clusteringEnabled && !trafficContext}
-        interpolateTraffic={!historyActive && !trafficContext}
+        interpolateTraffic={!capturedOrbitalView && !historyActive && !trafficContext}
         interpolationDurationMs={APP_CONFIG.interpolationDurationMs}
-        aircraftPhotoEnabled={aircraftPhotoFeatureEnabled}
+        aircraftPhotoEnabled={aircraftPhotoFeatureEnabled && !capturedOrbitalView}
         aircraftPhoto={hoveredAircraftPhoto.state}
         aircraftPhotoHoverDelayMs={
           APP_CONFIG.aircraftPhoto.hoverDelayMs
         }
-        vesselPhotoEnabled={!historyActive}
+        vesselPhotoEnabled={!historyActive && !capturedOrbitalView}
         vesselPhoto={hoveredVesselPhoto.state}
         viewRequestId={viewRequest.id}
         viewportSettleMs={APP_CONFIG.navigation.viewportSettleMs}
@@ -2006,8 +2121,9 @@ function App() {
           mobileWorkspace={mobileWorkspace}
           workspaceHandleRef={workspaceControlsRef}
           onWorkspaceTaskChange={handleWorkspaceTaskChange}
-          rulerAvailable={!historyActive && mapError === null && rulerAvailability === 'available'}
-          rulerMessage={historyActive ? 'Distance ruler is unavailable in HISTORY.'
+          rulerAvailable={!capturedOrbitalView && !historyActive && mapError === null && rulerAvailability === 'available'}
+          rulerMessage={capturedOrbitalView ? 'Distance ruler is unavailable in a captured view.'
+            : historyActive ? 'Distance ruler is unavailable in HISTORY.'
             : mapError ? 'Distance ruler is unavailable while the map recovers.'
               : rulerAvailabilityMessage(rulerAvailability)}
           rulerDistance={localRuler.phase === 'retained' ? rulerDistance : undefined}
@@ -2017,7 +2133,7 @@ function App() {
           onEnterFullscreen={enterFullscreen}
           onExitFullscreen={exitFullscreen}
           marineProviderName={marineResult.capabilities.name}
-          discoveryPaused={historyActive || !online}
+          discoveryPaused={capturedOrbitalView !== undefined || historyActive || !online}
           discoverMarineMetadata={marineResult.discoverMetadata}
           catalogAirports={airports}
           catalogPorts={ports}
@@ -2074,7 +2190,7 @@ function App() {
                   <p>{mapSubtitle}</p>
                 </div>
               </div>
-              <LiveStatus
+              {!capturedOrbitalView && <LiveStatus
                 compact={mobileWorkspace}
                 aircraftCount={aircraftVisible ? aircraft.length : 0}
                 vesselCount={vesselsVisible ? vessels.length : 0}
@@ -2090,7 +2206,7 @@ function App() {
                     ? undefined
                     : history.playback.cursor
                 }
-              />
+              />}
             </>
           }
           aircraftQuery={aircraftQuery}
@@ -2204,7 +2320,7 @@ function App() {
           }
           onCenter={handleCenter}
           northResetBearing={
-            isNorthResetUseful(
+            !capturedOrbitalView && isNorthResetUseful(
               mapCamera?.bearing,
               APP_CONFIG.navigation.northResetToleranceDegrees,
             ) ? mapCamera?.bearing : undefined
@@ -2219,7 +2335,7 @@ function App() {
           projectionPreference={projectionPreference}
           onProjectionPreferenceChange={setProjectionPreference}
           onUnitsChange={setUnits}
-          shareDisabled={!mapCamera}
+          shareDisabled={capturedOrbitalView !== undefined || !mapCamera}
           onShare={handleShare}
           onResetPreferences={handleResetPreferences}
           preferenceStatus={
@@ -2245,7 +2361,14 @@ function App() {
           settingsSummaryRef={settingsSummaryRef}
         />
 
-        {!historyActive && !journey && currentAssessment?.kind === 'ineligible' && (
+        {!capturedOrbitalView && orbitalViewMessage && (
+          <div className="viewport-notice" role="status">
+            <span>{orbitalViewMessage}</span>
+            <button type="button" onClick={() => setOrbitalViewMessage(undefined)}>Dismiss</button>
+          </div>
+        )}
+
+        {!capturedOrbitalView && !orbitalViewMessage && !historyActive && !journey && currentAssessment?.kind === 'ineligible' && (
           <div className="viewport-notice" role="status">
             <strong>
               {hasTrafficContext
@@ -2287,6 +2410,19 @@ function App() {
             onHide={handleCloseTraffic}
             onClose={handleCloseTraffic}
             onReturn={handleReturnJourney}
+          />
+        )}
+
+        {capturedOrbitalView && (
+          <CapturedOrbitalDetails
+            key={capturedOrbitalView.revision}
+            view={capturedOrbitalView}
+            ready={capturedOrbitalReady}
+            notice={orbitalViewMessage}
+            statusMessage={capturedOrbitalState?.message}
+            online={online}
+            units={units}
+            onReturn={returnFromCapturedOrbitalView}
           />
         )}
 
@@ -2346,6 +2482,10 @@ function App() {
             onImageLoaded={handleOrbitalImageLoaded}
             onImageFailed={handleOrbitalImageFailed}
             onClose={handleCloseOrbital}
+            onViewFromHere={handleCaptureOrbitalView}
+            viewFromHereUnavailable={mapError
+              ? 'View from here needs the vector basemap.'
+              : orbitalViewUnavailableReason(selectedOrbitalPosition, projectionPreference)}
           />
         )}
 

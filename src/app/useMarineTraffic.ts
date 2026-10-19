@@ -50,25 +50,29 @@ const developmentDiagnostics = (): MarineDiagnosticsOptions | undefined => {
 export const useMarineTraffic = (
   query: TrafficQuery | null,
   config: AppConfig['marine'],
+  intentionallyPaused = false,
 ) => {
   const [result, setResult] = useState<MarineTrafficResult>(initialResult)
   const providerRef = useRef<
     DigitrafficMarineProvider | MultiSourceMarineProvider | undefined
   >(undefined)
   const queryRef = useRef<TrafficQuery | null>(query)
+  const intentionalPauseRef = useRef(intentionallyPaused)
   const startProviderRef = useRef<
     ((initialQuery: TrafficQuery) => void) | undefined
   >(undefined)
 
   useEffect(() => {
+    const previousQuery = queryRef.current
     queryRef.current = query
+    intentionalPauseRef.current = intentionallyPaused
     const provider = providerRef.current
 
     if (provider) {
-      if (query) provider.updateQuery(query)
-      provider.setPaused(
-        shouldPauseTraffic(query, document.hidden, navigator.onLine),
-      )
+      const paused = shouldPauseTraffic(query, document.hidden, navigator.onLine, intentionallyPaused)
+      if (paused) provider.setPaused(true)
+      if (query && query !== previousQuery) provider.updateQuery(query)
+      if (!paused) provider.setPaused(false)
       return
     }
 
@@ -84,7 +88,7 @@ export const useMarineTraffic = (
         },
       }))
     }
-  }, [query])
+  }, [query, intentionallyPaused])
 
   useEffect(() => {
     let disposed = false
@@ -117,6 +121,7 @@ export const useMarineTraffic = (
           queryRef.current,
           document.hidden,
           navigator.onLine,
+          intentionalPauseRef.current,
         ),
       )
     }
@@ -130,6 +135,7 @@ export const useMarineTraffic = (
           queryRef.current,
           document.hidden,
           navigator.onLine,
+          intentionalPauseRef.current,
         ),
       )
     }

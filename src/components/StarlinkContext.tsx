@@ -40,6 +40,7 @@ const stateMessage = (state: OrbitalControllerState) => {
     case 'clock-invalid':
     case 'paused-hidden':
     case 'paused-history':
+    case 'paused-capture':
       return state.message
     case 'empty':
       return state.message ?? 'The sample loaded without a safe position.'
