@@ -21,6 +21,7 @@ import type { AppCenter } from '../config/appConfig'
 import { normalizeMapBearing } from '../domain/mapCamera'
 import { APP_CONFIG } from '../config/appConfig'
 import { depthSourceDescription, type BathymetryStatus } from '../domain/bathymetry'
+import type { BasemapReliefStatus } from '../map/basemapRelief'
 import type { Airport, AirportSource } from '../domain/airports'
 import type { Port, PortSource } from '../domain/ports'
 import type { CachedMarineDiscovery } from '../domain/objectDiscovery'
@@ -119,6 +120,9 @@ interface TrafficControlsProps {
   depthsVisible: boolean
   bathymetryStatus: BathymetryStatus
   onDepthsVisibleChange: (visible: boolean) => void
+  reliefVisible: boolean
+  reliefStatus: BasemapReliefStatus
+  onReliefVisibleChange: (visible: boolean) => void
   weatherLoading: boolean
   weatherWaiting: boolean
   weatherReady: boolean
@@ -350,6 +354,9 @@ export function TrafficControls({
   depthsVisible,
   bathymetryStatus,
   onDepthsVisibleChange,
+  reliefVisible,
+  reliefStatus,
+  onReliefVisibleChange,
   weatherLoading,
   weatherWaiting,
   weatherReady,
@@ -1101,6 +1108,41 @@ export function TrafficControls({
                 >
                   DEPTHS
                 </button>
+                <button
+                  id="relief-layer-toggle"
+                  type="button"
+                  className={reliefVisible ? 'is-active' : undefined}
+                  aria-pressed={reliefVisible}
+                  aria-describedby="relief-layer-status"
+                  onClick={() => onReliefVisibleChange(!reliefVisible)}
+                >
+                  RELIEF
+                </button>
+              </div>
+              <div id="relief-layer-status" className="control-note" role="status">
+                <p>
+                  {!reliefVisible ? 'Relief off. No relief requests.'
+                    : reliefStatus === 'unavailable' ? 'Relief unavailable. Toggle off/on to retry.'
+                      : reliefStatus === 'unsupported' ? 'Relief unavailable with this map style.'
+                        : 'Relief on. Coarse land shading.'}
+                </p>
+                <details className="context-details">
+                  <summary>Map detail &amp; sources</summary>
+                  <p>
+                    Land cover and close-up 3D buildings use the existing OpenFreeMap tiles.
+                    Building heights may be level-derived estimates; unknown/default heights stay flat.
+                  </p>
+                  <p>
+                    Relief is optional and off on reload. Enabling requests coarse Mapzen terrain
+                    tiles from public AWS storage; tile URLs disclose the viewed map area.
+                    Shading only, not raised terrain or navigation information.
+                  </p>
+                  <p>
+                    <a href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md">
+                      Mapzen terrain contributors and licenses
+                    </a>
+                  </p>
+                </details>
               </div>
               <div id="depths-layer-status" className="control-note" role="status">
                 {depthsVisible ? (
@@ -1384,6 +1426,12 @@ export function TrafficControls({
             <fieldset className="control-group">
               <legend>Sources</legend>
               <ul className="control-source-list">
+                <li>
+                  Relief (optional):{' '}
+                  <a href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md">
+                    Mapzen terrain contributors
+                  </a>. Coarse, older elevation; shading only.
+                </li>
                 <li>
                   Depths: <a href="https://emodnet.ec.europa.eu/en/bathymetry">EMODnet</a>
                   {' / '}<a href="https://www.gebco.net/">GEBCO</a>.

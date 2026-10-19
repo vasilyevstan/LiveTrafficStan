@@ -1033,6 +1033,30 @@ IndexedDB store every minute.
 
 ## Map rendering
 
+The default atlas's `basemapCartography.ts` adds five existing-source
+land-cover classes and close-zoom native building extrusions. It preserves
+road/label semantics, the flat footprints and custom/fallback styles.
+Only bounded numeric source render heights with valid bases are used;
+ambiguous default heights and `hide_3d` outlines remain flat. Native zoom
+expressions raise buildings between 14.5 and 15.5, without another animation
+loop or geometry service.
+
+`basemapRelief.ts` owns one optional native `raster-dem` source and hillshade
+layer on the same map. An App-owned session boolean, initially false, is
+controlled only by RELIEF in the existing Layers panel. There is no saved
+preference/share field, startup request, numeric lookup, `setTerrain`, new
+renderer, camera correction or provider pause reason. Source zoom is capped
+at 7, and water remains above shading so ocean relief cannot replace DEPTHS.
+
+The normal style installer rehydrates both additions without touching current
+traffic sources or captured-view ownership. Optional relief errors are
+consumed before generic map errors, remove only their source/layer, and report
+unavailable without ending an orbital view. Activation/source revisions fence
+late errors after off/on or style replacement. A failed activation stays
+failed through theme/style work; explicit off/on retries. Cleanup removes its
+owned resources and prevents late reinstallation. The original aircraft,
+marine, orbital, Home/history and raw Return mechanisms remain authoritative.
+
 `TrafficMap` creates one MapLibre instance. Aircraft, vessels, and the selected
 trail use persistent GeoJSON sources and layers whose data or visibility is
 updated in place. This avoids one React component or DOM marker per traffic
@@ -1590,9 +1614,11 @@ OpenFreeMap style before restoring the traffic overlays. It changes existing
 background, water, vegetation, urban/building, road, boundary, and label paint;
 the existing wood layer becomes available at zoom 5 rather than 10. Removing
 the Dark style's wood sprite pattern lets its forest color render consistently.
-It adds no map source, layer, image, fetch path, camera change, or geographic
-inference. Source geometry, filters, label content/font/placement,
-road widths, boundary dash patterns, and attribution remain provider-owned.
+The richer land-cover fills and bounded building extrusions reuse that same
+vector source; only explicit RELIEF activation adds a DEM source. Existing
+provider geometry/filters, label content/font/placement, road widths, boundary
+dash patterns and attribution remain intact. The new detail layers use their
+own class/height validity guards without changing traffic or camera behavior.
 
 The treatment is gated by the exact resolved default URL for each theme.
 Custom styles, opposite-theme overrides and the fallback are not recolored;

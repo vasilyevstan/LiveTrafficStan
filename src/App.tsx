@@ -90,6 +90,7 @@ import {
 } from './domain/vesselFilters'
 import type { ViewportAssessment } from './domain/viewport'
 import { INITIAL_BATHYMETRY_STATUS, type BathymetryStatus } from './domain/bathymetry'
+import type { BasemapReliefStatus } from './map/basemapRelief'
 import type { OrbitalViewport } from './domain/orbitalViewport'
 import { orbitalFeatureOwner, type ModeledOrbitalPosition } from './domain/orbital'
 import { orbitalViewUnavailableReason, type CapturedOrbitalView } from './domain/orbitalView'
@@ -336,6 +337,8 @@ function App() {
     setMapError(error)
   }, [clearLocalRuler, finishCapturedOrbitalView])
   const [bathymetryStatus, setBathymetryStatus] = useState<BathymetryStatus>(INITIAL_BATHYMETRY_STATUS)
+  const [reliefVisible, setReliefVisible] = useState(false)
+  const [reliefStatus, setReliefStatus] = useState<BasemapReliefStatus>('off')
   const [viewportReport, setViewportReport] = useState<{
     assessment: ViewportAssessment
     orbitalViewport: OrbitalViewport
@@ -1457,6 +1460,7 @@ function App() {
   const handleResetPreferences = useCallback(() => {
     finishCapturedOrbitalView()
     resetPreferences()
+    setReliefVisible(false)
     setShareFeedback(undefined)
     const url = new URL(window.location.href)
     if (!url.hash) return
@@ -2092,6 +2096,8 @@ function App() {
         weatherVisible={weatherVisible && !capturedOrbitalView}
         depthsVisible={depthsVisible}
         onBathymetryStatus={setBathymetryStatus}
+        reliefVisible={reliefVisible}
+        onReliefStatus={setReliefStatus}
         orbitalVisible={orbitalObjectsVisible && !historyActive && !capturedOrbitalView}
         starlinkVisible={orbitalObjectsVisible && !historyActive && !capturedOrbitalView}
         clusteringEnabled={clusteringEnabled && !trafficContext}
@@ -2282,6 +2288,9 @@ function App() {
           depthsVisible={depthsVisible}
           bathymetryStatus={bathymetryStatus}
           onDepthsVisibleChange={setDepthsVisible}
+          reliefVisible={reliefVisible}
+          reliefStatus={reliefStatus}
+          onReliefVisibleChange={setReliefVisible}
           weatherLoading={weatherLoading}
           weatherWaiting={weatherWaiting}
           weatherReady={weatherReady}

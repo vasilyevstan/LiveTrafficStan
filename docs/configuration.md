@@ -1010,6 +1010,39 @@ The bundled offline style retains its original background paint. This palette
 treatment adds no tile/imagery provider, terrain source, API key, preference,
 or camera behavior; projection is configured independently above.
 
+### Map detail and optional relief
+
+The default atlas also displays the existing vector land-cover classes for
+grass, farmland, rock, sand and wetland. This is real tile geometry, not
+invented detail or photographic imagery. Close zoom adds native building
+extrusions from the same `openmaptiles` source, below labels and traffic.
+Heights can be source/level-derived estimates, not surveyed truth. Hidden
+outline parts, missing/non-numeric heights, the ambiguous 5 m default, and
+unsafe bases/heights are omitted; the existing flat footprints remain.
+Buildings rise between zoom 14.5 and 15.5. They do not add useful detail from
+orbital altitude.
+
+**Layers -> RELIEF** (desktop **More -> Layers**) is a separate, session-only
+choice, initially off and reset by reload or Reset preferences. Enabling
+adds native `hillshade` from the public Mapzen Terrarium dataset on AWS.
+`BASEMAP_DETAIL_CONFIG` caps the 256 px elevation source at zoom 7, displaying
+coarse shading from zoom 4 to below 14. It is not geometric terrain:
+`setTerrain` is never used, the camera/virtual eye is unchanged, and there is
+no elevation lookup, extra renderer, dependency, scheduler or backend.
+
+Relief makes zero source requests while off. When on, native tile URLs reveal
+the viewed map area to AWS; existing HTTP caching may reuse tiles. The app
+does not store relief choice or coordinates, add a shell cache, or promise
+offline coverage. The source contains older merged elevation data and has no
+application uptime/update guarantee. Relief errors remove only that optional
+layer/source and report unavailable in Layers. Toggle off/on to retry;
+theme/style work does not repeatedly retry a failed activation. Custom,
+mismatched and bundled fallback styles remain untouched and report relief
+unsupported rather than claiming shading is present.
+
+See [source rights and attribution](data-sources-and-licensing.md#optional-land-relief-mapzen-terrain-tiles)
+and [bounded acceptance](development-and-testing.md#lightweight-map-detail-518).
+
 The current behavioral configuration keeps:
 
 | Setting | Decision |
