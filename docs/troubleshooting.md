@@ -117,6 +117,29 @@ requests, viewport eligibility, vessel filter membership, selection, or
 history changes at the same time, treat that as a regression rather than an
 expected unit conversion.
 
+## Relief or 3D buildings are missing
+
+RELIEF is intentionally **off after reload**. Enable it in Layers (desktop
+More / Layers), then use a regional land view between zoom 4 and below 14;
+the Alps are a useful example. Its elevation source is capped at zoom 7, so
+closer zoom does not promise finer terrain. It is native shading, not raised
+geometry, imagery or an elevation/navigation tool. Water stays above it and
+the separate DEPTHS control keeps its own behavior.
+
+If Layers says relief unavailable, the optional source was removed, not
+silently replaced. The rest of the map and traffic should remain usable.
+Explicit off/on retries; theme changes deliberately do not retry an already
+failed activation. Custom, mismatched or offline fallback styles do not
+receive this default-atlas addition. Browser blockers/CSP, source outages and
+uncached offline tiles can prevent loading. Do not clear preferences/history
+or weaken the whole CSP to recover an optional layer.
+
+Buildings rise only between zoom 14.5 and 15.5 on the default maps. Use a
+tilted close city view to see them. Heights can be approximate/level-derived;
+missing, ambiguous 5 m defaults, hidden outlines and unsafe values remain
+flat. This is not a claim of complete city coverage or surveyed height, and
+does not add visible building detail at orbital altitude.
+
 ## Depth shading or numbers are missing
 
 Check **More → Layers → DEPTHS**. It defaults on, but an explicit saved off

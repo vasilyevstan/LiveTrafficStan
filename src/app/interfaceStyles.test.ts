@@ -91,8 +91,9 @@ describe('interface presentation contracts', () => {
     expect(styles).not.toContain('.details-panel__close-anchor')
   })
 
-  it('keeps the depth toggle full-width and at least a 44px target', () => {
-    expect(styles).toMatch(/#depths-layer-toggle\s*\{[^}]*grid-column: 1 \/ -1;[^}]*min-height: 44px;/)
+  it('pairs depth and relief in the two-column grid with at least 44px targets', () => {
+    expect(styles).toMatch(/#depths-layer-toggle,\s*#relief-layer-toggle\s*\{[^}]*min-height: 44px;/)
+    expect(styles).not.toMatch(/#depths-layer-toggle[^{}]*\{[^}]*grid-column:/)
   })
 
   it('shares one mobile surface budget and keeps the compact body noninteractive', () => {

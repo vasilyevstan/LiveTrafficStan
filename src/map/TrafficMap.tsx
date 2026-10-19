@@ -68,6 +68,7 @@ import {
   applyBasemapCartography,
   needsBasemapStyleReset,
 } from './basemapCartography'
+import { createBasemapRelief, type BasemapReliefStatus } from './basemapRelief'
 import {
   createMapSafely,
   type TrafficMapError,
@@ -250,6 +251,8 @@ interface TrafficMapProps {
   weatherVisible: boolean
   depthsVisible: boolean
   onBathymetryStatus: (status: BathymetryStatus) => void
+  reliefVisible: boolean
+  onReliefStatus: (status: BasemapReliefStatus) => void
   orbitalVisible: boolean
   starlinkVisible?: boolean
   clusteringEnabled: boolean
@@ -460,6 +463,8 @@ export function TrafficMap({
   weatherVisible,
   depthsVisible,
   onBathymetryStatus,
+  reliefVisible,
+  onReliefStatus,
   orbitalVisible,
   starlinkVisible = false,
   clusteringEnabled,
@@ -519,6 +524,9 @@ export function TrafficMap({
   const bathymetryRef = useRef<BathymetryRuntime | null>(null)
   const depthsVisibleRef = useRef(depthsVisible)
   const bathymetryStatusRef = useRef(onBathymetryStatus)
+  const reliefRef = useRef<ReturnType<typeof createBasemapRelief> | null>(null)
+  const reliefVisibleRef = useRef(reliefVisible)
+  const reliefStatusRef = useRef(onReliefStatus)
   const pendingJourneyFitRef = useRef<{
     snapshot: JourneySnapshot
     fit: Extract<JourneyCameraFit, { kind: 'available' }>
@@ -662,6 +670,14 @@ export function TrafficMap({
     bathymetryStatusRef.current = onBathymetryStatus
     bathymetryRef.current?.setEnabled(depthsVisible, online, capturedOrbitalView !== undefined)
   }, [depthsVisible, online, onBathymetryStatus, capturedOrbitalView])
+
+  useEffect(() => {
+    reliefVisibleRef.current = reliefVisible
+    reliefStatusRef.current = onReliefStatus
+    if (mapRef.current && loadedRef.current) {
+      reliefRef.current?.install(themeRef.current, appliedStyleUrlRef.current, reliefVisible)
+    }
+  }, [reliefVisible, onReliefStatus])
 
   useEffect(() => {
     desiredStyleUrlRef.current = mapStyleUrl
@@ -1092,6 +1108,7 @@ export function TrafficMap({
         activeTheme,
         appliedStyleUrlRef.current,
       )
+      reliefRef.current?.install(activeTheme, appliedStyleUrlRef.current, reliefVisibleRef.current)
       bathymetryRef.current?.install(activeTheme)
       const aircraftFeatures = trafficFeatures(
         renderState.trafficContext
@@ -1531,6 +1548,7 @@ export function TrafficMap({
     if (!map) return
 
     mapRef.current = map
+    reliefRef.current = createBasemapRelief(map, status => reliefStatusRef.current(status))
     bathymetryRef.current = new BathymetryRuntime(
       map, depthsVisibleRef.current, onlineRef.current,
       status => bathymetryStatusRef.current(status),
@@ -2449,6 +2467,7 @@ export function TrafficMap({
     })
 
     map.on('error', (event) => {
+      if (reliefRef.current?.handleError(event)) return
       if (bathymetryRef.current?.handleError(event)) return
       if (event.error) {
         if (
@@ -2479,6 +2498,8 @@ export function TrafficMap({
     return () => {
       capturedCameraRef.current?.camera.exit(false)
       capturedCameraRef.current = undefined
+      reliefRef.current?.dispose()
+      reliefRef.current = null
       bathymetryRef.current?.dispose()
       bathymetryRef.current = null
       styleGenerationRef.current += 1

@@ -195,6 +195,19 @@ export const DEFAULT_MAP_STYLE_URLS = {
   dark: 'https://tiles.openfreemap.org/styles/dark',
 } as const
 
+export const BASEMAP_DETAIL_CONFIG = {
+  landcoverMinimumZoom: 5,
+  buildingsMinimumZoom: 14.5,
+  buildingsFullHeightZoom: 15.5,
+  unknownBuildingHeightMeters: 5,
+  maximumBuildingHeightMeters: 1_000,
+  reliefTileTemplate: 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png',
+  reliefSourceMaximumZoom: 7,
+  reliefMinimumZoom: 4,
+  reliefMaximumZoom: 14,
+  reliefExaggeration: 0.45,
+} as const
+
 export const WEB_ANALYTICS_CONFIG = {
   enabled: true,
   origin: 'https://trackstan.xyz',

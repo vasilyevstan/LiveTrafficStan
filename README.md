@@ -8,7 +8,10 @@ user accounts or a server-side vessel history archive.
 
 Public production: <https://trackstan.xyz>
 
-Current application/Worker source: `1352c6e586366084b09bcb9cefa2a5cf5f9c8065`,
+Latest rollout and exact application/Worker identities:
+[lightweight map-detail delivery receipt (#518)](https://github.com/vasilyevstan/LiveTrafficStan/issues/518).
+
+Historical native-orbital-primary application source: `1352c6e586366084b09bcb9cefa2a5cf5f9c8065`,
 Worker `c207eeee-e817-4a9f-bbc7-49daaab85504`, with the
 [native orbital primary receipt](docs/hosting-and-deployment.md#native-orbital-primary-production-acceptance-2026-10-17).
 Later documentation-only commits do not replace that running source.
@@ -107,11 +110,18 @@ identity are not renamed or reset.
   viewed area to the sources; explicit off is remembered.
   See [depth coverage, bounds and controls](docs/configuration.md#modeled-water-depths).
 - An atlas-style treatment of the default maps: blue water, visible forests
-  and parks, warm roads, and clearer building and harbour detail. Light uses
+  and parks, distinct grass/farmland/rock/sand/wetland, warm roads, and clearer
+  building and harbour detail. Close zoom adds approximate height-backed 3D
+  buildings; unknown/default heights stay flat. Light uses
   a warm paper palette; Dark uses deep-blue water with forest and bronze
-  detail. This is cartographic styling, not new imagery, terrain, or 3D
-  building geometry. Custom styles and the offline fallback retain their
+  detail. These additions reuse existing vector tiles, not imagery or a new
+  renderer. Custom styles and the offline fallback retain their
   original paint; the separately chosen map projection still applies.
+- Optional **RELIEF** in **Layers** (desktop **More -> Layers**) adds coarse
+  land shading from public Mapzen terrain tiles, not raised terrain. It is
+  session-only and off on reload, so it adds no startup requests. Enabling
+  discloses the map area through tile URLs; failure leaves the map and traffic
+  usable. See [map detail and relief](docs/configuration.md#map-detail-and-optional-relief).
 - Explicit Auto, Light, and Dark theme preferences. Auto follows the browser
   color-scheme signal, while Light and Dark remain persistent overrides; all
   three switch the base map without recreating MapLibre or resetting traffic.
