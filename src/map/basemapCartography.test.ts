@@ -4,12 +4,15 @@ import { BASEMAP_DETAIL_CONFIG, DEFAULT_MAP_STYLE_URLS } from '../config/appConf
 import {
   applyBasemapCartography,
   LAYER_BASEMAP_BUILDINGS,
+  LAYER_BASEMAP_LANDMARKS,
+  LAYER_BASEMAP_LANDUSE,
   needsBasemapStyleReset,
 } from './basemapCartography'
 import { trafficIconTreatment } from './icons'
 
 const style = (): StyleSpecification => ({
   version: 8,
+  glyphs: 'https://tiles.example.test/fonts/{fontstack}/{range}.pbf',
   sources: {
     openmaptiles: { type: 'vector', url: 'https://tiles.example.test/planet' },
     traffic: { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
@@ -190,7 +193,7 @@ describe('atlas basemap cartography', () => {
     const map = fakeMap()
     applyBasemapCartography(map, 'light', DEFAULT_MAP_STYLE_URLS.light)
     const added = map.addLayer.mock.calls.map(([layer]) => layer)
-    expect(added).toHaveLength(6)
+    expect(added).toHaveLength(8)
     expect(added.every(layer => 'source' in layer && layer.source === 'openmaptiles')).toBe(true)
     for (const kind of ['grass', 'farmland', 'rock', 'sand', 'wetland']) {
       expect(added).toContainEqual(expect.objectContaining({
@@ -222,6 +225,56 @@ describe('atlas basemap cartography', () => {
             ['number', ['get', 'render_height'], 0]]]],
     ])
     expect(map.addLayer).toHaveBeenCalledWith(building, 'water_label')
+  })
+
+  it.each(['light', 'dark'] as const)('exposes existing %s city and transport detail at ordinary zooms', (theme) => {
+    const base = style()
+    base.layers.push(
+      { id: 'landuse_residential', type: 'fill', source: 'openmaptiles',
+        'source-layer': 'landuse', maxzoom: theme === 'dark' ? 9 : 16 },
+      { id: 'railway', type: 'line', source: 'openmaptiles',
+        'source-layer': 'transportation', minzoom: 13 },
+      { id: 'railway_dashline', type: 'line', source: 'openmaptiles',
+        'source-layer': 'transportation', minzoom: 13 },
+      ...['major', 'minor', 'path'].map(kind => ({
+        id: `highway-name-${kind}`, type: 'symbol' as const, source: 'openmaptiles',
+        'source-layer': 'transportation_name', minzoom: 15,
+      })),
+    )
+    const original = structuredClone(base)
+    const map = fakeMap(base)
+    applyBasemapCartography(map, theme, DEFAULT_MAP_STYLE_URLS[theme])
+    expect(base).toEqual(original)
+    expect(map.setLayerZoomRange).toHaveBeenCalledWith('landuse_residential', 0, 24)
+    expect(map.setLayerZoomRange).toHaveBeenCalledWith('railway', 10, 24)
+    expect(map.setLayerZoomRange).toHaveBeenCalledWith('railway_dashline', 10, 24)
+    expect(map.setLayerZoomRange).toHaveBeenCalledWith('highway-name-major', 11, 24)
+    expect(map.setLayerZoomRange).toHaveBeenCalledWith('highway-name-minor', 13, 24)
+    expect(map.setLayerZoomRange).toHaveBeenCalledWith('highway-name-path', 14.5, 24)
+  })
+
+  it('adds only named rank-qualified landmarks with native collision handling and existing fonts', () => {
+    const map = fakeMap()
+    applyBasemapCartography(map, 'light', DEFAULT_MAP_STYLE_URLS.light)
+    const layers = map.addLayer.mock.calls.map(([layer]) => layer)
+    expect(layers.find(layer => layer.id === LAYER_BASEMAP_LANDUSE)).toMatchObject({
+      type: 'fill', source: 'openmaptiles', 'source-layer': 'landuse', minzoom: 9,
+      filter: ['match', ['get', 'class'],
+        ['industrial', 'commercial', 'retail', 'hospital', 'school', 'cemetery', 'grave_yard'],
+        true, false],
+    })
+    const landmarks = layers.find(layer => layer.id === LAYER_BASEMAP_LANDMARKS)
+    expect(landmarks).toMatchObject({
+      type: 'symbol', source: 'openmaptiles', 'source-layer': 'poi', minzoom: 12,
+      filter: ['all', ['has', 'name'], ['<=', ['number', ['get', 'rank'], 100], 3],
+        ['match', ['get', 'class'],
+          ['railway', 'ferry_terminal', 'hospital', 'college', 'school', 'attraction', 'stadium',
+            'cemetery', 'park', 'town_hall', 'museum', 'castle', 'monument'], true, false]],
+      layout: { 'text-font': ['Noto Sans Regular'], 'text-size': 12 },
+    })
+    expect(landmarks?.type === 'symbol' && landmarks.layout?.['text-allow-overlap']).toBeUndefined()
+    expect(landmarks?.type === 'symbol' && landmarks.layout?.['icon-image']).toBeUndefined()
+    expect(map.addLayer).toHaveBeenCalledWith(landmarks, 'water_label')
   })
 
   it('rehydrates detail colors without duplicate layers or changing camera/source data', () => {

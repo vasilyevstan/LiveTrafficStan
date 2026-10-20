@@ -1034,8 +1034,16 @@ IndexedDB store every minute.
 ## Map rendering
 
 The default atlas's `basemapCartography.ts` adds five existing-source
-land-cover classes and close-zoom native building extrusions. It preserves
-road/label semantics, the flat footprints and custom/fallback styles.
+land-cover classes, one land-use fill, one named/rank-qualified POI symbol
+layer and close-zoom native building extrusions. Ordinary top-down views
+retain urban shading, show main railways earlier, and lower the known Light
+street-name zoom gates. Both new layers reuse `openmaptiles`; POI labels reuse
+Noto Sans and native collision handling below the existing place labels.
+Static land use and station/ferry/civic names never become traffic entities,
+selectable operational objects, counts, lookups or history. Source detail
+and native placement determine what is actually visible, not the allowlist
+alone. Existing road/label semantics, flat footprints and the exact
+default-style/custom/fallback guards remain.
 Only bounded numeric source render heights with valid bases are used;
 ambiguous default heights and `hide_3d` outlines remain flat. Native zoom
 expressions raise buildings between 14.5 and 15.5, without another animation

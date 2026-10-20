@@ -48,6 +48,47 @@ supplementary marine WebSocket; use the actual local Worker for those paths.
 | `npm run check:deploy` | Bundle the Worker and Static Assets without credentials or deployment |
 | `npm run preview:worker` | Build and run the actual local Cloudflare `workerd` boundary |
 
+### Ordinary top-down map detail (#522)
+
+The #518 automatic land-cover fills were too subtle to establish noticeably
+richer everyday maps. #522 separately tests existing-vector city detail,
+without using relief or tilted buildings as a proxy. Cartography regressions
+cover retained residential shading, earlier rail/Light street-name gates,
+exact land-use classes, named rank-qualified POIs, existing fonts, native
+collisions, default-style guards and idempotent themed rehydration.
+
+Eight matched native before/after cases use actual OpenFreeMap vectors at
+zoom 11.5/13, pitch 0, Light/Dark and 1280x900/315x517. Inspect all 16
+native-size images: installed layers and feature-name totals are not exact
+visible-glyph counts or perceptual acceptance. The images demonstrate rail
+corridors, real land-use areas, earlier Light street names and retained Dark
+urban shading. One canvas, the same two stock style sources, no terrain or
+runtime errors and approximately 17.8-18.8 ms native frame p95 are observed.
+The two Light zoom-11.5 cases add an approximately 24 kB existing Noto Sans
+glyph range, not new geographic tile URLs. PBF observation includes fonts;
+do not describe it as a pure geographic-vector transfer count.
+
+The first inspection found that actual zoom-13 Tallinn POIs include stations
+and ferry terminals. A single allowlist correction includes those real
+terminals. Four final actual-App cases under production CSP confirm named
+terminals in both themes and sizes, trusted mouse/touch picking and X,
+retained desktop selection through native style rehydration, unchanged raw
+camera/controller ownership, one canvas, no horizontal overflow and a
+hit-tested 120x120 map region. Aircraft are synthetic and marine is
+intentionally unavailable; vectors/fonts are real. The final Dark phone
+case waits for actual Dark map paint, not just the React theme attribute.
+Initial resize/disclosure and pick timeouts plus the premature Dark capture
+remain qualified observer receipts; accepted cases are reused, not rerun,
+and no product control or layout is changed for those observer assumptions.
+Desktop Chrome phone emulation is not physical-device/GPU evidence.
+
+All required local gates pass 203 suites /2,258 tests. Matched production-input
+initial JS is 585,292 Node-default-gzip bytes versus 584,609: +683 /0.1168%,
+below 1%. CSS, dependencies, controls, saved data and production inputs are
+unchanged. Reuse accepted unchanged relief/building/orbital/update evidence;
+the [#522 receipt](https://github.com/vasilyevstan/LiveTrafficStan/issues/522)
+separately records checked delivery, actual public behavior and publication.
+
 ### Lightweight map detail (#518)
 
 `basemapCartography.test.ts` retains default/custom/shared-theme preservation,
