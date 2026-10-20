@@ -62,6 +62,32 @@ credentials and the private-relay secret. Observability remains disabled and
 no paid fallback is enabled. Orbital activation uses the included free KV and
 SQLite Durable Object allocations; R2 is not used.
 
+### Ordinary top-down detail release boundary (#522)
+
+This focused refinement makes existing vector city detail visible without
+RELIEF or a tilted camera: land use, rail corridors, earlier Light street
+names, retained urban shading and ranked named station/ferry/civic context.
+It keeps the same source/renderer, native label collisions, controls and
+attribution. Additional existing-font glyph ranges are possible; it is not
+a zero-network claim. No new provider, endpoint, dependency, binding, flag,
+credential, producer, persistence or camera mechanism is added.
+
+Use the serialized exact-current-main workflow with `application`,
+`oci-private-relay`, aircraft photos, routes, both orbital catalogs,
+`orbital_source=space-track`, marine supplement and airport boards preserved.
+Exact-SHA checks, atomic secrets, physical/source/retry fences and current
+provider deadlines remain authoritative. Existing tabs use ordinary
+Settings / REFRESH APP; no reset or migration is needed.
+
+The compatible predecessor is application
+`f1a8722547a95bcb3423519a357cd8209ec7140e`, Worker
+`8ae97c38-905a-4d0f-a711-ca7ee17ac954`. Revert the refinement or use the
+existing previous-version rollback without deleting preferences/history.
+The [#522 delivery receipt](https://github.com/vasilyevstan/LiveTrafficStan/issues/522)
+records actual resulting application/Worker identities and public acceptance;
+later documentation/Wiki commits do not replace the running application.
+The #518 receipt below remains historical evidence, not normal-view proof.
+
 ### Lightweight map-detail release boundary (#518)
 
 The automatic land-cover fills and close-zoom building extrusions reuse

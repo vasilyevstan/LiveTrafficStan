@@ -88,8 +88,17 @@ OpenFreeMap is free and open, requires no application key, and is directly compa
 ### Existing-vector map detail
 
 Grass, farmland, rock, sand, wetland and close-zoom building geometry reuse
-the same OpenFreeMap/OpenMapTiles source and its existing attribution. Building
-heights may be derived from OSM levels; they are approximate cartographic
+the same OpenFreeMap/OpenMapTiles source and its existing attribution.
+Ordinary top-down land-use shading, rail corridors, earlier road names and
+ranked named station/ferry/civic labels use that same source. These names
+are static cartographic context, not live observations, application discovery
+results or independently selectable objects. Coverage and label availability
+depend on actual tile content and native collisions; an allowed class is not
+a promise that its names exist at every zoom. Existing hosted fonts can load
+additional glyph ranges; the matched trial observed approximately 24 kB for
+one range, with no additional geographic tile URLs.
+
+Building heights may be derived from OSM levels; they are approximate cartographic
 context, not surveyed heights. Unknown/ambiguous default heights and hidden
 outlines are not extruded. No new lookup, feed, dataset download or imagery
 service is added for these vector details.

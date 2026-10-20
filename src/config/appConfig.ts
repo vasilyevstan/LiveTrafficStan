@@ -197,6 +197,14 @@ export const DEFAULT_MAP_STYLE_URLS = {
 
 export const BASEMAP_DETAIL_CONFIG = {
   landcoverMinimumZoom: 5,
+  landuseMinimumZoom: 9,
+  urbanMaximumZoom: 24,
+  railwayMinimumZoom: 10,
+  majorRoadNamesMinimumZoom: 11,
+  minorRoadNamesMinimumZoom: 13,
+  pathNamesMinimumZoom: 14.5,
+  landmarkMinimumZoom: 12,
+  landmarkMaximumRank: 3,
   buildingsMinimumZoom: 14.5,
   buildingsFullHeightZoom: 15.5,
   unknownBuildingHeightMeters: 5,
