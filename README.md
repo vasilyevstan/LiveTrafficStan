@@ -8,8 +8,10 @@ user accounts or a server-side vessel history archive.
 
 Public production: <https://trackstan.xyz>
 
-Latest rollout and exact application/Worker identities:
-[lightweight map-detail delivery receipt (#518)](https://github.com/vasilyevstan/LiveTrafficStan/issues/518).
+Current map-detail follow-up and exact application/Worker identities:
+[ordinary top-down detail delivery receipt (#522)](https://github.com/vasilyevstan/LiveTrafficStan/issues/522).
+The [initial relief/building release (#518)](https://github.com/vasilyevstan/LiveTrafficStan/issues/518)
+remains a separate historical receipt.
 
 Historical native-orbital-primary application source: `1352c6e586366084b09bcb9cefa2a5cf5f9c8065`,
 Worker `c207eeee-e817-4a9f-bbc7-49daaab85504`, with the
@@ -109,9 +111,13 @@ identity are not renamed or reset.
   tides, clearance or navigation guidance. Anonymous requests reveal the
   viewed area to the sources; explicit off is remembered.
   See [depth coverage, bounds and controls](docs/configuration.md#modeled-water-depths).
-- An atlas-style treatment of the default maps: blue water, visible forests
-  and parks, distinct grass/farmland/rock/sand/wetland, warm roads, and clearer
-  building and harbour detail. Close zoom adds approximate height-backed 3D
+- An atlas-style treatment of the default maps: ordinary top-down views gain
+  city land-use areas, rail corridors, earlier street names and ranked named
+  station/ferry/landmark labels where the existing tiles supply them.
+  Blue water, forests, parks, grass/farmland/rock/sand/wetland and warm roads
+  remain. Base-map labels are static context, not live selectable objects;
+  no relief switch or tilt is needed for this ordinary detail.
+  Close zoom adds approximate height-backed 3D
   buildings; unknown/default heights stay flat. Light uses
   a warm paper palette; Dark uses deep-blue water with forest and bronze
   detail. These additions reuse existing vector tiles, not imagery or a new

@@ -25,6 +25,11 @@ const PALETTES = {
     rock: '#c7c3b5',
     sand: '#e7d4a7',
     wetland: '#adc9b8',
+    industrial: '#cfc7bd',
+    commercial: '#e4c9a8',
+    civic: '#d1dac0',
+    cemetery: '#bfcfa8',
+    rail: '#8b7765',
   },
   dark: {
     land: '#263a3d',
@@ -48,6 +53,11 @@ const PALETTES = {
     rock: '#58605b',
     sand: '#71634a',
     wetland: '#335857',
+    industrial: '#51464d',
+    commercial: '#66503d',
+    civic: '#435a50',
+    cemetery: '#3d5748',
+    rail: '#a4aaa0',
   },
 } as const
 
@@ -65,6 +75,8 @@ type BasemapMap = Pick<
 }
 
 export const LAYER_BASEMAP_BUILDINGS = 'basemap-detail-buildings'
+export const LAYER_BASEMAP_LANDUSE = 'basemap-detail-landuse'
+export const LAYER_BASEMAP_LANDMARKS = 'basemap-detail-landmarks'
 
 export const needsBasemapStyleReset = (
   styleUrl: string,
@@ -116,6 +128,9 @@ const layerPaint = (
     if (sourceLayer === 'aeroway') return [['line-color', colors.runway]]
     if (layer.id === 'road_pier') return [['line-color', colors.pier]]
     if (sourceLayer === 'transportation') {
+      if (layer.id.startsWith('railway')) {
+        return [['line-color', layer.id.includes('dashline') ? colors.land : colors.rail]]
+      }
       if (/casing/.test(layer.id)) {
         return [['line-color', colors.roadCasing]]
       }
@@ -170,6 +185,26 @@ export const applyBasemapCartography = (
     ) {
       map.setLayerZoomRange(layer.id, 5, layer.maxzoom ?? 24)
     }
+    if ('source-layer' in layer && layer.source === 'openmaptiles') {
+      if (layer.id === 'landuse_residential') {
+        map.setLayerZoomRange(
+          layer.id, layer.minzoom ?? 0, BASEMAP_DETAIL_CONFIG.urbanMaximumZoom,
+        )
+      }
+      const minimumZoom =
+        layer.id === 'railway' || layer.id === 'railway_dashline'
+          ? BASEMAP_DETAIL_CONFIG.railwayMinimumZoom
+          : layer.id === 'highway-name-major'
+            ? BASEMAP_DETAIL_CONFIG.majorRoadNamesMinimumZoom
+            : layer.id === 'highway-name-minor'
+              ? BASEMAP_DETAIL_CONFIG.minorRoadNamesMinimumZoom
+              : layer.id === 'highway-name-path'
+                ? BASEMAP_DETAIL_CONFIG.pathNamesMinimumZoom
+                : undefined
+      if (minimumZoom !== undefined) {
+        map.setLayerZoomRange(layer.id, minimumZoom, layer.maxzoom ?? 24)
+      }
+    }
   }
 
   const layers = map.getStyle().layers
@@ -188,6 +223,45 @@ export const applyBasemapCartography = (
     }, beforeLandcover)
     map.setPaintProperty(id, 'fill-color', colors[kind])
   }
+
+  const landuseColor: ExpressionSpecification = ['match', ['get', 'class'],
+    'industrial', colors.industrial,
+    ['commercial', 'retail'], colors.commercial,
+    ['hospital', 'school'], colors.civic,
+    ['cemetery', 'grave_yard'], colors.cemetery,
+    colors.land,
+  ]
+  if (!map.getLayer(LAYER_BASEMAP_LANDUSE)) map.addLayer({
+    id: LAYER_BASEMAP_LANDUSE, type: 'fill', source: 'openmaptiles',
+    'source-layer': 'landuse', minzoom: BASEMAP_DETAIL_CONFIG.landuseMinimumZoom,
+    filter: ['match', ['get', 'class'],
+      ['industrial', 'commercial', 'retail', 'hospital', 'school', 'cemetery', 'grave_yard'],
+      true, false],
+    paint: { 'fill-color': landuseColor, 'fill-opacity': 0.8 },
+  }, layers.find(layer => 'source-layer' in layer &&
+    layer['source-layer'] === 'waterway' && layer.type === 'line')?.id)
+  map.setPaintProperty(LAYER_BASEMAP_LANDUSE, 'fill-color', landuseColor)
+
+  if (!map.getLayer(LAYER_BASEMAP_LANDMARKS)) map.addLayer({
+    id: LAYER_BASEMAP_LANDMARKS, type: 'symbol', source: 'openmaptiles',
+    'source-layer': 'poi', minzoom: BASEMAP_DETAIL_CONFIG.landmarkMinimumZoom,
+    filter: ['all', ['has', 'name'],
+      ['<=', ['number', ['get', 'rank'], 100], BASEMAP_DETAIL_CONFIG.landmarkMaximumRank],
+      ['match', ['get', 'class'],
+        ['railway', 'ferry_terminal', 'hospital', 'college', 'school', 'attraction', 'stadium',
+          'cemetery', 'park', 'town_hall', 'museum', 'castle', 'monument'],
+        true, false]],
+    layout: {
+      'text-field': ['coalesce', ['get', 'name_en'], ['get', 'name']],
+      'text-font': ['Noto Sans Regular'], 'text-size': 12,
+      'text-max-width': 10, 'text-padding': 4,
+      'symbol-sort-key': ['number', ['get', 'rank'], 100],
+    },
+    paint: { 'text-color': colors.secondaryText, 'text-halo-color': colors.land,
+      'text-halo-width': 1.5 },
+  }, layers.find(layer => layer.type === 'symbol')?.id)
+  map.setPaintProperty(LAYER_BASEMAP_LANDMARKS, 'text-color', colors.secondaryText)
+  map.setPaintProperty(LAYER_BASEMAP_LANDMARKS, 'text-halo-color', colors.land)
 
   if (!layers.some(layer => 'source-layer' in layer &&
     layer.source === 'openmaptiles' && layer['source-layer'] === 'building')) return

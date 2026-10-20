@@ -1022,6 +1022,19 @@ unsafe bases/heights are omitted; the existing flat footprints remain.
 Buildings rise between zoom 14.5 and 15.5. They do not add useful detail from
 orbital altitude.
 
+Ordinary top-down maps also show real industrial/commercial/civic/cemetery
+land-use areas from zoom 9 and main rail corridors from zoom 10. Urban
+shading remains visible at city zooms in both themes. Light major street
+names start at 11, minor names at 13 and path names at 14.5; Dark keeps its
+existing early street labels. Named transport/civic landmarks start at 12,
+limited to native rank 3 or better with normal label collision handling.
+The tiles still decide which features exist: the tested Tallinn zoom-13
+labels include stations and ferry terminals, not every hospital or landmark.
+These are static base-map names, not a live discovery layer or selectable
+traffic. They need neither RELIEF nor a tilted camera and add no control,
+preference, source, provider or lookup. Existing fonts may load an additional
+glyph range. See [normal-view evidence and costs](development-and-testing.md#ordinary-top-down-map-detail-522).
+
 **Layers -> RELIEF** (desktop **More -> Layers**) is a separate, session-only
 choice, initially off and reset by reload or Reset preferences. Enabling
 adds native `hillshade` from the public Mapzen Terrarium dataset on AWS.
