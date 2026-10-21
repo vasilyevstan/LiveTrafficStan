@@ -120,6 +120,16 @@ including its actual application/Worker, normal update and public acceptance.
 It preserves all production inputs and the existing board protocol, quota,
 credentials and coordinator; rollback requires no saved-data migration.
 
+The [#539 satellite-search access receipt](https://github.com/vasilyevstan/LiveTrafficStan/issues/539)
+records the later presentation-only correction: the existing desktop catalog
+entry is promoted/named explicitly, and a local catalog query can be entered
+before explicit Load/Enable. It adds no acquisition path, source, provider
+probe, secret, binding, timing or persistence change. The compatible predecessor
+is application `85f1966cfd01a8fca84d6b6e4c8018fab6d98bc8`, Worker
+`e43955f2-54cd-4332-817e-12dd59f16ed8`. Reuse the same checked release and
+existing rollback/update paths; actual runtime and publication evidence remain
+distinct from documentation commits.
+
 ### Ordinary top-down detail release boundary (#522)
 
 This focused refinement makes existing vector city detail visible without
