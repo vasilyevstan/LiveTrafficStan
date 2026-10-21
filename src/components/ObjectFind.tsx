@@ -4,7 +4,7 @@ import { workspaceOwnsFullscreen } from '../app/fullscreen'
 import { APP_CONFIG, type AppCenter } from '../config/appConfig'
 import { DISCOVERY_CONFIG } from '../config/discoveryConfig'
 import type { Airport, AirportSource } from '../domain/airports'
-import { discoverAirports, discoverLoadedOrbits, discoverPorts, loadedOrbitalCatalog } from '../domain/catalogDiscovery'
+import { discoverAirports, discoverLoadedOrbits, discoverPorts, loadedOrbitalCatalog, type OrbitalCatalogEntry } from '../domain/catalogDiscovery'
 import { formatAge } from '../domain/format'
 import type { CachedMarineDiscovery, DiscoveryMatch, DiscoveryResponse } from '../domain/objectDiscovery'
 import { qualifiedLastReport } from '../domain/objectDiscovery'
@@ -47,7 +47,24 @@ interface ObjectFindProps {
   selectedOrbitalId: string | null
   orbitalVisible: boolean
   onLoadOrbits: () => void
+  onOrbitalNavigate: (id: string, originId: string) => boolean
   discoverMarineMetadata?: (query: string, now: number) => CachedMarineDiscovery
+}
+
+function orbitalPositionMessage(entry: OrbitalCatalogEntry, state: OrbitalControllerState, now: number, visible: boolean) {
+  if (entry.position) return `Modeled ${formatAge(entry.position.modeledFor, now)}`
+  if (!visible) return 'Enable ORBITS to locate this satellite.'
+  const epoch = Date.parse(entry.record.epoch)
+  const day = 24 * 60 * 60_000
+  if (now - epoch > APP_CONFIG.orbital.maximumElementAgeMs) {
+    return `Cannot locate: elements are ${Math.floor((now - epoch) / day)} days old (${APP_CONFIG.orbital.maximumElementAgeMs / day}-day limit).`
+  }
+  if (epoch > now + APP_CONFIG.orbital.maximumFutureElementMs) return 'Cannot locate: orbital elements are dated in the future.'
+  if (state.phase === 'paused-history') return 'Return to LIVE to locate this satellite.'
+  if (state.phase === 'paused-capture') return 'Return to the map to locate another satellite.'
+  if (state.phase === 'paused-hidden') return 'Positions are paused while this tab is hidden.'
+  if (state.phase === 'offline') return 'Reconnect to update the satellite position.'
+  return 'No safe current modeled position is available.'
 }
 
 function IdentityResults({
@@ -63,7 +80,7 @@ function IdentityResults({
     <>
       <p className="control-note" role="status">
         {result.matches.length === 0 ? 'No matches in this source.' :
-          `${result.matches.length} matches${result.truncated ? ' · partial, limit reached' : ''}.`}
+          `${result.matches.length} ${result.matches.length === 1 ? 'match' : 'matches'}${result.truncated ? ' · partial, limit reached' : ''}.`}
         {result.rejectedRecords > 0 && ` ${result.rejectedRecords} invalid or unsupported records withheld.`}
       </p>
       <ul className="object-find-results" aria-label="Identity lookup results">
@@ -79,7 +96,9 @@ function IdentityResults({
             ].filter(Boolean).join(' · ')}</span>
             <span>{canNavigate(match) && match.location
               ? `Last position ${formatAge(match.location.reportedAt, now)}`
-              : 'Position unavailable'}</span>
+              : match.objectClass === 'ships'
+                ? 'Identity only: this source supplies no timed position.'
+                : 'No qualified last-reported position available.'}</span>
             {canNavigate(match) && match.location && (
               <ObjectResultButton prefix="object-find-result" onSelect={() => {
                 if (!canNavigate(match) || !qualifiedLastReport(match, result, Date.now()) || !match.location) return
@@ -108,7 +127,6 @@ function IdentityResults({
 export function ObjectFind(props: ObjectFindProps) {
   const { kind, mobile, now, active, paused, onNavigate, discoverMarineMetadata } = props
   const inputId = useId()
-  const [advancedOpen, setAdvancedOpen] = useState(false)
   const [scopes, setScopes] = useState<{ ships: Scope; aircraft: Scope }>({ ships: 'view', aircraft: 'view' })
   const [drafts, setDrafts] = useState({ ships: '', aircraft: '', received: '', airports: '', ports: '', orbits: '' })
   const [shipMethod, setShipMethod] = useState<'name' | 'mmsi'>('name')
@@ -125,8 +143,8 @@ export function ObjectFind(props: ObjectFindProps) {
     provider: new SameOriginObjectLookupProvider(), onState: setLookupState,
   }))
   const isTraffic = kind === 'ships' || kind === 'aircraft'
-  const scope = isTraffic ? !mobile && scopes[kind] === 'view' ? 'outside' : scopes[kind] : 'received'
-  const remoteActive = active && (mobile || advancedOpen) && isTraffic && scope === 'outside' && !paused
+  const scope = isTraffic ? scopes[kind] : 'received'
+  const remoteActive = active && isTraffic && scope === 'outside' && !paused
   const navigationDisabled = props.navigationDisabled
   const method = kind === 'aircraft' ? aircraftMethod : shipMethod
 
@@ -231,7 +249,10 @@ export function ObjectFind(props: ObjectFindProps) {
     return (
       <>
         {queryInput}
-        <p className="control-note" role="status">{rows.length} matches in loaded catalog{rows.length === 0 ? '.' : ` · ${paging.rangeStart}–${paging.rangeEnd}.`}</p>
+        {kind === 'orbits' && !props.orbitalVisible && (
+          <button type="button" disabled={paused} onClick={load}>Enable ORBITS</button>
+        )}
+        <p className="control-note" role="status">{rows.length} {rows.length === 1 ? 'match' : 'matches'} in loaded catalog{rows.length === 0 ? '.' : ` · ${paging.rangeStart}–${paging.rangeEnd}.`}</p>
         {kind === 'orbits' && orbitalCatalog.missing.length > 0 && (
           <p className="control-note">{orbitalCatalog.missing.includes('curated') ? 'Curated catalog unavailable.' : 'Starlink sample unavailable.'}</p>
         )}
@@ -253,16 +274,14 @@ export function ObjectFind(props: ObjectFindProps) {
           {orbits.slice(start, start + DISCOVERY_CONFIG.catalogResultLimit).map((entry) => (
             <li key={entry.id}>
               <strong>{entry.record.name}</strong><span>NORAD {entry.record.noradCatalogId} · {orbitalObjectTypeLabel(entry.record.objectType)} ({entry.record.objectType})</span>
-              <span>{entry.position ? `Modeled ${formatAge(entry.position.modeledFor, now)}` : 'Modeled position unavailable'}</span>
-              {entry.position && <ObjectResultButton prefix="object-find-result" disabled={navigationDisabled}
-                onSelect={() => {
-                  if (!entry.position || Date.now() - entry.position.modeledFor > DISCOVERY_CONFIG.maximumModeledPositionAgeMs) return
-                  onNavigate({ latitude: entry.position.latitude, longitude: entry.position.longitude, label: `Modeled: ${entry.record.name}` })
-                }}>Go to modeled point</ObjectResultButton>}
-              <details className="context-details"><summary>Element &amp; catalog times</summary>
+              <span>{orbitalPositionMessage(entry, entry.owner === 'starlink' ? props.starlink : props.curated, now, props.orbitalVisible)}</span>
+              <ObjectResultButton prefix="object-find-result" disabled={navigationDisabled || !entry.position}
+                onSelect={(originId) => setCatalogNavigationError(!props.onOrbitalNavigate(entry.id, originId))}>Go to satellite</ObjectResultButton>
+              <details className="context-details"><summary>Times, source &amp; limits</summary>
                 <p>Element epoch {entry.record.epoch}. Retrieved {entry.snapshot.retrievedAt}.</p>
                 <p>Published {entry.snapshot.publishedAt}. {entry.owner === 'starlink' ? 'Bounded Starlink sample.' : 'Curated catalog.'}</p>
-                <p>Modeled, not live tracking or optical visibility.</p>
+                <p>{entry.snapshot.sourceProvider === 'space-track' ? 'Space-Track orbital elements; CelesTrak catalog reference.' : 'CelesTrak orbital elements.'} Modeled, not live tracking or optical visibility.</p>
+                <p>Not every satellite or the full Starlink constellation. Find does not change map filters.</p>
               </details>
             </li>
           ))}
@@ -278,11 +297,10 @@ export function ObjectFind(props: ObjectFindProps) {
             setPage(paging.page + 1)
           }}>Next</button>
         </div>}
-        <details className="context-details"><summary>Catalog source &amp; limits</summary>
+        {kind !== 'orbits' && <details className="context-details"><summary>Catalog source &amp; limits</summary>
           {kind === 'airports' ? <p>OurAirports · {props.airportSource?.licenseName ?? 'Public domain'} · snapshot {props.airportSource?.publishedAt ?? 'date unavailable'}. Large and medium airports only; static, not airport operations.</p> :
-            kind === 'ports' ? <p>Natural Earth · {props.portSource?.licenseName ?? 'Public domain'} · snapshot {props.portSource?.publishedAt ?? 'date unavailable'}. Generalized ports, not berth or navigation information.</p> :
-              <p>Curated catalog and bounded Starlink sample, not the complete constellation. Modeled, not live or optical. Find does not change map filters.</p>}
-        </details>
+            <p>Natural Earth · {props.portSource?.licenseName ?? 'Public domain'} · snapshot {props.portSource?.publishedAt ?? 'date unavailable'}. Generalized ports, not berth or navigation information.</p>}
+        </details>}
       </>
     )
   }
@@ -295,27 +313,28 @@ export function ObjectFind(props: ObjectFindProps) {
       event.stopPropagation()
       controller.cancel()
     }}>
-      <div className={mobile && isTraffic ? 'object-find-heading-row' : undefined}>
+      <div className={isTraffic ? 'object-find-heading-row' : undefined}>
       {props.kindSelect}
       {isTraffic && <label className="object-find-scope"><span>Scope</span>
         <select aria-label="Find scope" value={scope} onChange={(event) => {
           const next = event.currentTarget.value
           if (next === 'view' || next === 'received' || next === 'outside') setScopes((current) => ({ ...current, [kind]: next }))
         }}>
-          {mobile && <option value="view">In view</option>}
+          <option value="view">In view</option>
           {kind === 'ships' && <option value="received">Received</option>}
           <option value="outside">Outside view</option>
         </select>
       </label>}
       </div>
-      {mobile && scope === 'view' ? props.currentView :
+      {isTraffic && scope === 'view' ? props.currentView :
         kind === 'ships' && scope === 'received' ? <>
           {input('received', 'Name, MMSI, IMO or callsign')}
-          <p className="control-note">Digitraffic metadata · last 24 hours · no new request.</p>
+          <p className="control-note">Digitraffic metadata · last 24 hours · names/IDs only · no new request.</p>
           {!cachedShips?.loaded ? <p className="control-note" role="status">No metadata received this session.</p> :
             [...drafts.received.trim()].length < 2 ? <p className="control-note">Enter at least two characters.</p> :
               <IdentityResults result={cachedShips.result} now={now} navigationDisabled onNavigate={onNavigate} />}
         </> : isTraffic && scope === 'outside' ? <>
+          {kind === 'ships' && <p className="control-note">Identity lookup only. This source cannot locate a ship.</p>}
           <form onSubmit={(event) => {
             event.preventDefault()
             if (!remoteActive || document.hidden || !navigator.onLine || (kind !== 'ships' && kind !== 'aircraft')) {
@@ -359,11 +378,5 @@ export function ObjectFind(props: ObjectFindProps) {
         </> : catalog()}
     </div>
   )
-  return mobile ? scopedContent : <>
-    <details className="context-details object-find-extra" onToggle={(event) => setAdvancedOpen(event.currentTarget.open)}>
-      <summary>Satellites, airports, ports &amp; lookups</summary>
-      {scopedContent}
-    </details>
-    {props.currentView}
-  </>
+  return scopedContent
 }

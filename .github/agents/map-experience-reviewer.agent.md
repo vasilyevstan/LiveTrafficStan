@@ -239,6 +239,13 @@ Check these project invariants:
   Distinguish catalog-owned from map-owned selection: await the current
   navigation's settled viewport before airport clearing, preserve ordinary
   off-layer/out-of-view clearing, and retain compact Find's Back context.
+- Find shows one selected class/scope on desktop and mobile. Satellite Go must
+  revalidate the exact current controller owner/snapshot, navigate and open
+  existing details; old elements keep a visible reason and disabled action.
+  Native coordinate navigation uses padded fitBounds: check the committed
+  target/visible object, not equality with the raw camera center. Preserve
+  current traffic selection, qualified aircraft last reports and untimed
+  ship identity-only results without inventing position or broader coverage.
 - Measure each collapsed panel, the combined expanded-stack bound, overlay
   obstruction, and attribution visibility in a real browser. Visible panel
   bounds are distinct from the transparent stack's maximum-height budget.

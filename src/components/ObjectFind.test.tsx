@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { EMPTY_ORBITAL_PREDICTION } from '../domain/orbital'
+import { EMPTY_ORBITAL_PREDICTION, type ModeledOrbitalPosition, type OrbitalControllerState, type OrbitalObject } from '../domain/orbital'
 import type { DiscoveryMatch, DiscoveryResponse } from '../domain/objectDiscovery'
 import { qualifiedLastReport } from '../domain/objectDiscovery'
 import { DISCOVERY_CONFIG } from '../config/discoveryConfig'
@@ -22,6 +22,27 @@ vi.mock('./ObjectResultButton', async (importOriginal) => {
 
 const now = Date.UTC(2026, 9, 14, 12)
 const empty = { phase: 'disabled', acceptedCount: 0, positions: [], prediction: EMPTY_ORBITAL_PREDICTION } as const
+const record: OrbitalObject = {
+  noradCatalogId: '100460', name: 'TEST SIX-DIGIT ORBIT', internationalDesignator: '2026-001A', objectType: 'PAY',
+  epoch: new Date(now - 60_000).toISOString(), meanMotion: 15, eccentricity: 0.001, inclination: 53,
+  rightAscensionOfAscendingNode: 0, argumentOfPericenter: 0, meanAnomaly: 0, ephemerisType: 0,
+  classificationType: 'U', elementSetNumber: 1, revolutionAtEpoch: 1, bstar: 0, meanMotionDot: 0, meanMotionDdot: 0,
+  sourceGroups: ['visual'], displayOrder: 0,
+}
+const snapshot = {
+  schemaVersion: 1, sourceContractVersion: 1, catalogId: 'test', sources: [],
+  retrievedAt: new Date(now - 30_000).toISOString(), publishedAt: new Date(now - 20_000).toISOString(),
+  recordCount: 1, sha256: 'a'.repeat(64), records: [record],
+}
+const position: ModeledOrbitalPosition = {
+  id: 'orbital:100460', noradCatalogId: '100460', name: record.name, internationalDesignator: record.internationalDesignator,
+  objectType: 'PAY', sourceGroups: ['visual'], displayOrder: 0, elementEpoch: Date.parse(record.epoch),
+  snapshotRetrievedAt: Date.parse(snapshot.retrievedAt), snapshotSha256: snapshot.sha256,
+  modeledFor: now, latitude: 0, longitude: 0, altitudeKm: 550, velocityKmPerSecond: 7.6,
+}
+const orbitalState: OrbitalControllerState = {
+  phase: 'ready', acceptedCount: 1, positions: [position], prediction: EMPTY_ORBITAL_PREDICTION, snapshot,
+}
 const render = (overrides: Partial<Parameters<typeof ObjectFind>[0]> = {}) => renderToStaticMarkup(
   <ObjectFind
     kind="ships" kindSelect={<label>Find class</label>} currentView={<p>Incumbent live discovery</p>}
@@ -31,6 +52,7 @@ const render = (overrides: Partial<Parameters<typeof ObjectFind>[0]> = {}) => re
     ports={[]} portsReady={false} portsLoading={false} onLoadPorts={vi.fn()}
     onPortNavigate={vi.fn(() => true)}
     curated={empty} starlink={empty} selectedOrbitalId={null} orbitalVisible={false} onLoadOrbits={vi.fn()}
+    onOrbitalNavigate={vi.fn(() => true)}
     {...overrides}
   />,
 )
@@ -40,19 +62,72 @@ afterEach(() => {
 })
 
 describe('scoped Find presentation boundaries', () => {
-  it('promotes the collapsed catalog entry before unchanged desktop discovery with zero requests', () => {
+  it('uses the same focused current-view flow on desktop without a redundant catalog wrapper or lookup request', () => {
     const fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
     const html = render({ mobile: false })
     expect(html).toContain('Incumbent live discovery')
-    expect(html).toContain('Satellites, airports, ports &amp; lookups')
-    expect(html.indexOf('Satellites, airports, ports &amp; lookups'))
-      .toBeLessThan(html.indexOf('Incumbent live discovery'))
-    expect(html).not.toMatch(/<details[^>]*open=/)
-    expect(html).toContain('Sent on submit to Open Waters; no Home or view coordinates.')
-    expect(html).toContain('Free exact IMO lookup is unavailable')
-    expect(html).toContain('identity-only')
+    expect(html).not.toContain('Satellites, airports, ports &amp; lookups')
+    expect(html).toContain('<option value="view" selected="">In view</option>')
+    expect(html).not.toContain('Look up')
     expect(fetchMock).not.toHaveBeenCalled()
+  })
+  it.each([false, true])('shows only satellite search and a single subordinate source disclosure (%s)', (mobile) => {
+    const html = render({ kind: 'orbits', mobile, curated: orbitalState, orbitalVisible: true })
+    expect(html).not.toContain('Incumbent live discovery')
+    expect(html).not.toContain('object-find-extra')
+    expect(html).toContain('1 match in loaded catalog')
+    expect(html.match(/<details/g)).toHaveLength(1)
+    expect(html).toContain('Times, source &amp; limits')
+    expect(html).toContain('Go to satellite')
+  })
+  it('navigates with exact orbital identity and opaque origin, not a generic coordinate-only jump', () => {
+    const onOrbitalNavigate = vi.fn(() => true)
+    const onNavigate = vi.fn()
+    render({ kind: 'orbits', curated: orbitalState, orbitalVisible: true, onOrbitalNavigate, onNavigate })
+    expect(resultActions).toHaveLength(1)
+    resultActions[0]('opaque-orbital-origin')
+    expect(onOrbitalNavigate).toHaveBeenCalledExactlyOnceWith('orbital:100460', 'opaque-orbital-origin')
+    expect(onNavigate).not.toHaveBeenCalled()
+  })
+  it('retains Starlink ownership in exact navigation', () => {
+    const onOrbitalNavigate = vi.fn(() => true)
+    render({
+      kind: 'orbits', orbitalVisible: true, onOrbitalNavigate,
+      starlink: { ...orbitalState, positions: [{ ...position, id: 'orbital:starlink:100460', owner: 'starlink' }] },
+    })
+    resultActions[0]('opaque-starlink-origin')
+    expect(onOrbitalNavigate).toHaveBeenCalledExactlyOnceWith('orbital:starlink:100460', 'opaque-starlink-origin')
+  })
+  it('explains an old element epoch despite a fresh catalog retrieval without offering a false current location', () => {
+    const html = render({
+      kind: 'orbits', orbitalVisible: true,
+      curated: {
+        ...orbitalState, positions: [],
+        snapshot: { ...snapshot, records: [{ ...record, epoch: new Date(now - 22 * 24 * 60 * 60_000).toISOString() }] },
+      },
+    })
+    expect(html).toContain('Cannot locate: elements are 22 days old (14-day limit).')
+    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Go to satellite<\/button>/)
+    expect(html).not.toContain('Modeled position unavailable')
+  })
+  it('keeps explicit Enable available for a loaded catalog after ORBITS is switched off', () => {
+    const load = vi.fn()
+    const html = render({ kind: 'orbits', curated: { ...orbitalState, phase: 'disabled' }, onLoadOrbits: load })
+    expect(html).toContain('Enable ORBITS to locate this satellite.')
+    expect(html).toMatch(/<button type="button">Enable ORBITS<\/button>/)
+    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Go to satellite<\/button>/)
+    expect(load).not.toHaveBeenCalled()
+  })
+  it.each([
+    ['paused-history', 'Return to LIVE'],
+    ['paused-capture', 'Return to the map'],
+    ['paused-hidden', 'while this tab is hidden'],
+    ['offline', 'Reconnect'],
+  ] as const)('explains the existing %s pause without substituting old coordinates', (phase, message) => {
+    const html = render({ kind: 'orbits', curated: { ...orbitalState, phase }, orbitalVisible: true })
+    expect(html).toContain(message)
+    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Go to satellite<\/button>/)
   })
   it('does not automatically download or enable an unloaded static/orbital catalog', () => {
     const fetchMock = vi.fn()

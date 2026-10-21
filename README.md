@@ -489,18 +489,25 @@ identity are not renamed or reset.
   data is reused. **Go to airport/port** navigates and opens the existing
   static details, with no selected-only pin; mobile **Back** restores Find.
   The accepted curated/Starlink sample catalogs still require their existing
-  explicit enable/load action. For satellite search, use **Find -> Satellites /
-  orbits**; on desktop first open **More -> Find -> Satellites, airports, ports
-  & lookups**, now placed before the traffic lists. Search the reported name,
+  explicit enable/load action. Find shows one selected object class on every
+  layout, without unrelated aircraft/ship searches below catalog results.
+  For satellite search, use **Find -> Satellites / orbits**; on desktop open
+  **More -> Find** first. Search the reported name,
   NORAD number or COSPAR ID. The query field is available before loading and
-  its local draft is retained through **Enable ORBITS**.
+  its local draft is retained through **Enable ORBITS**. **Go to satellite**
+  navigates to a qualified current modeled point and opens its existing details;
+  mobile **Back** restores Find. A disabled action explains why a point is
+  unavailable, including orbital elements older than the unchanged 14-day limit.
+  A freshly retrieved catalog does not make an old element epoch current.
   Choosing a class or typing does not download a catalog or perform lookup.
   Outside-view ships use free Open Waters name-prefix/exact-MMSI lookup and
-  always say **Position unavailable**; REST metadata time is not position time.
+  disclose **Identity lookup only** before submission and do not invent a
+  location; REST metadata time is not position time.
   Aircraft support exact ICAO24, registration or callsign, not arbitrary names.
   Only qualified original aircraft positions offer **Go to last report**.
-  Navigation never creates a fake live object or changes Home. Desktop Find
-  retains its local defaults; additional discovery starts collapsed.
+  Navigation never creates a fake live object or changes Home. Aircraft/Ships
+  start with their existing **In view** search; choose **Outside view** explicitly
+  for remote lookup. In-view results retain normal live selection/details.
   [Scopes, bounds and privacy](docs/configuration.md#scoped-object-discovery)
   include partial coverage, the 50-result cap and unavailable free exact IMO.
 - **In view** opens below Settings in the desktop rail or directly from the

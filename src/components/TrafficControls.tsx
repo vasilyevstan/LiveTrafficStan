@@ -155,6 +155,7 @@ interface TrafficControlsProps {
   onOrbitalVisibleChange: (visible: boolean) => void
   onOrbitalFiltersChange: (filters: OrbitalDiscoveryFilters) => void
   onOrbitalSelect: (id: string, originId: string) => void
+  onOrbitalNavigate: (id: string, originId: string) => boolean
   onRetryOrbital: () => void
   starlinkState: OrbitalControllerState
   starlinkCounts: OrbitalPopulationCounts
@@ -393,6 +394,7 @@ export function TrafficControls({
   onOrbitalVisibleChange,
   onOrbitalFiltersChange,
   onOrbitalSelect,
+  onOrbitalNavigate,
   onRetryOrbital,
   starlinkState,
   starlinkCounts,
@@ -1288,13 +1290,14 @@ export function TrafficControls({
               starlink={starlinkState}
               selectedOrbitalId={selectedOrbitalId}
               orbitalVisible={orbitalVisible}
+              onOrbitalNavigate={onOrbitalNavigate}
               onLoadOrbits={() => {
                 if (!orbitalVisible) onOrbitalVisibleChange(true)
                 else onRetryOrbital()
               }}
               discoverMarineMetadata={discoverMarineMetadata}
               currentView={<>
-            <div hidden={mobileWorkspace && findKind !== 'aircraft'}>
+            <div hidden={findKind !== 'aircraft'}>
             <AircraftDiscovery
               query={aircraftQuery}
               aircraft={aircraftResults}
@@ -1305,7 +1308,7 @@ export function TrafficControls({
               onSelect={onAircraftSelect}
             />
             </div>
-            <div hidden={mobileWorkspace && findKind !== 'ships'}>
+            <div hidden={findKind !== 'ships'}>
             <VesselDiscovery
               compactFilters={mobileWorkspace}
               filters={vesselFilters}
