@@ -37,6 +37,23 @@ export interface AirportBoardFlight {
   terminal?: string
 }
 
+export const filterAirportBoardFlights = (
+  flights: readonly AirportBoardFlight[],
+  query: string,
+) => {
+  const normalized = (value: string) =>
+    value.replace(/\s+/g, '').toLocaleLowerCase('en-US')
+  const search = normalized(query)
+  return flights.map((flight, index) => ({ flight, index })).filter(({ flight }) =>
+    !search || [
+      flight.number,
+      flight.otherAirport?.name,
+      flight.otherAirport?.iata,
+      flight.otherAirport?.icao,
+    ].some(value => value !== undefined && normalized(value).includes(search)),
+  )
+}
+
 export interface AirportBoardSnapshot {
   schemaVersion: 1
   airportIcao: string

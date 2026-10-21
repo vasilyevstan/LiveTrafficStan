@@ -8,6 +8,7 @@ const render = (state: AirportBoardState, options: Partial<{
   airportIcao: string
   online: boolean
   historical: boolean
+  visible: boolean
   retryAt: number
 }> = {}) => renderToStaticMarkup(
   <AirportBoardContent
@@ -46,6 +47,86 @@ describe('airport board presentation', () => {
   it('does not convert unknown coverage to successful empty', () => {
     expect(renderToStaticMarkup(<AirportBoardRows flights={null} direction="arrivals" />)).toContain('No arrivals board is available')
     expect(renderToStaticMarkup(<AirportBoardRows flights={[]} direction="arrivals" />)).toContain('No arrivals were returned')
+  })
+
+  it('offers a labelled, bounded, local-only filter only while a valid board is displayed', () => {
+    const html = render({ phase: 'ready', airportIcao: 'EETN', snapshot: airportBoardFixture() })
+    expect(html).toContain('for="airport-board-search"')
+    expect(html).toContain('Search loaded flights')
+    expect(html).toContain('type="search"')
+    expect(html).toContain('maxLength="100"')
+    expect(html).toContain('autoComplete="off"')
+    expect(html).toContain('Clear airport board search')
+    expect(html).toContain('origins for arrivals, destinations for departures')
+    expect(html).toContain('makes no requests or quota charges')
+
+    for (const state of [
+      { phase: 'idle' },
+      { phase: 'loading', airportIcao: 'EETN' },
+      { phase: 'expired', airportIcao: 'EETN' },
+      { phase: 'error', airportIcao: 'EETN', message: 'Quota exhausted' },
+    ] satisfies AirportBoardState[]) {
+      expect(render(state)).not.toContain('id="airport-board-search"')
+    }
+    for (const options of [{ historical: true }, { online: false }, { visible: false }]) {
+      expect(render({ phase: 'ready', airportIcao: 'EETN', snapshot: airportBoardFixture() }, options))
+        .not.toContain('id="airport-board-search"')
+    }
+    expect(render({
+      phase: 'ready', airportIcao: 'EETN', snapshot: airportBoardFixture(now - 31 * 60_000),
+    })).not.toContain('id="airport-board-search"')
+  })
+
+  it('reports matches without changing loaded totals, statuses or separate codeshares', () => {
+    const row = airportBoardFixture().arrivals![0]!
+    const records = [
+      row, { ...row, number: 'OTHER200' },
+      { ...row, codeshare: 'codeshare' as const, status: 'CanceledUncertain' as const },
+    ]
+    const html = renderToStaticMarkup(
+      <AirportBoardRows flights={records} direction="arrivals" query=" ts 100 " />,
+    )
+    expect(html).toContain('2 of 3 loaded arrivals match.')
+    expect(html).not.toContain('OTHER200')
+    expect(html).toContain('Possibly cancelled')
+    expect(html).toContain('operating flight')
+    expect(html).toContain('codeshare')
+    const content = render({
+      phase: 'ready', airportIcao: 'EETN',
+      snapshot: { ...airportBoardFixture(), arrivals: records },
+    })
+    expect(content).toContain('Arrivals (3)')
+    expect(content).toContain('Departures (1)')
+  })
+
+  it('labels zero matches without claiming cancellation, absence or unknown coverage', () => {
+    const row = airportBoardFixture().arrivals![0]!
+    const html = renderToStaticMarkup(
+      <AirportBoardRows flights={[row]} direction="departures" query="no-such-flight" />,
+    )
+    expect(html).toContain('role="status">No matching loaded flights.</p>')
+    expect(html).not.toContain('<ul')
+    expect(html).not.toContain('Cancelled')
+    expect(html).not.toContain('No departures were returned')
+    expect(html).not.toContain('No departures board is available')
+    expect(renderToStaticMarkup(<AirportBoardRows flights={null} direction="arrivals" query="TS100" />))
+      .toContain('No arrivals board is available')
+    expect(renderToStaticMarkup(<AirportBoardRows flights={[]} direction="departures" query="TS100" />))
+      .toContain('No departures were returned')
+  })
+
+  it('retains filtering controls with a valid held board during reload or failure', () => {
+    for (const state of [
+      { phase: 'loading', airportIcao: 'EETN', snapshot: airportBoardFixture() },
+      { phase: 'error', airportIcao: 'EETN', snapshot: airportBoardFixture(), message: 'Reload failed' },
+    ] satisfies AirportBoardState[]) {
+      const html = render(state)
+      expect(html).toContain('id="airport-board-search"')
+      expect(html).toContain('TS100')
+    }
+    expect(render({
+      phase: 'error', airportIcao: 'EETN', snapshot: airportBoardFixture(), message: 'Reload failed',
+    })).toContain('Reload failed')
   })
 
   it('keeps a full long airport name behind a code-led native disclosure', () => {

@@ -1509,6 +1509,57 @@ a 17:00 viewer, requiring the original request anchor rather than claiming
 a new window. Existing photo-reader behavior remains covered after extracting
 the identical bounded JSON reader for shared use.
 
+#### Local search within a loaded board (#535)
+
+The pure matching tests and static row tests cover case/whitespace-insensitive
+reported flight numbers, other-airport names/IATA/ICAO, missing fields,
+provider order, original source indices, separate codeshares/statuses and
+the existing 500-row bound. Airline, status, gate and terminal are not search
+fields; there is no fuzzy airport inference. Unavailable `null`, genuinely
+empty arrays and a nonempty board with zero matches remain distinct. The last
+case must say **No matching loaded flights**, not claim a flight is cancelled
+or nonexistent. Direction totals remain unfiltered.
+
+Use invented normalized rows and count actual board requests in the native
+App. Typing, Enter, Clear, direction switching, native airport-name disclosure
+and both themes/sizes must add zero requests. Verify nonempty-query Escape
+and Clear input focus, native fullscreen precedence, retained query across
+directions/held-snapshot updates and reset after a different airport or no
+valid board. Filtering must not transfer an expanded row's native disclosure
+to another source index/direction. Keep 44px targets, 16px compact search text,
+one inspector-body scroller and reachable source/close controls. Reuse
+unchanged controller/provider quota/expiry/cancellation tests; do not spend
+live provider quota to iterate on a local filter or claim physical-device/
+OS-keyboard evidence from desktop emulation.
+
+`type="search"` also has a native Escape-to-clear default. While this
+workspace owns actual native fullscreen, prevent that field default without
+stopping propagation; merely returning from the input handler still clears
+its query. The browser's native exit and the explicit Exit action remain
+authoritative. Both the search input and Clear use a small body-relative
+scroll margin, not the old button/link clearance that can push a match below
+a short inspector. Check the actual flight heading, not its row's padding,
+when measuring a readable first match.
+
+Local acceptance on October 21, 2026 used Chrome 156.0.8078.47 and invented
+board/traffic responses, with no live board quota. All mandatory local gates
+passed, including 204 test files / 2,287 tests. Six Light/Dark cases at
+1280x900, 315x517 and 390x568 kept the complete 19.25px first flight heading
+and search label visible, 44px input/Clear targets, 16px compact input text,
+one body scroller, one canvas and a hit-tested 120x120px map region. Combined
+phone overlays measured 61.24% / 57.23%; placeholder contrast was at least
+5.23:1. Matched initial JavaScript grew by 644 default-gzip bytes (0.110%).
+Filtering added no board requests; only explicit invented fixture loads did.
+
+Actual native fullscreen retained the query and selection after CDP Escape;
+the native Exit action and subsequent empty-query inspector Escape worked.
+This does not establish physical OS-reserved Escape behavior. Airport A-B-A
+ownership used the existing exact-catalog App callback, not a claimed physical
+return-airport pick. Original default-clearing, focus-clearance and observer
+failures remain preserved; unchanged controller/provider evidence is reused.
+Actual release identity and production acceptance belong to the
+[#535 delivery receipt](https://github.com/vasilyevstan/LiveTrafficStan/issues/535).
+
 Build the browser with `VITE_AIRPORT_BOARDS_ENABLED=true`. A real backend
 also needs the prepared `--airport-boards-enabled true` Worker configuration,
 protected flag and key; plain Vite preview is not that backend. Never place a

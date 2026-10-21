@@ -7,6 +7,7 @@ export const AIRPORT_BOARD_CONFIG = {
   offsetMinutes: -60,
   durationMinutes: 360,
   maximumFlights: 500,
+  maximumFilterLength: 100,
   maximumBytes: 1_024 * 1_024,
   maximumClientBytes: 512 * 1_024,
   upstreamTimeoutMs: 10_000,
