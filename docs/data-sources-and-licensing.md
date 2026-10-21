@@ -303,6 +303,12 @@ Object discovery is separate from live reception and Photon place search.
 already cached Digitraffic identities with their original metadata timestamps.
 Loaded airport/port/orbital catalogs retain their existing source rights and
 opt-in boundaries. Neither local nor catalog typing starts a new request.
+Explicit **Load airports/ports** reads the same pinned same-origin asset,
+independently of marker visibility, reusing any existing layer/weather load.
+It adds no catalog endpoint, credential, geocoder or provider query. Result
+navigation opens static OurAirports/Natural Earth details, not a live entity
+or inferred airport/port operation. Markers may stay completely off; airport
+boards and weather retain their own explicit request/enable boundaries.
 
 Explicit **Outside view** aircraft lookup uses only ADSB.lol's documented
 `/v2/hex/{icao24}`, `/v2/reg/{registration}` and `/v2/callsign/{callsign}`.

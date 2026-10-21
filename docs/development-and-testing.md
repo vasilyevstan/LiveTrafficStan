@@ -808,6 +808,42 @@ Device/focus emulation is not physical-phone or OS-keyboard acceptance.
 Existing short actions and mobile attribution/panel occlusion remain #449;
 line-box measurements do not establish unobstructed mobile usability.
 
+### Static Find without markers (#526)
+
+The shared-demand/typed-selection refinement passes **203 suites / 2,264
+tests**, the mandatory metadata/country/photo/orbital checks and the build.
+Focused regressions cover independent Load callbacks, raw off-layer catalog
+status, exact typed ID/opaque-origin actions and successful-empty versus
+unavailable results. Existing static-provider cancellation, validation and
+fulfilled-cache tests remain in use; no duplicate loader or test dependency
+was added.
+With unchanged production inputs, main JS grows by 343 Node-default-gzip
+bytes, from 585,292 to 585,635 (+0.0586%). CSS and both worker assets are
+unchanged; the 1% initial-JS ceiling is retained.
+
+Chrome 156 with actual local App/MapLibre/vector tiles covers Light/Dark at
+1280x900, 315x517 and 390x568. Trusted Load, text, result, repeated same-result,
+airport Back/X and focus actions retain off/hidden/unpickable markers and
+byte-equal saved preferences. An explicit `503` retries successfully; a pending
+port load survives class switches without a second request. Phone full
+bodies measure 180px at 315 and 195.36px at 390, with <=61.24% overlay union and a
+native-hit-tested 120x120 map region. All six scenes retain the four controller
+objects, one canvas and zero CSP/runtime exceptions. A settled port target,
+native full-style replacement with exact raw camera and hidden layers, and
+airport out-of-view clearing have separate supplemental evidence.
+
+Qualification: traffic/marine are local empty/unavailable fixtures; static
+assets and vector tiles are real. The unchanged class picker uses a
+controlled change event, not claimed OS-popup keyboard acceptance. The
+out-of-view transition uses public `jumpTo` as a geometry fixture. Emulated
+phone input is not physical-phone performance. Retain observer failures:
+closed-select key injection, same-document resume and session-scoped metric
+loss are not product defects. Wait for a fresh document, actual native paint
+and current-request viewport settlement; a detail DOM render or an arbitrary
+delay does not prove completed navigation. The real selection expiry during
+the existing 650ms navigation was fixed by matching the settled view request,
+not by extending the map-origin grace period.
+
 ### Mobile workspace and scoped discovery (#449)
 
 The implementation preserves desktop defaults and adds the approved

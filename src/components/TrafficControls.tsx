@@ -106,6 +106,8 @@ interface TrafficControlsProps {
   portsError?: string
   onPortsVisibleChange: (visible: boolean) => void
   onRetryPorts: () => void
+  onLoadPorts: () => void
+  onPortNavigate: (id: string, originId: string) => boolean
   airportsVisible: boolean
   airportsLoading: boolean
   airportsReady: boolean
@@ -116,6 +118,8 @@ interface TrafficControlsProps {
   onAirportsVisibleChange: (visible: boolean) => void
   onAirportSelect: (id: string, originId: string) => void
   onRetryAirports: () => void
+  onLoadAirports: () => void
+  onAirportNavigate: (id: string, originId: string) => boolean
   weatherVisible: boolean
   depthsVisible: boolean
   bathymetryStatus: BathymetryStatus
@@ -340,6 +344,8 @@ export function TrafficControls({
   portsError,
   onPortsVisibleChange,
   onRetryPorts,
+  onLoadPorts,
+  onPortNavigate,
   airportsVisible,
   airportsLoading,
   airportsReady,
@@ -350,6 +356,8 @@ export function TrafficControls({
   onAirportsVisibleChange,
   onAirportSelect,
   onRetryAirports,
+  onLoadAirports,
+  onAirportNavigate,
   weatherVisible,
   depthsVisible,
   bathymetryStatus,
@@ -1267,19 +1275,15 @@ export function TrafficControls({
               airportsLoading={airportsLoading}
               airportsError={airportsError}
               airportSource={airportSource}
-              onLoadAirports={() => {
-                if (!airportsVisible) onAirportsVisibleChange(true)
-                else onRetryAirports()
-              }}
+              onLoadAirports={onLoadAirports}
+              onAirportNavigate={onAirportNavigate}
               ports={catalogPorts}
               portsReady={portsReady}
               portsLoading={portsLoading}
               portsError={portsError}
               portSource={portSource}
-              onLoadPorts={() => {
-                if (!portsVisible) onPortsVisibleChange(true)
-                else onRetryPorts()
-              }}
+              onLoadPorts={onLoadPorts}
+              onPortNavigate={onPortNavigate}
               curated={orbitalState}
               starlink={starlinkState}
               selectedOrbitalId={selectedOrbitalId}

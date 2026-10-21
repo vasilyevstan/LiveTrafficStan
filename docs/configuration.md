@@ -542,8 +542,19 @@ Settings location input is reused for mobile Places.
 loaded Digitraffic metadata, including identities with no displayed position.
 It does not fetch, extend cache retention or bypass live vessel filters.
 Whole loaded static/orbital catalogs have 20-row pages and separate drafts;
-choosing a class or typing never loads/enables a catalog. **Load airports**,
-**Load ports** and **Enable ORBITS** retain their existing explicit semantics.
+choosing a class or typing never loads/enables a catalog. **Load airports**
+and **Load ports** request their existing pinned assets for this session
+without changing or saving the marker switches. Existing layer/weather loads
+and fulfilled assets are shared; closing or switching Find does not start
+another loader. An unavailable catalog remains an error with explicit retry,
+not an empty search. **Enable ORBITS** retains its existing semantics.
+
+**Go to airport/port** commits ordinary navigation and opens the existing
+static details even with all catalog markers off. It does not enable a
+selected-only pin, weather, airport-board requests or remote object lookup.
+Phone details open fully; **Back** restores the Find class, query and valid
+focus/scroll context, while **X** deselects. Desktop retains its current Find
+layout. Home, saved preferences and provider controllers are unchanged.
 
 **Outside view** submits one bounded operation. Ships allow name prefixes
 (two or more characters) or exact nine-digit MMSI, preserving leading zeros.
