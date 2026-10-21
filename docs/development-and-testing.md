@@ -222,6 +222,25 @@ is added. [#529](https://github.com/vasilyevstan/LiveTrafficStan/issues/529)
 records checked delivery, public normal-update acceptance and Wiki publication
 separately from this local fixture evidence.
 
+Actual public acceptance at2026-10-21 03:26:44-03:32:03 UTC uses native
+Space-Track source, transport, clock and workers, with no fixtures or provider
+overrides. BEIDOU 5 /36828 covers inverted mouse through nadir, Light1280x900
+to Dark315x517 framing and unchanged touch; STARLINK-34695 /64916 covers
+phone arrows and selected-model motion. Both raw Returns have zero measured
+error, exact original FOV/pitch/handlers and current base sky. Accepted eye
+error is below0.081m horizontally and1m vertically; one canvas and the two
+identified traffic-controller instances remain. Public compact overlays are
+16.05% desktop and38.82-41.51% phone, with44px actions and120x120 hit-tested
+map space. The ordinary old-tab update retains byte-equal preferences/root
+scope/database identity, not historical-row contents or physical-device proof.
+
+For Pause acceptance, wait for acknowledged visible native readiness and the
+displayed React/native handoff, not merely `capturedOrbitalPlaying=false`.
+The first immediate sample failed; the existing held pose later passes after
+two native frames. Preserve the failure and reuse completed update/look/aspect
+evidence; finish only the pending Return and remaining owner. No application
+edit, additional release or whole acceptance replay was needed.
+
 ### Moving 3D orbital view (#514)
 
 Required local gates pass **202 files / 2,235 tests**, lint, typecheck, all four
