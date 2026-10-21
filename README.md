@@ -475,8 +475,12 @@ identity are not renamed or reset.
 - **Find** separates **In view**, **Received** ship metadata, loaded catalogs
   and explicitly submitted **Outside view** lookup. Places/coordinates reuse
   the single existing location input; Photon is not a ship/aircraft directory.
-  Airports, ports and the complete accepted curated/Starlink sample catalogs
-  are searchable only after their existing explicit load/enable action.
+  **Load airports** and **Load ports** use the existing validated static
+  catalogs without enabling their map markers. Already-loaded layer/weather
+  data is reused. **Go to airport/port** navigates and opens the existing
+  static details, with no selected-only pin; mobile **Back** restores Find.
+  The accepted curated/Starlink sample catalogs still require their existing
+  explicit enable/load action.
   Choosing a class or typing does not download a catalog or perform lookup.
   Outside-view ships use free Open Waters name-prefix/exact-MMSI lookup and
   always say **Position unavailable**; REST metadata time is not position time.

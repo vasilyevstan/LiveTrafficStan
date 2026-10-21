@@ -320,6 +320,11 @@ function App() {
   )
   const [hoveredVesselId, setHoveredVesselId] = useState<string | null>(null)
   const [selectedPortId, setSelectedPortId] = useState<string | null>(null)
+  const [catalogSelection, setCatalogSelection] = useState<{
+    kind: 'airport' | 'port'
+    id: string
+    expandMobileDetails: boolean
+  } | null>(null)
   const [selectedAirportId, setSelectedAirportId] = useState<string | null>(
     null,
   )
@@ -607,16 +612,26 @@ function App() {
     () => new StaticPortsProvider(APP_CONFIG.ports),
     [],
   )
-  const portsResult = usePorts(portsVisible, portsProvider)
+  const [portsRequestedForFind, setPortsRequestedForFind] = useState(false)
+  const [airportsRequestedForFind, setAirportsRequestedForFind] = useState(false)
+  const portsResult = usePorts(portsVisible || portsRequestedForFind, portsProvider)
   const airportsProvider = useMemo(
     () => new StaticAirportsProvider(APP_CONFIG.airports),
     [],
   )
   const airportBoardProvider = useMemo(() => new SameOriginAirportBoardProvider(), [])
   const airportsResult = useAirports(
-    airportsVisible || weatherVisible,
+    airportsVisible || weatherVisible || airportsRequestedForFind,
     airportsProvider,
   )
+  const handleLoadPorts = useCallback(() => {
+    setPortsRequestedForFind(true)
+    if (portsResult.state.phase === 'error') portsResult.retry()
+  }, [portsResult.state.phase, portsResult.retry])
+  const handleLoadAirports = useCallback(() => {
+    setAirportsRequestedForFind(true)
+    if (airportsResult.state.phase === 'error') airportsResult.retry()
+  }, [airportsResult.state.phase, airportsResult.retry])
   const weatherProvider = useMemo(
     () => new AwcMetarProvider(APP_CONFIG.weather),
     [],
@@ -642,6 +657,7 @@ function App() {
       setSelectedOrbitalId(null)
       setSelectedPortId(null)
       setSelectedAirportId(null)
+      setCatalogSelection(null)
       setSelectedWeatherId(null)
       setHistoryResetRevision((current) => current + 1)
       setViewportReport(null)
@@ -1241,12 +1257,14 @@ function App() {
   }, [aircraftVisible, selectedEntity, selectedId, vesselsVisible])
 
   useEffect(() => {
-    if (!portsVisible && selectedPortId) setSelectedPortId(null)
-  }, [portsVisible, selectedPortId])
+    if (!portsVisible && selectedPortId &&
+      !(catalogSelection?.kind === 'port' && catalogSelection.id === selectedPortId)) setSelectedPortId(null)
+  }, [catalogSelection, portsVisible, selectedPortId])
 
   useEffect(() => {
-    if (!airportsVisible && selectedAirportId) setSelectedAirportId(null)
-  }, [airportsVisible, selectedAirportId])
+    if (!airportsVisible && selectedAirportId &&
+      !(catalogSelection?.kind === 'airport' && catalogSelection.id === selectedAirportId)) setSelectedAirportId(null)
+  }, [airportsVisible, catalogSelection, selectedAirportId])
 
   useEffect(() => {
     if (!weatherVisible && selectedWeatherId) setSelectedWeatherId(null)
@@ -1284,6 +1302,9 @@ function App() {
       setSelectedAirportId(null)
       return
     }
+    if (catalogSelection?.kind === 'airport' &&
+      catalogSelection.id === selectedAirportId &&
+      viewportReport?.viewRequestId !== viewRequest.id) return
     if (
       contextViewport &&
       visibleAirports.some(({ id }) => id === selectedAirportId)
@@ -1306,9 +1327,12 @@ function App() {
     }, delayMs)
     return () => window.clearTimeout(timeout)
   }, [
+    catalogSelection,
     contextViewport,
     selectedAirport,
     selectedAirportId,
+    viewportReport?.viewRequestId,
+    viewRequest.id,
     visibleAirports,
   ])
 
@@ -1532,6 +1556,7 @@ function App() {
     setSelectedOrbitalId(null)
     setSelectedAirportId(null)
     setSelectedWeatherId(null)
+    setCatalogSelection(null)
     setSelectedPortId(id)
   }, [clearJourney, finishCapturedOrbitalView])
 
@@ -1547,6 +1572,7 @@ function App() {
       setSelectedOrbitalId(null)
       setSelectedPortId(null)
       setSelectedWeatherId(null)
+      setCatalogSelection(null)
       setSelectedAirportId(id)
     },
     [clearJourney, finishCapturedOrbitalView],
@@ -1559,6 +1585,25 @@ function App() {
     (id: string, originId: string) => selectAirport(id, originId),
     [selectAirport],
   )
+  const handleFindAirportNavigate = useCallback((id: string, originId: string) => {
+    const airport = airports.find((candidate) => candidate.id === id)
+    if (!airport) return false
+    const label = `Airport: ${airport.name}`
+    commitNavigation({ latitude: airport.latitude, longitude: airport.longitude, label }, label)
+    selectAirport(id, originId)
+    setCatalogSelection({ kind: 'airport', id, expandMobileDetails: mobileWorkspace })
+    return true
+  }, [airports, commitNavigation, mobileWorkspace, selectAirport])
+  const handleFindPortNavigate = useCallback((id: string, originId: string) => {
+    const port = ports.find((candidate) => candidate.id === id)
+    if (!port) return false
+    const label = `Port: ${port.name}`
+    commitNavigation({ latitude: port.latitude, longitude: port.longitude, label }, label)
+    handleMapPortSelect(id)
+    detailFocusOriginIdRef.current = originId
+    setCatalogSelection({ kind: 'port', id, expandMobileDetails: mobileWorkspace })
+    return true
+  }, [commitNavigation, handleMapPortSelect, mobileWorkspace, ports])
 
   const selectWeather = useCallback(
     (id: string | null, originId: string | null) => {
@@ -1703,12 +1748,14 @@ function App() {
 
   const handleClosePort = useCallback(() => {
     setSelectedPortId(null)
+    setCatalogSelection(null)
     restoreDetailFocus()
   }, [restoreDetailFocus])
 
   const handleCloseAirport = useCallback(() => {
     airportSelectionGraceUntilRef.current = 0
     setSelectedAirportId(null)
+    setCatalogSelection(null)
     restoreDetailFocus()
   }, [restoreDetailFocus])
 
@@ -1888,8 +1935,13 @@ function App() {
 
   useEffect(() => {
     setInspectorExpanded(capturedOrbitalView === undefined)
-    setDetailsReturnToTask(false)
-  }, [capturedOrbitalView, selectedId, selectedOrbitalId, selectedPortId, selectedAirportId, selectedWeatherId, journey?.snapshot.revision])
+    const openCatalogDetails = catalogSelection?.kind === 'airport'
+      ? catalogSelection.id === selectedAirportId
+      : catalogSelection?.kind === 'port' && catalogSelection.id === selectedPortId
+    setDetailsReturnToTask(openCatalogDetails && catalogSelection?.expandMobileDetails
+      ? workspaceControlsRef.current?.suspendTask() ?? false
+      : false)
+  }, [capturedOrbitalView, catalogSelection, selectedId, selectedOrbitalId, selectedPortId, selectedAirportId, selectedWeatherId, journey?.snapshot.revision])
 
   const expandInspector = useCallback(() => {
     if (localRulerRef.current.phase === 'placing') clearLocalRuler()
@@ -2259,22 +2311,24 @@ function App() {
           onVesselsVisibleChange={setVesselsVisible}
           portsVisible={portsVisible}
           portsLoading={
-            portsVisible && portsResult.state.phase === 'loading'
+            portsResult.state.phase === 'loading'
           }
           portsError={
-            portsVisible && portsResult.state.phase === 'error'
+            portsResult.state.phase === 'error'
               ? portsResult.state.message
               : undefined
           }
           onPortsVisibleChange={setPortsVisible}
           onRetryPorts={portsResult.retry}
+          onLoadPorts={handleLoadPorts}
+          onPortNavigate={handleFindPortNavigate}
           airportsVisible={airportsVisible}
           airportsLoading={
-            airportsVisible && airportsResult.state.phase === 'loading'
+            airportsResult.state.phase === 'loading'
           }
           airportsReady={airportsResult.state.phase === 'ready'}
           airportsError={
-            airportsVisible && airportsResult.state.phase === 'error'
+            airportsResult.state.phase === 'error'
               ? airportsResult.state.message
               : undefined
           }
@@ -2284,6 +2338,8 @@ function App() {
           onAirportsVisibleChange={setAirportsVisible}
           onAirportSelect={handleAirportContextSelect}
           onRetryAirports={airportsResult.retry}
+          onLoadAirports={handleLoadAirports}
+          onAirportNavigate={handleFindAirportNavigate}
           weatherVisible={weatherVisible}
           depthsVisible={depthsVisible}
           bathymetryStatus={bathymetryStatus}

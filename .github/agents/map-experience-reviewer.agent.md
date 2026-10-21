@@ -218,6 +218,12 @@ Check these project invariants:
   tooltips, and selected details preserve altitude, trend, movement, exact
   AIS-shape, yacht-length, one-knot, and freshness meaning without relying on
   color alone.
+- Static Find Load joins the existing airport/port hook demand without
+  enabling or persisting marker preferences. Exact-ID Go opens existing
+  static details with an opaque focus origin and no selected-only pin.
+  Distinguish catalog-owned from map-owned selection: await the current
+  navigation's settled viewport before airport clearing, preserve ordinary
+  off-layer/out-of-view clearing, and retain compact Find's Back context.
 - Measure each collapsed panel, the combined expanded-stack bound, overlay
   obstruction, and attribution visibility in a real browser. Visible panel
   bounds are distinct from the transparent stack's maximum-height budget.

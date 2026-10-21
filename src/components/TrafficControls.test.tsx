@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from 'react-dom/server'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { DEFAULT_VESSEL_FILTERS } from '../domain/vesselFilters'
 import { EMPTY_ORBITAL_PREDICTION } from '../domain/orbital'
 import { INITIAL_BATHYMETRY_STATUS } from '../domain/bathymetry'
@@ -9,6 +9,21 @@ import {
   type OrbitalPopulationCounts,
 } from '../domain/orbitalDiscovery'
 import { TrafficControls } from './TrafficControls'
+
+const findRender = vi.hoisted(() =>
+  vi.fn<(props: Parameters<typeof import('./ObjectFind').ObjectFind>[0]) => void>(),
+)
+vi.mock('./ObjectFind', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./ObjectFind')>()
+  return {
+    ...actual,
+    ObjectFind: (props: Parameters<typeof actual.ObjectFind>[0]) => {
+      findRender(props)
+      return <actual.ObjectFind {...props} />
+    },
+  }
+})
+beforeEach(() => findRender.mockClear())
 
 const emptyOrbitalDisplay: OrbitalDisplaySelection = {
   available: true,
@@ -66,6 +81,8 @@ const renderControls = (
       portsLoading={false}
       onPortsVisibleChange={() => undefined}
       onRetryPorts={() => undefined}
+      onLoadPorts={() => undefined}
+      onPortNavigate={() => true}
       airportsVisible={false}
       airportsLoading={false}
       airportsReady={false}
@@ -75,6 +92,8 @@ const renderControls = (
       onAirportsVisibleChange={() => undefined}
       onAirportSelect={() => undefined}
       onRetryAirports={() => undefined}
+      onLoadAirports={() => undefined}
+      onAirportNavigate={() => true}
       weatherVisible={false}
       depthsVisible
       bathymetryStatus={INITIAL_BATHYMETRY_STATUS}
@@ -169,6 +188,54 @@ const renderControls = (
   )
 
 describe('TrafficControls', () => {
+  it.each([false, true])('loads Find catalogs independently of overlay visibility (%s)', (visible) => {
+    const onLoadAirports = vi.fn()
+    const onLoadPorts = vi.fn()
+    const onAirportsVisibleChange = vi.fn()
+    const onPortsVisibleChange = vi.fn()
+    const onRetryAirports = vi.fn()
+    const onRetryPorts = vi.fn()
+    renderControls({
+      airportsVisible: visible, portsVisible: visible,
+      onLoadAirports, onLoadPorts, onAirportsVisibleChange, onPortsVisibleChange,
+      onRetryAirports, onRetryPorts,
+    })
+    const props = findRender.mock.lastCall?.[0]
+    if (!props) throw Error('Find was not rendered')
+    expect(onLoadAirports).not.toHaveBeenCalled()
+    expect(onLoadPorts).not.toHaveBeenCalled()
+    props.onLoadAirports()
+    props.onLoadPorts()
+    expect(onLoadAirports).toHaveBeenCalledOnce()
+    expect(onLoadPorts).toHaveBeenCalledOnce()
+    expect(onAirportsVisibleChange).not.toHaveBeenCalled()
+    expect(onPortsVisibleChange).not.toHaveBeenCalled()
+    expect(onRetryAirports).not.toHaveBeenCalled()
+    expect(onRetryPorts).not.toHaveBeenCalled()
+  })
+
+  it('forwards off-layer catalog state and exact navigate-and-details actions', () => {
+    const onAirportNavigate = vi.fn(() => true)
+    const onPortNavigate = vi.fn(() => true)
+    const onAirportSelect = vi.fn()
+    const onLocationNavigate = vi.fn()
+    renderControls({
+      airportsVisible: false, portsVisible: false,
+      airportsLoading: true, portsError: 'Port catalog checksum failed.',
+      onAirportNavigate, onPortNavigate, onAirportSelect, onLocationNavigate,
+    })
+    const props = findRender.mock.lastCall?.[0]
+    if (!props) throw Error('Find was not rendered')
+    expect(props.airportsLoading).toBe(true)
+    expect(props.portsError).toBe('Port catalog checksum failed.')
+    expect(props.onAirportNavigate('airport:1', 'opaque-airport-origin')).toBe(true)
+    expect(props.onPortNavigate('port:1', 'opaque-port-origin')).toBe(true)
+    expect(onAirportNavigate).toHaveBeenCalledExactlyOnceWith('airport:1', 'opaque-airport-origin')
+    expect(onPortNavigate).toHaveBeenCalledExactlyOnceWith('port:1', 'opaque-port-origin')
+    expect(onAirportSelect).not.toHaveBeenCalled()
+    expect(onLocationNavigate).not.toHaveBeenCalled()
+  })
+
   it('keeps optional session relief in Layers without a permanent dock action', () => {
     const html = renderControls()
     expect(html).toMatch(/id="relief-layer-toggle"[^>]*aria-pressed="false"/)

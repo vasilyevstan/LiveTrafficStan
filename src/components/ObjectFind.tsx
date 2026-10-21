@@ -34,12 +34,14 @@ interface ObjectFindProps {
   airportsError?: string
   airportSource?: AirportSource
   onLoadAirports: () => void
+  onAirportNavigate: (id: string, originId: string) => boolean
   ports: readonly Port[]
   portsReady: boolean
   portsLoading: boolean
   portsError?: string
   portSource?: PortSource
   onLoadPorts: () => void
+  onPortNavigate: (id: string, originId: string) => boolean
   curated: OrbitalControllerState
   starlink: OrbitalControllerState
   selectedOrbitalId: string | null
@@ -112,6 +114,7 @@ export function ObjectFind(props: ObjectFindProps) {
   const [shipMethod, setShipMethod] = useState<'name' | 'mmsi'>('name')
   const [aircraftMethod, setAircraftMethod] = useState<'hex' | 'reg' | 'callsign'>('hex')
   const [page, setPage] = useState(0)
+  const [catalogNavigationError, setCatalogNavigationError] = useState(false)
   const catalogListRef = useRef<HTMLUListElement>(null)
   const restorePageFocusRef = useRef(false)
   const contentRef = useRef<HTMLDivElement>(null)
@@ -159,6 +162,7 @@ export function ObjectFind(props: ObjectFindProps) {
   useEffect(() => {
     controller.cancel()
     setPage(0)
+    setCatalogNavigationError(false)
   }, [controller, kind, scope, method])
   useEffect(() => {
     if (props.currentViewRequest > 0) setScopes((current) => ({ ...current, ships: 'view' }))
@@ -184,6 +188,7 @@ export function ObjectFind(props: ObjectFindProps) {
   const updateDraft = (key: keyof typeof drafts, value: string) => {
     setDrafts((current) => ({ ...current, [key]: value }))
     setPage(0)
+    setCatalogNavigationError(false)
     controller.cancel()
   }
   const input = (key: keyof typeof drafts, label: string) => (
@@ -231,14 +236,14 @@ export function ObjectFind(props: ObjectFindProps) {
             <li key={airport.id}>
               <strong>{airport.name}</strong><span>{[airport.ident, airport.iataCode, airport.municipality].filter(Boolean).join(' · ')}</span>
               <ObjectResultButton prefix="object-find-result" disabled={navigationDisabled}
-                onSelect={() => onNavigate({ latitude: airport.latitude, longitude: airport.longitude, label: `Airport: ${airport.name}` })}>Go to airport</ObjectResultButton>
+                onSelect={(originId) => setCatalogNavigationError(!props.onAirportNavigate(airport.id, originId))}>Go to airport</ObjectResultButton>
             </li>
           ))}
           {ports.slice(start, start + DISCOVERY_CONFIG.catalogResultLimit).map((port) => (
             <li key={port.id}>
               <strong>{port.name}</strong><span>Generalized static location</span>
               <ObjectResultButton prefix="object-find-result" disabled={navigationDisabled}
-                onSelect={() => onNavigate({ latitude: port.latitude, longitude: port.longitude, label: `Port: ${port.name}` })}>Go to port</ObjectResultButton>
+                onSelect={(originId) => setCatalogNavigationError(!props.onPortNavigate(port.id, originId))}>Go to port</ObjectResultButton>
             </li>
           ))}
           {orbits.slice(start, start + DISCOVERY_CONFIG.catalogResultLimit).map((entry) => (
@@ -258,6 +263,7 @@ export function ObjectFind(props: ObjectFindProps) {
             </li>
           ))}
         </ul>
+        {catalogNavigationError && <p className="control-note" role="alert">That catalog result is no longer available. Search again.</p>}
         {paging.pageCount > 1 && <div className="control-options control-options--two">
           <button type="button" disabled={paging.page === 0} onClick={() => {
             restorePageFocusRef.current = true

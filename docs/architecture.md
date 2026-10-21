@@ -454,6 +454,20 @@ curated/Starlink snapshots with 20-row pages, exact NORAD owner/clock checks,
 and no change to live filters. Missing catalogs require explicit existing
 Load/Enable actions; identity-only records never manufacture a location.
 
+Static Find demand is session-only and joins the existing `useAirports`/
+`usePorts` consumer demand; there is still one provider, request owner and
+fulfilled cache per catalog. Weather demand remains independent. Loading,
+errors and explicit retry are visible in Find even with markers off, without
+promoting an off-layer failure into Layers. Choosing a result validates its
+exact current ID, commits ordinary navigation, then selects the existing
+static details with the actual opaque result-button focus origin.
+Catalog-origin details may survive a hidden marker layer; map-origin
+selection still clears when that layer is disabled. Airport navigation waits
+for the current view request's settled report before the incumbent viewport/
+grace clearing rule applies. No selected-only marker is added. Compact Find
+selection records its entry intent and uses the existing suspended task/Back
+path, rather than adding another inspector or replaying intent on resize.
+
 `ObjectLookupController` is one explicit cancellable operation, not a poller.
 Its application-owned discovery DTO is separate from `TrafficEntity`.
 Class/scope/task changes, input, hidden/offline/HISTORY and unmount fence
