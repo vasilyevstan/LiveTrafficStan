@@ -130,6 +130,14 @@ is application `85f1966cfd01a8fca84d6b6e4c8018fab6d98bc8`, Worker
 existing rollback/update paths; actual runtime and publication evidence remain
 distinct from documentation commits.
 
+The [#544 focused-Find receipt](https://github.com/vasilyevstan/LiveTrafficStan/issues/544)
+records the subsequent class/scope cleanup and exact-owner satellite
+navigate-and-details action. It preserves existing sources, controllers,
+clocks, deadlines, inputs and serialized delivery. Missing fresh COSMOS2619
+elements remain the independent [#545 source dependency](https://github.com/vasilyevstan/LiveTrafficStan/issues/545),
+not a release permission gate or a reason to weaken modeling. Revert only this
+small UI/navigation slice for rollback; no saved-data migration is required.
+
 ### Ordinary top-down detail release boundary (#522)
 
 This focused refinement makes existing vector city detail visible without

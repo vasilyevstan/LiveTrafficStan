@@ -131,6 +131,7 @@ const renderControls = (
       onOrbitalVisibleChange={() => undefined}
       onOrbitalFiltersChange={() => undefined}
       onOrbitalSelect={() => undefined}
+      onOrbitalNavigate={() => true}
       onRetryOrbital={() => undefined}
       starlinkState={{
         phase: 'disabled',
@@ -241,6 +242,15 @@ describe('TrafficControls', () => {
     expect(onPortNavigate).toHaveBeenCalledExactlyOnceWith('port:1', 'opaque-port-origin')
     expect(onAirportSelect).not.toHaveBeenCalled()
     expect(onLocationNavigate).not.toHaveBeenCalled()
+  })
+
+  it('forwards the exact orbital navigation owner and opaque result origin', () => {
+    const onOrbitalNavigate = vi.fn(() => true)
+    renderControls({ onOrbitalNavigate })
+    const props = findRender.mock.lastCall?.[0]
+    if (!props) throw Error('Find was not rendered')
+    expect(props.onOrbitalNavigate('orbital:starlink:100460', 'opaque-find-origin')).toBe(true)
+    expect(onOrbitalNavigate).toHaveBeenCalledExactlyOnceWith('orbital:starlink:100460', 'opaque-find-origin')
   })
 
   it('keeps optional session relief in Layers without a permanent dock action', () => {

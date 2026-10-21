@@ -893,7 +893,75 @@ Device/focus emulation is not physical-phone or OS-keyboard acceptance.
 Existing short actions and mobile attribution/panel occlusion remain #449;
 line-box measurements do not establish unobstructed mobile usability.
 
-### Discoverable satellite search (#539)
+### Focused Find and satellite navigation (#544)
+
+Check desktop and short-phone Light/Dark as one bounded native batch. Changing
+class must show one relevant search, with no redundant desktop catalog wrapper
+or aircraft/ship controls below orbital results. Preserve per-class drafts,
+In-view traffic filters/selection, explicit Outside-view requests and unloaded
+catalog drafts. Typing/class/theme/layout changes cannot acquire catalogs or
+submit remote lookups. Outside-view ship identity-only coverage must be clear
+before submit; qualified aircraft Go to last report remains separate from live
+traffic selection. No arbitrary ship metadata geometry becomes navigable.
+
+Use a valid current modeled object and a freshly retrieved catalog containing
+an old element epoch. The former must offer **Go to satellite**, actually move
+the one native map and open exact-owner details; phone **Back** restores Find,
+its draft and valid focus. The latter must explain element age and disable Go,
+not silently hide the action or reset the 14-day safety rule. Also check
+already-loaded ORBITS-off Enable, history/offline pauses, unknown positions,
+action-time invalidation and curated/Starlink owner identity. Keep source/time/
+not-live/not-optical caveats in one subordinate disclosure. Measure 44px actions,
+16px input text, real result/disabled-reason visibility, one scroller/canvas,
+overflow and actual map space; do not claim independent #540 is fixed.
+
+One validated cache-only public read on October21 at19:53:36 UTC found a fresh
+Space-Track snapshot retrieved19:17:29 UTC,461 prepared objects and449 safe current
+positions. COSMOS2619 /NORAD100460 retained September28 elements,550.12hours old
+against336hours; ISS25544 modeled normally. This establishes the old-element
+reason, not a general outage or user-cache defect. Newer source data is the
+separate [#545 dependency](https://github.com/vasilyevstan/LiveTrafficStan/issues/545);
+do not force GP acquisition or relabel an old epoch as current.
+
+The focused change passes all eight required local gates: **204 files /
+2,301 tests**, with matched production-input initial JS **587,673
+Node-default-gzip bytes** (**+359 /0.0611%**) and CSS21,629 gzip bytes
+(+55). Ten accepted native Chrome156 cases complete at20:23:57 UTC on
+October21. Synthetic validated catalogs retain a deliberately22-day-old
+COSMOS fixture and a fresh ISS fixture; the actual application, orbital worker
+and32 rendered OpenMapTiles features run without a second map or dependency.
+This is development-source App evidence, not a production-bundle/provider
+claim. Local source/lookup fixtures, staged select values and explicit focus/
+device emulation are recorded; physical-phone/GPU/OS-keyboard acceptance is
+not inferred.
+
+Light/Dark1280x900,315x517 and390x568 cases exercise actual Go, exact-owner
+details, phone Back/query and visible close/focus. Native navigation targets
+agree with the authoritative modeled point within0.002 degrees; ordinary
+coordinate navigation uses **padded fitBounds**, so raw camera-center equality
+is not the correct target assertion. Current-view ships/aircraft retain their
+selection path, qualified aircraft last-report navigation commits its original
+coordinates, and explicit ship lookup remains identity-only. Loaded-off Enable
+reuses both fulfilled catalogs: one curated and one Starlink read throughout.
+Typing adds no lookup; the two explicit remote fixture submissions are distinct
+from natural traffic-provider work.
+
+Measured phone fixture states retain one outer scroller/canvas,44px Find
+actions,16px inputs, no horizontal overflow and a hit-tested120x120 map region.
+Overlay union is60.87% at315x517 and56.89% at390x568, with160/175px useful
+body height after padding. On the narrowest phone, native scrolling makes
+the full old-element reason and44px disabled Go visible and hit-testable;
+activating it leaves the camera unchanged. These local states do not repair
+or establish a blanket pass for independent wide-view #540. Initial observer
+selector, padding and resumed-response-counter failures remain preserved;
+native rendered vector features, not a style JSON or a reset network counter,
+establish the map's vector-tile evidence.
+
+### Historical discoverable satellite search (#539)
+
+The following records #539's accepted predecessor presentation and evidence.
+#544 intentionally replaces its redundant desktop disclosure/two-list layout;
+do not rerun these old layout assertions against the new focused Find.
 
 Desktop **More -> Find** must show **Satellites, airports, ports & lookups**
 before the unchanged aircraft/ship lists. That existing disclosure starts
