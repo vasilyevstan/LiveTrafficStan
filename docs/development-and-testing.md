@@ -893,6 +893,52 @@ Device/focus emulation is not physical-phone or OS-keyboard acceptance.
 Existing short actions and mobile attribution/panel occlusion remain #449;
 line-box measurements do not establish unobstructed mobile usability.
 
+### Discoverable satellite search (#539)
+
+Desktop **More -> Find** must show **Satellites, airports, ports & lookups**
+before the unchanged aircraft/ship lists. That existing disclosure starts
+closed; its class picker says **Satellites / orbits**. Phone Find uses the
+same class and catalog query, not a second search controller.
+
+Check a cold catalog before pressing **Enable ORBITS**: its labelled name/
+NORAD/COSPAR input must already be available, typing must make no request,
+and not-loaded/loading/error must not become zero matches. The draft and
+input remain when the existing explicit action supplies a valid catalog.
+Then check a known exact loaded NORAD, local no-match/Clear and class/theme/
+responsive transitions with no additional catalog or lookup request.
+Preserve the bounded Starlink/curated scope, source/model clocks and normal
+navigation; absence from these catalogs is not proof a satellite does not exist.
+
+Static regressions cover initial collapsed/order/default traffic behavior,
+the explicit class label on both layouts and the unloaded/loading query.
+Native acceptance must additionally measure real visibility, typing/focus,
+44px targets,16px phone input, one task scroller/canvas, no overflow and the
+existing useful-map budget at desktop/315x517/390x568 in both themes.
+Do not claim a native OS select popup, physical keyboard/device or real
+provider acquisition from controlled fixtures/focus emulation.
+
+The scoped correction passes all eight required local gates: **204 suites /
+2,290 tests**, with production-input initial JS **587,314 Node-default-gzip
+bytes**, only **+23 /0.0039%**, and unchanged CSS. Six native Chrome156
+desktop/315x517/390x568 Light/Dark cases confirm exact ISS/NORAD25544 matching,
+local no-match/Clear, retained drafts across class/theme/layout,44px controls,
+16px inputs, keyboard focus, one scroller/canvas and no horizontal overflow.
+Typing before explicit Enable and filtering afterward add no API requests.
+Catalog bodies are cache-only reads held in memory, not a raw-data archive.
+Wrong fixture Accept/Vary, independent Starlink retry and an observer's Alt/
+Shift modifier error remain preserved; no product edit was made for them.
+
+**Known pre-existing exception:** complete wide-view phone map-space targets
+do not pass. Including the44px `.viewport-notice`, overlay union is69.38% at
+315x517 and64.64% at390x568, with no120x120 free region. Native predecessor/
+candidate315px notice, heading and180px body rectangles are identical.
+[#540](https://github.com/vasilyevstan/LiveTrafficStan/issues/540) tracks that
+independent footprint defect; this no-CSS correction does not fix it or claim
+it passed. Desktop120x120 hit testing passes; its earlier ratio omitted the
+notice and is not claimed as a complete union. The 390px body is195px; its
+predecessor was not separately measured. Reach phone results by scrolling
+the existing Find body.
+
 ### Static Find without markers (#526)
 
 The shared-demand/typed-selection refinement passes **203 suites / 2,264

@@ -209,13 +209,18 @@ export function ObjectFind(props: ObjectFindProps) {
     const error = kind === 'airports' ? props.airportsError : kind === 'ports' ? props.portsError :
       props.curated.message ?? props.starlink.message
     const load = kind === 'airports' ? props.onLoadAirports : kind === 'ports' ? props.onLoadPorts : props.onLoadOrbits
+    const queryInput = input(kind, kind === 'airports' ? 'Airport name, city, ICAO or IATA' :
+      kind === 'ports' ? 'Port name' : 'Satellite / orbital name, NORAD or COSPAR')
     if (!ready) return (
-      <div className="control-note" role="status">
-        <p>{loading ? 'Catalog loading.' : error ?? 'Catalog not loaded.'}</p>
-        <button type="button" disabled={loading || paused} onClick={load}>
-          {kind === 'orbits' ? props.orbitalVisible ? 'Retry catalogs' : 'Enable ORBITS' : `Load ${kind}`}
-        </button>
-      </div>
+      <>
+        {queryInput}
+        <div className="control-note" role="status">
+          <p>{loading ? 'Catalog loading.' : error ?? 'Catalog not loaded.'}</p>
+          <button type="button" disabled={loading || paused} onClick={load}>
+            {kind === 'orbits' ? props.orbitalVisible ? 'Retry catalogs' : 'Enable ORBITS' : `Load ${kind}`}
+          </button>
+        </div>
+      </>
     )
     const airports = kind === 'airports' ? discoverAirports(props.airports, drafts.airports) : []
     const ports = kind === 'ports' ? discoverPorts(props.ports, drafts.ports) : []
@@ -225,8 +230,7 @@ export function ObjectFind(props: ObjectFindProps) {
     const start = paging.page * DISCOVERY_CONFIG.catalogResultLimit
     return (
       <>
-        {input(kind, kind === 'airports' ? 'Airport name, city, ICAO or IATA' :
-          kind === 'ports' ? 'Port name' : 'Orbital name, NORAD or COSPAR')}
+        {queryInput}
         <p className="control-note" role="status">{rows.length} matches in loaded catalog{rows.length === 0 ? '.' : ` · ${paging.rangeStart}–${paging.rangeEnd}.`}</p>
         {kind === 'orbits' && orbitalCatalog.missing.length > 0 && (
           <p className="control-note">{orbitalCatalog.missing.includes('curated') ? 'Curated catalog unavailable.' : 'Starlink sample unavailable.'}</p>
@@ -356,10 +360,10 @@ export function ObjectFind(props: ObjectFindProps) {
     </div>
   )
   return mobile ? scopedContent : <>
-    {props.currentView}
     <details className="context-details object-find-extra" onToggle={(event) => setAdvancedOpen(event.currentTarget.open)}>
-      <summary>Outside this view &amp; loaded catalogs</summary>
+      <summary>Satellites, airports, ports &amp; lookups</summary>
       {scopedContent}
     </details>
+    {props.currentView}
   </>
 }

@@ -489,7 +489,11 @@ identity are not renamed or reset.
   data is reused. **Go to airport/port** navigates and opens the existing
   static details, with no selected-only pin; mobile **Back** restores Find.
   The accepted curated/Starlink sample catalogs still require their existing
-  explicit enable/load action.
+  explicit enable/load action. For satellite search, use **Find -> Satellites /
+  orbits**; on desktop first open **More -> Find -> Satellites, airports, ports
+  & lookups**, now placed before the traffic lists. Search the reported name,
+  NORAD number or COSPAR ID. The query field is available before loading and
+  its local draft is retained through **Enable ORBITS**.
   Choosing a class or typing does not download a catalog or perform lookup.
   Outside-view ships use free Open Waters name-prefix/exact-MMSI lookup and
   always say **Position unavailable**; REST metadata time is not position time.

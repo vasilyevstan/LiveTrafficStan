@@ -40,12 +40,14 @@ afterEach(() => {
 })
 
 describe('scoped Find presentation boundaries', () => {
-  it('keeps incumbent desktop discovery and starts the additive entry collapsed with zero requests', () => {
+  it('promotes the collapsed catalog entry before unchanged desktop discovery with zero requests', () => {
     const fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
     const html = render({ mobile: false })
     expect(html).toContain('Incumbent live discovery')
-    expect(html).toContain('Outside this view &amp; loaded catalogs')
+    expect(html).toContain('Satellites, airports, ports &amp; lookups')
+    expect(html.indexOf('Satellites, airports, ports &amp; lookups'))
+      .toBeLessThan(html.indexOf('Incumbent live discovery'))
     expect(html).not.toMatch(/<details[^>]*open=/)
     expect(html).toContain('Sent on submit to Open Waters; no Home or view coordinates.')
     expect(html).toContain('Free exact IMO lookup is unavailable')
@@ -56,13 +58,30 @@ describe('scoped Find presentation boundaries', () => {
     const fetchMock = vi.fn()
     const load = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
-    for (const kind of ['airports', 'ports', 'orbits'] as const) {
+    for (const [kind, label] of [
+      ['airports', 'Airport name, city, ICAO or IATA'],
+      ['ports', 'Port name'],
+      ['orbits', 'Satellite / orbital name, NORAD or COSPAR'],
+    ] as const) {
       const html = render({ kind, onLoadAirports: load, onLoadPorts: load, onLoadOrbits: load })
+      expect(html).toContain(label)
+      expect(html).toContain('type="search"')
       expect(html).toContain('Catalog not loaded')
       expect(html).not.toContain('0 matches')
     }
     expect(fetchMock).not.toHaveBeenCalled()
     expect(load).not.toHaveBeenCalled()
+  })
+  it('keeps the local orbital query available while loading without reporting a false empty result', () => {
+    const html = render({
+      kind: 'orbits', orbitalVisible: true,
+      curated: { ...empty, phase: 'loading' },
+    })
+    expect(html).toContain('Satellite / orbital name, NORAD or COSPAR')
+    expect(html).toContain('type="search"')
+    expect(html).toContain('Catalog loading.')
+    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Retry catalogs<\/button>/)
+    expect(html).not.toContain('0 matches')
   })
   it('uses loaded static coordinates for explicit navigation, not synthetic traffic or hidden-layer activation', () => {
     const html = render({

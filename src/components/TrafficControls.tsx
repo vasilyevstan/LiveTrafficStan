@@ -757,7 +757,7 @@ export function TrafficControls({
       >
         <option value="ships">Ships</option>
         <option value="aircraft">Aircraft</option>
-        <option value="orbits">Orbits</option>
+        <option value="orbits">Satellites / orbits</option>
         <option value="airports">Airports</option>
         <option value="ports">Ports</option>
         <option value="places">Places / coordinates</option>
