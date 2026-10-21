@@ -353,6 +353,8 @@ does not replace it.
 **Moving 3D upgrade (#514).** The original captured-only release is retained
 as historical evidence; the same entry now supports normal-speed modeled
 motion and explicit Pause/Play, without another renderer or permanent toolbar.
+The #529 refinement improves native Earth framing and mouse look and can
+retain reports for the previous eligible local traffic area.
 
 Select an object with an already accepted current modeled position, then
 choose **View from here** in its details. Curated and the existing bounded
@@ -360,13 +362,23 @@ Starlink sample qualify independently; identity-only catalog results cannot
 fetch or propagate merely to enable entry. Payload, rocket-body, debris and
 unknown source-reported types are not given inferred attitudes or missions.
 
-The view starts obliquely Earth-facing, 72 degrees from nadir, with a curved
-horizon. The eye advances with the selected model at normal speed. Drag with
-a mouse or one finger, or focus the map and use arrow keys, to change only
-orientation, not the current modeled eye or height. Ordinary pan, wheel
-zoom and map orbiting are suspended. Looking is bounded to 79 degrees from
-nadir. An unsafe requested orientation keeps the last valid pose and explains
-the limit; it never moves or lowers the eye to make the request succeed.
+Low-orbit views retain an oblique curved-horizon entrance. When Earth's
+apparent diameter fits the original vertical field of view, entry instead
+faces Earth's center and adjusts native framing to the actual canvas aspect.
+The geographic eye and height do not change to fill the screen. This is
+cartographic framing, not simulated spacecraft optics; resize preserves the
+accepted look while adapting the framing.
+
+The eye advances with the selected model at normal speed. Drag with a mouse
+or one finger, or focus the map and use arrow keys, to change only orientation.
+**Mouse dragging is inverted on both axes**; touch and arrow directions retain
+their previous behavior. Looking can pass through nadir instead of sticking
+there. Ordinary pan, wheel zoom and map orbiting are suspended. The signed
+native surface-target construction is bounded to +/-79 degrees, not a fixed
+physical off-nadir angle at every altitude. An unsafe diagonal proposal may
+retain a supported individual axis; rejected input does not advance hidden
+orientation state. A map display limit keeps the last accepted look with an
+explanation, never moves or lowers the eye to make the request succeed.
 
 Entry is available only in **Auto** projection. Flat remains selected if the
 user chose it, with an explicit unavailable reason. The current native
@@ -377,6 +389,13 @@ a pose without moving the camera. The height comes from the accepted
 renderer's spherical Earth is an approximation, not a physical optical camera
 placement. There is no live telemetry, spacecraft attitude, camera feed, terrain,
 cloud, illumination or visibility simulation.
+
+Native atmosphere is used only for the high, Earth-framed entrance; applying
+it to the low-orbit Dark map washed out cartography in the proof. Existing
+close-zoom buildings keep source-derived heights. A 100m building projected
+to only 0.19-0.34 CSS pixels in the 400km prototype: enlarging it would invent
+scenery, not reveal physical detail. RELIEF is shading, not raised terrain.
+No new terrain, imagery service or rendering engine is added.
 
 The existing inspector shows the object, **Modeled** or **Paused**, the actual
 displayed UTC model time and height. **Pause** freezes that displayed pose;
@@ -405,22 +424,60 @@ at its existing one-second cadence. Two accepted poses are interpolated for
 painting with a one-second presentation delay; there is no extrapolation or
 per-frame SGP4. Pause and hidden release unnecessary selected worker work and
 stop animation. Five seconds without a selected update Returns with a reason.
+If advancing the eye reaches a native display limit, playback instead pauses
+at the exact last successfully displayed pose/time, with an explanation.
+Adjust the look before choosing Play; this is not an orbital-provider outage.
 Curated retains its
 2h/6h/24h revalidation/stale/expiry rules; Starlink retains 12h/18h/24h.
 Stale and offline alone do not invalidate a still-safe captured model.
 
-Aircraft and marine controllers compose the intentional pause with their
-existing hidden/offline/viewport gates. Their ordinary query remains intact;
-capture does not reset aircraft cadence/Retry-After or marine REST/reconnect
-deadlines. Operational overlays, picking, trails, ruler and optional
-selected/hover work yield to the capture. Captured camera poses do not become
-traffic queries, crossing viewports, Home, ordinary navigation labels or share
-state. Saved layer preferences are unchanged, and Share is unavailable.
-Normal atlas tiles can still load for the displayed Earth area.
+### Previous local area reports (#529)
+
+Entry atomically retains an already active eligible traffic query and its
+exact full display polygon. The mounted aircraft/marine controllers continue
+through their existing schedule, hidden/offline gates, Retry-After and
+REST/reconnect deadlines. Aircraft attempts remain at the ordinary 20-second
+cadence, up to three per minute before backoff; existing Digitraffic and any
+enabled supplementary marine reception can continue. This costs ongoing
+network work compared with the earlier fully paused viewer, but adds no
+connection, forced poll, catalog read or query from the orbital eye. Looking,
+theme changes and viewer resizing do not enlarge that area. With no eligible
+area at entry, aircraft and ships remain paused; no old or global area is
+substituted.
+
+Low views can show a screen-spaced sample through the existing traffic
+sources: at most 12 per kind, at least 64px apart, at actual reported ground
+coordinates with ordinary observation expiry. These are **Previous local
+area** reports, not aircraft at their real altitude or objects physically
+visible from the spacecraft. High Earth-framed views omit the ground glyphs
+rather than show an unhelpful clump; scoped provider reports may still update.
+Enabled layers and existing filters are inherited, not changed or saved.
+
+The sample is read-only: no interpolation, clustering, picking, hover,
+selection, trail or optional photo/metadata/route work. In View explicitly
+requires Return to map; Find may open but discovery remains paused. Neither
+surface relabels previous-area observations as current orbital-view
+membership. Provider details retain real counts, observation ages and
+independent partial/offline/error states. Drawing a sample never manufactures
+reports or history; genuinely received traffic retains the existing
+consent-controlled recorder behavior.
+
+Other satellites are not drawn. The bounded native elevated-symbol candidate
+lost high and raised-limb points and produced an unreadable low-eye glyph.
+It failed this lightweight proof, not a universal impossibility test. There
+is no flat-subpoint substitute, extra worker propagation or hidden placeholder.
+
+Captured camera poses do not become traffic queries, crossing viewports,
+Home, ordinary navigation labels, history or share state. Other operational
+overlays and the ruler yield to capture. Share is unavailable; normal atlas
+tiles can still load for the displayed Earth area.
+
+### Restoration and recovery
 
 **Return**, X and canvas-owned Escape restore the complete pre-entry raw
-camera, native pitch limit and exact previous handler-enabled states, not a rounded share pose or
-Home. When the workspace owns native fullscreen, Escape exits fullscreen
+camera, native pitch limit, field of view, current base-style sky and exact
+previous handler-enabled states, not a rounded share pose or Home. When the
+workspace owns native fullscreen, Escape exits fullscreen
 first and does not also Return. Find can open without moving the eye. Center,
 committed navigation, a new location action, HISTORY, ORBITS-off or projection
 change ends capture; newer navigation takes precedence over old restoration.
@@ -438,8 +495,8 @@ not by itself invalidate this captured owner.
 Renderer errors clean up input and pending callbacks. If native restoration
 itself fails, the existing map-error surface explicitly says the previous
 camera **could not be restored** and offers Center/reload recovery; it does
-not claim a successful Return. Capture is session-only, with no storage,
-recording, history entry or share-link representation.
+not claim a successful Return. Capture is session-only, with no stored viewer
+pose, orbital history entry or share-link representation.
 
 The accepted scope adds no renderer, dependency, provider, endpoint, worker,
 dataset or deployment setting. See [architecture](architecture.md#captured-orbital-camera-ownership-508),

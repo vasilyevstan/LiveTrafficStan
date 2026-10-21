@@ -5,6 +5,25 @@ import { MULTI_SOURCE_MARINE_CAPABILITIES } from '../providers/marine/multiSourc
 import { LiveStatus } from './LiveStatus'
 
 describe('LiveStatus', () => {
+  it('scopes retained-area reports without claiming spacecraft-visible counts or paused updates', () => {
+    const html = renderToStaticMarkup(
+      <LiveStatus compact scopeLabel="Previous local area"
+        aircraftCount={12} vesselCount={3}
+        aircraftStatus={{ phase: 'live', paused: false }}
+        marineStatus={{ phase: 'error', paused: false, error: 'Marine unavailable' }}
+        marineCapabilities={DIGITRAFFIC_MARINE_CAPABILITIES}
+        now={1_800_000_000_000} online />,
+    )
+    const summary = html.slice(0, html.indexOf('</summary>'))
+    expect(summary).toContain('>Previous local area</span>')
+    expect(summary).toContain('<strong>PARTIAL</strong>')
+    expect(summary).not.toContain('Last local sample')
+    expect(summary).not.toContain('Live updates paused')
+    expect(html).toContain('Previous local area: 12 aircraft · 3 ships shown in enabled layers.')
+    expect(html).toContain('Marine stream unavailable')
+    expect(html).toContain('Aircraft current')
+  })
+
   it('labels a paused context sample without claiming zero shown or wider live counts', () => {
     const html = renderToStaticMarkup(
       <LiveStatus

@@ -194,7 +194,9 @@ spread through components:
 | METAR stale / expiry | 75 minutes / 120 minutes |
 | Orbital layer | Off by default; explicit enable only |
 | Captured orbital view (#508) | Auto only; already accepted curated/Starlink position; no environment, preference or share setting |
-| Orbital view look range / input (#514) | Initial 72 / maximum 79 degrees from nadir; temporary native maximum 80, exactly restored; 0.2 degrees per CSS pointer pixel; 6 degrees per arrow key |
+| Orbital view look range / input (#514/#529) | Low entrance uses the 72-degree surface-target construction; signed +/-79 look bound, temporary native maximum 80; mouse axes inverted, touch/arrows unchanged; 0.2 degrees per CSS pointer pixel and 6 per arrow |
+| High orbital framing (#529) | Center Earth when its diameter fits the original vertical FOV; fit to 85% of the shorter canvas dimension; public native FOV range 0.1-150 degrees, no clamping |
+| Viewer local traffic (#529) | Retain only the exact eligible pre-entry area and normal cadence; low views sample at most 12 per kind with 64px separation; high views omit ground glyphs; no elevated peers |
 | Orbital view motion | Selected-only existing 1-second model cadence; 1-second presentation delay; no extrapolation; reduced motion starts paused |
 | Captured readiness | Five-second entry/style/resize and selected-update-stall bounds; no periodic camera correction |
 | Browser orbital request | Literal same-origin `GET /api/orbits/catalog`; fixed schema-2 vendor `Accept`; 5-second deadline; 512 KiB / 512-record complete-response limit |
@@ -299,6 +301,9 @@ keeps its existing course-first heading fallback.
 
 `ORBITAL_VIEW_CONFIG` centralizes `initialLookPitchDegrees` (72),
 `maximumLookPitchDegrees` (79), `nativeMaximumPitchDegrees` (80),
+`nativeMinimumFieldOfViewDegrees` (0.1),
+`nativeMaximumFieldOfViewDegrees` (150), `earthFrameFraction` (0.85),
+`earthAtmosphereBlend` (1),
 `interpolationDelayMs` (1,000),
 `pointerDegreesPerPixel` (0.2), `keyboardStepDegrees` (6) and
 `readinessTimeoutMs` (5,000). The mathematical native latitude limit in
@@ -316,9 +321,24 @@ Return resumes through existing reconciliation and can legitimately refresh
 only when the original acquisition/retry deadline permits.
 Play uses the existing selected-only model interval, not a new catalog timer.
 Pause freezes the displayed pose/time without freezing authoritative expiry;
-five seconds without selected output Returns. The temporary native pitch
-limit is restored on all exits. Keep numerical headroom below it: a native
+five seconds without selected output Returns. A moving native display-limit
+failure instead pauses at the last successfully painted pose. The temporary
+native pitch limit, FOV and current base-style sky are restored on all exits,
+including navigation exits that intentionally do not restore the old camera.
+Keep numerical headroom below the pitch limit: a native
 FromTo result can exceed its requested pitch by floating-point roundoff.
+The look values describe the native surface-target construction, not one
+physical off-nadir angle across altitudes. High framing is chosen from the
+entry height and recomputed for aspect changes without changing the eye.
+Atmosphere applies only to Earth-framed views.
+
+Local traffic reuses `trafficContext`'s existing sample and opacity bounds,
+not a new query limit. A retained eligible area continues normal 20-second
+aircraft attempts and existing marine reception/deadlines; no eligible area
+means pause, not acquisition from the orbital eye. Display layers remain
+preferences. High framing suppresses ground drawing but not scoped reports.
+There is no peer cap setting because the elevated-peer candidate did not
+qualify and no peer implementation was added.
 See [the complete experience](orbital-tracking.md#captured-orbital-views-508)
 and [#510's actual production receipt](hosting-and-deployment.md#captured-orbital-view-production-receipt-2026-10-19).
 

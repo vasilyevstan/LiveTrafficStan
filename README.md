@@ -264,18 +264,27 @@ identity are not renamed or reset.
   image uses one bounded same-origin load whose media type, byte count, and
   SHA-256 are validated before a session Blob URL can appear in details or a
   later tooltip.
-- **Moving 3D orbital view (#514; original capture #508/#510):** an accepted curated or
+- **Moving 3D orbital view (#514/#529; original capture #508/#510):** an accepted curated or
   bounded-sample Starlink object offers **View from here** in Auto projection.
   Enable ORBITS (in Layers on phones), select a modeled object and open Details.
-  It starts obliquely toward Earth's curved horizon and advances at normal
-  modeled speed. Drag or use arrows to look; **Pause** freezes the displayed
+  Low views start obliquely toward Earth's curved horizon; high views center
+  Earth with framing adapted to the canvas aspect, without moving the eye.
+  Mouse dragging is inverted; touch and arrow directions are unchanged and
+  looking can cross nadir. The view advances at normal modeled speed.
+  **Pause** freezes the displayed
   eye/time, and **Play** resumes from the current model without replay.
   Reduced-motion users start paused; geostationary objects may appear still.
   **Return**, X or canvas-owned Escape restores the previous map; native
   fullscreen retains Escape precedence. Flat and unsupported poses are
-  explicitly unavailable, never silently changed or clamped. Acquisition
+  explicitly unavailable, never silently changed or clamped. Orbital acquisition
   and crossing prediction pause; only the selected object is modeled at the
   existing one-second cadence, with bounded display-only interpolation.
+  An already eligible local traffic query can continue at its ordinary cadence:
+  **Previous local area** reports are bounded read-only ground annotations,
+  not traffic visible from the spacecraft. High Earth-framed views omit them;
+  entry without an eligible area starts no traffic acquisition. Other
+  satellites are omitted because the lightweight elevated-symbol proof failed.
+  Buildings keep their real map heights, not exaggerated orbital scenery.
   Authoritative clock/expiry checks remain;
   offline alone can retain a valid capture. This is an approximate spherical
   Earth map, not live telemetry, spacecraft attitude, optical visibility or a

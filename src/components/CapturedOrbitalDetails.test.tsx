@@ -21,6 +21,19 @@ const view: CapturedOrbitalView = {
 }
 
 describe('CapturedOrbitalDetails', () => {
+  it('keeps the previous ground-report area separate from paused modeled time and high-scale omission', () => {
+    const html = renderToStaticMarkup(
+      <CapturedOrbitalDetails view={view} ready playing={false}
+        localTrafficAvailable groundTrafficSuppressed online units="metric"
+        onReturn={() => undefined} onTogglePlaying={() => undefined} />,
+    )
+    expect(html).toContain('Previous local area reports: sampled ground annotations')
+    expect(html).toContain('not traffic visible from the spacecraft')
+    expect(html).toContain('Not drawn at this scale.')
+    expect(html).toContain('>Paused <time')
+    expect(html).not.toContain('Aircraft and ships paused')
+  })
+
   it('labels the displayed moving model, exact type and identity and source without live/attitude claims', () => {
     const html = renderToStaticMarkup(
       <CapturedOrbitalDetails view={view} ready playing online units="metric"

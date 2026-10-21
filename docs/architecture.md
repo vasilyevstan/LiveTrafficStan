@@ -836,7 +836,8 @@ The N2YO reference is a normal explicit external link, not a fetch or embed.
 ## Captured orbital camera ownership (#508)
 
 The original captured-only ownership contract was deployed through #510; #514
-extends it with selected-only motion and Pause/Play. The historical
+extends it with selected-only motion and Pause/Play, and #529 adds native
+framing/input refinements and retained-local-area reports. The historical
 [production receipt](hosting-and-deployment.md#captured-orbital-view-production-receipt-2026-10-19)
 records its exact runtime separately from implementation evidence.
 `orbitalView.ts` carries a readonly capture revision, ordinary navigation
@@ -871,6 +872,16 @@ transform changes without a continuing correction loop.
 Unsupported geometry remains unsupported rather than clamped or projected
 silently into Flat.
 
+`orbitalViewFraming` uses the public Mercator height conversion for the native
+sphere ratio. Low views keep the original oblique entrance/FOV; a high view
+whose Earth diameter fits the original vertical FOV starts at nadir. Its
+public vertical FOV fits Earth to 85% of the shorter canvas dimension and
+is set before recomputing placement, preserving the actual eye. Invalid
+dimensions or out-of-range FOV reject instead of relying on native clamping.
+Only high Earth-framed views override atmosphere. Style load captures the
+new base sky and reapplies the override idempotently; disposal fences even
+the initial style read.
+
 An active-only rAF interpolates between two validated selected positions,
 with wrapped longitude and a one-second presentation delay. It never runs
 SGP4 per frame or extrapolates. Pause freezes/reports the actual painted pose;
@@ -878,25 +889,45 @@ resume obtains current output and resets an obsolete bracket. Per-second
 pose reporting avoids React updates and live announcements on every frame.
 Hidden/readiness loss, disposal and Pause cancel rAF. A five-second selected
 update stall Returns explicitly. Reduced-motion observation exists only
-inside the attachment.
+inside the attachment. A native geometry limit during motion pauses at the
+last actually displayed pose/time, without silently re-aiming or Returning.
 
 The attachment snapshots raw center/zoom/bearing/pitch/roll/elevation/padding,
-eight input-handler states, the original native maximum pitch and changed
-canvas attributes. A temporary 80-degree native limit supports the horizon;
-the 79-degree look bound retains one-degree numerical headroom. Every exit,
-including newer navigation without camera restoration, restores that limit.
-Canvas-local input
-owns look-around and Escape; fullscreen retains priority. Disposal fences
+eight input-handler states, original native maximum pitch/FOV/base sky and
+changed canvas attributes. A temporary 80-degree native limit supports the
+horizon; the signed +/-79-degree construction retains numerical headroom and
+can cross nadir. Mouse-only inversion preserves touch/arrow directions.
+Input tries the complete proposal, then independent axes, with at most three
+native calculations and no hidden-state advance after rejection. Every exit,
+including newer navigation without old-camera restoration, restores pitch,
+FOV and the current base-style sky. Canvas-local input owns look-around and
+Escape; fullscreen retains priority. Disposal fences
 render/timer/input callbacks and restores exact prior states even when native
 placement fails. A failed restoration reports through the existing map-error
 surface and ends capture truthfully rather than stranding its owner.
 New explicit navigation releases ownership without applying the old camera.
 
-App retains the ordinary query/navigation/Home/share camera and mounted traffic
-controllers. Existing intentional-pause composition preserves all cadence,
-Retry-After and marine deadlines; effective overlay/optional-work inputs yield
-without modifying preferences. Depth move/style callbacks cannot acquire from
-captured poses. The immutable view survives hidden-controller output removal,
+App atomically retains the exact pre-capture eligible `TrafficViewport` object.
+Its existing query memo therefore retains the rounded request and full display
+polygon without a capture-induced update. The mounted traffic controllers
+continue only for that area through ordinary cadence, hidden/offline,
+Retry-After and marine deadlines; entry without an area stays paused. Viewer
+look/style/resize never creates traffic coverage or a second scheduler.
+
+Ground drawing requires the retained area, current native readiness and an
+explicit low/non-Earth-framed result; unknown readiness fails closed. It reuses
+the existing sources and bounded screen-space sampler, with interpolation,
+clustering, trails and picking/hover disabled. High views omit ground glyphs.
+`LiveStatus` scopes reports to Previous local area; `InViewPanel` retains its
+mounted hook state but renders an unavailable message instead of old-area
+membership. Find discovery and optional selected work remain gated. Genuine
+observations keep ordinary recorder consent; viewer poses never enter it.
+No elevated-peer source or worker extension shipped after that candidate's
+native rendering failure.
+
+Ordinary navigation/Home/share state and saved preferences remain unchanged.
+Depth move/style callbacks cannot acquire from captured poses.
+The immutable view survives hidden-controller output removal,
 but invalid owning clock, hard age or generation ends it once. There is no
 new scheduler, worker, provider, persistence or generic multi-object mode
 framework. [Usage and recovery](orbital-tracking.md#captured-orbital-views-508)

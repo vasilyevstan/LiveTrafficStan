@@ -62,6 +62,33 @@ credentials and the private-relay secret. Observability remains disabled and
 no paid fallback is enabled. Orbital activation uses the included free KV and
 SQLite Durable Object allocations; R2 is not used.
 
+### Orbital framing and previous-area release boundary (#529)
+
+This extends the existing moving viewer with aspect-aware high-Earth framing,
+mouse-only inverted look through nadir, native-limit Pause and exact FOV/sky
+restoration. Low views can reuse bounded read-only ground reports for the
+exact eligible area active before entry. Existing aircraft cadence and marine
+connections continue only for that area; no new/global query or provider path
+is added. Elevated peers failed the lightweight proof and are omitted, and
+building heights are not exaggerated.
+
+There is no dependency, renderer, worker, endpoint, binding, secret, production
+flag or saved-data migration. Preserve the existing serialized exact-current
+`main` workflow, `application`, `oci-private-relay`, photos, routes, both orbital
+catalogs, `orbital_source=space-track`, marine supplement and airport boards,
+with exact-SHA CI, atomic secrets and every source/physical/retry fence.
+Existing tabs use ordinary Settings / REFRESH APP without clearing preferences
+or private history.
+
+The compatible predecessor is application
+`849a10b43286b581c70108fb3471d3679795e36f`, Worker
+`f99e96e6-7e07-4908-943a-25f914444cd2`. A checked revert or the existing
+previous-version rollback removes this optional refinement; no migration or
+new rollback drill is needed. The [#529 delivery receipt](https://github.com/vasilyevstan/LiveTrafficStan/issues/529)
+records actual application/Worker identities, public native acceptance and
+Wiki publication separately from local fixtures and later docs-only commits.
+Earlier receipts remain historical and rollback evidence.
+
 ### Ordinary top-down detail release boundary (#522)
 
 This focused refinement makes existing vector city detail visible without

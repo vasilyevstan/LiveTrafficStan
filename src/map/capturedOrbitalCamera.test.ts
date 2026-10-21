@@ -2,7 +2,7 @@ import { LngLat, type CameraOptions, type LngLatLike, type Map as MapLibreMap } 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ModeledOrbitalPosition } from '../domain/orbital'
 import { orbitalViewUnavailableReason, type CapturedOrbitalView } from '../domain/orbitalView'
-import { createCapturedOrbitalCamera, orbitalEyeCameraOptions } from './capturedOrbitalCamera'
+import { createCapturedOrbitalCamera, orbitalEyeCameraOptions, orbitalViewFraming } from './capturedOrbitalCamera'
 
 const position: ModeledOrbitalPosition = {
   id: 'orbital:694', noradCatalogId: '694', name: 'Fixture',
@@ -19,6 +19,30 @@ const geometry = () => ({
     (_from: LngLatLike, _height: number, target: LngLatLike, _ground?: number): CameraOptions =>
       ({ center: target, zoom: 5, bearing: 123, pitch: 0 }),
   ),
+})
+
+describe('orbital Earth framing', () => {
+  const fieldOfView = 36.86989764584402
+  it('preserves the low-orbit oblique view and actual prior aperture', () => {
+    expect(orbitalViewFraming(position, 315, 517, fieldOfView)).toEqual({
+      initialPitch: 72, fieldOfView,
+    })
+  })
+  it('fits both axes of desktop and portrait high views rather than relying on vertical FOV', () => {
+    const high = { ...position, altitudeKm: 21_528 }
+    const desktop = orbitalViewFraming(high, 1280, 900, fieldOfView)
+    const phone = orbitalViewFraming(high, 315, 517, fieldOfView)
+    expect(desktop?.initialPitch).toBe(0)
+    expect(desktop?.fieldOfView).toBeCloseTo(30.853677536993345, 8)
+    expect(phone?.initialPitch).toBe(0)
+    expect(phone?.fieldOfView).toBeCloseTo(48.732331897319504, 8)
+  })
+  it('rejects invalid dimensions/apertures and unsupported tiny framing instead of native clamping', () => {
+    for (const [width, height, fov] of [[0, 517, fieldOfView], [315, NaN, fieldOfView], [315, 517, 151]]) {
+      expect(orbitalViewFraming(position, width, height, fov)).toBeUndefined()
+    }
+    expect(orbitalViewFraming({ ...position, altitudeKm: 1e12 }, 1280, 900, fieldOfView)).toBeUndefined()
+  })
 })
 
 describe('captured orbital camera cleanup', () => {
@@ -48,16 +72,18 @@ describe('captured orbital camera cleanup', () => {
     vi.useRealTimers()
   })
 
-  const fixture = () => {
+  const fixture = (initialPosition = position) => {
     // Native DOM/MapLibre behavior is browser-qualified; this Node double isolates cleanup faults.
     const attributes = new Map([['aria-label', 'Ordinary map']])
     const canvas = Object.assign(new EventTarget(), {
       style: { visibility: 'visible', touchAction: 'none', cursor: '' },
+      clientWidth: 1280, clientHeight: 900,
       getAttribute: (key: string) => attributes.get(key) ?? null,
       setAttribute: (key: string, value: string) => attributes.set(key, value),
       removeAttribute: (key: string) => attributes.delete(key),
       hasPointerCapture: () => false,
       releasePointerCapture: vi.fn(),
+      setPointerCapture: vi.fn(),
       focus: vi.fn(),
     }) as unknown as HTMLCanvasElement
     const handler = (initial = true) => {
@@ -70,12 +96,21 @@ describe('captured orbital camera cleanup', () => {
     }
     const jumpTo = vi.fn<MapLibreMap['jumpTo']>().mockReturnThis()
     const once = vi.fn<(type: string, callback: () => void) => void>()
+    const listeners = new Map<string, () => void>()
     let maximumPitch = 60
+    let fieldOfView = 36.86989764584402
+    let sky: ReturnType<MapLibreMap['getSky']> = { 'atmosphere-blend': 0.2 }
     const map = {
       ...geometry(), ...handlers, jumpTo, once,
       getMaxPitch: () => maximumPitch,
       setMaxPitch: vi.fn((value: number) => { maximumPitch = value }),
-      on: vi.fn<MapLibreMap['on']>(), off: vi.fn<MapLibreMap['off']>(),
+      getVerticalFieldOfView: () => fieldOfView,
+      setVerticalFieldOfView: vi.fn((value: number) => { fieldOfView = value }),
+      getSky: () => sky,
+      setSky: vi.fn((value: typeof sky) => { sky = value }),
+      getStyle: () => ({ version: 8, sources: {}, layers: [] }),
+      on: vi.fn((type: string, callback: () => void) => { listeners.set(type, callback) }),
+      off: vi.fn((type: string) => { listeners.delete(type) }),
       stop: vi.fn<MapLibreMap['stop']>(), getCanvas: () => canvas,
       getCenter: () => new LngLat(24.123456789, 59.654321987),
       getZoom: () => 11.123456, getBearing: () => 17.234567, getPitch: () => 22.345678,
@@ -83,7 +118,7 @@ describe('captured orbital camera cleanup', () => {
       getPadding: () => ({ top: 17.4, bottom: 19.8, left: 13.2, right: 23.6 }),
     } as unknown as MapLibreMap
     const view: CapturedOrbitalView = {
-      revision: 1, viewRequestId: 2, position,
+      revision: 1, viewRequestId: 2, position: initialPosition,
       snapshot: {
         schemaVersion: 2, sourceContractVersion: 2, catalogId: 'fixture', sources: [], recordCount: 0,
         records: [], retrievedAt: new Date(2_000).toISOString(), publishedAt: new Date(2_000).toISOString(),
@@ -103,6 +138,7 @@ describe('captured orbital camera cleanup', () => {
       expect(canvas.style).toEqual({ visibility: 'visible', touchAction: 'none', cursor: '' })
       expect(canvas.getAttribute('aria-label')).toBe('Ordinary map')
       expect(map.getMaxPitch()).toBe(60)
+      expect(map.getVerticalFieldOfView()).toBe(36.86989764584402)
       expect(frames.size).toBe(0)
       expect(vi.getTimerCount()).toBe(0)
     }
@@ -119,8 +155,123 @@ describe('captured orbital camera cleanup', () => {
       frames.clear()
       for (const callback of pending) callback(now)
     }
-    return { camera, canvas, callbacks, jumpTo, once, map, renderReady, tick, expectRestoredInput }
+    return { camera, canvas, callbacks, jumpTo, once, map, renderReady, tick, expectRestoredInput,
+      emit: (type: string) => listeners.get(type)?.(), listeners }
   }
+
+  const pointer = (type: string, pointerType: string, x: number, y: number) =>
+    Object.assign(new Event(type, { cancelable: true }), {
+      isPrimary: true, button: 0, pointerId: 1, pointerType, clientX: x, clientY: y,
+    })
+
+  it('retains low-orbit shading and the existing arrow-key direction', () => {
+    const { camera, canvas, map, renderReady, jumpTo, expectRestoredInput } = fixture()
+    camera.setReady(true)
+    renderReady()
+    expect(camera.earthFramed).toBe(false)
+    expect(map.setSky).not.toHaveBeenCalled()
+    canvas.dispatchEvent(Object.assign(new Event('keydown', { cancelable: true }), { key: 'ArrowDown' }))
+    expect(jumpTo.mock.calls.at(-1)?.[0]).toEqual(orbitalEyeCameraOptions(map, position, 0, 66))
+    camera.exit(true)
+    expectRestoredInput()
+  })
+
+  it.each(['mouse', 'touch'])('inverts only mouse look, including through nadir (%s)', pointerType => {
+    const high = { ...position, altitudeKm: 21_528 }
+    const { camera, canvas, renderReady, jumpTo, map, expectRestoredInput } = fixture(high)
+    camera.setReady(true)
+    renderReady()
+    const sign = pointerType === 'mouse' ? -1 : 1
+    const expected = orbitalEyeCameraOptions(map, high, sign * 2, sign * 2)
+    canvas.dispatchEvent(pointer('pointerdown', pointerType, 100, 100))
+    canvas.dispatchEvent(pointer('pointermove', pointerType, 110, 90))
+    canvas.dispatchEvent(pointer('pointerup', pointerType, 110, 90))
+    expect(jumpTo.mock.calls.at(-1)?.[0]).toEqual(expected)
+    camera.exit(true)
+    expectRestoredInput()
+  })
+
+  it('tries independent axes at most three times and keeps only an accepted look', () => {
+    const { camera, canvas, renderReady, map, jumpTo, callbacks } = fixture()
+    camera.setReady(true)
+    renderReady()
+    const calculate = vi.mocked(map.calculateCameraOptionsFromTo)
+    calculate.mockImplementation((_from, _height, target) => ({
+      center: target, zoom: Math.abs(LngLat.convert(target).lng) > 1e-9 ? -100 : 5,
+      bearing: 123, pitch: 0,
+    }))
+    calculate.mockClear()
+    canvas.dispatchEvent(pointer('pointerdown', 'mouse', 100, 100))
+    canvas.dispatchEvent(pointer('pointermove', 'mouse', 110, 110))
+    expect(calculate).toHaveBeenCalledTimes(3)
+    const accepted = LngLat.convert(jumpTo.mock.calls.at(-1)?.[0].center ?? [0, 0])
+    expect(accepted.lng).toBeCloseTo(0, 10)
+    expect(accepted.lat).toBeGreaterThan(0)
+    expect(callbacks.onNotice).toHaveBeenLastCalledWith(expect.stringContaining('Map display limit'))
+    calculate.mockClear()
+    const paints = jumpTo.mock.calls.length
+    canvas.dispatchEvent(pointer('pointermove', 'mouse', 120, 110))
+    expect(calculate.mock.calls.length).toBeLessThanOrEqual(3)
+    expect(jumpTo.mock.calls).toHaveLength(paints)
+    camera.exit(false)
+  })
+
+  it('reframes resize without re-aiming and restores the latest native style sky and prior lens', () => {
+    const high = { ...position, altitudeKm: 21_528 }
+    const { camera, canvas, map, renderReady, emit, jumpTo, expectRestoredInput } = fixture(high)
+    camera.setReady(true)
+    renderReady()
+    expect(camera.earthFramed).toBe(true)
+    expect(map.getVerticalFieldOfView()).toBeCloseTo(30.853677536993345, 8)
+    expect(map.getSky()['atmosphere-blend']).toBe(1)
+    canvas.dispatchEvent(pointer('pointerdown', 'mouse', 100, 100))
+    canvas.dispatchEvent(pointer('pointermove', 'mouse', 110, 90))
+    const before = jumpTo.mock.calls.at(-1)?.[0]
+    Object.assign(canvas, { clientWidth: 315, clientHeight: 517 })
+    emit('resize')
+    renderReady()
+    expect(map.getVerticalFieldOfView()).toBeCloseTo(48.732331897319504, 8)
+    const after = jumpTo.mock.calls.at(-1)?.[0]
+    if (!before?.center || !after?.center) throw Error('Expected accepted look targets')
+    expect(LngLat.convert(after.center).lng).toBeCloseTo(LngLat.convert(before.center).lng, 10)
+    expect(LngLat.convert(after.center).lat).toBeCloseTo(LngLat.convert(before.center).lat, 10)
+    expect(after.bearing).toBe(before.bearing)
+    expect(after.roll).toBe(before.roll)
+    map.setSky({ 'sky-color': '#102030', 'atmosphere-blend': 0.3 })
+    emit('style.load')
+    renderReady()
+    camera.exit(false)
+    expect(map.getSky()).toEqual({ 'sky-color': '#102030', 'atmosphere-blend': 0.3 })
+    expectRestoredInput()
+  })
+
+  it('pauses at the exact last display when a moving look reaches a native limit', () => {
+    const { camera, map, renderReady, tick, callbacks, expectRestoredInput } = fixture()
+    camera.setReady(true)
+    renderReady()
+    camera.setPlayback(true, { ...position, modeledFor: 4_000, longitude: 0.1 })
+    vi.mocked(map.calculateCameraOptionsFromTo).mockReturnValueOnce({ center: [0, 0], zoom: -100, pitch: 0 })
+    tick(100)
+    expect(callbacks.onPause).toHaveBeenCalledTimes(1)
+    expect(callbacks.onPosition.mock.calls.at(-1)?.[0]).toMatchObject({ modeledFor: 3_000, longitude: 0 })
+    expect(callbacks.onFailure).not.toHaveBeenCalled()
+    expect(frames.size).toBe(0)
+    camera.setPlayback(true, { ...position, modeledFor: 5_000, longitude: 0.2 })
+    expect(callbacks.onNotice).toHaveBeenLastCalledWith(undefined)
+    tick(100)
+    expect(callbacks.onPosition.mock.calls.at(-1)?.[0]).toMatchObject({ modeledFor: 5_000, longitude: 0.2 })
+    camera.exit(true)
+    expectRestoredInput()
+  })
+
+  it('fences a queued style callback after disposal before touching the old map', () => {
+    const { camera, listeners, map } = fixture()
+    const late = listeners.get('style.load')
+    camera.exit(false)
+    const getSky = vi.spyOn(map, 'getSky').mockImplementation(() => { throw Error('disposed map') })
+    expect(() => late?.()).not.toThrow()
+    expect(getSky).not.toHaveBeenCalled()
+  })
 
   it('restores the exact raw camera and disabled handlers when native entry fails', () => {
     const { camera, callbacks, jumpTo, expectRestoredInput } = fixture()
