@@ -1220,6 +1220,23 @@ It does not acquire newer elements or extend their lifetime. Pause freezes
 the displayed model time, not source clocks or expiry. The Earth-facing
 motion is modeled, not a live observation or telemetry stream.
 
+The #529 framing refinement uses native FOV/sky only; it adds no terrain,
+imagery, object or peer source. Existing building heights are not exaggerated.
+When entry already has an eligible local traffic area, the existing aircraft
+and marine controllers can continue receiving for that same rounded query
+and exact polygon. Aircraft retain the ordinary 20-second cadence and
+Retry-After; marine reception retains existing connection, REST and retry
+limits. This is sustained existing-provider work, not zero network or
+spacecraft/global coverage. Entry without an eligible area keeps them paused.
+No eye coordinate or look/resize is sent as a new traffic query.
+
+Read-only low-view glyphs are ground annotations of genuine previous-area
+reports with ordinary expiry, not true-height aircraft or optical sightings.
+High Earth-framed views omit these glyphs. Other satellites remain omitted
+after a bounded native rendering candidate failed; no ground-subpoint
+substitute is presented as a 3D peer. Existing source credits, independent
+errors and observation clocks remain available in scoped provider details.
+
 The copied SGP4 geodetic height is used with a spherical Earth renderer.
 The result is an approximate Earth-facing map, not spacecraft
 attitude, live telemetry, an optical observation, camera imagery, illumination
@@ -1227,8 +1244,10 @@ or navigational clearance. Starlink remains a bounded sample, not the full
 constellation. No modeled position becomes aircraft/marine traffic, a trail,
 photo, enrichment match or recorded history.
 
-The capture has no persistence, share representation or custom analytics
-event. It adds no object/provider lookup; ordinary map tiles can still
+The capture has no persisted viewer pose, share representation or custom
+analytics event. Genuine incoming traffic retains its existing source rights
+and consent-controlled history path; modeled viewer poses do not enter it.
+It adds no object/provider lookup path; ordinary map tiles can still
 disclose the displayed geographic area to the incumbent map host. Existing
 independent page analytics retain their documented trust boundary.
 There is no provider/account/credential, backend publication, acquisition

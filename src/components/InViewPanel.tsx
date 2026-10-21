@@ -26,6 +26,7 @@ import {
 } from '../domain/vesselFilters'
 
 interface InViewPanelProps {
+  unavailableMessage?: string
   aircraft: readonly DisplayAircraft[]
   totalAircraft: number
   aircraftQuery: string
@@ -61,6 +62,7 @@ interface ResultRow {
 }
 
 export function InViewPanel({
+  unavailableMessage,
   aircraft,
   totalAircraft,
   aircraftQuery,
@@ -198,6 +200,12 @@ export function InViewPanel({
         id === selectedVesselId && !rankedVessels.rows.some((vessel) => vessel.id === id),
       )
     : undefined
+
+  if (unavailableMessage) {
+    return <div ref={rootRef} className="in-view">
+      <p className="metadata-status" role="status">{unavailableMessage}</p>
+    </div>
+  }
 
   return (
     <div ref={rootRef} className="in-view">

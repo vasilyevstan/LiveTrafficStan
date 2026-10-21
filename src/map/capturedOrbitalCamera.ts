@@ -7,6 +7,36 @@ import { workspaceOwnsFullscreen } from '../app/fullscreen'
 type CameraGeometry = Pick<MapLibreMap,
   'calculateCameraOptionsFromTo' | 'getMinZoom' | 'getMaxZoom' | 'getMaxPitch'>
 
+// Public Mercator units supply the renderer's radius without changing app distance math.
+const orbitalRadiusRatio = (heightMeters: number) =>
+  1 / (1 + MercatorCoordinate.fromLngLat([0, 0], heightMeters).z * 2 * Math.PI)
+
+export const orbitalViewFraming = (
+  position: Readonly<ModeledOrbitalPosition>,
+  width: number,
+  height: number,
+  previousFieldOfView: number,
+) => {
+  if (orbitalViewUnavailableReason(position, 'auto') ||
+    !Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0 ||
+    !Number.isFinite(previousFieldOfView) ||
+    previousFieldOfView < ORBITAL_VIEW_CONFIG.nativeMinimumFieldOfViewDegrees ||
+    previousFieldOfView > ORBITAL_VIEW_CONFIG.nativeMaximumFieldOfViewDegrees) return undefined
+  const radius = Math.asin(orbitalRadiusRatio(position.altitudeKm * 1_000))
+  if (radius * 360 / Math.PI > previousFieldOfView) {
+    return {
+      initialPitch: ORBITAL_VIEW_CONFIG.initialLookPitchDegrees,
+      fieldOfView: previousFieldOfView,
+    }
+  }
+  const fieldOfView = 2 * Math.atan(Math.tan(radius) /
+    (ORBITAL_VIEW_CONFIG.earthFrameFraction * Math.min(1, width / height))) * 180 / Math.PI
+  if (!Number.isFinite(fieldOfView) ||
+    fieldOfView < ORBITAL_VIEW_CONFIG.nativeMinimumFieldOfViewDegrees ||
+    fieldOfView > ORBITAL_VIEW_CONFIG.nativeMaximumFieldOfViewDegrees) return undefined
+  return { initialPitch: 0, fieldOfView }
+}
+
 export const orbitalEyeCameraOptions = (
   map: CameraGeometry,
   position: Readonly<ModeledOrbitalPosition>,
@@ -16,12 +46,11 @@ export const orbitalEyeCameraOptions = (
   const heightMeters = position.altitudeKm * 1_000
   if (orbitalViewUnavailableReason(position, 'auto') || !Number.isFinite(heightMeters) ||
     !Number.isFinite(yawDegrees) || !Number.isFinite(pitchDegrees) ||
-    pitchDegrees < 0 || pitchDegrees > ORBITAL_VIEW_CONFIG.maximumLookPitchDegrees) return undefined
+    Math.abs(pitchDegrees) > ORBITAL_VIEW_CONFIG.maximumLookPitchDegrees) return undefined
   const radians = Math.PI / 180
-  const yaw = yawDegrees * radians
-  const beta = pitchDegrees * radians
-  // Public Mercator units supply the renderer's radius without changing app distance math.
-  const ratio = 1 / (1 + MercatorCoordinate.fromLngLat([0, 0], heightMeters).z * 2 * Math.PI)
+  const yaw = (yawDegrees + (pitchDegrees < 0 ? 180 : 0)) * radians
+  const beta = Math.abs(pitchDegrees) * radians
+  const ratio = orbitalRadiusRatio(heightMeters)
   const theta = beta - Math.asin(ratio * Math.sin(beta))
   const latitude = position.latitude * radians
   const longitude = position.longitude * radians
@@ -44,7 +73,8 @@ export const orbitalEyeCameraOptions = (
     pitch > map.getMaxPitch()) return undefined
   return {
     ...options, ...(pitchDegrees === 0 ? { bearing: yawDegrees } : {}),
-    roll: 0, padding: { top: 0, bottom: 0, left: 0, right: 0 },
+    roll: pitchDegrees < 0 ? 180 : 0,
+    padding: { top: 0, bottom: 0, left: 0, right: 0 },
   }
 }
 
@@ -66,6 +96,9 @@ export const createCapturedOrbitalCamera = (
   const canvas = map.getCanvas()
   map.stop()
   const previousMaximumPitch = map.getMaxPitch()
+  const previousFieldOfView = map.getVerticalFieldOfView()
+  let previousSky = map.getSky()
+  let skyApplied = false
   const center = map.getCenter()
   const previousCamera: JumpToOptions = {
     center: [center.lng, center.lat], zoom: map.getZoom(), bearing: map.getBearing(),
@@ -85,6 +118,7 @@ export const createCapturedOrbitalCamera = (
   let ready = false
   let needsReapply = true
   let orientationInitialized = false
+  let earthFramed: boolean | undefined
   let yaw = 0
   let pitch: number = ORBITAL_VIEW_CONFIG.initialLookPitchDegrees
   let currentPosition = view.position
@@ -142,7 +176,7 @@ export const createCapturedOrbitalCamera = (
     clearHandoff()
     reducedMotion?.removeEventListener('change', motionPreferenceChanged)
     map.off('resize', reapply)
-    map.off('style.load', reapply)
+    map.off('style.load', styleLoaded)
     document.removeEventListener('visibilitychange', visibilityChanged)
     canvas.removeEventListener('pointerdown', down, true)
     canvas.removeEventListener('pointermove', move, true)
@@ -166,7 +200,9 @@ export const createCapturedOrbitalCamera = (
     else canvas.setAttribute('aria-label', previousLabel)
     try {
       map.setMaxPitch(previousMaximumPitch)
+      map.setVerticalFieldOfView(previousFieldOfView)
       if (restore) map.jumpTo(previousCamera)
+      if (skyApplied && map.getStyle()) map.setSky(previousSky)
     } catch (error) {
       restoreFailure = `The previous camera could not be restored: ${error instanceof Error ? error.message : 'native camera error'}. Modeled view ended. Use Center or reload the map to recover.`
       callbacks.onRestoreFailure(restoreFailure)
@@ -207,9 +243,16 @@ export const createCapturedOrbitalCamera = (
     }
     try {
       if (currentPosition.modeledFor !== position.modeledFor) {
+        const previousDisplayedPosition = currentPosition
         currentPosition = position
         if (!apply()) {
-          fail('This position cannot preserve the modeled eye. Returned to the previous map.')
+          currentPosition = previousDisplayedPosition
+          playing = false
+          waitingForPosition = true
+          reportPosition(true)
+          notice = 'Map display limit. View paused at the last modeled position; adjust the look before playing.'
+          callbacks.onNotice(notice)
+          callbacks.onPause?.()
           return
         }
         reportPosition()
@@ -235,8 +278,22 @@ export const createCapturedOrbitalCamera = (
       fail('The captured map view did not become ready. Returned to the previous map.')
     }, ORBITAL_VIEW_CONFIG.readinessTimeoutMs)
     try {
+      const framing = orbitalViewFraming(
+        view.position, canvas.clientWidth, canvas.clientHeight, previousFieldOfView,
+      )
+      if (!framing) {
+        fail('This canvas cannot frame the modeled eye. Returned to the previous map.')
+        return
+      }
+      earthFramed = framing.initialPitch === 0
+      map.setVerticalFieldOfView(framing.fieldOfView)
+      if (earthFramed && map.getStyle()) {
+        map.setSky({ ...previousSky, 'atmosphere-blend': ORBITAL_VIEW_CONFIG.earthAtmosphereBlend })
+        skyApplied = true
+      }
       if (!orientationInitialized) {
         map.setMaxPitch(ORBITAL_VIEW_CONFIG.nativeMaximumPitchDegrees)
+        pitch = framing.initialPitch
         if (!orbitalEyeCameraOptions(map, currentPosition, yaw, pitch)) yaw = 180
         orientationInitialized = true
       }
@@ -264,16 +321,26 @@ export const createCapturedOrbitalCamera = (
   }
   const update = (nextYaw: number, nextPitch: number) => {
     if (disposed || !ready || renderCallback || document.hidden) return
-    const boundedPitch = Math.max(0, Math.min(ORBITAL_VIEW_CONFIG.maximumLookPitchDegrees, nextPitch))
-    const options = orbitalEyeCameraOptions(map, currentPosition, nextYaw, boundedPitch)
-    const nextNotice = options ? undefined : 'View limit reached; look back toward Earth.'
+    let acceptedYaw = nextYaw
+    let acceptedPitch = Math.max(-ORBITAL_VIEW_CONFIG.maximumLookPitchDegrees,
+      Math.min(ORBITAL_VIEW_CONFIG.maximumLookPitchDegrees, nextPitch))
+    let options = orbitalEyeCameraOptions(map, currentPosition, acceptedYaw, acceptedPitch)
+    const nextNotice = options ? undefined : 'Map display limit. Try another look direction.'
+    if (!options && acceptedYaw !== yaw) {
+      options = orbitalEyeCameraOptions(map, currentPosition, acceptedYaw, pitch)
+      if (options) acceptedPitch = pitch
+    }
+    if (!options && acceptedPitch !== pitch) {
+      options = orbitalEyeCameraOptions(map, currentPosition, yaw, acceptedPitch)
+      if (options) acceptedYaw = yaw
+    }
     if (notice !== nextNotice) {
       notice = nextNotice
       callbacks.onNotice(notice)
     }
     if (!options) return
-    yaw = ((nextYaw % 360) + 360) % 360
-    pitch = boundedPitch
+    yaw = ((acceptedYaw % 360) + 360) % 360
+    pitch = acceptedPitch
     try {
       map.jumpTo(options)
     } catch (error) {
@@ -295,7 +362,7 @@ export const createCapturedOrbitalCamera = (
   const move = (event: PointerEvent) => {
     block(event)
     if (!pointer || pointer.id !== event.pointerId) return
-    const step = ORBITAL_VIEW_CONFIG.pointerDegreesPerPixel
+    const step = ORBITAL_VIEW_CONFIG.pointerDegreesPerPixel * (event.pointerType === 'mouse' ? -1 : 1)
     update(yaw + (event.clientX - pointer.x) * step, pitch - (event.clientY - pointer.y) * step)
     pointer = { id: event.pointerId, x: event.clientX, y: event.clientY }
   }
@@ -330,6 +397,12 @@ export const createCapturedOrbitalCamera = (
     if (document.hidden) hide()
     // A visible scene is released only by the App's validated controller acknowledgements.
   }
+  function styleLoaded() {
+    if (disposed) return
+    previousSky = map.getSky()
+    skyApplied = false
+    reapply()
+  }
   canvas.addEventListener('pointerdown', down, { capture: true })
   canvas.addEventListener('pointermove', move, { capture: true })
   canvas.addEventListener('pointerup', up, { capture: true })
@@ -342,9 +415,10 @@ export const createCapturedOrbitalCamera = (
   document.addEventListener('visibilitychange', visibilityChanged)
   reducedMotion?.addEventListener('change', motionPreferenceChanged)
   map.on('resize', reapply)
-  map.on('style.load', reapply)
+  map.on('style.load', styleLoaded)
   return {
     exit,
+    get earthFramed() { return earthFramed },
     setPlayback(nextPlaying: boolean, position?: Readonly<ModeledOrbitalPosition>) {
       if (disposed) return
       if (playing !== nextPlaying) {
@@ -352,6 +426,10 @@ export const createCapturedOrbitalCamera = (
         stopFrame()
         waitingForPosition = true
         receivedAt = performance.now()
+        if (playing && notice) {
+          notice = undefined
+          callbacks.onNotice(undefined)
+        }
         if (!playing) reportPosition(true)
       }
       if (playing && position && position.modeledFor > lastAcceptedFor) {

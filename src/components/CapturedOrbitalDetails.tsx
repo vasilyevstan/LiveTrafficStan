@@ -9,6 +9,8 @@ import { APP_CONFIG } from '../config/appConfig'
 interface Props {
   view: CapturedOrbitalView
   ready: boolean
+  localTrafficAvailable?: boolean
+  groundTrafficSuppressed?: boolean
   playing: boolean
   position?: Readonly<ModeledOrbitalPosition>
   notice?: string
@@ -19,7 +21,7 @@ interface Props {
   onTogglePlaying: () => void
 }
 
-export function CapturedOrbitalDetails({ view, ready, playing, position: displayedPosition, notice, statusMessage, online, units, onReturn, onTogglePlaying }: Props) {
+export function CapturedOrbitalDetails({ view, ready, localTrafficAvailable = false, groundTrafficSuppressed = false, playing, position: displayedPosition, notice, statusMessage, online, units, onReturn, onTogglePlaying }: Props) {
   const titleId = useId()
   const { snapshot } = view
   const position = displayedPosition ?? view.position
@@ -51,6 +53,11 @@ export function CapturedOrbitalDetails({ view, ready, playing, position: display
     >
       <p className="metadata-status">Drag or use arrows to look. Pause holds the view.</p>
       <p className="metadata-status">Earth-facing map model, not live or optical. No spacecraft attitude is inferred.</p>
+      <p className="metadata-status">
+        {localTrafficAvailable
+          ? `Previous local area reports: sampled ground annotations, not traffic visible from the spacecraft.${groundTrafficSuppressed ? ' Not drawn at this scale.' : ''}`
+          : 'Aircraft and ships paused: no eligible previous local area.'}
+      </p>
       <details className="context-details">
         <summary>Model &amp; source</summary>
         <dl className="details-grid">

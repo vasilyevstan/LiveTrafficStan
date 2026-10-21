@@ -156,6 +156,72 @@ two-control selector adjustment. No dependency, renderer, backend, worker,
 provider scheduler or persistent field is added. The [#518 delivery receipt](https://github.com/vasilyevstan/LiveTrafficStan/issues/518)
 records separate actual public availability and Wiki publication.
 
+### Native orbital framing, input and previous-area reports (#529)
+
+Final local gates pass **203 suites / 2,277 tests**, lint, typecheck, all four
+required data checks and the production-input build. The camera suite has
+31 regressions covering aspect-aware framing, true-eye placement, mouse-only
+inversion, unchanged touch/arrows, signed nadir crossing, bounded accepted-axis
+fallback, native-limit Pause, FOV/current-style-sky restoration and late-style
+disposal. Scoped status/details and the mounted In View unavailability guard
+also have deterministic coverage.
+
+The bounded native prototype has 28 cases using installed MapLibre 6.10.0
+and incumbent vectors. Camera/framing and low ground annotations qualify;
+elevated peers do not. A high elevated point and raised-limb points disappear,
+and a low-eye glyph collapses to nine colored pixels. No peer worker/source
+extension, flat substitute or placeholder is added. Six incumbent mixed
+aircraft/ship glyphs from 12 synthetic points remain legible at 315x517.
+High-only atmosphere avoids the measured low-orbit Dark washout. A 100m
+building projects to 0.19-0.34px in the 400km fixture; heights stay unchanged.
+
+Actual-App acceptance in owned **Chrome 156**, with the real bundled SGP4
+worker and native vector map, retains two base captures plus three focused
+completed captures. Re-signed bundled catalog/aircraft HTTP fixtures and an
+unavailable marine fixture are not live-provider or production parity proof.
+The high curated case and low rocket-body case cover Light 1280x900, Dark
+315x517, style replacement, real resize, inverted mouse through nadir,
+arrows, Pause/Play and Return. The focused fully loaded vector case uses
+**BEIDOU-3 M10 /43246**, not the user's unobserved M21 example; its FOV is
+30.861817 degrees desktop and 48.744261 portrait with the same eye. Native
+touch keeps its old direction. The Starlink /59486 case proves an actual
+rendered ground point is unpickable, photos remain disabled, In View is
+quarantined during capture and normal category controls return afterward.
+Ineligible entry enables neither aircraft nor MQTT acquisition.
+
+Accepted virtual-eye errors remain below 0.117m horizontally and 1m in height;
+these are renderer precision, not orbital/optical accuracy. All five complete
+raw Returns have zero measured center/zoom/bearing/pitch/roll/elevation/padding
+error, with original FOV, pitch limit, current base-style sky and handlers
+restored. One canvas and four existing controller identities remain. Genuine
+fixture ground reports advance while the modeled eye/time is paused; two
+successive aircraft intervals are 20,003ms and 20,002ms at the identical
+retained request path. High views suppress ground drawing. No viewer pose
+creates another traffic query.
+
+Compact overlay union is 16.05% desktop and 38.82% at315x517, with a hit-tested
+120x120 CSS-pixel map region, 44px actions and no horizontal overflow.
+Fully settled vector captures wait for native tile completion, not merely
+style load. The original generated-fixture replacement/SyntaxError, stale
+pause-observer read and pre-resize-handoff hit-test failure remain archived;
+the focused continuation waits for actual visible native readiness and
+layout before touch. Accepted cases are reused rather than rerun. There are
+zero accepted-run runtime/CSP exceptions. This is desktop touch emulation,
+not physical-phone/GPU or OS-keyboard evidence. Unchanged #514 lifecycle,
+clock/expiry and worker-scheduling evidence below remains applicable.
+
+The exact HTML initial module/static-import closure is
+`index-TlqYvlfC.js`, **586,647 Node-default-gzip bytes**, with no static-import
+chunks. The cumulative Find-plus-orbital increase is **1,355 /0.2315%**
+against the approved 585,292-byte whole-task baseline, below its 591,144.92-byte
+1% ceiling. Matched inputs retain `/api/aircraft`, photos, routes, marine
+supplement and airport boards enabled. CSS remains `index-CCuk1d2k.css`;
+shell `d195c351060a7804af20` has 11 URLs /3,712,313 bytes. No dependency,
+renderer, worker, endpoint, source dataset, persistence or production setting
+is added. [#529](https://github.com/vasilyevstan/LiveTrafficStan/issues/529)
+records checked delivery, public normal-update acceptance and Wiki publication
+separately from this local fixture evidence.
+
 ### Moving 3D orbital view (#514)
 
 Required local gates pass **202 files / 2,235 tests**, lint, typecheck, all four

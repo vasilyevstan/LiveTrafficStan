@@ -86,6 +86,16 @@ const renderPanel = (
 )
 
 describe('InViewPanel', () => {
+  it('quarantines current-view membership without claiming retained reports are in the modeled view', () => {
+    const html = renderPanel({ unavailableMessage: 'Return to map to browse local reports.' })
+    expect(html).toContain('role="status">Return to map to browse local reports.')
+    expect(html).not.toContain('In view category')
+    expect(html).not.toContain('in-view-aircraft-panel')
+    expect(html).not.toContain('TEST 1')
+    expect(html).not.toContain('VESSEL 1')
+    expect(html).not.toContain('ISS (ZARYA)')
+  })
+
   it('bounds each page to twenty individual results while retaining the full count', () => {
     const html = renderPanel()
     expect(html).toContain('45 individual aircraft in view')
