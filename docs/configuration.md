@@ -553,9 +553,11 @@ Cloudflare Worker does not add a geocoder proxy.
 
 ## Scoped object discovery
 
-Mobile **Find** offers Ships, Aircraft, Orbits, Airports, Ports and
+Mobile **Find** offers Ships, Aircraft, Satellites / orbits, Airports, Ports and
 Places/coordinates. Desktop **More -> Find** keeps the current aircraft/ship
-controls; its additional discovery disclosure starts closed. The single
+controls; **Satellites, airports, ports & lookups** starts closed before those
+lists, rather than below the ship filters. Select **Satellites / orbits** to
+search the loaded orbital name, NORAD number or COSPAR ID. The single
 Settings location input is reused for mobile Places.
 
 **In view** uses current filtered observations; **Received** reads already
@@ -567,7 +569,11 @@ and **Load ports** request their existing pinned assets for this session
 without changing or saving the marker switches. Existing layer/weather loads
 and fulfilled assets are shared; closing or switching Find does not start
 another loader. An unavailable catalog remains an error with explicit retry,
-not an empty search. **Enable ORBITS** retains its existing semantics.
+not an empty search. The local catalog query is available before loading;
+typing keeps a draft without making a request, and the existing explicit
+Load/Enable action applies it when data arrives. **Enable ORBITS** retains its
+existing semantics. Satellite search covers the accepted curated catalog and
+bounded Starlink sample, not every satellite or the complete constellation.
 
 **Go to airport/port** commits ordinary navigation and opens the existing
 static details even with all catalog markers off. It does not enable a

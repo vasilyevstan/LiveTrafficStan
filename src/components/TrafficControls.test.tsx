@@ -188,6 +188,13 @@ const renderControls = (
   )
 
 describe('TrafficControls', () => {
+  it.each([false, true])('names satellite search explicitly in the existing class picker (%s)', (mobileWorkspace) => {
+    const html = renderControls({ mobileWorkspace })
+    expect(html).toContain('<option value="orbits">Satellites / orbits</option>')
+    expect(html).toContain('Callsign, registration, ICAO24, or type')
+    expect(html).toContain('Name, callsign, MMSI, or IMO')
+  })
+
   it.each([false, true])('loads Find catalogs independently of overlay visibility (%s)', (visible) => {
     const onLoadAirports = vi.fn()
     const onLoadPorts = vi.fn()
