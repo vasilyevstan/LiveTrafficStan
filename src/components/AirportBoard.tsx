@@ -1,8 +1,10 @@
-import { memo, useState } from 'react'
+import { memo, useRef, useState } from 'react'
 import { useAirportBoard } from '../app/useAirportBoard'
+import { workspaceOwnsFullscreen } from '../app/fullscreen'
 import { AIRPORT_BOARD_CONFIG as config } from '../config/appConfig'
 import {
   AIRPORT_BOARD_STATUS_LABELS,
+  filterAirportBoardFlights,
   type AirportBoardDirection,
   type AirportBoardFlight,
   type AirportBoardState,
@@ -29,9 +31,11 @@ const BoardTime = ({ value }: { value?: AirportBoardTime }) => {
 export const AirportBoardRows = memo(function AirportBoardRows({
   flights,
   direction,
+  query = '',
 }: {
   flights: AirportBoardFlight[] | null
   direction: AirportBoardDirection
+  query?: string
 }) {
   if (flights === null) {
     return <p className="metadata-status">No {direction} board is available for this airport and window.</p>
@@ -39,10 +43,20 @@ export const AirportBoardRows = memo(function AirportBoardRows({
   if (flights.length === 0) {
     return <p className="metadata-status">No {direction} were returned for this window. Coverage may be incomplete.</p>
   }
+  const matches = filterAirportBoardFlights(flights, query)
+  if (matches.length === 0) {
+    return <p className="metadata-status" role="status">No matching loaded flights.</p>
+  }
   return (
+    <>
+      {query.trim() && (
+        <p className="metadata-status" role="status">
+          {matches.length} of {flights.length} loaded {direction} match.
+        </p>
+      )}
     <ul className="airport-board__rows" aria-label={direction === 'arrivals' ? 'Arrivals' : 'Departures'}>
-      {flights.map((flight, index) => (
-        <li key={index}>
+      {matches.map(({ flight, index }) => (
+        <li key={`${direction}-${index}`}>
           <div className="airport-board__flight-heading">
             <strong><bdi>{flight.number}</bdi></strong>
             <span className={`airport-board__status airport-board__status--${flight.status.toLowerCase()}`}>
@@ -91,8 +105,64 @@ export const AirportBoardRows = memo(function AirportBoardRows({
         </li>
       ))}
     </ul>
+    </>
   )
 })
+
+function AirportBoardSearch({
+  flights,
+  direction,
+}: {
+  flights: AirportBoardFlight[] | null
+  direction: AirportBoardDirection
+}) {
+  const [query, setQuery] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+  const clear = () => {
+    setQuery('')
+    inputRef.current?.focus({ preventScroll: true })
+  }
+  return (
+    <>
+      <label className="airport-board__search-label" htmlFor="airport-board-search">
+        Search loaded flights
+      </label>
+      <div className="airport-board__search">
+        <input
+          ref={inputRef}
+          id="airport-board-search"
+          type="search"
+          autoComplete="off"
+          maxLength={config.maximumFilterLength}
+          placeholder="Flight or airport"
+          aria-describedby="airport-board-filter-guidance"
+          value={query}
+          onChange={event => setQuery(event.currentTarget.value)}
+          onKeyDown={event => {
+            if (event.key !== 'Escape' || event.defaultPrevented) return
+            if (workspaceOwnsFullscreen(event.currentTarget)) {
+              // Prevent native search clearing, not the browser's fullscreen exit.
+              event.preventDefault()
+              return
+            }
+            if (event.nativeEvent.isComposing) {
+              event.stopPropagation()
+              return
+            }
+            if (!query) return
+            event.preventDefault()
+            event.stopPropagation()
+            clear()
+          }}
+        />
+        <button type="button" onClick={clear} disabled={!query} aria-label="Clear airport board search">
+          Clear
+        </button>
+      </div>
+      <AirportBoardRows flights={flights} direction={direction} query={query} />
+    </>
+  )
+}
 
 interface AirportBoardContentProps {
   airportIcao?: string
@@ -187,9 +257,16 @@ export function AirportBoardContent({
           </>
         )}
       </p>
-      {snapshot && <AirportBoardRows flights={snapshot[direction]} direction={direction} />}
+      {snapshot && (
+        <AirportBoardSearch key={snapshot.airportIcao} flights={snapshot[direction]} direction={direction} />
+      )}
       <details className="airport-board__about">
         <summary>About this board</summary>
+        <p className="airport-board__context" id="airport-board-filter-guidance">
+          Search only filters loaded flight numbers and airport names/codes:
+          origins for arrivals, destinations for departures. It makes no requests or quota charges.
+          No matching loaded flights does not mean a flight is cancelled or nonexistent.
+        </p>
         <p className="airport-board__context" id="airport-board-reload-guidance">
           Shared cache up to five minutes; at most 200 uncached boards per billing month,
           before other charged work. No automatic refresh.

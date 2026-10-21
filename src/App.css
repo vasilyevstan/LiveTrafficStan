@@ -1787,9 +1787,40 @@
   color: var(--button-hover-text);
 }
 
-.airport-board button:focus-visible {
+.airport-board button:focus-visible,
+.airport-board__search input:focus-visible {
   outline: 2px solid var(--accent-line);
   outline-offset: 2px;
+}
+
+.airport-board__search-label {
+  display: block;
+  margin: 10px 0 5px;
+  color: var(--detail-label);
+  font-size: 0.75rem;
+}
+
+.airport-board__search {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 5px;
+}
+
+.airport-board__search input {
+  min-width: 0;
+  min-height: 44px;
+  width: 100%;
+  padding: 0 9px;
+  border: 1px solid var(--button-border);
+  border-radius: 8px;
+  color: var(--button-text);
+  background: var(--button-background);
+  font: inherit;
+}
+
+.airport-board__search input::placeholder {
+  color: var(--detail-label);
+  opacity: 1;
 }
 
 .airport-board button:disabled {
@@ -1863,6 +1894,10 @@
 
 .details-panel--airport-board :is(button, a, summary) {
   scroll-margin-block: 76px 8px;
+}
+
+.airport-board__search :is(input, button) {
+  scroll-margin-block: 2rem 4px;
 }
 
 .airport-board__directions button[aria-pressed='true'] {
