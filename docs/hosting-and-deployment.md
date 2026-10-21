@@ -87,6 +87,30 @@ previous-version rollback removes this optional refinement; no migration or
 new rollback drill is needed. The [#529 delivery receipt](https://github.com/vasilyevstan/LiveTrafficStan/issues/529)
 records actual application/Worker identities, public native acceptance and
 Wiki publication separately from local fixtures and later docs-only commits.
+
+The running application is **`18c76cf8cb0889e78c5a6352a935c4ad4c7cd5f6`**,
+Worker **`5e417c69-a8cb-43e4-be9f-594b6b9e8254`**, published on
+**2026-10-21 at 03:25:34 UTC** by successful deployment
+[39538387248](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/39538387248).
+Checked #530, necessary tree-neutral #531 and promotion #532 retain accepted
+application tree `f7f12bba19f4562a68ddf293719eb9fd9f49dad3`; exact-main
+Validation39538234869 and unchanged strict smokes on both origins pass.
+The sole real ancestry conflict preserved accepted bytes, with complete
+original rules/settings immediately restored and deep-verified.
+
+Actual public Chrome 156 acceptance at03:26:44-03:32:03 UTC performs ordinary
+REFRESH APP from `index-Bfz6FefH.js` to `index-TlqYvlfC.js`, changing document
+time origin while retaining byte-equal preferences, root SW scope and history
+database identity. BEIDOU 5 /36828 and STARLINK-34695 /64916 pass native
+mouse/touch/arrows, aspect/theme, modeled Pause/Play and zero-error raw Return
+with original FOV/limits/handlers. Eye error stays below0.081m horizontally
+and1m vertically. One canvas and the two observed traffic-controller identities
+remain; unchanged four-controller/local lifecycle evidence is reused.
+The immediate after-Pause observer failure remains archived; the same held
+pose is confirmed after native readiness/two frames, without a product change
+or repeated normal update. These are public native-source/emulated-phone
+receipts, not physical-device/GPU, optical or historical-row-content proof.
+Later receipt-only documentation and Wiki commits do not redeploy this runtime.
 Earlier receipts remain historical and rollback evidence.
 
 ### Ordinary top-down detail release boundary (#522)
