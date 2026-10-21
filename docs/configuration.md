@@ -988,6 +988,24 @@ deadlines, 1 MiB raw/512 KiB normalized responses, 500 combined rows,
 serve for five minutes; empty/unknown responses for one minute. Active
 display expires at 30 minutes. These are not per-viewer budget allowances.
 
+**Search loaded flights** is a local, case/whitespace-insensitive substring
+filter over reported flight numbers and the other airport's name/IATA/ICAO.
+For arrivals this is the origin; for departures it is the destination.
+`maximumFilterLength` bounds the input to 100 characters. The filter retains
+provider order, separate codeshares, reported statuses and original direction
+totals; a matching count describes only loaded rows. **No matching loaded
+flights** does not mean cancellation or nonexistence. Unknown coverage and a
+genuinely empty response keep their original messages.
+
+The query survives direction changes and a Reload/error retaining the same
+valid snapshot. Another airport, expiry, offline, hidden or HISTORY removes
+the displayed board and clears the query. Clear returns focus to the input;
+Escape clears a nonempty query without closing details, except that native
+fullscreen keeps first-Escape precedence. No query is sent, persisted, put in
+a URL/share link or copied into traffic/history. Filtering makes no requests,
+uses no quota, does not refresh data and does not reset any cache/retry deadline.
+Only the existing explicit Load/Reload can acquire a board.
+
 There is no browser endpoint override or secret. Invalid parameters cannot
 reach the coordinator. The global SQL record stores only operational
 reservations/reset/retry state; disabling or recreating the object does not

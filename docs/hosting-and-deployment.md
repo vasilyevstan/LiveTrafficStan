@@ -88,7 +88,8 @@ new rollback drill is needed. The [#529 delivery receipt](https://github.com/vas
 records actual application/Worker identities, public native acceptance and
 Wiki publication separately from local fixtures and later docs-only commits.
 
-The running application is **`18c76cf8cb0889e78c5a6352a935c4ad4c7cd5f6`**,
+That orbital refinement deployed application
+**`18c76cf8cb0889e78c5a6352a935c4ad4c7cd5f6`**,
 Worker **`5e417c69-a8cb-43e4-be9f-594b6b9e8254`**, published on
 **2026-10-21 at 03:25:34 UTC** by successful deployment
 [39538387248](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/39538387248).
@@ -112,6 +113,12 @@ or repeated normal update. These are public native-source/emulated-phone
 receipts, not physical-device/GPU, optical or historical-row-content proof.
 Later receipt-only documentation and Wiki commits do not redeploy this runtime.
 Earlier receipts remain historical and rollback evidence.
+
+The subsequent browser-only loaded-board search release is recorded in the
+[#535 delivery receipt](https://github.com/vasilyevstan/LiveTrafficStan/issues/535),
+including its actual application/Worker, normal update and public acceptance.
+It preserves all production inputs and the existing board protocol, quota,
+credentials and coordinator; rollback requires no saved-data migration.
 
 ### Ordinary top-down detail release boundary (#522)
 

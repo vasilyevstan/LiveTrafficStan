@@ -1493,6 +1493,12 @@ monitoring, privacy, and rollback procedure.
   or actual. Source update time is unknown and codeshares can appear separately.
   The ongoing-free, noncommercial plan allows at most **200 uncached combined
   boards per billing month shared app-wide**, before other charged work.
+  **Search loaded flights** filters reported flight numbers and airport
+  names/IATA/ICAO codes (origins for arrivals, destinations for departures),
+  ignoring case and whitespace. Typing, **Clear** and direction switching
+  make no extra requests or quota charges. Loaded direction totals stay
+  unchanged; **No matching loaded flights** is not a cancellation or
+  nonexistence claim. The query stays local to the displayed airport board.
   Exhaustion is explicit, with no paid fallback, automatic refresh, flight
   archive or inferred connection to map aircraft. See the
   [board contract and evidence](docs/airport-board-evaluation.md) and
