@@ -553,10 +553,11 @@ Cloudflare Worker does not add a geocoder proxy.
 
 ## Scoped object discovery
 
-Mobile **Find** offers Ships, Aircraft, Satellites / orbits, Airports, Ports and
-Places/coordinates. Desktop **More -> Find** keeps the current aircraft/ship
-controls; **Satellites, airports, ports & lookups** starts closed before those
-lists, rather than below the ship filters. Select **Satellites / orbits** to
+**Find** offers Ships, Aircraft, Satellites / orbits, Airports, Ports and
+Places/coordinates. Desktop **More -> Find** uses the same focused class/scope
+flow as mobile: only the selected search is visible, without a second catalog
+disclosure or unrelated aircraft/ship lists. Traffic starts **In view**; remote
+lookup is an explicit **Outside view** scope. Select **Satellites / orbits** to
 search the loaded orbital name, NORAD number or COSPAR ID. The single
 Settings location input is reused for mobile Places.
 
@@ -579,14 +580,29 @@ bounded Starlink sample, not every satellite or the complete constellation.
 static details even with all catalog markers off. It does not enable a
 selected-only pin, weather, airport-board requests or remote object lookup.
 Phone details open fully; **Back** restores the Find class, query and valid
-focus/scroll context, while **X** deselects. Desktop retains its current Find
-layout. Home, saved preferences and provider controllers are unchanged.
+focus/scroll context, while **X** deselects. Home, saved preferences and provider
+controllers are unchanged.
+
+**Go to satellite** revalidates the exact owner, current snapshot, element
+identity and position age at activation, commits ordinary navigation and opens
+that object's existing details. Phone Back uses the same Find suspension/return
+path as static catalogs. This is a modeled map point, not the separate **View
+from here** camera or optical visibility. Unavailable points keep a disabled
+action and a reason: old/future elements, disabled ORBITS, paused modeling or no
+safe current position. An already-loaded catalog still offers **Enable ORBITS**
+when the layer is off. Element age remains at most 14 days; retrieval/publication
+time cannot substitute for element epoch. Newer source elements are necessary
+for old records, not a forced browser retry or guessed location. The demonstrated
+COSMOS 2619 / NORAD100460 dependency is tracked separately in
+[#545](https://github.com/vasilyevstan/LiveTrafficStan/issues/545).
 
 **Outside view** submits one bounded operation. Ships allow name prefixes
 (two or more characters) or exact nine-digit MMSI, preserving leading zeros.
 Aircraft allow exact ICAO24, registration (including hyphens) or callsign.
 Free exact IMO and arbitrary aircraft-name lookup are unavailable.
-Ship results are always identity-only / **Position unavailable**. Aircraft
+Ship results disclose identity-only coverage before submit and explain that the
+source supplies no timed position. Received metadata has the same limitation;
+use **In view** for selection of a currently received ship. Aircraft
 positions are last reports, not live selections; original clocks must qualify
 before navigation is offered. Static and modeled points are labelled separately.
 Explicit navigation clears previous selection/trails, but never changes Home.

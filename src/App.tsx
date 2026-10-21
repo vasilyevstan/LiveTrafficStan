@@ -52,6 +52,7 @@ import {
 import type { AppCenter } from './config/appConfig'
 import { orderAircraftSearchResults } from './domain/aircraftSearch'
 import { airportsInViewport } from './domain/airports'
+import { loadedOrbitalCatalog } from './domain/catalogDiscovery'
 import {
   aircraftInViewAvailability,
   deriveOrbitalInView,
@@ -327,7 +328,7 @@ function App() {
   const [hoveredVesselId, setHoveredVesselId] = useState<string | null>(null)
   const [selectedPortId, setSelectedPortId] = useState<string | null>(null)
   const [catalogSelection, setCatalogSelection] = useState<{
-    kind: 'airport' | 'port'
+    kind: 'airport' | 'port' | 'orbital'
     id: string
     expandMobileDetails: boolean
   } | null>(null)
@@ -1646,6 +1647,7 @@ function App() {
       setSelectedPortId(null)
       setSelectedAirportId(null)
       setSelectedWeatherId(null)
+      setCatalogSelection(null)
       setSelectedOrbitalId(id)
     },
     [clearJourney, finishCapturedOrbitalView],
@@ -1691,6 +1693,20 @@ function App() {
     (id: string, originId: string) => selectOrbital(id, originId),
     [selectOrbital],
   )
+  const handleFindOrbitalNavigate = useCallback((id: string, originId: string) => {
+    const entry = loadedOrbitalCatalog(
+      orbitalState, starlinkState, id, Date.now(), APP_CONFIG.orbital.expireAfterMs,
+    ).entries.find((candidate) => candidate.id === id)
+    const source = acceptedOrbitalPositionForCapture(id)
+    if (!entry?.position || !source || source.snapshot !== entry.snapshot) return false
+    const label = `Modeled: ${entry.record.name}`
+    commitNavigation({
+      latitude: source.position.latitude, longitude: source.position.longitude, label,
+    }, label)
+    selectOrbital(id, originId)
+    setCatalogSelection({ kind: 'orbital', id, expandMobileDetails: mobileWorkspace })
+    return true
+  }, [acceptedOrbitalPositionForCapture, commitNavigation, mobileWorkspace, orbitalState, selectOrbital, starlinkState])
 
   const restoreDetailFocus = useCallback(() => {
     const originId = detailFocusOriginIdRef.current
@@ -1949,7 +1965,9 @@ function App() {
     setInspectorExpanded(capturedOrbitalView === undefined)
     const openCatalogDetails = catalogSelection?.kind === 'airport'
       ? catalogSelection.id === selectedAirportId
-      : catalogSelection?.kind === 'port' && catalogSelection.id === selectedPortId
+      : catalogSelection?.kind === 'port'
+        ? catalogSelection.id === selectedPortId
+        : catalogSelection?.kind === 'orbital' && catalogSelection.id === selectedOrbitalId
     setDetailsReturnToTask(openCatalogDetails && catalogSelection?.expandMobileDetails
       ? workspaceControlsRef.current?.suspendTask() ?? false
       : false)
@@ -2382,6 +2400,7 @@ function App() {
           onRefreshWeather={weatherResult.refresh}
           orbitalVisible={orbitalObjectsVisible}
           orbitalState={orbitalState}
+          onOrbitalNavigate={handleFindOrbitalNavigate}
           selectedOrbitalId={selectedOrbitalId}
           orbitalFilters={orbitalFilters}
           orbitalDisplay={orbitalDisplay}
