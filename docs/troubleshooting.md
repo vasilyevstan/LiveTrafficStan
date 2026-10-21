@@ -225,6 +225,26 @@ when the phone inspector is compact; canvas Escape Returns unless native
 workspace fullscreen owns it. Find does not move the camera; Center is new
 ordinary navigation, not restoration of the old pose.
 
+The #529 refinement inverts mouse dragging only; touch and arrows keep their
+old directions. Looking can cross nadir. High-orbit entry centers Earth and
+adapts the native field of view to the actual canvas aspect without moving
+closer; low orbit keeps the oblique horizon. If moving reaches a native map
+display limit, it pauses at the last displayed pose/time. Adjust the look
+before Play. This notice is not a failed catalog or provider login.
+
+Flat-looking buildings at orbital height are not a missing height setting:
+existing extrusions are close-zoom source data and physically subpixel from
+hundreds of kilometres. Their heights are not exaggerated. Atmosphere is
+limited to high Earth-framed views; low Dark cartography stays unwashed.
+
+**Previous local area** means only the exact eligible area already active at
+entry, not the Earth now in the viewer. Its providers may continue at their
+ordinary cadence; low views show only a read-only spaced sample. High framing
+omits ground glyphs. No eligible prior area means paused aircraft/ships, not
+zero global traffic. In View requires Return to map and Find discovery stays
+paused. Other satellites are deliberately absent after the lightweight
+elevated-symbol proof failed; enabling ORBITS does not create 3D peers.
+
 Offline alone can retain a still-valid capture, but uncached tiles cannot
 appear. Invalid device time, hard catalog expiry or owning-generation loss
 automatically Returns with an explanation. Do not refresh provider data just

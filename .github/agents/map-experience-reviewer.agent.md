@@ -152,10 +152,25 @@ Check these project invariants:
   mutually exclusive selection clears it synchronously. Current orbital
   context/details cannot flash during the first HISTORY render.
 - Explicit captured orbital View from here is separate from selection: Auto
-  only, fixed geographic eye/height, no follow or silent Flat override.
+  only, exact selected owner/snapshot and normal-speed modeled eye/height;
+  Pause freezes the displayed pose/time, not source expiry. No silent Flat override.
   Reuse accepted native evidence; geometry/API success is not eye proof.
   Entry/style/resize use only the bounded render handoff, never correction
-  loops. Return restores raw camera/handler states; newer navigation wins.
+  loops. High Earth framing may change public native FOV/sky before exact-eye
+  placement, never the eye to fill the screen. Mouse-only inversion must not
+  change touch/arrows; signed look can cross nadir. A moving display limit
+  pauses at the last painted pose/time. Return restores raw camera/handlers,
+  pitch/FOV and current base-style sky; newer navigation wins without an old
+  camera jump but still releases lens/sky ownership.
+- Retained viewer traffic means only the exact eligible pre-entry query and
+  polygon, normal existing cadence/connections and ordinary observation expiry.
+  No eye/resize query, forced poll or reconnect. Low views reuse bounded
+  read-only ground sampling; high views omit it. Keep Previous local area
+  provider truth distinct from spacecraft visibility, and quarantine In View,
+  Find membership and optional selection work. Entry without an area stays
+  paused. Genuine traffic retains recorder consent; modeled poses never enter
+  history. Elevated peers remain omitted after their failed bounded native
+  proof; do not add a flat-subpoint substitute or re-review unchanged evidence.
 - Capture clears ordinary selection, so inspector-reset effects must not
   reopen the compact phone body. Keep time/height and 44px Return/X reachable.
   Fullscreen owns Escape first. Placement plus restoration failure must end

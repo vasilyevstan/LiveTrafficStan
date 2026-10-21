@@ -15,6 +15,7 @@ interface LiveStatusProps {
   historicalAt?: number
   orbitalSummary?: string
   trafficContext?: boolean
+  scopeLabel?: string
 }
 
 const providerLabel = (
@@ -43,6 +44,7 @@ export function LiveStatus({
   historicalAt,
   orbitalSummary,
   trafficContext = false,
+  scopeLabel,
 }: LiveStatusProps) {
   const statuses = [aircraftStatus, marineStatus]
   const allPaused = statuses.every((status) => status.paused)
@@ -75,7 +77,7 @@ export function LiveStatus({
       aria-live={historicalAt === undefined ? 'polite' : undefined}
       aria-label={
         historicalAt === undefined
-          ? 'Traffic provider status'
+          ? scopeLabel ? `Traffic provider status · ${scopeLabel}` : 'Traffic provider status'
           : 'Historical traffic status'
       }
     >
@@ -96,7 +98,9 @@ export function LiveStatus({
       >
         <summary>
           <span className="live-status__summary">
-            {trafficContext && historicalAt === undefined ? (
+            {scopeLabel && historicalAt === undefined ? (
+              <span title={`${aircraftCount} aircraft · ${vesselCount} ships shown`}>{scopeLabel}</span>
+            ) : trafficContext && historicalAt === undefined ? (
               <>
                 <span>Last local sample</span>
                 <span>Live updates paused</span>
@@ -124,6 +128,7 @@ export function LiveStatus({
           </span>
         </summary>
         <div className="live-status__providers">
+          {scopeLabel && <span>{scopeLabel}: {aircraftCount} aircraft · {vesselCount} ships shown in enabled layers.</span>}
           {!online && historicalAt === undefined && (
             <span>
               Browser offline; live updates unavailable.

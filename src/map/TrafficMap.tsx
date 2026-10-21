@@ -189,7 +189,7 @@ interface TrafficMapProps {
   capturedOrbitalPlaying?: boolean
   capturedOrbitalPosition?: Readonly<ModeledOrbitalPosition>
   onCapturedOrbitalViewEnd?: (revision: number, reason?: string) => void
-  onCapturedOrbitalViewReady?: (revision: number, ready: boolean) => void
+  onCapturedOrbitalViewReady?: (revision: number, ready: boolean, earthFramed?: boolean) => void
   onCapturedOrbitalViewNotice?: (revision: number, message: string | undefined) => void
   onCapturedOrbitalViewPosition?: (revision: number, position: Readonly<ModeledOrbitalPosition>) => void
   onCapturedOrbitalViewPause?: (revision: number) => void
@@ -910,7 +910,7 @@ export function TrafficMap({
       lastFrameRef.current = now
       renderSources(now)
       if (
-        shouldAnimateTrafficSources(
+        !capturedViewRef.current && shouldAnimateTrafficSources(
           clusteringEnabledRef.current,
           hasActiveMotion(aircraftMotionRef.current, now) ||
             hasActiveMotion(vesselMotionRef.current, now),
@@ -3082,7 +3082,11 @@ export function TrafficMap({
           onReturn: () => capturedCallbacksRef.current.end?.(view.revision),
           onFailure: message => capturedCallbacksRef.current.end?.(view.revision, message),
           onRestoreFailure: message => errorRef.current({ kind: 'runtime', message }),
-          onReady: ready => capturedCallbacksRef.current.ready?.(view.revision, ready),
+          onReady: ready => {
+            const active = capturedCameraRef.current
+            capturedCallbacksRef.current.ready?.(view.revision, ready,
+              active?.revision === view.revision ? active.camera.earthFramed : undefined)
+          },
           onNotice: message => capturedCallbacksRef.current.notice?.(view.revision, message),
           onPosition: position => capturedCallbacksRef.current.position?.(view.revision, position),
           onPause: () => capturedCallbacksRef.current.pause?.(view.revision),
