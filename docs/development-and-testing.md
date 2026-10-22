@@ -241,6 +241,50 @@ two native frames. Preserve the failure and reuse completed update/look/aspect
 evidence; finish only the pending Return and remaining owner. No application
 edit, additional release or whole acceptance replay was needed.
 
+### Travel-aligned Earth-facing view (#549)
+
+Focused regressions cover cardinal/wrapped/high-latitude Earth-relative
+velocity projection, subtraction of Earth's rotation, near-stationary/radial
+motion, invalid vectors and agreement with independent modeled motion.
+Selected-position modeling must still invoke SGP4 once, not propagate again
+to guess heading. Ordinary pinned position/altitude/speed remain unchanged.
+Interpolation takes the shortest circular bearing and never invents one from
+an unknown endpoint. Camera cases retain manual offsets through motion,
+359/1-degree wrap, Pause/Play, style and resize; a rejected pose cannot advance
+the held reference. Initial latitude-limit fallback is nadir, never reverse.
+
+Native acceptance measures the actual eye-to-look-target azimuth against the
+worker's forward reference, not merely `getBearing()`: native map bearing is
+defined at the target. Nadir cases instead project a point forward from the
+eye's subpoint and require screen-up alignment. Retain the one-meter eye,
+exact raw Return/handler/FOV and current short-phone layout gates. Reuse
+unchanged provider, clock/expiry and update-lifecycle evidence; record fixture
+and actual public observations separately.
+
+The October 22 local batch completes at19:57:10 UTC in Chrome156.0.8078.47
+with eight accepted actual-App/native cases: Light/Dark at1280x900,315x517
+and390x568, both owners, high/nadir framing, style/resize, native mouse/touch/
+arrows, modeled motion and Pause/Play. Six use the actual SGP4 worker with
+re-signed bundled elements; two explicitly synthetic worker-pose cases cover
+359/1-degree wrap at the dateline and80-degree latitude fallback/unknown
+direction. Actual eye-to-target azimuth or nadir screen-up error stays below
+0.001 degree; logged entry/look/motion eye errors are below0.000003m
+horizontally and0.000001m vertically. These are renderer precision, not
+physical orbit or optical accuracy. Full raw Returns have zero recorded error,
+with exact handlers, FOV and pitch-limit restoration.
+
+Visible default guidance fits two lines, all actions remain at least44px,
+one canvas and a hit-tested120x120px map region remain, and compact phone
+overlay union is at most38.82%. Selected playback makes three single-object
+position requests during each2.4-second observation; controls add no catalog
+request beyond the observed local startup baseline. Active-frame p95 is
+17.8-18.7ms, with a maximum34.4ms interval, on desktop Chrome, not a physical
+phone/GPU benchmark. Original observer-only startup-count and ambiguous-hit
+failures remain archived; accepted cases are reused. No product correction
+was needed. All eight required local gates pass204 suites/2,323 tests.
+Matched initial JavaScript is587,941 Node-default-gzip bytes, +268/0.0456%
+over the actual public predecessor; CSS is byte-identical.
+
 ### Moving 3D orbital view (#514)
 
 Required local gates pass **202 files / 2,235 tests**, lint, typecheck, all four

@@ -269,6 +269,9 @@ identity are not renamed or reset.
   Enable ORBITS (in Layers on phones), select a modeled object and open Details.
   Low views start obliquely toward Earth's curved horizon; high views center
   Earth with framing adapted to the canvas aspect, without moving the eye.
+  Forward follows modeled travel relative to Earth, not a fixed northward
+  heading. Looking around keeps your offset from that moving reference;
+  an unavailable travel direction retains a neutral or last accepted look.
   Mouse dragging is inverted; touch and arrow directions are unchanged and
   looking can cross nadir. The view advances at normal modeled speed.
   **Pause** freezes the displayed

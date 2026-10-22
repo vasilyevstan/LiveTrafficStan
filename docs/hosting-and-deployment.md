@@ -114,6 +114,19 @@ receipts, not physical-device/GPU, optical or historical-row-content proof.
 Later receipt-only documentation and Wiki commits do not redeploy this runtime.
 Earlier receipts remain historical and rollback evidence.
 
+The [#549 travel-aligned orbital-view receipt](https://github.com/vasilyevstan/LiveTrafficStan/issues/549)
+records the focused forward-reference correction: Earth-facing framing now
+uses Earth-relative modeled travel, retaining manual look offsets. It reuses
+the existing SGP4 velocity without an extra propagation or acquisition.
+There is no dependency, renderer, provider, endpoint, binding, credential,
+production-input or saved-data change. Preserve every input and safeguard
+listed above, including `orbital_source=space-track`. The compatible
+predecessor is application `4c470cf717fa4c838071e9b823bb742297aa52f2`,
+Worker `1516e9d6-90f3-4df6-9377-f1a8fe4199ac`; a checked small-slice revert
+or existing previous-version rollback needs no migration. The Issue receipt
+distinguishes actual deployment/public acceptance from local fixtures and
+later documentation/Wiki commits.
+
 The subsequent browser-only loaded-board search release is recorded in the
 [#535 delivery receipt](https://github.com/vasilyevstan/LiveTrafficStan/issues/535),
 including its actual application/Worker, normal update and public acceptance.

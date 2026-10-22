@@ -304,6 +304,7 @@ keeps its existing course-first heading fallback.
 `nativeMinimumFieldOfViewDegrees` (0.1),
 `nativeMaximumFieldOfViewDegrees` (150), `earthFrameFraction` (0.85),
 `earthAtmosphereBlend` (1),
+`minimumTravelSpeedKmPerSecond` (0.00001, or 0.01m/s),
 `interpolationDelayMs` (1,000),
 `pointerDegreesPerPixel` (0.2), `keyboardStepDegrees` (6) and
 `readinessTimeoutMs` (5,000). The mathematical native latitude limit in
@@ -331,6 +332,12 @@ The look values describe the native surface-target construction, not one
 physical off-nadir angle across altitudes. High framing is chosen from the
 entry height and recomputed for aspect changes without changing the eye.
 Atmosphere applies only to Earth-framed views.
+The worker derives the forward azimuth from the same SGP4 position/velocity
+already computed for a published position, subtracting Earth's rotation.
+Below the horizontal-speed floor, direction is unavailable rather than
+inferred from inertial speed. Looking keeps a travel-relative offset; unknown
+direction holds the neutral/last accepted reference. An unsafe initial
+oblique target falls back to nadir at the same forward azimuth, never backward.
 
 Local traffic reuses `trafficContext`'s existing sample and opacity bounds,
 not a new query limit. A retained eligible area continues normal 20-second

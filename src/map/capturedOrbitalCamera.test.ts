@@ -164,6 +164,77 @@ describe('captured orbital camera cleanup', () => {
       isPrimary: true, button: 0, pointerId: 1, pointerType, clientX: x, clientY: y,
     })
 
+  it('starts Earth-facing along modeled travel rather than north', () => {
+    const forward = { ...position, travelBearingDegrees: 90 }
+    const { camera, map, jumpTo, renderReady, expectRestoredInput } = fixture(forward)
+    camera.setReady(true)
+    renderReady()
+    expect(jumpTo.mock.calls.at(-1)?.[0]).toEqual(orbitalEyeCameraOptions(map, forward, 90, 72))
+    const target = LngLat.convert(jumpTo.mock.calls.at(-1)?.[0].center ?? [0, 0])
+    expect(target.lng).toBeGreaterThan(0)
+    expect(target.lat).toBeCloseTo(0, 10)
+    camera.exit(true)
+    expectRestoredInput()
+  })
+
+  it('keeps a manual look offset through forward wrap, motion, Pause, resume, style and resize', () => {
+    const forward = { ...position, travelBearingDegrees: 359 }
+    const { camera, canvas, map, jumpTo, renderReady, tick, emit, expectRestoredInput } = fixture(forward)
+    const first = { ...forward, modeledFor: 4_000 }
+    camera.setPlayback(true, first)
+    camera.setReady(true)
+    renderReady()
+    canvas.dispatchEvent(Object.assign(new Event('keydown', { cancelable: true }), { key: 'ArrowRight' }))
+    expect(jumpTo.mock.calls.at(-1)?.[0]).toEqual(orbitalEyeCameraOptions(map, first, 5, 72))
+    camera.setPlayback(true, { ...first, modeledFor: 5_000, travelBearingDegrees: 1 })
+    tick(500)
+    const halfway = { ...first, modeledFor: 4_500, travelBearingDegrees: 0 }
+    expect(jumpTo.mock.calls.at(-1)?.[0]).toEqual(orbitalEyeCameraOptions(map, halfway, 6, 72))
+    camera.setPlayback(false)
+    const paints = jumpTo.mock.calls.length
+    tick(10_000)
+    expect(jumpTo).toHaveBeenCalledTimes(paints)
+    camera.setPlayback(true, { ...first, modeledFor: 15_000, travelBearingDegrees: 40 })
+    tick(0)
+    expect(jumpTo.mock.calls.at(-1)?.[0]).toEqual(orbitalEyeCameraOptions(map, first, 46, 72))
+    for (const event of ['style.load', 'resize']) {
+      emit(event)
+      renderReady()
+      expect(jumpTo.mock.calls.at(-1)?.[0]).toEqual(orbitalEyeCameraOptions(map, first, 46, 72))
+    }
+    camera.exit(true)
+    expectRestoredInput()
+  })
+
+  it('tilts an unsafe initial forward target to nadir without turning backward', () => {
+    const north = { ...position, latitude: 80, travelBearingDegrees: 0 }
+    const { camera, map, renderReady, jumpTo, expectRestoredInput } = fixture(north)
+    camera.setReady(true)
+    renderReady()
+    expect(jumpTo.mock.calls.at(-1)?.[0]).toEqual(orbitalEyeCameraOptions(map, north, 0, 0))
+    expect(jumpTo.mock.calls.at(-1)?.[0].bearing).toBe(0)
+    camera.exit(true)
+    expectRestoredInput()
+  })
+
+  it('holds only an accepted travel reference when a rejected moving pose is followed by unknown direction', () => {
+    const forward = { ...position, travelBearingDegrees: 90 }
+    const { camera, map, renderReady, tick, callbacks, jumpTo, expectRestoredInput } = fixture(forward)
+    camera.setPlayback(true, { ...forward, modeledFor: 4_000 })
+    camera.setReady(true)
+    renderReady()
+    camera.setPlayback(true, { ...forward, modeledFor: 5_000, travelBearingDegrees: 180 })
+    vi.mocked(map.calculateCameraOptionsFromTo).mockReturnValueOnce({ center: [0, 0], zoom: -100, pitch: 0 })
+    tick(500)
+    expect(callbacks.onPause).toHaveBeenCalledTimes(1)
+    camera.setPlayback(true, { ...position, modeledFor: 6_000 })
+    tick(0)
+    expect(jumpTo.mock.calls.at(-1)?.[0]).toEqual(orbitalEyeCameraOptions(map, position, 90, 72))
+    expect(callbacks.onPosition.mock.calls.at(-1)?.[0].travelBearingDegrees).toBeUndefined()
+    camera.exit(true)
+    expectRestoredInput()
+  })
+
   it('retains low-orbit shading and the existing arrow-key direction', () => {
     const { camera, canvas, map, renderReady, jumpTo, expectRestoredInput } = fixture()
     camera.setReady(true)

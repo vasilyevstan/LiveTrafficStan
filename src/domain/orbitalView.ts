@@ -36,6 +36,11 @@ export const interpolateOrbitalViewPosition = (
     altitudeKm: first.altitudeKm + (last.altitudeKm - first.altitudeKm) * fraction,
     velocityKmPerSecond: first.velocityKmPerSecond +
       (last.velocityKmPerSecond - first.velocityKmPerSecond) * fraction,
+    travelBearingDegrees: first.travelBearingDegrees === undefined || last.travelBearingDegrees === undefined
+      ? undefined
+      : ((first.travelBearingDegrees +
+        (unwrapOrbitalLongitude(last.travelBearingDegrees, first.travelBearingDegrees) -
+          first.travelBearingDegrees) * fraction) % 360 + 360) % 360,
   }
 }
 
@@ -45,6 +50,11 @@ export const orbitalViewUnavailableReason = (
 ): string | undefined => {
   if (projection !== 'auto') return 'View from here is available in Auto projection, not Flat.'
   if (!position) return 'An accepted modeled position is needed.'
+  if (position.travelBearingDegrees !== undefined &&
+    (!Number.isFinite(position.travelBearingDegrees) ||
+      position.travelBearingDegrees < 0 || position.travelBearingDegrees >= 360)) {
+    return 'The modeled travel direction is invalid.'
+  }
   if (
     !Number.isFinite(position.latitude) || !Number.isFinite(position.longitude) ||
     !Number.isFinite(position.altitudeKm) || position.altitudeKm <= 0 ||

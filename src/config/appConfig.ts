@@ -51,6 +51,7 @@ export const ORBITAL_VIEW_CONFIG = {
   nativeMaximumFieldOfViewDegrees: 150,
   earthFrameFraction: 0.85,
   earthAtmosphereBlend: 1,
+  minimumTravelSpeedKmPerSecond: 0.00001,
   interpolationDelayMs: 1_000,
   pointerDegreesPerPixel: 0.2,
   keyboardStepDegrees: 6,
