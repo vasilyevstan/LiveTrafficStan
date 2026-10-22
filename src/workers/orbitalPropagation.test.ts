@@ -1,12 +1,15 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   modelOrbitalPositions,
+  orbitalTravelBearing,
   predictOrbitalView,
   predictOrbitalViewAsync,
   prepareOrbitalCatalog,
 } from './orbitalPropagation'
 import type { OrbitalCatalogSnapshot, OrbitalObject } from '../domain/orbital'
 import type { OrbitalPropagationLimits } from './orbitalProtocol'
+import * as satelliteJs from './satelliteJs'
+import { ORBITAL_VIEW_CONFIG } from '../config/appConfig'
 
 const object: OrbitalObject = {
   noradCatalogId: '694',
@@ -65,6 +68,46 @@ const limits: OrbitalPropagationLimits = {
 
 const epoch = Date.parse(object.epoch)
 
+describe('Earth-relative orbital travel bearing', () => {
+  it.each([
+    [0, 0, 0], [90, 0, 90], [180, 45, -170],
+    [270, -80, 179.9], [359, 80, -179.9], [1, -30, 120],
+  ])('projects heading %s at latitude %s and inertial longitude %s', (bearing, latitude, longitude) => {
+    const radians = Math.PI / 180
+    const phi = latitude * radians, angle = longitude * radians
+    const radius = 7_000 * Math.cos(phi)
+    const east = 7 * Math.sin(bearing * radians) + 7.2921151467e-5 * radius
+    const north = 7 * Math.cos(bearing * radians)
+    const velocity = {
+      x: -Math.sin(angle) * east - Math.cos(angle) * Math.sin(phi) * north,
+      y: Math.cos(angle) * east - Math.sin(angle) * Math.sin(phi) * north,
+      z: Math.cos(phi) * north,
+    }
+    expect(orbitalTravelBearing(
+      { x: radius * Math.cos(angle), y: radius * Math.sin(angle) }, velocity, phi,
+    )).toBeCloseTo(bearing, 9)
+  })
+
+  it('does not confuse inertial eastward speed with stationary, radial or westward Earth-relative motion', () => {
+    const position = { x: 42_164, y: 0 }
+    const rotation = 7.2921151467e-5 * position.x
+    expect(orbitalTravelBearing(position, { x: 0, y: rotation, z: 0 }, 0)).toBeUndefined()
+    expect(orbitalTravelBearing(position, { x: 2, y: rotation, z: 0 }, 0)).toBeUndefined()
+    expect(orbitalTravelBearing(position, { x: 0, y: rotation - 0.1, z: 0 }, 0)).toBe(270)
+    const minimum = ORBITAL_VIEW_CONFIG.minimumTravelSpeedKmPerSecond
+    expect(orbitalTravelBearing(position, { x: 0, y: rotation + minimum / 2, z: 0 }, 0)).toBeUndefined()
+    expect(orbitalTravelBearing(position, { x: 0, y: rotation + minimum * 2, z: 0 }, 0)).toBe(90)
+  })
+
+  it('leaves invalid vectors and an undefined polar basis without an invented direction', () => {
+    expect(orbitalTravelBearing({ x: 0, y: 0 }, { x: 0, y: 0, z: 7 }, Math.PI / 2)).toBeUndefined()
+    expect(orbitalTravelBearing({ x: NaN, y: 0 }, { x: 0, y: 7, z: 0 }, 0)).toBeUndefined()
+    expect(orbitalTravelBearing({ x: 7_000, y: 0 }, { x: 0, y: Infinity, z: 0 }, 0)).toBeUndefined()
+    expect(orbitalTravelBearing({ x: 7_000, y: 0 }, { x: 0, y: 7, z: 0 }, NaN)).toBeUndefined()
+    expect(orbitalTravelBearing({ x: 7_000, y: 0 }, { x: 0, y: 7, z: 0 }, Math.PI)).toBeUndefined()
+  })
+})
+
 describe('orbital SGP4 propagation', () => {
   it('matches a pinned ordinary LEO reference vector', () => {
     const catalog = prepareOrbitalCatalog(snapshot(), limits)
@@ -76,6 +119,32 @@ describe('orbital SGP4 propagation', () => {
     expect(position.altitudeKm).toBeCloseTo(662.5911321, 3)
     expect(position.velocityKmPerSecond).toBeCloseTo(7.6241986, 5)
     expect(position).not.toHaveProperty('observedAt')
+  })
+
+  it('uses the existing selected propagation once and agrees with modeled Earth-relative motion', () => {
+    const catalog = prepareOrbitalCatalog(snapshot(), limits)
+    const propagate = vi.spyOn(satelliteJs, 'propagate')
+    try {
+      const [position] = modelOrbitalPositions(catalog, epoch, 'orbital:694')
+      expect(propagate).toHaveBeenCalledTimes(1)
+      expect(position.travelBearingDegrees).toBeGreaterThan(0)
+      expect(position.travelBearingDegrees).toBeLessThan(90)
+    } finally {
+      propagate.mockRestore()
+    }
+    for (const minutes of [0, 10, 30, 55, 90]) {
+      const time = epoch + minutes * 60_000
+      const [position] = modelOrbitalPositions(catalog, time)
+      const [before] = modelOrbitalPositions(catalog, time - 1_000)
+      const [after] = modelOrbitalPositions(catalog, time + 1_000)
+      const longitudeDelta = ((after.longitude - before.longitude + 540) % 360) - 180
+      const direction = Math.atan2(longitudeDelta * Math.cos(position.latitude * Math.PI / 180),
+        after.latitude - before.latitude) * 180 / Math.PI
+      if (position.travelBearingDegrees === undefined) throw Error('Expected modeled travel')
+      const error = Math.abs(((position.travelBearingDegrees - direction + 540) % 360) - 180)
+      // The viewer sphere is not the geodetic ellipsoid used by SGP4's conversion.
+      expect(error).toBeLessThan(0.25)
+    }
   })
 
   it('supports six-digit catalog IDs and rejects over-age elements', () => {

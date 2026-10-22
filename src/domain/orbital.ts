@@ -113,6 +113,8 @@ export interface ModeledOrbitalPosition {
   longitude: number
   altitudeKm: number
   velocityKmPerSecond: number
+  // Earth-relative horizontal travel, not spacecraft attitude.
+  travelBearingDegrees?: number
 }
 
 export interface OrbitalCrossing {

@@ -32,6 +32,29 @@ import {
   type OrbitalViewport,
 } from '../domain/orbitalViewport'
 import type { OrbitalPropagationLimits } from './orbitalProtocol'
+import { ORBITAL_VIEW_CONFIG } from '../config/appConfig'
+
+const EARTH_ROTATION_RADIANS_PER_SECOND = 7.2921151467e-5
+
+export const orbitalTravelBearing = (
+  positionKm: Readonly<{ x: number; y: number }>,
+  velocityKmPerSecond: Readonly<{ x: number; y: number; z: number }>,
+  latitudeRadians: number,
+): number | undefined => {
+  const radius = Math.hypot(positionKm.x, positionKm.y)
+  if (!Number.isFinite(radius) || radius === 0 ||
+    !Number.isFinite(latitudeRadians) || Math.abs(latitudeRadians) > Math.PI / 2) return undefined
+  // Rotate the local basis into ECI, then remove Earth's eastward rotation.
+  const east = (positionKm.x * velocityKmPerSecond.y - positionKm.y * velocityKmPerSecond.x) / radius -
+    EARTH_ROTATION_RADIANS_PER_SECOND * radius
+  const north = velocityKmPerSecond.z * Math.cos(latitudeRadians) -
+    (positionKm.x * velocityKmPerSecond.x + positionKm.y * velocityKmPerSecond.y) /
+    radius * Math.sin(latitudeRadians)
+  const horizontalSpeed = Math.hypot(east, north)
+  if (!Number.isFinite(horizontalSpeed) ||
+    horizontalSpeed < ORBITAL_VIEW_CONFIG.minimumTravelSpeedKmPerSecond) return undefined
+  return (Math.atan2(east, north) * 180 / Math.PI + 360) % 360
+}
 
 interface PreparedOrbitalObject {
   object: OrbitalObject
@@ -102,6 +125,7 @@ const modelPosition = (
   prepared: PreparedOrbitalObject,
   catalog: PreparedOrbitalCatalog,
   modeledFor: number,
+  includeTravelBearing = false,
 ): ModeledOrbitalPosition | undefined => {
   if (!validElementAge(prepared, modeledFor, catalog.limits)) {
     return undefined
@@ -161,6 +185,9 @@ const modelPosition = (
     longitude,
     altitudeKm,
     velocityKmPerSecond,
+    ...(includeTravelBearing ? {
+      travelBearingDegrees: orbitalTravelBearing(result.position, result.velocity, geodetic.latitude),
+    } : {}),
   }
 }
 
@@ -172,7 +199,7 @@ export const modelOrbitalPositions = (
   catalog.objects.flatMap((prepared) => {
     if (selectedId !== undefined &&
       orbitalFeatureId(prepared.object.noradCatalogId) !== selectedId) return []
-    const position = modelPosition(prepared, catalog, modeledFor)
+    const position = modelPosition(prepared, catalog, modeledFor, true)
     return position ? [position] : []
   })
 

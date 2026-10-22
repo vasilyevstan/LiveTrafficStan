@@ -38,7 +38,7 @@ describe('CapturedOrbitalDetails', () => {
     const html = renderToStaticMarkup(
       <CapturedOrbitalDetails view={view} ready playing online units="metric"
         onReturn={() => undefined} onTogglePlaying={() => undefined}
-        position={{ ...view.position, modeledFor: 4_000, altitudeKm: 551 }} />,
+        position={{ ...view.position, modeledFor: 4_000, altitudeKm: 551, travelBearingDegrees: 90 }} />,
     )
     expect(html).toContain('551,000 m')
     expect(html).toContain('1970-01-01T00:00:04.000Z')
@@ -50,6 +50,9 @@ describe('CapturedOrbitalDetails', () => {
     expect(html).toContain('Space-Track.org / USSPACECOM')
     expect(html).toContain('not live or optical')
     expect(html).toContain('No spacecraft attitude is inferred')
+    expect(html).toContain('Travel-relative look')
+    expect(html).toContain('Earth-relative modeled travel; your look offset is retained')
+    expect(html).not.toContain('Travel direction unavailable')
     expect(html).toContain('not the full constellation')
     expect(html).toContain('aria-label="Return to map"')
     expect(html).not.toContain('id="orbital:')
@@ -90,5 +93,8 @@ describe('CapturedOrbitalDetails', () => {
     expect(html).toContain('>Paused <time')
     expect(html).toContain('Normal-speed modeled motion; geostationary objects may appear still')
     expect(html).toContain('Modeled time')
+    expect(html).toContain('Travel direction unavailable')
+    expect(html).toContain('Unavailable; neutral or last accepted direction')
+    expect(html).not.toContain('Travel-relative look')
   })
 })
