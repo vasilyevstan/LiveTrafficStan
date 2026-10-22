@@ -51,7 +51,11 @@ export function CapturedOrbitalDetails({ view, ready, localTrafficAvailable = fa
         </div>
       }
     >
-      <p className="metadata-status">Drag or use arrows to look. Pause holds the view.</p>
+      <p className="metadata-status">
+        {position.travelBearingDegrees === undefined
+          ? 'Travel direction unavailable. Drag or use arrows to look.'
+          : 'Travel-relative look. Drag or use arrows; Pause holds the view.'}
+      </p>
       <p className="metadata-status">Earth-facing map model, not live or optical. No spacecraft attitude is inferred.</p>
       <p className="metadata-status">
         {localTrafficAvailable
@@ -63,6 +67,11 @@ export function CapturedOrbitalDetails({ view, ready, localTrafficAvailable = fa
         <dl className="details-grid">
           <div className="detail-row"><dt>Object</dt><dd>{position.name}</dd></div>
           <div className="detail-row"><dt>Modeled time</dt><dd>{modeledAt}</dd></div>
+          <div className="detail-row"><dt>Forward reference</dt><dd>
+            {position.travelBearingDegrees === undefined
+              ? 'Unavailable; neutral or last accepted direction.'
+              : 'Earth-relative modeled travel; your look offset is retained.'}
+          </dd></div>
           <div className="detail-row"><dt>Catalog type</dt><dd>{orbitalObjectTypeLabel(position.objectType)} ({position.objectType})</dd></div>
           <div className="detail-row"><dt>NORAD</dt><dd>{position.noradCatalogId}</dd></div>
           <div className="detail-row"><dt>Element epoch</dt><dd>{new Date(position.elementEpoch).toISOString()}</dd></div>

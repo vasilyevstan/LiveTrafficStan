@@ -120,6 +120,7 @@ export const createCapturedOrbitalCamera = (
   let orientationInitialized = false
   let earthFramed: boolean | undefined
   let yaw = 0
+  let travelBearing = view.position.travelBearingDegrees ?? 0
   let pitch: number = ORBITAL_VIEW_CONFIG.initialLookPitchDegrees
   let currentPosition = view.position
   let previousPosition = currentPosition
@@ -219,10 +220,15 @@ export const createCapturedOrbitalCamera = (
     }
     map.once('render', renderCallback)
   }
+  const lookOptions = (nextYaw: number, nextPitch: number) => orbitalEyeCameraOptions(
+    map, currentPosition,
+    ((currentPosition.travelBearingDegrees ?? travelBearing) + nextYaw) % 360, nextPitch,
+  )
   const apply = () => {
-    const options = orbitalEyeCameraOptions(map, currentPosition, yaw, pitch)
+    const options = lookOptions(yaw, pitch)
     if (!options) return false
     map.jumpTo(options)
+    travelBearing = currentPosition.travelBearingDegrees ?? travelBearing
     return true
   }
   function animate(now: number) {
@@ -294,7 +300,7 @@ export const createCapturedOrbitalCamera = (
       if (!orientationInitialized) {
         map.setMaxPitch(ORBITAL_VIEW_CONFIG.nativeMaximumPitchDegrees)
         pitch = framing.initialPitch
-        if (!orbitalEyeCameraOptions(map, currentPosition, yaw, pitch)) yaw = 180
+        if (!lookOptions(yaw, pitch)) pitch = 0
         orientationInitialized = true
       }
       // Auto may replace its native transform on the first rendered placement.
@@ -324,14 +330,14 @@ export const createCapturedOrbitalCamera = (
     let acceptedYaw = nextYaw
     let acceptedPitch = Math.max(-ORBITAL_VIEW_CONFIG.maximumLookPitchDegrees,
       Math.min(ORBITAL_VIEW_CONFIG.maximumLookPitchDegrees, nextPitch))
-    let options = orbitalEyeCameraOptions(map, currentPosition, acceptedYaw, acceptedPitch)
+    let options = lookOptions(acceptedYaw, acceptedPitch)
     const nextNotice = options ? undefined : 'Map display limit. Try another look direction.'
     if (!options && acceptedYaw !== yaw) {
-      options = orbitalEyeCameraOptions(map, currentPosition, acceptedYaw, pitch)
+      options = lookOptions(acceptedYaw, pitch)
       if (options) acceptedPitch = pitch
     }
     if (!options && acceptedPitch !== pitch) {
-      options = orbitalEyeCameraOptions(map, currentPosition, yaw, acceptedPitch)
+      options = lookOptions(yaw, acceptedPitch)
       if (options) acceptedYaw = yaw
     }
     if (notice !== nextNotice) {

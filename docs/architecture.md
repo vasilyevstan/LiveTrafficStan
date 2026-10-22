@@ -882,8 +882,21 @@ Only high Earth-framed views override atmosphere. Style load captures the
 new base sky and reapplies the override idempotently; disposal fences even
 the initial style read.
 
+Published positions carry an optional `travelBearingDegrees`: the existing
+worker projects its already-computed SGP4 velocity onto local east/north and
+subtracts Earth's rotational velocity. This is Earth-relative horizontal
+travel, not inertial heading or spacecraft attitude. It adds no propagation;
+prediction/track-only samples skip the calculation. Near-stationary motion
+has no invented direction. The camera starts at zero user offset from travel
+and retains that offset as travel changes. Missing direction holds the last
+accepted reference (neutral north at entry) with explicit inspector feedback.
+Only successful native placement advances that reference. An unsafe initial
+oblique target uses nadir without reversing the azimuth.
+
 An active-only rAF interpolates between two validated selected positions,
-with wrapped longitude and a one-second presentation delay. It never runs
+with wrapped longitude, shortest-angle travel-bearing interpolation and a
+one-second presentation delay. An unknown endpoint never supplies a guessed
+intermediate heading. It never runs
 SGP4 per frame or extrapolates. Pause freezes/reports the actual painted pose;
 resume obtains current output and resets an obsolete bracket. Per-second
 pose reporting avoids React updates and live announcements on every frame.

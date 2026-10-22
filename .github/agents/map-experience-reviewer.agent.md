@@ -162,6 +162,10 @@ Check these project invariants:
   pauses at the last painted pose/time. Return restores raw camera/handlers,
   pitch/FOV and current base-style sky; newer navigation wins without an old
   camera jump but still releases lens/sky ownership.
+  Forward is Earth-relative modeled travel, not north or spacecraft attitude;
+  preserve manual offsets and disclose an unavailable held reference. Measure
+  actual eye-to-target azimuth or nadir screen-up, not target-based map bearing.
+  Initial latitude-limit fallback must retain azimuth, never reverse travel.
 - Retained viewer traffic means only the exact eligible pre-entry query and
   polygon, normal existing cadence/connections and ordinary observation expiry.
   No eye/resize query, forced poll or reconnect. Low views reuse bounded

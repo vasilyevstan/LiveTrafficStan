@@ -29,6 +29,24 @@ describe('orbital view pose interpolation', () => {
     modeledFor => expect(interpolateOrbitalViewPosition(first, last, modeledFor)).toBeUndefined(),
   )
 
+  it.each([[359, 1, 0], [1, 359, 0], [90, 180, 135], [0, 0, 0]])(
+    'interpolates the shortest travel direction %s to %s through %s',
+    (start, end, expected) => {
+      const a = { ...first, travelBearingDegrees: start }
+      const b = { ...last, travelBearingDegrees: end }
+      expect(interpolateOrbitalViewPosition(a, b, 3_500)?.travelBearingDegrees).toBe(expected)
+      expect(interpolateOrbitalViewPosition(a, b, 3_000)).toBe(a)
+      expect(interpolateOrbitalViewPosition(a, b, 4_000)).toBe(b)
+    },
+  )
+
+  it('never interpolates an unknown travel direction from just one endpoint', () => {
+    const directed = { ...last, travelBearingDegrees: 90 }
+    expect(interpolateOrbitalViewPosition(first, directed, 3_500)?.travelBearingDegrees).toBeUndefined()
+    expect(interpolateOrbitalViewPosition({ ...first, travelBearingDegrees: 90 }, last, 3_500)
+      ?.travelBearingDegrees).toBeUndefined()
+  })
+
   it.each([
     { id: 'orbital:starlink:694', owner: 'starlink' as const },
     { owner: 'starlink' as const },
@@ -42,6 +60,10 @@ describe('orbital view pose interpolation', () => {
     { longitude: 181 },
     { altitudeKm: 0 },
     { velocityKmPerSecond: Number.NaN },
+    { travelBearingDegrees: Number.NaN },
+    { travelBearingDegrees: Number.POSITIVE_INFINITY },
+    { travelBearingDegrees: -1 },
+    { travelBearingDegrees: 360 },
   ])('rejects mixed identities, source generations and unsafe endpoints: %j', override => {
     expect(interpolateOrbitalViewPosition(first, { ...last, ...override }, 3_500)).toBeUndefined()
   })

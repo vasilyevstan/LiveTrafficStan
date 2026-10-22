@@ -380,6 +380,16 @@ retain a supported individual axis; rejected input does not advance hidden
 orientation state. A map display limit keeps the last accepted look with an
 explanation, never moves or lowers the eye to make the request succeed.
 
+**Forward is modeled travel relative to Earth, while the view stays
+Earth-facing.** It is not a fixed northward camera or an inferred spacecraft
+attitude. Looking around keeps your chosen offset from the changing travel
+direction; Pause holds the displayed pose and orientation. At a high nadir
+entrance, travel points toward the top of the Earth disc. If the initial
+oblique target reaches a native latitude limit, entry uses nadir at that same
+azimuth rather than turning backward. For nearly stationary horizontal motion,
+**Travel direction unavailable** is honest: the neutral/last accepted reference
+is retained and manual looking remains usable.
+
 Entry is available only in **Auto** projection. Flat remains selected if the
 user chose it, with an explicit unavailable reason. The current native
 Mercator latitude limit, approximately 85.051129 degrees north/south, excludes
