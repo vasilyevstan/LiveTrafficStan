@@ -392,14 +392,34 @@ MMSI route. The free service returns at most 50 identities; cap/truncation
 and partial receiver coverage are disclosed. Exact IMO lookup is not available
 on this anonymous path. No account, token, payment or scraping is added.
 REST `seen` can advance on static reports and is not an original position
-clock. Consequently **all ship lookup geometry is discarded**, and every
-match is labelled **Position unavailable**, without a navigation action.
+clock. Consequently **all identity/metadata lookup geometry is discarded**;
+identity search alone never permits navigation.
+
+An explicit **Locate** on an Outside-view ship separately requests that exact
+supported MMSI's [`/v1/vessels/{mmsi}/track`](https://openwaters.io/api/ais/) over
+one captured 24-hour window, with `interval=0&limit=1&format=geojson`. The explicit
+zero interval selects newest-first limiting; `limit=1` alone is not treated as
+proof of newest. The Worker requires the exact echoed identity/window, original
+aligned observation time, zero or one valid point and complete contributing
+credits within 32 KiB. A valid empty response is distinct from HTTP, malformed,
+oversized or incomplete failure. It performs no pagination, second-source
+fallback, token use, cache, polling or archive download.
+
+A qualified report may navigate once to a dated local view. Report/retrieval
+times and original track credits remain visible, with no current-position or
+live-reception promise. Locate does not manufacture a traffic entity, marker,
+count, selection, trail, enrichment/photo request or history record. Ordinary
+reception after navigation keeps its independent filters/freshness contract.
+Safe map framing, including the conservative absolute 85-degree latitude bound,
+is separate from whether the provider has a geographically valid point.
 
 Each ship result requires nonempty original contributing-source attribution.
 Open Waters aggregates Digitraffic, AISHub, AISStream and station contributions;
 their individual rights/caveats continue to apply. This qualified transient
 identity lookup is not a blanket CC0/redistribution claim or a data-rights
-waiver. Known non-vessel kinds are excluded; malformed/unsupported or wholly
+waiver. The separate transient position operation retains those same source
+attribution/use caveats; it is not a new blanket license claim.
+Known non-vessel kinds are excluded; malformed/unsupported or wholly
 invalid responses are not silently treated as successful empty searches.
 See the pinned source review in [Marine Provider Evaluation](marine-provider-evaluation.md).
 

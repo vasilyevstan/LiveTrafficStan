@@ -2,7 +2,8 @@ import { DISCOVERY_CONFIG } from '../config/discoveryConfig.js'
 
 export type DiscoveryClass = 'aircraft' | 'ships'
 export type AircraftLookupMethod = 'hex' | 'reg' | 'callsign'
-export type ShipLookupMethod = 'name' | 'mmsi'
+export type ShipLookupMethod = 'name' | 'mmsi' | 'position'
+export const SHIP_POSITION_SOURCE = 'open-waters-track'
 export type LookupRequest =
   | { objectClass: 'aircraft'; by: AircraftLookupMethod; query: string }
   | { objectClass: 'ships'; by: ShipLookupMethod; query: string }
@@ -46,10 +47,13 @@ export interface CachedMarineDiscovery {
 
 export const qualifiedLastReport = (match: DiscoveryMatch, result: DiscoveryResponse, now: number) => {
   const location = match.location
-  if (match.objectClass !== 'aircraft' || !location ||
+  const ship = match.objectClass === 'ships'
+  if (!location || match.objectClass !== result.objectClass ||
+    ship && (match.source.name !== 'Open Waters AIS' || match.source.code !== SHIP_POSITION_SOURCE ||
+      match.metadataReportedAt !== null) ||
     result.retrievedAt > now + DISCOVERY_CONFIG.futureToleranceMs ||
-    now - result.retrievedAt > DISCOVERY_CONFIG.maximumAircraftSnapshotAgeMs ||
+    now - result.retrievedAt > (ship ? DISCOVERY_CONFIG.maximumShipSnapshotAgeMs : DISCOVERY_CONFIG.maximumAircraftSnapshotAgeMs) ||
     location.reportedAt > now + DISCOVERY_CONFIG.futureToleranceMs ||
-    now - location.reportedAt > DISCOVERY_CONFIG.maximumAircraftPositionAgeMs) return null
+    now - location.reportedAt > (ship ? DISCOVERY_CONFIG.shipPositionWindowMs : DISCOVERY_CONFIG.maximumAircraftPositionAgeMs)) return null
   return location
 }

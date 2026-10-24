@@ -209,7 +209,8 @@ interface TrafficMapProps {
   onJourneyFit?: (revision: number, message: string) => void
   viewLabel: string
   viewRadiusKm: number
-  objectShareFrame?: { radiusKm: number; onError: (message: string) => void }
+  pointFrame?: { radiusKm: number; onError: (message: string) => void }
+  pointFramingRef?: Ref<() => boolean>
   maximumViewportRadiusKm: number
   touchHitTolerancePx: number
   clusterRadiusPx: number
@@ -433,7 +434,8 @@ export function TrafficMap({
   onJourneyFit,
   viewLabel,
   viewRadiusKm,
-  objectShareFrame,
+  pointFrame,
+  pointFramingRef,
   maximumViewportRadiusKm,
   touchHitTolerancePx,
   clusterRadiusPx,
@@ -530,7 +532,7 @@ export function TrafficMap({
   const viewRequestRef = useRef(viewRequestId)
   const viewCenterRef = useRef(viewCenter)
   const viewRadiusKmRef = useRef(viewRadiusKm)
-  const objectShareFrameRef = useRef(objectShareFrame)
+  const pointFrameRef = useRef(pointFrame)
   const initialCameraRef = useRef(viewCamera)
   const viewCameraRef = useRef(viewCamera)
   const viewJourneyRef = useRef(viewJourney)
@@ -578,6 +580,10 @@ export function TrafficMap({
     focusMap: () => mapRef.current?.getCanvas().focus({ preventScroll: true }),
     refresh: () => localRulerInteractionRef.current?.refresh() ?? 'unsupported',
   }), [])
+  useImperativeHandle(pointFramingRef, () => () => {
+    const map = mapRef.current
+    return Boolean(map && loadedRef.current && journeyFitPadding(map.getCanvas().getBoundingClientRect()))
+  }, [])
   const compactAttributionRef = useRef(compactAttribution)
   const clusterOptionsGenerationRef = useRef(0)
   const interactionGenerationRef = useRef(0)
@@ -710,7 +716,7 @@ export function TrafficMap({
     viewRequestRef.current = viewRequestId
     viewCenterRef.current = viewCenter
     viewRadiusKmRef.current = viewRadiusKm
-    objectShareFrameRef.current = objectShareFrame
+    pointFrameRef.current = pointFrame
     viewCameraRef.current = viewCamera
     viewJourneyRef.current = viewJourney
     viewRequestCancelledRef.current = viewRequestCancelled
@@ -736,7 +742,7 @@ export function TrafficMap({
     coordinatePrecision,
     viewCenter,
     viewRadiusKm,
-    objectShareFrame,
+    pointFrame,
     viewCamera,
     viewJourney,
     viewRequestCancelled,
@@ -1091,17 +1097,17 @@ export function TrafficMap({
         return
       }
       const currentView = viewCenterRef.current
-      const shared = objectShareFrameRef.current
-      const padding = shared
+      const frame = pointFrameRef.current
+      const padding = frame
         ? journeyFitPadding(map.getCanvas().getBoundingClientRect())
         : fitPadding()
       if (!padding) {
-        shared?.onError('Close a menu or enlarge the view to frame the shared point.')
+        frame?.onError('Close a menu or enlarge the view to frame this position.')
         scheduleViewportReport(map, 0)
         return
       }
       map.fitBounds(
-        boundsAroundCenter(currentView, shared?.radiusKm ?? viewRadiusKmRef.current),
+        boundsAroundCenter(currentView, frame?.radiusKm ?? viewRadiusKmRef.current),
         {
           padding,
           duration,
