@@ -4,6 +4,10 @@ import { aircraftQueryRadiusNauticalMiles } from '../providers/aircraft/adsbLolP
 import { createAppConfig } from './appConfig'
 
 describe('createAppConfig', () => {
+  it('keeps object sharing default-off with no configurable outside endpoint', () => {
+    expect(createAppConfig({}).objectSharing.enabled).toBe(false)
+    expect(createAppConfig({ VITE_OBJECT_SHARING_ENABLED: 'true' }).objectSharing.enabled).toBe(true)
+  })
   it('keeps airport boards opt-in with a fixed same-origin route and no endpoint override', () => {
     expect(createAppConfig({}).airportBoards).toMatchObject({
       enabled: false, path: '/api/airports/board', durationMinutes: 360, monthlyUnits: 400,

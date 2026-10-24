@@ -73,6 +73,62 @@ are dashboard-backed received data, not unique-person counts or proof of
 every dimension, country or physical device. See the dated runtime receipt
 for exact windows and the aggregation delay.
 
+## Public object links
+
+**Share object** is explicit publication of a small public aircraft, vessel or
+orbital snapshot through the existing Cloudflare Worker and one D1 database.
+It is distinct from fragment-only Share view and optional device-local history.
+Anyone with the URL can open it during its 24-hour server lifetime; the random
+token is a bearer link, not authentication, encryption or a secrecy promise.
+Do not publish private information through it.
+
+The record contains a version, object kind/canonical identifier, bounded public
+label, compatible registration/IMO/designator, necessary source attribution,
+optional three-decimal public object position and its real observation/model
+instant, and server creation/expiry. Orbital context also retains exact SATCAT
+type, originating owner, snapshot digest/retrieval and element epoch, never
+elements. It does not contain sender Home, full camera, preferences, search
+text, free-form messages, photos/enrichment, provider payloads, trails or
+private history.
+
+Source credits remain ADSB.lol; Fintraffic Digitraffic and applicable
+AISStream/Open Waters contributors; or the actual orbital source
+Space-Track.org / USSPACECOM or CelesTrak. Existing provider rights and
+modeled-not-live/not-optical caveats remain. Schema validation does not certify
+sender-supplied source, name, position or time as a provider observation.
+Opening a snapshot adds no external identifier lookup or automatic orbital
+loading; ordinary eligible map reception and a later real selection retain
+their existing provider/metadata/photo contracts.
+
+An exact token path redirects to the root fragment without reading the record.
+Startup strips the fragment before analytics. Fixed sharing requests carry
+tokens/records in same-origin POST bodies, omit browser credentials/referrer,
+and are outside HTTP/application-shell caches. Application logs do not record
+the token, identity, coordinates or body. Cloudflare necessarily handles the
+short-path request and API data; this is not a claim that hosting infrastructure
+receives no request metadata or retains no operational records.
+
+Resolution checks expiry against server time. Bounded scheduled deletion
+removes expired active records; delayed cleanup does not extend validity.
+Daily per-kind/identifier aggregate counts retain 30 UTC days, without
+tokens, positions, visitor IDs, IP/referrer/user-agent history or a clickstream.
+Active-data deletion is not instantaneous vendor-backup erasure:
+[D1 limits](https://developers.cloudflare.com/d1/platform/limits/) document
+7-day Time Travel on Free (30 days on Paid), and
+[point-in-time recovery](https://developers.cloudflare.com/d1/reference/time-travel/)
+is always on. Do not restore old public links/counters as a routine rollback.
+
+Native Cloudflare Web Analytics remains unchanged and cannot count custom
+share actions or rank objects. Fixed queries in the existing authenticated
+Cloudflare D1 console count
+**created links**, not messages sent, and **valid resolutions**, not unique
+people, bot-free opens or confirmed rendered selections. Public identifiers
+can be reassigned; popularity is not a verified physical-object/owner history.
+GitHub Actions is public for this repository; protected dispatch does not
+make its job summaries private. Setup publishes only qualification checks
+and synthetic measurements, not account usage or sharing statistics.
+See [private queries, caps and retention operations](hosting-and-deployment.md#exact-object-sharing-operations).
+
 ## Map: OpenFreeMap
 
 - Style service: <https://tiles.openfreemap.org/styles/positron>

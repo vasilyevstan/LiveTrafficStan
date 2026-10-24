@@ -139,6 +139,17 @@ identity are not renamed or reset.
   three-decimal camera plus validated presentation state. Opening it does not
   save those overrides, and its camera wins over a later automatic geolocation
   result.
+- Optional **Share object** in normal aircraft, vessel and orbital details
+  creates a public, 12-character link valid for 24 hours. The recipient gets
+  the exact identity and dated, rounded location context, not a promise that
+  the object is still there. Current recipient-owned data may open ordinary
+  details; otherwise **Shared object** remains explicit dated context.
+  Recipient layers, filters and Home stay unchanged; no outside lookup or
+  automatic ORBITS loading is added. Clipboard failure leaves a selectable
+  URL. Deployment defaults off until storage and Free-account reserve pass
+  protected qualification. See [usage and bounds](docs/configuration.md#share-this-exact-object),
+  [publication/privacy](docs/data-sources-and-licensing.md#public-object-links)
+  and [setup and private statistics](docs/hosting-and-deployment.md#exact-object-sharing-operations).
 - Viewport-driven traffic after settled pan, zoom, rotation, pitch, Home, and
   resize changes.
 - A truthful 100 km enclosing-query limit: wider or unsafe views pause traffic

@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { DetailsPanel } from './DetailsPanel'
 import {
   formatAge,
@@ -79,6 +79,7 @@ interface TrafficDetailsProps {
   onShowJourney?: () => void
   journeyMessage?: string
   journeyPreparing?: boolean
+  shareObject?: ReactNode
   onClose: () => void
 }
 
@@ -646,6 +647,7 @@ export function TrafficDetails({
   onShowJourney,
   journeyMessage,
   journeyPreparing = false,
+  shareObject,
   onClose,
 }: TrafficDetailsProps) {
   const panelRef = useRef<HTMLDivElement>(null)
@@ -698,6 +700,7 @@ export function TrafficDetails({
         </div>
       }
     >
+      {!historical && shareObject}
       {!historical && journeyMessage && (
         <p className="metadata-status" role="status">{journeyMessage}</p>
       )}

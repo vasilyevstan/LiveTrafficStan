@@ -21,6 +21,7 @@ cp .env.example .env.local
 | `VITE_AIRCRAFT_PHOTO_ENABLED` | `false` | Exact `true` or `false`; exposes the direct-browser selected-details and fine-pointer hover evaluation paths and does not add a proxy |
 | `VITE_FLIGHT_ROUTE_ENABLED` | `true` | Exact `true` or `false`; controls automatic selected-aircraft ADSB.lol plausible-route lookup |
 | `VITE_AIRPORT_BOARDS_ENABLED` | `false` | Exposes explicit on-demand boards in airport details; requires the corresponding protected Worker deployment; no startup request or endpoint override |
+| `VITE_OBJECT_SHARING_ENABLED` | `false` | Exposes explicit Share object actions; requires the matching enabled Worker/D1 configuration; fixed endpoints, no startup work without an object-link intent |
 | `VITE_WEATHER_ENDPOINT` | `/api/weather/metar` | Root-relative same-origin METAR route with no query or fragment; protocol-relative and absolute URLs are rejected |
 | `VITE_MARINE_REST_ENDPOINT` | `https://meri.digitraffic.fi` | HTTPS URL or root-relative path |
 | `VITE_MARINE_MQTT_ENDPOINT` | `wss://meri.digitraffic.fi:443/mqtt` | Secure WebSocket URL or root-relative path |
@@ -77,6 +78,8 @@ build:
 | `ORBITAL_CATALOG_ENABLED` | `false` | Exact `true` enables the fixed CelesTrak Cron, KV snapshot binding, SQLite Durable Object cadence coordinator, and same-origin catalog route; every other value leaves the updater and route disabled |
 | `STARLINK_CATALOG_ENABLED` | `false` | Exact `true`, together with `ORBITAL_CATALOG_ENABLED=true`, enables the independent 12-hour Starlink acquisition row and literal `/api/orbits/starlink` storage/bootstrap route; it adds no Cron, namespace, Durable Object, or browser-direct provider access |
 | `AIRPORT_BOARDS_ENABLED` | `false` | Exact `true` enables the fixed board route with `AIRPORT_BOARD_COORDINATOR`; source defaults remain disabled |
+| `OBJECT_SHARING_ENABLED` | `false` | Repository deployment variable; exact `true` enables the fixed sharing APIs and matching browser action |
+| `OBJECT_SHARES_DATABASE_ID` | unset | Non-secret UUID of the qualified reserved D1 database; required when sharing is enabled; retain when disabling so bounded cleanup continues |
 | `AERODATABOX_RAPIDAPI_KEY` | protected secret | Worker-only credential installed atomically from the main-restricted production environment; never use a `VITE_*` variable |
 | `RELEASE_SHA` | unset | Exact 40-character lowercase source SHA added to Worker API responses |
 
@@ -1171,7 +1174,7 @@ text, selection, provider state, observations, history consent/retention/data,
 or playback. **RESET PREFERENCES** removes the unified key and legacy theme
 mirror but leaves private-history storage untouched.
 
-Explicit sharing uses a validated fragment with maximum length 2,048:
+**Share view** uses a validated fragment with maximum length 2,048:
 
 ```text
 #v=1&lat=59.437&lon=24.754&zoom=8.25&bearing=0.0&pitch=0.0&projection=auto&...
@@ -1192,6 +1195,72 @@ latitude 85). This is a serialization bound, not a new MapLibre minimum-zoom
 setting. Choosing Flat can apply Mercator's own camera constraints. A shared
 negative globe camera is restored only after projection initialization and
 only if newer navigation or trusted manual input has not superseded it.
+
+## Share this exact object
+
+When enabled by the deployment, **Share object** in ordinary aircraft, vessel
+or orbital details creates a URL such as `https://trackstan.xyz/9kP4sV7xQ2mN`.
+The example is not a working link. A link is public to anyone who receives
+it, not a private message or authentication token. There is no individual
+revocation or permanent-link promise.
+
+Creation is explicit. Copy reuses the current successful link until its
+expiry; changing the selected identity discards its UI state and cancels
+obsolete work. If the browser cannot write the clipboard after the request,
+select and copy the read-only URL. A committed server creation may still
+count even if a later cancellation or lost response prevents copying it.
+
+A recipient first sees the intended identity, source and actual observation
+or modeled time. With a qualified saved position, the map navigates once to
+that dated point. The object may have moved. Without a position, retain
+identity-only context and the ordinary map. The snapshot is sender-supplied,
+not a current or provider-verified report.
+
+For up to 30 seconds, matching current application-owned data in the accepted
+view may replace dated context with normal exact-object details. Aircraft use
+ICAO24, vessels MMSI, and orbital objects the exact owner/NORAD identity;
+contradictory registration, IMO or international designator cannot match.
+No name/callsign-only matching, extra identifier lookup, following or later
+corrective camera movement is performed.
+
+Layers, filters, projection, saved preferences and session Home remain the
+recipient's. Hidden/filtered objects or ORBITS off do not silently enable
+anything. Use existing controls and Find if desired; changing a layer/filter
+cancels the old automatic-selection intent rather than reviving it later.
+Manual navigation, another selection, HISTORY or capture also wins over an
+older link. Late geolocation can still update Home silently; Center remains
+the explicit way to visit Home. **Share view** remains a different action.
+
+`APP_CONFIG.objectSharing` reuses the browser/Worker constants in
+`src/config/objectShareConfig.ts`:
+
+| Bound | Value |
+| --- | --- |
+| Token | 12 base64url characters / 72 random bits; at most 3 collision attempts |
+| Server link lifetime | 24 hours from creation, not observation freshness |
+| Global UTC-day admission | 100 creations / 1,000 valid resolutions |
+| Context / response | At most 1,024 / 2,048 UTF-8 bytes |
+| Label | At most 80 JavaScript string units; validated public text |
+| Rounded coordinates | 3 decimal places |
+| Request deadline / creation cooldown | 5 seconds / 5 seconds; cached Copy needs no new creation |
+| Pending exact selection | At most 30 seconds and never past link expiry |
+| Framing radius | Aircraft 12 km; vessels 3 km; orbital subpoint context 1,500 km |
+| Aggregate statistics retention | 30 UTC days; private D1 console daily/top-10 queries |
+| Scheduled deletion batch | At most 200 expired links and 200 old aggregate rows per event |
+
+Framing uses unobstructed map space without shrinking the actual canvas or
+its 100 km traffic contract. Orbital framing is ordinary subpoint/world
+context, not View from here. If controls leave no fitting space, the app
+reports that limitation and keeps the map/context usable.
+
+Unknown/expired links, daily admission limits, transport failure and storage
+failure have distinct feedback. A valid link does not extend live freshness,
+orbital clock validity or element lifetime. Resolution needs network access;
+tokens/context are not installed-shell or offline caches.
+
+See [storage/publication and backups](data-sources-and-licensing.md#public-object-links),
+[protected operations](hosting-and-deployment.md#exact-object-sharing-operations)
+and [acceptance evidence](development-and-testing.md#exact-object-sharing-553).
 
 ## Installable application shell
 

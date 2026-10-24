@@ -43,7 +43,7 @@ const workRoot = join(
   'orbital-deployment',
 )
 
-const prepare = (enabled, starlinkEnabled = false, marineEnabled = false, airportBoardsEnabled = false, source = 'celestrak') => {
+const prepare = (enabled, starlinkEnabled = false, marineEnabled = false, airportBoardsEnabled = false, source = 'celestrak', sharing = 'false', databaseId = 'none') => {
   const directory = join(workRoot, randomUUID())
   mkdirSync(directory, { recursive: true })
   const output = join(directory, 'wrangler.jsonc')
@@ -63,6 +63,8 @@ const prepare = (enabled, starlinkEnabled = false, marineEnabled = false, airpor
     String(airportBoardsEnabled),
     '--orbital-source',
     source,
+    '--object-sharing-enabled', sharing,
+    '--object-shares-database-id', databaseId,
   ]
   if (enabled) {
     args.push(
@@ -75,6 +77,29 @@ const prepare = (enabled, starlinkEnabled = false, marineEnabled = false, airpor
 }
 
 describe('orbital Cloudflare deployment configuration', () => {
+  it('keeps sharing storage and cleanup independent from feature activation and orbital acquisition', () => {
+    const id = '12345678-1234-1234-1234-123456789abc'
+    const disabled = prepare(false)
+    expect(disabled.d1_databases).toBeUndefined()
+    expect(disabled.triggers.crons).toEqual([])
+    const sharing = prepare(false, false, true, true, 'space-track', 'true', id)
+    expect(sharing.d1_databases).toEqual([{
+      binding: 'OBJECT_SHARES', database_name: 'livetrafficstan-object-shares', database_id: id,
+    }])
+    expect(sharing.triggers.crons).toEqual(['47 * * * *'])
+    expect(sharing.vars.OBJECT_SHARING_ENABLED).toBe('true')
+    expect(sharing.durable_objects.bindings.map(binding => binding.name)).toEqual([
+      'MARINE_TRAFFIC_RELAY', 'AIRPORT_BOARD_COORDINATOR',
+    ])
+    const paused = prepare(false, false, false, false, 'space-track', 'false', id)
+    expect(paused.d1_databases).toEqual(sharing.d1_databases)
+    expect(paused.triggers.crons).toEqual(sharing.triggers.crons)
+    const withOrbits = prepare(true, true, true, true, 'space-track', 'true', id)
+    expect(withOrbits.triggers.crons).toEqual(['17,47 * * * *'])
+    expect(withOrbits.assets.run_worker_first).toEqual(['/api', '/api/*'])
+    expect(() => prepare(false, false, false, false, 'celestrak', 'true')).toThrow()
+    expect(() => prepare(false, false, false, false, 'celestrak', 'false', 'bad')).toThrow()
+  })
   afterAll(() => {
     rmSync(workRoot, { recursive: true, force: true })
     try {

@@ -2030,6 +2030,133 @@ it requires user acceptance of Cloudflare's Terms of Service and Privacy
 Policy, must be claimed, and is not the permanent production/CI account model.
 LiveTrafficStan does not use that workaround.
 
+## Exact object sharing operations
+
+Sharing uses one reserved D1 database, **`livetrafficstan-object-shares`**,
+bound as `OBJECT_SHARES` in the existing Worker. It is separate from orbital
+KV/coordinator and marine/board Durable Objects. Source defaults are off.
+No account, plan or credential permission is changed by setup or private queries.
+
+First merge the checked default-off implementation and operations to current
+`main`. Then dispatch the existing main-only protected workflow:
+
+```bash
+gh workflow run prepare-trackstan-domain.yml \
+  --repo vasilyevstan/LiveTrafficStan --ref main \
+  -f sha=<40-character-current-main-sha> \
+  -f operation=object-sharing-setup \
+  -f remove_parking_records=false
+```
+
+Despite the historical workflow name, sharing setup cannot run DNS or
+parking cleanup. It retains exact-current-main validation, successful
+exact-SHA CI, the protected production environment and the existing serialized
+production-deployment concurrency group. Handle eligible CLI-owned gates
+automatically; an approved wait timer is not a personal-approval request.
+
+Setup reads actual account subscriptions, seven complete UTC usage days plus
+partial today, D1 storage and database slots before provisioning. The existing
+protected token needs the real operations it performs: Billing Read,
+Account Analytics Read, D1 discovery/read and D1 creation/write. A denial is
+an evidenced technical blocker, not permission to extract credentials, broaden
+them silently, buy a plan or retry blindly.
+
+The fixed reserve gate requires peak existing requests plus 2,100 sharing
+successful-path invocations <=80,000/day; reads plus 100,000 <=4.5 million;
+writes plus 10,000 <=90,000; current writes plus the 40,000 setup reserve
+<=90,000; and storage plus 10MiB <=4GiB. It rejects an active non-Free or
+ambiguous Workers plan. These adaptive estimates are not a live quota balance,
+future traffic guarantee or abuse bound.
+
+The exact reserved database name must be unambiguous. Setup creates the schema,
+then qualifies a new/empty store using the real production SQL: 100 creations,
+1,000 valid resolutions, 200 distinct still-valid modeled test links across
+two days, and 6,000 aggregate rows. The fixtures use ancient days and are
+removed in `finally`; no usable synthetic public link or current-day counter
+is published. Actual D1 `rows_read`, `rows_written` and `size_after` must prove
+the capped workload below 100,000 reads, 10,000 writes and 10MiB. Local SQLite's
+simulated metering is not that proof. Inspect a failed operation/resource
+before any repeat; do not reset a busy store or adopt unrelated resources.
+
+Only after actual setup/headroom/metering passes, retain the returned UUID
+and enable the repository deployment variables:
+
+```bash
+gh variable set OBJECT_SHARES_DATABASE_ID --repo vasilyevstan/LiveTrafficStan \
+  --body <qualified-database-uuid>
+gh variable set OBJECT_SHARING_ENABLED --repo vasilyevstan/LiveTrafficStan \
+  --body true
+```
+
+The UUID is not a secret. The existing deployment workflow reads these values
+for both browser and Worker; no eleventh dispatch input is added. Dispatch
+the normal exact-main application deployment with **all existing production
+choices preserved**, including native Space-Track, Starlink, marine supplement,
+private aircraft, photos, routes and airport boards. A matching enabled
+production configuration is dry-run before atomic protected-secret deployment.
+No local privileged deployment or feature-branch account access is allowed.
+
+The initial global UTC-day caps are 100 creations / 1,000 valid resolutions.
+Daily caps plus rolling 24-hour validity permit about 200 active links and
+200KiB payload across midnight, not a hard 100-active-record bound. The
+2,100 successful-path invocation estimate includes creates, redirects and
+resolutions. Unknown/malformed/expired requests, bots, repeat redirects and
+new users' ordinary map polling add costs. One continuously active eligible
+aircraft viewer can already make up to 4,320 requests/day. Free does not
+mean unlimited visitors or a guarantee that abuse cannot exhaust account
+availability; no paid upgrade or faster provider cadence is authorized.
+
+Sharing statistics stay private in the **existing authenticated Cloudflare D1
+console**. In Cloudflare, open Workers & Pages / D1, select
+`livetrafficstan-object-shares`, and run these fixed read-only queries.
+They return at most 30 UTC-day totals and the top 10 public kind/identifier
+aggregates, ranked by links created:
+
+```sql
+SELECT date(day * 86400, 'unixepoch') AS utc_day,
+       SUM(created) AS created, SUM(resolved) AS resolved
+FROM object_share_statistics
+WHERE day BETWEEN CAST(unixepoch('now') / 86400 AS INTEGER) - 29
+              AND CAST(unixepoch('now') / 86400 AS INTEGER)
+GROUP BY day
+ORDER BY day DESC
+LIMIT 30;
+```
+
+```sql
+SELECT kind, identifier, SUM(created) AS created, SUM(resolved) AS resolved
+FROM object_share_statistics
+WHERE day BETWEEN CAST(unixepoch('now') / 86400 AS INTEGER) - 29
+              AND CAST(unixepoch('now') / 86400 AS INTEGER)
+GROUP BY kind, identifier
+ORDER BY created DESC, resolved DESC, kind, identifier
+LIMIT 10;
+```
+
+No reporting page, public admin endpoint, new reporting credential or automatic
+reporting request is added. The proposed Actions report was removed before
+publication: this repository's Actions output is public even when running a
+job requires a protected approval. Setup summaries contain only Free/reserve
+check results and synthetic qualification measurements, not account usage,
+object counters, identifiers, tokens, positions or visitors.
+
+Created means committed links, not sent messages; resolved means admitted
+valid API responses, not people or rendered selection. A canceled HTTP request
+may still have committed storage work. Public identifiers are sender-supplied
+and may be reassigned. Native Web Analytics remains separate and has no custom
+sharing events. Console reporting is optional and cannot hold accepted links
+hostage.
+
+Rollback sets `OBJECT_SHARING_ENABLED=false` and uses the same checked
+deployment while **retaining `OBJECT_SHARES_DATABASE_ID`**. New actions/APIs
+are disabled; root handoff/ordinary-map fallback and bounded cleanup remain.
+The existing orbital Cron also cleans sharing; if orbital acquisition is off,
+configuration adds `47 * * * *` for cleanup. Expiry is enforced even if deletion
+is delayed. Removing the binding or restoring an older pre-feature Worker
+also stops that cleanup; document it explicitly rather than promising erasure.
+Do not delete the database, reset counters, restore D1 Time Travel, or change
+provider state as routine rollback. See [active versus backup retention](data-sources-and-licensing.md#public-object-links).
+
 ## Private aircraft transport bootstrap
 
 `.github/workflows/bootstrap-aircraft-relay.yml` creates or verifies exactly

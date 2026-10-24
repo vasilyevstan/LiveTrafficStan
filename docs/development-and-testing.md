@@ -2825,6 +2825,76 @@ It also checks one MapLibre canvas, visible attribution, no runtime exceptions,
 real touch movement, and direct Return to Live access at 390x844 and 390x568.
 Provider HTTP failures are provider-state evidence, not JavaScript exceptions.
 
+## Exact object sharing (#553)
+
+The bounded share slice extends #12 without changing Share view. The accepted
+local source passes lint/typecheck, all **209 suites / 2,380 tests**, four
+mandatory data checks, matched production-input build and the enabled Worker
+dry run. The dry run uses a clearly synthetic D1 UUID without credentials or
+remote provisioning; it is not actual D1 billing/account acceptance.
+
+Deterministic coverage uses the shared production SQL with real local SQLite,
+not a map-shaped in-memory key/value substitute. It covers exact identities
+and contradictory corroboration, actual Fintraffic source naming, safe text/
+bytes/coordinates, fractional observed/model instants, independently strict
+server clocks, token collisions, concurrent global admission/counters, exact
+TTL boundary, bounded cleanup, failure/cancellation and routing exclusions.
+Request/startup cases prove one document-owned resolution across StrictMode
+consumers, no-token zero work, malformed/mixed-fragment isolation, explicit
+transport states and late cancellation. Protected-operation tests simulate
+metering to test accounting logic; they do not establish real Cloudflare cost.
+
+The integrated local Chrome156 report retains **29 accepted cases**:
+all three recipient kinds in Light/Dark at 1280x900, 315x517 and 390x568,
+normal senders, Copy/reuse/selectable fallback, exact current-owner selection,
+ORBITS-off dated context, hidden/filtered targets, invalid/unavailable links,
+manual-intent readiness, and late Home update followed by explicit Center.
+Three remaining transition cases prove sender A-to-B-to-A cancellation,
+same-batch layer off/on cancellation and pending-intent expiry before later
+ordinary traffic. The latter observes normal aircraft attempts at about
+2.329s, 22.335s and 42.334s, not a sharing-induced cadence reset.
+
+Actual production-built App, local workerd/D1 create/resolve, existing native
+vector tiles and the real SGP4 worker participate. Eighteen ordinary local
+recipient resolutions measure **31.4-482.8ms**, median **43.5ms**; these are
+local HTTP timings, not public-service latency guarantees. Rounded saved
+points are hit-tested uncovered after the object-only fit; ground full-canvas
+traffic assessments are eligible. One same map/canvas survives navigation.
+Two orbital controllers are expected at an initial wide view; the two traffic
+controllers are created only after an eligible query. Do not create unused
+controllers to satisfy an observer's mistaken fixed-count assumption.
+
+Primary actions measure at least 44px, phone URL input 16px, with one useful
+body scroller, reachable credits and a 120x120 hit-tested map region in the
+accepted recipient layouts. Ordinary expanded orbital sender geometry is
+accepted at **390x844**, not 390x568: the pre-existing wide-view pause notice
+plus expanded inspector leaves no contiguous 120px-tall region on that short
+phone despite 64.97% overlay union and a 195px body. It is recorded separately
+as #554, related to #540; no short-phone sender pass is claimed for that case.
+No unrelated workspace redesign is part of sharing.
+
+Matched initial JS is **593,829 Node-default-gzip bytes** versus **587,954**
+at implementation base `0bad8d110f0227b9804a3e742ed7a31a078812c0`:
++5,875 / **0.99923%**, below the exact 1% boundary. Vite's displayed gzip
+uses a different measurement; do not substitute rounded figures. No
+dependency, renderer, browser worker, provider/scheduler or additional
+shell-cache entry is introduced. The existing shell remains below its 4MiB limit.
+
+Accepted unchanged cases are reused, not rerun after observer-only fixes.
+Preserve original targeting, visibility, first-navigation/reload and local
+shell-activation failures separately. A fragment-only navigation is not a new
+document; the harness explicitly stages `about:blank` between startup cases.
+Closing old owned local clients allowed normal waiting-worker activation;
+that fixture setup is not production installed-upgrade evidence. Clipboard
+uses an injected page port, and native device/focus emulation is not physical
+phone/GPU, host clipboard, OS-location or OS-keyboard acceptance.
+
+Public activation additionally requires the protected current-main operation
+to verify actual Free/shared-account reserve, permissions and D1 row/storage
+metering. Public links, genuine installed update and canonical/Wiki publication
+are separate delivery evidence, not inferred from this local report; see
+the actual delivery receipt on #553.
+
 ## Issue #12 preference, share, and unit acceptance
 
 The PR A Chromium matrix starts from absent preference keys and proves Light and
