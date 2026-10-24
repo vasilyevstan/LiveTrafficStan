@@ -61,7 +61,8 @@ export const ORBITAL_VIEW_CONFIG = {
 
 export const EARTH_DAY_NIGHT_CONFIG = {
   timeStepMs: 60_000,
-  geometryStepDegrees: 1,
+  textureSize: 512,
+  transitionDegrees: 12,
   fullOpacityMaximumZoom: 3.5,
   maximumZoom: 5,
 } as const

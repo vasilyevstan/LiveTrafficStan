@@ -928,13 +928,19 @@ handoff does not clear it. Automatic invalidity/error exits and newer
 navigation use the non-restoring path; ordinary selection validity resumes
 with current output.
 
-`earthDayNight.ts` calculates an approximate solar subpoint and bounded night
-geometry locally. `earthDayNightStyle.ts` keeps one `earth-day-night` source,
-an `earth-night` fill and `earth-terminator` line below symbols. Existing
-displayed time supplies minute buckets, so Pause also freezes the shading.
-Ordinary zoom fades it from 3.5 to 5; capture retains it. Style replacement
-rehydrates current geometry and themed paint idempotently on the same map.
-No provider, timer, physical illumination model or new camera owner is added.
+`earthDayNight.ts` calculates an approximate solar subpoint and a bounded
+512x512 Mercator alpha field locally. Solar depression drives a smooth
+12-degree night-side transition, an illustration rather than a physical
+twilight model. `earthDayNightStyle.ts` keeps one URL-less `earth-day-night`
+native image source and one `earth-night` raster layer below symbols.
+Decoded `ImageData` is supplied synchronously through public `updateImage`;
+linear raster sampling avoids polygon bands, seams and a drawn terminator.
+There is no image request, canvas animation or asynchronous image callback.
+Existing displayed time supplies minute buckets, so Pause freezes the shade.
+Theme changes recolor the retained alpha field, without recalculating the Sun.
+Ordinary zoom fades opacity from 3.5 to 5; capture retains it. Style replacement
+rehydrates the current image/paint idempotently on the same map. No provider,
+timer, physical illumination model or new camera owner is added.
 
 App atomically retains the exact pre-capture eligible `TrafficViewport` object.
 Its existing query memo therefore retains the rounded request and full display
