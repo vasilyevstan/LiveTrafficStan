@@ -354,16 +354,21 @@ and [#510's actual production receipt](hosting-and-deployment.md#captured-orbita
 
 ### Earth day/night context (#563)
 
-`EARTH_DAY_NIGHT_CONFIG` uses 60,000ms displayed-time buckets and one-degree
-geometry sampling. A subdued night fill and one-pixel terminator are fully
-visible through map zoom 3.5 and fade to zero at zoom 5; View from here retains
-them independently of that zoom fade. Pause freezes the shade with the
-displayed modeled time, not with a separate clock.
+The outline-free #570 refinement of `EARTH_DAY_NIGHT_CONFIG` uses
+60,000ms displayed-time buckets, a 512x512 local
+shade image and a 12-degree solar-depression transition into night. Native
+linear sampling makes the edge soft without a drawn line or polygon bands.
+The muted tint is fully visible through map zoom 3.5 and fades to zero at
+zoom 5; View from here retains it independently of that zoom fade. Pause
+freezes the shade with displayed modeled time, not with a separate clock.
 
-The approximation is calculated locally and reuses persistent native layers,
-the existing displayed-time updates and theme rehydration. It adds no switch,
+The approximation is calculated locally and uses one persistent native image
+source/raster layer, existing displayed-time updates and theme rehydration.
+Its 256KiB alpha field produces one 1MiB decoded RGBA image, not a download
+or an animated canvas; theme changes reuse the alpha field. It adds no switch,
 saved preference, provider, request or timer. It represents approximate
-surface day/night, not twilight, terrain shadows, spacecraft lighting,
+surface day/night with an illustrative soft transition, not a physical
+twilight model, terrain shadows, spacecraft lighting,
 weather or optical visibility. Explicit Return also retains the originating
 satellite only while its owning generation remains valid; newer navigation
 and automatic/error exits do not restore obsolete selection.

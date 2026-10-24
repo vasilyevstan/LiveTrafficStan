@@ -240,11 +240,13 @@ Flat-looking buildings at orbital height are not a missing height setting:
 existing extrusions are close-zoom source data and physically subpixel from
 hundreds of kilometres. Their heights are not exaggerated. Atmosphere is
 limited to high Earth-framed views; low Dark cartography stays unwashed.
-The quiet day/night tint and thin line are approximate local Earth context,
+The quiet day/night tint uses an intentionally soft transition, not a drawn
+line. It is approximate local Earth context,
 not photographic lighting or a prediction that a satellite is illuminated.
-Pause freezes them with displayed time. On the ordinary map they fade between
-zooms 3.5 and 5, so their absence at street scale is intentional. No solar
-provider refresh or site-data reset is needed.
+Pause freezes it with displayed time. On the ordinary map it fades between
+zooms 3.5 and 5, so its absence at street scale is intentional. A fully day-
+or night-facing pose may not include the transition in the camera's field
+of view. No solar provider refresh or site-data reset is needed.
 
 **Previous local area** means only the exact eligible area already active at
 entry, not the Earth now in the viewer. Its providers may continue at their
