@@ -365,6 +365,32 @@ admission; wait for the displayed deadline and submit again if needed.
 Do not switch endpoints, reset identity/backoff or repeatedly retry.
 Coordinate navigation and unrelated providers remain usable during lookup failure.
 
+## A shared object does not open as live details
+
+**Shared object** is dated, sender-supplied context. A 24-hour-valid link does
+not mean the aircraft/vessel is still received or the saved orbital point is
+current. Normal exact selection requires qualified current recipient-owned
+data in the accepted view. Hidden layers, filters, ORBITS off, stale/expired
+models or missing coverage leave honest dated context, not a fabricated live
+marker. Unavailable is not proof the object does not exist.
+
+There is no automatic outside lookup, ORBITS enable/Load, following or delayed
+camera correction. Use the existing layer/Find controls if desired. Changing
+filters/layers or manually navigating cancels the old automatic-selection
+intent; returning to the old settings does not revive it. Center still visits
+your separate session Home.
+
+Unknown or physically deleted links say **expired or unavailable**. A daily
+creation/opening limit, network timeout and storage outage have different
+messages. Wait for the displayed rate-limit deadline; do not repeatedly retry
+or clear site data. The ordinary map remains usable, and opening a link needs
+network access rather than an offline snapshot cache.
+
+If Copy cannot use the clipboard, select the displayed read-only URL.
+Repeated Copy of an unexpired link does not create another. For operator
+storage/flag failures, use the [fixed protected operations](hosting-and-deployment.md#exact-object-sharing-operations),
+not a browser token, database reset or provider change.
+
 ## Phone menus or details leave too little map space
 
 Use the five actions **Center, Layers, Find, In view, Settings**. One expanded

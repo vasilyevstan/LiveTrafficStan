@@ -1,4 +1,4 @@
-import { useId, useState } from 'react'
+import { useId, useState, type ReactNode } from 'react'
 import { DetailsPanel } from './DetailsPanel'
 import {
   formatAge,
@@ -45,6 +45,7 @@ interface OrbitalDetailsProps {
   onClose: () => void
   onViewFromHere?: () => void
   viewFromHereUnavailable?: string
+  shareObject?: ReactNode
 }
 
 const DetailRow = ({
@@ -248,6 +249,7 @@ export function OrbitalDetails({
   onClose,
   onViewFromHere,
   viewFromHereUnavailable,
+  shareObject,
 }: OrbitalDetailsProps) {
   const viewReasonId = useId()
   const nativeGp = snapshot.sourceProvider === 'space-track'
@@ -283,6 +285,7 @@ export function OrbitalDetails({
         </div>
       }
     >
+      {shareObject}
       {onViewFromHere && (
         <div className="journey-actions">
           <button type="button" className="orbital-view-entry" onClick={onViewFromHere} disabled={Boolean(viewFromHereUnavailable)}

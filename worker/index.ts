@@ -32,6 +32,8 @@ import { DISCOVERY_CONFIG } from '../src/config/discoveryConfig.js'
 import { VESSEL_PHOTO_CONFIG } from '../src/config/vesselPhotoConfig.js'
 import { AIRPORT_BOARD_CONFIG } from '../src/config/airportBoardConfig.js'
 import { handleAirportBoards, type AirportBoardEnvironment } from './airportBoards.js'
+import { cleanupObjectShares, handleObjectShares, objectShareRedirect, type ObjectShareEnvironment } from './objectShares.js'
+import { OBJECT_SHARE_CONFIG } from '../src/config/objectShareConfig.js'
 export { OrbitalCatalogCoordinator } from './orbitalCatalogCoordinator.js'
 export { MarineTrafficRelay } from './marineStream.js'
 export { AirportBoardCoordinator } from './airportBoards.js'
@@ -47,7 +49,7 @@ interface WorkerScheduledController {
   noRetry(): void
 }
 
-export interface WorkerEnv extends AirportBoardEnvironment {
+export interface WorkerEnv extends AirportBoardEnvironment, ObjectShareEnvironment {
   ASSETS: FetchBinding
   AIRCRAFT_DELIVERY?: string
   AIRCRAFT_RELAY?: FetchBinding
@@ -130,6 +132,11 @@ const withReleaseSha = (response: Response, releaseSha: string | undefined) => {
 const worker = {
   async fetch(request: Request, env: WorkerEnv) {
     const pathname = new URL(request.url).pathname
+    if (pathname === OBJECT_SHARE_CONFIG.createPath || pathname === OBJECT_SHARE_CONFIG.resolvePath) {
+      return withReleaseSha(await handleObjectShares(request, env), env.RELEASE_SHA)
+    }
+    const sharedRedirect = objectShareRedirect(request)
+    if (sharedRedirect) return withReleaseSha(sharedRedirect, env.RELEASE_SHA)
     if (pathname === DISCOVERY_CONFIG.aircraftPath || pathname === DISCOVERY_CONFIG.shipsPath) {
       return withReleaseSha(await handleObjectLookup(request, {
         aircraftFetchImpl: aircraftFetch(env),
@@ -185,7 +192,7 @@ const worker = {
   },
   async scheduled(controller: WorkerScheduledController, env: WorkerEnv) {
     controller.noRetry()
-    await runScheduledOrbitalCatalogRefresh(env)
+    await Promise.all([runScheduledOrbitalCatalogRefresh(env), cleanupObjectShares(env)])
   },
 }
 

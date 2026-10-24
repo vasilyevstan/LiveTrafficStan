@@ -35,6 +35,18 @@ if (!['celestrak', 'space-track'].includes(orbitalSource)) {
 }
 const marineEnabled = args.get('marine-enabled') ?? 'false'
 const airportBoardsEnabled = args.get('airport-boards-enabled') ?? 'false'
+const objectSharingEnabled = args.get('object-sharing-enabled') ?? 'false'
+const databaseIdArgument = args.get('object-shares-database-id') ?? ''
+const objectSharesDatabaseId = databaseIdArgument === 'none' ? '' : databaseIdArgument
+if (!['true', 'false'].includes(objectSharingEnabled)) {
+  throw new Error('--object-sharing-enabled must be true or false')
+}
+if (objectSharesDatabaseId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(objectSharesDatabaseId)) {
+  throw new Error('The object shares database ID must be a lowercase UUID')
+}
+if (objectSharingEnabled === 'true' && !objectSharesDatabaseId) {
+  throw new Error('Object sharing requires its provisioned database ID')
+}
 if (airportBoardsEnabled !== 'true' && airportBoardsEnabled !== 'false') {
   throw new Error('--airport-boards-enabled must be true or false')
 }
@@ -63,7 +75,18 @@ config.triggers = {
   crons: orbitalEnabled === 'true'
     ? [orbitalSource === 'space-track' ? '17,47 * * * *' : '17 */2 * * *'] : [],
 }
-config.vars = { ...config.vars, ORBITAL_CATALOG_SOURCE: orbitalSource }
+config.vars = { ...config.vars, ORBITAL_CATALOG_SOURCE: orbitalSource, OBJECT_SHARING_ENABLED: objectSharingEnabled }
+const databases = (config.d1_databases ?? []).filter(database => database.binding !== 'OBJECT_SHARES')
+if (objectSharesDatabaseId) {
+  databases.push({
+    binding: 'OBJECT_SHARES',
+    database_name: 'livetrafficstan-object-shares',
+    database_id: objectSharesDatabaseId,
+  })
+  if (orbitalEnabled !== 'true') config.triggers.crons.push('47 * * * *')
+}
+if (databases.length) config.d1_databases = databases
+else delete config.d1_databases
 const bindings = (config.durable_objects?.bindings ?? []).filter((binding) =>
   binding.name !== 'ORBITAL_CATALOG_COORDINATOR' &&
   binding.name !== 'MARINE_TRAFFIC_RELAY' &&
@@ -121,5 +144,5 @@ await writeFile(outputPath, `${JSON.stringify(config, null, 2)}\n`)
 console.log(
   `Prepared ${outputPath} with orbital catalog ${orbitalEnabled} ` +
     `and Starlink catalog ${starlinkEnabled}; orbital source ${orbitalSource}; ` +
-    `marine supplement ${marineEnabled}; airport boards ${airportBoardsEnabled}`,
+    `marine supplement ${marineEnabled}; airport boards ${airportBoardsEnabled}; object sharing ${objectSharingEnabled}`,
 )

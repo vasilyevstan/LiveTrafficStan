@@ -4,10 +4,13 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 import './index.css'
 import App from './App.tsx'
 import { installWebAnalytics } from './app/webAnalytics'
+import { startObjectShare } from './app/objectShareStartup'
+
+const objectShareStartup = startObjectShare(window.location, window.history)
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <App objectShareStartup={objectShareStartup} />
   </StrictMode>,
 )
 

@@ -204,6 +204,7 @@ interface TrafficMapProps {
   onJourneyFit?: (revision: number, message: string) => void
   viewLabel: string
   viewRadiusKm: number
+  objectShareFrame?: { radiusKm: number; onError: (message: string) => void }
   maximumViewportRadiusKm: number
   touchHitTolerancePx: number
   clusterRadiusPx: number
@@ -424,6 +425,7 @@ export function TrafficMap({
   onJourneyFit,
   viewLabel,
   viewRadiusKm,
+  objectShareFrame,
   maximumViewportRadiusKm,
   touchHitTolerancePx,
   clusterRadiusPx,
@@ -515,6 +517,8 @@ export function TrafficMap({
   const initialViewRequestIdRef = useRef(viewRequestId)
   const viewRequestRef = useRef(viewRequestId)
   const viewCenterRef = useRef(viewCenter)
+  const viewRadiusKmRef = useRef(viewRadiusKm)
+  const objectShareFrameRef = useRef(objectShareFrame)
   const initialCameraRef = useRef(viewCamera)
   const viewCameraRef = useRef(viewCamera)
   const viewJourneyRef = useRef(viewJourney)
@@ -685,6 +689,8 @@ export function TrafficMap({
     themeRef.current = theme
     viewRequestRef.current = viewRequestId
     viewCenterRef.current = viewCenter
+    viewRadiusKmRef.current = viewRadiusKm
+    objectShareFrameRef.current = objectShareFrame
     viewCameraRef.current = viewCamera
     viewJourneyRef.current = viewJourney
     viewRequestCancelledRef.current = viewRequestCancelled
@@ -709,6 +715,8 @@ export function TrafficMap({
     clusteringEnabled,
     coordinatePrecision,
     viewCenter,
+    viewRadiusKm,
+    objectShareFrame,
     viewCamera,
     viewJourney,
     viewRequestCancelled,
@@ -1063,10 +1071,19 @@ export function TrafficMap({
         return
       }
       const currentView = viewCenterRef.current
+      const shared = objectShareFrameRef.current
+      const padding = shared
+        ? journeyFitPadding(map.getCanvas().getBoundingClientRect())
+        : fitPadding()
+      if (!padding) {
+        shared?.onError('Close a menu or enlarge the view to frame the shared point.')
+        scheduleViewportReport(map, 0)
+        return
+      }
       map.fitBounds(
-        boundsAroundCenter(currentView, viewRadiusKm),
+        boundsAroundCenter(currentView, shared?.radiusKm ?? viewRadiusKmRef.current),
         {
-          padding: fitPadding(),
+          padding,
           duration,
         },
       )
@@ -1075,7 +1092,7 @@ export function TrafficMap({
         duration + viewportSettleMsRef.current,
       )
     },
-    [clearPendingViewport, scheduleViewportReport, viewRadiusKm],
+    [clearPendingViewport, scheduleViewportReport],
   )
 
   const getTrafficImages = useCallback((activeTheme: Theme) => {

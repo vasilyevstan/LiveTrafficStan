@@ -17,6 +17,15 @@ const secretsScript = readFileSync(
 )
 
 describe('production deployment workflow', () => {
+  it('snapshots default-off sharing variables without adding a dispatch input or a secret', () => {
+    expect(workflow).toContain("OBJECT_SHARING_ENABLED: ${{ vars.OBJECT_SHARING_ENABLED || 'false' }}")
+    expect(workflow).toContain('OBJECT_SHARES_DATABASE_ID: ${{ vars.OBJECT_SHARES_DATABASE_ID }}')
+    expect(workflow).toContain('VITE_OBJECT_SHARING_ENABLED: ${{ env.OBJECT_SHARING_ENABLED }}')
+    expect(workflow).toContain('--object-sharing-enabled "$OBJECT_SHARING_ENABLED"')
+    expect(workflow).not.toContain('      object_sharing_enabled:')
+    expect(workflow).not.toContain('secrets.OBJECT_SHARES')
+    expect(workflow).toContain('[[ "$OBJECT_SHARING_ENABLED" == true || "$OBJECT_SHARING_ENABLED" == false ]]')
+  })
   it('defaults to the production-qualified native source while retaining explicit legacy rollback', () => {
     const source = workflow.match(/      orbital_source:([\s\S]*?)(?=\n      \w+:)/)?.[1]
     expect(source).toContain('default: space-track')

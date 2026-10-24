@@ -8,7 +8,7 @@ on:
         required: true
         type: string
       operation:
-        description: Fixed domain preparation, analytics setup or read-only verification
+        description: Fixed domain, analytics or object-sharing storage operation
         required: true
         default: domain
         type: choice
@@ -17,6 +17,7 @@ on:
           - web-analytics
           - web-analytics-read
           - web-analytics-statistics
+          - object-sharing-setup
       remove_parking_records:
         description: Remove only the two known imported apex parking A values
         required: true
@@ -47,7 +48,7 @@ jobs:
           test "$GITHUB_REF" = refs/heads/main
           [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
           test "$GITHUB_SHA" = "$EXPECTED_SHA"
-          [[ "$OPERATION" == domain || "$OPERATION" == web-analytics || "$OPERATION" == web-analytics-read || "$OPERATION" == web-analytics-statistics ]]
+          [[ "$OPERATION" == domain || "$OPERATION" == web-analytics || "$OPERATION" == web-analytics-read || "$OPERATION" == web-analytics-statistics || "$OPERATION" == object-sharing-setup ]]
           if [[ "$OPERATION" != domain ]]; then
             test "$REMOVE_PARKING_RECORDS" = false
           fi
@@ -80,7 +81,7 @@ jobs:
           node-version: 24
 
       - name: Prepare fixed zone and optional parking cleanup
-        if: inputs.operation != 'web-analytics' && inputs.operation != 'web-analytics-read' && inputs.operation != 'web-analytics-statistics'
+        if: inputs.operation == 'domain'
         env:
           EXPECTED_SHA: ${{ inputs.sha }}
           REMOVE_PARKING_RECORDS: ${{ inputs.remove_parking_records }}
@@ -97,3 +98,12 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: node scripts/prepare-trackstan-analytics.mjs
+
+      - name: Prepare fixed object-sharing storage
+        if: inputs.operation == 'object-sharing-setup'
+        env:
+          EXPECTED_SHA: ${{ inputs.sha }}
+          OBJECT_SHARE_OPERATION: setup
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: node scripts/prepare-object-sharing.mjs
