@@ -85,6 +85,8 @@ import {
   type LocalRulerAvailability,
 } from './domain/localRuler'
 import type { Coordinates } from './domain/center'
+import type { ShipLocateNavigation } from './components/ObjectFind'
+import { DISCOVERY_CONFIG } from './config/discoveryConfig'
 import {
   createShareUrl,
   readBrowserShareState,
@@ -150,6 +152,7 @@ interface ViewRequest {
   journey?: JourneySnapshot
   cancelled?: boolean
   radiusKm?: number
+  onFramingError?: (message: string) => void
 }
 
 const EMPTY_VIEW_OUTPUT = [] as const
@@ -175,6 +178,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
   const appShellRef = useRef<HTMLElement>(null)
   const workspaceControlsRef = useRef<WorkspaceControlsHandle>(null)
   const rulerMapRef = useRef<LocalRulerHandle>(null)
+  const pointFramingRef = useRef<(() => boolean) | null>(null)
   const rulerPanelRef = useRef<HTMLElement>(null)
   const rulerTaskOriginRef = useRef(false)
   const [localRuler, setLocalRuler] = useState(EMPTY_LOCAL_RULER)
@@ -699,7 +703,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     (
       center: AppCenter,
       label: string,
-      options: { explicit?: boolean; camera?: MapCameraState; radiusKm?: number; preserveSharedObject?: boolean } = {},
+      options: { explicit?: boolean; camera?: MapCameraState; radiusKm?: number; onFramingError?: (message: string) => void; preserveSharedObject?: boolean } = {},
     ) => {
       if (!options.preserveSharedObject) cancelSharedObject()
       finishCapturedOrbitalView()
@@ -728,6 +732,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
         center: { ...center, label },
         camera: options.camera,
         radiusKm: options.radiusKm,
+        onFramingError: options.onFramingError,
       }))
     },
     [cancelPlaceSearch, cancelSharedObject, clearJourney, clearLocalRuler, finishCapturedOrbitalView, locationCameraIntent],
@@ -838,6 +843,10 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     returnToLiveRef.current = returnToLive
   }, [returnToLive])
   const historyActive = history.playback.mode !== 'live'
+  const shipLocateAllowedRef = useRef(false)
+  useLayoutEffect(() => {
+    shipLocateAllowedRef.current = !historyActive && !capturedOrbitalView && online && mapError?.kind !== 'initialization'
+  }, [historyActive, capturedOrbitalView, online, mapError])
   const orbitalResult = useOrbitalObjects(
     orbitalObjectsVisible,
     historyActive,
@@ -1512,6 +1521,30 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     },
     [commitNavigation],
   )
+  const handleBeginShipLocate = useCallback((): ShipLocateNavigation | null => {
+    if (!shipLocateAllowedRef.current || document.hidden || !navigator.onLine) return null
+    const revision = locationCameraIntent.beginExplicitViewIntent()
+    if (objectShareStartup?.pending) {
+      cancelSharedObject()
+      setViewReady(true)
+    }
+    return (center, onFramingError) => {
+      if (!shipLocateAllowedRef.current || !locationCameraIntent.isCurrent(revision) ||
+        document.hidden || !navigator.onLine) return false
+      if (Math.abs(center.latitude) > DISCOVERY_CONFIG.shipPositionMaximumLatitude) {
+        onFramingError('The report is outside safe local map framing. Your view was kept.')
+        return false
+      }
+      if (!pointFramingRef.current?.()) {
+        onFramingError('Close a menu or enlarge the view to frame this position. Your view was kept.')
+        return false
+      }
+      commitNavigation(center, center.label, {
+        radiusKm: DISCOVERY_CONFIG.shipPositionRadiusKm, onFramingError,
+      })
+      return true
+    }
+  }, [cancelSharedObject, commitNavigation, locationCameraIntent, objectShareStartup])
 
   const handlePlaceResultSelect = useCallback(
     (result: PlaceSearchResult) => {
@@ -1608,7 +1641,10 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
 
   const selectTraffic = useCallback(
     (id: string | null, originId: string | null, fromSharedObject = false) => {
-      if (!fromSharedObject) cancelSharedObject()
+      if (!fromSharedObject) {
+        locationCameraIntent.beginExplicitViewIntent()
+        cancelSharedObject()
+      }
       finishCapturedOrbitalView()
       clearJourney()
       detailFocusOriginIdRef.current = id ? originId : null
@@ -1618,7 +1654,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
       setSelectedWeatherId(null)
       setSelectedId(id)
     },
-    [cancelSharedObject, clearJourney, finishCapturedOrbitalView],
+    [cancelSharedObject, clearJourney, finishCapturedOrbitalView, locationCameraIntent],
   )
 
   const handleMapTrafficSelect = useCallback(
@@ -1635,6 +1671,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
   )
 
   const handleMapPortSelect = useCallback((id: string | null) => {
+    locationCameraIntent.beginExplicitViewIntent()
     cancelSharedObject()
     finishCapturedOrbitalView()
     clearJourney()
@@ -1645,10 +1682,11 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     setSelectedWeatherId(null)
     setCatalogSelection(null)
     setSelectedPortId(id)
-  }, [cancelSharedObject, clearJourney, finishCapturedOrbitalView])
+  }, [cancelSharedObject, clearJourney, finishCapturedOrbitalView, locationCameraIntent])
 
   const selectAirport = useCallback(
     (id: string | null, originId: string | null) => {
+      locationCameraIntent.beginExplicitViewIntent()
       cancelSharedObject()
       finishCapturedOrbitalView()
       clearJourney()
@@ -1663,7 +1701,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
       setCatalogSelection(null)
       setSelectedAirportId(id)
     },
-    [cancelSharedObject, clearJourney, finishCapturedOrbitalView],
+    [cancelSharedObject, clearJourney, finishCapturedOrbitalView, locationCameraIntent],
   )
   const handleMapAirportSelect = useCallback(
     (id: string | null) => selectAirport(id, null),
@@ -1695,6 +1733,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
 
   const selectWeather = useCallback(
     (id: string | null, originId: string | null) => {
+      locationCameraIntent.beginExplicitViewIntent()
       cancelSharedObject()
       finishCapturedOrbitalView()
       clearJourney()
@@ -1705,7 +1744,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
       setSelectedAirportId(null)
       setSelectedWeatherId(id)
     },
-    [cancelSharedObject, clearJourney, finishCapturedOrbitalView],
+    [cancelSharedObject, clearJourney, finishCapturedOrbitalView, locationCameraIntent],
   )
   const handleMapWeatherSelect = useCallback(
     (id: string | null) => selectWeather(id, null),
@@ -1718,7 +1757,10 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
 
   const selectOrbital = useCallback(
     (id: string | null, originId: string | null, fromSharedObject = false) => {
-      if (!fromSharedObject) cancelSharedObject()
+      if (!fromSharedObject) {
+        locationCameraIntent.beginExplicitViewIntent()
+        cancelSharedObject()
+      }
       finishCapturedOrbitalView()
       clearJourney()
       detailFocusOriginIdRef.current = id ? originId : null
@@ -1729,7 +1771,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
       setCatalogSelection(null)
       setSelectedOrbitalId(id)
     },
-    [cancelSharedObject, clearJourney, finishCapturedOrbitalView],
+    [cancelSharedObject, clearJourney, finishCapturedOrbitalView, locationCameraIntent],
   )
   const handleMapOrbitalSelect = useCallback(
     (id: string | null) => selectOrbital(id, null),
@@ -1917,6 +1959,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
   ])
 
   const handleEnterHistory = useCallback(() => {
+    locationCameraIntent.beginExplicitViewIntent()
     cancelSharedObject()
     finishCapturedOrbitalView()
     clearLocalRuler()
@@ -1928,7 +1971,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
         historyPlaybackControlRef.current?.focus()
       }
     })
-  }, [cancelSharedObject, clearJourney, clearLocalRuler, enterHistory, finishCapturedOrbitalView])
+  }, [cancelSharedObject, clearJourney, clearLocalRuler, enterHistory, finishCapturedOrbitalView, locationCameraIntent])
 
   const sharedObjectFilters = JSON.stringify([layerPreferences, vesselFilters, orbitalFilters])
   useEffect(() => {
@@ -2321,7 +2364,8 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
         onJourneyFit={handleJourneyFit}
         viewLabel={activeLocationLabel}
         viewRadiusKm={APP_CONFIG.map.homeViewRadiusKm}
-        objectShareFrame={viewRequest.radiusKm ? { radiusKm: viewRequest.radiusKm, onError: setSharedObjectNotice } : undefined}
+        pointFrame={viewRequest.radiusKm ? { radiusKm: viewRequest.radiusKm, onError: viewRequest.onFramingError ?? setSharedObjectNotice } : undefined}
+        pointFramingRef={pointFramingRef}
         maximumViewportRadiusKm={APP_CONFIG.map.maximumViewportRadiusKm}
         touchHitTolerancePx={APP_CONFIG.map.touchHitTolerancePx}
         clusterRadiusPx={APP_CONFIG.map.clustering.radiusPx}
@@ -2672,6 +2716,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
           placeSearchState={placeSearchState}
           onPlaceSearch={handlePlaceSearch}
           onLocationNavigate={handleLocationNavigate}
+          onBeginShipLocate={handleBeginShipLocate}
           onPlaceResultSelect={handlePlaceResultSelect}
           onPlaceSearchCancel={cancelPlaceSearch}
           mapToolsSummaryRef={mapToolsSummaryRef}

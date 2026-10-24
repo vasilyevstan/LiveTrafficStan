@@ -3,7 +3,7 @@ import type { DiscoveryResponse, LookupRequest } from '../src/domain/objectDisco
 import { readBoundedBytes } from '../src/providers/boundedResponse.js'
 import { isRecord } from '../src/providers/guards.js'
 import {
-  normalizeAircraftLookup, normalizeLookupRequest, normalizeShipLookup,
+  normalizeAircraftLookup, normalizeLookupRequest, normalizeShipLookup, normalizeShipPositionLookup,
 } from '../src/providers/discovery/lookupContract.js'
 import { forwardAircraftRequest, type AircraftProxyFetch } from './aircraftProxy.js'
 
@@ -16,8 +16,8 @@ const response = (body: unknown, status: number, headers?: HeadersInit) =>
     },
   })
 
-const json = async (upstream: Response, contentTypes: readonly string[], signal: AbortSignal) => {
-  const bytes = await readBoundedBytes(upstream, config.maximumBytes, contentTypes, signal)
+const json = async (upstream: Response, contentTypes: readonly string[], signal: AbortSignal, maximumBytes: number = config.maximumBytes) => {
+  const bytes = await readBoundedBytes(upstream, maximumBytes, contentTypes, signal)
   return JSON.parse(new TextDecoder('utf-8', { fatal: true, ignoreBOM: false }).decode(bytes)) as unknown
 }
 
@@ -65,6 +65,14 @@ export const handleObjectLookup = async (
     }
     if (timedOut) return response({ error: 'Lookup timed out' }, 504)
     if (request.signal.aborted) return response({ error: 'Lookup canceled' }, 499)
+    const positionLookup = lookup.objectClass === 'ships' && lookup.by === 'position'
+    const to = Math.floor(Date.now() / 1_000) * 1_000
+    const from = to - config.shipPositionWindowMs
+    const positionUrl = positionLookup ? new URL(`/v1/vessels/${lookup.query}/track`, config.openWatersOrigin) : undefined
+    if (positionUrl) positionUrl.search = new URLSearchParams({
+      from: new Date(from).toISOString(), to: new Date(to).toISOString(),
+      interval: '0', limit: '1', format: 'geojson',
+    }).toString()
     const upstream = lookup.objectClass === 'aircraft'
       ? await forwardAircraftRequest(
           new Request(url.origin, { signal: controller.signal }),
@@ -72,7 +80,8 @@ export const handleObjectLookup = async (
           { fetchImpl: options.aircraftFetchImpl ?? options.fetchImpl, timeoutMs, maxResponseBytes: config.maximumBytes },
         )
       : await (options.fetchImpl ?? fetch)(
-          lookup.by === 'mmsi' ? `${config.openWatersOrigin}/v1/vessels/${lookup.query}` :
+          positionUrl ? positionUrl.toString() :
+            lookup.by === 'mmsi' ? `${config.openWatersOrigin}/v1/vessels/${lookup.query}` :
             `${config.openWatersOrigin}/v1/vessels?${new URLSearchParams({ q: lookup.query, kind: 'vessel' })}`,
           {
             method: 'GET', signal: controller.signal, redirect: 'manual', cache: 'no-store',
@@ -102,8 +111,13 @@ export const handleObjectLookup = async (
           retryAfter ? { 'Retry-After': retryAfter } : undefined,
         )
       }
-      const body = await json(upstream, lookup.objectClass === 'ships' ? ['application/geo+json'] : ['application/json'], controller.signal)
-      result = lookup.objectClass === 'ships' ? normalizeShipLookup(body, lookup, Date.now()) :
+      const body = await json(upstream,
+        positionLookup ? ['application/geo+json', 'application/json'] :
+          lookup.objectClass === 'ships' ? ['application/geo+json'] : ['application/json'],
+        controller.signal, positionLookup ? config.shipPositionMaximumBytes : config.maximumBytes)
+      result = lookup.objectClass === 'ships' ? positionLookup
+        ? normalizeShipPositionLookup(body, lookup, from, to, Date.now())
+        : normalizeShipLookup(body, lookup, Date.now()) :
         normalizeAircraftLookup(body, lookup, Date.now())
     }
     if (timedOut) return response({ error: 'Lookup timed out' }, 504)

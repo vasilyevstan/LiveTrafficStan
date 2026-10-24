@@ -74,6 +74,7 @@ export class ObjectLookupController {
       const result = await this.provider.lookup(request, controller.signal)
       if (revision !== this.revision || controller.signal.aborted || timedOut) return
       this.onState({ phase: 'results', request, result })
+      return result
     } catch (error) {
       let retryAt: number | undefined
       if (error instanceof ProviderError &&

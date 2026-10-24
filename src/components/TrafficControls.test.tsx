@@ -182,6 +182,7 @@ const renderControls = (
       placeSearchState={{ phase: 'idle' }}
       onPlaceSearch={() => undefined}
       onLocationNavigate={() => undefined}
+      onBeginShipLocate={() => null}
       onPlaceResultSelect={() => undefined}
       onPlaceSearchCancel={() => undefined}
       {...overrides}

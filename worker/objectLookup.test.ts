@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { DISCOVERY_CONFIG } from '../src/config/discoveryConfig.js'
 import { handleObjectLookup } from './objectLookup.js'
 import type { AircraftProxyFetch } from './aircraftProxy.js'
@@ -6,6 +6,99 @@ import type { AircraftProxyFetch } from './aircraftProxy.js'
 const request = (path = '/api/find/ships', body: unknown = { by: 'name', q: 'TEST' }, init: RequestInit = {}) =>
   new Request(`https://app.example${path}`, {
     method: 'POST', body: JSON.stringify(body), headers: { 'Content-Type': 'application/json' }, ...init,
+  })
+
+  describe('explicit newest ship report Worker operation', () => {
+    const mmsi = '230123456'
+    const to = Date.UTC(2026, 9, 24, 20)
+    const from = to - DISCOVERY_CONFIG.shipPositionWindowMs
+    const input = () => request('/api/find/ships', { by: 'position', q: mmsi })
+    const track = (points: 0 | 1 = 1) => ({
+      type: 'Feature', id: Number(mmsi),
+      geometry: points ? { type: 'Point', coordinates: [24.75, 59.44] } : null,
+      properties: {
+        mmsi: Number(mmsi), from: new Date(from).toISOString(), to: new Date(to).toISOString(),
+        points, interval: 0, truncated: points === 1, times: points ? [new Date(to - 5_000).toISOString()] : [],
+      },
+      attribution: points ? { digitraffic: 'Fintraffic · CC BY 4.0' } : {},
+    })
+    beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(to + 789) })
+
+    it.each(['application/geo+json', 'application/json'])('makes one exact newest-point request and accepts %s', async (contentType) => {
+      const fetchImpl = vi.fn<AircraftProxyFetch>(async () => Response.json(track(), { headers: { 'Content-Type': contentType } }))
+      const response = await handleObjectLookup(input(), { fetchImpl })
+      expect(response.status).toBe(200)
+      expect(fetchImpl).toHaveBeenCalledOnce()
+      const url = new URL(String(fetchImpl.mock.calls[0][0]))
+      expect(url.origin).toBe('https://ais.openwaters.io')
+      expect(url.pathname).toBe(`/v1/vessels/${mmsi}/track`)
+      expect(Object.fromEntries(url.searchParams)).toEqual({
+        from: new Date(from).toISOString(), to: new Date(to).toISOString(), interval: '0', limit: '1', format: 'geojson',
+      })
+      expect(fetchImpl.mock.calls[0][1]).toMatchObject({
+        method: 'GET', cache: 'no-store', redirect: 'manual',
+        headers: { Accept: 'application/geo+json', 'User-Agent': 'LiveTrafficStan (+https://github.com/vasilyevstan/LiveTrafficStan)' },
+      })
+      expect(await response.json()).toMatchObject({
+        matches: [{
+          identifiers: { mmsi }, metadataReportedAt: null,
+          location: { latitude: 59.44, longitude: 24.75, reportedAt: to - 5_000 },
+          source: { code: 'open-waters-track', credit: 'Fintraffic · CC BY 4.0' },
+        }],
+        truncated: false, rejectedRecords: 0,
+      })
+      expect(response.headers.get('Cache-Control')).toBe('no-store')
+      expect(response.headers.has('Access-Control-Allow-Origin')).toBe(false)
+    })
+    it('reserves successful empty for a valid 200 with zero points, not even the identity endpoint documented 404', async () => {
+      const empty = await handleObjectLookup(input(), { fetchImpl: async () => shipResponse(track(0)) })
+      expect(empty.status).toBe(200)
+      expect(await empty.json()).toMatchObject({ matches: [] })
+      const unavailable = await handleObjectLookup(input(), {
+        fetchImpl: async () => Response.json({ error: 'unknown vessel' }, { status: 404 }),
+      })
+      expect(unavailable.status).toBe(502)
+    })
+    it.each([403, 429, 503, 500, 302])('preserves a position HTTP %i failure rather than a false missing report', async (status) => {
+      const fetchImpl = vi.fn<AircraftProxyFetch>(async () => new Response('source error', {
+        status, headers: { 'Retry-After': '45', Location: 'https://evil.example' },
+      }))
+      const response = await handleObjectLookup(input(), { fetchImpl })
+      expect(response.status).toBe([403, 429, 503].includes(status) ? status : 502)
+      expect(response.headers.get('Retry-After')).toBe('45')
+      expect(response.headers.has('Location')).toBe(false)
+      expect(fetchImpl).toHaveBeenCalledOnce()
+    })
+    it.each(['001234567', '23012345', '230123456/track', '000000000'])('rejects unsupported position identity %s before contact', async (q) => {
+      const fetchImpl = vi.fn<AircraftProxyFetch>()
+      expect((await handleObjectLookup(request(undefined, { by: 'position', q }), { fetchImpl })).status).toBe(400)
+      expect(fetchImpl).not.toHaveBeenCalled()
+    })
+    it('enforces the small position byte cap and rejects malformed or crossed-identity tracks', async () => {
+      for (const body of [
+        { ...track(), id: 230123457 },
+        { ...track(), properties: { ...track().properties, points: 2 } },
+        { ...track(), extra: 'x'.repeat(DISCOVERY_CONFIG.shipPositionMaximumBytes) },
+        collection(),
+      ]) {
+        const response = await handleObjectLookup(input(), { fetchImpl: async () => shipResponse(body) })
+        expect(response.status).toBe(502)
+      }
+    })
+    it('bounds a stalled position body and incoming cancellation with the existing total deadline', async () => {
+      const pending = handleObjectLookup(input(), {
+        fetchImpl: async () => new Response(new ReadableStream(), { headers: { 'Content-Type': 'application/json' } }),
+        timeoutMs: 100,
+      })
+      await vi.advanceTimersByTimeAsync(100)
+      expect((await pending).status).toBe(504)
+      const controller = new AbortController()
+      const canceled = handleObjectLookup(request(undefined, { by: 'position', q: mmsi }, { signal: controller.signal }), {
+        fetchImpl: async () => new Response(new ReadableStream(), { headers: { 'Content-Type': 'application/json' } }),
+      })
+      controller.abort()
+      expect((await canceled).status).toBe(499)
+    })
   })
 const collection = () => ({
   type: 'FeatureCollection', attribution: { digitraffic: 'Fintraffic · CC BY 4.0' },

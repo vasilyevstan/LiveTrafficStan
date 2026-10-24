@@ -470,21 +470,43 @@ grace clearing rule applies. No selected-only marker is added. Compact Find
 selection records its entry intent and uses the existing suspended task/Back
 path, rather than adding another inspector or replaying intent on resize.
 
-`ObjectLookupController` is one explicit cancellable operation, not a poller.
+Each `ObjectLookupController` owns one explicit cancellable operation, not a poller.
 Its application-owned discovery DTO is separate from `TrafficEntity`.
 Class/scope/task changes, input, hidden/offline/HISTORY and unmount fence
 obsolete A-B-A results. Per-source cooldown/Retry-After survives cancellation;
 a late valid retry deadline can update operational backoff without publishing
-stale UI. There is no result cache, persisted draft, auto-retry or location bias.
+stale UI. Find reuses separate identity and position controller instances so
+Locate cannot replace the fulfilled identity list. Handlers stop the other
+operation; both share one provider's observed source HTTP backoff, while their
+ordinary cooldowns remain independent. There is no result cache, persisted
+draft, auto-retry or location bias.
 
 Fixed POST `/api/find/aircraft` and `/api/find/ships` send bounded `{by,q}`;
 submitted text cannot enter browser resource URLs or identity-bearing DOM IDs.
 The Worker validates method/origin/body and makes only reviewed fixed GETs.
 Aircraft exact hex/reg/callsign goes through the same private relay and
 persistent shared admission as point requests. Ships use anonymous Open Waters
-identity lookup with original source credits; all REST geometry is discarded.
-Only original qualified aircraft clocks (`now - seen_pos * 1000`) permit
-last-report navigation. Static/modeled/last-reported navigation reuses
+identity lookup with original source credits; all metadata REST geometry is discarded.
+Explicit `{by:"position",q:<MMSI>}` reuses that POST for the fixed Open Waters
+track route: one whole-second 24-hour window, `interval=0&limit=1`, a 32 KiB
+streamed cap, exact echoed identity/window, zero/one valid point, aligned original
+time and complete bounded contributing credits. HTTP errors, malformed or
+incomplete bodies never become a successful empty report.
+
+The accepted-response return from the existing controller supports one awaited
+Locate action, not a response-watching navigation effect. An exact owner object,
+synchronous pending guard and current UI/visibility/online checks fence obsolete
+work; published timeout/error state releases the guard before the next usable
+button paint even if transport ignores abort. App reserves the monotonic camera
+intent before lookup, so newer navigation/selection/HISTORY wins and older
+geolocation may update Home silently without taking the camera.
+Before destructive commit, a stable map ref preflights the existing unobstructed
+point-framing calculation. Unsupported latitude or insufficient visual-viewport
+space preserves selection, shared/journey context, trail and view label.
+Successful Locate uses the same persistent map's point framing with a 5 km radius.
+No live entity, marker, metadata/photo request or history record is fabricated.
+Original aircraft clocks (`now - seen_pos * 1000`) continue to qualify their
+separate last-report path. Static/modeled/last-reported navigation reuses
 `commitNavigation`, clears old selection/trails and preserves Home, map,
 controllers and cadence; it never fabricates observations/history.
 

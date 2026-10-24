@@ -1,8 +1,10 @@
 import { DISCOVERY_CONFIG as config } from '../../config/discoveryConfig.js'
 import type { DiscoveryMatch, DiscoveryResponse, LookupRequest } from '../../domain/objectDiscovery.js'
+import { SHIP_POSITION_SOURCE } from '../../domain/objectDiscovery.js'
 import { isValidCoordinate } from '../../domain/geo.js'
 import { hasControlCharacters, isRecord } from '../guards.js'
 import { ProviderError } from '../errors.js'
+import { parseMarineMmsi, parseMarineTimestamp } from '../marine/marineSourceNormalization.js'
 
 const length = (value: string) => [...value].length
 const invalid = () => new ProviderError('The lookup source returned an invalid response.')
@@ -22,6 +24,10 @@ export const normalizeLookupRequest = (
   }
   const query = value.trim()
   if (objectClass === 'ships') {
+    if (by === 'position') {
+      if (parseMarineMmsi(query) !== undefined) return { objectClass, by, query }
+      throw new ProviderError('This identity does not have a supported nine-digit ship MMSI.')
+    }
     if (by === 'name' && length(query) >= 2 && length(query) <= config.maximumQueryLength) {
       return { objectClass, by, query }
     }
@@ -123,7 +129,7 @@ export const normalizeShipLookup = (
   request: Extract<LookupRequest, { objectClass: 'ships' }>,
   retrievedAt: number,
 ): DiscoveryResponse => {
-  if (!isRecord(value) || !isRecord(value.attribution) ||
+  if (request.by === 'position' || !isRecord(value) || !isRecord(value.attribution) ||
     request.by === 'name' && (value.type !== 'FeatureCollection' || !Array.isArray(value.features)) ||
     request.by === 'mmsi' && value.type !== 'Feature' ||
     value.truncated !== undefined && typeof value.truncated !== 'boolean') throw invalid()
@@ -164,6 +170,58 @@ export const normalizeShipLookup = (
   })
 }
 
+export const normalizeShipPositionLookup = (
+  value: unknown,
+  request: Extract<LookupRequest, { objectClass: 'ships' }>,
+  from: number,
+  to: number,
+  retrievedAt: number,
+): DiscoveryResponse => {
+  const mmsi = parseMarineMmsi(request.query)
+  if (request.by !== 'position' || mmsi === undefined || !isRecord(value) || value.type !== 'Feature' ||
+    value.id !== mmsi || !isRecord(value.properties) ||
+    !isRecord(value.attribution)) throw invalid()
+  const properties = value.properties
+  const actualFrom = parseMarineTimestamp(properties.from)
+  const actualTo = parseMarineTimestamp(properties.to)
+  const count = properties.points
+  if (properties.mmsi !== value.id || count !== 0 && count !== 1 ||
+    properties.interval !== 0 || typeof properties.truncated !== 'boolean' ||
+    actualFrom === undefined || actualTo === undefined ||
+    actualFrom !== from || actualTo !== to || actualFrom > actualTo ||
+    !Array.isArray(properties.times) || properties.times.length !== count ||
+    !validTime(retrievedAt) || to > retrievedAt + config.futureToleranceMs) throw invalid()
+  const entries = Object.entries(value.attribution)
+  if (entries.length > config.shipPositionMaximumCredits || entries.some(([key, credit]) =>
+    !/^[a-z][a-z\d_-]{0,63}$/.test(key) || typeof credit !== 'string' ||
+    !credit.trim() || text(credit, config.maximumCreditLength) === undefined)) throw invalid()
+  const credit = entries.map(([, value]) => String(value).trim()).join(' · ')
+  if (length(credit) > config.maximumCreditLength) throw invalid()
+  const result: DiscoveryResponse = {
+    objectClass: 'ships', retrievedAt, matches: [], truncated: false, rejectedRecords: 0,
+  }
+  if (count === 0) {
+    if (value.geometry !== null || properties.truncated) throw invalid()
+    return result
+  }
+  const geometry = value.geometry
+  const reportedAt = parseMarineTimestamp(properties.times[0])
+  if (!credit || !isRecord(geometry) || geometry.type !== 'Point' ||
+    !Array.isArray(geometry.coordinates) || geometry.coordinates.length !== 2 ||
+    typeof geometry.coordinates[0] !== 'number' || typeof geometry.coordinates[1] !== 'number' ||
+    !isValidCoordinate(geometry.coordinates[1], geometry.coordinates[0]) ||
+    reportedAt === undefined || reportedAt < actualFrom || reportedAt > actualTo) throw invalid()
+  return {
+    ...result,
+    matches: [{
+      objectClass: 'ships', key: `open-waters:${request.query}`,
+      identifiers: { mmsi: request.query }, metadataReportedAt: null,
+      source: { name: 'Open Waters AIS', code: SHIP_POSITION_SOURCE, credit },
+      location: { longitude: geometry.coordinates[0], latitude: geometry.coordinates[1], reportedAt },
+    }],
+  }
+}
+
 export const validateDiscoveryResponse = (
   value: unknown,
   request: LookupRequest,
@@ -175,6 +233,8 @@ export const validateDiscoveryResponse = (
     typeof value.truncated !== 'boolean' || typeof value.rejectedRecords !== 'number' ||
     !Number.isInteger(value.rejectedRecords) || value.rejectedRecords < 0 ||
     value.rejectedRecords > config.maximumSourceRecords) throw invalid()
+  const shipPosition = request.objectClass === 'ships' && request.by === 'position'
+  if (shipPosition && (value.matches.length > 1 || value.truncated || value.rejectedRecords !== 0)) throw invalid()
   const matches: DiscoveryMatch[] = []
   const keys = new Set<string>()
   for (const match of value.matches) {
@@ -193,7 +253,11 @@ export const validateDiscoveryResponse = (
     if (request.objectClass === 'ships') {
       if (match.source.name !== 'Open Waters AIS' || typeof ids.mmsi !== 'string' ||
         !/^\d{9}$/.test(ids.mmsi) || Number(ids.mmsi) === 0 ||
-        match.key !== `open-waters:${ids.mmsi}` || match.location !== null ||
+        match.key !== `open-waters:${ids.mmsi}` ||
+        (shipPosition
+          ? ids.mmsi !== request.query || parseMarineMmsi(ids.mmsi) === undefined ||
+            match.location === null || match.source.code !== SHIP_POSITION_SOURCE || match.metadataReportedAt !== null
+          : match.location !== null) ||
         request.by === 'mmsi' && ids.mmsi !== request.query ||
         ids.icao24 !== undefined || ids.registration !== undefined) throw invalid()
     } else if (match.source.name !== 'ADSB.lol' || typeof ids.icao24 !== 'string' ||
@@ -210,7 +274,8 @@ export const validateDiscoveryResponse = (
         !validTime(match.location.reportedAt) ||
         match.location.reportedAt > value.retrievedAt + config.futureToleranceMs ||
         match.location.reportedAt > receivedAt + config.futureToleranceMs ||
-        value.retrievedAt - match.location.reportedAt > config.maximumAircraftPositionAgeMs) throw invalid()
+        value.retrievedAt - match.location.reportedAt >
+          (shipPosition ? config.shipPositionWindowMs : config.maximumAircraftPositionAgeMs)) throw invalid()
       location = {
         latitude: match.location.latitude,
         longitude: match.location.longitude,

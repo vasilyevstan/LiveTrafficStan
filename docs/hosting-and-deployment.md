@@ -65,6 +65,39 @@ credentials and the private-relay secret. Observability remains disabled and
 no paid fallback is enabled. Orbital activation uses the included free KV and
 SQLite Durable Object allocations; R2 is not used.
 
+### Explicit outside-view ship Locate (#574)
+
+Locate extends the existing fixed browser POST `/api/find/ships`; the Worker
+alone calls the fixed anonymous exact-MMSI newest-point track route.
+It adds no endpoint override, account, dependency, binding, secret,
+production flag, backend cache, migration or polling scheduler. Browser
+query/identity remains in the bounded POST body, not resource URLs or
+application logs. Original position/retrieval clocks and complete credits
+remain separate from ordinary live traffic and provider health.
+
+Use the existing checked dev-to-main path and serialized exact-current-main
+application deployment. Preserve `oci-private-relay`, aircraft photos,
+routes, native Space-Track, curated/Starlink, marine supplement, airport
+boards and the enabled sharing/D1 variables. Atomic protected secrets,
+all operational/physical/source/retry fences, exact-SHA CI and persistent
+dev remain unchanged. The all-feature dry run is configuration/bundle
+evidence, not a production deployment or provider qualification.
+
+Existing tabs use ordinary Settings / REFRESH APP or a normal reload;
+never clear preferences/private history to obtain the feature. Reuse
+unchanged accepted installed-update evidence because no PWA/state contract
+changes. The compatible predecessor is application
+`c5bfdac6098e15161e5e2b71eb06ef9c30b269e2`, Worker
+`3141d3b2-a150-4984-bd58-734c30533097`. A checked small-slice revert or
+existing previous-version rollback removes Locate without a data migration,
+new rollback drill, D1 cleanup or source-state reset.
+
+The [#574 delivery receipt](https://github.com/vasilyevstan/LiveTrafficStan/issues/574)
+records resulting exact source/Worker identities, bounded actual public
+acceptance and canonical/Wiki publication separately from local fixtures
+and later documentation-only commits. Preserve earlier receipts below as
+historical qualification and rollback evidence.
+
 ### Orbital framing and previous-area release boundary (#529)
 
 This extends the existing moving viewer with aspect-aware high-Earth framing,

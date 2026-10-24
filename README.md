@@ -8,6 +8,18 @@ user accounts or a server-side vessel history archive.
 
 Public production: <https://trackstan.xyz>
 
+**Locate a ship outside the view (#574):** Find's explicit ship search first
+returns identities. Choose a row's **Locate** to request its newest reported
+position in the last 24 hours and move the existing map there at useful local
+zoom. The report keeps its actual time and credits; it is not a live marker.
+Missing reports, errors or unsafe framing leave the current view and context intact.
+Query/list/focus stay intact and newer user intent wins over delayed work.
+There is no new account, feed, poller, dependency or saved-state change.
+[Usage and limits](docs/configuration.md#scoped-object-discovery),
+[measured acceptance](docs/development-and-testing.md#explicit-outside-view-ship-locate-574)
+and the [delivery receipt](https://github.com/vasilyevstan/LiveTrafficStan/issues/574)
+distinguish local fixtures, actual public behavior and running source.
+
 **Object sharing and Earth context (2026-10-24):** use the Share
 arrow beside X for a 12-character aircraft/vessel/satellite link lasting
 24 hours. A validated satellite link enables ORBITS for that session, not
@@ -15,7 +27,7 @@ ordinary startup or saved preferences. Explicit Return retains its valid
 originating satellite. Wide Earth and View from here use a soft transition
 into night, without a drawn boundary, with displayed-time/Pause agreement.
 The [soft-shading delivery receipt](https://github.com/vasilyevstan/LiveTrafficStan/issues/570)
-records the actual running application/Worker separately from documentation
+records that release's actual application/Worker separately from documentation
 commits. The [preceding sharing release/update acceptance](docs/hosting-and-deployment.md#shared-orbital-entry-and-earth-context-563)
 remains historical qualification and rollback evidence.
 The [initial sharing/D1 qualification](docs/hosting-and-deployment.md#production-activation-and-public-acceptance-2026-10-24)
@@ -28,7 +40,7 @@ receipts remain historical.
 Historical native-orbital-primary application source: `1352c6e586366084b09bcb9cefa2a5cf5f9c8065`,
 Worker `c207eeee-e817-4a9f-bbc7-49daaab85504`, with the
 [native orbital primary receipt](docs/hosting-and-deployment.md#native-orbital-primary-production-acceptance-2026-10-17).
-This is historical evidence, not the current runtime identified above.
+This is historical evidence, not the current runtime in the delivery receipt.
 
 **Orbital source restored on 2026-10-17:** Space-Track GP is the production
 primary and checked deployment default. Ordinary scheduled acquisitions
@@ -51,8 +63,9 @@ to four ASCII octal digits without rewriting legacy history. See
 Layers, Find, In view, Settings**, one expanded task/full inspector and
 compact retained selection. Real short-phone selected/task overlays measure
 61.24% at 315x517, down from the roughly 78% baseline, with a 160px useful
-body and native-hit-tested 120x120 map region. Explicit free ship lookup
-returns attributed identities with **Position unavailable**; exact aircraft
+body and native-hit-tested 120x120 map region. At that historical release,
+explicit free ship lookup returned identity-only results; #574 adds the
+separate timestamped Locate above. Exact aircraft
 lookup offers **Go to last report** only for qualified original position
 times. Desktop defaults stay intact. See [scopes and limits](docs/configuration.md#scoped-object-discovery)
 and [measured acceptance and qualifications](docs/development-and-testing.md#mobile-workspace-and-scoped-discovery-449).
@@ -537,11 +550,13 @@ identity are not renamed or reset.
   unavailable, including orbital elements older than the unchanged 14-day limit.
   A freshly retrieved catalog does not make an old element epoch current.
   Choosing a class or typing does not download a catalog or perform lookup.
-  Outside-view ships use free Open Waters name-prefix/exact-MMSI lookup and
-  disclose **Identity lookup only** before submission and do not invent a
-  location; REST metadata time is not position time.
+  Outside-view ships use free Open Waters name-prefix/exact-MMSI identity
+  lookup. Select **Locate** on one result to request its newest timestamped
+  report within the last 24 hours and frame that dated position. Query,
+  results and focus stay available; missing reports/errors keep the current
+  view. Untimed REST metadata geometry never becomes a position.
   Aircraft support exact ICAO24, registration or callsign, not arbitrary names.
-  Only qualified original aircraft positions offer **Go to last report**.
+  Qualified original aircraft positions offer **Go to last report**.
   Navigation never creates a fake live object or changes Home. Aircraft/Ships
   start with their existing **In view** search; choose **Outside view** explicitly
   for remote lookup. In-view results retain normal live selection/details.
@@ -1514,8 +1529,10 @@ monitoring, privacy, and rollback procedure.
   a fair-use public service with no availability guarantee; direct coordinate
   entry remains local and available during search failure or throttling.
 - Outside-view object lookup is receiver-dependent, not a complete global
-  registry. Ship matches are identity-only, with original contributing credits;
-  free exact IMO is unavailable. Aircraft lookup shares the private relay's
+  registry. Ship search returns identities; a separate explicit **Locate**
+  checks one MMSI's newest original-clock report in the last 24 hours, with
+  contributing credits. No report is not proof of no ship or no coverage.
+  Free exact IMO is unavailable. Aircraft lookup shares the private relay's
   existing global 20-second admission with viewport polling and can be busy.
   Fixed same-origin POST bodies keep submitted object text out of browser
   resource URLs; the named upstream still receives the submitted identifier.

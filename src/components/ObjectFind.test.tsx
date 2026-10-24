@@ -2,9 +2,9 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { EMPTY_ORBITAL_PREDICTION, type ModeledOrbitalPosition, type OrbitalControllerState, type OrbitalObject } from '../domain/orbital'
 import type { DiscoveryMatch, DiscoveryResponse } from '../domain/objectDiscovery'
-import { qualifiedLastReport } from '../domain/objectDiscovery'
+import { qualifiedLastReport, SHIP_POSITION_SOURCE } from '../domain/objectDiscovery'
 import { DISCOVERY_CONFIG } from '../config/discoveryConfig'
-import { ObjectFind } from './ObjectFind'
+import { IdentityResults, ObjectFind } from './ObjectFind'
 
 const resultActions = vi.hoisted(() => {
   const actions: ((originId: string) => void)[] = []
@@ -47,6 +47,7 @@ const render = (overrides: Partial<Parameters<typeof ObjectFind>[0]> = {}) => re
   <ObjectFind
     kind="ships" kindSelect={<label>Find class</label>} currentView={<p>Incumbent live discovery</p>}
     mobile active paused={false} currentViewRequest={0} now={now} navigationDisabled={false} onNavigate={vi.fn()}
+    onBeginShipLocate={vi.fn(() => null)}
     airports={[]} airportsReady={false} airportsLoading={false} onLoadAirports={vi.fn()}
     onAirportNavigate={vi.fn(() => true)}
     ports={[]} portsReady={false} portsLoading={false} onLoadPorts={vi.fn()}
@@ -225,5 +226,126 @@ describe('last-report navigation qualification at display and action time', () =
     expect(qualifiedLastReport({ ...match, location: { ...match.location!, reportedAt: now - DISCOVERY_CONFIG.maximumAircraftPositionAgeMs - 1 } }, result, now)).toBeNull()
     expect(qualifiedLastReport(match, result, now - DISCOVERY_CONFIG.futureToleranceMs - 1)).toBeNull()
     expect(qualifiedLastReport(match, result, now + DISCOVERY_CONFIG.maximumAircraftSnapshotAgeMs)).not.toBeNull()
+  })
+  it('qualifies an explicitly tagged ship track but never ordinary REST geometry or metadata time', () => {
+    const ship: DiscoveryMatch = {
+      ...match, objectClass: 'ships', key: 'open-waters:230123456', identifiers: { mmsi: '230123456' },
+      source: { name: 'Open Waters AIS', code: SHIP_POSITION_SOURCE, credit: 'Fintraffic · CC BY 4.0' },
+      metadataReportedAt: null,
+    }
+    const response = { ...result, objectClass: 'ships' as const, matches: [ship] }
+    expect(qualifiedLastReport(ship, response, now)).toBe(ship.location)
+    expect(qualifiedLastReport({ ...ship, metadataReportedAt: now }, response, now)).toBeNull()
+    expect(qualifiedLastReport({ ...ship, source: { ...ship.source, code: 'digitraffic:station' } }, response, now)).toBeNull()
+    expect(qualifiedLastReport(ship, response, now + DISCOVERY_CONFIG.maximumShipSnapshotAgeMs + 1)).toBeNull()
+    expect(qualifiedLastReport({ ...ship, location: { ...ship.location!, reportedAt: now - DISCOVERY_CONFIG.shipPositionWindowMs } }, response, now)).not.toBeNull()
+    expect(qualifiedLastReport({ ...ship, location: { ...ship.location!, reportedAt: now - DISCOVERY_CONFIG.shipPositionWindowMs - 1 } }, response, now)).toBeNull()
+  })
+})
+
+describe('explicit ship Locate row presentation', () => {
+  const ship: DiscoveryMatch = {
+    objectClass: 'ships', key: 'open-waters:230123456', name: 'TEST SHIP',
+    identifiers: { mmsi: '230123456' }, location: null, metadataReportedAt: now - 1_000,
+    source: { name: 'Open Waters AIS', code: 'digitraffic:station', credit: 'Identity source credit' },
+  }
+  const result: DiscoveryResponse = {
+    objectClass: 'ships', retrievedAt: now, truncated: false, rejectedRecords: 0,
+    matches: [ship, { ...ship, key: 'open-waters:230123457', name: 'OTHER SHIP', identifiers: { mmsi: '230123457' } }],
+  }
+  type Locate = NonNullable<Parameters<typeof IdentityResults>[0]['shipLocate']>
+  const locator = (overrides: Partial<Locate> = {}): Locate => ({
+    key: null, state: { phase: 'idle' }, disabled: false, onLocate: vi.fn(), ...overrides,
+  })
+  const renderShips = (shipLocate?: Locate, navigationDisabled = false) => renderToStaticMarkup(
+    <IdentityResults result={result} now={now} navigationDisabled={navigationDisabled} onNavigate={vi.fn()} shipLocate={shipLocate} />,
+  )
+  it('renders one named Locate per outside-view identity and performs no request during rendering', () => {
+    const fetchMock = vi.fn()
+    const onLocate = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    const html = renderShips(locator({ onLocate }))
+    expect(html).toContain('2 matches')
+    expect(html).toContain('aria-label="Locate TEST SHIP, MMSI 230123456"')
+    expect(html).toContain('aria-label="Locate OTHER SHIP, MMSI 230123457"')
+    expect(html.match(/>Locate<\/button>/g)).toHaveLength(2)
+    expect(html).not.toContain('This source cannot locate')
+    expect(html).not.toMatch(/id="[^"]*230123456/)
+    expect(onLocate).not.toHaveBeenCalled()
+    expect(fetchMock).not.toHaveBeenCalled()
+    resultActions[0]('opaque-origin')
+    expect(onLocate).toHaveBeenCalledExactlyOnceWith(ship)
+  })
+  it('keeps Received identity-only and changes no existing aircraft action', () => {
+    const html = renderShips()
+    expect(html).toContain('no position lookup in Received')
+    expect(html).not.toContain('>Locate</button>')
+    expect(resultActions).toHaveLength(0)
+    const aircraft: DiscoveryMatch = {
+      objectClass: 'aircraft', key: 'adsb-lol:abc123', identifiers: { icao24: 'abc123' },
+      metadataReportedAt: now, source: { name: 'ADSB.lol', code: 'ADSB.lol', credit: 'ADSB.lol · ODbL 1.0' },
+      location: { latitude: 59.44, longitude: 24.75, reportedAt: now },
+    }
+    const aircraftHtml = renderToStaticMarkup(<IdentityResults
+      result={{ ...result, objectClass: 'aircraft', matches: [aircraft] }}
+      now={now} navigationDisabled={false} onNavigate={vi.fn()}
+    />)
+    expect(aircraftHtml).toContain('Go to last report')
+    expect(aircraftHtml).not.toContain('>Locate</button>')
+  })
+  it('retains the same result buttons while one row is busy instead of replacing the list or disabling its native focus', () => {
+    const idle = renderShips(locator())
+    resultActions.splice(0)
+    const onLocate = vi.fn()
+    const busy = renderShips(locator({
+      key: ship.key, state: { phase: 'loading', request: { objectClass: 'ships', by: 'position', query: '230123456' } },
+      onLocate,
+    }))
+    expect(busy).toContain('TEST SHIP')
+    expect(busy).toContain('OTHER SHIP')
+    expect(busy).toContain('aria-busy="true"')
+    expect(busy).toContain('aria-disabled="true"')
+    expect(busy).not.toContain(' disabled=""')
+    expect([...busy.matchAll(/<button id="([^"]+)"/g)].map((match) => match[1]))
+      .toEqual([...idle.matchAll(/<button id="([^"]+)"/g)].map((match) => match[1]))
+    resultActions[0]('opaque-origin')
+    expect(onLocate).not.toHaveBeenCalled()
+  })
+  it.each([
+    ['Position unavailable: no reports in the last 24 hours.', { phase: 'results', request: { objectClass: 'ships', by: 'position', query: '230123456' }, result: { ...result, matches: [] } }],
+    ['Lookup timed out. The map and local search still work.', { phase: 'error', message: 'Lookup timed out. The map and local search still work.' }],
+    ['Lookup is limited. Try again in 45s.', { phase: 'error', message: 'Lookup is limited. Try again in 45s.', retryAt: now + 45_000 }],
+  ] as const)('keeps missing reports, timeout and limits explicit beside the exact row: %s', (message, state) => {
+    const html = renderShips(locator({ key: ship.key, message, state }))
+    expect(html).toContain(message)
+    expect(html).toContain('TEST SHIP')
+    expect(html).toContain('OTHER SHIP')
+    expect(html.match(/>Locate<\/button>/g)).toHaveLength(2)
+  })
+  it('separates observation and retrieval time from identity metadata and credits the actual track without claiming live selection', () => {
+    const located: DiscoveryMatch = {
+      ...ship, metadataReportedAt: null,
+      source: { name: 'Open Waters AIS', code: SHIP_POSITION_SOURCE, credit: 'Complete original track credit' },
+      location: { latitude: 59.44, longitude: 24.75, reportedAt: now - 5_000 },
+    }
+    const html = renderShips(locator({
+      key: ship.key, message: 'Report found; a newer action kept the map unchanged.',
+      state: {
+        phase: 'results', request: { objectClass: 'ships', by: 'position', query: '230123456' },
+        result: { ...result, matches: [located] },
+      },
+    }))
+    expect(html).toContain('a newer action kept the map unchanged')
+    expect(html).toContain(new Date(now - 5_000).toISOString())
+    expect(html).toContain(new Date(now - 1_000).toISOString())
+    expect(html).toContain('Complete original track credit')
+    expect(html).toContain('Identity source credit')
+    expect(html).toContain('Last report, not live reception')
+    expect(html).not.toContain('vessel:230123456')
+  })
+  it('keeps an explicit paused/navigation-disabled action disabled without requesting a position', () => {
+    const html = renderShips(locator({ disabled: true }))
+    expect(html.match(/ disabled=""/g)).toHaveLength(2)
+    expect(renderShips(locator(), true).match(/ disabled=""/g)).toHaveLength(2)
   })
 })
