@@ -203,6 +203,7 @@ interface TrafficControlsProps {
   placeSearchState: PlaceSearchState
   onPlaceSearch: (query: string) => void
   onLocationNavigate: (center: AppCenter) => void
+  onBeginShipLocate: Parameters<typeof ObjectFind>[0]['onBeginShipLocate']
   onPlaceResultSelect: (result: PlaceSearchResult) => void
   onPlaceSearchCancel: () => void
   mapToolsSummaryRef?: Ref<HTMLElement>
@@ -442,6 +443,7 @@ export function TrafficControls({
   placeSearchState,
   onPlaceSearch,
   onLocationNavigate,
+  onBeginShipLocate,
   onPlaceResultSelect,
   onPlaceSearchCancel,
   mapToolsSummaryRef,
@@ -1272,6 +1274,7 @@ export function TrafficControls({
               now={now}
               navigationDisabled={locationNavigationDisabled}
               onNavigate={onLocationNavigate}
+              onBeginShipLocate={onBeginShipLocate}
               airports={catalogAirports}
               airportsReady={airportsReady}
               airportsLoading={airportsLoading}

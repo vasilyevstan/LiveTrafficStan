@@ -364,9 +364,24 @@ unknown-value filters is not evidence that name matching is broken.
 **Outside view** requires explicit **Look up**: ship name prefix or exact MMSI,
 aircraft exact ICAO24/registration/callsign. There is no arbitrary aircraft-name
 directory, free exact ship IMO lookup or complete worldwide registry promise.
-Ships correctly say **Position unavailable**, even if the upstream REST object
-contains untimed geometry. Aircraft last reports navigate only when their
-original source clocks qualify; they do not become live selections.
+Ship search returns identities even when ordinary metadata contains untimed
+geometry. Select **Locate** on an Outside-view result to check its newest
+timestamped report within the last 24 hours. **Received** has no position
+request. Unsupported/leading-zero MMSIs have an explicit disabled reason.
+**No reports in the last 24 hours** is not proof that a ship does not exist,
+has no coverage anywhere, or is at the old location. HTTP/source errors and
+rate limits are not empty reports.
+
+A successful Locate frames a dated report, not a synthetic live ship. The
+normal enabled layers, filters, reception and observation expiry still decide
+whether a live marker/details appears. Read **Source & age** for original report
+time, retrieval time and full contributing credits. No filter or Home override
+occurs. If a newer action kept the map unchanged, Locate again deliberately;
+there is no following or automatic retry. If framing is unavailable, close a
+menu or enlarge the visible view; reports beyond 85 degrees latitude cannot use
+this conservative local fit. Failed framing preserves the previous context.
+Aircraft last reports still require their own original clocks and do not
+become live selections.
 
 Typing/class changes never issue lookup or load a catalog. A missing airport,
 port or orbital catalog needs its existing explicit Load/Enable action.

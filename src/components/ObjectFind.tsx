@@ -1,4 +1,4 @@
-import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { ObjectLookupController, type ObjectLookupState } from '../app/ObjectLookupController'
 import { workspaceOwnsFullscreen } from '../app/fullscreen'
 import { APP_CONFIG, type AppCenter } from '../config/appConfig'
@@ -12,9 +12,11 @@ import { orbitalObjectTypeLabel, type OrbitalControllerState } from '../domain/o
 import { orbitalCatalogPage } from '../domain/orbitalDiscovery'
 import type { Port, PortSource } from '../domain/ports'
 import { SameOriginObjectLookupProvider } from '../providers/discovery/objectLookupProvider'
+import { parseMarineMmsi } from '../providers/marine/marineSourceNormalization'
 import { ObjectResultButton } from './ObjectResultButton'
 
 export type FindKind = 'places' | 'aircraft' | 'ships' | 'orbits' | 'airports' | 'ports'
+export type ShipLocateNavigation = (center: AppCenter, onFramingError: (message: string) => void) => boolean
 type Scope = 'view' | 'received' | 'outside'
 
 interface ObjectFindProps {
@@ -28,6 +30,7 @@ interface ObjectFindProps {
   now: number
   navigationDisabled: boolean
   onNavigate: (center: AppCenter) => void
+  onBeginShipLocate: () => ShipLocateNavigation | null
   airports: readonly Airport[]
   airportsReady: boolean
   airportsLoading: boolean
@@ -67,13 +70,22 @@ function orbitalPositionMessage(entry: OrbitalCatalogEntry, state: OrbitalContro
   return 'No safe current modeled position is available.'
 }
 
-function IdentityResults({
-  result, now, navigationDisabled, onNavigate,
+interface ShipLocateResults {
+  key: string | null
+  state: ObjectLookupState
+  message?: string
+  disabled: boolean
+  onLocate: (match: DiscoveryMatch) => void
+}
+
+export function IdentityResults({
+  result, now, navigationDisabled, onNavigate, shipLocate,
 }: {
   result: DiscoveryResponse
   now: number
   navigationDisabled: boolean
   onNavigate: (center: AppCenter) => void
+  shipLocate?: ShipLocateResults
 }) {
   const canNavigate = (match: DiscoveryMatch) => !navigationDisabled && qualifiedLastReport(match, result, now) !== null
   return (
@@ -84,7 +96,14 @@ function IdentityResults({
         {result.rejectedRecords > 0 && ` ${result.rejectedRecords} invalid or unsupported records withheld.`}
       </p>
       <ul className="object-find-results" aria-label="Identity lookup results">
-        {result.matches.map((match) => (
+        {result.matches.map((match) => {
+          const ownsLocate = shipLocate?.key === match.key
+          const locating = ownsLocate && shipLocate.state.phase === 'loading'
+          const located = ownsLocate && shipLocate.state.phase === 'results'
+            ? shipLocate.state.result.matches.find((candidate) => candidate.identifiers.mmsi === match.identifiers.mmsi)
+            : undefined
+          const supportedMmsi = parseMarineMmsi(match.identifiers.mmsi) !== undefined
+          return (
           <li key={match.key}>
             <strong>{match.name ?? match.identifiers.mmsi ?? match.identifiers.icao24}</strong>
             <span>{[
@@ -94,11 +113,24 @@ function IdentityResults({
               match.identifiers.callsign,
               match.identifiers.imo && `IMO ${match.identifiers.imo}`,
             ].filter(Boolean).join(' · ')}</span>
-            <span>{canNavigate(match) && match.location
+            {match.objectClass === 'ships' && shipLocate ? <>
+              <ObjectResultButton prefix="object-find-result"
+                aria-label={`Locate ${match.name ?? 'ship'}, MMSI ${match.identifiers.mmsi}`}
+                disabled={navigationDisabled || shipLocate.disabled || !supportedMmsi}
+                aria-disabled={locating || undefined} aria-busy={locating || undefined}
+                onSelect={() => { if (!locating) shipLocate.onLocate(match) }}>{locating ? 'Locating…' : 'Locate'}</ObjectResultButton>
+              {!supportedMmsi && <span>Position lookup requires a supported nine-digit MMSI.</span>}
+              {ownsLocate && <span role="status">
+                {locating ? 'Checking the last 24 hours.' :
+                  shipLocate.state.phase === 'error' ? shipLocate.state.message :
+                    shipLocate.message}
+                {located?.location && ` Last report ${formatAge(located.location.reportedAt, now)}.`}
+              </span>}
+            </> : <span>{canNavigate(match) && match.location
               ? `Last position ${formatAge(match.location.reportedAt, now)}`
               : match.objectClass === 'ships'
-                ? 'Identity only: this source supplies no timed position.'
-                : 'No qualified last-reported position available.'}</span>
+                ? 'Identity only; no position lookup in Received.'
+                : 'No qualified last-reported position available.'}</span>}
             {canNavigate(match) && match.location && (
               <ObjectResultButton prefix="object-find-result" onSelect={() => {
                 if (!canNavigate(match) || !qualifiedLastReport(match, result, Date.now()) || !match.location) return
@@ -116,9 +148,15 @@ function IdentityResults({
                 : 'Metadata report time unavailable.'}</p>
               <p>Retrieved {new Date(result.retrievedAt).toISOString()}.</p>
               {match.location && <p>Position reported {new Date(match.location.reportedAt).toISOString()}.</p>}
+              {located?.location && shipLocate?.state.phase === 'results' && <>
+                <p>Position reported {new Date(located.location.reportedAt).toISOString()}; retrieved {new Date(shipLocate.state.result.retrievedAt).toISOString()}.</p>
+                <p>{located.source.name} track: {located.source.credit}</p>
+                <p>Last report, not live reception or a guarantee that the ship is still there.</p>
+              </>}
             </details>
           </li>
-        ))}
+          )
+        })}
       </ul>
     </>
   )
@@ -139,16 +177,42 @@ export function ObjectFind(props: ObjectFindProps) {
   const lastFocusedRef = useRef<HTMLElement | null>(null)
   const previousMobileRef = useRef(mobile)
   const [lookupState, setLookupState] = useState<ObjectLookupState>({ phase: 'idle' })
+  const [lookupProvider] = useState(() => new SameOriginObjectLookupProvider())
   const [controller] = useState(() => new ObjectLookupController({
-    provider: new SameOriginObjectLookupProvider(), onState: setLookupState,
+    provider: lookupProvider, onState: setLookupState,
+  }))
+  const [locateState, setLocateState] = useState<ObjectLookupState>({ phase: 'idle' })
+  const [locateKey, setLocateKey] = useState<string | null>(null)
+  const [locateMessage, setLocateMessage] = useState<string>()
+  const locateOwnerRef = useRef<{ key: string; navigate: ShipLocateNavigation } | null>(null)
+  const locatingRef = useRef<string | null>(null)
+  const [locator] = useState(() => new ObjectLookupController({
+    provider: lookupProvider, onState: setLocateState,
   }))
   const isTraffic = kind === 'ships' || kind === 'aircraft'
   const scope = isTraffic ? scopes[kind] : 'received'
   const remoteActive = active && isTraffic && scope === 'outside' && !paused
   const navigationDisabled = props.navigationDisabled
   const method = kind === 'aircraft' ? aircraftMethod : shipMethod
+  const locateAllowedRef = useRef(false)
+  useLayoutEffect(() => {
+    locateAllowedRef.current = remoteActive && kind === 'ships' && !navigationDisabled
+    if (locateState.phase !== 'loading') locatingRef.current = null
+  }, [remoteActive, kind, navigationDisabled, locateState])
+  const cancelShipLocate = useCallback(() => {
+    locateOwnerRef.current = null
+    locatingRef.current = null
+    locator.cancel()
+    setLocateKey(null)
+    setLocateMessage(undefined)
+  }, [locator])
 
-  useEffect(() => () => controller.stop(), [controller])
+  useEffect(() => () => {
+    locateOwnerRef.current = null
+    locatingRef.current = null
+    locator.stop()
+    controller.stop()
+  }, [controller, locator])
   useLayoutEffect(() => {
     if (previousMobileRef.current === mobile) return
     previousMobileRef.current = mobile
@@ -167,7 +231,11 @@ export function ObjectFind(props: ObjectFindProps) {
     const stopIfPaused = () => {
       if (remoteActive && !document.hidden && navigator.onLine) return
       controller.stop()
+      locator.stop()
+      locateOwnerRef.current = null
+      locatingRef.current = null
       setLookupState((state) => state.phase === 'loading' ? { phase: 'idle' } : state)
+      setLocateState((state) => state.phase === 'loading' ? { phase: 'idle' } : state)
     }
     stopIfPaused()
     document.addEventListener('visibilitychange', stopIfPaused)
@@ -176,12 +244,13 @@ export function ObjectFind(props: ObjectFindProps) {
       document.removeEventListener('visibilitychange', stopIfPaused)
       window.removeEventListener('offline', stopIfPaused)
     }
-  }, [controller, remoteActive])
+  }, [controller, locator, remoteActive])
   useEffect(() => {
     controller.cancel()
     setPage(0)
     setCatalogNavigationError(false)
   }, [controller, kind, scope, method])
+  useLayoutEffect(() => cancelShipLocate(), [cancelShipLocate, kind, scope, method])
   useEffect(() => {
     if (props.currentViewRequest > 0) setScopes((current) => ({ ...current, ships: 'view' }))
   }, [props.currentViewRequest])
@@ -208,6 +277,48 @@ export function ObjectFind(props: ObjectFindProps) {
     setPage(0)
     setCatalogNavigationError(false)
     controller.cancel()
+    cancelShipLocate()
+  }
+  const locateShip = async (match: DiscoveryMatch) => {
+    const mmsi = match.identifiers.mmsi
+    if (!locateAllowedRef.current || document.hidden || !navigator.onLine ||
+      parseMarineMmsi(mmsi) === undefined || !mmsi || locatingRef.current === match.key) return
+    locateOwnerRef.current = null
+    locatingRef.current = null
+    locator.cancel()
+    const navigate = props.onBeginShipLocate()
+    setLocateKey(match.key)
+    setLocateMessage(undefined)
+    if (!navigate) {
+      setLocateMessage('Navigation is unavailable. Return to LIVE and reconnect.')
+      return
+    }
+    controller.stop()
+    const owner = { key: match.key, navigate }
+    locateOwnerRef.current = owner
+    locatingRef.current = match.key
+    const result = await locator.lookup('ships', 'position', mmsi)
+    if (!result || locateOwnerRef.current !== owner || !locateAllowedRef.current ||
+      document.hidden || !navigator.onLine || !contentRef.current?.getClientRects().length) return
+    if (result.matches.length === 0) {
+      setLocateMessage('Position unavailable: no reports in the last 24 hours.')
+      return
+    }
+    const point = qualifiedLastReport(result.matches[0], result, Date.now())
+    if (!point) {
+      setLocateMessage('The dated report is no longer usable. Locate again.')
+      return
+    }
+    let framingError: string | undefined
+    const navigated = owner.navigate({
+      latitude: point.latitude, longitude: point.longitude,
+      label: `Last report: ${match.name ?? mmsi}`,
+    }, (message) => {
+      framingError = message
+      if (locateOwnerRef.current === owner) setLocateMessage(message)
+    })
+    setLocateMessage(framingError ?? (navigated ? 'Centered on the reported position.' :
+      'Report found; a newer action kept the map unchanged.'))
   }
   const input = (key: keyof typeof drafts, label: string) => (
     <>
@@ -308,15 +419,18 @@ export function ObjectFind(props: ObjectFindProps) {
     <div ref={contentRef} className="object-find" onFocusCapture={(event) => {
       if (event.target instanceof HTMLElement) lastFocusedRef.current = event.target
     }} onKeyDown={(event) => {
-      if (event.key !== 'Escape' || workspaceOwnsFullscreen(event.currentTarget) || lookupState.phase !== 'loading') return
+      if (event.key !== 'Escape' || workspaceOwnsFullscreen(event.currentTarget) ||
+        lookupState.phase !== 'loading' && locateState.phase !== 'loading') return
       event.preventDefault()
       event.stopPropagation()
-      controller.cancel()
+      if (lookupState.phase === 'loading') controller.cancel()
+      cancelShipLocate()
     }}>
       <div className={isTraffic ? 'object-find-heading-row' : undefined}>
       {props.kindSelect}
       {isTraffic && <label className="object-find-scope"><span>Scope</span>
         <select aria-label="Find scope" value={scope} onChange={(event) => {
+          cancelShipLocate()
           const next = event.currentTarget.value
           if (next === 'view' || next === 'received' || next === 'outside') setScopes((current) => ({ ...current, [kind]: next }))
         }}>
@@ -334,9 +448,10 @@ export function ObjectFind(props: ObjectFindProps) {
             [...drafts.received.trim()].length < 2 ? <p className="control-note">Enter at least two characters.</p> :
               <IdentityResults result={cachedShips.result} now={now} navigationDisabled onNavigate={onNavigate} />}
         </> : isTraffic && scope === 'outside' ? <>
-          {kind === 'ships' && <p className="control-note">Identity lookup only. This source cannot locate a ship.</p>}
+          {kind === 'ships' && <p className="control-note">Select Locate to check one ship’s last report.</p>}
           <form onSubmit={(event) => {
             event.preventDefault()
+            cancelShipLocate()
             if (!remoteActive || document.hidden || !navigator.onLine || (kind !== 'ships' && kind !== 'aircraft')) {
               setLookupState({ phase: 'error', message: 'Lookup paused. Return to LIVE and reconnect to submit.' })
               return
@@ -345,6 +460,7 @@ export function ObjectFind(props: ObjectFindProps) {
           }}>
             <label className="object-find-scope"><span>By</span>
               <select aria-label="Outside-view lookup method" value={method} onChange={(event) => {
+                cancelShipLocate()
                 const value = event.currentTarget.value
                 if (kind === 'ships' && (value === 'name' || value === 'mmsi')) setShipMethod(value)
                 if (kind === 'aircraft' && (value === 'hex' || value === 'reg' || value === 'callsign')) setAircraftMethod(value)
@@ -363,11 +479,16 @@ export function ObjectFind(props: ObjectFindProps) {
           {lookupState.phase === 'loading' && <p role="status" className="control-note">Looking up the submitted identifier.</p>}
           {lookupState.phase === 'error' && <p role="status" className="control-note">{lookupState.message}</p>}
           {lookupState.phase === 'results' && lookupState.request.objectClass === kind && <IdentityResults
-            result={lookupState.result} now={now} navigationDisabled={navigationDisabled} onNavigate={onNavigate} />}
+            result={lookupState.result} now={now} navigationDisabled={navigationDisabled} onNavigate={onNavigate}
+            shipLocate={kind === 'ships' ? {
+              key: locateKey, state: locateState, message: locateMessage, disabled: !remoteActive,
+              onLocate: (match) => { void locateShip(match) },
+            } : undefined} />}
           <details className="context-details"><summary>Source, coverage &amp; limits</summary>
             {kind === 'ships' ? <>
               <p><a href="https://openwaters.io/api/ais/" target="_blank" rel="noreferrer">Open Waters AIS</a> · prefix search, at most 50 matches. Receiver-dependent identities, not a complete ship registry. Free exact IMO lookup is unavailable.</p>
-              <p>REST metadata time is not a position clock. All ship matches are identity-only; no map position is offered. Original source credits are retained with each result.</p>
+              <p>Search returns identities, not timed positions. Locate separately checks one exact MMSI for its newest report in the last 24 hours. No report leaves the map unchanged.</p>
+              <p>Report age and original track credits remain available with the result. Navigation does not create live traffic, override filters or change Home; ordinary reception may subsequently supply the ship.</p>
               <p>Open Waters aggregates other providers; their attribution and source-use caveats still apply. No data-rights waiver is implied.</p>
             </> : <>
               <p><a href="https://www.adsb.lol/docs/open-data/api/" target="_blank" rel="noreferrer">ADSB.lol · ODbL 1.0</a>. Exact identifier lookup, not an aircraft-name directory; receiver coverage is partial.</p>

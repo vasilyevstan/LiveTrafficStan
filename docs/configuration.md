@@ -631,12 +631,31 @@ COSMOS 2619 / NORAD100460 dependency is tracked separately in
 (two or more characters) or exact nine-digit MMSI, preserving leading zeros.
 Aircraft allow exact ICAO24, registration (including hyphens) or callsign.
 Free exact IMO and arbitrary aircraft-name lookup are unavailable.
-Ship results disclose identity-only coverage before submit and explain that the
-source supplies no timed position. Received metadata has the same limitation;
-use **In view** for selection of a currently received ship. Aircraft
-positions are last reports, not live selections; original clocks must qualify
-before navigation is offered. Static and modeled points are labelled separately.
-Explicit navigation clears previous selection/trails, but never changes Home.
+Ship search itself returns identities, not timed positions. On an **Outside
+view** result, **Locate** explicitly checks that one supported nine-digit MMSI's
+newest original-clock report in the last 24 hours. The source operation uses
+`interval=0&limit=1`, not metadata `seen` or arbitrary REST geometry. Leading-zero
+identities remain searchable but cannot use this position operation.
+**Received** remains identity-only, with no Locate request.
+
+Locate keeps the query, row ordering, result controls and focus. A qualified
+report receives ordinary local framing with a 5 km radius; report and retrieval
+times plus complete track credits are in **Source & age**. This is a dated
+report, not a live marker/selection or a guarantee the vessel remains there.
+No report in the window, a timeout, HTTP/source limits and malformed data are
+distinct outcomes and do not move the map. A newer navigation, selection,
+HISTORY, draft/scope/method/class change, closing Find, hidden/offline state
+or an obsolete A-B-A response prevents late navigation. Pending activation
+does not duplicate the request; timeout releases the same button.
+
+Framing first checks the actual unobstructed map space. Reports beyond
+85 degrees latitude or without usable framing space leave the camera and
+existing context intact with an explanation; this is a conservative map limit,
+not a provider-coverage rule. Successful explicit navigation clears previous
+selection/trails, but never changes Home, filters, layer preferences or provider
+lifetimes/cadence. Ordinary reception may subsequently supply the ship.
+Aircraft original clocks still qualify **Go to last report** separately;
+static and modeled points retain their own labels.
 
 `appConfig.ts` re-exports the browser-neutral `DISCOVERY_CONFIG` shared with
 the Worker. This avoids importing browser environment configuration into the
@@ -645,7 +664,8 @@ server boundary. There is no endpoint override, new credential or polling flag.
 | Discovery bound | Value |
 | --- | --- |
 | Browser routes | Fixed POST `/api/find/aircraft` and `/api/find/ships`; no URL query |
-| Submitted body / decoded response | 2 KiB / 256 KiB |
+| Submitted body / decoded identity response | 2 KiB / 256 KiB |
+| Explicit ship position response / source credits | 32 KiB / at most 8, combined 2,048 codepoints |
 | Total operation deadline | 8 seconds, including streamed reads |
 | Query / ordinary text / credit | 100 codepoints / 256 / 2,048 |
 | Results / scanned source records | 50 / 500; truncation and rejected records are explicit |
@@ -653,10 +673,15 @@ server boundary. There is no endpoint override, new credential or polling flag.
 | Unguided rate-limit fallback | 60 seconds; readable `Retry-After` takes precedence |
 | Received metadata age / scan bound | Original timestamps, 24 hours / 50,000 existing records |
 | Aircraft snapshot / position age | At most 10 minutes / 24 hours |
+| Ship position window / snapshot age | 24 hours / at most 10 minutes |
+| Ship local framing / supported latitude | 5 km radius / at most 85 degrees absolute |
 | Future-clock tolerance | 120 seconds |
 | Navigable modeled-point age | At most 15 seconds, exact snapshot/owner/element identity |
 
-No typing/startup request, automatic retry, success cache or persisted
+Identity search and Locate have independent ordinary cooldowns but share the
+provider's actual HTTP `Retry-After` deadline; changing operation cannot bypass
+a source limit. Only one logical operation is active. No typing/startup request,
+automatic retry, success cache or persisted
 query/result is added. The named upstream receives submitted text and ordinary
 transport metadata; a fixed POST keeps that text out of browser resource URLs.
 Aircraft lookup shares the private relay's existing persistent global

@@ -48,6 +48,69 @@ supplementary marine WebSocket; use the actual local Worker for those paths.
 | `npm run check:deploy` | Bundle the Worker and Static Assets without credentials or deployment |
 | `npm run preview:worker` | Build and run the actual local Cloudflare `workerd` boundary |
 
+### Explicit outside-view ship Locate (#574)
+
+The original identity lookup still discards untimed REST geometry.
+Deterministic discovery/Worker/controller/intent/component regressions cover
+the separate exact-MMSI position operation: fixed newest-point parameters,
+exact whole-second 24-hour window, zero/one aligned original-clock reports,
+identity, latitude/longitude, future/retrieval age, truncation, complete
+credits, streamed body caps, errors, timeout, cancellation and shared source
+Retry-After. Retain Received metadata, qualified aircraft last reports and
+explicit orbital loading as separate contracts.
+
+All eight mandatory local gates pass **212 files /2,506 tests**. Matched
+production-input `index-BuXwUJkY.js` is 2,673,156 raw bytes /
+**597,311 Node-default-gzip bytes**, versus 595,822 at the accepted base:
+**+1,489 bytes /0.2499%**, below the 1% ceiling. CSS is unchanged.
+The all-feature Worker dry run includes native Space-Track, curated/Starlink,
+marine supplement, airport boards, sharing and the private aircraft relay.
+Its synthetic dry-run KV identity qualifies bundling/configuration, not a
+real production namespace or new provider acquisition.
+
+**26 accepted native Chrome 156 fixture cases complete at
+2026-10-24 21:52:51 UTC.** Light/Dark at 1280x900, 315x517 and 390x568
+use native mouse/emulated touch Locate on the actual App and existing
+MapLibre/worker. Each successful report issues one fitBounds and projects
+onto uncovered canvas, retaining the exact query/list/button/focus and
+preference bytes. Desktop zoom is about 11.57; phones about 9.25/9.55.
+Phone overlay unions are **60.87% /56.89%**; client reading heights
+178/193px leave **160/175px useful content**, one outer scroller, readable
+16px inputs, 44px Find controls and a hit-tested 120x120 map region.
+Unchanged desktop submenu/attribution targets are not retroactively claimed
+to meet the Find-specific 44px check.
+
+The final row is natively scroll-reachable and source disclosure does not
+request positions. Empty, HTTP failure and unsupported latitude preserve
+context/focus. Delayed success after a controlled 180px visual-height
+reduction proves preflight happens before destructive navigation: zero
+camera commands, retained selection, trail and stable view label.
+Ignored-abort responses lose to drag, Center, selection, draft, scope,
+method, class, close, HISTORY, offline and hidden state. Native Enter,
+after staged row focus, starts three distinct A-B-A requests; only the
+newest owner navigates and pending repeat Enter adds no request.
+An older staged one-shot geolocation cannot steal Locate intent. Timeout
+releases the same control even with ignored abort, and an observed eight-second
+Retry-After blocks identity work beyond the five-second ordinary cooldown.
+Received remains identity-only, aircraft still navigates to its qualified
+last report and orbital typing makes zero catalog requests before explicit
+Load. One map/canvas, **1,474 rendered vector features** and zero observed
+runtime exceptions remain.
+
+Preserve observer failures rather than weakening product guards. The first
+offline/hidden claims were withdrawn because HISTORY cleanup left Locate
+disabled, then confirmed with actual per-operation request-start assertions.
+Every race must establish its own request before invalidation; unchanged
+zero-request baselines cannot pass. CDP Enter includes carriage-return text
+so native button activation really occurs. Stable labels, not changing
+provider-age text, establish context preservation. Selection/HISTORY and
+Use Location use staged App callbacks; visibility is controlled, and
+device/focus/network are emulated. These are not physical-device/GPU,
+OS-keyboard/geolocation or physical-hide claims. Transport/catalog fixtures
+are distinct from the already accepted three anonymous feasibility reads.
+The [#574 delivery receipt](https://github.com/vasilyevstan/LiveTrafficStan/issues/574)
+separately records actual released/public behavior and publication.
+
 ### Ordinary top-down map detail (#522)
 
 The #518 automatic land-cover fills were too subtle to establish noticeably
@@ -944,9 +1007,11 @@ class must show one relevant search, with no redundant desktop catalog wrapper
 or aircraft/ship controls below orbital results. Preserve per-class drafts,
 In-view traffic filters/selection, explicit Outside-view requests and unloaded
 catalog drafts. Typing/class/theme/layout changes cannot acquire catalogs or
-submit remote lookups. Outside-view ship identity-only coverage must be clear
-before submit; qualified aircraft Go to last report remains separate from live
-traffic selection. No arbitrary ship metadata geometry becomes navigable.
+submit remote lookups. Outside-view ship search returns identities; the separate
+explicit Locate contract is documented below for #574. Qualified aircraft Go to
+last report remains separate from live traffic selection. No arbitrary ship
+metadata geometry becomes navigable. The dated #544 receipt below predates
+Locate and is retained as historical evidence, not a current prohibition.
 
 Use a valid current modeled object and a freshly retrieved catalog containing
 an old element epoch. The former must offer **Go to satellite**, actually move

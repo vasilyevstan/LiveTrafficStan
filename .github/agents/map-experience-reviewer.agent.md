@@ -257,8 +257,16 @@ Check these project invariants:
   existing details; old elements keep a visible reason and disabled action.
   Native coordinate navigation uses padded fitBounds: check the committed
   target/visible object, not equality with the raw camera center. Preserve
-  current traffic selection, qualified aircraft last reports and untimed
-  ship identity-only results without inventing position or broader coverage.
+  current traffic selection, qualified aircraft last reports and untimed ship
+  identity-only search. Outside-view ship Locate is a separate explicit
+  original-clock report request, not permission to use metadata geometry.
+  Preserve its list/query/focus, shared source Retry-After, exact owner and
+  newer camera intent. Preflight unobstructed framing before a destructive
+  commit; delayed success under a reduced visual viewport must keep existing
+  selection/trail/shared context when framing is unavailable.
+  Race evidence must establish each actual request start before cancellation;
+  disabled/paused controls and incomplete synthetic key events cannot pass
+  by leaving an unchanged zero-request baseline.
 - Measure each collapsed panel, the combined expanded-stack bound, overlay
   obstruction, and attribution visibility in a real browser. Visible panel
   bounds are distinct from the transparent stack's maximum-height budget.

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { DISCOVERY_CONFIG } from '../../config/discoveryConfig'
 import {
-  normalizeAircraftLookup, normalizeLookupRequest, normalizeShipLookup, validateDiscoveryResponse,
+  normalizeAircraftLookup, normalizeLookupRequest, normalizeShipLookup, normalizeShipPositionLookup, validateDiscoveryResponse,
 } from './lookupContract'
 
 const now = Date.UTC(2026, 9, 14, 12)
@@ -31,6 +31,7 @@ describe('explicit object query contracts', () => {
     ['aircraft', 'callsign', ' tst123 ', 'TST123'],
     ['ships', 'name', ' ÅLAND ', 'ÅLAND'],
     ['ships', 'mmsi', '001234567', '001234567'],
+    ['ships', 'position', ' 230123456 ', '230123456'],
   ])('canonicalizes only %s %s', (objectClass, by, query, expected) => {
     expect(normalizeLookupRequest(objectClass, by, query)).toEqual({ objectClass, by, query: expected })
   })
@@ -40,6 +41,8 @@ describe('explicit object query contracts', () => {
     ['aircraft', 'callsign', 'TST/123'], ['aircraft', 'callsign', '123456789'],
     ['aircraft', 'name', 'Airbus'], ['ships', 'imo', '8919805'],
     ['ships', 'mmsi', '000000000'], ['ships', 'mmsi', '12345678'],
+    ['ships', 'position', '001234567'], ['ships', 'position', '23012345'],
+    ['ships', 'position', '230123456/track'], ['ships', 'position', '2.30123456e8'],
     ['ships', 'name', 'A'], ['ships', 'name', '🙂'],
     ['ships', 'name', 'X'.repeat(101)], ['ships', 'name', 'TEST\nSHIP'],
     ['ships', 'name', 'TEST\u0085SHIP'], ['ships', 'name', 'TEST\u007fSHIP'],
@@ -124,6 +127,95 @@ describe('Open Waters identity-only contract', () => {
     expect(result.matches).toHaveLength(50)
     expect(result.truncated).toBe(true)
     expect(result.rejectedRecords).toBe(1)
+  })
+})
+
+describe('explicit one-point ship position contract', () => {
+  const request = { objectClass: 'ships', by: 'position', query: '230123456' } as const
+  const from = now - DISCOVERY_CONFIG.shipPositionWindowMs
+  const track = (properties: Record<string, unknown> = {}) => ({
+    type: 'Feature', id: 230123456,
+    geometry: { type: 'Point', coordinates: [24.75, 59.44] },
+    properties: {
+      mmsi: 230123456, from: new Date(from).toISOString(), to: new Date(now).toISOString(),
+      points: 1, interval: 0, truncated: true, times: [new Date(now - 5_000).toISOString()],
+      ...properties,
+    },
+    attribution: { digitraffic: 'Fintraffic · CC BY 4.0', aishub: 'AISHub upstream credit' },
+  })
+  const normalize = (value: unknown) => normalizeShipPositionLookup(value, request, from, now, now + 1_000)
+
+  it('qualifies only the original one-point observation and retains every complete credit', () => {
+    const result = normalize(track({ seen: new Date(now).toISOString() }))
+    expect(result).toMatchObject({
+      objectClass: 'ships', retrievedAt: now + 1_000, truncated: false, rejectedRecords: 0,
+      matches: [{
+        key: 'open-waters:230123456', identifiers: { mmsi: '230123456' }, metadataReportedAt: null,
+        source: {
+          name: 'Open Waters AIS', code: 'open-waters-track',
+          credit: 'Fintraffic · CC BY 4.0 · AISHub upstream credit',
+        },
+        location: { latitude: 59.44, longitude: 24.75, reportedAt: now - 5_000 },
+      }],
+    })
+    expect(result.matches[0]).not.toHaveProperty('seen')
+    expect(validateDiscoveryResponse(result, request, now + 1_000)).toEqual(result)
+    expect(() => normalizeShipLookup(track(), request, now)).toThrow()
+    expect(() => validateDiscoveryResponse(result, shipRequest, now + 1_000)).toThrow()
+  })
+  it('accepts a complete successful empty track, never untimed metadata geometry', () => {
+    const empty = { ...track({ points: 0, times: [], truncated: false }), geometry: null, attribution: {} }
+    expect(normalize(empty)).toMatchObject({ matches: [], truncated: false, rejectedRecords: 0 })
+    expect(() => normalize({ ...empty, geometry: track().geometry })).toThrow()
+    expect(() => normalize({ ...empty, properties: { ...empty.properties, truncated: true } })).toThrow()
+    expect(() => normalize(collection())).toThrow()
+  })
+  it.each([
+    { mmsi: '230123456' }, { mmsi: 230123457 }, { points: 2 }, { points: -1 },
+    { interval: 1 }, { interval: undefined }, { truncated: undefined }, { truncated: 'true' },
+    { from: new Date(from + 1_000).toISOString() }, { from: new Date(from - 1_000).toISOString() },
+    { to: new Date(now - 1_000).toISOString() }, { to: new Date(now + 1_000).toISOString() },
+    { times: [] }, { times: [new Date(now).toISOString(), new Date(now).toISOString()] },
+    { times: [new Date(now + 1).toISOString()] }, { times: [new Date(from - 1).toISOString()] },
+    { times: ['2026-02-30T12:00:00Z'] }, { times: [now - 1_000] },
+    { times: undefined, seen: new Date(now).toISOString() },
+  ])('rejects wrong identity, cardinality, clocks or window: %j', (properties) => {
+    expect(() => normalize(track(properties))).toThrow()
+  })
+  it.each([
+    null, { type: 'LineString', coordinates: [[24.75, 59.44], [24.76, 59.45]] },
+    { type: 'Point', coordinates: [24.75, 91] }, { type: 'Point', coordinates: [181, 59.44] },
+    { type: 'Point', coordinates: [24.75, 59.44, 0] }, { type: 'Point', coordinates: [24.75, NaN] },
+    { type: 'Point', coordinates: ['24.75', 59.44] },
+  ])('rejects non-point, wrong-sized or invalid geometry: %j', (geometry) => {
+    expect(() => normalize({ ...track(), geometry })).toThrow()
+  })
+  it.each([
+    undefined, {}, { aishub: '' }, { aishub: 123 }, { aishub: 'credit\ninjection' },
+    { aishub: 'X'.repeat(DISCOVERY_CONFIG.maximumCreditLength + 1) },
+    { aishub: 'X'.repeat(1_500), digitraffic: 'Y'.repeat(1_500) },
+    Object.fromEntries(Array.from({ length: DISCOVERY_CONFIG.shipPositionMaximumCredits + 1 }, (_, index) => [`source${index}`, 'credit'])),
+  ])('rejects missing, incomplete or oversized credits without truncating them: %j', (attribution) => {
+    expect(() => normalize({ ...track(), attribution })).toThrow()
+  })
+  it('checks feature identity and the original requested MMSI, not just the body clock', () => {
+    expect(() => normalize({ ...track(), id: 230123457 })).toThrow()
+    expect(() => normalizeShipPositionLookup({ ...track(), id: undefined }, { ...request, query: '001234567' }, from, now, now)).toThrow()
+    expect(() => normalizeShipPositionLookup(track(), { ...request, by: 'mmsi' }, from, now, now)).toThrow()
+  })
+  it('rejects crossed identities, fake provenance, partial position responses and substituted metadata clocks at the browser boundary', () => {
+    const result = normalize(track())
+    const match = result.matches[0]
+    for (const changed of [
+      { ...match, identifiers: { mmsi: '230123457' } },
+      { ...match, source: { ...match.source, code: 'digitraffic:station' } },
+      { ...match, metadataReportedAt: now }, { ...match, location: null },
+    ]) {
+      expect(() => validateDiscoveryResponse({ ...result, matches: [changed] }, request, now + 1_000)).toThrow()
+    }
+    expect(() => validateDiscoveryResponse({ ...result, matches: [match, match] }, request, now + 1_000)).toThrow()
+    expect(() => validateDiscoveryResponse({ ...result, truncated: true }, request, now + 1_000)).toThrow()
+    expect(() => validateDiscoveryResponse({ ...result, rejectedRecords: 1 }, request, now + 1_000)).toThrow()
   })
 })
 
