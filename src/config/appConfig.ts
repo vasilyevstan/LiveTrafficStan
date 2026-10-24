@@ -26,6 +26,7 @@ export { MARINE_STREAM_CONFIG } from './marineStreamConfig'
 export { VESSEL_PHOTO_CONFIG } from './vesselPhotoConfig'
 export { AIRPORT_BOARD_CONFIG } from './airportBoardConfig'
 export { DISCOVERY_CONFIG } from './discoveryConfig'
+export { OBJECT_SHARE_CONFIG } from './objectShareConfig'
 
 export const LOCAL_MAP_TOOLS_CONFIG = {
   maximumPitchDegrees: 0.5,
@@ -120,6 +121,7 @@ export interface AppConfig {
   }
   airports: StaticAirportsProviderConfig
   airportBoards: typeof AIRPORT_BOARD_CONFIG & { enabled: boolean }
+  objectSharing: { enabled: boolean }
   ports: StaticPortsProviderConfig
   weather: FreshnessThresholds &
     AwcMetarProviderConfig & {
@@ -597,6 +599,9 @@ export const createAppConfig = (
     airportBoards: {
       ...AIRPORT_BOARD_CONFIG,
       enabled: readBoolean(env, 'VITE_AIRPORT_BOARDS_ENABLED', false),
+    },
+    objectSharing: {
+      enabled: readBoolean(env, 'VITE_OBJECT_SHARING_ENABLED', false),
     },
     ports: {
       assetUrl: `/ports/${portsSource.projection.outputVersion}/ports.geojson`,

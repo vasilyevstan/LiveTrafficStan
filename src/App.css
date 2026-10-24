@@ -1662,6 +1662,35 @@
   flex: 0 0 auto;
 }
 
+.object-share {
+  margin-block: 0 12px;
+}
+
+.object-share .journey-actions {
+  margin-top: 0;
+}
+
+.object-share__url {
+  display: grid;
+  gap: 4px;
+  color: var(--button-text);
+  font-size: 0.75rem;
+}
+
+.object-share__url input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px;
+  border: 1px solid var(--button-border);
+  border-radius: 8px;
+  background: var(--button-background);
+  color: var(--button-text);
+  font: inherit;
+  font-size: 1rem;
+}
+
 .context-details {
   margin-top: 8px;
   color: var(--note-text);

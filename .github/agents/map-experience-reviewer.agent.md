@@ -79,6 +79,15 @@ Check these project invariants:
 - Shareable camera reporting is independent of viewport-assessment
   deduplication, including repeated wide/invalid views. Fragment coordinates
   use the configured privacy precision and camera is never persisted.
+- Share object is dated public context, not Share view or a synthetic live
+  entity. One document-owned resolution/fit and a finite exact-selection
+  intent preserve recipient layers/filters/Home and never load ORBITS or
+  perform an outside lookup. Synchronous cancellation must survive same-batch
+  layer/filter A-to-B-to-A and late transport/worker results.
+- Object-link fits reuse actual unobstructed-space padding through stable
+  commands/refs, without changing map construction or ordinary Home fits.
+  Measure the projected shared point and full-canvas eligibility, not equality
+  between a padding-adjusted native camera center and the target.
 - Session Home and the current named/coordinate view target remain separate.
   Coordinate and place navigation never mutate Home, and Center always uses
   the latest configured or rounded geolocated Home.

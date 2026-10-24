@@ -6,7 +6,9 @@ LiveTrafficStan V1 is a browser application with no authentication, account
 database, or general backend. Production adds one fixed-purpose Cloudflare
 Worker for browser-incompatible aircraft/weather access, the protected
 scheduled CelesTrak snapshot, an optional isolated marine-stream relay and
-the fixed Open Waters vessel-photo metadata route.
+the fixed Open Waters vessel-photo metadata route. Optional exact-object
+sharing adds one bounded D1 store behind that same Worker, not an account
+database or general link platform.
 Plausible route lookup, Digitraffic marine traffic, place search, map data,
 and aircraft photos use reviewed direct browser paths.
 Vessel photos prefer reviewed versioned same-origin assets, then use a bounded
@@ -1617,6 +1619,69 @@ and the current share fragment. It does not move the camera/Home or alter
 private-history consent, epochs, settings, or IndexedDB. Existing selection
 invalidation still applies when reset defaults hide or filter the selected
 object.
+
+## Exact-object link ownership and storage
+
+`objectShare.ts` defines a versioned public context separate from traffic,
+orbital positions and history. It validates exact identities, corroboration,
+source/type/provenance, bounded text/bytes and rounded coordinates. Observation
+and modeled instants may contain fractional milliseconds from the existing
+monotonic orbital clock; preserve those real instants rather than inventing
+integer times. Server receipt/admission clocks remain independently validated.
+
+The sender control is keyed by complete identity/corroboration and, for an
+orbital selection, snapshot. Capture happens on explicit activation, not in
+render. One bounded request and a monotonic cached-link deadline own Copy.
+Unmount/identity changes abort the consumer; obsolete A-to-B-to-A results
+cannot publish feedback or copy a URL into a new selected lifetime.
+
+`main.tsx` detects an object fragment once, before React StrictMode and the
+analytics bootstrap, removes it with `replaceState`, and passes one
+`ObjectShareStartup` transaction into App. No intent adds no feature-owned
+request/timer. Mixed object/legacy-camera fragments are rejected rather than
+merging sender preferences into the recipient. Existing Share view startup
+is unchanged.
+
+Valid startup reserves camera ownership before asynchronous geolocation.
+Receipt consumption makes at most one ordinary `commitNavigation`, with
+per-kind radius carried in the existing ref-backed map command. The
+object-specific fit reuses `journeyFitPadding` to keep the shared point out
+from behind the inspector. It does not change ordinary Home/Share view fits,
+map-construction dependencies, canvas size or provider coverage. A missing
+fitting area reports a local notice, not a successful framing claim.
+
+Dated context and a finite pending exact-selection ref are separate. Only
+qualified current recipient entities, visible in the accepted view, may
+consume the latter and establish an ordinary selection. It never creates a
+marker/entity/count/trail/history row from a snapshot. ORBITS stays opt-in;
+current owner, snapshot/clock validity, filter and footprint rules still
+apply. Layer/filter setters clear pending intent synchronously, including a
+same-batch off/on transition. Manual movement/navigation/selection, HISTORY,
+capture, cancellation and monotonic expiry fence late work. No repeating
+selection/camera effect or outside lookup is introduced.
+
+`worker/objectShares.ts` owns literal same-origin POST create/resolve routes.
+It validates method, origin/fetch-site, media type, body/schema, byte bounds
+and deadlines; replies are no-store/no-referrer/noindex. Nine random bytes
+make a 12-character token, with bounded unique-key collision retries. Exact
+one-component root token GET/HEAD redirects uncached to `/#object=<token>`
+without a database read. Query-bearing token paths fail; unrelated routing
+and `assets.run_worker_first` remain unchanged.
+
+One D1 database has `object_shares` (token/expiry-indexed public context),
+`object_share_days` (global atomic UTC-day admission) and
+`object_share_statistics` (daily kind/identifier counts). Shared production
+SQL and transactional batches couple admission, insert/valid resolution and
+counters; no read-then-write cap race is allowed. Server expiry determines
+validity independently of deletion. D1 work already admitted may commit
+after HTTP cancellation; counters describe committed/admitted work.
+
+Scheduled cleanup is independent of orbital acquisition and continues with
+a retained D1 binding even when sharing is disabled. The ordinary orbital
+Cron is reused; with orbital acquisition off, prepared configuration adds
+one hourly cleanup Cron. No per-token actor, new provider, browser poller,
+database client dependency or general migration framework is added.
+See [operations, measured-budget gate and rollback](hosting-and-deployment.md#exact-object-sharing-operations).
 
 ## Smooth globe and safe footprints
 

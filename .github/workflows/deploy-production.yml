@@ -81,6 +81,8 @@ jobs:
       url: ${{ steps.deploy.outputs.deployment-url }}
     env:
       WRANGLER_SEND_METRICS: false
+      OBJECT_SHARING_ENABLED: ${{ vars.OBJECT_SHARING_ENABLED || 'false' }}
+      OBJECT_SHARES_DATABASE_ID: ${{ vars.OBJECT_SHARES_DATABASE_ID }}
 
     steps:
       - name: Validate deployment request
@@ -100,6 +102,10 @@ jobs:
           if [[ "$STARLINK_ENABLED" == "true" && "$ORBITAL_ENABLED" != "true" ]]; then
             echo "The Starlink catalog requires the curated orbital catalog." >&2
             exit 1
+          fi
+          [[ "$OBJECT_SHARING_ENABLED" == true || "$OBJECT_SHARING_ENABLED" == false ]]
+          if [[ "$OBJECT_SHARING_ENABLED" == true ]]; then
+            [[ "$OBJECT_SHARES_DATABASE_ID" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]]
           fi
 
       - name: Check out exact source
@@ -180,6 +186,7 @@ jobs:
           VITE_FLIGHT_ROUTE_ENABLED: ${{ inputs.flight_route_enabled }}
           VITE_MARINE_SUPPLEMENT_ENABLED: ${{ inputs.marine_supplement_enabled }}
           VITE_AIRPORT_BOARDS_ENABLED: ${{ inputs.airport_boards_enabled }}
+          VITE_OBJECT_SHARING_ENABLED: ${{ env.OBJECT_SHARING_ENABLED }}
         run: npm run build
 
       - name: Build PWA retirement artifact
@@ -190,6 +197,7 @@ jobs:
           VITE_FLIGHT_ROUTE_ENABLED: ${{ inputs.flight_route_enabled }}
           VITE_MARINE_SUPPLEMENT_ENABLED: ${{ inputs.marine_supplement_enabled }}
           VITE_AIRPORT_BOARDS_ENABLED: ${{ inputs.airport_boards_enabled }}
+          VITE_OBJECT_SHARING_ENABLED: ${{ env.OBJECT_SHARING_ENABLED }}
         run: npm run build:pwa-retire
 
       - name: Check exact deployment bundle
@@ -221,6 +229,8 @@ jobs:
               --orbital-source "$ORBITAL_SOURCE" \
               --marine-enabled "$MARINE_ENABLED" \
               --airport-boards-enabled "$AIRPORT_BOARDS_ENABLED" \
+              --object-sharing-enabled "$OBJECT_SHARING_ENABLED" \
+              --object-shares-database-id "${OBJECT_SHARES_DATABASE_ID:-none}" \
               --namespace-id "$NAMESPACE_ID"
           else
             node scripts/prepare-wrangler-config.mjs \
@@ -230,7 +240,9 @@ jobs:
               --starlink-enabled false \
               --orbital-source "$ORBITAL_SOURCE" \
               --marine-enabled "$MARINE_ENABLED" \
-              --airport-boards-enabled "$AIRPORT_BOARDS_ENABLED"
+              --airport-boards-enabled "$AIRPORT_BOARDS_ENABLED" \
+              --object-sharing-enabled "$OBJECT_SHARING_ENABLED" \
+              --object-shares-database-id "${OBJECT_SHARES_DATABASE_ID:-none}"
           fi
 
       - name: Check exact production Worker configuration
@@ -327,6 +339,8 @@ jobs:
             echo "- Orbital acquisition source: \`${{ inputs.orbital_source }}\`"
             echo "- Marine supplement enabled: \`${{ inputs.marine_supplement_enabled }}\`"
             echo "- Airport boards enabled: \`${{ inputs.airport_boards_enabled }}\`"
+            echo "- Object sharing enabled: \`$OBJECT_SHARING_ENABLED\`"
+            echo "- Object shares database: \`${OBJECT_SHARES_DATABASE_ID:-none}\`"
             echo "- Orbital KV namespace: \`${{ steps.orbital-kv.outputs.namespace-id || 'none' }}\`"
             echo "- Orbital coordinator enabled: \`${{ inputs.orbital_catalog_enabled }}\`"
             echo "- URL: $DEPLOYMENT_URL"
