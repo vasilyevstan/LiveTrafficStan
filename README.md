@@ -8,15 +8,21 @@ user accounts or a server-side vessel history archive.
 
 Public production: <https://trackstan.xyz>
 
-Current map-detail follow-up and exact application/Worker identities:
-[ordinary top-down detail delivery receipt (#522)](https://github.com/vasilyevstan/LiveTrafficStan/issues/522).
-The [initial relief/building release (#518)](https://github.com/vasilyevstan/LiveTrafficStan/issues/518)
-remains a separate historical receipt.
+**Exact-object sharing is live (2026-10-24):** select an aircraft, vessel or
+satellite and choose **Share object** for a 12-character link lasting 24 hours.
+Running application: **`479a03b96a3a5a1847c40d781f0325edc60356c8`**; Worker:
+**`0f7ce603-d149-4476-a8f5-58df3f293f84`**. Actual Free-account/D1 qualification,
+public three-kind links and an ordinary installed update passed.
+[Release evidence and private sharing reports](docs/hosting-and-deployment.md#production-activation-and-public-acceptance-2026-10-24)
+distinguish this runtime from later documentation-only commits.
+Earlier [ordinary map-detail (#522)](https://github.com/vasilyevstan/LiveTrafficStan/issues/522)
+and [initial relief/building (#518)](https://github.com/vasilyevstan/LiveTrafficStan/issues/518)
+receipts remain historical.
 
 Historical native-orbital-primary application source: `1352c6e586366084b09bcb9cefa2a5cf5f9c8065`,
 Worker `c207eeee-e817-4a9f-bbc7-49daaab85504`, with the
 [native orbital primary receipt](docs/hosting-and-deployment.md#native-orbital-primary-production-acceptance-2026-10-17).
-Later documentation-only commits do not replace that running source.
+This is historical evidence, not the current runtime identified above.
 
 **Orbital source restored on 2026-10-17:** Space-Track GP is the production
 primary and checked deployment default. Ordinary scheduled acquisitions
@@ -146,8 +152,8 @@ identity are not renamed or reset.
   details; otherwise **Shared object** remains explicit dated context.
   Recipient layers, filters and Home stay unchanged; no outside lookup or
   automatic ORBITS loading is added. Clipboard failure leaves a selectable
-  URL. Deployment defaults off until storage and Free-account reserve pass
-  protected qualification. See [usage and bounds](docs/configuration.md#share-this-exact-object),
+  URL. Source defaults remain off; production is enabled after actual protected
+  storage and Free-account qualification. See [usage and bounds](docs/configuration.md#share-this-exact-object),
   [publication/privacy](docs/data-sources-and-licensing.md#public-object-links)
   and [setup and private statistics](docs/hosting-and-deployment.md#exact-object-sharing-operations).
 - Viewport-driven traffic after settled pan, zoom, rotation, pitch, Home, and

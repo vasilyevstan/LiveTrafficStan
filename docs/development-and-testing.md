@@ -2891,9 +2891,77 @@ phone/GPU, host clipboard, OS-location or OS-keyboard acceptance.
 
 Public activation additionally requires the protected current-main operation
 to verify actual Free/shared-account reserve, permissions and D1 row/storage
-metering. Public links, genuine installed update and canonical/Wiki publication
-are separate delivery evidence, not inferred from this local report; see
-the actual delivery receipt on #553.
+metering. The actual successful operation and subsequent public evidence are
+recorded below, separately from the accepted local report.
+
+### Public object links and installed update (2026-10-24)
+
+Protected setup **40081713255** passed actual Free/shared-account reserve and
+real D1 SQL metering before enabled deployment **40082635395** published
+application `479a03b96a3a5a1847c40d781f0325edc60356c8`, Worker
+`0f7ce603-d149-4476-a8f5-58df3f293f84`. This is remote resource qualification,
+not the local simulated accounting test. The earlier HTTP 403 stops are
+historical; #558 is resolved.
+
+The real public Chrome156 batch completed at **10:11:03 UTC**:
+
+| Kind | Recipient | Native create / resolve | Resolution time | Outcome |
+| --- | --- | --- | --- | --- |
+| Aircraft | Light, 1280x900 | `201` / `200` | 394.6ms | Exact current application-owned selection |
+| Vessel | Dark, 390x844 | `201` / `200` | 174.4ms | Exact current application-owned selection |
+| Orbital | Light, 315x517 | `201` / `200` | 258.5ms | Explicit dated context; ORBITS stays off; zero catalog requests |
+
+All three actual normal inspectors use native marker selection, Share and
+cached Copy; creations use desktop. Root-token GET/HEAD return uncached `302`; each fresh
+recipient document makes one native resolve. Saved points project to
+uncovered map canvas inside the measured viewport, without equating the
+padding-adjusted native center to the snapshot. Each recipient retains one
+canvas, byte-equal actual saved preferences/history settings, an empty token
+fragment and identity-free heading IDs. Aircraft/vessel traffic assessments
+are eligible; the intentionally wide orbital fit truthfully pauses traffic.
+Native fetch, WebSocket, Date.now and Worker remain, with no fixture,
+interception or clock override and no uncaught runtime exception.
+
+The observer separately makes one real HTTP receipt resolve per link because
+its first CDP body-completion assumption did not yield the creation body.
+These three probes are additional resolved operations, not recipients or
+unique people; they are not included in the native timing column. The first
+successful aircraft creation and the two accepted traffic recipients were
+retained during observer corrections, not recreated. Its unpersisted
+pre-create camera snapshot is not reconstructed. An intermediate unsettled
+mobile-sender attempt issued no creation; final public senders use desktop,
+while the accepted local 390x844 sender geometry remains separate.
+
+Three native official Web Analytics POSTs returned `204`; observed payloads
+contain none of their relevant short-link tokens. This is payload/transport
+evidence, not new exact-host dashboard ingestion or custom sharing metrics.
+The private D1 daily/top-10 queries remain the sharing-reporting mechanism.
+Public creation times are 215.4-380.6ms and native resolution times
+174.4-394.6ms; neither is an availability or future latency promise.
+
+The genuine original controlled tab upgraded from application `461b56a` to
+`479a03b` through trusted **REFRESH APP**. Its actual asset changed from
+`index-Dp-0UGNh.js` to `index-C63hvujh.js`, with changed document time origin,
+root scope/control and history database name/version retained. Theme,
+unified preferences and history-setting strings are byte-equal. No replacement
+tab, service-worker unregister or site-data clearing substitutes for that
+consumed update.
+
+Treat `livetrafficstan.history.invalidate.v1` as coordination metadata, not a
+user preference. Normal recording after reload changes writer/revision and
+publishes `write`; verify the retained history epoch separately and reject a
+clear/disable/reset rather than requiring all prefixed storage bytes to match.
+The original overbroad observer failure is retained; confirmation resumes the
+same already-updated document rather than fabricating another old tab.
+
+Read-only React/MapLibre observations, focus/device emulation and software
+WebGL are not physical-phone/GPU, OS clipboard, OS-keyboard or OS-location
+proof. The public checks do not prove old historical row contents, 24-hour
+wall-clock expiry, exhausted production quotas or whole-app/provider health.
+Reuse the accepted deterministic TTL/caps/races/offline and full local
+responsive matrix, including the independent #554 sender limitation.
+[Operations and actual deployment](hosting-and-deployment.md#production-activation-and-public-acceptance-2026-10-24)
+and the #553 receipt distinguish runtime from later documentation publication.
 
 ## Issue #12 preference, share, and unit acceptance
 
