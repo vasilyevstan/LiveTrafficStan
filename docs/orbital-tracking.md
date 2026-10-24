@@ -397,8 +397,17 @@ unrepresentable nadir entry. Further native zoom/pitch/target checks can reject
 a pose without moving the camera. The height comes from the accepted
 `altitudeKm`, explicitly converted to meters: SGP4's geodetic height on the
 renderer's spherical Earth is an approximation, not a physical optical camera
-placement. There is no live telemetry, spacecraft attitude, camera feed, terrain,
-cloud, illumination or visibility simulation.
+placement. There is no live telemetry, spacecraft attitude, camera feed,
+terrain, cloud or optical-visibility simulation.
+
+A subdued night-side tint and thin day/night boundary provide approximate
+surface sunlight context on the wide Earth and in View from here. They are
+calculated locally from displayed time in minute buckets; Pause holds that
+time and shade together. Ordinary map shading fades between zoom 3.5 and 5
+to avoid local-map clutter; the captured view keeps it. This is not twilight,
+terrain-shadow, satellite eclipse/lighting or optical-visibility prediction,
+and makes no claim that a spacecraft or ground object is sunlit or visible.
+It adds no provider, request, timer, permanent control or saved preference.
 
 Native atmosphere is used only for the high, Earth-framed entrance; applying
 it to the low-orbit Dark map washed out cartography in the proof. Existing
@@ -492,7 +501,11 @@ first and does not also Return. Find can open without moving the eye. Center,
 committed navigation, a new location action, HISTORY, ORBITS-off or projection
 change ends capture; newer navigation takes precedence over old restoration.
 Old location callbacks may update session Home silently, never steal the eye.
-Cancelled selection, ruler and journey commands are not resurrected.
+Explicit Return, X and owned Escape retain the originating satellite selection
+when that same owning model generation still qualifies. Ordinary filters,
+visibility and current-output validity still apply after resumption.
+Newer navigation, invalid-model/error exits, cancelled ruler and old journey
+commands do not resurrect obsolete selection.
 
 Hiding retains the captured identity/snapshot independently of controller output
 and stops motion. Visibility resume validates and obtains a fresh selected
@@ -507,6 +520,23 @@ itself fails, the existing map-error surface explicitly says the previous
 camera **could not be restored** and offers Center/reload recovery; it does
 not claim a successful Return. Capture is session-only, with no stored viewer
 pose, orbital history entry or share-link representation.
+
+### Opening a shared satellite
+
+A validated exact-object link enables ORBITS for this session unless an
+explicit orbital-layer choice wins during resolution. It does not change
+ordinary startup or the saved layer preference. The existing curated and
+bounded Starlink channels load normally, never by an outside identity lookup.
+Current exact owner/NORAD, corroboration, model validity, filters and native
+visibility must confirm the object before ordinary details replace dated
+**Shared object** context. Link lifetime does not extend model freshness.
+
+Manual off wins. An explicit subsequent ORBITS enable can grant one finite
+matching opportunity without another link resolution or camera move; it
+never creates an indefinitely reselecting effect. Use the accessible Share
+arrow beside X in ordinary details; it is not available for the captured
+viewer. [Sharing bounds](configuration.md#share-this-exact-object) apply to
+all three object kinds.
 
 The accepted scope adds no renderer, dependency, provider, endpoint, worker,
 dataset or deployment setting. See [architecture](architecture.md#captured-orbital-camera-ownership-508),

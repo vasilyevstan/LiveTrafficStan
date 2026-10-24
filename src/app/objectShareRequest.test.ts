@@ -91,10 +91,26 @@ describe('one document-owned startup transaction', () => {
     const startup = new ObjectShareStartup(token, fetchImpl)
     const results = await Promise.all([startup.result, startup.result, startup.result])
     expect(results.every(result => 'receipt' in result)).toBe(true)
+    expect(results[1]).toBe(results[0])
+    expect(results[2]).toBe(results[0])
     expect(fetchImpl).toHaveBeenCalledOnce()
     expect(startup.pending).toBe(false)
     expect(startup.consume()).toBe(true)
     expect(startup.consume()).toBe(false)
+  })
+
+  it('anchors remaining link lifetime before transport so late delivery cannot extend selection', async () => {
+    const requestedAt = performance.now()
+    const fetchImpl = vi.fn<typeof fetch>().mockImplementation(async () => {
+      await new Promise(resolve => setTimeout(resolve, 2_000))
+      return response({ ...receipt, createdAt: now + 4_000 - config.lifetimeMs,
+        expiresAt: now + 4_000, serverNow: now + 1_000 })
+    })
+    const startup = new ObjectShareStartup(token, fetchImpl)
+    await vi.advanceTimersByTimeAsync(2_000)
+    expect(await startup.result).toMatchObject({ linkDeadline: requestedAt + 3_000 })
+    expect(fetchImpl).toHaveBeenCalledOnce()
+    expect(startup.consume()).toBe(true)
   })
 
   it('cannot be consumed after newer manual intent, even when a transport ignores cancellation', async () => {

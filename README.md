@@ -150,9 +150,13 @@ identity are not renamed or reset.
   the exact identity and dated, rounded location context, not a promise that
   the object is still there. Current recipient-owned data may open ordinary
   details; otherwise **Shared object** remains explicit dated context.
-  Recipient layers, filters and Home stay unchanged; no outside lookup or
-  automatic ORBITS loading is added. Clipboard failure leaves a selectable
-  URL. Source defaults remain off; production is enabled after actual protected
+  The Share arrow is immediately beside the inspector's X; Copy and selectable
+  URL feedback use its existing body. A validated satellite link enables
+  ORBITS for that session unless an explicit layer choice wins. Ordinary
+  startup, saved preferences, filters and Home stay unchanged; no outside
+  identifier lookup is added. Explicit orbital re-enable grants one finite
+  matching opportunity, not another resolution or camera move. Source
+  defaults remain off; production is enabled after actual protected
   storage and Free-account qualification. See [usage and bounds](docs/configuration.md#share-this-exact-object),
   [publication/privacy](docs/data-sources-and-licensing.md#public-object-links)
   and [setup and private statistics](docs/hosting-and-deployment.md#exact-object-sharing-operations).
@@ -294,8 +298,15 @@ identity are not renamed or reset.
   **Pause** freezes the displayed
   eye/time, and **Play** resumes from the current model without replay.
   Reduced-motion users start paused; geostationary objects may appear still.
-  **Return**, X or canvas-owned Escape restores the previous map; native
-  fullscreen retains Escape precedence. Flat and unsupported poses are
+  **Return**, X or canvas-owned Escape restores the previous map and retains
+  the originating satellite selection when its owning model still qualifies.
+  Newer navigation and automatic/error exits do not revive old selection;
+  native fullscreen retains Escape precedence. A subdued night-side tint and
+  thin day/night line provide approximate local Earth context in this view
+  and on the zoomed-out map. They follow displayed time, including Pause,
+  and fade away at ordinary close zooms, without a new control or request.
+  This is not a spacecraft-lighting or optical-visibility simulation.
+  Flat and unsupported poses are
   explicitly unavailable, never silently changed or clamped. Orbital acquisition
   and crossing prediction pause; only the selected object is modeled at the
   existing one-second cadence, with bounded display-only interpolation.

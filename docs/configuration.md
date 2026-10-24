@@ -352,6 +352,22 @@ qualify and no peer implementation was added.
 See [the complete experience](orbital-tracking.md#captured-orbital-views-508)
 and [#510's actual production receipt](hosting-and-deployment.md#captured-orbital-view-production-receipt-2026-10-19).
 
+### Earth day/night context (#563)
+
+`EARTH_DAY_NIGHT_CONFIG` uses 60,000ms displayed-time buckets and one-degree
+geometry sampling. A subdued night fill and one-pixel terminator are fully
+visible through map zoom 3.5 and fade to zero at zoom 5; View from here retains
+them independently of that zoom fade. Pause freezes the shade with the
+displayed modeled time, not with a separate clock.
+
+The approximation is calculated locally and reuses persistent native layers,
+the existing displayed-time updates and theme rehydration. It adds no switch,
+saved preference, provider, request or timer. It represents approximate
+surface day/night, not twilight, terrain shadows, spacecraft lighting,
+weather or optical visibility. Explicit Return also retains the originating
+satellite only while its owning generation remains valid; newer navigation
+and automatic/error exits do not restore obsolete selection.
+
 ## Changing the center
 
 For example, a local Tallinn-area variant can use:
@@ -1204,10 +1220,13 @@ The example is not a working link. A link is public to anyone who receives
 it, not a private message or authentication token. There is no individual
 revocation or permanent-link promise.
 
-Creation is explicit. Copy reuses the current successful link until its
+The accessible Share arrow is immediately left of X in the details header,
+including compact phone details. Creation is explicit. Copy reuses the current successful link until its
 expiry; changing the selected identity discards its UI state and cancels
 obsolete work. If the browser cannot write the clipboard after the request,
-select and copy the read-only URL. A committed server creation may still
+select and copy the read-only URL in the existing inspector body. The header
+action brings that feedback into view without another scroll region.
+A committed server creation may still
 count even if a later cancellation or lost response prevents copying it.
 
 A recipient first sees the intended identity, source and actual observation
@@ -1223,10 +1242,16 @@ contradictory registration, IMO or international designator cannot match.
 No name/callsign-only matching, extra identifier lookup, following or later
 corrective camera movement is performed.
 
-Layers, filters, projection, saved preferences and session Home remain the
-recipient's. Hidden/filtered objects or ORBITS off do not silently enable
-anything. Use existing controls and Find if desired; changing a layer/filter
-cancels the old automatic-selection intent rather than reviving it later.
+Saved preferences, filters, projection and session Home remain the recipient's.
+A validated incoming satellite link is explicit session intent to enable
+ORBITS, including its existing bounded Starlink sample. It does not change
+ordinary no-token startup or save the override. An explicit orbital layer
+choice while resolution is pending wins; manual off remains off.
+Other hidden/filtered objects are not enabled or forced through filters.
+Layer/filter changes cancel the old automatic-selection intent. For this
+shared satellite only, explicitly enabling ORBITS creates one new opportunity
+of at most 30 seconds, bounded by the original link expiry, without resolving
+again or navigating again. Passive updates never renew it.
 Manual navigation, another selection, HISTORY or capture also wins over an
 older link. Late geolocation can still update Home silently; Center remains
 the explicit way to visit Home. **Share view** remains a different action.
@@ -1260,7 +1285,7 @@ tokens/context are not installed-shell or offline caches.
 
 See [storage/publication and backups](data-sources-and-licensing.md#public-object-links),
 [protected operations](hosting-and-deployment.md#exact-object-sharing-operations)
-and [acceptance evidence](development-and-testing.md#exact-object-sharing-553).
+and [follow-up acceptance](development-and-testing.md#shared-orbital-entry-inspector-actions-and-earth-context-563).
 
 ## Installable application shell
 

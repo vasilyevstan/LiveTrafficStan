@@ -1,7 +1,9 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useContext, useEffect, useId, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { requestObjectShare, ObjectShareRequestError } from '../app/objectShareRequest'
 import { OBJECT_SHARE_CONFIG as config } from '../config/objectShareConfig'
 import type { ObjectShareContext } from '../domain/objectShare'
+import { DetailsPanelFeedbackContext, MobileInspectorContext } from './mobileWorkspace'
 
 interface Props {
   identityKey: string
@@ -10,6 +12,8 @@ interface Props {
 }
 
 function ShareControl({ capture, now }: Props) {
+  const presentation = useContext(MobileInspectorContext)
+  const feedbackTarget = useContext(DetailsPanelFeedbackContext)
   const inputId = useId()
   const pendingRef = useRef<AbortController | undefined>(undefined)
   const linkRef = useRef<{ url: string; deadline: number } | undefined>(undefined)
@@ -67,19 +71,29 @@ function ShareControl({ capture, now }: Props) {
     }
   }
   const ready = displayLink && now < displayLink.expiresAt
+  const label = pending ? 'Creating link...' : ready ? 'Copy object link' : 'Share object'
+  const feedbackContent = (feedback || displayLink) && <div className="object-share__feedback">
+    {feedback && <p className="metadata-status" role="status">{feedback}</p>}
+    {displayLink && <label className="object-share__url" htmlFor={inputId}>Object link
+      <input id={inputId} readOnly value={displayLink.url} onFocus={event => event.currentTarget.select()} />
+    </label>}
+  </div>
   return (
     <div className="object-share">
-      <div className="journey-actions">
-        <button type="button" onClick={() => void share()}
-          disabled={pending || !ready && now < cooldownUntil}>
-          {pending ? 'Creating link...' : ready ? 'Copy object link' : 'Share object'}
-        </button>
-      </div>
-      {feedback ? <p className="metadata-status" role="status">{feedback}</p> :
-        <p className="metadata-status">Public identity and dated position. Link lasts 24 hours.</p>}
-      {displayLink && <label className="object-share__url" htmlFor={inputId}>Object link
-        <input id={inputId} readOnly value={displayLink.url} onFocus={event => event.currentTarget.select()} />
-      </label>}
+      <button type="button" className="close-button details-panel__share" onClick={() => {
+        if ((presentation?.mobile || presentation?.forceCompact) && presentation?.compact) presentation.onExpand()
+        void share()
+      }}
+        aria-label={label} aria-busy={pending}
+        title={`${label}. Public identity and dated position; link lasts 24 hours.`}
+        disabled={pending || !ready && now < cooldownUntil}>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+          strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+          <path d="M12 16V3m-4 4 4-4 4 4M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7" />
+        </svg>
+      </button>
+      {feedbackTarget ? createPortal(feedbackContent, feedbackTarget)
+        : feedbackTarget === undefined ? feedbackContent : null}
     </div>
   )
 }

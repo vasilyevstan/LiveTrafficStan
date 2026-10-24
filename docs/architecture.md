@@ -921,6 +921,20 @@ render/timer/input callbacks and restores exact prior states even when native
 placement fails. A failed restoration reports through the existing map-error
 surface and ends capture truthfully rather than stranding its owner.
 New explicit navigation releases ownership without applying the old camera.
+Explicit Return, X and canvas-owned Escape have a separate revision-fenced
+App callback: the same valid owning generation can restore the originating
+satellite selection before controllers resume. The transient capture-paused
+handoff does not clear it. Automatic invalidity/error exits and newer
+navigation use the non-restoring path; ordinary selection validity resumes
+with current output.
+
+`earthDayNight.ts` calculates an approximate solar subpoint and bounded night
+geometry locally. `earthDayNightStyle.ts` keeps one `earth-day-night` source,
+an `earth-night` fill and `earth-terminator` line below symbols. Existing
+displayed time supplies minute buckets, so Pause also freezes the shading.
+Ordinary zoom fades it from 3.5 to 5; capture retains it. Style replacement
+rehydrates current geometry and themed paint idempotently on the same map.
+No provider, timer, physical illumination model or new camera owner is added.
 
 App atomically retains the exact pre-capture eligible `TrafficViewport` object.
 Its existing query memo therefore retains the rounded request and full display
@@ -1634,6 +1648,10 @@ orbital selection, snapshot. Capture happens on explicit activation, not in
 render. One bounded request and a monotonic cached-link deadline own Copy.
 Unmount/identity changes abort the consumer; obsolete A-to-B-to-A results
 cannot publish feedback or copy a URL into a new selected lifetime.
+The same control supplies the accessible header arrow beside Close; feedback
+is portaled into the existing body scroller. Its identity-keyed request/Copy
+owner is not remounted or duplicated. Header activation reveals that body
+and resets its scroll to show feedback; focus containment includes the portal.
 
 `main.tsx` detects an object fragment once, before React StrictMode and the
 analytics bootstrap, removes it with `replaceState`, and passes one
@@ -1653,10 +1671,23 @@ fitting area reports a local notice, not a successful framing claim.
 Dated context and a finite pending exact-selection ref are separate. Only
 qualified current recipient entities, visible in the accepted view, may
 consume the latter and establish an ordinary selection. It never creates a
-marker/entity/count/trail/history row from a snapshot. ORBITS stays opt-in;
-current owner, snapshot/clock validity, filter and footprint rules still
-apply. Layer/filter setters clear pending intent synchronously, including a
-same-batch off/on transition. Manual movement/navigation/selection, HISTORY,
+marker/entity/count/trail/history row from a snapshot. A validated incoming
+orbital receipt can enable ORBITS through a session-only effective-layer
+override. Stored layers remain separate; a manual orbital choice during
+resolution wins, and ordinary startup adds no activation or request.
+The matching effect waits until its exact receipt is committed to displayed
+context: an older render's filter signature cannot consume a newly assigned
+ref before the layer/receipt state is applied. It still enforces current owner,
+snapshot/clock validity, corroboration, filters and accepted view. A safe
+geographic footprint uses the existing containment test; invalid globe
+geometry requires exact-ID native rendered-point visibility, not guessed
+whole-world counts.
+
+Layer/filter setters clear pending intent synchronously. Explicit orbital
+re-enable for the retained shared receipt alone creates one bounded attempt,
+without another resolve/navigation. Its deadline is the earlier of 30 seconds
+and the original monotonic link deadline, anchored before transport; passive
+updates cannot renew either. Manual movement/navigation/selection, HISTORY,
 capture, cancellation and monotonic expiry fence late work. No repeating
 selection/camera effect or outside lookup is introduced.
 

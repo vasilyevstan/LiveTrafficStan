@@ -24,3 +24,6 @@ export interface MobileInspectorPresentation {
 
 export const MobileInspectorContext =
   createContext<MobileInspectorPresentation | undefined>(undefined)
+
+export const DetailsPanelFeedbackContext =
+  createContext<HTMLElement | null | undefined>(undefined)

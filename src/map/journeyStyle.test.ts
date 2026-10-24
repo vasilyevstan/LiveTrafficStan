@@ -14,6 +14,25 @@ const snapshot: JourneySnapshot = {
 }
 
 describe('captured journey map layers', () => {
+  it('keeps an exact eastward seam endpoint on the positive edge without extrapolating latitude', () => {
+    expect(splitJourneyLine([
+      { latitude: 10, longitude: 179 },
+      { latitude: 11, longitude: -180 },
+      { latitude: 12, longitude: -179 },
+    ])).toEqual([
+      [[179, 10], [180, 11]],
+      [[-180, 11], [-180, 11], [-179, 12]],
+    ])
+    expect(splitJourneyLine([
+      { latitude: 10, longitude: -179 },
+      { latitude: 11, longitude: 180 },
+      { latitude: 12, longitude: 179 },
+    ])).toEqual([
+      [[-179, 10], [-180, 11]],
+      [[180, 11], [180, 11], [179, 12]],
+    ])
+  })
+
   it('splits dateline crossings and preserves seam-equivalent points without NaN or world-spanning edges', () => {
     expect(splitJourneyLine(snapshot.segments[0]!.points)).toEqual([
       [[179, 0], [180, 1]], [[-180, 1], [-179, 2]],

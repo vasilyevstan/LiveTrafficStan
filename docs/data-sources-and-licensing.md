@@ -96,9 +96,18 @@ AISStream/Open Waters contributors; or the actual orbital source
 Space-Track.org / USSPACECOM or CelesTrak. Existing provider rights and
 modeled-not-live/not-optical caveats remain. Schema validation does not certify
 sender-supplied source, name, position or time as a provider observation.
-Opening a snapshot adds no external identifier lookup or automatic orbital
-loading; ordinary eligible map reception and a later real selection retain
-their existing provider/metadata/photo contracts.
+Opening a snapshot adds no external identifier lookup. A validated satellite
+link enables the existing ORBITS channels for that session unless an explicit
+layer choice wins; ordinary startup and saved preferences remain unchanged.
+These are the normal same-origin cache-only curated/bounded-Starlink reads,
+not direct GP acquisition or arbitrary satellite discovery. Ordinary eligible
+map reception and a real selection retain their existing provider/metadata/
+photo contracts.
+
+The quiet Earth day/night overlay is a local approximation using displayed
+time. It adds no solar-data provider, request or persistence and is not
+spacecraft lighting, eclipse or optical-visibility prediction. Existing
+basemap and orbital source credits remain required.
 
 An exact token path redirects to the root fragment without reading the record.
 Startup strips the fragment before analytics. Fixed sharing requests carry

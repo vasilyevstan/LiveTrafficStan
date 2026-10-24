@@ -35,7 +35,7 @@ export function SharedObjectDetails({
           {context.kind === 'orbital' ? ' The saved point is modeled, not live or an optical view.' : ' The object may have moved or left receiver coverage.'}</p>
         {context.kind === 'orbital' && <p>Originating {context.owner} catalog retrieved {formatTimestamp(context.snapshot.retrievedAt)}.
           Element epoch {formatTimestamp(context.snapshot.elementEpoch)}.</p>}
-        <p>Your layers, filters and Home stay unchanged. No outside lookup.</p>
+        <p>Saved preferences, filters and Home stay unchanged. No outside lookup.</p>
       </details>
     </DetailsPanel>
   )

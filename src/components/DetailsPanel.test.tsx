@@ -5,6 +5,28 @@ import { closeDetailsOnEscape } from './detailsKeyboard'
 import { MobileInspectorContext } from './mobileWorkspace'
 
 describe('DetailsPanel', () => {
+  it('keeps a labeled header action usable outside a compact hidden body', () => {
+    const html = renderToStaticMarkup(
+      <MobileInspectorContext.Provider value={{
+        mobile: true, compact: true, identity: 'orbital:test', returnToTask: false,
+        onExpand: vi.fn(), onCollapse: vi.fn(),
+      }}>
+        <DetailsPanel titleId="test-title" closeLabel="Close orbital details" onClose={vi.fn()}
+          heading={<h2 id="test-title">Test satellite</h2>}
+          headerAction={<button type="button" aria-label="Share object"><svg aria-hidden="true" /></button>}>
+          <p>Selected object and attribution</p>
+        </DetailsPanel>
+      </MobileInspectorContext.Provider>,
+    )
+    expect(html).toContain('class="details-panel details-panel--action"')
+    expect(html).toMatch(/class="details-panel__body" hidden="" inert=""/)
+    expect(html.indexOf('aria-label="Share object"')).toBeLessThan(html.indexOf('details-panel__body'))
+    expect(html.indexOf('aria-label="Share object"')).toBeLessThan(html.indexOf('details-panel__close'))
+    expect(html.indexOf('details-panel__action-feedback')).toBeGreaterThan(html.indexOf('details-panel__body'))
+    expect(html.indexOf('details-panel__action-feedback')).toBeLessThan(html.indexOf('Selected object and attribution'))
+    expect(html).toContain('Selected object and attribution')
+  })
+
   it('supports narrowly forced desktop compaction without unmounting selected content', () => {
     const html = renderToStaticMarkup(
       <MobileInspectorContext.Provider value={{

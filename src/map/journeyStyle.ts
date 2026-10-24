@@ -23,7 +23,7 @@ export const splitJourneyLine = (points: readonly JourneyCoordinate[]): [number,
         part.push([previous[0], point.latitude])
         continue
       }
-      const seam = unwrapped > 180 ? 180 : -180
+      const seam = unwrapped >= 180 ? 180 : -180
       const ratio = (seam - previous[0]) / (unwrapped - previous[0])
       const latitude = previous[1] + (point.latitude - previous[1]) * ratio
       part.push([seam, latitude])

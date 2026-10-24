@@ -15,7 +15,7 @@ import {
 import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
 import type { Theme } from '../app/theme'
 import { workspaceOwnsFullscreen } from '../app/fullscreen'
-import type { AppCenter } from '../config/appConfig'
+import { EARTH_DAY_NIGHT_CONFIG, type AppCenter } from '../config/appConfig'
 import type { JourneySnapshot } from '../domain/journey'
 import type { AircraftPhotoViewState } from '../domain/aircraftPhoto'
 import { vesselPhotoIdentity, type VesselPhotoViewState } from '../domain/vesselPhoto'
@@ -34,6 +34,7 @@ import { EMPTY_LOCAL_RULER, rulerAllowsDeferredInteraction, type LocalRulerState
 import type { Coordinates } from '../domain/center'
 import { createLocalRulerInteraction, isRulerPlacementTap, rulerCenterIsUsable, type LocalRulerHandle } from './localRulerInteraction'
 import { installLocalRulerStyle } from './localRulerStyle'
+import { installEarthDayNightStyle, type EarthDayNightStyleState } from './earthDayNightStyle'
 import type { Port } from '../domain/ports'
 import type { MapProjectionPreference } from '../domain/preferences'
 import type {
@@ -119,6 +120,7 @@ import {
   installOrbitalStyle,
   installStarlinkStyle,
   orbitalPickLayerIds,
+  renderedOrbitalPointMatches,
   orbitalPositionFeatures,
   orbitalSelectionHighlightFeatures,
   orbitalSelectionTrackFeatures,
@@ -184,11 +186,14 @@ const EMPTY_ORBITAL_IDS: readonly string[] = []
 const EMPTY_ORBITAL_TRACK: readonly OrbitalTrackSegment[] = []
 
 interface TrafficMapProps {
+  orbitalVisibilityRef?: Ref<(id: string) => boolean>
   capturedOrbitalView?: CapturedOrbitalView
   capturedOrbitalViewAcknowledged?: boolean
   capturedOrbitalPlaying?: boolean
   capturedOrbitalPosition?: Readonly<ModeledOrbitalPosition>
+  displayTime: number
   onCapturedOrbitalViewEnd?: (revision: number, reason?: string) => void
+  onCapturedOrbitalViewReturn?: (revision: number) => void
   onCapturedOrbitalViewReady?: (revision: number, ready: boolean, earthFramed?: boolean) => void
   onCapturedOrbitalViewNotice?: (revision: number, message: string | undefined) => void
   onCapturedOrbitalViewPosition?: (revision: number, position: Readonly<ModeledOrbitalPosition>) => void
@@ -405,11 +410,14 @@ const viewportSignature = (assessment: ViewportAssessment) => {
 }
 
 export function TrafficMap({
+  orbitalVisibilityRef,
   capturedOrbitalView,
   capturedOrbitalViewAcknowledged = false,
   capturedOrbitalPlaying = false,
   capturedOrbitalPosition,
+  displayTime,
   onCapturedOrbitalViewEnd,
+  onCapturedOrbitalViewReturn,
   onCapturedOrbitalViewReady,
   onCapturedOrbitalViewNotice,
   onCapturedOrbitalViewPosition,
@@ -502,10 +510,14 @@ export function TrafficMap({
   } | undefined>(undefined)
   const capturedCallbacksRef = useRef({
     end: onCapturedOrbitalViewEnd, ready: onCapturedOrbitalViewReady,
+    return: onCapturedOrbitalViewReturn,
     notice: onCapturedOrbitalViewNotice,
     position: onCapturedOrbitalViewPosition, pause: onCapturedOrbitalViewPause,
   })
   const loadedRef = useRef(false)
+  const earthTime = Math.floor(displayTime / EARTH_DAY_NIGHT_CONFIG.timeStepMs) * EARTH_DAY_NIGHT_CONFIG.timeStepMs
+  const earthTimeRef = useRef(earthTime)
+  const earthDayNightRef = useRef<EarthDayNightStyleState | undefined>(undefined)
   const frameRef = useRef<number | null>(null)
   const lastFrameRef = useRef(0)
   const aircraftMotionRef = useRef<MotionStates>(new Map())
@@ -640,6 +652,14 @@ export function TrafficMap({
     starlinkVisible,
     trailSegments,
   })
+  useImperativeHandle(orbitalVisibilityRef, () => id => {
+    const map = mapRef.current
+    if (!map || !loadedRef.current || capturedViewRef.current || map.isMoving()) return false
+    const view = viewStateRef.current
+    return renderedOrbitalPointMatches(map, id,
+      view.orbitalVisible && orbitalRenderStateRef.current.shownIds.includes(id),
+      view.starlinkVisible && starlinkRenderStateRef.current.shownIds.includes(id))
+  }, [])
   const selectRef = useRef(onSelect)
   const selectOrbitalRef = useRef(onSelectOrbital)
   const selectPortRef = useRef(onSelectPort)
@@ -1113,6 +1133,18 @@ export function TrafficMap({
     return images
   }, [])
 
+  const updateEarthDayNight = useCallback((map: MapLibreMap) => {
+    earthDayNightRef.current = installEarthDayNightStyle(
+      map, earthTimeRef.current, themeRef.current, Boolean(capturedViewRef.current), earthDayNightRef.current,
+    )
+  }, [])
+
+  useEffect(() => {
+    earthTimeRef.current = earthTime
+    const map = mapRef.current
+    if (map && loadedRef.current) updateEarthDayNight(map)
+  }, [earthTime, capturedOrbitalView, theme, updateEarthDayNight])
+
   const installCurrentStyle = useCallback(
     (map: MapLibreMap) => {
       const now = performance.now()
@@ -1127,6 +1159,7 @@ export function TrafficMap({
       )
       reliefRef.current?.install(activeTheme, appliedStyleUrlRef.current, reliefVisibleRef.current)
       bathymetryRef.current?.install(activeTheme)
+      updateEarthDayNight(map)
       const aircraftFeatures = trafficFeatures(
         renderState.trafficContext
           ? sampleTrafficZoomContext(map, renderState.aircraft)
@@ -1307,6 +1340,7 @@ export function TrafficMap({
       getTrafficImages,
       scheduleRender,
       scheduleViewportReport,
+      updateEarthDayNight,
     ],
   )
 
@@ -2157,6 +2191,9 @@ export function TrafficMap({
     map.on('movestart', () => bathymetryRef.current?.moveStarted())
     map.on('style.load', hideTrafficTooltip)
     map.on('render', revalidateTrafficTooltip)
+    map.on('zoom', () => {
+      if (loadedRef.current) updateEarthDayNight(map)
+    })
 
     map.on('moveend', () => {
       scheduleViewportReport(map)
@@ -2519,6 +2556,7 @@ export function TrafficMap({
       reliefRef.current = null
       bathymetryRef.current?.dispose()
       bathymetryRef.current = null
+      earthDayNightRef.current = undefined
       styleGenerationRef.current += 1
       clusterOptionsGenerationRef.current += 1
       interactionGenerationRef.current += 1
@@ -2559,6 +2597,7 @@ export function TrafficMap({
     switchMapStyle,
     touchHitTolerancePx,
     scheduleRender,
+    updateEarthDayNight,
   ])
 
   useEffect(() => {
@@ -3062,6 +3101,7 @@ export function TrafficMap({
     capturedViewRef.current = nextView
     capturedCallbacksRef.current = {
       end: onCapturedOrbitalViewEnd, ready: onCapturedOrbitalViewReady,
+      return: onCapturedOrbitalViewReturn,
       notice: onCapturedOrbitalViewNotice,
       position: onCapturedOrbitalViewPosition, pause: onCapturedOrbitalViewPause,
     }
@@ -3077,6 +3117,7 @@ export function TrafficMap({
     capturedOrbitalView, onCapturedOrbitalViewEnd, onCapturedOrbitalViewReady,
     onCapturedOrbitalViewNotice, scheduleViewportReport, viewRequestId,
     onCapturedOrbitalViewPosition, onCapturedOrbitalViewPause,
+    onCapturedOrbitalViewReturn,
   ])
 
   useEffect(() => {
@@ -3096,7 +3137,7 @@ export function TrafficMap({
       capturedCameraRef.current = {
         revision: view.revision, viewRequestId: view.viewRequestId,
         camera: createCapturedOrbitalCamera(map, view, {
-          onReturn: () => capturedCallbacksRef.current.end?.(view.revision),
+          onReturn: () => capturedCallbacksRef.current.return?.(view.revision),
           onFailure: message => capturedCallbacksRef.current.end?.(view.revision, message),
           onRestoreFailure: message => errorRef.current({ kind: 'runtime', message }),
           onReady: ready => {

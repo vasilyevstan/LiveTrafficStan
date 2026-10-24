@@ -59,6 +59,13 @@ export const ORBITAL_VIEW_CONFIG = {
   readinessTimeoutMs: 5_000,
 } as const
 
+export const EARTH_DAY_NIGHT_CONFIG = {
+  timeStepMs: 60_000,
+  geometryStepDegrees: 1,
+  fullOpacityMaximumZoom: 3.5,
+  maximumZoom: 5,
+} as const
+
 export interface FreshnessThresholds {
   staleAfterMs: number
   expireAfterMs: number

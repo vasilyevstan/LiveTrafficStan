@@ -1,7 +1,7 @@
 import { readObjectShareIntent, type ObjectShareReceipt } from '../domain/objectShare'
 import { requestObjectShare } from './objectShareRequest'
 
-export type ObjectShareStartupResult = { receipt: ObjectShareReceipt } | { error: string }
+export type ObjectShareStartupResult = { receipt: ObjectShareReceipt; linkDeadline: number } | { error: string }
 
 export class ObjectShareStartup {
   private readonly controller = new AbortController()
@@ -9,8 +9,10 @@ export class ObjectShareStartup {
   private settled = false
   readonly result: Promise<ObjectShareStartupResult>
   constructor(token: string | undefined, fetchImpl?: typeof fetch) {
+    const requestedAt = performance.now()
     this.result = (token ? requestObjectShare('resolve', token, this.controller.signal, fetchImpl)
-      .then(receipt => ({ receipt }), error => ({ error: error instanceof Error ? error.message : 'The shared link is unavailable.' }))
+      .then(receipt => ({ receipt, linkDeadline: requestedAt + receipt.expiresAt - receipt.serverNow }),
+        error => ({ error: error instanceof Error ? error.message : 'The shared link is unavailable.' }))
       : Promise.resolve({ error: 'This shared link is invalid. Showing the ordinary map.' }))
       .then(result => { this.settled = true; return result })
   }
