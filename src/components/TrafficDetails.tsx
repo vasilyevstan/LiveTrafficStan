@@ -681,6 +681,7 @@ export function TrafficDetails({
         entity.kind === 'aircraft' ? 'aircraft' : 'ship'
       } details`}
       onClose={onClose}
+      headerAction={!historical ? shareObject : undefined}
       heading={
         <div>
           <p className="eyebrow">
@@ -700,7 +701,6 @@ export function TrafficDetails({
         </div>
       }
     >
-      {!historical && shareObject}
       {!historical && journeyMessage && (
         <p className="metadata-status" role="status">{journeyMessage}</p>
       )}

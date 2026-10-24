@@ -169,6 +169,8 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     objectShareStartup ? 'Opening shared object...' : undefined,
   )
   const pendingSharedObjectRef = useRef<{ receipt: ObjectShareReceipt; deadline: number; filters: string } | undefined>(undefined)
+  const sharedObjectDeadlineRef = useRef(0)
+  const sharedOrbitalVisibilityRef = useRef<((id: string) => boolean) | null>(null)
   const sharedObjectMountRef = useRef(0)
   const appShellRef = useRef<HTMLElement>(null)
   const workspaceControlsRef = useRef<WorkspaceControlsHandle>(null)
@@ -246,12 +248,20 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     status: preferenceStatus,
   } = useAppPreferences(sharedState?.preferences)
   const {
-    layers: layerPreferences,
+    layers: storedLayerPreferences,
     trail: trailPreferences,
     theme: themePreference,
     projection: projectionPreference,
     units,
   } = preferences
+  const [sharedOrbitsEnabled, setSharedOrbitsEnabled] = useState(false)
+  const orbitalVisibilityChangedRef = useRef(false)
+  const layerPreferences = useMemo(
+    () => sharedOrbitsEnabled
+      ? updateLayerPreference(storedLayerPreferences, 'orbitalObjectsVisible', true)
+      : storedLayerPreferences,
+    [sharedOrbitsEnabled, storedLayerPreferences],
+  )
   const theme = useTheme(themePreference)
   const [aircraftQuery, setAircraftQuery] = useState('')
   const [vesselQuery, setVesselQuery] = useState('')
@@ -326,7 +336,6 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
   const toggleCapturedOrbitalPlaying = useCallback((revision: number) => {
     if (capturedOrbitalViewRef.current?.revision === revision) setCapturedOrbitalPlaying(playing => !playing)
   }, [])
-  const returnFromCapturedOrbitalView = useCallback(() => finishCapturedOrbitalView(), [finishCapturedOrbitalView])
   const [orbitalFilters, setOrbitalFilters] =
     useState<OrbitalDiscoveryFilters>(
       DEFAULT_ORBITAL_DISCOVERY_FILTERS,
@@ -563,11 +572,23 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
   )
   const setOrbitalObjectsVisible = useCallback(
     (visible: boolean) => {
+      orbitalVisibilityChangedRef.current = true
+      setSharedOrbitsEnabled(false)
       if (!visible) finishCapturedOrbitalView()
       if (!visible) setSelectedOrbitalId(null)
       setLayerPreference('orbitalObjectsVisible', visible)
+      if (visible && sharedObject?.context.kind === 'orbital') {
+        pendingSharedObjectRef.current = {
+          receipt: sharedObject,
+          deadline: Math.min(performance.now() + OBJECT_SHARE_CONFIG.selectionWaitMs, sharedObjectDeadlineRef.current),
+          filters: JSON.stringify([
+            updateLayerPreference(layerPreferences, 'orbitalObjectsVisible', true),
+            vesselFilters, orbitalFilters,
+          ]),
+        }
+      }
     },
-    [finishCapturedOrbitalView, setLayerPreference],
+    [finishCapturedOrbitalView, layerPreferences, orbitalFilters, setLayerPreference, sharedObject, vesselFilters],
   )
   const setTrailPreferences = useCallback(
     (trail: typeof trailPreferences) => {
@@ -847,6 +868,18 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     (!capturedOrbitalPlaying || capturedOrbitalState.viewPosition?.id === capturedOrbitalView.position.id) &&
     orbitalState.capturePauseRevision === capturedOrbitalView.revision &&
     starlinkState.capturePauseRevision === capturedOrbitalView.revision)
+  const returnFromCapturedOrbitalView = useCallback((revision: number) => {
+    const view = capturedOrbitalViewRef.current
+    if (!view || view.revision !== revision || view.revision !== capturedOrbitalView?.revision ||
+      view.viewRequestId !== viewRequest.id) return
+    if (orbitalObjectsVisible && !historyActive && capturedGenerationMatches && (
+      capturedOrbitalState?.phase === 'paused-capture' ||
+      capturedOrbitalState?.phase === 'paused-hidden' ||
+      acceptedOrbitalPositionForCapture(view.position.id)
+    )) setSelectedOrbitalId(view.position.id)
+    finishCapturedOrbitalView(view.revision)
+  }, [acceptedOrbitalPositionForCapture, capturedGenerationMatches, capturedOrbitalState?.phase,
+    capturedOrbitalView?.revision, finishCapturedOrbitalView, historyActive, orbitalObjectsVisible, viewRequest.id])
   useEffect(() => {
     if (!capturedOrbitalView || !capturedOrbitalState ||
       capturedOrbitalState.capturePauseRevision !== capturedOrbitalView.revision) return
@@ -1322,6 +1355,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
       selectedOrbitalState.phase === 'unavailable' ||
       selectedOrbitalState.phase === 'clock-invalid' ||
       (!selectedOrbitalPosition &&
+        selectedOrbitalState.phase !== 'paused-capture' &&
         selectedOrbitalState.phase !== 'paused-hidden' &&
         selectedOrbitalState.phase !== 'loading' &&
         selectedOrbitalState.phase !== 'refreshing')
@@ -1505,7 +1539,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     const url = createShareUrl(
       window.location,
       mapCamera,
-      preferences,
+      { ...preferences, layers: layerPreferences },
       APP_CONFIG.navigation.coordinatePrecision,
     )
     const clipboard = window.navigator.clipboard
@@ -1527,11 +1561,13 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
         })
       },
     )
-  }, [mapCamera, preferences])
+  }, [layerPreferences, mapCamera, preferences])
 
   const handleResetPreferences = useCallback(() => {
     cancelSharedObject()
     finishCapturedOrbitalView()
+    orbitalVisibilityChangedRef.current = true
+    setSharedOrbitsEnabled(false)
     resetPreferences()
     setReliefVisible(false)
     setShareFeedback(undefined)
@@ -1909,8 +1945,11 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
         setSharedObjectNotice(result.error)
         return
       }
-      const { receipt } = result
+      const { receipt, linkDeadline } = result
+      sharedObjectDeadlineRef.current = linkDeadline
       const { context } = receipt
+      const enableSharedOrbits = context.kind === 'orbital' && !orbitalVisibilityChangedRef.current
+      if (enableSharedOrbits) setSharedOrbitsEnabled(true)
       if (context.position) {
         const label = `Shared object: ${context.label}`
         commitNavigation({ ...context.position, label }, label, {
@@ -1922,18 +1961,25 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
       setSharedObject(receipt)
       setInspectorExpanded(true)
       pendingSharedObjectRef.current = {
-        receipt, deadline: performance.now() + OBJECT_SHARE_CONFIG.selectionWaitMs, filters: sharedObjectFilters,
+        receipt, deadline: Math.min(performance.now() + OBJECT_SHARE_CONFIG.selectionWaitMs, linkDeadline),
+        filters: enableSharedOrbits
+          ? JSON.stringify([
+            updateLayerPreference(layerPreferences, 'orbitalObjectsVisible', true),
+            vesselFilters, orbitalFilters,
+          ])
+          : sharedObjectFilters,
       }
     })
     return () => {
       subscribed = false
       queueMicrotask(cancelAfterUnmount)
     }
-  }, [commitNavigation, objectShareStartup, sharedObjectFilters])
+  }, [commitNavigation, layerPreferences, objectShareStartup, orbitalFilters, sharedObjectFilters, vesselFilters])
 
   useEffect(() => {
     const pending = pendingSharedObjectRef.current
-    if (!pending) return
+    // An older render must not consume a newly resolved receipt.
+    if (!pending || pending.receipt !== sharedObject) return
     if (historyActive || capturedOrbitalView || pending.filters !== sharedObjectFilters ||
       performance.now() >= pending.deadline) {
       pendingSharedObjectRef.current = undefined
@@ -1951,7 +1997,9 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
       if (!id || !current || !currentOrbitalViewport ||
         !sharedOrbitalMatches(context, current.position, current.snapshot) ||
         !matchesOrbitalFilters(current.position, context.owner === 'starlink' ? DEFAULT_ORBITAL_DISCOVERY_FILTERS : orbitalFilters) ||
-        !orbitalPositionInViewport(current.position, currentOrbitalViewport)) return
+        !(currentOrbitalViewport.kind === 'invalid'
+          ? sharedOrbitalVisibilityRef.current?.(id)
+          : orbitalPositionInViewport(current.position, currentOrbitalViewport))) return
       pendingSharedObjectRef.current = undefined
       setSharedObject(undefined)
       selectOrbital(id, null, true)
@@ -1969,14 +2017,16 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     }
   }, [acceptedOrbitalPositionForCapture, aircraftVisible, capturedOrbitalView, currentAssessment,
     currentOrbitalViewport, displayEntities, historyActive, now, orbitalFilters, orbitalObjectsVisible,
-    selectOrbital, selectTraffic, sharedObjectFilters, vesselsVisible, orbitalState, starlinkState])
+    selectOrbital, selectTraffic, sharedObject, sharedObjectFilters, vesselsVisible, orbitalState, starlinkState])
 
   const sharedObjectMessage = !sharedObject?.context.position
     ? 'No position was shared. Showing the ordinary map.'
     : sharedObject.context.kind === 'orbital'
       ? orbitalObjectsVisible
-        ? 'Not confirmed here by your loaded orbital data. Showing the dated modeled point.'
-        : 'ORBITS is off. Showing the dated modeled point; no catalog loaded.'
+        ? (sharedObject.context.owner === 'starlink' ? starlinkState : orbitalState).phase === 'loading'
+          ? 'Checking current orbital data. Showing the dated shared point.'
+          : 'Current selection is not confirmed. Showing the dated modeled point.'
+        : 'ORBITS is off. Showing the dated modeled point.'
       : (sharedObject.context.kind === 'aircraft' ? aircraftVisible : vesselsVisible)
         ? 'Not confirmed by received objects here. Showing the dated shared position.'
         : 'This object layer is off. Your layers and filters are unchanged.'
@@ -2246,11 +2296,16 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
       data-orbital-view={capturedOrbitalView ? capturedOrbitalReady ? 'captured' : 'preparing' : undefined}
     >
       <TrafficMap
+        orbitalVisibilityRef={sharedOrbitalVisibilityRef}
         capturedOrbitalView={capturedOrbitalView}
         capturedOrbitalViewAcknowledged={capturedOrbitalAcknowledged}
         capturedOrbitalPlaying={capturedOrbitalPlaying}
         capturedOrbitalPosition={capturedOrbitalState?.viewPosition}
+        displayTime={capturedOrbitalView
+          ? (capturedOrbitalDisplayedPosition ?? capturedOrbitalView.position).modeledFor
+          : displayNow}
         onCapturedOrbitalViewEnd={finishCapturedOrbitalView}
+        onCapturedOrbitalViewReturn={returnFromCapturedOrbitalView}
         onCapturedOrbitalViewReady={handleCapturedOrbitalReady}
         onCapturedOrbitalViewNotice={handleCapturedOrbitalNotice}
         onCapturedOrbitalViewPosition={handleCapturedOrbitalPosition}
@@ -2700,7 +2755,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
             statusMessage={capturedOrbitalState?.message}
             online={online}
             units={units}
-            onReturn={returnFromCapturedOrbitalView}
+            onReturn={() => returnFromCapturedOrbitalView(capturedOrbitalView.revision)}
             onTogglePlaying={() => toggleCapturedOrbitalPlaying(capturedOrbitalView.revision)}
           />
         )}
