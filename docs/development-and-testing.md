@@ -3015,7 +3015,56 @@ catalog/traffic/clipboard/permission/MQTT fixtures participate. Device/focus
 emulation is not physical-phone/GPU, OS clipboard/keyboard or optical proof.
 Local waiting-worker activation is not production installed-update evidence;
 its before/after document already uses the same new asset. Actual release
-and public installed-update acceptance must be recorded separately.
+and public installed-update acceptance follow separately.
+
+### Public follow-up and genuine installed update (2026-10-24)
+
+Successful deployment **40096826810** publishes application
+`74f67dd8d5e59233979def5328145963c6d5875a` / Worker
+`9d982778-647d-44e8-92ee-dd76247c582b` at **13:09:11 UTC**. All required
+feature/dev/ancestry/promotion/main checks pass with the exact accepted tree;
+the actual README/testing-guide ancestry conflicts change no bytes.
+The unchanged strict backup-origin smoke passes, not a new complete two-origin
+provider-health claim. All existing production inputs and safeguards remain.
+
+Four real-public native cases finish at **13:14:36.849 UTC**: quiet Light
+wide Earth; a 44px header Share arrow beside X with one `201` creation,
+cached Copy and selectable URL; explicit desktop Return; and saved-off Dark
+315x517 satellite receipt with exact session activation and phone X Return.
+The actual current object is **SL-14 R/B / orbital:16882**, not a fixture.
+One `200` resolve and four ordinary cache-only catalog `200`s span sender/
+recipient; controls/Pause/Return add no catalog reads. Saved preference bytes
+remain unchanged by the incoming session override. Native transport, clock
+and worker, one retained canvas, one body scroller, no overflow and zero
+uncaught exceptions pass. Return retains the exact selected identity after
+ordinary worker resumption and restores raw camera, padding, eight handler
+states, FOV and max pitch with zero error.
+
+The desktop observer did not reapply device emulation after reconnect:
+actual native window/PNG dimensions are **1200x1216 at DPR 1**, not its
+nominal 1280x900 screenshot filenames. Keep the original report and the
+dimension-qualified receipt; do not claim a new public 1280x900 case.
+Dark phone is actually 315x517. Phone controller reads identify two refs,
+not all four local controllers. Captured images/queries do not prove a
+visible terminator crossing in those poses: source/displayed-time agreement
+and Pause are public evidence, while accepted local visual coverage is reused.
+Independent #554 remains qualified exactly as above.
+
+The original controlled production predecessor is staged before deployment.
+Trusted **REFRESH APP** changes `index-C63hvujh.js` to `index-BDbIDTD3.js`
+and document time origin, retaining byte-equal user preferences/history
+settings, root scope/control, IndexedDB name/version and history epoch 1.
+Native history invalidation metadata changes revision 3 to 7 under operation
+write; it is not a lost preference or historical-row-content proof. No
+clearing/unregistering, fabricated predecessor or repeated accepted update.
+
+Receipts are `shared-orbital-ux-production/{stage,accept,feature-accept}.json`
+with original dimension labeling preserved separately. Public feature work
+uses real models without fetch, catalog, clipboard, MQTT or clock fixtures;
+map cameras and ref reads are observer seams. Device/focus emulation is not
+physical-phone/GPU, OS clipboard/keyboard or optical proof. No repeated GP
+acquisition, board Load, D1 qualification, application deployment or local
+matrix is needed for documentation publication.
 
 ## Issue #12 preference, share, and unit acceptance
 

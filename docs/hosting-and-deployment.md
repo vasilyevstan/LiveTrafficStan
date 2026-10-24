@@ -2035,9 +2035,64 @@ LiveTrafficStan does not use that workaround.
 
 ## Exact object sharing operations
 
+### Shared orbital entry and Earth context (#563)
+
+**Live on 2026-10-24 at 13:09:11 UTC.** Checked #564, the necessary
+zero-tree ancestry #566 and dev-to-main #565 deliver application
+**`74f67dd8d5e59233979def5328145963c6d5875a`**, Worker
+**`9d982778-647d-44e8-92ee-dd76247c582b`**, through successful serialized
+[deployment 40096826810](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/40096826810).
+Frozen feature `04e3be1d0bee50c71c4fdabcdd103edef5bffa16` and accepted tree
+`fd121ac4e881f1964c2812b4a9690fc7af7c6525` remain exact. Feature/dev/ancestry/
+updated-dev/promotion/main checks 40096173781 / 40096312359 / 40096479697 /
+40096601985 / 40096604361 / 40096726705 pass. The unchanged strict backup-
+origin smoke passes; no continuous whole-provider-health claim follows.
+
+After original-dev CI passed, #565 was actually DIRTY/CONFLICTING in README
+and the testing guide. #566 resolves only those conflicts with the accepted
+bytes. The existing guarded merge immediately restores and deep-verifies
+complete original dev/main rules and repository settings; no optional sync
+or unchanged-source review is added. All ten production inputs, native
+Space-Track, atomic protected secrets, serialization, persistent dev and
+ownership/source/physical/retry fences remain. Sharing enable/UUID variables,
+D1 identity/schema/caps and private reporting are unchanged; do not repeat
+completed Free-account/D1 qualification for this client-only follow-up.
+
+Actual public native acceptance completes at **13:14:36 UTC**. Light desktop
+uses the actual 1200x1216 native window; Dark 315x517 is emulated touch.
+Current **SL-14 R/B / NORAD 16882** creates one `201` link from the header arrow;
+cached Copy adds no creation, and the selectable URL is available. One native
+recipient `200` resolution activates session ORBITS from a saved-off preference
+and opens exact current details without changing those saved bytes. There
+are four ordinary cache-only catalog `200`s across sender/recipient, not GP
+acquisitions; Share/Copy, Pause and Return add no catalog reads.
+Explicit desktop Return and phone X retain that exact satellite after worker
+resumption, with zero raw camera/handler/FOV/pitch-limit restoration errors.
+Wide-Earth imagery shows the quiet boundary; captured displayed-time/shade
+remains fixed while paused. The captured images do not establish a visible
+terminator crossing; unchanged local visual coverage is reused.
+
+The genuinely retained controlled predecessor loads new assets/time origin
+through trusted ordinary **REFRESH APP**, preserving actual preference/history-
+setting bytes, root scope/control, IndexedDB identity and history epoch.
+Normal history-writer revision changes are not preference loss. No old tab
+is fabricated, storage cleared, worker unregistered or accepted update repeated.
+This is not physical-device/GPU/OS clipboard/keyboard, historical-row-content
+or optical-accuracy proof. Independent expanded-phone #554 remains unaccepted
+for the complete 120x120 map-space gate.
+
+The compatible predecessor is sharing application
+`479a03b96a3a5a1847c40d781f0325edc60356c8` / Worker
+`0f7ce603-d149-4476-a8f5-58df3f293f84`, whose initial qualification/receipt
+below remain historical. Use the existing checked application revert or
+compatible version rollback; no preference migration, D1 reset/deletion or
+GP state reset is required. Later documentation/Wiki receipts do not deploy
+another application. [Measured evidence](development-and-testing.md#public-follow-up-and-genuine-installed-update-2026-10-24)
+records the actual desktop dimensions and preserved observer limitations.
+
 ### Production activation and public acceptance (2026-10-24)
 
-**Sharing is live.** Running application
+**Historical initial sharing release and compatible predecessor.** Application
 **`479a03b96a3a5a1847c40d781f0325edc60356c8`**, Worker
 **`0f7ce603-d149-4476-a8f5-58df3f293f84`**, was published by the successful
 serialized exact-main [deployment 40082635395](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/40082635395)
