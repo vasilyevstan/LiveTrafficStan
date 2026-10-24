@@ -105,7 +105,10 @@ map reception and a real selection retain their existing provider/metadata/
 photo contracts.
 
 The quiet Earth day/night overlay is a local approximation using displayed
-time. It adds no solar-data provider, request or persistence and is not
+time, with a soft night-side transition rather than a drawn boundary. The
+512x512 shade image is generated in memory, not requested from an imagery
+service. It adds no solar-data provider, request or persistence and is not
+an atmospheric twilight model,
 spacecraft lighting, eclipse or optical-visibility prediction. Existing
 basemap and orbital source credits remain required.
 

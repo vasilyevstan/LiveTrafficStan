@@ -1,15 +1,16 @@
 import type { AllPaintProperties } from '@maplibre/maplibre-gl-style-spec'
-import type { ExpressionSpecification, GeoJSONSource, LayerSpecification, Map } from 'maplibre-gl'
+import type { ExpressionSpecification, ImageSource, LayerSpecification, Map } from 'maplibre-gl'
 import type { Theme } from '../app/theme'
 import { EARTH_DAY_NIGHT_CONFIG } from '../config/appConfig'
-import { nightHemisphere, solarSubpoint } from './earthDayNight'
+import { ORBITAL_VIEW_MAXIMUM_LATITUDE } from '../domain/orbitalView'
+import { nightShade, solarSubpoint } from './earthDayNight'
 
 export const SOURCE_EARTH_DAY_NIGHT = 'earth-day-night'
 export const LAYER_EARTH_NIGHT = 'earth-night'
-export const LAYER_EARTH_TERMINATOR = 'earth-terminator'
 
 export interface EarthDayNightStyleState {
-  source: GeoJSONSource
+  source: ImageSource
+  shade?: Uint8ClampedArray
   time?: number
   theme: Theme
   captured: boolean
@@ -17,8 +18,8 @@ export interface EarthDayNightStyleState {
 }
 
 const COLORS = {
-  light: { night: '#12243b', boundary: '#2d6580', opacity: 0.26 },
-  dark: { night: '#02070f', boundary: '#93afc6', opacity: 0.5 },
+  light: { night: [18, 36, 59], opacity: 0.26 },
+  dark: { night: [2, 7, 15], opacity: 0.5 },
 } as const
 
 export const installEarthDayNightStyle = (
@@ -30,39 +31,48 @@ export const installEarthDayNightStyle = (
   previous?: EarthDayNightStyleState,
 ): EarthDayNightStyleState | undefined => {
   const visible = captured || map.getZoom() < EARTH_DAY_NIGHT_CONFIG.maximumZoom
-  let source = map.getSource<GeoJSONSource>(SOURCE_EARTH_DAY_NIGHT)
+  let source = map.getSource<ImageSource>(SOURCE_EARTH_DAY_NIGHT)
   if (!visible && !source) return undefined
   const bucket = Math.floor(time / EARTH_DAY_NIGHT_CONFIG.timeStepMs) * EARTH_DAY_NIGHT_CONFIG.timeStepMs
   if (previous && previous.source === source && previous.visible === visible && previous.theme === theme &&
     previous.captured === captured && (!visible || previous.time === bucket) &&
-    map.getLayer(LAYER_EARTH_NIGHT) && map.getLayer(LAYER_EARTH_TERMINATOR)) return previous
+    map.getLayer(LAYER_EARTH_NIGHT)) return previous
   let dataTime = previous?.source === source ? previous?.time : undefined
+  let shade = previous?.source === source ? previous?.shade : undefined
   if (visible && (!source || dataTime !== bucket)) {
-    const data = nightHemisphere(solarSubpoint(bucket))
-    if (source) source.setData(data)
-    else {
-      map.addSource(SOURCE_EARTH_DAY_NIGHT, { type: 'geojson', data, maxzoom: 6, tolerance: 0 })
-      source = map.getSource<GeoJSONSource>(SOURCE_EARTH_DAY_NIGHT)
+    shade = nightShade(solarSubpoint(bucket))
+    if (!source) {
+      const limit = ORBITAL_VIEW_MAXIMUM_LATITUDE
+      map.addSource(SOURCE_EARTH_DAY_NIGHT, {
+        type: 'image',
+        coordinates: [[-180, limit], [180, limit], [180, -limit], [-180, -limit]],
+      })
+      source = map.getSource<ImageSource>(SOURCE_EARTH_DAY_NIGHT)
     }
     dataTime = bucket
   }
   if (!source) throw new Error('The day/night map source could not be installed.')
   const colors = COLORS[theme]
-  const opacity = (maximum: number): number | ExpressionSpecification => captured ? maximum : [
+  if (shade && (previous?.source !== source || previous.shade !== shade || previous.theme !== theme)) {
+    const image = new ImageData(EARTH_DAY_NIGHT_CONFIG.textureSize, EARTH_DAY_NIGHT_CONFIG.textureSize)
+    for (let index = 0; index < shade.length; index++) {
+      const offset = index * 4
+      image.data[offset] = colors.night[0]
+      image.data[offset + 1] = colors.night[1]
+      image.data[offset + 2] = colors.night[2]
+      image.data[offset + 3] = shade[index]!
+    }
+    source.updateImage({ image })
+  }
+  const opacity: number | ExpressionSpecification = captured ? colors.opacity : [
     'interpolate', ['linear'], ['zoom'],
-    EARTH_DAY_NIGHT_CONFIG.fullOpacityMaximumZoom, maximum,
+    EARTH_DAY_NIGHT_CONFIG.fullOpacityMaximumZoom, colors.opacity,
     EARTH_DAY_NIGHT_CONFIG.maximumZoom, 0,
   ]
   const layers: LayerSpecification[] = [
     {
-      id: LAYER_EARTH_NIGHT, type: 'fill', source: SOURCE_EARTH_DAY_NIGHT,
-      filter: ['==', ['geometry-type'], 'Polygon'],
-      paint: { 'fill-color': colors.night, 'fill-opacity': opacity(colors.opacity), 'fill-antialias': false },
-    },
-    {
-      id: LAYER_EARTH_TERMINATOR, type: 'line', source: SOURCE_EARTH_DAY_NIGHT,
-      filter: ['==', ['geometry-type'], 'LineString'],
-      paint: { 'line-color': colors.boundary, 'line-width': 1, 'line-opacity': opacity(0.65) },
+      id: LAYER_EARTH_NIGHT, type: 'raster', source: SOURCE_EARTH_DAY_NIGHT,
+      paint: { 'raster-opacity': opacity, 'raster-resampling': 'linear', 'raster-fade-duration': 0 },
     },
   ]
   const before = map.getStyle()?.layers.find(layer => layer.type === 'symbol')?.id
@@ -75,5 +85,5 @@ export const installEarthDayNightStyle = (
     }
     map.setLayoutProperty(layer.id, 'visibility', visible ? 'visible' : 'none')
   }
-  return { source, time: dataTime, theme, captured, visible }
+  return { source, shade, time: dataTime, theme, captured, visible }
 }

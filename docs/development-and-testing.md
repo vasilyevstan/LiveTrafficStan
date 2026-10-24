@@ -3066,6 +3066,49 @@ physical-phone/GPU, OS clipboard/keyboard or optical proof. No repeated GP
 acquisition, board Load, D1 qualification, application deployment or local
 matrix is needed for documentation publication.
 
+### Soft Earth night shading (#570)
+
+The outline-free refinement retains the accepted #563 solar clock, provider,
+selection, update and preference behavior; those unchanged matrices are not
+repeated. Required local gates pass 212 suites /2,431 tests, retained lint
+warnings, four data checks and the production-input build. Initial JS is
+595,822 Node-default-gzip bytes, 248 fewer than the 596,070-byte predecessor;
+the 11-URL /3,757,126-byte shell stays below 4MiB.
+Deterministic checks cover equinox/solstice, wrapped longitudes,
+Mercator pixel centers/polar edges, transparent daylight, smooth monotonic
+night alpha, fixed 512x512 bounds, URL-less decoded-image installation,
+minute/Pause/theme/capture ownership and idempotent style replacement.
+
+One native Chrome 156 desktop/short-phone Light/Dark batch exposed visible
+polygon bands in the low-orbit scene. Preserve that rejected candidate and
+its observer's obsolete Return-selector failure. One coherent correction
+uses a bilinearly sampled local image instead. The eight source-App/native
+confirmation cases measure actual 1280x900 and 315x517 at DPR 1, four wide-
+Earth images and four captured Pause/style/resize cases, retaining one map/
+canvas and normal Return. A fully night-facing capture is not evidence of
+a visible transition; wide-Earth images directly establish the soft edge.
+Only the pending captured-crossing check resumes on the same document:
+two high-eye Light/Dark images visibly span day and night. This synthetic
+BEIDOU-3 M21 /44794 selection is staged through the actual App callback,
+not claimed as another native marker-picking acceptance; capture, Pause,
+theme and Return use native input. Preserve the premature native-pick
+observer failure, rather than repeat accepted cases or change product code.
+
+The alpha field is 262,144 bytes and the decoded RGBA image 1,048,576 bytes,
+with zero image download. Thirty local generation samples have median 1.8ms
+and p95 2.0ms. Ninety paused browser frame intervals have p95 17.8ms; this is
+not an active-render/GPU benchmark or physical-phone proof. Validated synthetic
+catalog fixtures avoid GP, board and sharing requests. Reports and original
+failures are retained in `earth-night-local/` and `earth-night-confirmation/`.
+The entry-inclusive 2.4-second moving high-eye sample records 120 native
+render events: median interval 16.7ms, p95 30.7ms and maximum 287.4ms. This
+is not a controlled steady-state renderer comparison; it does not attribute
+the entry hitch to shading or establish physical-device/GPU performance.
+Capture/theme/Return add no catalog reads.
+Independent #554's expanded-phone budget is not claimed fixed. See
+[#570](https://github.com/vasilyevstan/LiveTrafficStan/issues/570) for the
+checked delivery and actual public acceptance, distinct from local fixtures.
+
 ## Issue #12 preference, share, and unit acceptance
 
 The PR A Chromium matrix starts from absent preference keys and proves Light and

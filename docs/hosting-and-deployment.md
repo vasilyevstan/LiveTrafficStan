@@ -2035,9 +2035,25 @@ LiveTrafficStan does not use that workaround.
 
 ## Exact object sharing operations
 
+### Soft Earth night shading (#570)
+
+This client-only refinement replaces the drawn day/night outline with one
+locally generated, linearly sampled native image. It changes no production
+input, provider, secret, sharing/D1 state, source admission, cadence, saved
+preference or installation identity. The existing displayed-time/Pause and
+ordinary zoom-fade owners remain. A rejected polygon-band candidate is
+preserved in the [scoped native evidence](development-and-testing.md#soft-earth-night-shading-570).
+
+The [delivery receipt on #570](https://github.com/vasilyevstan/LiveTrafficStan/issues/570)
+records the exact checked application SHA, Worker version and actual public
+acceptance; documentation commits do not establish a running release.
+The #563 application/Worker below is the compatible historical predecessor.
+Rollback uses the existing checked revert/version path, without migration,
+new provider qualification, D1 change or orbital state reset.
+
 ### Shared orbital entry and Earth context (#563)
 
-**Live on 2026-10-24 at 13:09:11 UTC.** Checked #564, the necessary
+**Historical predecessor, published on 2026-10-24 at 13:09:11 UTC.** Checked #564, the necessary
 zero-tree ancestry #566 and dev-to-main #565 deliver application
 **`74f67dd8d5e59233979def5328145963c6d5875a`**, Worker
 **`9d982778-647d-44e8-92ee-dd76247c582b`**, through successful serialized

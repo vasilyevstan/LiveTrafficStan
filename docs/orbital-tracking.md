@@ -400,11 +400,12 @@ renderer's spherical Earth is an approximation, not a physical optical camera
 placement. There is no live telemetry, spacecraft attitude, camera feed,
 terrain, cloud or optical-visibility simulation.
 
-A subdued night-side tint and thin day/night boundary provide approximate
-surface sunlight context on the wide Earth and in View from here. They are
-calculated locally from displayed time in minute buckets; Pause holds that
-time and shade together. Ordinary map shading fades between zoom 3.5 and 5
-to avoid local-map clutter; the captured view keeps it. This is not twilight,
+A subdued night-side tint with a soft transition and no drawn boundary
+provides approximate surface sunlight context on the wide Earth and in
+View from here. It is calculated locally from displayed time in minute
+buckets; Pause holds that time and shade together. Ordinary map shading fades
+between zoom 3.5 and 5 to avoid local-map clutter; the captured view keeps it.
+The 12-degree transition is illustrative, not a physical twilight model,
 terrain-shadow, satellite eclipse/lighting or optical-visibility prediction,
 and makes no claim that a spacecraft or ground object is sunlit or visible.
 It adds no provider, request, timer, permanent control or saved preference.

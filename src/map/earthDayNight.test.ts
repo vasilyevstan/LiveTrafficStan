@@ -1,28 +1,22 @@
-import type { Position } from 'geojson'
 import { describe, expect, it } from 'vitest'
+import { EARTH_DAY_NIGHT_CONFIG } from '../config/appConfig'
 import type { Coordinates } from '../domain/center'
-import { ORBITAL_VIEW_MAXIMUM_LATITUDE } from '../domain/orbitalView'
 import { normalizeLongitude } from '../domain/viewport'
-import { nightHemisphere, solarSubpoint } from './earthDayNight'
+import { nightShade, solarSubpoint } from './earthDayNight'
 
 const RADIAN = Math.PI / 180
-const solarAltitudeSine = (point: Coordinates, sun: Coordinates) =>
+const size = EARTH_DAY_NIGHT_CONFIG.textureSize
+const coordinate = (x: number, y: number): Coordinates => ({
+  longitude: ((x + 0.5) / size * 2 - 1) * 180,
+  latitude: Math.atan(Math.sinh(Math.PI * (1 - 2 * (y + 0.5) / size))) / RADIAN,
+})
+const solarAltitude = (point: Coordinates, sun: Coordinates) => Math.asin(
   Math.sin(point.latitude * RADIAN) * Math.sin(sun.latitude * RADIAN) +
   Math.cos(point.latitude * RADIAN) * Math.cos(sun.latitude * RADIAN) *
-  Math.cos((point.longitude - sun.longitude) * RADIAN)
+  Math.cos((point.longitude - sun.longitude) * RADIAN),
+) / RADIAN
 
-const insideRing = (point: Coordinates, ring: readonly Position[]) => {
-  let inside = false
-  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-    const [xi, yi] = ring[i]!
-    const [xj, yj] = ring[j]!
-    if ((yi! > point.latitude) !== (yj! > point.latitude) &&
-      point.longitude < (xj! - xi!) * (point.latitude - yi!) / (yj! - yi!) + xi!) inside = !inside
-  }
-  return inside
-}
-
-describe('local approximate Earth day/night geometry', () => {
+describe('local approximate Earth day/night shading', () => {
   it('places the Sun near the equator at the March equinox and the correct solstice hemisphere', () => {
     const equinox = solarSubpoint(Date.parse('2026-03-20T14:46:00Z'))
     expect(Math.abs(equinox.latitude)).toBeLessThan(0.05)
@@ -47,58 +41,44 @@ describe('local approximate Earth day/night geometry', () => {
     expect(() => solarSubpoint(time)).toThrow(RangeError)
   })
 
+  it('increases darkness smoothly behind sunset, with no polygon bands or overlapping fills', () => {
+    const shade = nightShade({ latitude: 0, longitude: 0 })
+    const row = shade.slice(size * (size / 2), size * (size / 2 + 1))
+    const sunset = Math.floor(size * 3 / 4)
+    expect(row[sunset - 1]).toBe(0)
+    expect(row[sunset]).toBeLessThan(2)
+    expect(row[sunset + Math.ceil(size * EARTH_DAY_NIGHT_CONFIG.transitionDegrees / 360)]).toBe(255)
+    for (let x = sunset + 1; x < size; x++) expect(row[x]!).toBeGreaterThanOrEqual(row[x - 1]!)
+    expect(new Set(shade).size).toBe(256)
+  })
+
   for (const latitude of [-23.44, -0.000001, 0, 0.000001, 23.44]) {
-    it.each([-179.9, -90, 0, 90, 179.9])(`shades only the night hemisphere at declination ${latitude}, longitude %s`, longitude => {
+    it.each([-179.9, -90, 0, 90, 179.9])(`shades solar depression at declination ${latitude}, longitude %s`, longitude => {
       const sun = { latitude, longitude }
-      const data = nightHemisphere(sun)
-      const polygons = data.features.flatMap(feature =>
-        feature.geometry.type === 'Polygon' ? feature.geometry.coordinates : [])
-      expect(polygons.length).toBeGreaterThan(0)
-      for (const pointLatitude of [-80, -60, -30, 0, 30, 60, 80]) {
-        for (let pointLongitude = -170; pointLongitude <= 170; pointLongitude += 20) {
-          const point = { latitude: pointLatitude, longitude: pointLongitude }
-          const altitude = solarAltitudeSine(point, sun)
-          if (Math.abs(altitude) < 0.01) continue
-          expect(polygons.some(ring => insideRing(point, ring)),
-            `${JSON.stringify(point)} relative to ${JSON.stringify(sun)}`).toBe(altitude < 0)
+      const shade = nightShade(sun)
+      expect(shade.byteLength).toBe(512 * 512)
+      for (const y of [0, 1, 32, 128, 255, 256, 383, 479, 510, 511]) {
+        for (const x of [0, 1, 32, 64, 128, 192, 255, 256, 320, 384, 448, 479, 510, 511]) {
+          const altitude = solarAltitude(coordinate(x, y), sun)
+          const progress = Math.max(0, Math.min(1, -altitude / EARTH_DAY_NIGHT_CONFIG.transitionDegrees))
+          expect(shade[y * size + x]).toBe(Math.round(255 * progress * progress * (3 - 2 * progress)))
+          if (altitude >= 0) expect(shade[y * size + x]).toBe(0)
+          if (altitude <= -EARTH_DAY_NIGHT_CONFIG.transitionDegrees) expect(shade[y * size + x]).toBe(255)
         }
       }
-      const coordinates = data.features.flatMap(feature =>
-        feature.geometry.type === 'Polygon' ? feature.geometry.coordinates.flat() : feature.geometry.coordinates)
-      expect(coordinates.length).toBeLessThan(3_000)
-      for (const [x, y] of coordinates) {
-        expect(Number.isFinite(x) && Number.isFinite(y)).toBe(true)
-        expect(Math.abs(x!)).toBeLessThanOrEqual(180)
-        expect(Math.abs(y!)).toBeLessThanOrEqual(ORBITAL_VIEW_MAXIMUM_LATITUDE)
-      }
-      for (const ring of polygons) {
-        expect(ring.length).toBeGreaterThanOrEqual(4)
-        expect(ring[0]).toEqual(ring.at(-1))
-        const area = ring.slice(0, -1).reduce((sum, point, index) => {
-          const next = ring[index + 1]!
-          return sum + point[0]! * next[1]! - next[0]! * point[1]!
-        }, 0)
-        expect(area).toBeGreaterThan(0)
-      }
-      const lines = data.features.flatMap(feature =>
-        feature.geometry.type === 'LineString' ? [feature.geometry.coordinates] : [])
-      expect(lines.length).toBeGreaterThan(0)
-      for (const line of lines) {
-        for (let index = 0; index < line.length; index++) {
-          const point = line[index]!
-          expect(Math.abs(solarAltitudeSine({ longitude: point[0]!, latitude: point[1]! }, sun))).toBeLessThan(0.0005)
-          if (index) expect(Math.abs(point[0]! - line[index - 1]![0]!)).toBeLessThanOrEqual(180)
-        }
-      }
-      expect(data.features.every(feature => Object.keys(feature.properties ?? {}).length === 0)).toBe(true)
     })
   }
+
+  it('normalizes wrapped solar longitude without changing the shade field', () => {
+    expect(nightShade({ latitude: -23.44, longitude: 180 })).toEqual(nightShade({ latitude: -23.44, longitude: -180 }))
+    expect(nightShade({ latitude: 12, longitude: 540 })).toEqual(nightShade({ latitude: 12, longitude: -180 }))
+  })
 
   it.each([
     { latitude: NaN, longitude: 0 },
     { latitude: 91, longitude: 0 },
     { latitude: 0, longitude: Infinity },
-  ])('rejects an invalid solar point without partial geometry: %s', point => {
-    expect(() => nightHemisphere(point)).toThrow(RangeError)
+  ])('rejects an invalid solar point without partial shading: %s', point => {
+    expect(() => nightShade(point)).toThrow(RangeError)
   })
 })
