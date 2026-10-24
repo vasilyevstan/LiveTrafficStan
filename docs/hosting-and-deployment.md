@@ -41,6 +41,9 @@ production platform:
 - airport boards add one independent, demand-driven SQLite coordinator for
   fixed AeroDataBox requests. Only quota/reset/retry reservations persist;
   short-lived complete boards remain in memory, with no Cron or flight archive.
+- explicit object sharing adds one bounded D1 database for 24-hour minimal
+  public identity snapshots and 30-day aggregate counters, not user accounts,
+  private history or a provider-payload archive.
 
 The accepted recovery design keeps that public Cloudflare boundary and routes
 only aircraft through a private Workers VPC Service and Tunnel to an isolated
@@ -2031,6 +2034,66 @@ Policy, must be claimed, and is not the permanent production/CI account model.
 LiveTrafficStan does not use that workaround.
 
 ## Exact object sharing operations
+
+### Production activation and public acceptance (2026-10-24)
+
+**Sharing is live.** Running application
+**`479a03b96a3a5a1847c40d781f0325edc60356c8`**, Worker
+**`0f7ce603-d149-4476-a8f5-58df3f293f84`**, was published by the successful
+serialized exact-main [deployment 40082635395](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/40082635395)
+at **09:38:06 UTC**. Both public origins identify that exact release.
+Later canonical/Wiki documentation commits do not deploy another application.
+The frozen feature is `e063ea5ef3c357ced8d937724f242b4218ed7da3`; its complete
+accepted source tree remains `329efb8ebc5310cb0456f3b66ea93928dba14c4f`.
+
+After the owner confirmed the account-access correction, protected
+[setup 40081713255](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/40081713255)
+passed at **09:23:13 UTC**: actual Free subscription, shared-account reserve,
+D1 access/resource identity and real production-SQL read/write/storage
+qualification. The qualified database is `livetrafficstan-object-shares`,
+UUID **`e6d157a7-7c1f-43fa-a164-f0eb6e4c9fd3`**. Repository variables
+`OBJECT_SHARES_DATABASE_ID` and `OBJECT_SHARING_ENABLED=true` were read back;
+there were no production-environment overrides. Source defaults remain off.
+Do not repeat the qualification workload against the now-live store merely
+to reproduce its already accepted summary.
+
+The earlier subscription-read HTTP 403 stops in runs 40049462583 and
+40081433610 are historical zero-resource-write evidence, not a current
+activation blocker. [#558](https://github.com/vasilyevstan/LiveTrafficStan/issues/558)
+is resolved by the successful guarded operation; the exact cause of those
+earlier denials was not established. No permission extraction, plan upgrade,
+capacity bypass or new deployment input was used.
+
+All ten deployment inputs were preserved: application, private OCI aircraft,
+photos, flight routes, curated/Starlink catalogs, native Space-Track, marine
+supplement and airport boards, with exact-SHA CI, production serialization,
+atomic protected secrets and existing ownership/source/physical/retry fences.
+The previous application `461b56ada8279372b35c01b3f787cd8142f5db4b` / Worker
+`4c024bdc-caa7-4d1f-b2de-50630e5b89ad` remains historical rollback evidence;
+the preferred sharing rollback below retains D1 for cleanup.
+
+Actual public native-browser acceptance completed at **10:11:03 UTC**.
+All three normal inspectors created links with `201`; cached Copy reused
+them. Real root-token GET/HEAD handoffs returned uncached `302`, followed
+by one native recipient resolution per document. Aircraft and vessel links
+opened exact current details; the 315x517 orbital recipient deliberately kept
+ORBITS off and displayed dated identity/source context with **zero catalog
+requests**. Each saved point was hit-tested uncovered at its useful framing,
+with one canvas, unchanged actual recipient preferences and native transport/
+clock/worker. A genuine controlled predecessor used trusted **REFRESH APP**
+without site-data clearing, preserving real preferences/history settings,
+root control and the history database identity.
+
+Public native resolution timings were **174.4-394.6ms**, not a future latency
+guarantee. Three additional explicit HTTP receipt probes are recorded
+separately; acceptance contributed three creations and six valid resolutions,
+not six people. Sharing counts and top-object reports stay in the private D1
+console below. Three native official Web Analytics POSTs returned `204` with
+no relevant short-link token in their observed payloads; no custom share
+events or new exact-host statistics-ingestion claim is made.
+[Measured evidence and qualifications](development-and-testing.md#public-object-links-and-installed-update-2026-10-24)
+and the [#553 receipt](https://github.com/vasilyevstan/LiveTrafficStan/issues/553#issuecomment-6378237652)
+retain the local/public distinction and independent #554 limitation.
 
 Sharing uses one reserved D1 database, **`livetrafficstan-object-shares`**,
 bound as `OBJECT_SHARES` in the existing Worker. It is separate from orbital

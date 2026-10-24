@@ -289,6 +289,12 @@ Check these project invariants:
 - PWA install/update/retirement cannot create a second canvas, reapply an old
   shared camera, hide attribution/Return to Live, or exceed the checked 58vh
   control bound at 390x844 and 390x568.
+- Installed-update checks compare actual preferences/history settings separately
+  from `livetrafficstan.history.invalidate.v1`. Native writes may change its
+  writer/revision; verify epoch and operation rather than treating that as
+  preference loss. Preserve the genuine consumed refresh and original observer
+  failure; resume confirmation on the same updated document, not a fabricated
+  predecessor or repeated product review.
 - Vessel discovery keeps search, typed filters, matching-versus-shown counts,
   reset state, hidden-SHIPS selection behavior, local port loading/error/retry,
   and source-limit wording readable and keyboard-usable in both supported
