@@ -2827,6 +2827,10 @@ Provider HTTP failures are provider-state evidence, not JavaScript exceptions.
 
 ## Exact object sharing (#553)
 
+This section preserves the initial release's actual behavior and evidence.
+The [#563 follow-up](#shared-orbital-entry-inspector-actions-and-earth-context-563)
+changes validated satellite-link activation; it does not rewrite these receipts.
+
 The bounded share slice extends #12 without changing Share view. The accepted
 local source passes lint/typecheck, all **209 suites / 2,380 tests**, four
 mandatory data checks, matched production-input build and the enabled Worker
@@ -2962,6 +2966,56 @@ Reuse the accepted deterministic TTL/caps/races/offline and full local
 responsive matrix, including the independent #554 sender limitation.
 [Operations and actual deployment](hosting-and-deployment.md#production-activation-and-public-acceptance-2026-10-24)
 and the #553 receipt distinguish runtime from later documentation publication.
+
+## Shared orbital entry, inspector actions and Earth context (#563)
+
+The follow-up passes the required lint (with retained warnings), typecheck,
+**212 suites / 2,429 tests**, four immutable-data checks and production-input
+build. Initial JS is **596,070 Node-default-gzip bytes** versus **593,829**
+at the accepted sharing baseline: +2,241 / **0.37738%**, below 1%. The shell
+contains 11 URLs / 3,757,959 bytes, below 4MiB. No dependency, provider,
+physical worker, D1 schema/cap or production flag is added.
+
+The bounded local Chrome156 coverage has **21 accepted cases**, combining
+nine final recipient/session-ownership confirmations with twelve accepted
+unchanged cases, not rerunning all 21 after every correction. It covers
+Light/Dark at 1280x900, 1920x1080, 315x517 and 390x568; ordinary no-token
+ORBITS-off startup; all three header Share/Copy controls; selectable fallback
+and one body scroller; exact current satellite entry with unchanged saved
+preferences; explicit off winning delayed resolution and finite re-enable;
+actual theme/style rehydration; quiet wide-Earth shading; curated Return/
+canvas Escape and Starlink X; Pause-frozen displayed time/shade; exact raw
+camera Return and newer-Center fencing. Native primary actions remain at
+least 44px; Copy reveals feedback without another creation or scroll region.
+
+An early-render regression was reproduced with a re-signed 30-second-old
+fixture: an older effect cleared the newly assigned pending ref 1.9ms after
+creation using its obsolete filter signature. Matching now waits for the
+exact receipt to be committed to displayed state. The same timeline retains
+the intent and selects the current object, without renewing its absolute
+deadline. Repeated startup subscribers preserve one result identity.
+For invalid globe footprint geometry, a positive native exact-ID control
+and a settled opposite-side view prove the target excluded while 70 other
+orbital symbols remain queryable; this is not a fabricated global count.
+The original pre-paint observer assertion and all earlier failures remain
+preserved, rather than weakening visibility guards.
+
+Short-phone expanded orbital details retain the independent **#554**
+limitation: overlay union is about 69.75% at 315x517 and 64.97% at 390x568,
+without a contiguous 120x120 map region. Bodies remain 180/195px (162/177px
+excluding padding), one scroller and no horizontal overflow. These cases
+qualify the changed controls/selection, not the complete standard map-space
+budget or a workspace redesign. Other accepted cases retain their normal
+layout gates.
+
+Reports are `shared-orbital-ux-owned-receipt-occlusion/report.json` and its
+retained prior-case references, plus the fixed aged-fixture `pending-trace.json`;
+real local workerd/D1, native MapLibre/SGP4 and synthetic
+catalog/traffic/clipboard/permission/MQTT fixtures participate. Device/focus
+emulation is not physical-phone/GPU, OS clipboard/keyboard or optical proof.
+Local waiting-worker activation is not production installed-update evidence;
+its before/after document already uses the same new asset. Actual release
+and public installed-update acceptance must be recorded separately.
 
 ## Issue #12 preference, share, and unit acceptance
 

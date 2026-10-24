@@ -16,6 +16,7 @@ import {
   LAYER_STARLINK_POINTS,
   LAYER_STARLINK_TRACK,
   orbitalPickLayerIds,
+  renderedOrbitalPointMatches,
   orbitalPointFilter,
   orbitalHighlightFeatures,
   orbitalPositionFeatures,
@@ -108,6 +109,7 @@ const createMap = () => {
   const layers = [LAYER_SELECTED_TRAIL]
   const layerSpecs = new Map<string, unknown>()
   const imageIds = new Set<string>()
+  const queryRenderedFeatures = vi.fn()
   const addLayer = vi.fn((layer: { id: string }, before?: string) => {
     const beforeIndex = before ? layers.indexOf(before) : -1
     if (beforeIndex >= 0) layers.splice(beforeIndex, 0, layer.id)
@@ -115,6 +117,7 @@ const createMap = () => {
     layerSpecs.set(layer.id, layer)
   })
   const map = {
+    queryRenderedFeatures,
     getStyle: () => ({
       version: 8 as const,
       glyphs: 'https://tiles.example.test/{fontstack}/{range}.pbf',
@@ -151,10 +154,33 @@ const createMap = () => {
     layerSpecs,
     imageIds,
     addLayer,
+    queryRenderedFeatures,
   }
 }
 
 describe('orbital map style', () => {
+  it.each([
+    { name: 'exact curated point', id: 'orbital:694', feature: 'orbital:694', curated: true, starlink: false, installed: true, expected: true },
+    { name: 'exact Starlink point', id: 'orbital:starlink:44713', feature: 'orbital:starlink:44713', curated: false, starlink: true, installed: true, expected: true },
+    { name: 'same NORAD from another owner', id: 'orbital:694', feature: 'orbital:starlink:694', curated: true, starlink: true, installed: true, expected: false },
+    { name: 'another identity', id: 'orbital:694', feature: 'orbital:20580', curated: true, starlink: false, installed: true, expected: false },
+    { name: 'no natively rendered point', id: 'orbital:694', feature: null, curated: true, starlink: false, installed: true, expected: false },
+    { name: 'hidden channels', id: 'orbital:694', feature: 'orbital:694', curated: false, starlink: false, installed: true, expected: false },
+    { name: 'uninstalled style', id: 'orbital:694', feature: 'orbital:694', curated: true, starlink: false, installed: false, expected: false },
+  ])('confirms only native visible point layers: $name', ({ id, feature, curated, starlink, installed, expected }) => {
+    const { map, layers, queryRenderedFeatures } = createMap()
+    if (installed) layers.push(LAYER_ORBITAL_POINTS, LAYER_STARLINK_POINTS)
+    queryRenderedFeatures.mockReturnValue(feature ? [{ properties: { id: feature } }] : [])
+    expect(renderedOrbitalPointMatches(map, id, curated, starlink)).toBe(expected)
+    if (!installed || !curated && !starlink) expect(queryRenderedFeatures).not.toHaveBeenCalled()
+    else expect(queryRenderedFeatures).toHaveBeenCalledWith({
+      layers: [
+        ...(curated ? [LAYER_ORBITAL_POINTS] : []),
+        ...(starlink ? [LAYER_STARLINK_POINTS] : []),
+      ],
+    })
+  })
+
   it('installs one persistent source/layer set with stable IDs', () => {
     const {
       map,

@@ -28,6 +28,7 @@ import {
 } from './orbitalIcons'
 import { mapTextFont } from './textFont'
 import { LAYER_SELECTED_TRAIL } from './trafficStyle'
+import { exactEligibleFeatureId } from './touchPicking'
 
 export const SOURCE_ORBITAL_POINTS = 'orbital-modeled-points'
 export const SOURCE_ORBITAL_HIGHLIGHT = 'orbital-selected-highlight'
@@ -320,7 +321,7 @@ export const firstOrbitalLayerId = (map: MapLibreMap) =>
       : undefined
 
 export const orbitalPickLayerIds = (
-  map: MapLibreMap,
+  map: Pick<MapLibreMap, 'getLayer'>,
   orbitalVisible: boolean,
   starlinkVisible: boolean,
 ) => {
@@ -333,6 +334,17 @@ export const orbitalPickLayerIds = (
       : []),
   ]
   return layerIds.filter((layerId) => map.getLayer(layerId))
+}
+
+export const renderedOrbitalPointMatches = (
+  map: Pick<MapLibreMap, 'getLayer' | 'queryRenderedFeatures'>,
+  id: string,
+  orbitalVisible: boolean,
+  starlinkVisible: boolean,
+) => {
+  const layers = orbitalPickLayerIds(map, orbitalVisible, starlinkVisible)
+  return layers.length > 0 &&
+    exactEligibleFeatureId(map.queryRenderedFeatures({ layers }), new Set([id])) === id
 }
 
 export const installOrbitalStyle = (

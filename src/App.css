@@ -138,12 +138,20 @@
   padding-right: 96px;
 }
 
+.details-panel--action[data-force-compact] .details-panel__heading {
+  padding-right: 148px;
+}
+
 .app-shell:not(.app-shell--mobile-workspace) .details-panel[data-force-compact] .details-panel__presentation {
   position: absolute;
   top: 8px;
   right: 52px;
   width: 52px;
   min-height: 44px;
+}
+
+.app-shell:not(.app-shell--mobile-workspace) .details-panel--action[data-force-compact] .details-panel__presentation {
+  right: 96px;
 }
 
 @container workspace (max-width: 1000px) {
@@ -1556,6 +1564,14 @@
   border-bottom: 1px solid var(--divider);
 }
 
+.details-panel--action .details-panel__heading {
+  padding-right: 88px;
+}
+
+.details-panel__header-action {
+  display: contents;
+}
+
 .details-panel__body {
   min-height: 0;
   overflow: auto;
@@ -1575,7 +1591,8 @@
   align-items: center;
 }
 
-.details-panel__close {
+.details-panel__close,
+.details-panel__share {
   position: absolute;
   top: -8px;
   right: 0;
@@ -1589,6 +1606,10 @@
   border-radius: 50%;
   background: var(--panel-background);
   pointer-events: auto;
+}
+
+.details-panel__share {
+  right: 44px;
 }
 
 .details-panel__heading .eyebrow {
@@ -1663,11 +1684,15 @@
 }
 
 .object-share {
-  margin-block: 0 12px;
+  display: contents;
 }
 
-.object-share .journey-actions {
-  margin-top: 0;
+.object-share__feedback {
+  margin-block: 8px;
+}
+
+.object-share__feedback .metadata-status {
+  margin: 0 0 8px;
 }
 
 .object-share__url {
@@ -3173,8 +3198,16 @@
   padding: 0 96px 0 12px;
 }
 
+.app-shell--mobile-workspace .details-panel--action .details-panel__heading {
+  padding-right: 140px;
+}
+
 .app-shell--mobile-workspace .details-panel__identity {
   flex-wrap: wrap;
+}
+
+.app-shell--mobile-workspace .details-panel--action .details-panel__identity {
+  flex-wrap: nowrap;
 }
 
 .app-shell--mobile-workspace .details-panel h2 {
@@ -3208,9 +3241,17 @@
   font-size: 0.72rem;
 }
 
+.app-shell--mobile-workspace .details-panel--action .details-panel__presentation {
+  right: 88px;
+}
+
 .app-shell--mobile-workspace .details-panel__close {
   top: 0;
   right: 0;
+}
+
+.app-shell--mobile-workspace .details-panel__share {
+  top: 0;
 }
 
 .app-shell--mobile-workspace .details-panel[data-compact] .details-panel__heading {

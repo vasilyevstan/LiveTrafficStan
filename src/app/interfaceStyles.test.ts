@@ -85,8 +85,10 @@ describe('interface presentation contracts', () => {
       /\.details-panel__body\s*\{[^}]*min-height: 0;[^}]*overflow: auto;/,
     )
     expect(styles).toMatch(
-      /\.details-panel__close\s*\{[^}]*position: absolute;[^}]*width: 44px;[^}]*height: 44px;/,
+      /\.details-panel__close,\s*\.details-panel__share\s*\{[^}]*position: absolute;[^}]*width: 44px;[^}]*height: 44px;/,
     )
+    expect(styles).not.toMatch(/\.object-share__feedback\s*\{[^}]*(?:overflow|max-height):/)
+    expect(styles).toMatch(/\.app-shell--mobile-workspace \.details-panel--action \.details-panel__identity\s*\{\s*flex-wrap: nowrap;/)
     expect(styles).not.toContain('margin-right: 58px')
     expect(styles).not.toContain('.details-panel__close-anchor')
   })

@@ -83,6 +83,7 @@ export function CapturedOrbitalDetails({ view, ready, localTrafficAvailable = fa
         <p className="metadata-status">
           {orbitalFeatureOwner(position.id) === 'starlink' ? 'Bounded Starlink sample, not the full constellation. ' : ''}
           Approximate spherical Earth map, not a camera feed or terrain/visibility model.
+          Day/night shading is calculated locally for the displayed modeled time, not optical visibility.
           Normal-speed modeled motion; geostationary objects may appear still.
           Session-only; no recording or share link.
         </p>

@@ -1,13 +1,14 @@
-import { useContext, useId, useImperativeHandle, useLayoutEffect, useRef, type ReactNode, type Ref } from 'react'
+import { useContext, useId, useImperativeHandle, useLayoutEffect, useRef, useState, type ReactNode, type Ref } from 'react'
 import { closeDetailsOnEscape } from './detailsKeyboard'
 import { workspaceOwnsFullscreen } from '../app/fullscreen'
-import { MobileInspectorContext } from './mobileWorkspace'
+import { DetailsPanelFeedbackContext, MobileInspectorContext } from './mobileWorkspace'
 
 interface DetailsPanelProps {
   titleId: string
   closeLabel: string
   onClose: () => void
   heading: ReactNode
+  headerAction?: ReactNode
   children: ReactNode
   className?: string
   panelRef?: Ref<HTMLDivElement>
@@ -18,6 +19,7 @@ export function DetailsPanel({
   closeLabel,
   onClose,
   heading,
+  headerAction,
   children,
   className,
   panelRef,
@@ -26,6 +28,7 @@ export function DetailsPanel({
   const compact = Boolean((presentation?.mobile || presentation?.forceCompact) && presentation?.compact)
   const bodyId = useId()
   const bodyRef = useRef<HTMLDivElement>(null)
+  const [feedbackTarget, setFeedbackTarget] = useState<HTMLDivElement | null>(null)
   const presentationButtonRef = useRef<HTMLButtonElement>(null)
   const scrollTopRef = useRef(0)
   const identityRef = useRef(presentation?.identity)
@@ -52,15 +55,36 @@ export function DetailsPanel({
 
   return (
     <aside
-      className={`details-panel${className ? ` ${className}` : ''}`}
+      className={`details-panel${headerAction ? ' details-panel--action' : ''}${className ? ` ${className}` : ''}`}
       aria-labelledby={titleId}
       data-compact={compact || undefined}
       data-force-compact={presentation?.forceCompact || undefined}
       onKeyDown={(event) =>
         closeDetailsOnEscape(event, onClose, workspaceOwnsFullscreen(event.currentTarget))
       }
+      onFocusCapture={(event) => {
+        if (event.target instanceof HTMLElement && bodyRef.current?.contains(event.target)) {
+          lastBodyFocusRef.current = event.target
+        }
+      }}
+      onBlurCapture={(event) => {
+        if (event.relatedTarget instanceof Node && event.relatedTarget !== document.body &&
+          !bodyRef.current?.contains(event.relatedTarget)) {
+          lastBodyFocusRef.current = null
+        }
+      }}
     >
       <div className="details-panel__heading">{heading}</div>
+      {headerAction && (
+        <div className="details-panel__header-action" onClickCapture={() => {
+          scrollTopRef.current = 0
+          if (bodyRef.current) bodyRef.current.scrollTop = 0
+        }}>
+          <DetailsPanelFeedbackContext.Provider value={feedbackTarget}>
+            {headerAction}
+          </DetailsPanelFeedbackContext.Provider>
+        </div>
+      )}
       {(presentation?.mobile || presentation?.forceCompact) && (
         <button
           ref={presentationButtonRef}
@@ -99,19 +123,11 @@ export function DetailsPanel({
         className="details-panel__body"
         hidden={compact}
         inert={compact || undefined}
-        onFocusCapture={(event) => {
-          if (event.target instanceof HTMLElement) lastBodyFocusRef.current = event.target
-        }}
-        onBlurCapture={(event) => {
-          if (event.relatedTarget instanceof Node && event.relatedTarget !== document.body &&
-            !event.currentTarget.contains(event.relatedTarget)) {
-            lastBodyFocusRef.current = null
-          }
-        }}
         onScroll={(event) => {
           if (!compact && !event.currentTarget.hidden) scrollTopRef.current = event.currentTarget.scrollTop
         }}
       >
+        {headerAction && <div ref={setFeedbackTarget} className="details-panel__action-feedback" />}
         {children}
       </div>
     </aside>

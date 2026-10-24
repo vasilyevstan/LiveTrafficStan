@@ -278,6 +278,7 @@ export function OrbitalDetails({
       titleId="selected-orbital-title"
       closeLabel="Close orbital details"
       onClose={onClose}
+      headerAction={shareObject}
       heading={
         <div>
           <p className="eyebrow">Selected orbit</p>
@@ -285,7 +286,6 @@ export function OrbitalDetails({
         </div>
       }
     >
-      {shareObject}
       {onViewFromHere && (
         <div className="journey-actions">
           <button type="button" className="orbital-view-entry" onClick={onViewFromHere} disabled={Boolean(viewFromHereUnavailable)}
