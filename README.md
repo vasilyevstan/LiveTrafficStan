@@ -8,13 +8,19 @@ user accounts or a server-side vessel history archive.
 
 Public production: <https://trackstan.xyz>
 
-**Exact-object sharing is live (2026-10-24):** select an aircraft, vessel or
-satellite and choose **Share object** for a 12-character link lasting 24 hours.
-Running application: **`479a03b96a3a5a1847c40d781f0325edc60356c8`**; Worker:
-**`0f7ce603-d149-4476-a8f5-58df3f293f84`**. Actual Free-account/D1 qualification,
-public three-kind links and an ordinary installed update passed.
-[Release evidence and private sharing reports](docs/hosting-and-deployment.md#production-activation-and-public-acceptance-2026-10-24)
-distinguish this runtime from later documentation-only commits.
+**Sharing and Earth-context follow-up is live (2026-10-24):** use the Share
+arrow beside X for a 12-character aircraft/vessel/satellite link lasting
+24 hours. A validated satellite link enables ORBITS for that session, not
+ordinary startup or saved preferences. Explicit Return retains its valid
+originating satellite. Wide Earth and View from here gain quiet local
+day/night context, with displayed-time/Pause agreement.
+Running application: **`74f67dd8d5e59233979def5328145963c6d5875a`**; Worker:
+**`9d982778-647d-44e8-92ee-dd76247c582b`**.
+[Actual release/update acceptance](docs/hosting-and-deployment.md#shared-orbital-entry-and-earth-context-563)
+distinguishes runtime from later documentation-only commits.
+The [initial sharing/D1 qualification](docs/hosting-and-deployment.md#production-activation-and-public-acceptance-2026-10-24)
+and three-kind links remain historical accepted evidence; private reporting
+is unchanged.
 Earlier [ordinary map-detail (#522)](https://github.com/vasilyevstan/LiveTrafficStan/issues/522)
 and [initial relief/building (#518)](https://github.com/vasilyevstan/LiveTrafficStan/issues/518)
 receipts remain historical.
