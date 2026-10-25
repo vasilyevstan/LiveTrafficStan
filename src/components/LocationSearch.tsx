@@ -9,6 +9,8 @@ interface LocationSearchInputProps {
   maximumQueryLength: number
   searchState: PlaceSearchState
   disabled?: boolean
+  unified?: boolean
+  busy?: boolean
 }
 
 interface LocationSearchDetailsProps {
@@ -38,13 +40,15 @@ export function LocationSearchInput({
   maximumQueryLength,
   searchState,
   disabled = false,
+  unified = false,
+  busy = false,
 }: LocationSearchInputProps) {
   return (
     <form
       className="location-search__form location-search__form--compact"
       role="search"
-      aria-label="Go to a location"
-      aria-busy={searchState.phase === 'loading'}
+      aria-label={unified ? 'Find objects or places' : 'Go to a location'}
+      aria-busy={busy || searchState.phase === 'loading'}
       onSubmit={model.handleSubmit}
       onKeyDown={model.handleKeyDown}
     >
@@ -56,10 +60,10 @@ export function LocationSearchInput({
           enterKeyHint="search"
           value={model.value}
           maxLength={maximumQueryLength}
-          placeholder="Place or 59.437, 24.754"
+          placeholder={unified ? 'Find an object or place' : 'Place or 59.437, 24.754'}
           autoComplete="off"
           disabled={disabled}
-          aria-label="Place or coordinates"
+          aria-label={unified ? 'Find by name, identifier, callsign or coordinates' : 'Place or coordinates'}
           aria-invalid={Boolean(model.inputError)}
           aria-describedby={
             model.inputError || searchMessage(searchState)
@@ -68,11 +72,23 @@ export function LocationSearchInput({
           }
           onChange={model.handleChange}
         />
+        {unified && model.value && (
+          <button type="button" className="object-find-clear" aria-label="Clear Find" onClick={model.clear}>
+            <svg className="operation-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m6 6 12 12M18 6 6 18" />
+            </svg>
+          </button>
+        )}
         <button
           type="submit"
-          disabled={disabled || searchState.phase === 'loading'}
+          aria-label={unified ? 'Search' : undefined}
+          disabled={disabled || busy || searchState.phase === 'loading'}
         >
-          {searchState.phase === 'loading' ? 'SEARCHING...' : 'GO'}
+          {unified ? (
+            <svg className="operation-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 4 4" />
+            </svg>
+          ) : searchState.phase === 'loading' ? 'SEARCHING...' : 'GO'}
         </button>
       </div>
     </form>

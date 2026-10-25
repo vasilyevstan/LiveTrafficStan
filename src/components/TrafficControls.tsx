@@ -50,17 +50,13 @@ import type { PlaceSearchResult } from '../providers/geocoding/photonProvider'
 import { AircraftDiscovery } from './AircraftDiscovery'
 import { AirportContext } from './AirportContext'
 import { HistoryControls } from './HistoryControls'
-import {
-  LocationSearchDetails,
-  LocationSearchInput,
-} from './LocationSearch'
 import { useLocationSearchModel } from './useLocationSearchModel'
 import { VesselDiscovery } from './VesselDiscovery'
 import { WeatherContext } from './WeatherContext'
 import { OrbitalContext } from './OrbitalContext'
 import { StarlinkContext } from './StarlinkContext'
 import type { MobileWorkspaceTask, WorkspaceControlsHandle } from './mobileWorkspace'
-import { ObjectFind, type FindKind } from './ObjectFind'
+import { ObjectFind } from './ObjectFind'
 
 interface TrafficControlsProps {
   discoveryPaused?: boolean
@@ -85,12 +81,14 @@ interface TrafficControlsProps {
   inView: ReactNode
   aircraftQuery: string
   aircraftResults: readonly DisplayAircraft[]
+  findAircraft?: readonly DisplayAircraft[]
   totalAircraft: number
   aircraftEmptyMessage: string
   onAircraftQueryChange: (query: string) => void
   onAircraftSelect: (id: string, originId: string) => void
   vesselFilters: VesselFilterState
   vesselResults: readonly DisplayVessel[]
+  findVessels?: readonly DisplayVessel[]
   totalVessels: number
   vesselEmptyMessage: string
   marineProviderName?: string
@@ -206,6 +204,7 @@ interface TrafficControlsProps {
   onBeginShipLocate: Parameters<typeof ObjectFind>[0]['onBeginShipLocate']
   onPlaceResultSelect: (result: PlaceSearchResult) => void
   onPlaceSearchCancel: () => void
+  onPlaceSearchPause?: () => void
   mapToolsSummaryRef?: Ref<HTMLElement>
   settingsSummaryRef?: Ref<HTMLElement>
 }
@@ -326,12 +325,14 @@ export function TrafficControls({
   inView,
   aircraftQuery,
   aircraftResults,
+  findAircraft = aircraftResults,
   totalAircraft,
   aircraftEmptyMessage,
   onAircraftQueryChange,
   onAircraftSelect,
   vesselFilters,
   vesselResults,
+  findVessels = vesselResults,
   totalVessels,
   vesselEmptyMessage,
   units,
@@ -446,6 +447,7 @@ export function TrafficControls({
   onBeginShipLocate,
   onPlaceResultSelect,
   onPlaceSearchCancel,
+  onPlaceSearchPause,
   mapToolsSummaryRef,
   settingsSummaryRef,
 }: TrafficControlsProps) {
@@ -460,9 +462,6 @@ export function TrafficControls({
   const inViewEntryRef = useRef<HTMLButtonElement>(null)
   const inViewOpenedFromSettingsRef = useRef(false)
   const orbitalToggleRef = useRef<HTMLButtonElement>(null)
-  const [findKind, setFindKind] = useState<FindKind>('ships')
-  const [currentFindViewRequest, setCurrentFindViewRequest] = useState(0)
-  const [settingsMode, setSettingsMode] = useState<'settings' | 'places'>('settings')
   const [openWorkspaceTask, setOpenWorkspaceTask] = useState<MobileWorkspaceTask | null>(null)
   const suspendedTaskRef = useRef<{
     details: HTMLDetailsElement
@@ -493,11 +492,11 @@ export function TrafficControls({
   }
   const reconcileTask = useCallback(() => {
     const task = mapToolsDetailsRef.current?.open ? mapToolTask :
-      settingsDetailsRef.current?.open ? settingsMode :
+      settingsDetailsRef.current?.open ? 'settings' :
         inViewDetailsRef.current?.open ? 'in-view' : null
     setOpenWorkspaceTask(task)
     onWorkspaceTaskChange?.(task)
-  }, [mapToolTask, settingsMode, onWorkspaceTaskChange])
+  }, [mapToolTask, onWorkspaceTaskChange])
   useEffect(reconcileTask, [reconcileTask])
   useEffect(() => {
     if (!mobileWorkspace || playback.mode === 'live') return
@@ -577,8 +576,7 @@ export function TrafficControls({
       return true
     },
     openShipFind: () => {
-      setCurrentFindViewRequest((current) => current + 1)
-      openFind('ships')
+      openFind()
     },
   }))
   const historyNeedsRecovery = [
@@ -650,11 +648,9 @@ export function TrafficControls({
     onNavigate: onLocationNavigate,
     onSelectResult: onPlaceResultSelect,
     onCancel: onPlaceSearchCancel,
-    onRevealDetails: () => {
-      if (settingsDetailsRef.current) {
-        openTask(settingsDetailsRef.current)
-      }
-    },
+    onPause: onPlaceSearchPause,
+    queryPaused: discoveryPaused || openWorkspaceTask !== 'find',
+    onRevealDetails: () => openTask(mapToolsDetailsRef.current),
   })
   const orbitalLoading =
     orbitalState.phase === 'loading' ||
@@ -708,66 +704,32 @@ export function TrafficControls({
     })
   }
   const selectMapToolTask = (task: MapToolTask) => {
+    if (task === 'find') {
+      openFind()
+      return
+    }
     setMapToolTask(task)
     globalThis.requestAnimationFrame(() => {
       mapToolsBodyRef.current?.scrollTo({ top: 0 })
     })
   }
-  function openFind(kind: FindKind = findKind, focusTarget: 'search' | 'class' = 'search') {
+  function openFind() {
     const focusOrigin = document.activeElement
-    setFindKind(kind)
-    if (kind === 'places') {
-      setSettingsMode('places')
-      openTask(settingsDetailsRef.current)
-      onWorkspaceTaskChange?.('places')
-    } else {
-      setMapToolTask('find')
-      openTask(mapToolsDetailsRef.current)
-      onWorkspaceTaskChange?.('find')
-    }
+    setMapToolTask('find')
+    openTask(mapToolsDetailsRef.current)
+    onWorkspaceTaskChange?.('find')
     if (findFocusFrameRef.current !== null) {
       globalThis.cancelAnimationFrame(findFocusFrameRef.current)
     }
     findFocusFrameRef.current = globalThis.requestAnimationFrame(() => {
       findFocusFrameRef.current = null
-      const details = kind === 'places' ? settingsDetailsRef.current : mapToolsDetailsRef.current
+      const details = mapToolsDetailsRef.current
       if (!details?.isConnected || !details.open) return
       if (document.activeElement !== focusOrigin && document.activeElement !== document.body) return
-      const body = kind === 'places' ? settingsBodyRef.current : mapToolsBodyRef.current
-      const scopedInput = [...(body?.querySelectorAll<HTMLInputElement>('.object-find input[type="search"]') ?? [])]
-        .find(visibleControl)
-      const target = focusTarget === 'class' ? body?.querySelector<HTMLSelectElement>('select[aria-label="Find object class"]') :
-        kind === 'places' ? locationSearchInputRef.current :
-        scopedInput ?? [...(body?.querySelectorAll<HTMLInputElement>('input[type="search"]') ?? [])]
-          .find(visibleControl)
-      const fallback = body?.querySelector<HTMLSelectElement>('select[aria-label="Find object class"]')
+      const target = locationSearchInputRef.current
       if (visibleControl(target)) target.focus()
-      else if (visibleControl(fallback)) fallback.focus()
     })
   }
-  const findKindSelect = (
-    <label className="mobile-find-kind object-find-kind">
-      <span>Find</span>
-      <select
-        aria-label="Find object class"
-        value={findKind}
-        onChange={(event) => {
-          const kind = event.currentTarget.value
-          if (kind === 'places' || kind === 'aircraft' || kind === 'ships' || kind === 'orbits' ||
-            kind === 'airports' || kind === 'ports') {
-            openFind(kind, 'class')
-          }
-        }}
-      >
-        <option value="ships">Ships</option>
-        <option value="aircraft">Aircraft</option>
-        <option value="orbits">Satellites / orbits</option>
-        <option value="airports">Airports</option>
-        <option value="ports">Ports</option>
-        <option value="places">Places / coordinates</option>
-      </select>
-    </label>
-  )
   const mobileTaskHeading = (label: string, onClose: () => void) => mobileWorkspace && (
     <div className="mobile-task-heading">
       {(label === 'Context' || label === 'Orbits' || label === 'Sources') && (
@@ -1256,6 +1218,29 @@ export function TrafficControls({
                 </div>
               )}
             </fieldset>
+            <details className="context-details map-filter-options">
+              <summary>Map filters</summary>
+              <AircraftDiscovery
+                query={aircraftQuery}
+                aircraft={aircraftResults}
+                totalAircraft={totalAircraft}
+                aircraftVisible={aircraftVisible}
+                emptyMessage={aircraftEmptyMessage}
+                onQueryChange={onAircraftQueryChange}
+                onSelect={onAircraftSelect}
+              />
+              <VesselDiscovery
+                compactFilters
+                filters={vesselFilters}
+                vessels={vesselResults}
+                totalVessels={totalVessels}
+                vesselsVisible={vesselsVisible}
+                emptyMessage={vesselEmptyMessage}
+                units={units}
+                onFiltersChange={onVesselFiltersChange}
+                onSelect={onVesselSelect}
+              />
+            </details>
           </section>
 
           <section
@@ -1265,16 +1250,24 @@ export function TrafficControls({
             hidden={mapToolTask !== 'find'}
           >
             <ObjectFind
-              kind={findKind}
-              kindSelect={findKindSelect}
+              model={locationSearch}
+              inputRef={locationSearchInputRef}
+              maximumQueryLength={maximumLocationQueryLength}
+              placeSearchState={placeSearchState}
               mobile={mobileWorkspace}
               active={openWorkspaceTask === 'find'}
               paused={discoveryPaused}
-              currentViewRequest={currentFindViewRequest}
               now={now}
               navigationDisabled={locationNavigationDisabled}
               onNavigate={onLocationNavigate}
               onBeginShipLocate={onBeginShipLocate}
+              aircraft={findAircraft}
+              vessels={findVessels}
+              aircraftVisible={aircraftVisible}
+              vesselsVisible={vesselsVisible}
+              selectableVesselIds={new Set(vesselResults.map((vessel) => vessel.id))}
+              onAircraftSelect={onAircraftSelect}
+              onVesselSelect={onVesselSelect}
               airports={catalogAirports}
               airportsReady={airportsReady}
               airportsLoading={airportsLoading}
@@ -1299,32 +1292,6 @@ export function TrafficControls({
                 else onRetryOrbital()
               }}
               discoverMarineMetadata={discoverMarineMetadata}
-              currentView={<>
-            <div hidden={findKind !== 'aircraft'}>
-            <AircraftDiscovery
-              query={aircraftQuery}
-              aircraft={aircraftResults}
-              totalAircraft={totalAircraft}
-              aircraftVisible={aircraftVisible}
-              emptyMessage={aircraftEmptyMessage}
-              onQueryChange={onAircraftQueryChange}
-              onSelect={onAircraftSelect}
-            />
-            </div>
-            <div hidden={findKind !== 'ships'}>
-            <VesselDiscovery
-              compactFilters={mobileWorkspace}
-              filters={vesselFilters}
-              vessels={vesselResults}
-              totalVessels={totalVessels}
-              vesselsVisible={vesselsVisible}
-              emptyMessage={vesselEmptyMessage}
-              units={units}
-              onFiltersChange={onVesselFiltersChange}
-              onSelect={onVesselSelect}
-            />
-            </div>
-              </>}
             />
           </section>
 
@@ -1549,12 +1516,12 @@ export function TrafficControls({
           id="mobile-find-button"
           className="workspace-find"
           type="button"
-          aria-controls={findKind === 'places' ? 'traffic-controls-settings' : 'traffic-controls-map-tools'}
-          aria-expanded={openWorkspaceTask === 'find' || openWorkspaceTask === 'places'}
+          aria-controls="traffic-controls-map-tools"
+          aria-expanded={openWorkspaceTask === 'find'}
           aria-keyshortcuts="f"
           aria-describedby="map-action-shortcuts"
           onClick={() => {
-            if (openWorkspaceTask === 'find' || openWorkspaceTask === 'places') {
+            if (openWorkspaceTask === 'find') {
               if (mapToolsDetailsRef.current) mapToolsDetailsRef.current.open = false
               if (settingsDetailsRef.current) settingsDetailsRef.current.open = false
               reconcileTask()
@@ -1601,7 +1568,6 @@ export function TrafficControls({
           id="traffic-controls-settings"
           name="traffic-control-panels"
           className="control-panel__more"
-          data-settings-mode={settingsMode}
           onFocusCapture={(event) => {
             captureTaskFocus(event)
             handleDisclosureFocus(event, focusedWithinSettingsRef)
@@ -1625,19 +1591,14 @@ export function TrafficControls({
             id="traffic-controls-settings-summary"
             ref={settingsSummaryRef}
             title="View and settings: appearance, location and history"
-            onClick={(event) => {
+            onClick={() => {
               closeOtherTasks(settingsDetailsRef.current)
-              if (mobileWorkspace && settingsDetailsRef.current?.open && settingsMode !== 'settings') {
-                event.preventDefault()
-                requestAnimationFrame(() => settingsBodyRef.current?.scrollTo({ top: 0 }))
-              }
-              setSettingsMode('settings')
             }}
           >
             <OperationIcon name="settings" />
             <span>Settings</span>
           </summary>
-          {mobileTaskHeading(settingsMode === 'places' ? 'Find places' : 'Settings', () => {
+          {mobileTaskHeading('Settings', () => {
             if (settingsDetailsRef.current) settingsDetailsRef.current.open = false
           })}
           <div
@@ -1660,21 +1621,12 @@ export function TrafficControls({
               Aircraft, ships &amp; orbits in view
             </button>
             <div className="workspace-location">
-            {mobileWorkspace && settingsMode === 'places' && findKindSelect}
             <div className="workspace-navigation" role="group" aria-label="Map navigation">
-              <LocationSearchInput
-                model={locationSearch}
-                inputRef={locationSearchInputRef}
-                maximumQueryLength={maximumLocationQueryLength}
-                searchState={placeSearchState}
-                disabled={locationNavigationDisabled}
-              />
+              <button type="button" onClick={openFind} aria-controls="map-tools-panel-find">
+                <OperationIcon name="find" /> Find objects or places
+              </button>
+              <p className="control-note"><strong>Viewing:</strong> {activeLocationLabel}</p>
             </div>
-            <LocationSearchDetails
-              model={locationSearch}
-              activeLabel={activeLocationLabel}
-              searchState={placeSearchState}
-            />
             </div>
 
             <fieldset className="control-group">

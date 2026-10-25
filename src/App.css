@@ -3128,20 +3128,6 @@
   background: transparent;
 }
 
-.app-shell--mobile-workspace .mobile-find-kind {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  margin-bottom: 12px;
-  color: var(--heading-text);
-  font-weight: 650;
-}
-
-.app-shell--mobile-workspace .mobile-find-kind select {
-  min-width: 0;
-  flex: 1 1 auto;
-}
-
 .app-shell--mobile-workspace .mobile-context-actions {
   margin-block: 10px 16px;
 }
@@ -3151,7 +3137,7 @@
   .vessel-discovery select, .vessel-discovery input[type='search'],
   .location-search__form button, .workspace-navigation input,
   .location-results button, .vessel-results button,
-  .mobile-find-kind select, .in-view input[type='search'], .in-view__find-ships,
+  .in-view input[type='search'], .in-view__find-ships,
   .control-panel__more-body button, .details-panel button, .history-mode-notice button
 ) {
   min-width: 44px;
@@ -3172,14 +3158,6 @@
   min-height: 44px;
   padding-block: 12px;
   color: var(--heading-text);
-}
-
-.app-shell--mobile-workspace #traffic-controls-settings[data-settings-mode='settings'] .workspace-location {
-  display: none;
-}
-
-.app-shell--mobile-workspace #traffic-controls-settings[data-settings-mode='places'] .control-panel__more-body > :not(.workspace-location) {
-  display: none;
 }
 
 .app-shell--mobile-workspace .details-panel {
@@ -3383,17 +3361,7 @@
   }
 }
 
-.object-find-kind,
-.object-find-scope {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-block: 0 12px;
-  color: var(--heading-text);
-}
-
-.object-find :is(input, select),
-.object-find-kind select {
+.object-find input {
   min-width: 0;
   min-height: 44px;
   flex: 1 1 auto;
@@ -3403,6 +3371,11 @@
   color: var(--panel-text);
   background: var(--button-background);
   font-size: 1rem;
+}
+
+.app-shell:not(.app-shell--mobile-workspace) .control-panel__more-body:has(> #map-tools-panel-find:not([hidden])) {
+  bottom: auto;
+  max-height: calc(100% - var(--workspace-orientation-note) - var(--workspace-note-height));
 }
 
 .object-find button {
@@ -3426,79 +3399,176 @@
   border-color: var(--button-hover-border);
 }
 
-.object-find-label {
-  display: block;
-  margin-block: 8px 6px;
-  color: var(--heading-text);
-}
-
-.object-find-input {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-
-.object-find-heading-row {
+.object-find .location-search__input-row {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  margin-bottom: 10px;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  gap: 6px;
 }
 
-.object-find-heading-row > label {
-  min-width: 0;
-  margin: 0;
+.object-find .location-search__input-row:has(.object-find-clear) {
+  grid-template-columns: minmax(0, 1fr) 44px 44px;
 }
 
-.object-find-heading-row label > span {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
+.object-find input[type='search']::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
 }
 
-.object-find-heading-row select {
-  width: 100%;
+.object-find .location-search__input-row button {
+  display: grid;
+  place-items: center;
+  padding: 0;
 }
 
-.object-find :is(.aircraft-discovery, .vessel-discovery) > legend {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
+.object-find-privacy {
+  margin-block: 4px 2px;
+  font-size: 0.72rem;
+  line-height: 1.4;
 }
 
-.object-find-submit {
-  width: 100%;
+.object-find-count {
+  margin-block: 2px 4px;
+}
+
+.map-filter-options .vessel-discovery__filter-options > summary {
+  display: block;
+  min-height: 44px;
+  padding-block: 12px;
+  color: var(--heading-text);
 }
 
 .object-find-results {
   display: grid;
-  gap: 12px;
-  margin: 12px 0;
+  gap: 0;
+  margin: 4px 0;
   padding: 0;
   list-style: none;
 }
 
-.object-find-results li {
+.object-find-result {
   display: grid;
-  gap: 6px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 8px;
+  align-items: start;
   min-width: 0;
-  padding-bottom: 12px;
   border-bottom: 1px solid var(--panel-border);
   overflow-wrap: anywhere;
 }
 
-.object-find-results li > span {
+.object-find-result__details {
+  grid-column: 1 / -1;
+  grid-row: 1 / 3;
+  min-width: 0;
+}
+
+.object-find-result:has(.object-find-result__action) .object-find-result__details > summary {
+  padding-right: 76px;
+}
+
+.control-panel__more .object-find-result__details > summary {
+  display: block;
+  min-height: 60px;
+  padding-block: 10px;
+  list-style: none;
+  color: var(--heading-text);
+  background: transparent;
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.control-panel__more .object-find-result__details > summary::after {
+  content: none;
+}
+
+.object-find-result__details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.object-find-result__details > summary:focus-visible {
+  outline: 2px solid var(--button-hover-border);
+  outline-offset: -2px;
+  border-radius: 4px;
+}
+
+.object-find-result__name {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  color: var(--heading-text);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.object-find-result__name strong {
+  min-width: 0;
+  font-weight: 650;
+}
+
+.object-find-result__chevron {
+  flex: 0 0 12px;
+  width: 12px;
+  height: 12px;
+  margin-left: auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+}
+
+.object-find-result__details[open] .object-find-result__chevron {
+  transform: rotate(180deg);
+}
+
+.object-find-flag {
+  flex: 0 0 auto;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.object-find-result__context,
+.object-find-result__country {
+  display: block;
+  margin-top: 2px;
   color: var(--subtle-text);
+  font-size: 0.73rem;
+  line-height: 1.4;
+}
+
+.object-find-result__information {
+  padding-bottom: 10px;
+  color: var(--note-text);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.object-find-result__information p {
+  margin-block: 6px;
+}
+
+.object-find-result__action {
+  z-index: 1;
+  grid-column: 2;
+  grid-row: 1;
+  padding-block: 8px;
+}
+
+.object-find-result__action button {
+  min-width: 68px;
+  max-width: 100%;
   font-size: 0.78rem;
 }
 
-.object-find-results button {
-  width: 100%;
+.object-find-result__status {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  padding-bottom: 8px;
+  color: var(--note-text);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.object-find-result__details > summary:hover .object-find-result__name {
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .control-panel__more .object-find .context-details > summary {

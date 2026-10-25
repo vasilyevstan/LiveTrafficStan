@@ -20,6 +20,8 @@ interface UseLocationSearchModelOptions {
   onNavigate: (center: AppCenter) => void
   onSelectResult: (result: PlaceSearchResult) => void
   onCancel: () => void
+  onPause?: () => void
+  queryPaused?: boolean
   onRevealDetails?: () => void
 }
 
@@ -27,9 +29,12 @@ export interface LocationSearchModel {
   value: string
   inputError?: string
   handleChange: (event: ChangeEvent<HTMLInputElement>) => void
-  handleSubmit: (event: FormEvent<HTMLFormElement>) => void
+  handleSubmit: (event: FormEvent<HTMLFormElement>) => ReturnType<typeof parseLocationInput> | undefined
   handleKeyDown: (event: KeyboardEvent<HTMLElement>) => void
   selectResult: (result: PlaceSearchResult) => void
+  clear: () => void
+  cancel: () => void
+  pause: () => void
 }
 
 export function useLocationSearchModel({
@@ -40,6 +45,8 @@ export function useLocationSearchModel({
   onNavigate,
   onSelectResult,
   onCancel,
+  onPause = onCancel,
+  queryPaused = false,
   onRevealDetails,
 }: UseLocationSearchModelOptions) {
   const [value, setValue] = useState('')
@@ -64,7 +71,7 @@ export function useLocationSearchModel({
     if (parsed.kind === 'error') {
       setInputError(parsed.message)
       onRevealDetails?.()
-      return
+      return parsed
     }
 
     setInputError(undefined)
@@ -72,11 +79,21 @@ export function useLocationSearchModel({
       onNavigate(parsed.center)
       setValue(parsed.center.label)
       inputRef.current?.focus()
-      return
+      return parsed
+    }
+
+    if (queryPaused || document.hidden || !navigator.onLine) {
+      const message = document.hidden ? 'Online search is paused while this tab is hidden.' :
+        !navigator.onLine ? 'Offline. Reconnect to search online; coordinates still work.' :
+          'Online search is paused in this view. Return to LIVE/the map to search online.'
+      setInputError(message)
+      onRevealDetails?.()
+      return { kind: 'error' as const, message }
     }
 
     onRevealDetails?.()
     onSearch(parsed.query)
+    return parsed
   }
 
   const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
@@ -93,6 +110,13 @@ export function useLocationSearchModel({
     inputRef.current?.focus()
   }
 
+  const clear = () => {
+    onCancel()
+    setValue('')
+    setInputError(undefined)
+    inputRef.current?.focus()
+  }
+
   const model: LocationSearchModel = {
     value,
     inputError,
@@ -100,6 +124,9 @@ export function useLocationSearchModel({
     handleSubmit,
     handleKeyDown,
     selectResult,
+    clear,
+    cancel: onCancel,
+    pause: onPause,
   }
 
   return [model, inputRef] as const
