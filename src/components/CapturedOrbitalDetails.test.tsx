@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { CapturedOrbitalView } from '../domain/orbitalView'
 import { CapturedOrbitalDetails } from './CapturedOrbitalDetails'
 import { MobileInspectorContext } from './mobileWorkspace'
+import { ObjectShareControl } from './ObjectShareControl'
 
 const view: CapturedOrbitalView = {
   revision: 1, viewRequestId: 2,
@@ -21,6 +22,28 @@ const view: CapturedOrbitalView = {
 }
 
 describe('CapturedOrbitalDetails', () => {
+  it('keeps one Share action beside Return and playback even with the mobile body collapsed', () => {
+    const html = renderToStaticMarkup(
+      <MobileInspectorContext value={{
+        mobile: true, compact: true, identity: 'capture:1', returnToTask: false,
+        onExpand: () => undefined, onCollapse: () => undefined,
+      }}>
+        <CapturedOrbitalDetails view={view} ready playing={false} online units="metric"
+          shareObject={<ObjectShareControl identityKey="from-here:1" viewFromHere now={3_000}
+            capture={() => { throw new Error('Share must be explicit') }} />}
+          onReturn={() => undefined} onTogglePlaying={() => undefined} />
+      </MobileInspectorContext>,
+    )
+    const bodyAt = html.indexOf('class="details-panel__body"')
+    expect(html).toContain('details-panel--action')
+    expect(html.slice(0, bodyAt)).toContain('aria-label="Share view from here"')
+    expect(html.match(/aria-label="Share view from here"/g)).toHaveLength(1)
+    expect(html.slice(0, bodyAt)).toContain('>Return</button>')
+    expect(html.slice(0, bodyAt)).toContain('>Play</button>')
+    expect(html.slice(0, bodyAt)).toContain('aria-label="Return to map"')
+    expect(html.slice(bodyAt)).toContain('hidden=""')
+  })
+
   it('keeps the previous ground-report area separate from paused modeled time and high-scale omission', () => {
     const html = renderToStaticMarkup(
       <CapturedOrbitalDetails view={view} ready playing={false}

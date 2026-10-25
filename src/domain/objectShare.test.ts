@@ -96,6 +96,39 @@ describe('minimal public object context', () => {
     expect(() => parseObjectShareContext({ ...context, snapshot: { ...snapshot, epoch: now } }, now)).toThrow()
   })
 
+  it('marks only explicit orbital viewpoints and keeps ordinary records and identity keys distinct', () => {
+    const ordinary = shareOrbitalObject(position, snapshot)
+    const view = shareOrbitalObject(position, snapshot, 'from-here')
+    expect(ordinary).not.toHaveProperty('view')
+    expect(view).toEqual({ ...ordinary, view: 'from-here' })
+    expect(parseObjectShareContext(JSON.parse(JSON.stringify(view)), now)).toEqual(view)
+    expect(objectShareIdentityKey(view)).not.toBe(objectShareIdentityKey(ordinary))
+    for (const context of [shareTrafficObject(aircraft), shareTrafficObject(vessel)]) {
+      expect(() => parseObjectShareContext({ ...context, view: 'from-here' }, now)).toThrow()
+    }
+    for (const view of ['map', 'from-there', '', null, true, { yaw: 90 }]) {
+      expect(() => parseObjectShareContext({ ...ordinary, view }, now)).toThrow()
+    }
+    for (const extra of [{ camera: { zoom: 4 } }, { playing: false }, { look: [1, 2] }, { modeledFor: now }]) {
+      expect(() => parseObjectShareContext({ ...view, ...extra }, now)).toThrow()
+    }
+  })
+
+  it.each(['curated', 'starlink'] as const)('uses the current %s model, never the sender point or another owner', owner => {
+    const original = { ...position, owner, id: orbitalFeatureId(position.noradCatalogId, owner) }
+    const context = shareOrbitalObject(original, snapshot, 'from-here')
+    const newer = { ...snapshot, sha256: 'b'.repeat(64), retrievedAt: new Date(now).toISOString() }
+    const current = {
+      ...original, latitude: -40, longitude: -120, modeledFor: now + 1_000,
+      snapshotSha256: newer.sha256, snapshotRetrievedAt: now,
+    }
+    expect(context.position).toEqual({ latitude: 1, longitude: 2, at: now })
+    expect(sharedOrbitalMatches(context, current, newer)).toBe(true)
+    expect(sharedOrbitalMatches(context, { ...current, owner: owner === 'curated' ? 'starlink' : 'curated' }, newer)).toBe(false)
+    expect(sharedOrbitalMatches(context, { ...current, internationalDesignator: '2026-002A' }, newer)).toBe(false)
+    expect(sharedOrbitalMatches(context, current, snapshot)).toBe(false)
+  })
+
   it('accepts a newer qualified same-owner snapshot, not a same-NORAD other-owner or contradictory designator', () => {
     const context = shareOrbitalObject(position, snapshot)
     const newer = { ...snapshot, sha256: 'b'.repeat(64), retrievedAt: new Date(now).toISOString() }

@@ -1921,15 +1921,15 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     restoreDetailFocus()
   }, [cancelSharedObject, restoreDetailFocus])
 
-  const handleCaptureOrbitalView = useCallback(() => {
-    if (!selectedOrbitalId || historyActive || mapError) return
-    cancelSharedObject()
-    const source = acceptedOrbitalPositionForCapture(selectedOrbitalId)
+  const handleCaptureOrbitalView = useCallback((id: string) => {
+    if (historyActive || mapError) return
+    const source = acceptedOrbitalPositionForCapture(id)
     const reason = orbitalViewUnavailableReason(source?.position, projectionPreference)
     if (!source || reason) {
       setOrbitalViewMessage(reason ?? 'The accepted modeled position changed. Select the object again.')
       return
     }
+    cancelSharedObject()
     const view: CapturedOrbitalView = Object.freeze({
       ...source, revision: ++capturedOrbitalRevisionRef.current, viewRequestId: viewRequest.id,
     })
@@ -1956,7 +1956,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     setInspectorExpanded(false)
   }, [
     cancelPlaceSearch, cancelSharedObject, clearJourney, clearLocalRuler, historyActive, locationCameraIntent,
-    mapError, acceptedOrbitalPositionForCapture, projectionPreference, selectedOrbitalId,
+    mapError, acceptedOrbitalPositionForCapture, projectionPreference,
     viewRequest.id, activeViewport,
   ])
 
@@ -2039,8 +2039,13 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
       }
       const id = sharedOrbitalId(context)
       const current = id ? acceptedOrbitalPositionForCapture(id) : undefined
-      if (!id || !current || !currentOrbitalViewport ||
-        !sharedOrbitalMatches(context, current.position, current.snapshot) ||
+      if (!id || !current || !sharedOrbitalMatches(context, current.position, current.snapshot)) return
+      if (context.view === 'from-here') {
+        pendingSharedObjectRef.current = undefined
+        handleCaptureOrbitalView(id)
+        return
+      }
+      if (!currentOrbitalViewport ||
         !matchesOrbitalFilters(current.position, context.owner === 'starlink' ? DEFAULT_ORBITAL_DISCOVERY_FILTERS : orbitalFilters) ||
         !(currentOrbitalViewport.kind === 'invalid'
           ? sharedOrbitalVisibilityRef.current?.(id)
@@ -2061,10 +2066,19 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
       selectTraffic(current.id, null, true)
     }
   }, [acceptedOrbitalPositionForCapture, aircraftVisible, capturedOrbitalView, currentAssessment,
-    currentOrbitalViewport, displayEntities, historyActive, now, orbitalFilters, orbitalObjectsVisible,
+    currentOrbitalViewport, displayEntities, handleCaptureOrbitalView, historyActive, now, orbitalFilters, orbitalObjectsVisible,
     selectOrbital, selectTraffic, sharedObject, sharedObjectFilters, vesselsVisible, orbitalState, starlinkState])
 
-  const sharedObjectMessage = !sharedObject?.context.position
+  const sharedOrbitalView = sharedObject?.context.kind === 'orbital' && sharedObject.context.view === 'from-here'
+  const sharedObjectMessage = sharedOrbitalView
+    ? orbitalViewMessage ?? (projectionPreference !== 'auto'
+      ? 'View from here needs Auto projection. Flat is unchanged.'
+      : !orbitalObjectsVisible ? 'ORBITS is off. View from here was not opened.'
+        : pendingSharedObjectRef.current?.receipt === sharedObject &&
+          performance.now() < pendingSharedObjectRef.current.deadline
+          ? 'Opening current modeled view...'
+          : 'Current modeled view unavailable. Showing the shared context.')
+    : !sharedObject?.context.position
     ? 'No position was shared. Showing the ordinary map.'
     : sharedObject.context.kind === 'orbital'
       ? orbitalObjectsVisible
@@ -2735,7 +2749,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
           </div>
         )}
 
-        {!sharedObjectNotice && !capturedOrbitalView && orbitalViewMessage && (
+        {!sharedObjectNotice && !sharedOrbitalView && !capturedOrbitalView && orbitalViewMessage && (
           <div className="viewport-notice" role="status">
             <span>{orbitalViewMessage}</span>
             <button type="button" onClick={() => setOrbitalViewMessage(undefined)}>Dismiss</button>
@@ -2805,6 +2819,14 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
             statusMessage={capturedOrbitalState?.message}
             online={online}
             units={units}
+            shareObject={APP_CONFIG.objectSharing.enabled ? <ObjectShareControl
+              identityKey={`from-here:${capturedOrbitalView.revision}`}
+              viewFromHere
+              disabled={!capturedOrbitalReady}
+              capture={() => shareOrbitalObject(
+                capturedOrbitalDisplayedPosition ?? capturedOrbitalView.position,
+                capturedOrbitalView.snapshot, 'from-here',
+              )} now={now} /> : undefined}
             onReturn={() => returnFromCapturedOrbitalView(capturedOrbitalView.revision)}
             onTogglePlaying={() => toggleCapturedOrbitalPlaying(capturedOrbitalView.revision)}
           />
@@ -2869,7 +2891,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
             onImageLoaded={handleOrbitalImageLoaded}
             onImageFailed={handleOrbitalImageFailed}
             onClose={handleCloseOrbital}
-            onViewFromHere={handleCaptureOrbitalView}
+            onViewFromHere={() => handleCaptureOrbitalView(selectedOrbitalPosition.id)}
             viewFromHereUnavailable={mapError
               ? 'View from here needs the vector basemap.'
               : orbitalViewUnavailableReason(selectedOrbitalPosition, projectionPreference)}
