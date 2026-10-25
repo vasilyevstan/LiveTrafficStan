@@ -45,5 +45,10 @@ export const usePlaceSearch = (
     [controller],
   )
 
-  return { state, search, cancel }
+  const pause = useCallback(() => {
+    controller.stop()
+    setState((current) => current.phase === 'loading' ? { phase: 'idle' } : current)
+  }, [controller])
+
+  return { state, search, cancel, pause }
 }

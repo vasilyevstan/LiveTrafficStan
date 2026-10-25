@@ -352,29 +352,34 @@ and map zoom remain available; this is not document-wide gesture blocking.
 
 ## Find cannot locate a ship or aircraft
 
-First check the selected class and scope. Places/coordinates uses Photon,
-not a ship/aircraft directory. **In view** searches received, filtered and
-unexpired observations; the Ships **In view** panel is only a top-20 length/
-draught shortlist. A vessel outside the view or excluded by length/yacht/
-unknown-value filters is not evidence that name matching is broken.
-**Find ships** opens the normal search/filter flow.
+Find has one input, without a class/scope selector. Typing searches current
+received objects, cached Digitraffic identities and loaded catalogs locally.
+Press **Search** for the existing online lookups and static catalog demand;
+opening Find or typing alone does not fetch. All entry points, including
+Settings's **Find objects or places**, reuse the same draft.
 
-**Received** searches already loaded Digitraffic metadata from the last
-24 hours, without a new request. It can find identities absent from the map.
-**Outside view** requires explicit **Look up**: ship name prefix or exact MMSI,
-aircraft exact ICAO24/registration/callsign. There is no arbitrary aircraft-name
+Live ship filters remain under **Layers -> Map filters**. A matching received
+ship hidden by a layer/filter has a disabled View and a reason; Find never
+changes those preferences. The separate Ships **In view** panel is only a
+top-20 length/draught shortlist, not every vessel or a global directory.
+
+Online ship search supports name prefixes of at least two characters or exact
+nine-digit MMSI; aircraft uses exact ICAO24/registration/callsign. Six hex
+characters route to ICAO24, hyphens/N-numbers to registration and other
+compatible short identifiers to callsign. For ambiguity, use `icao24:`,
+`reg:`, `callsign:` or `mmsi:` in the same input. There is no arbitrary aircraft-name
 directory, free exact ship IMO lookup or complete worldwide registry promise.
 Ship search returns identities even when ordinary metadata contains untimed
-geometry. Select **Locate** on an Outside-view result to check its newest
-timestamped report within the last 24 hours. **Received** has no position
-request. Unsupported/leading-zero MMSIs have an explicit disabled reason.
+geometry. Select **Locate** on an identity result to check its newest
+timestamped report within the last 24 hours. No position is looked up
+automatically. Unsupported/leading-zero MMSIs have an explicit disabled reason.
 **No reports in the last 24 hours** is not proof that a ship does not exist,
 has no coverage anywhere, or is at the old location. HTTP/source errors and
 rate limits are not empty reports.
 
 A successful Locate frames a dated report, not a synthetic live ship. The
 normal enabled layers, filters, reception and observation expiry still decide
-whether a live marker/details appears. Read **Source & age** for original report
+whether a live marker/details appears. Open the result's name for original report
 time, retrieval time and full contributing credits. No filter or Home override
 occurs. If a newer action kept the map unchanged, Locate again deliberately;
 there is no following or automatic retry. If framing is unavailable, close a
@@ -383,8 +388,11 @@ this conservative local fit. Failed framing preserves the previous context.
 Aircraft last reports still require their own original clocks and do not
 become live selections.
 
-Typing/class changes never issue lookup or load a catalog. A missing airport,
-port or orbital catalog needs its existing explicit Load/Enable action.
+Registry flags are MMSI flag state/ICAO24 allocation, not the object's current
+country or city. Ship search supplies no city; the app does not invent one.
+Search explicitly loads the existing airport/port assets once, leaving their
+markers off. ORBITS still needs explicit **Enable ORBITS** in Layers or
+**Sources & search limits**; Search never silently downloads/enables it.
 Successful empty, truncated, invalid/unavailable and Busy/Retry-After states
 are different. Aircraft lookup shares viewport polling's persistent relay
 admission; wait for the displayed deadline and submit again if needed.

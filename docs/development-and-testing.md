@@ -48,7 +48,56 @@ supplementary marine WebSocket; use the actual local Worker for those paths.
 | `npm run check:deploy` | Bundle the Worker and Static Assets without credentials or deployment |
 | `npm run preview:worker` | Build and run the actual local Cloudflare `workerd` boundary |
 
+### Unified compact Find (#578)
+
+The component/domain regressions cover one input without class/scope/method
+selectors, compatible one-per-class routing, optional textual exact-method
+hints, stable mixed ranking, exact deduplication without source/clock mutation,
+20-row pages, registry-country semantics, source-qualified locality, raw
+received arrays and independent map-filter eligibility. Coordinate intent stays
+local; immediate duplicate submission, Clear and independent request aborts
+retain the existing controller deadlines. The single place model checks
+hidden/offline/paused queries before Photon, while local coordinates still
+work. Existing lookup/place/controller/Worker timing, validation and A-B-A
+regressions remain authoritative.
+
+The matched all-feature build has **598,372 Node-default-gzip JavaScript
+bytes**, versus the accepted #574 baseline of 597,311: **+1,061 bytes /
+0.1776%**. CSS is 22,112 default-gzip bytes. This compares identical production
+feature inputs, not Vite's differently reported gzip estimate. No dependency,
+provider, Worker endpoint, binding, persistent state or scheduler was added.
+
+Native Chrome156 source-App fixtures cover Light/Dark1280x900,315x517 and
+390x568 in one bounded inspection/correction cycle. Accepted evidence includes
+local-only typing; actual explicit fixed POSTs and static demand; 20-row mixed
+paging/source truncation; flags, full IDs and original source/time disclosure;
+one 44px Clear (without a duplicate native search cancel); 44px actions and
+16px phone input; a single body scroller; retained map/canvas; native
+ship Locate and aircraft last-report navigation; static/orbital exact details
+and Back; offline/local coordinates; pending object/place edit/Clear aborts;
+and recoverable synchronous cooldown errors. ORBITS reads occur only after
+its explicit enable, not Search. Existing committed navigation still cancels
+transient place results, so place locality is checked before navigation.
+
+Retain the original observer failures. Padded coordinate navigation is not
+raw-center equality or a new promise that every coordinate is uncovered by an
+open phone task. Mixed ranking does not guarantee a ship is the first row.
+Long identities may scroll: first-action visibility/hit testing, not a fixed
+whole-row initial-fold guarantee, is the measured interaction. Source-qualified
+locality paging was completed separately on the retained App; already-passed
+ship/aircraft navigation before that later observer timeout was reused.
+No product edit or third visual-polish cycle followed those observer corrections.
+Source fixtures, emulated touch/network and native vectors are not public
+provider, physical-device/GPU, OS-keyboard or actual hidden-page proof.
+Independent #540/#554 remain open; this is not their complete map-space gate.
+The [#578 receipt](https://github.com/vasilyevstan/LiveTrafficStan/issues/578)
+records exact source gates, public acceptance and documentation publication.
+
 ### Explicit outside-view ship Locate (#574)
+
+The following dated receipt preserves the earlier class/scope interface as
+historical evidence; #578 above replaces those selectors, not its qualified
+position transport or navigation ownership.
 
 The original identity lookup still discards untimed REST geometry.
 Deterministic discovery/Worker/controller/intent/component regressions cover

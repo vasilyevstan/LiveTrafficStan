@@ -190,11 +190,18 @@ const renderControls = (
   )
 
 describe('TrafficControls', () => {
-  it.each([false, true])('names satellite search explicitly in the existing class picker (%s)', (mobileWorkspace) => {
+  it.each([false, true])('mounts one unified Find and keeps existing map filters separately in Layers (%s)', (mobileWorkspace) => {
     const html = renderControls({ mobileWorkspace })
-    expect(html).toContain('<option value="orbits">Satellites / orbits</option>')
-    expect(html).toContain('Callsign, registration, ICAO24, or type')
-    expect(html).toContain('Name, callsign, MMSI, or IMO')
+    const find = html.slice(html.indexOf('<section id="map-tools-panel-find"'), html.indexOf('<section id="map-tools-panel-context"'))
+    const layers = html.slice(html.indexOf('<section id="map-tools-panel-layers"'), html.indexOf('<section id="map-tools-panel-find"'))
+    expect(find).toContain('Find objects or places')
+    expect(find).not.toContain('<select')
+    expect(find.match(/type="search"/g)).toHaveLength(1)
+    expect(layers).toContain('Map filters')
+    expect(layers).toContain('Callsign, registration, ICAO24, or type')
+    expect(layers).toContain('Name, callsign, MMSI, or IMO')
+    expect(html).not.toContain('Find object class')
+    expect(html).not.toContain('Places / coordinates</option>')
   })
 
   it.each([false, true])('loads Find catalogs independently of overlay visibility (%s)', (visible) => {
@@ -252,6 +259,15 @@ describe('TrafficControls', () => {
     if (!props) throw Error('Find was not rendered')
     expect(props.onOrbitalNavigate('orbital:starlink:100460', 'opaque-find-origin')).toBe(true)
     expect(onOrbitalNavigate).toHaveBeenCalledExactlyOnceWith('orbital:starlink:100460', 'opaque-find-origin')
+  })
+
+  it('gives unified Find the unfiltered received arrays while retaining map-filter selection eligibility', () => {
+    const findAircraft: never[] = [], findVessels: never[] = []
+    renderControls({ findAircraft, findVessels })
+    const props = findRender.mock.lastCall?.[0]
+    expect(props?.aircraft).toBe(findAircraft)
+    expect(props?.vessels).toBe(findVessels)
+    expect(props?.selectableVesselIds.size).toBe(0)
   })
 
   it('keeps optional session relief in Layers without a permanent dock action', () => {
@@ -391,7 +407,7 @@ describe('TrafficControls', () => {
     expect(automatic).toContain('Auto globe changes smoothly with map zoom.')
   })
 
-  it('keeps Center in the primary dock and search in Settings without growing the header', () => {
+  it('keeps Center in the primary dock and one Find input without growing the header', () => {
     const html = renderControls()
     const headerEnd = html.indexOf('</header>')
     const masthead = html.slice(0, headerEnd)
@@ -463,10 +479,11 @@ describe('TrafficControls', () => {
     expect(settingsMore).toContain('<span>Settings</span></summary>')
     expect(settingsMore).toContain('class="workspace-panel-title">View &amp; settings')
     expect(settingsMore).toContain('aria-label="Map navigation"')
-    expect(settingsMore).toContain('id="location-search-input"')
+    expect(settingsMore).not.toContain('id="location-search-input"')
+    expect(navigationMore).toContain('id="location-search-input"')
     expect(settingsMore).not.toContain('>CENTER<')
-    expect(settingsMore).toContain('aria-label="Location search details"')
-    expect(settingsMore.indexOf('id="location-search-input"'))
+    expect(settingsMore).toContain('Find objects or places')
+    expect(settingsMore.indexOf('Find objects or places'))
       .toBeLessThan(settingsMore.indexOf('<legend>Appearance</legend>'))
     expect(settingsMore).toContain('USE LOCATION')
     expect(settingsMore).toContain('<legend>History</legend>')
@@ -482,7 +499,7 @@ describe('TrafficControls', () => {
     expect(html.match(/>SHIPS</g)).toHaveLength(1)
     expect(html.match(/>TRAILS</g)).toHaveLength(1)
     expect(html.match(/>ORBITS</g)).toHaveLength(2)
-    expect(html.match(/class="operation-icon"/g)).toHaveLength(10)
+    expect(html.match(/class="operation-icon"/g)).toHaveLength(12)
     expect(html.match(/aria-label="Theme and trails"/g)).toHaveLength(1)
     expect(html.match(/>LIGHT</g)).toHaveLength(1)
   })
@@ -559,6 +576,8 @@ describe('TrafficControls', () => {
       'id="traffic-controls-settings" name="traffic-control-panels"',
     )
     expect(html.slice(html.indexOf('id="traffic-controls-settings"')))
+      .toContain('Find objects or places')
+    expect(html.slice(html.indexOf('id="traffic-controls-map-tools"'), html.indexOf('id="traffic-controls-settings"')))
       .toContain('role="search"')
   })
 

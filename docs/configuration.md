@@ -555,7 +555,7 @@ qualifications](development-and-testing.md#native-workspace-fullscreen-434).
 
 ## Coordinate entry and named-place search
 
-The Location control submits only when the user activates **Go** or presses
+The **Find** input submits only when the user activates **Search** or presses
 Enter. Two strict decimal numbers separated by one comma are validated and
 rounded locally, then used directly as the next camera target. Valid coordinate
 input never calls a geocoder. Exponent notation, non-finite values, incomplete
@@ -575,8 +575,9 @@ Successful and empty results are cached in session memory for 15 minutes, up to
 one minute before another network search. This is a local fair-use safeguard,
 not a claim about an aggregate provider quota.
 
-The default endpoint is called directly from the browser. Submitted place text
-therefore appears in the Photon request URL, and Photon receives ordinary
+The default endpoint is called directly from the browser. All submitted
+non-coordinate text, including object names and identifiers, therefore appears
+in the Photon request URL, and Photon receives ordinary
 network metadata such as the client IP address. Browser-derived Home
 coordinates are not sent to Photon. A root-relative
 `VITE_GEOCODER_ENDPOINT` is only a deployment substitution point; the checked
@@ -584,33 +585,67 @@ Cloudflare Worker does not add a geocoder proxy.
 
 ## Scoped object discovery
 
-**Find** offers Ships, Aircraft, Satellites / orbits, Airports, Ports and
-Places/coordinates. Desktop **More -> Find** uses the same focused class/scope
-flow as mobile: only the selected search is visible, without a second catalog
-disclosure or unrelated aircraft/ship lists. Traffic starts **In view**; remote
-lookup is an explicit **Outside view** scope. Select **Satellites / orbits** to
-search the loaded orbital name, NORAD number or COSPAR ID. The single
-Settings location input is reused for mobile Places.
+**Find** has one input and one session-only draft on desktop and phones:
+names, identifiers, callsigns, places or strict decimal coordinates. There is
+no object-class, method or In view/Outside view selector. Desktop **More ->
+Find**, phone **Find**, the map-focused **F** shortcut, **Find ships** and
+Settings's **Find objects or places** open that same input. Settings does not
+mount another location form.
 
-**In view** uses current filtered observations; **Received** reads already
-loaded Digitraffic metadata, including identities with no displayed position.
-It does not fetch, extend cache retention or bypass live vessel filters.
-Whole loaded static/orbital catalogs have 20-row pages and separate drafts;
-choosing a class or typing never loads/enables a catalog. **Load airports**
-and **Load ports** request their existing pinned assets for this session
-without changing or saving the marker switches. Existing layer/weather loads
-and fulfilled assets are shared; closing or switching Find does not start
-another loader. An unavailable catalog remains an error with explicit retry,
-not an empty search. The local catalog query is available before loading;
-typing keeps a draft without making a request, and the existing explicit
-Load/Enable action applies it when data arrives. **Enable ORBITS** retains its
-existing semantics. Satellite search covers the accepted curated catalog and
-bounded Starlink sample, not every satellite or the complete constellation.
+Typing stays local: current eligible received aircraft/ships, the existing
+bounded Digitraffic metadata cache, fulfilled airport/port catalogs and
+accepted loaded orbital catalogs. It neither fetches nor prolongs source
+retention. Find's draft does not mutate live filters; those remain separately
+under **Layers -> Map filters**. A received object hidden by a layer or ship
+filter has a disabled **View** and a reason, not a silent preference override.
+
+**Search** is the explicit online operation. Non-coordinate text goes to
+Photon for places, to Open Waters when compatible with ship name/MMSI lookup,
+and to at most one compatible ADSB.lol exact lookup. The first named Search
+also demands the existing OurAirports and Natural Earth assets once for this
+session, independently of marker visibility. Existing Layers/weather demand
+and fulfilled caches are reused; closing Find never creates a second loader.
+A cold load is real transfer: the pinned airport/port assets are about
+225,625/22,482 gzip bytes. Loading/error/retry stay distinct from zero matches.
+Opening Find or typing never initiates these reads.
+
+Nine digits select exact ship MMSI; other names of at least two characters
+use ship name-prefix lookup. Six hexadecimal characters select aircraft
+ICAO24; a compatible identifier containing a hyphen or beginning with an
+N-number selects registration; otherwise up to eight alphanumeric characters
+select callsign. This is bounded routing, not perfect identity inference.
+For ambiguity, optional **`icao24:`**, **`reg:`**, **`callsign:`** or **`mmsi:`**
+text prefixes choose the existing exact method without a form picker.
+Normal provider validation remains authoritative; no fallback sequence
+bypasses aircraft's 20-second or ships' five-second cooldown.
+
+Mixed matches are stably ranked exact identity/name first, then prefixes.
+Exact identities are deduplicated with received observations preferred;
+source payloads and clocks are never merged. At most 20 rows render per
+page, with the full available count and explicit source truncation. Source
+errors remain independent and do not turn unavailable coverage into an empty
+result. A row's name opens its complete source, identifiers and times;
+**Sources & search limits** contains shared restrictions rather than repeated
+full-width instructions below every row.
+
+Available flags/country labels are synchronous bundled **MMSI flag state**
+or **ICAO24 allocation**, not current location, nationality of occupants or
+an inferred owner. Native flag glyphs depend on platform fonts; the country
+name and basis remain textual. Airport/place locality appears only where
+its source supplies it. Ship identity search supplies no dated position,
+city or current-location country; there is no automatic per-row Locate,
+reverse geocoder or nearest-city inference.
+
+Search never enables ORBITS or downloads its catalogs. Explicit **Enable
+ORBITS** in **Sources & search limits** or Layers retains its existing
+semantics and the draft. Local satellite name, NORAD and COSPAR search covers
+only the accepted curated catalog and bounded Starlink sample, not every
+satellite or the complete constellation.
 
 **Go to airport/port** commits ordinary navigation and opens the existing
 static details even with all catalog markers off. It does not enable a
 selected-only pin, weather, airport-board requests or remote object lookup.
-Phone details open fully; **Back** restores the Find class, query and valid
+Phone details open fully; **Back** restores the Find query and valid
 focus/scroll context, while **X** deselects. Home, saved preferences and provider
 controllers are unchanged.
 
@@ -627,16 +662,13 @@ for old records, not a forced browser retry or guessed location. The demonstrate
 COSMOS 2619 / NORAD100460 dependency is tracked separately in
 [#545](https://github.com/vasilyevstan/LiveTrafficStan/issues/545).
 
-**Outside view** submits one bounded operation. Ships allow name prefixes
-(two or more characters) or exact nine-digit MMSI, preserving leading zeros.
-Aircraft allow exact ICAO24, registration (including hyphens) or callsign.
-Free exact IMO and arbitrary aircraft-name lookup are unavailable.
-Ship search itself returns identities, not timed positions. On an **Outside
-view** result, **Locate** explicitly checks that one supported nine-digit MMSI's
+Free exact IMO and arbitrary aircraft-name lookup remain unavailable.
+Ship search itself returns identities, not timed positions. On an identity
+result, **Locate** explicitly checks that one supported nine-digit MMSI's
 newest original-clock report in the last 24 hours. The source operation uses
 `interval=0&limit=1`, not metadata `seen` or arbitrary REST geometry. Leading-zero
 identities remain searchable but cannot use this position operation.
-**Received** remains identity-only, with no Locate request.
+Cached metadata remains identity-only until that explicit Locate succeeds.
 
 Locate keeps the query, row ordering, result controls and focus. A qualified
 report receives ordinary local framing with a 5 km radius; report and retrieval
@@ -644,7 +676,7 @@ times plus complete track credits are in **Source & age**. This is a dated
 report, not a live marker/selection or a guarantee the vessel remains there.
 No report in the window, a timeout, HTTP/source limits and malformed data are
 distinct outcomes and do not move the map. A newer navigation, selection,
-HISTORY, draft/scope/method/class change, closing Find, hidden/offline state
+HISTORY, draft changes, closing Find, hidden/offline state
 or an obsolete A-B-A response prevents late navigation. Pending activation
 does not duplicate the request; timeout releases the same button.
 
@@ -654,8 +686,17 @@ existing context intact with an explanation; this is a conservative map limit,
 not a provider-coverage rule. Successful explicit navigation clears previous
 selection/trails, but never changes Home, filters, layer preferences or provider
 lifetimes/cadence. Ordinary reception may subsequently supply the ship.
-Aircraft original clocks still qualify **Go to last report** separately;
+Aircraft original clocks still qualify the compact **Locate** action
+(accessible name **Go to last report**) separately;
 static and modeled points retain their own labels.
+
+Editing/Clear immediately cancels pending object and place work. Closing,
+HISTORY/captured view, hidden/offline and unmount fence obsolete work without
+resetting cooldowns or shared Retry-After. Completed place data survives a
+simple panel pause; ordinary committed navigation keeps its existing place
+cancellation boundary. Online Search reports why it is unavailable, while
+strict coordinates remain local and usable offline. No query, result or
+location is persisted, and Home/provider controllers remain unchanged.
 
 `appConfig.ts` re-exports the browser-neutral `DISCOVERY_CONFIG` shared with
 the Worker. This avoids importing browser environment configuration into the

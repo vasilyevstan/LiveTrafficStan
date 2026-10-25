@@ -268,8 +268,8 @@ details, not a row per button; error feedback receives only its extra space.
 Presence-scoped mobile flyout clearance keeps both companions reachable.
 In fullscreen-only short desktop/landscape views, existing rail targets
 compact to at least 44px rather than scrolling the exit offscreen.
-The single location model/input remains mounted in Settings: desktop keeps its
-placement, while mobile Find/Places exposes that same content, not a clone.
+The single location model/input remains mounted in Find on both layouts.
+Settings and all Find entry points open that same draft, not a cloned form.
 The desktop floating card remains 280x88 px, inset 16 px; mobile compacts its
 status presentation. Its redundant brand subtitle is hidden;
 counts, freshness, and provider disclosure stay visible, with unchanged 44 px
@@ -446,15 +446,33 @@ This presentation changes no acquisition, filter, Home or history lifecycle.
 
 ### Scoped discovery and explicit remote operations
 
-`ObjectFind` presents one class/scope and separate ephemeral drafts. In-view
-aircraft matching remains list-only; vessel matching/typed filters still
-refine map/counts and the 20-ship shortlist. Received ship search reads the
+`ObjectFind` presents one ephemeral query and mixed, 20-row paged results,
+without a class/scope/method selector. `useLocationSearchModel` remains the
+single parser/input owner; its returned parse result keeps strict coordinates
+local before source routing. Typing matches received observations and fulfilled
+catalogs only. Existing aircraft/vessel filters remain separate under Layers;
+the Find draft never changes map/count/shortlist filters. Cached ship search reads the
 existing bounded Digitraffic metadata cache using its original timestamps,
 at most 24 hours, without fetching or prolonging cache life.
 `catalogDiscovery.ts` searches whole fulfilled airport/port assets and accepted
-curated/Starlink snapshots with 20-row pages, exact NORAD owner/clock checks,
-and no change to live filters. Missing catalogs require explicit existing
-Load/Enable actions; identity-only records never manufacture a location.
+curated/Starlink snapshots with exact NORAD owner/clock checks.
+`unifiedFind.ts` plans at most one compatible request per object class and
+stably ranks exact identities/names, then prefixes. Received exact identities
+win deduplication; source DTOs/clocks are never spliced. Compact native
+disclosures retain per-result provenance, with separate inline View/Go/Locate.
+Country hints reuse synchronous MMSI/ICAO24 allocations; no locality lookup,
+registry-to-position inference, new entity field or acquisition is introduced.
+
+Explicit named Search invokes existing independent place/ship/aircraft paths
+and session demand for both static catalogs. It does not load/enable ORBITS;
+that remains explicit. A synchronous submission ref blocks duplicate events
+before rerender and reconciles on every render, including immediate errors.
+The place model checks online/visible/active-query availability before Photon,
+without preventing local coordinates. Immediate edits/Clear cancel pending
+work; place pause stops its existing controller while preserving fulfilled
+presentation. Ordinary committed navigation retains its prior cancellation
+semantics. No second parser, input, geocoder controller, scheduler or cache
+is added.
 
 Static Find demand is session-only and joins the existing `useAirports`/
 `usePorts` consumer demand; there is still one provider, request owner and
@@ -472,17 +490,20 @@ path, rather than adding another inspector or replaying intent on resize.
 
 Each `ObjectLookupController` owns one explicit cancellable operation, not a poller.
 Its application-owned discovery DTO is separate from `TrafficEntity`.
-Class/scope/task changes, input, hidden/offline/HISTORY and unmount fence
+Task changes, input, hidden/offline/HISTORY/captured view and unmount fence
 obsolete A-B-A results. Per-source cooldown/Retry-After survives cancellation;
 a late valid retry deadline can update operational backoff without publishing
 stale UI. Find reuses separate identity and position controller instances so
-Locate cannot replace the fulfilled identity list. Handlers stop the other
-operation; both share one provider's observed source HTTP backoff, while their
+Locate cannot replace the fulfilled identity list. Starting Locate stops an
+unfinished ship identity operation, not the independent aircraft result.
+All three controllers share one provider's observed per-class HTTP backoff, while their
 ordinary cooldowns remain independent. There is no result cache, persisted
 draft, auto-retry or location bias.
 
 Fixed POST `/api/find/aircraft` and `/api/find/ships` send bounded `{by,q}`;
-submitted text cannot enter browser resource URLs or identity-bearing DOM IDs.
+those object requests put no query text in their resource URLs or DOM IDs.
+The same explicit unified submission also uses Photon, whose separate URL
+contains the submitted text as disclosed beside the input.
 The Worker validates method/origin/body and makes only reviewed fixed GETs.
 Aircraft exact hex/reg/callsign goes through the same private relay and
 persistent shared admission as point requests. Ships use anonymous Open Waters
