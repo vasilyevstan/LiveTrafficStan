@@ -1207,14 +1207,17 @@ preference, source, provider or lookup. Existing fonts may load an additional
 glyph range. See [normal-view evidence and costs](development-and-testing.md#ordinary-top-down-map-detail-522).
 
 **Layers -> RELIEF** (desktop **More -> Layers**) is a separate, session-only
-choice, initially off and reset by reload or Reset preferences. Enabling
-adds native `hillshade` from the public Mapzen Terrarium dataset on AWS.
+choice, **on by default** through `BASEMAP_DETAIL_CONFIG.reliefVisibleByDefault`.
+Turning it off applies to the current session; reload and Reset preferences
+restore on. Enabled relief adds native `hillshade` from the public Mapzen
+Terrarium dataset on AWS.
 `BASEMAP_DETAIL_CONFIG` caps the 256 px elevation source at zoom 7, displaying
 coarse shading from zoom 4 to below 14. It is not geometric terrain:
 `setTerrain` is never used, the camera/virtual eye is unchanged, and there is
 no elevation lookup, extra renderer, dependency, scheduler or backend.
 
-Relief makes zero source requests while off. When on, native tile URLs reveal
+Relief makes zero source requests while off. Default-on can request tiles at
+startup in supported styles and zooms. When on, native tile URLs reveal
 the viewed map area to AWS; existing HTTP caching may reuse tiles. The app
 does not store relief choice or coordinates, add a shell cache, or promise
 offline coverage. The source contains older merged elevation data and has no

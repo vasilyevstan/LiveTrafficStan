@@ -356,10 +356,10 @@ describe('TrafficDetails aircraft metadata', () => {
     expect(enabledHtml).toContain('Aircraft photo')
     expect(enabledHtml).toContain('Load photo')
     expect(enabledHtml).toContain(
-      'Planespotters receives ICAO24 511123 plus normal network metadata',
+      'Planespotters receives ICAO24 511123 plus network metadata',
     )
-    expect(enabledHtml).toContain('JSON cache: this tab, 1 hour')
-    expect(enabledHtml).toContain('image bytes not stored')
+    expect(enabledHtml).toContain('images load from its CDN')
+    expect(enabledHtml).not.toContain('JSON cache:')
     expect(enabledHtml).toContain('Terms')
     expect(enabledHtml).not.toContain('<img')
   })

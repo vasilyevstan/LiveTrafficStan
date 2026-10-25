@@ -27,9 +27,9 @@ describe('CapturedOrbitalDetails', () => {
         localTrafficAvailable groundTrafficSuppressed online units="metric"
         onReturn={() => undefined} onTogglePlaying={() => undefined} />,
     )
-    expect(html).toContain('Previous local area reports: sampled ground annotations')
-    expect(html).toContain('not traffic visible from the spacecraft')
-    expect(html).toContain('Not drawn at this scale.')
+    expect(html).toContain('Previous local area: ground markers only.')
+    expect(html).toContain('Hidden at this scale.')
+    expect(html).toContain('not live or optical')
     expect(html).toContain('>Paused <time')
     expect(html).not.toContain('Aircraft and ships paused')
   })
@@ -85,13 +85,15 @@ describe('CapturedOrbitalDetails', () => {
     }
   })
 
-  it('distinguishes paused model time while retaining normal-speed and geostationary caveats', () => {
+  it('distinguishes paused model time while retaining real-time and slow-apparent-motion caveats', () => {
     const html = renderToStaticMarkup(
       <CapturedOrbitalDetails view={view} ready playing={false} online units="metric"
         onReturn={() => undefined} onTogglePlaying={() => undefined} />,
     )
     expect(html).toContain('>Paused <time')
-    expect(html).toContain('Normal-speed modeled motion; geostationary objects may appear still')
+    expect(html).toContain('Real-time modeled motion; high orbits can appear still.')
+    expect(html).toContain('Day/night shading uses the displayed modeled time, not optical visibility.')
+    expect(html).not.toContain('Session-only; no recording or share link')
     expect(html).toContain('Modeled time')
     expect(html).toContain('Travel direction unavailable')
     expect(html).toContain('Unavailable; neutral or last accepted direction')

@@ -57,8 +57,9 @@ Check these project invariants:
   useful short-screen height and whole photos, without a full-height gutter.
   Test middle/end text, images and links against the button rectangle.
 - Default explanatory copy fits at most two rendered lines at supported
-  widths. Native disclosures retain full names, rights, privacy and limits;
-  prove keyboard/touch access rather than silently clipping necessary text.
+  widths. Expanded help must also stay brief, not relocate essays. Retain
+  full names, rights, essential privacy and limits; link canonical docs for
+  extended explanations. Prove keyboard/touch access, never silently clip text.
   Include layer-off and ungranted-location states at the narrowest width;
   enabled/other-permission fixtures do not exercise those copy branches.
 - Show path makes one north-up fit. Return restores the prior bearing,

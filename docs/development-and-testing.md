@@ -228,7 +228,53 @@ unchanged. Reuse accepted unchanged relief/building/orbital/update evidence;
 the [#522 receipt](https://github.com/vasilyevstan/LiveTrafficStan/issues/522)
 separately records checked delivery, actual public behavior and publication.
 
+### Default-on Relief and concise menus (#585)
+
+Exercise the actual App's initial Relief state, session off, reload-on and
+Reset preferences-on paths; a controls fixture alone does not prove App
+initialization or reset. Retain the source-zoom-7 bound, no geometric terrain,
+local source errors and the existing style/camera/provider owners.
+
+Review Layers, Find, Context, Orbits, Sources, Settings, History, In view and
+Provider details, including expanded help/source sections. Remove duplicated
+explanations rather than hiding them in another disclosure. Keep short
+instructions, errors, privacy, source/time/datum qualifiers and required
+credits; preserve actual object facts and mission descriptions. Cover
+desktop, 315x517 and 390x568 in Light/Dark, including hidden layers and an
+ungranted location permission at the narrowest width. Measure real copy,
+scrolling, target/focus access and overflow. Do not shrink text or silently
+clip prose. Extended technical explanations belong in canonical docs.
+
+Component regressions retain off/unavailable/unsupported Relief, failed and
+partial depths, source links, local-only board filtering, unknown source
+age/codeshares and separate modeled/observed clocks. Reuse unchanged provider,
+PWA and captured-camera acceptance; this copy/default change does not justify
+another complete lifecycle or live-provider matrix.
+
+The October 25 source-App Chrome 156 batch passes 54 scoped menu/disclosure
+observations across Light/Dark at 1280x900, 315x517 and 390x568. Actual startup,
+session-off, ordinary reload-on and Reset preferences-on assertions pass with
+one map, a source-zoom-7 DEM and no geometric terrain. Real OpenFreeMap/Mapzen
+tiles render the Alpine fixture view. Phone ordinary menus peak at 60.87%
+combined overlay, retain a hit-tested 120x120 map region and at least 160px
+useful body height; there is one scroll owner, no horizontal overflow and no
+measured default helper exceeding two lines. The narrow cases include hidden
+traffic layers and denied location permission. Sources receives a native
+touch-scroll check. Existing desktop 24/36px native/secondary controls are not
+misreported as new 44px controls; phone primary controls retain 44px targets.
+
+The preload/reload-generation and unchanged desktop-target observer failures
+are retained. Completed default assertions are reused for the menu continuation;
+their original pre-reload raw metrics were not saved. No product correction
+followed those observer fixes. This is controlled-source desktop/emulated-touch
+evidence, not physical-device/GPU, OS-keyboard, new PWA-update or live-provider
+acceptance. All eight local gates pass, including 213 suites / 2,534 tests.
+Matched initial JS is 596,545 Node-default-gzip bytes (843 fewer); CSS remains
+21,907 bytes. Public rollout and Wiki publication are separate milestones.
+
 ### Lightweight map detail (#518)
+
+This historical October 19 receipt precedes #585's default-on Relief change.
 
 `basemapCartography.test.ts` retains default/custom/shared-theme preservation,
 label/vessel contrast and unchanged source/road semantics, adding exact

@@ -119,12 +119,13 @@ expected unit conversion.
 
 ## Relief or 3D buildings are missing
 
-RELIEF is intentionally **off after reload**. Enable it in Layers (desktop
-More / Layers), then use a regional land view between zoom 4 and below 14;
+RELIEF is **on after reload and Reset preferences**. Check its switch in
+Layers (desktop More / Layers), then use a regional land view between zoom 4 and below 14;
 the Alps are a useful example. Its elevation source is capped at zoom 7, so
 closer zoom does not promise finer terrain. It is native shading, not raised
 geometry, imagery or an elevation/navigation tool. Water stays above it and
 the separate DEPTHS control keeps its own behavior.
+Turning Relief off lasts for the current session, not the next reload.
 
 If Layers says relief unavailable, the optional source was removed, not
 silently replaced. The rest of the map and traffic should remain usable.
