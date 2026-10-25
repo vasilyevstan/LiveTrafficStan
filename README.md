@@ -8,6 +8,16 @@ user accounts or a server-side vessel history archive.
 
 Public production: <https://trackstan.xyz>
 
+**One Find (#578):** enter an object name, identifier, callsign, place or
+coordinates without choosing an object type or In view/Outside view scope.
+Typing searches available data locally; **Search** explicitly includes the
+existing online sources and static catalogs. Compact mixed results show exact
+identifiers and available registry flags; open a name for source and age.
+Registry country is not current location. Ship positions still require an
+explicit **Locate**; no city is guessed or reverse-geocoded.
+[Usage, costs and limits](docs/configuration.md#scoped-object-discovery)
+and [delivery evidence](https://github.com/vasilyevstan/LiveTrafficStan/issues/578).
+
 **Locate a ship outside the view (#574):** Find's explicit ship search first
 returns identities. Choose a row's **Locate** to request its newest reported
 position in the last 24 hours and move the existing map there at useful local
@@ -497,14 +507,15 @@ identity are not renamed or reset.
   remain available on demand, including across themes.
   These stable native disclosures
   retain one scroll owner per panel and session-only
-  Layers/Find/Context/Orbits/Sources views. **Settings** groups the single
-  explicit-submit location input, results, and search privacy text before
-  **Appearance**. **Center** stays outside menus in the main rail/dock.
-  The search controls stay mounted when Settings is closed;
+  Layers/Find/Context/Orbits/Sources views. The single explicit-submit input,
+  mixed results and search privacy text live in **Find** on both layouts;
+  Settings's **Find objects or places** opens that same retained draft.
+  **Center** stays outside menus in the main rail/dock.
+  The search controls stay mounted when Find is closed;
   Auto/Light/Dark and Trails remain under Appearance.
   Native fullscreen is under **View**; the browser owns its Escape/system exit.
-  With the map canvas focused, unmodified **F** opens the current Find class,
-  scope and draft; **C** runs the available Center action. These are not
+  With the map canvas focused, unmodified **F** opens the retained Find draft;
+  **C** runs the available Center action. These are not
   typing-field or browser-Find shortcuts. Hidden mobile HISTORY actions stay
   unavailable. Find does not navigate, submit or discard a captured path;
   Center retains its normal session-Home/navigation behavior.
@@ -531,37 +542,33 @@ identity are not renamed or reset.
   colored dots. The duplicate traffic legend is intentionally omitted.
   [Local refinement evidence](docs/development-and-testing.md#minimal-right-controls-local-evidence)
   is separate from the historical production release below.
-- **Find** separates **In view**, **Received** ship metadata, loaded catalogs
-  and explicitly submitted **Outside view** lookup. Places/coordinates reuse
-  the single existing location input; Photon is not a ship/aircraft directory.
-  **Load airports** and **Load ports** use the existing validated static
-  catalogs without enabling their map markers. Already-loaded layer/weather
-  data is reused. **Go to airport/port** navigates and opens the existing
-  static details, with no selected-only pin; mobile **Back** restores Find.
-  The accepted curated/Starlink sample catalogs still require their existing
-  explicit enable/load action. Find shows one selected object class on every
-  layout, without unrelated aircraft/ship searches below catalog results.
-  For satellite search, use **Find -> Satellites / orbits**; on desktop open
-  **More -> Find** first. Search the reported name,
-  NORAD number or COSPAR ID. The query field is available before loading and
-  its local draft is retained through **Enable ORBITS**. **Go to satellite**
-  navigates to a qualified current modeled point and opens its existing details;
-  mobile **Back** restores Find. A disabled action explains why a point is
-  unavailable, including orbital elements older than the unchanged 14-day limit.
-  A freshly retrieved catalog does not make an old element epoch current.
-  Choosing a class or typing does not download a catalog or perform lookup.
-  Outside-view ships use free Open Waters name-prefix/exact-MMSI identity
-  lookup. Select **Locate** on one result to request its newest timestamped
-  report within the last 24 hours and frame that dated position. Query,
-  results and focus stay available; missing reports/errors keep the current
-  view. Untimed REST metadata geometry never becomes a position.
-  Aircraft support exact ICAO24, registration or callsign, not arbitrary names.
-  Qualified original aircraft positions offer **Go to last report**.
-  Navigation never creates a fake live object or changes Home. Aircraft/Ships
-  start with their existing **In view** search; choose **Outside view** explicitly
-  for remote lookup. In-view results retain normal live selection/details.
-  [Scopes, bounds and privacy](docs/configuration.md#scoped-object-discovery)
-  include partial coverage, the 50-result cap and unavailable free exact IMO.
+- **Find** is one input for aircraft, ships, satellites, airports, ports,
+  places and coordinates, with no class/scope/method selector. Typing matches
+  received objects, cached ship identities and loaded catalogs locally.
+  **Search** explicitly submits compatible existing online lookups and loads
+  the existing airport/port assets once without enabling their markers.
+  Exact identities are deduplicated; at most 20 mixed rows appear per page,
+  with honest totals, partial coverage and independent errors.
+  Full names, identifiers and bundled MMSI/ICAO24 country hints distinguish
+  results; flags are registry/allocation context, not current location.
+  Open a result name for its source, original clocks and limitations.
+  Ship search supplies no position or city: **Locate** explicitly requests
+  one newest original-clock report within 24 hours. Aircraft **Locate**
+  navigates only to a qualified last report, not a synthetic live selection.
+  Received objects use normal **View**; hidden layers/filters keep a reason.
+  Existing map filters remain separately under **Layers -> Map filters**.
+  Static and satellite **Go** opens existing details; mobile **Back** restores
+  Find. ORBITS is never enabled by Search: explicitly **Enable ORBITS** in
+  **Sources & search limits** or Layers, then search its accepted name,
+  NORAD number or COSPAR ID locally. The curated catalog and bounded Starlink
+  sample are not every satellite. Old/future elements retain disabled Go and
+  a reason; a fresh retrieval never renews the unchanged 14-day element limit.
+  Coordinates navigate locally without a request; submitted non-coordinate
+  text appears in Photon's URL. No typeahead, reverse geocoder, automatic
+  per-row position lookup or new provider is added.
+  [Routing, source bounds and privacy](docs/configuration.md#scoped-object-discovery)
+  explain optional textual identifier hints, the 50-source-result cap and
+  unavailable free exact IMO/arbitrary aircraft-name lookup.
 - **In view** opens below Settings in the desktop rail or directly from the
   phone dock. Aircraft and Orbits have local search and 20-row pages, with
   complete individual counts rather than cluster-symbol counts. **Ships**

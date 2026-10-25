@@ -1,36 +1,49 @@
-import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react'
 import { ObjectLookupController, type ObjectLookupState } from '../app/ObjectLookupController'
+import type { PlaceSearchState } from '../app/PlaceSearchController'
 import { workspaceOwnsFullscreen } from '../app/fullscreen'
 import { APP_CONFIG, type AppCenter } from '../config/appConfig'
 import { DISCOVERY_CONFIG } from '../config/discoveryConfig'
 import type { Airport, AirportSource } from '../domain/airports'
+import { aircraftResultContext, aircraftResultLabel, orderAircraftSearchResults } from '../domain/aircraftSearch'
 import { discoverAirports, discoverLoadedOrbits, discoverPorts, loadedOrbitalCatalog, type OrbitalCatalogEntry } from '../domain/catalogDiscovery'
+import { countryForAircraftHex, flagStateForMmsi, type CountryAllocation } from '../domain/countryAllocations'
 import { formatAge } from '../domain/format'
 import type { CachedMarineDiscovery, DiscoveryMatch, DiscoveryResponse } from '../domain/objectDiscovery'
 import { qualifiedLastReport } from '../domain/objectDiscovery'
 import { orbitalObjectTypeLabel, type OrbitalControllerState } from '../domain/orbital'
 import { orbitalCatalogPage } from '../domain/orbitalDiscovery'
 import type { Port, PortSource } from '../domain/ports'
+import type { DisplayAircraft, DisplayVessel } from '../domain/traffic'
+import { findLookupRequests, rankFindResults } from '../domain/unifiedFind'
+import { matchesVesselIdentitySearch, normalizeVesselSearchQuery, orderVesselSearchResults, vesselResultContext, vesselResultLabel } from '../domain/vesselFilters'
 import { SameOriginObjectLookupProvider } from '../providers/discovery/objectLookupProvider'
 import { parseMarineMmsi } from '../providers/marine/marineSourceNormalization'
+import { LocationSearchInput } from './LocationSearch'
 import { ObjectResultButton } from './ObjectResultButton'
+import type { LocationSearchModel } from './useLocationSearchModel'
 
-export type FindKind = 'places' | 'aircraft' | 'ships' | 'orbits' | 'airports' | 'ports'
 export type ShipLocateNavigation = (center: AppCenter, onFramingError: (message: string) => void) => boolean
-type Scope = 'view' | 'received' | 'outside'
 
 interface ObjectFindProps {
-  kind: FindKind
-  kindSelect: ReactNode
-  currentView: ReactNode
+  model: LocationSearchModel
+  inputRef: RefObject<HTMLInputElement | null>
+  maximumQueryLength: number
+  placeSearchState: PlaceSearchState
   mobile: boolean
   active: boolean
   paused: boolean
-  currentViewRequest: number
   now: number
   navigationDisabled: boolean
   onNavigate: (center: AppCenter) => void
   onBeginShipLocate: () => ShipLocateNavigation | null
+  aircraft: readonly DisplayAircraft[]
+  vessels: readonly DisplayVessel[]
+  aircraftVisible: boolean
+  vesselsVisible: boolean
+  selectableVesselIds: ReadonlySet<string>
+  onAircraftSelect: (id: string, originId: string) => void
+  onVesselSelect: (id: string, originId: string) => void
   airports: readonly Airport[]
   airportsReady: boolean
   airportsLoading: boolean
@@ -70,6 +83,40 @@ function orbitalPositionMessage(entry: OrbitalCatalogEntry, state: OrbitalContro
   return 'No safe current modeled position is available.'
 }
 
+export function FindResultRow({
+  label, context, country, countryBasis, action, status, children,
+}: {
+  label: string
+  context: string
+  country?: CountryAllocation
+  countryBasis?: string
+  action?: ReactNode
+  status?: ReactNode
+  children: ReactNode
+}) {
+  const flag = country && String.fromCodePoint(...[...country.iso2.toUpperCase()].map((letter) => 0x1f1e6 + letter.charCodeAt(0) - 65))
+  return (
+    <li className="object-find-result">
+      <details className="object-find-result__details">
+        <summary aria-label={`${label}: identity, source and age`}>
+          <span className="object-find-result__name">
+            {country && <span className="object-find-flag" aria-hidden="true" title={`${countryBasis ?? 'Country'}: ${country.name}`}>{flag}</span>}
+            <strong>{label}</strong>
+            <svg className="object-find-result__chevron" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </span>
+          <span className="object-find-result__context">{context}</span>
+          {country && <span className="object-find-result__country">{country.name} · {countryBasis ?? 'country'}</span>}
+        </summary>
+        <div className="object-find-result__information">{children}</div>
+      </details>
+      {action && <div className="object-find-result__action">{action}</div>}
+      {status && <span className="object-find-result__status" role="status">{status}</span>}
+    </li>
+  )
+}
+
 interface ShipLocateResults {
   key: string | null
   state: ObjectLookupState
@@ -78,127 +125,126 @@ interface ShipLocateResults {
   onLocate: (match: DiscoveryMatch) => void
 }
 
-export function IdentityResults({
-  result, now, navigationDisabled, onNavigate, shipLocate,
+function IdentityRow({
+  match, result, now, navigationDisabled, onNavigate, shipLocate,
 }: {
+  match: DiscoveryMatch
   result: DiscoveryResponse
   now: number
   navigationDisabled: boolean
   onNavigate: (center: AppCenter) => void
   shipLocate?: ShipLocateResults
 }) {
-  const canNavigate = (match: DiscoveryMatch) => !navigationDisabled && qualifiedLastReport(match, result, now) !== null
+  const canNavigate = !navigationDisabled && qualifiedLastReport(match, result, now) !== null
+  const ownsLocate = shipLocate?.key === match.key
+  const locating = ownsLocate && shipLocate.state.phase === 'loading'
+  const located = ownsLocate && shipLocate.state.phase === 'results'
+    ? shipLocate.state.result.matches.find((candidate) => candidate.identifiers.mmsi === match.identifiers.mmsi)
+    : undefined
+  const supportedMmsi = parseMarineMmsi(match.identifiers.mmsi) !== undefined
+  const ship = match.objectClass === 'ships'
+  const label = match.name ?? match.identifiers.registration ?? match.identifiers.mmsi ?? match.identifiers.icao24 ?? 'Reported object'
+  const identifiers = [
+    ship ? 'Ship' : 'Aircraft',
+    match.identifiers.mmsi && `MMSI ${match.identifiers.mmsi}`,
+    match.identifiers.icao24 && `ICAO24 ${match.identifiers.icao24.toUpperCase()}`,
+    match.identifiers.registration,
+    match.identifiers.callsign,
+    match.identifiers.imo && `IMO ${match.identifiers.imo}`,
+  ].filter(Boolean).join(' · ')
   return (
-    <>
-      <p className="control-note" role="status">
-        {result.matches.length === 0 ? 'No matches in this source.' :
-          `${result.matches.length} ${result.matches.length === 1 ? 'match' : 'matches'}${result.truncated ? ' · partial, limit reached' : ''}.`}
-        {result.rejectedRecords > 0 && ` ${result.rejectedRecords} invalid or unsupported records withheld.`}
-      </p>
-      <ul className="object-find-results" aria-label="Identity lookup results">
-        {result.matches.map((match) => {
-          const ownsLocate = shipLocate?.key === match.key
-          const locating = ownsLocate && shipLocate.state.phase === 'loading'
-          const located = ownsLocate && shipLocate.state.phase === 'results'
-            ? shipLocate.state.result.matches.find((candidate) => candidate.identifiers.mmsi === match.identifiers.mmsi)
-            : undefined
-          const supportedMmsi = parseMarineMmsi(match.identifiers.mmsi) !== undefined
-          return (
-          <li key={match.key}>
-            <strong>{match.name ?? match.identifiers.mmsi ?? match.identifiers.icao24}</strong>
-            <span>{[
-              match.identifiers.mmsi && `MMSI ${match.identifiers.mmsi}`,
-              match.identifiers.icao24 && `ICAO24 ${match.identifiers.icao24}`,
-              match.identifiers.registration,
-              match.identifiers.callsign,
-              match.identifiers.imo && `IMO ${match.identifiers.imo}`,
-            ].filter(Boolean).join(' · ')}</span>
-            {match.objectClass === 'ships' && shipLocate ? <>
-              <ObjectResultButton prefix="object-find-result"
-                aria-label={`Locate ${match.name ?? 'ship'}, MMSI ${match.identifiers.mmsi}`}
-                disabled={navigationDisabled || shipLocate.disabled || !supportedMmsi}
-                aria-disabled={locating || undefined} aria-busy={locating || undefined}
-                onSelect={() => { if (!locating) shipLocate.onLocate(match) }}>{locating ? 'Locating…' : 'Locate'}</ObjectResultButton>
-              {!supportedMmsi && <span>Position lookup requires a supported nine-digit MMSI.</span>}
-              {ownsLocate && <span role="status">
-                {locating ? 'Checking the last 24 hours.' :
-                  shipLocate.state.phase === 'error' ? shipLocate.state.message :
-                    shipLocate.message}
-                {located?.location && ` Last report ${formatAge(located.location.reportedAt, now)}.`}
-              </span>}
-            </> : <span>{canNavigate(match) && match.location
-              ? `Last position ${formatAge(match.location.reportedAt, now)}`
-              : match.objectClass === 'ships'
-                ? 'Identity only; no position lookup in Received.'
-                : 'No qualified last-reported position available.'}</span>}
-            {canNavigate(match) && match.location && (
-              <ObjectResultButton prefix="object-find-result" onSelect={() => {
-                if (!canNavigate(match) || !qualifiedLastReport(match, result, Date.now()) || !match.location) return
-                onNavigate({
-                  latitude: match.location.latitude, longitude: match.location.longitude,
-                  label: `Last report: ${match.name ?? match.identifiers.icao24}`,
-                })
-              }}>Go to last report</ObjectResultButton>
-            )}
-            <details className="context-details">
-              <summary>Source &amp; age</summary>
-              <p>{match.source.name}: {match.source.credit}</p>
-              <p>{match.metadataReportedAt
-                ? `Metadata reported ${new Date(match.metadataReportedAt).toISOString()}. Not a position time.`
-                : 'Metadata report time unavailable.'}</p>
-              <p>Retrieved {new Date(result.retrievedAt).toISOString()}.</p>
-              {match.location && <p>Position reported {new Date(match.location.reportedAt).toISOString()}.</p>}
-              {located?.location && shipLocate?.state.phase === 'results' && <>
-                <p>Position reported {new Date(located.location.reportedAt).toISOString()}; retrieved {new Date(shipLocate.state.result.retrievedAt).toISOString()}.</p>
-                <p>{located.source.name} track: {located.source.credit}</p>
-                <p>Last report, not live reception or a guarantee that the ship is still there.</p>
-              </>}
-            </details>
-          </li>
-          )
-        })}
-      </ul>
-    </>
+    <FindResultRow label={label} context={identifiers}
+      country={ship ? flagStateForMmsi(Number(match.identifiers.mmsi)) : countryForAircraftHex(match.identifiers.icao24 ?? '')}
+      countryBasis={ship ? 'MMSI flag state' : 'ICAO24 allocation'}
+      action={ship && shipLocate ? (
+        <ObjectResultButton prefix="object-find-result"
+          aria-label={`Locate ${match.name ?? 'ship'}, MMSI ${match.identifiers.mmsi}`}
+          disabled={navigationDisabled || shipLocate.disabled || !supportedMmsi}
+          aria-disabled={locating || undefined} aria-busy={locating || undefined}
+          onSelect={() => { if (!locating) shipLocate.onLocate(match) }}>{locating ? 'Locating…' : 'Locate'}</ObjectResultButton>
+      ) : canNavigate && match.location ? (
+        <ObjectResultButton prefix="object-find-result" aria-label={`Go to last report for ${label}`} onSelect={() => {
+          if (!qualifiedLastReport(match, result, Date.now()) || !match.location) return
+          onNavigate({ latitude: match.location.latitude, longitude: match.location.longitude, label: `Last report: ${label}` })
+        }}>Locate</ObjectResultButton>
+      ) : undefined}
+      status={ownsLocate ? <>
+        {locating ? 'Checking the last 24 hours.' :
+          shipLocate.state.phase === 'error' ? shipLocate.state.message : shipLocate.message}
+        {located?.location && ` Last report ${formatAge(located.location.reportedAt, now)}.`}
+      </> : undefined}>
+      <p>{match.source.name}: {match.source.credit}</p>
+      <p>{match.metadataReportedAt
+        ? `Metadata reported ${new Date(match.metadataReportedAt).toISOString()}. Not a position time.`
+        : 'Metadata report time unavailable.'}</p>
+      <p>Retrieved {new Date(result.retrievedAt).toISOString()}.</p>
+      {match.location ? <p>Position reported {new Date(match.location.reportedAt).toISOString()} · {match.location.latitude.toFixed(3)}, {match.location.longitude.toFixed(3)}.
+        {!canNavigate && ' No qualified last-reported position available.'}</p> :
+        <p>{shipLocate ? 'Locate checks one last report; search does not supply a position or city.' :
+          ship ? 'Identity only; no position lookup in Received.' : 'No qualified last-reported position available.'}</p>}
+      {!supportedMmsi && ship && <p>Position lookup requires a supported nine-digit MMSI.</p>}
+      {located?.location && shipLocate?.state.phase === 'results' && <>
+        <p>Position reported {new Date(located.location.reportedAt).toISOString()}; retrieved {new Date(shipLocate.state.result.retrievedAt).toISOString()}.</p>
+        <p>{located.source.name} track: {located.source.credit}</p>
+        <p>Last report, not live reception or a guarantee that the ship is still there.</p>
+      </>}
+    </FindResultRow>
   )
 }
 
+export function IdentityResults(props: {
+  result: DiscoveryResponse
+  now: number
+  navigationDisabled: boolean
+  onNavigate: (center: AppCenter) => void
+  shipLocate?: ShipLocateResults
+}) {
+  return <>
+    <p className="control-note" role="status">{props.result.matches.length} {props.result.matches.length === 1 ? 'match' : 'matches'}{props.result.truncated && ' · partial, limit reached'}.</p>
+    <ul className="object-find-results" aria-label="Identity lookup results">
+      {props.result.matches.map((match) => <IdentityRow key={match.key} {...props} match={match} />)}
+    </ul>
+  </>
+}
+
+interface Result {
+  key: string
+  label: string
+  identities: readonly string[]
+  content: ReactNode
+}
+
 export function ObjectFind(props: ObjectFindProps) {
-  const { kind, mobile, now, active, paused, onNavigate, discoverMarineMetadata } = props
-  const inputId = useId()
-  const [scopes, setScopes] = useState<{ ships: Scope; aircraft: Scope }>({ ships: 'view', aircraft: 'view' })
-  const [drafts, setDrafts] = useState({ ships: '', aircraft: '', received: '', airports: '', ports: '', orbits: '' })
-  const [shipMethod, setShipMethod] = useState<'name' | 'mmsi'>('name')
-  const [aircraftMethod, setAircraftMethod] = useState<'hex' | 'reg' | 'callsign'>('hex')
+  const { mobile, now, active, paused, onNavigate, discoverMarineMetadata, model, placeSearchState } = props
+  const query = model.value.trim()
   const [page, setPage] = useState(0)
+  const [submitted, setSubmitted] = useState(false)
   const [catalogNavigationError, setCatalogNavigationError] = useState(false)
   const catalogListRef = useRef<HTMLUListElement>(null)
   const restorePageFocusRef = useRef(false)
   const contentRef = useRef<HTMLDivElement>(null)
   const lastFocusedRef = useRef<HTMLElement | null>(null)
   const previousMobileRef = useRef(mobile)
-  const [lookupState, setLookupState] = useState<ObjectLookupState>({ phase: 'idle' })
+  const requestedCatalogsRef = useRef(false)
+  const submittingRef = useRef(false)
+  const [shipState, setShipState] = useState<ObjectLookupState>({ phase: 'idle' })
+  const [aircraftState, setAircraftState] = useState<ObjectLookupState>({ phase: 'idle' })
   const [lookupProvider] = useState(() => new SameOriginObjectLookupProvider())
-  const [controller] = useState(() => new ObjectLookupController({
-    provider: lookupProvider, onState: setLookupState,
-  }))
+  const [shipController] = useState(() => new ObjectLookupController({ provider: lookupProvider, onState: setShipState }))
+  const [aircraftController] = useState(() => new ObjectLookupController({ provider: lookupProvider, onState: setAircraftState }))
   const [locateState, setLocateState] = useState<ObjectLookupState>({ phase: 'idle' })
   const [locateKey, setLocateKey] = useState<string | null>(null)
   const [locateMessage, setLocateMessage] = useState<string>()
   const locateOwnerRef = useRef<{ key: string; navigate: ShipLocateNavigation } | null>(null)
   const locatingRef = useRef<string | null>(null)
-  const [locator] = useState(() => new ObjectLookupController({
-    provider: lookupProvider, onState: setLocateState,
-  }))
-  const isTraffic = kind === 'ships' || kind === 'aircraft'
-  const scope = isTraffic ? scopes[kind] : 'received'
-  const remoteActive = active && isTraffic && scope === 'outside' && !paused
+  const [locator] = useState(() => new ObjectLookupController({ provider: lookupProvider, onState: setLocateState }))
+  const remoteActive = active && !paused
   const navigationDisabled = props.navigationDisabled
-  const method = kind === 'aircraft' ? aircraftMethod : shipMethod
   const locateAllowedRef = useRef(false)
   useLayoutEffect(() => {
-    locateAllowedRef.current = remoteActive && kind === 'ships' && !navigationDisabled
+    locateAllowedRef.current = remoteActive && !navigationDisabled
     if (locateState.phase !== 'loading') locatingRef.current = null
-  }, [remoteActive, kind, navigationDisabled, locateState])
+  }, [remoteActive, navigationDisabled, locateState])
   const cancelShipLocate = useCallback(() => {
     locateOwnerRef.current = null
     locatingRef.current = null
@@ -206,13 +252,27 @@ export function ObjectFind(props: ObjectFindProps) {
     setLocateKey(null)
     setLocateMessage(undefined)
   }, [locator])
-
+  const cancelLookups = useCallback(() => {
+    submittingRef.current = false
+    model.cancel()
+    shipController.cancel()
+    aircraftController.cancel()
+    cancelShipLocate()
+  }, [shipController, aircraftController, cancelShipLocate, model.cancel])
   useEffect(() => () => {
     locateOwnerRef.current = null
     locatingRef.current = null
     locator.stop()
-    controller.stop()
-  }, [controller, locator])
+    model.pause()
+    shipController.stop()
+    aircraftController.stop()
+  }, [shipController, aircraftController, locator, model.pause])
+  useLayoutEffect(() => {
+    cancelLookups()
+    setPage(0)
+    setSubmitted(false)
+    setCatalogNavigationError(false)
+  }, [query, cancelLookups])
   useLayoutEffect(() => {
     if (previousMobileRef.current === mobile) return
     previousMobileRef.current = mobile
@@ -220,7 +280,7 @@ export function ObjectFind(props: ObjectFindProps) {
     const current = document.activeElement
     if (!previous || current !== document.body && current !== previous) return
     const body = contentRef.current?.closest('.control-panel__more-body')
-    const target = [...(body?.querySelectorAll<HTMLElement>('input, select, button, summary') ?? [])]
+    const target = [...(body?.querySelectorAll<HTMLElement>('input, button, summary') ?? [])]
       .find((element) => element.getClientRects().length && getComputedStyle(element).visibility === 'visible' &&
         !element.matches(':disabled') && !element.closest('[inert]'))
     target?.focus({ preventScroll: true })
@@ -230,11 +290,14 @@ export function ObjectFind(props: ObjectFindProps) {
   useEffect(() => {
     const stopIfPaused = () => {
       if (remoteActive && !document.hidden && navigator.onLine) return
-      controller.stop()
+      shipController.stop()
+      aircraftController.stop()
       locator.stop()
+      model.pause()
       locateOwnerRef.current = null
       locatingRef.current = null
-      setLookupState((state) => state.phase === 'loading' ? { phase: 'idle' } : state)
+      setShipState((state) => state.phase === 'loading' ? { phase: 'idle' } : state)
+      setAircraftState((state) => state.phase === 'loading' ? { phase: 'idle' } : state)
       setLocateState((state) => state.phase === 'loading' ? { phase: 'idle' } : state)
     }
     stopIfPaused()
@@ -244,16 +307,7 @@ export function ObjectFind(props: ObjectFindProps) {
       document.removeEventListener('visibilitychange', stopIfPaused)
       window.removeEventListener('offline', stopIfPaused)
     }
-  }, [controller, locator, remoteActive])
-  useEffect(() => {
-    controller.cancel()
-    setPage(0)
-    setCatalogNavigationError(false)
-  }, [controller, kind, scope, method])
-  useLayoutEffect(() => cancelShipLocate(), [cancelShipLocate, kind, scope, method])
-  useEffect(() => {
-    if (props.currentViewRequest > 0) setScopes((current) => ({ ...current, ships: 'view' }))
-  }, [props.currentViewRequest])
+  }, [shipController, aircraftController, locator, remoteActive, model.pause])
   useEffect(() => {
     if (!restorePageFocusRef.current) return
     restorePageFocusRef.current = false
@@ -266,19 +320,11 @@ export function ObjectFind(props: ObjectFindProps) {
     return () => cancelAnimationFrame(frame)
   }, [page])
 
-  const orbitalCatalog = useMemo(() => kind === 'orbits' ? loadedOrbitalCatalog(
+  const orbitalCatalog = useMemo(() => loadedOrbitalCatalog(
     props.curated, props.starlink, props.selectedOrbitalId, now, APP_CONFIG.orbital.expireAfterMs,
-  ) : { entries: [], missing: [] }, [kind, props.curated, props.starlink, props.selectedOrbitalId, now])
-  const cachedShips = useMemo(() => kind === 'ships' && scope === 'received'
-    ? discoverMarineMetadata?.(drafts.received, now) : undefined,
-  [kind, scope, drafts.received, now, discoverMarineMetadata])
-  const updateDraft = (key: keyof typeof drafts, value: string) => {
-    setDrafts((current) => ({ ...current, [key]: value }))
-    setPage(0)
-    setCatalogNavigationError(false)
-    controller.cancel()
-    cancelShipLocate()
-  }
+  ), [props.curated, props.starlink, props.selectedOrbitalId, now])
+  const cachedShips = useMemo(() => [...query].length >= 2 ? discoverMarineMetadata?.(query, now) : undefined,
+    [query, now, discoverMarineMetadata])
   const locateShip = async (match: DiscoveryMatch) => {
     const mmsi = match.identifiers.mmsi
     if (!locateAllowedRef.current || document.hidden || !navigator.onLine ||
@@ -293,7 +339,8 @@ export function ObjectFind(props: ObjectFindProps) {
       setLocateMessage('Navigation is unavailable. Return to LIVE and reconnect.')
       return
     }
-    controller.stop()
+    shipController.stop()
+    setShipState((state) => state.phase === 'loading' ? { phase: 'idle' } : state)
     const owner = { key: match.key, navigate }
     locateOwnerRef.current = owner
     locatingRef.current = match.key
@@ -311,8 +358,7 @@ export function ObjectFind(props: ObjectFindProps) {
     }
     let framingError: string | undefined
     const navigated = owner.navigate({
-      latitude: point.latitude, longitude: point.longitude,
-      label: `Last report: ${match.name ?? mmsi}`,
+      latitude: point.latitude, longitude: point.longitude, label: `Last report: ${match.name ?? mmsi}`,
     }, (message) => {
       framingError = message
       if (locateOwnerRef.current === owner) setLocateMessage(message)
@@ -320,184 +366,233 @@ export function ObjectFind(props: ObjectFindProps) {
     setLocateMessage(framingError ?? (navigated ? 'Centered on the reported position.' :
       'Report found; a newer action kept the map unchanged.'))
   }
-  const input = (key: keyof typeof drafts, label: string) => (
-    <>
-      <label className="object-find-label" htmlFor={inputId}>{label}</label>
-      <div className="object-find-input">
-        <input id={inputId} type="search" value={drafts[key]} maxLength={DISCOVERY_CONFIG.maximumQueryLength}
-          onChange={(event) => updateDraft(key, event.currentTarget.value)} autoComplete="off" />
-        <button type="button" disabled={!drafts[key]} onClick={() => updateDraft(key, '')}>Clear</button>
-      </div>
-    </>
-  )
-  const catalog = () => {
-    if (kind !== 'airports' && kind !== 'ports' && kind !== 'orbits') return null
-    const ready = kind === 'airports' ? props.airportsReady : kind === 'ports' ? props.portsReady : orbitalCatalog.entries.length > 0
-    const loading = kind === 'airports' ? props.airportsLoading : kind === 'ports' ? props.portsLoading :
-      props.curated.phase === 'loading' || props.starlink.phase === 'loading'
-    const error = kind === 'airports' ? props.airportsError : kind === 'ports' ? props.portsError :
-      props.curated.message ?? props.starlink.message
-    const load = kind === 'airports' ? props.onLoadAirports : kind === 'ports' ? props.onLoadPorts : props.onLoadOrbits
-    const queryInput = input(kind, kind === 'airports' ? 'Airport name, city, ICAO or IATA' :
-      kind === 'ports' ? 'Port name' : 'Satellite / orbital name, NORAD or COSPAR')
-    if (!ready) return (
-      <>
-        {queryInput}
-        <div className="control-note" role="status">
-          <p>{loading ? 'Catalog loading.' : error ?? 'Catalog not loaded.'}</p>
-          <button type="button" disabled={loading || paused} onClick={load}>
-            {kind === 'orbits' ? props.orbitalVisible ? 'Retry catalogs' : 'Enable ORBITS' : `Load ${kind}`}
-          </button>
-        </div>
-      </>
-    )
-    const airports = kind === 'airports' ? discoverAirports(props.airports, drafts.airports) : []
-    const ports = kind === 'ports' ? discoverPorts(props.ports, drafts.ports) : []
-    const orbits = kind === 'orbits' ? discoverLoadedOrbits(orbitalCatalog.entries, drafts.orbits) : []
-    const rows = kind === 'airports' ? airports : kind === 'ports' ? ports : orbits
-    const paging = orbitalCatalogPage<unknown>(rows, page, DISCOVERY_CONFIG.catalogResultLimit)
-    const start = paging.page * DISCOVERY_CONFIG.catalogResultLimit
-    return (
-      <>
-        {queryInput}
-        {kind === 'orbits' && !props.orbitalVisible && (
-          <button type="button" disabled={paused} onClick={load}>Enable ORBITS</button>
-        )}
-        <p className="control-note" role="status">{rows.length} {rows.length === 1 ? 'match' : 'matches'} in loaded catalog{rows.length === 0 ? '.' : ` · ${paging.rangeStart}–${paging.rangeEnd}.`}</p>
-        {kind === 'orbits' && orbitalCatalog.missing.length > 0 && (
-          <p className="control-note">{orbitalCatalog.missing.includes('curated') ? 'Curated catalog unavailable.' : 'Starlink sample unavailable.'}</p>
-        )}
-        <ul ref={catalogListRef} className="object-find-results" aria-label="Loaded catalog matches">
-          {airports.slice(start, start + DISCOVERY_CONFIG.catalogResultLimit).map((airport) => (
-            <li key={airport.id}>
-              <strong>{airport.name}</strong><span>{[airport.ident, airport.iataCode, airport.municipality].filter(Boolean).join(' · ')}</span>
-              <ObjectResultButton prefix="object-find-result" disabled={navigationDisabled}
-                onSelect={(originId) => setCatalogNavigationError(!props.onAirportNavigate(airport.id, originId))}>Go to airport</ObjectResultButton>
-            </li>
-          ))}
-          {ports.slice(start, start + DISCOVERY_CONFIG.catalogResultLimit).map((port) => (
-            <li key={port.id}>
-              <strong>{port.name}</strong><span>Generalized static location</span>
-              <ObjectResultButton prefix="object-find-result" disabled={navigationDisabled}
-                onSelect={(originId) => setCatalogNavigationError(!props.onPortNavigate(port.id, originId))}>Go to port</ObjectResultButton>
-            </li>
-          ))}
-          {orbits.slice(start, start + DISCOVERY_CONFIG.catalogResultLimit).map((entry) => (
-            <li key={entry.id}>
-              <strong>{entry.record.name}</strong><span>NORAD {entry.record.noradCatalogId} · {orbitalObjectTypeLabel(entry.record.objectType)} ({entry.record.objectType})</span>
-              <span>{orbitalPositionMessage(entry, entry.owner === 'starlink' ? props.starlink : props.curated, now, props.orbitalVisible)}</span>
-              <ObjectResultButton prefix="object-find-result" disabled={navigationDisabled || !entry.position}
-                onSelect={(originId) => setCatalogNavigationError(!props.onOrbitalNavigate(entry.id, originId))}>Go to satellite</ObjectResultButton>
-              <details className="context-details"><summary>Times, source &amp; limits</summary>
-                <p>Element epoch {entry.record.epoch}. Retrieved {entry.snapshot.retrievedAt}.</p>
-                <p>Published {entry.snapshot.publishedAt}. {entry.owner === 'starlink' ? 'Bounded Starlink sample.' : 'Curated catalog.'}</p>
-                <p>{entry.snapshot.sourceProvider === 'space-track' ? 'Space-Track orbital elements; CelesTrak catalog reference.' : 'CelesTrak orbital elements.'} Modeled, not live tracking or optical visibility.</p>
-                <p>Not every satellite or the full Starlink constellation. Find does not change map filters.</p>
-              </details>
-            </li>
-          ))}
-        </ul>
-        {catalogNavigationError && <p className="control-note" role="alert">That catalog result is no longer available. Search again.</p>}
-        {paging.pageCount > 1 && <div className="control-options control-options--two">
-          <button type="button" disabled={paging.page === 0} onClick={() => {
-            restorePageFocusRef.current = true
-            setPage(paging.page - 1)
-          }}>Previous</button>
-          <button type="button" disabled={paging.page + 1 === paging.pageCount} onClick={() => {
-            restorePageFocusRef.current = true
-            setPage(paging.page + 1)
-          }}>Next</button>
-        </div>}
-        {kind !== 'orbits' && <details className="context-details"><summary>Catalog source &amp; limits</summary>
-          {kind === 'airports' ? <p>OurAirports · {props.airportSource?.licenseName ?? 'Public domain'} · snapshot {props.airportSource?.publishedAt ?? 'date unavailable'}. Large and medium airports only; static, not airport operations.</p> :
-            <p>Natural Earth · {props.portSource?.licenseName ?? 'Public domain'} · snapshot {props.portSource?.publishedAt ?? 'date unavailable'}. Generalized ports, not berth or navigation information.</p>}
-        </details>}
-      </>
-    )
+  const shipLocate: ShipLocateResults = {
+    key: locateKey, state: locateState, message: locateMessage, disabled: !remoteActive,
+    onLocate: (match) => { void locateShip(match) },
   }
-  const scopedContent = (
+  const rows: Result[] = []
+  const receivedIds = new Set<string>()
+  if (query) {
+    for (const aircraft of orderAircraftSearchResults(props.aircraft, query)) {
+      receivedIds.add(`aircraft:${aircraft.hex.toLowerCase()}`)
+      const label = aircraftResultLabel(aircraft)
+      rows.push({
+        key: aircraft.id, label, identities: [aircraft.hex, aircraft.registration ?? '', aircraft.callsign ?? ''],
+        content: <FindResultRow label={label} context={`Aircraft · ${aircraftResultContext(aircraft)}`}
+          country={countryForAircraftHex(aircraft.hex)} countryBasis="ICAO24 allocation"
+          action={<ObjectResultButton prefix="object-find-result" disabled={navigationDisabled || !props.aircraftVisible}
+            onSelect={(originId) => props.onAircraftSelect(aircraft.id, originId)}>View</ObjectResultButton>}
+          status={!props.aircraftVisible ? 'AIRCRAFT is off.' : undefined}>
+          <p>{aircraft.provider}. Position reported {new Date(aircraft.position.observedAt).toISOString()}.</p>
+          <p>{aircraft.position.latitude.toFixed(3)}, {aircraft.position.longitude.toFixed(3)} · {formatAge(aircraft.position.observedAt, now)}.</p>
+          {!props.aircraftVisible && <p>Enable AIRCRAFT to select this received object.</p>}
+        </FindResultRow>,
+      })
+    }
+    const vessels = props.vessels.filter((vessel) => matchesVesselIdentitySearch(vessel, normalizeVesselSearchQuery(query)))
+    for (const vessel of orderVesselSearchResults(vessels, query)) {
+      receivedIds.add(`ships:${vessel.mmsi}`)
+      const label = vesselResultLabel(vessel)
+      const selectable = props.vesselsVisible && props.selectableVesselIds.has(vessel.id)
+      rows.push({
+        key: vessel.id, label, identities: [String(vessel.mmsi), vessel.imo ? String(vessel.imo) : '', vessel.callSign ?? ''],
+        content: <FindResultRow label={label} context={`Ship · ${vesselResultContext(vessel)}`}
+          country={flagStateForMmsi(vessel.mmsi)} countryBasis="MMSI flag state"
+          action={<ObjectResultButton prefix="object-find-result" disabled={navigationDisabled || !selectable}
+            onSelect={(originId) => props.onVesselSelect(vessel.id, originId)}>View</ObjectResultButton>}
+          status={!selectable ? 'Hidden by SHIPS or map filters.' : undefined}>
+          <p>{vessel.provider}: {vessel.attribution ?? 'Received vessel report'}.</p>
+          <p>Position reported {new Date(vessel.position.observedAt).toISOString()} · {vessel.position.latitude.toFixed(3)}, {vessel.position.longitude.toFixed(3)} · {formatAge(vessel.position.observedAt, now)}.</p>
+          {!selectable && <p>Hidden by the SHIPS layer or map filters. Find does not change those preferences.</p>}
+        </FindResultRow>,
+      })
+    }
+    for (const result of [
+      ...(shipState.phase === 'results' ? [shipState.result] : []),
+      ...(aircraftState.phase === 'results' ? [aircraftState.result] : []),
+      ...(cachedShips?.loaded ? [cachedShips.result] : []),
+    ]) {
+      for (const match of result.matches) {
+        const identity = `${match.objectClass}:${match.identifiers.mmsi ?? match.identifiers.icao24?.toLowerCase()}`
+        if (receivedIds.has(identity)) continue
+        receivedIds.add(identity)
+        const label = match.name ?? match.identifiers.registration ?? match.identifiers.mmsi ?? match.identifiers.icao24 ?? 'Reported object'
+        rows.push({
+          key: identity, label, identities: Object.values(match.identifiers).filter((value): value is string => Boolean(value)),
+          content: <IdentityRow match={match} result={result} now={now} navigationDisabled={navigationDisabled}
+            onNavigate={onNavigate} shipLocate={match.objectClass === 'ships' ? shipLocate : undefined} />,
+        })
+      }
+    }
+    for (const airport of discoverAirports(props.airports, query)) {
+      rows.push({
+        key: airport.id, label: airport.name, identities: [airport.ident, airport.icaoCode ?? '', airport.iataCode ?? ''],
+        content: <FindResultRow label={airport.name}
+          context={['Airport', airport.ident, airport.iataCode, airport.municipality, airport.isoCountry].filter(Boolean).join(' · ')}
+          action={<ObjectResultButton prefix="object-find-result" aria-label={`Go to airport ${airport.name}`} disabled={navigationDisabled}
+            onSelect={(originId) => setCatalogNavigationError(!props.onAirportNavigate(airport.id, originId))}>Go</ObjectResultButton>}>
+          <p>OurAirports · {props.airportSource?.licenseName ?? 'Public domain'} · snapshot {props.airportSource?.publishedAt ?? 'date unavailable'}.</p>
+          <p>Large and medium airports only; static location, not airport operations.</p>
+        </FindResultRow>,
+      })
+    }
+    for (const port of discoverPorts(props.ports, query)) {
+      rows.push({
+        key: port.id, label: port.name, identities: [],
+        content: <FindResultRow label={port.name} context="Port · generalized static location"
+          action={<ObjectResultButton prefix="object-find-result" aria-label={`Go to port ${port.name}`} disabled={navigationDisabled}
+            onSelect={(originId) => setCatalogNavigationError(!props.onPortNavigate(port.id, originId))}>Go</ObjectResultButton>}>
+          <p>Natural Earth · {props.portSource?.licenseName ?? 'Public domain'} · snapshot {props.portSource?.publishedAt ?? 'date unavailable'}.</p>
+          <p>Generalized static location, not berth or navigation information.</p>
+        </FindResultRow>,
+      })
+    }
+    for (const entry of discoverLoadedOrbits(orbitalCatalog.entries, query)) {
+      rows.push({
+        key: entry.id, label: entry.record.name, identities: [entry.record.noradCatalogId, entry.record.internationalDesignator ?? ''],
+        content: <FindResultRow label={entry.record.name}
+          context={`Satellite · NORAD ${entry.record.noradCatalogId} · ${orbitalObjectTypeLabel(entry.record.objectType)} (${entry.record.objectType})`}
+          action={<ObjectResultButton prefix="object-find-result" aria-label={`Go to satellite ${entry.record.name}`}
+            disabled={navigationDisabled || !entry.position}
+            onSelect={(originId) => setCatalogNavigationError(!props.onOrbitalNavigate(entry.id, originId))}>Go</ObjectResultButton>}
+          status={!entry.position ? orbitalPositionMessage(entry, entry.owner === 'starlink' ? props.starlink : props.curated, now, props.orbitalVisible) : undefined}>
+          <p>{orbitalPositionMessage(entry, entry.owner === 'starlink' ? props.starlink : props.curated, now, props.orbitalVisible)}</p>
+          <p>Element epoch {entry.record.epoch}. Retrieved {entry.snapshot.retrievedAt}.</p>
+          <p>Published {entry.snapshot.publishedAt}. {entry.owner === 'starlink' ? 'Bounded Starlink sample.' : 'Curated catalog.'}</p>
+          <p>{entry.snapshot.sourceProvider === 'space-track' ? 'Space-Track orbital elements; CelesTrak catalog reference.' : 'CelesTrak orbital elements.'} Modeled, not live tracking or optical visibility.</p>
+          <p>Not every satellite or the full Starlink constellation. Find does not change map filters.</p>
+        </FindResultRow>,
+      })
+    }
+    if (placeSearchState.phase === 'results') {
+      for (const place of placeSearchState.results) {
+        rows.push({
+          key: `place:${place.id}`, label: place.label, identities: [],
+          content: <FindResultRow label={place.label} context="Place · Photon / OpenStreetMap"
+            action={<ObjectResultButton prefix="object-find-result" disabled={navigationDisabled}
+              onSelect={() => model.selectResult(place)}>Go</ObjectResultButton>}>
+            <p>Photon · © OpenStreetMap contributors. {place.center.latitude.toFixed(3)}, {place.center.longitude.toFixed(3)}.</p>
+          </FindResultRow>,
+        })
+      }
+    }
+  }
+  const sorted = rankFindResults(rows, query)
+  const paging = orbitalCatalogPage(sorted, page, DISCOVERY_CONFIG.catalogResultLimit)
+  const start = paging.page * DISCOVERY_CONFIG.catalogResultLimit
+  const searching = shipState.phase === 'loading' || aircraftState.phase === 'loading' || placeSearchState.phase === 'loading'
+  useLayoutEffect(() => {
+    submittingRef.current = searching
+  })
+  const catalogLoading = props.airportsLoading || props.portsLoading
+  const sourceErrors = [
+    shipState.phase === 'error' ? `Ships: ${shipState.message}` : undefined,
+    aircraftState.phase === 'error' ? `Aircraft: ${aircraftState.message}` : undefined,
+    placeSearchState.phase === 'error' ? `Places: ${placeSearchState.message}` : undefined,
+    query && props.airportsError ? `Airports: ${props.airportsError}` : undefined,
+    query && props.portsError ? `Ports: ${props.portsError}` : undefined,
+  ].filter(Boolean)
+  const partial = shipState.phase === 'results' && shipState.result.truncated ||
+    aircraftState.phase === 'results' && aircraftState.result.truncated || Boolean(cachedShips?.result.truncated)
+  return (
     <div ref={contentRef} className="object-find" onFocusCapture={(event) => {
       if (event.target instanceof HTMLElement) lastFocusedRef.current = event.target
     }} onKeyDown={(event) => {
       if (event.key !== 'Escape' || workspaceOwnsFullscreen(event.currentTarget) ||
-        lookupState.phase !== 'loading' && locateState.phase !== 'loading') return
+        !searching && locateState.phase !== 'loading') return
       event.preventDefault()
       event.stopPropagation()
-      if (lookupState.phase === 'loading') controller.cancel()
-      cancelShipLocate()
+      cancelLookups()
+      model.handleKeyDown(event)
     }}>
-      <div className={isTraffic ? 'object-find-heading-row' : undefined}>
-      {props.kindSelect}
-      {isTraffic && <label className="object-find-scope"><span>Scope</span>
-        <select aria-label="Find scope" value={scope} onChange={(event) => {
-          cancelShipLocate()
-          const next = event.currentTarget.value
-          if (next === 'view' || next === 'received' || next === 'outside') setScopes((current) => ({ ...current, [kind]: next }))
-        }}>
-          <option value="view">In view</option>
-          {kind === 'ships' && <option value="received">Received</option>}
-          <option value="outside">Outside view</option>
-        </select>
-      </label>}
-      </div>
-      {isTraffic && scope === 'view' ? props.currentView :
-        kind === 'ships' && scope === 'received' ? <>
-          {input('received', 'Name, MMSI, IMO or callsign')}
-          <p className="control-note">Digitraffic metadata · last 24 hours · names/IDs only · no new request.</p>
-          {!cachedShips?.loaded ? <p className="control-note" role="status">No metadata received this session.</p> :
-            [...drafts.received.trim()].length < 2 ? <p className="control-note">Enter at least two characters.</p> :
-              <IdentityResults result={cachedShips.result} now={now} navigationDisabled onNavigate={onNavigate} />}
-        </> : isTraffic && scope === 'outside' ? <>
-          {kind === 'ships' && <p className="control-note">Select Locate to check one ship’s last report.</p>}
-          <form onSubmit={(event) => {
+      <LocationSearchInput model={{
+        ...model,
+        handleChange: (event) => { cancelLookups(); model.handleChange(event) },
+        clear: () => { cancelLookups(); model.clear() },
+        handleKeyDown: (event) => {
+          if (searching || locateState.phase === 'loading') {
+            if (event.key === 'Escape' && !workspaceOwnsFullscreen(event.currentTarget)) cancelLookups()
+            model.handleKeyDown(event)
+          }
+        },
+        handleSubmit: (event) => {
+          if (submittingRef.current) {
             event.preventDefault()
-            cancelShipLocate()
-            if (!remoteActive || document.hidden || !navigator.onLine || (kind !== 'ships' && kind !== 'aircraft')) {
-              setLookupState({ phase: 'error', message: 'Lookup paused. Return to LIVE and reconnect to submit.' })
-              return
-            }
-            void controller.lookup(kind, method, drafts[kind])
-          }}>
-            <label className="object-find-scope"><span>By</span>
-              <select aria-label="Outside-view lookup method" value={method} onChange={(event) => {
-                cancelShipLocate()
-                const value = event.currentTarget.value
-                if (kind === 'ships' && (value === 'name' || value === 'mmsi')) setShipMethod(value)
-                if (kind === 'aircraft' && (value === 'hex' || value === 'reg' || value === 'callsign')) setAircraftMethod(value)
-              }}>
-                {kind === 'ships' ? <><option value="name">Name prefix</option><option value="mmsi">Exact MMSI</option></> :
-                  <><option value="hex">Exact ICAO24</option><option value="reg">Exact registration</option><option value="callsign">Exact callsign</option></>}
-              </select>
-            </label>
-            {input(kind, kind === 'ships' ? shipMethod === 'name' ? 'Ship name prefix (2+ characters)' : 'Nine-digit MMSI' :
-              aircraftMethod === 'hex' ? 'Six-character ICAO24' : aircraftMethod === 'reg' ? 'Registration, including hyphen' : 'Aircraft callsign')}
-            <button className="object-find-submit" type="submit" disabled={!remoteActive || lookupState.phase === 'loading'}>
-              {lookupState.phase === 'loading' ? 'Looking up…' : 'Look up'}
-            </button>
-          </form>
-          <p className="control-note">Sent on submit to {kind === 'ships' ? 'Open Waters' : 'ADSB.lol'}; no Home or view coordinates.</p>
-          {lookupState.phase === 'loading' && <p role="status" className="control-note">Looking up the submitted identifier.</p>}
-          {lookupState.phase === 'error' && <p role="status" className="control-note">{lookupState.message}</p>}
-          {lookupState.phase === 'results' && lookupState.request.objectClass === kind && <IdentityResults
-            result={lookupState.result} now={now} navigationDisabled={navigationDisabled} onNavigate={onNavigate}
-            shipLocate={kind === 'ships' ? {
-              key: locateKey, state: locateState, message: locateMessage, disabled: !remoteActive,
-              onLocate: (match) => { void locateShip(match) },
-            } : undefined} />}
-          <details className="context-details"><summary>Source, coverage &amp; limits</summary>
-            {kind === 'ships' ? <>
-              <p><a href="https://openwaters.io/api/ais/" target="_blank" rel="noreferrer">Open Waters AIS</a> · prefix search, at most 50 matches. Receiver-dependent identities, not a complete ship registry. Free exact IMO lookup is unavailable.</p>
-              <p>Search returns identities, not timed positions. Locate separately checks one exact MMSI for its newest report in the last 24 hours. No report leaves the map unchanged.</p>
-              <p>Report age and original track credits remain available with the result. Navigation does not create live traffic, override filters or change Home; ordinary reception may subsequently supply the ship.</p>
-              <p>Open Waters aggregates other providers; their attribution and source-use caveats still apply. No data-rights waiver is implied.</p>
-            </> : <>
-              <p><a href="https://www.adsb.lol/docs/open-data/api/" target="_blank" rel="noreferrer">ADSB.lol · ODbL 1.0</a>. Exact identifier lookup, not an aircraft-name directory; receiver coverage is partial.</p>
-              <p>Only original, qualified position times permit Go to last report. A last report is not a live selection or a guarantee of current reception.</p>
-              <p>Lookup shares the existing aircraft relay admission. Busy/Retry-After may apply; no automatic retry.</p>
-            </>}
-          </details>
-        </> : catalog()}
+            return
+          }
+          cancelShipLocate()
+          const parsed = model.handleSubmit(event)
+          if (parsed?.kind !== 'query') {
+            cancelLookups()
+            return parsed
+          }
+          if (!remoteActive || document.hidden || !navigator.onLine) {
+            setShipState({ phase: 'error', message: 'Lookup paused. Return to LIVE and reconnect to submit.' })
+            return parsed
+          }
+          submittingRef.current = true
+          setSubmitted(true)
+          for (const request of findLookupRequests(parsed.query)) {
+            void (request.objectClass === 'ships' ? shipController : aircraftController)
+              .lookup(request.objectClass, request.by, request.query)
+          }
+          if (!requestedCatalogsRef.current) {
+            requestedCatalogsRef.current = true
+            if (!props.airportsReady && !props.airportsLoading) props.onLoadAirports()
+            if (!props.portsReady && !props.portsLoading) props.onLoadPorts()
+          }
+          return parsed
+        },
+      }} inputRef={props.inputRef} maximumQueryLength={props.maximumQueryLength}
+        searchState={placeSearchState} disabled={navigationDisabled} unified busy={searching} />
+      <p id="location-search-help" className="control-note object-find-privacy">
+        Text sent in <a href="https://photon.komoot.io/" target="_blank" rel="noreferrer">Photon URL</a> · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap</a>
+      </p>
+      {model.inputError && <p id="location-search-status" className="control-note" role="alert">{model.inputError}</p>}
+      {!query && <p className="control-note">Names, IDs, callsigns or coordinates.</p>}
+      {query && !model.inputError && <p id="location-search-status" className="control-note object-find-count" role="status">
+        {searching ? 'Searching online… ' : ''}
+        {rows.length ? `${rows.length} ${rows.length === 1 ? 'match' : 'matches'}${partial ? ' · partial, source limit reached' : ''}${paging.pageCount > 1 ? ` · ${paging.rangeStart}–${paging.rangeEnd}` : ''}.` :
+          searching || catalogLoading ? 'Loading available results.' :
+            submitted ? sourceErrors.length ? 'No matches in available data; some sources unavailable.' : 'No matches in searched sources.' :
+              'Press Search to include online results and static catalogs.'}
+      </p>}
+      {sourceErrors.length > 0 && <p className="control-note" role="status">{sourceErrors.join(' ')}</p>}
+      {rows.length > 0 && <ul ref={catalogListRef} className="object-find-results" aria-label="Find matches">
+        {sorted.slice(start, start + DISCOVERY_CONFIG.catalogResultLimit).map((row) => <Fragment key={row.key}>{row.content}</Fragment>)}
+      </ul>}
+      {catalogNavigationError && <p className="control-note" role="alert">That catalog result is no longer available. Search again.</p>}
+      {paging.pageCount > 1 && <div className="control-options control-options--two">
+        <button type="button" disabled={paging.page === 0} onClick={() => {
+          restorePageFocusRef.current = true
+          setPage(paging.page - 1)
+        }}>Previous</button>
+        <button type="button" disabled={paging.page + 1 === paging.pageCount} onClick={() => {
+          restorePageFocusRef.current = true
+          setPage(paging.page + 1)
+        }}>Next</button>
+      </div>}
+      <details className="context-details object-find-sources"><summary>Sources &amp; search limits</summary>
+        <p>Typing searches received objects and loaded catalogs locally. Search submits text to Open Waters, a compatible exact aircraft lookup to ADSB.lol, and Photon for places. No Home or view coordinates are sent. Valid decimal coordinates navigate locally without a request.</p>
+        <p>Search loads the existing OurAirports and Natural Earth static catalogs once on demand; it never enables their markers.</p>
+        {query && (!props.airportsReady || !props.portsReady) && <p>Some static catalogs are not yet available.{catalogLoading && ' Loading.'}</p>}
+        {orbitalCatalog.missing.length > 0 && <p>Some satellite catalogs are not loaded or usable. Search does not enable ORBITS or download orbital data.</p>}
+        {(!props.orbitalVisible || orbitalCatalog.entries.length === 0) && <button type="button" disabled={paused} onClick={props.onLoadOrbits}>
+          {props.orbitalVisible ? 'Retry satellite catalogs' : 'Enable ORBITS'}
+        </button>}
+        {(props.airportsError || props.portsError) && <button type="button" disabled={paused} onClick={() => {
+          if (props.airportsError) props.onLoadAirports()
+          if (props.portsError) props.onLoadPorts()
+        }}>Retry static catalogs</button>}
+        <p><a href="https://openwaters.io/api/ais/" target="_blank" rel="noreferrer">Open Waters AIS</a>: ship name prefixes or exact MMSIs, at most 50 source matches. Free exact IMO lookup is unavailable. Receiver-dependent identities, not a complete registry.</p>
+        <p>Locate separately checks one exact MMSI for its newest report in the last 24 hours. No report leaves the map unchanged. Search does not automatically fetch positions or reverse-geocode cities.</p>
+        <p>Flags show MMSI flag state or ICAO24 allocation, not current location. City and country labels are shown only when the source supplies them; they are not inferred from registry country.</p>
+        <p><a href="https://www.adsb.lol/docs/open-data/api/" target="_blank" rel="noreferrer">ADSB.lol · ODbL 1.0</a>: exact ICAO24, registration or callsign, not an aircraft-name directory. Six hexadecimal characters mean ICAO24; a hyphen or N-number means registration, otherwise a compatible identifier means callsign. For ambiguity, use callsign:, reg: or icao24: in the search text.</p>
+        <p>Lookup keeps existing cooldowns, shared admission and Retry-After; no automatic retry. Only original qualified report times permit last-report navigation.</p>
+        <p>Received Digitraffic metadata is bounded to the last 24 hours and remains identity-only. Exact identities are deduplicated without mixing sources or their clocks.</p>
+        <p>OurAirports: large/medium airports only, public domain. Natural Earth: generalized ports, public domain. Orbital data: Space-Track elements / CelesTrak references where available, modeled rather than live or optical, including only the published bounded Starlink sample.</p>
+        <p>Open a result name for its own source, identifiers and times. Provider attribution and source-use caveats still apply; no data-rights waiver is implied.</p>
+      </details>
     </div>
   )
-  return scopedContent
 }

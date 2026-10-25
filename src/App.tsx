@@ -512,6 +512,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     state: placeSearchState,
     search: searchPlaces,
     cancel: cancelPlaceSearch,
+    pause: pausePlaceSearch,
   } = usePlaceSearch(
     APP_CONFIG.geocoder,
     APP_CONFIG.navigation.coordinatePrecision,
@@ -2484,6 +2485,8 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
           marineProviderName={marineResult.capabilities.name}
           discoveryPaused={capturedOrbitalView !== undefined || historyActive || !online}
           discoverMarineMetadata={marineResult.discoverMetadata}
+          findAircraft={aircraft}
+          findVessels={currentVessels}
           catalogAirports={airports}
           catalogPorts={ports}
           portsReady={portsResult.state.phase === 'ready'}
@@ -2719,6 +2722,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
           onBeginShipLocate={handleBeginShipLocate}
           onPlaceResultSelect={handlePlaceResultSelect}
           onPlaceSearchCancel={cancelPlaceSearch}
+          onPlaceSearchPause={pausePlaceSearch}
           mapToolsSummaryRef={mapToolsSummaryRef}
           settingsSummaryRef={settingsSummaryRef}
         />

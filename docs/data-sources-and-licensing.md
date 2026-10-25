@@ -366,19 +366,23 @@ choice; no geocoder proxy or credential was added.
 
 ## Explicit object lookup: ADSB.lol and Open Waters
 
-Object discovery is separate from live reception and Photon place search.
-**In view** searches current filtered observations; **Received** searches
-already cached Digitraffic identities with their original metadata timestamps.
-Loaded airport/port/orbital catalogs retain their existing source rights and
-opt-in boundaries. Neither local nor catalog typing starts a new request.
-Explicit **Load airports/ports** reads the same pinned same-origin asset,
+One Find input combines distinct source contracts, not a global directory or
+merged traffic feed. Typing searches received observations, cached Digitraffic
+identities with their original metadata timestamps, and loaded catalogs locally.
+Explicit named **Search** sends text to Photon for places, and compatible
+ship/aircraft queries to their existing bounded endpoints. Submitted text
+appears in the Photon URL; Home/current view coordinates are not added as
+bias. Valid decimal coordinates never reach any search provider. There is no
+typeahead, reverse geocoder, new provider or persisted query/result.
+
+The first explicit named Search reads the same pinned airport/port assets,
 independently of marker visibility, reusing any existing layer/weather load.
 It adds no catalog endpoint, credential, geocoder or provider query. Result
 navigation opens static OurAirports/Natural Earth details, not a live entity
 or inferred airport/port operation. Markers may stay completely off; airport
 boards and weather retain their own explicit request/enable boundaries.
 
-Explicit **Outside view** aircraft lookup uses only ADSB.lol's documented
+Explicit aircraft lookup uses only ADSB.lol's documented
 `/v2/hex/{icao24}`, `/v2/reg/{registration}` and `/v2/callsign/{callsign}`.
 It is partial receiver coverage, not an aircraft-name directory. Preserve
 ADSB.lol/ODbL attribution. Snapshot `now` is epoch milliseconds and `seen_pos`
@@ -395,7 +399,7 @@ REST `seen` can advance on static reports and is not an original position
 clock. Consequently **all identity/metadata lookup geometry is discarded**;
 identity search alone never permits navigation.
 
-An explicit **Locate** on an Outside-view ship separately requests that exact
+An explicit **Locate** on a ship identity separately requests that exact
 supported MMSI's [`/v1/vessels/{mmsi}/track`](https://openwaters.io/api/ais/) over
 one captured 24-hour window, with `interval=0&limit=1&format=geojson`. The explicit
 zero interval selects newest-first limiting; `limit=1` alone is not treated as
@@ -412,6 +416,15 @@ count, selection, trail, enrichment/photo request or history record. Ordinary
 reception after navigation keeps its independent filters/freshness contract.
 Safe map framing, including the conservative absolute 85-degree latitude bound,
 is separate from whether the provider has a geographically valid point.
+
+Find's flag/country hints reuse bundled MMSI flag-state and ICAO24-allocation
+lookups without another request or normalized traffic field. They are not
+current location or inferred ownership. Ship identity responses do not supply
+a city/current-location country; no per-row position or geocoder request fills
+that gap. Airport/Photon locality is shown only when supplied by that source.
+ORBITS remains explicit and retains its own accepted catalog/sample/clock
+boundaries. Compact result disclosures preserve individual source credits
+and original clocks; shared limits are disclosed once.
 
 Each ship result requires nonempty original contributing-source attribution.
 Open Waters aggregates Digitraffic, AISHub, AISStream and station contributions;

@@ -226,8 +226,8 @@ Check these project invariants:
   and 390x568 while the control panel remains scrollable and reachable.
 - Keep the accepted minimal controls compact and task-based: a 280 px floating
   brand/status card replaces the top bar. Do not reintroduce an edge-to-edge
-  header. Desktop location search/results/privacy remain together in Settings;
-  mobile Find/Places exposes that same mounted input/model. The mobile dock is
+  header. Desktop/mobile Find share one mounted input/model/results/privacy;
+  Settings opens that same retained draft rather than another form. The mobile dock is
   Center, Layers, Find, In view, Settings, with layer switches inside Layers.
   Only one nonmodal task/full inspector expands; a task retains compact
   selection and the same hidden/inert detail body. Details/Back preserves the
@@ -246,13 +246,21 @@ Check these project invariants:
   tooltips, and selected details preserve altitude, trend, movement, exact
   AIS-shape, yacht-length, one-knot, and freshness meaning without relying on
   color alone.
-- Static Find Load joins the existing airport/port hook demand without
+- Explicit named Find Search joins the existing airport/port hook demand without
   enabling or persisting marker preferences. Exact-ID Go opens existing
   static details with an opaque focus origin and no selected-only pin.
   Distinguish catalog-owned from map-owned selection: await the current
   navigation's settled viewport before airport clearing, preserve ordinary
   off-layer/out-of-view clearing, and retain compact Find's Back context.
-- Find shows one selected class/scope on desktop and mobile. Satellite Go must
+- Find has no class/scope/method picker: one local draft and compact mixed,
+  exact-deduplicated 20-row pages. Opening/typing does not request data;
+  explicit Search uses only compatible bounded sources and static demand,
+  never automatic ORBITS or per-row positions. Keep flags as MMSI/ICAO24
+  country context, not physical locality; source-qualified locality only.
+  Native checks must cover actual source starts, independent cancellation,
+  partial errors, cooldown recovery and one scroll owner. Long full identities
+  may need scrolling; the first action must remain reachable, not clipped
+  text or an invented fixed row-height guarantee. Satellite Go must
   revalidate the exact current controller owner/snapshot, navigate and open
   existing details; old elements keep a visible reason and disabled action.
   Native coordinate navigation uses padded fitBounds: check the committed
