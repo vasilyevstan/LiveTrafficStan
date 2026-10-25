@@ -1,9 +1,19 @@
 import { describe, expect, it } from 'vitest'
 import { MAX_AIRCRAFT_RADIUS_NM } from '../../worker/aircraftProxy'
 import { aircraftQueryRadiusNauticalMiles } from '../providers/aircraft/adsbLolProvider'
-import { createAppConfig } from './appConfig'
+import { BASEMAP_DETAIL_CONFIG, createAppConfig } from './appConfig'
 
 describe('createAppConfig', () => {
+  it('starts session relief on without increasing its coarse source or display bounds', () => {
+    expect(BASEMAP_DETAIL_CONFIG).toMatchObject({
+      reliefVisibleByDefault: true,
+      reliefSourceMaximumZoom: 7,
+      reliefMinimumZoom: 4,
+      reliefMaximumZoom: 14,
+      reliefExaggeration: 0.45,
+    })
+  })
+
   it('keeps object sharing default-off with no configurable outside endpoint', () => {
     expect(createAppConfig({}).objectSharing.enabled).toBe(false)
     expect(createAppConfig({ VITE_OBJECT_SHARING_ENABLED: 'true' }).objectSharing.enabled).toBe(true)

@@ -1,4 +1,4 @@
-import { useId } from 'react'
+import { useId, type ReactNode } from 'react'
 import { DetailsPanel } from './DetailsPanel'
 import { formatAltitude } from '../domain/format'
 import { orbitalFeatureOwner, orbitalObjectTypeLabel, type ModeledOrbitalPosition } from '../domain/orbital'
@@ -17,11 +17,12 @@ interface Props {
   statusMessage?: string
   online: boolean
   units: UnitSystem
+  shareObject?: ReactNode
   onReturn: () => void
   onTogglePlaying: () => void
 }
 
-export function CapturedOrbitalDetails({ view, ready, localTrafficAvailable = false, groundTrafficSuppressed = false, playing, position: displayedPosition, notice, statusMessage, online, units, onReturn, onTogglePlaying }: Props) {
+export function CapturedOrbitalDetails({ view, ready, localTrafficAvailable = false, groundTrafficSuppressed = false, playing, position: displayedPosition, notice, statusMessage, online, units, shareObject, onReturn, onTogglePlaying }: Props) {
   const titleId = useId()
   const { snapshot } = view
   const position = displayedPosition ?? view.position
@@ -33,6 +34,7 @@ export function CapturedOrbitalDetails({ view, ready, localTrafficAvailable = fa
       className="details-panel--orbital-view"
       closeLabel="Return to map"
       onClose={onReturn}
+      headerAction={shareObject}
       heading={
         <div className="orbital-view-heading">
           <h2 id={titleId} title={`Modeled 3D view from ${position.name}`}>From {position.name}</h2>
@@ -56,10 +58,10 @@ export function CapturedOrbitalDetails({ view, ready, localTrafficAvailable = fa
           ? 'Travel direction unavailable. Drag or use arrows to look.'
           : 'Travel-relative look. Drag or use arrows; Pause holds the view.'}
       </p>
-      <p className="metadata-status">Earth-facing map model, not live or optical. No spacecraft attitude is inferred.</p>
+      <p className="metadata-status">Modeled Earth, not live or optical. No spacecraft attitude is inferred.</p>
       <p className="metadata-status">
         {localTrafficAvailable
-          ? `Previous local area reports: sampled ground annotations, not traffic visible from the spacecraft.${groundTrafficSuppressed ? ' Not drawn at this scale.' : ''}`
+          ? `Previous local area: ground markers only.${groundTrafficSuppressed ? ' Hidden at this scale.' : ''}`
           : 'Aircraft and ships paused: no eligible previous local area.'}
       </p>
       <details className="context-details">
@@ -82,10 +84,10 @@ export function CapturedOrbitalDetails({ view, ready, localTrafficAvailable = fa
         {!online && <p className="metadata-status">Offline; only already available basemap tiles may draw.</p>}
         <p className="metadata-status">
           {orbitalFeatureOwner(position.id) === 'starlink' ? 'Bounded Starlink sample, not the full constellation. ' : ''}
-          Approximate spherical Earth map, not a camera feed or terrain/visibility model.
-          Day/night shading is calculated locally for the displayed modeled time, not optical visibility.
-          Normal-speed modeled motion; geostationary objects may appear still.
-          Session-only; no recording or share link.
+          Approximate Earth map. Day/night shading uses the displayed modeled time, not optical visibility.
+        </p>
+        <p className="metadata-status">
+          Real-time modeled motion; high orbits can appear still.
         </p>
         <p className="metadata-attribution">
           SGP4 · <a href={nativeGp ? 'https://www.space-track.org/' : APP_CONFIG.orbital.sourceWebsiteUrl}>

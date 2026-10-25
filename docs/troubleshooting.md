@@ -119,12 +119,13 @@ expected unit conversion.
 
 ## Relief or 3D buildings are missing
 
-RELIEF is intentionally **off after reload**. Enable it in Layers (desktop
-More / Layers), then use a regional land view between zoom 4 and below 14;
+RELIEF is **on after reload and Reset preferences**. Check its switch in
+Layers (desktop More / Layers), then use a regional land view between zoom 4 and below 14;
 the Alps are a useful example. Its elevation source is capped at zoom 7, so
 closer zoom does not promise finer terrain. It is native shading, not raised
 geometry, imagery or an elevation/navigation tool. Water stays above it and
 the separate DEPTHS control keeps its own behavior.
+Turning Relief off lasts for the current session, not the next reload.
 
 If Layers says relief unavailable, the optional source was removed, not
 silently replaced. The rest of the map and traffic should remain usable.
@@ -418,6 +419,16 @@ gets one finite matching opportunity without another resolution or camera
 move. Passive updates do not extend it. Other layer/filter changes and manual
 navigation cancel the old intent. Center still visits your separate session
 Home.
+
+A link made in **View from here** instead requests that exact satellite's
+current modeled viewpoint. It waits at most 30 seconds for the owning valid
+model; link validity does not extend model/element validity. A satellite moving
+away from the dated point or an initial saved display filter is not a veto.
+Flat is never silently changed: use Auto explicitly if desired. Unavailable
+models/unsupported poses leave brief dated context, not a made-up eye.
+Older installed shells or a checked rollback may reject this newer optional
+view intent; use normal **REFRESH APP**, not cleared preferences/history.
+Ordinary object links remain ordinary map links.
 
 Unknown or physically deleted links say **expired or unavailable**. A daily
 creation/opening limit, network timeout and storage outage have different

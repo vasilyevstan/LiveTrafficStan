@@ -438,9 +438,11 @@ The shell introduces no map, provider, persistence or document-wide keyboard
 lifecycle.
 
 Default menu/inspector explanatory text has a purpose and fits at most two
-rendered lines at supported widths. Full sources, licenses, privacy, counting
-rules and route limitations use labelled native disclosures, not silent
-line-clamping. Current failures and incomplete/paused states remain visible;
+rendered lines at supported widths. Expanded disclosures must also stay brief:
+retain full source names, licenses, necessary privacy and model limitations,
+but remove repeated explanations rather than relocating essays. Extended
+protocol, storage and modeling detail belongs in canonical docs. Never use
+silent line-clamping. Current failures and incomplete/paused states remain visible;
 facts and full identities remain in body fields or explicit name disclosures.
 This presentation changes no acquisition, filter, Home or history lifecycle.
 
@@ -1177,10 +1179,12 @@ expressions raise buildings between 14.5 and 15.5, without another animation
 loop or geometry service.
 
 `basemapRelief.ts` owns one optional native `raster-dem` source and hillshade
-layer on the same map. An App-owned session boolean, initially false, is
-controlled only by RELIEF in the existing Layers panel. There is no saved
-preference/share field, startup request, numeric lookup, `setTerrain`, new
-renderer, camera correction or provider pause reason. Source zoom is capped
+layer on the same map. An App-owned session boolean starts from
+`BASEMAP_DETAIL_CONFIG.reliefVisibleByDefault` (true), with the existing
+RELIEF switch and Reset preferences as its only user controls. Reload/reset
+restore on. Supported views may request the existing Mapzen/AWS tiles at
+startup. There is no saved preference/share field, numeric lookup, `setTerrain`,
+new renderer, camera correction or provider pause reason. Source zoom is capped
 at 7, and water remains above shading so ocean relief cannot replace DEPTHS.
 
 The normal style installer rehydrates both additions without touching current
@@ -1736,6 +1740,25 @@ geographic footprint uses the existing containment test; invalid globe
 geometry requires exact-ID native rendered-point visibility, not guessed
 whole-world counts.
 
+Version 1 optionally accepts `view: "from-here"` for orbital context only.
+The ready captured inspector reuses the same keyed Share control and body
+feedback; modeled ticks do not create new links. Placement/style/resize
+temporarily disables that same owner rather than unmounting it and losing its
+created link. No pose, attitude, look
+offset, playback or element data is serialized. The parser and creation
+receipt identity both preserve this discriminator; other kinds or arbitrary
+camera fields cannot use it.
+
+For that explicit viewer intent, the existing pending effect first confirms
+exact owner/id/designator and the authoritative current snapshot/clock through
+`acceptedPositionForCapture`. It then consumes the intent once and calls the
+existing explicit-ID capture operation. Ordinary viewport/display-filter
+checks remain on the ordinary-selection branch, not on this current-eye
+branch: the satellite can have moved far from the stored dated point.
+Existing session-only ORBITS activation, finite deadlines, manual-intent
+fences, controller acknowledgements, camera attachment, expiry and Return
+remain the owners. An unsupported pose retains truthful shared context.
+
 Layer/filter setters clear pending intent synchronously. Explicit orbital
 re-enable for the retained shared receipt alone creates one bounded attempt,
 without another resolve/navigation. Its deadline is the earlier of 30 seconds
@@ -1830,7 +1853,7 @@ background, water, vegetation, urban/building, road, boundary, and label paint;
 the existing wood layer becomes available at zoom 5 rather than 10. Removing
 the Dark style's wood sprite pattern lets its forest color render consistently.
 The richer land-cover fills and bounded building extrusions reuse that same
-vector source; only explicit RELIEF activation adds a DEM source. Existing
+vector source; enabled RELIEF, now on by default, adds the DEM source. Existing
 provider geometry/filters, label content/font/placement, road widths, boundary
 dash patterns and attribution remain intact. The new detail layers use their
 own class/height validity guards without changing traffic or camera behavior.

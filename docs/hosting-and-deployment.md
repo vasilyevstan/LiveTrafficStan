@@ -216,8 +216,10 @@ The #518 receipt below remains historical evidence, not normal-view proof.
 ### Lightweight map-detail release boundary (#518)
 
 The automatic land-cover fills and close-zoom building extrusions reuse
-OpenFreeMap's existing vectors. The only added external contact is the explicit,
-off-on-reload RELIEF layer, using a fixed public Mapzen/AWS Terrarium path
+OpenFreeMap's existing vectors. At the initial #518 release, the only added
+external contact was the explicit, off-on-reload RELIEF layer. #585 changes
+that session default to on, including reload/Reset preferences; supported
+views may now contact the same source at startup. It uses a fixed public Mapzen/AWS Terrarium path
 already allowed narrowly by the browser CSP. No account, paid tier, new
 dependency, renderer, backend endpoint, binding, secret or producer is added.
 Source errors stay local to relief; aircraft, marine and orbital admission,
@@ -2264,6 +2266,16 @@ production configuration is dry-run before atomic protected-secret deployment.
 No local privileged deployment or feature-branch account access is allowed.
 
 The initial global UTC-day caps are 100 creations / 1,000 valid resolutions.
+Captured-view sharing reuses these paths, binding and JSON record with the
+optional orbital-only `view: "from-here"` discriminator. There is no schema
+migration, new flag, cap/TTL change, account setup or separate view-statistics
+category; creations/resolutions remain orbital operations. Deploy browser and
+Worker from the same checked source. Older strict parsers can reject marked
+records during rollback or in an older installed shell; this is an unavailable
+link fallback, not permission to migrate/reset records or broaden validation.
+Existing ordinary records remain compatible, and ordinary REFRESH APP updates
+the shell without deleting preferences/history.
+
 Daily caps plus rolling 24-hour validity permit about 200 active links and
 200KiB payload across midnight, not a hard 100-active-record bound. The
 2,100 successful-path invocation estimate includes creates, redirects and

@@ -25,6 +25,7 @@ export type ObjectShareContext = ShareBase & (
       objectType: OrbitalObjectType
       internationalDesignator: string
       snapshot: { sha256: string; retrievedAt: number; elementEpoch: number }
+      view?: 'from-here'
     }
 )
 export interface ObjectShareReceipt {
@@ -97,9 +98,10 @@ export const parseObjectShareContext = (value: unknown, now: number): ObjectShar
   } else if (value.kind === 'orbital' && /^[1-9][0-9]{0,8}$/.test(value.identifier) &&
     (value.owner === 'curated' || value.owner === 'starlink') &&
     (value.source === 'Space-Track.org / USSPACECOM' || value.source === 'CelesTrak')) {
-    allowed.push('owner', 'objectType', 'internationalDesignator', 'snapshot')
+    allowed.push('owner', 'objectType', 'internationalDesignator', 'snapshot', 'view')
     const snapshot = value.snapshot
-    if ((value.objectType !== 'PAY' && value.objectType !== 'R/B' && value.objectType !== 'DEB' && value.objectType !== 'UNK') ||
+    if (value.view !== undefined && value.view !== 'from-here' ||
+      (value.objectType !== 'PAY' && value.objectType !== 'R/B' && value.objectType !== 'DEB' && value.objectType !== 'UNK') ||
       typeof value.internationalDesignator !== 'string' ||
       !/^(?:[0-9]{4}-[0-9]{3}[A-Z]{1,3})?$/.test(value.internationalDesignator) ||
       !isRecord(snapshot) || !onlyKeys(snapshot, ['sha256', 'retrievedAt', 'elementEpoch']) ||
@@ -110,6 +112,7 @@ export const parseObjectShareContext = (value: unknown, now: number): ObjectShar
       ...base, kind: 'orbital', owner: value.owner, objectType: value.objectType,
       internationalDesignator: value.internationalDesignator,
       snapshot: { sha256: snapshot.sha256, retrievedAt: snapshot.retrievedAt, elementEpoch: snapshot.elementEpoch },
+      ...(value.view === 'from-here' ? { view: value.view } : {}),
     }
   } else {
     throw new Error('Invalid shared identity or source')
@@ -123,7 +126,7 @@ export const parseObjectShareContext = (value: unknown, now: number): ObjectShar
 export const objectShareIdentityKey = (context: ObjectShareContext) =>
   JSON.stringify([context.kind, context.identifier,
     context.kind === 'aircraft' ? context.registration :
-      context.kind === 'vessel' ? context.imo : [context.owner, context.internationalDesignator]])
+      context.kind === 'vessel' ? context.imo : [context.owner, context.internationalDesignator, context.view]])
 
 export const shareTrafficObject = (entity: TrafficEntity): ObjectShareContext => {
   const position = {
@@ -144,7 +147,8 @@ export const shareTrafficObject = (entity: TrafficEntity): ObjectShareContext =>
 }
 
 export const shareOrbitalObject = (
-  position: ModeledOrbitalPosition, snapshot: OrbitalCatalogSnapshot,
+  position: Readonly<ModeledOrbitalPosition>, snapshot: Readonly<OrbitalCatalogSnapshot>,
+  view?: 'from-here',
 ): ObjectShareContext => {
   const identity = parseOrbitalFeatureId(position.id)
   if (!identity || identity.noradCatalogId !== position.noradCatalogId ||
@@ -160,6 +164,7 @@ export const shareOrbitalObject = (
     source: snapshot.sourceProvider === 'space-track' ? 'Space-Track.org / USSPACECOM' : 'CelesTrak',
     snapshot: { sha256: snapshot.sha256, retrievedAt: position.snapshotRetrievedAt, elementEpoch: position.elementEpoch },
     position: { latitude: position.latitude, longitude: position.longitude, at: position.modeledFor },
+    ...(view ? { view } : {}),
   }, Date.now())
 }
 
@@ -179,6 +184,7 @@ export const sharedOrbitalMatches = (
   context: ObjectShareContext, position: ModeledOrbitalPosition, snapshot: OrbitalCatalogSnapshot,
 ) => context.kind === 'orbital' && sharedOrbitalId(context) === position.id &&
   context.identifier === position.noradCatalogId &&
+  (position.owner === undefined || position.owner === context.owner) &&
   position.snapshotSha256 === snapshot.sha256 && position.snapshotRetrievedAt === Date.parse(snapshot.retrievedAt) &&
   (!context.internationalDesignator || !position.internationalDesignator ||
     context.internationalDesignator === position.internationalDesignator)

@@ -488,9 +488,11 @@ It failed this lightweight proof, not a universal impossibility test. There
 is no flat-subpoint substitute, extra worker propagation or hidden placeholder.
 
 Captured camera poses do not become traffic queries, crossing viewports,
-Home, ordinary navigation labels, history or share state. Other operational
-overlays and the ruler yield to capture. Share is unavailable; normal atlas
-tiles can still load for the displayed Earth area.
+Home, ordinary navigation labels, history or saved camera state. Other
+operational overlays and the ruler yield to capture. The ready header's Share
+arrow publishes only the exact satellite and current-view intent through the
+existing 24-hour object link, not the sender's pose or look offsets. Normal
+atlas tiles can still load for the displayed Earth area.
 
 ### Restoration and recovery
 
@@ -520,7 +522,8 @@ Renderer errors clean up input and pending callbacks. If native restoration
 itself fails, the existing map-error surface explicitly says the previous
 camera **could not be restored** and offers Center/reload recovery; it does
 not claim a successful Return. Capture is session-only, with no stored viewer
-pose, orbital history entry or share-link representation.
+pose or orbital history entry. An explicit shared-view link is public context,
+not a persisted capture or replay.
 
 ### Opening a shared satellite
 
@@ -535,8 +538,16 @@ visibility must confirm the object before ordinary details replace dated
 Manual off wins. An explicit subsequent ORBITS enable can grant one finite
 matching opportunity without another link resolution or camera move; it
 never creates an indefinitely reselecting effect. Use the accessible Share
-arrow beside X in ordinary details; it is not available for the captured
-viewer. [Sharing bounds](configuration.md#share-this-exact-object) apply to
+arrow beside X in ordinary details for ordinary map selection.
+The same arrow in **View from here** creates a marked link: after one
+resolution, a matching valid current model enters that satellite's viewer
+directly. A newer same-owner snapshot is allowed; the satellite need not remain
+inside the sender's dated footprint or pass initial map display filters.
+Saved filters remain unchanged, and later explicit choices still cancel entry.
+Auto is required; Flat/unavailable/unsupported views retain a brief fallback
+instead of changing projection. Sender Pause and manual look are not replayed;
+the recipient's normal reduced-motion and Return behavior applies.
+[Sharing bounds](configuration.md#share-this-exact-object) apply to
 all three object kinds.
 
 The accepted scope adds no renderer, dependency, provider, endpoint, worker,

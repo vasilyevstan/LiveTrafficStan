@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { CapturedOrbitalView } from '../domain/orbitalView'
 import { CapturedOrbitalDetails } from './CapturedOrbitalDetails'
 import { MobileInspectorContext } from './mobileWorkspace'
+import { ObjectShareControl } from './ObjectShareControl'
 
 const view: CapturedOrbitalView = {
   revision: 1, viewRequestId: 2,
@@ -21,15 +22,37 @@ const view: CapturedOrbitalView = {
 }
 
 describe('CapturedOrbitalDetails', () => {
+  it('keeps one Share action beside Return and playback even with the mobile body collapsed', () => {
+    const html = renderToStaticMarkup(
+      <MobileInspectorContext value={{
+        mobile: true, compact: true, identity: 'capture:1', returnToTask: false,
+        onExpand: () => undefined, onCollapse: () => undefined,
+      }}>
+        <CapturedOrbitalDetails view={view} ready playing={false} online units="metric"
+          shareObject={<ObjectShareControl identityKey="from-here:1" viewFromHere now={3_000}
+            capture={() => { throw new Error('Share must be explicit') }} />}
+          onReturn={() => undefined} onTogglePlaying={() => undefined} />
+      </MobileInspectorContext>,
+    )
+    const bodyAt = html.indexOf('class="details-panel__body"')
+    expect(html).toContain('details-panel--action')
+    expect(html.slice(0, bodyAt)).toContain('aria-label="Share view from here"')
+    expect(html.match(/aria-label="Share view from here"/g)).toHaveLength(1)
+    expect(html.slice(0, bodyAt)).toContain('>Return</button>')
+    expect(html.slice(0, bodyAt)).toContain('>Play</button>')
+    expect(html.slice(0, bodyAt)).toContain('aria-label="Return to map"')
+    expect(html.slice(bodyAt)).toContain('hidden=""')
+  })
+
   it('keeps the previous ground-report area separate from paused modeled time and high-scale omission', () => {
     const html = renderToStaticMarkup(
       <CapturedOrbitalDetails view={view} ready playing={false}
         localTrafficAvailable groundTrafficSuppressed online units="metric"
         onReturn={() => undefined} onTogglePlaying={() => undefined} />,
     )
-    expect(html).toContain('Previous local area reports: sampled ground annotations')
-    expect(html).toContain('not traffic visible from the spacecraft')
-    expect(html).toContain('Not drawn at this scale.')
+    expect(html).toContain('Previous local area: ground markers only.')
+    expect(html).toContain('Hidden at this scale.')
+    expect(html).toContain('not live or optical')
     expect(html).toContain('>Paused <time')
     expect(html).not.toContain('Aircraft and ships paused')
   })
@@ -85,13 +108,15 @@ describe('CapturedOrbitalDetails', () => {
     }
   })
 
-  it('distinguishes paused model time while retaining normal-speed and geostationary caveats', () => {
+  it('distinguishes paused model time while retaining real-time and slow-apparent-motion caveats', () => {
     const html = renderToStaticMarkup(
       <CapturedOrbitalDetails view={view} ready playing={false} online units="metric"
         onReturn={() => undefined} onTogglePlaying={() => undefined} />,
     )
     expect(html).toContain('>Paused <time')
-    expect(html).toContain('Normal-speed modeled motion; geostationary objects may appear still')
+    expect(html).toContain('Real-time modeled motion; high orbits can appear still.')
+    expect(html).toContain('Day/night shading uses the displayed modeled time, not optical visibility.')
+    expect(html).not.toContain('Session-only; no recording or share link')
     expect(html).toContain('Modeled time')
     expect(html).toContain('Travel direction unavailable')
     expect(html).toContain('Unavailable; neutral or last accepted direction')

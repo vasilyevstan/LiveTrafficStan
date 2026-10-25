@@ -158,10 +158,11 @@ identity are not renamed or reset.
   detail. These additions reuse existing vector tiles, not imagery or a new
   renderer. Custom styles and the offline fallback retain their
   original paint; the separately chosen map projection still applies.
-- Optional **RELIEF** in **Layers** (desktop **More -> Layers**) adds coarse
-  land shading from public Mapzen terrain tiles, not raised terrain. It is
-  session-only and off on reload, so it adds no startup requests. Enabling
-  discloses the map area through tile URLs; failure leaves the map and traffic
+- **RELIEF** starts **on by default** and can be switched off in **Layers**
+  (desktop **More -> Layers**). It adds coarse land shading from public Mapzen
+  terrain tiles, not raised terrain. The choice is session-only: reload and
+  Reset preferences restore on. Eligible views may request tiles at startup,
+  disclosing the map area to AWS; failure leaves the map and traffic
   usable. See [map detail and relief](docs/configuration.md#map-detail-and-optional-relief).
 - Explicit Auto, Light, and Dark theme preferences. Auto follows the browser
   color-scheme signal, while Light and Dark remain persistent overrides; all
@@ -184,7 +185,10 @@ identity are not renamed or reset.
   ORBITS for that session unless an explicit layer choice wins. Ordinary
   startup, saved preferences, filters and Home stay unchanged; no outside
   identifier lookup is added. Explicit orbital re-enable grants one finite
-  matching opportunity, not another resolution or camera move. Source
+  matching opportunity, not another resolution or camera move. The same arrow
+  in **View from here** creates a link that directly opens that satellite's
+  valid current modeled view. It does not replay the sender's time or look
+  direction; Auto projection and a qualifying current model are required. Source
   defaults remain off; production is enabled after actual protected
   storage and Free-account qualification. See [usage and bounds](docs/configuration.md#share-this-exact-object),
   [publication/privacy](docs/data-sources-and-licensing.md#public-object-links)
@@ -329,6 +333,9 @@ identity are not renamed or reset.
   Reduced-motion users start paused; geostationary objects may appear still.
   **Return**, X or canvas-owned Escape restores the previous map and retains
   the originating satellite selection when its owning model still qualifies.
+  The header's **Share view from here** arrow opens the same satellite's
+  current modeled viewpoint for a recipient, rather than ordinary map details.
+  Copy reuses the existing 24-hour link; no camera offsets or playback are saved.
   Newer navigation and automatic/error exits do not revive old selection;
   native fullscreen retains Escape precedence. A subdued night-side tint with
   a soft, outline-free transition provides approximate local Earth context in
@@ -491,7 +498,9 @@ identity are not renamed or reset.
   visible beside a compact identity header. **Show path** shares that header;
   the body scrolls at full width without a close-button gutter.
   Default menu explanations use purposeful two-line summaries; labelled
-  disclosures retain full names, sources, privacy and limitations.
+  disclosures also stay concise, retaining full names, required credits,
+  essential privacy and limitations. Extended explanations live in the docs,
+  not another page of text inside a menu.
   Outside native workspace fullscreen, Escape closes an inspector when focus is inside it;
   either action preserves the camera and returns focus to the existing
   selection control or visible More/Settings fallback.

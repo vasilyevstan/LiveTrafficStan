@@ -438,8 +438,7 @@ function AircraftPhotoDetails({
             <summary>Photo privacy &amp; terms</summary>
             <p className="metadata-status">
               Planespotters receives ICAO24 {identity || 'unavailable'} plus
-              normal network metadata; its CDN serves the image. JSON cache:
-              this tab, 1 hour; image bytes not stored.{' '}
+              network metadata; images load from its CDN.{' '}
               <a href={termsUrl}>Terms</a>.
             </p>
           </details>

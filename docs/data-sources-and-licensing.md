@@ -87,7 +87,9 @@ label, compatible registration/IMO/designator, necessary source attribution,
 optional three-decimal public object position and its real observation/model
 instant, and server creation/expiry. Orbital context also retains exact SATCAT
 type, originating owner, snapshot digest/retrieval and element epoch, never
-elements. It does not contain sender Home, full camera, preferences, search
+elements. A link explicitly created in View from here adds only the orbital
+`view: "from-here"` intent. The recipient uses its current valid model, not a
+stored eye, attitude, look direction or playback time. It does not contain sender Home, full camera, preferences, search
 text, free-form messages, photos/enrichment, provider payloads, trails or
 private history.
 
@@ -183,8 +185,10 @@ service is added for these vector details.
   An actual public GET with Origin returned HTTP 200 and
   `Access-Control-Allow-Origin: *` on October 19, 2026.
 
-RELIEF is an explicit session-only opt-in in Layers, off on reload. The
-browser loads coarse 256 px Terrarium DEM tiles only for native hillshading,
+RELIEF is on by default, with a session-only off switch in Layers. Reload
+and Reset preferences restore on; there is no saved relief field.
+Supported views can therefore contact Mapzen/AWS at startup. The browser
+loads coarse 256 px Terrarium DEM tiles only for native hillshading,
 with a source maximum zoom of 7. Terrain geometry is not enabled, no numeric
 height/depth values are inferred from shading, and no navigation, optical
 accuracy or surveyed-building claim is made. It is separate from DEPTHS.
@@ -1345,14 +1349,17 @@ or navigational clearance. Starlink remains a bounded sample, not the full
 constellation. No modeled position becomes aircraft/marine traffic, a trail,
 photo, enrichment match or recorded history.
 
-The capture has no persisted viewer pose, share representation or custom
-analytics event. Genuine incoming traffic retains its existing source rights
+Capture alone publishes nothing and has no persisted viewer pose or custom
+analytics event. Explicit Share uses the existing [public object-link](#public-object-links)
+record with that minimal viewpoint intent, never camera offsets or elements.
+Genuine incoming traffic retains its existing source rights
 and consent-controlled history path; modeled viewer poses do not enter it.
 It adds no object/provider lookup path; ordinary map tiles can still
 disclose the displayed geographic area to the incumbent map host. Existing
 independent page analytics retain their documented trust boundary.
-There is no provider/account/credential, backend publication, acquisition
-cadence or licensing change. #510 deploys this presentation without changing
+There is no new provider/account/credential, acquisition cadence or licensing
+change. The optional publication uses the existing sharing backend and bounds.
+#510 originally deployed this presentation without changing
 the native GP source. See [usage and validity](orbital-tracking.md#captured-orbital-views-508)
 and the [production receipt](hosting-and-deployment.md#captured-orbital-view-production-receipt-2026-10-19).
 

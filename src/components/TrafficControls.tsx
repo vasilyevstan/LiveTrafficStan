@@ -1103,13 +1103,11 @@ export function TrafficControls({
                 <details className="context-details">
                   <summary>Map detail &amp; sources</summary>
                   <p>
-                    Land cover and close-up 3D buildings use the existing OpenFreeMap tiles.
-                    Building heights may be level-derived estimates; unknown/default heights stay flat.
+                    OpenFreeMap land cover and buildings; heights are estimates.
                   </p>
                   <p>
-                    Relief is optional and off on reload. Enabling requests coarse Mapzen terrain
-                    tiles from public AWS storage; tile URLs disclose the viewed map area.
-                    Shading only, not raised terrain or navigation information.
+                    Relief starts on: land shading, not 3D terrain.
+                    Mapzen/AWS tile requests reveal the viewed area.
                   </p>
                   <p>
                     <a href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md">
@@ -1155,18 +1153,16 @@ export function TrafficControls({
                 )}
                 <details className="context-details">
                   <summary>Depth sources &amp; privacy</summary>
-                  <p>{bathymetryStatus.imageryMessage}</p>
-                  <p>{bathymetryStatus.values.message}</p>
+                  {bathymetryStatus.imagery !== 'ready' && <p>{bathymetryStatus.imageryMessage}</p>}
+                  {bathymetryStatus.values.phase !== 'ready' && <p>{bathymetryStatus.values.message}</p>}
                   <p>{depthSourceDescription(bathymetryStatus.values.source)}.</p>
                   <p>
-                    Shading: EMODnet 2018 / GEBCO 2019. Numbers use newer service grids;
-                    colors and numbers are not the same survey or date.
+                    Shading: EMODnet 2018 / GEBCO 2019. Newer grid numbers may differ.
                   </p>
                   <p>
-                    Approximate seabed models, not navigation or tide/clearance information.
-                    Enabling sends the requested map area to EMODnet and GEBCO; no Home coordinates are stored.
+                    Not for navigation, tides or clearance.
+                    Requests reveal the map area to EMODnet and GEBCO.
                   </p>
-                  <p>Depth requests disclose the viewed map area.</p>
                 </details>
               </div>
               {portsVisible &&
@@ -1404,10 +1400,10 @@ export function TrafficControls({
               <legend>Sources</legend>
               <ul className="control-source-list">
                 <li>
-                  Relief (optional):{' '}
+                  Relief:{' '}
                   <a href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md">
                     Mapzen terrain contributors
-                  </a>. Coarse, older elevation; shading only.
+                  </a>. Land shading only.
                 </li>
                 <li>
                   Depths: <a href="https://emodnet.ec.europa.eu/en/bathymetry">EMODnet</a>
@@ -1464,45 +1460,34 @@ export function TrafficControls({
                 </li>
               </ul>
               <p className="control-note control-note--muted">
-                Depth requests disclose the viewed map area.
+                Relief and depth requests reveal the viewed map area.
               </p>
               <details className="context-details">
                 <summary>Data use &amp; model limits</summary>
                 <p className="control-note">
-                  World Base Layer v1 shading (EMODnet 2018 / GEBCO 2019);
-                  automatic numbers from the regional EMODnet mean grid (LAT)
-                  or global GEBCO latest grid (nominal MSL, with coastal exceptions).
-                  Metres only; approximate models, not soundings or navigation.
+                  Depth shading: EMODnet 2018 / GEBCO 2019. Numbers use newer grids.
                 </p>
                 <p className="control-note">
-                  Original contributing marine sources are credited in ship details and Provider details.
-                  Each photo carries its own artist, source and license.
+                  Metres: EMODnet LAT; GEBCO nominal MSL, with coastal exceptions.
+                  Not for navigation.
                 </p>
                 <p className="control-note">
-                  Airport boards are explicit on-demand loads, not linked to live aircraft.
-                  METAR is public-domain observation data; not forecasts or boards.
-                  Orbital symbols retain exact payload, stage, debris or unknown class.
+                  METAR: public domain unless marked otherwise.
+                  Observation and retrieval times are in details.
                 </p>
               <p className="control-note control-note--muted">
-                DEPTHS is on by default. Anonymous tile and value requests reveal the
-                requested map area to the named providers; their retention is not controlled by this app.
-                {' '}
-                METAR sends visible ICAO IDs via this app; source/retrieval
-                times are in details.
-                {' '}<a href="https://github.com/vasilyevstan/LiveTrafficStan/blob/main/docs/data-sources-and-licensing.md">Full data credits</a>.
+                METAR requests send visible station IDs.
+                {' '}<a href="https://github.com/vasilyevstan/LiveTrafficStan/blob/main/docs/data-sources-and-licensing.md">Full data credits &amp; privacy</a>.
               </p>
               </details>
               <details className="context-details">
                 <summary>Visitor analytics &amp; privacy</summary>
                 <p className="control-note">
-                  On trackstan.xyz, Cloudflare measures page loads, referrers,
-                  country, browser, device and performance. No cookies,
-                  persistent visitor IDs or custom interaction events.
+                  Cloudflare receives page-load and performance data on trackstan.xyz:
+                  referrers, country, browser and device.
                 </p>
                 <p className="control-note">
-                  The official beacon sends per-page performance data.
-                  Shared coordinates, searches and private history are not
-                  analytics fields. Blocking analytics leaves the map usable.
+                  No cookies, persistent visitor IDs or custom interaction events.
                   {' '}<a href="https://github.com/vasilyevstan/LiveTrafficStan/blob/main/docs/data-sources-and-licensing.md#visitor-analytics">Collection details</a>.
                 </p>
               </details>
@@ -1735,7 +1720,7 @@ export function TrafficControls({
                   </div>
                   <p id="ruler-view-status" className="control-note">
                     {rulerDistance ? <>Approximate surface distance: <output>{rulerDistance}</output></>
-                      : rulerMessage ?? 'Two local points. No route or navigation claim.'}
+                      : rulerMessage ?? 'Two points; approximate distance, not a route.'}
                   </p>
                   {rulerDistance && (
                     <div className="control-options control-options--one">

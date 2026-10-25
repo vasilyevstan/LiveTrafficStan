@@ -228,7 +228,53 @@ unchanged. Reuse accepted unchanged relief/building/orbital/update evidence;
 the [#522 receipt](https://github.com/vasilyevstan/LiveTrafficStan/issues/522)
 separately records checked delivery, actual public behavior and publication.
 
+### Default-on Relief and concise menus (#585)
+
+Exercise the actual App's initial Relief state, session off, reload-on and
+Reset preferences-on paths; a controls fixture alone does not prove App
+initialization or reset. Retain the source-zoom-7 bound, no geometric terrain,
+local source errors and the existing style/camera/provider owners.
+
+Review Layers, Find, Context, Orbits, Sources, Settings, History, In view and
+Provider details, including expanded help/source sections. Remove duplicated
+explanations rather than hiding them in another disclosure. Keep short
+instructions, errors, privacy, source/time/datum qualifiers and required
+credits; preserve actual object facts and mission descriptions. Cover
+desktop, 315x517 and 390x568 in Light/Dark, including hidden layers and an
+ungranted location permission at the narrowest width. Measure real copy,
+scrolling, target/focus access and overflow. Do not shrink text or silently
+clip prose. Extended technical explanations belong in canonical docs.
+
+Component regressions retain off/unavailable/unsupported Relief, failed and
+partial depths, source links, local-only board filtering, unknown source
+age/codeshares and separate modeled/observed clocks. Reuse unchanged provider,
+PWA and captured-camera acceptance; this copy/default change does not justify
+another complete lifecycle or live-provider matrix.
+
+The October 25 source-App Chrome 156 batch passes 54 scoped menu/disclosure
+observations across Light/Dark at 1280x900, 315x517 and 390x568. Actual startup,
+session-off, ordinary reload-on and Reset preferences-on assertions pass with
+one map, a source-zoom-7 DEM and no geometric terrain. Real OpenFreeMap/Mapzen
+tiles render the Alpine fixture view. Phone ordinary menus peak at 60.87%
+combined overlay, retain a hit-tested 120x120 map region and at least 160px
+useful body height; there is one scroll owner, no horizontal overflow and no
+measured default helper exceeding two lines. The narrow cases include hidden
+traffic layers and denied location permission. Sources receives a native
+touch-scroll check. Existing desktop 24/36px native/secondary controls are not
+misreported as new 44px controls; phone primary controls retain 44px targets.
+
+The preload/reload-generation and unchanged desktop-target observer failures
+are retained. Completed default assertions are reused for the menu continuation;
+their original pre-reload raw metrics were not saved. No product correction
+followed those observer fixes. This is controlled-source desktop/emulated-touch
+evidence, not physical-device/GPU, OS-keyboard, new PWA-update or live-provider
+acceptance. All eight local gates pass, including 213 suites / 2,534 tests.
+Matched initial JS is 596,545 Node-default-gzip bytes (843 fewer); CSS remains
+21,907 bytes. Public rollout and Wiki publication are separate milestones.
+
 ### Lightweight map detail (#518)
+
+This historical October 19 receipt precedes #585's default-on Relief change.
 
 `basemapCartography.test.ts` retains default/custom/shared-theme preservation,
 label/vessel contrast and unchanged source/road semantics, adding exact
@@ -2971,6 +3017,53 @@ Provider HTTP failures are provider-state evidence, not JavaScript exceptions.
 This section preserves the initial release's actual behavior and evidence.
 The [#563 follow-up](#shared-orbital-entry-inspector-actions-and-earth-context-563)
 changes validated satellite-link activation; it does not rewrite these receipts.
+
+### Direct View from here links (#587)
+
+The optional orbital-only `view: "from-here"` discriminator reuses the version-1
+record, exact short-token root handoff, bounded Worker/SQLite handlers and
+one document-owned resolution. Deterministic cases cover both owners, strict
+field rejection, current/newer same-owner model matching, contradictory
+designator/owner/snapshot rejection, receipt mode preservation, unchanged
+24-hour storage/statistics, explicit creation and the collapsed-header action.
+Ordinary records remain unmarked and keep ordinary selection behavior.
+
+Native acceptance must distinguish actual entry from a successful resolve.
+Use the ready captured Share action and repeat Copy/fallback, follow the real
+root handoff, and measure automatic qualified capture, Return selection,
+saved-preference preservation and one map. Include a newer current position
+far outside the stored footprint, independently qualified bounded Starlink,
+Flat/unavailable fallback, finite matching and newer manual intent. Batch
+Light/Dark desktop and 315x517/390x568 header targets, overlap, body scrolling
+and map space. Local handler/SQLite fulfillment is not Cloudflare D1 transport,
+billing or public-service acceptance; a clipboard adapter is not OS clipboard
+proof. Reuse unchanged provider, PWA and native camera evidence.
+
+The October 25 local acceptance passes **213 suites / 2,543 tests**, lint,
+typecheck, all four mandatory data checks, the matched build and an enabled
+native-source Worker dry run with synthetic storage IDs. Two default-parallel
+attempts hit five-second limits in different unchanged tests; the final full
+run uses the existing `--maxWorkers=2` option with no weakened assertion or
+timeout. Initial JS is **596,851 Node-default-gzip bytes**, +306 / 0.0513%
+against the accepted menu/Relief base; CSS is 21,987 bytes, +80.
+
+The native Chrome 156 fixture receipt contains 14 bounded behavioral/layout
+cases, retaining three unchanged functional observations from the initial run.
+A six-layout geometry correction at **21:10:55 UTC** supersedes earlier map
+space measurements: the absolutely positioned mobile brand title must be
+included even when it extends beyond its parent's rectangle. Corrected
+Light/Dark overlay unions are **59.35% at 315x517** and **56.69% at 390x568**,
+with 160/175px useful expanded bodies, nonoverlapping 44px actions, one
+scroller/canvas and a hit-tested 120x120px map region. Theme/size transitions
+retain the created URL; final Copy makes no second create request. Temporary
+placement disables the same Share owner rather than unmounting it. These are
+actual-App/native-worker/real-basemap observations with controlled catalogs
+and local Worker-handler/SQLite fulfillment, not production transport,
+physical-device/GPU, OS clipboard or native-hidden acceptance. The held-model
+case demonstrates finite fallback and late-callback fencing, not that one
+particular timeout was the only contributing guard.
+
+### Initial object-link acceptance
 
 The bounded share slice extends #12 without changing Share view. The accepted
 local source passes lint/typecheck, all **209 suites / 2,380 tests**, four

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { DEFAULT_VESSEL_FILTERS } from '../domain/vesselFilters'
 import { EMPTY_ORBITAL_PREDICTION } from '../domain/orbital'
 import { INITIAL_BATHYMETRY_STATUS } from '../domain/bathymetry'
+import { BASEMAP_DETAIL_CONFIG } from '../config/appConfig'
 import {
   DEFAULT_ORBITAL_DISCOVERY_FILTERS,
   type OrbitalDisplaySelection,
@@ -98,8 +99,8 @@ const renderControls = (
       depthsVisible
       bathymetryStatus={INITIAL_BATHYMETRY_STATUS}
       onDepthsVisibleChange={() => undefined}
-      reliefVisible={false}
-      reliefStatus="off"
+      reliefVisible={BASEMAP_DETAIL_CONFIG.reliefVisibleByDefault}
+      reliefStatus="enabled"
       onReliefVisibleChange={() => undefined}
       weatherLoading={false}
       weatherWaiting={false}
@@ -271,14 +272,47 @@ describe('TrafficControls', () => {
   })
 
   it('keeps optional session relief in Layers without a permanent dock action', () => {
-    const html = renderControls()
+    const html = renderControls({ reliefVisible: false, reliefStatus: 'off' })
     expect(html).toMatch(/id="relief-layer-toggle"[^>]*aria-pressed="false"/)
     expect(html).toContain('Relief off. No relief requests.')
-    expect(html).toContain('Relief is optional and off on reload.')
-    expect(html).toContain('tile URLs disclose the viewed map area.')
+    expect(html).toContain('Relief starts on: land shading, not 3D terrain.')
+    expect(html).toContain('Mapzen/AWS tile requests reveal the viewed area.')
     expect(html).toContain('Mapzen terrain contributors and licenses')
+    expect(html).not.toContain('off on reload')
     expect(html.match(/id="relief-layer-toggle"/g)).toHaveLength(1)
     expect(html).not.toContain('data-workspace-task="relief"')
+  })
+
+  it('keeps the configured initial relief switch on with concise, reachable source/privacy notices', () => {
+    const html = renderControls()
+    expect(html).toMatch(/id="relief-layer-toggle"[^>]*aria-pressed="true"/)
+    expect(html).toContain('Relief on. Coarse land shading.')
+    expect(html).toContain('Shading: EMODnet 2018 / GEBCO 2019. Newer grid numbers may differ.')
+    expect(html).toContain('Requests reveal the map area to EMODnet and GEBCO.')
+    expect(html).toContain('GEBCO nominal MSL, with coastal exceptions.')
+    expect(html).toContain('Full data credits &amp; privacy')
+    expect(html).not.toContain('World Base Layer v1 shading')
+    expect(html).not.toContain('colors and numbers are not the same survey or date')
+  })
+
+  it('removes redundant successful depth explanations, not failures or partial-result reasons', () => {
+    const html = renderControls({
+      bathymetryStatus: {
+        ...INITIAL_BATHYMETRY_STATUS,
+        imagery: 'ready', imageryMessage: 'Redundant successful shading explanation.',
+        values: { ...INITIAL_BATHYMETRY_STATUS.values, phase: 'ready', message: 'Redundant successful value explanation.' },
+      },
+    })
+    expect(html).not.toContain('Redundant successful')
+    const unavailable = renderControls({
+      bathymetryStatus: {
+        ...INITIAL_BATHYMETRY_STATUS,
+        imagery: 'unavailable', imageryMessage: 'Depth tile source failed.',
+        values: { ...INITIAL_BATHYMETRY_STATUS.values, phase: 'partial', message: 'Some grid cells failed; retained values are partial.' },
+      },
+    })
+    expect(unavailable).toContain('Depth tile source failed.')
+    expect(unavailable).toContain('Some grid cells failed; retained values are partial.')
   })
 
   it.each([
@@ -452,9 +486,9 @@ describe('TrafficControls', () => {
     expect(navigationMore).toContain('<legend>Layers</legend>')
     expect(navigationMore).toContain('id="depths-layer-toggle"')
     expect(navigationMore).toContain('aria-describedby="depths-layer-status"')
-    expect(navigationMore).toContain('Approximate seabed models, not navigation')
+    expect(navigationMore).toContain('Not for navigation, tides or clearance.')
     expect(navigationMore).toContain('Shading: EMODnet 2018 / GEBCO 2019')
-    expect(navigationMore).toContain('requested map area')
+    expect(navigationMore).toContain('Requests reveal the map area')
     expect(navigationMore).toContain('>ORBITS</button>')
     expect(navigationMore).not.toContain('Traffic legend')
     expect(navigationMore).not.toContain('Band 1 · below 1,000 m')
@@ -989,9 +1023,9 @@ describe('TrafficControls', () => {
     expect(failed).toContain('METAR unavailable')
     expect(failed).toContain('RETRY METAR')
     expect(failed).toContain('NOAA/NWS AWC')
-    expect(failed).toContain('not forecasts or boards')
-    expect(failed).toContain('visible ICAO IDs via this app')
-    expect(failed).toContain('source/retrieval times')
+    expect(failed).toContain('observations, not forecasts')
+    expect(failed).toContain('METAR requests send visible station IDs.')
+    expect(failed).toContain('Observation and retrieval times are in details.')
 
     const disabled = renderControls({
       weatherVisible: false,

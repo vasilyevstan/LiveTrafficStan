@@ -86,6 +86,14 @@ const renderPanel = (
 )
 
 describe('InViewPanel', () => {
+  it('keeps count qualifications without a duplicate explanatory disclosure', () => {
+    const html = renderPanel()
+    expect(html).toContain('Observed aircraft, not cluster or last-local samples.')
+    expect(html).toContain('Top 20 by reported size; draught is not water depth.')
+    expect(html).toContain('Modeled, not live or optical. Includes a Starlink sample.')
+    expect(html).not.toContain('How this list works')
+  })
+
   it('quarantines current-view membership without claiming retained reports are in the modeled view', () => {
     const html = renderPanel({ unavailableMessage: 'Return to map to browse local reports.' })
     expect(html).toContain('role="status">Return to map to browse local reports.')
@@ -105,7 +113,7 @@ describe('InViewPanel', () => {
     expect(html).toContain('>Next</button>')
     expect(html).toContain('TEST 20')
     expect(html).not.toContain('TEST 21')
-    expect(html).toContain('not cluster symbols or fading last-local samples')
+    expect(html).toContain('not cluster or last-local samples')
   })
 
   it('keeps categories accessible and inactive content hidden with local search limits', () => {
@@ -134,8 +142,8 @@ describe('InViewPanel', () => {
     expect(html).toContain('>Deepest draught</button>')
     expect(html).toContain('aria-label="Ranked ships in view"')
     expect(html).not.toContain('id="in-view-ships-search"')
-    expect(html).toContain('search and vessel filters are in More')
-    expect(html).toContain('Reported draught is not water depth')
+    expect(html).toContain('Top 20 by reported size')
+    expect(html).toContain('draught is not water depth')
   })
 
   it('shows reported measurements and missing-value exclusions without guessing', () => {
@@ -255,8 +263,8 @@ describe('InViewPanel', () => {
     expect(html).toContain(`Element epoch ${new Date(position.elementEpoch).toISOString()}`)
     expect(html).toContain(`Modeled ${new Date(position.modeledFor).toISOString()}`)
     expect(html).toContain(`Retrieved ${new Date(position.snapshotRetrievedAt).toISOString()}`)
-    expect(html).toContain('not live telemetry or optical visibility')
-    expect(html).toContain('not the full constellation')
+    expect(html).toContain('Modeled, not live or optical.')
+    expect(html).toContain('Includes a Starlink sample.')
   })
 
   it('labels partial sources, zoom-hidden rows, and selected exceptions outside totals', () => {
