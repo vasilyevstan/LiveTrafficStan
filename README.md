@@ -8,6 +8,18 @@ user accounts or a server-side vessel history archive.
 
 Public production: <https://trackstan.xyz>
 
+**Default Relief and direct satellite views (#585/#587):** Relief now starts
+on, including reload and Reset preferences; off remains session-only.
+Menus keep short instructions, errors and necessary source/privacy credits
+instead of duplicated explanations. The **Share arrow beside X in View from
+here** creates a link that automatically opens the same satellite's valid
+**current modeled view**, not a replay of the sender's time or look offsets.
+Auto is required; unavailable models or Flat retain a brief truthful fallback.
+[Usage](docs/orbital-tracking.md#captured-orbital-view),
+[public release receipt](docs/hosting-and-deployment.md#default-relief-and-direct-satellite-view-links)
+and [measured acceptance](docs/development-and-testing.md#direct-view-from-here-links-587)
+distinguish the running application from later documentation-only commits.
+
 **One Find (#578):** enter an object name, identifier, callsign, place or
 coordinates without choosing an object type or In view/Outside view scope.
 Typing searches available data locally; **Search** explicitly includes the
