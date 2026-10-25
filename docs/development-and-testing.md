@@ -61,16 +61,43 @@ hidden/offline/paused queries before Photon, while local coordinates still
 work. Existing lookup/place/controller/Worker timing, validation and A-B-A
 regressions remain authoritative.
 
-The matched all-feature build has **598,372 Node-default-gzip JavaScript
+The follow-up to the user's rejected expanded-result screenshot removes all
+per-row disclosures, paragraph blocks, duplicated visible country lines and
+the redundant successful-navigation sentence. Regressions cover plain mixed
+rows, accessible flag-state/allocation names, compact successful Locate,
+original observation versus retrieval clocks, complete source credits,
+retained result buttons and explicit errors/disabled reasons. The shared
+Sources surface is attribution and a limits link, not a second instructions
+wall. Query routing, providers, navigation and preference lifetimes are
+unchanged; their accepted evidence below is reused.
+
+The initial, pre-follow-up matched all-feature build has **598,372 Node-default-gzip JavaScript
 bytes**, versus the accepted #574 baseline of 597,311: **+1,061 bytes /
 0.1776%**. CSS is 22,112 default-gzip bytes. This compares identical production
 feature inputs, not Vite's differently reported gzip estimate. No dependency,
 provider, Worker endpoint, binding, persistent state or scheduler was added.
 
+The plain-row correction passes all eight mandatory local gates, **213 files /
+2,530 tests**. Its matched initial JS is **597,388 Node-default-gzip bytes**,
+984 fewer than the initial unified Find; CSS is **21,907**, 205 fewer.
+The 11-URL shell is 3,762,196 raw bytes. Six actual-App Chrome156 Light/Dark
+desktop/315x517/390x568 cases have zero row paragraphs/disclosures, 20-row
+pages, 85.36-99.11px first mixed rows, hit-tested 44px actions, 16px phone
+inputs, one outer scroller and no horizontal overflow. The existing 180px /
+195px phone body budgets and one vector canvas remain.
+Native Locate retains its row/query/action focus and a single original-clock
+age label; complete credits, normal static details and phone Back remain
+available. A DOM-assignment observer returned a linked React object before
+Locate, so the dependent credit check also failed. Returning `void` resolves
+only those pending observations on the retained App, without a product edit
+or rerunning the six accepted layouts. Reports and failed observations remain.
+This focused presentation evidence reuses unchanged query/provider/PWA
+acceptance; it is not another public-provider or physical-device proof.
+
 Native Chrome156 source-App fixtures cover Light/Dark1280x900,315x517 and
 390x568 in one bounded inspection/correction cycle. Accepted evidence includes
 local-only typing; actual explicit fixed POSTs and static demand; 20-row mixed
-paging/source truncation; flags, full IDs and original source/time disclosure;
+paging/source truncation; flags, full IDs and original source/time provenance;
 one 44px Clear (without a duplicate native search cancel); 44px actions and
 16px phone input; a single body scroller; retained map/canvas; native
 ship Locate and aircraft last-report navigation; static/orbital exact details

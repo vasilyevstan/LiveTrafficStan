@@ -624,20 +624,23 @@ Exact identities are deduplicated with received observations preferred;
 source payloads and clocks are never merged. At most 20 rows render per
 page, with the full available count and explicit source truncation. Source
 errors remain independent and do not turn unavailable coverage into an empty
-result. A row's name opens its complete source, identifiers and times;
-**Sources & search limits** contains shared restrictions rather than repeated
-full-width instructions below every row.
+result. Rows are plain identity/action entries, with one short source/age
+label and no expandable metadata report. Exact original and retrieval clocks
+remain in native provenance tooltips, with report/model time in semantic
+`time` attributes. **Sources** retains complete contributing credits and a
+link to these bounds; full detail panels keep their existing provenance.
 
 Available flags/country labels are synchronous bundled **MMSI flag state**
 or **ICAO24 allocation**, not current location, nationality of occupants or
 an inferred owner. Native flag glyphs depend on platform fonts; the country
-name and basis remain textual. Airport/place locality appears only where
+name and basis remain available in the flag's accessible name and native
+tooltip rather than a duplicated visible country line. Airport/place locality appears only where
 its source supplies it. Ship identity search supplies no dated position,
 city or current-location country; there is no automatic per-row Locate,
 reverse geocoder or nearest-city inference.
 
 Search never enables ORBITS or downloads its catalogs. Explicit **Enable
-ORBITS** in **Sources & search limits** or Layers retains its existing
+ORBITS** in **Sources** or Layers retains its existing
 semantics and the draft. Local satellite name, NORAD and COSPAR search covers
 only the accepted curated catalog and bounded Starlink sample, not every
 satellite or the complete constellation.
