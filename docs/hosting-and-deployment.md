@@ -65,6 +65,67 @@ credentials and the private-relay secret. Observability remains disabled and
 no paid fallback is enabled. Orbital activation uses the included free KV and
 SQLite Durable Object allocations; R2 is not used.
 
+### Default Relief and direct satellite-view links
+
+The combined #585/#587 release runs application
+**`05599569de5280082798835370fa66fe5489fc05`**, Worker
+**`67209a87-2271-49e1-a444-d8b05fe76fa9`**, published on **2026-10-25 at
+21:29:55 UTC** by successful serialized
+[deployment 40235668700](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/40235668700).
+Checked #586/#588, the sole necessary zero-tree ancestry #590 and promotion
+#589 preserve complete accepted tree
+`b7163b015d865c8a254848a01229b879ff926bd1`. Exact-main
+[Validation 40235575056](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/40235575056)
+and the unchanged strict backup-origin smoke pass. The actual promotion
+gate was BEHIND, not a content conflict; the guarded ancestry merge immediately
+restored and deep-verified complete original dev/main rules and repository
+settings. Persistent dev and disabled automatic branch deletion remain.
+
+Relief starts on, including reload/Reset, without a saved field or geometric
+terrain. Menus remove redundant prose while retaining short instructions,
+errors, actual object facts and required source/privacy credits. Captured
+Share reuses version-1 storage with an optional orbital-only `from-here`
+intent. It adds no endpoint, D1 migration, TTL/cap/statistics dimension,
+deployment flag, provider, scheduler, dependency or saved camera. All current
+production inputs, enabled sharing/D1 identity, native Space-Track,
+main-only atomic secrets, serialization and operational/source/physical/retry
+fences remain. No OCI operation, forced GP acquisition or airport-board Load
+is performed for this release.
+
+Actual unmocked public Chrome 156 acceptance completes at **21:30:55 UTC**.
+**STARLINK-1500 /45744** creates one native POST **201** in **265.2ms**;
+cached Copy creates no second link. Actual short-root GET **302** and one
+native resolve POST **200** in **179.7ms** automatically enter the exact
+current Starlink-owned view. The recipient's pre-Pause modeled time is
+3.644 seconds newer than the sender's pre-Pause sample. Saved ORBITS-off
+preferences stay byte-equal; incoming activation is session-only. Native
+Return retains the exact satellite, and the sender restores its prior camera.
+Light 1280x900 and Dark 315x517 retain one map/canvas/scroller; captured phone
+actions are nonoverlapping/hit-tested 44px, with **59.35%** combined overlays,
+**160px** useful body and a hit-tested **120x120px** map region.
+
+Native vector/DEM rendering confirms released default Relief and concise
+Layers. Four ordinary cache-only catalog GETs serve sender/recipient; these
+are not GP acquisition. There are zero observed runtime exceptions.
+Initial selection/camera are App-callback staged; subsequent controls,
+transport, clocks and worker are native. Desktop/emulated touch/focus is not
+physical-device/GPU, OS clipboard or native-hidden proof. The ordinary
+wide-view **selected satellite plus Layers** observation is **69.75%** and
+does not retain a 120x120 region; it does not qualify the separate #540/#554
+wide-notice/workspace composition. Reuse accepted curated, complete-menu,
+provider, camera and PWA evidence rather than claim another whole-app matrix.
+[Detailed acceptance](development-and-testing.md#direct-view-from-here-links-587)
+keeps local fixtures and public D1 transport distinct.
+
+The compatible prior application is
+`cc3a4380c7f90ca8de4891bc4bd26e3674affcd1`, Worker
+`8f35ac8c-4430-45da-862c-7692c68d3645`; its receipts below remain historical
+and rollback evidence. Use the existing checked revert/rollback path, retaining
+the D1 identity and all production inputs. Older strict clients may reject a
+marked view link; ordinary REFRESH APP is sufficient without clearing data.
+Later receipt-only commits and Wiki publication do not redeploy or replace
+the running application identified above.
+
 ### Explicit outside-view ship Locate (#574)
 
 Locate extends the existing fixed browser POST `/api/find/ships`; the Worker

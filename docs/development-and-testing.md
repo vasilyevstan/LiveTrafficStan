@@ -3063,6 +3063,38 @@ physical-device/GPU, OS clipboard or native-hidden acceptance. The held-model
 case demonstrates finite fallback and late-callback fencing, not that one
 particular timeout was the only contributing guard.
 
+The combined #585/#587 public milestone completes on **2026-10-25 at
+21:30:55 UTC**, against actual running application
+`05599569de5280082798835370fa66fe5489fc05` / `index-BLSCKBp2.js`.
+Unmocked native **STARLINK-1500 /45744** Share creates exactly one public
+POST 201 (265.2ms), repeated Copy creates none, actual root GET 302 hands
+off to one native resolve POST 200 (179.7ms), and the recipient automatically
+enters the exact Starlink-owned current model. The pre-observer-Pause modeled
+samples advance from `21:30:50.499Z` to `21:30:54.1429Z`; this is current
+entry, not sender-time replay. Saved ORBITS-off preference bytes remain
+unchanged, and both native Returns retain the satellite; sender Return also
+restores the raw prior camera.
+
+Light 1280x900 sender and Dark 315x517 recipient keep one canvas/scroller,
+44px nonoverlapping/hit-tested captured actions and no overflow. The captured
+phone overlay union is **59.35%**, useful body **160px**, with a corrected
+brand-excluding **120x120px** hit-tested map region. Native vectors and 70
+successful DEM responses confirm released default Relief and concise Layers;
+the full 54-case menu/default/reload/Reset evidence above remains local.
+The separate ordinary wide-view selected-satellite-plus-Layers observation
+measures **69.75%**, 160px useful body and no qualifying 120x120 region.
+It is not a pass for the independent #540/#554 workspace-composition criteria.
+
+There are four ordinary cache-only catalog GETs across sender/recipient and
+zero observed runtime exceptions; no forced GP work, board Load, provider
+fixture or fetch/socket/clock/worker override is used. Exact initial selection
+and camera are App-callback staged; controls and subsequent link transport are
+native. This bounded actual public D1 milestone does not repeat account/billing
+qualification, curated fixtures, complete-menu/provider/camera/PWA acceptance,
+physical-device/GPU, OS clipboard or native-hidden proof.
+[The release receipt](hosting-and-deployment.md#default-relief-and-direct-satellite-view-links)
+records actual deployment separately from documentation publication.
+
 ### Initial object-link acceptance
 
 The bounded share slice extends #12 without changing Share view. The accepted
