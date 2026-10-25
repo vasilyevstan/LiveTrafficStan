@@ -458,8 +458,12 @@ at most 24 hours, without fetching or prolonging cache life.
 curated/Starlink snapshots with exact NORAD owner/clock checks.
 `unifiedFind.ts` plans at most one compatible request per object class and
 stably ranks exact identities/names, then prefixes. Received exact identities
-win deduplication; source DTOs/clocks are never spliced. Compact native
-disclosures retain per-result provenance, with separate inline View/Go/Locate.
+win deduplication; source DTOs/clocks are never spliced. Plain result rows keep
+identity, inline View/Go/Locate and a short source/age label, without per-row
+disclosures or explanatory paragraphs. Native titles and semantic time
+attributes retain exact clocks; the shared Sources disclosure deduplicates
+full contributing credits. Success does not add a redundant navigation essay;
+busy, errors, missing reports and disabled reasons remain explicit.
 Country hints reuse synchronous MMSI/ICAO24 allocations; no locality lookup,
 registry-to-position inference, new entity field or acquisition is introduced.
 
