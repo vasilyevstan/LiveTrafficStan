@@ -1740,6 +1740,25 @@ geographic footprint uses the existing containment test; invalid globe
 geometry requires exact-ID native rendered-point visibility, not guessed
 whole-world counts.
 
+Version 1 optionally accepts `view: "from-here"` for orbital context only.
+The ready captured inspector reuses the same keyed Share control and body
+feedback; modeled ticks do not create new links. Placement/style/resize
+temporarily disables that same owner rather than unmounting it and losing its
+created link. No pose, attitude, look
+offset, playback or element data is serialized. The parser and creation
+receipt identity both preserve this discriminator; other kinds or arbitrary
+camera fields cannot use it.
+
+For that explicit viewer intent, the existing pending effect first confirms
+exact owner/id/designator and the authoritative current snapshot/clock through
+`acceptedPositionForCapture`. It then consumes the intent once and calls the
+existing explicit-ID capture operation. Ordinary viewport/display-filter
+checks remain on the ordinary-selection branch, not on this current-eye
+branch: the satellite can have moved far from the stored dated point.
+Existing session-only ORBITS activation, finite deadlines, manual-intent
+fences, controller acknowledgements, camera attachment, expiry and Return
+remain the owners. An unsupported pose retains truthful shared context.
+
 Layer/filter setters clear pending intent synchronously. Explicit orbital
 re-enable for the retained shared receipt alone creates one bounded attempt,
 without another resolve/navigation. Its deadline is the earlier of 30 seconds

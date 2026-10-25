@@ -9,9 +9,11 @@ interface Props {
   identityKey: string
   capture: () => ObjectShareContext
   now: number
+  viewFromHere?: boolean
+  disabled?: boolean
 }
 
-function ShareControl({ capture, now }: Props) {
+function ShareControl({ capture, now, viewFromHere = false, disabled = false }: Props) {
   const presentation = useContext(MobileInspectorContext)
   const feedbackTarget = useContext(DetailsPanelFeedbackContext)
   const inputId = useId()
@@ -27,7 +29,7 @@ function ShareControl({ capture, now }: Props) {
   const share = async () => {
     const cached = linkRef.current
     const monotonicNow = performance.now()
-    if (pendingRef.current ||
+    if (disabled || pendingRef.current ||
       (!cached || monotonicNow >= cached.deadline) && monotonicNow < cooldownRef.current) return
     const controller = new AbortController()
     pendingRef.current = controller
@@ -50,7 +52,7 @@ function ShareControl({ capture, now }: Props) {
       try {
         if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable')
         await navigator.clipboard.writeText(link.url)
-        if (!controller.signal.aborted) setFeedback('Object link copied. It lasts 24 hours from creation.')
+        if (!controller.signal.aborted) setFeedback(`${viewFromHere ? 'View' : 'Object'} link copied. It lasts 24 hours from creation.`)
       } catch {
         if (!controller.signal.aborted) setFeedback('Link ready. Select and copy it below.')
       }
@@ -71,10 +73,12 @@ function ShareControl({ capture, now }: Props) {
     }
   }
   const ready = displayLink && now < displayLink.expiresAt
-  const label = pending ? 'Creating link...' : ready ? 'Copy object link' : 'Share object'
+  const label = pending ? 'Creating link...' : ready
+    ? viewFromHere ? 'Copy view link' : 'Copy object link'
+    : viewFromHere ? 'Share view from here' : 'Share object'
   const feedbackContent = (feedback || displayLink) && <div className="object-share__feedback">
     {feedback && <p className="metadata-status" role="status">{feedback}</p>}
-    {displayLink && <label className="object-share__url" htmlFor={inputId}>Object link
+    {displayLink && <label className="object-share__url" htmlFor={inputId}>{viewFromHere ? 'View link' : 'Object link'}
       <input id={inputId} readOnly value={displayLink.url} onFocus={event => event.currentTarget.select()} />
     </label>}
   </div>
@@ -85,8 +89,10 @@ function ShareControl({ capture, now }: Props) {
         void share()
       }}
         aria-label={label} aria-busy={pending}
-        title={`${label}. Public identity and dated position; link lasts 24 hours.`}
-        disabled={pending || !ready && now < cooldownUntil}>
+        title={viewFromHere
+          ? `${label}. Opens this satellite's current modeled view; link lasts 24 hours.`
+          : `${label}. Public identity and dated position; link lasts 24 hours.`}
+        disabled={disabled || pending || !ready && now < cooldownUntil}>
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
           strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
           <path d="M12 16V3m-4 4 4-4 4 4M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7" />

@@ -3018,6 +3018,53 @@ This section preserves the initial release's actual behavior and evidence.
 The [#563 follow-up](#shared-orbital-entry-inspector-actions-and-earth-context-563)
 changes validated satellite-link activation; it does not rewrite these receipts.
 
+### Direct View from here links (#587)
+
+The optional orbital-only `view: "from-here"` discriminator reuses the version-1
+record, exact short-token root handoff, bounded Worker/SQLite handlers and
+one document-owned resolution. Deterministic cases cover both owners, strict
+field rejection, current/newer same-owner model matching, contradictory
+designator/owner/snapshot rejection, receipt mode preservation, unchanged
+24-hour storage/statistics, explicit creation and the collapsed-header action.
+Ordinary records remain unmarked and keep ordinary selection behavior.
+
+Native acceptance must distinguish actual entry from a successful resolve.
+Use the ready captured Share action and repeat Copy/fallback, follow the real
+root handoff, and measure automatic qualified capture, Return selection,
+saved-preference preservation and one map. Include a newer current position
+far outside the stored footprint, independently qualified bounded Starlink,
+Flat/unavailable fallback, finite matching and newer manual intent. Batch
+Light/Dark desktop and 315x517/390x568 header targets, overlap, body scrolling
+and map space. Local handler/SQLite fulfillment is not Cloudflare D1 transport,
+billing or public-service acceptance; a clipboard adapter is not OS clipboard
+proof. Reuse unchanged provider, PWA and native camera evidence.
+
+The October 25 local acceptance passes **213 suites / 2,543 tests**, lint,
+typecheck, all four mandatory data checks, the matched build and an enabled
+native-source Worker dry run with synthetic storage IDs. Two default-parallel
+attempts hit five-second limits in different unchanged tests; the final full
+run uses the existing `--maxWorkers=2` option with no weakened assertion or
+timeout. Initial JS is **596,851 Node-default-gzip bytes**, +306 / 0.0513%
+against the accepted menu/Relief base; CSS is 21,987 bytes, +80.
+
+The native Chrome 156 fixture receipt contains 14 bounded behavioral/layout
+cases, retaining three unchanged functional observations from the initial run.
+A six-layout geometry correction at **21:10:55 UTC** supersedes earlier map
+space measurements: the absolutely positioned mobile brand title must be
+included even when it extends beyond its parent's rectangle. Corrected
+Light/Dark overlay unions are **59.35% at 315x517** and **56.69% at 390x568**,
+with 160/175px useful expanded bodies, nonoverlapping 44px actions, one
+scroller/canvas and a hit-tested 120x120px map region. Theme/size transitions
+retain the created URL; final Copy makes no second create request. Temporary
+placement disables the same Share owner rather than unmounting it. These are
+actual-App/native-worker/real-basemap observations with controlled catalogs
+and local Worker-handler/SQLite fulfillment, not production transport,
+physical-device/GPU, OS clipboard or native-hidden acceptance. The held-model
+case demonstrates finite fallback and late-callback fencing, not that one
+particular timeout was the only contributing guard.
+
+### Initial object-link acceptance
+
 The bounded share slice extends #12 without changing Share view. The accepted
 local source passes lint/typecheck, all **209 suites / 2,380 tests**, four
 mandatory data checks, matched production-input build and the enabled Worker

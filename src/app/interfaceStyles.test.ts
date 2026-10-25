@@ -98,6 +98,16 @@ describe('interface presentation contracts', () => {
     expect(styles).not.toMatch(/#depths-layer-toggle[^{}]*\{[^}]*grid-column:/)
   })
 
+  it('reserves captured-title Share clearance without squeezing the playback and Return row', () => {
+    expect(styles).toMatch(/\.details-panel--orbital-view\.details-panel--action \.details-panel__heading\s*\{\s*padding-right: 0;/)
+    expect(styles).toMatch(/\.details-panel--orbital-view\.details-panel--action h2\s*\{\s*padding-right: 88px;/)
+    expect(styles).toMatch(/\.details-panel--orbital-view\.details-panel--action \.orbital-view-heading\s*\{\s*grid-template-rows: minmax\(40px, auto\) auto;/)
+    expect(styles).toMatch(/\.details-panel--orbital-view\.details-panel--action\[data-force-compact\] h2\s*\{\s*padding-right: 148px;/)
+    expect(styles).toMatch(/\.app-shell--mobile-workspace \.details-panel--orbital-view\.details-panel--action \.details-panel__heading\s*\{\s*padding-right: 12px;/)
+    expect(styles).toMatch(/\.app-shell--mobile-workspace \.details-panel--orbital-view\.details-panel--action h2\s*\{\s*padding-right: 128px;/)
+    expect(styles).toMatch(/\.app-shell--mobile-workspace \.details-panel--orbital-view\.details-panel--action \.details-panel__body\s*\{\s*max-height: max\(44px, calc\(var\(--mobile-body-height\) - 20px\)\);\s*padding-block: 0;/)
+  })
+
   it('shares one mobile surface budget and keeps the compact body noninteractive', () => {
     expect(styles).toMatch(/--mobile-body-height: max\(44px, min\(\s*clamp\(180px,[^;]*340px\)/)
     expect(styles).toMatch(/\.app-shell--mobile-workspace \.control-panel__more-body\s*\{[^}]*height: var\(--mobile-body-height\)/)

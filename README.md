@@ -185,7 +185,10 @@ identity are not renamed or reset.
   ORBITS for that session unless an explicit layer choice wins. Ordinary
   startup, saved preferences, filters and Home stay unchanged; no outside
   identifier lookup is added. Explicit orbital re-enable grants one finite
-  matching opportunity, not another resolution or camera move. Source
+  matching opportunity, not another resolution or camera move. The same arrow
+  in **View from here** creates a link that directly opens that satellite's
+  valid current modeled view. It does not replay the sender's time or look
+  direction; Auto projection and a qualifying current model are required. Source
   defaults remain off; production is enabled after actual protected
   storage and Free-account qualification. See [usage and bounds](docs/configuration.md#share-this-exact-object),
   [publication/privacy](docs/data-sources-and-licensing.md#public-object-links)
@@ -330,6 +333,9 @@ identity are not renamed or reset.
   Reduced-motion users start paused; geostationary objects may appear still.
   **Return**, X or canvas-owned Escape restores the previous map and retains
   the originating satellite selection when its owning model still qualifies.
+  The header's **Share view from here** arrow opens the same satellite's
+  current modeled viewpoint for a recipient, rather than ordinary map details.
+  Copy reuses the existing 24-hour link; no camera offsets or playback are saved.
   Newer navigation and automatic/error exits do not revive old selection;
   native fullscreen retains Escape precedence. A subdued night-side tint with
   a soft, outline-free transition provides approximate local Earth context in

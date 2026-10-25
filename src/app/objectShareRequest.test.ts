@@ -42,6 +42,30 @@ describe('bounded same-origin sharing transport', () => {
       .rejects.toThrow('could not be loaded or created')
   })
 
+  it('round-trips viewer intent through fixed bodies but rejects a receipt that silently drops it', async () => {
+    const orbital: ObjectShareContext = {
+      version: 1, kind: 'orbital', identifier: '12345', label: 'PUBLIC SATELLITE',
+      source: 'Space-Track.org / USSPACECOM', owner: 'curated', objectType: 'PAY',
+      internationalDesignator: '2026-001A',
+      snapshot: { sha256: 'a'.repeat(64), retrievedAt: now - 10_000, elementEpoch: now - 60_000 },
+    }
+    const view = { ...orbital, view: 'from-here' } as const
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(response({ ...receipt, context: view }, 201))
+    expect((await requestObjectShare('create', view, new AbortController().signal, fetchImpl)).context).toEqual(view)
+    expect(fetchImpl).toHaveBeenCalledWith('/api/share/create', expect.objectContaining({
+      body: JSON.stringify(view), credentials: 'omit', referrerPolicy: 'no-referrer', cache: 'no-store',
+    }))
+    await expect(requestObjectShare('create', view, new AbortController().signal,
+      vi.fn<typeof fetch>().mockResolvedValue(response({ ...receipt, context: orbital }, 201))))
+      .rejects.toThrow('could not be loaded or created')
+    const startupFetch = vi.fn<typeof fetch>().mockResolvedValue(response({ ...receipt, context: view }))
+    const startup = new ObjectShareStartup(token, startupFetch)
+    expect(await startup.result).toMatchObject({ receipt: { context: view } })
+    expect(startupFetch).toHaveBeenCalledOnce()
+    expect(startup.consume()).toBe(true)
+    expect(startup.consume()).toBe(false)
+  })
+
   it('distinguishes global opening limits, missing links and storage failures', async () => {
     for (const [status, message] of [[404, 'expired or is unavailable'], [429, 'daily shared-link opening limit'], [503, 'currently unavailable']] as const) {
       const operation = requestObjectShare('resolve', token, new AbortController().signal,

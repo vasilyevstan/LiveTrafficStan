@@ -1,4 +1,4 @@
-import { useId } from 'react'
+import { useId, type ReactNode } from 'react'
 import { DetailsPanel } from './DetailsPanel'
 import { formatAltitude } from '../domain/format'
 import { orbitalFeatureOwner, orbitalObjectTypeLabel, type ModeledOrbitalPosition } from '../domain/orbital'
@@ -17,11 +17,12 @@ interface Props {
   statusMessage?: string
   online: boolean
   units: UnitSystem
+  shareObject?: ReactNode
   onReturn: () => void
   onTogglePlaying: () => void
 }
 
-export function CapturedOrbitalDetails({ view, ready, localTrafficAvailable = false, groundTrafficSuppressed = false, playing, position: displayedPosition, notice, statusMessage, online, units, onReturn, onTogglePlaying }: Props) {
+export function CapturedOrbitalDetails({ view, ready, localTrafficAvailable = false, groundTrafficSuppressed = false, playing, position: displayedPosition, notice, statusMessage, online, units, shareObject, onReturn, onTogglePlaying }: Props) {
   const titleId = useId()
   const { snapshot } = view
   const position = displayedPosition ?? view.position
@@ -33,6 +34,7 @@ export function CapturedOrbitalDetails({ view, ready, localTrafficAvailable = fa
       className="details-panel--orbital-view"
       closeLabel="Return to map"
       onClose={onReturn}
+      headerAction={shareObject}
       heading={
         <div className="orbital-view-heading">
           <h2 id={titleId} title={`Modeled 3D view from ${position.name}`}>From {position.name}</h2>

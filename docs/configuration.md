@@ -1324,7 +1324,8 @@ A validated incoming satellite link is explicit session intent to enable
 ORBITS, including its existing bounded Starlink sample. It does not change
 ordinary no-token startup or save the override. An explicit orbital layer
 choice while resolution is pending wins; manual off remains off.
-Other hidden/filtered objects are not enabled or forced through filters.
+Ordinary object links do not enable other hidden layers or force a target
+through map filters.
 Layer/filter changes cancel the old automatic-selection intent. For this
 shared satellite only, explicitly enabling ORBITS creates one new opportunity
 of at most 30 seconds, bounded by the original link expiry, without resolving
@@ -1332,6 +1333,20 @@ again or navigating again. Passive updates never renew it.
 Manual navigation, another selection, HISTORY or capture also wins over an
 older link. Late geolocation can still update Home silently; Center remains
 the explicit way to visit Home. **Share view** remains a different action.
+
+The ready **View from here** inspector also has a Share arrow. Its link
+requests the same exact satellite's **current** qualified modeled view,
+including a newer matching snapshot from the same owner. It does not replay
+the sender's paused time, height, look offsets or camera. Opening it uses the
+existing one-shot resolution and at-most-30-second match window, then enters
+the existing viewer automatically. Reduced-motion users still start paused.
+An initial saved map filter or the satellite moving outside the dated point's
+footprint does not veto this explicit one-object viewpoint; saved filters are
+not changed. Newer user navigation, layer/filter choices or selection still
+cancel pending entry. Auto remains required: Flat, unavailable models and
+unsupported poses keep a brief explanation and usable shared context instead
+of changing projection or inventing a current eye. Return uses the ordinary
+viewer restoration and valid-origin-selection rules.
 
 `APP_CONFIG.objectSharing` reuses the browser/Worker constants in
 `src/config/objectShareConfig.ts`:
@@ -1351,8 +1366,9 @@ the explicit way to visit Home. **Share view** remains a different action.
 | Scheduled deletion batch | At most 200 expired links and 200 old aggregate rows per event |
 
 Framing uses unobstructed map space without shrinking the actual canvas or
-its 100 km traffic contract. Orbital framing is ordinary subpoint/world
-context, not View from here. If controls leave no fitting space, the app
+its 100 km traffic contract. An ordinary orbital link uses subpoint/world
+context; a marked viewer link subsequently enters the qualified current eye.
+If controls leave no fitting space, the app
 reports that limitation and keeps the map/context usable.
 
 Unknown/expired links, daily admission limits, transport failure and storage

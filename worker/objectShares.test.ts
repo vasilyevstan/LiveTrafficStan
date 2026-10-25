@@ -36,12 +36,38 @@ describe('bounded D1 object shares', () => {
       token, createdAt: now, expiresAt: now + config.lifetimeMs, serverNow: now,
       context: { position: { latitude: 59.437, longitude: 24.754, at: now - 5_000 } },
     })
+    expect(receipt.context).not.toHaveProperty('view')
     expect((await resolve(database)).status).toBe(200)
     expect(database.sqlite.prepare('SELECT created, resolved FROM object_share_days').get()).toEqual({ created: 1, resolved: 1 })
     expect(database.sqlite.prepare('SELECT kind, identifier, created, resolved FROM object_share_statistics').get())
       .toEqual({ kind: 'aircraft', identifier: 'abc123', created: 1, resolved: 1 })
     expect((await resolve(database, now + config.lifetimeMs)).status).toBe(404)
     expect(database.sqlite.prepare('SELECT resolved FROM object_share_days WHERE created = 1').get()).toEqual({ resolved: 1 })
+  })
+
+  it('stores an orbital-only viewpoint in the existing JSON payload with unchanged TTL and aggregate semantics', async () => {
+    const database = new ObjectShareTestDatabase()
+    const context = {
+      version: 1, kind: 'orbital', identifier: '12345', label: 'PUBLIC SATELLITE',
+      source: 'Space-Track.org / USSPACECOM', owner: 'curated', objectType: 'PAY',
+      internationalDesignator: '2026-001A', view: 'from-here',
+      snapshot: { sha256: 'a'.repeat(64), retrievedAt: now - 10_000, elementEpoch: now - 60_000 },
+      position: { latitude: 1.2345, longitude: 2.3456, at: now - 5_000 },
+    }
+    const created = await handleObjectShares(request(config.createPath, context),
+      { OBJECT_SHARES: database, OBJECT_SHARING_ENABLED: 'true' }, { now: () => now, token: () => token })
+    expect(created.status).toBe(201)
+    const receipt = await created.json()
+    expect(receipt).toMatchObject({
+      createdAt: now, expiresAt: now + config.lifetimeMs,
+      context: { ...context, position: { latitude: 1.234, longitude: 2.346, at: now - 5_000 } },
+    })
+    const resolved = await resolve(database)
+    expect(resolved.status).toBe(200)
+    expect(await resolved.json()).toEqual(receipt)
+    expect(database.sqlite.prepare('SELECT kind, identifier, created, resolved FROM object_share_statistics').get())
+      .toEqual({ kind: 'orbital', identifier: '12345', created: 1, resolved: 1 })
+    expect((await resolve(database, now + config.lifetimeMs)).status).toBe(404)
   })
 
   it('has a narrow uncached GET/HEAD redirect with no storage work and replaces appended fragments', () => {
@@ -103,6 +129,7 @@ describe('bounded D1 object shares', () => {
       request(config.createPath, context, { method: 'GET', body: undefined }),
       request(config.createPath, context, { headers: { 'Content-Type': 'application/json', Origin: 'https://other.example' } }),
       request(config.createPath, { ...context, home: { latitude: 59 } }),
+      request(config.createPath, { ...context, view: 'from-here' }),
       request(config.createPath, { ...context, label: 'x'.repeat(2_000) }),
       request(config.createPath, context, { headers: { 'Content-Type': 'text/plain' } }),
       request(config.resolvePath, { token: '../not-valid' }),

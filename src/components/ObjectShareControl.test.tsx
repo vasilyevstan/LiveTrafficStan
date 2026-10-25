@@ -18,4 +18,26 @@ describe('ObjectShareControl', () => {
     expect(html).not.toContain('journey-actions')
     expect(html).not.toContain('object-share__url')
   })
+
+  it('names a captured-view link without acquiring or creating anything during render', () => {
+    const capture = vi.fn()
+    const html = renderToStaticMarkup(
+      <ObjectShareControl identityKey="from-here:1" viewFromHere capture={capture} now={0} />,
+    )
+    expect(capture).not.toHaveBeenCalled()
+    expect(html).toContain('aria-label="Share view from here"')
+    expect(html).toContain('current modeled view; link lasts 24 hours.')
+    expect(html).not.toContain('>Share view from here</button>')
+    expect(html).not.toContain('object-share__url')
+  })
+
+  it('can retain its keyed owner while temporarily unavailable during captured placement', () => {
+    const capture = vi.fn()
+    const html = renderToStaticMarkup(
+      <ObjectShareControl identityKey="from-here:1" viewFromHere disabled capture={capture} now={0} />,
+    )
+    expect(html).toContain('aria-label="Share view from here"')
+    expect(html).toContain('disabled=""')
+    expect(capture).not.toHaveBeenCalled()
+  })
 })

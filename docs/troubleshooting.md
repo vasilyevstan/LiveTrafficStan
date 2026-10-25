@@ -420,6 +420,16 @@ move. Passive updates do not extend it. Other layer/filter changes and manual
 navigation cancel the old intent. Center still visits your separate session
 Home.
 
+A link made in **View from here** instead requests that exact satellite's
+current modeled viewpoint. It waits at most 30 seconds for the owning valid
+model; link validity does not extend model/element validity. A satellite moving
+away from the dated point or an initial saved display filter is not a veto.
+Flat is never silently changed: use Auto explicitly if desired. Unavailable
+models/unsupported poses leave brief dated context, not a made-up eye.
+Older installed shells or a checked rollback may reject this newer optional
+view intent; use normal **REFRESH APP**, not cleared preferences/history.
+Ordinary object links remain ordinary map links.
+
 Unknown or physically deleted links say **expired or unavailable**. A daily
 creation/opening limit, network timeout and storage outage have different
 messages. Wait for the displayed rate-limit deadline; do not repeatedly retry

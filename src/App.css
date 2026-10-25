@@ -1653,6 +1653,22 @@
   gap: 4px 8px;
 }
 
+.details-panel--orbital-view.details-panel--action .details-panel__heading {
+  padding-right: 0;
+}
+
+.details-panel--orbital-view.details-panel--action h2 {
+  padding-right: 88px;
+}
+
+.details-panel--orbital-view.details-panel--action .orbital-view-heading {
+  grid-template-rows: minmax(40px, auto) auto;
+}
+
+.details-panel--orbital-view.details-panel--action[data-force-compact] h2 {
+  padding-right: 148px;
+}
+
 .orbital-view-heading h2 {
   grid-column: 1 / -1;
 }
@@ -3180,6 +3196,14 @@
   padding-right: 140px;
 }
 
+.app-shell--mobile-workspace .details-panel--orbital-view.details-panel--action .details-panel__heading {
+  padding-right: 12px;
+}
+
+.app-shell--mobile-workspace .details-panel--orbital-view.details-panel--action h2 {
+  padding-right: 128px;
+}
+
 .app-shell--mobile-workspace .details-panel__identity {
   flex-wrap: wrap;
 }
@@ -3205,6 +3229,11 @@
 .app-shell--mobile-workspace .details-panel--orbital-view .details-panel__body {
   height: auto;
   max-height: var(--mobile-body-height);
+}
+
+.app-shell--mobile-workspace .details-panel--orbital-view.details-panel--action .details-panel__body {
+  max-height: max(44px, calc(var(--mobile-body-height) - 20px));
+  padding-block: 0;
 }
 
 .app-shell--mobile-workspace .details-panel__presentation {

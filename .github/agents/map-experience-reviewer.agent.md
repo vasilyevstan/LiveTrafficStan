@@ -187,6 +187,17 @@ Check these project invariants:
   proof; do not add a flat-subpoint substitute or re-review unchanged evidence.
 - Capture clears ordinary selection, so inspector-reset effects must not
   reopen the compact phone body. Keep time/height and 44px Return/X reachable.
+  Captured Share reuses the existing header action/body feedback; its top
+  controls cannot overlap Play/Pause/Return on narrow phones. Keep its keyed
+  request/Copy owner mounted through transient placement, disabling rather
+  than unmounting it during style/resize. Include the absolutely positioned
+  brand title, not only its short parent box, in phone overlay/map-space
+  measurements. A marked orbital
+  link must enter the exact owner's valid current eye once, not the sender's
+  dated subpoint or stored look. Initial map filters/footprint do not veto this
+  explicit viewer intent; later manual intent still wins. Preserve ordinary
+  links, saved preferences, Auto-only fallback, finite matching and Return
+  selection. Do not add another acquisition, capture or sharing owner.
   Fullscreen owns Escape first. Placement plus restoration failure must end
   capture with truthful recovery, clean input and fence late callbacks, not
   claim Returned or leave the owner stranded.
