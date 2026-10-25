@@ -106,7 +106,7 @@ describe('unified compact Find presentation boundaries', () => {
     const html = render({ mobile, curated: orbitalState, orbitalVisible: true })
     expect(html).toContain('1 match.')
     expect(html.match(/object-find-result__action/g)).toHaveLength(1)
-    expect(html).toContain('Sources &amp; search limits')
+    expect(html).toContain('<summary>Sources</summary>')
     expect(html).toContain('Go to satellite')
   })
   it('navigates with exact orbital identity and opaque origin, not a generic coordinate-only jump', () => {
@@ -255,11 +255,19 @@ describe('unified compact Find presentation boundaries', () => {
     })
     expect(html).toContain('6 matches.')
     expect(html.match(/class="object-find-result"/g)).toHaveLength(6)
-    expect(html).toContain('Finland · MMSI flag state')
-    expect(html).toContain('Netherlands · ICAO24 allocation')
+    expect(html).toContain('aria-label="MMSI flag state: Finland"')
+    expect(html).toContain('aria-label="ICAO24 allocation: Netherlands"')
     expect(html).toContain('🇫🇮')
     expect(html).toContain('Tallinn · EE')
     expect(html).toContain('TEST Place, Tallinn, Estonia')
+    expect(html).not.toContain('object-find-result__details')
+    expect(html).not.toContain('object-find-result__information')
+    expect(html).not.toContain('object-find-result__country')
+    expect(html).not.toMatch(/<li class="object-find-result">(?:(?!<\/li>)[\s\S])*<(?:details|summary|p)[ >]/)
+    expect(html).toContain('Report just now')
+    expect(html).toContain('OurAirports · static')
+    expect(html).toContain('Natural Earth · static')
+    expect(html).toContain('Modeled just now')
     expect(html).not.toMatch(/id="[^"]*(230123456|4840d6|100460)/)
     expect(fetchMock).not.toHaveBeenCalled()
   })
@@ -428,7 +436,7 @@ describe('explicit ship Locate row presentation', () => {
   })
   it('keeps Received identity-only and retains qualified aircraft last-report navigation', () => {
     const html = renderShips()
-    expect(html).toContain('no position lookup in Received')
+    expect(html).toContain('Identity only')
     expect(html).not.toContain('>Locate</button>')
     expect(resultActions).toHaveLength(0)
     const aircraft: DiscoveryMatch = {
@@ -491,8 +499,35 @@ describe('explicit ship Locate row presentation', () => {
     expect(html).toContain(new Date(now - 1_000).toISOString())
     expect(html).toContain('Complete original track credit')
     expect(html).toContain('Identity source credit')
-    expect(html).toContain('Last report, not live reception')
+    expect(html).toContain('Last report 5 sec ago')
+    expect(html).toContain(`dateTime="${new Date(now - 5_000).toISOString()}"`)
+    expect(html).not.toContain('<p>Position')
+    expect(html).not.toContain('search does not supply a position or city')
     expect(html).not.toContain('vessel:230123456')
+  })
+  it('keeps successful Locate compact with one source/age label and no expandable dossier', () => {
+    const located: DiscoveryMatch = {
+      ...ship, metadataReportedAt: null,
+      source: { name: 'Open Waters AIS', code: SHIP_POSITION_SOURCE, credit: 'Complete original track credit' },
+      location: { latitude: 59.44, longitude: 24.75, reportedAt: now - 60 * 60_000 },
+    }
+    const html = renderShips(locator({
+      key: ship.key,
+      state: {
+        phase: 'results', request: { objectClass: 'ships', by: 'position', query: '230123456' },
+        result: { ...result, retrievedAt: now - 1_000, matches: [located] },
+      },
+    }))
+    expect(html).toContain('Open Waters AIS · <time')
+    expect(html).toContain('Last report 1 hr ago')
+    expect(html).toContain(`Position retrieved ${new Date(now - 1_000).toISOString()}`)
+    expect(html).toContain('Complete original track credit')
+    expect(html.match(/>Locate<\/button>/g)).toHaveLength(2)
+    expect(html).not.toContain('<details')
+    expect(html).not.toContain('<summary')
+    expect(html).not.toContain('Centered on the reported position')
+    expect(html).not.toContain('<p>Metadata')
+    expect(html).not.toContain('<p>Retrieved')
   })
   it('keeps an explicit paused/navigation-disabled action disabled without requesting a position', () => {
     const html = renderShips(locator({ disabled: true }))

@@ -379,8 +379,10 @@ rate limits are not empty reports.
 
 A successful Locate frames a dated report, not a synthetic live ship. The
 normal enabled layers, filters, reception and observation expiry still decide
-whether a live marker/details appears. Open the result's name for original report
-time, retrieval time and full contributing credits. No filter or Home override
+whether a live marker/details appears. The compact source/age line uses the
+original report clock, not retrieval time. Exact clocks remain in native
+provenance tooltips; **Sources** retains full contributing credits. Result
+names no longer expand into explanatory dossiers. No filter or Home override
 occurs. If a newer action kept the map unchanged, Locate again deliberately;
 there is no following or automatic retry. If framing is unavailable, close a
 menu or enlarge the visible view; reports beyond 85 degrees latitude cannot use
@@ -392,7 +394,7 @@ Registry flags are MMSI flag state/ICAO24 allocation, not the object's current
 country or city. Ship search supplies no city; the app does not invent one.
 Search explicitly loads the existing airport/port assets once, leaving their
 markers off. ORBITS still needs explicit **Enable ORBITS** in Layers or
-**Sources & search limits**; Search never silently downloads/enables it.
+**Sources**; Search never silently downloads/enables it.
 Successful empty, truncated, invalid/unavailable and Busy/Retry-After states
 are different. Aircraft lookup shares viewport polling's persistent relay
 admission; wait for the displayed deadline and submit again if needed.

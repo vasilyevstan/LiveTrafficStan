@@ -257,6 +257,10 @@ Check these project invariants:
   explicit Search uses only compatible bounded sources and static demand,
   never automatic ORBITS or per-row positions. Keep flags as MMSI/ICAO24
   country context, not physical locality; source-qualified locality only.
+  Result rows are identities/actions, not expandable provenance dossiers:
+  keep one short source/age label, precise clocks in native titles/time
+  attributes, full credits in Sources, and explicit failures/disabled reasons.
+  Do not restore paragraph walls or a duplicated visible country line.
   Native checks must cover actual source starts, independent cancellation,
   partial errors, cooldown recovery and one scroll owner. Long full identities
   may need scrolling; the first action must remain reachable, not clipped

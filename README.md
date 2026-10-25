@@ -551,7 +551,9 @@ identity are not renamed or reset.
   with honest totals, partial coverage and independent errors.
   Full names, identifiers and bundled MMSI/ICAO24 country hints distinguish
   results; flags are registry/allocation context, not current location.
-  Open a result name for its source, original clocks and limitations.
+  Rows show just identity, action and a short source/report-age label, not an
+  expandable dossier. Exact clocks remain in native provenance tooltips and
+  time attributes; complete credits and the limits link stay under **Sources**.
   Ship search supplies no position or city: **Locate** explicitly requests
   one newest original-clock report within 24 hours. Aircraft **Locate**
   navigates only to a qualified last report, not a synthetic live selection.
@@ -559,7 +561,7 @@ identity are not renamed or reset.
   Existing map filters remain separately under **Layers -> Map filters**.
   Static and satellite **Go** opens existing details; mobile **Back** restores
   Find. ORBITS is never enabled by Search: explicitly **Enable ORBITS** in
-  **Sources & search limits** or Layers, then search its accepted name,
+  **Sources** or Layers, then search its accepted name,
   NORAD number or COSPAR ID locally. The curated catalog and bounded Starlink
   sample are not every satellite. Old/future elements retain disabled Go and
   a reason; a fresh retrieval never renews the unchanged 14-day element limit.

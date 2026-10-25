@@ -3455,39 +3455,12 @@
   overflow-wrap: anywhere;
 }
 
-.object-find-result__details {
-  grid-column: 1 / -1;
-  grid-row: 1 / 3;
+.object-find-result__identity {
+  grid-column: 1;
+  grid-row: 1;
   min-width: 0;
-}
-
-.object-find-result:has(.object-find-result__action) .object-find-result__details > summary {
-  padding-right: 76px;
-}
-
-.control-panel__more .object-find-result__details > summary {
-  display: block;
   min-height: 60px;
   padding-block: 10px;
-  list-style: none;
-  color: var(--heading-text);
-  background: transparent;
-  border-radius: 0;
-  cursor: pointer;
-}
-
-.control-panel__more .object-find-result__details > summary::after {
-  content: none;
-}
-
-.object-find-result__details > summary::-webkit-details-marker {
-  display: none;
-}
-
-.object-find-result__details > summary:focus-visible {
-  outline: 2px solid var(--button-hover-border);
-  outline-offset: -2px;
-  border-radius: 4px;
 }
 
 .object-find-result__name {
@@ -3504,28 +3477,13 @@
   font-weight: 650;
 }
 
-.object-find-result__chevron {
-  flex: 0 0 12px;
-  width: 12px;
-  height: 12px;
-  margin-left: auto;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.6;
-}
-
-.object-find-result__details[open] .object-find-result__chevron {
-  transform: rotate(180deg);
-}
-
 .object-find-flag {
   flex: 0 0 auto;
   font-size: 1rem;
   line-height: 1;
 }
 
-.object-find-result__context,
-.object-find-result__country {
+.object-find-result__context {
   display: block;
   margin-top: 2px;
   color: var(--subtle-text);
@@ -3533,19 +3491,16 @@
   line-height: 1.4;
 }
 
-.object-find-result__information {
-  padding-bottom: 10px;
-  color: var(--note-text);
-  font-size: 0.75rem;
-  line-height: 1.5;
-}
-
-.object-find-result__information p {
-  margin-block: 6px;
+.object-find-result__meta {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  padding-bottom: 8px;
+  color: var(--subtle-text);
+  font-size: 0.73rem;
+  line-height: 1.4;
 }
 
 .object-find-result__action {
-  z-index: 1;
   grid-column: 2;
   grid-row: 1;
   padding-block: 8px;
@@ -3564,11 +3519,6 @@
   color: var(--note-text);
   font-size: 0.75rem;
   line-height: 1.4;
-}
-
-.object-find-result__details > summary:hover .object-find-result__name {
-  text-decoration: underline;
-  text-underline-offset: 3px;
 }
 
 .control-panel__more .object-find .context-details > summary {

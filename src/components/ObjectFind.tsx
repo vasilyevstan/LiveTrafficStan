@@ -84,7 +84,7 @@ function orbitalPositionMessage(entry: OrbitalCatalogEntry, state: OrbitalContro
 }
 
 export function FindResultRow({
-  label, context, country, countryBasis, action, status, children,
+  label, context, country, countryBasis, action, status, meta,
 }: {
   label: string
   context: string
@@ -92,26 +92,22 @@ export function FindResultRow({
   countryBasis?: string
   action?: ReactNode
   status?: ReactNode
-  children: ReactNode
+  meta?: ReactNode
 }) {
   const flag = country && String.fromCodePoint(...[...country.iso2.toUpperCase()].map((letter) => 0x1f1e6 + letter.charCodeAt(0) - 65))
   return (
     <li className="object-find-result">
-      <details className="object-find-result__details">
-        <summary aria-label={`${label}: identity, source and age`}>
-          <span className="object-find-result__name">
-            {country && <span className="object-find-flag" aria-hidden="true" title={`${countryBasis ?? 'Country'}: ${country.name}`}>{flag}</span>}
-            <strong>{label}</strong>
-            <svg className="object-find-result__chevron" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="m6 9 6 6 6-6" />
-            </svg>
-          </span>
-          <span className="object-find-result__context">{context}</span>
-          {country && <span className="object-find-result__country">{country.name} · {countryBasis ?? 'country'}</span>}
-        </summary>
-        <div className="object-find-result__information">{children}</div>
-      </details>
+      <div className="object-find-result__identity">
+        <span className="object-find-result__name">
+          {country && <span className="object-find-flag" role="img"
+            aria-label={`${countryBasis ?? 'Country'}: ${country.name}`}
+            title={`${countryBasis ?? 'Country'}: ${country.name}`}>{flag}</span>}
+          <strong>{label}</strong>
+        </span>
+        <span className="object-find-result__context">{context}</span>
+      </div>
       {action && <div className="object-find-result__action">{action}</div>}
+      {meta && <small className="object-find-result__meta">{meta}</small>}
       {status && <span className="object-find-result__status" role="status">{status}</span>}
     </li>
   )
@@ -152,6 +148,16 @@ function IdentityRow({
     match.identifiers.callsign,
     match.identifiers.imo && `IMO ${match.identifiers.imo}`,
   ].filter(Boolean).join(' · ')
+  const location = located?.location ?? match.location
+  const source = located?.location ? located.source : match.source
+  const provenance = [
+    match.source.credit,
+    match.metadataReportedAt !== null && `Metadata reported ${new Date(match.metadataReportedAt).toISOString()}`,
+    `Identity retrieved ${new Date(result.retrievedAt).toISOString()}`,
+    located?.location && located.source.credit,
+    location && `Position reported ${new Date(location.reportedAt).toISOString()} · ${location.latitude.toFixed(3)}, ${location.longitude.toFixed(3)}`,
+    located?.location && shipLocate?.state.phase === 'results' && `Position retrieved ${new Date(shipLocate.state.result.retrievedAt).toISOString()}`,
+  ].filter(Boolean).join(' · ')
   return (
     <FindResultRow label={label} context={identifiers}
       country={ship ? flagStateForMmsi(Number(match.identifiers.mmsi)) : countryForAircraftHex(match.identifiers.icao24 ?? '')}
@@ -168,27 +174,11 @@ function IdentityRow({
           onNavigate({ latitude: match.location.latitude, longitude: match.location.longitude, label: `Last report: ${label}` })
         }}>Locate</ObjectResultButton>
       ) : undefined}
-      status={ownsLocate ? <>
-        {locating ? 'Checking the last 24 hours.' :
-          shipLocate.state.phase === 'error' ? shipLocate.state.message : shipLocate.message}
-        {located?.location && ` Last report ${formatAge(located.location.reportedAt, now)}.`}
-      </> : undefined}>
-      <p>{match.source.name}: {match.source.credit}</p>
-      <p>{match.metadataReportedAt
-        ? `Metadata reported ${new Date(match.metadataReportedAt).toISOString()}. Not a position time.`
-        : 'Metadata report time unavailable.'}</p>
-      <p>Retrieved {new Date(result.retrievedAt).toISOString()}.</p>
-      {match.location ? <p>Position reported {new Date(match.location.reportedAt).toISOString()} · {match.location.latitude.toFixed(3)}, {match.location.longitude.toFixed(3)}.
-        {!canNavigate && ' No qualified last-reported position available.'}</p> :
-        <p>{shipLocate ? 'Locate checks one last report; search does not supply a position or city.' :
-          ship ? 'Identity only; no position lookup in Received.' : 'No qualified last-reported position available.'}</p>}
-      {!supportedMmsi && ship && <p>Position lookup requires a supported nine-digit MMSI.</p>}
-      {located?.location && shipLocate?.state.phase === 'results' && <>
-        <p>Position reported {new Date(located.location.reportedAt).toISOString()}; retrieved {new Date(shipLocate.state.result.retrievedAt).toISOString()}.</p>
-        <p>{located.source.name} track: {located.source.credit}</p>
-        <p>Last report, not live reception or a guarantee that the ship is still there.</p>
-      </>}
-    </FindResultRow>
+      meta={<span title={provenance}>{source.name} · {location
+        ? <time dateTime={new Date(location.reportedAt).toISOString()} role={located?.location ? 'status' : undefined}>Last report {formatAge(location.reportedAt, now)}</time>
+        : 'Identity only'}</span>}
+      status={ship && !supportedMmsi ? 'Position lookup requires a supported nine-digit MMSI.' :
+        ownsLocate && !locating ? shipLocate.state.phase === 'error' ? shipLocate.state.message : shipLocate.message : undefined} />
   )
 }
 
@@ -363,7 +353,7 @@ export function ObjectFind(props: ObjectFindProps) {
       framingError = message
       if (locateOwnerRef.current === owner) setLocateMessage(message)
     })
-    setLocateMessage(framingError ?? (navigated ? 'Centered on the reported position.' :
+    setLocateMessage(framingError ?? (navigated ? undefined :
       'Report found; a newer action kept the map unchanged.'))
   }
   const shipLocate: ShipLocateResults = {
@@ -372,6 +362,7 @@ export function ObjectFind(props: ObjectFindProps) {
   }
   const rows: Result[] = []
   const receivedIds = new Set<string>()
+  const receivedCredits = new Set<string>()
   if (query) {
     for (const aircraft of orderAircraftSearchResults(props.aircraft, query)) {
       receivedIds.add(`aircraft:${aircraft.hex.toLowerCase()}`)
@@ -382,16 +373,15 @@ export function ObjectFind(props: ObjectFindProps) {
           country={countryForAircraftHex(aircraft.hex)} countryBasis="ICAO24 allocation"
           action={<ObjectResultButton prefix="object-find-result" disabled={navigationDisabled || !props.aircraftVisible}
             onSelect={(originId) => props.onAircraftSelect(aircraft.id, originId)}>View</ObjectResultButton>}
-          status={!props.aircraftVisible ? 'AIRCRAFT is off.' : undefined}>
-          <p>{aircraft.provider}. Position reported {new Date(aircraft.position.observedAt).toISOString()}.</p>
-          <p>{aircraft.position.latitude.toFixed(3)}, {aircraft.position.longitude.toFixed(3)} · {formatAge(aircraft.position.observedAt, now)}.</p>
-          {!props.aircraftVisible && <p>Enable AIRCRAFT to select this received object.</p>}
-        </FindResultRow>,
+          meta={<span>{aircraft.provider} · <time dateTime={new Date(aircraft.position.observedAt).toISOString()}
+            title={`Position reported ${new Date(aircraft.position.observedAt).toISOString()}`}>Report {formatAge(aircraft.position.observedAt, now)}</time></span>}
+          status={!props.aircraftVisible ? 'AIRCRAFT is off.' : undefined} />,
       })
     }
     const vessels = props.vessels.filter((vessel) => matchesVesselIdentitySearch(vessel, normalizeVesselSearchQuery(query)))
     for (const vessel of orderVesselSearchResults(vessels, query)) {
       receivedIds.add(`ships:${vessel.mmsi}`)
+      if (vessel.attribution) receivedCredits.add(vessel.attribution)
       const label = vesselResultLabel(vessel)
       const selectable = props.vesselsVisible && props.selectableVesselIds.has(vessel.id)
       rows.push({
@@ -400,11 +390,9 @@ export function ObjectFind(props: ObjectFindProps) {
           country={flagStateForMmsi(vessel.mmsi)} countryBasis="MMSI flag state"
           action={<ObjectResultButton prefix="object-find-result" disabled={navigationDisabled || !selectable}
             onSelect={(originId) => props.onVesselSelect(vessel.id, originId)}>View</ObjectResultButton>}
-          status={!selectable ? 'Hidden by SHIPS or map filters.' : undefined}>
-          <p>{vessel.provider}: {vessel.attribution ?? 'Received vessel report'}.</p>
-          <p>Position reported {new Date(vessel.position.observedAt).toISOString()} · {vessel.position.latitude.toFixed(3)}, {vessel.position.longitude.toFixed(3)} · {formatAge(vessel.position.observedAt, now)}.</p>
-          {!selectable && <p>Hidden by the SHIPS layer or map filters. Find does not change those preferences.</p>}
-        </FindResultRow>,
+          meta={<span title={vessel.attribution}>{vessel.provider} · <time dateTime={new Date(vessel.position.observedAt).toISOString()}
+            title={`Position reported ${new Date(vessel.position.observedAt).toISOString()}`}>Report {formatAge(vessel.position.observedAt, now)}</time></span>}
+          status={!selectable ? 'Hidden by SHIPS or map filters.' : undefined} />,
       })
     }
     for (const result of [
@@ -430,10 +418,8 @@ export function ObjectFind(props: ObjectFindProps) {
         content: <FindResultRow label={airport.name}
           context={['Airport', airport.ident, airport.iataCode, airport.municipality, airport.isoCountry].filter(Boolean).join(' · ')}
           action={<ObjectResultButton prefix="object-find-result" aria-label={`Go to airport ${airport.name}`} disabled={navigationDisabled}
-            onSelect={(originId) => setCatalogNavigationError(!props.onAirportNavigate(airport.id, originId))}>Go</ObjectResultButton>}>
-          <p>OurAirports · {props.airportSource?.licenseName ?? 'Public domain'} · snapshot {props.airportSource?.publishedAt ?? 'date unavailable'}.</p>
-          <p>Large and medium airports only; static location, not airport operations.</p>
-        </FindResultRow>,
+            onSelect={(originId) => setCatalogNavigationError(!props.onAirportNavigate(airport.id, originId))}>Go</ObjectResultButton>}
+          meta={<span title={`${props.airportSource?.licenseName ?? 'Public domain'} · Snapshot ${props.airportSource?.publishedAt ?? 'date unavailable'}`}>OurAirports · static</span>} />,
       })
     }
     for (const port of discoverPorts(props.ports, query)) {
@@ -441,10 +427,8 @@ export function ObjectFind(props: ObjectFindProps) {
         key: port.id, label: port.name, identities: [],
         content: <FindResultRow label={port.name} context="Port · generalized static location"
           action={<ObjectResultButton prefix="object-find-result" aria-label={`Go to port ${port.name}`} disabled={navigationDisabled}
-            onSelect={(originId) => setCatalogNavigationError(!props.onPortNavigate(port.id, originId))}>Go</ObjectResultButton>}>
-          <p>Natural Earth · {props.portSource?.licenseName ?? 'Public domain'} · snapshot {props.portSource?.publishedAt ?? 'date unavailable'}.</p>
-          <p>Generalized static location, not berth or navigation information.</p>
-        </FindResultRow>,
+            onSelect={(originId) => setCatalogNavigationError(!props.onPortNavigate(port.id, originId))}>Go</ObjectResultButton>}
+          meta={<span title={`${props.portSource?.licenseName ?? 'Public domain'} · Snapshot ${props.portSource?.publishedAt ?? 'date unavailable'}`}>Natural Earth · static</span>} />,
       })
     }
     for (const entry of discoverLoadedOrbits(orbitalCatalog.entries, query)) {
@@ -455,13 +439,11 @@ export function ObjectFind(props: ObjectFindProps) {
           action={<ObjectResultButton prefix="object-find-result" aria-label={`Go to satellite ${entry.record.name}`}
             disabled={navigationDisabled || !entry.position}
             onSelect={(originId) => setCatalogNavigationError(!props.onOrbitalNavigate(entry.id, originId))}>Go</ObjectResultButton>}
-          status={!entry.position ? orbitalPositionMessage(entry, entry.owner === 'starlink' ? props.starlink : props.curated, now, props.orbitalVisible) : undefined}>
-          <p>{orbitalPositionMessage(entry, entry.owner === 'starlink' ? props.starlink : props.curated, now, props.orbitalVisible)}</p>
-          <p>Element epoch {entry.record.epoch}. Retrieved {entry.snapshot.retrievedAt}.</p>
-          <p>Published {entry.snapshot.publishedAt}. {entry.owner === 'starlink' ? 'Bounded Starlink sample.' : 'Curated catalog.'}</p>
-          <p>{entry.snapshot.sourceProvider === 'space-track' ? 'Space-Track orbital elements; CelesTrak catalog reference.' : 'CelesTrak orbital elements.'} Modeled, not live tracking or optical visibility.</p>
-          <p>Not every satellite or the full Starlink constellation. Find does not change map filters.</p>
-        </FindResultRow>,
+          meta={<span title={`Element epoch ${entry.record.epoch} · Retrieved ${entry.snapshot.retrievedAt} · Published ${entry.snapshot.publishedAt} · ${entry.owner === 'starlink' ? 'Bounded Starlink sample' : 'Curated catalog'}`}>
+            {entry.snapshot.sourceProvider === 'space-track' ? 'Space-Track / CelesTrak' : 'CelesTrak'}
+            {entry.position && <> · <time dateTime={new Date(entry.position.modeledFor).toISOString()}>Modeled {formatAge(entry.position.modeledFor, now)}</time></>}
+          </span>}
+          status={!entry.position ? orbitalPositionMessage(entry, entry.owner === 'starlink' ? props.starlink : props.curated, now, props.orbitalVisible) : undefined} />,
       })
     }
     if (placeSearchState.phase === 'results') {
@@ -470,9 +452,7 @@ export function ObjectFind(props: ObjectFindProps) {
           key: `place:${place.id}`, label: place.label, identities: [],
           content: <FindResultRow label={place.label} context="Place · Photon / OpenStreetMap"
             action={<ObjectResultButton prefix="object-find-result" disabled={navigationDisabled}
-              onSelect={() => model.selectResult(place)}>Go</ObjectResultButton>}>
-            <p>Photon · © OpenStreetMap contributors. {place.center.latitude.toFixed(3)}, {place.center.longitude.toFixed(3)}.</p>
-          </FindResultRow>,
+              onSelect={() => model.selectResult(place)}>Go</ObjectResultButton>} />,
         })
       }
     }
@@ -494,6 +474,15 @@ export function ObjectFind(props: ObjectFindProps) {
   ].filter(Boolean)
   const partial = shipState.phase === 'results' && shipState.result.truncated ||
     aircraftState.phase === 'results' && aircraftState.result.truncated || Boolean(cachedShips?.result.truncated)
+  const lookupCredits = [...new Set([
+    ...receivedCredits,
+    ...[
+      ...(shipState.phase === 'results' ? shipState.result.matches : []),
+      ...(aircraftState.phase === 'results' ? aircraftState.result.matches : []),
+      ...(cachedShips?.loaded ? cachedShips.result.matches : []),
+      ...(locateState.phase === 'results' ? locateState.result.matches : []),
+    ].map((match) => match.source.credit),
+  ])]
   return (
     <div ref={contentRef} className="object-find" onFocusCapture={(event) => {
       if (event.target instanceof HTMLElement) lastFocusedRef.current = event.target
@@ -572,11 +561,12 @@ export function ObjectFind(props: ObjectFindProps) {
           setPage(paging.page + 1)
         }}>Next</button>
       </div>}
-      <details className="context-details object-find-sources"><summary>Sources &amp; search limits</summary>
-        <p>Typing searches received objects and loaded catalogs locally. Search submits text to Open Waters, a compatible exact aircraft lookup to ADSB.lol, and Photon for places. No Home or view coordinates are sent. Valid decimal coordinates navigate locally without a request.</p>
-        <p>Search loads the existing OurAirports and Natural Earth static catalogs once on demand; it never enables their markers.</p>
+      <details className="context-details object-find-sources"><summary>Sources</summary>
+        <p><a href="https://www.adsb.lol/docs/open-data/api/" target="_blank" rel="noreferrer">ADSB.lol · ODbL 1.0</a> · <a href="https://openwaters.io/api/ais/" target="_blank" rel="noreferrer">Open Waters AIS</a> · OurAirports / Natural Earth (public domain).</p>
+        {lookupCredits.length > 0 && <p>{lookupCredits.join(' · ')}</p>}
+        <p>Satellites: Space-Track / CelesTrak. Modeled, not live or optical.</p>
         {query && (!props.airportsReady || !props.portsReady) && <p>Some static catalogs are not yet available.{catalogLoading && ' Loading.'}</p>}
-        {orbitalCatalog.missing.length > 0 && <p>Some satellite catalogs are not loaded or usable. Search does not enable ORBITS or download orbital data.</p>}
+        {orbitalCatalog.missing.length > 0 && <p>Some satellite catalogs are not loaded or usable.</p>}
         {(!props.orbitalVisible || orbitalCatalog.entries.length === 0) && <button type="button" disabled={paused} onClick={props.onLoadOrbits}>
           {props.orbitalVisible ? 'Retry satellite catalogs' : 'Enable ORBITS'}
         </button>}
@@ -584,14 +574,7 @@ export function ObjectFind(props: ObjectFindProps) {
           if (props.airportsError) props.onLoadAirports()
           if (props.portsError) props.onLoadPorts()
         }}>Retry static catalogs</button>}
-        <p><a href="https://openwaters.io/api/ais/" target="_blank" rel="noreferrer">Open Waters AIS</a>: ship name prefixes or exact MMSIs, at most 50 source matches. Free exact IMO lookup is unavailable. Receiver-dependent identities, not a complete registry.</p>
-        <p>Locate separately checks one exact MMSI for its newest report in the last 24 hours. No report leaves the map unchanged. Search does not automatically fetch positions or reverse-geocode cities.</p>
-        <p>Flags show MMSI flag state or ICAO24 allocation, not current location. City and country labels are shown only when the source supplies them; they are not inferred from registry country.</p>
-        <p><a href="https://www.adsb.lol/docs/open-data/api/" target="_blank" rel="noreferrer">ADSB.lol · ODbL 1.0</a>: exact ICAO24, registration or callsign, not an aircraft-name directory. Six hexadecimal characters mean ICAO24; a hyphen or N-number means registration, otherwise a compatible identifier means callsign. For ambiguity, use callsign:, reg: or icao24: in the search text.</p>
-        <p>Lookup keeps existing cooldowns, shared admission and Retry-After; no automatic retry. Only original qualified report times permit last-report navigation.</p>
-        <p>Received Digitraffic metadata is bounded to the last 24 hours and remains identity-only. Exact identities are deduplicated without mixing sources or their clocks.</p>
-        <p>OurAirports: large/medium airports only, public domain. Natural Earth: generalized ports, public domain. Orbital data: Space-Track elements / CelesTrak references where available, modeled rather than live or optical, including only the published bounded Starlink sample.</p>
-        <p>Open a result name for its own source, identifiers and times. Provider attribution and source-use caveats still apply; no data-rights waiver is implied.</p>
+        <p><a href="https://github.com/vasilyevstan/LiveTrafficStan/blob/main/docs/configuration.md#scoped-object-discovery" target="_blank" rel="noreferrer">Coverage, search limits and privacy</a></p>
       </details>
     </div>
   )
