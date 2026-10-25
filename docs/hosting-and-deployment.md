@@ -216,8 +216,10 @@ The #518 receipt below remains historical evidence, not normal-view proof.
 ### Lightweight map-detail release boundary (#518)
 
 The automatic land-cover fills and close-zoom building extrusions reuse
-OpenFreeMap's existing vectors. The only added external contact is the explicit,
-off-on-reload RELIEF layer, using a fixed public Mapzen/AWS Terrarium path
+OpenFreeMap's existing vectors. At the initial #518 release, the only added
+external contact was the explicit, off-on-reload RELIEF layer. #585 changes
+that session default to on, including reload/Reset preferences; supported
+views may now contact the same source at startup. It uses a fixed public Mapzen/AWS Terrarium path
 already allowed narrowly by the browser CSP. No account, paid tier, new
 dependency, renderer, backend endpoint, binding, secret or producer is added.
 Source errors stay local to relief; aircraft, marine and orbital admission,

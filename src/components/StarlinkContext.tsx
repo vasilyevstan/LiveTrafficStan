@@ -216,13 +216,11 @@ export function StarlinkContext({
             {snapshot.sourceProvider === 'space-track' && (
               <p>
                 <a href="https://www.space-track.org/">Space-Track.org / USSPACECOM</a>{' '}
-                GP-reported public, undecayed Starlink payloads with element epochs
-                within the source query&apos;s ten-day window.
+                GP · public, undecayed Starlink payloads.
               </p>
             )}
             <p>
-              Not the full constellation. SGP4 modeled, not live telemetry,
-              optical visibility, or operational status.
+              SGP4 modeled, not live or optical. Operational status unknown.
             </p>
           </details>
 

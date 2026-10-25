@@ -183,8 +183,10 @@ service is added for these vector details.
   An actual public GET with Origin returned HTTP 200 and
   `Access-Control-Allow-Origin: *` on October 19, 2026.
 
-RELIEF is an explicit session-only opt-in in Layers, off on reload. The
-browser loads coarse 256 px Terrarium DEM tiles only for native hillshading,
+RELIEF is on by default, with a session-only off switch in Layers. Reload
+and Reset preferences restore on; there is no saved relief field.
+Supported views can therefore contact Mapzen/AWS at startup. The browser
+loads coarse 256 px Terrarium DEM tiles only for native hillshading,
 with a source maximum zoom of 7. Terrain geometry is not enabled, no numeric
 height/depth values are inferred from shading, and no navigation, optical
 accuracy or surveyed-building claim is made. It is separate from DEPTHS.

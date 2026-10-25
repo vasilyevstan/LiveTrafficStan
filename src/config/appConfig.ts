@@ -224,6 +224,7 @@ export const BASEMAP_DETAIL_CONFIG = {
   buildingsFullHeightZoom: 15.5,
   unknownBuildingHeightMeters: 5,
   maximumBuildingHeightMeters: 1_000,
+  reliefVisibleByDefault: true,
   reliefTileTemplate: 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png',
   reliefSourceMaximumZoom: 7,
   reliefMinimumZoom: 4,

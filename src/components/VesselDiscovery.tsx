@@ -23,7 +23,6 @@ import {
 import type { UnitSystem } from '../domain/units'
 import { APP_CONFIG } from '../config/appConfig'
 import { ObjectResultButton } from './ObjectResultButton'
-import { MULTI_SOURCE_MARINE_CAPABILITIES } from '../providers/marine/multiSourceCapabilities'
 
 interface VesselDiscoveryProps {
   compactFilters?: boolean
@@ -232,10 +231,9 @@ export function VesselDiscovery({
       <details className="context-details">
         <summary>Yacht rules &amp; coverage</summary>
       <p className="control-note control-note--muted">
-        Yachts: ≥8 m; reported-speed, maximum-length and normal freshness
-        rules apply.{' '}
+        Reported sailing/pleasure type required. Other filters still apply.{' '}
         {APP_CONFIG.marine.supplementEnabled
-          ? MULTI_SOURCE_MARINE_CAPABILITIES.discoveryNote
+          ? 'Class A/B reception varies; type or length may be missing.'
           : 'Digitraffic is Class A only; Class B coverage is incomplete.'}
       </p>
       </details>

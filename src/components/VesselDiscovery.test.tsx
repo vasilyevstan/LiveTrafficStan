@@ -1,5 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
+import { APP_CONFIG } from '../config/appConfig'
 import type { DisplayVessel } from '../domain/traffic'
 import {
   DEFAULT_VESSEL_FILTERS,
@@ -60,10 +61,14 @@ describe('VesselDiscovery', () => {
     expect(html).toContain('Non-yacht minimum length')
     expect(html).toContain('Maximum length (all vessels)')
     expect(html).toContain('Include non-yachts with unknown length')
-    expect(html).toContain('Yachts: ≥8 m; reported-speed, maximum-length')
-    expect(html).toContain('normal freshness rules apply')
+    expect(html).toContain('Yachts: known length ≥8 m. Speed filters still apply.')
+    expect(html).toContain('Reported sailing/pleasure type required. Other filters still apply.')
     expect(html).not.toContain('≥1 kn, ≤120 s')
-    expect(html).toContain('Class B coverage is incomplete')
+    expect(html).toContain(
+      APP_CONFIG.marine.supplementEnabled
+        ? 'Class A/B reception varies; type or length may be missing.'
+        : 'Class B coverage is incomplete',
+    )
     expect(html).toContain('RESET FILTERS')
   })
 

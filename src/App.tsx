@@ -54,6 +54,7 @@ import { CapturedOrbitalDetails } from './components/CapturedOrbitalDetails'
 import { formatOrbitalSummary } from './components/orbitalSummary'
 import {
   APP_CONFIG,
+  BASEMAP_DETAIL_CONFIG,
   ZOOM_TRAFFIC_CONTEXT_CONFIG,
   OBJECT_SHARE_CONFIG,
 } from './config/appConfig'
@@ -383,7 +384,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     setMapError(error)
   }, [clearLocalRuler, finishCapturedOrbitalView])
   const [bathymetryStatus, setBathymetryStatus] = useState<BathymetryStatus>(INITIAL_BATHYMETRY_STATUS)
-  const [reliefVisible, setReliefVisible] = useState(false)
+  const [reliefVisible, setReliefVisible] = useState<boolean>(BASEMAP_DETAIL_CONFIG.reliefVisibleByDefault)
   const [reliefStatus, setReliefStatus] = useState<BasemapReliefStatus>('off')
   const [viewportReport, setViewportReport] = useState<{
     assessment: ViewportAssessment
@@ -1603,7 +1604,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     orbitalVisibilityChangedRef.current = true
     setSharedOrbitsEnabled(false)
     resetPreferences()
-    setReliefVisible(false)
+    setReliefVisible(BASEMAP_DETAIL_CONFIG.reliefVisibleByDefault)
     setShareFeedback(undefined)
     const url = new URL(window.location.href)
     if (!url.hash) return

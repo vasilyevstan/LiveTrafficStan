@@ -338,8 +338,7 @@ export function OrbitalContext({
               {catalogPage.page + 1} of {catalogPage.pageCount}.
             </p>
             <p>
-              Text changes only this list. Exact type and source-group filters
-              also change local map and crossing eligibility.
+              Text filters this list; type/group also filter the map and passes.
             </p>
           </div>
 

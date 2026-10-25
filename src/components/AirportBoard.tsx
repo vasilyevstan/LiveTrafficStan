@@ -263,17 +263,15 @@ export function AirportBoardContent({
       <details className="airport-board__about">
         <summary>About this board</summary>
         <p className="airport-board__context" id="airport-board-filter-guidance">
-          Search only filters loaded flight numbers and airport names/codes:
-          origins for arrivals, destinations for departures. It makes no requests or quota charges.
-          No matching loaded flights does not mean a flight is cancelled or nonexistent.
+          Filter loaded flight numbers or airport names/codes. No extra requests.
+          No match does not mean cancelled.
         </p>
         <p className="airport-board__context" id="airport-board-reload-guidance">
-          Shared cache up to five minutes; at most 200 uncached boards per billing month,
-          before other charged work. No automatic refresh.
+          Shared five-minute cache and free allowance. No automatic refresh.
           {waiting && <> Refresh after {new Date(refreshAt).toISOString().slice(0, 16).replace('T', ' ')} UTC.</>}
         </p>
         <p className="airport-board__context">
-          Source update time is not supplied. Retrieval time describes when this app fetched the board.
+          Retrieval is not the source update time.
         </p>
         {snapshot && (
         <>
@@ -282,9 +280,9 @@ export function AirportBoardContent({
             <time dateTime={new Date(snapshot.requestedAt).toISOString()}>
               {new Date(snapshot.requestedAt).toISOString().slice(0, 16).replace('T', ' ')}
             </time>
-            {' '}UTC: the preceding hour and following five hours, relative to that request.
-            Times are airport-local, with UTC offsets. Revised times may be estimated or actual,
-            at the gate or runway. Codeshares may appear separately. No link to live map aircraft is inferred.
+            {' '}UTC · window -1h/+5h.
+            Airport-local times with UTC offsets; codeshares listed separately.
+            Revised times: estimated/actual, gate/runway.
           </p>
         </>
         )}
