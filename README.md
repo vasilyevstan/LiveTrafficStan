@@ -8,6 +8,13 @@ user accounts or a server-side vessel history archive.
 
 Public production: <https://trackstan.xyz>
 
+**Menu clarity correction (#594):** toggle echoes, routine success narration
+and normal-behavior explanations are removed, not hidden elsewhere.
+Controls, useful facts, actionable failures and required source/privacy/safety
+information remain. [Acceptance](docs/development-and-testing.md#necessary-menu-copy-594)
+and [delivery record](https://github.com/vasilyevstan/LiveTrafficStan/issues/594)
+distinguish this correction from the earlier two-line copy benchmark.
+
 **Default Relief and direct satellite views (#585/#587):** Relief now starts
 on, including reload and Reset preferences; off remains session-only.
 Menus keep short instructions, errors and necessary source/privacy credits
