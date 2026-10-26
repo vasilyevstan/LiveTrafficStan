@@ -404,7 +404,8 @@
   color: var(--status-warning);
 }
 
-.live-status--offline .live-status__mode {
+.live-status--offline .live-status__mode,
+.live-status--unavailable .live-status__mode {
   color: var(--status-error);
 }
 
@@ -417,6 +418,7 @@
 }
 
 .live-status--offline .live-status__dot,
+.live-status--unavailable .live-status__dot,
 .live-status--paused .live-status__dot,
 .live-status--history .live-status__dot {
   animation: none;
@@ -2440,6 +2442,12 @@
 }
 
 @container workspace (max-width: 760px) {
+  .control-panel__more-body .history-controls select,
+  .control-panel__more-body .playback-controls select,
+  .control-panel__more-body .vessel-discovery__checkbox {
+    min-height: 44px;
+  }
+
   .control-stack:has(.workspace-north, .workspace-fullscreen-exit, .workspace-fullscreen-status) {
     --workspace-orientation-note: 0px;
   }
@@ -3430,12 +3438,12 @@
 
 .object-find .location-search__input-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 44px;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 6px;
 }
 
 .object-find .location-search__input-row:has(.object-find-clear) {
-  grid-template-columns: minmax(0, 1fr) 44px 44px;
+  grid-template-columns: minmax(0, 1fr) 44px auto;
 }
 
 .object-find input[type='search']::-webkit-search-cancel-button {
@@ -3447,6 +3455,10 @@
   display: grid;
   place-items: center;
   padding: 0;
+}
+
+.object-find .location-search__input-row button[type='submit'] {
+  padding-inline: 10px;
 }
 
 .object-find-privacy {

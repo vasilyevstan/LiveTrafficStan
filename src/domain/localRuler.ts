@@ -85,7 +85,7 @@ export const formatLocalRulerDistance = (points: RulerPoints, units: UnitSystem)
 }
 
 export const rulerAvailabilityMessage = (availability: LocalRulerAvailability) =>
-  availability === 'unsupported' ? 'Use a local, level Flat view.'
+  availability === 'unsupported' ? 'Choose Flat, zoom in and remove map tilt.'
     : availability === 'updating' ? 'Map style is updating.'
       : availability === 'moving' ? 'Let the map settle to place a point.'
         : availability === 'obscured' ? 'Reveal the map center or close details.'

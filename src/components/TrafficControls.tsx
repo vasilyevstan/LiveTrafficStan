@@ -658,6 +658,10 @@ export function TrafficControls({
   const orbitalRetryAvailable =
     orbitalState.phase === 'unavailable' ||
     orbitalState.phase === 'clock-invalid'
+  const reliefStatusMessage = !reliefVisible ? undefined
+    : reliefStatus === 'unavailable' ? 'Relief unavailable. Toggle off/on to retry.'
+      : reliefStatus === 'unsupported' ? 'Relief unavailable with this map style.'
+        : undefined
   const orbitalStatusMessage = (() => {
     switch (orbitalState.phase) {
       case 'disabled':
@@ -775,6 +779,7 @@ export function TrafficControls({
 
   return (
     <>
+    <span id="map-action-shortcuts" hidden>Map focused: F Find, C Center.</span>
     <header className="brand-panel">
       {masthead}
     </header>
@@ -996,7 +1001,6 @@ export function TrafficControls({
               </div>
             </div>
           )}
-          <p className="workspace-panel-title">Explore map</p>
           <div
             className="control-panel__tasks"
             role="group"
@@ -1025,8 +1029,7 @@ export function TrafficControls({
             aria-labelledby="map-tools-task-layers"
             hidden={mapToolTask !== 'layers'}
           >
-            <fieldset className="control-group">
-              <legend>Layers</legend>
+            <fieldset className="control-group" aria-label="Layers">
               <div className="control-options control-options--two">
                 <button
                   type="button"
@@ -1077,7 +1080,7 @@ export function TrafficControls({
                   className={depthsVisible ? 'is-active' : undefined}
                   aria-pressed={depthsVisible}
                   aria-busy={depthsVisible && bathymetryStatus.imagery === 'loading'}
-                  aria-describedby="depths-layer-status"
+                  aria-describedby={depthsVisible ? 'depths-layer-status' : undefined}
                   onClick={() => onDepthsVisibleChange(!depthsVisible)}
                 >
                   DEPTHS
@@ -1087,83 +1090,48 @@ export function TrafficControls({
                   type="button"
                   className={reliefVisible ? 'is-active' : undefined}
                   aria-pressed={reliefVisible}
-                  aria-describedby="relief-layer-status"
+                  aria-describedby={reliefStatusMessage ? 'relief-layer-status' : undefined}
                   onClick={() => onReliefVisibleChange(!reliefVisible)}
                 >
                   RELIEF
                 </button>
               </div>
-              <div id="relief-layer-status" className="control-note" role="status">
-                <p>
-                  {!reliefVisible ? 'Relief off. No relief requests.'
-                    : reliefStatus === 'unavailable' ? 'Relief unavailable. Toggle off/on to retry.'
-                      : reliefStatus === 'unsupported' ? 'Relief unavailable with this map style.'
-                        : 'Relief on. Coarse land shading.'}
-                </p>
-                <details className="context-details">
-                  <summary>Map detail &amp; sources</summary>
-                  <p>
-                    OpenFreeMap land cover and buildings; heights are estimates.
-                  </p>
-                  <p>
-                    Relief starts on: land shading, not 3D terrain.
-                    Mapzen/AWS tile requests reveal the viewed area.
-                  </p>
-                  <p>
-                    <a href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md">
-                      Mapzen terrain contributors and licenses
-                    </a>
-                  </p>
-                </details>
+              <div id="relief-layer-status" role="status">
+                {reliefStatusMessage && <p className="control-note">{reliefStatusMessage}</p>}
               </div>
-              <div id="depths-layer-status" className="control-note" role="status">
+              <div id="depths-layer-status" className={depthsVisible ? 'control-note' : undefined} role="status">
                 {depthsVisible ? (
                   <>
                     <p>
-                      {bathymetryStatus.imagery === 'unavailable'
-                        ? 'No shading; not for navigation.'
-                        : bathymetryStatus.imagery === 'loading'
-                          ? 'Shading loading; not for navigation.'
-                          : bathymetryStatus.imagery === 'paused'
-                            ? 'Shading paused; not for navigation.'
-                            : 'Model depths; not for navigation.'}
+                      Modeled depths; not for navigation.
                     </p>
                     <p>
                       {bathymetryStatus.values.source === 'emodnet'
-                        ? 'EMODnet · m LAT'
+                        ? 'EMODnet · m below LAT'
                         : bathymetryStatus.values.source === 'gebco'
-                          ? 'GEBCO · m MSL*'
-                          : 'Metre labels'}
+                          ? 'GEBCO · m below nominal MSL'
+                          : 'Depth labels'}
                       {' · '}
                       {bathymetryStatus.values.phase === 'zoom-in'
                         ? 'zoom in.'
                         : bathymetryStatus.values.phase === 'loading'
                           ? 'loading.'
                           : bathymetryStatus.values.phase === 'empty'
-                            ? 'no cells.'
+                            ? 'no values.'
                             : bathymetryStatus.values.phase === 'unavailable'
                               ? 'unavailable.'
                               : bathymetryStatus.values.phase === 'paused'
                                 ? 'paused.'
                                 : `${bathymetryStatus.values.samples.length} values${bathymetryStatus.values.phase === 'partial' ? ' · partial' : ''}.`}
                     </p>
+                    {bathymetryStatus.imagery !== 'ready' && bathymetryStatus.imageryMessage && (
+                      <p>{bathymetryStatus.imageryMessage}</p>
+                    )}
+                    {['partial', 'unavailable'].includes(bathymetryStatus.values.phase) && (
+                      <p>{bathymetryStatus.values.message}</p>
+                    )}
                   </>
-                ) : (
-                  <p>Depths off. No depth requests.</p>
-                )}
-                <details className="context-details">
-                  <summary>Depth sources &amp; privacy</summary>
-                  {bathymetryStatus.imagery !== 'ready' && <p>{bathymetryStatus.imageryMessage}</p>}
-                  {bathymetryStatus.values.phase !== 'ready' && <p>{bathymetryStatus.values.message}</p>}
-                  <p>{depthSourceDescription(bathymetryStatus.values.source)}.</p>
-                  <p>
-                    Shading: EMODnet 2018 / GEBCO 2019. Newer grid numbers may differ.
-                  </p>
-                  <p>
-                    Not for navigation, tides or clearance.
-                    Requests reveal the map area to EMODnet and GEBCO.
-                  </p>
-                </details>
+                ) : null}
               </div>
               {portsVisible &&
                 portsError &&
@@ -1226,7 +1194,6 @@ export function TrafficControls({
                 onSelect={onAircraftSelect}
               />
               <VesselDiscovery
-                compactFilters
                 filters={vesselFilters}
                 vessels={vesselResults}
                 totalVessels={totalVessels}
@@ -1316,12 +1283,26 @@ export function TrafficControls({
               />
             )}
 
-            {!(
-              (airportsVisible && airportsReady) ||
-              (weatherVisible && weatherReady)
-            ) && (
+            {!airportsVisible && !weatherVisible && (
               <p className="control-note">
                 Enable AIRPORTS or METAR in Layers.
+              </p>
+            )}
+            {airportsVisible && !airportsReady && !airportsError && (
+              <p className="control-note" role="status">
+                {airportsLoading ? 'Loading airports.' : 'Waiting for airports.'}
+              </p>
+            )}
+            {airportsVisible && airportsError && operationalPromotedAction?.kind !== 'airports' &&
+              !(operationalPromotedAction?.kind === 'weather' && weatherRetryUsesAirports) && (
+              <div className="control-note ports-status" role="status">
+                <span>Airports unavailable: {airportsError}</span>
+                <button type="button" onClick={onRetryAirports}>RETRY AIRPORTS</button>
+              </div>
+            )}
+            {weatherVisible && !weatherReady && !weatherError && (
+              <p className="control-note" role="status">
+                {weatherStatusMessage ?? (weatherLoading ? 'Loading weather reports.' : 'Waiting for weather reports.')}
               </p>
             )}
           </section>
@@ -1338,7 +1319,6 @@ export function TrafficControls({
                 {orbitalRetryAvailable && (
                   <button
                     type="button"
-                    title="Check the cached catalog; provider updates run on schedule."
                     onClick={onRetryOrbital}
                   >
                     RECHECK ORBITS
@@ -1348,7 +1328,7 @@ export function TrafficControls({
             )}
 
             {!orbitalVisible && (
-              <p className="control-note">Enable ORBITS above.</p>
+              <p className="control-note">Turn on ORBITS in Layers.</p>
             )}
 
             <StarlinkContext
@@ -1396,19 +1376,17 @@ export function TrafficControls({
             aria-labelledby="map-tools-task-sources"
             hidden={mapToolTask !== 'sources'}
           >
-            <fieldset className="control-group">
-              <legend>Sources</legend>
+            <fieldset className="control-group" aria-label="Sources">
               <ul className="control-source-list">
                 <li>
                   Relief:{' '}
                   <a href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md">
                     Mapzen terrain contributors
-                  </a>. Land shading only.
+                  </a>.
                 </li>
                 <li>
                   Depths: <a href="https://emodnet.ec.europa.eu/en/bathymetry">EMODnet</a>
                   {' / '}<a href="https://www.gebco.net/">GEBCO</a>.
-                  {' '}Modeled metres, not soundings.
                 </li>
                 <li>
                   Aircraft: <a href="https://www.adsb.lol/">ADSB.lol</a>.
@@ -1431,7 +1409,7 @@ export function TrafficControls({
                 <li>
                   Airports:{' '}
                   <a href="https://ourairports.com/data/">OurAirports</a>{' '}
-                  · public domain · not operational.
+                  · public domain · static.
                 </li>
                 {APP_CONFIG.airportBoards.enabled && (
                   <li>
@@ -1439,7 +1417,6 @@ export function TrafficControls({
                     <a href={APP_CONFIG.airportBoards.sourceUrl} target="_blank" rel="noopener" referrerPolicy="origin">
                       AeroDataBox
                     </a>
-                    {' · '}on-demand; shared free allowance.
                   </li>
                 )}
                 <li>
@@ -1456,27 +1433,26 @@ export function TrafficControls({
                 </li>
                 <li>
                   Site statistics: <a href="https://www.cloudflare.com/web-analytics/">Cloudflare</a>.
-                  {' '}Cookie-free; trackstan.xyz only.
                 </li>
               </ul>
               <p className="control-note control-note--muted">
-                Relief and depth requests reveal the viewed map area.
+                Relief and depth requests reveal the viewed area to Mapzen/AWS, EMODnet and GEBCO.
               </p>
               <details className="context-details">
                 <summary>Data use &amp; model limits</summary>
+                <p className="control-note">Building heights are estimates.</p>
                 <p className="control-note">
                   Depth shading: EMODnet 2018 / GEBCO 2019. Numbers use newer grids.
                 </p>
                 <p className="control-note">
-                  Metres: EMODnet LAT; GEBCO nominal MSL, with coastal exceptions.
-                  Not for navigation.
+                  {depthSourceDescription('emodnet')}.
+                  {' '}{depthSourceDescription('gebco')}.
                 </p>
                 <p className="control-note">
-                  METAR: public domain unless marked otherwise.
-                  Observation and retrieval times are in details.
+                  METAR: U.S. public domain unless marked otherwise.
                 </p>
               <p className="control-note control-note--muted">
-                METAR requests send visible station IDs.
+                Browser location is rounded and not saved. METAR requests send visible station IDs.
                 {' '}<a href="https://github.com/vasilyevstan/LiveTrafficStan/blob/main/docs/data-sources-and-licensing.md">Full data credits &amp; privacy</a>.
               </p>
               </details>
@@ -1533,10 +1509,10 @@ export function TrafficControls({
         >
           {settingsPromotedAction && (
               <>
-                <span>
+               {settingsPromotedAction.kind !== 'app-update' && <span>
                   {settingsPromotedAction.label}:{' '}
                   {settingsPromotedAction.message}
-              </span>
+               </span>}
               <button
                 type="button"
                 disabled={settingsPromotedAction.disabled}
@@ -1593,7 +1569,6 @@ export function TrafficControls({
             aria-label="Location and settings"
             tabIndex={0}
           >
-            <p className="workspace-panel-title">View &amp; settings</p>
             <button
               ref={inViewEntryRef}
               id="in-view-settings-entry"
@@ -1610,7 +1585,7 @@ export function TrafficControls({
               <button type="button" onClick={openFind} aria-controls="map-tools-panel-find">
                 <OperationIcon name="find" /> Find objects or places
               </button>
-              <p className="control-note"><strong>Viewing:</strong> {activeLocationLabel}</p>
+              {activeLocationLabel !== 'Custom view' && <p className="control-note">{activeLocationLabel}</p>}
             </div>
             </div>
 
@@ -1667,17 +1642,9 @@ export function TrafficControls({
                   </button>
                 ))}
               </div>
-              <p className="control-note">
-                Auto globe changes smoothly with map zoom.
-              </p>
-              <p className="control-note">
-                Scale: approximate center distance; local, level Flat views only.
-              </p>
             </fieldset>
 
-            <fieldset className="control-group">
-              <legend>View</legend>
-              <p id="map-action-shortcuts" className="control-note">Map focused: F Find, C Center.</p>
+            <fieldset className="control-group" aria-label="View">
               <div className="control-options control-options--one">
                 {!fullscreen.active && (
                   <button
@@ -1714,14 +1681,15 @@ export function TrafficControls({
                 <>
                   <div className="control-options control-options--one">
                     <button id="measure-distance-button" type="button"
-                      disabled={!rulerAvailable} aria-describedby="ruler-view-status"
+                      disabled={!rulerAvailable}
+                      aria-describedby={rulerDistance || rulerMessage ? 'ruler-view-status' : undefined}
                       onClick={onStartRuler}
                     >MEASURE DISTANCE</button>
                   </div>
-                  <p id="ruler-view-status" className="control-note">
+                  {(rulerDistance || rulerMessage) && <p id="ruler-view-status" className="control-note">
                     {rulerDistance ? <>Approximate surface distance: <output>{rulerDistance}</output></>
-                      : rulerMessage ?? 'Two points; approximate distance, not a route.'}
-                  </p>
+                      : rulerMessage}
+                  </p>}
                   {rulerDistance && (
                     <div className="control-options control-options--one">
                       <button id="clear-distance-button" type="button" onClick={onClearRuler}>CLEAR MEASUREMENT</button>

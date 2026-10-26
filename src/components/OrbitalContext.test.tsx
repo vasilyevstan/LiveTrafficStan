@@ -105,8 +105,9 @@ describe('OrbitalContext', () => {
       },
     })
 
-    expect(html).toContain('8 SHOWN · 12 IN MAP · 3 PASSES ≤90M')
-    expect(html).toContain('462 catalog · 460 accepted')
+    expect(html).toContain('8 SHOWN · 12 IN MAP · 3 CROSSINGS ≤90M')
+    expect(html).not.toContain('Catalog accounting')
+    expect(html).not.toContain('462 catalog · 460 accepted')
     expect(html).toContain('in map now')
     expect(html).toContain(
       'Purpose: Crewed microgravity science laboratory',
@@ -174,10 +175,10 @@ describe('OrbitalContext', () => {
     )
 
     expect(html).toContain(
-      '246 matching modeled objects are hidden by this zoom tier',
+      '246 matching modeled objects are not shown at this zoom',
     )
     expect(html).toContain(
-      '1 matching selected exception is included in SHOWN despite the current zoom tier',
+      'Selected object is outside the zoom-level sample.',
     )
   })
 

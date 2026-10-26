@@ -250,7 +250,7 @@ describe('current orbital in-view population', () => {
     for (const curated of [refreshing, source([], 'offline'), source([], 'unavailable')]) {
       const result = model({ curated, starlink: source([], 'loading') })
       expect(result.available).toBe(false)
-      expect(result.message).toContain('not a confirmed empty view')
+      expect(result.message).toBe('Current modeled positions unavailable.')
     }
   })
 
@@ -270,7 +270,7 @@ describe('current orbital in-view population', () => {
       available: false,
       rows: [],
       shownCount: 0,
-      message: 'ORBITS is off. Enable it in the main controls.',
+      message: 'Turn on ORBITS in Layers.',
     })
     expect(model({ historyActive: true })).toMatchObject({
       available: false,
@@ -313,7 +313,7 @@ describe.each([
         .toBe(false)
     }
     expect(availability({ ...options, viewportEligible: false }).message)
-      .toContain('last-local samples are not live counts')
+      .toBe('Traffic paused. Zoom in or reduce tilt.')
   })
 
   it.each(['idle', 'loading', 'error'] as const)('distinguishes %s from a confirmed empty result', (phase) => {

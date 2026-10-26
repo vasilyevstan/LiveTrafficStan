@@ -9,7 +9,6 @@ import {
   VESSEL_NAVIGATION_LABELS,
   VESSEL_RESULT_LIMIT,
   VESSEL_SEARCH_MAX_LENGTH,
-  vesselFilterSummary,
   vesselReportedSpeedLabels,
   vesselResultContext,
   vesselResultLabel,
@@ -21,11 +20,9 @@ import {
   type VesselReportedSpeedFilter,
 } from '../domain/vesselFilters'
 import type { UnitSystem } from '../domain/units'
-import { APP_CONFIG } from '../config/appConfig'
 import { ObjectResultButton } from './ObjectResultButton'
 
 interface VesselDiscoveryProps {
-  compactFilters?: boolean
   filters: VesselFilterState
   vessels: readonly DisplayVessel[]
   totalVessels: number
@@ -40,7 +37,6 @@ const maximumLengthLabel = (value: VesselMaximumLength) =>
   value === null ? 'No maximum' : `${value} m`
 
 export function VesselDiscovery({
-  compactFilters = false,
   filters,
   vessels,
   totalVessels,
@@ -54,11 +50,11 @@ export function VesselDiscovery({
   const listedVessels = vessels.slice(0, VESSEL_RESULT_LIMIT)
   const status = vesselsVisible
     ? `${vessels.length} of ${totalVessels} ships shown`
-    : `${vessels.length} of ${totalVessels} ships match; SHIPS layer hidden`
+    : `${vessels.length} of ${totalVessels} ships match; turn on SHIPS to select`
 
   return (
     <fieldset className="control-group vessel-discovery">
-      <legend>Vessel discovery</legend>
+      <legend>Ships</legend>
 
       <label className="vessel-discovery__label" htmlFor="vessel-search">
         Name, callsign, MMSI, or IMO
@@ -86,8 +82,6 @@ export function VesselDiscovery({
         </button>
       </div>
 
-      <details className="vessel-discovery__filter-options" open={compactFilters ? undefined : true}>
-      <summary>Filters</summary>
       <div className="vessel-discovery__filters">
         <label>
           <span>Vessel type</span>
@@ -214,11 +208,9 @@ export function VesselDiscovery({
           <span>Include non-yachts with unknown length</span>
         </label>
       </div>
-      </details>
 
       <div className="vessel-discovery__summary">
-        <p role="status">{status}</p>
-        <p>{vesselFilterSummary(filters, units)}</p>
+        {totalVessels > 0 && <p role="status">{status}</p>}
         <button
           type="button"
           disabled={isDefaultVesselFilters(filters)}
@@ -227,16 +219,11 @@ export function VesselDiscovery({
           RESET FILTERS
         </button>
       </div>
-      <p className="control-note control-note--muted">Yachts: known length ≥8 m. Speed filters still apply.</p>
-      <details className="context-details">
-        <summary>Yacht rules &amp; coverage</summary>
-      <p className="control-note control-note--muted">
-        Reported sailing/pleasure type required. Other filters still apply.{' '}
-        {APP_CONFIG.marine.supplementEnabled
-          ? 'Class A/B reception varies; type or length may be missing.'
-          : 'Digitraffic is Class A only; Class B coverage is incomplete.'}
-      </p>
-      </details>
+      {(filters.category === 'all' || filters.category === 'other') && (
+        <p className="control-note control-note--muted">
+          Yachts: reported sailing/pleasure type and length ≥8 m.
+        </p>
+      )}
 
       {totalVessels === 0 && (
         <p className="control-note" role="status">
@@ -266,12 +253,7 @@ export function VesselDiscovery({
       )}
       {normalizedQuery && vessels.length > VESSEL_RESULT_LIMIT && (
         <p className="control-note control-note--muted">
-          First {VESSEL_RESULT_LIMIT} of {vessels.length}; all remain on map.
-        </p>
-      )}
-      {normalizedQuery && vessels.length > 0 && !vesselsVisible && (
-        <p className="control-note">
-          Show the SHIPS layer to select a matching vessel.
+          First {VESSEL_RESULT_LIMIT} of {vessels.length}.
         </p>
       )}
     </fieldset>

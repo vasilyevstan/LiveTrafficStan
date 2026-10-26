@@ -41,17 +41,15 @@ const formatLogicalBytes = (bytes: number) =>
 const persistenceLabel = (status: HistoryPersistenceStatus) => {
   switch (status.phase) {
     case 'initializing':
-      return 'Preparing private local history.'
+      return 'Loading saved history.'
     case 'disabled':
-      return 'Private local history is off.'
     case 'ready':
-      return 'Private local history is ready.'
     case 'writing':
-      return 'Saving provider observations locally.'
+      return undefined
     case 'blocked':
       return 'Local history storage is blocked.'
     case 'stale-tab':
-      return 'Another tab changed history. Retry to continue.'
+      return status.message ?? 'History changed in another tab.'
     case 'quota-exceeded':
       return 'Local history is full; recording paused.'
     case 'error':
@@ -131,9 +129,6 @@ export function HistoryControls({
             ))}
           </select>
         </label>
-        <p className="control-note control-note--muted">
-          Session observations only; no backfill.
-        </p>
       </fieldset>
 
       <fieldset className="control-group playback-controls">
@@ -159,7 +154,7 @@ export function HistoryControls({
         </div>
 
         <label>
-          <span>Maximum local retention</span>
+          <span>Keep saved history for</span>
           <select
             value={historySettings.retentionHours}
             onChange={(event) => {
@@ -176,13 +171,11 @@ export function HistoryControls({
           </select>
         </label>
 
-        <p className="control-note" role="status">
+        {statusLabel && !retryPromoted && <p className="control-note" role="status">
           {statusLabel}
-        </p>
+        </p>}
         <p className="control-note">
-          {historyStatus.recordCount} durable / {historyRecordCount} available
-          {' · '}
-          {formatLogicalBytes(historyStatus.logicalBytes)}
+          {historyRecordCount} observations available
         </p>
         {historyRange && (
           <p className="control-note control-note--muted">
@@ -203,29 +196,40 @@ export function HistoryControls({
           </button>
         )}
 
-        {playback.mode === 'live' && (
+        {playback.mode === 'live' && <>
           <button
             id="history-enter-button"
             type="button"
             className="history-action"
             disabled={!historyRange}
+            aria-describedby={!historyRange ? 'history-entry-status' : undefined}
             onClick={onEnterHistory}
           >
             ENTER HISTORY
           </button>
-        )}
+          {!historyRange && <p id="history-entry-status" className="control-note">
+            {historyStatus.phase === 'initializing' ? 'Loading saved observations.'
+              : ['blocked', 'stale-tab', 'error', 'deletion-failed'].includes(historyStatus.phase)
+                ? 'Restore local history to check saved observations.'
+                : historyStatus.phase === 'deletion-pending' ? 'Deleting saved observations.'
+                  : 'No recorded observations yet.'}
+          </p>}
+        </>}
 
         <p className="control-note control-note--muted">
           Private on-device records; no upload or sync.
         </p>
         <details className="context-details">
           <summary>Storage details</summary>
-          {historyStatus.message && historyStatus.message !== statusLabel && (
+          {!retryPromoted && historyStatus.message && historyStatus.message !== statusLabel && (
             <p className="control-note">{historyStatus.message}</p>
           )}
           <p className="control-note">
-            Local history: up to 60 min, origin-private, browser-evictable; no
-            export, sync, or backend.
+            Session buffer: up to 60 min. Saved history: up to {historySettings.retentionHours}{' '}
+            {historySettings.retentionHours === 1 ? 'hour' : 'hours'}. This browser may evict saved data.
+          </p>
+          <p className="control-note">
+            {historyStatus.recordCount} saved records · {formatLogicalBytes(historyStatus.logicalBytes)}
           </p>
         </details>
       </fieldset>

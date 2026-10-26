@@ -46,11 +46,11 @@ describe('AircraftDiscovery', () => {
   it('uses bounded native local-search controls and reports the current corpus', () => {
     const html = renderDiscovery()
 
-    expect(html).toContain('Aircraft discovery')
+    expect(html).toContain('<legend>Aircraft</legend>')
     expect(html).toContain('Callsign, registration, ICAO24, or type')
     expect(html).toContain(`maxLength="${AIRCRAFT_SEARCH_MAX_LENGTH}"`)
     expect(html).toContain('3 aircraft in view')
-    expect(html).toContain('Local to this view')
+    expect(html).not.toContain('Local to this view')
   })
 
   it('bounds result buttons and disables selection while AIRCRAFT is hidden', () => {
@@ -66,9 +66,9 @@ describe('AircraftDiscovery', () => {
     })
 
     expect((html.match(/<li>/g) ?? [])).toHaveLength(AIRCRAFT_RESULT_LIMIT)
-    expect(html).toContain('AIRCRAFT layer hidden')
+    expect(html).toContain('turn on AIRCRAFT to select')
     expect(html).toContain('disabled=""')
-    expect(html).toContain('Show the AIRCRAFT layer')
+    expect(html).not.toContain('all remain on map')
     expect(html).toMatch(/id="aircraft-discovery-result-[^"]+"/)
     expect(html).not.toContain('id="aircraft-discovery-result-aircraft:0"')
     expect(html).toContain(
@@ -88,5 +88,11 @@ describe('AircraftDiscovery', () => {
         totalAircraft: 4,
       }),
     ).toContain('No aircraft match the current search.')
+  })
+
+  it('does not add an empty count to an unavailable source message', () => {
+    const html = renderDiscovery({ aircraft: [], totalAircraft: 0, emptyMessage: 'Aircraft source unavailable.' })
+    expect(html).toContain('Aircraft source unavailable.')
+    expect(html).not.toContain('0 aircraft in view')
   })
 })

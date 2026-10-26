@@ -32,7 +32,7 @@ describe('HistoryControls', () => {
     expect(html).toContain('<option value="5">5 MIN</option>')
     expect(html).toContain('<option value="15" selected="">15 MIN</option>')
     expect(html).toContain('<option value="60">60 MIN</option>')
-    expect(html).toContain('Session observations only')
+    expect(html).not.toContain('Session observations only')
   })
 
   it('keeps hidden state explicit without disabling collection settings', () => {
@@ -88,7 +88,7 @@ describe('HistoryControls', () => {
     expect(html).not.toContain('ENTER HISTORY')
   })
 
-  it('suppresses a promoted persistence retry without hiding its status', () => {
+  it('does not repeat the promoted failure but explains disabled playback', () => {
     const html = renderToStaticMarkup(
       <HistoryControls
         {...baseProps}
@@ -102,7 +102,8 @@ describe('HistoryControls', () => {
       />,
     )
 
-    expect(html).toContain('History database unavailable')
+    expect(html).not.toContain('History database unavailable')
+    expect(html).toContain('Restore local history to check saved observations.')
     expect(html).not.toContain('RETRY LOCAL HISTORY')
   })
 
@@ -121,7 +122,7 @@ describe('HistoryControls', () => {
 
     expect(html.split(message)).toHaveLength(2)
     expect(html).toContain(`role="status">${message}`)
-    expect(html).toContain('0 durable / 0 available')
+    expect(html).toContain('0 observations available')
   })
 
   it('retains a distinct supplementary history message', () => {
@@ -137,7 +138,36 @@ describe('HistoryControls', () => {
       />,
     )
 
-    expect(html).toContain('Private local history is ready.')
+    expect(html).not.toContain('Private local history is ready.')
     expect(html.split(message)).toHaveLength(2)
   })
+
+  it.each(['disabled', 'ready', 'writing'] as const)('does not narrate ordinary %s history state', (phase) => {
+    const html = renderToStaticMarkup(
+      <HistoryControls {...baseProps} historyStatus={{ ...baseProps.historyStatus, phase }} />,
+    )
+    expect(html).not.toContain('Private local history is')
+    expect(html).not.toContain('Saving provider observations')
+    expect(html).toContain('Private on-device records; no upload or sync.')
+    expect(html).toContain('No recorded observations yet.')
+    expect(html).toMatch(/id="history-enter-button"[^>]*disabled=""[^>]*aria-describedby="history-entry-status"/)
+  })
+
+  it.each([1, 6, 24] as const)('distinguishes the session buffer from %s-hour saved retention', (retentionHours) => {
+    const html = renderToStaticMarkup(<HistoryControls {...baseProps}
+      historySettings={{ version: 1, enabled: true, retentionHours }} />)
+    expect(html).toContain(`Saved history: up to ${retentionHours} ${retentionHours === 1 ? 'hour' : 'hours'}.`)
+    expect(html).toContain('Session buffer: up to 60 min.')
+    expect(html).not.toContain('Local history: up to 60 min')
+    expect(html).toContain('This browser may evict saved data.')
+  })
+
+  it.each(['initializing', 'blocked', 'error', 'deletion-pending'] as const)(
+    'does not diagnose missing recordings while storage is %s', (phase) => {
+      const html = renderToStaticMarkup(<HistoryControls {...baseProps}
+        historyStatus={{ ...baseProps.historyStatus, phase }} />)
+      expect(html).not.toContain('No recorded observations yet.')
+      expect(html).toContain('id="history-entry-status"')
+    },
+  )
 })

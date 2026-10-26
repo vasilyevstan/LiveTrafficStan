@@ -88,8 +88,8 @@ const renderPanel = (
 describe('InViewPanel', () => {
   it('keeps count qualifications without a duplicate explanatory disclosure', () => {
     const html = renderPanel()
-    expect(html).toContain('Observed aircraft, not cluster or last-local samples.')
-    expect(html).toContain('Top 20 by reported size; draught is not water depth.')
+    expect(html).not.toContain('Observed aircraft, not cluster or last-local samples.')
+    expect(html).toContain('Draught is not water depth.')
     expect(html).toContain('Modeled, not live or optical. Includes a Starlink sample.')
     expect(html).not.toContain('How this list works')
   })
@@ -106,14 +106,14 @@ describe('InViewPanel', () => {
 
   it('bounds each page to twenty individual results while retaining the full count', () => {
     const html = renderPanel()
-    expect(html).toContain('45 individual aircraft in view')
+    expect(html).toContain('45 aircraft in view')
     expect(html.match(/id="in-view-aircraft-result-/g)).toHaveLength(20)
     expect(html).toContain('1–20 of 45')
     expect(html).toContain('>Previous</button>')
     expect(html).toContain('>Next</button>')
     expect(html).toContain('TEST 20')
     expect(html).not.toContain('TEST 21')
-    expect(html).toContain('not cluster or last-local samples')
+    expect(html).not.toContain('not cluster or last-local samples')
   })
 
   it('keeps categories accessible and inactive content hidden with local search limits', () => {
@@ -142,8 +142,8 @@ describe('InViewPanel', () => {
     expect(html).toContain('>Deepest draught</button>')
     expect(html).toContain('aria-label="Ranked ships in view"')
     expect(html).not.toContain('id="in-view-ships-search"')
-    expect(html).toContain('Top 20 by reported size')
-    expect(html).toContain('draught is not water depth')
+    expect(html).not.toContain('Top 20 by reported size')
+    expect(html).toContain('Draught is not water depth')
   })
 
   it('shows reported measurements and missing-value exclusions without guessing', () => {
@@ -154,7 +154,8 @@ describe('InViewPanel', () => {
     const html = renderPanel({ vessels })
     expect(html).toContain('1 of 1 ranked · 2 in view')
     expect(html).toContain('Draught not reported')
-    expect(html).toContain('1 without reported length; omitted, not zero.')
+    expect(html).toContain('1 without reported length.')
+    expect(html).not.toContain('omitted, not zero')
     expect(html.match(/id="in-view-ships-result-/g)).toHaveLength(1)
   })
 
@@ -195,7 +196,8 @@ describe('InViewPanel', () => {
 
   it('labels selected ships outside the shortlist without promoting them into the ranking', () => {
     const html = renderPanel({ selectedVesselId: vesselObservations[0].id })
-    expect(html).toContain('Selected outside this shortlist: VESSEL 1. Not added to the ranking.')
+    expect(html).toContain('Selected outside this shortlist: VESSEL 1.')
+    expect(html).not.toContain('Not added to the ranking.')
     expect(html.match(/id="in-view-ships-result-/g)).toHaveLength(20)
     expect(html).not.toContain('id="in-view-ships-result-vessel:257000001"')
   })
@@ -210,7 +212,7 @@ describe('InViewPanel', () => {
         message: 'Offline · last received, unexpired observations only.',
       },
     })
-    expect(html).toContain('45 individual aircraft in view · layer hidden')
+    expect(html).toContain('45 aircraft in view · layer hidden')
     expect(html).toContain('Offline')
     expect(html).toMatch(/id="in-view-aircraft-result-[^"]+"[^>]*disabled=""/)
     expect(onAircraftSelect).not.toHaveBeenCalled()
@@ -224,7 +226,7 @@ describe('InViewPanel', () => {
       },
     })
     expect(html).toContain('Return to Live')
-    expect(html).not.toContain('individual aircraft in view')
+    expect(html).not.toMatch(/\d+ aircraft in view/)
     expect(html).not.toContain('in-view-aircraft-result-')
     expect(html).not.toContain('No unexpired aircraft')
   })
@@ -240,7 +242,7 @@ describe('InViewPanel', () => {
     }
     const aircraft = displayTraffic([stale, expired], now, APP_CONFIG.aircraft)
     const html = renderPanel({ aircraft, totalAircraft: aircraft.length })
-    expect(html).toContain('1 individual aircraft in view')
+    expect(html).toContain('1 aircraft in view')
     expect(html).toContain('STALE')
     expect(html).not.toContain('TEST 2')
   })
@@ -274,7 +276,7 @@ describe('InViewPanel', () => {
         rows: [{ position, shown: false }],
         shownCount: 0,
         partial: true,
-        sourceMessages: ['Starlink sample: unavailable. Use More for source details and retry.'],
+        sourceMessages: ['Starlink sample: unavailable. Open Orbits in Layers to retry.'],
         selectedOutside: {
           position: { ...position, name: 'OUTSIDE', id: 'orbital:99999' },
           reason: 'view',
@@ -284,7 +286,8 @@ describe('InViewPanel', () => {
     expect(html).toContain('0 shown of 1 modeled in view · partial')
     expect(html).toContain('Starlink sample: unavailable')
     expect(html).toContain('Not shown at this zoom')
-    expect(html).toContain('Selected outside this view: OUTSIDE. Not added to these totals.')
+    expect(html).toContain('Selected outside this view: OUTSIDE.')
+    expect(html).not.toContain('Not added to these totals.')
     expect(html.match(/id="in-view-orbits-result-/g)).toHaveLength(1)
   })
 })

@@ -2490,6 +2490,8 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
           rulerMessage={capturedOrbitalView ? 'Distance ruler is unavailable in a captured view.'
             : historyActive ? 'Distance ruler is unavailable in HISTORY.'
             : mapError ? 'Distance ruler is unavailable while the map recovers.'
+              : rulerAvailability === 'unsupported' && projectionPreference === 'flat'
+                ? 'Zoom in or remove map tilt.'
               : rulerAvailabilityMessage(rulerAvailability)}
           rulerDistance={localRuler.phase === 'retained' ? rulerDistance : undefined}
           onStartRuler={startLocalRuler}
@@ -2570,7 +2572,6 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
                 marineCapabilities={marineResult.capabilities}
                 now={now}
                 online={online}
-                orbitalSummary={capturedOrbitalView ? undefined : orbitalSummary}
                 trafficContext={hasTrafficContext}
                 historicalAt={
                   history.playback.mode === 'live'
@@ -2707,7 +2708,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
           onResetNorth={handleResetNorth}
           locationAvailable={location.canRequest}
           locationLoading={location.locating}
-          locationMessage={location.message}
+          locationMessage={location.phase === 'error' ? location.message : undefined}
           onUseLocation={handleUseLocation}
           themePreference={themePreference}
           onThemePreferenceChange={setThemePreference}
@@ -2718,10 +2719,10 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
           onShare={handleShare}
           onResetPreferences={handleResetPreferences}
           preferenceStatus={
-            shareFeedback?.message ?? preferenceStatus?.message
+            shareFeedback?.message ?? (preferenceStatus?.kind === 'error' ? preferenceStatus.message : undefined)
           }
           manualShareUrl={shareFeedback?.manualUrl}
-          appShellStatus={appShell.message}
+          appShellStatus={['error', 'unsupported', 'retiring'].includes(appShell.phase) ? appShell.message : undefined}
           appUpdateAvailable={appShell.updateAvailable}
           appUpdateActivating={appShell.phase === 'activating'}
           onRefreshApp={appShell.activateUpdate}

@@ -195,6 +195,11 @@ describe('interface presentation contracts', () => {
     expect(styles).toMatch(/\.close-button\s*\{\s*min-height: 44px;/)
   })
 
+  it('keeps edited mobile history selects and the flattened vessel checkbox at 44px', () => {
+    const mobile = styles.split('@container workspace (max-width: 760px) {')[1]
+    expect(mobile).toMatch(/\.control-panel__more-body \.history-controls select,\s*\.control-panel__more-body \.playback-controls select,\s*\.control-panel__more-body \.vessel-discovery__checkbox\s*\{\s*min-height: 44px;/)
+  })
+
   it('wraps magnified dock actions and bounds credits independently of the layout viewport', () => {
     expect(styles).toContain('@container workspace (max-width: 280px)')
     expect(styles).toContain('--mobile-dock-height: 116px')

@@ -65,9 +65,19 @@ credentials and the private-relay secret. Observability remains disabled and
 no paid fallback is enabled. Orbital activation uses the included free KV and
 SQLite Durable Object allocations; R2 is not used.
 
+### Necessary menu copy (#594)
+
+The menu-only correction preserves the enabled production inputs, sharing/D1
+identity, exact-main checks, atomic protected secrets and serialized workflow.
+It adds no service, provider, dependency or saved-data migration. Its
+[#594 delivery record](https://github.com/vasilyevstan/LiveTrafficStan/issues/594)
+tracks the exact source, running application/Worker, actual public acceptance
+and corresponding Wiki publication. The #585/#587 receipt below remains
+historical/rollback evidence, not proof that unnecessary copy was removed.
+
 ### Default Relief and direct satellite-view links
 
-The combined #585/#587 release runs application
+The combined #585/#587 release published application
 **`05599569de5280082798835370fa66fe5489fc05`**, Worker
 **`67209a87-2271-49e1-a444-d8b05fe76fa9`**, published on **2026-10-25 at
 21:29:55 UTC** by successful serialized

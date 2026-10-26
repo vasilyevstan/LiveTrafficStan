@@ -13,7 +13,6 @@ interface LiveStatusProps {
   now: number
   online: boolean
   historicalAt?: number
-  orbitalSummary?: string
   trafficContext?: boolean
   scopeLabel?: string
 }
@@ -42,7 +41,6 @@ export function LiveStatus({
   now,
   online,
   historicalAt,
-  orbitalSummary,
   trafficContext = false,
   scopeLabel,
 }: LiveStatusProps) {
@@ -64,7 +62,7 @@ export function LiveStatus({
           : liveCount === 1 && errorCount === 1
             ? 'PARTIAL'
             : errorCount === 2
-              ? 'OFFLINE'
+              ? 'UNAVAILABLE'
               : 'CONNECTING'
   const latestUpdate = Math.max(
     aircraftStatus.lastDataAt ?? 0,
@@ -167,14 +165,6 @@ export function LiveStatus({
               </details>
             )}
           </div>
-          {orbitalSummary && (
-            <span
-              className="live-status__orbital"
-              aria-hidden="true"
-            >
-              {orbitalSummary}
-            </span>
-          )}
           <span>{marineCapabilities.coverage.kind === 'global-best-effort'
             ? 'Best-effort receiver coverage.'
             : 'Regional receiver coverage.'}</span>
@@ -188,12 +178,6 @@ export function LiveStatus({
               credited on each ship identify the data actually used.
             </span>
           )}
-          <span>
-            Photos: <a href="https://www.planespotters.net/photo/api" target="_blank" rel="noreferrer">Planespotters</a>
-            {' · '}<a href="https://openwaters.io/ais/" target="_blank" rel="noreferrer">Open Waters</a>
-            {' / '}<a href="https://commons.wikimedia.org/" target="_blank" rel="noreferrer">Wikimedia Commons</a>.
-            Each image carries its own artist and licence.
-          </span>
           <span className="live-status__credits">
             ADSB.lol: <a href="https://opendatacommons.org/licenses/odbl/1-0/" target="_blank" rel="noreferrer">ODbL 1.0</a>.
             {' '}Source: Fintraffic / digitraffic.fi, license{' '}
@@ -213,15 +197,6 @@ export function LiveStatus({
               {' '}<a href="https://openwaters.io/ais/#license" target="_blank" rel="noreferrer">Original-source terms</a>.
             </span>
           )}
-          <span className="live-status__credits">
-            Airport context: <a href="https://ourairports.com/data/" target="_blank" rel="noreferrer">OurAirports</a>.
-            {' '}Generalized ports: <a href="https://www.naturalearthdata.com/about/terms-of-use/" target="_blank" rel="noreferrer">Natural Earth</a>.
-            {' '}Both are public domain. Weather observations:{' '}
-            <a href="https://aviationweather.gov/data/api/" target="_blank" rel="noreferrer">NOAA/NWS Aviation Weather Center</a>
-            {' '}(U.S. public domain unless marked otherwise).
-            {' '}Modeled orbits: <a href="https://celestrak.org/" target="_blank" rel="noreferrer">CelesTrak</a>
-            {' · '}<a href="https://www.space-track.org/" target="_blank" rel="noreferrer">Space-Track.org / USSPACECOM</a>, not live telemetry.
-          </span>
           </details>
         </div>
       </details>
