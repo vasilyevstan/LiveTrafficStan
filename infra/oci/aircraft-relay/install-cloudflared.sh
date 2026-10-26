@@ -2,8 +2,8 @@
 
 set -euo pipefail
 
-readonly CLOUDFLARED_VERSION='2026.9.3'
-readonly CLOUDFLARED_SHA256='58b3221b6a22d23825cb5a0b347600db39e24e5a5e97afa6e0ae67c34ef235ef'
+readonly CLOUDFLARED_VERSION='2026.10.4'
+readonly CLOUDFLARED_SHA256='173965b09f7268b476a8e110dc68e02377f6622a10e19a3f16631bc8d6b4a6ee'
 readonly CLOUDFLARED_RPM_URL='https://pkg.cloudflare.com/cloudflared/rpm/x86_64/cloudflared-linux-x86_64.rpm'
 readonly TOKEN_FILE='/etc/livetrafficstan-cloudflared-token'
 readonly SERVICE_NAME='livetrafficstan-cloudflared.service'
