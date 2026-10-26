@@ -19,11 +19,7 @@ import {
   discoverOrbitalCatalog,
 } from '../domain/orbitalDiscovery'
 import type { DisplayAircraft, DisplayVessel } from '../domain/traffic'
-import {
-  VESSEL_RESULT_LIMIT,
-  vesselResultContext,
-  vesselResultLabel,
-} from '../domain/vesselFilters'
+import { vesselResultContext, vesselResultLabel } from '../domain/vesselFilters'
 
 interface InViewPanelProps {
   unavailableMessage?: string
@@ -292,7 +288,7 @@ export function InViewPanel({
             <div className="in-view__status" role="status">
               {availability.available && (
                 <p>{isAircraft
-                  ? `${total} individual aircraft in view${aircraftVisible ? '' : ' · layer hidden'}`
+                  ? `${total} aircraft in view${aircraftVisible ? '' : ' · layer hidden'}`
                   : isShips
                     ? `${rankedVessels.rows.length} of ${rankedVessels.rankableCount} ranked · ${total} in view${vesselsVisible ? '' : ' · layer hidden'}`
                     : `${orbits.shownCount} shown of ${total} modeled in view${orbits.partial ? ' · partial' : ''}`}</p>
@@ -368,22 +364,21 @@ export function InViewPanel({
             )}
             {isShips && availability.available && rankedVessels.unrankedCount > 0 && (
               <p className="control-note">
-                {rankedVessels.unrankedCount} without reported {vesselRanking}; omitted, not zero.
+                {rankedVessels.unrankedCount} without reported {vesselRanking}.
               </p>
             )}
-            <p className="control-note control-note--muted">
-              {isAircraft ? 'Observed aircraft, not cluster or last-local samples.'
-                : isShips ? `Top ${VESSEL_RESULT_LIMIT} by reported size; draught is not water depth.`
-                  : 'Modeled, not live or optical. Includes a Starlink sample.'}
-            </p>
+            {!isAircraft && <p className="control-note control-note--muted">
+              {isShips ? 'Draught is not water depth.'
+                : 'Modeled, not live or optical. Includes a Starlink sample.'}
+            </p>}
             {isShips && selectedVesselOutside && (
               <p className="control-note">
-                Selected outside this shortlist: {vesselResultLabel(selectedVesselOutside)}. Not added to the ranking.
+                Selected outside this shortlist: {vesselResultLabel(selectedVesselOutside)}.
               </p>
             )}
             {isOrbits && orbits.selectedOutside && (
               <p className="control-note">
-                Selected outside this {orbits.selectedOutside.reason}: {orbits.selectedOutside.position.name}. Not added to these totals.
+                Selected outside this {orbits.selectedOutside.reason}: {orbits.selectedOutside.position.name}.
               </p>
             )}
           </section>

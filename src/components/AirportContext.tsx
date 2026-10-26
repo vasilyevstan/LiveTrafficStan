@@ -36,7 +36,6 @@ export function AirportContext({
         <p role="status">
           {airports.length} airport{airports.length === 1 ? '' : 's'} in view
         </p>
-        <p>Static context only; not operational.</p>
       </div>
 
       {airports.length === 0 ? (

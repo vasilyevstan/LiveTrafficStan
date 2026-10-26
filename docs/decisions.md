@@ -1,5 +1,25 @@
 # Engineering Decisions
 
+## Menu necessity before line length (#594)
+
+The earlier two-rendered-line check did not establish whether text belonged in
+the interface. An enabled switch does not need an "on" paragraph; Auto globe
+does not need an explanation of its ordinary zoom transition. Two independent
+critics and one defender challenged all menu lines, including expanded and
+conditional content. The correction deletes redundant narration rather than
+compressing it or moving it behind another disclosure.
+
+Retain text only for a necessary choice/action, actual object or measurement
+fact, meaningful conditional state/recovery, accessible name, or evidenced
+rights/privacy/safety requirement. Keep those notices in the closest useful
+place without repeating them. Preserve real source clocks, unavailable versus
+empty results, modeled versus observed data, and actual image credits.
+Existing navigation, data and storage owners remain unchanged.
+
+Nonvisual descriptions referenced by always-visible controls must remain
+outside closed native disclosures. Check the browser's computed accessible
+description, not merely the existence of an `aria-describedby` target.
+
 ## Mobile usability and search refinement plan (#449)
 
 The approved implementation uses **Center, Layers, Find, In view, Settings**

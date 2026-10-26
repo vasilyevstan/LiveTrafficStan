@@ -32,14 +32,14 @@ export function AircraftDiscovery({
   const status = normalizedQuery
     ? aircraftVisible
       ? `${aircraft.length} of ${totalAircraft} aircraft match`
-      : `${aircraft.length} of ${totalAircraft} aircraft match; AIRCRAFT layer hidden`
+      : `${aircraft.length} of ${totalAircraft} aircraft match; turn on AIRCRAFT to select`
     : aircraftVisible
       ? `${totalAircraft} aircraft in view`
-      : `${totalAircraft} aircraft in view; AIRCRAFT layer hidden`
+      : `${totalAircraft} aircraft in view; turn on AIRCRAFT to select`
 
   return (
     <fieldset className="control-group vessel-discovery aircraft-discovery">
-      <legend>Aircraft discovery</legend>
+      <legend>Aircraft</legend>
 
       <label className="vessel-discovery__label" htmlFor="aircraft-search">
         Callsign, registration, ICAO24, or type
@@ -62,10 +62,9 @@ export function AircraftDiscovery({
         </button>
       </div>
 
-      <div className="vessel-discovery__summary">
+      {totalAircraft > 0 && <div className="vessel-discovery__summary">
         <p role="status">{status}</p>
-        <p>Local to this view.</p>
-      </div>
+      </div>}
 
       {totalAircraft === 0 && (
         <p className="control-note" role="status">
@@ -98,12 +97,7 @@ export function AircraftDiscovery({
       )}
       {normalizedQuery && aircraft.length > AIRCRAFT_RESULT_LIMIT && (
         <p className="control-note control-note--muted">
-          First {AIRCRAFT_RESULT_LIMIT} of {aircraft.length}; all remain on map.
-        </p>
-      )}
-      {normalizedQuery && aircraft.length > 0 && !aircraftVisible && (
-        <p className="control-note">
-          Show the AIRCRAFT layer to select a matching aircraft.
+          First {AIRCRAFT_RESULT_LIMIT} of {aircraft.length}.
         </p>
       )}
     </fieldset>

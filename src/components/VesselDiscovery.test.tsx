@@ -1,6 +1,5 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
-import { APP_CONFIG } from '../config/appConfig'
 import type { DisplayVessel } from '../domain/traffic'
 import {
   DEFAULT_VESSEL_FILTERS,
@@ -51,24 +50,19 @@ describe('VesselDiscovery', () => {
   it('exposes the released default, explicit unknown behavior, count, and native controls', () => {
     const html = renderDiscovery()
 
-    expect(html).toContain('Vessel discovery')
+    expect(html).toContain('<legend>Ships</legend>')
     expect(html).toContain('Name, callsign, MMSI, or IMO')
-    expect(html).toContain(
-      'non-yachts 50 m or longer · non-yachts with unknown length hidden',
-    )
+    expect(html).toContain('<option value="50" selected="">50 m</option>')
+    expect(html).not.toMatch(/type="checkbox"[^>]*checked=/)
     expect(html).toContain('1 of 3 ships shown')
     expect(html).toContain('Reported speed')
     expect(html).toContain('Non-yacht minimum length')
     expect(html).toContain('Maximum length (all vessels)')
     expect(html).toContain('Include non-yachts with unknown length')
-    expect(html).toContain('Yachts: known length ≥8 m. Speed filters still apply.')
-    expect(html).toContain('Reported sailing/pleasure type required. Other filters still apply.')
+    expect(html).toContain('Yachts: reported sailing/pleasure type and length ≥8 m.')
+    expect(html).not.toContain('Yacht rules &amp; coverage')
+    expect(html).not.toContain('<summary>Filters</summary>')
     expect(html).not.toContain('≥1 kn, ≤120 s')
-    expect(html).toContain(
-      APP_CONFIG.marine.supplementEnabled
-        ? 'Class A/B reception varies; type or length may be missing.'
-        : 'Class B coverage is incomplete',
-    )
     expect(html).toContain('RESET FILTERS')
   })
 
@@ -85,9 +79,9 @@ describe('VesselDiscovery', () => {
     })
 
     expect((html.match(/<li>/g) ?? [])).toHaveLength(VESSEL_RESULT_LIMIT)
-    expect(html).toContain('SHIPS layer hidden')
+    expect(html).toContain('turn on SHIPS to select')
     expect(html).toContain('disabled=""')
-    expect(html).toContain('Show the SHIPS layer')
+    expect(html).not.toContain('all remain on map')
     expect(html).toMatch(/id="vessel-discovery-result-[^"]+"/)
     expect(html).not.toContain('id="vessel-discovery-result-vessel:0"')
     expect(html).toContain(
@@ -106,5 +100,15 @@ describe('VesselDiscovery', () => {
         totalVessels: 4,
       }),
     ).toContain('No ships match the current vessel filters.')
+  })
+
+  it('does not explain an excluded yacht category or claim an unavailable feed is empty', () => {
+    const html = renderDiscovery({
+      filters: { ...DEFAULT_VESSEL_FILTERS, category: 'cargo' },
+      vessels: [], totalVessels: 0, emptyMessage: 'Marine source unavailable.',
+    })
+    expect(html).not.toContain('Yachts:')
+    expect(html).not.toContain('0 of 0 ships')
+    expect(html).toContain('Marine source unavailable.')
   })
 })

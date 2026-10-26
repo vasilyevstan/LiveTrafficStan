@@ -178,7 +178,8 @@ describe('StarlinkContext', () => {
       },
     })
     expect(html).toContain('RECHECK STARLINK')
-    expect(html).toContain('Check the cached catalog; provider updates run on schedule.')
+    expect(html).toContain('Source updates are paused; cached orbital data expired.')
+    expect(html).not.toContain('provider updates run on schedule')
     expect(html).not.toContain('RETRY STARLINK')
     expect(html).not.toContain('Updating')
     expect(html).not.toContain('<dt>In map</dt><dd>0</dd>')
@@ -186,8 +187,7 @@ describe('StarlinkContext', () => {
 
   it('includes the sample with ORBITS, without an independent switch', () => {
     const html = renderContext({ parentVisible: false })
-    expect(html).toContain('Included with ORBITS')
-    expect(html).toContain('Enable ORBITS above')
+    expect(html).toBe('')
     expect(html).not.toContain('STARLINK ON')
     expect(html).not.toContain('STARLINK OFF')
     expect(html).not.toContain('Preference remembered')
@@ -202,13 +202,15 @@ describe('StarlinkContext', () => {
     expect(html).toContain('<dt>In map</dt><dd>1</dd><span>1 shown</span>')
     expect(html).toContain('<dt>Next 90m</dt><dd>0</dd>')
     expect(html).toContain('Systematic sample from 11,127 source objects')
-    expect(html).toContain('not the full constellation')
+    expect(html).toContain('Starlink sample')
+    expect(html).not.toContain('Included with ORBITS')
     expect(html).toContain('not live or optical')
     expect(html).toContain('STARLINK-TEST')
-    expect(html).toContain('Safe modeled position · in map now')
+    expect(html).toContain('In map now')
+    expect(html).not.toContain('Safe modeled position')
   })
 
-  it('labels schema-2 shell balancing and its four fixed sample quotas truthfully', () => {
+  it('keeps actual sample provenance without internal quota narration', () => {
     const shellSnapshot: StarlinkOrbitalCatalogSnapshot = {
       ...snapshot,
       schemaVersion: 2,
@@ -246,7 +248,7 @@ describe('StarlinkContext', () => {
     expect(html).toContain(
       'Shell-balanced sample from 11,127 source objects',
     )
-    expect(html).toContain(
+    expect(html).not.toContain(
       '4 inclination bands · 128/128/128/128 sampled',
     )
     expect(html).toContain(
@@ -288,10 +290,9 @@ describe('StarlinkContext', () => {
         prediction: EMPTY_ORBITAL_PREDICTION,
       },
     })
-    expect(html).toContain('Enable ORBITS')
+    expect(html).toBe('')
     expect(html).not.toContain('SOURCE REPORTED')
     const history = renderContext({ live: false })
-    expect(history).toContain('paused during historical traffic playback')
-    expect(history).not.toContain('STARLINK-TEST')
+    expect(history).toBe('')
   })
 })

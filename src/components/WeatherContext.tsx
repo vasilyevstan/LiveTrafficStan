@@ -28,7 +28,7 @@ export function WeatherContext({
       <legend>METAR observations in this view</legend>
       <div className="vessel-discovery__summary">
         <p role="status">
-          {observations.length} current observation
+          {observations.length} observation
           {observations.length === 1 ? '' : 's'}
         </p>
         <p>Observed weather; not a forecast.</p>

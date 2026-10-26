@@ -271,13 +271,87 @@ describe('TrafficControls', () => {
     expect(props?.selectableVesselIds.size).toBe(0)
   })
 
+  it.each([false, true])('does not repeat the relief toggle state in prose (%s)', (reliefVisible) => {
+    const html = renderControls({
+      reliefVisible,
+      reliefStatus: reliefVisible ? 'enabled' : 'off',
+    })
+    expect(html).toMatch(new RegExp(`id="relief-layer-toggle"[^>]*aria-pressed="${reliefVisible}"`))
+    expect(html).not.toContain('Relief on.')
+    expect(html).not.toContain('Relief off.')
+    expect(html).not.toContain('Coarse land shading.')
+  })
+
+  it('does not explain ordinary projection behavior below its controls', () => {
+    const html = renderControls()
+    expect(html).toContain('AUTO GLOBE')
+    expect(html).toContain('FLAT')
+    expect(html).not.toContain('Auto globe changes smoothly with map zoom.')
+  })
+
+  it('does not narrate a disabled depth layer or attach an empty description', () => {
+    const html = renderControls({ depthsVisible: false })
+    const layers = html.slice(html.indexOf('id="map-tools-panel-layers"'), html.indexOf('id="map-tools-panel-find"'))
+    expect(layers).not.toContain('Depths off')
+    expect(layers).not.toContain('not for navigation')
+    expect(layers.match(/id="depths-layer-toggle"[^>]*/)?.[0]).not.toContain('aria-describedby')
+    expect(html).toContain('depth requests reveal the viewed area')
+  })
+
+  it('keeps available ruler and ordinary custom navigation free of idle explanations', () => {
+    const html = renderControls({
+      activeLocationLabel: 'Custom view', rulerAvailable: true, onStartRuler: () => undefined,
+    })
+    expect(html).not.toContain('Custom view')
+    expect(html).not.toContain('Viewing:')
+    expect(html).not.toContain('Two points; approximate distance, not a route.')
+    expect(html).not.toContain('id="ruler-view-status"')
+    expect(html.match(/id="measure-distance-button"[^>]*/)?.[0]).not.toContain('aria-describedby')
+  })
+
+  it('gives one correct off-state orbital direction for both desktop and mobile', () => {
+    for (const mobileWorkspace of [false, true]) {
+      const html = renderControls({ mobileWorkspace })
+      expect(html.match(/Turn on ORBITS in Layers\./g)).toHaveLength(1)
+      expect(html).not.toContain('Enable ORBITS above')
+      expect(html).not.toContain('Included with ORBITS')
+    }
+  })
+
+  it.each([false, true])('does not tell users to enable already-enabled loading context (%s)', (weather) => {
+    const html = renderControls({
+      airportsVisible: !weather, airportsLoading: !weather,
+      weatherVisible: weather, weatherLoading: weather,
+    })
+    const context = html.slice(html.indexOf('id="map-tools-panel-context"'), html.indexOf('id="map-tools-panel-orbits"'))
+    expect(context).not.toContain('Enable AIRPORTS or METAR')
+    expect(context).not.toContain('No current')
+    expect(context).toContain(weather ? 'Loading weather reports.' : 'Loading airports.')
+  })
+
+  it('keeps context failures actionable rather than replacing them with an enable instruction', () => {
+    const html = renderControls({
+      airportsVisible: true, airportsError: 'Airport checksum failed.',
+      weatherVisible: true, weatherError: 'Weather source timed out.',
+    })
+    const context = html.slice(html.indexOf('id="map-tools-panel-context"'), html.indexOf('id="map-tools-panel-orbits"'))
+    expect(context).toContain('Airport checksum failed.')
+    expect(context).toContain('RETRY AIRPORTS')
+    expect(context).not.toContain('Enable AIRPORTS or METAR')
+    expect(html).toContain('Weather source timed out.')
+    expect(html.match(/RETRY METAR/g)).toHaveLength(1)
+  })
+
   it('keeps optional session relief in Layers without a permanent dock action', () => {
     const html = renderControls({ reliefVisible: false, reliefStatus: 'off' })
     expect(html).toMatch(/id="relief-layer-toggle"[^>]*aria-pressed="false"/)
-    expect(html).toContain('Relief off. No relief requests.')
-    expect(html).toContain('Relief starts on: land shading, not 3D terrain.')
-    expect(html).toContain('Mapzen/AWS tile requests reveal the viewed area.')
-    expect(html).toContain('Mapzen terrain contributors and licenses')
+    expect(html.match(/id="relief-layer-toggle"[^>]*/)?.[0]).not.toContain('aria-describedby')
+    expect(html).not.toContain('Relief starts on')
+    expect(html).toContain('Relief and depth requests reveal the viewed area to Mapzen/AWS, EMODnet and GEBCO.')
+    expect(html).toContain('Mapzen terrain contributors')
+    expect(html).toContain('https://github.com/tilezen/joerd/blob/master/docs/attribution.md')
+    expect(html).not.toContain('Map detail &amp; sources')
+    expect(html).not.toContain('Depth sources &amp; privacy')
     expect(html).not.toContain('off on reload')
     expect(html.match(/id="relief-layer-toggle"/g)).toHaveLength(1)
     expect(html).not.toContain('data-workspace-task="relief"')
@@ -286,10 +360,11 @@ describe('TrafficControls', () => {
   it('keeps the configured initial relief switch on with concise, reachable source/privacy notices', () => {
     const html = renderControls()
     expect(html).toMatch(/id="relief-layer-toggle"[^>]*aria-pressed="true"/)
-    expect(html).toContain('Relief on. Coarse land shading.')
-    expect(html).toContain('Shading: EMODnet 2018 / GEBCO 2019. Newer grid numbers may differ.')
-    expect(html).toContain('Requests reveal the map area to EMODnet and GEBCO.')
-    expect(html).toContain('GEBCO nominal MSL, with coastal exceptions.')
+    expect(html).not.toContain('Relief on.')
+    expect(html).toContain('Depth shading: EMODnet 2018 / GEBCO 2019. Numbers use newer grids.')
+    expect(html).toContain('viewed area to Mapzen/AWS, EMODnet and GEBCO.')
+    expect(html).toContain('metres below LAT (Lowest Astronomical Tide)')
+    expect(html).toContain('metres below nominal mean sea level; coastal datums can differ')
     expect(html).toContain('Full data credits &amp; privacy')
     expect(html).not.toContain('World Base Layer v1 shading')
     expect(html).not.toContain('colors and numbers are not the same survey or date')
@@ -316,7 +391,7 @@ describe('TrafficControls', () => {
   })
 
   it.each([
-    ['enabled', 'Relief on. Coarse land shading.'],
+    ['enabled', undefined],
     ['unavailable', 'Relief unavailable. Toggle off/on to retry.'],
     ['unsupported', 'Relief unavailable with this map style.'],
   ] as const)('keeps %s relief status separate from depth and traffic state', (reliefStatus, message) => {
@@ -325,8 +400,13 @@ describe('TrafficControls', () => {
       bathymetryStatus: { ...INITIAL_BATHYMETRY_STATUS, imagery: 'ready' },
     })
     expect(html).toMatch(/id="relief-layer-toggle"[^>]*aria-pressed="true"/)
-    expect(html).toContain(message)
-    expect(html).toContain('Model depths; not for navigation.')
+    if (message) {
+      expect(html).toContain(message)
+      expect(html.match(/id="relief-layer-toggle"[^>]*/)?.[0]).toContain('aria-describedby="relief-layer-status"')
+    } else {
+      expect(html.match(/id="relief-layer-toggle"[^>]*/)?.[0]).not.toContain('aria-describedby')
+    }
+    expect(html).toContain('Modeled depths; not for navigation.')
   })
 
   it('keeps ruler entry/readout/Clear in View without adding a permanent task', () => {
@@ -334,7 +414,7 @@ describe('TrafficControls', () => {
       rulerAvailable: true, rulerDistance: '12.3 km',
       onStartRuler: () => undefined, onClearRuler: () => undefined,
     })
-    const view = html.match(/<legend>View<\/legend>([\s\S]*?)<\/fieldset>/)?.[1]
+    const view = html.match(/<fieldset class="control-group" aria-label="View">([\s\S]*?)<\/fieldset>/)?.[1]
     expect(view).toContain('id="measure-distance-button"')
     expect(view).toContain('Approximate surface distance: <output>12.3 km</output>')
     expect(view).toContain('id="clear-distance-button"')
@@ -343,10 +423,11 @@ describe('TrafficControls', () => {
   })
   it('keeps unsupported ruler entry disabled with a specific explanation', () => {
     const html = renderControls({
-      rulerMessage: 'Use a local, level Flat view.', onStartRuler: () => undefined,
+      rulerMessage: 'Choose Flat, zoom in and remove map tilt.', onStartRuler: () => undefined,
     })
     expect(html).toMatch(/id="measure-distance-button"[^>]*disabled=""/)
-    expect(html).toContain('Use a local, level Flat view.')
+    expect(html).toContain('Choose Flat, zoom in and remove map tilt.')
+    expect(html.match(/id="measure-distance-button"[^>]*/)?.[0]).toContain('aria-describedby="ruler-view-status"')
     expect(html).not.toContain('id="clear-distance-button"')
   })
   it('labels an orbital recovery action as a cache recheck, not a provider retry', () => {
@@ -361,13 +442,14 @@ describe('TrafficControls', () => {
       },
     })
     expect(html).toContain('RECHECK ORBITS')
-    expect(html).toContain('Check the cached catalog; provider updates run on schedule.')
+    expect(html).toContain('Source updates are paused; cached orbital data expired.')
+    expect(html).not.toContain('provider updates run on schedule')
     expect(html).not.toContain('RETRY ORBITS')
   })
 
   it('places native entry in Settings / View without adding a dock slot', () => {
     const html = renderControls()
-    const view = html.match(/<legend>View<\/legend>([\s\S]*?)<\/fieldset>/)?.[1]
+    const view = html.match(/<fieldset class="control-group" aria-label="View">([\s\S]*?)<\/fieldset>/)?.[1]
     expect(view).toContain('id="enter-fullscreen-button"')
     expect(view).toContain('aria-label="Enter workspace fullscreen"')
     expect(view!.indexOf('ENTER FULLSCREEN')).toBeLessThan(view!.indexOf('USE LOCATION'))
@@ -407,8 +489,8 @@ describe('TrafficControls', () => {
     expect(html).not.toMatch(/id="exit-fullscreen-button"[^>]* disabled=/)
   })
 
-  it('keeps the ungranted-location hint attached to the explicit enabled action', () => {
-    const message = 'Use location to request access. Rounded, not saved.'
+  it('keeps a genuine location failure attached to the explicit retry action', () => {
+    const message = 'Location timed out. Use Location to retry.'
     const html = renderControls({ locationMessage: message })
 
     expect(html).toMatch(
@@ -438,7 +520,7 @@ describe('TrafficControls', () => {
     expect(automatic.indexOf('aria-label="Map projection"')).toBeGreaterThan(
       automatic.indexOf('<details id="traffic-controls-settings"'),
     )
-    expect(automatic).toContain('Auto globe changes smoothly with map zoom.')
+    expect(automatic).not.toContain('Auto globe changes smoothly with map zoom.')
   })
 
   it('keeps Center in the primary dock and one Find input without growing the header', () => {
@@ -482,21 +564,21 @@ describe('TrafficControls', () => {
     expect(navigationPrimary).not.toContain('href=')
     expect(navigationMore).toContain('id="traffic-controls-map-tools-summary"')
     expect(navigationMore).toContain('<span>More</span></summary>')
-    expect(navigationMore).toContain('class="workspace-panel-title">Explore map')
-    expect(navigationMore).toContain('<legend>Layers</legend>')
+    expect(navigationMore).not.toContain('class="workspace-panel-title"')
+    expect(navigationMore).toContain('<fieldset class="control-group" aria-label="Layers">')
     expect(navigationMore).toContain('id="depths-layer-toggle"')
     expect(navigationMore).toContain('aria-describedby="depths-layer-status"')
-    expect(navigationMore).toContain('Not for navigation, tides or clearance.')
-    expect(navigationMore).toContain('Shading: EMODnet 2018 / GEBCO 2019')
-    expect(navigationMore).toContain('Requests reveal the map area')
+    expect(navigationMore).toContain('Modeled depths; not for navigation.')
+    expect(navigationMore).toContain('Depth shading: EMODnet 2018 / GEBCO 2019')
+    expect(navigationMore).toContain('requests reveal the viewed area')
     expect(navigationMore).toContain('>ORBITS</button>')
     expect(navigationMore).not.toContain('Traffic legend')
     expect(navigationMore).not.toContain('Band 1 · below 1,000 m')
     expect(navigationMore).toContain(
       'role="region" aria-label="Map tools" tabindex="0"',
     )
-    expect(navigationMore).toContain('Aircraft discovery')
-    expect(navigationMore).toContain('Vessel discovery')
+    expect(navigationMore).toContain('<legend>Aircraft</legend>')
+    expect(navigationMore).toContain('<legend>Ships</legend>')
     expect(navigationMore).not.toContain(
       'aria-label="Location search details"',
     )
@@ -511,7 +593,7 @@ describe('TrafficControls', () => {
     expect(settingsMore).toContain('>TRAILS<')
     expect(settingsMore).toContain('id="traffic-controls-settings-summary"')
     expect(settingsMore).toContain('<span>Settings</span></summary>')
-    expect(settingsMore).toContain('class="workspace-panel-title">View &amp; settings')
+    expect(settingsMore).not.toContain('View &amp; settings')
     expect(settingsMore).toContain('aria-label="Map navigation"')
     expect(settingsMore).not.toContain('id="location-search-input"')
     expect(navigationMore).toContain('id="location-search-input"')
@@ -533,7 +615,7 @@ describe('TrafficControls', () => {
     expect(html.match(/>SHIPS</g)).toHaveLength(1)
     expect(html.match(/>TRAILS</g)).toHaveLength(1)
     expect(html.match(/>ORBITS</g)).toHaveLength(2)
-    expect(html.match(/class="operation-icon"/g)).toHaveLength(12)
+    expect(html.match(/class="operation-icon"/g)).toHaveLength(11)
     expect(html.match(/aria-label="Theme and trails"/g)).toHaveLength(1)
     expect(html.match(/>LIGHT</g)).toHaveLength(1)
   })
@@ -590,7 +672,8 @@ describe('TrafficControls', () => {
 
   it('describes the canvas-only shortcuts on the existing actions without another command surface', () => {
     const html = renderControls({ mobileWorkspace: true })
-    expect(html).toContain('id="map-action-shortcuts" class="control-note">Map focused: F Find, C Center.')
+    expect(html).toContain('id="map-action-shortcuts" hidden="">Map focused: F Find, C Center.')
+    expect(html.indexOf('id="map-action-shortcuts"')).toBeLessThan(html.indexOf('<details'))
     expect(html.match(/<button id="center-map-button"[^>]*>/)?.[0])
       .toContain('aria-keyshortcuts="c" aria-describedby="map-action-shortcuts"')
     expect(html.match(/<button id="mobile-find-button"[^>]*>/)?.[0])
@@ -652,7 +735,7 @@ describe('TrafficControls', () => {
     expect(sources).toContain('Planespotters')
     expect(sources).toContain('Wikimedia Commons')
     expect(sources).toContain('Full data credits')
-    expect(sources).toContain('Cookie-free; trackstan.xyz only.')
+    expect(sources).toContain('performance data on trackstan.xyz:')
     expect(sources).toContain('Visitor analytics &amp; privacy')
     expect(sources).toContain('No cookies, persistent visitor IDs or custom interaction events.')
     expect(sources).toContain('#visitor-analytics')
@@ -865,12 +948,10 @@ describe('TrafficControls', () => {
       appUpdateAvailable: true,
     })
     expect(html).toContain('REFRESH APP')
-    expect(html).toContain('An application update is ready.')
+    expect(html).not.toContain('An application update is ready.')
     expect(html).toContain('role="status"')
     expect(html.match(/REFRESH APP/g)).toHaveLength(1)
-    expect(
-      html.match(/An application update is ready\./g),
-    ).toHaveLength(1)
+    expect(html).not.toContain('App update:')
   })
 
   it('promotes operational recovery without duplicating shared airport retry', () => {
@@ -903,6 +984,7 @@ describe('TrafficControls', () => {
 
     expect(html.match(/RETRY HISTORY/g)).toHaveLength(1)
     expect(html.match(/RETRY METAR/g)).toHaveLength(1)
+    expect(html.match(/History database unavailable/g)).toHaveLength(1)
   })
 
   it('keeps clustering as a provider-neutral optional layer preference', () => {
@@ -967,7 +1049,7 @@ describe('TrafficControls', () => {
     expect(failed).toContain('RETRY AIRPORTS')
     expect(failed).toContain('OurAirports')
     expect(failed).toContain('public domain')
-    expect(failed).toContain('not operational')
+    expect(failed).toContain('public domain · static')
     expect(failed).not.toContain('Map unavailable')
 
     const ready = renderControls({
@@ -1025,7 +1107,8 @@ describe('TrafficControls', () => {
     expect(failed).toContain('NOAA/NWS AWC')
     expect(failed).toContain('observations, not forecasts')
     expect(failed).toContain('METAR requests send visible station IDs.')
-    expect(failed).toContain('Observation and retrieval times are in details.')
+    expect(failed).toContain('METAR: U.S. public domain unless marked otherwise.')
+    expect(failed).not.toContain('Observation and retrieval times are in details.')
 
     const disabled = renderControls({
       weatherVisible: false,

@@ -31,8 +31,8 @@ const stateMessage = (state: OrbitalControllerState) => {
       return 'Loading the Starlink sample.'
     case 'refreshing':
       return state.positions.length > 0
-        ? 'Refreshing the sample; safe modeled positions are retained.'
-        : 'Preparing the refreshed sample; positions are temporarily unavailable.'
+        ? 'Updating sample.'
+        : 'Updating sample; positions temporarily unavailable.'
     case 'stale':
       return state.message ?? 'The Starlink sample is stale.'
     case 'unavailable':
@@ -101,6 +101,8 @@ export function StarlinkContext({
     setPage(nextPage)
   }
 
+  if (!active) return null
+
   return (
     <section
       className="control-group orbital-starlink"
@@ -112,27 +114,12 @@ export function StarlinkContext({
         </h3>
       </div>
 
-      <p className="control-note">
-        Included with ORBITS; not the full constellation.
-      </p>
-      {!parentVisible && (
-        <p className="control-note">
-          Enable ORBITS above to load and model the
-          sample.
-        </p>
-      )}
-      {!live && (
-        <p className="control-note">
-          Starlink modeling is paused during historical traffic playback.
-        </p>
-      )}
       {status && (
         <div className="control-note ports-status" role="status">
           <span>{status}</span>
           {['unavailable', 'clock-invalid'].includes(state.phase) && (
             <button
               type="button"
-              title="Check the cached catalog; provider updates run on schedule."
               onClick={onRetry}
             >
               RECHECK STARLINK
@@ -141,7 +128,7 @@ export function StarlinkContext({
         </div>
       )}
 
-      {active && snapshot && (
+      {snapshot && (
         <>
           <dl
             className="orbital-summary-metrics"
@@ -180,8 +167,8 @@ export function StarlinkContext({
                     ? 'Unavailable'
                     : 'Updating'
                   : counts.futureCrossingCount === 1
-                    ? 'map pass'
-                    : 'map passes'}
+                    ? 'crossing'
+                    : 'crossings'}
               </span>
             </div>
           </dl>
@@ -193,14 +180,6 @@ export function StarlinkContext({
               {snapshot.starlink.populationCount.toLocaleString('en-US')}{' '}
               source objects.
             </p>
-            {snapshot.starlink.shells && (
-              <p>
-                {snapshot.starlink.shells.length} inclination bands ·{' '}
-                {snapshot.starlink.shells
-                  .map((shell) => shell.sampleCount)
-                  .join('/')} sampled.
-              </p>
-            )}
             <p>
               GP{' '}
               {formatTimestamp(
@@ -220,15 +199,14 @@ export function StarlinkContext({
               </p>
             )}
             <p>
-              SGP4 modeled, not live or optical. Operational status unknown.
+              Modeled, not live or optical. Operational status unknown.
             </p>
           </details>
 
           <div className="vessel-discovery__summary orbital-starlink__page">
             <p>
               {catalogPage.rangeStart}-{catalogPage.rangeEnd} of{' '}
-              {catalogPage.listedRowCount} sampled objects · page{' '}
-              {catalogPage.page + 1}/{catalogPage.pageCount}.
+              {catalogPage.listedRowCount} sampled objects.
             </p>
           </div>
 
@@ -266,17 +244,17 @@ export function StarlinkContext({
                         record.internationalDesignator,
                       )}
                     </span>
-                    <span>
+                    {(!position || crossing?.currentlyInView || crossing?.firstCrossingAt !== undefined) && <span>
                       {!position
                         ? 'Position unavailable'
                         : crossing?.currentlyInView
-                          ? 'Safe modeled position · in map now'
+                          ? 'In map now'
                           : crossing?.firstCrossingAt !== undefined
-                            ? `Safe modeled position · next map crossing ${formatTimestamp(
+                            ? `Next crossing ${formatTimestamp(
                                 crossing.firstCrossingAt,
                               )}`
-                            : 'Safe modeled position'}
-                    </span>
+                            : undefined}
+                    </span>}
                   </ObjectResultButton>
                 </li>
               )
