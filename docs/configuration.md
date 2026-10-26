@@ -417,8 +417,26 @@ effects. Hidden mobile HISTORY controls remain unavailable through shortcuts.
 The keys do nothing in inputs, selects, inspectors or other focused controls;
 modified keys (including Ctrl/Cmd+F), repetition, IME composition and already
 handled events are ignored. Arrow/zoom keys and native fullscreen Escape keep
-their existing owners. The short reminder is in Settings / View; there is no
-saved shortcut preference or global keyboard listener.
+their existing owners. Center and Find retain accessible shortcut descriptions
+without a visible tutorial. Their shared nonvisual description remains outside
+closed disclosures; there is no saved shortcut preference or global keyboard
+listener.
+
+### Menu feedback
+
+Switches and selected values express ordinary state without a second paragraph.
+Settings omits routine preference-saved, location-success and offline-shell-ready
+messages. Real location, storage, map and provider problems retain their reason
+and existing recovery action; Share/Copy retains its necessary outcome feedback.
+Online failure of both traffic sources is **UNAVAILABLE**, not **OFFLINE**;
+the latter remains reserved for the browser being offline.
+
+Find has a visibly named **Search** action and keeps its pre-submit Photon URL
+disclosure. Map/depth rights and request privacy are available once in Sources,
+with active-depth safety and partial-result warnings beside DEPTHS.
+History's **Storage details** distinguishes the 60-minute session buffer from
+the selected 1/6/24-hour saved retention. No timing, preference format, storage
+ownership, provider lifecycle or camera behavior changes with this copy policy.
 
 ### Passive center scale
 

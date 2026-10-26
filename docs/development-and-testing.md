@@ -228,6 +228,62 @@ unchanged. Reuse accepted unchanged relief/building/orbital/update evidence;
 the [#522 receipt](https://github.com/vasilyevstan/LiveTrafficStan/issues/522)
 separately records checked delivery, actual public behavior and publication.
 
+### Necessary menu copy (#594)
+
+The #585 two-line benchmark below is historical evidence, not acceptance of
+necessity. Challenge all default, expanded and conditional lines in Layers,
+Find, Context, Orbits, Sources, Settings, History, In view and Provider details.
+Delete normal toggle/ready/saved narration, duplicate headings and ordinary
+behavior tutorials; do not satisfy the check by shortening or hiding them.
+Keep actual identities, measurements, clocks, meaningful errors, actions and
+required source/privacy/safety information.
+
+Regressions forbid Relief on/off prose and the Auto globe explanation while
+retaining pressed states and genuine unavailable/unsupported reasons. Cover
+quiet available ruler/normal Settings, a visibly named Search action, specific
+result names, one correct ORBITS-off direction, enabled-but-loading context,
+truthful stale weather and hidden-layer truncation, selected 1/6/24-hour saved
+retention, and online source failure versus browser offline. Promoted recovery
+must retain the real failure exactly once. Required source links, datums,
+rights, consent and pre-submit Photon disclosure survive deletion.
+
+Use actual source-App Light/Dark at 1280x900, 315x517 and 390x568, including all
+In view categories, orbital catalog rows, reachable disclosures, off layers,
+actual blocked-location feedback and Provider details. Check real copy,
+44px phone actions, one outer scroller, focus, overflow and retained map
+ownership. A scrolling phone body needs useful reading height; a short,
+content-fitting empty state need not be padded to 160px. Preserve useful map
+space without claiming that independent selected-object layout defects are
+fixed. For text moved to nonvisual descriptions, inspect the browser's actual
+accessibility tree with the owning disclosure closed; an existing DOM ID
+alone is insufficient. Reuse unchanged provider, PWA and sharing evidence.
+
+Measure visibility with `checkVisibility` and hidden/inert guards before
+choosing an overlay or scroller. Closed native `<details>` descendants may
+retain client rectangles; `getClientRects()` alone can count invisible boxes.
+
+The 2026-10-26 local inspection retains 111 copy/action scenes. Its phantom
+closed-provider geometry is withdrawn, as are three tail scene dimensions
+recorded as 315x517 when the actual canvas was 390x568. One 67-scene corrective
+confirmation passes at 00:30:24 UTC across all six layouts. Ordinary phone
+menu overlays are 60.87% at 315x517 and 56.89% at 390x568, with 160/175px
+useful scrolling bodies and hit-tested 120x120 map space. The three corrected
+checkbox/history-select targets are 44px. Only missing in-scroller visibility
+measurements finish at 00:34:18 UTC: the actual blocked-location response and
+all three corrected targets are visible/hit-tested at 315x517 without another
+location request. Those intermediate scroll positions are DOM-staged; native
+end-scrolling evidence is reused.
+
+The actual Center AX description is checked with Settings closed. One retained
+canvas/map lifetime, unchanged final camera/preferences and zero observed
+runtime exceptions pass. Native vectors/relief, worker and clock accompany
+controlled object protocols and explicit focus/device emulation, not physical
+device/GPU/OS-popup proof or a persistent denied browser permission claim.
+All eight local gates pass 213 suites /2,566 tests with existing lint warnings
+and a matched production-input build. See [#594](https://github.com/vasilyevstan/LiveTrafficStan/issues/594)
+for checked delivery, actual public acceptance and publication; the local
+receipt is not itself proof of deployment or resolution of #540/#554.
+
 ### Default-on Relief and concise menus (#585)
 
 Exercise the actual App's initial Relief state, session off, reload-on and

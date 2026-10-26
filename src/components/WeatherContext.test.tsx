@@ -35,6 +35,8 @@ describe('WeatherContext', () => {
     expect(html).toContain('MVFR')
     expect(html).toContain('1 min ago')
     expect(html).toContain('stale')
+    expect(html).toContain('1 observation')
+    expect(html).not.toContain('current observation')
     expect(html).toContain('aria-pressed="true"')
     expect(html).toContain('not a forecast')
   })

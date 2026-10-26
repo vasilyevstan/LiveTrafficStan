@@ -72,7 +72,7 @@ describe('LiveStatus', () => {
     }
     expect(html).toContain('https://aisstream.io/')
     expect(html).toContain('https://openwaters.io/ais/')
-    expect(html).toContain('Wikimedia Commons')
+    expect(html).not.toContain('Each image carries its own artist and licence.')
     expect(html).toContain('Norwegian licence for Open Government data')
     expect(html).toContain('Data delivered by BarentsWatch')
   })
@@ -216,7 +216,24 @@ describe('LiveStatus', () => {
     )
   })
 
-  it('adds modeled orbital context without changing traffic health', () => {
+  it('does not call an online two-source failure browser offline', () => {
+    const html = renderToStaticMarkup(<LiveStatus
+      aircraftCount={0} vesselCount={0}
+      aircraftStatus={{ phase: 'error', paused: false, error: 'Aircraft source failed.' }}
+      marineStatus={{ phase: 'error', paused: false, error: 'Marine source failed.' }}
+      marineCapabilities={MULTI_SOURCE_MARINE_CAPABILITIES}
+      now={1_800_000_000_000} online />)
+    expect(html).toContain('<strong>UNAVAILABLE</strong>')
+    expect(html).toContain('live-status--unavailable')
+    expect(html).not.toContain('<strong>OFFLINE</strong>')
+    expect(html).toContain('Aircraft source failed.')
+    expect(html).toContain('Marine source failed.')
+    expect(html).toContain('ODbL 1.0')
+    expect(html).toContain('CC 4.0 BY')
+    expect(html).toContain('Norwegian licence for Open Government data')
+  })
+
+  it('keeps traffic health without repeating the separate primary orbital summary', () => {
     const html = renderToStaticMarkup(
       <LiveStatus
         aircraftCount={0}
@@ -230,7 +247,6 @@ describe('LiveStatus', () => {
         marineCapabilities={DIGITRAFFIC_MARINE_CAPABILITIES}
         now={1_800_000_000_000}
         online
-        orbitalSummary="ORBITS · 0 IN VIEW · 1 PASS ≤90M"
       />,
     )
 
@@ -239,8 +255,6 @@ describe('LiveStatus', () => {
     expect(html).toContain('36 ships shown · regional source')
     expect(html).toContain('Aircraft unavailable')
     expect(html).toContain('Marine stream connected')
-    expect(html).toContain(
-      'class="live-status__orbital" aria-hidden="true">ORBITS · 0 IN VIEW · 1 PASS ≤90M',
-    )
+    expect(html).not.toContain('live-status__orbital')
   })
 })

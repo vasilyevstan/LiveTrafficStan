@@ -84,11 +84,7 @@ export function LocationSearchInput({
           aria-label={unified ? 'Search' : undefined}
           disabled={disabled || busy || searchState.phase === 'loading'}
         >
-          {unified ? (
-            <svg className="operation-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 4 4" />
-            </svg>
-          ) : searchState.phase === 'loading' ? 'SEARCHING...' : 'GO'}
+          {unified ? 'Search' : searchState.phase === 'loading' ? 'SEARCHING...' : 'GO'}
         </button>
       </div>
     </form>

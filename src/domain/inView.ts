@@ -45,7 +45,7 @@ const trafficInViewAvailability = ({
   if (!viewportEligible) {
     return {
       available: false,
-      message: 'Traffic paused. Zoom in or reduce tilt; last-local samples are not live counts.',
+      message: 'Traffic paused. Zoom in or reduce tilt.',
     }
   }
   if (!online) {
@@ -59,7 +59,7 @@ const trafficInViewAvailability = ({
       available: count > 0,
       message: count > 0
         ? `Partial · ${source} unavailable; retained observations only.`
-        : `${kind === 'aircraft' ? 'Aircraft' : 'Marine'} source unavailable. This is not an empty result.`,
+        : `${kind === 'aircraft' ? 'Aircraft' : 'Marine'} source unavailable.`,
     }
   }
   if (status.phase === 'idle' || status.phase === 'loading') {
@@ -170,14 +170,14 @@ const sourceMessage = (source: OrbitalInViewSource, label: string) => {
     case 'empty': return `${label}: no safe modeled positions.`
     case 'disabled':
     case 'loading': return `${label}: loading.`
-    case 'refreshing': return `${label}: updating; safe positions retained.`
+    case 'refreshing': return `${label}: updating.`
     case 'stale': return `${label}: stale catalog.`
     case 'offline': return `${label}: offline.`
     case 'paused-hidden': return `${label}: paused while hidden.`
     case 'paused-history': return `${label}: hidden in HISTORY.`
     case 'paused-capture': return `${label}: paused for the captured view.`
     case 'clock-invalid': return `${label}: check the device clock.`
-    case 'unavailable': return `${label}: unavailable. Use More for source details and retry.`
+    case 'unavailable': return `${label}: unavailable. Open Orbits in Layers to retry.`
   }
 }
 
@@ -208,14 +208,14 @@ export const deriveOrbitalInView = ({
     return {
       ...empty,
       available: false,
-      message: 'ORBITS is off. Enable it in the main controls.',
+      message: 'Turn on ORBITS in Layers.',
     }
   }
   if (!viewport || viewport.kind === 'invalid') {
     return {
       ...empty,
       available: false,
-      message: 'In-view counts unavailable for this map geometry. Modeled points may still be shown; zoom in or use a safe flat view.',
+      message: 'In-view counts unavailable. Zoom in or choose Flat.',
     }
   }
   const sources = [curated, starlink]
@@ -258,7 +258,7 @@ export const deriveOrbitalInView = ({
     sourceMessages,
     selectedOutside,
     ...(usable.length === 0
-      ? { message: 'Current modeled positions are unavailable, not a confirmed empty view.' }
+      ? { message: 'Current modeled positions unavailable.' }
       : {}),
   }
 }

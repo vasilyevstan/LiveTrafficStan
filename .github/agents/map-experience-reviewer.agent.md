@@ -56,10 +56,17 @@ Check these project invariants:
   header. Reserve clearance only there; keep one full-width body scroller,
   useful short-screen height and whole photos, without a full-height gutter.
   Test middle/end text, images and links against the button rectangle.
-- Default explanatory copy fits at most two rendered lines at supported
-  widths. Expanded help must also stay brief, not relocate essays. Retain
-  full names, rights, essential privacy and limits; link canonical docs for
-  extended explanations. Prove keyboard/touch access, never silently clip text.
+- Necessity precedes line length: remove toggle-state echoes, routine success
+  narration, repeated headings and ordinary-behavior tutorials instead of
+  shortening or moving them. Every retained line needs an action/decision,
+  actual fact, meaningful conditional state, accessible name or evidenced
+  rights/privacy/safety purpose. Necessary default guidance stays short;
+  expanded help must not relocate essays. Retain full names, rights,
+  essential privacy and limits. Never silently clip text.
+  When moving description text, verify the browser's computed accessible
+  description with native disclosures closed, not just an existing IDREF.
+  Exclude closed disclosure descendants with `checkVisibility` before
+  measuring overlays/scrollers; client rectangles alone may include them.
   Include layer-off and ungranted-location states at the narrowest width;
   enabled/other-permission fixtures do not exercise those copy branches.
 - Show path makes one north-up fit. Return restores the prior bearing,

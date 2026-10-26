@@ -8,6 +8,13 @@ user accounts or a server-side vessel history archive.
 
 Public production: <https://trackstan.xyz>
 
+**Menu clarity correction (#594):** toggle echoes, routine success narration
+and normal-behavior explanations are removed, not hidden elsewhere.
+Controls, useful facts, actionable failures and required source/privacy/safety
+information remain. [Acceptance](docs/development-and-testing.md#necessary-menu-copy-594)
+and [delivery record](https://github.com/vasilyevstan/LiveTrafficStan/issues/594)
+distinguish this correction from the earlier two-line copy benchmark.
+
 **Default Relief and direct satellite views (#585/#587):** Relief now starts
 on, including reload and Reset preferences; off remains session-only.
 Menus keep short instructions, errors and necessary source/privacy credits
@@ -509,17 +516,19 @@ identity are not renamed or reset.
   Every object inspector has an accessible, 44px corner-attached X that stays
   visible beside a compact identity header. **Show path** shares that header;
   the body scrolls at full width without a close-button gutter.
-  Default menu explanations use purposeful two-line summaries; labelled
-  disclosures also stay concise, retaining full names, required credits,
-  essential privacy and limitations. Extended explanations live in the docs,
-  not another page of text inside a menu.
+  Menu text must help a decision or action, report an actual fact or meaningful
+  condition, or meet an attribution, privacy or safety requirement.
+  Toggle-state echoes, routine success narration and normal-behavior tutorials
+  are omitted, not shortened or moved into another disclosure.
+  Necessary guidance stays short; complete names, errors and required notices
+  remain reachable without clipping.
   Outside native workspace fullscreen, Escape closes an inspector when focus is inside it;
   either action preserves the camera and returns focus to the existing
   selection control or visible More/Settings fallback.
   White Light and slate Dark surfaces share system typography and one accent.
   Counts, marine source scope, freshness, and traffic mode remain visible;
   **Provider details** opens independent provider messages on every screen size.
-- **More** (Explore map) and **Settings** (View & settings) open beside the
+- **More** and **Settings** open beside the
   desktop rail. On phones, one nonmodal task or full inspector occupies the
   shared reading surface above the dock. Opening a task retains a compact
   selected-object heading and X, without remounting its details.
@@ -534,7 +543,7 @@ identity are not renamed or reset.
   **Center** stays outside menus in the main rail/dock.
   The search controls stay mounted when Find is closed;
   Auto/Light/Dark and Trails remain under Appearance.
-  Native fullscreen is under **View**; the browser owns its Escape/system exit.
+  **Enter fullscreen** is in Settings; the browser owns its Escape/system exit.
   With the map canvas focused, unmodified **F** opens the retained Find draft;
   **C** runs the available Center action. These are not
   typing-field or browser-Find shortcuts. Hidden mobile HISTORY actions stay

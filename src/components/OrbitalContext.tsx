@@ -137,8 +137,8 @@ export function OrbitalContext({
 
   const selectedExceptionMessage = display.selectedException
     ? display.selectedFiltered
-      ? '+1 selected exception is shown outside the matching exact type and source-group totals.'
-      : '1 matching selected exception is included in SHOWN despite the current zoom tier.'
+      ? 'Selected object is outside these filters.'
+      : 'Selected object is outside the zoom-level sample.'
     : undefined
   const nearbyResults =
     counts.futureCrossingCount === undefined
@@ -179,23 +179,16 @@ export function OrbitalContext({
                 counts.futureCrossingCount === undefined
                   ? 'PASSES UPDATING'
                   : `${counts.futureCrossingCount} ${
-                      counts.futureCrossingCount === 1 ? 'PASS' : 'PASSES'
+                      counts.futureCrossingCount === 1 ? 'CROSSING' : 'CROSSINGS'
                     } ≤${horizonMinutes}M`
               }`}
         </p>
-        <p>SGP4 geographic model; not live or optical visibility.</p>
-        <details className="context-details">
-          <summary>Catalog accounting</summary>
-        <p>
-          {counts.catalogCount} catalog · {counts.acceptedCount} accepted ·{' '}
-          {counts.modeledNowCount} modeled now · {counts.catalogMatchCount}{' '}
-          catalog matches · {counts.modeledMatchCount} modeled matches.
-        </p>
+        <p>Modeled, not live or optical visibility.</p>
         {display.zoomHiddenCount > 0 && (
           <p>
             {display.zoomHiddenCount} matching modeled{' '}
             {display.zoomHiddenCount === 1 ? 'object is' : 'objects are'}{' '}
-            hidden by this zoom tier.
+            not shown at this zoom.
           </p>
         )}
         {counts.catalogMatchCount > counts.modeledMatchCount && (
@@ -205,11 +198,10 @@ export function OrbitalContext({
             {counts.catalogMatchCount - counts.modeledMatchCount === 1
               ? 'object has'
               : 'objects have'}{' '}
-            no safe current position.
+            no current modeled position.
           </p>
         )}
-        {selectedExceptionMessage && <p>{selectedExceptionMessage}</p>}
-        </details>
+        {view === 'nearby' && selectedExceptionMessage && <p>{selectedExceptionMessage}</p>}
       </div>
 
       {view === 'nearby' ? (
@@ -217,9 +209,9 @@ export function OrbitalContext({
           {nearbyResults.length === 0 ? (
             <p className="control-note">
               {counts.catalogMatchCount === 0
-                ? 'No catalog objects match the current exact filters.'
+                ? 'No catalog objects match these filters.'
                 : counts.modeledMatchCount === 0
-                  ? 'Matching catalog objects have no safe current position.'
+                  ? 'Matching catalog objects have no current modeled position.'
                   : state.prediction.message ??
                     'No current map presence or crossing in this window.'}
             </p>
@@ -255,9 +247,9 @@ export function OrbitalContext({
                               ? 'crossing time unavailable'
                               : futureTime(result.firstCrossingAt, now)}
                       </span>
-                      <span className="orbital-context__purpose">
+                      {enrichment && <span className="orbital-context__purpose">
                         {orbitalEnrichmentSummary(enrichment)}
-                      </span>
+                      </span>}
                     </ObjectResultButton>
                   </li>
                 )
@@ -276,7 +268,7 @@ export function OrbitalContext({
       ) : (
         <>
           <label className="vessel-discovery__label" htmlFor="orbital-query">
-            Search complete catalog
+            Search catalog
           </label>
           <input
             id="orbital-query"
@@ -291,7 +283,7 @@ export function OrbitalContext({
           />
           <div className="vessel-discovery__filters orbital-context__filters">
             <label>
-              <span>Exact type</span>
+              <span>Type</span>
               <select
                 value={filters.objectType}
                 onChange={(event) =>
@@ -310,7 +302,7 @@ export function OrbitalContext({
               </select>
             </label>
             <label>
-              <span>Exact source group</span>
+              <span>Source group</span>
               <select
                 value={filters.sourceGroup}
                 onChange={(event) =>
@@ -334,19 +326,18 @@ export function OrbitalContext({
           <div className="vessel-discovery__summary">
             <p>
               {catalogPage.rangeStart}-{catalogPage.rangeEnd} of{' '}
-              {catalogPage.listedRowCount} listed rows · page{' '}
-              {catalogPage.page + 1} of {catalogPage.pageCount}.
+              {catalogPage.listedRowCount} objects.
             </p>
             <p>
-              Text filters this list; type/group also filter the map and passes.
+              Type and source also filter the map and crossings.
             </p>
           </div>
 
           {catalogPage.rows.length === 0 ? (
             <p className="control-note">
               {query.trim()
-                ? 'No catalog objects match this text and the exact filters.'
-                : 'No catalog objects match the current exact filters.'}
+                ? 'No catalog objects match this search and filters.'
+                : 'No catalog objects match these filters.'}
             </p>
           ) : (
             <ul
@@ -376,12 +367,8 @@ export function OrbitalContext({
                         )}
                       </span>
                       <span>
-                        {hasPosition
-                          ? id === selectedId && display.selectedException
-                            ? 'Selected exception · safe current position'
-                            : 'Safe current position'
-                          : 'Position unavailable'}
-                        {' · '}
+                        {!hasPosition ? 'Position unavailable · '
+                          : id === selectedId && display.selectedException ? 'Selected outside sample · ' : ''}
                         {record.sourceGroups
                           .map(sourceGroupLabel)
                           .join(', ')}

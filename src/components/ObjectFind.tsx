@@ -371,7 +371,8 @@ export function ObjectFind(props: ObjectFindProps) {
         key: aircraft.id, label, identities: [aircraft.hex, aircraft.registration ?? '', aircraft.callsign ?? ''],
         content: <FindResultRow label={label} context={`Aircraft · ${aircraftResultContext(aircraft)}`}
           country={countryForAircraftHex(aircraft.hex)} countryBasis="ICAO24 allocation"
-          action={<ObjectResultButton prefix="object-find-result" disabled={navigationDisabled || !props.aircraftVisible}
+          action={<ObjectResultButton prefix="object-find-result" aria-label={`View aircraft ${label}`}
+            disabled={navigationDisabled || !props.aircraftVisible}
             onSelect={(originId) => props.onAircraftSelect(aircraft.id, originId)}>View</ObjectResultButton>}
           meta={<span>{aircraft.provider} · <time dateTime={new Date(aircraft.position.observedAt).toISOString()}
             title={`Position reported ${new Date(aircraft.position.observedAt).toISOString()}`}>Report {formatAge(aircraft.position.observedAt, now)}</time></span>}
@@ -388,7 +389,8 @@ export function ObjectFind(props: ObjectFindProps) {
         key: vessel.id, label, identities: [String(vessel.mmsi), vessel.imo ? String(vessel.imo) : '', vessel.callSign ?? ''],
         content: <FindResultRow label={label} context={`Ship · ${vesselResultContext(vessel)}`}
           country={flagStateForMmsi(vessel.mmsi)} countryBasis="MMSI flag state"
-          action={<ObjectResultButton prefix="object-find-result" disabled={navigationDisabled || !selectable}
+          action={<ObjectResultButton prefix="object-find-result" aria-label={`View ship ${label}`}
+            disabled={navigationDisabled || !selectable}
             onSelect={(originId) => props.onVesselSelect(vessel.id, originId)}>View</ObjectResultButton>}
           meta={<span title={vessel.attribution}>{vessel.provider} · <time dateTime={new Date(vessel.position.observedAt).toISOString()}
             title={`Position reported ${new Date(vessel.position.observedAt).toISOString()}`}>Report {formatAge(vessel.position.observedAt, now)}</time></span>}
@@ -538,7 +540,6 @@ export function ObjectFind(props: ObjectFindProps) {
         Text sent in <a href="https://photon.komoot.io/" target="_blank" rel="noreferrer">Photon URL</a> · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap</a>
       </p>
       {model.inputError && <p id="location-search-status" className="control-note" role="alert">{model.inputError}</p>}
-      {!query && <p className="control-note">Names, IDs, callsigns or coordinates.</p>}
       {query && !model.inputError && <p id="location-search-status" className="control-note object-find-count" role="status">
         {searching ? 'Searching online… ' : ''}
         {rows.length ? `${rows.length} ${rows.length === 1 ? 'match' : 'matches'}${partial ? ' · partial, source limit reached' : ''}${paging.pageCount > 1 ? ` · ${paging.rangeStart}–${paging.rangeEnd}` : ''}.` :
