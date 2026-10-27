@@ -276,7 +276,9 @@ counts, freshness, and provider disclosure stay visible, with unchanged 44 px
 search/status targets. **More** opens the Explore
 map panel inward to the left of the rail
 or above the dock and separates secondary tools
-into session-only Layers, Find, Context, Orbits, and Sources views; **VIEW**
+into session-only Find, Layers, Context, Orbits, and Sources views. A closed
+desktop More always opens Find first through the existing focus owner; mobile
+keeps its separate Find and Layers controls. **VIEW**
 opens Orbits and focuses the first result without moving the map or fetching
 again. The task strip uses the same application button, focus, and active-state
 system as the primary controls rather than browser-default buttons. The
@@ -493,6 +495,19 @@ for the current view request's settled report before the incumbent viewport/
 grace clearing rule applies. No selected-only marker is added. Compact Find
 selection records its entry intent and uses the existing suspended task/Back
 path, rather than adding another inspector or replaying intent on resize.
+
+Find activation uses `FIND_VIEW_RADIUS_KM` and the existing one-shot point-frame
+command: aircraft 25 km, vessels 20 km, airports/ports 40 km, places 50 km and
+orbital objects 1,500 km. Received traffic retains its accepted observed
+selection only while that same view request settles, with ordinary freshness
+checks; settled ineligibility or hidden/filtered data still clears selection.
+The fit uses actual inspector, task, dock and notice rectangles. A requested
+radius already beyond the traffic limit displays its pause notice before
+fitting, so that notice cannot subsequently cover the target. Longitude frames
+remain wrapped around their center and bounded to one world; native Mercator
+latitude limits are respected and unrepresentable centers fail explicitly.
+Typing, provider updates, theme changes and manual panning never repeat the fit.
+Coordinates, Home, In view/map selections and shared links keep their own paths.
 
 Each `ObjectLookupController` owns one explicit cancellable operation, not a poller.
 Its application-owned discovery DTO is separate from `TrafficEntity`.
@@ -1697,6 +1712,10 @@ settled viewport assessment as a normal fit, and synchronously fences off
 automatic geolocation. Camera reporting is independent of viewport-assessment
 deduplication so even repeated ineligible views can be shared accurately.
 Opening a link never writes its overrides automatically.
+Shared theme is additionally kept outside saved preferences, so even later
+unrelated preference writes cannot persist it. New Share view links serialize
+the resolved Light/Dark mode rather than Auto; old Auto fragments remain valid.
+Explicit theme selection or Reset dismisses the visit override.
 
 Domain, filter, provider, viewport, and history values remain metric.
 `metric | aviation-nautical` changes formatting only: altitude, speed, vertical
@@ -1725,6 +1744,12 @@ orbital selection, snapshot. Capture happens on explicit activation, not in
 render. One bounded request and a monotonic cached-link deadline own Copy.
 Unmount/identity changes abort the consumer; obsolete A-to-B-to-A results
 cannot publish feedback or copy a URL into a new selected lifetime.
+Capture includes the effective `light | dark` theme. A theme change aborts
+pending work and clears cached Copy/feedback without resetting the creation
+cooldown; receipts must retain the captured theme. Incoming themes use the
+same visit-only owner as Share view, fenced by newer explicit theme/reset
+choices. Legacy records without a theme use recipient preferences. Short-link
+theme is known only after the existing single asynchronous resolution.
 The same control supplies the accessible header arrow beside Close; feedback
 is portaled into the existing body scroller. Its identity-keyed request/Copy
 owner is not remounted or duplicated. Header activation reveals that body
@@ -1734,8 +1759,8 @@ and resets its scroll to show feedback; focus containment includes the portal.
 analytics bootstrap, removes it with `replaceState`, and passes one
 `ObjectShareStartup` transaction into App. No intent adds no feature-owned
 request/timer. Mixed object/legacy-camera fragments are rejected rather than
-merging sender preferences into the recipient. Existing Share view startup
-is unchanged.
+merging arbitrary sender preferences into the recipient. Both link types
+preserve their existing camera startup ownership.
 
 Valid startup reserves camera ownership before asynchronous geolocation.
 Receipt consumption makes at most one ordinary `commitNavigation`, with
@@ -1877,6 +1902,11 @@ vector source; enabled RELIEF, now on by default, adds the DEM source. Existing
 provider geometry/filters, label content/font/placement, road widths, boundary
 dash patterns and attribution remain intact. The new detail layers use their
 own class/height validity guards without changing traffic or camera behavior.
+For the default Light URL, `transformStyle` installs `LIGHT_MAP_SKY` before
+all `style.load` consumers, including captured-camera atmosphere ownership.
+The map container uses the same pale-blue sky color where globe atmosphere
+becomes transparent. Style replacement resets this background for Dark,
+custom and fallback styles; captured Return restores the current base sky.
 
 The treatment is gated by the exact resolved default URL for each theme.
 Custom styles, opposite-theme overrides and the fallback are not recolored;

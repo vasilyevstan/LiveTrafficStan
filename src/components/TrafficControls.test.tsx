@@ -67,6 +67,8 @@ const renderControls = (
       aircraftEmptyMessage="No current aircraft are shown in this view."
       onAircraftQueryChange={() => undefined}
       onAircraftSelect={() => undefined}
+      onFindTrafficNavigate={() => undefined}
+      onFindReportNavigate={() => undefined}
       vesselFilters={DEFAULT_VESSEL_FILTERS}
       vesselResults={[]}
       totalVessels={0}
@@ -715,14 +717,32 @@ describe('TrafficControls', () => {
       expect(html).toContain(`id="map-tools-panel-${task}"`)
     }
     expect(html).toContain(
-      'id="map-tools-task-layers" type="button" class="is-active" aria-pressed="true"',
+      'id="map-tools-task-find" type="button" class="is-active" aria-pressed="true"',
     )
     expect(html).toContain(
-      'id="map-tools-panel-find" class="control-panel__task" aria-labelledby="map-tools-task-find" hidden=""',
+      'id="map-tools-panel-layers" class="control-panel__task" aria-labelledby="map-tools-task-layers" hidden=""',
     )
     expect(html).toContain('Enable AIRPORTS or METAR in Layers.')
     expect(html).toContain('Natural Earth')
     expect(html).toContain('SGP4 modeled')
+    expect(html.indexOf('id="map-tools-task-find"')).toBeLessThan(html.indexOf('id="map-tools-task-layers"'))
+  })
+
+  it('keeps mobile Layers as the initial panel and gives Find its own navigation callbacks', () => {
+    const onFindTrafficNavigate = vi.fn()
+    const onFindReportNavigate = vi.fn()
+    const html = renderControls({ mobileWorkspace: true, onFindTrafficNavigate, onFindReportNavigate })
+    expect(html).toContain('id="map-tools-task-layers" type="button" class="is-active" aria-pressed="true"')
+    const props = findRender.mock.lastCall?.[0]
+    props?.onAircraftSelect('aircraft:abcdef', 'find-aircraft')
+    props?.onVesselSelect('vessel:230123456', 'find-vessel')
+    props?.onNavigate({ latitude: 59, longitude: 24, label: 'Dated report' }, 'aircraft')
+    expect(onFindTrafficNavigate.mock.calls).toEqual([
+      ['aircraft:abcdef', 'find-aircraft'], ['vessel:230123456', 'find-vessel'],
+    ])
+    expect(onFindReportNavigate).toHaveBeenCalledWith(
+      { latitude: 59, longitude: 24, label: 'Dated report' }, 'aircraft',
+    )
   })
 
   it('names the configured traffic and photo providers in Sources', () => {

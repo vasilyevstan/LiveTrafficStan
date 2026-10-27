@@ -35,7 +35,7 @@ interface ObjectFindProps {
   paused: boolean
   now: number
   navigationDisabled: boolean
-  onNavigate: (center: AppCenter) => void
+  onNavigate: (center: AppCenter, kind: 'aircraft' | 'vessel') => void
   onBeginShipLocate: () => ShipLocateNavigation | null
   aircraft: readonly DisplayAircraft[]
   vessels: readonly DisplayVessel[]
@@ -128,7 +128,7 @@ function IdentityRow({
   result: DiscoveryResponse
   now: number
   navigationDisabled: boolean
-  onNavigate: (center: AppCenter) => void
+  onNavigate: (center: AppCenter, kind: 'aircraft' | 'vessel') => void
   shipLocate?: ShipLocateResults
 }) {
   const canNavigate = !navigationDisabled && qualifiedLastReport(match, result, now) !== null
@@ -171,7 +171,8 @@ function IdentityRow({
       ) : canNavigate && match.location ? (
         <ObjectResultButton prefix="object-find-result" aria-label={`Go to last report for ${label}`} onSelect={() => {
           if (!qualifiedLastReport(match, result, Date.now()) || !match.location) return
-          onNavigate({ latitude: match.location.latitude, longitude: match.location.longitude, label: `Last report: ${label}` })
+          onNavigate({ latitude: match.location.latitude, longitude: match.location.longitude, label: `Last report: ${label}` },
+            ship ? 'vessel' : 'aircraft')
         }}>Locate</ObjectResultButton>
       ) : undefined}
       meta={<span title={provenance}>{source.name} · {location
@@ -186,7 +187,7 @@ export function IdentityResults(props: {
   result: DiscoveryResponse
   now: number
   navigationDisabled: boolean
-  onNavigate: (center: AppCenter) => void
+  onNavigate: (center: AppCenter, kind: 'aircraft' | 'vessel') => void
   shipLocate?: ShipLocateResults
 }) {
   return <>

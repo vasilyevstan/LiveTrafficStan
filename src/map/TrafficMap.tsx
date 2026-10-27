@@ -67,7 +67,9 @@ import {
 import { createTrafficIcons } from './icons'
 import {
   applyBasemapCartography,
+  basemapSkyBackground,
   needsBasemapStyleReset,
+  withBasemapSky,
 } from './basemapCartography'
 import { createBasemapRelief, type BasemapReliefStatus } from './basemapRelief'
 import {
@@ -168,7 +170,7 @@ import {
   sampleMapViewport,
   withMapProjection,
 } from './mapProjection'
-import { chooseJourneyCamera, journeyFitPadding, journeyIsFramed, type JourneyCameraFit } from './journeyCamera'
+import { chooseJourneyCamera, journeyFitPadding, journeyIsFramed, pointFrameBounds, type JourneyCameraFit } from './journeyCamera'
 import { installJourneyStyle } from './journeyStyle'
 import type { BathymetryStatus } from '../domain/bathymetry'
 import { BathymetryRuntime } from './BathymetryRuntime'
@@ -1108,8 +1110,15 @@ export function TrafficMap({
         scheduleViewportReport(map, 0)
         return
       }
+      const bounds = frame ? pointFrameBounds(currentView, frame.radiusKm)
+        : boundsAroundCenter(currentView, viewRadiusKmRef.current)
+      if (!bounds) {
+        frame?.onError('This position cannot be framed safely. Your view was kept.')
+        scheduleViewportReport(map, 0)
+        return
+      }
       map.fitBounds(
-        boundsAroundCenter(currentView, frame?.radiusKm ?? viewRadiusKmRef.current),
+        bounds,
         {
           padding,
           duration,
@@ -1380,6 +1389,9 @@ export function TrafficMap({
 
         const handleStyleLoad = () => {
           if (generation !== styleGenerationRef.current) return
+          if (containerRef.current) {
+            containerRef.current.style.backgroundColor = basemapSkyBackground(themeRef.current, styleKey)
+          }
           appliedStyleUrlRef.current = styleKey
           fallbackActiveRef.current = reason !== undefined
           appliedThemeRef.current = themeRef.current
@@ -1412,7 +1424,10 @@ export function TrafficMap({
           map.setStyle(style, {
             diff: styleKey !== appliedStyleUrlRef.current,
             transformStyle: (_previous, next) =>
-              withMapProjection(next, projectionPreferenceRef.current),
+              withMapProjection(
+                withBasemapSky(next, themeRef.current, styleKey),
+                projectionPreferenceRef.current,
+              ),
           })
         } catch (error) {
           map.off('style.load', handleStyleLoad)

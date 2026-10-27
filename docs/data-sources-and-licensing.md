@@ -87,9 +87,12 @@ label, compatible registration/IMO/designator, necessary source attribution,
 optional three-decimal public object position and its real observation/model
 instant, and server creation/expiry. Orbital context also retains exact SATCAT
 type, originating owner, snapshot digest/retrieval and element epoch, never
-elements. A link explicitly created in View from here adds only the orbital
+elements. New records also contain the visible `light | dark` display theme,
+not the sender's saved Auto preference. This is a recipient visit-only
+override, not a saved preference transfer. Legacy records omit it.
+A link explicitly created in View from here adds only the orbital
 `view: "from-here"` intent. The recipient uses its current valid model, not a
-stored eye, attitude, look direction or playback time. It does not contain sender Home, full camera, preferences, search
+stored eye, attitude, look direction or playback time. It does not contain sender Home, full camera, other preferences, search
 text, free-form messages, photos/enrichment, provider payloads, trails or
 private history.
 

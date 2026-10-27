@@ -1,6 +1,6 @@
-import type { ExpressionSpecification, LayerSpecification, Map as MapLibreMap } from 'maplibre-gl'
+import type { ExpressionSpecification, LayerSpecification, Map as MapLibreMap, StyleSpecification } from 'maplibre-gl'
 import type { Theme } from '../app/theme'
-import { BASEMAP_DETAIL_CONFIG, DEFAULT_MAP_STYLE_URLS } from '../config/appConfig'
+import { BASEMAP_DETAIL_CONFIG, DEFAULT_MAP_STYLE_URLS, LIGHT_MAP_SKY } from '../config/appConfig'
 
 const PALETTES = {
   light: {
@@ -77,6 +77,18 @@ type BasemapMap = Pick<
 export const LAYER_BASEMAP_BUILDINGS = 'basemap-detail-buildings'
 export const LAYER_BASEMAP_LANDUSE = 'basemap-detail-landuse'
 export const LAYER_BASEMAP_LANDMARKS = 'basemap-detail-landmarks'
+
+export const basemapSkyBackground = (theme: Theme, styleUrl: string): string =>
+  theme === 'light' && styleUrl === DEFAULT_MAP_STYLE_URLS.light ? LIGHT_MAP_SKY['sky-color'] : ''
+
+export const withBasemapSky = (
+  style: StyleSpecification,
+  theme: Theme,
+  styleUrl: string,
+): StyleSpecification =>
+  basemapSkyBackground(theme, styleUrl)
+    ? { ...style, sky: { ...LIGHT_MAP_SKY } }
+    : style
 
 export const needsBasemapStyleReset = (
   styleUrl: string,

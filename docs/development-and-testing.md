@@ -89,6 +89,36 @@ aircraft photos, flight routes, the marine supplement, airport boards and
 object sharing enabled also passes (3,757,583 bytes). This is local acceptance
 only; no production deployment or connector maintenance was performed.
 
+### Shared themes, light sky and contextual Find
+
+Local acceptance for this change uses headless Chrome 156 and native MapLibre,
+with bounded local aircraft/marine/lookup/Photon/share fixtures and fresh-clock
+orbital fixtures derived from the bundled catalogs. It is not production-release evidence or
+an additional live-provider qualification. The required local checks pass,
+including **213 files / 2,576 tests**; the final suite limits workers to two
+after unrelated CPU-heavy shade tests timed out alongside browser rendering.
+
+The browser covers opposing sender/recipient themes for both link types, Auto
+sharing concrete Dark, unrelated preference writes retaining saved Light,
+legacy no-theme links, cached Copy reuse, theme-change invalidation with the
+creation cooldown retained, and explicit theme/Reset winning over a four-second
+delayed resolution. Captured ISS Light/Dark/Light and Return restore the exact
+light sky and pale-blue container background on the original map canvas.
+Rendered capture exposed transparent globe sky, so native sky settings alone
+were not accepted as proof: the actual background is also pale blue.
+
+Desktop More opens/reopens Find first. Received aircraft and vessels, remote
+last-report/Locate, airports/ports with markers off, named places, ISS and a
+bounded-sample Starlink all use their category framing. The initial 50 km
+aircraft radius cleared selection by exceeding full-canvas traffic eligibility;
+25 km retains the accepted selection, with 20 km for vessels. ISS desktop zoom
+is approximately 3.49 and Starlink 3.46. At an emulated **390x568**, notice-aware ISS framing
+uses zoom **1.32** and projects the target to approximately **(195,148)**,
+outside the top pause notice and full inspector; Find and Layers remain
+separate dock entries. Broad orbital framing retains the truthful traffic
+pause rather than clamping the view. These checks retain one original canvas
+and report no runtime exceptions.
+
 ### Unified compact Find (#578)
 
 The component/domain regressions cover one input without class/scope/method

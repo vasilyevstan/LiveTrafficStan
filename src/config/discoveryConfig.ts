@@ -20,7 +20,6 @@ export const DISCOVERY_CONFIG = {
   shipPositionMaximumBytes: 32_768,
   shipPositionMaximumCredits: 8,
   maximumShipSnapshotAgeMs: 10 * 60_000,
-  shipPositionRadiusKm: 5,
   shipPositionMaximumLatitude: 85,
   aircraftCooldownMs: 20_000,
   shipsCooldownMs: 5_000,

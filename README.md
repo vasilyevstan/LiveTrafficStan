@@ -186,6 +186,8 @@ identity are not renamed or reset.
 - Explicit Auto, Light, and Dark theme preferences. Auto follows the browser
   color-scheme signal, while Light and Dark remain persistent overrides; all
   three switch the base map without recreating MapLibre or resetting traffic.
+  The default Light map has a pale-blue sky and a soft horizon, including the
+  background beyond the globe and satellite View from here.
 - One versioned device-local preference schema remembers theme, projection, metric or
   aviation/nautical presentation units, layers, structured vessel filters, and
   selected-trail controls. It never stores camera, Home/location, search text,
@@ -193,7 +195,10 @@ identity are not renamed or reset.
 - An explicit **Share view** action creates a fragment-only link containing a
   three-decimal camera plus validated presentation state. Opening it does not
   save those overrides, and its camera wins over a later automatic geolocation
-  result.
+  result. New view and object links capture the sender's visible Light/Dark
+  mode, including Auto. That theme applies only to the recipient's visit;
+  unrelated preference changes do not save it, and an explicit theme choice
+  or Reset preferences wins. Older object links have no recorded theme.
 - Optional **Share object** in normal aircraft, vessel and orbital details
   creates a public, 12-character link valid for 24 hours. The recipient gets
   the exact identity and dated, rounded location context, not a promise that
@@ -537,7 +542,9 @@ identity are not renamed or reset.
   remain available on demand, including across themes.
   These stable native disclosures
   retain one scroll owner per panel and session-only
-  Layers/Find/Context/Orbits/Sources views. The single explicit-submit input,
+  Find/Layers/Context/Orbits/Sources views. Closed desktop **More** always opens
+  with **Find** selected first; phones retain separate Find and Layers buttons.
+  The single explicit-submit input,
   mixed results and search privacy text live in **Find** on both layouts;
   Settings's **Find objects or places** opens that same retained draft.
   **Center** stays outside menus in the main rail/dock.
@@ -588,6 +595,11 @@ identity are not renamed or reset.
   one newest original-clock report within 24 hours. Aircraft **Locate**
   navigates only to a qualified last report, not a synthetic live selection.
   Received objects use normal **View**; hidden layers/filters keep a reason.
+  Activating a result frames geographic context appropriate to its category:
+  aircraft 25 km, ships 20 km, airports/ports 40 km, places 50 km, and satellites
+  1,500 km. Satellite Go stays on the ordinary map, not View from here.
+  These are one-shot framing radii, not tracking; typed coordinates, Home,
+  map/In view selection and shared-link framing keep their existing behavior.
   Existing map filters remain separately under **Layers -> Map filters**.
   Static and satellite **Go** opens existing details; mobile **Back** restores
   Find. ORBITS is never enabled by Search: explicitly **Enable ORBITS** in
