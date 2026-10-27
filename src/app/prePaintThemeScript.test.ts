@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs'
 import { runInNewContext } from 'node:vm'
 import { describe, expect, it } from 'vitest'
 import { resolvePrePaintTheme } from './prePaintTheme'
+import { defaultAppPreferences } from '../domain/preferences'
+import { serializeShareFragment } from '../domain/shareState'
 
 const html = readFileSync(
   new URL('../../index.html', import.meta.url),
@@ -57,6 +59,20 @@ const executeInlineScript = ({
 }
 
 describe('inline pre-paint theme script', () => {
+  it.each(['light', 'dark'] as const)('accepts a complete currently generated %s Share view before first paint', theme => {
+    const fixture = {
+      fragment: serializeShareFragment(
+        { latitude: 85, longitude: 24, zoom: -1, bearing: 0, pitch: 0 },
+        { ...defaultAppPreferences(), theme }, 3,
+      ),
+      storedPreferences: JSON.stringify({ ...defaultAppPreferences(), theme: theme === 'dark' ? 'light' : 'dark' }),
+      legacyTheme: null,
+      systemDark: theme !== 'dark',
+    }
+    expect(executeInlineScript(fixture)).toBe(theme)
+    expect(resolvePrePaintTheme(fixture)).toBe(theme)
+  })
+
   it('matches the runtime resolver for precedence and invalid inputs', () => {
     const fixtures = [
       {

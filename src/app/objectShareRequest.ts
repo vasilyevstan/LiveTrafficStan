@@ -51,7 +51,8 @@ export const requestObjectShare = async (
       body.expiresAt !== body.createdAt + config.lifetimeMs || body.expiresAt <= body.serverNow ||
       action === 'resolve' && body.token !== value) throw new Error('Invalid shared-link response')
     const context = parseObjectShareContext(body.context, body.serverNow)
-    if (action === 'create' && (typeof value === 'string' || objectShareIdentityKey(context) !== objectShareIdentityKey(value))) {
+    if (action === 'create' && (typeof value === 'string' ||
+      objectShareIdentityKey(context) !== objectShareIdentityKey(value) || context.theme !== value.theme)) {
       throw new Error('Sharing response does not match the captured identity')
     }
     return {

@@ -609,6 +609,8 @@ no object-class, method or In view/Outside view selector. Desktop **More ->
 Find**, phone **Find**, the map-focused **F** shortcut, **Find ships** and
 Settings's **Find objects or places** open that same input. Settings does not
 mount another location form.
+Desktop More lists Find first and selects it each time the closed disclosure
+opens. Mobile retains separate Find and Layers entry points.
 
 Typing stays local: current eligible received aircraft/ships, the existing
 bounded Digitraffic metadata cache, fulfilled airport/port catalogs and
@@ -669,6 +671,16 @@ selected-only pin, weather, airport-board requests or remote object lookup.
 Phone details open fully; **Back** restores the Find query and valid
 focus/scroll context, while **X** deselects. Home, saved preferences and provider
 controllers are unchanged.
+
+All explicit Find result actions use the one-shot radii in
+`FIND_VIEW_RADIUS_KM`: aircraft **25 km**, ships **20 km**, airports and ports
+**40 km**, named places **50 km**, and satellites **1,500 km**. Actual zoom
+adapts to the available canvas and controls rather than a fixed zoom number.
+Typing/results alone, coordinates, Home/Center, map clicks, In view selection
+and incoming shared links do not use these Find radii. No following, hidden
+layer activation or new provider lifecycle is added. A broad satellite view
+may truthfully pause aircraft/ships under the existing 100 km full-canvas rule.
+Unsafe geometry or insufficient unobstructed space reports a framing failure.
 
 **Go to satellite** revalidates the exact owner, current snapshot, element
 identity and position age at activation, commits ordinary navigation and opens
@@ -1198,6 +1210,11 @@ resets that style through the existing loader rather than retaining its paint.
 The bundled offline style retains its original background paint. This palette
 treatment adds no tile/imagery provider, terrain source, API key, preference,
 or camera behavior; projection is configured independently above.
+`LIGHT_MAP_SKY` supplies the default Light map's pale-blue sky, subtle horizon
+and fog. The container shares the sky color beyond the transparent globe
+atmosphere. It is installed before captured-view style listeners and restored
+through normal theme/Return ownership; Dark, custom and offline styles retain
+their own treatment.
 
 ### Map detail and optional relief
 
@@ -1298,6 +1315,10 @@ saved automatically. Browser Home/location, queries, selection, history, and
 provider state are never serialized. The orbital field is only `orbits=0|1`;
 it never serializes catalog identity, modeled time, selected NORAD ID, or
 track.
+New links record the resolved visible `theme=light|dark`, even when the sender
+uses Auto. A shared theme is visit-only and cannot leak into storage when an
+unrelated preference changes. Explicit theme selection or Reset preferences
+supersedes it; existing `theme=auto` fragments remain compatible.
 
 `projection=auto|flat` is allowlisted; older fragments without it inherit the
 saved/default projection. Camera validation accepts zoom -6 through 22 because
@@ -1317,8 +1338,9 @@ revocation or permanent-link promise.
 
 The accessible Share arrow is immediately left of X in the details header,
 including compact phone details. Creation is explicit. Copy reuses the current successful link until its
-expiry; changing the selected identity discards its UI state and cancels
-obsolete work. If the browser cannot write the clipboard after the request,
+expiry; changing the selected identity or visible theme discards its UI state
+and cancels obsolete work. Theme changes preserve the creation cooldown.
+If the browser cannot write the clipboard after the request,
 select and copy the read-only URL in the existing inspector body. The header
 action brings that feedback into view without another scroll region.
 A committed server creation may still
@@ -1337,7 +1359,11 @@ contradictory registration, IMO or international designator cannot match.
 No name/callsign-only matching, extra identifier lookup, following or later
 corrective camera movement is performed.
 
-Saved preferences, filters, projection and session Home remain the recipient's.
+New records also contain the sender's visible Light/Dark theme, applied only
+after the existing resolution succeeds and only for this visit. A newer
+explicit recipient theme/reset choice wins over late resolution. Older records
+have no recoverable sender theme and use the recipient's normal preference.
+Saved theme, filters, projection and session Home remain the recipient's.
 A validated incoming satellite link is explicit session intent to enable
 ORBITS, including its existing bounded Starlink sample. It does not change
 ordinary no-token startup or save the override. An explicit orbital layer
