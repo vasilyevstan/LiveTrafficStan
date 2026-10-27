@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createAppConfig } from '../../config/appConfig'
+import { MARINE_STREAM_CONFIG } from '../../config/marineStreamConfig'
 import type { TrafficQuery } from '../types'
 import { DigitrafficMarineProvider } from './DigitrafficMarineProvider'
 
@@ -23,6 +24,92 @@ afterEach(() => {
 })
 
 describe('DigitrafficMarineProvider query updates', () => {
+  it.each(['rest', 'mqtt'] as const)('rejects future %s positions before cache/status clocks and recovers', async source => {
+    vi.useFakeTimers()
+    const now = 1_800_000_000_000
+    vi.setSystemTime(now)
+    vi.stubGlobal('window', {
+      setTimeout: globalThis.setTimeout,
+      clearTimeout: globalThis.clearTimeout,
+      setInterval: globalThis.setInterval,
+      clearInterval: globalThis.clearInterval,
+    })
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    let first = true
+    vi.stubGlobal('fetch', vi.fn(async (input: string | URL | Request) => {
+      if (String(input).endsWith('/vessels')) return Response.json([])
+      const observedAt = first ? now + 86_400_000 : Date.now()
+      first = false
+      return Response.json({ features: source === 'rest' ? [{
+        geometry: { coordinates: [24.75, 59.44] },
+        properties: { mmsi: 230123456, timestampExternal: observedAt },
+      }] : [] })
+    }))
+    const onSnapshot = vi.fn()
+    const onStatus = vi.fn()
+    const config = createAppConfig({}).marine
+    const provider = new DigitrafficMarineProvider({
+      config, query: query(59.437, 24.754), callbacks: { onSnapshot, onStatus },
+    })
+    const internals = provider as unknown as {
+      openMqttClient: (generation: number) => Promise<void>
+      handleMqttMessage: (topic: string, payload: Uint8Array) => void
+    }
+    vi.spyOn(internals, 'openMqttClient').mockResolvedValue()
+    const message = (observedAt: number) => internals.handleMqttMessage(
+      'vessels-v2/230123456/location',
+      new TextEncoder().encode(JSON.stringify({ time: observedAt / 1_000, lat: 59.44, lon: 24.75 })),
+    )
+    provider.start()
+    await vi.advanceTimersByTimeAsync(0)
+    if (source === 'mqtt') message(now + 86_400_000)
+    await vi.advanceTimersByTimeAsync(config.snapshotFlushIntervalMs)
+    expect(onSnapshot.mock.calls.at(-1)?.[0]).toEqual([])
+    expect(onStatus.mock.calls.some(([status]) => (status.lastDataAt ?? 0) > Date.now())).toBe(false)
+    if (source === 'rest') {
+      await vi.advanceTimersByTimeAsync(config.queryRestRefreshIntervalMs)
+      provider.updateQuery(query(59.438, 24.755))
+    } else {
+      message(Date.now())
+    }
+    await vi.advanceTimersByTimeAsync(config.snapshotFlushIntervalMs)
+    expect(onSnapshot.mock.calls.at(-1)?.[0]).toHaveLength(1)
+    expect(onSnapshot.mock.calls.at(-1)?.[0][0].position.observedAt).toBeLessThanOrEqual(Date.now())
+    provider.stop()
+  })
+
+  it.each([0, 1])('enforces the shared future tolerance boundary plus %s ms', async extra => {
+    vi.useFakeTimers()
+    const now = 1_800_000_000_000
+    vi.setSystemTime(now)
+    vi.stubGlobal('window', {
+      setTimeout: globalThis.setTimeout, clearTimeout: globalThis.clearTimeout,
+      setInterval: globalThis.setInterval, clearInterval: globalThis.clearInterval,
+    })
+    vi.stubGlobal('fetch', vi.fn(async (input: string | URL | Request) =>
+      Response.json(String(input).endsWith('/vessels') ? [] : { features: [] })))
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const onSnapshot = vi.fn()
+    const provider = new DigitrafficMarineProvider({
+      config: createAppConfig({}).marine, query: query(59.437, 24.754),
+      callbacks: { onSnapshot, onStatus: vi.fn() },
+    })
+    const internals = provider as unknown as {
+      openMqttClient: (generation: number) => Promise<void>
+      handleMqttMessage: (topic: string, payload: Uint8Array) => void
+    }
+    vi.spyOn(internals, 'openMqttClient').mockResolvedValue()
+    provider.start()
+    await vi.advanceTimersByTimeAsync(0)
+    internals.handleMqttMessage('vessels-v2/230123456/location', new TextEncoder().encode(JSON.stringify({
+      time: (now + MARINE_STREAM_CONFIG.maximumFutureMs + extra) / 1_000,
+      lat: 59.44, lon: 24.75,
+    })))
+    await vi.advanceTimersByTimeAsync(1_000)
+    expect(onSnapshot.mock.calls.at(-1)?.[0]).toHaveLength(extra === 0 ? 1 : 0)
+    provider.stop()
+  })
+
   it.each([
     ['locations', 429, 'seconds', 3_600_000],
     ['vessels', 503, 'date', 3_600_000],

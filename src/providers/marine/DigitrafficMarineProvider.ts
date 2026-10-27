@@ -1,5 +1,6 @@
 import type { MqttClient } from 'mqtt'
 import type { AppConfig } from '../../config/appConfig'
+import { MARINE_STREAM_CONFIG } from '../../config/marineStreamConfig'
 import { distanceKm } from '../../domain/geo'
 import type { ProviderStatus, Vessel } from '../../domain/traffic'
 import type { CachedMarineDiscovery } from '../../domain/objectDiscovery'
@@ -264,13 +265,11 @@ export class DigitrafficMarineProvider {
       ) {
         return
       }
-      for (const location of locations) this.mergeLocation(location)
-      this.noteRestSuccess(
-        locations.reduce(
-          (latest, location) => Math.max(latest, location.observedAt),
-          0,
-        ),
-      )
+      let latest = 0
+      for (const location of locations) {
+        if (this.mergeLocation(location)) latest = Math.max(latest, location.observedAt)
+      }
+      this.noteRestSuccess(latest)
       this.scheduleFlush()
     } catch (error) {
       if (
@@ -508,6 +507,10 @@ export class DigitrafficMarineProvider {
   }
 
   private mergeLocation(location: MarineLocationRecord) {
+    if (location.observedAt > Date.now() + MARINE_STREAM_CONFIG.maximumFutureMs) {
+      this.warnPayload('location', 'future timestamp')
+      return false
+    }
     const current = this.locations.get(location.mmsi)
     if (!current || location.observedAt >= current.observedAt) {
       this.locations.set(location.mmsi, location)
@@ -518,6 +521,7 @@ export class DigitrafficMarineProvider {
         )
       }
     }
+    return true
   }
 
   private mergeMetadata(record: MarineMetadataRecord) {
@@ -708,7 +712,7 @@ export class DigitrafficMarineProvider {
           this.warnPayload(topicKind, 'invalid fields')
           return
         }
-        this.mergeLocation(location)
+        if (!this.mergeLocation(location)) return
         this.noteLiveSuccess(location.observedAt)
         this.scheduleFlush()
         accepted = true
