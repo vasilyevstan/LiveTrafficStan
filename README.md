@@ -8,6 +8,15 @@ user accounts or a server-side vessel history archive.
 
 Public production: <https://trackstan.xyz>
 
+**Reviewed correctness fixes (#603):** history recording survives overlapping
+retention changes; marine recovery respects retry deadlines, valid report
+clocks and authoritative unavailable metadata. Manual camera movement and
+browser-owned keys retain their intent during startup. No saved-data migration
+or production feature change is required.
+[Acceptance](docs/development-and-testing.md#correctness-regression-acceptance-603)
+and [release receipt](docs/hosting-and-deployment.md#reviewed-correctness-corrections-603)
+distinguish the running application from later documentation-only commits.
+
 **Menu clarity correction (#594):** toggle echoes, routine success narration
 and normal-behavior explanations are removed, not hidden elsewhere.
 Controls, useful facts, actionable failures and required source/privacy/safety
