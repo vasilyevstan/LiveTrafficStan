@@ -27,7 +27,7 @@ import {
   type NorthResetRequest,
 } from '../domain/mapCamera'
 import { consumeNorthReset } from './resetNorth'
-import { handleMapActionShortcut, type MapActionShortcut } from './mapShortcuts'
+import { handleMapActionShortcut, isMapMovementKey, type MapActionShortcut } from './mapShortcuts'
 import { InitiallyCompactAttributionControl } from './InitiallyCompactAttributionControl'
 import { LocalScaleControl } from './LocalScaleControl'
 import { EMPTY_LOCAL_RULER, rulerAllowsDeferredInteraction, type LocalRulerState, type LocalRulerAvailability } from '../domain/localRuler'
@@ -1883,17 +1883,7 @@ export function TrafficMap({
       if (handleMapActionShortcut(
         event, canvas, canvas.ownerDocument.activeElement, actionShortcutRef.current,
       )) return
-      if (
-        [
-          'ArrowDown',
-          'ArrowLeft',
-          'ArrowRight',
-          'ArrowUp',
-          '+',
-          '-',
-          '=',
-        ].includes(event.key)
-      ) {
+      if (isMapMovementKey(event)) {
         hideTrafficTooltip()
         interactionGenerationRef.current += 1
         clusterExpansionGenerationRef.current += 1

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { handleMapActionShortcut, type MapActionShortcut } from './mapShortcuts'
+import { handleMapActionShortcut, isMapMovementKey, type MapActionShortcut } from './mapShortcuts'
 
 const canvas = new EventTarget()
 const keyEvent = (key = 'f') => ({
@@ -13,6 +13,35 @@ const keyEvent = (key = 'f') => ({
   isComposing: false,
   defaultPrevented: false,
   preventDefault: vi.fn(),
+})
+
+describe('map movement intent', () => {
+  it.each(['ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowUp', '+', '-', '='])(
+    'recognizes plain, shifted and repeated %s without consuming browser defaults',
+    key => {
+      const event = keyEvent(key)
+      expect(isMapMovementKey(event)).toBe(true)
+      expect(isMapMovementKey({ ...event, shiftKey: true })).toBe(true)
+      expect(isMapMovementKey({ ...event, repeat: true })).toBe(true)
+      expect(event.preventDefault).not.toHaveBeenCalled()
+    },
+  )
+
+  it.each(['altKey', 'ctrlKey', 'metaKey', 'isComposing', 'defaultPrevented'] as const)(
+    'does not claim movement during %s',
+    guard => {
+      for (const key of ['+', '-', '=', 'ArrowUp']) {
+        const event = { ...keyEvent(key), [guard]: true }
+        expect(isMapMovementKey(event)).toBe(false)
+        expect(event.preventDefault).not.toHaveBeenCalled()
+      }
+    },
+  )
+
+  it.each(['f', 'c', 'Escape', 'Enter', 'Dead', 'Process'])(
+    'leaves %s with its existing owner',
+    key => expect(isMapMovementKey(keyEvent(key))).toBe(false),
+  )
 })
 
 describe('map-focused action shortcuts', () => {
