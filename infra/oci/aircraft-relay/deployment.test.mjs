@@ -58,10 +58,10 @@ describe('OCI relay deployment', () => {
 
   it('pins cloudflared and reads its token from a protected file', () => {
     expect(cloudflaredScript).toContain(
-      "readonly CLOUDFLARED_VERSION='2026.9.3'",
+      "readonly CLOUDFLARED_VERSION='2026.10.4'",
     )
     expect(cloudflaredScript).toContain(
-      "readonly CLOUDFLARED_SHA256='58b3221b6a22d23825cb5a0b347600db39e24e5a5e97afa6e0ae67c34ef235ef'",
+      "readonly CLOUDFLARED_SHA256='173965b09f7268b476a8e110dc68e02377f6622a10e19a3f16631bc8d6b4a6ee'",
     )
     expect(cloudflaredUnit).toContain('--protocol quic')
     expect(cloudflaredUnit).toContain('--edge-ip-version 6')

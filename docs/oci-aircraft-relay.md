@@ -22,8 +22,9 @@ The OCI relay service was proven on **2026-09-26** and initially ran release
 `76540a21291878b44e7f92ceecb37d03a366c0c7`. Protected bootstrap run
 `36267393879` then created remote-managed Tunnel
 `361ff78a-2cba-4558-aba9-6990c9be12e2` and HTTP VPC Service
-`01a0df44-6600-79a2-a14f-88b6606869fb`. Pinned `cloudflared` `2026.9.3` is
-active on the relay VM with four IPv6 QUIC connections and a dedicated
+`01a0df44-6600-79a2-a14f-88b6606869fb`. The connector initially used
+`cloudflared` `2026.9.3`; security maintenance #599 upgraded it to pinned
+`2026.10.4`. It remains active on the relay VM over IPv6 QUIC with a dedicated
 `0400` token file. The Worker binding is checked into `wrangler.jsonc` and is
 used only when a protected deployment selects `oci-private-relay`.
 
@@ -117,6 +118,47 @@ It reintroduces the demonstrated memory-pressure trigger, so use it only in
 controlled maintenance after addressing headroom, not as a production rehearsal.
 Application-version rollback does not require re-enabling this timer.
 
+### Certificate-trust security update (#599)
+
+[Cloudflare's 20 October 2026 advisory](https://blog.cloudflare.com/emudhra-certificate-compromise/)
+requires cloudflared `2026.10.2` or later; non-Homebrew macOS installations
+require `2026.10.3` or later. This Linux connector uses `2026.10.4`. The notice
+concerns compromised certificate authentication, not evidence that this
+deployment was breached. Its private origin remains HTTP loopback, not an
+HTTPS origin whose certificate needs replacing.
+
+The existing OCI Run Command path confirmed the installed RPM and running
+executable were both `2026.9.3`. At **2026-10-26 23:53:15 UTC**, a complete
+exit-0 operation verified the replacement RPM, connected an owned temporary
+replica using the same hardened unit, and required its `/ready` response
+before restarting the original. The original then ran `2026.10.4` and
+returned `/ready` 200; the temporary replica, unit and staged RPM were removed.
+Measured preflight available memory was 250,364 KiB. This overlapping handover
+is not a claim that arbitrary long-lived connections can never disconnect.
+
+The relay process stayed unchanged at source
+`b54962f3cce89ea4757e4b47c829b895ebadc863`; its provider-free health passed.
+Application `e26e233877a53fe4332930e1e06ca47b1226260f` was not redeployed.
+One public aircraft request at **23:54:13 UTC** returned a valid empty
+HTTP 200 result, 101 bytes, the same application release, `no-store` and no
+CORS allowance. No relay restart, token rewrite/export, admission reset,
+reboot, network change or broad package maintenance was performed. Original
+unit bytes, token-file metadata, boot and disabled metadata timer were verified.
+
+Use the SHA-256 for the **actual installer URL**: the IPv6-capable
+`pkg.cloudflare.com` RPM differs from the GitHub release RPM despite the same
+version. The pin below matches Cloudflare's RPM repository metadata and the
+downloaded bytes. The host reported an uninstalled RPM signing key (`NOKEY`);
+integrity verification used that published SHA-256, not a claim of verified
+RPM signature trust. No TLS-verification bypass was used.
+
+For future package-only maintenance, preserve the token and existing unit;
+do not rerun bootstrap just to upgrade. Keep the original connector serving
+until its replacement is ready; if restart fails, retain the connected
+temporary replica until recovery. Application rollback does not patch
+cloudflared, and reverting to the affected version is not a completed fix.
+This receipt covers the documented OCI connector, not other account tunnels.
+
 ## Provider and privacy contract
 
 The relay is not a generic proxy. It accepts only:
@@ -183,7 +225,7 @@ framework, container, reverse proxy, database, or application cache.
 | Component | Pin | SHA-256 |
 | --- | --- | --- |
 | Node.js Linux x64 archive | `24.13.1` | `30215f90ea3cd04dfbc06e762c021393fa173a1d392974298bbc871a8e461089` |
-| cloudflared Linux x86_64 RPM | `2026.9.3` | `58b3221b6a22d23825cb5a0b347600db39e24e5a5e97afa6e0ae67c34ef235ef` |
+| cloudflared Linux x86_64 RPM | `2026.10.4` | `173965b09f7268b476a8e110dc68e02377f6622a10e19a3f16631bc8d6b4a6ee` |
 
 The relay layout is:
 
