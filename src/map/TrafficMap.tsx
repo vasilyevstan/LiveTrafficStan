@@ -27,7 +27,7 @@ import {
   type NorthResetRequest,
 } from '../domain/mapCamera'
 import { consumeNorthReset } from './resetNorth'
-import { handleMapActionShortcut, type MapActionShortcut } from './mapShortcuts'
+import { handleMapActionShortcut, isMapMovementKey, type MapActionShortcut } from './mapShortcuts'
 import { InitiallyCompactAttributionControl } from './InitiallyCompactAttributionControl'
 import { LocalScaleControl } from './LocalScaleControl'
 import { EMPTY_LOCAL_RULER, rulerAllowsDeferredInteraction, type LocalRulerState, type LocalRulerAvailability } from '../domain/localRuler'
@@ -74,6 +74,7 @@ import {
 import { createBasemapRelief, type BasemapReliefStatus } from './basemapRelief'
 import {
   createMapSafely,
+  shouldFitInitialView,
   type TrafficMapError,
 } from './mapInitialization'
 import {
@@ -614,6 +615,7 @@ export function TrafficMap({
   const themeRef = useRef(theme)
   const appliedThemeRef = useRef(theme)
   const initialFitCompleteRef = useRef(false)
+  const initialViewInterruptedRef = useRef<number | null>(null)
   const trafficImagesRef = useRef<
     Partial<Record<Theme, TrafficStyleImages>>
   >({})
@@ -1321,7 +1323,13 @@ export function TrafficMap({
       if (!initialFitCompleteRef.current) {
         initialFitCompleteRef.current = true
         lastViewRequestRef.current = viewRequestRef.current
-        if (
+        if (!shouldFitInitialView(
+          viewRequestRef.current,
+          initialViewInterruptedRef.current,
+        )) {
+          lastViewportSignatureRef.current = null
+          scheduleViewportReport(map, 0)
+        } else if (
           initialCameraRef.current &&
           viewRequestRef.current === initialViewRequestIdRef.current
         ) {
@@ -1794,6 +1802,7 @@ export function TrafficMap({
     let multiplePointerGesture = false
     let suppressRulerClick = false
     const cancelJourneyFraming = () => {
+      initialViewInterruptedRef.current = viewRequestRef.current
       pendingJourneyFitRef.current = undefined
       if (viewJourneyRef.current) {
         viewRequestCancelledRef.current = true
@@ -1889,17 +1898,7 @@ export function TrafficMap({
       if (handleMapActionShortcut(
         event, canvas, canvas.ownerDocument.activeElement, actionShortcutRef.current,
       )) return
-      if (
-        [
-          'ArrowDown',
-          'ArrowLeft',
-          'ArrowRight',
-          'ArrowUp',
-          '+',
-          '-',
-          '=',
-        ].includes(event.key)
-      ) {
+      if (isMapMovementKey(event)) {
         hideTrafficTooltip()
         interactionGenerationRef.current += 1
         clusterExpansionGenerationRef.current += 1

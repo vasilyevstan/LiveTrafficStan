@@ -616,8 +616,12 @@ reconnect, rather than interpreting an empty initializing cache as vessel
 deletion. Compatible cached static context may bridge that reconnect; its
 original observation expiry is not extended by newer positions or repeated
 disconnects. Normal continuous same-source reports still replace unavailable
-fields. This keeps selection and yacht eligibility stable through recovery
-without turning temporary metadata into an unbounded cache.
+fields. A source-timed static report also ends same-source reconnect borrowing,
+including when it reports unavailable values; superseded retained context
+cannot reappear on a later cold reconnect. Position-only recovery may still
+borrow compatible context until the original expiry. This keeps selection and
+yacht eligibility stable through recovery without turning temporary metadata
+into an unbounded cache.
 
 The marine boundary exposes either the original regional descriptor or a
 global-best-effort multi-source descriptor. They describe capability and
@@ -1051,7 +1055,13 @@ continues to render.
   connection, and permit a location REST refresh no more than every five
   minutes. Hidden or ineligible states stop active REST, interval, timeout, and
   MQTT resources while retaining the provider, cache, and all timing gates;
-  unmount performs final shutdown.
+  unmount performs final shutdown. Location and metadata REST share a
+  session-lived `Retry-After` gate. A `429` without usable guidance falls back
+  to the existing five-minute refresh interval; query changes and pause/resume
+  cannot shorten it. Timer waits are platform-bounded and recheck the complete
+  deadline before admission. REST and MQTT positions beyond the existing
+  one-minute future tolerance are rejected before cache high-water comparison
+  or freshness advancement, so a bad source clock cannot poison recovery.
 - Provider errors remain visible until a successful request or subscription
   recovers that provider.
 - Place search has its own cancellable controller and UI state. It permits one
@@ -1155,6 +1165,10 @@ batch retains the epoch under which it was enqueued. Typed cross-tab Clear
 invalidations clear volatile session history and pending writes before reload;
 Disable clears pending writes. Failed batches remain queued, while quota or
 transaction suspension remains visible until explicit recovery.
+Recording ownership is separate from asynchronous UI-status intent. Changing
+retention cannot invalidate a committed Enable or Clear operation's write
+admission, hide a failed operation, or clear a quota suspension. A newer
+Disable, Clear, cross-tab invalidation or teardown still fences obsolete work.
 
 Startup validation, malformed-row deletion, canonical-row repair, metadata
 recount, and optional pruning share one readwrite transaction. The repair
@@ -1627,8 +1641,14 @@ provider scheduler is created.
 Programmatic view requests retain their target label. Trusted canvas wheel,
 double-click, supported map-keyboard input, or pointer movement beyond the
 drag threshold changes the visible label to `Custom view`. Simple marker clicks
-do not. All navigation reuses the same MapLibre instance and settled viewport
-pipeline; it does not add another traffic scheduler or reconnect marine MQTT.
+do not. Manual movement while the initial style is pending cancels framing for
+that view request; a later explicit request may still frame when ready.
+Unmodified and Shift-modified map movement keys retain their existing behavior.
+Alt/Ctrl/Meta combinations, composition and already-consumed keys do not claim
+manual camera intent or cancel pending navigation. Browser zoom remains with
+the browser, and a real canvas resize still reports the changed viewport.
+All navigation reuses the same MapLibre instance and settled viewport pipeline;
+it does not add another traffic scheduler or reconnect marine MQTT.
 
 The aircraft hook creates one revision-aware polling controller after the first
 eligible query and retains it for the session. The marine hook does the same

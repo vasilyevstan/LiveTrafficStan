@@ -3,8 +3,23 @@ import {
   createMapSafely,
   MAP_INITIALIZATION_ERROR,
   mapErrorPresentation,
+  shouldFitInitialView,
   type TrafficMapError,
 } from './mapInitialization'
+
+describe('initial camera ownership', () => {
+  it('preserves ordinary startup framing when the user has not moved', () => {
+    expect(shouldFitInitialView(1, null)).toBe(true)
+  })
+
+  it('does not reapply the initial target after manual movement', () => {
+    expect(shouldFitInitialView(1, 1)).toBe(false)
+  })
+
+  it('honors a newer explicit request after manual movement', () => {
+    expect(shouldFitInitialView(2, 1)).toBe(true)
+  })
+})
 
 describe('createMapSafely', () => {
   it('returns a successfully created map without reporting an error', () => {
