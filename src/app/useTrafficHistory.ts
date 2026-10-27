@@ -143,6 +143,8 @@ export const useTrafficHistory = (
   const flushingRef = useRef(false)
   const mountedRef = useRef(true)
   const operationIntentRef = useRef(0)
+  // Retention can supersede UI status without revoking a committed recording operation.
+  const recordingIntentRef = useRef(0)
   const reloadRequestRef = useRef(0)
   const invalidationSequenceRef = useRef(0)
   const invalidationRevisionsRef = useRef(new Map<string, number>())
@@ -173,6 +175,7 @@ export const useTrafficHistory = (
         }))
       },
       onVersionChange: () => {
+        recordingIntentRef.current += 1
         writeAllowedRef.current = false
         if (!mountedRef.current) return
         setStatus((current) => ({
@@ -240,6 +243,7 @@ export const useTrafficHistory = (
       }
 
       if (message.operation === 'clear') {
+        recordingIntentRef.current += 1
         sessionHistoryRef.current.clear(message.clearedAt as number)
         setSessionSnapshot(sessionHistoryRef.current.snapshot())
         pendingWritesRef.current.clear()
@@ -256,6 +260,7 @@ export const useTrafficHistory = (
           message: 'History was cleared in another tab.',
         })
       } else if (message.operation === 'disable') {
+        recordingIntentRef.current += 1
         pendingWritesRef.current.clear()
         committedRecordsRef.current.clear()
         writeAllowedRef.current = false
@@ -274,6 +279,7 @@ export const useTrafficHistory = (
           logicalBytes: 0,
         })
       } else if (message.operation === 'enable') {
+        recordingIntentRef.current += 1
         pendingWritesRef.current.clear()
         writeAllowedRef.current = false
       }
@@ -319,6 +325,7 @@ export const useTrafficHistory = (
     return () => {
       mountedRef.current = false
       operationIntentRef.current += 1
+      recordingIntentRef.current += 1
       reloadRequestRef.current += 1
       writeAllowedRef.current = false
       pendingWrites.clear()
@@ -864,6 +871,7 @@ export const useTrafficHistory = (
       }
 
       const intent = ++operationIntentRef.current
+      const recordingIntent = ++recordingIntentRef.current
       settingsRef.current = nextSettings
       setSettings(nextSettings)
       writeAllowedRef.current = false
@@ -896,7 +904,7 @@ export const useTrafficHistory = (
           )
           if (
             !mountedRef.current ||
-            intent !== operationIntentRef.current
+            recordingIntent !== recordingIntentRef.current
           ) {
             return
           }
@@ -905,8 +913,10 @@ export const useTrafficHistory = (
             return
           }
           recordingEpochRef.current = metadata.recordingEpoch
-          writeAllowedRef.current = enabled
+          writeAllowedRef.current =
+            settingsRef.current.enabled && metadata.recordingEnabled
           writeSuspensionRef.current = undefined
+          if (intent !== operationIntentRef.current) return
           setStatus(
             statusFromMetadata(
               metadata,
@@ -916,19 +926,20 @@ export const useTrafficHistory = (
         } catch (error) {
           if (
             !mountedRef.current ||
-            intent !== operationIntentRef.current
+            recordingIntent !== recordingIntentRef.current
           ) {
             return
           }
+          const message = error instanceof Error
+            ? error.message
+            : enabled
+              ? 'Local history could not be enabled.'
+              : 'Local history could not be deleted.'
+          writeSuspensionRef.current = { phase: 'error', message }
           setStatus((current) => ({
             ...current,
             phase: enabled ? 'error' : 'deletion-failed',
-            message:
-              error instanceof Error
-                ? error.message
-                : enabled
-                  ? 'Local history could not be enabled.'
-                  : 'Local history could not be deleted.',
+            message,
           }))
         }
       })
@@ -1051,6 +1062,7 @@ export const useTrafficHistory = (
 
   const clearHistory = useCallback(async () => {
     const intent = ++operationIntentRef.current
+    const recordingIntent = ++recordingIntentRef.current
     const clearedAt = Date.now()
     sessionHistoryRef.current.clear(clearedAt)
     setSessionSnapshot(sessionHistoryRef.current.snapshot())
@@ -1080,7 +1092,7 @@ export const useTrafficHistory = (
         notifyInvalidation('clear', metadata, clearedAt)
         if (
           !mountedRef.current ||
-          intent !== operationIntentRef.current
+          recordingIntent !== recordingIntentRef.current
         ) {
           return
         }
@@ -1092,6 +1104,7 @@ export const useTrafficHistory = (
         writeAllowedRef.current =
           settingsRef.current.enabled && metadata.recordingEnabled
         writeSuspensionRef.current = undefined
+        if (intent !== operationIntentRef.current) return
         setStatus(
           statusFromMetadata(
             metadata,
@@ -1101,17 +1114,18 @@ export const useTrafficHistory = (
       } catch (error) {
         if (
           !mountedRef.current ||
-          intent !== operationIntentRef.current
+          recordingIntent !== recordingIntentRef.current
         ) {
           return
         }
+        const message = error instanceof Error
+          ? error.message
+          : 'Local history could not be cleared.'
+        writeSuspensionRef.current = { phase: 'error', message }
         setStatus((current) => ({
           ...current,
           phase: 'deletion-failed',
-          message:
-            error instanceof Error
-              ? error.message
-              : 'Local history could not be cleared.',
+          message,
         }))
       }
     })
@@ -1137,6 +1151,7 @@ export const useTrafficHistory = (
   )
   const retryPersistence = useCallback(() => {
     operationIntentRef.current += 1
+    recordingIntentRef.current += 1
     writeSuspensionRef.current = undefined
     setStatus((current) => ({
       ...current,

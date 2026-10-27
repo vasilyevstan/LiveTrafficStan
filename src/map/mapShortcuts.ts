@@ -6,6 +6,12 @@ type MapShortcutEvent = Pick<
   | 'repeat' | 'isComposing' | 'defaultPrevented' | 'preventDefault'
 >
 
+export const isMapMovementKey = (
+  event: Omit<MapShortcutEvent, 'target' | 'preventDefault'>,
+) => !event.altKey && !event.ctrlKey && !event.metaKey &&
+  !event.isComposing && !event.defaultPrevented &&
+  ['ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowUp', '+', '-', '='].includes(event.key)
+
 export const handleMapActionShortcut = (
   event: MapShortcutEvent,
   canvas: EventTarget,

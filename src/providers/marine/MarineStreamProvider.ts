@@ -1,12 +1,12 @@
-import { MARINE_STREAM_CONFIG as config } from '../../config/marineStreamConfig'
-import { distanceKm } from '../../domain/geo'
-import type { ProviderStatus, Vessel } from '../../domain/traffic'
-import type { TrafficQuery } from '../types'
-import { enrichMarineVesselMetadata, mergeMarineVessels } from './marineFusion'
+import { MARINE_STREAM_CONFIG as config } from '../../config/marineStreamConfig.js'
+import { distanceKm } from '../../domain/geo.js'
+import type { ProviderStatus, Vessel } from '../../domain/traffic.js'
+import type { TrafficQuery } from '../types.js'
+import { enrichMarineVesselMetadata, mergeMarineVessels } from './marineFusion.js'
 import {
   parseMarineStreamRetry,
   parseMarineStreamSnapshot,
-} from './marineStreamProtocol'
+} from './marineStreamProtocol.js'
 
 interface Callbacks {
   onSnapshot(vessels: Vessel[]): void
@@ -286,7 +286,14 @@ export class MarineStreamProvider {
       const previous = current.get(vessel.id)
       current.delete(vessel.id)
       const merged = previous ? mergeMarineVessels(previous, vessel) : vessel
-      current.set(vessel.id, previous
+      if (previous?.provider === vessel.provider &&
+        vessel.metadataObservedAt !== undefined &&
+        vessel.metadataObservedAt >= (previous.metadataObservedAt ?? 0) &&
+        merged === vessel) {
+        this.retained.delete(vessel.id)
+      }
+      // Borrow cold-recovery context only until the source supplies static metadata.
+      current.set(vessel.id, previous && vessel.metadataObservedAt === undefined
         ? enrichMarineVesselMetadata(merged, previous) : merged)
     }
     const now = Date.now()
