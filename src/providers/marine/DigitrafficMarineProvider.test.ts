@@ -23,6 +23,62 @@ afterEach(() => {
 })
 
 describe('DigitrafficMarineProvider query updates', () => {
+  it.each([
+    ['locations', 429, 'seconds', 3_600_000],
+    ['vessels', 503, 'date', 3_600_000],
+    ['locations', 429, 'missing', 300_000],
+    ['vessels', 429, 'invalid', 300_000],
+    ['locations', 429, 'seconds', 3_000_000_000],
+  ] as const)('preserves %s %s %s backoff for %s ms across queries and pause/resume', async (route, status, format, delay) => {
+    vi.useFakeTimers()
+    const now = 1_800_000_000_000
+    vi.setSystemTime(now)
+    vi.stubGlobal('window', {
+      setTimeout: globalThis.setTimeout,
+      clearTimeout: globalThis.clearTimeout,
+      setInterval: globalThis.setInterval,
+      clearInterval: globalThis.clearInterval,
+    })
+    let limited = false
+    const fetchMock = vi.fn(async (input: string | URL | Request) => {
+      if (!limited && new URL(String(input)).pathname.endsWith(`/${route}`)) {
+        limited = true
+        return new Response('Slow down', {
+          status,
+          headers: format === 'missing' ? {} : {
+            'Retry-After': format === 'seconds'
+              ? String(delay / 1_000)
+              : format === 'date' ? new Date(now + delay).toUTCString() : 'invalid',
+          },
+        })
+      }
+      return Response.json(String(input).endsWith('/vessels') ? [] : { features: [] })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    const provider = new DigitrafficMarineProvider({
+      config: createAppConfig({}).marine,
+      query: query(59.437, 24.754),
+      callbacks: { onSnapshot: vi.fn(), onStatus: vi.fn() },
+    })
+    const internals = provider as unknown as { openMqttClient: (generation: number) => Promise<void> }
+    const openMqttClient = vi.spyOn(internals, 'openMqttClient').mockResolvedValue()
+    provider.start()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    await vi.advanceTimersByTimeAsync(30_000)
+    provider.updateQuery(query(59.5, 24.8))
+    provider.setPaused(true)
+    provider.setPaused(false)
+    await vi.advanceTimersByTimeAsync(delay - 30_000 - 1)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    await vi.advanceTimersByTimeAsync(1)
+    expect(fetchMock).toHaveBeenCalledTimes(4)
+    expect(openMqttClient).toHaveBeenCalledTimes(2)
+    provider.stop()
+    await vi.advanceTimersByTimeAsync(delay)
+    expect(fetchMock).toHaveBeenCalledTimes(4)
+  })
+
   it('reuses MQTT and gates query-triggered REST snapshots', async () => {
     vi.useFakeTimers()
     vi.setSystemTime(0)

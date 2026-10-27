@@ -3,7 +3,7 @@ import type { AppConfig } from '../../config/appConfig'
 import { distanceKm } from '../../domain/geo'
 import type { ProviderStatus, Vessel } from '../../domain/traffic'
 import type { CachedMarineDiscovery } from '../../domain/objectDiscovery'
-import { errorMessage, responseError } from '../errors'
+import { errorMessage, ProviderError, responseError } from '../errors'
 import type { TrafficQuery } from '../types'
 import {
   type MarineLocationRecord,
@@ -63,6 +63,7 @@ export class DigitrafficMarineProvider {
   private lastStatusEmission = 0
   private lastLocationRefreshStartedAt?: number
   private lastMetadataRefreshStartedAt?: number
+  private restRetryAt = 0
   private lastMqttConnectAttemptAt?: number
   private locationRefreshPending = false
   private readonly diagnostics?: MarineDiagnosticsCollector
@@ -209,7 +210,7 @@ export class DigitrafficMarineProvider {
     this.locationRefreshTimer = window.setTimeout(() => {
       this.locationRefreshTimer = undefined
       void this.refreshLocations()
-    }, delayMs)
+    }, Math.min(2_147_483_647, Math.max(0, delayMs)))
   }
 
   private async refreshLocations() {
@@ -222,16 +223,14 @@ export class DigitrafficMarineProvider {
     }
 
     const startedAt = Date.now()
-    if (
-      this.lastLocationRefreshStartedAt !== undefined &&
-      startedAt - this.lastLocationRefreshStartedAt <
-        this.config.queryRestRefreshIntervalMs
-    ) {
-      this.scheduleLocationRefresh(
-        this.lastLocationRefreshStartedAt +
-          this.config.queryRestRefreshIntervalMs -
-          startedAt,
-      )
+    const nextRequestAt = Math.max(
+      this.restRetryAt,
+      this.lastLocationRefreshStartedAt === undefined
+        ? 0
+        : this.lastLocationRefreshStartedAt + this.config.queryRestRefreshIntervalMs,
+    )
+    if (startedAt < nextRequestAt) {
+      this.scheduleLocationRefresh(nextRequestAt - startedAt)
       return
     }
 
@@ -278,7 +277,7 @@ export class DigitrafficMarineProvider {
         !controller.signal.aborted &&
         this.isActiveGeneration(generation)
       ) {
-        this.noteError(error)
+        this.noteRestError(error)
       }
     } finally {
       if (this.locationController === controller) {
@@ -295,23 +294,21 @@ export class DigitrafficMarineProvider {
     this.metadataRefreshTimer = window.setTimeout(() => {
       this.metadataRefreshTimer = undefined
       void this.refreshMetadata()
-    }, delayMs)
+    }, Math.min(2_147_483_647, Math.max(0, delayMs)))
   }
 
   private async refreshMetadata() {
     if (!this.isActive() || this.metadataController) return
 
     const startedAt = Date.now()
-    if (
-      this.lastMetadataRefreshStartedAt !== undefined &&
-      startedAt - this.lastMetadataRefreshStartedAt <
-        this.config.metadataRefreshIntervalMs
-    ) {
-      this.scheduleMetadataRefresh(
-        this.lastMetadataRefreshStartedAt +
-          this.config.metadataRefreshIntervalMs -
-          startedAt,
-      )
+    const nextRequestAt = Math.max(
+      this.restRetryAt,
+      this.lastMetadataRefreshStartedAt === undefined
+        ? 0
+        : this.lastMetadataRefreshStartedAt + this.config.metadataRefreshIntervalMs,
+    )
+    if (startedAt < nextRequestAt) {
+      this.scheduleMetadataRefresh(nextRequestAt - startedAt)
       return
     }
 
@@ -344,14 +341,17 @@ export class DigitrafficMarineProvider {
         !controller.signal.aborted &&
         this.isActiveGeneration(generation)
       ) {
-        this.noteError(error)
+        this.noteRestError(error)
       }
     } finally {
       if (this.metadataController === controller) {
         this.metadataController = undefined
       }
       if (this.isActive()) {
-        this.scheduleMetadataRefresh(this.config.metadataRefreshIntervalMs)
+        this.scheduleMetadataRefresh(Math.max(
+          this.config.metadataRefreshIntervalMs,
+          this.restRetryAt - Date.now(),
+        ))
       }
     }
   }
@@ -624,6 +624,18 @@ export class DigitrafficMarineProvider {
           : this.status.lastDataAt,
     }
     this.emitStatus(recovered)
+  }
+
+  private noteRestError(error: unknown) {
+    if (error instanceof ProviderError &&
+      (error.status === 429 || error.retryAfterMs !== undefined)) {
+      const delay = error.retryAfterMs ?? this.config.queryRestRefreshIntervalMs
+      this.restRetryAt = Math.max(
+        this.restRetryAt,
+        Math.min(Number.MAX_SAFE_INTEGER, Date.now() + delay),
+      )
+    }
+    this.noteError(error)
   }
 
   private noteError(error: unknown) {
