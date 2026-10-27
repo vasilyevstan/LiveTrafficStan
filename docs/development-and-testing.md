@@ -48,7 +48,7 @@ supplementary marine WebSocket; use the actual local Worker for those paths.
 | `npm run check:deploy` | Bundle the Worker and Static Assets without credentials or deployment |
 | `npm run preview:worker` | Build and run the actual local Cloudflare `workerd` boundary |
 
-### Unreleased correctness regression acceptance
+### Correctness regression acceptance (#603)
 
 The six focused history/marine/map corrections pass all eight mandatory
 commands above: **214 files / 2,604 tests**. Existing App/ObjectFind lint
@@ -86,8 +86,11 @@ The existing #540/#554 phone-space limitations are not declared fixed.
 The same-input default build has an **11-URL, 3,757,153-byte shell**, versus
 3,756,096 at the reviewed baseline: **+1,057 bytes / 0.0281%**. The build with
 aircraft photos, flight routes, the marine supplement, airport boards and
-object sharing enabled also passes (3,757,583 bytes). This is local acceptance
-only; no production deployment or connector maintenance was performed.
+object sharing enabled also passes (3,757,583 bytes). Those measurements describe
+the isolated correction's local acceptance, not the combined release.
+The [production receipt](hosting-and-deployment.md#reviewed-correctness-corrections-603)
+records the subsequent deployment separately; no connector maintenance was
+performed for these corrections.
 
 ### Shared themes, light sky and contextual Find
 
