@@ -73,6 +73,34 @@ are dashboard-backed received data, not unique-person counts or proof of
 every dimension, country or physical device. See the dated runtime receipt
 for exact windows and the aggregation delay.
 
+## Device-local Saved identities
+
+Saved objects are an origin-local browser identity list, separate from public
+object links, fragment view sharing and opt-in IndexedDB history. Records
+contain canonical ICAO24, MMSI, NORAD, OurAirports ID or Natural Earth
+`ne_id`, plus bounded save-time display/corroboration hints. They contain no
+coordinates, trails, provider payloads, orbital elements, modeled positions,
+photos, Home, camera or history observations.
+
+The list is not sent to TrackStan, Cloudflare Web Analytics, providers, object
+sharing, a service worker, an account, sync, export or backup endpoint.
+Rendering it makes no request. A later explicit Find/Locate/catalog/orbital
+action retains the existing provider disclosure, rate, cancellation,
+attribution and privacy boundary.
+
+Aircraft ICAO24 and vessel MMSI can be reassigned or spoofed; registration and
+valid reported IMO are corroboration rather than ownership or immutable
+airframe/hull truth. NORAD state is modeled from accepted catalog elements,
+not observed or live. Static airport/port references inherit the pinned
+OurAirports/Natural Earth snapshot limits.
+
+Anyone using the same browser profile can inspect Saved. TrackStan provides no
+account separation or application lock. Clear Saved removes the active Saved
+document from that origin/profile boundary but cannot remove screenshots,
+clipboard copies, browser/OS backups, provider logs, existing public links or
+separate private-history rows. Removing an installed shortcut may leave
+browser site data intact.
+
 ## Public object links
 
 **Share object** is explicit publication of a small public aircraft, vessel or

@@ -9,6 +9,9 @@ scheduled CelesTrak snapshot, an optional isolated marine-stream relay and
 the fixed Open Waters vessel-photo metadata route. Optional exact-object
 sharing adds one bounded D1 store behind that same Worker, not an account
 database or general link platform.
+Saved objects add one bounded versioned origin-local identity document in
+browser storage. That document is not an account, provider cache, observation
+archive, or scheduler.
 Plausible route lookup, Digitraffic marine traffic, place search, map data,
 and aircraft photos use reviewed direct browser paths.
 Vessel photos prefer reviewed versioned same-origin assets, then use a bounded
@@ -109,6 +112,8 @@ ORBITS toggle -> same-origin complete CelesTrak snapshot
 STARLINK child -> same-origin bounded systematic sample
                -> isolated logical channel on the same physical worker
 current Aircraft[] -> local literal search -> existing traffic selection
+explicit selected object -> identity-only Saved document
+Saved + current accepted app state -> passive Find/In view resolution
 
 coordinate text -> local parser ------------------------+
 named text -> Photon adapter -> PlaceSearchResult[] ----+-> view navigation
@@ -210,7 +215,7 @@ are part of the feature contract.
 | Area | Responsibility |
 | --- | --- |
 | `src/config/` | Typed defaults and validation of browser-safe environment overrides |
-| `src/domain/` | Application-owned traffic/port/airport/weather/flight-route/orbital types, independent traffic and orbital viewport geometry, local discovery and filters, pure country-allocation, exact-IMO vessel-photo, and exact-NORAD orbital-enrichment lookup, location-input parsing, versioned preferences/share state, unit conversion, and formatting |
+| `src/domain/` | Application-owned traffic/port/airport/weather/flight-route/orbital types, independent traffic and orbital viewport geometry, local discovery and filters, pure country-allocation, exact-IMO vessel-photo, exact-NORAD orbital-enrichment lookup, canonical Saved identities/passive resolution, location-input parsing, versioned preferences/share state, unit conversion, and formatting |
 | `src/providers/aircraft/` | ADSB.lol request, runtime payload checks, normalization, and unit conversion |
 | `src/providers/aircraftMetadata/` | Bounded same-origin static metadata loading, provenance/schema/hash validation, exact identity matching, and shard LRU |
 | `src/providers/aircraftPhoto/` | Disabled-by-default direct Planespotters hex lookup, bounded response validation, exact returned-origin enforcement, and typed local failures |
@@ -222,12 +227,12 @@ are part of the feature contract.
 | `src/providers/bathymetry/` | Fixed matched image/mask acquisition, bounded composition/cache and strict actual WMS grid-value normalization |
 | `src/providers/orbital/` | Strict same-origin snapshot reads, streamed byte bounds, exact schema/header/digest validation, ETag revalidation, and fulfilled current-tab caching |
 | `src/providers/geocoding/` | Photon request construction, response bounds, runtime GeoJSON validation, result normalization, and attribution identity |
-| `src/app/` | React hooks/controllers for provider and orbital lifecycle, unified preference persistence, place-search cancellation/cache, bounded selected-photo, selected-route, and exact-NORAD image tab caches, navigation intent, time ticks, offline state, and traffic-history orchestration |
+| `src/app/` | React hooks/controllers for provider and orbital lifecycle, unified preference persistence, revision/clear-epoch fenced Saved persistence, place-search cancellation/cache, bounded selected-photo, selected-route, and exact-NORAD image tab caches, navigation intent, time ticks, offline state, and traffic-history orchestration |
 | `src/history/` | Provider-qualified observation projection, bounded session history, IndexedDB transactions, settings, indexes, playback, and gap-aware historical trails |
 | `src/traffic/` | Filtering, freshness/expiry, interpolation, and selected-trail history |
 | `src/map/` | MapLibre lifecycle, external/local-fallback styles, persistent traffic/context/orbital GeoJSON sources and layers, feature selection, and marker images |
 | `src/workers/` | Dedicated orbital protocol, validated pure SGP4 propagation, local crossing prediction, selected-track splitting, and revision fencing |
-| `src/components/` | Status, controls, and selected-object details |
+| `src/components/` | Status, controls, selected-object details, accessible Save/Remove actions, and Find-integrated Saved presentation |
 | `worker/` | Fixed aircraft and weather proxies plus the feature-gated CelesTrak orbital snapshot scheduler/reader, with sanitized route matching, explicit protected aircraft delivery mode, VPC/KV/Durable Object binding injection, atomic orbital cadence admission, and fail-closed relay authentication |
 | `infra/oci/aircraft-relay/` | Dependency-free fixed ADSB.lol relay, persistent global admission, loopback HTTP adapter, hardened systemd units, exact-SHA deployment, and Tunnel installation |
 | `scripts/pwa-shell.mjs` | Deterministic shell allowlist/versioning, request classification, two-generation cleanup, and normal/retirement worker source |
@@ -1696,6 +1701,56 @@ task/full inspector wins over restoration; native fullscreen owns Escape
 before ruler cancellation. Navigation/HISTORY/map failure clear the state,
 while theme rehydration restores current geometry without refetching.
 Unmount removes listeners and fences late commands before removing the map.
+
+## Saved object ownership and storage
+
+Saved is an explicit device-local recall layer, not a tracking subsystem. The
+normal selected-details action projects only a canonical application identity,
+a bounded save-time label/corroboration hint and the save time into
+`livetrafficstan.saved.v1`. The list has a 50-entry total limit and a 20-entry
+limit for each moving-object class. Capacity rejects additions visibly; it
+never evicts user-authored entries.
+
+The five classes deliberately do not share one availability claim:
+
+- aircraft resolve by exact lowercase ICAO24 against current accepted traffic;
+- ships resolve by exact ordinary MMSI before display filters;
+- satellites resolve by canonical NORAD ID across accepted curated and
+  Starlink catalogs, with modeled/catalog state rather than observation;
+- airports resolve by the OurAirports numeric source ID;
+- ports resolve by the Natural Earth `ne_id`.
+
+Registration, valid reported IMO, international designator, static ident and
+source output version are corroboration only. A changed value produces a
+visible identity/catalog conflict and never silently rebinds the Saved entry.
+Callsign, vessel name, IATA/ICAO text, port name and coordinates are not
+primary keys.
+
+Opening, filtering or rendering Saved is a pure projection over current
+application-owned traffic, already loaded static catalogs, already accepted
+orbital snapshots and existing opt-in local history. It creates no provider,
+fetch, MQTT, worker, timer, camera, layer, catalog-load, enrichment, photo,
+route or sharing work. Explicit row actions reuse the existing Find, Locate,
+catalog demand and navigation owners. HISTORY may report a matching playback
+observation, but Saved does not enable recording or copy an observation.
+
+The storage parser accepts only known version-1 keys, bounded text without
+control/bidi formatting, canonical identifiers, finite timestamps and bounded
+logical bytes. Unsupported future schemas and malformed documents remain
+untouched and blocked. Partially invalid current documents expose only valid
+rows read-only until the user explicitly clears Saved.
+
+Every explicit mutation reads the latest document, advances a revision and
+verifies the exact synchronous write. BroadcastChannel and `storage` events
+are invalidation hints. Clear advances a clear epoch, so an older in-memory
+Undo cannot restore an entry after Clear. Reset preferences, Clear history and
+Clear Saved remain separate operations.
+
+Saved contains no coordinates, trails, provider payloads, orbital elements,
+modeled tracks, Home, camera, photos, search results or private-history rows.
+It is visible to anyone using the same browser profile, is not included in
+view/object links or analytics, and has no sync, export, import, alerts,
+notifications, account or service-worker refresh.
 
 ## Portable preferences, explicit sharing, and units
 

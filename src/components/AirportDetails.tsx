@@ -6,12 +6,14 @@ import {
 import type { AirportBoardProvider } from '../providers/airportBoards/airportBoardProvider'
 import { AirportBoard } from './AirportBoard'
 import { DetailsPanel } from './DetailsPanel'
+import type { ReactNode } from 'react'
 
 interface AirportDetailsProps {
   airport: Airport
   source: AirportSource
   coordinatePrecision: number
   onClose: () => void
+  headerAction?: ReactNode
   board?: {
     provider: AirportBoardProvider
     now: number
@@ -39,6 +41,7 @@ export function AirportDetails({
   source,
   coordinatePrecision,
   onClose,
+  headerAction,
   board,
 }: AirportDetailsProps) {
   return (
@@ -47,6 +50,7 @@ export function AirportDetails({
       titleId="selected-airport-title"
       closeLabel="Close airport details"
       onClose={onClose}
+      headerAction={headerAction}
       heading={
         <div>
           <p className="eyebrow">Selected airport</p>

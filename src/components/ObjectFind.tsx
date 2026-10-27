@@ -16,11 +16,20 @@ import { orbitalCatalogPage } from '../domain/orbitalDiscovery'
 import type { Port, PortSource } from '../domain/ports'
 import type { DisplayAircraft, DisplayVessel } from '../domain/traffic'
 import { findLookupRequests, rankFindResults } from '../domain/unifiedFind'
+import type { InViewAvailability } from '../domain/inView'
+import {
+  emptySavedObjectsDocument,
+  savedObjectKey,
+  type SavedObject,
+  type SavedObjectsLoadResult,
+  type SavedObjectsMutationResult,
+} from '../domain/savedObjects'
 import { matchesVesselIdentitySearch, normalizeVesselSearchQuery, orderVesselSearchResults, vesselResultContext, vesselResultLabel } from '../domain/vesselFilters'
 import { SameOriginObjectLookupProvider } from '../providers/discovery/objectLookupProvider'
 import { parseMarineMmsi } from '../providers/marine/marineSourceNormalization'
 import { LocationSearchInput } from './LocationSearch'
 import { ObjectResultButton } from './ObjectResultButton'
+import { SavedObjects } from './SavedObjects'
 import type { LocationSearchModel } from './useLocationSearchModel'
 
 export type ShipLocateNavigation = (center: AppCenter, onFramingError: (message: string) => void) => boolean
@@ -65,6 +74,17 @@ interface ObjectFindProps {
   onLoadOrbits: () => void
   onOrbitalNavigate: (id: string, originId: string) => boolean
   discoverMarineMetadata?: (query: string, now: number) => CachedMarineDiscovery
+  savedEntries?: readonly SavedObject[]
+  savedStatus?: SavedObjectsLoadResult
+  aircraftAvailability?: InViewAvailability
+  vesselAvailability?: InViewAvailability
+  lastObservedAt?: (entry: SavedObject) => number | undefined
+  onRemoveSaved?: (key: string) => SavedObjectsMutationResult
+  onClearSaved?: () => SavedObjectsMutationResult
+  onRestoreSaved?: (
+    entry: SavedObject,
+    expectedClearEpoch: number,
+  ) => SavedObjectsMutationResult
 }
 
 function orbitalPositionMessage(entry: OrbitalCatalogEntry, state: OrbitalControllerState, now: number, visible: boolean) {
@@ -231,6 +251,16 @@ export function ObjectFind(props: ObjectFindProps) {
   const [locator] = useState(() => new ObjectLookupController({ provider: lookupProvider, onState: setLocateState }))
   const remoteActive = active && !paused
   const navigationDisabled = props.navigationDisabled
+  const savedEntries = props.savedEntries ?? []
+  const savedStatus = props.savedStatus ?? {
+    phase: 'ready' as const,
+    document: emptySavedObjectsDocument(),
+  }
+  const unchangedSaved = {
+    ok: false,
+    document: savedStatus.document,
+    message: 'Saved objects are unavailable.',
+  }
   const locateAllowedRef = useRef(false)
   useLayoutEffect(() => {
     locateAllowedRef.current = remoteActive && !navigationDisabled
@@ -362,10 +392,24 @@ export function ObjectFind(props: ObjectFindProps) {
     onLocate: (match) => { void locateShip(match) },
   }
   const rows: Result[] = []
+  const savedMatches = savedEntries.filter((entry) => {
+    if (!query) return true
+    const search = query.toLocaleLowerCase('en-US')
+    return [
+      entry.savedLabel,
+      entry.id,
+      entry.kind === 'aircraft' ? entry.registration : undefined,
+      entry.kind === 'vessel' ? entry.imo : undefined,
+      entry.kind === 'orbital' ? entry.internationalDesignator : undefined,
+      entry.kind === 'airport' ? entry.ident : undefined,
+    ].some((value) => value?.toLocaleLowerCase('en-US').includes(search))
+  })
+  const savedKeys = new Set(savedMatches.map(savedObjectKey))
   const receivedIds = new Set<string>()
   const receivedCredits = new Set<string>()
   if (query) {
     for (const aircraft of orderAircraftSearchResults(props.aircraft, query)) {
+      if (savedKeys.has(`aircraft:${aircraft.hex.toLowerCase()}`)) continue
       receivedIds.add(`aircraft:${aircraft.hex.toLowerCase()}`)
       const label = aircraftResultLabel(aircraft)
       rows.push({
@@ -382,6 +426,7 @@ export function ObjectFind(props: ObjectFindProps) {
     }
     const vessels = props.vessels.filter((vessel) => matchesVesselIdentitySearch(vessel, normalizeVesselSearchQuery(query)))
     for (const vessel of orderVesselSearchResults(vessels, query)) {
+      if (savedKeys.has(`vessel:${vessel.mmsi}`)) continue
       receivedIds.add(`ships:${vessel.mmsi}`)
       if (vessel.attribution) receivedCredits.add(vessel.attribution)
       const label = vesselResultLabel(vessel)
@@ -405,6 +450,10 @@ export function ObjectFind(props: ObjectFindProps) {
     ]) {
       for (const match of result.matches) {
         const identity = `${match.objectClass}:${match.identifiers.mmsi ?? match.identifiers.icao24?.toLowerCase()}`
+        const savedIdentity = match.objectClass === 'ships'
+          ? `vessel:${match.identifiers.mmsi}`
+          : `aircraft:${match.identifiers.icao24?.toLowerCase()}`
+        if (savedKeys.has(savedIdentity)) continue
         if (receivedIds.has(identity)) continue
         receivedIds.add(identity)
         const label = match.name ?? match.identifiers.registration ?? match.identifiers.mmsi ?? match.identifiers.icao24 ?? 'Reported object'
@@ -416,6 +465,7 @@ export function ObjectFind(props: ObjectFindProps) {
       }
     }
     for (const airport of discoverAirports(props.airports, query)) {
+      if (savedKeys.has(`airport:${airport.id}`)) continue
       rows.push({
         key: airport.id, label: airport.name, identities: [airport.ident, airport.icaoCode ?? '', airport.iataCode ?? ''],
         content: <FindResultRow label={airport.name}
@@ -426,6 +476,7 @@ export function ObjectFind(props: ObjectFindProps) {
       })
     }
     for (const port of discoverPorts(props.ports, query)) {
+      if (savedKeys.has(`port:${port.id}`)) continue
       rows.push({
         key: port.id, label: port.name, identities: [],
         content: <FindResultRow label={port.name} context="Port · generalized static location"
@@ -435,6 +486,7 @@ export function ObjectFind(props: ObjectFindProps) {
       })
     }
     for (const entry of discoverLoadedOrbits(orbitalCatalog.entries, query)) {
+      if (savedKeys.has(`orbital:${entry.record.noradCatalogId}`)) continue
       rows.push({
         key: entry.id, label: entry.record.name, identities: [entry.record.noradCatalogId, entry.record.internationalDesignator ?? ''],
         content: <FindResultRow label={entry.record.name}
@@ -461,6 +513,7 @@ export function ObjectFind(props: ObjectFindProps) {
     }
   }
   const sorted = rankFindResults(rows, query)
+  const totalMatches = rows.length + savedMatches.length
   const paging = orbitalCatalogPage(sorted, page, DISCOVERY_CONFIG.catalogResultLimit)
   const start = paging.page * DISCOVERY_CONFIG.catalogResultLimit
   const searching = shipState.phase === 'loading' || aircraftState.phase === 'loading' || placeSearchState.phase === 'loading'
@@ -540,10 +593,52 @@ export function ObjectFind(props: ObjectFindProps) {
       <p id="location-search-help" className="control-note object-find-privacy">
         Text sent in <a href="https://photon.komoot.io/" target="_blank" rel="noreferrer">Photon URL</a> · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap</a>
       </p>
+      <SavedObjects
+        entries={savedEntries}
+        status={savedStatus}
+        query={query}
+        aircraft={props.aircraft}
+        vessels={props.vessels}
+        aircraftVisible={props.aircraftVisible}
+        vesselsVisible={props.vesselsVisible}
+        selectableVesselIds={props.selectableVesselIds}
+        aircraftAvailability={props.aircraftAvailability ?? { available: true }}
+        vesselAvailability={props.vesselAvailability ?? { available: true }}
+        lastObservedAt={props.lastObservedAt ?? (() => undefined)}
+        airports={props.airports}
+        airportsReady={props.airportsReady}
+        airportSource={props.airportSource}
+        ports={props.ports}
+        portsReady={props.portsReady}
+        portSource={props.portSource}
+        orbitalCatalog={orbitalCatalog.entries}
+        curated={props.curated}
+        starlink={props.starlink}
+        navigationDisabled={navigationDisabled}
+        onAircraftSelect={props.onAircraftSelect}
+        onVesselSelect={props.onVesselSelect}
+        onAirportNavigate={props.onAirportNavigate}
+        onPortNavigate={props.onPortNavigate}
+        onOrbitalNavigate={props.onOrbitalNavigate}
+        onPrefillFind={model.setValue ?? (() => undefined)}
+        onLoadAirports={props.onLoadAirports}
+        onLoadPorts={props.onLoadPorts}
+        onLoadOrbits={props.onLoadOrbits}
+        loadsDisabled={paused}
+        onRemove={props.onRemoveSaved ?? (() => unchangedSaved)}
+        onClear={props.onClearSaved ?? (() => unchangedSaved)}
+        onRestore={props.onRestoreSaved ?? (() => unchangedSaved)}
+      />
       {model.inputError && <p id="location-search-status" className="control-note" role="alert">{model.inputError}</p>}
       {query && !model.inputError && <p id="location-search-status" className="control-note object-find-count" role="status">
         {searching ? 'Searching online… ' : ''}
-        {rows.length ? `${rows.length} ${rows.length === 1 ? 'match' : 'matches'}${partial ? ' · partial, source limit reached' : ''}${paging.pageCount > 1 ? ` · ${paging.rangeStart}–${paging.rangeEnd}` : ''}.` :
+        {totalMatches ? `${totalMatches} ${totalMatches === 1 ? 'match' : 'matches'}${partial ? ' · partial, source limit reached' : ''}${
+          paging.pageCount > 1
+            ? savedMatches.length
+              ? ` · other results ${paging.rangeStart}–${paging.rangeEnd} of ${rows.length}`
+              : ` · ${paging.rangeStart}–${paging.rangeEnd}`
+            : ''
+        }.` :
           searching || catalogLoading ? 'Loading available results.' :
             submitted ? sourceErrors.length ? 'No matches in available data; some sources unavailable.' : 'No matches in searched sources.' :
               'Press Search to include online results and static catalogs.'}

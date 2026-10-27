@@ -1,22 +1,26 @@
 import type { Port, PortSource } from '../domain/ports'
 import { DetailsPanel } from './DetailsPanel'
+import type { ReactNode } from 'react'
 
 interface PortDetailsProps {
   port: Port
   source: PortSource
   onClose: () => void
+  headerAction?: ReactNode
 }
 
 export function PortDetails({
   port,
   source,
   onClose,
+  headerAction,
 }: PortDetailsProps) {
   return (
     <DetailsPanel
       titleId="selected-port-title"
       closeLabel="Close port details"
       onClose={onClose}
+      headerAction={headerAction}
       heading={
         <div>
           <p className="eyebrow">Selected port</p>

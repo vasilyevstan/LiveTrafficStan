@@ -1183,6 +1183,27 @@ export const useTrafficHistory = (
       sessionIndex,
     ],
   )
+  const lastRetainedObservationByIdentity = useMemo(() => {
+    const latest = new Map<string, number>()
+    if (!settings.enabled) return latest
+    for (const record of [...sessionSnapshot.records, ...durableRecords]) {
+      const key = record.kind === 'aircraft'
+        ? `aircraft:${record.hex.toLowerCase()}`
+        : `vessel:${record.mmsi}`
+      const current = latest.get(key)
+      if (current === undefined || record.observedAt > current) {
+        latest.set(key, record.observedAt)
+      }
+    }
+    return latest
+  }, [durableRecords, sessionSnapshot.records, settings.enabled])
+  const lastRetainedObservationAt = useCallback(
+    (kind: 'aircraft' | 'vessel', identifier: string) =>
+      lastRetainedObservationByIdentity.get(
+        `${kind}:${kind === 'aircraft' ? identifier.toLowerCase() : identifier}`,
+      ),
+    [lastRetainedObservationByIdentity],
+  )
 
   return {
     settings,
@@ -1193,6 +1214,7 @@ export const useTrafficHistory = (
     playback,
     historicalEntities,
     trailSegments,
+    lastRetainedObservationAt,
     setPersistenceEnabled,
     setRetentionHours,
     clearHistory,
