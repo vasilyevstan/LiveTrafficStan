@@ -36,6 +36,18 @@ beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(now) })
 afterEach(() => vi.useRealTimers())
 
 describe('minimal public object context', () => {
+  it('allows only an optional concrete sender theme for every public object kind', () => {
+    for (const context of [shareTrafficObject(aircraft), shareTrafficObject(vessel), shareOrbitalObject(position, snapshot)]) {
+      expect(parseObjectShareContext(context, now).theme).toBeUndefined()
+      for (const theme of ['light', 'dark']) {
+        expect(parseObjectShareContext({ ...context, theme }, now)).toEqual({ ...context, theme })
+      }
+      for (const theme of ['auto', '', 'DARK', null, 1, {}]) {
+        expect(() => parseObjectShareContext({ ...context, theme }, now)).toThrow('Invalid shared theme')
+      }
+    }
+  })
+
   it('captures rounded reported positions and exact corroboration without extra live fields', () => {
     const context = shareTrafficObject(aircraft)
     expect(context).toEqual({

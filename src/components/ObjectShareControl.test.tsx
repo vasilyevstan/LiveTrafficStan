@@ -6,7 +6,7 @@ describe('ObjectShareControl', () => {
   it('renders a labeled share arrow without creating a link or a duplicate text action', () => {
     const capture = vi.fn()
     const html = renderToStaticMarkup(
-      <ObjectShareControl identityKey="selected:test" capture={capture} now={0} />,
+      <ObjectShareControl theme="dark" identityKey="selected:test" capture={capture} now={0} />,
     )
     expect(capture).not.toHaveBeenCalled()
     expect(html).toContain('class="close-button details-panel__share"')
@@ -22,7 +22,7 @@ describe('ObjectShareControl', () => {
   it('names a captured-view link without acquiring or creating anything during render', () => {
     const capture = vi.fn()
     const html = renderToStaticMarkup(
-      <ObjectShareControl identityKey="from-here:1" viewFromHere capture={capture} now={0} />,
+      <ObjectShareControl theme="dark" identityKey="from-here:1" viewFromHere capture={capture} now={0} />,
     )
     expect(capture).not.toHaveBeenCalled()
     expect(html).toContain('aria-label="Share view from here"')
@@ -34,7 +34,7 @@ describe('ObjectShareControl', () => {
   it('can retain its keyed owner while temporarily unavailable during captured placement', () => {
     const capture = vi.fn()
     const html = renderToStaticMarkup(
-      <ObjectShareControl identityKey="from-here:1" viewFromHere disabled capture={capture} now={0} />,
+      <ObjectShareControl theme="light" identityKey="from-here:1" viewFromHere disabled capture={capture} now={0} />,
     )
     expect(html).toContain('aria-label="Share view from here"')
     expect(html).toContain('disabled=""')

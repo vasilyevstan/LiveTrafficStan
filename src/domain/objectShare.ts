@@ -11,6 +11,7 @@ type MarineShareSource = typeof marineSources[number]
 type ShareSource = 'ADSB.lol' | MarineShareSource | 'Space-Track.org / USSPACECOM' | 'CelesTrak'
 interface ShareBase {
   version: 1
+  theme?: 'light' | 'dark'
   identifier: string
   label: string
   source: ShareSource
@@ -57,7 +58,10 @@ export const parseObjectShareContext = (value: unknown, now: number): ObjectShar
     !text(value.label, config.maximumLabelLength) || !source(value.source)) {
     throw new Error('Invalid shared object')
   }
-  const allowed = ['version', 'kind', 'identifier', 'label', 'source', 'position']
+  const allowed = ['version', 'kind', 'identifier', 'label', 'source', 'position', 'theme']
+  if (value.theme !== undefined && value.theme !== 'light' && value.theme !== 'dark') {
+    throw new Error('Invalid shared theme')
+  }
   let position: ShareBase['position']
   if (value.position !== undefined) {
     const point = value.position
@@ -71,6 +75,7 @@ export const parseObjectShareContext = (value: unknown, now: number): ObjectShar
   }
   const base: ShareBase = {
     version: 1, identifier: value.identifier, label: value.label, source: value.source,
+    ...(value.theme ? { theme: value.theme } : {}),
     ...(position ? { position } : {}),
   }
   let context: ObjectShareContext

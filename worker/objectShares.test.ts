@@ -25,6 +25,17 @@ const resolve = (database: ObjectShareTestDatabase, at = now, value = token) =>
 describe('bounded D1 object shares', () => {
   afterEach(() => vi.restoreAllMocks())
 
+  it.each(['light', 'dark'])('preserves the optional %s theme without changing the existing storage lifetime', async theme => {
+    const database = new ObjectShareTestDatabase()
+    const created = await handleObjectShares(request(config.createPath, { ...context, theme }),
+      { OBJECT_SHARES: database, OBJECT_SHARING_ENABLED: 'true' }, { now: () => now, token: () => token })
+    expect(created.status).toBe(201)
+    const receipt = await created.json()
+    expect(receipt.context.theme).toBe(theme)
+    expect(receipt.expiresAt).toBe(now + config.lifetimeMs)
+    expect(await (await resolve(database)).json()).toEqual(receipt)
+  })
+
   it('commits rounded public context with a server TTL and counts only committed creations/resolutions', async () => {
     const database = new ObjectShareTestDatabase()
     const response = await create(database)

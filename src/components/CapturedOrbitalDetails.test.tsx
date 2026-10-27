@@ -29,7 +29,7 @@ describe('CapturedOrbitalDetails', () => {
         onExpand: () => undefined, onCollapse: () => undefined,
       }}>
         <CapturedOrbitalDetails view={view} ready playing={false} online units="metric"
-          shareObject={<ObjectShareControl identityKey="from-here:1" viewFromHere now={3_000}
+          shareObject={<ObjectShareControl theme="light" identityKey="from-here:1" viewFromHere now={3_000}
             capture={() => { throw new Error('Share must be explicit') }} />}
           onReturn={() => undefined} onTogglePlaying={() => undefined} />
       </MobileInspectorContext>,
