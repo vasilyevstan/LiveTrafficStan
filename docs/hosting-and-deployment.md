@@ -65,6 +65,38 @@ credentials and the private-relay secret. Observability remains disabled and
 no paid fallback is enabled. Orbital activation uses the included free KV and
 SQLite Durable Object allocations; R2 is not used.
 
+### Reviewed correctness corrections (#603)
+
+The six corrections accepted in #603 are live as application
+**`35eb4ebba103b015e87790b50e79d81d4ec28374`**, Worker
+**`edbc296f-0737-4db8-acbb-ba4e77c1dd94`**, published on
+**2026-10-27 at 12:41:17 UTC** through successful serialized
+[deployment 40505550090](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/40505550090).
+Promotion #607 and necessary zero-tree ancestry #608 preserve accepted tree
+`c0f7bbab6674015556116c7a0dd834ad9a218ea5`. Exact-main
+[Validation 40505371703](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/40505371703)
+passed. The complete original dev/main rules and repository merge settings
+were restored and deep-verified immediately after the ancestry merge.
+
+Publication, atomic-secret cleanup and the unchanged complete strict smoke
+passed in the workflow. The same strict smoke also passed on `trackstan.xyz`
+using an identical-input local build of the exact source. The combined
+enabled build has an 11-URL, 3,760,390-byte shell; its deployment suite passes
+214 files / 2,614 tests. Reuse the qualified
+[local native-browser acceptance](development-and-testing.md#correctness-regression-acceptance-603);
+HTTP smoke is not new physical-device or rendered-interaction evidence.
+
+All production inputs remain: application, private OCI aircraft relay,
+photos/routes/curated orbital/Starlink/marine supplement/airport boards/object
+sharing enabled, and Space-Track acquisition. Existing D1/KV/coordinator
+identities, main-only secrets, serialization and operational/source/physical/
+retry fences remain. No schema, saved-data migration, OCI operation or forced
+provider acquisition was introduced. The actual immediate predecessor is
+application `ed45f8d0da5ffca8965632fd19841fb3df0dcfec`, Worker
+`611874b2-0cef-4e13-b40f-6585b971f644`; retain the existing protected rollback.
+Later receipt-only documentation and Wiki commits do not redeploy or replace
+the running application identified here.
+
 ### Necessary menu copy (#594)
 
 The menu-only correction preserves the enabled production inputs, sharing/D1
