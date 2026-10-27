@@ -72,6 +72,7 @@ import {
 import { createBasemapRelief, type BasemapReliefStatus } from './basemapRelief'
 import {
   createMapSafely,
+  shouldFitInitialView,
   type TrafficMapError,
 } from './mapInitialization'
 import {
@@ -612,6 +613,7 @@ export function TrafficMap({
   const themeRef = useRef(theme)
   const appliedThemeRef = useRef(theme)
   const initialFitCompleteRef = useRef(false)
+  const initialViewInterruptedRef = useRef<number | null>(null)
   const trafficImagesRef = useRef<
     Partial<Record<Theme, TrafficStyleImages>>
   >({})
@@ -1312,7 +1314,13 @@ export function TrafficMap({
       if (!initialFitCompleteRef.current) {
         initialFitCompleteRef.current = true
         lastViewRequestRef.current = viewRequestRef.current
-        if (
+        if (!shouldFitInitialView(
+          viewRequestRef.current,
+          initialViewInterruptedRef.current,
+        )) {
+          lastViewportSignatureRef.current = null
+          scheduleViewportReport(map, 0)
+        } else if (
           initialCameraRef.current &&
           viewRequestRef.current === initialViewRequestIdRef.current
         ) {
@@ -1779,6 +1787,7 @@ export function TrafficMap({
     let multiplePointerGesture = false
     let suppressRulerClick = false
     const cancelJourneyFraming = () => {
+      initialViewInterruptedRef.current = viewRequestRef.current
       pendingJourneyFitRef.current = undefined
       if (viewJourneyRef.current) {
         viewRequestCancelledRef.current = true

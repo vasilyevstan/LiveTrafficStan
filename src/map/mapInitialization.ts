@@ -17,6 +17,11 @@ export const MAP_INITIALIZATION_ERROR: TrafficMapError = {
   message: 'The map could not start. Check browser graphics support or reload.',
 }
 
+export const shouldFitInitialView = (
+  currentRequestId: number,
+  interruptedRequestId: number | null,
+) => currentRequestId !== interruptedRequestId
+
 export const createMapSafely = <T>(
   createMap: () => T,
   onError: (error: TrafficMapError) => void,
