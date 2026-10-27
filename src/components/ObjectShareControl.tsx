@@ -1,19 +1,21 @@
-import { useContext, useEffect, useId, useRef, useState } from 'react'
+import { useContext, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { requestObjectShare, ObjectShareRequestError } from '../app/objectShareRequest'
 import { OBJECT_SHARE_CONFIG as config } from '../config/objectShareConfig'
 import type { ObjectShareContext } from '../domain/objectShare'
+import type { Theme } from '../app/theme'
 import { DetailsPanelFeedbackContext, MobileInspectorContext } from './mobileWorkspace'
 
 interface Props {
   identityKey: string
   capture: () => ObjectShareContext
+  theme: Theme
   now: number
   viewFromHere?: boolean
   disabled?: boolean
 }
 
-function ShareControl({ capture, now, viewFromHere = false, disabled = false }: Props) {
+function ShareControl({ capture, theme, now, viewFromHere = false, disabled = false }: Props) {
   const presentation = useContext(MobileInspectorContext)
   const feedbackTarget = useContext(DetailsPanelFeedbackContext)
   const inputId = useId()
@@ -25,6 +27,14 @@ function ShareControl({ capture, now, viewFromHere = false, disabled = false }: 
   const [displayLink, setDisplayLink] = useState<{ url: string; expiresAt: number }>()
   const [cooldownUntil, setCooldownUntil] = useState(0)
   useEffect(() => () => pendingRef.current?.abort(), [])
+  useLayoutEffect(() => {
+    pendingRef.current?.abort()
+    pendingRef.current = undefined
+    linkRef.current = undefined
+    setPending(false)
+    setFeedback(undefined)
+    setDisplayLink(undefined)
+  }, [theme])
 
   const share = async () => {
     const cached = linkRef.current
@@ -40,7 +50,7 @@ function ShareControl({ capture, now, viewFromHere = false, disabled = false }: 
       if (!link || performance.now() >= link.deadline) {
         cooldownRef.current = performance.now() + config.creationCooldownMs
         setCooldownUntil(Date.now() + config.creationCooldownMs)
-        const receipt = await requestObjectShare('create', capture(), controller.signal)
+        const receipt = await requestObjectShare('create', { ...capture(), theme }, controller.signal)
         if (controller.signal.aborted) return
         link = {
           url: `${window.location.origin}/${receipt.token}`,

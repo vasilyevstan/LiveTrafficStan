@@ -1,12 +1,14 @@
 import type { StyleSpecification } from 'maplibre-gl'
 import { describe, expect, it, vi } from 'vitest'
-import { BASEMAP_DETAIL_CONFIG, DEFAULT_MAP_STYLE_URLS } from '../config/appConfig'
+import { BASEMAP_DETAIL_CONFIG, DEFAULT_MAP_STYLE_URLS, LIGHT_MAP_SKY } from '../config/appConfig'
 import {
   applyBasemapCartography,
+  basemapSkyBackground,
   LAYER_BASEMAP_BUILDINGS,
   LAYER_BASEMAP_LANDMARKS,
   LAYER_BASEMAP_LANDUSE,
   needsBasemapStyleReset,
+  withBasemapSky,
 } from './basemapCartography'
 import { trafficIconTreatment } from './icons'
 
@@ -92,6 +94,21 @@ const contrast = (first: string, second: string) => {
 }
 
 describe('atlas basemap cartography', () => {
+  it('installs the light sky before style.load without changing dark, custom or fallback skies', () => {
+    const original = { ...style(), sky: { 'sky-color': '#123456' } }
+    const light = withBasemapSky(original, 'light', DEFAULT_MAP_STYLE_URLS.light)
+    expect(light.sky).toEqual(LIGHT_MAP_SKY)
+    expect(basemapSkyBackground('light', DEFAULT_MAP_STYLE_URLS.light)).toBe(LIGHT_MAP_SKY['sky-color'])
+    expect(withBasemapSky(light, 'light', DEFAULT_MAP_STYLE_URLS.light)).toEqual(light)
+    expect(original.sky).toEqual({ 'sky-color': '#123456' })
+    for (const [theme, url] of [
+      ['dark', DEFAULT_MAP_STYLE_URLS.dark], ['light', 'custom-style'],
+      ['light', 'livetrafficstan-fallback:light'], ['light', DEFAULT_MAP_STYLE_URLS.dark],
+    ] as const) {
+      expect(withBasemapSky(original, theme, url)).toBe(original)
+      expect(basemapSkyBackground(theme, url)).toBe('')
+    }
+  })
   it.each([
     [DEFAULT_MAP_STYLE_URLS.light, 'light', 'dark', true],
     [DEFAULT_MAP_STYLE_URLS.dark, 'dark', 'light', true],

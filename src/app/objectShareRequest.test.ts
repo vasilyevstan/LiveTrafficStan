@@ -14,6 +14,17 @@ beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(now) })
 afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks() })
 
 describe('bounded same-origin sharing transport', () => {
+  it('round-trips the captured theme and rejects a creation response that drops or changes it', async () => {
+    const shared = { ...context, theme: 'dark' } as const
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(response({ ...receipt, context: shared }, 201))
+    expect((await requestObjectShare('create', shared, new AbortController().signal, fetchImpl)).context.theme).toBe('dark')
+    for (const returned of [context, { ...context, theme: 'light' }]) {
+      await expect(requestObjectShare('create', shared, new AbortController().signal,
+        vi.fn<typeof fetch>().mockResolvedValue(response({ ...receipt, context: returned }, 201))))
+        .rejects.toThrow('could not be loaded or created')
+    }
+  })
+
   it('uses fixed POST bodies with no credentials, referrer, redirect or cache', async () => {
     const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(response(receipt, 201))
     expect(await requestObjectShare('create', context, new AbortController().signal, fetchImpl)).toEqual(receipt)

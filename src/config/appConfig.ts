@@ -1,4 +1,4 @@
-import type { ProjectionSpecification } from 'maplibre-gl'
+import type { ProjectionSpecification, SkySpecification } from 'maplibre-gl'
 import type { StaticAircraftMetadataProviderConfig } from '../providers/aircraftMetadata/staticAircraftMetadataProvider'
 import type { PlanespottersPhotoProviderConfig } from '../providers/aircraftPhoto/planespottersPhotoProvider'
 import type { StaticAirportsProviderConfig } from '../providers/airports/staticAirportsProvider'
@@ -43,6 +43,24 @@ export const MOBILE_WORKSPACE_CONFIG = {
   coarseLandscapeMaximumWidthPx: 1024,
   coarseLandscapeMaximumHeightPx: 480,
 } as const
+
+export const FIND_VIEW_RADIUS_KM = {
+  aircraft: 25,
+  vessel: 20,
+  airport: 40,
+  port: 40,
+  place: 50,
+  orbital: 1_500,
+} as const
+
+export const LIGHT_MAP_SKY = {
+  'sky-color': '#b7d5ed',
+  'horizon-color': '#e1edf4',
+  'fog-color': '#e1edf4',
+  'sky-horizon-blend': 0.6,
+  'horizon-fog-blend': 0.3,
+  'fog-ground-blend': 0.2,
+} satisfies SkySpecification
 
 export const ORBITAL_VIEW_CONFIG = {
   initialLookPitchDegrees: 72,

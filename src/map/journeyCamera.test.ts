@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 import { LngLat, LngLatBounds, MercatorCoordinate, type LngLatBoundsLike } from 'maplibre-gl'
 import type { JourneySnapshot } from '../domain/journey'
-import { chooseJourneyCamera, journeyIsFramed, largestJourneyFitRect } from './journeyCamera'
+import { chooseJourneyCamera, journeyFitPadding, journeyIsFramed, largestJourneyFitRect, pointFrameBounds } from './journeyCamera'
+import { FIND_VIEW_RADIUS_KM, JOURNEY_CONFIG } from '../config/appConfig'
 
 const snapshot: JourneySnapshot = {
   revision: 1, identity: 'aircraft:test', kind: 'aircraft', title: 'Test',
@@ -16,6 +17,47 @@ const snapshot: JourneySnapshot = {
 const padding = { left: 20, right: 20, top: 20, bottom: 20 }
 
 describe('one-shot journey framing', () => {
+  it('uses contextual per-kind extents and keeps wrapped and high-latitude point fits representable', () => {
+    expect(FIND_VIEW_RADIUS_KM).toEqual({
+      aircraft: 25, vessel: 20, airport: 40, port: 40, place: 50, orbital: 1_500,
+    })
+    for (const latitude of [0, 51, 84, -84]) {
+      for (const longitude of [0, 179.9, -179.9]) {
+        for (const radius of Object.values(FIND_VIEW_RADIUS_KM)) {
+          const [[west, south], [east, north]] = pointFrameBounds({ latitude, longitude, label: 'Find' }, radius)!
+          expect(west).toBeLessThan(longitude)
+          expect(east).toBeGreaterThan(longitude)
+          expect(east - west).toBeLessThanOrEqual(360)
+          expect(south).toBeLessThan(latitude)
+          expect(north).toBeGreaterThan(latitude)
+          expect(Math.max(Math.abs(south), Math.abs(north))).toBeLessThanOrEqual(JOURNEY_CONFIG.maximumFitLatitude)
+        }
+      }
+    }
+    for (const latitude of [86, NaN]) {
+      expect(pointFrameBounds({ latitude, longitude: 0, label: 'Unsafe' }, 1_500)).toBeUndefined()
+    }
+    expect(pointFrameBounds({ latitude: 0, longitude: 0, label: 'Unsafe' }, -1)).toBeUndefined()
+  })
+
+  it('reserves the actual traffic-pause notice as well as the mobile inspector', () => {
+    const querySelectorAll = vi.fn().mockReturnValue([
+      { matches: () => true, getClientRects: () => [1], getBoundingClientRect: () => ({ left: 0, right: 390, top: 76, bottom: 120 }) },
+      { matches: () => false, getClientRects: () => [1], getBoundingClientRect: () => ({ left: 8, right: 382, top: 215, bottom: 454 }) },
+      { matches: () => false, getClientRects: () => [1], getBoundingClientRect: () => ({ left: 0, right: 390, top: 458, bottom: 568 }) },
+    ])
+    vi.stubGlobal('window', { innerWidth: 390, innerHeight: 568 })
+    vi.stubGlobal('document', { querySelectorAll })
+    try {
+      const padding = journeyFitPadding({ left: 0, top: 0, right: 390, bottom: 568 } as DOMRect)
+      expect(querySelectorAll.mock.calls[0]?.[0]).toContain('.viewport-notice')
+      expect(padding?.top).toBeGreaterThanOrEqual(124)
+      expect(padding && 568 - padding.bottom).toBeLessThanOrEqual(207)
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
   it('uses the largest unobscured area for desktop, mobile and a magnified viewport', () => {
     const desktop = largestJourneyFitRect({ left: 0, right: 1280, top: 0, bottom: 900 }, [
       { left: 16, right: 386, top: 120, bottom: 642 },

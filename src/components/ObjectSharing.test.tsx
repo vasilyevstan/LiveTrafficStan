@@ -16,7 +16,7 @@ const context: ObjectShareContext = {
 describe('subordinate sharing controls and dated context', () => {
   it('does not capture or request anything while merely rendering the sender action', () => {
     const capture = vi.fn(() => context)
-    const html = renderToStaticMarkup(<ObjectShareControl identityKey="private-key" capture={capture} now={now} />)
+    const html = renderToStaticMarkup(<ObjectShareControl theme="dark" identityKey="private-key" capture={capture} now={now} />)
     expect(html).toContain('Share object')
     expect(html).toContain('24 hours')
     expect(html).not.toContain('private-key')

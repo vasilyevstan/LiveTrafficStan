@@ -26,6 +26,7 @@ import { usePlaceSearch } from './app/usePlaceSearch'
 import { usePorts } from './app/usePorts'
 import { useSessionLocation } from './app/useSessionLocation'
 import { useTheme } from './app/useTheme'
+import type { ThemePreference } from './app/theme'
 import { useTrafficHistory } from './app/useTrafficHistory'
 import { useTrailHistory } from './app/useTrailHistory'
 import { useWeatherObservations } from './app/useWeatherObservations'
@@ -57,6 +58,7 @@ import {
   BASEMAP_DETAIL_CONFIG,
   ZOOM_TRAFFIC_CONTEXT_CONFIG,
   OBJECT_SHARE_CONFIG,
+  FIND_VIEW_RADIUS_KM,
 } from './config/appConfig'
 import type { AppCenter } from './config/appConfig'
 import { orderAircraftSearchResults } from './domain/aircraftSearch'
@@ -176,6 +178,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
   const sharedObjectDeadlineRef = useRef(0)
   const sharedOrbitalVisibilityRef = useRef<((id: string) => boolean) | null>(null)
   const sharedObjectMountRef = useRef(0)
+  const findTrafficSelectionRef = useRef<{ entity: DisplayTrafficEntity; viewRequestId: number } | undefined>(undefined)
   const appShellRef = useRef<HTMLElement>(null)
   const workspaceControlsRef = useRef<WorkspaceControlsHandle>(null)
   const rulerMapRef = useRef<LocalRulerHandle>(null)
@@ -239,6 +242,8 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
   const [sharedState] = useState(() =>
     objectShareStartup ? null : readBrowserShareState(APP_CONFIG.navigation.coordinatePrecision),
   )
+  const [sharedTheme, setSharedTheme] = useState<ThemePreference | undefined>(sharedState?.preferences?.theme)
+  const sharedThemeDismissedRef = useRef(false)
   const [locationCameraIntent] = useState(() => {
     const intent = new LocationCameraIntent()
     if (sharedState?.camera || objectShareStartup) {
@@ -251,14 +256,15 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     updatePreferences,
     resetPreferences,
     status: preferenceStatus,
-  } = useAppPreferences(sharedState?.preferences)
+  } = useAppPreferences(sharedState?.preferences ? { ...sharedState.preferences, theme: undefined } : undefined)
   const {
     layers: storedLayerPreferences,
     trail: trailPreferences,
-    theme: themePreference,
+    theme: savedThemePreference,
     projection: projectionPreference,
     units,
   } = preferences
+  const themePreference = sharedTheme ?? savedThemePreference
   const [sharedOrbitsEnabled, setSharedOrbitsEnabled] = useState(false)
   const orbitalVisibilityChangedRef = useRef(false)
   const layerPreferences = useMemo(
@@ -604,6 +610,8 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
   )
   const setThemePreference = useCallback(
     (nextTheme: typeof themePreference) => {
+      sharedThemeDismissedRef.current = true
+      setSharedTheme(undefined)
       updatePreferences((current) => ({
         ...current,
         theme: nextTheme,
@@ -780,6 +788,10 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     viewportReport?.viewRequestId === viewRequest.id
       ? viewportReport.assessment
       : null
+  const trafficPauseNotice = currentAssessment?.kind === 'ineligible' ? currentAssessment
+    : !currentAssessment && (viewRequest.radiusKm ?? 0) > APP_CONFIG.map.maximumViewportRadiusKm
+      ? { message: 'Zoom in to see live traffic', viewport: undefined }
+      : undefined
   const currentOrbitalViewport =
     viewReady && viewportReport?.viewRequestId === viewRequest.id
       ? viewportReport.orbitalViewport
@@ -1167,8 +1179,16 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     [aircraft, vessels],
   )
   const selectedEntity = useMemo(
-    () => displayEntities.find((entity) => entity.id === selectedId),
-    [displayEntities, selectedId],
+    () => {
+      const current = displayEntities.find((entity) => entity.id === selectedId)
+      if (current) return current
+      const pending = findTrafficSelectionRef.current
+      if (pending?.entity.id !== selectedId || pending.viewRequestId !== viewRequest.id ||
+        viewportReport?.viewRequestId === viewRequest.id) return undefined
+      return displayTraffic([pending.entity], displayNow,
+        pending.entity.kind === 'aircraft' ? APP_CONFIG.aircraft : APP_CONFIG.marine)[0]
+    },
+    [displayEntities, displayNow, selectedId, viewRequest.id, viewportReport?.viewRequestId],
   )
   const hoveredAircraft = useMemo(
     () => aircraft.find((entity) => entity.id === hoveredAircraftId),
@@ -1523,6 +1543,12 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     },
     [commitNavigation],
   )
+  const handleFindReportNavigate = useCallback(
+    (center: AppCenter, kind: 'aircraft' | 'vessel') => {
+      commitNavigation(center, center.label, { radiusKm: FIND_VIEW_RADIUS_KM[kind] })
+    },
+    [commitNavigation],
+  )
   const handleBeginShipLocate = useCallback((): ShipLocateNavigation | null => {
     if (!shipLocateAllowedRef.current || document.hidden || !navigator.onLine) return null
     const revision = locationCameraIntent.beginExplicitViewIntent()
@@ -1542,7 +1568,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
         return false
       }
       commitNavigation(center, center.label, {
-        radiusKm: DISCOVERY_CONFIG.shipPositionRadiusKm, onFramingError,
+        radiusKm: FIND_VIEW_RADIUS_KM.vessel, onFramingError,
       })
       return true
     }
@@ -1550,7 +1576,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
 
   const handlePlaceResultSelect = useCallback(
     (result: PlaceSearchResult) => {
-      commitNavigation(result.center, result.label)
+      commitNavigation(result.center, result.label, { radiusKm: FIND_VIEW_RADIUS_KM.place })
     },
     [commitNavigation],
   )
@@ -1574,7 +1600,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     const url = createShareUrl(
       window.location,
       mapCamera,
-      { ...preferences, layers: layerPreferences },
+      { ...preferences, theme, layers: layerPreferences },
       APP_CONFIG.navigation.coordinatePrecision,
     )
     const clipboard = window.navigator.clipboard
@@ -1596,13 +1622,15 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
         })
       },
     )
-  }, [layerPreferences, mapCamera, preferences])
+  }, [layerPreferences, mapCamera, preferences, theme])
 
   const handleResetPreferences = useCallback(() => {
     cancelSharedObject()
     finishCapturedOrbitalView()
     orbitalVisibilityChangedRef.current = true
     setSharedOrbitsEnabled(false)
+    sharedThemeDismissedRef.current = true
+    setSharedTheme(undefined)
     resetPreferences()
     setReliefVisible(BASEMAP_DETAIL_CONFIG.reliefVisibleByDefault)
     setShareFeedback(undefined)
@@ -1671,6 +1699,16 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     (id: string, originId: string) => selectTraffic(id, originId),
     [selectTraffic],
   )
+  const handleFindTrafficNavigate = useCallback((id: string, originId: string) => {
+    const entity = aircraft.find(candidate => candidate.id === id) ?? currentVessels.find(candidate => candidate.id === id)
+    if (!entity) return
+    const label = entity.kind === 'aircraft'
+      ? entity.callsign ?? entity.registration ?? entity.hex
+      : entity.name ?? String(entity.mmsi)
+    findTrafficSelectionRef.current = { entity, viewRequestId: viewRequest.id + 1 }
+    commitNavigation({ ...entity.position, label }, label, { radiusKm: FIND_VIEW_RADIUS_KM[entity.kind] })
+    selectTraffic(id, originId)
+  }, [aircraft, commitNavigation, currentVessels, selectTraffic, viewRequest.id])
 
   const handleMapPortSelect = useCallback((id: string | null) => {
     locationCameraIntent.beginExplicitViewIntent()
@@ -1717,7 +1755,8 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     const airport = airports.find((candidate) => candidate.id === id)
     if (!airport) return false
     const label = `Airport: ${airport.name}`
-    commitNavigation({ latitude: airport.latitude, longitude: airport.longitude, label }, label)
+    commitNavigation({ latitude: airport.latitude, longitude: airport.longitude, label }, label,
+      { radiusKm: FIND_VIEW_RADIUS_KM.airport })
     selectAirport(id, originId)
     setCatalogSelection({ kind: 'airport', id, expandMobileDetails: mobileWorkspace })
     return true
@@ -1726,7 +1765,8 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     const port = ports.find((candidate) => candidate.id === id)
     if (!port) return false
     const label = `Port: ${port.name}`
-    commitNavigation({ latitude: port.latitude, longitude: port.longitude, label }, label)
+    commitNavigation({ latitude: port.latitude, longitude: port.longitude, label }, label,
+      { radiusKm: FIND_VIEW_RADIUS_KM.port })
     handleMapPortSelect(id)
     detailFocusOriginIdRef.current = originId
     setCatalogSelection({ kind: 'port', id, expandMobileDetails: mobileWorkspace })
@@ -1825,7 +1865,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     const label = `Modeled: ${entry.record.name}`
     commitNavigation({
       latitude: source.position.latitude, longitude: source.position.longitude, label,
-    }, label)
+    }, label, { radiusKm: FIND_VIEW_RADIUS_KM.orbital })
     selectOrbital(id, originId)
     setCatalogSelection({ kind: 'orbital', id, expandMobileDetails: mobileWorkspace })
     return true
@@ -1993,6 +2033,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
       const { receipt, linkDeadline } = result
       sharedObjectDeadlineRef.current = linkDeadline
       const { context } = receipt
+      if (!sharedThemeDismissedRef.current && context.theme) setSharedTheme(context.theme)
       const enableSharedOrbits = context.kind === 'orbital' && !orbitalVisibilityChangedRef.current
       if (enableSharedOrbits) setSharedOrbitsEnabled(true)
       if (context.position) {
@@ -2587,6 +2628,8 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
           aircraftEmptyMessage={aircraftEmptyMessage}
           onAircraftQueryChange={setAircraftQuery}
           onAircraftSelect={handleAircraftDiscoverySelect}
+          onFindTrafficNavigate={handleFindTrafficNavigate}
+          onFindReportNavigate={handleFindReportNavigate}
           vesselFilters={vesselFilters}
           vesselResults={vesselResults}
           totalVessels={currentVessels.length}
@@ -2757,7 +2800,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
           </div>
         )}
 
-        {!sharedObjectNotice && !sharedObject && !capturedOrbitalView && !orbitalViewMessage && !historyActive && !journey && currentAssessment?.kind === 'ineligible' && (
+        {!sharedObjectNotice && !sharedObject && !capturedOrbitalView && !orbitalViewMessage && !historyActive && !journey && trafficPauseNotice && (
           <div className="viewport-notice" role="status">
             <strong>
               {hasTrafficContext
@@ -2767,9 +2810,9 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
             <span>
               {hasTrafficContext &&
                 'Last local sample; not wider live coverage. '}
-              {currentAssessment.message}
+              {trafficPauseNotice.message}
             </span>
-            {currentAssessment.viewport && (
+            {trafficPauseNotice.viewport && (
               <button type="button" onClick={handleResumeLiveTraffic}>
                 RESUME LIVE
               </button>
@@ -2821,6 +2864,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
             online={online}
             units={units}
             shareObject={APP_CONFIG.objectSharing.enabled ? <ObjectShareControl
+              theme={theme}
               identityKey={`from-here:${capturedOrbitalView.revision}`}
               viewFromHere
               disabled={!capturedOrbitalReady}
@@ -2856,6 +2900,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
             journeyMessage={journeyMessage}
             journeyPreparing={journeyPreparing}
             shareObject={!historyActive && APP_CONFIG.objectSharing.enabled ? <ObjectShareControl
+              theme={theme}
               identityKey={JSON.stringify([selectedEntity.id, selectedEntity.kind === 'aircraft' ? selectedEntity.registration : selectedEntity.imo])}
               capture={() => shareTrafficObject(selectedEntity)} now={now} /> : undefined}
             onClose={handleCloseTraffic}
@@ -2897,6 +2942,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
               ? 'View from here needs the vector basemap.'
               : orbitalViewUnavailableReason(selectedOrbitalPosition, projectionPreference)}
             shareObject={APP_CONFIG.objectSharing.enabled ? <ObjectShareControl
+              theme={theme}
               identityKey={`${selectedOrbitalPosition.id}|${selectedOrbitalState.snapshot.sha256}`}
               capture={() => {
                 const snapshot = selectedOrbitalState.snapshot

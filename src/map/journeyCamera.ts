@@ -1,6 +1,6 @@
 import { LngLat, type Map as MapLibreMap, type PaddingOptions } from 'maplibre-gl'
 import { JOURNEY_CONFIG } from '../config/appConfig'
-import { distanceKm } from '../domain/geo'
+import { boundsAroundCenter, distanceKm, isValidCoordinate, type AppCenter } from '../domain/geo'
 import type { JourneySnapshot } from '../domain/journey'
 import { unwrapLongitude } from '../domain/viewport'
 
@@ -9,6 +9,19 @@ export interface JourneyFitRect {
   right: number
   top: number
   bottom: number
+}
+
+export const pointFrameBounds = (
+  center: AppCenter, radiusKm: number,
+): [[number, number], [number, number]] | undefined => {
+  if (!isValidCoordinate(center.latitude, center.longitude) ||
+    Math.abs(center.latitude) > JOURNEY_CONFIG.maximumFitLatitude ||
+    !Number.isFinite(radiusKm) || radiusKm <= 0) return undefined
+  const [[west, south], [east, north]] = boundsAroundCenter(center, radiusKm)
+  return [
+    [Math.max(center.longitude - 180, west), Math.max(-JOURNEY_CONFIG.maximumFitLatitude, south)],
+    [Math.min(center.longitude + 180, east), Math.min(JOURNEY_CONFIG.maximumFitLatitude, north)],
+  ]
 }
 
 const intersects = (a: JourneyFitRect, b: JourneyFitRect) =>
@@ -56,11 +69,12 @@ export const journeyFitPadding = (canvas: DOMRect): Required<PaddingOptions> | u
     bottom: Math.min(canvas.bottom, (visual?.offsetTop ?? 0) + (visual?.height ?? window.innerHeight)),
   }
   const obstacles = [...document.querySelectorAll<HTMLElement>(
-    '.brand-panel, .details-panel, .workspace-dock, .control-panel__more[open] > .control-panel__more-body, .control-panel__urgent:not([hidden]), .maplibregl-ctrl-attrib',
+    '.brand-panel, .details-panel, .workspace-dock, .viewport-notice, .control-panel__more[open] > .control-panel__more-body, .control-panel__urgent:not([hidden]), .maplibregl-ctrl-attrib',
   )].filter(element => element.getClientRects().length > 0)
     .map(element => {
       const rect = element.getBoundingClientRect()
-      return { left: rect.left - 8, right: rect.right + 8, top: rect.top - 8, bottom: rect.bottom + 8 }
+      const margin = element.matches('.viewport-notice') ? 4 : 8
+      return { left: rect.left - margin, right: rect.right + margin, top: rect.top - margin, bottom: rect.bottom + margin }
     })
   const area = largestJourneyFitRect(viewport, obstacles)
   return area ? {

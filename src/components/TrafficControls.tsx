@@ -86,6 +86,8 @@ interface TrafficControlsProps {
   aircraftEmptyMessage: string
   onAircraftQueryChange: (query: string) => void
   onAircraftSelect: (id: string, originId: string) => void
+  onFindTrafficNavigate: (id: string, originId: string) => void
+  onFindReportNavigate: Parameters<typeof ObjectFind>[0]['onNavigate']
   vesselFilters: VesselFilterState
   vesselResults: readonly DisplayVessel[]
   findVessels?: readonly DisplayVessel[]
@@ -226,8 +228,8 @@ interface PromotedAction {
 }
 
 const MAP_TOOL_TASKS = [
-  ['layers', 'LAYERS'],
   ['find', 'FIND'],
+  ['layers', 'LAYERS'],
   ['context', 'CONTEXT'],
   ['orbits', 'ORBITS'],
   ['sources', 'SOURCES'],
@@ -330,6 +332,8 @@ export function TrafficControls({
   aircraftEmptyMessage,
   onAircraftQueryChange,
   onAircraftSelect,
+  onFindTrafficNavigate,
+  onFindReportNavigate,
   vesselFilters,
   vesselResults,
   findVessels = vesselResults,
@@ -470,7 +474,7 @@ export function TrafficControls({
     focus: Element | null
   } | null>(null)
   const [mapToolTask, setMapToolTask] =
-    useState<MapToolTask>('layers')
+    useState<MapToolTask>(mobileWorkspace ? 'layers' : 'find')
   const focusedWithinMapToolsRef = useRef(false)
   const focusedWithinSettingsRef = useRef(false)
   const lastTaskFocusRef = useRef(new WeakMap<HTMLDetailsElement, HTMLElement>())
@@ -957,7 +961,14 @@ export function TrafficControls({
           title={mobileWorkspace ? 'Layers and map context' : 'Explore map: layers, discovery, context and sources'}
           onClick={(event) => {
             closeOtherTasks(mapToolsDetailsRef.current)
-            if (!mobileWorkspace) return
+            if (!mobileWorkspace) {
+              if (!mapToolsDetailsRef.current?.open) {
+                event.preventDefault()
+                openFind()
+                mapToolsBodyRef.current?.scrollTo({ top: 0 })
+              }
+              return
+            }
             if (mapToolsDetailsRef.current?.open && mapToolTask !== 'layers') {
               event.preventDefault()
               selectMapToolTask('layers')
@@ -1222,15 +1233,15 @@ export function TrafficControls({
               paused={discoveryPaused}
               now={now}
               navigationDisabled={locationNavigationDisabled}
-              onNavigate={onLocationNavigate}
+              onNavigate={onFindReportNavigate}
               onBeginShipLocate={onBeginShipLocate}
               aircraft={findAircraft}
               vessels={findVessels}
               aircraftVisible={aircraftVisible}
               vesselsVisible={vesselsVisible}
               selectableVesselIds={new Set(vesselResults.map((vessel) => vessel.id))}
-              onAircraftSelect={onAircraftSelect}
-              onVesselSelect={onVesselSelect}
+              onAircraftSelect={onFindTrafficNavigate}
+              onVesselSelect={onFindTrafficNavigate}
               airports={catalogAirports}
               airportsReady={airportsReady}
               airportsLoading={airportsLoading}
