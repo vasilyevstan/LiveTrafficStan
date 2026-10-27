@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ProviderError } from '../src/providers/errors.js'
+import type { Vessel } from '../src/domain/traffic.js'
+import { normalizeAisVessel } from '../src/providers/marine/digitrafficNormalization.js'
+import { MarineStreamProvider } from '../src/providers/marine/MarineStreamProvider.js'
+import { parseMarineStreamSnapshot } from '../src/providers/marine/marineStreamProtocol.js'
 import type { MarineStreamSource } from '../src/providers/marine/marineSourceNormalization.js'
 import {
   MarineStreamHub,
@@ -93,11 +97,87 @@ beforeEach(() => {
   vi.spyOn(console, 'error').mockImplementation(() => {})
 })
 afterEach(() => {
+  vi.unstubAllGlobals()
   vi.restoreAllMocks()
   vi.useRealTimers()
 })
 
 describe('shared marine subscriptions', () => {
+  it('does not revive retained browser metadata after a newer native unavailable report', async () => {
+    vi.stubGlobal('window', { location: { href: 'https://app.example/' } })
+    const { hub, client, upstreams, ready } = setup()
+    await ready()
+    const staticReport = (available: boolean) => ({
+      MessageType: 'ShipStaticData',
+      Message: { ShipStaticData: {
+        MessageID: 5, UserID: 230123456, Valid: true, Name: 'EXAMPLE',
+        Type: available ? 37 : 0,
+        Dimension: available ? { A: 6, B: 3, C: 2, D: 1 } : { A: 0, B: 0, C: 0, D: 0 },
+      } },
+      MetaData: { MMSI: 230123456, time_utc: new Date(Date.now()).toISOString() },
+    })
+    const relaySnapshot = () => {
+      const frame = parseMarineStreamSnapshot(client.sent.at(-1))
+      if (!frame) throw new Error('Expected a complete relay snapshot')
+      return frame
+    }
+    upstreams.aisstream.receive(position())
+    upstreams.aisstream.receive(staticReport(true))
+    await vi.advanceTimersByTimeAsync(1_000)
+    const original = relaySnapshot()
+    expect(original.vessels[0]).toMatchObject({
+      lengthMeters: 9, vesselType: 'Pleasure craft', metadataObservedAt: now,
+    })
+    const sockets: Socket[] = []
+    const onSnapshot = vi.fn<(vessels: Vessel[]) => void>()
+    const browser = new MarineStreamProvider({
+      query: { center: { ...view().center, label: 'View' }, radiusKm: 20 },
+      callbacks: { onSnapshot, onStatus: vi.fn() },
+      connect: () => {
+        const socket = new Socket()
+        sockets.push(socket)
+        return socket
+      },
+    })
+    const positionOnly = () => normalizeAisVessel(
+      { mmsi: 230123456, latitude: 59.44, longitude: 24.75, observedAt: Date.now() },
+      undefined, Date.now(), 'AISStream', 'AISStream',
+    )
+    browser.start()
+    await vi.advanceTimersByTimeAsync(0)
+    sockets[0].dispatchEvent(new Event('open'))
+    sockets[0].receive({ ...original, revision: 1, sequence: 1 })
+    sockets[0].close()
+    await vi.advanceTimersByTimeAsync(15_000)
+    sockets[1].dispatchEvent(new Event('open'))
+    sockets[1].receive({ ...original, revision: 2, sequence: 1, vessels: [positionOnly()] })
+    expect(onSnapshot.mock.lastCall?.[0][0]).toMatchObject({
+      lengthMeters: 9, vesselType: 'Pleasure craft',
+    })
+
+    upstreams.aisstream.receive(position(Date.now()))
+    upstreams.aisstream.receive(staticReport(false))
+    await vi.advanceTimersByTimeAsync(1_000)
+    const unavailable = relaySnapshot()
+    expect(unavailable.vessels[0].metadataObservedAt).toBe(now + 16_000)
+    expect(unavailable.vessels[0].lengthMeters).toBeUndefined()
+    expect(unavailable.vessels[0].vesselType).toBeUndefined()
+    sockets[1].receive({ ...unavailable, revision: 2, sequence: 2 })
+    expect(onSnapshot.mock.lastCall?.[0][0].lengthMeters).toBeUndefined()
+    expect(onSnapshot.mock.lastCall?.[0][0].vesselType).toBeUndefined()
+    expect(onSnapshot.mock.lastCall?.[0][0].metadataObservedAt).toBe(now + 16_000)
+
+    sockets[1].close()
+    await vi.advanceTimersByTimeAsync(15_000)
+    sockets[2].dispatchEvent(new Event('open'))
+    sockets[2].receive({ ...unavailable, revision: 3, sequence: 1, vessels: [positionOnly()] })
+    expect(onSnapshot.mock.lastCall?.[0][0].lengthMeters).toBeUndefined()
+    expect(onSnapshot.mock.lastCall?.[0][0].vesselType).toBeUndefined()
+    browser.stop()
+    hub.dispose()
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
   it('keeps one connection per provider and never replaces another viewer interest', async () => {
     const { hub, client, upstreams, connect, ready } = setup()
     await ready()
