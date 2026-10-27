@@ -48,6 +48,47 @@ supplementary marine WebSocket; use the actual local Worker for those paths.
 | `npm run check:deploy` | Bundle the Worker and Static Assets without credentials or deployment |
 | `npm run preview:worker` | Build and run the actual local Cloudflare `workerd` boundary |
 
+### Unreleased correctness regression acceptance
+
+The six focused history/marine/map corrections pass all eight mandatory
+commands above: **214 files / 2,604 tests**. Existing App/ObjectFind lint
+warnings and the existing large-chunk build warning remain; no new warnings,
+dependencies, public payloads, database versions, storage keys or timing
+defaults are introduced.
+
+History tests cover Enable/Clear overlapping retention, committed durable
+writes, explicit operation failure, quota suspension and newer Disable.
+Actual React/Chrome IndexedDB checks retain one durable observation in both
+previously failing overlaps. Marine fake-clock tests cover shared numeric/date
+`Retry-After`, headerless/invalid `429`, oversized timer waits, query/pause/stop
+fences and future-clock rejection/recovery. The reconnect regression traverses
+native AIS parsing, relay static replacement and browser recovery, including
+another reconnect after an authoritative unavailable report.
+
+Actual-App Chrome 156 fixtures cover Light/Dark at **1280x900, 315x517 and
+390x568**. Native mouse selection and theme rehydration retain the selected
+aircraft, one map/canvas, source data and visibility, with no extra aircraft
+request or MQTT connection across the style change. Marine failure leaves
+aircraft selectable. Modified `=`/`-` retain the view target and do not issue
+MapLibre keyboard zoom commands or prevent browser defaults; a pending Photon
+request is not aborted. Plain `=` still advances map zoom by one, and an
+actual resize publishes a new viewport.
+
+Delayed-style acceptance first establishes a changed camera while the style
+is still unloaded. Desktop drag and 390x568 native emulated touch retain zoom
+8 with zero startup fit commands after style release. Untouched startup and a
+stationary click still frame once; a newer explicit destination after the
+drag also frames once. Normal drag inertia is not mistaken for a startup fit.
+These are local fixture/headless-browser checks, not physical-device,
+OS browser-magnification, live vector-tile or public-provider acceptance.
+The existing #540/#554 phone-space limitations are not declared fixed.
+
+The same-input default build has an **11-URL, 3,757,153-byte shell**, versus
+3,756,096 at the reviewed baseline: **+1,057 bytes / 0.0281%**. The build with
+aircraft photos, flight routes, the marine supplement, airport boards and
+object sharing enabled also passes (3,757,583 bytes). This is local acceptance
+only; no production deployment or connector maintenance was performed.
+
 ### Unified compact Find (#578)
 
 The component/domain regressions cover one input without class/scope/method
