@@ -965,7 +965,7 @@ unaffected, and AIS destination is not presented as a complete route.
 The dated
 [aircraft metadata evaluation](aircraft-metadata-evaluation.md) selects the
 Mictronics aircraft-database at commit
-`1724959f854f540c95f11872bcd377ecfeb698a2`. Its exports are explicitly offered
+`d31104a82bdc429be7fe94726247fc45aa0c49a4`. Its exports are explicitly offered
 under ODC-By 1.0, allowing a compact derivative database with visible
 attribution and the full license conveyed alongside the data.
 

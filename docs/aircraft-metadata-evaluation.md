@@ -2,21 +2,21 @@
 
 ## Decision
 
-Verified on 2026-09-19, LiveTrafficStan uses a compact, lazily loaded derivative
+Re-verified on 2026-10-28, LiveTrafficStan uses a compact, lazily loaded derivative
 database generated from the Mictronics
 [aircraft-database](https://github.com/Mictronics/aircraft-database).
 
 - Pinned commit:
-  `1724959f854f540c95f11872bcd377ecfeb698a2`
-- Source publication instant: `2026-09-13T07:35:29Z`
-- Internal database version: 522
+  `d31104a82bdc429be7fe94726247fc45aa0c49a4`
+- Source publication instant: `2026-10-25T09:05:04Z`
+- Internal database version: 528
 - Pinned `indexedDB.zip` SHA-256:
-  `3f274f21154833d47cae45b5e847c3d47463a212c631384bc79493872beb44dc`
+  `fdff9ab076f279658d21aa4bc61f7b2b8310410000a8e51b7cd3c29989a094f7`
 - Pinned license SHA-256:
   `11a6d83734845ad09d809667aa219857a5b985b28c258a2eebf5677668a6bd3b`
 - Database license:
   [ODC Attribution License 1.0](https://opendatacommons.org/licenses/by/1-0/)
-- Immutable application path: `/aircraft-metadata/2026-09-13-v1`
+- Immutable application path: `/aircraft-metadata/2026-10-25-v1`
 
 The source README makes the exports available under ODC-By and describes a
 weekly update process. ODC-By permits use, extraction, modification, creation
@@ -49,20 +49,20 @@ currency.
 
 ## Projection and measured cost
 
-The pinned archive contains 447,779 aircraft rows and 2,788 type rows. The
+The pinned archive contains 452,321 aircraft rows and 2,788 type rows. The
 validated projection contains:
 
-- 407,368 available aircraft records;
-- 403 explicit ambiguous records;
-- 196 duplicated normalized registration values in the source;
+- 408,105 available aircraft records;
+- 421 explicit ambiguous records;
+- 205 duplicated normalized registration values in the source;
 - 2,774 retained type descriptions;
 - 123 non-empty two-hex-prefix shards;
-- 6,844,037 raw shard bytes;
-- 2,555,150 deterministic Node gzip-9 shard bytes;
-- largest raw shard: 377,781 bytes;
-- largest gzip-9 shard: 145,154 bytes;
-- median shard: 2,902 gzip-9 bytes;
-- index/type asset: 132,471 raw / about 43.5 KB gzip-9 bytes.
+- 6,856,915 raw shard bytes;
+- 2,559,876 deterministic Node gzip-9 shard bytes;
+- largest raw shard: 377,888 bytes;
+- largest gzip-9 shard: 145,178 bytes;
+- median shard: 2,907 gzip-9 bytes;
+- index/type asset: 132,472 raw / 43,386 gzip-9 bytes.
 
 The one-record difference from an earlier exploratory projection is
 intentional: one source registration contains a control-corrupted non-ASCII
@@ -70,12 +70,12 @@ sequence and is rejected rather than repaired or displayed. Seven printable
 source registrations containing `?` or `=` are retained exactly; no
 punctuation is stripped.
 
-A worst-case first lookup transfers one index/type asset and one shard, 188,514
+A worst-case first lookup transfers one index/type asset and one shard, 188,564
 gzip-9 body bytes using the deterministic measurements. Later same-prefix
 lookups use the bounded shard cache.
 
-The built immutable version contains 125 files totaling 6,996,485 raw,
-2,605,020 gzip-9, or 1,765,419 Brotli-quality-11 bytes, including the index,
+The built immutable version contains 125 files totaling 7,009,364 raw,
+2,609,772 gzip-9, or 1,769,019 Brotli-quality-11 bytes, including the index,
 license, and all shards. These compression totals are reproducible build
 measurements rather than a Cloudflare transfer guarantee.
 
@@ -83,13 +83,13 @@ Compared with the exact pre-Issue-#4 source, the production main JavaScript
 increases by 15,023 raw / 4,701 gzip-9 / 3,895 Brotli bytes. CSS increases by
 513 raw / 81 gzip-9 / 26 Brotli bytes. No runtime dependency was added.
 
-A deterministic Chrome production-preview check measured exactly two first-use
-requests for the AB fixture: 43,877 encoded index bytes plus 111,669 encoded
-shard bytes. Selected details appeared 111.8 ms after the click; the observed
-upper bound after both resource response ends was 75.5 ms for integrity
-checking, validation/parsing, controller publication, React rendering, and the
-acceptance poll. This is a local acceptance observation, not a public latency
-SLA or an isolated parser microbenchmark.
+The original `2026-09-13-v1` deterministic Chrome production-preview acceptance
+baseline measured exactly two first-use requests for the AB fixture: 43,877
+encoded index bytes plus 111,669 encoded shard bytes. Selected details appeared
+111.8 ms after the click; the observed upper bound after both resource response
+ends was 75.5 ms for integrity checking, validation/parsing, controller
+publication, React rendering, and the acceptance poll. This historical local
+observation is not a public latency SLA or an isolated parser microbenchmark.
 
 ## Matching and truthfulness
 
@@ -135,7 +135,7 @@ Configuration and wake category are detail context only.
 
 The source publication instant is a dataset-wide age, not per-aircraft
 verification. The snapshot is valid through the exact 45-day boundary and
-becomes unavailable after `2026-10-28T07:35:29Z`. A publication date more than
+becomes unavailable after `2026-12-09T09:05:04Z`. A publication date more than
 24 hours ahead of the browser clock is also invalid. An open cached detail view
 reevaluates those clock rules without another request.
 
@@ -144,7 +144,7 @@ reevaluates those clock rules without another request.
 LiveTrafficStan source code remains Apache-2.0. The projected aircraft metadata
 is a derivative database conveyed under ODC-By 1.0. Its full license is
 co-located at
-`public/aircraft-metadata/2026-09-13-v1/LICENSE`, and the project `NOTICE`
+`public/aircraft-metadata/2026-10-25-v1/LICENSE`, and the project `NOTICE`
 records the database attribution separately from source-code attribution.
 
 When metadata is displayed, the selected-aircraft panel visibly identifies the
