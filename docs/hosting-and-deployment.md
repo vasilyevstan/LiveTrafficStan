@@ -1497,6 +1497,19 @@ authentication or retry guidance holds future admission for investigation
 without inventing an upstream HTTP 403. The actual diagnostic remains one
 bounded overwritten receipt, not another quota ledger.
 
+Native acquisition failures classify safe stages in the existing receipt
+`reason`: transport/response rejection, empty or malformed GP arrays,
+duplicate or rejected rows, bounded missing/unpinned NORAD IDs, ownership
+checks and publication failure. Reasons contain only code-defined text,
+canonical public IDs and bounded counts, never provider names, response text,
+credentials or arbitrary exception messages. The receipt schema and its
+160-character limit are unchanged for rollback. A missing-ID diagnostic does
+not authorize partial publication or reference pruning: legitimate per-ID
+retirement/reclassification needs independent evidence and a reviewed immutable
+reference revision. Aggregate publication and Starlink fulfillment do not
+prove curated freshness; native schema-3 curated validation and source times
+must be reported separately.
+
 `SPACE_TRACK_USERNAME` and `SPACE_TRACK_PASSWORD` are selected only for enabled
 native orbital acquisition, in the same owner-only atomic `--secrets-file` as
 the existing necessary relay/marine/board credentials. No standalone secret

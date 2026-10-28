@@ -110,13 +110,13 @@ const gate = (starlinkDue = true) => {
   return { coordinator, next: () => next, starlinkNext: () => starlinkNext }
 }
 
-const api = (afterLogin?: () => void) => vi.fn(async (input: string | URL | Request, _init?: RequestInit) => {
+const api = (afterLogin?: () => void, gpValue?: unknown) => vi.fn(async (input: string | URL | Request, _init?: RequestInit) => {
   const url = String(input)
   if (url === SPACE_TRACK_LOGIN_URL) {
     afterLogin?.()
     return new Response('""', { headers: { 'Set-Cookie': 'session=private; Path=/; Secure; HttpOnly' } })
   }
-  return Response.json(rows(url.includes('OBJECT_NAME/~~STARLINK') ? 'starlink' : 'curated'))
+  return Response.json(gpValue ?? rows(url.includes('OBJECT_NAME/~~STARLINK') ? 'starlink' : 'curated'))
 })
 
 afterEach(() => {
@@ -282,6 +282,118 @@ describe('bounded server-only Space-Track session', () => {
 })
 
 describe('one physical producer and one topic per admission', () => {
+  it.each([
+    ['empty array', () => [], 'empty GP array'],
+    ['non-GP array', () => [{ error: 'private-provider-message' }], 'row index 0 rejected: fields'],
+    ['duplicate', () => rows('curated').map((value, index, all) => index === 0 ? all[1] : value),
+      `duplicate ID ${rows('curated')[1].NORAD_CAT_ID}`],
+    ['invalid numeric string', () => rows('curated').map((value, index) =>
+      index === 0 ? { ...value, BSTAR: 'private-provider-message' } : value),
+      `row ${rows('curated')[0].NORAD_CAT_ID} rejected: BSTAR`],
+    ['out-of-range value', () => rows('curated').map((value, index) =>
+      index === 0 ? { ...value, MEAN_MOTION: '999' } : value),
+      `row ${rows('curated')[0].NORAD_CAT_ID} rejected: GP values`],
+    ['decayed row', () => rows('curated').map((value, index) =>
+      index === 0 ? { ...value, DECAY_DATE: '2026-10-17' } : value),
+      `row ${rows('curated')[0].NORAD_CAT_ID} rejected: DECAY_DATE`],
+  ] as const)('classifies %s without exposing provider text or changing admission', async (_name, values, diagnostic) => {
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const env = environment()
+    const state = gate(false)
+    const fetchImpl = api(undefined, values())
+    const outcome = await refreshSpaceTrackCatalog(env, state.coordinator, { fetchImpl, now: () => NOW })
+    expect(outcome).toEqual({
+      kind: 'failed', reason: `Space-Track curated GP ${diagnostic}`,
+      publicationResults: { curated: 'not-attempted' },
+    })
+    expect(JSON.stringify(outcome)).not.toContain('private-provider-message')
+    expect(state.next()).toBe(NOW + ORBITAL_REFRESH_INTERVAL_MS)
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+    expect(env.ORBITAL_CATALOG.put).not.toHaveBeenCalled()
+  })
+
+  it('identifies missing and substituted pinned IDs without publishing partial coverage', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const source = rows('curated')
+    for (const [values, unpinned] of [
+      [source.slice(1), 'none'],
+      [source.map((value, index) => index === 0 ? row('999999999') : value), '999999999'],
+    ] as const) {
+      const env = environment()
+      const outcome = await refreshSpaceTrackCatalog(env, gate(false).coordinator, {
+        fetchImpl: api(undefined, values), now: () => NOW,
+      })
+      expect(outcome).toEqual({
+        kind: 'failed',
+        reason: `Space-Track curated GP records ${values.length} of 461, missing ${source[0].NORAD_CAT_ID}, unpinned ${unpinned}`,
+        publicationResults: { curated: 'not-attempted' },
+      })
+      expect(env.ORBITAL_CATALOG.put).not.toHaveBeenCalled()
+    }
+  })
+
+  it('bounds complete-set discrepancy diagnostics to the unchanged receipt format', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const values = rows('curated').map((_value, index) => row(String(900_000_000 + index)))
+    const outcome = await refreshSpaceTrackCatalog(environment(), gate(false).coordinator, {
+      fetchImpl: api(undefined, values), now: () => NOW,
+    })
+    expect(outcome).toMatchObject({ kind: 'failed' })
+    if (!('reason' in outcome)) throw new Error('Missing fixture failure reason')
+    expect(outcome.reason).toMatch(/^[A-Za-z0-9][A-Za-z0-9 _.,:/'()-]{0,159}$/)
+    expect(outcome.reason).toContain('records 461 of 461, missing')
+    expect(outcome.reason).toContain('and 458 more')
+    expect(outcome.reason).toContain('unpinned 900000000, 900000001, 900000002 and 458 more')
+    expect(Object.keys(outcome).sort()).toEqual(['kind', 'publicationResults', 'reason'])
+  })
+
+  it('distinguishes transport, JSON errors and rejected publication without leaking underlying errors', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    for (const failure of ['transport', 'json', 'publication'] as const) {
+      const env = environment()
+      const state = gate(false)
+      const fetchImpl = api()
+      if (failure === 'publication') {
+        env.ORBITAL_CATALOG.put.mockRejectedValue(new Error('private-storage-detail'))
+      } else {
+        fetchImpl.mockImplementationOnce(async () =>
+          new Response('""', { headers: { 'Set-Cookie': 'session=private; Path=/' } }))
+        if (failure === 'transport') fetchImpl.mockRejectedValueOnce(new Error('private-transport-detail'))
+        else fetchImpl.mockImplementationOnce(async () => Response.json({ error: 'private-provider-detail' }))
+      }
+      const outcome = await refreshSpaceTrackCatalog(env, state.coordinator, { fetchImpl, now: () => NOW })
+      expect(outcome).toEqual({
+        kind: 'failed',
+        reason: `Space-Track curated GP ${failure === 'transport' ? 'transport-unavailable' :
+          failure === 'json' ? 'response-json-or-integrity-invalid' : 'snapshot publication failed'}`,
+        publicationResults: { curated: failure === 'publication' ? 'rejected' : 'not-attempted' },
+        ...(failure === 'json' ? { status: 200 } : {}),
+      })
+      expect(JSON.stringify(outcome)).not.toContain('private-')
+      expect(state.next()).toBe(NOW + ORBITAL_REFRESH_INTERVAL_MS)
+      expect(fetchImpl).toHaveBeenCalledTimes(2)
+    }
+  })
+
+  it('does not turn a later Starlink publication into curated recovery', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const values = new Map([[SPACE_TRACK_CURATED_KEY, 'retained-curated-snapshot']])
+    const env = environment(values)
+    const state = gate(false)
+    const first = await refreshSpaceTrackCatalog(env, state.coordinator, {
+      fetchImpl: api(undefined, []), now: () => NOW,
+    })
+    expect(first).toMatchObject({ kind: 'failed', reason: 'Space-Track curated GP empty GP array' })
+    const second = await refreshSpaceTrackCatalog(env, state.coordinator, {
+      fetchImpl: api(), now: () => NOW + STARLINK_REFRESH_INTERVAL_MS,
+    })
+    expect(second).toMatchObject({
+      kind: 'published', publicationResults: { curated: 'not-attempted', starlink: 'fulfilled' },
+    })
+    expect(values.get(SPACE_TRACK_CURATED_KEY)).toBe('retained-curated-snapshot')
+    expect(env.ORBITAL_CATALOG.put).toHaveBeenCalledTimes(1)
+  })
+
   it.each(['diagnostic', 'completion'] as const)('keeps %s persistence separate from actual committed publication', async (failure) => {
     vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     const env = environment()

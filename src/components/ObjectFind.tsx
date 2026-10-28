@@ -12,7 +12,8 @@ import { formatAge } from '../domain/format'
 import type { CachedMarineDiscovery, DiscoveryMatch, DiscoveryResponse } from '../domain/objectDiscovery'
 import { qualifiedLastReport } from '../domain/objectDiscovery'
 import { orbitalObjectTypeLabel, type OrbitalControllerState } from '../domain/orbital'
-import { orbitalCatalogPage } from '../domain/orbitalDiscovery'
+import { orbitalCatalogPage, orbitalSearchAliases } from '../domain/orbitalDiscovery'
+import { matchesSavedObjectQuery } from '../domain/savedObjectResolution'
 import type { Port, PortSource } from '../domain/ports'
 import type { DisplayAircraft, DisplayVessel } from '../domain/traffic'
 import { findLookupRequests, rankFindResults } from '../domain/unifiedFind'
@@ -392,18 +393,7 @@ export function ObjectFind(props: ObjectFindProps) {
     onLocate: (match) => { void locateShip(match) },
   }
   const rows: Result[] = []
-  const savedMatches = savedEntries.filter((entry) => {
-    if (!query) return true
-    const search = query.toLocaleLowerCase('en-US')
-    return [
-      entry.savedLabel,
-      entry.id,
-      entry.kind === 'aircraft' ? entry.registration : undefined,
-      entry.kind === 'vessel' ? entry.imo : undefined,
-      entry.kind === 'orbital' ? entry.internationalDesignator : undefined,
-      entry.kind === 'airport' ? entry.ident : undefined,
-    ].some((value) => value?.toLocaleLowerCase('en-US').includes(search))
-  })
+  const savedMatches = savedEntries.filter((entry) => matchesSavedObjectQuery(entry, query))
   const savedKeys = new Set(savedMatches.map(savedObjectKey))
   const receivedIds = new Set<string>()
   const receivedCredits = new Set<string>()
@@ -488,7 +478,10 @@ export function ObjectFind(props: ObjectFindProps) {
     for (const entry of discoverLoadedOrbits(orbitalCatalog.entries, query)) {
       if (savedKeys.has(`orbital:${entry.record.noradCatalogId}`)) continue
       rows.push({
-        key: entry.id, label: entry.record.name, identities: [entry.record.noradCatalogId, entry.record.internationalDesignator ?? ''],
+        key: entry.id, label: entry.record.name, identities: [
+          entry.record.noradCatalogId, entry.record.internationalDesignator ?? '',
+          ...orbitalSearchAliases(entry.record.noradCatalogId),
+        ],
         content: <FindResultRow label={entry.record.name}
           context={`Satellite · NORAD ${entry.record.noradCatalogId} · ${orbitalObjectTypeLabel(entry.record.objectType)} (${entry.record.objectType})`}
           action={<ObjectResultButton prefix="object-find-result" aria-label={`Go to satellite ${entry.record.name}`}
@@ -640,9 +633,22 @@ export function ObjectFind(props: ObjectFindProps) {
             : ''
         }.` :
           searching || catalogLoading ? 'Loading available results.' :
-            submitted ? sourceErrors.length ? 'No matches in available data; some sources unavailable.' : 'No matches in searched sources.' :
+            submitted ? sourceErrors.length || orbitalCatalog.missing.length
+              ? 'No matches in available data; some sources unavailable.' : 'No matches in searched sources.' :
               'Press Search to include online results and static catalogs.'}
       </p>}
+      {orbitalCatalog.unavailable.map(({ owner, reason, retrievedAt }) => <p key={owner} className="control-note" role="status">
+        {owner === 'curated' ? 'Curated satellite catalog' : 'Starlink sample'}{reason === 'expired'
+          ? ` expired (${APP_CONFIG.orbital.expireAfterMs / 3_600_000}-hour safety limit). Its objects are omitted from Find.`
+          : reason === 'clock-invalid' ? ' unavailable: catalog time cannot be trusted.'
+            : reason === 'loading' ? ' is loading.' : ' is not loaded.'}
+        {reason === 'expired' && retrievedAt && <> Last retrieved <time dateTime={retrievedAt}>{retrievedAt}</time>.</>}
+      </p>)}
+      {(!props.orbitalVisible || orbitalCatalog.missing.includes('curated') || orbitalCatalog.entries.length === 0) &&
+        <button type="button" disabled={paused || props.curated.phase === 'loading'} onClick={props.onLoadOrbits}>
+          {!props.orbitalVisible ? 'Enable ORBITS' : orbitalCatalog.missing.includes('curated')
+            ? 'Recheck curated catalog' : 'Retry satellite catalogs'}
+        </button>}
       {sourceErrors.length > 0 && <p className="control-note" role="status">{sourceErrors.join(' ')}</p>}
       {rows.length > 0 && <ul ref={catalogListRef} className="object-find-results" aria-label="Find matches">
         {sorted.slice(start, start + DISCOVERY_CONFIG.catalogResultLimit).map((row) => <Fragment key={row.key}>{row.content}</Fragment>)}
@@ -663,10 +669,6 @@ export function ObjectFind(props: ObjectFindProps) {
         {lookupCredits.length > 0 && <p>{lookupCredits.join(' · ')}</p>}
         <p>Satellites: Space-Track / CelesTrak. Modeled, not live or optical.</p>
         {query && (!props.airportsReady || !props.portsReady) && <p>Some static catalogs are not yet available.{catalogLoading && ' Loading.'}</p>}
-        {orbitalCatalog.missing.length > 0 && <p>Some satellite catalogs are not loaded or usable.</p>}
-        {(!props.orbitalVisible || orbitalCatalog.entries.length === 0) && <button type="button" disabled={paused} onClick={props.onLoadOrbits}>
-          {props.orbitalVisible ? 'Retry satellite catalogs' : 'Enable ORBITS'}
-        </button>}
         {(props.airportsError || props.portsError) && <button type="button" disabled={paused} onClick={() => {
           if (props.airportsError) props.onLoadAirports()
           if (props.portsError) props.onLoadPorts()

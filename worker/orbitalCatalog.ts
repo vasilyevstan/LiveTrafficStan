@@ -350,7 +350,7 @@ interface CatalogRouteOptions {
 
 type UnknownRecord = Record<string, unknown>
 
-class OrbitalCatalogValidationError extends Error {}
+export class OrbitalCatalogValidationError extends Error {}
 
 class OrbitalCatalogUpstreamError extends Error {
   readonly kind: 'blocked' | 'retry-after' | 'transient'

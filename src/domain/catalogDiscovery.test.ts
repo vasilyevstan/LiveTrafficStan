@@ -71,6 +71,46 @@ describe('whole loaded catalog discovery', () => {
     const invalid = { ...state('curated', 'a'), phase: 'clock-invalid' as const }
     expect(find(invalid, { ...state('starlink', 'b'), snapshot: undefined }).missing).toEqual(['curated', 'starlink'])
   })
+  it('retains the exact expiry reason and timestamp while independently searching fresh Starlink', () => {
+    const curated = state('curated', 'a')
+    if (!curated.snapshot) throw new Error('Missing fixture snapshot')
+    const retrievedAt = Date.parse(curated.snapshot.retrievedAt)
+    const boundary = retrievedAt + APP_CONFIG.orbital.expireAfterMs
+    expect(find(curated, { ...state('starlink', 'b'), snapshot: undefined }, null, boundary - 1).entries).toHaveLength(1)
+    const starlink = state('starlink', 'b')
+    if (!starlink.snapshot) throw new Error('Missing fixture snapshot')
+    starlink.snapshot = { ...starlink.snapshot, retrievedAt: new Date(boundary - 30_000).toISOString() }
+    for (const phase of ['ready', 'unavailable', 'disabled', 'paused-history', 'paused-hidden'] as const) {
+      const result = find({ ...curated, phase }, starlink, null, boundary)
+      expect(result.missing).toEqual(['curated'])
+      expect(result.unavailable).toEqual([{
+        owner: 'curated', reason: 'expired', retrievedAt: curated.snapshot.retrievedAt,
+      }])
+      expect(result.entries).toHaveLength(1)
+      expect(result.entries[0].owner).toBe('starlink')
+      expect(result.entries[0].position).toBeUndefined()
+    }
+  })
+  it('does not alter duplicate ownership when an alias matches either loaded channel', () => {
+    const identify = (owner: OrbitalChannel, digest: string) => {
+      const value = state(owner, digest)
+      if (!value.snapshot) throw new Error('Missing fixture snapshot')
+      return {
+        ...value,
+        snapshot: { ...value.snapshot, records: [{ ...record, noradCatalogId: '20580', name: 'HST' }] },
+        positions: [],
+      }
+    }
+    const curated = identify('curated', 'a')
+    const starlink = identify('starlink', 'b')
+    for (const selected of [null, 'orbital:starlink:20580']) {
+      const result = discoverLoadedOrbits(find(curated, starlink, selected).entries, 'Hubble')
+      expect(result).toHaveLength(1)
+      expect(result[0].owner).toBe(selected ? 'starlink' : 'curated')
+      expect(result[0].record.name).toBe('HST')
+      expect(result[0].position).toBeUndefined()
+    }
+  })
   it('withholds old, wrong-generation and wrong-epoch positions while retaining exact catalog identity', () => {
     for (const override of [
       { modeledFor: now - DISCOVERY_CONFIG.maximumModeledPositionAgeMs - 1 },

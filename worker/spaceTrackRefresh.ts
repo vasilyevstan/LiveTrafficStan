@@ -14,6 +14,7 @@ import { STARLINK_UPSTREAM_TIMEOUT_MS } from './starlinkCatalog.ts'
 import {
   SPACE_TRACK_CURATED_KEY,
   SPACE_TRACK_STARLINK_KEY,
+  SpaceTrackCatalogDiagnosticError,
   createSpaceTrackCuratedSnapshot,
   createSpaceTrackStarlinkSnapshot,
   serializeSpaceTrackSnapshot,
@@ -60,6 +61,7 @@ export const refreshSpaceTrackCatalog = async (
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), ORBITAL_TOTAL_REFRESH_TIMEOUT_MS)
   let channel: OrbitalChannel | undefined
+  let failureStage = 'snapshot validation failed'
   let completion: OrbitalRefreshCompletion = {
     kind: 'next', nextAllowedAtMs: startedAtMs + ORBITAL_REFRESH_INTERVAL_MS,
   }
@@ -101,8 +103,10 @@ export const refreshSpaceTrackCatalog = async (
       ? await createSpaceTrackCuratedSnapshot(gp, new Date(now()).toISOString())
       : await createSpaceTrackStarlinkSnapshot(gp, new Date(now()).toISOString())
     ensureActive()
+    failureStage = 'attempt ownership check failed'
     await coordinator.assertCurrent(reservation.attemptId)
     ensureActive()
+    failureStage = 'snapshot publication failed'
     try {
       await store.put(
         channel === 'curated' ? SPACE_TRACK_CURATED_KEY : SPACE_TRACK_STARLINK_KEY,
@@ -132,12 +136,21 @@ export const refreshSpaceTrackCatalog = async (
     }
   } catch (error) {
     const apiError = error instanceof SpaceTrackApiError ? error : undefined
+    const publicApiCodes = [
+      'request-timed-out', 'transport-unavailable', 'provider-response-rejected',
+      'provider-deferred', 'response-content-type-invalid', 'response-length-invalid',
+      'response-oversized', 'response-encoding-invalid', 'response-json-or-integrity-invalid',
+    ]
+    const diagnostic = error instanceof SpaceTrackCatalogDiagnosticError
+      ? error.diagnostic
+      : apiError ? publicApiCodes.includes(apiError.code) ? apiError.code : 'request failed'
+        : failureStage
     const reason = apiError?.requiresReview
       ? 'Space-Track authentication or retry guidance requires investigation'
       : channel === 'starlink'
-        ? 'Space-Track Starlink GP acquisition or publication failed'
+        ? `Space-Track Starlink GP ${diagnostic}`
         : channel === 'curated'
-          ? 'Space-Track curated GP acquisition or publication failed'
+          ? `Space-Track curated GP ${diagnostic}`
           : 'Space-Track authentication failed'
     if (channel === 'starlink') {
       starlink = {

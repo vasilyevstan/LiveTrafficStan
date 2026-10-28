@@ -717,10 +717,25 @@ city or current-location country; there is no automatic per-row Locate,
 reverse geocoder or nearest-city inference.
 
 Search never enables ORBITS or downloads its catalogs. Explicit **Enable
-ORBITS** in **Sources** or Layers retains its existing
+ORBITS** beside the Find coverage notice or in Layers retains its existing
 semantics and the draft. Local satellite name, NORAD and COSPAR search covers
 only the accepted curated catalog and bounded Starlink sample, not every
 satellite or the complete constellation.
+
+Find visibly identifies unavailable channels without opening **Sources**. A
+retained catalog at the unchanged 24-hour safety limit is excluded, with its
+retrieval timestamp and an expiry explanation. Fresh Starlink results do not
+hide **Recheck curated catalog**. This action only rereads the existing
+same-origin catalog; it cannot start upstream acquisition, and unchanged or
+matching-ETag data remains expired. Explicitly Saved identities remain visible
+as unavailable, not as navigable expired catalog results.
+
+The bundled aliases **ISS / International Space Station** (NORAD 25544),
+**Hubble / Hubble Space Telescope** (20580), and **Tiangong** (48274) use the
+same exact, prefix and substring matching/ranking as provider names. Names
+such as `HST`, `ISS (ZARYA)` and `CSS (TIANHE-1)` remain authoritative display
+labels. Aliases do not add fuzzy spelling correction, alter source ownership,
+duplicate objects, rewrite Saved labels or make unavailable objects navigable.
 
 **Go to airport/port** commits ordinary navigation and opens the existing
 static details even with all catalog markers off. It does not enable a

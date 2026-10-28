@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  matchesSavedObjectQuery,
   resolveSavedAircraft,
   resolveSavedAirport,
   resolveSavedOrbital,
@@ -48,6 +49,19 @@ const orbitalState = (
 })
 
 describe('saved object resolution', () => {
+  it('matches famous aliases by exact saved orbital identity without changing stored labels or ownership', () => {
+    const saved: SavedObject = {
+      kind: 'orbital', id: '20580', savedLabel: 'HST', savedAt: 1, preferredOwner: 'starlink',
+    }
+    const before = JSON.stringify(saved)
+    for (const query of ['Hubble', 'Hubble Space Telescope', 'hub', 'telescope', '20580', 'HST']) {
+      expect(matchesSavedObjectQuery(saved, query)).toBe(true)
+    }
+    expect(matchesSavedObjectQuery(saved, 'Huble')).toBe(false)
+    expect(matchesSavedObjectQuery({ ...saved, id: '99999' }, 'Hubble')).toBe(false)
+    expect(matchesSavedObjectQuery({ ...aircraftEntry, id: '20580' }, 'Hubble')).toBe(false)
+    expect(JSON.stringify(saved)).toBe(before)
+  })
   it('distinguishes current, stale, unavailable, and identity-conflict aircraft', () => {
     const entity = {
       id: 'aircraft:abc123',

@@ -56,14 +56,24 @@ export const loadedOrbitalCatalog = (
   maximumAgeMs: number,
 ) => {
   const entries = new Map<string, OrbitalCatalogEntry>()
-  const missing: OrbitalChannel[] = []
+  const unavailable: {
+    owner: OrbitalChannel
+    reason: 'not-loaded' | 'loading' | 'clock-invalid' | 'expired'
+    retrievedAt?: string
+  }[] = []
   for (const [owner, state] of [['curated', curated], ['starlink', starlink]] as const) {
     const snapshot = state.snapshot
-    const retrievedAt = snapshot ? Date.parse(snapshot.retrievedAt) : NaN
-    if (!snapshot || ['loading', 'clock-invalid'].includes(state.phase) ||
-      !Number.isFinite(retrievedAt) || now - retrievedAt >= maximumAgeMs ||
-      retrievedAt > now + DISCOVERY_CONFIG.futureToleranceMs) {
-      missing.push(owner)
+    if (!snapshot) {
+      unavailable.push({ owner, reason: state.phase === 'loading' ? 'loading' : 'not-loaded' })
+      continue
+    }
+    const retrievedAt = Date.parse(snapshot.retrievedAt)
+    const reason = state.phase === 'loading' ? 'loading'
+      : state.phase === 'clock-invalid' || !Number.isFinite(retrievedAt) ||
+        retrievedAt > now + DISCOVERY_CONFIG.futureToleranceMs ? 'clock-invalid'
+        : now - retrievedAt >= maximumAgeMs ? 'expired' : undefined
+    if (reason) {
+      unavailable.push({ owner, reason, retrievedAt: snapshot?.retrievedAt })
       continue
     }
     const positions = new Map(state.positions.map((position) => [position.noradCatalogId, position]))
@@ -81,7 +91,7 @@ export const loadedOrbitalCatalog = (
       entries.set(record.noradCatalogId, preferOrbitalOwner(entries.get(record.noradCatalogId), entry, selectedId))
     }
   }
-  return { entries: [...entries.values()], missing }
+  return { entries: [...entries.values()], missing: unavailable.map(({ owner }) => owner), unavailable }
 }
 
 export const discoverLoadedOrbits = (entries: readonly OrbitalCatalogEntry[], query: string) => {

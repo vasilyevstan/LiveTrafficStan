@@ -7,6 +7,7 @@ import type { Port, PortSource } from '../domain/ports'
 import {
   savedObjectContext,
   savedObjectQuery,
+  matchesSavedObjectQuery,
   resolveSavedAircraft,
   resolveSavedAirport,
   resolveSavedOrbital,
@@ -63,22 +64,6 @@ interface Props {
   ) => SavedObjectsMutationResult
 }
 
-const normalized = (value: string) =>
-  value.trim().replace(/\s+/g, ' ').toLocaleLowerCase('en-US')
-
-const matchesQuery = (entry: SavedObject, query: string) => {
-  if (!query) return true
-  const search = normalized(query)
-  return [
-    entry.savedLabel,
-    entry.id,
-    entry.kind === 'aircraft' ? entry.registration : undefined,
-    entry.kind === 'vessel' ? entry.imo : undefined,
-    entry.kind === 'orbital' ? entry.internationalDesignator : undefined,
-    entry.kind === 'airport' ? entry.ident : undefined,
-  ].some((value) => value && normalized(value).includes(search))
-}
-
 const classLabel = (entry: SavedObject) => {
   switch (entry.kind) {
     case 'aircraft':
@@ -105,7 +90,7 @@ export function SavedObjects(props: Props) {
   const entries = useMemo(
     () =>
       props.entries
-        .filter((entry) => matchesQuery(entry, props.query))
+        .filter((entry) => matchesSavedObjectQuery(entry, props.query))
         .sort(
           (first, second) =>
             second.savedAt - first.savedAt ||

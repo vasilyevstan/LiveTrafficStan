@@ -2,6 +2,7 @@ import type { Airport } from './airports'
 import type { InViewAvailability } from './inView'
 import type { OrbitalCatalogEntry } from './catalogDiscovery'
 import type { OrbitalControllerState } from './orbital'
+import { orbitalSearchAliases } from './orbitalDiscovery'
 import type { Port } from './ports'
 import type { SavedObject } from './savedObjects'
 import type { DisplayAircraft, DisplayVessel } from './traffic'
@@ -18,6 +19,21 @@ export interface SavedObjectResolution {
   status: string
   detail?: string
   targetId?: string
+}
+
+export const matchesSavedObjectQuery = (entry: SavedObject, query: string) => {
+  const normalized = (value: string) => value.trim().replace(/\s+/g, ' ').toLocaleLowerCase('en-US')
+  const search = normalized(query)
+  if (!search) return true
+  return [
+    entry.savedLabel,
+    entry.id,
+    entry.kind === 'aircraft' ? entry.registration : undefined,
+    entry.kind === 'vessel' ? entry.imo : undefined,
+    entry.kind === 'orbital' ? entry.internationalDesignator : undefined,
+    entry.kind === 'airport' ? entry.ident : undefined,
+    ...(entry.kind === 'orbital' ? orbitalSearchAliases(entry.id) : []),
+  ].some((value) => value && normalized(value).includes(search))
 }
 
 const changed = (saved: string | undefined, current: string | undefined) =>
