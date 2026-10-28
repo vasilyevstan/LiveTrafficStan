@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "id": "curated-reference-2026-10-17-v1",
+  "id": "curated-reference-2026-10-17-v2",
   "sourceCatalogId": "celestrak-curated-v1",
   "retrievedAt": "2026-10-17T12:17:07.523Z",
   "sha256": "d062e417f365701d3ef2951e400a9196700c514ced47960305f010681d0da5c0",
@@ -2665,12 +2665,6 @@
     },
     {
       "noradCatalogId": "67685",
-      "sourceGroups": [
-        "stations"
-      ]
-    },
-    {
-      "noradCatalogId": "67686",
       "sourceGroups": [
         "stations"
       ]
