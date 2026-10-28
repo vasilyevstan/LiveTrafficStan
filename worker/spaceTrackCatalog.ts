@@ -23,6 +23,7 @@ import {
   type SpaceTrackUnsignedSnapshot,
 } from '../src/providers/orbital/spaceTrackCatalogContract.ts'
 import {
+  OrbitalCatalogValidationError,
   sourceGpRecord,
   type OrbitalCatalogEnvironment,
 } from './orbitalCatalog.ts'
@@ -45,42 +46,63 @@ const nativeTypes = new Map<string, OrbitalObjectType>([
   ['PAYLOAD', 'PAY'], ['ROCKET BODY', 'R/B'], ['DEBRIS', 'DEB'], ['UNKNOWN', 'UNK'],
 ])
 
-function invalid(): never { throw new SpaceTrackCatalogContractError() }
+export class SpaceTrackCatalogDiagnosticError extends SpaceTrackCatalogContractError {
+  readonly diagnostic: string
+  constructor(diagnostic: string) {
+    super()
+    this.diagnostic = diagnostic
+  }
+}
+
+function invalid(diagnostic = 'catalog validation failed'): never {
+  throw new SpaceTrackCatalogDiagnosticError(diagnostic)
+}
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
 
 export const spaceTrackCurationReference = () =>
   parseSpaceTrackCurationReference(referenceInput)
 
-const normalizeGp = (value: unknown) => {
+const normalizeGp = (value: unknown, index: number) => {
+  if (!isRecord(value)) invalid(`row ${index} shape invalid`)
+  const rawId = value.NORAD_CAT_ID
+  const id = typeof rawId === 'string' || typeof rawId === 'number' ? String(rawId) : ''
+  const label = /^[1-9]\d{0,8}$/.test(id) ? `row ${id}` : `row index ${index}`
   if (
-    !isRecord(value) || Object.keys(value).length !== SPACE_TRACK_GP_FIELDS.length ||
-    Object.keys(value).some((key) => !SPACE_TRACK_GP_FIELDS.some((field) => field === key)) ||
-    value.CLASSIFICATION_TYPE !== 'U' || value.DECAY_DATE !== null ||
-    typeof value.OBJECT_TYPE !== 'string' ||
-    !/^[A-Z][A-Z /-]{0,31}$/.test(value.OBJECT_TYPE)
-  ) invalid()
+    Object.keys(value).length !== SPACE_TRACK_GP_FIELDS.length ||
+    Object.keys(value).some((key) => !SPACE_TRACK_GP_FIELDS.some((field) => field === key))
+  ) invalid(`${label} rejected: fields`)
+  if (value.CLASSIFICATION_TYPE !== 'U') invalid(`${label} rejected: CLASSIFICATION_TYPE`)
+  if (value.DECAY_DATE !== null) invalid(`${label} rejected: DECAY_DATE`)
+  if (typeof value.OBJECT_TYPE !== 'string' || !/^[A-Z][A-Z /-]{0,31}$/.test(value.OBJECT_TYPE)) {
+    invalid(`${label} rejected: OBJECT_TYPE`)
+  }
   const normalized = { ...value }
   for (const field of numberFields) {
     const number = spaceTrackNumber(value[field])
-    if (number === undefined) invalid()
+    if (number === undefined) invalid(`${label} rejected: ${field}`)
     normalized[field] = number
   }
-  return {
-    record: sourceGpRecord(normalized, nativeTypes.get(value.OBJECT_TYPE) ?? 'UNK'),
-    reportedType: value.OBJECT_TYPE,
+  try {
+    return {
+      record: sourceGpRecord(normalized, nativeTypes.get(value.OBJECT_TYPE) ?? 'UNK'),
+      reportedType: value.OBJECT_TYPE,
+    }
+  } catch (error) {
+    if (error instanceof OrbitalCatalogValidationError) invalid(`${label} rejected: GP values`)
+    throw error
   }
 }
 
 const population = (input: GpResult, maximumRecords: number) => {
-  if (
-    !Array.isArray(input.value) || input.value.length === 0 ||
-    input.value.length > maximumRecords || input.source.recordCount !== input.value.length
-  ) invalid()
+  if (!Array.isArray(input.value)) invalid('response shape invalid')
+  if (input.value.length === 0) invalid('empty GP array')
+  if (input.value.length > maximumRecords) invalid('GP population exceeds limit')
+  if (input.source.recordCount !== input.value.length) invalid('GP source count mismatch')
   const ids = new Set<string>()
-  return input.value.map((value) => {
-    const parsed = normalizeGp(value)
-    if (ids.has(parsed.record.noradCatalogId)) invalid()
+  return input.value.map((value, index) => {
+    const parsed = normalizeGp(value, index)
+    if (ids.has(parsed.record.noradCatalogId)) invalid(`duplicate ID ${parsed.record.noradCatalogId}`)
     ids.add(parsed.record.noradCatalogId)
     return parsed
   })
@@ -89,7 +111,9 @@ const population = (input: GpResult, maximumRecords: number) => {
 const sign = async (snapshot: SpaceTrackUnsignedSnapshot) => {
   const sha256 = await spaceTrackDigest(JSON.stringify(spaceTrackSnapshotDigestInput(snapshot)))
   const complete = { ...snapshot, sha256 }
-  if (new TextEncoder().encode(JSON.stringify(complete)).byteLength > SPACE_TRACK_MAX_SNAPSHOT_BYTES) invalid()
+  if (new TextEncoder().encode(JSON.stringify(complete)).byteLength > SPACE_TRACK_MAX_SNAPSHOT_BYTES) {
+    invalid('snapshot exceeds size limit')
+  }
   return complete
 }
 
@@ -99,11 +123,18 @@ export const createSpaceTrackCuratedSnapshot = async (
 ): Promise<SpaceTrackCuratedSnapshot> => {
   const curationReference = spaceTrackCurationReference()
   const joined = population(input, 512)
-  if (joined.length !== curationReference.records.length) invalid()
   const byId = new Map(joined.map(({ record }) => [record.noradCatalogId, record]))
+  const expected = new Set(curationReference.records.map(({ noradCatalogId }) => noradCatalogId))
+  const missing = [...expected].filter((id) => !byId.has(id))
+  const unpinned = [...byId.keys()].filter((id) => !expected.has(id))
+  const list = (ids: string[]) =>
+    `${ids.slice(0, 3).join(', ') || 'none'}${ids.length > 3 ? ` and ${ids.length - 3} more` : ''}`
+  if (joined.length !== expected.size || missing.length || unpinned.length) {
+    invalid(`records ${joined.length} of ${expected.size}, missing ${list(missing)}, unpinned ${list(unpinned)}`)
+  }
   const records: OrbitalObject[] = curationReference.records.map((membership) => {
     const record = byId.get(membership.noradCatalogId)
-    if (!record) invalid()
+    if (!record) invalid('curation membership unavailable')
     return {
       ...record, sourceGroups: membership.sourceGroups,
       displayOrder: SPACE_TRACK_CURATED_GROUPS.indexOf(membership.sourceGroups[0]) *
