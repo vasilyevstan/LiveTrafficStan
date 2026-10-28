@@ -127,9 +127,14 @@ afterEach(() => {
 describe('native Space-Track catalog contract', () => {
   it('pins only current exact IDs/groups, not old names, types, or elements', () => {
     const reference = spaceTrackCurationReference()
-    expect(reference.records).toHaveLength(461)
+    expect(reference.id).toBe('curated-reference-2026-10-17-v2')
+    expect(reference.records).toHaveLength(460)
     expect(reference.retrievedAt).toBe('2026-10-17T12:17:07.523Z')
     expect(reference.sha256).toBe('d062e417f365701d3ef2951e400a9196700c514ced47960305f010681d0da5c0')
+    expect(reference.records.some((record) => record.noradCatalogId === '67686')).toBe(false)
+    expect(reference.records.map((record) => record.noradCatalogId)).toEqual(
+      expect.arrayContaining(['20580', '25544', '48274']),
+    )
     expect(reference.records.every((record) =>
       Object.keys(record).sort().join(',') === 'noradCatalogId,sourceGroups')).toBe(true)
   })
@@ -150,7 +155,7 @@ describe('native Space-Track catalog contract', () => {
     if (snapshot.channel === 'curated') {
       const parsed = await parseSpaceTrackSnapshot(snapshot, 'curated')
       const model = spaceTrackApplicationSnapshot(parsed)
-      expect(model.curationReference?.id).toBe('curated-reference-2026-10-17-v1')
+      expect(model.curationReference?.id).toBe('curated-reference-2026-10-17-v2')
       expect(model.sources.every((source) => source.satcatSourceUrl === undefined)).toBe(true)
     } else {
       const parsed = await parseSpaceTrackSnapshot(snapshot, 'starlink')
@@ -325,7 +330,7 @@ describe('one physical producer and one topic per admission', () => {
       })
       expect(outcome).toEqual({
         kind: 'failed',
-        reason: `Space-Track curated GP records ${values.length} of 461, missing ${source[0].NORAD_CAT_ID}, unpinned ${unpinned}`,
+        reason: `Space-Track curated GP records ${values.length} of 460, missing ${source[0].NORAD_CAT_ID}, unpinned ${unpinned}`,
         publicationResults: { curated: 'not-attempted' },
       })
       expect(env.ORBITAL_CATALOG.put).not.toHaveBeenCalled()
@@ -341,9 +346,9 @@ describe('one physical producer and one topic per admission', () => {
     expect(outcome).toMatchObject({ kind: 'failed' })
     if (!('reason' in outcome)) throw new Error('Missing fixture failure reason')
     expect(outcome.reason).toMatch(/^[A-Za-z0-9][A-Za-z0-9 _.,:/'()-]{0,159}$/)
-    expect(outcome.reason).toContain('records 461 of 461, missing')
-    expect(outcome.reason).toContain('and 458 more')
-    expect(outcome.reason).toContain('unpinned 900000000, 900000001, 900000002 and 458 more')
+    expect(outcome.reason).toContain('records 460 of 460, missing')
+    expect(outcome.reason).toContain('and 457 more')
+    expect(outcome.reason).toContain('unpinned 900000000, 900000001, 900000002 and 457 more')
     expect(Object.keys(outcome).sort()).toEqual(['kind', 'publicationResults', 'reason'])
   })
 

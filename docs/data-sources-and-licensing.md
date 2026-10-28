@@ -1425,13 +1425,27 @@ There is **no SATCAT request, fabricated SATCAT URL/count, advanced-data request
 browser login, cookie persistence, credential-bearing URL, or arbitrary proxy**.
 
 Curated membership is pinned in `src/config/spaceTrackCurationReference.json`:
-461 exact NORAD IDs and ordered memberships from the validated CelesTrak
+460 exact NORAD IDs and ordered memberships derived from the validated CelesTrak
 snapshot retrieved `2026-10-17T12:17:07.523Z`, source digest
 `d062e417f365701d3ef2951e400a9196700c514ced47960305f010681d0da5c0`.
 Only identity, membership, reference date, and provenance are retained: old
 names, elements, and types are not carried forward. Every pinned ID must have
 one complete valid native GP row before publication. Additions/removals require
 a reviewed reference revision; this is not automatic CelesTrak group expansion.
+
+Revision `curated-reference-2026-10-17-v2`, reviewed on 2026-10-28 for #616,
+removes only NORAD `67686` (UITMSAT-2, `1998-067YD`) from the original 461 IDs.
+An ordinary native attempt returned 460 of 461 required records, identifying
+that exact missing ID. Independently, the public
+[CelesTrak SATCAT record](https://celestrak.org/satcat/records.php?CATNR=67686)
+reports `DECAY_DATE: 2026-10-22`, corroborated by
+[N2YO's no-longer-on-orbit notice](https://www.n2yo.com/satellite/?s=67686).
+The primary SATCAT response verified at `2026-10-28T23:22:32.879Z` has SHA-256
+`8c03150c9fba5858da2407755b4ddeb1713397284c04a4ca1f29bd3c121a411f`.
+The original membership source date/digest remain unchanged; all other IDs
+and memberships, including ISS/HST/Tiangong, are preserved. This is an
+offline reviewed retirement, not a new runtime SATCAT request, automatic
+pruning, partial publication, or a fresh timestamp on retained elements.
 
 The separate Starlink GP predicate requests public, undecayed `PAYLOAD` rows
 whose names contain `STARLINK` and whose epochs satisfy the source's ten-day
