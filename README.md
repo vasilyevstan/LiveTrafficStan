@@ -201,6 +201,15 @@ identity are not renamed or reset.
   aviation/nautical presentation units, layers, structured vessel filters, and
   selected-trail controls. It never stores camera, Home/location, search text,
   selection, provider state, playback, or private-history consent.
+- **Saved objects** retains up to 50 explicit aircraft, ship, satellite,
+  airport, or port identities on the current browser profile. Use the bookmark
+  action in normal details, then review Saved at the top of Find. Saved stores
+  no coordinates, trails, provider payloads, orbital elements, camera, Home, or
+  search history and performs no background lookup, polling, alerting, catalog
+  load, or layer activation. Aircraft/ship state is scoped to current partial
+  reception, satellites remain modeled/catalog context, and airports/ports are
+  static catalog references. Anyone using the same browser profile can see the
+  list; Clear Saved is separate from preferences and private history.
 - An explicit **Share view** action creates a fragment-only link containing a
   three-decimal camera plus validated presentation state. Opening it does not
   save those overrides, and its camera wins over a later automatic geolocation

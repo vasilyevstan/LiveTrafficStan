@@ -32,6 +32,13 @@ import type { UnitSystem } from '../domain/units'
 import type { VesselFilterState } from '../domain/vesselFilters'
 import type { DisplayWeatherObservation } from '../domain/weatherObservations'
 import type { OrbitalControllerState } from '../domain/orbital'
+import type { InViewAvailability } from '../domain/inView'
+import type {
+  SavedObject,
+  SavedObjectsLoadResult,
+  SavedObjectsMutationResult,
+} from '../domain/savedObjects'
+import { emptySavedObjectsDocument } from '../domain/savedObjects'
 import type {
   OrbitalDiscoveryFilters,
   OrbitalDisplaySelection,
@@ -207,6 +214,17 @@ interface TrafficControlsProps {
   onPlaceResultSelect: (result: PlaceSearchResult) => void
   onPlaceSearchCancel: () => void
   onPlaceSearchPause?: () => void
+  savedEntries?: readonly SavedObject[]
+  savedStatus?: SavedObjectsLoadResult
+  aircraftAvailability?: InViewAvailability
+  vesselAvailability?: InViewAvailability
+  lastSavedObservationAt?: (entry: SavedObject) => number | undefined
+  onRemoveSaved?: (key: string) => SavedObjectsMutationResult
+  onClearSaved?: () => SavedObjectsMutationResult
+  onRestoreSaved?: (
+    entry: SavedObject,
+    expectedClearEpoch: number,
+  ) => SavedObjectsMutationResult
   mapToolsSummaryRef?: Ref<HTMLElement>
   settingsSummaryRef?: Ref<HTMLElement>
 }
@@ -452,10 +470,35 @@ export function TrafficControls({
   onPlaceResultSelect,
   onPlaceSearchCancel,
   onPlaceSearchPause,
+  savedEntries = [],
+  savedStatus = {
+    phase: 'ready',
+    document: emptySavedObjectsDocument(),
+  },
+  aircraftAvailability = { available: true },
+  vesselAvailability = { available: true },
+  lastSavedObservationAt = () => undefined,
+  onRemoveSaved = () => ({
+    ok: false,
+    document: emptySavedObjectsDocument(),
+    message: 'Saved objects are unavailable.',
+  }),
+  onClearSaved = () => ({
+    ok: false,
+    document: emptySavedObjectsDocument(),
+    message: 'Saved objects are unavailable.',
+  }),
+  onRestoreSaved = () => ({
+    ok: false,
+    document: emptySavedObjectsDocument(),
+    message: 'Saved objects are unavailable.',
+  }),
   mapToolsSummaryRef,
   settingsSummaryRef,
 }: TrafficControlsProps) {
   const centerButtonRef = useRef<HTMLButtonElement>(null)
+  const [savedClearArmed, setSavedClearArmed] = useState(false)
+  const [savedMessage, setSavedMessage] = useState<string>()
   const findFocusFrameRef = useRef<number | null>(null)
   const mapToolsDetailsRef = useRef<HTMLDetailsElement>(null)
   const mapToolsBodyRef = useRef<HTMLDivElement>(null)
@@ -1266,6 +1309,14 @@ export function TrafficControls({
                 else onRetryOrbital()
               }}
               discoverMarineMetadata={discoverMarineMetadata}
+              savedEntries={savedEntries}
+              savedStatus={savedStatus}
+              aircraftAvailability={aircraftAvailability}
+              vesselAvailability={vesselAvailability}
+              lastObservedAt={lastSavedObservationAt}
+              onRemoveSaved={onRemoveSaved}
+              onClearSaved={onClearSaved}
+              onRestoreSaved={onRestoreSaved}
             />
           </section>
 
@@ -1740,6 +1791,44 @@ export function TrafficControls({
               retryPromoted={settingsPromotedAction?.kind === 'history'}
               trailVisibilityPromoted
             />
+
+            <fieldset className="control-group">
+              <legend>Saved objects</legend>
+              <p className="control-note">
+                {savedEntries.length} saved on this browser profile. Anyone using
+                this profile can see the list. Saved membership performs no
+                background lookup and is not included in share links.
+              </p>
+              {savedStatus.phase !== 'ready' && (
+                <p className="control-note" role="alert">{savedStatus.message}</p>
+              )}
+              {savedMessage && (
+                <p className="control-note" role="status">{savedMessage}</p>
+              )}
+              <div className="control-options control-options--one">
+                <button
+                  type="button"
+                  disabled={savedEntries.length === 0 && savedStatus.phase === 'ready'}
+                  onBlur={() => setSavedClearArmed(false)}
+                  onClick={() => {
+                    if (!savedClearArmed) {
+                      setSavedClearArmed(true)
+                      setSavedMessage('Activate again to clear saved identities from this browser profile.')
+                      return
+                    }
+                    const result = onClearSaved()
+                    setSavedClearArmed(false)
+                    setSavedMessage(result.message)
+                  }}
+                >
+                  {savedClearArmed ? 'CONFIRM CLEAR SAVED' : 'CLEAR SAVED'}
+                </button>
+              </div>
+              <p className="control-note control-note--muted">
+                Clearing Saved does not clear local history or preferences.
+                Removing the installed app may not remove browser site data.
+              </p>
+            </fieldset>
 
             <fieldset className="control-group">
               <legend>Preferences</legend>

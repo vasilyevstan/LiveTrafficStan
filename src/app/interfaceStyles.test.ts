@@ -77,7 +77,7 @@ describe('interface presentation contracts', () => {
     expect(styles).toContain('outline: 3px solid var(--focus-ring)')
   })
 
-  it('keeps the floating close over only a compact header and one full-width body scroller', () => {
+  it('keeps floating close and header actions over only a compact header and one full-width body scroller', () => {
     expect(styles).toMatch(
       /\.details-panel__heading\s*\{[^}]*padding: 0 44px 8px 0;/,
     )
@@ -85,8 +85,9 @@ describe('interface presentation contracts', () => {
       /\.details-panel__body\s*\{[^}]*min-height: 0;[^}]*overflow: auto;/,
     )
     expect(styles).toMatch(
-      /\.details-panel__close,\s*\.details-panel__share\s*\{[^}]*position: absolute;[^}]*width: 44px;[^}]*height: 44px;/,
+      /\.details-panel__close,\s*\.details-panel__share,\s*\.details-panel__save\s*\{[^}]*position: absolute;[^}]*width: 44px;[^}]*height: 44px;/,
     )
+    expect(styles).toMatch(/\.details-panel__header-action\s*\{[^}]*position: absolute;[^}]*display: flex;/)
     expect(styles).not.toMatch(/\.object-share__feedback\s*\{[^}]*(?:overflow|max-height):/)
     expect(styles).toMatch(/\.app-shell--mobile-workspace \.details-panel--action \.details-panel__identity\s*\{\s*flex-wrap: nowrap;/)
     expect(styles).not.toContain('margin-right: 58px')
@@ -98,13 +99,16 @@ describe('interface presentation contracts', () => {
     expect(styles).not.toMatch(/#depths-layer-toggle[^{}]*\{[^}]*grid-column:/)
   })
 
-  it('reserves captured-title Share clearance without squeezing the playback and Return row', () => {
+  it('reserves captured-title Save and Share clearance without squeezing the playback and Return row', () => {
     expect(styles).toMatch(/\.details-panel--orbital-view\.details-panel--action \.details-panel__heading\s*\{\s*padding-right: 0;/)
     expect(styles).toMatch(/\.details-panel--orbital-view\.details-panel--action h2\s*\{\s*padding-right: 88px;/)
+    expect(styles).toMatch(/\.details-panel--orbital-view\.details-panel--action:has\(\.details-panel__save\):has\(\.details-panel__share\)\s*h2\s*\{\s*padding-right: 132px;/)
     expect(styles).toMatch(/\.details-panel--orbital-view\.details-panel--action \.orbital-view-heading\s*\{\s*grid-template-rows: minmax\(40px, auto\) auto;/)
     expect(styles).toMatch(/\.details-panel--orbital-view\.details-panel--action\[data-force-compact\] h2\s*\{\s*padding-right: 148px;/)
+    expect(styles).toMatch(/\.details-panel--orbital-view\.details-panel--action\[data-force-compact\]:has\(\.details-panel__save\):has\(\.details-panel__share\)\s*h2\s*\{\s*padding-right: 192px;/)
     expect(styles).toMatch(/\.app-shell--mobile-workspace \.details-panel--orbital-view\.details-panel--action \.details-panel__heading\s*\{\s*padding-right: 12px;/)
     expect(styles).toMatch(/\.app-shell--mobile-workspace \.details-panel--orbital-view\.details-panel--action h2\s*\{\s*padding-right: 128px;/)
+    expect(styles).toMatch(/\.app-shell--mobile-workspace\s+\.details-panel--orbital-view\.details-panel--action:has\(\.details-panel__save\):has\(\.details-panel__share\)\s+h2\s*\{\s*padding-right: 172px;/)
     expect(styles).toMatch(/\.app-shell--mobile-workspace \.details-panel--orbital-view\.details-panel--action \.details-panel__body\s*\{\s*max-height: max\(44px, calc\(var\(--mobile-body-height\) - 20px\)\);\s*padding-block: 0;/)
   })
 

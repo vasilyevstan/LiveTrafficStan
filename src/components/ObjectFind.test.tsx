@@ -103,6 +103,32 @@ describe('unified compact Find presentation boundaries', () => {
     expect(html).toContain('© OpenStreetMap')
     expect(fetchMock).not.toHaveBeenCalled()
   })
+  it('ranks a matching Saved identity first without duplicating its current result', () => {
+    const aircraft: DisplayAircraft = {
+      kind: 'aircraft',
+      id: 'aircraft:4840d6',
+      hex: '4840d6',
+      callsign: 'TEST FLIGHT',
+      provider: 'ADSB.lol',
+      markerIcon: 'aircraft',
+      markerScale: 1,
+      receivedAt: now,
+      freshness: 'live',
+      position: { latitude: 59.4, longitude: 24.7, observedAt: now },
+    }
+    const html = render({
+      aircraft: [aircraft],
+      savedEntries: [{
+        kind: 'aircraft',
+        id: '4840d6',
+        savedLabel: 'TEST FLIGHT',
+        savedAt: now,
+      }],
+    })
+    expect(html).toContain('<h3 id="saved-objects-heading"')
+    expect(html).toContain('1 match.')
+    expect(html.match(/<strong>TEST FLIGHT<\/strong>/g)).toHaveLength(1)
+  })
   it.each([false, true])('includes loaded satellites without a separate class or tall action block (%s)', (mobile) => {
     const html = render({ mobile, curated: orbitalState, orbitalVisible: true })
     expect(html).toContain('1 match.')

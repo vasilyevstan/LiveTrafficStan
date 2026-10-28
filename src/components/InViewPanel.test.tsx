@@ -94,6 +94,14 @@ describe('InViewPanel', () => {
     expect(html).not.toContain('How this list works')
   })
 
+  it('marks matching rows as Saved without changing the in-view count', () => {
+    const html = renderPanel({
+      savedKeys: new Set(['aircraft:000001']),
+    })
+    expect(html).toContain('45 aircraft in view')
+    expect(html).toMatch(/TEST 1[\s\S]*Saved/)
+  })
+
   it('quarantines current-view membership without claiming retained reports are in the modeled view', () => {
     const html = renderPanel({ unavailableMessage: 'Return to map to browse local reports.' })
     expect(html).toContain('role="status">Return to map to browse local reports.')

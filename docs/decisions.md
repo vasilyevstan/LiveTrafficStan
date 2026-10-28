@@ -1,5 +1,43 @@
 # Engineering Decisions
 
+## Device-local Saved identities without tracking (#611)
+
+The accepted product scope includes aircraft, ships, satellites, airports and
+ports, but rejects a uniform "watchlist" contract. The product label is
+**Saved** because no alerts, background monitoring, global freshness or
+continuous following exists.
+
+Only canonical identities and bounded save-time hints persist. Coordinates,
+last-known positions, trails, provider payloads, orbital elements, camera,
+Home, search results, photos and history observations are rejected. Current
+and last-retained context is derived from existing application state and
+opt-in history rather than copied into another store.
+
+All five classes keep their own truth model. Aircraft/ship absence is scoped
+to the current partial acquisition footprint. Satellites remain modeled
+catalog objects with stale/expiry/pause distinctions. Airports and ports are
+static catalog references with no "current availability." Identifier or
+corroboration changes produce conflicts and never silently rebind.
+
+Saved is integrated into existing details, Find and passive In view
+presentation. It does not get another mobile task, provider, scheduler,
+service-worker job, account, sync, export, share format or analytics event.
+Explicit actions reuse the existing Find/Locate/catalog/orbital/navigation
+owners.
+
+The independent versioned local document is bounded to 50 entries and 20 per
+moving class. It rejects capacity instead of evicting, validates an exact
+allowlist, leaves unsupported/corrupt schemas untouched, verifies writes, and
+uses revision plus clear-epoch fencing so stale Undo cannot restore entries
+after Clear. Preferences, history and Saved have separate reset/deletion
+operations.
+
+The principal accepted privacy cost is a sensitive interest list visible to
+anyone using the same browser profile. First-save feedback and Settings keep
+that boundary explicit. No claim is made about app locks, confidentiality,
+browser backups, installed-app removal, screenshots, clipboard copies,
+provider logs, existing public links or separate history deletion.
+
 ## Menu necessity before line length (#594)
 
 The earlier two-rendered-line check did not establish whether text belonged in
@@ -927,7 +965,7 @@ unaffected, and AIS destination is not presented as a complete route.
 The dated
 [aircraft metadata evaluation](aircraft-metadata-evaluation.md) selects the
 Mictronics aircraft-database at commit
-`1724959f854f540c95f11872bcd377ecfeb698a2`. Its exports are explicitly offered
+`d31104a82bdc429be7fe94726247fc45aa0c49a4`. Its exports are explicitly offered
 under ODC-By 1.0, allowing a compact derivative database with visible
 attribution and the full license conveyed alongside the data.
 

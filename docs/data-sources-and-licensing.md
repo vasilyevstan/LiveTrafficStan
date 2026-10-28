@@ -73,6 +73,34 @@ are dashboard-backed received data, not unique-person counts or proof of
 every dimension, country or physical device. See the dated runtime receipt
 for exact windows and the aggregation delay.
 
+## Device-local Saved identities
+
+Saved objects are an origin-local browser identity list, separate from public
+object links, fragment view sharing and opt-in IndexedDB history. Records
+contain canonical ICAO24, MMSI, NORAD, OurAirports ID or Natural Earth
+`ne_id`, plus bounded save-time display/corroboration hints. They contain no
+coordinates, trails, provider payloads, orbital elements, modeled positions,
+photos, Home, camera or history observations.
+
+The list is not sent to TrackStan, Cloudflare Web Analytics, providers, object
+sharing, a service worker, an account, sync, export or backup endpoint.
+Rendering it makes no request. A later explicit Find/Locate/catalog/orbital
+action retains the existing provider disclosure, rate, cancellation,
+attribution and privacy boundary.
+
+Aircraft ICAO24 and vessel MMSI can be reassigned or spoofed; registration and
+valid reported IMO are corroboration rather than ownership or immutable
+airframe/hull truth. NORAD state is modeled from accepted catalog elements,
+not observed or live. Static airport/port references inherit the pinned
+OurAirports/Natural Earth snapshot limits.
+
+Anyone using the same browser profile can inspect Saved. TrackStan provides no
+account separation or application lock. Clear Saved removes the active Saved
+document from that origin/profile boundary but cannot remove screenshots,
+clipboard copies, browser/OS backups, provider logs, existing public links or
+separate private-history rows. Removing an installed shortcut may leave
+browser site data intact.
+
 ## Public object links
 
 **Share object** is explicit publication of a small public aircraft, vessel or
@@ -840,19 +868,19 @@ points, or cached plausible-route lookups.
 - Source repository:
   <https://github.com/Mictronics/aircraft-database>
 - Pinned commit:
-  `1724959f854f540c95f11872bcd377ecfeb698a2`
-- Source publication instant: `2026-09-13T07:35:29Z`
-- Internal database version: 522
+  `d31104a82bdc429be7fe94726247fc45aa0c49a4`
+- Source publication instant: `2026-10-25T09:05:04Z`
+- Internal database version: 528
 - License:
   [Open Data Commons Attribution License 1.0](https://opendatacommons.org/licenses/by/1-0/)
 - Pinned archive SHA-256:
-  `3f274f21154833d47cae45b5e847c3d47463a212c631384bc79493872beb44dc`
+  `fdff9ab076f279658d21aa4bc61f7b2b8310410000a8e51b7cd3c29989a094f7`
 - Pinned license SHA-256:
   `11a6d83734845ad09d809667aa219857a5b985b28c258a2eebf5677668a6bd3b`
-- Immutable projected path: `/aircraft-metadata/2026-09-13-v1`
+- Immutable projected path: `/aircraft-metadata/2026-10-25-v1`
 
-This decision was verified on 2026-09-19. The source README explicitly makes
-its exports available under ODC-By and describes a weekly update process.
+This decision was last re-verified on 2026-10-28. The source README explicitly
+makes its exports available under ODC-By and describes a weekly update process.
 ODC-By permits use, extraction, modification, creation and conveyance of a
 derivative database subject to its attribution and notice requirements.
 
@@ -886,7 +914,7 @@ never changes the live provider or its marker category.
 
 The source publication date is dataset-wide age rather than per-aircraft
 verification. This snapshot remains valid through the exact 45-day boundary
-and becomes unavailable after `2026-10-28T07:35:29Z`. A date more than 24 hours
+and becomes unavailable after `2026-12-09T09:05:04Z`. A date more than 24 hours
 ahead of the client clock is invalid. Any source, schema, generator, or
 generated-byte update uses a new immutable output path.
 

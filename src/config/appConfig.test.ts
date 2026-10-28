@@ -162,12 +162,12 @@ describe('createAppConfig', () => {
       sourceUsagePolicyUrl: 'https://celestrak.org/usage-policy.php',
     })
     expect(config.aircraftMetadata).toMatchObject({
-      baseUrl: '/aircraft-metadata/2026-09-13-v1',
+      baseUrl: '/aircraft-metadata/2026-10-25-v1',
       timeoutMs: 5_000,
       shardCacheEntries: 8,
       staleAfterDays: 45,
       futureToleranceHours: 24,
-      sourceDatabaseVersion: 522,
+      sourceDatabaseVersion: 528,
     })
     expect(config.aircraftPhoto).toEqual({
       enabled: false,

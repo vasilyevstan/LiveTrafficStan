@@ -1570,8 +1570,19 @@
   padding-right: 88px;
 }
 
+.details-panel--action:has(.details-panel__save):has(.details-panel__share)
+  .details-panel__heading {
+  padding-right: 132px;
+}
+
 .details-panel__header-action {
-  display: contents;
+  position: absolute;
+  top: -8px;
+  right: 44px;
+  z-index: 3;
+  display: flex;
+  flex-direction: row-reverse;
+  pointer-events: auto;
 }
 
 .details-panel__body {
@@ -1594,7 +1605,8 @@
 }
 
 .details-panel__close,
-.details-panel__share {
+.details-panel__share,
+.details-panel__save {
   position: absolute;
   top: -8px;
   right: 0;
@@ -1611,7 +1623,15 @@
 }
 
 .details-panel__share {
-  right: 44px;
+  position: static;
+}
+
+.details-panel__save {
+  position: static;
+}
+
+.details-panel__save[aria-pressed='true'] {
+  color: var(--accent-line);
 }
 
 .details-panel__heading .eyebrow {
@@ -1663,12 +1683,22 @@
   padding-right: 88px;
 }
 
+.details-panel--orbital-view.details-panel--action:has(.details-panel__save):has(.details-panel__share)
+  h2 {
+  padding-right: 132px;
+}
+
 .details-panel--orbital-view.details-panel--action .orbital-view-heading {
   grid-template-rows: minmax(40px, auto) auto;
 }
 
 .details-panel--orbital-view.details-panel--action[data-force-compact] h2 {
   padding-right: 148px;
+}
+
+.details-panel--orbital-view.details-panel--action[data-force-compact]:has(.details-panel__save):has(.details-panel__share)
+  h2 {
+  padding-right: 192px;
 }
 
 .orbital-view-heading h2 {
@@ -1703,6 +1733,75 @@
 
 .object-share {
   display: contents;
+}
+
+.saved-object-control {
+  display: contents;
+}
+
+.saved-objects {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--divider);
+}
+
+.saved-objects__heading {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.saved-objects__heading h3 {
+  margin: 0;
+  color: var(--summary-text);
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.saved-objects__heading h3:focus {
+  outline: 2px solid var(--accent-line);
+  outline-offset: 3px;
+}
+
+.saved-objects__clear {
+  min-height: 36px;
+  padding: 5px 9px;
+  font-size: 0.68rem;
+}
+
+.saved-objects__undo {
+  min-height: 32px;
+  padding: 4px 8px;
+  font-size: 0.68rem;
+}
+
+.saved-objects__list {
+  margin-top: 8px;
+}
+
+.saved-objects__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.saved-objects__actions button {
+  min-height: 36px;
+  padding: 5px 8px;
+  font-size: 0.67rem;
+}
+
+.saved-objects .object-find-result__status {
+  display: grid;
+  gap: 2px;
+}
+
+.saved-objects .object-find-result__status small {
+  color: var(--note-muted);
+  font-size: 0.64rem;
+  line-height: 1.35;
 }
 
 .object-share__feedback {
@@ -3204,12 +3303,24 @@
   padding-right: 140px;
 }
 
+.app-shell--mobile-workspace
+  .details-panel--action:has(.details-panel__save):has(.details-panel__share)
+  .details-panel__heading {
+  padding-right: 184px;
+}
+
 .app-shell--mobile-workspace .details-panel--orbital-view.details-panel--action .details-panel__heading {
   padding-right: 12px;
 }
 
 .app-shell--mobile-workspace .details-panel--orbital-view.details-panel--action h2 {
   padding-right: 128px;
+}
+
+.app-shell--mobile-workspace
+  .details-panel--orbital-view.details-panel--action:has(.details-panel__save):has(.details-panel__share)
+  h2 {
+  padding-right: 172px;
 }
 
 .app-shell--mobile-workspace .details-panel__identity {
