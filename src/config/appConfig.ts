@@ -220,6 +220,13 @@ export interface AppConfig {
     aircraftTrailGapMs: number
     vesselTrailGapMs: number
   }
+  saved: {
+    maxEntries: number
+    maxMovingEntriesPerKind: number
+    maxLabelLength: number
+    maxRecordBytes: number
+    maxDocumentBytes: number
+  }
   interpolationDurationMs: number
 }
 
@@ -842,6 +849,13 @@ export const createAppConfig = (
       playbackPublishIntervalMs: 100,
       aircraftTrailGapMs: 120_000,
       vesselTrailGapMs: 600_000,
+    },
+    saved: {
+      maxEntries: 50,
+      maxMovingEntriesPerKind: 20,
+      maxLabelLength: 80,
+      maxRecordBytes: 512,
+      maxDocumentBytes: 32 * 1_024,
     },
     interpolationDurationMs: 1_500,
   }

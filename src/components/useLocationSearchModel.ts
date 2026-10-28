@@ -35,6 +35,7 @@ export interface LocationSearchModel {
   clear: () => void
   cancel: () => void
   pause: () => void
+  setValue?: (value: string) => void
 }
 
 export function useLocationSearchModel({
@@ -127,6 +128,12 @@ export function useLocationSearchModel({
     clear,
     cancel: onCancel,
     pause: onPause,
+    setValue: (nextValue) => {
+      onCancel()
+      setValue(nextValue.slice(0, maximumQueryLength))
+      setInputError(undefined)
+      inputRef.current?.focus()
+    },
   }
 
   return [model, inputRef] as const

@@ -221,6 +221,7 @@ spread through components:
 | Starlink cadence/sample | One actual-start SQLite reservation per 12 hours; schema 1 remains the exact 150-record `inclination-raan-systematic-v1` sample; schema 2 is exactly 512 records, 128 per fixed inclination band, selected by `inclination-shell-raan-phase-grid-v1`; no retry, truncation, rotation, viewport request, or completeness/representativeness claim |
 | Orbital catalog discovery | Query at most 64 characters; exact type/source-group filters; 20 rows per page |
 | In view | Collapsed peer below desktop Settings; direct action in the five-slot mobile dock. Aircraft and current modeled orbits reuse local search and `orbital.discovery.pageSize` (20). Ships uses the existing `VESSEL_RESULT_LIMIT` (20) for a capped Longest/Deepest draught shortlist; ranking is component-local, not a saved preference or map filter |
+| Saved objects | 50 total entries; 20 each for aircraft, vessels and satellites; 80-character labels; 512-byte records; 32 KiB versioned document; explicit additions only and no silent eviction |
 | Mobile workspace | Width <=760px, or coarse-pointer landscape <=1024x480; one expanded nonmodal surface and compact retained selection; no saved presentation state |
 | Orbital selected track | 15 minutes; at most 31 points before gap/dateline splitting |
 | Orbital reviewed image | 5-second total deadline; exact manifest byte count, media type, and SHA-256; one fulfilled Blob URL or terminal failure per immutable asset in the running tab |
@@ -600,6 +601,62 @@ network metadata such as the client IP address. Browser-derived Home
 coordinates are not sent to Photon. A root-relative
 `VITE_GEOCODER_ENDPOINT` is only a deployment substitution point; the checked
 Cloudflare Worker does not add a geocoder proxy.
+
+## Saved objects
+
+Normal aircraft, ship, satellite, airport and port details expose an explicit
+bookmark action. Saved appears inside the existing Find task rather than
+adding another desktop disclosure or sixth mobile dock action. Empty Find
+shows the bounded local list; typed Find ranks matching Saved identities first
+and removes duplicate ordinary result rows. Matching In view rows show a
+display-only Saved marker.
+
+The stored version-1 projection contains:
+
+| Class | Primary identity | Optional corroboration |
+| --- | --- | --- |
+| Aircraft | six-character lowercase ICAO24 | registration at save time |
+| Ship | ordinary nine-digit MMSI | checksum-valid reported IMO |
+| Satellite | NORAD catalog number | international designator and preferred current catalog owner |
+| Airport | OurAirports numeric source ID | ident and source output version |
+| Port | Natural Earth `ne_id` | source output version |
+
+Saved labels are bounded save-time hints, not user-editable registry truth.
+Changed corroboration is reported and never silently updates the identity.
+Callsigns, vessel/port names, airport codes and coordinates cannot migrate or
+replace a primary identity.
+
+Opening Saved performs no request and starts no scheduler. Current aircraft
+and ship states come only from the accepted data already held for the current
+view/provider lifecycle; absence is "not in current data," never landed,
+docked, gone or globally unavailable. A ship received before filters is
+reported as filtered rather than absent. Offline, paused, source-failure and
+HISTORY states remain distinct.
+Objects received behind a hidden layer or vessel filter remain non-selecting;
+Saved never changes display preferences to reveal them.
+
+Satellite rows say **Modeled now** only when an already accepted, non-expired
+catalog has a safe current modeled position. Catalog/sample absence, stale,
+hard-expired, offline, clock-invalid, hidden, HISTORY and captured-view pauses
+remain distinct. Airports and ports say catalog reference available/not
+loaded/missing from the loaded snapshot; they are not monitored objects.
+
+When opt-in durable history is enabled, an aircraft or ship row may show the
+newest matching retained observation time. Saved does not enable history,
+copy coordinates, or create a second observation record.
+
+Explicit row actions preserve existing owners: View selects an exact current
+object; Go uses the existing static/orbital navigation; Load explicitly
+demands a static catalog; Find only prefills the existing query for the user to
+submit; Enable uses the existing ORBITS action. Saved membership itself never
+looks up, locates, enables, loads or navigates.
+
+The local document uses `livetrafficstan.saved.v1`, with revision and clear
+epoch fencing plus cross-tab invalidation. Unsupported/malformed data is not
+overwritten. Clear Saved is confirmed separately from Reset preferences and
+Clear history. The list is visible to anyone using the same browser profile;
+browser/PWA removal and origin backups are outside the application's deletion
+guarantee.
 
 ## Scoped object discovery
 

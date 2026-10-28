@@ -14,6 +14,7 @@ import { useAirports } from './app/useAirports'
 import { LocationCameraIntent } from './app/locationCameraIntent'
 import type { ObjectShareStartup } from './app/objectShareStartup'
 import { ObjectShareControl } from './components/ObjectShareControl'
+import { SavedObjectControl } from './components/SavedObjectControl'
 import { SharedObjectDetails } from './components/SharedObjectDetails'
 import {
   shareOrbitalObject, shareTrafficObject, sharedOrbitalId, sharedOrbitalMatches, sharedTrafficMatches,
@@ -28,6 +29,7 @@ import { useSessionLocation } from './app/useSessionLocation'
 import { useTheme } from './app/useTheme'
 import type { ThemePreference } from './app/theme'
 import { useTrafficHistory } from './app/useTrafficHistory'
+import { useSavedObjects } from './app/useSavedObjects'
 import { useTrailHistory } from './app/useTrailHistory'
 import { useWeatherObservations } from './app/useWeatherObservations'
 import { useOrbitalObjects } from './app/useOrbitalObjects'
@@ -95,6 +97,14 @@ import {
   readBrowserShareState,
 } from './domain/shareState'
 import type { DisplayTrafficEntity, TrafficEntity } from './domain/traffic'
+import {
+  createSavedAirportObject,
+  createSavedOrbitalObject,
+  createSavedPortObject,
+  createSavedTrafficObject,
+  savedObjectKey,
+  type SavedObject,
+} from './domain/savedObjects'
 import {
   trailHistoryConfig,
 } from './domain/trailPreferences'
@@ -264,6 +274,11 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     projection: projectionPreference,
     units,
   } = preferences
+  const savedObjects = useSavedObjects(APP_CONFIG.saved)
+  const savedObjectKeys = useMemo(
+    () => new Set(savedObjects.entries.map(savedObjectKey)),
+    [savedObjects.entries],
+  )
   const themePreference = sharedTheme ?? savedThemePreference
   const [sharedOrbitsEnabled, setSharedOrbitsEnabled] = useState(false)
   const orbitalVisibilityChangedRef = useRef(false)
@@ -853,6 +868,13 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     enterHistory,
     returnToLive,
   } = history
+  const lastSavedObservationAt = useCallback(
+    (entry: SavedObject) =>
+      entry.kind === 'aircraft' || entry.kind === 'vessel'
+        ? history.lastRetainedObservationAt(entry.kind, entry.id)
+        : undefined,
+    [history],
+  )
   useEffect(() => {
     returnToLiveRef.current = returnToLive
   }, [returnToLive])
@@ -1056,6 +1078,44 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
   const vesselResults = useMemo(
     () => orderVesselSearchResults(vessels, vesselFilters.query),
     [vesselFilters.query, vessels],
+  )
+  const aircraftAvailability = useMemo(
+    () =>
+      aircraftInViewAvailability({
+        historyActive,
+        viewportReady: viewReady && currentAssessment !== null,
+        viewportEligible: currentAssessment?.kind === 'eligible',
+        online,
+        status: aircraftResult.status,
+        count: aircraft.length,
+      }),
+    [
+      aircraft.length,
+      aircraftResult.status,
+      currentAssessment,
+      historyActive,
+      online,
+      viewReady,
+    ],
+  )
+  const vesselAvailability = useMemo(
+    () =>
+      vesselInViewAvailability({
+        historyActive,
+        viewportReady: viewReady && currentAssessment !== null,
+        viewportEligible: currentAssessment?.kind === 'eligible',
+        online,
+        status: marineResult.status,
+        count: vessels.length,
+      }),
+    [
+      currentAssessment,
+      historyActive,
+      marineResult.status,
+      online,
+      vessels.length,
+      viewReady,
+    ],
   )
   const zoomContextViewport = trafficZoomContextViewport(
     lastLocalTrafficView,
@@ -1265,6 +1325,52 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
   const selectedOrbitalImageState = useOrbitalEnrichmentImage(
     selectedOrbitalEnrichment,
     orbitalEnrichmentImageLoader,
+  )
+  const selectedTrafficSavedObject = useMemo(
+    () =>
+      selectedEntity && !historyActive
+        ? createSavedTrafficObject(
+            selectedEntity,
+            now,
+            APP_CONFIG.saved.maxLabelLength,
+          )
+        : undefined,
+    [historyActive, now, selectedEntity],
+  )
+  const selectedOrbitalSavedObject = useMemo(
+    () =>
+      selectedOrbitalPosition
+        ? createSavedOrbitalObject(
+            selectedOrbitalPosition,
+            now,
+            APP_CONFIG.saved.maxLabelLength,
+          )
+        : undefined,
+    [now, selectedOrbitalPosition],
+  )
+  const selectedAirportSavedObject = useMemo(
+    () =>
+      selectedAirport && airportsResult.state.phase === 'ready'
+        ? createSavedAirportObject(
+            selectedAirport,
+            airportsResult.state.dataset.source,
+            now,
+            APP_CONFIG.saved.maxLabelLength,
+          )
+        : undefined,
+    [airportsResult.state, now, selectedAirport],
+  )
+  const selectedPortSavedObject = useMemo(
+    () =>
+      selectedPort && portsResult.state.phase === 'ready'
+        ? createSavedPortObject(
+            selectedPort,
+            portsResult.state.dataset.source,
+            now,
+            APP_CONFIG.saved.maxLabelLength,
+          )
+        : undefined,
+    [now, portsResult.state, selectedPort],
   )
   const aircraftMetadata = useAircraftMetadata(
     !capturedOrbitalView && !historyActive && selectedEntity?.kind === 'aircraft'
@@ -2559,27 +2665,13 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
               totalAircraft={aircraft.length}
               aircraftQuery={aircraftQuery}
               aircraftVisible={aircraftVisible}
-              aircraftAvailability={aircraftInViewAvailability({
-                historyActive,
-                viewportReady: viewReady && currentAssessment !== null,
-                viewportEligible: currentAssessment?.kind === 'eligible',
-                online,
-                status: aircraftResult.status,
-                count: aircraft.length,
-              })}
+              aircraftAvailability={aircraftAvailability}
               selectedAircraftId={selectedId}
               onAircraftQueryChange={setAircraftQuery}
               onAircraftSelect={selectTraffic}
               vessels={vessels}
               vesselsVisible={vesselsVisible}
-              vesselAvailability={vesselInViewAvailability({
-                historyActive,
-                viewportReady: viewReady && currentAssessment !== null,
-                viewportEligible: currentAssessment?.kind === 'eligible',
-                online,
-                status: marineResult.status,
-                count: vessels.length,
-              })}
+              vesselAvailability={vesselAvailability}
               selectedVesselId={selectedId}
               onVesselSelect={selectTraffic}
               onFindShips={() => workspaceControlsRef.current?.openShipFind()}
@@ -2590,6 +2682,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
               maximumOrbitalQueryLength={
                 APP_CONFIG.orbital.discovery.maximumQueryLength
               }
+              savedKeys={savedObjectKeys}
             />
           }
           masthead={
@@ -2782,6 +2875,14 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
           onPlaceResultSelect={handlePlaceResultSelect}
           onPlaceSearchCancel={cancelPlaceSearch}
           onPlaceSearchPause={pausePlaceSearch}
+          savedEntries={savedObjects.entries}
+          savedStatus={savedObjects.status}
+          aircraftAvailability={aircraftAvailability}
+          vesselAvailability={vesselAvailability}
+          lastSavedObservationAt={lastSavedObservationAt}
+          onRemoveSaved={savedObjects.remove}
+          onClearSaved={savedObjects.clear}
+          onRestoreSaved={savedObjects.restore}
           mapToolsSummaryRef={mapToolsSummaryRef}
           settingsSummaryRef={settingsSummaryRef}
         />
@@ -2863,15 +2964,31 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
             statusMessage={capturedOrbitalState?.message}
             online={online}
             units={units}
-            shareObject={APP_CONFIG.objectSharing.enabled ? <ObjectShareControl
-              theme={theme}
-              identityKey={`from-here:${capturedOrbitalView.revision}`}
-              viewFromHere
-              disabled={!capturedOrbitalReady}
-              capture={() => shareOrbitalObject(
-                capturedOrbitalDisplayedPosition ?? capturedOrbitalView.position,
-                capturedOrbitalView.snapshot, 'from-here',
-              )} now={now} /> : undefined}
+            shareObject={<>
+              <SavedObjectControl
+                entry={createSavedOrbitalObject(
+                  capturedOrbitalDisplayedPosition ?? capturedOrbitalView.position,
+                  now,
+                  APP_CONFIG.saved.maxLabelLength,
+                )}
+                saved={savedObjects.isSaved(createSavedOrbitalObject(
+                  capturedOrbitalDisplayedPosition ?? capturedOrbitalView.position,
+                  now,
+                  APP_CONFIG.saved.maxLabelLength,
+                ))}
+                onSave={savedObjects.save}
+                onRemove={savedObjects.remove}
+              />
+              {APP_CONFIG.objectSharing.enabled && <ObjectShareControl
+                theme={theme}
+                identityKey={`from-here:${capturedOrbitalView.revision}`}
+                viewFromHere
+                disabled={!capturedOrbitalReady}
+                capture={() => shareOrbitalObject(
+                  capturedOrbitalDisplayedPosition ?? capturedOrbitalView.position,
+                  capturedOrbitalView.snapshot, 'from-here',
+                )} now={now} />}
+            </>}
             onReturn={() => returnFromCapturedOrbitalView(capturedOrbitalView.revision)}
             onTogglePlaying={() => toggleCapturedOrbitalPlaying(capturedOrbitalView.revision)}
           />
@@ -2899,10 +3016,18 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
             onShowJourney={!historyActive && mapCamera ? handleShowJourney : undefined}
             journeyMessage={journeyMessage}
             journeyPreparing={journeyPreparing}
-            shareObject={!historyActive && APP_CONFIG.objectSharing.enabled ? <ObjectShareControl
-              theme={theme}
-              identityKey={JSON.stringify([selectedEntity.id, selectedEntity.kind === 'aircraft' ? selectedEntity.registration : selectedEntity.imo])}
-              capture={() => shareTrafficObject(selectedEntity)} now={now} /> : undefined}
+            shareObject={selectedTrafficSavedObject ? <>
+              <SavedObjectControl
+                entry={selectedTrafficSavedObject}
+                saved={savedObjects.isSaved(selectedTrafficSavedObject)}
+                onSave={savedObjects.save}
+                onRemove={savedObjects.remove}
+              />
+              {APP_CONFIG.objectSharing.enabled && <ObjectShareControl
+                theme={theme}
+                identityKey={JSON.stringify([selectedEntity.id, selectedEntity.kind === 'aircraft' ? selectedEntity.registration : selectedEntity.imo])}
+                capture={() => shareTrafficObject(selectedEntity)} now={now} />}
+            </> : undefined}
             onClose={handleCloseTraffic}
           />
         )}
@@ -2941,14 +3066,22 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
             viewFromHereUnavailable={mapError
               ? 'View from here needs the vector basemap.'
               : orbitalViewUnavailableReason(selectedOrbitalPosition, projectionPreference)}
-            shareObject={APP_CONFIG.objectSharing.enabled ? <ObjectShareControl
-              theme={theme}
-              identityKey={`${selectedOrbitalPosition.id}|${selectedOrbitalState.snapshot.sha256}`}
-              capture={() => {
-                const snapshot = selectedOrbitalState.snapshot
-                if (!snapshot) throw new Error('The orbital catalog is no longer available.')
-                return shareOrbitalObject(selectedOrbitalPosition, snapshot)
-              }} now={now} /> : undefined}
+            shareObject={selectedOrbitalSavedObject ? <>
+              <SavedObjectControl
+                entry={selectedOrbitalSavedObject}
+                saved={savedObjects.isSaved(selectedOrbitalSavedObject)}
+                onSave={savedObjects.save}
+                onRemove={savedObjects.remove}
+              />
+              {APP_CONFIG.objectSharing.enabled && <ObjectShareControl
+                theme={theme}
+                identityKey={`${selectedOrbitalPosition.id}|${selectedOrbitalState.snapshot.sha256}`}
+                capture={() => {
+                  const snapshot = selectedOrbitalState.snapshot
+                  if (!snapshot) throw new Error('The orbital catalog is no longer available.')
+                  return shareOrbitalObject(selectedOrbitalPosition, snapshot)
+                }} now={now} />}
+            </> : undefined}
           />
         )}
 
@@ -2956,6 +3089,12 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
           <PortDetails
             port={selectedPort}
             source={portsResult.state.dataset.source}
+            headerAction={selectedPortSavedObject && <SavedObjectControl
+              entry={selectedPortSavedObject}
+              saved={savedObjects.isSaved(selectedPortSavedObject)}
+              onSave={savedObjects.save}
+              onRemove={savedObjects.remove}
+            />}
             onClose={handleClosePort}
           />
         )}
@@ -2965,6 +3104,12 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
             airport={selectedAirport}
             source={airportsResult.state.dataset.source}
             coordinatePrecision={APP_CONFIG.navigation.coordinatePrecision}
+            headerAction={selectedAirportSavedObject && <SavedObjectControl
+              entry={selectedAirportSavedObject}
+              saved={savedObjects.isSaved(selectedAirportSavedObject)}
+              onSave={savedObjects.save}
+              onRemove={savedObjects.remove}
+            />}
             onClose={handleCloseAirport}
             board={APP_CONFIG.airportBoards.enabled ? {
               provider: airportBoardProvider, now, online, historical: historyActive,

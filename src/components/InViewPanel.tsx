@@ -42,6 +42,7 @@ interface InViewPanelProps {
   onOrbitalSelect: (id: string, originId: string) => void
   pageSize: number
   maximumOrbitalQueryLength: number
+  savedKeys?: ReadonlySet<string>
 }
 
 const CATEGORIES = ['aircraft', 'ships', 'orbits'] as const
@@ -78,6 +79,7 @@ export function InViewPanel({
   onOrbitalSelect,
   pageSize,
   maximumOrbitalQueryLength,
+  savedKeys = new Set(),
 }: InViewPanelProps) {
   const [kind, setKind] = useState<Kind>('aircraft')
   const [orbitalQuery, setOrbitalQuery] = useState('')
@@ -105,6 +107,7 @@ export function InViewPanel({
           id: entity.id,
           label: aircraftResultLabel(entity),
           context: aircraftResultContext(entity),
+          detail: savedKeys.has(`aircraft:${entity.hex.toLowerCase()}`) ? 'Saved' : undefined,
     }))
       : []
     const orbitalRows: ResultRow[] = orbitalResults.map((position) => ({
@@ -114,7 +117,10 @@ export function InViewPanel({
       context: `NORAD ${position.noradCatalogId} · ${position.objectType} · ${
         position.owner === 'starlink' ? 'Starlink sample' : 'Curated'
       }`,
-      detail: shownIds.has(position.id) ? 'Shown on map' : 'Not shown at this zoom',
+      detail: [
+        shownIds.has(position.id) ? 'Shown on map' : 'Not shown at this zoom',
+        savedKeys.has(`orbital:${position.noradCatalogId}`) ? 'Saved' : undefined,
+      ].filter(Boolean).join(' · '),
       title: `Element epoch ${new Date(position.elementEpoch).toISOString()}. Modeled ${new Date(position.modeledFor).toISOString()}. Retrieved ${new Date(position.snapshotRetrievedAt).toISOString()}.`,
       }))
     const vesselRows: ResultRow[] = rankedVessels.rows.map((vessel) => {
@@ -131,11 +137,12 @@ export function InViewPanel({
         detail: [
           vesselResultContext(vessel),
           vessel.freshness === 'stale' ? 'STALE' : undefined,
+          savedKeys.has(`vessel:${vessel.mmsi}`) ? 'Saved' : undefined,
         ].filter(Boolean).join(' · '),
       }
     })
     return { aircraft: aircraftRows, ships: vesselRows, orbits: orbitalRows }
-  }, [aircraft, aircraftAvailability.available, orbits.rows, orbitalQuery, rankedVessels.rows])
+  }, [aircraft, aircraftAvailability.available, orbits.rows, orbitalQuery, rankedVessels.rows, savedKeys])
   const paged = useMemo(() => ({
     aircraft: inViewPage(results.aircraft, pages.aircraft, pageSize, focusedKey),
     ships: inViewPage(results.ships, pages.ships, pageSize, focusedKey),
