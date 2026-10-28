@@ -19,6 +19,7 @@ export interface SavedObjectResolution {
   status: string
   detail?: string
   targetId?: string
+  conflictSignature?: string
 }
 
 export const matchesSavedObjectQuery = (entry: SavedObject, query: string) => {
@@ -75,6 +76,7 @@ export const resolveSavedAircraft = (
       return {
         state: 'conflict',
         status: 'Reported identity changed',
+        conflictSignature: `${entry.registration ?? ''}:${entity.registration ?? ''}`,
         detail: [
           `Saved registration ${entry.registration}`,
           `current ${entity.registration}`,
@@ -133,6 +135,7 @@ export const resolveSavedVessel = (
       return {
         state: 'conflict',
         status: 'Reported identity changed',
+        conflictSignature: `${entry.imo ?? ''}:${currentImo ?? ''}`,
         detail: [
           `Saved IMO ${entry.imo}`,
           `current ${currentImo}`,
@@ -233,6 +236,7 @@ export const resolveSavedOrbital = (
       return {
         state: 'conflict',
         status: 'Reported identity changed',
+        conflictSignature: `${entry.internationalDesignator ?? ''}:${currentDesignator ?? ''}`,
         detail: [
           `Saved designator ${entry.internationalDesignator}`,
           `current ${currentDesignator}`,

@@ -3749,6 +3749,34 @@
   margin-block: 2px 4px;
 }
 
+.saved-activity {
+  margin-block: 8px 12px;
+  padding-block: 8px 4px;
+  border-block: 1px solid var(--panel-border);
+}
+
+.saved-activity h4 {
+  margin: 0;
+  color: var(--heading-text);
+  font-size: 0.82rem;
+}
+
+.saved-activity__count {
+  display: inline-flex;
+  margin-left: 8px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  color: var(--button-text);
+  background: var(--button-background);
+  font-size: 0.68rem;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+.saved-activity__list {
+  margin-bottom: 0;
+}
+
 .map-filter-options .vessel-discovery__filter-options > summary {
   display: block;
   min-height: 44px;
