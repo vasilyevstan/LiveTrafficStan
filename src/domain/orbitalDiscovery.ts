@@ -75,6 +75,15 @@ export const matchesOrbitalFilters = (
 export const normalizeOrbitalSearchText = (value: string) =>
   value.trim().toLocaleLowerCase('en-US')
 
+const famousAliases = new Map<string, readonly string[]>([
+  ['25544', ['ISS', 'International Space Station']],
+  ['20580', ['Hubble', 'Hubble Space Telescope']],
+  ['48274', ['Tiangong']],
+])
+
+export const orbitalSearchAliases = (noradCatalogId: string): readonly string[] =>
+  famousAliases.get(noradCatalogId) ?? []
+
 type OrbitalSearchRecord = Pick<
   OrbitalObject,
   | 'name'
@@ -91,6 +100,7 @@ const searchRank = (record: OrbitalSearchRecord, query: string) => {
     normalizeOrbitalSearchText(record.name),
     record.noradCatalogId,
     normalizeOrbitalSearchText(record.internationalDesignator),
+    ...orbitalSearchAliases(record.noradCatalogId).map(normalizeOrbitalSearchText),
   ]
   if (values.some((value) => value === query)) return 0
   if (values.some((value) => value.startsWith(query))) return 1

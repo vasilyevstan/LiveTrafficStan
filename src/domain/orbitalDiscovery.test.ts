@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import reference from '../config/spaceTrackCurationReference.json'
 import {
   EMPTY_ORBITAL_PREDICTION,
   type ModeledOrbitalPosition,
@@ -12,6 +13,7 @@ import {
   discoverOrbitalCatalog,
   orbitalCatalogPage,
   orbitalFiltersSignature,
+  orbitalSearchAliases,
   selectOrbitalDisplay,
   type OrbitalDiscoveryFilters,
   type OrbitalDisplayLimits,
@@ -83,6 +85,48 @@ const filters = (
 })
 
 describe('orbital discovery policy', () => {
+  const famous = [
+    object('25544', { name: 'ISS (ZARYA)' }),
+    object('20580', { name: 'HST', sourceGroups: ['science'] }),
+    object('48274', { name: 'CSS (TIANHE-1)', sourceGroups: ['stations'] }),
+  ]
+  it('pins aliases to the reviewed reference identities without rewriting provider names', () => {
+    const before = JSON.stringify(famous)
+    for (const record of famous) {
+      expect(reference.records.some((entry) => entry.noradCatalogId === record.noradCatalogId)).toBe(true)
+      expect(record.objectType).toBe('PAY')
+      expect(orbitalSearchAliases(record.noradCatalogId).length).toBeGreaterThan(0)
+    }
+    expect(orbitalSearchAliases('49044')).toEqual([])
+    expect(orbitalSearchAliases('025544')).toEqual([])
+    expect(orbitalSearchAliases('255440')).toEqual([])
+    expect(orbitalSearchAliases('__proto__')).toEqual([])
+    expect(orbitalSearchAliases('constructor')).toEqual([])
+    expect(JSON.stringify(famous)).toBe(before)
+  })
+
+  it.each([
+    ['iss', '25544'], ['International Space Station', '25544'], ['intern', '25544'],
+    ['space station', '25544'], ['Hubble', '20580'], ['Hubble Space Telescope', '20580'],
+    [' hub ', '20580'], ['telescope', '20580'], ['Tiangong', '48274'],
+    ['tian', '48274'], ['angong', '48274'], ['HST', '20580'], ['CSS (TIANHE-1)', '48274'],
+  ])('uses ordinary name matching for %s', (query, expected) => {
+    expect(discoverOrbitalCatalog(famous, query, filters()).map((record) => record.noradCatalogId)).toEqual([expected])
+  })
+
+  it('keeps canonical identifiers, filters and Nauka independent without fuzzy correction', () => {
+    const nauka = object('49044', { name: 'ISS (NAUKA)', displayOrder: -1 })
+    expect(discoverOrbitalCatalog([...famous, nauka], 'ISS', filters())).toEqual([famous[0], nauka])
+    expect(discoverOrbitalCatalog(famous, '20580', filters())).toEqual([famous[1]])
+    expect(discoverOrbitalCatalog(famous, famous[1].internationalDesignator, filters())).toEqual([famous[1]])
+    expect(discoverOrbitalCatalog(famous, 'Hubble', filters({ sourceGroup: 'stations' }))).toEqual([])
+    expect(discoverOrbitalCatalog(famous, 'Hubble', filters({ objectType: 'DEB' }))).toEqual([])
+    expect(discoverOrbitalCatalog([object('99999', { name: 'HST' })], 'Hubble', filters())).toEqual([])
+    for (const query of ['Huble', 'H.S.T.', 'InternationalSpaceStation', 'Intl Space Station']) {
+      expect(discoverOrbitalCatalog(famous, query, filters())).toEqual([])
+    }
+  })
+
   it('does not claim a display tier before a settled raw zoom exists', () => {
     const display = selectOrbitalDisplay(
       [position(1)],

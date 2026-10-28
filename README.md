@@ -43,6 +43,10 @@ existing online sources and static catalogs. Compact mixed results show exact
 identifiers and available registry flags; open a name for source and age.
 Registry country is not current location. Ship positions still require an
 explicit **Locate**; no city is guessed or reverse-geocoded.
+Famous satellite aliases include ISS, Hubble and Tiangong without changing
+provider labels or adding fuzzy correction. Find explains expired catalog
+coverage and offers a storage-only curated recheck; the 24-hour safety limit
+still excludes expired results even when Starlink remains available.
 [Usage, costs and limits](docs/configuration.md#scoped-object-discovery)
 and [delivery evidence](https://github.com/vasilyevstan/LiveTrafficStan/issues/578).
 

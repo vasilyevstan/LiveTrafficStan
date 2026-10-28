@@ -607,7 +607,7 @@ describe('orbital catalog coordinator', () => {
     const replacement = storage.values.get(ORBITAL_COORDINATOR_LAST_OUTCOME_KEY)
     expect(replacement).toMatchObject({
       starlinkKind: 'failed', starlinkStartedAtMs: at,
-      starlinkReason: 'Space-Track Starlink GP acquisition or publication failed',
+      starlinkReason: 'Space-Track Starlink GP transport-unavailable',
     })
     expect(replacement).not.toHaveProperty('starlinkStatus')
     expect(replacement).not.toHaveProperty('starlinkSource')

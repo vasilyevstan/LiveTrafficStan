@@ -4,6 +4,7 @@ import { EMPTY_ORBITAL_PREDICTION, type ModeledOrbitalPosition, type OrbitalCont
 import type { DiscoveryMatch, DiscoveryResponse } from '../domain/objectDiscovery'
 import { qualifiedLastReport, SHIP_POSITION_SOURCE } from '../domain/objectDiscovery'
 import { DISCOVERY_CONFIG } from '../config/discoveryConfig'
+import { APP_CONFIG } from '../config/appConfig'
 import { IdentityResults, ObjectFind } from './ObjectFind'
 import type { LocationSearchModel } from './useLocationSearchModel'
 import type { DisplayAircraft, DisplayVessel } from '../domain/traffic'
@@ -60,6 +61,11 @@ const position: ModeledOrbitalPosition = {
 const orbitalState: OrbitalControllerState = {
   phase: 'ready', acceptedCount: 1, positions: [position], prediction: EMPTY_ORBITAL_PREDICTION, snapshot,
 }
+const famousState = (id: string, name: string) => ({
+  ...orbitalState,
+  snapshot: { ...snapshot, records: [{ ...record, noradCatalogId: id, name }] },
+  positions: [{ ...position, id: `orbital:${id}`, noradCatalogId: id, name }],
+})
 const model = (value = ''): LocationSearchModel => ({
   value, handleChange: vi.fn(), handleSubmit: vi.fn(), handleKeyDown: vi.fn(), selectResult: vi.fn(),
   clear: vi.fn(), cancel: vi.fn(), pause: vi.fn(),
@@ -88,6 +94,64 @@ afterEach(() => {
 })
 
 describe('unified compact Find presentation boundaries', () => {
+  it.each([false, true])('exposes dated curated expiry and recheck outside Sources with fresh Starlink (%s)', (mobile) => {
+    const retrievedAt = new Date(now - APP_CONFIG.orbital.expireAfterMs).toISOString()
+    const curated = famousState('25544', 'ISS (ZARYA)')
+    const html = render({
+      mobile, orbitalVisible: true, model: model('ISS'),
+      curated: { ...curated, snapshot: { ...snapshot, retrievedAt, records: curated.snapshot.records } },
+      starlink: orbitalState,
+    })
+    expect(html).toContain('Curated satellite catalog expired (24-hour safety limit). Its objects are omitted from Find.')
+    expect(html).toContain(`<time dateTime="${retrievedAt}">${retrievedAt}</time>`)
+    expect(html.indexOf('Recheck curated catalog')).toBeLessThan(html.indexOf('<summary>Sources</summary>'))
+    expect(html).not.toContain('Go to satellite ISS')
+    expect(html).not.toContain('<strong>ISS (ZARYA)</strong>')
+    expect(html).not.toContain('No matches in searched sources.')
+  })
+
+  it('carries aliases into mixed ranking, canonical navigation and Saved deduplication', () => {
+    const curated = famousState('20580', 'HST')
+    const onOrbitalNavigate = vi.fn(() => true)
+    const overrides: Partial<Parameters<typeof ObjectFind>[0]> = {
+      model: model('Hubble'), orbitalVisible: true, curated, onOrbitalNavigate,
+      airports: [{
+        id: 'airport:1', name: 'HUBBLE FIELD', ident: 'TEST', isoCountry: 'US',
+        kind: 'large', latitude: 0, longitude: 0,
+      }],
+    }
+    const html = render(overrides)
+    expect(html).toContain('2 matches.')
+    expect(html.indexOf('<strong>HST</strong>')).toBeLessThan(html.indexOf('<strong>HUBBLE FIELD</strong>'))
+    resultActions[0]('alias-origin')
+    expect(onOrbitalNavigate).toHaveBeenCalledExactlyOnceWith('orbital:20580', 'alias-origin')
+    const saved = render({
+      ...overrides, savedEntries: [{ kind: 'orbital', id: '20580', savedLabel: 'HST', savedAt: now }],
+    })
+    expect(saved).toContain('2 matches.')
+    expect(saved.match(/<strong>HST<\/strong>/g)).toHaveLength(1)
+    expect(saved).not.toContain('Go to satellite HST')
+  })
+
+  it('matches a deliberately Saved expired identity without manufacturing a catalog result or modeled target', () => {
+    const curated = famousState('20580', 'HST')
+    const html = render({
+      model: model('Hubble'), orbitalVisible: true,
+      curated: {
+        ...curated,
+        snapshot: {
+          ...snapshot, records: curated.snapshot.records,
+          retrievedAt: new Date(now - APP_CONFIG.orbital.expireAfterMs).toISOString(),
+        },
+      },
+      savedEntries: [{ kind: 'orbital', id: '20580', savedLabel: 'HST', savedAt: now }],
+    })
+    expect(html).toContain('1 match.')
+    expect(html).toContain('<strong>HST</strong>')
+    expect(html).not.toContain('Go to satellite HST')
+    expect(html).toContain('expired')
+  })
+
   it.each([false, true])('uses one input and no object, method or scope selectors (%s)', (mobile) => {
     const fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
@@ -190,7 +254,8 @@ describe('unified compact Find presentation boundaries', () => {
     vi.stubGlobal('fetch', fetchMock)
     const html = render({ onLoadAirports: load, onLoadPorts: load, onLoadOrbits: load })
     expect(html).toContain('type="search"')
-    expect(html).toContain('Some satellite catalogs are not loaded or usable.')
+    expect(html).toContain('Curated satellite catalog is not loaded.')
+    expect(html).toContain('Starlink sample is not loaded.')
     expect(html).not.toContain('0 matches')
     expect(fetchMock).not.toHaveBeenCalled()
     expect(load).not.toHaveBeenCalled()
@@ -201,8 +266,8 @@ describe('unified compact Find presentation boundaries', () => {
       curated: { ...empty, phase: 'loading' },
     })
     expect(html).toContain('type="search"')
-    expect(html).toContain('not loaded or usable')
-    expect(html).toContain('Retry satellite catalogs')
+    expect(html).toContain('Curated satellite catalog is loading.')
+    expect(html).toMatch(/<button type="button" disabled="">Recheck curated catalog<\/button>/)
     expect(html).not.toContain('0 matches')
   })
   it('uses loaded static coordinates for explicit navigation, not synthetic traffic or hidden-layer activation', () => {

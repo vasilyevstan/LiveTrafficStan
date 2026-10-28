@@ -1252,6 +1252,28 @@ Device/focus emulation is not physical-phone or OS-keyboard acceptance.
 Existing short actions and mobile attribution/panel occlusion remain #449;
 line-box measurements do not establish unobstructed mobile usability.
 
+### Curated expiry and famous satellite aliases (#616)
+
+The diagnostic/Find bundle passes all eight required commands: **218 files /
+2,663 tests**, plus the all-feature application build and Worker dry run.
+Regressions cover bounded safe producer reasons, missing/duplicate/unpinned
+identities, retained bytes, admission, independent Starlink publication,
+the exact hard-expiry boundary, alias ranking, owner deduplication and read-only
+Saved matching.
+
+Chrome 156 native rendering covers Light/Dark at desktop 1280x900 and short
+phone 315x517: dated expiry/recheck is visible with Sources closed and fresh
+Starlink; a matching `304` does not revive expired results. Both layouts retain
+one live canvas/map, 16px input, 44px recheck and no horizontal overflow or
+observed JavaScript runtime exceptions. All three canonical objects open via
+their aliases and move the same map on desktop and a 390x740 phone. At 315x517,
+aliases remain discoverable, but the existing wide-view notice leaves
+insufficient framing space; this is still independent **#540**, not fixed here.
+These are validated synthetic schema-3 catalog fixtures with unrelated
+acquisition denied, not production recovery or complete map-asset acceptance.
+Genuinely newer native curated data and public Find remain separate release
+acceptance; aggregate publication or fresh Starlink cannot establish recovery.
+
 ### Focused Find and satellite navigation (#544)
 
 Check desktop and short-phone Light/Dark as one bounded native batch. Changing
