@@ -8,6 +8,16 @@ user accounts or a server-side vessel history archive.
 
 Public production: <https://trackstan.xyz>
 
+**Curated orbital discovery restored (2026-10-29, #616):** Find again returns
+ISS, Hubble and Tiangong from a genuinely fresh, complete Space-Track catalog.
+One independently confirmed decayed object was removed from the reviewed
+reference; normal scheduled acquisition recovered all 460 remaining members.
+Expired rows still stay excluded, with a visible explanation and storage-only
+recheck. Search **Hubble** or **20580**; misspellings such as `Huble` are not
+autocorrected. The [release receipt](docs/hosting-and-deployment.md#curated-orbital-recovery-616)
+and [public acceptance](docs/development-and-testing.md#curated-expiry-and-famous-satellite-aliases-616)
+retain the separate, unresolved phone map-space limitation #540.
+
 **Reviewed correctness fixes (#603):** history recording survives overlapping
 retention changes; marine recovery respects retry deadlines, valid report
 clocks and authoritative unavailable metadata. Manual camera movement and

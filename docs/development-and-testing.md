@@ -1271,8 +1271,39 @@ aliases remain discoverable, but the existing wide-view notice leaves
 insufficient framing space; this is still independent **#540**, not fixed here.
 These are validated synthetic schema-3 catalog fixtures with unrelated
 acquisition denied, not production recovery or complete map-asset acceptance.
-Genuinely newer native curated data and public Find remain separate release
-acceptance; aggregate publication or fresh Starlink cannot establish recovery.
+Those fixtures did not establish production recovery; aggregate publication
+or fresh Starlink cannot establish recovery.
+
+#### Public recovery acceptance, 2026-10-29
+
+The [actual release/native receipt](hosting-and-deployment.md#curated-orbital-recovery-616)
+records a normal admitted acquisition publishing complete v2-reference,
+schema-3 curated data at **01:17:29.965 UTC**, with 460 exact members and all
+three targets. Public acceptance completed at **01:34:01 UTC** against
+`https://trackstan.xyz`, application `184302bba08856f565ce95ed891855379901bdea`
+and native digest
+`d7c4a1b56f31736a6e865c44668172fae5bd3c1a4916c2183f456d6c52c08577`.
+
+Unmocked Chrome 156 native rendering/input verifies Light 1280x900 desktop
+and Dark phone: ISS, Hubble and Tiangong each resolve to the correct
+provider-labelled details/NORAD and actually move/settle the retained map.
+All three are also discoverable at 315x517 before phone navigation at 390x900.
+The initial map renders real vector features (1,821 desktop / 36 phone).
+Each case retains one connected canvas, 16px Find input and zero horizontal
+overflow or observed application runtime exceptions. There are zero orbital
+startup requests; ordinary Enable ORBITS reads each native channel once.
+Typing, Go and Find reopening add no catalog reads. Data/network are not
+intercepted; no development server or synthetic catalog is used.
+
+The final six Go actions passed, but this is not a blanket phone-framing fix:
+earlier actual enriched ISS runs at both 390x740 and 390x900 displayed
+**Close a menu or enlarge the view to frame this position.** Correct fresh
+details remained available and the camera stayed unchanged. Those retained
+observations and independent short-phone map-space #540 remain unresolved;
+passing later camera movement does not invalidate them. Device/focus
+emulation is not physical-phone, GPU or OS-keyboard acceptance. World orbital
+navigation may legitimately pause traffic under its separate 100 km rule;
+this is not evidence that every traffic provider is healthy.
 
 ### Focused Find and satellite navigation (#544)
 
