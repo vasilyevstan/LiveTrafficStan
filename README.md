@@ -8,6 +8,16 @@ user accounts or a server-side vessel history archive.
 
 Public production: <https://trackstan.xyz>
 
+**Curated orbital discovery restored (2026-10-29, #616):** Find again returns
+ISS, Hubble and Tiangong from a genuinely fresh, complete Space-Track catalog.
+One independently confirmed decayed object was removed from the reviewed
+reference; normal scheduled acquisition recovered all 460 remaining members.
+Expired rows still stay excluded, with a visible explanation and storage-only
+recheck. Search **Hubble** or **20580**; misspellings such as `Huble` are not
+autocorrected. The [release receipt](docs/hosting-and-deployment.md#curated-orbital-recovery-616)
+and [public acceptance](docs/development-and-testing.md#curated-expiry-and-famous-satellite-aliases-616)
+retain the separate, unresolved phone map-space limitation #540.
+
 **Reviewed correctness fixes (#603):** history recording survives overlapping
 retention changes; marine recovery respects retry deadlines, valid report
 clocks and authoritative unavailable metadata. Manual camera movement and
@@ -249,6 +259,15 @@ identity are not renamed or reset.
   and twelve ships are decluttered and faded between zoom 7 and 3; observations
   expire within two minutes. The labelled, read-only sample is not wider live
   coverage and never enters live counts, details, trails or history.
+- **Aircraft View from here (#625):** a live airborne aircraft at or above
+  300 m offers **View from here** in Auto projection. The view rides along its
+  observed ADS-B positions at their reported barometric altitude, about 20 s
+  behind and only between reports, so it never predicts. Drag or use the arrow
+  keys to look around. **Pause** and **Play** work as in the satellite view,
+  and **Return**, X or Escape restores the previous map. Other traffic is
+  hidden. The view holds when reports stop and returns after the ordinary
+  two-minute expiry. While it is active, a temporary globe-style projection
+  is used, and it is not saved. The view makes no extra provider requests.
 - **Show path** in aircraft/ship details captures a session-only journey
   overview. Warm-colored past and blue remaining sections distinguish the
   journey phases; solid lines join received positions and dashed lines are

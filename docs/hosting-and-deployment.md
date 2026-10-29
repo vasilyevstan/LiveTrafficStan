@@ -65,6 +65,56 @@ credentials and the private-relay secret. Observability remains disabled and
 no paid fallback is enabled. Orbital activation uses the included free KV and
 SQLite Durable Object allocations; R2 is not used.
 
+### Curated orbital recovery (#616)
+
+The diagnostic/Find release #617/#618 and independently evidenced reference
+repair #620/#621 are live as application
+**`184302bba08856f565ce95ed891855379901bdea`**, Worker
+**`2097a563-edd1-4743-b6e7-dd4baca745a5`**, published on
+**2026-10-28 at 23:39:09 UTC** through successful
+[deployment 40788361250, attempt 2](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/40788361250/attempts/2).
+Exact-main [Validation 40788139171](https://github.com/vasilyevstan/LiveTrafficStan/actions/runs/40788139171)
+passed. Checked, tree-neutral ancestry #622 retained accepted tree
+`41c76124ec4568e568e383adeab1ae16ef309195`; complete original dev/main rules
+and repository settings were immediately restored and deep-verified.
+
+The ordinary producer attempt at 23:17 UTC classified the failure as 460 of
+461 required records, missing only NORAD 67686. Independent primary SATCAT
+evidence confirms that object decayed on October 22; the
+[source record](data-sources-and-licensing.md) preserves its identity and
+evidence digest. Reviewed reference `curated-reference-2026-10-17-v2` removes
+only that member, retaining every other ID/group and original provenance.
+There is no automatic pruning, partial publication or new runtime SATCAT call.
+
+**Actual native recovery occurred on 2026-10-29 at 01:17:29.965 UTC**, not at
+application deployment. The normal admitted acquisition started at
+01:17:27.920 UTC, after the unchanged 01:17:27.729 admission deadline, and
+published a complete schema-3, v2-reference **460-record** curated snapshot:
+`d7c4a1b56f31736a6e865c44668172fae5bd3c1a4916c2183f456d6c52c08577`.
+A native-media GET at 01:20 UTC validated the full contract, reference, digest,
+freshness and ISS 25544, HST 20580 and Tiangong 48274. Aggregate publication,
+Starlink success and compatibility-schema smoke were not substituted.
+The [public browser receipt](development-and-testing.md#curated-expiry-and-famous-satellite-aliases-616)
+distinguishes actual recovery from local fixtures and existing phone limits.
+
+Attempt 1 failed before upload/publication on Cloudflare secrets-inspection
+internal error 10500; cleanup passed and the predecessor remained active.
+Only the same owned run was retried, with unchanged source, credentials and
+inputs. Attempt 2 passed publication, protected-secret cleanup and strict
+smoke. The repair passes all eight required local commands, 218 files /
+2,663 tests and the preserved enabled-production build.
+
+Inputs remain application, `oci-private-relay`, photos/routes/curated orbital/
+Starlink/marine supplement/airport boards enabled, `orbital_source=space-track`
+and actual `OBJECT_SHARING_ENABLED=true`. Existing D1/KV/coordinator identities,
+main-only secrets and serialization/operation/source/physical/retry fences
+remain. No forced acquisition, deadline reset, expiry extension, saved-data
+migration or OCI operation was needed. The immediate deployed predecessor is
+application `74449d6b3a7928bc716c5283a3cb0f14b4f77056`, Worker
+`d16771fa-0f73-47f6-abc0-cc6e72684b3b`; retain the existing protected rollback.
+Later receipt-only documentation and Wiki commits do not replace or redeploy
+the application identified here.
+
 ### Reviewed correctness corrections (#603)
 
 The six corrections accepted in #603 are live as application
