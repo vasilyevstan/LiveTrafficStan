@@ -10,12 +10,13 @@ import {
   Map as MapLibreMap,
   Popup,
   setWorkerUrl,
+  type ProjectionSpecification,
   type StyleSpecification,
 } from 'maplibre-gl'
 import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
 import type { Theme } from '../app/theme'
 import { workspaceOwnsFullscreen } from '../app/fullscreen'
-import { EARTH_DAY_NIGHT_CONFIG, type AppCenter } from '../config/appConfig'
+import { EARTH_DAY_NIGHT_CONFIG, MAP_PROJECTION_CONFIG, type AppCenter } from '../config/appConfig'
 import type { JourneySnapshot } from '../domain/journey'
 import type { AircraftPhotoViewState } from '../domain/aircraftPhoto'
 import { vesselPhotoIdentity, type VesselPhotoViewState } from '../domain/vesselPhoto'
@@ -174,7 +175,8 @@ import { chooseJourneyCamera, journeyFitPadding, journeyIsFramed, pointFrameBoun
 import { installJourneyStyle } from './journeyStyle'
 import type { BathymetryStatus } from '../domain/bathymetry'
 import { BathymetryRuntime } from './BathymetryRuntime'
-import { createCapturedOrbitalCamera } from './capturedOrbitalCamera'
+import { createCapturedAircraftCamera, createCapturedOrbitalCamera } from './capturedOrbitalCamera'
+import type { AircraftViewPosition, CapturedAircraftView } from '../domain/aircraftView'
 import type { CapturedOrbitalView } from '../domain/orbitalView'
 
 setWorkerUrl(maplibreWorkerUrl)
@@ -185,6 +187,9 @@ const emptyTrail = (): FeatureCollection<LineString> => ({
 })
 
 const EMPTY_ORBITAL_POSITIONS: readonly ModeledOrbitalPosition[] = []
+type CapturedHostedView =
+  | { kind: 'orbital'; view: CapturedOrbitalView }
+  | { kind: 'aircraft'; view: CapturedAircraftView }
 const EMPTY_ORBITAL_IDS: readonly string[] = []
 const EMPTY_ORBITAL_TRACK: readonly OrbitalTrackSegment[] = []
 
@@ -201,6 +206,15 @@ interface TrafficMapProps {
   onCapturedOrbitalViewNotice?: (revision: number, message: string | undefined) => void
   onCapturedOrbitalViewPosition?: (revision: number, position: Readonly<ModeledOrbitalPosition>) => void
   onCapturedOrbitalViewPause?: (revision: number) => void
+  capturedAircraftView?: CapturedAircraftView
+  capturedAircraftPlaying?: boolean
+  capturedAircraftPosition?: AircraftViewPosition
+  onCapturedAircraftViewEnd?: (revision: number, reason?: string) => void
+  onCapturedAircraftViewReturn?: (revision: number) => void
+  onCapturedAircraftViewReady?: (revision: number, ready: boolean) => void
+  onCapturedAircraftViewNotice?: (revision: number, message: string | undefined) => void
+  onCapturedAircraftViewPosition?: (revision: number, position: AircraftViewPosition) => void
+  onCapturedAircraftViewPause?: (revision: number) => void
   compactAttribution?: boolean
   northResetRequest?: NorthResetRequest
   northResetDurationMs: number
@@ -426,6 +440,15 @@ export function TrafficMap({
   onCapturedOrbitalViewNotice,
   onCapturedOrbitalViewPosition,
   onCapturedOrbitalViewPause,
+  capturedAircraftView,
+  capturedAircraftPlaying = false,
+  capturedAircraftPosition,
+  onCapturedAircraftViewEnd,
+  onCapturedAircraftViewReturn,
+  onCapturedAircraftViewReady,
+  onCapturedAircraftViewNotice,
+  onCapturedAircraftViewPosition,
+  onCapturedAircraftViewPause,
   compactAttribution = false,
   northResetRequest,
   northResetDurationMs,
@@ -507,11 +530,12 @@ export function TrafficMap({
 }: TrafficMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MapLibreMap | null>(null)
-  const capturedViewRef = useRef(capturedOrbitalView)
+  const capturedViewRef = useRef<CapturedHostedView | undefined>(undefined)
   const capturedCameraRef = useRef<{
+    kind: CapturedHostedView['kind']
     revision: number
     viewRequestId: number
-    camera: ReturnType<typeof createCapturedOrbitalCamera>
+    camera: ReturnType<typeof createCapturedOrbitalCamera> | ReturnType<typeof createCapturedAircraftCamera>
   } | undefined>(undefined)
   const capturedCallbacksRef = useRef({
     end: onCapturedOrbitalViewEnd, ready: onCapturedOrbitalViewReady,
@@ -519,6 +543,13 @@ export function TrafficMap({
     notice: onCapturedOrbitalViewNotice,
     position: onCapturedOrbitalViewPosition, pause: onCapturedOrbitalViewPause,
   })
+  const aircraftCallbacksRef = useRef({
+    end: onCapturedAircraftViewEnd, ready: onCapturedAircraftViewReady,
+    return: onCapturedAircraftViewReturn, notice: onCapturedAircraftViewNotice,
+    position: onCapturedAircraftViewPosition, pause: onCapturedAircraftViewPause,
+  })
+  // Only the captured aircraft view temporarily replaces the preference projection.
+  const projectionOverrideRef = useRef<ProjectionSpecification | undefined>(undefined)
   const loadedRef = useRef(false)
   const earthTime = Math.floor(displayTime / EARTH_DAY_NIGHT_CONFIG.timeStepMs) * EARTH_DAY_NIGHT_CONFIG.timeStepMs
   const earthTimeRef = useRef(earthTime)
@@ -702,8 +733,9 @@ export function TrafficMap({
   useEffect(() => {
     depthsVisibleRef.current = depthsVisible
     bathymetryStatusRef.current = onBathymetryStatus
-    bathymetryRef.current?.setEnabled(depthsVisible, online, capturedOrbitalView !== undefined)
-  }, [depthsVisible, online, onBathymetryStatus, capturedOrbitalView])
+    bathymetryRef.current?.setEnabled(depthsVisible, online,
+      capturedOrbitalView !== undefined || capturedAircraftView !== undefined)
+  }, [depthsVisible, online, onBathymetryStatus, capturedOrbitalView, capturedAircraftView])
 
   useEffect(() => {
     reliefVisibleRef.current = reliefVisible
@@ -1160,7 +1192,7 @@ export function TrafficMap({
     earthTimeRef.current = earthTime
     const map = mapRef.current
     if (map && loadedRef.current) updateEarthDayNight(map)
-  }, [earthTime, capturedOrbitalView, theme, updateEarthDayNight])
+  }, [earthTime, capturedOrbitalView, capturedAircraftView, theme, updateEarthDayNight])
 
   const installCurrentStyle = useCallback(
     (map: MapLibreMap) => {
@@ -1168,7 +1200,7 @@ export function TrafficMap({
       const renderState = renderStateRef.current
       const viewState = viewStateRef.current
       const activeTheme = themeRef.current
-      applyMapProjection(map, projectionPreferenceRef.current)
+      applyMapProjection(map, projectionPreferenceRef.current, projectionOverrideRef.current)
       applyBasemapCartography(
         map,
         activeTheme,
@@ -1427,6 +1459,7 @@ export function TrafficMap({
               withMapProjection(
                 withBasemapSky(next, themeRef.current, styleKey),
                 projectionPreferenceRef.current,
+                projectionOverrideRef.current,
               ),
           })
         } catch (error) {
@@ -1458,7 +1491,7 @@ export function TrafficMap({
   useEffect(() => {
     projectionPreferenceRef.current = projectionPreference
     const map = mapRef.current
-    if (!map || !loadedRef.current) return
+    if (!map || !loadedRef.current || projectionOverrideRef.current) return
     try {
       if (applyMapProjection(map, projectionPreference)) {
         hideTrafficTooltipRef.current()
@@ -3117,7 +3150,10 @@ export function TrafficMap({
 
   useLayoutEffect(() => {
     const obsolete = capturedOrbitalView && capturedOrbitalView.viewRequestId !== viewRequestId
-    const nextView = obsolete ? undefined : capturedOrbitalView
+    const aircraftObsolete = capturedAircraftView && capturedAircraftView.viewRequestId !== viewRequestId
+    const nextView: CapturedHostedView | undefined = capturedOrbitalView
+      ? obsolete ? undefined : { kind: 'orbital', view: capturedOrbitalView }
+      : capturedAircraftView && !aircraftObsolete ? { kind: 'aircraft', view: capturedAircraftView } : undefined
     capturedViewRef.current = nextView
     capturedCallbacksRef.current = {
       end: onCapturedOrbitalViewEnd, ready: onCapturedOrbitalViewReady,
@@ -3125,25 +3161,33 @@ export function TrafficMap({
       notice: onCapturedOrbitalViewNotice,
       position: onCapturedOrbitalViewPosition, pause: onCapturedOrbitalViewPause,
     }
+    aircraftCallbacksRef.current = {
+      end: onCapturedAircraftViewEnd, ready: onCapturedAircraftViewReady,
+      return: onCapturedAircraftViewReturn, notice: onCapturedAircraftViewNotice,
+      position: onCapturedAircraftViewPosition, pause: onCapturedAircraftViewPause,
+    }
     const current = capturedCameraRef.current
-    if (current && current.revision !== nextView?.revision) {
+    if (current && (current.kind !== nextView?.kind || current.revision !== nextView.view.revision)) {
       const restore = current.viewRequestId === viewRequestId
       current.camera.exit(restore)
       capturedCameraRef.current = undefined
       if (restore && mapRef.current) scheduleViewportReport(mapRef.current)
     }
     if (obsolete) onCapturedOrbitalViewEnd?.(capturedOrbitalView.revision)
+    if (aircraftObsolete) onCapturedAircraftViewEnd?.(capturedAircraftView.revision)
   }, [
     capturedOrbitalView, onCapturedOrbitalViewEnd, onCapturedOrbitalViewReady,
     onCapturedOrbitalViewNotice, scheduleViewportReport, viewRequestId,
     onCapturedOrbitalViewPosition, onCapturedOrbitalViewPause,
-    onCapturedOrbitalViewReturn,
+    onCapturedOrbitalViewReturn, capturedAircraftView, onCapturedAircraftViewEnd,
+    onCapturedAircraftViewReady, onCapturedAircraftViewReturn, onCapturedAircraftViewNotice,
+    onCapturedAircraftViewPosition, onCapturedAircraftViewPause,
   ])
 
   useEffect(() => {
-    const view = capturedViewRef.current
+    const hosted = capturedViewRef.current
     const map = mapRef.current
-    if (!view || !map) return
+    if (!hosted || !map) return
     if (!capturedCameraRef.current) {
       clearPendingViewport()
       pendingJourneyFitRef.current = undefined
@@ -3154,8 +3198,35 @@ export function TrafficMap({
         window.cancelAnimationFrame(frameRef.current)
         frameRef.current = null
       }
+    }
+    if (!capturedCameraRef.current && hosted.kind === 'aircraft') {
+      const view = hosted.view
+      const callbacks = aircraftCallbacksRef
       capturedCameraRef.current = {
-        revision: view.revision, viewRequestId: view.viewRequestId,
+        kind: 'aircraft', revision: view.revision, viewRequestId: view.viewRequestId,
+        camera: createCapturedAircraftCamera(map, view, {
+          enter: () => {
+            projectionOverrideRef.current = MAP_PROJECTION_CONFIG.capturedAircraftProjection
+            applyMapProjection(map, projectionPreferenceRef.current, projectionOverrideRef.current)
+          },
+          restore: () => {
+            projectionOverrideRef.current = undefined
+            applyMapProjection(map, projectionPreferenceRef.current)
+          },
+        }, {
+          onReturn: () => callbacks.current.return?.(view.revision),
+          onFailure: message => callbacks.current.end?.(view.revision, message),
+          onRestoreFailure: message => errorRef.current({ kind: 'runtime', message }),
+          onReady: ready => callbacks.current.ready?.(view.revision, ready),
+          onNotice: message => callbacks.current.notice?.(view.revision, message),
+          onPosition: position => callbacks.current.position?.(view.revision, position),
+          onPause: () => callbacks.current.pause?.(view.revision),
+        }),
+      }
+    } else if (!capturedCameraRef.current && hosted.kind === 'orbital') {
+      const view = hosted.view
+      capturedCameraRef.current = {
+        kind: 'orbital', revision: view.revision, viewRequestId: view.viewRequestId,
         camera: createCapturedOrbitalCamera(map, view, {
           onReturn: () => capturedCallbacksRef.current.return?.(view.revision),
           onFailure: message => capturedCallbacksRef.current.end?.(view.revision, message),
@@ -3171,8 +3242,17 @@ export function TrafficMap({
         }),
       }
     }
-    capturedCameraRef.current.camera.setPlayback(capturedOrbitalPlaying, capturedOrbitalPosition)
-    capturedCameraRef.current.camera.setReady(capturedOrbitalViewAcknowledged && loadedRef.current)
+    const active = capturedCameraRef.current
+    if (!active) return
+    if (active.kind === 'aircraft') {
+      const camera = active.camera as ReturnType<typeof createCapturedAircraftCamera>
+      camera.setPlayback(capturedAircraftPlaying, capturedAircraftPosition)
+      camera.setReady(loadedRef.current)
+      return
+    }
+    const camera = active.camera as ReturnType<typeof createCapturedOrbitalCamera>
+    camera.setPlayback(capturedOrbitalPlaying, capturedOrbitalPosition)
+    camera.setReady(capturedOrbitalViewAcknowledged && loadedRef.current)
   })
 
   useEffect(() => {
@@ -3188,7 +3268,7 @@ export function TrafficMap({
     <div
       ref={containerRef}
       className="traffic-map"
-      aria-label={capturedOrbitalView ? `Modeled 3D orbital view from ${capturedOrbitalView.position.name}` : `${
+      aria-label={capturedOrbitalView ? `Modeled 3D orbital view from ${capturedOrbitalView.position.name}` : capturedAircraftView ? `3D view from aircraft ${capturedAircraftView.position.name}` : `${
         interpolateTraffic ? 'Live' : 'Historical'
       } traffic map: ${viewLabel}`}
     />

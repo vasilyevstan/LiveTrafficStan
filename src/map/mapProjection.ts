@@ -35,8 +35,9 @@ export const mapProjectionForPreference = (
 export const applyMapProjection = (
   map: ProjectionMap,
   preference: MapProjectionPreference,
+  override?: ProjectionSpecification,
 ) => {
-  const projection = mapProjectionForPreference(preference)
+  const projection = override ?? mapProjectionForPreference(preference)
   if ((map.getProjection()?.type ?? 'mercator') === projection.type) {
     return false
   }
@@ -47,9 +48,10 @@ export const applyMapProjection = (
 export const withMapProjection = (
   style: StyleSpecification,
   preference: MapProjectionPreference,
+  override?: ProjectionSpecification,
 ): StyleSpecification => ({
   ...style,
-  projection: mapProjectionForPreference(preference),
+  projection: override ?? mapProjectionForPreference(preference),
 })
 
 const canvasPerimeter = (width: number, height: number, margin = 0) => {

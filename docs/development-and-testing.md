@@ -5437,6 +5437,43 @@ Local `workerd` returned the airport asset with
 404 rather than the application shell. The only browser diagnostic was an
 external OpenFreeMap font-range 404 already outside this feature boundary.
 
+## Captured aircraft view acceptance (#625)
+
+Unit coverage:
+- `src/domain/aircraftView.test.ts`: eligibility, eye mapping, interpolation,
+  antimeridian and bearing wrap, and identity.
+- `src/map/capturedOrbitalCamera.test.ts`, aircraft kind:
+  - projection order;
+  - glide, hold and long-gap jump;
+  - resume from the paused display;
+  - identity mismatch;
+  - framing.
+- `mapProjection` override coverage.
+- Entry-button reasons.
+
+Real-browser CDP acceptance used built `dist` with a local fixture
+`/api/aircraft` serving a moving observation:
+
+| Check | Result |
+| --- | --- |
+| 1280x900: entry and ride | Panel 8.8% of the viewport, 44 px actions, a free 120x120 map region |
+| 1280x900: cadence | 2 requests, minimum gap 19,983 ms |
+| 1280x900: Pause/Play, resize | Hold correctly |
+| 1280x900: reports stop | Hold notice at about 45 s; Return with a reason at 120 s |
+| 315x517 Dark: layout | Panel 19.1% |
+| 315x517 Dark: lifecycle | Escape, a real Settings theme switch and resize to 390x568 keep the view |
+| 315x517 Dark: Return | Restores the previous map (1.2% pixel difference, focus ring only); focus returns to the entry button |
+| Reduced motion | Enters paused |
+| Hidden tab | Covered by the shared camera visibility tests |
+| Real ADSB.lol ride, 45 s near Frankfurt | Status advanced about 20 s behind; altitude glided 9,456-9,665 m |
+
+Initial-JS gzip grew 601,921 → 604,517 bytes (+0.43%), within the 1% ceiling.
+
+Testing notes:
+- Auto theme follows day/night, not `prefers-color-scheme`. Switch themes with
+  the Settings LIGHT/DARK buttons.
+- Screenshot diffs include the canvas focus ring.
+
 ## Dependency and bundle discipline
 
 Runtime dependencies are intentionally limited to React, MapLibre GL JS, and

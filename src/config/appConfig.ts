@@ -77,6 +77,14 @@ export const ORBITAL_VIEW_CONFIG = {
   readinessTimeoutMs: 5_000,
 } as const
 
+// Aircraft view eye: observed positions only, presented about one ADSB.lol cadence behind.
+export const AIRCRAFT_VIEW_CONFIG = {
+  minimumAltitudeMeters: 300,
+  initialLookPitchDegrees: 76,
+  interpolationDelayMs: 20_000,
+  maximumInterpolationGapMs: 60_000,
+} as const
+
 export const EARTH_DAY_NIGHT_CONFIG = {
   timeStepMs: 60_000,
   textureSize: 512,
@@ -266,6 +274,8 @@ export const WEB_ANALYTICS_CONFIG = {
 
 export const MAP_PROJECTION_CONFIG = {
   automaticProjection: { type: 'globe' } satisfies ProjectionSpecification,
+  // Fixed-sphere projection: aircraft eye zooms fall in Auto's globe-to-Mercator band.
+  capturedAircraftProjection: { type: 'vertical-perspective' } satisfies ProjectionSpecification,
   surfaceMarginPx: 1,
   surfaceRoundTripTolerancePx: 0.01,
 } as const

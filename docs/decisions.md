@@ -1,5 +1,31 @@
 # Engineering Decisions
 
+## Aircraft View from here (#625)
+
+The earlier aircraft fixed-eye NO-GO had a concrete root cause: Auto changes
+from globe to Mercator near zoom 11-12, while aircraft eye heights compute
+zooms of about 10-16. A wider FOV or a maximum-zoom fence still failed at
+desktop cruise. While the aircraft view is active, the map therefore uses a
+temporary `vertical-perspective` projection that is cleared before the
+previous camera is restored. The saved Auto/Flat preference, share links and
+projection control are unchanged. Gate 0 compared independent spherical
+pinhole ground-control points with `map.project` across 315x517 and 1920x1080,
+300 m-11 km, latitude 70, longitude 179.9, resize, look sweeps, climbs,
+`style.load` and theme switches, and passed. Gate 1 confirmed a readable
+horizon, sky and ground in both themes.
+
+GPT, Claude Opus and Grok challenged the architecture. The result is
+deliberately small. There is no follow query: the ride uses the frozen
+pre-capture aircraft query, so cadence, `Retry-After`, history and other
+providers are unchanged. Marine and orbital work is not paused, because that
+would tear down MQTT or the worker; their glyphs are only hidden. The camera
+reuses the orbital fixed-eye lifecycle with a closed `kind` branch instead of
+a policy framework. The view moves only between observed reports, about one
+aircraft cadence behind, without extrapolation. It holds when no newer report
+arrives and Returns at the ordinary 120-second expiry. Ground, stale, history,
+Flat or polar selections show a truthful unavailable reason. Ships remain
+omitted, because a 20 m eye showed only water and sky.
+
 ## Device-local Saved identities without tracking (#611)
 
 The accepted product scope includes aircraft, ships, satellites, airports and
@@ -683,6 +709,8 @@ The proof-first orbital assessment is separate from the earlier aircraft/ship
 NO-GO: aircraft failed fixed-eye precision across relevant native Auto poses
 and resize, while assumed-height ships failed usefulness despite valid
 placement. Do not revive them merely because orbital heights qualify.
+(Aircraft were later revived on new projection evidence, not by analogy; see
+[Aircraft View from here](#aircraft-view-from-here-625). Ships remain omitted.)
 Source/architecture/clock discussion used GPT-6.1 Sol, Claude Opus 5.5 and
 GPT-5.5; actual native renderer, integrated lifecycle and weight gates decide
 the result.

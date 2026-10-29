@@ -374,6 +374,20 @@ weather or optical visibility. Explicit Return also retains the originating
 satellite only while its owning generation remains valid; newer navigation
 and automatic/error exits do not restore obsolete selection.
 
+## Captured aircraft view (#625)
+
+`AIRCRAFT_VIEW_CONFIG` in `src/config/appConfig.ts`:
+
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| `minimumAltitudeMeters` | 300 | Lowest reported barometric altitude that can enter. |
+| `initialLookPitchDegrees` | 76 | Initial track-relative look angle from nadir. |
+| `interpolationDelayMs` | 20,000 | Display lag behind the latest report (one aircraft cadence). |
+| `maximumInterpolationGapMs` | 60,000 | A longer report gap jumps instead of gliding. |
+
+The hold notice and expiry reuse the aircraft `staleAfterMs` and
+`expireAfterMs`. There is no environment override.
+
 ## Changing the center
 
 For example, a local Tallinn-area variant can use:

@@ -1394,6 +1394,15 @@ change. The optional publication uses the existing sharing backend and bounds.
 the native GP source. See [usage and validity](orbital-tracking.md#captured-orbital-views-508)
 and the [production receipt](hosting-and-deployment.md#captured-orbital-view-production-receipt-2026-10-19).
 
+## Captured aircraft view (#625)
+
+The aircraft view reuses only ADSB.lol observations that are already
+accepted. It does not request metadata, photos, routes, bathymetry, terrain
+or imagery, and it makes no extra ADSB.lol request. The altitude is the
+reported barometric value over a sea-level map. The inspector keeps the
+ADSB.lol source credit and states that this is not a cockpit or camera view.
+The ordinary OpenFreeMap/OpenMapTiles/OpenStreetMap attribution stays visible.
+
 ## Native Space-Track GP-only source (schema 3)
 
 Production uses server-side `ORBITAL_CATALOG_SOURCE=space-track` as the primary

@@ -1019,3 +1019,39 @@ describe('TrafficDetails aircraft metadata', () => {
     },
   )
 })
+
+describe('TrafficDetails aircraft View from here', () => {
+  const render = (entity: DisplayAircraft | DisplayVessel, unavailable?: string, historical = false) =>
+    renderToStaticMarkup(
+      <TrafficDetails
+        entity={entity}
+        aircraftMetadata={{ phase: 'idle' }}
+        now={1_800_000_001_000}
+        units="metric"
+        historical={historical}
+        onViewFromHere={() => undefined}
+        viewFromHereUnavailable={unavailable}
+        onClose={() => undefined}
+      />,
+    )
+
+  it('offers the entry for a live aircraft', () => {
+    const html = render(aircraft)
+    expect(html).toContain('data-aircraft-view-entry="aircraft:511123"')
+    expect(html).toContain('>View from here</button>')
+    expect(html).not.toMatch(/data-aircraft-view-entry[^>]*disabled/)
+  })
+
+  it('disables the entry with a described reason', () => {
+    const html = render(aircraft, 'View from here needs a reported altitude.')
+    expect(html).toMatch(/data-aircraft-view-entry[^>]*disabled/)
+    const described = /aria-describedby="([^"]+)"/.exec(html)?.[1]
+    expect(described).toBeTruthy()
+    expect(html).toContain(`id="${described}" class="metadata-status">View from here needs a reported altitude.</p>`)
+  })
+
+  it('omits the entry for history and vessels', () => {
+    expect(render(aircraft, undefined, true)).not.toContain('View from here')
+    expect(render(vessel)).not.toContain('View from here')
+  })
+})
