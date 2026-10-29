@@ -1581,6 +1581,27 @@ The subsequent #282 UI release's real predecessor is `d565b562...` /
 `e9e473d1-fac5-4594-b62b-7ba68573efeb`, not a later documentation-only commit.
 Its backend/provider contracts and protected rollback mechanism are unchanged.
 
+## Captured aircraft view (#625)
+
+The aircraft view reuses `createCapturedOrbitalCamera`'s fixed-eye lifecycle
+through `createCapturedAircraftCamera`, a closed `kind: 'aircraft'` branch with
+no policy framework. `src/domain/aircraftView.ts` owns eligibility, mapping an
+observation to an eye, and interpolation between two observed positions only.
+The App keeps a separate `capturedAircraftView` state beside the orbital one;
+the two are mutually exclusive. Shared exits, such as navigation, HISTORY,
+projection, layer-off, map error and unmount, end either view. The App resolves
+the exact `aircraft:<hex>` from the frozen pre-capture `aircraftResult` and
+Returns at the ordinary 120-second expiry measured from `observedAt`.
+
+During the view, TrafficMap sets `projectionOverrideRef` to
+`MAP_PROJECTION_CONFIG.capturedAircraftProjection`. That ref is read by `installCurrentStyle` and the
+style transform, and the projection-preference effect skips while it is set.
+Exit order is fixed: clear the override and reapply the preference, restore
+native `maxPitch` and the FOV, then jump to the previous camera. All glyphs are
+hidden at render time. Aircraft, marine and orbital controllers keep their
+queries and connections, so the view adds no new pause reason, query or
+request.
+
 ## Navigation and viewport boundaries
 
 The application keeps session Home, explicit view targets, and the current

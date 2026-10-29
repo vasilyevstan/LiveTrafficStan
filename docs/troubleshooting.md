@@ -270,6 +270,22 @@ without resetting Home, preferences or private history.
 See [the supported contract](orbital-tracking.md#captured-orbital-views-508)
 and [actual production evidence](hosting-and-deployment.md#captured-orbital-view-production-receipt-2026-10-19).
 
+## Captured aircraft view is unavailable or returns (#625)
+
+The disabled **View from here** button in aircraft details states its reason:
+- the selection is not live;
+- the aircraft is on the ground, below 300 m or has no altitude;
+- the position is polar;
+- the projection is Flat, or HISTORY is active;
+- the basemap is not loaded.
+
+A hold notice means no newer report has arrived. The view does not predict
+movement, and it Returns with a reason after two minutes without a report.
+The ride stays on the area that was loaded when you entered, so an aircraft
+that leaves that area holds and then Returns. The globe-style projection is
+temporary, and Return restores your saved projection. Other traffic is
+hidden by design.
+
 ## Fullscreen is unavailable, declined or exits unexpectedly
 
 Use **Settings → View → Enter fullscreen** for the entire workspace. The

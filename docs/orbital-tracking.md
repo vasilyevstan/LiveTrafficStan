@@ -555,8 +555,9 @@ dataset or deployment setting. See [architecture](architecture.md#captured-orbit
 [bounds](configuration.md#captured-orbital-view-508),
 [browser and weight evidence](development-and-testing.md#captured-orbital-view-508-development-acceptance)
 and [recovery](troubleshooting.md#captured-orbital-view-is-unavailable-or-returns-508).
-Aircraft/ship viewpoints remain omitted after their separate failed
-precision/usefulness assessment; Flat is not rescued with another mode.
+Ship viewpoints remain omitted after their failed usefulness assessment.
+Aircraft later gained a separate observed-position view (#625) on new
+projection evidence; Flat is not rescued with another mode.
 
 ## Browser model boundary
 

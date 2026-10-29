@@ -54,6 +54,20 @@ describe('map projection integration', () => {
     expect(mapProjectionForPreference('auto')).toEqual({ type: 'globe' })
   })
 
+  it('lets a temporary override win over either preference', () => {
+    let projection: ProjectionSpecification | undefined = { type: 'globe' }
+    const map = {
+      getProjection: () => projection,
+      setProjection: vi.fn((next: ProjectionSpecification) => { projection = next }),
+    }
+    const override = { type: 'vertical-perspective' } as ProjectionSpecification
+    expect(applyMapProjection(map, 'auto', override)).toBe(true)
+    expect(applyMapProjection(map, 'flat', override)).toBe(false)
+    expect(map.setProjection).toHaveBeenCalledExactlyOnceWith(override)
+    expect(applyMapProjection(map, 'auto')).toBe(true)
+    expect(projection).toEqual({ type: 'globe' })
+  })
+
   it('sets projection before a style is installed without mutating sources or layers', () => {
     const style: StyleSpecification = {
       version: 8,

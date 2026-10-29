@@ -2,7 +2,14 @@ import { LngLat, type CameraOptions, type LngLatLike, type Map as MapLibreMap } 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ModeledOrbitalPosition } from '../domain/orbital'
 import { orbitalViewUnavailableReason, type CapturedOrbitalView } from '../domain/orbitalView'
-import { createCapturedOrbitalCamera, orbitalEyeCameraOptions, orbitalViewFraming } from './capturedOrbitalCamera'
+import type { AircraftViewPosition } from '../domain/aircraftView'
+import {
+  aircraftViewFraming,
+  createCapturedAircraftCamera,
+  createCapturedOrbitalCamera,
+  orbitalEyeCameraOptions,
+  orbitalViewFraming,
+} from './capturedOrbitalCamera'
 
 const position: ModeledOrbitalPosition = {
   id: 'orbital:694', noradCatalogId: '694', name: 'Fixture',
@@ -72,7 +79,11 @@ describe('captured orbital camera cleanup', () => {
     vi.useRealTimers()
   })
 
-  const fixture = (initialPosition = position) => {
+  type Callbacks = Parameters<typeof createCapturedOrbitalCamera>[2]
+  const fixture = <C = ReturnType<typeof createCapturedOrbitalCamera>>(
+    initialPosition = position,
+    create?: (map: MapLibreMap, callbacks: Callbacks) => C,
+  ) => {
     // Native DOM/MapLibre behavior is browser-qualified; this Node double isolates cleanup faults.
     const attributes = new Map([['aria-label', 'Ordinary map']])
     const canvas = Object.assign(new EventTarget(), {
@@ -130,7 +141,7 @@ describe('captured orbital camera cleanup', () => {
       onReady: vi.fn(), onNotice: vi.fn(),
       onPosition: vi.fn(), onPause: vi.fn(),
     }
-    const camera = createCapturedOrbitalCamera(map, view, callbacks)
+    const camera = (create ? create(map, callbacks) : createCapturedOrbitalCamera(map, view, callbacks)) as C
     const expectRestoredInput = () => {
       expect(Object.values(handlers).map(handler => handler.isEnabled())).toEqual(
         [true, false, false, true, true, true, true, true],
@@ -471,6 +482,95 @@ describe('captured orbital camera cleanup', () => {
     motionPreference.dispatchEvent(new Event('change'))
     expect(callbacks.onPause).toHaveBeenCalledTimes(1)
     expectRestoredInput()
+  })
+  describe('aircraft kind', () => {
+    const flight: AircraftViewPosition = {
+      id: 'aircraft:511123', name: 'TST123', latitude: 0, longitude: 0,
+      altitudeKm: 10, travelBearingDegrees: 90, observedAt: 0,
+    }
+    const aircraftFixture = () => {
+      const projection = { enter: vi.fn(), restore: vi.fn() }
+      const result = fixture(position, (map, callbacks) => createCapturedAircraftCamera(
+        map, { revision: 1, viewRequestId: 2, position: flight }, projection,
+        callbacks as unknown as Parameters<typeof createCapturedAircraftCamera>[3]))
+      return { ...result, projection }
+    }
+    const latitudes = (jumpTo: ReturnType<typeof aircraftFixture>['jumpTo']) =>
+      jumpTo.mock.calls.map(([options]) => LngLat.convert(options.center ?? [0, 0]).lat)
+
+    it('enters the override before placement and restores it before the previous camera', () => {
+      const { camera, map, jumpTo, projection, renderReady, expectRestoredInput } = aircraftFixture()
+      camera.setReady(true)
+      expect(projection.enter).toHaveBeenCalledTimes(1)
+      renderReady()
+      expect(projection.enter.mock.invocationCallOrder[0]).toBeLessThan(jumpTo.mock.invocationCallOrder[0])
+      camera.exit(true)
+      expect(projection.restore).toHaveBeenCalledTimes(1)
+      const restoreOrder = projection.restore.mock.invocationCallOrder[0]
+      expect(restoreOrder).toBeLessThan(vi.mocked(map.setMaxPitch).mock.invocationCallOrder.at(-1) ?? 0)
+      expect(restoreOrder).toBeLessThan(jumpTo.mock.invocationCallOrder.at(-1) ?? 0)
+      expect(jumpTo.mock.calls.at(-1)?.[0]).toMatchObject({ zoom: 11.123456, bearing: 17.234567 })
+      expectRestoredInput()
+    })
+
+    it('glides between observations one cadence behind, holds at the latest and never stalls', () => {
+      const { camera, jumpTo, callbacks, renderReady, tick, expectRestoredInput } = aircraftFixture()
+      camera.setPlayback(true, flight)
+      camera.setReady(true)
+      renderReady()
+      camera.setPlayback(true, { ...flight, latitude: 1, observedAt: 20_000 })
+      const before = jumpTo.mock.calls.length
+      for (let step = 0; step < 50; step += 1) tick(1_000)
+      const shown = latitudes(jumpTo).slice(before)
+      expect(shown.length).toBeGreaterThan(10)
+      expect(shown.every((value, index) => index === 0 || value >= shown[index - 1])).toBe(true)
+      expect(Math.min(...shown)).toBeGreaterThan(0)
+      expect(shown.at(-1)).toBeCloseTo(1, 3)
+      const observed = callbacks.onPosition.mock.calls.map(([value]) => value.observedAt)
+      expect(observed.every(value => value >= 0 && value <= 20_000)).toBe(true)
+      for (let step = 0; step < 300; step += 1) tick(1_000)
+      expect(callbacks.onFailure).not.toHaveBeenCalled()
+      camera.exit(true)
+      expectRestoredInput()
+    })
+
+    it('resumes from the paused display instead of skipping ahead', () => {
+      const { camera, jumpTo, renderReady, tick, expectRestoredInput } = aircraftFixture()
+      camera.setPlayback(true, flight)
+      camera.setReady(true)
+      renderReady()
+      camera.setPlayback(true, { ...flight, latitude: 1, observedAt: 20_000 })
+      for (let step = 0; step < 5; step += 1) tick(1_000)
+      const paused = latitudes(jumpTo).at(-1) ?? 0
+      camera.setPlayback(false)
+      tick(60_000)
+      camera.setPlayback(true)
+      tick(16)
+      expect(latitudes(jumpTo).at(-1) ?? 0).toBeCloseTo(paused, 2)
+      camera.exit(true)
+      expectRestoredInput()
+    })
+
+    it('jumps across a long gap and rejects a different aircraft', () => {
+      const { camera, jumpTo, callbacks, renderReady, tick, expectRestoredInput } = aircraftFixture()
+      camera.setPlayback(true, flight)
+      camera.setReady(true)
+      renderReady()
+      camera.setPlayback(true, { ...flight, latitude: 3, observedAt: 61_000 })
+      tick(16)
+      expect(latitudes(jumpTo).at(-1)).toBeCloseTo(3, 3)
+      camera.setPlayback(true, { ...flight, id: 'aircraft:abcdef', observedAt: 62_000 })
+      expect(callbacks.onFailure).toHaveBeenCalledExactlyOnceWith(expect.stringContaining('no longer matches'))
+      expectRestoredInput()
+    })
+
+    it('keeps the prior aperture and rejects invalid canvases', () => {
+      expect(aircraftViewFraming(315, 517, 36.86989764584402)).toEqual({
+        initialPitch: 76, fieldOfView: 36.86989764584402,
+      })
+      expect(aircraftViewFraming(0, 517, 36.86989764584402)).toBeUndefined()
+      expect(aircraftViewFraming(315, 517, 151)).toBeUndefined()
+    })
   })
 })
 

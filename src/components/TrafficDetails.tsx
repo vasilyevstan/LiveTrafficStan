@@ -78,6 +78,8 @@ interface TrafficDetailsProps {
   onRequestFlightRoute?: () => void
   onShowJourney?: () => void
   journeyMessage?: string
+  onViewFromHere?: () => void
+  viewFromHereUnavailable?: string
   journeyPreparing?: boolean
   shareObject?: ReactNode
   onClose: () => void
@@ -646,10 +648,13 @@ export function TrafficDetails({
   onShowJourney,
   journeyMessage,
   journeyPreparing = false,
+  onViewFromHere,
+  viewFromHereUnavailable,
   shareObject,
   onClose,
 }: TrafficDetailsProps) {
   const panelRef = useRef<HTMLDivElement>(null)
+  const viewReasonId = useId()
   useEffect(() => {
     if (panelRef.current) panelRef.current.scrollTop = 0
   }, [entity.id])
@@ -702,6 +707,16 @@ export function TrafficDetails({
     >
       {!historical && journeyMessage && (
         <p className="metadata-status" role="status">{journeyMessage}</p>
+      )}
+      {!historical && entity.kind === 'aircraft' && onViewFromHere && (
+        <div className="journey-actions">
+          <button type="button" className="orbital-view-entry" data-aircraft-view-entry={entity.id}
+            onClick={onViewFromHere} disabled={Boolean(viewFromHereUnavailable)}
+            aria-describedby={viewFromHereUnavailable ? viewReasonId : undefined}>
+            View from here
+          </button>
+          {viewFromHereUnavailable && <p id={viewReasonId} className="metadata-status">{viewFromHereUnavailable}</p>}
+        </div>
       )}
 
       {vesselPhotoSelection?.kind === 'available' && (
