@@ -204,7 +204,7 @@ describe('production smoke policy', () => {
       "const releaseProbePath = '/api/aircraft/v2/point/91/24.754/11'",
     )
     const providerRequestIndex = smokeScript.indexOf(
-      "const validPath = '/api/aircraft/v2/point/59.437/24.754/11'",
+      "const validPath = '/api/aircraft/v2/point/59.437/24.754/135'",
     )
 
     expect(releaseProbeIndex).toBeGreaterThan(-1)
@@ -294,7 +294,7 @@ describe('production smoke policy', () => {
       "aircraftDelivery === 'oci-private-relay'",
     )
     expect(smokeScript).toContain(
-      "new URL(\n      '/v2/point/59.437/24.754/11',\n      'https://api.adsb.lol',",
+      "new URL(\n      '/v2/point/59.437/24.754/135',\n      'https://api.adsb.lol',",
     )
     expect(smokeScript).toContain(
       "'Direct aircraft provider did not allow the deployed origin'",
@@ -304,6 +304,9 @@ describe('production smoke policy', () => {
     expect(smokeScript).toContain("credentials: 'omit'")
     expect(smokeScript).toContain(
       'body.byteLength <= MAX_AIRCRAFT_RESPONSE_BYTES',
+    )
+    expect(smokeScript).toContain(
+      'Aircraft wide-view probe passed delivery=${aircraftDelivery}',
     )
   })
 

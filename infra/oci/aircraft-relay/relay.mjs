@@ -13,7 +13,7 @@ export const RELAY_STATUS_HEADER = 'X-LiveTrafficStan-Relay-Status'
 export const RELAY_ADMISSION_STATUS = 'admission'
 
 const coordinatePattern = /^-?(?:0|[1-9]\d*)(?:\.\d{1,7})?$/
-const radiusPattern = /^(?:[1-9]|[1-4]\d|5[0-4])$/
+const radiusPattern = /^(?:[1-9]|[1-9]\d|1[0-2]\d|13[0-5])$/
 
 class ResponseTooLargeError extends Error {}
 class AdmissionStateError extends Error {}

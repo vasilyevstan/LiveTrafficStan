@@ -154,6 +154,26 @@ describe('normalizeAdsbLolResponse', () => {
     expect(result[0]?.altitudeMeters).toBe(0)
   })
 
+  it('keeps transport-fringe aircraft out of the normalized query circle', () => {
+    const wideQuery = {
+      center: { latitude: 0, longitude: 0, label: 'Wide view' },
+      radiusKm: 250,
+    }
+    const result = normalizeAdsbLolResponse(
+      {
+        now: 1_800_000_000_000,
+        ac: [
+          { hex: 'inside1', lat: 0, lon: 2.248 },
+          { hex: 'fringe1', lat: 0, lon: 2.249 },
+        ],
+      },
+      wideQuery,
+      1_800_000_000_000,
+    )
+
+    expect(result.map(({ id }) => id)).toEqual(['aircraft:inside1'])
+  })
+
   it('maps only reported emitter categories to the bounded icon vocabulary', () => {
     const aircraft = normalizeAdsbLolResponse(
       {
@@ -250,9 +270,11 @@ describe('normalizeAdsbLolResponse', () => {
 })
 
 describe('aircraftQueryRadiusNauticalMiles', () => {
-  it('rounds an eligible 100 km viewport outward to 54 nautical miles', () => {
+  it('rounds eligible viewport radii outward through the 250 km boundary', () => {
     expect(aircraftQueryRadiusNauticalMiles(100)).toBe(54)
     expect(54 * 1.852).toBeCloseTo(100.008)
+    expect(aircraftQueryRadiusNauticalMiles(250)).toBe(135)
+    expect(135 * 1.852).toBeCloseTo(250.02)
   })
 })
 

@@ -75,6 +75,25 @@ describe('LiveStatus', () => {
     expect(html).toContain('https://www.digitraffic.fi/en/marine-traffic/')
   })
 
+  it('reports partial operation when aircraft remain live and marine is view-paused', () => {
+    const html = renderToStaticMarkup(
+      <LiveStatus
+        compact
+        aircraftCount={18}
+        vesselCount={0}
+        aircraftStatus={{ phase: 'live', paused: false }}
+        marineStatus={{ phase: 'live', paused: true }}
+        marineCapabilities={DIGITRAFFIC_MARINE_CAPABILITIES}
+        now={1_800_000_000_000}
+        online
+      />,
+    )
+    expect(html).toContain('<strong>PARTIAL</strong>')
+    expect(html).toContain('Aircraft current')
+    expect(html).toContain('Marine stream paused')
+    expect(html).not.toContain('VIEW PAUSED')
+  })
+
   it('describes an empty global-source view without promising complete coverage', () => {
     const html = renderToStaticMarkup(
       <LiveStatus

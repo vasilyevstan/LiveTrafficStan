@@ -659,7 +659,7 @@ The source and rights evidence is recorded in
 
 Issue #162 first added orbital context to the existing single Mercator map before
 globe projection work. The flat map already supported whole-world and
-street-level zooms, while the separate aircraft/marine 100 km contract remains
+street-level zooms, while the then-shared aircraft/marine 100 km contract was
 well understood. A globe would also change horizon geometry, off-Earth canvas
 samples, poles, style projection restoration, front/back picking, camera/share
 state, and the zoom 11-12 projection transition. Those risks belonged to
@@ -1116,16 +1116,19 @@ overlays and do not reduce the geographic area that must be covered.
 
 Domain code canonicalizes and unwraps longitudes around a center rounded to
 three decimal places. It rejects non-finite, degenerate, unsafe, or
-world-spanning geometry. The farthest footprint point defines a conservative
-enclosing circle. Views requiring more than 100 km are ineligible: traffic and
-trails are hidden, provider work pauses, invalid selection clears, and the UI
-asks the user to zoom in or reduce tilt. The app does not clamp, subdivide, or
-claim partial results are complete.
+world-spanning geometry. The farthest footprint point defines a conservative enclosing circle. Aircraft
+views through 250 km are eligible; marine and local airport/weather context
+retain 100 km. Between those limits the UI reports ships paused and sends no
+marine query while aircraft keep their existing scheduler. Views over 250 km
+or unsafe geometry pause both. The app does not clamp, subdivide, or claim
+partial results are complete.
 
-For eligible views, providers receive the enclosing circle while display
-filtering uses the actual unwrapped polygon. The 100 km decision occurs before
-ADSB.lol's required whole-nautical-mile rounding, so the boundary request uses
-54 NM (100.008 km transport coverage) but display eligibility remains 100 km.
+For eligible views, each source receives only its allowed enclosing circle
+while display filtering uses the actual unwrapped polygon. The 250 km aircraft
+decision occurs before ADSB.lol's required whole-nautical-mile rounding, so
+the boundary request uses 135 NM (250.02 km transport coverage) but display
+eligibility remains the actual polygon. The 100 km marine/local decision is
+independent and does not reconnect MQTT or bypass REST/metadata deadlines.
 Center restores a session Home framing comparable to a 30 km local view. This
 keeps fast aircraft on-screen about 50% longer than the earlier 20 km framing
 without changing provider or display geometry: the safely representable full

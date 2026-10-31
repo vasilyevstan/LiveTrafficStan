@@ -56,4 +56,20 @@ describe('compact workspace presentation', () => {
     expect(html).not.toContain('<button')
     expect(html).not.toContain('Last local sample')
   })
+
+  it('states that only ships are paused while aircraft remain live', () => {
+    const html = renderToStaticMarkup(
+      <TrafficPauseNotice
+        retainedSample={false}
+        aircraftPaused={false}
+        message="Zoom in or reduce tilt to see live ships"
+        onResume={() => undefined}
+      />,
+    )
+    expect(html).toContain('Ships paused')
+    expect(html).not.toContain('Aircraft and ships paused')
+    expect(html).toContain('Zoom in or reduce tilt to see live ships')
+    expect(html).toContain('SHOW LIVE SHIPS')
+    expect(html).not.toContain('RESUME LIVE')
+  })
 })
