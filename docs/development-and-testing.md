@@ -5561,3 +5561,22 @@ MQTT.js. MQTT is dynamically imported because it is needed only after the
 marine provider starts. The main MapLibre application bundle is expected to be
 large; changes should avoid adding another framework or duplicating mapping,
 state, networking, or formatting functionality without a demonstrated need.
+
+The accepted startup boundaries are demand-triggered vessel flag pixels,
+orbital advanced UI, and airport details/board. They do not defer MapLibre,
+history runtime, provider/controller ownership, selected identities, or map
+sources/layers. `npm run build` enforces the measured output with dependency-free
+gzip-9/Brotli-11 checks:
+
+- entry JavaScript: at most 545 KiB gzip and 440 KiB Brotli;
+- vessel flag pixels: at most 60 KiB gzip;
+- orbital advanced UI: at most 12 KiB gzip;
+- airport details/board: at most 8 KiB gzip;
+- complete atomic shell: below 4 MiB uncompressed.
+
+The accepted 2026-10-29 build measured 529,407 entry gzip bytes and 428,702
+Brotli bytes; the semantic chunks measured 53,949, 7,187, and 4,301 gzip bytes
+respectively. The 16-URL shell measured 3,807,618 raw bytes. These splits reduce
+initial navigation work, not installed-shell transfer: every emitted asset is
+preinstalled so first use remains available cold offline, and the predecessor
+cache remains searchable for an older tab's deferred hashed import.

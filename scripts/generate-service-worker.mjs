@@ -8,6 +8,7 @@ import {
   shellVersion,
   verifyShellFiles,
 } from './pwa-shell.mjs'
+import { checkBundleBudgets } from './bundle-budgets.mjs'
 
 const distDirectory = resolve('dist')
 const retirement = process.argv.includes('--retire')
@@ -20,6 +21,7 @@ if (retirement) {
     renderRetirementServiceWorker(),
   )
 } else {
+  const bundleReport = await checkBundleBudgets(distDirectory)
   const entries = await collectShellEntries(distDirectory)
   await verifyShellFiles(entries)
   const bytes = assertShellBudget(entries)
@@ -34,4 +36,9 @@ if (retirement) {
   console.log(
     `Generated shell ${version}: ${entries.length} URLs, ${bytes} bytes`,
   )
+  for (const [label, report] of Object.entries(bundleReport)) {
+    console.log(
+      `${label}: ${report.gzip} gzip bytes, ${report.brotli} Brotli bytes`,
+    )
+  }
 }
