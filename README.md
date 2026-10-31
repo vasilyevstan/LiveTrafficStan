@@ -575,12 +575,17 @@ identity are not renamed or reset.
   Counts, marine source scope, freshness, and traffic mode remain visible;
   **Provider details** opens independent provider messages on every screen size.
 - **More** and **Settings** open beside the
-  desktop rail. On phones, one nonmodal task or full inspector occupies the
-  shared reading surface above the dock. Opening a task retains a compact
-  selected-object heading and X, without remounting its details.
-  **Details** replaces the task; **Back** restores its query, scroll and valid
-  focus. X still deselects. Complete native map credits start compact once and
-  remain available on demand, including across themes.
+  desktop rail. **The unreleased map-first phone revision in this source**
+  starts map selections as a compact identity card with **Details** and X.
+  One nonmodal task, expanded inspector, provider disclosure or credits surface
+  is visible at a time. Opening a task suspends the whole retained inspector
+  without remounting its details. Selecting a result opens its details;
+  **Back** restores the task's query, scroll and valid focus. X still deselects.
+  Panels use a bounded reading area above the lower dock; landscape leaves
+  the map beside the panel. Pause explanations and recovery actions share the
+  active reading area rather than covering its controls. Complete native map
+  credits start compact once and remain available on demand, including across
+  themes. Desktop menus and their default expanded inspectors are unchanged.
   These stable native disclosures
   retain one scroll owner per panel and session-only
   Find/Layers/Context/Orbits/Sources views. Closed desktop **More** always opens

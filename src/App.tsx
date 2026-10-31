@@ -45,8 +45,13 @@ import { InViewPanel } from './components/InViewPanel'
 import { LiveStatus } from './components/LiveStatus'
 import { PortDetails } from './components/PortDetails'
 import { TrafficControls } from './components/TrafficControls'
+import { TrafficPauseNotice } from './components/TrafficPauseNotice'
 import {
+  closeMobileDisclosures,
+  inspectorStartsExpanded,
+  MOBILE_DISCLOSURES,
   MobileInspectorContext,
+  trafficPausePlacement,
   type MobileWorkspaceTask,
   type WorkspaceControlsHandle,
 } from './components/mobileWorkspace'
@@ -252,8 +257,11 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     ),
   )
   const [activeWorkspaceTask, setActiveWorkspaceTask] = useState<MobileWorkspaceTask | null>(null)
+  const mobileWorkspaceRef = useRef(mobileWorkspace)
   const [inspectorExpanded, setInspectorExpanded] = useState(true)
+  const [inspectorSelectionRevision, setInspectorSelectionRevision] = useState(0)
   const [detailsReturnToTask, setDetailsReturnToTask] = useState(false)
+  const [providerDetailsOpen, setProviderDetailsOpen] = useState(false)
   const [sharedState] = useState(() =>
     objectShareStartup ? null : readBrowserShareState(APP_CONFIG.navigation.coordinatePrecision),
   )
@@ -1717,6 +1725,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
       },
       'Current map area',
     )
+    requestAnimationFrame(() => rulerMapRef.current?.focusMap())
   }, [commitNavigation, currentAssessment])
 
   const handleUseLocation = useCallback(() => {
@@ -1880,6 +1889,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
       finishCapturedViews()
       clearJourney()
       detailFocusOriginIdRef.current = id ? originId : null
+      setInspectorSelectionRevision(revision => revision + 1)
       setSelectedOrbitalId(null)
       setSelectedPortId(null)
       setSelectedAirportId(null)
@@ -1918,6 +1928,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     finishCapturedViews()
     clearJourney()
     detailFocusOriginIdRef.current = null
+    setInspectorSelectionRevision(revision => revision + 1)
     setSelectedId(null)
     setSelectedOrbitalId(null)
     setSelectedAirportId(null)
@@ -1933,6 +1944,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
       finishCapturedViews()
       clearJourney()
       detailFocusOriginIdRef.current = id ? originId : null
+      setInspectorSelectionRevision(revision => revision + 1)
       airportSelectionGraceUntilRef.current = id
         ? Date.now() + APP_CONFIG.navigation.viewportSettleMs + 100
         : 0
@@ -1982,6 +1994,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
       finishCapturedViews()
       clearJourney()
       detailFocusOriginIdRef.current = id ? originId : null
+      setInspectorSelectionRevision(revision => revision + 1)
       setSelectedId(null)
       setSelectedOrbitalId(null)
       setSelectedPortId(null)
@@ -2008,6 +2021,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
       finishCapturedViews()
       clearJourney()
       detailFocusOriginIdRef.current = id ? originId : null
+      setInspectorSelectionRevision(revision => revision + 1)
       setSelectedId(null)
       setSelectedPortId(null)
       setSelectedAirportId(null)
@@ -2492,19 +2506,24 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
       : weatherResult.retry
 
   useEffect(() => {
-    setInspectorExpanded(!capturedViewActive)
     const openCatalogDetails = catalogSelection?.kind === 'airport'
       ? catalogSelection.id === selectedAirportId
       : catalogSelection?.kind === 'port'
         ? catalogSelection.id === selectedPortId
         : catalogSelection?.kind === 'orbital' && catalogSelection.id === selectedOrbitalId
-    setDetailsReturnToTask(openCatalogDetails && catalogSelection?.expandMobileDetails
+    const fromResult = Boolean(detailFocusOriginIdRef.current || journey?.snapshot.revision !== undefined || sharedObject ||
+      openCatalogDetails && catalogSelection?.expandMobileDetails)
+    const expanded = inspectorStartsExpanded(mobileWorkspaceRef.current, capturedViewActive, fromResult)
+    setInspectorExpanded(expanded)
+    if (mobileWorkspaceRef.current && expanded) closeMobileDisclosures(appShellRef.current)
+    setDetailsReturnToTask(mobileWorkspaceRef.current && expanded && fromResult
       ? workspaceControlsRef.current?.suspendTask() ?? false
       : false)
-  }, [capturedViewActive, catalogSelection, selectedId, selectedOrbitalId, selectedPortId, selectedAirportId, selectedWeatherId, journey?.snapshot.revision])
+  }, [capturedViewActive, catalogSelection, selectedId, selectedOrbitalId, selectedPortId, selectedAirportId, selectedWeatherId, journey?.snapshot.revision, sharedObject, inspectorSelectionRevision])
 
   const expandInspector = useCallback(() => {
     if (localRulerRef.current.phase === 'placing') clearLocalRuler()
+    if (mobileWorkspaceRef.current) closeMobileDisclosures(appShellRef.current)
     setDetailsReturnToTask(workspaceControlsRef.current?.suspendTask() ?? false)
     setInspectorExpanded(true)
   }, [clearLocalRuler])
@@ -2516,8 +2535,49 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
   const handleWorkspaceTaskChange = useCallback((task: MobileWorkspaceTask | null) => {
     if (task && localRulerRef.current.phase === 'placing') clearLocalRuler()
     setActiveWorkspaceTask(task)
-    if (task) setDetailsReturnToTask(false)
+    if (task) {
+      setDetailsReturnToTask(false)
+      if (mobileWorkspaceRef.current) {
+        setInspectorExpanded(false)
+      }
+    }
   }, [clearLocalRuler])
+  useEffect(() => {
+    const root = appShellRef.current
+    if (!mobileWorkspace || !root) return
+    closeMobileDisclosures(root)
+    setProviderDetailsOpen(false)
+    const onToggle = (event: Event) => {
+      const disclosure = event.target
+      if (!(disclosure instanceof HTMLDetailsElement) ||
+        !disclosure.matches(MOBILE_DISCLOSURES)) return
+      if (!disclosure.open) {
+        setProviderDetailsOpen(Boolean(root.querySelector<HTMLDetailsElement>('.live-status__disclosure')?.open))
+        return
+      }
+      closeMobileDisclosures(root, disclosure)
+      setProviderDetailsOpen(disclosure.matches('.live-status__disclosure'))
+      workspaceControlsRef.current?.suspendTask()
+      setDetailsReturnToTask(false)
+      setInspectorExpanded(false)
+    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.defaultPrevented || document.fullscreenElement === root) return
+      const disclosure = event.target instanceof Element
+        ? event.target.closest<HTMLDetailsElement>('.maplibregl-ctrl-attrib[open]') : null
+      if (!disclosure) return
+      event.preventDefault()
+      event.stopPropagation()
+      closeMobileDisclosures(root)
+      disclosure.querySelector('summary')?.focus({ preventScroll: true })
+    }
+    root.addEventListener('toggle', onToggle, true)
+    root.addEventListener('keydown', onKeyDown)
+    return () => {
+      root.removeEventListener('toggle', onToggle, true)
+      root.removeEventListener('keydown', onKeyDown)
+    }
+  }, [mobileWorkspace])
   const startLocalRuler = useCallback(() => {
     if (capturedOrbitalViewRef.current || capturedAircraftViewRef.current || historyActive || mapError) return
     const availability = rulerMapRef.current?.refresh() ?? 'unsupported'
@@ -2544,12 +2604,32 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
   const inspectorPresentation = {
     mobile: mobileWorkspace,
     compact: localRuler.phase === 'placing' || !inspectorExpanded || activeWorkspaceTask !== null,
+    suspended: activeWorkspaceTask !== null || providerDetailsOpen,
     forceCompact: localRuler.phase === 'placing',
     identity: inspectorIdentity,
     returnToTask: detailsReturnToTask,
     onExpand: expandInspector,
     onCollapse: collapseInspector,
   }
+  const visibleTrafficPause = !sharedObjectNotice && !sharedObject && !capturedViewActive &&
+    !orbitalViewMessage && !historyActive && !journey ? trafficPauseNotice : undefined
+  const inspectorAvailable = Boolean(
+    selectedEntity ||
+    (orbitalObjectsVisible && selectedOrbitalPosition && selectedOrbitalState.snapshot) ||
+    (selectedPort && portsResult.state.phase === 'ready') ||
+    (selectedAirport && airportsResult.state.phase === 'ready') ||
+    (selectedWeather && weatherResult.state.phase === 'ready' &&
+      weatherResult.state.stationKey === weatherStationKey),
+  )
+  const pausePlacement = trafficPausePlacement(
+    mobileWorkspace, activeWorkspaceTask, inspectorAvailable && !inspectorPresentation.compact,
+    providerDetailsOpen,
+  )
+  const pauseContent = visibleTrafficPause && (
+    <TrafficPauseNotice retainedSample={hasTrafficContext} message={visibleTrafficPause.message}
+      onResume={visibleTrafficPause.viewport ? handleResumeLiveTraffic : undefined}
+      inline={pausePlacement !== 'map'} />
+  )
   useLayoutEffect(() => {
     rulerMapRef.current?.refresh()
   }, [activeWorkspaceTask, inspectorExpanded, inspectorIdentity, localRuler, mobileWorkspace])
@@ -2571,7 +2651,11 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
         viewport,
       )
       if (!values) return
-      setMobileWorkspace(isCompactWorkspace(viewport, window.matchMedia('(pointer: coarse)').matches))
+      const compact = isCompactWorkspace(viewport, window.matchMedia('(pointer: coarse)').matches)
+      mobileWorkspaceRef.current = compact
+      setMobileWorkspace(compact)
+      appShell.toggleAttribute('data-mobile-landscape',
+        compact && window.innerWidth > window.innerHeight && viewport.width > viewport.height)
       appShell.style.setProperty(
         '--app-visual-viewport-width',
         values.width,
@@ -2767,11 +2851,18 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
         </svg>
       )}
 
-      <MobileInspectorContext value={inspectorPresentation}>
+      <MobileInspectorContext value={{
+        ...inspectorPresentation, notice: pausePlacement === 'inspector' ? pauseContent : undefined,
+      }}>
       <div
         className="interface-layer"
         data-workspace-task={activeWorkspaceTask ?? undefined}
       >
+        <div className="viewport-announcement" role="status" aria-atomic="true">
+          {visibleTrafficPause && `${hasTrafficContext
+            ? 'Last local sample; not wider live coverage.'
+            : 'Aircraft and ships paused.'} ${visibleTrafficPause.message}`}
+        </div>
         {localRuler.phase === 'placing' && (
           <LocalRulerPlacement state={localRuler} availability={rulerAvailability}
             distance={rulerDistance} panelRef={rulerPanelRef}
@@ -2780,6 +2871,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
           />
         )}
         <TrafficControls
+          viewportNotice={pausePlacement === 'task' ? pauseContent : undefined}
           mobileWorkspace={mobileWorkspace}
           workspaceHandleRef={workspaceControlsRef}
           onWorkspaceTaskChange={handleWorkspaceTaskChange}
@@ -2849,6 +2941,8 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
                 </div>
               </div>
               {(!capturedOrbitalView || capturedLocalTraffic) && <LiveStatus
+                viewportNotice={pausePlacement === 'providers' ? pauseContent : undefined}
+                viewportPaused={mobileWorkspace && Boolean(visibleTrafficPause)}
                 compact={mobileWorkspace}
                 scopeLabel={capturedLocalTraffic || capturedAircraftView ? 'Previous local area' : undefined}
                 aircraftCount={aircraftVisible ? aircraft.length : 0}
@@ -3053,25 +3147,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
           </div>
         )}
 
-        {!sharedObjectNotice && !sharedObject && !capturedViewActive && !orbitalViewMessage && !historyActive && !journey && trafficPauseNotice && (
-          <div className="viewport-notice" role="status">
-            <strong>
-              {hasTrafficContext
-                ? 'Last local traffic sample'
-                : 'Aircraft and ships paused'}
-            </strong>
-            <span>
-              {hasTrafficContext &&
-                'Last local sample; not wider live coverage. '}
-              {trafficPauseNotice.message}
-            </span>
-            {trafficPauseNotice.viewport && (
-              <button type="button" onClick={handleResumeLiveTraffic}>
-                RESUME LIVE
-              </button>
-            )}
-          </div>
-        )}
+        {pausePlacement === 'map' && pauseContent}
 
         {history.playback.mode !== 'live' && (
           <HistoryModeNotice

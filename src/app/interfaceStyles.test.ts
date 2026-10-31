@@ -115,9 +115,10 @@ describe('interface presentation contracts', () => {
   it('shares one mobile surface budget and keeps the compact body noninteractive', () => {
     expect(styles).toMatch(/--mobile-body-height: max\(44px, min\(\s*clamp\(180px,[^;]*340px\)/)
     expect(styles).toMatch(/\.app-shell--mobile-workspace \.control-panel__more-body\s*\{[^}]*height: var\(--mobile-body-height\)/)
-    expect(styles).toMatch(/\.app-shell--mobile-workspace \.details-panel__body\s*\{[^}]*height: var\(--mobile-body-height\)/)
+    expect(styles).toMatch(/\.app-shell--mobile-workspace \.details-panel__body\s*\{[^}]*height: auto;[^}]*max-height: var\(--mobile-body-height\)/)
     expect(styles).toMatch(/\.app-shell--mobile-workspace \.details-panel__body\[hidden\]\s*\{\s*display: none;/)
-    expect(styles).toMatch(/\.app-shell--mobile-workspace \.interface-layer:has\(\.details-panel\[data-compact\]\) \.mobile-task-heading\s*\{\s*display: none;/)
+    expect(styles).not.toMatch(/\.interface-layer:has\(\.details-panel\[data-compact\]\) \.mobile-task-heading\s*\{\s*display: none;/)
+    expect(styles).toMatch(/\.app-shell--mobile-workspace \.details-panel\[hidden\],[^}]*display: none;/)
   })
 
   it('anchors interface and native map controls to the visual viewport, not the canvas', () => {
@@ -181,6 +182,9 @@ describe('interface presentation contracts', () => {
     expect(styles).toMatch(/\.app-shell--mobile-workspace \.interface-layer:has\(\.history-mode-notice\) \.workspace-dock\s*\{\s*visibility: hidden;/)
     expect(styles).toMatch(/\.app-shell--mobile-workspace \.interface-layer:has\(\.history-mode-notice\) > \*\s*\{[^}]*--mobile-surface-bottom:/)
     expect(styles).toContain(".interface-layer:has(.details-panel:not([data-compact]))")
+    expect(styles).toMatch(/\.app-shell--mobile-workspace \.history-mode-notice__actions\s*\{\s*grid-template-columns: 44px minmax\(0, 1fr\);/)
+    expect(styles).toMatch(/\.app-shell--mobile-workspace \.history-mode-notice__speeds\s*\{\s*grid-column: 1 \/ -1;\s*grid-row: 2;/)
+    expect(styles).toContain('var(--mobile-surface-bottom) - var(--mobile-dock-bottom) + 52px')
   })
 
   it('gives fullscreen actions 44px targets and presence-only mobile flyout clearance', () => {
@@ -208,8 +212,19 @@ describe('interface presentation contracts', () => {
     expect(styles).toContain('@container workspace (max-width: 280px)')
     expect(styles).toContain('--mobile-dock-height: 116px')
     expect(styles).toMatch(/\.workspace-dock\s*\{[^}]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);[^}]*grid-template-rows: repeat\(2, minmax\(0, 1fr\)\)/)
-    expect(styles).toMatch(/\.app-shell--mobile-workspace \.maplibregl-ctrl-attrib\.maplibregl-compact-show \.maplibregl-ctrl-attrib-inner\s*\{[^}]*position: absolute;[^}]*width: min\(360px,[^}]*overflow: auto;/)
+    expect(styles).toMatch(/\.app-shell--mobile-workspace \.maplibregl-ctrl-attrib\.maplibregl-compact-show \.maplibregl-ctrl-attrib-inner\s*\{[^}]*position: absolute;[^}]*width: var\(--mobile-surface-width\);[^}]*overflow: auto;/)
     expect(styles).toMatch(/\.app-shell--mobile-workspace \.maplibregl-ctrl-attrib-button\s*\{[^}]*background-repeat: no-repeat;/)
     expect(styles).toContain('.control-panel__more-body button, .details-panel button, .history-mode-notice button')
+  })
+
+  it('recovers the dock gutter without overlapping attribution or action controls', () => {
+    expect(styles).toContain('--mobile-dock-bottom: max(8px, env(safe-area-inset-bottom))')
+    expect(styles).toContain('--mobile-dock-right: max(60px, calc(env(safe-area-inset-right) + 52px))')
+    expect(styles).toMatch(/\.app-shell--mobile-workspace\s+\.details-panel--action:has\(\.details-panel__save\):has\(\.details-panel__share\)\s+\.details-panel__presentation\s*\{\s*right: 132px;/)
+    expect(styles).toMatch(/\.app-shell--mobile-workspace \.details-panel__header-action\s*\{\s*top: 0;/)
+    expect(styles).toMatch(/\.app-shell--mobile-workspace\[data-mobile-landscape\][^{]*\{[^}]*--mobile-surface-width:/)
+    expect(styles).toContain('@container workspace (max-height: 420px)')
+    expect(styles).toMatch(/\.traffic-pause-notice\s*\{[^}]*display: grid;/)
+    expect(styles).not.toMatch(/\.traffic-pause-notice\s*\{[^}]*(?:overflow|height|position):/)
   })
 })

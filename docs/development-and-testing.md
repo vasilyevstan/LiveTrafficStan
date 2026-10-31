@@ -48,6 +48,86 @@ supplementary marine WebSocket; use the actual local Worker for those paths.
 | `npm run check:deploy` | Bundle the Worker and Static Assets without credentials or deployment |
 | `npm run preview:worker` | Build and run the actual local Cloudflare `workerd` boundary |
 
+### Map-first phone workspace (unreleased; #540 / #554)
+
+This branch replaces overlapping phone reading surfaces, not desktop menus or
+provider geometry. Map selections start compact with Details/X; a result opens
+details with Back to its retained task. Find, Layers, In view, Settings,
+Context/Orbits/Sources, provider details and native credits remain accessible.
+Task/inspector/provider pause instructions and promoted recovery actions use
+the existing body scroller instead of covering another panel. HISTORY keeps
+its separate playback mode with 44px controls on two rows.
+
+The three requested reviews (Claude Opus 5.5, GPT-6.1 Sol and Grok 4.7),
+including the map UI/UX specialist, identified independent overlays, automatic
+full inspector expansion and the reserved dock gutter as the main problems.
+Native baseline at 315x517 left only 59px between the pause strip and Find;
+provider details also covered Find's heading/Close. The approved solution
+keeps the existing compact classification: width <=760px, or coarse-pointer
+landscape <=1024x480. It does not add touch-device detection, new controllers,
+network timing or map padding.
+
+Native Chrome 156.0.8078.74 acceptance uses the production React/MapLibre bundle,
+real vector tiles and bundled catalogs. Aircraft, METAR and orbital HTTP
+responses are fixtures; marine unavailability is intentional, not live-provider
+acceptance. Initial orbital/static context selections are callback-staged;
+aircraft map taps, subsequent controls, drag, scrolling, Back and Resume use
+native CDP input. Local object sharing is enabled to expose both Save and Share
+beside Details/X. These checks do not publish shared objects or deploy a build.
+
+The final source passes all eight required commands: **2,720 tests / 220
+files**, all four integrity scripts and the production build. Lint completes
+with React compiler/ref warnings; the build reports the large-chunk warning.
+The sharing-enabled acceptance shell is `c565a69152b085db95ab`
+(`index-DGRcNQ3G.js`). No application runtime exceptions occurred in the accepted
+production core and special-mode runs.
+
+Find measurements are identical in Light and Dark:
+
+| Visible viewport | Clear map band | Useful reading body | Overlay union |
+| --- | --- | --- | --- |
+| 315x517 | 169px | 160px | 59.13% |
+| 390x568 | 220px | 160px | 53.02% |
+| 390x844 | 368px | 288px | 50.22% |
+
+At 315x517, Find retains a **169px map band and 160px useful body**;
+expanded orbital/airport/METAR details retain **168px and 162px**. A short port
+body uses its natural height (95px in the fixture), leaving more map instead
+of reserving empty space. Both include a hit-tested 120x120 map square,
+one retained canvas and reachable 44px primary actions. The ordinary Find
+overlay union is 59.13%; expanded details are 59.50%. Area percentage alone
+is not a usability pass.
+
+Cover Light/Dark at 315x517, 390x568 and 390x844, plus 568x320 and 844x390
+landscape. Check actual visible dimensions, not nominal emulation labels.
+The 568x320 side panel has a 130px useful body and a map square beside it;
+844x390 has a 160px body. A forced 844px layout/517px visual viewport keeps
+the full 390x844 canvas and a 160px body. A separate synthetic 300px keyboard
+height keeps 168px of reading/input area but does **not** pass the ordinary
+map-square requirement; dismissing it restores the normal dock and map space.
+No physical-device, OS-keyboard or assistive-technology speech claim is made.
+
+Regression journeys include result -> Details -> Back with the `25544` draft,
+safe-view Resume with canvas focus, native aircraft tap/expand/compact through
+rotation, captured aircraft Play/Pause/Return, HISTORY/Return to Live, and
+airport/port/weather inspectors. Ruler placement/cancel runs in its existing
+eligible Flat, untilted view; native workspace fullscreen enters/exits without
+replacing the canvas. A simulated METAR 503 moves the single visible
+recovery notice from Layers into Find's scroller; native Retry recovers after
+the unchanged 60-second cooldown. Desktop 1280x900/1920x1080 and normal
+768x1024 tablet retain More's default Find tab and expanded inspectors.
+
+Observer rules: use `checkVisibility({ visibilityProperty: true })` and
+hidden/inert ancestry, not DOM existence or rectangles alone. HISTORY's
+intentionally invisible dock can still have rectangles. Wait for the actual
+canvas backing dimensions and rendered features after rotation before tapping;
+CSS dimensions can update before MapLibre's resize frame. CDP coordinates
+subtract visual-viewport offsets. Never serialize React-owned DOM elements
+through CDP; return booleans or plain measurements. Preserve the accepted
+`mobile-acceptance.mjs`, `phone-acceptance.json` and screenshots as session
+artifacts. These measurements supersede the older short-phone geometry
+only for this local revision; they do not close the issues or claim a release.
+
 ### Correctness regression acceptance (#603)
 
 The six focused history/marine/map corrections pass all eight mandatory

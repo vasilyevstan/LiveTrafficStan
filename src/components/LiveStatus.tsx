@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { formatAge, formatTimestamp } from '../domain/format'
 import { workspaceOwnsFullscreen } from '../app/fullscreen'
 import type { ProviderStatus } from '../domain/traffic'
@@ -15,6 +16,8 @@ interface LiveStatusProps {
   historicalAt?: number
   trafficContext?: boolean
   scopeLabel?: string
+  viewportPaused?: boolean
+  viewportNotice?: ReactNode
 }
 
 const providerLabel = (
@@ -43,6 +46,8 @@ export function LiveStatus({
   historicalAt,
   trafficContext = false,
   scopeLabel,
+  viewportPaused = false,
+  viewportNotice,
 }: LiveStatusProps) {
   const statuses = [aircraftStatus, marineStatus]
   const allPaused = statuses.every((status) => status.paused)
@@ -55,7 +60,7 @@ export function LiveStatus({
       ? 'HISTORY'
       : !online
         ? 'OFFLINE'
-      : allPaused
+      : viewportPaused || allPaused
         ? 'PAUSED'
         : liveCount === 2
           ? partialSources ? 'PARTIAL' : 'LIVE'
@@ -72,7 +77,7 @@ export function LiveStatus({
   return (
     <section
       className={`live-status live-status--${mode.toLowerCase()}`}
-      aria-live={historicalAt === undefined ? 'polite' : undefined}
+      aria-live={historicalAt === undefined && !viewportPaused ? 'polite' : undefined}
       aria-label={
         historicalAt === undefined
           ? scopeLabel ? `Traffic provider status · ${scopeLabel}` : 'Traffic provider status'
@@ -81,7 +86,7 @@ export function LiveStatus({
     >
       <span className="live-status__mode">
         <span className="live-status__dot" aria-hidden="true" />
-        <strong>{mode}</strong>
+        <strong>{viewportPaused && mode === 'PAUSED' ? 'VIEW PAUSED' : mode}</strong>
       </span>
       <details
         className="live-status__disclosure"
@@ -101,7 +106,7 @@ export function LiveStatus({
             ) : trafficContext && historicalAt === undefined ? (
               <>
                 <span>Last local sample</span>
-                <span>Live updates paused</span>
+                {(!compact || !viewportPaused) && <span>Live updates paused</span>}
               </>
             ) : (
               <>
@@ -126,6 +131,18 @@ export function LiveStatus({
           </span>
         </summary>
         <div className="live-status__providers">
+          {compact && (
+            <div className="mobile-disclosure-heading">
+              <strong>Provider details</strong>
+              <button type="button" aria-label="Close provider details" onClick={event => {
+                const disclosure = event.currentTarget.closest('details')
+                if (disclosure) {
+                  disclosure.open = false
+                  disclosure.querySelector('summary')?.focus({ preventScroll: true })
+                }
+              }}>Close</button>
+            </div>
+          )}
           {scopeLabel && <span>{scopeLabel}: {aircraftCount} aircraft · {vesselCount} ships shown in enabled layers.</span>}
           {!online && historicalAt === undefined && (
             <span>
@@ -198,6 +215,7 @@ export function LiveStatus({
             </span>
           )}
           </details>
+          {compact && viewportNotice}
         </div>
       </details>
     </section>
