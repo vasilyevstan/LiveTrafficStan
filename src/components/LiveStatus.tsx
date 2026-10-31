@@ -51,6 +51,7 @@ export function LiveStatus({
 }: LiveStatusProps) {
   const statuses = [aircraftStatus, marineStatus]
   const allPaused = statuses.every((status) => status.paused)
+  const somePaused = statuses.some((status) => status.paused)
   const liveCount = statuses.filter((status) => status.phase === 'live').length
   const errorCount = statuses.filter((status) => status.phase === 'error').length
   const partialSources = marineCapabilities.coverage.kind === 'global-best-effort' &&
@@ -62,6 +63,8 @@ export function LiveStatus({
         ? 'OFFLINE'
       : viewportPaused || allPaused
         ? 'PAUSED'
+        : somePaused && liveCount > 0
+          ? 'PARTIAL'
         : liveCount === 2
           ? partialSources ? 'PARTIAL' : 'LIVE'
           : liveCount === 1 && errorCount === 1

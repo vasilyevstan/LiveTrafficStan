@@ -4,7 +4,7 @@ export const AIRCRAFT_PROXY_PREFIX = '/api/aircraft'
 export const ADSB_LOL_ORIGIN = 'https://api.adsb.lol'
 export const ADSB_LOL_USER_AGENT =
   'LiveTrafficStan (+https://github.com/vasilyevstan/LiveTrafficStan)'
-export const MAX_AIRCRAFT_RADIUS_NM = 54
+export const MAX_AIRCRAFT_RADIUS_NM = 135
 export const AIRCRAFT_PROXY_TIMEOUT_MS = 10_000
 export const MAX_AIRCRAFT_RESPONSE_BYTES = 4 * 1024 * 1024
 
@@ -26,7 +26,7 @@ interface ParsedPointRequest {
 }
 
 const coordinatePattern = /^-?(?:0|[1-9]\d*)(?:\.\d{1,7})?$/
-const radiusPattern = /^(?:[1-9]|[1-4]\d|5[0-4])$/
+const radiusPattern = /^(?:[1-9]|[1-9]\d|1[0-2]\d|13[0-5])$/
 
 class ResponseTooLargeError extends Error {}
 

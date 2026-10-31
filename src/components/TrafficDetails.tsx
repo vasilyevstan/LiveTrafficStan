@@ -679,13 +679,28 @@ export function TrafficDetails({
   return (
     <DetailsPanel
       panelRef={panelRef}
-      className={historical ? 'details-panel--historical' : undefined}
+      className={historical ? 'details-panel--historical' : 'details-panel--traffic-actions'}
       titleId="selected-traffic-title"
       closeLabel={`Close ${historical ? 'historical ' : ''}${
         entity.kind === 'aircraft' ? 'aircraft' : 'ship'
       } details`}
       onClose={onClose}
       headerAction={!historical ? shareObject : undefined}
+      actionRow={!historical ? <>
+        {onShowJourney && (
+          <button type="button" className="traffic-details__path-action"
+            onClick={onShowJourney} disabled={journeyPreparing}>
+            {journeyPreparing ? 'Loading path...' : 'Show path'}
+          </button>
+        )}
+        {entity.kind === 'aircraft' && onViewFromHere && (
+          <button type="button" className="orbital-view-entry" data-aircraft-view-entry={entity.id}
+            onClick={onViewFromHere} disabled={Boolean(viewFromHereUnavailable)}
+            aria-describedby={viewFromHereUnavailable ? viewReasonId : undefined}>
+            View from here
+          </button>
+        )}
+      </> : undefined}
       heading={
         <div>
           <p className="eyebrow">
@@ -694,13 +709,6 @@ export function TrafficDetails({
           </p>
           <div className="details-panel__identity">
             <h2 id="selected-traffic-title" title={title}>{title}</h2>
-            {!historical && onShowJourney && (
-              <div className="journey-action">
-                <button type="button" onClick={onShowJourney} disabled={journeyPreparing}>
-                  {journeyPreparing ? 'Loading path...' : 'Show path'}
-                </button>
-              </div>
-            )}
           </div>
         </div>
       }
@@ -708,15 +716,8 @@ export function TrafficDetails({
       {!historical && journeyMessage && (
         <p className="metadata-status" role="status">{journeyMessage}</p>
       )}
-      {!historical && entity.kind === 'aircraft' && onViewFromHere && (
-        <div className="journey-actions">
-          <button type="button" className="orbital-view-entry" data-aircraft-view-entry={entity.id}
-            onClick={onViewFromHere} disabled={Boolean(viewFromHereUnavailable)}
-            aria-describedby={viewFromHereUnavailable ? viewReasonId : undefined}>
-            View from here
-          </button>
-          {viewFromHereUnavailable && <p id={viewReasonId} className="metadata-status">{viewFromHereUnavailable}</p>}
-        </div>
+      {!historical && entity.kind === 'aircraft' && onViewFromHere && viewFromHereUnavailable && (
+        <p id={viewReasonId} className="metadata-status">{viewFromHereUnavailable}</p>
       )}
 
       {vesselPhotoSelection?.kind === 'available' && (

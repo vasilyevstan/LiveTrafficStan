@@ -175,7 +175,8 @@ by their existing independent controllers.
 
 `BathymetryRuntime` owns only depth imagery/values on the existing MapLibre
 instance. It consumes the already-settled full-canvas orbital viewport
-geometry and zoom, independently of the traffic 100 km contract. Stable
+geometry and zoom, independently of the 100 km marine/local and 250 km aircraft
+traffic contracts. Stable
 source-cell candidates are generated in the domain layer; rendered ocean
 polygons and projected screen spacing gate up to twelve candidates. Values
 never enter traffic entities, freshness, counts, selection, trails, captured
@@ -450,11 +451,17 @@ above the command dock rather than beneath its buttons. None of these DOM/CSS
 positions changes the full-canvas viewport used by MapLibre or provider queries.
 
 All five detail components and captured journeys share `DetailsPanel`,
-including aircraft, ships and historical traffic. Its fixed identity header
-alone reserves clearance for the 44 by 44 px icon-only X, attached 8 px above
-the panel corner with an opaque themed backplate and object-specific accessible
-name. Show path shares the heading row. The full-width body is the sole scroll
-owner; there is no full-height close gutter or extra action ribbon.
+including aircraft, ships and historical traffic. Live traffic adds one scoped
+desktop action row beneath its identity for Show path, View from here, Save,
+Share, and the 44 by 44 px accessible X. Compact mobile and forced-compact
+presentations keep primary actions in the expanded body so disabled reasons
+remain visible and non-inert. Other inspectors retain their existing heading
+contract. The full-width body is the sole scroll owner.
+
+Shared overlay geometry uses bounded workspace/visual-viewport dimensions for
+width, padding, gaps, and reading height. Coarse-pointer landscape screens do
+not inherit oversized mouse-desktop whitespace merely because their CSS width
+is large; controls remain at least 44 px and required content remains scrollable.
 
 Mobile inspectors share the task reading budget rather than stacking a full
 inspector above a full task. Desktop photo/airport-board behavior and the
@@ -588,11 +595,15 @@ UI and map code never consume raw provider payloads. Each adapter:
 5. preserves unavailable data as unavailable rather than guessing it;
 6. emits application-owned `Aircraft` or `Vessel` records.
 
-An eligible map viewport produces a center rounded to three decimal places and
-a conservative enclosing radius no greater than 100 km. Aircraft requests
-convert that radius to an outward-rounded integer nautical-mile query for
-ADSB.lol. Eligibility is decided first, so an exact 100 km viewport uses 54 NM
-(100.008 km) for transport without widening the display boundary.
+One settled full-canvas sample produces a center rounded to three decimal
+places, an unwrapped polygon, and a conservative enclosing radius. Aircraft
+eligibility extends through 250 km; marine and local airport/weather context
+retain 100 km. Aircraft requests convert their eligible radius to an
+outward-rounded integer nautical-mile query for ADSB.lol. Eligibility is
+decided first, so an exact 250 km viewport uses 135 NM (250.02 km) for transport
+without widening the exact display polygon. Between 100 and 250 km the aircraft
+controller continues on its existing cadence while marine receives no query
+and retains its connection and deadlines.
 
 The same adapter can use either the root-relative checked Worker route or the
 fixed public ADSB.lol origin selected at protected build time. Current
@@ -1547,7 +1558,7 @@ and gives only the aircraft proxy one private outbound dependency:
    orbital attribution remains visible when the corresponding data is shown.
 
 The production proxy accepts canonical finite latitude/longitude values and
-integer radii from 1 through 54 NM. It rejects query strings, other methods,
+integer radii from 1 through 135 NM. It rejects query strings, other methods,
 other paths, redirects, responses over 4 MiB, and work exceeding the ten-second
 total deadline. It constructs a fixed ADSB.lol destination, forwards only a
 JSON accept header and stable public project User-Agent, preserves upstream
@@ -1962,7 +1973,8 @@ On globe, public `getBounds()` rejects an included pole and public
 coordinates alone are insufficient: globe unprojection can snap sky to the
 limb. The guard's 0.01 px tolerance never expands the actual display polygon.
 An unsafe surface fails closed before radius or whole-world classification.
-Flat whole-world orbital behavior and the exact traffic 100 km contract remain.
+Flat whole-world orbital behavior and the exact source-specific traffic
+contracts remain.
 
 Unsafe geometry pauses aircraft/marine through their existing independent
 controllers and cadence. Orbital current positions, valid selection and tracks

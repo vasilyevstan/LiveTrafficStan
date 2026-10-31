@@ -94,6 +94,31 @@ describe('interface presentation contracts', () => {
     expect(styles).not.toContain('.details-panel__close-anchor')
   })
 
+  it('gives opted-in traffic details one 44px desktop action row and responsive compact placement', () => {
+    expect(styles).toMatch(/\.details-panel__action-row,\s*\.details-panel__body-actions\s*\{[^}]*min-height: 44px;/)
+    expect(styles).toMatch(/\.details-panel__action-row\s*\{[^}]*flex: 0 0 44px;/)
+    expect(styles).toMatch(/\.details-panel__action-row \.details-panel__close\s*\{[^}]*position: static;/)
+    expect(styles).toMatch(/\.details-panel--traffic-actions \.details-panel__heading\s*\{\s*padding-right: 0;/)
+    expect(styles).toMatch(/\.details-panel--traffic-actions\s*\{\s*width: min\(430px, calc\(var\(--app-visual-viewport-width\) - 32px\)\);/)
+    expect(styles).toMatch(/\.app-shell--mobile-workspace \.details-panel__body-actions\s*\{[^}]*margin-bottom: 8px;/)
+  })
+
+  it('sizes shared overlays from the visual workspace with clamped panel spacing and landscape width', () => {
+    expect(styles).toContain('--details-panel-padding: clamp(12px, 2cqh, 18px)')
+    expect(styles).toMatch(/\.details-panel\s*\{[^}]*max-height: min\(\s*620px,\s*calc\(var\(--app-visual-viewport-height\) - var\(--workspace-header-bottom\) - 32px\)/)
+    expect(styles).toContain('--mobile-safe-left: max(8px, env(safe-area-inset-left))')
+    expect(styles).toContain('--mobile-safe-right: max(8px, env(safe-area-inset-right))')
+    expect(styles).toMatch(/--mobile-surface-width: min\(\s*460px,\s*calc\(\s*var\(--app-visual-viewport-width\) -\s*var\(--mobile-safe-left\) -\s*var\(--mobile-safe-right\)/)
+    expect(styles).toMatch(/\.app-shell--mobile-workspace \.brand-panel\s*\{[^}]*left: var\(--mobile-safe-left\);[^}]*width: min\(\s*280px,[^}]*var\(--mobile-safe-right\)/)
+    expect(styles).toMatch(/\.app-shell--mobile-workspace\[data-mobile-landscape\]\s*\{[^}]*--mobile-surface-width: min\(\s*460px,\s*calc\(var\(--app-visual-viewport-width\) \* 0\.52\),\s*calc\(\s*var\(--app-visual-viewport-width\) -\s*var\(--mobile-safe-left\) -\s*var\(--mobile-safe-right\)/)
+    expect(styles).toMatch(/\.app-shell--mobile-workspace\[data-mobile-landscape\] \.brand-panel\s*\{[^}]*width: clamp\(\s*0px,[^}]*280px\s*\);[^}]*overflow: hidden;/)
+    expect(styles).toMatch(/\.app-shell--mobile-workspace\[data-mobile-landscape\] :is\(\.viewport-notice, \.map-error\)\s*\{\s*right: calc\(var\(--mobile-safe-right\) \+ var\(--mobile-surface-width\) \+ 8px\);/)
+    expect(styles).toMatch(/\.app-shell--mobile-workspace\[data-mobile-landscape\] \.control-panel__in-view\s*\{[^}]*--in-view-landscape-width: min\(\s*272px,/)
+    expect(styles).toMatch(/\.control-panel__in-view\s+:is\(\.control-panel__more-body, \.mobile-task-heading\)\s*\{\s*width: var\(--in-view-landscape-width\);/)
+    expect(styles).toMatch(/\.control-panel__in-view\s+\.control-panel__more-body\s*\{[^}]*height: min\(var\(--mobile-body-height\), 132px\);[^}]*padding: 6px 8px;/)
+    expect(styles).toMatch(/\.control-panel__in-view\s+\.in-view__tabs\s*\{\s*margin: 0 44px 6px 0;/)
+  })
+
   it('pairs depth and relief in the two-column grid with at least 44px targets', () => {
     expect(styles).toMatch(/#depths-layer-toggle,\s*#relief-layer-toggle\s*\{[^}]*min-height: 44px;/)
     expect(styles).not.toMatch(/#depths-layer-toggle[^{}]*\{[^}]*grid-column:/)

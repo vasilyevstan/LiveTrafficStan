@@ -6,6 +6,7 @@ import type {
   DisplayAircraft,
   DisplayVessel,
 } from '../domain/traffic'
+import { MobileInspectorContext } from './mobileWorkspace'
 import { TrafficDetails } from './TrafficDetails'
 
 const aircraft: DisplayAircraft = {
@@ -1053,5 +1054,109 @@ describe('TrafficDetails aircraft View from here', () => {
   it('omits the entry for history and vessels', () => {
     expect(render(aircraft, undefined, true)).not.toContain('View from here')
     expect(render(vessel)).not.toContain('View from here')
+  })
+})
+
+describe('TrafficDetails action placement', () => {
+  const shareObject = <>
+    <button type="button" className="details-panel__save" aria-label="Save TEST123">Save</button>
+    <button type="button" className="details-panel__share" aria-label="Share object">Share</button>
+  </>
+  const renderActions = (
+    entity: DisplayAircraft | DisplayVessel,
+    options: { historical?: boolean, compact?: boolean, forceCompact?: boolean } = {},
+  ) => renderToStaticMarkup(
+    <MobileInspectorContext.Provider value={options.compact === undefined ? undefined : {
+      mobile: !options.forceCompact,
+      compact: options.compact,
+      forceCompact: options.forceCompact,
+      identity: entity.id,
+      returnToTask: false,
+      onExpand: () => undefined,
+      onCollapse: () => undefined,
+    }}>
+      <TrafficDetails
+        entity={entity}
+        aircraftMetadata={{ phase: 'idle' }}
+        now={1_800_000_001_000}
+        units="metric"
+        historical={options.historical}
+        onShowJourney={() => undefined}
+        onViewFromHere={() => undefined}
+        shareObject={shareObject}
+        onClose={() => undefined}
+      />
+    </MobileInspectorContext.Provider>,
+  )
+
+  it('keeps identity separate and orders every normal desktop action in one row', () => {
+    const html = renderActions(aircraft)
+    const row = html.slice(
+      html.indexOf('details-panel__action-row'),
+      html.indexOf('details-panel__body'),
+    )
+    expect(html).toContain('class="details-panel details-panel--action details-panel--action-row details-panel--traffic-actions"')
+    expect(html.indexOf('selected-traffic-title')).toBeLessThan(html.indexOf('details-panel__action-row'))
+    for (const label of ['Show path', 'View from here', 'Save TEST123', 'Share object', 'Close aircraft details']) {
+      expect(row).toContain(label)
+      expect(html.match(new RegExp(label, 'g'))).toHaveLength(1)
+    }
+    expect(row.indexOf('Show path')).toBeLessThan(row.indexOf('View from here'))
+    expect(row.indexOf('View from here')).toBeLessThan(row.indexOf('Save TEST123'))
+    expect(row.indexOf('Save TEST123')).toBeLessThan(row.indexOf('Share object'))
+    expect(row.indexOf('Share object')).toBeLessThan(row.indexOf('Close aircraft details'))
+  })
+
+  it('keeps vessel actions scoped without exposing the aircraft view action', () => {
+    const html = renderActions(vessel)
+    expect(html).toContain('Show path')
+    expect(html).toContain('Save TEST123')
+    expect(html).toContain('Share object')
+    expect(html).toContain('Close ship details')
+    expect(html).not.toContain('View from here')
+  })
+
+  it('keeps history on the generic panel without current actions', () => {
+    const html = renderActions(aircraft, { historical: true })
+    expect(html).toContain('details-panel--historical')
+    expect(html).not.toContain('details-panel--action-row')
+    expect(html).not.toContain('Show path')
+    expect(html).not.toContain('View from here')
+    expect(html).not.toContain('Save TEST123')
+    expect(html).not.toContain('Share object')
+  })
+
+  it.each([
+    { compact: true, forceCompact: false },
+    { compact: true, forceCompact: true },
+  ])('keeps utilities in the compact header and primary actions inert until expansion %j', options => {
+    const html = renderActions(aircraft, options)
+    const body = html.slice(html.indexOf('details-panel__body'))
+    expect(html).toMatch(/Save TEST123[\s\S]*Share object[\s\S]*>Details<\/button>[\s\S]*Close aircraft details/)
+    expect(body).toContain('hidden=""')
+    expect(body).toContain('inert=""')
+    expect(body).toContain('Show path')
+    expect(body).toContain('View from here')
+    expect(html.match(/Show path/g)).toHaveLength(1)
+    expect(html.match(/View from here/g)).toHaveLength(1)
+  })
+
+  it('preserves loading and failure feedback without duplicating path controls', () => {
+    const html = renderToStaticMarkup(
+      <TrafficDetails
+        entity={aircraft}
+        aircraftMetadata={{ phase: 'idle' }}
+        now={1_800_000_001_000}
+        units="metric"
+        onShowJourney={() => undefined}
+        journeyPreparing
+        journeyMessage="The path could not be prepared."
+        onClose={() => undefined}
+      />,
+    )
+    expect(html).toContain('disabled=""')
+    expect(html).toContain('Loading path...')
+    expect(html).toContain('role="status">The path could not be prepared.')
+    expect(html.match(/Loading path/g)).toHaveLength(1)
   })
 })

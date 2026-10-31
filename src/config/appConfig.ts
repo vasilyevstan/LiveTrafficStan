@@ -107,6 +107,7 @@ export interface AppConfig {
     darkStyleUrl: string
     homeViewRadiusKm: number
     maximumViewportRadiusKm: number
+    maximumAircraftViewportRadiusKm: number
     touchHitTolerancePx: number
     clustering: {
       radiusPx: number
@@ -531,6 +532,7 @@ export const createAppConfig = (
       ),
       homeViewRadiusKm: 30,
       maximumViewportRadiusKm: 100,
+      maximumAircraftViewportRadiusKm: 250,
       touchHitTolerancePx: 8,
       clustering: {
         radiusPx: 42,

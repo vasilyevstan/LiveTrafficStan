@@ -63,6 +63,48 @@ describe('DetailsPanel', () => {
     expect(html).toContain('Selected object and attribution')
   })
 
+  it('uses the optional action row only for an opted-in desktop panel', () => {
+    const html = renderToStaticMarkup(
+      <DetailsPanel titleId="test-title" closeLabel="Close traffic details" onClose={vi.fn()}
+        heading={<h2 id="test-title">Selected traffic</h2>}
+        headerAction={<button type="button" aria-label="Save object">Save</button>}
+        actionRow={<><button type="button">Show path</button><button type="button">View from here</button></>}>
+        <p>Traffic details</p>
+      </DetailsPanel>,
+    )
+    expect(html).toContain('details-panel--action-row')
+    expect(html).toMatch(/details-panel__action-row[\s\S]*Show path[\s\S]*View from here[\s\S]*Save object[\s\S]*Close traffic details/)
+    expect(html.indexOf('details-panel__action-row')).toBeLessThan(html.indexOf('details-panel__body'))
+    expect(html.match(/Close traffic details/g)).toHaveLength(1)
+    expect(html.match(/Show path/g)).toHaveLength(1)
+    expect(html.match(/View from here/g)).toHaveLength(1)
+  })
+
+  it.each([
+    { mobile: true, forceCompact: undefined },
+    { mobile: false, forceCompact: true },
+  ])('moves described primary actions into the expanded body for compact-capable presentation %j',
+    ({ mobile, forceCompact }) => {
+      const html = renderToStaticMarkup(
+        <MobileInspectorContext.Provider value={{
+          mobile, forceCompact, compact: true, identity: 'traffic:test', returnToTask: false,
+          onExpand: vi.fn(), onCollapse: vi.fn(),
+        }}>
+          <DetailsPanel titleId="test-title" closeLabel="Close traffic details" onClose={vi.fn()}
+            heading={<h2 id="test-title">Selected traffic</h2>}
+            headerAction={<button type="button" aria-label="Save object">Save</button>}
+            actionRow={<button type="button" aria-describedby="reason">View from here</button>}>
+            <p id="reason">A reported altitude is required.</p>
+          </DetailsPanel>
+        </MobileInspectorContext.Provider>,
+      )
+      expect(html).toMatch(/Save object[\s\S]*>Details<\/button>[\s\S]*Close traffic details[\s\S]*details-panel__body" hidden="" inert=""/)
+      expect(html).toMatch(/details-panel__body-actions[\s\S]*aria-describedby="reason"[\s\S]*id="reason"/)
+      expect(html.match(/View from here/g)).toHaveLength(1)
+      expect(html.match(/id="reason"/g)).toHaveLength(1)
+    },
+  )
+
   it('supports narrowly forced desktop compaction without unmounting selected content', () => {
     const html = renderToStaticMarkup(
       <MobileInspectorContext.Provider value={{
