@@ -32,7 +32,6 @@ const trafficInViewAvailability = ({
   count,
 }: TrafficInViewOptions, kind: 'aircraft' | 'ships'): InViewAvailability => {
   const title = kind === 'aircraft' ? 'Aircraft' : 'Ship'
-  const source = kind === 'aircraft' ? 'aircraft source' : 'marine source'
   if (historyActive) {
     return {
       available: false,
@@ -51,30 +50,30 @@ const trafficInViewAvailability = ({
   if (!online) {
     return {
       available: count > 0,
-      message: 'Offline · last received, unexpired observations only.',
+      message: 'Offline · retained observations only.',
     }
   }
   if (status.phase === 'error') {
     return {
       available: count > 0,
       message: count > 0
-        ? `Partial · ${source} unavailable; retained observations only.`
+        ? `${kind === 'aircraft' ? 'Aircraft' : 'Marine'} source unavailable · retained observations only.`
         : `${kind === 'aircraft' ? 'Aircraft' : 'Marine'} source unavailable.`,
     }
   }
   if (status.phase === 'idle' || status.phase === 'loading') {
-    return { available: count > 0, message: `Loading ${kind} observations.` }
+    return { available: count > 0, message: `Loading ${kind}…` }
   }
   if (status.paused) {
     return {
       available: count > 0,
-      message: `${title} updates paused; retained observations only.`,
+      message: `${title} updates paused · retained only.`,
     }
   }
   return {
     available: true,
     ...(status.updating
-      ? { message: `Updating ${kind}; current observations retained.` }
+      ? { message: `Updating ${kind}…` }
       : {}),
   }
 }

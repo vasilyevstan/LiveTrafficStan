@@ -10,6 +10,7 @@ interface DetailsPanelProps {
   heading: ReactNode
   headerAction?: ReactNode
   actionRow?: ReactNode
+  mobileActionPlacement?: 'body' | 'header'
   children: ReactNode
   className?: string
   panelRef?: Ref<HTMLDivElement>
@@ -22,12 +23,16 @@ export function DetailsPanel({
   heading,
   headerAction,
   actionRow,
+  mobileActionPlacement = 'body',
   children,
   className,
   panelRef,
 }: DetailsPanelProps) {
   const presentation = useContext(MobileInspectorContext)
   const responsiveActions = Boolean(presentation?.mobile || presentation?.forceCompact)
+  const mobileHeaderActions = Boolean(
+    actionRow && presentation?.mobile && mobileActionPlacement === 'header',
+  )
   const compact = Boolean((presentation?.mobile || presentation?.forceCompact) && presentation?.compact)
   const suspended = Boolean(presentation?.mobile && presentation.suspended)
   const bodyId = useId()
@@ -59,7 +64,7 @@ export function DetailsPanel({
 
   return (
     <aside
-      className={`details-panel${headerAction ? ' details-panel--action' : ''}${actionRow ? ' details-panel--action-row' : ''}${className ? ` ${className}` : ''}`}
+      className={`details-panel${headerAction ? ' details-panel--action' : ''}${actionRow ? ' details-panel--action-row' : ''}${mobileHeaderActions ? ' details-panel--mobile-header-actions' : ''}${className ? ` ${className}` : ''}`}
       aria-labelledby={titleId}
       hidden={suspended}
       inert={suspended || undefined}
@@ -124,6 +129,14 @@ export function DetailsPanel({
           </DetailsPanelFeedbackContext.Provider>
         </div>
       )}
+      {mobileHeaderActions && !compact && (
+        <div className="details-panel__mobile-actions" onClickCapture={() => {
+          scrollTopRef.current = 0
+          if (bodyRef.current) bodyRef.current.scrollTop = 0
+        }}>
+          {actionRow}
+        </div>
+      )}
       {(presentation?.mobile || presentation?.forceCompact) && (
         <button
           ref={presentationButtonRef}
@@ -169,7 +182,7 @@ export function DetailsPanel({
         }}
       >
         {headerAction && <div ref={setFeedbackTarget} className="details-panel__action-feedback" />}
-        {actionRow && responsiveActions && (
+        {actionRow && responsiveActions && !mobileHeaderActions && (
           <div className="details-panel__body-actions">{actionRow}</div>
         )}
         {children}

@@ -49,6 +49,31 @@ interface DetailRowProps {
   value: string | number | undefined
 }
 
+function TrafficActionIcon({ name }: { name: 'path' | 'view' }) {
+  return (
+    <svg
+      className="traffic-action-icon"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      {name === 'path' ? <>
+        <circle cx="5" cy="18" r="2" />
+        <circle cx="19" cy="6" r="2" />
+        <path d="M7 18c0-5 3.5-5 6-6s4-2 4-4" />
+      </> : <>
+        <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6S2.5 12 2.5 12Z" />
+        <circle cx="12" cy="12" r="2.5" />
+      </>}
+    </svg>
+  )
+}
+
 function DetailRow({ label, value }: DetailRowProps) {
   if (value === undefined || value === '') return null
 
@@ -327,7 +352,7 @@ function FlightRouteDetails({
       )}
       {state.phase === 'unavailable' && (
         <p className="metadata-status">
-          Route unavailable: {unavailableRouteMessage(state.reason)}
+          {unavailableRouteMessage(state.reason)}
         </p>
       )}
       {state.phase === 'error' && (
@@ -435,7 +460,6 @@ function AircraftPhotoDetails({
         </>
       ) : (
         <>
-          <p className="metadata-status">Photo lookup sends ICAO24 to Planespotters.</p>
           <details className="context-details">
             <summary>Photo privacy &amp; terms</summary>
             <p className="metadata-status">
@@ -453,7 +477,7 @@ function AircraftPhotoDetails({
             <p className="metadata-status">
               {invalidIdentity
                 ? 'Photo needs a valid six-character ICAO24.'
-                : `No exact photo for ICAO24 ${identity}; no substitute shown.`}
+                : `No exact photo for ICAO24 ${identity} · exact matches only.`}
             </p>
           )}
           {state.phase === 'error' && (
@@ -686,18 +710,26 @@ export function TrafficDetails({
       } details`}
       onClose={onClose}
       headerAction={!historical ? shareObject : undefined}
+      mobileActionPlacement="header"
       actionRow={!historical ? <>
         {onShowJourney && (
-          <button type="button" className="traffic-details__path-action"
+          <button type="button" className="traffic-details__icon-action traffic-details__path-action"
+            aria-label={journeyPreparing ? 'Loading path' : 'Show path'}
+            title={journeyPreparing ? 'Loading path' : 'Show path'}
+            aria-busy={journeyPreparing || undefined}
             onClick={onShowJourney} disabled={journeyPreparing}>
-            {journeyPreparing ? 'Loading path...' : 'Show path'}
+            <TrafficActionIcon name="path" />
           </button>
         )}
         {entity.kind === 'aircraft' && onViewFromHere && (
-          <button type="button" className="orbital-view-entry" data-aircraft-view-entry={entity.id}
+          <button type="button"
+            className="traffic-details__icon-action orbital-view-entry"
+            aria-label="View from here"
+            title="View from here"
+            data-aircraft-view-entry={entity.id}
             onClick={onViewFromHere} disabled={Boolean(viewFromHereUnavailable)}
             aria-describedby={viewFromHereUnavailable ? viewReasonId : undefined}>
-            View from here
+            <TrafficActionIcon name="view" />
           </button>
         )}
       </> : undefined}

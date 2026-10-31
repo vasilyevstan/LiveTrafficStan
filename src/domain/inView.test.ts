@@ -453,7 +453,7 @@ describe('ranked ships in view', () => {
     }
     expect(vesselInViewAvailability(options)).toMatchObject({
       available: true,
-      message: 'Updating ships; current observations retained. Partial · Digitraffic: unavailable',
+      message: 'Updating ships… Partial · Digitraffic: unavailable',
     })
     expect(vesselInViewAvailability({ ...options, historyActive: true }))
       .toMatchObject({ available: false, message: expect.stringContaining('HISTORY') })
