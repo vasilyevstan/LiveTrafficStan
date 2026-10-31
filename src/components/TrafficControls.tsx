@@ -63,6 +63,7 @@ import { AircraftDiscovery } from './AircraftDiscovery'
 import { AirportContext } from './AirportContext'
 import { DeferredModule } from './DeferredModule'
 import { HistoryControls } from './HistoryControls'
+import { focusOrbitalRevealTarget } from './orbitalRevealFocus'
 import { useLocationSearchModel } from './useLocationSearchModel'
 import { VesselDiscovery } from './VesselDiscovery'
 import { WeatherContext } from './WeatherContext'
@@ -524,7 +525,6 @@ export function TrafficControls({
   const inViewBodyRef = useRef<HTMLDivElement>(null)
   const inViewEntryRef = useRef<HTMLButtonElement>(null)
   const inViewOpenedFromSettingsRef = useRef(false)
-  const orbitalToggleRef = useRef<HTMLButtonElement>(null)
   const [openWorkspaceTask, setOpenWorkspaceTask] = useState<MobileWorkspaceTask | null>(null)
   const inspector = useContext(MobileInspectorContext)
   const [noticeTarget, setNoticeTarget] = useState<HTMLElement | null>(null)
@@ -779,11 +779,7 @@ export function TrafficControls({
     openTask(details)
     globalThis.requestAnimationFrame(() => {
       mapToolsBodyRef.current?.scrollTo({ top: 0 })
-      const target =
-        details.querySelector<HTMLElement>(
-          '.orbital-results button',
-        ) ?? orbitalToggleRef.current
-      target?.focus()
+      focusOrbitalRevealTarget(details)
     })
   }
   const selectMapToolTask = (task: MapToolTask) => {
@@ -954,7 +950,6 @@ export function TrafficControls({
           SHIPS
         </button>
         <button
-          ref={orbitalToggleRef}
           id="orbital-layer-toggle"
           type="button"
           className={orbitalVisible ? 'is-active' : undefined}
@@ -1409,6 +1404,7 @@ export function TrafficControls({
             id="map-tools-panel-orbits"
             className="control-panel__task"
             aria-labelledby="map-tools-task-orbits"
+            tabIndex={-1}
             hidden={mapToolTask !== 'orbits'}
           >
             {orbitalVisible && orbitalStatusMessage && (
