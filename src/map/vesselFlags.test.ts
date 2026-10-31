@@ -4,13 +4,18 @@ import {
   countryForAircraftHex,
   flagStateForMmsi,
 } from '../domain/countryAllocations'
-import { VESSEL_FLAG_IMAGES, vesselFlagImageId } from './vesselFlags'
+import { VESSEL_FLAG_ISO2, vesselFlagImageId } from './vesselFlags'
+import {
+  decodeVesselFlagImages,
+  VESSEL_FLAG_IMAGES,
+} from './vesselFlagImages'
 
 describe('bundled country flag artwork', () => {
   it('covers exactly the existing assigned MID countries with complete 2x pixels', () => {
     const countries = new Set(
       Object.values(allocations.mids).map((record) => record[1]),
     )
+    expect(VESSEL_FLAG_ISO2).toEqual(countries)
     expect(VESSEL_FLAG_IMAGES.size).toBe(countries.size)
     for (const [mid, [, iso2]] of Object.entries(allocations.mids)) {
       const country = flagStateForMmsi(Number(mid) * 1_000_000 + 123_456)
@@ -57,4 +62,14 @@ describe('bundled country flag artwork', () => {
       expect(vesselFlagImageId(iso2)).toBeUndefined()
     },
   )
+
+  it('rejects artwork that does not match the allocation set', () => {
+    expect(() =>
+      decodeVesselFlagImages({
+        width: 1,
+        height: 1,
+        flags: { EE: 'AAAAAA==' },
+      } as never),
+    ).toThrow('does not match country allocations')
+  })
 })

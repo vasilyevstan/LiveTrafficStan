@@ -105,7 +105,11 @@ const createWorkerHarness = ({
       for (const url of urls) store.add(url)
     },
     match: async (request) => {
-      const key = typeof request === 'string' ? request : request.url
+      const requestKey =
+        typeof request === 'string' ? request : request.url
+      const key = requestKey.startsWith('http')
+        ? new URL(requestKey).pathname
+        : requestKey
       if (!stores.get(name).has(key)) return undefined
       return new Response(new ArrayBuffer(0), {
         headers:
@@ -115,7 +119,11 @@ const createWorkerHarness = ({
       })
     },
     put: async (request, response) => {
-      const key = typeof request === 'string' ? request : request.url
+      const requestKey =
+        typeof request === 'string' ? request : request.url
+      const key = requestKey.startsWith('http')
+        ? new URL(requestKey).pathname
+        : requestKey
       stores.get(name).add(key)
       if (key === '/') {
         responseHeaders.set(name, new Map(response.headers.values))
@@ -161,14 +169,19 @@ const createWorkerHarness = ({
   }
   const dispatch = async (type, event = {}) => {
     const waits = []
+    let response
     listeners.get(type)?.({
       ...event,
       waitUntil: (promise) => waits.push(promise),
+      respondWith: (promise) => {
+        response = Promise.resolve(promise)
+      },
     })
     await Promise.allSettled(waits).then((results) => {
       const rejected = results.find((result) => result.status === 'rejected')
       if (rejected) throw rejected.reason
     })
+    return response
   }
   return {
     context,
@@ -397,6 +410,7 @@ describe('PWA shell generation', () => {
       version: 'current',
       urls: ['/', '/index.html', '/assets/current.js'],
     })
+
     const harness = createWorkerHarness({
       initialCaches: {
         'livetrafficstan-shell-active': [
@@ -439,6 +453,40 @@ describe('PWA shell generation', () => {
         .get('livetrafficstan-shell-active')
         .has('x-livetrafficstan-active-cache'),
     ).toBe(false)
+  })
+
+  it('serves an older deferred import from the retained predecessor cache', async () => {
+    const source = renderServiceWorker({
+      version: 'current',
+      urls: ['/', '/index.html', '/assets/current.js'],
+    })
+    const harness = createWorkerHarness({
+      initialCaches: {
+        'livetrafficstan-shell-current': [
+          '/',
+          '/index.html',
+          '/assets/current.js',
+        ],
+        'livetrafficstan-shell-predecessor': [
+          '/',
+          '/index.html',
+          '/assets/AdvancedOrbitalUi-old.js',
+        ],
+      },
+    })
+    harness.context.fetch.mockRejectedValueOnce(new Error('offline'))
+    runInNewContext(source, harness.context)
+
+    const response = await harness.dispatch('fetch', {
+      request: {
+        method: 'GET',
+        url: 'https://example.test/assets/AdvancedOrbitalUi-old.js',
+        mode: 'cors',
+      },
+    })
+
+    expect(response).toBeDefined()
+    expect(harness.context.fetch).not.toHaveBeenCalled()
   })
 
   it('preserves active metadata across a same-cache worker-only update', async () => {

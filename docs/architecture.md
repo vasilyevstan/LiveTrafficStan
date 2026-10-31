@@ -2036,10 +2036,21 @@ itself adds no terrain, building heights, projection change, or automatic tilt.
 ## Application-shell and offline lifecycle
 
 The service worker is build output, not hand-maintained source. After Vite emits
-the exact hashed application, MapLibre-worker, and lazy MQTT files,
+the exact hashed application, workers, and lazy modules,
 `scripts/generate-service-worker.mjs` scans `dist`, computes a content version,
 including the worker policy source so worker-only changes receive a new cache
-identity, enforces a 4 MiB uncompressed budget, and writes stable `/sw.js`.
+identity, enforces compressed entry/semantic-chunk budgets plus a 4 MiB
+uncompressed shell budget, and writes stable `/sw.js`.
+
+Startup boundaries are semantic rather than manual vendor chunks. Vessel flag
+identity remains synchronous, while the 226 raster pixels and decode work load
+only after visible traffic needs a supported flag. Cached pixels are reinstalled
+after `map.setStyle` without recreating the map or provider controllers.
+Orbital controls/details and airport details/boards load on first UI demand;
+orbital data/controller/worker ownership, airport selection/provider ownership,
+history runtime, and the single MapLibre instance remain eager in their existing
+owners. A failed optional UI module keeps its task or selection and exposes a
+local retry instead of suspending the application.
 
 The precache allowlist contains only:
 
@@ -2053,6 +2064,10 @@ airports, ports, and IndexedDB history. Root/index navigations are
 network-first with cached `index.html`
 fallback. Exact shell assets are cache-first; any other request is not handled
 by the service worker and receives no SPA fallback.
+
+Lazy modules are still complete application-shell members. Splitting reduces
+first-document transfer, parse/evaluation, and advanced UI mount work; it does
+not reduce total installed-shell transfer or weaken cold-offline first use.
 
 Install precaching is fail-closed. A waiting generation is complete before it
 can activate. Cached root-response metadata records the generation that was

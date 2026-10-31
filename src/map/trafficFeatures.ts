@@ -19,6 +19,7 @@ export const trafficFeatures = (
   selectedId: string | null,
   interpolate: boolean,
   contextSample = false,
+  flagImagesReady = true,
 ): FeatureCollection<Point> => ({
   type: 'FeatureCollection',
   features: entities.map((entity) => {
@@ -26,11 +27,13 @@ export const trafficFeatures = (
       ? sampleMotion(motion.get(entity.id)!, now)
       : entity.position
     const presentation = trafficPresentation(entity)
-    const flagIcon = countryFlagImageId(
-      entity.kind === 'aircraft'
-        ? countryForAircraftHex(entity.hex)?.iso2
-        : flagStateForMmsi(entity.mmsi)?.iso2,
-    )
+    const flagIcon = flagImagesReady
+      ? countryFlagImageId(
+          entity.kind === 'aircraft'
+            ? countryForAircraftHex(entity.hex)?.iso2
+            : flagStateForMmsi(entity.mmsi)?.iso2,
+        )
+      : undefined
     const markerScale =
       presentation.kind === 'vessel'
         ? entity.markerScale *
@@ -66,3 +69,14 @@ export const trafficFeatures = (
     }
   }),
 })
+
+export const trafficNeedsFlagImages = (
+  entities: readonly DisplayTrafficEntity[],
+) =>
+  entities.some((entity) =>
+    countryFlagImageId(
+      entity.kind === 'aircraft'
+        ? countryForAircraftHex(entity.hex)?.iso2
+        : flagStateForMmsi(entity.mmsi)?.iso2,
+    ) !== undefined,
+  )

@@ -761,7 +761,7 @@ describe('TrafficControls', () => {
     expect(sources).toContain('#visitor-analytics')
   })
 
-  it('shows modeled orbital status and selection only after explicit enable', () => {
+  it('shows orbital summary without mounting closed advanced controls', () => {
     const html = renderControls({
       orbitalVisible: true,
       orbitalState: {
@@ -826,9 +826,8 @@ describe('TrafficControls', () => {
     expect(html).toContain(
       'aria-label="View modeled orbital objects" aria-controls="traffic-controls-map-tools">VIEW',
     )
-    expect(html).toContain('Modeled orbital objects')
-    expect(html).toContain('ATLAS CENTAUR 2')
-    expect(html).toContain('not live or optical visibility')
+    expect(html).not.toContain('Modeled orbital objects')
+    expect(html).not.toContain('ATLAS CENTAUR 2')
     expect(html).toContain('CelesTrak')
   })
 
@@ -891,7 +890,7 @@ describe('TrafficControls', () => {
       'ORBITS · 0 SHOWN · 1 PASS ≤90M',
     )
     expect(navigationPrimary).toContain('>VIEW</button>')
-    expect(html).toContain('COSMOS 2550')
+    expect(html).not.toContain('COSMOS 2550')
   })
 
   it('explains HISTORY suppression without rendering current orbital context', () => {

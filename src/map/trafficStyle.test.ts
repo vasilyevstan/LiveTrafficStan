@@ -23,7 +23,7 @@ import {
   type TrafficStyleImages,
   type TrafficStyleSnapshot,
 } from './trafficStyle'
-import { VESSEL_FLAG_IMAGES } from './vesselFlags'
+import { VESSEL_FLAG_IMAGES } from './vesselFlagImages'
 
 const points: FeatureCollection<Point> = {
   type: 'FeatureCollection',
@@ -114,9 +114,9 @@ describe('installTrafficStyle', () => {
       },
     } as unknown as MapLibreMap
 
-    installTrafficStyle(map, snapshot('light'), lightImages)
-    installTrafficStyle(map, snapshot('dark'), darkImages)
-    installTrafficStyle(map, snapshot('light'), lightImages)
+    installTrafficStyle(map, snapshot('light'), lightImages, VESSEL_FLAG_IMAGES)
+    installTrafficStyle(map, snapshot('dark'), darkImages, VESSEL_FLAG_IMAGES)
+    installTrafficStyle(map, snapshot('light'), lightImages, VESSEL_FLAG_IMAGES)
 
     expect(addImage).toHaveBeenCalledTimes(
       TRAFFIC_STYLE_IMAGE_IDS.length + VESSEL_FLAG_IMAGES.size,
@@ -322,6 +322,7 @@ describe('installTrafficStyle', () => {
       map,
       { ...snapshot('dark'), aircraftVisible: false, vesselsVisible: true },
       darkImages,
+      VESSEL_FLAG_IMAGES,
     )
     expect(imageIds.has('vessel-flag-EE')).toBe(true)
     expect(imageIds.size).toBe(
@@ -338,11 +339,30 @@ describe('installTrafficStyle', () => {
       expectedOpacity(0.52),
     )
 
-    installTrafficStyle(map, snapshot('light'), lightImages)
+    installTrafficStyle(map, snapshot('light'), lightImages, VESSEL_FLAG_IMAGES)
     expect(visibility.get(`${LAYER_AIRCRAFT_FLAGS}:visibility`)).toBe('visible')
     expect(visibility.get(`${LAYER_VESSEL_FLAGS}:visibility`)).toBe('none')
     expect(paint.get(`${LAYER_AIRCRAFT_FLAGS}:icon-opacity`)).toEqual(
       expectedOpacity(0.54),
     )
+  })
+
+  it('installs the base traffic style before flag artwork is ready', () => {
+    const imageIds = new Set<string>()
+    const map = {
+      getStyle: () => baseStyle(),
+      hasImage: (id: string) => imageIds.has(id),
+      addImage: (id: string) => imageIds.add(id),
+      updateImage: vi.fn(),
+      getSource: vi.fn(),
+      addSource: vi.fn(),
+      getLayer: vi.fn(),
+      addLayer: vi.fn(),
+      setLayoutProperty: vi.fn(),
+    } as unknown as MapLibreMap
+
+    installTrafficStyle(map, snapshot('light'), lightImages)
+
+    expect(imageIds).toEqual(new Set(TRAFFIC_STYLE_IMAGE_IDS))
   })
 })

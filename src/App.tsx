@@ -38,7 +38,8 @@ import { OrbitalEnrichmentImageLoader } from './app/OrbitalEnrichmentImageLoader
 import { useOrbitalEnrichmentImage } from './app/useOrbitalEnrichmentImage'
 import { isCompactWorkspace, visualViewportCssValues } from './app/visualViewport'
 import { preventCompactControlWheelZoom } from './app/controlZoom'
-import { AirportDetails } from './components/AirportDetails'
+import { DeferredModule } from './components/DeferredModule'
+import { DetailsPanel } from './components/DetailsPanel'
 import { HistoryModeNotice } from './components/HistoryModeNotice'
 import { JourneyDetails } from './components/JourneyDetails'
 import { LocalRulerPlacement } from './components/LocalRulerPlacement'
@@ -58,9 +59,7 @@ import {
 } from './components/mobileWorkspace'
 import { TrafficDetails } from './components/TrafficDetails'
 import { WeatherObservationDetails } from './components/WeatherObservationDetails'
-import { OrbitalDetails } from './components/OrbitalDetails'
 import { CapturedAircraftDetails } from './components/CapturedAircraftDetails'
-import { CapturedOrbitalDetails } from './components/CapturedOrbitalDetails'
 import { formatOrbitalSummary } from './components/orbitalSummary'
 import {
   AIRCRAFT_VIEW_CONFIG,
@@ -154,6 +153,9 @@ import {
   trafficZoomContextViewport,
   type LastLocalTrafficView,
 } from './map/trafficZoomContext'
+
+const loadAdvancedOrbitalUi = () => import('./components/AdvancedOrbitalUi')
+const loadAirportDetails = () => import('./components/AirportDetails')
 import type { PlaceSearchResult } from './providers/geocoding/photonProvider'
 import { StaticAircraftMetadataProvider } from './providers/aircraftMetadata/staticAircraftMetadataProvider'
 import { PlanespottersPhotoProvider } from './providers/aircraftPhoto/planespottersPhotoProvider'
@@ -462,6 +464,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     null,
   )
   const [mapError, setMapError] = useState<TrafficMapError | null>(null)
+  const [flagArtworkError, setFlagArtworkError] = useState<string>()
   const handleMapError = useCallback((error: TrafficMapError | null) => {
     if (error) {
       clearLocalRuler()
@@ -1399,6 +1402,10 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     () => airports.find((airport) => airport.id === selectedAirportId),
     [airports, selectedAirportId],
   )
+  const selectedAirportSource =
+    airportsResult.state.phase === 'ready'
+      ? airportsResult.state.dataset.source
+      : undefined
   const selectedWeather = useMemo(
     () =>
       weatherObservations.find(
@@ -1427,6 +1434,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     selectedOrbitalOwner === 'starlink'
       ? starlinkState
       : orbitalState
+  const selectedOrbitalSnapshot = selectedOrbitalState.snapshot
   const selectedOrbitalCounts =
     selectedOrbitalOwner === 'starlink'
       ? starlinkCounts
@@ -2871,6 +2879,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
           return (action === 'find' ? controls?.openFind() : controls?.center()) ?? false
         }}
         onMapError={handleMapError}
+        onFlagArtworkError={setFlagArtworkError}
       />
       <div className="radar-shade" aria-hidden="true" />
       {localRuler.phase === 'placing' && (rulerAvailability === 'available' || rulerAvailability === 'moving') && (
@@ -2918,6 +2927,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
           onEnterFullscreen={enterFullscreen}
           onExitFullscreen={exitFullscreen}
           marineProviderName={marineResult.capabilities.name}
+          flagArtworkError={flagArtworkError}
           discoveryPaused={capturedViewActive || historyActive || !online}
           discoverMarineMetadata={marineResult.discoverMetadata}
           findAircraft={aircraft}
@@ -3212,46 +3222,76 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
         )}
 
         {capturedOrbitalView && (
-          <CapturedOrbitalDetails
-            key={capturedOrbitalView.revision}
-            view={capturedOrbitalView}
-            ready={capturedOrbitalReady}
-            localTrafficAvailable={capturedLocalTraffic}
-            groundTrafficSuppressed={capturedEarthFramed === true}
-            playing={capturedOrbitalPlaying}
-            position={capturedOrbitalDisplayedPosition}
-            notice={orbitalViewMessage}
-            statusMessage={capturedOrbitalState?.message}
-            online={online}
-            units={units}
-            shareObject={<>
-              <SavedObjectControl
-                entry={createSavedOrbitalObject(
-                  capturedOrbitalDisplayedPosition ?? capturedOrbitalView.position,
-                  now,
-                  APP_CONFIG.saved.maxLabelLength,
-                )}
-                saved={savedObjects.isSaved(createSavedOrbitalObject(
-                  capturedOrbitalDisplayedPosition ?? capturedOrbitalView.position,
-                  now,
-                  APP_CONFIG.saved.maxLabelLength,
-                ))}
-                onSave={savedObjects.save}
-                onRemove={savedObjects.remove}
+          <DeferredModule
+            active
+            load={loadAdvancedOrbitalUi}
+            pending={
+              <DetailsPanel
+                titleId="captured-orbital-loading-title"
+                closeLabel="Return to map"
+                onClose={() => returnFromCapturedOrbitalView(capturedOrbitalView.revision)}
+                heading={<h2 id="captured-orbital-loading-title">Opening modeled view</h2>}
+              >
+                <p className="metadata-status" role="status">Opening orbital details.</p>
+              </DetailsPanel>
+            }
+            failed={(_error, retry) => (
+              <DetailsPanel
+                titleId="captured-orbital-error-title"
+                closeLabel="Return to map"
+                onClose={() => returnFromCapturedOrbitalView(capturedOrbitalView.revision)}
+                heading={<h2 id="captured-orbital-error-title">Orbital details unavailable</h2>}
+              >
+                <p className="metadata-status" role="alert">
+                  The modeled view remains selected, but its details could not open.
+                </p>
+                <button type="button" onClick={retry}>RETRY</button>
+              </DetailsPanel>
+            )}
+          >
+            {({ CapturedOrbitalDetails }) => (
+              <CapturedOrbitalDetails
+                key={capturedOrbitalView.revision}
+                view={capturedOrbitalView}
+                ready={capturedOrbitalReady}
+                localTrafficAvailable={capturedLocalTraffic}
+                groundTrafficSuppressed={capturedEarthFramed === true}
+                playing={capturedOrbitalPlaying}
+                position={capturedOrbitalDisplayedPosition}
+                notice={orbitalViewMessage}
+                statusMessage={capturedOrbitalState?.message}
+                online={online}
+                units={units}
+                shareObject={<>
+                  <SavedObjectControl
+                    entry={createSavedOrbitalObject(
+                      capturedOrbitalDisplayedPosition ?? capturedOrbitalView.position,
+                      now,
+                      APP_CONFIG.saved.maxLabelLength,
+                    )}
+                    saved={savedObjects.isSaved(createSavedOrbitalObject(
+                      capturedOrbitalDisplayedPosition ?? capturedOrbitalView.position,
+                      now,
+                      APP_CONFIG.saved.maxLabelLength,
+                    ))}
+                    onSave={savedObjects.save}
+                    onRemove={savedObjects.remove}
+                  />
+                  {APP_CONFIG.objectSharing.enabled && <ObjectShareControl
+                    theme={theme}
+                    identityKey={`from-here:${capturedOrbitalView.revision}`}
+                    viewFromHere
+                    disabled={!capturedOrbitalReady}
+                    capture={() => shareOrbitalObject(
+                      capturedOrbitalDisplayedPosition ?? capturedOrbitalView.position,
+                      capturedOrbitalView.snapshot, 'from-here',
+                    )} now={now} />}
+                </>}
+                onReturn={() => returnFromCapturedOrbitalView(capturedOrbitalView.revision)}
+                onTogglePlaying={() => toggleCapturedOrbitalPlaying(capturedOrbitalView.revision)}
               />
-              {APP_CONFIG.objectSharing.enabled && <ObjectShareControl
-                theme={theme}
-                identityKey={`from-here:${capturedOrbitalView.revision}`}
-                viewFromHere
-                disabled={!capturedOrbitalReady}
-                capture={() => shareOrbitalObject(
-                  capturedOrbitalDisplayedPosition ?? capturedOrbitalView.position,
-                  capturedOrbitalView.snapshot, 'from-here',
-                )} now={now} />}
-            </>}
-            onReturn={() => returnFromCapturedOrbitalView(capturedOrbitalView.revision)}
-            onTogglePlaying={() => toggleCapturedOrbitalPlaying(capturedOrbitalView.revision)}
-          />
+            )}
+          </DeferredModule>
         )}
 
         {capturedAircraftView && capturedAircraftCurrent && (
@@ -3314,54 +3354,82 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
         {!historyActive &&
           orbitalObjectsVisible &&
           selectedOrbitalPosition &&
-          selectedOrbitalState.snapshot && (
-          <OrbitalDetails
-            key={`${selectedOrbitalPosition.id}|${selectedOrbitalState.snapshot.sha256}`}
-            position={selectedOrbitalPosition}
-            crossing={selectedOrbitalCrossing}
-            snapshot={selectedOrbitalState.snapshot}
-            sourceName={APP_CONFIG.orbital.sourceName}
-            sourceWebsiteUrl={APP_CONFIG.orbital.sourceWebsiteUrl}
-            sourceUsagePolicyUrl={
-              APP_CONFIG.orbital.sourceUsagePolicyUrl
+          selectedOrbitalSnapshot && (
+          <DeferredModule
+            active
+            load={loadAdvancedOrbitalUi}
+            pending={
+              <DetailsPanel
+                titleId="orbital-loading-title"
+                closeLabel="Close orbital details"
+                onClose={handleCloseOrbital}
+                heading={<h2 id="orbital-loading-title">Opening orbital details</h2>}
+              >
+                <p className="metadata-status" role="status">Opening selected object.</p>
+              </DetailsPanel>
             }
-            now={now}
-            online={online}
-            units={units}
-            imageState={selectedOrbitalImageState}
-            mapDisplay={
-              selectedOrbitalDisplay.available
-                ? {
-                    available: true,
-                    selectedException:
-                      selectedOrbitalDisplay.selectedException,
-                  }
-                : { available: false }
-            }
-            onImageLoaded={handleOrbitalImageLoaded}
-            onImageFailed={handleOrbitalImageFailed}
-            onClose={handleCloseOrbital}
-            onViewFromHere={() => handleCaptureOrbitalView(selectedOrbitalPosition.id)}
-            viewFromHereUnavailable={mapError
-              ? 'View from here needs the vector basemap.'
-              : orbitalViewUnavailableReason(selectedOrbitalPosition, projectionPreference)}
-            shareObject={selectedOrbitalSavedObject ? <>
-              <SavedObjectControl
-                entry={selectedOrbitalSavedObject}
-                saved={savedObjects.isSaved(selectedOrbitalSavedObject)}
-                onSave={savedObjects.save}
-                onRemove={savedObjects.remove}
+            failed={(_error, retry) => (
+              <DetailsPanel
+                titleId="orbital-error-title"
+                closeLabel="Close orbital details"
+                onClose={handleCloseOrbital}
+                heading={<h2 id="orbital-error-title">Orbital details unavailable</h2>}
+              >
+                <p className="metadata-status" role="alert">
+                  The object remains selected and map layers remain usable.
+                </p>
+                <button type="button" onClick={retry}>RETRY</button>
+              </DetailsPanel>
+            )}
+          >
+            {({ OrbitalDetails }) => (
+              <OrbitalDetails
+                key={`${selectedOrbitalPosition.id}|${selectedOrbitalSnapshot.sha256}`}
+                position={selectedOrbitalPosition}
+                crossing={selectedOrbitalCrossing}
+                snapshot={selectedOrbitalSnapshot}
+                sourceName={APP_CONFIG.orbital.sourceName}
+                sourceWebsiteUrl={APP_CONFIG.orbital.sourceWebsiteUrl}
+                sourceUsagePolicyUrl={
+                  APP_CONFIG.orbital.sourceUsagePolicyUrl
+                }
+                now={now}
+                online={online}
+                units={units}
+                imageState={selectedOrbitalImageState}
+                mapDisplay={
+                  selectedOrbitalDisplay.available
+                    ? {
+                        available: true,
+                        selectedException:
+                          selectedOrbitalDisplay.selectedException,
+                      }
+                    : { available: false }
+                }
+                onImageLoaded={handleOrbitalImageLoaded}
+                onImageFailed={handleOrbitalImageFailed}
+                onClose={handleCloseOrbital}
+                onViewFromHere={() => handleCaptureOrbitalView(selectedOrbitalPosition.id)}
+                viewFromHereUnavailable={mapError
+                  ? 'View from here needs the vector basemap.'
+                  : orbitalViewUnavailableReason(selectedOrbitalPosition, projectionPreference)}
+                shareObject={selectedOrbitalSavedObject ? <>
+                  <SavedObjectControl
+                    entry={selectedOrbitalSavedObject}
+                    saved={savedObjects.isSaved(selectedOrbitalSavedObject)}
+                    onSave={savedObjects.save}
+                    onRemove={savedObjects.remove}
+                  />
+                  {APP_CONFIG.objectSharing.enabled && <ObjectShareControl
+                    theme={theme}
+                    identityKey={`${selectedOrbitalPosition.id}|${selectedOrbitalSnapshot.sha256}`}
+                    capture={() => {
+                      return shareOrbitalObject(selectedOrbitalPosition, selectedOrbitalSnapshot)
+                    }} now={now} />}
+                </> : undefined}
               />
-              {APP_CONFIG.objectSharing.enabled && <ObjectShareControl
-                theme={theme}
-                identityKey={`${selectedOrbitalPosition.id}|${selectedOrbitalState.snapshot.sha256}`}
-                capture={() => {
-                  const snapshot = selectedOrbitalState.snapshot
-                  if (!snapshot) throw new Error('The orbital catalog is no longer available.')
-                  return shareOrbitalObject(selectedOrbitalPosition, snapshot)
-                }} now={now} />}
-            </> : undefined}
-          />
+            )}
+          </DeferredModule>
         )}
 
         {selectedPort && portsResult.state.phase === 'ready' && (
@@ -3378,22 +3446,52 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
           />
         )}
 
-        {selectedAirport && airportsResult.state.phase === 'ready' && (
-          <AirportDetails
-            airport={selectedAirport}
-            source={airportsResult.state.dataset.source}
-            coordinatePrecision={APP_CONFIG.navigation.coordinatePrecision}
-            headerAction={selectedAirportSavedObject && <SavedObjectControl
-              entry={selectedAirportSavedObject}
-              saved={savedObjects.isSaved(selectedAirportSavedObject)}
-              onSave={savedObjects.save}
-              onRemove={savedObjects.remove}
-            />}
-            onClose={handleCloseAirport}
-            board={APP_CONFIG.airportBoards.enabled ? {
-              provider: airportBoardProvider, now, online, historical: historyActive,
-            } : undefined}
-          />
+        {selectedAirport && selectedAirportSource && (
+          <DeferredModule
+            active
+            load={loadAirportDetails}
+            pending={
+              <DetailsPanel
+                titleId="airport-loading-title"
+                closeLabel="Close airport details"
+                onClose={handleCloseAirport}
+                heading={<h2 id="airport-loading-title">Opening airport details</h2>}
+              >
+                <p className="metadata-status" role="status">Opening selected airport.</p>
+              </DetailsPanel>
+            }
+            failed={(_error, retry) => (
+              <DetailsPanel
+                titleId="airport-error-title"
+                closeLabel="Close airport details"
+                onClose={handleCloseAirport}
+                heading={<h2 id="airport-error-title">Airport details unavailable</h2>}
+              >
+                <p className="metadata-status" role="alert">
+                  The airport remains selected and traffic remains usable.
+                </p>
+                <button type="button" onClick={retry}>RETRY</button>
+              </DetailsPanel>
+            )}
+          >
+            {({ AirportDetails }) => (
+              <AirportDetails
+                airport={selectedAirport}
+                source={selectedAirportSource}
+                coordinatePrecision={APP_CONFIG.navigation.coordinatePrecision}
+                headerAction={selectedAirportSavedObject && <SavedObjectControl
+                  entry={selectedAirportSavedObject}
+                  saved={savedObjects.isSaved(selectedAirportSavedObject)}
+                  onSave={savedObjects.save}
+                  onRemove={savedObjects.remove}
+                />}
+                onClose={handleCloseAirport}
+                board={APP_CONFIG.airportBoards.enabled ? {
+                  provider: airportBoardProvider, now, online, historical: historyActive,
+                } : undefined}
+              />
+            )}
+          </DeferredModule>
         )}
 
         {selectedWeather &&

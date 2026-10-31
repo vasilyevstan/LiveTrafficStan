@@ -61,14 +61,15 @@ import type {
 import type { PlaceSearchResult } from '../providers/geocoding/photonProvider'
 import { AircraftDiscovery } from './AircraftDiscovery'
 import { AirportContext } from './AirportContext'
+import { DeferredModule } from './DeferredModule'
 import { HistoryControls } from './HistoryControls'
 import { useLocationSearchModel } from './useLocationSearchModel'
 import { VesselDiscovery } from './VesselDiscovery'
 import { WeatherContext } from './WeatherContext'
-import { OrbitalContext } from './OrbitalContext'
-import { StarlinkContext } from './StarlinkContext'
 import type { MobileWorkspaceTask, WorkspaceControlsHandle } from './mobileWorkspace'
 import { ObjectFind } from './ObjectFind'
+
+const loadAdvancedOrbitalUi = () => import('./AdvancedOrbitalUi')
 
 interface TrafficControlsProps {
   discoveryPaused?: boolean
@@ -107,6 +108,7 @@ interface TrafficControlsProps {
   totalVessels: number
   vesselEmptyMessage: string
   marineProviderName?: string
+  flagArtworkError?: string
   units: UnitSystem
   onVesselFiltersChange: (filters: VesselFilterState) => void
   onVesselSelect: (id: string, originId: string) => void
@@ -351,6 +353,7 @@ export function TrafficControls({
   onEnterFullscreen,
   onExitFullscreen,
   marineProviderName = 'Digitraffic',
+  flagArtworkError,
   masthead,
   inView,
   aircraftQuery,
@@ -544,6 +547,7 @@ export function TrafficControls({
   } | null>(null)
   const [mapToolTask, setMapToolTask] =
     useState<MapToolTask>(mobileWorkspace ? 'layers' : 'find')
+  const [orbitalUiRequested, setOrbitalUiRequested] = useState(false)
   const focusedWithinMapToolsRef = useRef(false)
   const focusedWithinSettingsRef = useRef(false)
   const lastTaskFocusRef = useRef(new WeakMap<HTMLDetailsElement, HTMLElement>())
@@ -770,6 +774,7 @@ export function TrafficControls({
   const revealOrbitalObjects = () => {
     const details = mapToolsDetailsRef.current
     if (!details) return
+    setOrbitalUiRequested(true)
     setMapToolTask('orbits')
     openTask(details)
     globalThis.requestAnimationFrame(() => {
@@ -786,6 +791,7 @@ export function TrafficControls({
       openFind()
       return
     }
+    if (task === 'orbits') setOrbitalUiRequested(true)
     setMapToolTask(task)
     globalThis.requestAnimationFrame(() => {
       mapToolsBodyRef.current?.scrollTo({ top: 0 })
@@ -1423,43 +1429,51 @@ export function TrafficControls({
               <p className="control-note">Turn on ORBITS in Layers.</p>
             )}
 
-            <StarlinkContext
-              parentVisible={orbitalVisible}
-              live={playback.mode === 'live'}
-              state={starlinkState}
-              selectedId={selectedOrbitalId}
-              counts={starlinkCounts}
-              horizonMs={orbitalPredictionHorizonMs}
-              pageSize={orbitalPageSize}
-              onSelect={onOrbitalSelect}
-              onRetry={onRetryStarlink}
-            />
-
-            {orbitalVisible &&
-              playback.mode === 'live' &&
-              orbitalState.snapshot &&
-              ![
-                'loading',
-                'unavailable',
-                'clock-invalid',
-                'paused-hidden',
-                'paused-history',
-                'paused-capture',
-              ].includes(orbitalState.phase) && (
-                <OrbitalContext
-                  state={orbitalState}
+            <DeferredModule
+              active={orbitalUiRequested}
+              load={loadAdvancedOrbitalUi}
+              pending={<p className="control-note" role="status">Opening orbital tools.</p>}
+              failed={(_error, retry) => (
+                <div className="control-note ports-status" role="alert">
+                  <span>Orbital tools unavailable. Traffic and map layers remain usable.</span>
+                  <button type="button" onClick={retry}>RETRY ORBITAL TOOLS</button>
+                </div>
+              )}
+            >
+              {({ AdvancedOrbitalControls }) => (
+                <AdvancedOrbitalControls
+                  orbitalVisible={orbitalVisible}
+                  live={playback.mode === 'live'}
+                  orbitalState={orbitalState}
                   selectedId={selectedOrbitalId}
                   filters={orbitalFilters}
                   display={orbitalDisplay}
                   counts={orbitalCounts}
+                  starlinkState={starlinkState}
+                  starlinkCounts={starlinkCounts}
                   horizonMs={orbitalPredictionHorizonMs}
                   now={now}
                   maximumQueryLength={orbitalMaximumQueryLength}
                   pageSize={orbitalPageSize}
+                  showOrbitalContext={Boolean(
+                    orbitalVisible &&
+                    playback.mode === 'live' &&
+                    orbitalState.snapshot &&
+                    ![
+                      'loading',
+                      'unavailable',
+                      'clock-invalid',
+                      'paused-hidden',
+                      'paused-history',
+                      'paused-capture',
+                    ].includes(orbitalState.phase),
+                  )}
                   onFiltersChange={onOrbitalFiltersChange}
                   onSelect={onOrbitalSelect}
+                  onRetryStarlink={onRetryStarlink}
                 />
               )}
+            </DeferredModule>
           </section>
 
           <section
@@ -1485,6 +1499,14 @@ export function TrafficControls({
                 </li>
                 <li>
                   Marine: {marineProviderName}.
+                </li>
+                <li>
+                  Country flags: bundled flag-icons artwork.
+                  {flagArtworkError && (
+                    <span className="control-note" role="alert">
+                      {' '}{flagArtworkError}
+                    </span>
+                  )}
                 </li>
                 <li>
                   Photos: <a href="https://www.planespotters.net/photo/api">Planespotters</a>
