@@ -139,6 +139,24 @@ becomes unavailable after `2026-12-09T09:05:04Z`. A publication date more than
 24 hours ahead of the browser clock is also invalid. An open cached detail view
 reevaluates those clock rules without another request.
 
+## Renewal reminder
+
+The `Aircraft metadata renewal` GitHub Actions workflow checks the pinned
+publication age daily and can also be run with `workflow_dispatch`. At 21, 14,
+and 7 days remaining, it creates or advances one durable reminder issue
+assigned to `@vasilyevstan`; it marks the issue expired only after the exact
+45-day boundary. A fresh snapshot closes the reminder. The workflow does not
+fetch or project provider data, create an update pull request, or change the
+runtime age policy.
+
+The assigned maintainer reviews source currency, provenance, licensing, and
+checksums, then explicitly runs `npm run update:aircraft-metadata` and follows
+the normal checked release path. Prior immutable assets remain available for
+predecessor clients and rollback. The scheduled reminder is not a guarantee:
+GitHub may delay or disable scheduled workflows during prolonged repository
+inactivity, so the owner should monitor Actions and can run the workflow
+manually. The existing integrity check and runtime expiry remain fail-closed.
+
 ## License boundary and attribution
 
 LiveTrafficStan source code remains Apache-2.0. The projected aircraft metadata

@@ -101,6 +101,14 @@ clipboard copies, browser/OS backups, provider logs, existing public links or
 separate private-history rows. Removing an installed shortcut may leave
 browser site data intact.
 
+Saved activity adds no provider request or persisted observation. It retains at
+most 20 labels and scoped event descriptions in memory for the current tab and
+resets on reload. Aircraft/ship activity means only that an exact Saved identity
+was received in accepted current-map data during that tab session. Satellite
+activity means only that the existing SGP4 prediction already contained an
+upcoming modeled crossing for the current map area. Neither is global tracking,
+physical arrival, live satellite observation or guaranteed notification.
+
 ## Public object links
 
 **Share object** is explicit publication of a small public aircraft, vessel or

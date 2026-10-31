@@ -1,0 +1,38 @@
+name: Aircraft metadata renewal
+
+on:
+  schedule:
+    - cron: '17 10 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: aircraft-metadata-renewal
+  cancel-in-progress: false
+
+jobs:
+  remind:
+    name: Remind metadata owner
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v6
+        with:
+          ref: main
+
+      - name: Use Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Update renewal reminder
+        run: node scripts/check-aircraft-metadata-renewal.mjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          AIRCRAFT_METADATA_RENEWAL_ASSIGNEE: vasilyevstan

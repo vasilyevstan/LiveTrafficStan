@@ -6,6 +6,11 @@ import { SavedObjects } from './SavedObjects'
 const baseProps: Parameters<typeof SavedObjects>[0] = {
   entries: [],
   status: { phase: 'ready', document: emptySavedObjectsDocument() },
+  activity: [],
+  activityUnreadCount: 0,
+  active: false,
+  now: 1_000,
+  onAcknowledgeActivity: vi.fn(),
   query: '',
   aircraft: [],
   vessels: [],
@@ -138,5 +143,69 @@ describe('SavedObjects', () => {
     )
     expect(html).toMatch(/disabled="" aria-label="Load saved Airport"/)
     expect(html).toMatch(/disabled="" aria-label="Enable saved ISS"/)
+  })
+
+  it('renders passive tab-session activity without a live region', () => {
+    const html = renderToStaticMarkup(
+      <SavedObjects
+        {...baseProps}
+        entries={[
+          {
+            kind: 'aircraft',
+            id: 'abc123',
+            savedLabel: 'Plane',
+            savedAt: 1,
+          },
+        ]}
+        activityUnreadCount={1}
+        activity={[
+          {
+            id: 'saved-activity-1',
+            objectKey: 'aircraft:abc123',
+            objectKind: 'aircraft',
+            savedLabel: 'Plane',
+            kind: 'received',
+            createdAt: 500,
+            signature: 'received:2',
+          },
+        ]}
+      />,
+    )
+    expect(html).toContain('1 new')
+    expect(html).toContain('1 new Saved activity observed in this tab')
+    expect(html).toContain('Received in current map data')
+    expect(html).toContain('Reloading clears this list')
+    expect(html).not.toContain('aria-live')
+  })
+
+  it('keeps unmatched query activity hidden for later acknowledgment', () => {
+    const html = renderToStaticMarkup(
+      <SavedObjects
+        {...baseProps}
+        active
+        query="different object"
+        entries={[
+          {
+            kind: 'aircraft',
+            id: 'abc123',
+            savedLabel: 'Plane',
+            savedAt: 1,
+          },
+        ]}
+        activityUnreadCount={1}
+        activity={[
+          {
+            id: 'saved-activity-1',
+            objectKey: 'aircraft:abc123',
+            objectKind: 'aircraft',
+            savedLabel: 'Plane',
+            kind: 'received',
+            createdAt: 500,
+            signature: 'received:2',
+          },
+        ]}
+      />,
+    )
+    expect(html).toBe('')
   })
 })

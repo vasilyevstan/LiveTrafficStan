@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { InViewAvailability } from '../domain/inView'
 import type { OrbitalCatalogEntry } from '../domain/catalogDiscovery'
 import type { OrbitalControllerState } from '../domain/orbital'
@@ -21,12 +21,22 @@ import {
   type SavedObjectsLoadResult,
   type SavedObjectsMutationResult,
 } from '../domain/savedObjects'
+import {
+  savedActivityLabel,
+  type SavedActivityRecord,
+} from '../domain/savedActivity'
+import { formatAge } from '../domain/format'
 import type { DisplayAircraft, DisplayVessel } from '../domain/traffic'
 import { ObjectResultButton } from './ObjectResultButton'
 
 interface Props {
   entries: readonly SavedObject[]
   status: SavedObjectsLoadResult
+  activity: readonly SavedActivityRecord[]
+  activityUnreadCount: number
+  active: boolean
+  now: number
+  onAcknowledgeActivity: () => void
   query: string
   aircraft: readonly DisplayAircraft[]
   vessels: readonly DisplayVessel[]
@@ -87,6 +97,11 @@ export function SavedObjects(props: Props) {
     clearEpoch: number
   }>()
   const headingRef = useRef<HTMLHeadingElement>(null)
+  const {
+    active,
+    activityUnreadCount,
+    onAcknowledgeActivity,
+  } = props
   const entries = useMemo(
     () =>
       props.entries
@@ -98,6 +113,17 @@ export function SavedObjects(props: Props) {
         ),
     [props.entries, props.query],
   )
+  const sectionVisible = !props.query || entries.length > 0
+  useEffect(() => {
+    if (active && sectionVisible && activityUnreadCount > 0) {
+      onAcknowledgeActivity()
+    }
+  }, [
+    active,
+    activityUnreadCount,
+    onAcknowledgeActivity,
+    sectionVisible,
+  ])
   const restoreLastRemoved = () => {
     if (!lastRemoved) return
     const result = props.onRestore(
@@ -204,7 +230,9 @@ export function SavedObjects(props: Props) {
     if (props.query && !message) return null
     return (
       <section className="saved-objects" aria-labelledby="saved-objects-heading">
-        <h3 id="saved-objects-heading" ref={headingRef} tabIndex={-1}>Saved</h3>
+        <h3 id="saved-objects-heading" ref={headingRef} tabIndex={-1}>
+          Saved
+        </h3>
         {feedback}
         <p className="control-note">
           No saved objects on this browser. Select an aircraft, ship, satellite,
@@ -218,7 +246,19 @@ export function SavedObjects(props: Props) {
   return (
     <section className="saved-objects" aria-labelledby="saved-objects-heading">
       <div className="saved-objects__heading">
-        <h3 id="saved-objects-heading" ref={headingRef} tabIndex={-1}>Saved</h3>
+        <h3 id="saved-objects-heading" ref={headingRef} tabIndex={-1}>
+          Saved
+          {props.activityUnreadCount > 0 && (
+            <span
+              className="saved-activity__count"
+              aria-label={`${props.activityUnreadCount} new Saved ${
+                props.activityUnreadCount === 1 ? 'activity' : 'activities'
+              } observed in this tab`}
+            >
+              {props.activityUnreadCount} new
+            </span>
+          )}
+        </h3>
         {!props.query && props.entries.length > 0 && (
           <button
             type="button"
@@ -248,6 +288,66 @@ export function SavedObjects(props: Props) {
       <p className="control-note control-note--muted">
         Visible to anyone using this browser profile. Saved membership performs no background lookup.
       </p>
+      {props.activity.length > 0 && (
+        <section
+          className="saved-activity"
+          aria-labelledby="saved-activity-heading"
+        >
+          <h4 id="saved-activity-heading">Saved activity</h4>
+          <p className="control-note control-note--muted">
+            Observed only while this tab is open. Reloading clears this list.
+          </p>
+          <ul
+            className="object-find-results saved-activity__list"
+            aria-label="Saved activity"
+          >
+            {props.activity.map((activity) => {
+              const entry = props.entries.find(
+                (candidate) => savedObjectKey(candidate) === activity.objectKey,
+              )
+              const resolution = entry ? resolve(entry) : undefined
+              const canAct = Boolean(
+                entry &&
+                  resolution?.targetId &&
+                  resolution.state === 'current' &&
+                  !props.navigationDisabled,
+              )
+              return (
+                <li className="object-find-result" key={activity.id}>
+                  <div className="object-find-result__identity">
+                    <span className="object-find-result__name">
+                      <strong>{activity.savedLabel}</strong>
+                    </span>
+                    <span className="object-find-result__context">
+                      {savedActivityLabel(activity)}
+                    </span>
+                  </div>
+                  {entry && resolution && (
+                    <div className="object-find-result__action">
+                      <ObjectResultButton
+                        prefix="saved-activity-result"
+                        disabled={!canAct}
+                        aria-label={`View current saved ${activity.savedLabel}`}
+                        onSelect={(originId) =>
+                          act(entry, resolution, originId)
+                        }
+                      >
+                        View
+                      </ObjectResultButton>
+                    </div>
+                  )}
+                  <small className="object-find-result__meta">
+                    {activity.detail ? `${activity.detail} · ` : ''}
+                    <time dateTime={new Date(activity.createdAt).toISOString()}>
+                      {formatAge(activity.createdAt, props.now)}
+                    </time>
+                  </small>
+                </li>
+              )
+            })}
+          </ul>
+        </section>
+      )}
       <ul className="object-find-results saved-objects__list" aria-label="Saved objects">
         {entries.map((entry) => {
           const resolution = resolve(entry)

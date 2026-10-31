@@ -5,6 +5,32 @@ import { MULTI_SOURCE_MARINE_CAPABILITIES } from '../providers/marine/multiSourc
 import { LiveStatus } from './LiveStatus'
 
 describe('LiveStatus', () => {
+  it('keeps the view pause visible and supplies an explicit phone disclosure dismissal', () => {
+    const html = renderToStaticMarkup(<LiveStatus compact viewportPaused trafficContext
+      aircraftCount={0} vesselCount={0} aircraftStatus={{ phase: 'live', paused: true }}
+      marineStatus={{ phase: 'error', paused: true, error: 'Retained provider error' }}
+      marineCapabilities={DIGITRAFFIC_MARINE_CAPABILITIES} online now={1_800_000_000_000} />)
+    const summary = html.slice(0, html.indexOf('</summary>'))
+    expect(summary).toContain('VIEW PAUSED')
+    expect(summary).toContain('Last local sample')
+    expect(summary).not.toContain('Live updates paused')
+    expect(html).not.toContain('aria-live')
+    expect(html).toContain('aria-label="Close provider details"')
+    expect(html).toContain('Retained provider error')
+  })
+
+  it.each([
+    [false, undefined, 'OFFLINE'],
+    [true, 1_800_000_000_000, 'HISTORY'],
+  ] as const)('does not hide offline/history behind a view pause', (online, historicalAt, mode) => {
+    const html = renderToStaticMarkup(<LiveStatus compact viewportPaused online={online} historicalAt={historicalAt}
+      aircraftCount={0} vesselCount={0} aircraftStatus={{ phase: 'live', paused: true }}
+      marineStatus={{ phase: 'live', paused: true }}
+      marineCapabilities={DIGITRAFFIC_MARINE_CAPABILITIES} now={1_800_000_000_000} />)
+    expect(html).toContain(`<strong>${mode}</strong>`)
+    expect(html).not.toContain('VIEW PAUSED')
+  })
+
   it('scopes retained-area reports without claiming spacecraft-visible counts or paused updates', () => {
     const html = renderToStaticMarkup(
       <LiveStatus compact scopeLabel="Previous local area"

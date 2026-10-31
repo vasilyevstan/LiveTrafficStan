@@ -1,7 +1,9 @@
 import {
   useCallback,
+  useContext,
   useEffect,
   useImperativeHandle,
+  useLayoutEffect,
   useRef,
   useState,
   type FocusEvent,
@@ -10,6 +12,8 @@ import {
   type Ref,
   type SyntheticEvent,
 } from 'react'
+import { createPortal } from 'react-dom'
+import { closeMobileDisclosures, MobileInspectorContext } from './mobileWorkspace'
 import type { ThemePreference } from '../app/theme'
 import {
   FULLSCREEN_UNAVAILABLE_MESSAGE,
@@ -38,6 +42,7 @@ import type {
   SavedObjectsLoadResult,
   SavedObjectsMutationResult,
 } from '../domain/savedObjects'
+import type { SavedActivityRecord } from '../domain/savedActivity'
 import { emptySavedObjectsDocument } from '../domain/savedObjects'
 import type {
   OrbitalDiscoveryFilters,
@@ -74,6 +79,7 @@ interface TrafficControlsProps {
   portsReady?: boolean
   discoverMarineMetadata?: (query: string, now: number) => CachedMarineDiscovery
   mobileWorkspace?: boolean
+  viewportNotice?: ReactNode
   workspaceHandleRef?: Ref<WorkspaceControlsHandle>
   onWorkspaceTaskChange?: (task: MobileWorkspaceTask | null) => void
   rulerAvailable?: boolean
@@ -216,6 +222,9 @@ interface TrafficControlsProps {
   onPlaceSearchPause?: () => void
   savedEntries?: readonly SavedObject[]
   savedStatus?: SavedObjectsLoadResult
+  savedActivity?: readonly SavedActivityRecord[]
+  savedActivityUnreadCount?: number
+  onAcknowledgeSavedActivity?: () => void
   aircraftAvailability?: InViewAvailability
   vesselAvailability?: InViewAvailability
   lastSavedObservationAt?: (entry: SavedObject) => number | undefined
@@ -330,6 +339,7 @@ export function TrafficControls({
   portsReady = false,
   discoverMarineMetadata,
   mobileWorkspace = false,
+  viewportNotice,
   workspaceHandleRef,
   onWorkspaceTaskChange,
   rulerAvailable = false,
@@ -475,6 +485,9 @@ export function TrafficControls({
     phase: 'ready',
     document: emptySavedObjectsDocument(),
   },
+  savedActivity = [],
+  savedActivityUnreadCount = 0,
+  onAcknowledgeSavedActivity = () => undefined,
   aircraftAvailability = { available: true },
   vesselAvailability = { available: true },
   lastSavedObservationAt = () => undefined,
@@ -510,6 +523,19 @@ export function TrafficControls({
   const inViewOpenedFromSettingsRef = useRef(false)
   const orbitalToggleRef = useRef<HTMLButtonElement>(null)
   const [openWorkspaceTask, setOpenWorkspaceTask] = useState<MobileWorkspaceTask | null>(null)
+  const inspector = useContext(MobileInspectorContext)
+  const [noticeTarget, setNoticeTarget] = useState<HTMLElement | null>(null)
+  useLayoutEffect(() => {
+    const root = centerButtonRef.current?.closest('.app-shell')
+    const taskBody = openWorkspaceTask === 'settings' ? settingsBodyRef.current
+      : openWorkspaceTask === 'in-view' ? inViewBodyRef.current
+        : openWorkspaceTask ? mapToolsBodyRef.current : null
+    setNoticeTarget(mobileWorkspace ? taskBody ??
+      root?.querySelector<HTMLElement>('.live-status__disclosure[open] .live-status__providers') ??
+      root?.querySelector<HTMLElement>('.details-panel:not([hidden], [data-compact]) .details-panel__body') ?? null : null)
+  }, [mobileWorkspace, openWorkspaceTask, inspector?.identity, inspector?.compact, inspector?.suspended])
+  const renderPromotedNotice = (notice: ReactNode) =>
+    noticeTarget ? createPortal(notice, noticeTarget) : notice
   const suspendedTaskRef = useRef<{
     details: HTMLDetailsElement
     body: HTMLDivElement | null
@@ -528,6 +554,7 @@ export function TrafficControls({
     }
   }
   const closeOtherTasks = (target: HTMLDetailsElement | null) => {
+    if (mobileWorkspace) closeMobileDisclosures(centerButtonRef.current?.closest('.app-shell') ?? null)
     for (const peer of [mapToolsDetailsRef.current, settingsDetailsRef.current, inViewDetailsRef.current]) {
       if (peer && peer !== target) peer.open = false
     }
@@ -950,8 +977,8 @@ export function TrafficControls({
         </div>
       )}
 
-      <div
-        className="control-panel__urgent"
+      {renderPromotedNotice(<div
+        className={noticeTarget ? 'mobile-surface-alert' : 'control-panel__urgent'}
         hidden={!operationalPromotedAction}
         role={operationalPromotedAction ? 'status' : undefined}
         aria-live={operationalPromotedAction ? 'polite' : undefined}
@@ -972,7 +999,7 @@ export function TrafficControls({
             </button>
           </>
         )}
-      </div>
+      </div>)}
 
       <details
         ref={mapToolsDetailsRef}
@@ -1311,6 +1338,9 @@ export function TrafficControls({
               discoverMarineMetadata={discoverMarineMetadata}
               savedEntries={savedEntries}
               savedStatus={savedStatus}
+              savedActivity={savedActivity}
+              savedActivityUnreadCount={savedActivityUnreadCount}
+              onAcknowledgeSavedActivity={onAcknowledgeSavedActivity}
               aircraftAvailability={aircraftAvailability}
               vesselAvailability={vesselAvailability}
               lastObservedAt={lastSavedObservationAt}
@@ -1531,6 +1561,8 @@ export function TrafficControls({
               </details>
             </fieldset>
           </section>
+          {mobileWorkspace && openWorkspaceTask !== null &&
+            openWorkspaceTask !== 'settings' && openWorkspaceTask !== 'in-view' && viewportNotice}
         </div>
       </details>
       </aside>
@@ -1562,8 +1594,8 @@ export function TrafficControls({
         }`}
         aria-label="Location and settings"
       >
-        <div
-          className="control-panel__urgent"
+        {renderPromotedNotice(<div
+          className={noticeTarget ? 'mobile-surface-alert' : 'control-panel__urgent'}
           hidden={!settingsPromotedAction}
           role={settingsPromotedAction ? 'status' : undefined}
           aria-live={settingsPromotedAction ? 'polite' : undefined}
@@ -1584,7 +1616,7 @@ export function TrafficControls({
               </button>
             </>
           )}
-        </div>
+        </div>)}
 
         <details
           ref={settingsDetailsRef}
@@ -1899,6 +1931,7 @@ export function TrafficControls({
                 </p>
               )}
             </fieldset>
+            {mobileWorkspace && openWorkspaceTask === 'settings' && viewportNotice}
           </div>
         </details>
       </aside>
@@ -1949,6 +1982,7 @@ export function TrafficControls({
                 More: orbital discovery &amp; passes
               </button>
             </div>
+            {mobileWorkspace && openWorkspaceTask === 'in-view' && viewportNotice}
           </div>
         </details>
       </aside>

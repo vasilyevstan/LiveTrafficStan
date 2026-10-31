@@ -10,6 +10,7 @@ import {
   sha256,
   verifySha256,
 } from './aircraft-metadata-projection.mjs'
+import { assessAircraftMetadataAge } from './aircraft-metadata-age.mjs'
 
 const repositoryRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -66,17 +67,17 @@ for (const [name, expected] of Object.entries(
   }
 }
 
-const publishedAt = Date.parse(index.source.publishedAt)
 const now = Date.now()
-const staleAfterMs =
-  sourceSettings.projection.staleAfterDays * 24 * 60 * 60 * 1_000
-const futureToleranceMs =
-  sourceSettings.projection.futureToleranceHours * 60 * 60 * 1_000
-if (!Number.isFinite(publishedAt)) fail('publication date is invalid')
-if (publishedAt > now + futureToleranceMs) {
+const metadataAge = assessAircraftMetadataAge({
+  publishedAt: index.source.publishedAt,
+  staleAfterDays: sourceSettings.projection.staleAfterDays,
+  futureToleranceHours: sourceSettings.projection.futureToleranceHours,
+  now,
+})
+if (metadataAge.isFutureDated) {
   fail('publication date is materially future-dated')
 }
-if (now > publishedAt + staleAfterMs) {
+if (metadataAge.isExpired) {
   fail(
     `snapshot is older than ${sourceSettings.projection.staleAfterDays} days; run npm run update:aircraft-metadata`,
   )
