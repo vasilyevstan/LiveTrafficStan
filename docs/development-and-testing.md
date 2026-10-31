@@ -4549,25 +4549,31 @@ For the viewport-driven map experience, additionally verify:
    the desired traffic viewport without snapping the camera back.
 2. Rapid camera changes resolve to the latest area without increasing aircraft
    request cadence or reconnecting marine MQTT.
-3. A view at or below the 100 km enclosing limit shows exact polygon-filtered
-   traffic; an object inside the query circle but outside the visible footprint
-   stays hidden.
-4. Wider or unsafe views hide traffic and trails, clear selection, pause both
-   providers, and show the zoom or tilt prompt. Zooming back in resumes at the
-   preserved provider boundaries.
+3. A view at or below 100 km shows exact polygon-filtered aircraft and ships.
+   Between 100 and 250 km aircraft remain exact and live while ships are
+   explicitly paused and receive no query. An object inside either query circle
+   but outside the visible footprint stays hidden.
+4. Views above 250 km or unsafe geometry hide traffic and trails, clear invalid
+   selection, pause both providers, and show the zoom or tilt prompt. Zooming
+   back in resumes each source at its preserved boundary.
 5. Center returns to session Home using the initial local framing.
 6. Already-granted location starts near the rounded browser location without a
    prompt; other permission states retain Tallinn until explicit action.
 7. Dateline, rotated, pitched, and desktop/mobile resized views remain bounded
    and do not become a falsely small query.
 8. Initial load, Home, and Center use the configured 30 km framing. The
-   resulting full-canvas assessment remains eligible and below the unchanged
-   100 km limit; camera actions do not add aircraft polls beyond cadence or
+   resulting full-canvas assessment remains below both source limits; camera
+   actions do not add aircraft polls beyond cadence or
    display aircraft outside the exact viewport polygon.
 9. Auto system changes and repeated explicit Light/Dark overrides preserve
    camera, live traffic, selected object, trail, controls, and provider
    connections.
 10. Both themes remain readable on desktop and a narrow mobile viewport.
+    Also verify 1024x600 and 1280x720 coarse-pointer landscape plus
+    1920x1200/1920x1080 car-browser proportions: overlay padding and reading
+    height respond to actual workspace/visual viewport size, every exposed
+    action remains at least 44 px, one panel owns scrolling, and a hit-tested
+    useful map region remains.
 11. Aircraft, helicopter, and vessel artwork retains its identity over land,
    water, and busy detail at actual marker scale; stale markers remain
    recognizable and distinct from live markers.

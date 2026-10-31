@@ -1544,6 +1544,7 @@
 }
 
 .details-panel {
+  --details-panel-padding: clamp(12px, 2cqh, 18px);
   position: absolute;
   top: calc(var(--workspace-header-bottom) + 16px);
   right: auto;
@@ -1552,9 +1553,12 @@
   display: flex;
   flex-direction: column;
   width: min(370px, calc(var(--app-visual-viewport-width) - 32px));
-  max-height: min(var(--app-visual-viewport-58), 620px);
+  max-height: min(
+    620px,
+    calc(var(--app-visual-viewport-height) - var(--workspace-header-bottom) - 32px)
+  );
   overflow: visible;
-  padding: 18px;
+  padding: var(--details-panel-padding);
   border-radius: 16px;
 }
 
@@ -1583,6 +1587,66 @@
   display: flex;
   flex-direction: row-reverse;
   pointer-events: auto;
+}
+
+.details-panel__action-row,
+.details-panel__body-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+}
+
+.details-panel__action-row {
+  flex: 0 0 44px;
+  margin-top: 8px;
+}
+
+.details-panel__action-row > :is(button, .journey-action),
+.details-panel__body-actions > :is(button, .journey-action) {
+  min-width: 0;
+}
+
+.details-panel__action-row > button:not(.details-panel__close),
+.details-panel__body-actions > button {
+  min-height: 44px;
+  padding: 8px 10px;
+}
+
+.details-panel__action-row .details-panel__close {
+  position: static;
+  flex: 0 0 44px;
+}
+
+.details-panel--traffic-actions .details-panel__heading {
+  padding-right: 0;
+}
+
+.details-panel--traffic-actions {
+  width: min(430px, calc(var(--app-visual-viewport-width) - 32px));
+}
+
+.details-panel--traffic-actions[data-force-compact] .details-panel__heading {
+  padding-right: 148px;
+}
+
+.details-panel--traffic-actions[data-force-compact]:has(.details-panel__save):has(.details-panel__share)
+  .details-panel__heading {
+  padding-right: 192px;
+}
+
+.app-shell:not(.app-shell--mobile-workspace)
+  .details-panel--traffic-actions[data-force-compact]:has(.details-panel__save):has(.details-panel__share)
+  .details-panel__presentation {
+  right: 140px;
+}
+
+.details-panel--traffic-actions .details-panel__action-row > :is(
+  .traffic-details__path-action,
+  .orbital-view-entry
+) {
+  flex: 1 1 auto;
+  white-space: nowrap;
 }
 
 .details-panel__body {
@@ -3027,11 +3091,20 @@
 }
 
 .app-shell--mobile-workspace {
+  --mobile-safe-left: max(8px, env(safe-area-inset-left));
+  --mobile-safe-right: max(8px, env(safe-area-inset-right));
   --mobile-dock-bottom: max(8px, env(safe-area-inset-bottom));
   --mobile-dock-height: 58px;
   --mobile-surface-gap: 4px;
   --mobile-dock-right: max(60px, calc(env(safe-area-inset-right) + 52px));
-  --mobile-surface-width: min(460px, calc(var(--app-visual-viewport-width) - 16px));
+  --mobile-surface-width: min(
+    460px,
+    calc(
+      var(--app-visual-viewport-width) -
+        var(--mobile-safe-left) -
+        var(--mobile-safe-right)
+    )
+  );
   --mobile-body-height: max(44px, min(
     clamp(180px, calc(var(--app-visual-viewport-height) * 0.5 - 114px), 340px),
     calc(var(--app-visual-viewport-height) - var(--mobile-surface-bottom) - 100px)
@@ -3119,8 +3192,15 @@
 
 .app-shell--mobile-workspace .brand-panel {
   top: 8px;
-  left: 8px;
-  width: min(280px, calc(var(--app-visual-viewport-width) - 16px));
+  left: var(--mobile-safe-left);
+  width: min(
+    280px,
+    calc(
+      var(--app-visual-viewport-width) -
+        var(--mobile-safe-left) -
+        var(--mobile-safe-right)
+    )
+  );
   padding: 0 10px;
 }
 
@@ -3197,9 +3277,9 @@
 .app-shell--mobile-workspace .interface-layer:has(.details-panel) .control-stack,
 .app-shell--mobile-workspace .interface-layer:has(.history-mode-notice) .control-stack {
   top: auto;
-  right: max(8px, env(safe-area-inset-right));
+  right: var(--mobile-safe-right);
   bottom: var(--mobile-dock-bottom);
-  left: max(8px, env(safe-area-inset-left));
+  left: var(--mobile-safe-left);
   width: auto;
   height: var(--mobile-dock-height);
   visibility: visible;
@@ -3419,6 +3499,14 @@
   height: auto;
   max-height: var(--mobile-body-height);
   padding: 9px 12px;
+}
+
+.app-shell--mobile-workspace .details-panel__body-actions {
+  margin-bottom: 8px;
+}
+
+.app-shell--mobile-workspace .details-panel__body-actions > button {
+  flex: 1 1 0;
 }
 
 .app-shell--mobile-workspace .details-panel[hidden],
@@ -3893,7 +3981,15 @@
 }
 
 .app-shell--mobile-workspace[data-mobile-landscape] {
-  --mobile-surface-width: min(460px, calc(var(--app-visual-viewport-width) * 0.52));
+  --mobile-surface-width: min(
+    460px,
+    calc(var(--app-visual-viewport-width) * 0.52),
+    calc(
+      var(--app-visual-viewport-width) -
+        var(--mobile-safe-left) -
+        var(--mobile-safe-right)
+    )
+  );
 }
 
 .app-shell--mobile-workspace[data-mobile-landscape] .interface-layer .control-stack {
@@ -3901,12 +3997,70 @@
   width: var(--mobile-surface-width);
 }
 
+.app-shell--mobile-workspace[data-mobile-landscape] .control-panel__in-view {
+  --in-view-landscape-width: min(
+    272px,
+    calc(
+      var(--app-visual-viewport-width) -
+        var(--mobile-safe-left) -
+        var(--mobile-safe-right)
+    )
+  );
+}
+
+.app-shell--mobile-workspace[data-mobile-landscape]
+  .control-panel__in-view
+  :is(.control-panel__more-body, .mobile-task-heading) {
+  width: var(--in-view-landscape-width);
+}
+
+.app-shell--mobile-workspace[data-mobile-landscape]
+  .control-panel__in-view
+  .control-panel__more-body {
+  height: min(var(--mobile-body-height), 132px);
+  padding: 6px 8px;
+}
+
+.app-shell--mobile-workspace[data-mobile-landscape]
+  .control-panel__in-view
+  .mobile-task-heading {
+  bottom: calc(
+    var(--mobile-dock-height) + var(--mobile-surface-gap) +
+      min(var(--mobile-body-height), 132px)
+  );
+  padding-left: 8px;
+}
+
+.app-shell--mobile-workspace[data-mobile-landscape]
+  .control-panel__in-view
+  .in-view__tabs {
+  margin: 0 44px 6px 0;
+}
+
+.app-shell--mobile-workspace[data-mobile-landscape]
+  .control-panel__in-view
+  .in-view__status {
+  margin-block: 5px;
+  line-height: 1.3;
+}
+
 .app-shell--mobile-workspace[data-mobile-landscape] .brand-panel {
-  width: min(280px, calc(var(--app-visual-viewport-width) - var(--mobile-surface-width) - 24px));
+  width: clamp(
+    0px,
+    calc(
+      var(--app-visual-viewport-width) -
+        var(--mobile-safe-left) -
+        var(--mobile-safe-right) -
+        var(--mobile-surface-width) -
+        8px
+    ),
+    280px
+  );
+  overflow: hidden;
 }
 
 .app-shell--mobile-workspace[data-mobile-landscape] :is(.viewport-notice, .map-error) {
-  right: calc(var(--mobile-surface-width) + 16px);
+  right: calc(var(--mobile-safe-right) + var(--mobile-surface-width) + 8px);
 }
 
 .app-shell--mobile-workspace[data-mobile-landscape] :is(

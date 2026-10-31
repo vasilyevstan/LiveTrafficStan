@@ -120,6 +120,11 @@ import {
   orderVesselSearchResults,
 } from './domain/vesselFilters'
 import type { TrafficViewport, ViewportAssessment } from './domain/viewport'
+import {
+  trafficQueryForViewport,
+  trafficViewportScopes,
+  viewportWithinMaximum,
+} from './domain/trafficViewports'
 import { INITIAL_BATHYMETRY_STATUS, type BathymetryStatus } from './domain/bathymetry'
 import type { BasemapReliefStatus } from './map/basemapRelief'
 import type { OrbitalViewport } from './domain/orbitalViewport'
@@ -877,10 +882,35 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     viewportReport?.viewRequestId === viewRequest.id
       ? viewportReport.assessment
       : null
-  const trafficPauseNotice = currentAssessment?.kind === 'ineligible' ? currentAssessment
-    : !currentAssessment && (viewRequest.radiusKm ?? 0) > APP_CONFIG.map.maximumViewportRadiusKm
-      ? { message: 'Zoom in to see live traffic', viewport: undefined }
-      : undefined
+  const currentTrafficViewports = trafficViewportScopes(
+    currentAssessment,
+    APP_CONFIG.map.maximumViewportRadiusKm,
+  )
+  const trafficPauseNotice = currentAssessment?.kind === 'ineligible'
+    ? { ...currentAssessment, aircraftPaused: true }
+    : currentAssessment?.kind === 'eligible' && !currentTrafficViewports.marine
+      ? {
+          message: 'Zoom in or reduce tilt to see live ships',
+          viewport: currentAssessment.viewport,
+          aircraftPaused: false,
+        }
+      : !currentAssessment &&
+          (viewRequest.radiusKm ?? 0) >
+            APP_CONFIG.map.maximumAircraftViewportRadiusKm
+        ? {
+            message: 'Zoom in to see live traffic',
+            viewport: undefined,
+            aircraftPaused: true,
+          }
+        : !currentAssessment &&
+            (viewRequest.radiusKm ?? 0) >
+              APP_CONFIG.map.maximumViewportRadiusKm
+          ? {
+              message: 'Zoom in to see live ships',
+              viewport: undefined,
+              aircraftPaused: false,
+            }
+          : undefined
   const currentOrbitalViewport =
     viewReady && viewportReport?.viewRequestId === viewRequest.id
       ? viewportReport.orbitalViewport
@@ -889,45 +919,43 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     viewReady && viewportReport?.viewRequestId === viewRequest.id
       ? viewportReport.rawZoom
       : undefined
-  const activeViewport =
-    capturedViewActive
-      ? capturedTrafficViewportRef.current
-      : viewReady && currentAssessment?.kind === 'eligible'
-      ? currentAssessment.viewport
-      : null
-  const capturedLocalTraffic = Boolean(capturedOrbitalView && activeViewport)
-  const capturedGroundTraffic = capturedLocalTraffic && capturedOrbitalReady && capturedEarthFramed === false
-  const contextViewport =
-    viewReady && currentAssessment
-      ? currentAssessment.kind === 'eligible'
-        ? currentAssessment.viewport
-        : currentAssessment.viewport ?? null
-      : null
-  const trafficQuery = useMemo(
-    () =>
-      activeViewport
-        ? {
-            center: activeViewport.center,
-            radiusKm: activeViewport.enclosingRadiusKm,
-          }
-        : null,
-    [activeViewport],
+  const activeAircraftViewport = capturedViewActive
+    ? capturedTrafficViewportRef.current
+    : viewReady ? currentTrafficViewports.aircraft : null
+  const activeMarineViewport = capturedViewActive
+    ? viewportWithinMaximum(
+        capturedTrafficViewportRef.current,
+        APP_CONFIG.map.maximumViewportRadiusKm,
+      )
+    : viewReady ? currentTrafficViewports.marine : null
+  const capturedLocalTraffic = Boolean(
+    capturedOrbitalView && activeAircraftViewport,
   )
-  const aircraftResult = useAircraftTraffic(trafficQuery, APP_CONFIG.aircraft, Boolean(capturedOrbitalView && !capturedLocalTraffic))
-  const marineResult = useMarineTraffic(trafficQuery, APP_CONFIG.marine, Boolean(capturedOrbitalView && !capturedLocalTraffic))
+  const capturedGroundTraffic = capturedLocalTraffic && capturedOrbitalReady && capturedEarthFramed === false
+  const contextViewport = viewReady ? currentTrafficViewports.marine : null
+  const aircraftTrafficQuery = useMemo(
+    () => trafficQueryForViewport(activeAircraftViewport),
+    [activeAircraftViewport],
+  )
+  const marineTrafficQuery = useMemo(
+    () => trafficQueryForViewport(activeMarineViewport),
+    [activeMarineViewport],
+  )
+  const aircraftResult = useAircraftTraffic(aircraftTrafficQuery, APP_CONFIG.aircraft, Boolean(capturedOrbitalView && !capturedLocalTraffic))
+  const marineResult = useMarineTraffic(marineTrafficQuery, APP_CONFIG.marine, Boolean(capturedOrbitalView && !capturedLocalTraffic))
   const liveViewportAircraft = useMemo(
     () =>
-      activeViewport
-        ? filterTrafficByViewport(aircraftResult.entities, activeViewport)
+      activeAircraftViewport
+        ? filterTrafficByViewport(aircraftResult.entities, activeAircraftViewport)
         : [],
-    [activeViewport, aircraftResult.entities],
+    [activeAircraftViewport, aircraftResult.entities],
   )
   const liveViewportVessels = useMemo(
     () =>
-      activeViewport
-        ? filterTrafficByViewport(marineResult.entities, activeViewport)
+      activeMarineViewport
+        ? filterTrafficByViewport(marineResult.entities, activeMarineViewport)
         : [],
-    [activeViewport, marineResult.entities],
+    [activeMarineViewport, marineResult.entities],
   )
   const sourceEntities = useMemo<TrafficEntity[]>(
     () => [...liveViewportAircraft, ...liveViewportVessels],
@@ -1130,35 +1158,35 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
       selectedOrbitalId,
     ],
   )
-  const historicalViewportEntities = useMemo(
-    () =>
-      activeViewport
-        ? filterTrafficByViewport(
-            history.historicalEntities,
-            activeViewport,
-          )
-        : [],
-    [activeViewport, history.historicalEntities],
-  )
   const viewportAircraft = useMemo(
     () =>
       historyActive
-        ? historicalViewportEntities.filter(
-            (entity): entity is Extract<TrafficEntity, { kind: 'aircraft' }> =>
-              entity.kind === 'aircraft',
-          )
+        ? activeAircraftViewport
+          ? filterTrafficByViewport(
+              history.historicalEntities.filter(
+                (entity): entity is Extract<TrafficEntity, { kind: 'aircraft' }> =>
+                  entity.kind === 'aircraft',
+              ),
+              activeAircraftViewport,
+            )
+          : []
         : liveViewportAircraft,
-    [historicalViewportEntities, historyActive, liveViewportAircraft],
+    [activeAircraftViewport, history.historicalEntities, historyActive, liveViewportAircraft],
   )
   const viewportVessels = useMemo(
     () =>
       historyActive
-        ? historicalViewportEntities.filter(
-            (entity): entity is Extract<TrafficEntity, { kind: 'vessel' }> =>
-              entity.kind === 'vessel',
-          )
+        ? activeMarineViewport
+          ? filterTrafficByViewport(
+              history.historicalEntities.filter(
+                (entity): entity is Extract<TrafficEntity, { kind: 'vessel' }> =>
+                  entity.kind === 'vessel',
+              ),
+              activeMarineViewport,
+            )
+          : []
         : liveViewportVessels,
-    [historicalViewportEntities, historyActive, liveViewportVessels],
+    [activeMarineViewport, history.historicalEntities, historyActive, liveViewportVessels],
   )
   const displayNow =
     history.playback.mode === 'live' ? now : history.playback.cursor
@@ -1192,7 +1220,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
       aircraftInViewAvailability({
         historyActive,
         viewportReady: viewReady && currentAssessment !== null,
-        viewportEligible: currentAssessment?.kind === 'eligible',
+        viewportEligible: activeAircraftViewport !== null,
         online,
         status: aircraftResult.status,
         count: aircraft.length,
@@ -1211,7 +1239,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
       vesselInViewAvailability({
         historyActive,
         viewportReady: viewReady && currentAssessment !== null,
-        viewportEligible: currentAssessment?.kind === 'eligible',
+        viewportEligible: activeMarineViewport !== null,
         online,
         status: marineResult.status,
         count: vessels.length,
@@ -1317,10 +1345,10 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
   )
   const weatherStations = useMemo(
     () =>
-      activeViewport
-        ? airportsInViewport(airports, activeViewport)
+      activeMarineViewport
+        ? airportsInViewport(airports, activeMarineViewport)
         : [],
-    [activeViewport, airports],
+    [activeMarineViewport, airports],
   )
   const weatherStationSelection = useMemo(
     () =>
@@ -1338,7 +1366,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
   const weatherQueryEnabled =
     !historyActive &&
     weatherVisible &&
-    Boolean(activeViewport) &&
+    Boolean(activeMarineViewport) &&
     airportsResult.state.phase === 'ready' &&
     weatherStationSelection.kind === 'ready'
   const weatherResult = useWeatherObservations(
@@ -1587,15 +1615,22 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
   )
   const trailSegments = useMemo(
     () => {
-      if (!activeViewport || !trailPreferences.visible) return []
+      const selectedViewport = selectedEntity?.kind === 'aircraft'
+        ? activeAircraftViewport
+        : selectedEntity?.kind === 'vessel'
+          ? activeMarineViewport
+          : null
+      if (!selectedViewport || !trailPreferences.visible) return []
       if (historyActive) return historicalTrailSegments
       return liveTrail.length > 0 ? [liveTrail] : []
     },
     [
-      activeViewport,
+      activeAircraftViewport,
+      activeMarineViewport,
       historicalTrailSegments,
       historyActive,
       liveTrail,
+      selectedEntity?.kind,
       trailPreferences.visible,
     ],
   )
@@ -1711,14 +1746,21 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
         rawZoom,
         viewRequestId: reportViewRequestId,
       })
+      const localViewport =
+        assessment.kind === 'eligible'
+          ? viewportWithinMaximum(
+              assessment.viewport,
+              APP_CONFIG.map.maximumViewportRadiusKm,
+            )
+          : null
       if (
         reportViewRequestId === viewRequest.id &&
-        assessment.kind === 'eligible' &&
+        localViewport &&
         rawZoom !== undefined &&
         Number.isFinite(rawZoom)
       ) {
         setLastLocalTrafficView({
-          viewport: assessment.viewport,
+          viewport: localViewport,
           zoom: rawZoom,
           viewRequestId: reportViewRequestId,
         })
@@ -1749,21 +1791,16 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
   }, [cancelJourneyPreparation, cancelSharedObject, locationCameraIntent, viewRequest.id])
 
   const handleResumeLiveTraffic = useCallback(() => {
-    if (
-      currentAssessment?.kind !== 'ineligible' ||
-      !currentAssessment.viewport
-    ) {
-      return
-    }
+    if (!trafficPauseNotice?.viewport) return
     commitNavigation(
       {
-        ...currentAssessment.viewport.center,
+        ...trafficPauseNotice.viewport.center,
         label: 'Current map area',
       },
       'Current map area',
     )
     requestAnimationFrame(() => rulerMapRef.current?.focusMap())
-  }, [commitNavigation, currentAssessment])
+  }, [commitNavigation, trafficPauseNotice])
 
   const handleUseLocation = useCallback(() => {
     cancelSharedObject()
@@ -2238,7 +2275,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     setSelectedWeatherId(null)
     setHoveredAircraftId(null)
     setHoveredVesselId(null)
-    capturedTrafficViewportRef.current = activeViewport
+    capturedTrafficViewportRef.current = activeAircraftViewport
     capturedOrbitalViewRef.current = view
     setCapturedOrbitalView(view)
     setCapturedOrbitalReady(false)
@@ -2250,13 +2287,13 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
   }, [
     cancelPlaceSearch, cancelSharedObject, clearJourney, clearLocalRuler, historyActive, locationCameraIntent,
     mapError, acceptedOrbitalPositionForCapture, projectionPreference,
-    viewRequest.id, activeViewport,
+    viewRequest.id, activeAircraftViewport,
   ])
 
   const selectedAircraftViewUnavailable = selectedEntity?.kind === 'aircraft'
     ? historyActive ? 'View from here is unavailable in HISTORY.'
       : mapError ? 'View from here needs the basemap.'
-        : !activeViewport ? 'View from here needs an eligible live map view.'
+        : !activeAircraftViewport ? 'View from here needs an eligible live map view.'
           : aircraftViewUnavailableReason(selectedEntity, projectionPreference)
     : undefined
   const handleCaptureAircraftView = useCallback(() => {
@@ -2279,7 +2316,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     setSelectedWeatherId(null)
     setHoveredAircraftId(null)
     setHoveredVesselId(null)
-    capturedTrafficViewportRef.current = activeViewport
+    capturedTrafficViewportRef.current = activeAircraftViewport
     capturedAircraftViewRef.current = view
     setCapturedAircraftView(view)
     setCapturedAircraftReady(false)
@@ -2290,7 +2327,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     setOrbitalViewMessage(undefined)
     setInspectorExpanded(false)
   }, [
-    activeViewport, cancelPlaceSearch, cancelSharedObject, clearJourney, clearLocalRuler, locationCameraIntent,
+    activeAircraftViewport, cancelPlaceSearch, cancelSharedObject, clearJourney, clearLocalRuler, locationCameraIntent,
     selectedAircraftViewUnavailable, selectedEntity, viewRequest.id,
   ])
 
@@ -2461,18 +2498,24 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     ? 'Historical traffic area'
     : !viewReady
       ? 'Preparing map view'
-      : currentAssessment?.kind === 'eligible'
-        ? orbitalObjectsVisible
-          ? 'Visible traffic and orbital area'
-          : 'Visible traffic area'
+      : activeAircraftViewport
+        ? activeMarineViewport
+          ? orbitalObjectsVisible
+            ? 'Visible traffic and orbital area'
+            : 'Visible traffic area'
+          : orbitalObjectsVisible
+            ? 'Aircraft live · ships paused · orbital area'
+            : 'Aircraft live · ships paused'
         : currentAssessment
           ? 'Aircraft and ships paused'
           : 'Updating map view'
   const vesselEmptyMessage =
     historyActive
       ? 'No recorded ships are shown at this historical cursor.'
-      : currentAssessment?.kind === 'ineligible'
-      ? 'Aircraft and ships are paused for this view.'
+      : !activeMarineViewport
+      ? activeAircraftViewport
+        ? 'Ships are paused for this view. Zoom in or reduce tilt.'
+        : 'Aircraft and ships are paused for this view.'
       : marineResult.status.phase === 'error'
         ? 'The marine source is unavailable.'
         : marineResult.status.phase === 'idle' ||
@@ -2482,7 +2525,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
   const aircraftEmptyMessage =
     historyActive
       ? 'No recorded aircraft are shown at this historical cursor.'
-      : currentAssessment?.kind === 'ineligible'
+      : !activeAircraftViewport
       ? 'Aircraft and ships are paused for this view.'
       : aircraftResult.status.phase === 'error'
         ? 'The aircraft source is unavailable.'
@@ -2519,7 +2562,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
       ? undefined
       : historyActive
         ? 'Current METAR observations are hidden during historical playback.'
-      : !activeViewport
+      : !activeMarineViewport
         ? 'METAR observations are paused until the map shows an eligible live-traffic view.'
         : airportsResult.state.phase === 'loading'
           ? 'Loading the pinned airport dataset used to choose METAR stations.'
@@ -2664,6 +2707,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
   )
   const pauseContent = visibleTrafficPause && (
     <TrafficPauseNotice retainedSample={hasTrafficContext} message={visibleTrafficPause.message}
+      aircraftPaused={visibleTrafficPause.aircraftPaused}
       onResume={visibleTrafficPause.viewport ? handleResumeLiveTraffic : undefined}
       inline={pausePlacement !== 'map'} />
   )
@@ -2800,7 +2844,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
         viewRadiusKm={APP_CONFIG.map.homeViewRadiusKm}
         pointFrame={viewRequest.radiusKm ? { radiusKm: viewRequest.radiusKm, onError: viewRequest.onFramingError ?? setSharedObjectNotice } : undefined}
         pointFramingRef={pointFramingRef}
-        maximumViewportRadiusKm={APP_CONFIG.map.maximumViewportRadiusKm}
+        maximumViewportRadiusKm={APP_CONFIG.map.maximumAircraftViewportRadiusKm}
         touchHitTolerancePx={APP_CONFIG.map.touchHitTolerancePx}
         clusterRadiusPx={APP_CONFIG.map.clustering.radiusPx}
         clusterMinimumPoints={APP_CONFIG.map.clustering.minimumPoints}
@@ -2899,7 +2943,9 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
         <div className="viewport-announcement" role="status" aria-atomic="true">
           {visibleTrafficPause && `${hasTrafficContext
             ? 'Last local sample; not wider live coverage.'
-            : 'Aircraft and ships paused.'} ${visibleTrafficPause.message}`}
+            : visibleTrafficPause.aircraftPaused
+              ? 'Aircraft and ships paused.'
+              : 'Ships paused; aircraft remain live.'} ${visibleTrafficPause.message}`}
         </div>
         {localRuler.phase === 'placing' && (
           <LocalRulerPlacement state={localRuler} availability={rulerAvailability}
@@ -2981,7 +3027,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
               </div>
               {(!capturedOrbitalView || capturedLocalTraffic) && <LiveStatus
                 viewportNotice={pausePlacement === 'providers' ? pauseContent : undefined}
-                viewportPaused={mobileWorkspace && Boolean(visibleTrafficPause)}
+                viewportPaused={mobileWorkspace && Boolean(visibleTrafficPause?.aircraftPaused)}
                 compact={mobileWorkspace}
                 scopeLabel={capturedLocalTraffic || capturedAircraftView ? 'Previous local area' : undefined}
                 aircraftCount={aircraftVisible ? aircraft.length : 0}

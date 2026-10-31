@@ -173,7 +173,7 @@ GET /v2/callsign/{canonical-callsign}
 The implementation:
 
 - requires a bearer token before starting upstream work;
-- accepts only canonical finite coordinates and integer radius 1-54 NM;
+- accepts only canonical finite coordinates and integer radius 1-135 NM;
 - rejects query strings, other methods, encoded separators, and redirects;
 - constructs only the fixed ADSB.lol point or exact identifier URL;
 - forwards only `Accept: application/json` and the stable LiveTrafficStan

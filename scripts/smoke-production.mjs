@@ -398,10 +398,11 @@ const waitForWorkerRelease = async () => {
 
 const verifyAircraftProxy = async () => {
   await waitForWorkerRelease()
+  const startedAt = performance.now()
 
   if (aircraftDelivery === 'adsb-lol-direct') {
     const endpoint = new URL(
-      '/v2/point/59.437/24.754/11',
+      '/v2/point/59.437/24.754/135',
       'https://api.adsb.lol',
     )
     const response = await fetchWithTimeout(endpoint, {
@@ -457,6 +458,11 @@ const verifyAircraftProxy = async () => {
         payload && typeof payload === 'object' && Array.isArray(payload.ac),
         'Direct aircraft provider returned an unexpected payload',
       )
+      console.log(
+        `Aircraft wide-view probe passed delivery=${aircraftDelivery} ` +
+          `status=${response.status} bytes=${body.byteLength} ` +
+          `duration_ms=${Math.round(performance.now() - startedAt)}`,
+      )
     } else {
       void response.body?.cancel().catch(() => undefined)
       console.warn(
@@ -466,7 +472,7 @@ const verifyAircraftProxy = async () => {
     return
   }
 
-  const validPath = '/api/aircraft/v2/point/59.437/24.754/11'
+  const validPath = '/api/aircraft/v2/point/59.437/24.754/135'
   const validUrl = new URL(validPath, baseUrl)
   const privateRelayDeadlineController =
     aircraftDelivery === 'oci-private-relay'
@@ -532,10 +538,31 @@ const verifyAircraftProxy = async () => {
         response.headers.get('content-type')?.includes('application/json'),
         'Aircraft proxy did not preserve the JSON content type',
       )
-      const payload = await response.json()
+      const declaredBytes = Number(response.headers.get('content-length'))
+      assert(
+        !Number.isFinite(declaredBytes) ||
+          declaredBytes <= MAX_AIRCRAFT_RESPONSE_BYTES,
+        'Aircraft proxy declared an oversized response',
+      )
+      const body = new Uint8Array(await response.arrayBuffer())
+      assert(
+        body.byteLength <= MAX_AIRCRAFT_RESPONSE_BYTES,
+        'Aircraft proxy returned an oversized response',
+      )
+      let payload
+      try {
+        payload = JSON.parse(new TextDecoder().decode(body))
+      } catch {
+        throw new Error('Aircraft proxy returned invalid JSON')
+      }
       assert(
         payload && typeof payload === 'object' && Array.isArray(payload.ac),
         'Aircraft proxy returned an unexpected payload',
+      )
+      console.log(
+        `Aircraft wide-view probe passed delivery=${aircraftDelivery} ` +
+          `status=${response.status} bytes=${body.byteLength} ` +
+          `duration_ms=${Math.round(performance.now() - startedAt)}`,
       )
     } else {
       void response.body?.cancel().catch(() => undefined)

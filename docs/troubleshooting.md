@@ -307,8 +307,8 @@ The browser can leave fullscreen or reset page magnification itself, and
 the app never automatically reenters. F11/window fullscreen and standalone
 installation are separate browser modes.
 
-Full-canvas size changes may change local traffic counts or exceed the
-existing 100km eligibility limit. That is ordinary viewport filtering, not
+Full-canvas size changes may change counts or cross the 100 km marine/local or
+250 km aircraft eligibility limits. That is ordinary viewport filtering, not
 navigation, a lost Home, a new provider connection or a reason to reset
 preferences/history.
 
@@ -319,9 +319,12 @@ of the Auto/Light/Dark theme. Automatic globe becomes flat smoothly between
 map zoom 11 and 12. Browser page magnification does not change this preference.
 Reset preferences restores automatic globe without clearing private history.
 
-Aircraft and ships intentionally pause when the full canvas includes a limb,
-pole, unsafe surface or a footprint over the existing 100 km bound. Zoom in,
-reduce tilt, or use Center; do not expect worldwide live traffic. A preceding
+Ships intentionally pause above the 100 km marine boundary while aircraft can
+remain live through 250 km. Both pause when the full canvas includes a limb,
+pole, unsafe surface or a footprint over 250 km. The notice identifies the
+paused source; **Resume ships** returns to the marine-safe framing without
+claiming aircraft were paused. Zoom in, reduce tilt, or use Center; do not
+expect worldwide live traffic. A preceding
 eligible local view may leave a **Last local traffic sample** during zoom-out:
 at most twelve representatives per kind, at their actual observed positions,
 fading from zoom 7 to zero at zoom 3 and expiring within two minutes. This
@@ -705,9 +708,9 @@ METAR is optional and independent of live traffic. It makes no startup request
 and has no periodic poller. First enable may need to load the pinned airport
 asset before it can derive explicit ICAO station IDs.
 
-- **Paused until the map shows an eligible view** means the live-traffic
-  viewport is still updating or exceeds the 100 km safety boundary. Zoom in or
-  reduce tilt.
+- **Paused until the map shows an eligible view** means weather/local context
+  is still updating or exceeds its 100 km boundary. Aircraft may remain live
+  independently through 250 km. Zoom in or reduce tilt.
 - **Too many qualifying stations** means more than 50 explicit four-letter
   ICAO codes are visible. The app refuses to truncate the station set; zoom in.
 - **No qualifying stations** means the reduced large/medium OurAirports
@@ -968,16 +971,16 @@ speed is known; the below/at-least-one-knot boundary is exactly 1.852 km/h.
 Reserved AIS ship-type subcodes remain unknown rather than being grouped with
 defined passenger, cargo, or tanker codes.
 
-Settled pan, zoom, rotation, pitch, Home, and resize changes all update the
-traffic viewport. If its conservative enclosing radius exceeds 100 km, the app
-hides live traffic and trails, pauses both providers, and shows **Zoom in to see live
-traffic** or **Zoom in or reduce tilt to see live traffic**. This is not an
-empty provider response. The labelled zoom-out sample described above is only
-recent local context, never a complete wider board or feed. Use **Resume live**
-to keep the current map center and
-fit it back to the reviewed safe framing, or zoom in / reduce tilt manually.
-The existing provider instances resume at their next allowed cadence,
-reconnect, REST, or metadata boundary.
+Settled pan, zoom, rotation, pitch, Home, and resize changes all update one
+sampled full-canvas viewport. Above 100 km the app hides ships and local
+context, passes no marine query, and explicitly reports ships paused while
+aircraft can remain live. Above 250 km or for unsafe geometry it hides live
+traffic and trails and pauses both providers. This is not an empty provider
+response. The labelled zoom-out sample described above is only recent local
+context, never a complete wider board or feed. Use **Resume ships** to keep the
+current center and fit back to the reviewed 100 km framing, or zoom in / reduce
+tilt manually. Provider instances retain their cadence, backoff, reconnect,
+REST, and metadata boundaries.
 
 If camera movement causes repeated requests, verify that settled updates are
 coalesced and that unchanged enclosing queries do not restart provider work.

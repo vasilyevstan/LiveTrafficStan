@@ -257,9 +257,12 @@ identity are not renamed or reset.
   and [setup and private statistics](docs/hosting-and-deployment.md#exact-object-sharing-operations).
 - Viewport-driven traffic after settled pan, zoom, rotation, pitch, Home, and
   resize changes.
-- A truthful 100 km enclosing-query limit: wider or unsafe views pause traffic
-  and offer **Resume live** to fit the current map center back to the reviewed
-  safe framing rather than showing partial coverage as complete.
+- Truthful source-specific enclosing-query limits: aircraft remain live through
+  250 km, while ships and local airport/weather context retain the reviewed
+  100 km boundary. In the 100-250 km band the UI explicitly reports ships
+  paused rather than presenting an empty sea; unsafe or wider views pause both.
+  **Resume ships** keeps the current center and returns to the marine-safe
+  framing without clamping or presenting partial coverage as complete.
 - A smoother zoom-out hand-off retains a small **last local traffic sample**
   at real observed positions, with no wider requests. At most twelve aircraft
   and twelve ships are decluttered and faded between zoom 7 and 3; observations
@@ -565,9 +568,14 @@ identity are not renamed or reset.
   16 px on desktops. Phones use a compact status card and a five-action dock:
   **Center, Layers, Find, In view, Settings**. Aircraft/Ships/ORBITS switches
   are in mobile Layers; desktop controls keep their existing layout/defaults.
-  Every object inspector has an accessible, 44px corner-attached X that stays
-  visible beside a compact identity header. **Show path** shares that header;
-  the body scrolls at full width without a close-button gutter.
+  Every object inspector has an accessible 44px X. Selected live traffic uses
+  a compact identity row plus one desktop action row for **Show path**,
+  **View from here**, Save, Share, and Close; mobile/forced-compact views keep
+  those primary actions in the expanded body so their status text remains
+  visible. The body is the sole reading scroller.
+  Overlay widths, padding and reading heights are bounded from the actual
+  workspace and visual viewport rather than growing fixed whitespace on large
+  coarse-pointer landscape screens.
   Menu text must help a decision or action, report an actual fact or meaningful
   condition, or meet an attribution, privacy or safety requirement.
   Toggle-state echoes, routine success narration and normal-behavior tutorials
@@ -979,7 +987,7 @@ provider selector.
 
 The proxy accepts only
 `GET /api/aircraft/v2/point/{latitude}/{longitude}/{radiusNm}`, validates the
-current 1-54 NM transport contract, uses a total upstream deadline and body
+current 1-135 NM transport contract, uses a total upstream deadline and body
 limit, rejects redirects, and preserves provider status, body, and
 `Retry-After`. It forwards no browser credentials or arbitrary headers and
 keeps request URL logging disabled.
@@ -1616,10 +1624,12 @@ monitoring, privacy, and rollback procedure.
   region or vessel is covered. Yacht type and known length at least 8 m remain
   required; absent or delayed static metadata cannot be inferred. Source
   failures, shared capacity limits and exhausted free budgets remain visible.
-- Views whose conservative enclosing radius exceeds 100 km pause live traffic.
-  **Resume live** keeps the current map center and returns to the reviewed safe
-  framing; manual zoom-in or reduced tilt remain available. Partial coverage is
-  never presented as complete. A recent preceding eligible view may leave
+- Views whose conservative enclosing radius exceeds 100 km pause ships and
+  local airport/weather context; aircraft remain live through 250 km. Wider or
+  unsafe views pause both. **Resume ships** keeps the current map center and
+  returns to the reviewed marine-safe framing; manual zoom-in or reduced tilt
+  remain available. Partial coverage is never presented as complete. A recent
+  preceding eligible view may leave
   labelled, fading local sample markers during zoom-out; an initial wide view
   has no such sample. ORBITS remains opt-in and appears only at real modeled
   positions, so an empty area is not filled with invented orbital objects.

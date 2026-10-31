@@ -11,7 +11,7 @@ import type {
   MarineProviderCapabilities,
   TrafficQuery,
 } from '../providers/types'
-import { shouldPauseTraffic } from './trafficPause'
+import { marineTrafficPause } from './marineTrafficPause'
 
 interface MarineTrafficResult extends TrafficProviderResult<Vessel> {
   capabilities: MarineProviderCapabilities
@@ -69,10 +69,23 @@ export const useMarineTraffic = (
     const provider = providerRef.current
 
     if (provider) {
-      const paused = shouldPauseTraffic(query, document.hidden, navigator.onLine, intentionallyPaused)
-      if (paused) provider.setPaused(true)
+      const { networkPaused, viewportPaused } = marineTrafficPause(
+        query,
+        document.hidden,
+        navigator.onLine,
+        intentionallyPaused,
+      )
+      if (networkPaused) provider.setPaused(true)
       if (query && query !== previousQuery) provider.updateQuery(query)
-      if (!paused) provider.setPaused(false)
+      if (!networkPaused) provider.setPaused(false)
+      setResult((current) => ({
+        ...current,
+        status: {
+          ...current.status,
+          paused: networkPaused || viewportPaused,
+          ...(viewportPaused ? { updating: false } : {}),
+        },
+      }))
       return
     }
 
@@ -110,20 +123,25 @@ export const useMarineTraffic = (
           },
           onStatus: (status) => {
             if (!disposed) {
-              setResult((current) => ({ ...current, status }))
+              setResult((current) => ({
+                ...current,
+                status: {
+                  ...status,
+                  paused: status.paused || queryRef.current === null,
+                  ...(queryRef.current === null ? { updating: false } : {}),
+                },
+              }))
             }
           },
         },
       })
       providerRef.current = provider
-      provider.start(
-        shouldPauseTraffic(
-          queryRef.current,
-          document.hidden,
-          navigator.onLine,
-          intentionalPauseRef.current,
-        ),
-      )
+      provider.start(marineTrafficPause(
+        queryRef.current,
+        document.hidden,
+        navigator.onLine,
+        intentionalPauseRef.current,
+      ).networkPaused)
     }
 
     startProviderRef.current = startProvider
@@ -131,12 +149,12 @@ export const useMarineTraffic = (
 
     const handleVisibilityChange = () => {
       providerRef.current?.setPaused(
-        shouldPauseTraffic(
+        marineTrafficPause(
           queryRef.current,
           document.hidden,
           navigator.onLine,
           intentionalPauseRef.current,
-        ),
+        ).networkPaused,
       )
     }
 
