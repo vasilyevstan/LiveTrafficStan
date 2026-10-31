@@ -146,6 +146,7 @@ import {
   type OrbitalStyleImages,
 } from './orbitalIcons'
 import {
+  installTrafficFlagImages,
   installTrafficStyle,
   AIRCRAFT_TRAFFIC_LAYER_IDS,
   LAYER_AIRCRAFT,
@@ -160,7 +161,11 @@ import {
   type TrafficStyleImages,
   VESSEL_TRAFFIC_LAYER_IDS,
 } from './trafficStyle'
-import { trafficFeatures } from './trafficFeatures'
+import {
+  trafficFeatures,
+  trafficNeedsFlagImages,
+} from './trafficFeatures'
+import type { VesselFlagImages } from './vesselFlagImages'
 import { sampleTrafficZoomContext } from './trafficZoomContext'
 import {
   createTrafficTooltipElement,
@@ -306,6 +311,7 @@ interface TrafficMapProps {
   onManualViewChange: () => void
   onActionShortcut?: (action: MapActionShortcut) => boolean
   onMapError: (error: TrafficMapError | null) => void
+  onFlagArtworkError?: (message: string | undefined) => void
 }
 
 interface RenderState {
@@ -527,6 +533,7 @@ export function TrafficMap({
   onManualViewChange,
   onActionShortcut,
   onMapError,
+  onFlagArtworkError,
 }: TrafficMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MapLibreMap | null>(null)
@@ -650,6 +657,9 @@ export function TrafficMap({
   const trafficImagesRef = useRef<
     Partial<Record<Theme, TrafficStyleImages>>
   >({})
+  const flagImagesRef = useRef<VesselFlagImages | undefined>(undefined)
+  const flagImagesLoadRef = useRef<Promise<void> | undefined>(undefined)
+  const flagImagesGenerationRef = useRef(0)
   const orbitalImagesRef = useRef<
     Partial<Record<Theme, OrbitalStyleImages>>
   >({})
@@ -711,6 +721,7 @@ export function TrafficMap({
   const manualViewChangeRef = useRef(onManualViewChange)
   const actionShortcutRef = useRef(onActionShortcut)
   const errorRef = useRef(onMapError)
+  const flagArtworkErrorRef = useRef(onFlagArtworkError)
   const unitsRef = useRef(units)
   const aircraftPhotoEnabledRef = useRef(aircraftPhotoEnabled)
   const previousAircraftPhotoEnabledRef = useRef(
@@ -824,6 +835,7 @@ export function TrafficMap({
         state.selectedId,
         interpolateTrafficRef.current && !clustered,
         state.trafficContext,
+        flagImagesRef.current !== undefined,
       )
       const source = map.getSource(sourceId) as GeoJSONSource | undefined
       const previous = lastTrafficFeaturesRef.current[kind]
@@ -994,6 +1006,39 @@ export function TrafficMap({
 
     frameRef.current = window.requestAnimationFrame(draw)
   }, [renderSources])
+
+  const requestFlagImages = useCallback(() => {
+    if (flagImagesRef.current || flagImagesLoadRef.current) return
+    const generation = ++flagImagesGenerationRef.current
+    const load = import('./vesselFlagImages')
+      .then(({ VESSEL_FLAG_IMAGES }) => {
+        if (generation !== flagImagesGenerationRef.current) return
+        flagImagesRef.current = VESSEL_FLAG_IMAGES
+        flagArtworkErrorRef.current?.(undefined)
+        const map = mapRef.current
+        if (!map || !loadedRef.current) return
+        installTrafficFlagImages(map, VESSEL_FLAG_IMAGES)
+        renderSources(performance.now(), true)
+        scheduleRender()
+      })
+      .catch((error: unknown) => {
+        if (generation !== flagImagesGenerationRef.current) return
+        flagArtworkErrorRef.current?.(
+          error instanceof Error
+            ? `Country flag artwork unavailable: ${error.message}`
+            : 'Country flag artwork unavailable.',
+        )
+      })
+      .finally(() => {
+        if (
+          generation === flagImagesGenerationRef.current &&
+          flagImagesLoadRef.current === load
+        ) {
+          flagImagesLoadRef.current = undefined
+        }
+      })
+    flagImagesLoadRef.current = load
+  }, [renderSources, scheduleRender])
 
   const clearPendingViewport = useCallback(() => {
     if (viewportSettleTimerRef.current === null) return
@@ -1219,6 +1264,7 @@ export function TrafficMap({
         interpolateTrafficRef.current &&
           !clusteringEnabledRef.current,
         renderState.trafficContext,
+        flagImagesRef.current !== undefined,
       )
       const vesselFeatures = trafficFeatures(
         renderState.trafficContext
@@ -1230,6 +1276,7 @@ export function TrafficMap({
         interpolateTrafficRef.current &&
           !clusteringEnabledRef.current,
         renderState.trafficContext,
+        flagImagesRef.current !== undefined,
       )
       installTrafficStyle(
         map,
@@ -1246,6 +1293,7 @@ export function TrafficMap({
           clusterMaximumZoom: clusterConfigRef.current.maximumZoom,
         },
         getTrafficImages(activeTheme),
+        flagImagesRef.current,
       )
       lastTrafficFeaturesRef.current = {
         aircraft: aircraftFeatures.features,
@@ -1575,6 +1623,24 @@ export function TrafficMap({
   useEffect(() => {
     errorRef.current = onMapError
   }, [onMapError])
+
+  useEffect(() => {
+    flagArtworkErrorRef.current = onFlagArtworkError
+  }, [onFlagArtworkError])
+
+  useEffect(() => {
+    if (trafficNeedsFlagImages([...aircraft, ...vessels])) {
+      requestFlagImages()
+    }
+  }, [aircraft, online, requestFlagImages, vessels])
+
+  useEffect(
+    () => () => {
+      flagImagesGenerationRef.current += 1
+      flagImagesLoadRef.current = undefined
+    },
+    [],
+  )
 
   useEffect(() => {
     hoverAircraftChangeRef.current = onHoverAircraftChange

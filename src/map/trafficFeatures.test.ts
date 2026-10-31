@@ -105,6 +105,22 @@ describe('trafficFeatures presentation projection', () => {
     expect(aircraft).not.toHaveProperty('flagIcon')
   })
 
+  it('omits flag image references until artwork is ready', () => {
+    const collection = trafficFeatures(
+      [aircraft, yacht],
+      new Map(),
+      1,
+      null,
+      false,
+      false,
+      false,
+    )
+
+    for (const feature of collection.features) {
+      expect(feature.properties).not.toHaveProperty('flagIcon')
+    }
+  })
+
   it.each([
     ['511000', 'vessel-flag-EE'],
     ['5117ff', 'vessel-flag-EE'],

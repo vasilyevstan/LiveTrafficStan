@@ -867,7 +867,10 @@ selection, clustering, and details paths, but disables interpolation and hides
 current-only aircraft metadata and METAR context.
 
 `npm run build` generates `/sw.js` from the exact Vite output and worker policy,
-and rejects an application shell above 4 MiB uncompressed. Root navigation is
+enforces compressed entry and semantic lazy-chunk budgets, and rejects an
+application shell above 4 MiB uncompressed. Vessel flag pixels, orbital
+advanced UI, and airport details/boards load only on demand, while the complete
+emitted asset set remains atomically precached. Root navigation is
 network-first with cached `index.html` only as the offline fallback. Exact shell
 assets are cache-first across the current and immediate predecessor generations
 so an older controlled tab can finish a deferred hashed import during an

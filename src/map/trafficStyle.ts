@@ -16,7 +16,7 @@ import {
   type TrafficStyleImageId,
 } from '../domain/trafficPresentation'
 import { mapTextFont } from './textFont'
-import { VESSEL_FLAG_IMAGES } from './vesselFlags'
+import type { VesselFlagImages } from './vesselFlagImages'
 
 export const SOURCE_AIRCRAFT = 'traffic-aircraft'
 export const SOURCE_VESSELS = 'traffic-vessels'
@@ -177,10 +177,18 @@ const ensureLayer = (map: MapLibreMap, layer: LayerSpecification) => {
   if (!map.getLayer(layer.id)) map.addLayer(layer)
 }
 
+export const installTrafficFlagImages = (
+  map: MapLibreMap,
+  images: VesselFlagImages,
+) => {
+  for (const [imageId, image] of images) ensureImage(map, imageId, image)
+}
+
 export const installTrafficStyle = (
   map: MapLibreMap,
   snapshot: TrafficStyleSnapshot,
   images: TrafficStyleImages,
+  flagImages?: VesselFlagImages,
 ) => {
   const paint = themePaint(snapshot.theme)
   const textFont = mapTextFont(map)
@@ -188,9 +196,7 @@ export const installTrafficStyle = (
   for (const imageId of TRAFFIC_STYLE_IMAGE_IDS) {
     ensureImage(map, imageId, images[imageId])
   }
-  for (const [imageId, image] of VESSEL_FLAG_IMAGES) {
-    ensureImage(map, imageId, image)
-  }
+  if (flagImages) installTrafficFlagImages(map, flagImages)
 
   ensureSource(map, SOURCE_TRAIL, snapshot.trail)
   ensurePointSource(map, SOURCE_AIRCRAFT, snapshot.aircraft, snapshot)
