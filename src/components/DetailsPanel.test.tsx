@@ -5,6 +5,42 @@ import { closeDetailsOnEscape } from './detailsKeyboard'
 import { MobileInspectorContext } from './mobileWorkspace'
 
 describe('DetailsPanel', () => {
+  it.each([false, true])('suspends the retained inspector only on phones (mobile=%s)', mobile => {
+    const html = renderToStaticMarkup(
+      <MobileInspectorContext value={{
+        mobile, compact: true, suspended: true, identity: 'test:one', returnToTask: false,
+        onExpand: vi.fn(), onCollapse: vi.fn(),
+      }}>
+        <DetailsPanel titleId="test-title" closeLabel="Close details" onClose={vi.fn()}
+          heading={<h2>Retained selection</h2>}>Retained body</DetailsPanel>
+      </MobileInspectorContext>,
+    )
+    expect(/<aside[^>]*hidden="" inert=""/.test(html)).toBe(mobile)
+    if (!mobile) expect(html).not.toContain('hidden=""')
+    expect(html).toContain('Retained selection')
+    expect(html).toContain('Retained body')
+  })
+
+  it.each([false, true])('hosts pause instructions only in an expanded body (compact=%s)', compact => {
+    const html = renderToStaticMarkup(
+      <MobileInspectorContext value={{
+        mobile: true, compact, identity: 'orbital:test', returnToTask: false,
+        onExpand: vi.fn(), onCollapse: vi.fn(),
+        notice: <div className="traffic-pause-notice">Complete pause instruction</div>,
+      }}>
+        <DetailsPanel titleId="test-title" closeLabel="Close details" onClose={vi.fn()}
+          heading={<h2>Satellite</h2>}>
+          <p>Source and selected context</p>
+        </DetailsPanel>
+      </MobileInspectorContext>,
+    )
+    expect(html.includes('Complete pause instruction')).toBe(!compact)
+    if (!compact) {
+      expect(html.indexOf('traffic-pause-notice')).toBeGreaterThan(html.indexOf('details-panel__body'))
+      expect(html.indexOf('Complete pause instruction')).toBeGreaterThan(html.indexOf('Source and selected context'))
+    }
+  })
+
   it('keeps a labeled header action usable outside a compact hidden body', () => {
     const html = renderToStaticMarkup(
       <MobileInspectorContext.Provider value={{

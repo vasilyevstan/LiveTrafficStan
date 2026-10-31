@@ -301,13 +301,17 @@ are duplicated or remounted.
 
 `mobileWorkspace.ts` separates selected identity from inspector presentation.
 Only one expanded task or inspector uses the nonmodal mobile reading surface.
-An open task compacts selection without unmounting `DetailsPanel` or its
-metadata/photo/route hooks. Its hidden body is inert and removed from
-accessibility/focus exposure. Details suspends the actual native task; Back
+Map selection starts compact on phones; desktop and result-origin selection
+keep expanded details. An open phone task suspends the entire retained
+`DetailsPanel` with native hidden/inert, without unmounting its
+metadata/photo/route hooks. Details suspends the actual native task; Back
 restores that task's draft, scroll and valid focus. X invokes the existing
-deselection callback. A new identity resets presentation, not provider timing.
-Native disclosures remain uncontrolled; toggle reconciliation reads actual
-open peers rather than trusting a stale event snapshot.
+deselection callback. Selection revisions reset presentation, not provider
+timing; rotation does not reset the user's expansion choice.
+Native disclosures remain uncontrolled. Task-opening intent synchronously
+closes provider/credits peers; delayed toggle notifications cannot dismiss
+a newer disclosure. Actual provider/credits opening suspends the task and
+inspector. Native credits Escape preserves workspace-fullscreen ownership.
 
 The workspace uses the existing visual-viewport subscription and a deferred,
 cleanup-cancelled focus-scroll frame after responsive layout commits.
@@ -316,8 +320,19 @@ Compact layout means width at most 760px, or coarse-pointer landscape at most
 1024x480. The normal dock is 58px; very narrow magnified views wrap its five
 actions in order rather than shrinking targets/text. One body scroller,
 bounded surface width/height, 44px primary targets and a 4px surface gap leave
-the measured useful body and native map-drag region. Keyboard/explicitly
-expanded credits prioritize reachable reading and dismissal over map area.
+the measured useful body and native map-drag region. Keyboard-reduced portrait layout prioritizes reachable input, submit and
+dismissal, temporarily hiding the dock when necessary. Ordinary portrait
+panels retain a map band; landscape panels share one right-side reading
+surface with the dock below. The full-canvas map and provider footprint never
+shrink to accommodate these overlays.
+
+`TrafficPauseNotice` preserves the complete pause/retained-sample explanation
+and existing safe-view Resume action. Exactly one visible host owns it: the
+active task, expanded inspector, provider body, or standalone fallback. It
+comes after primary task/detail content in the existing sole scroller.
+App owns a stable status announcement so relocation is not a new announcement;
+the compact status card keeps VIEW PAUSED, with OFFLINE/HISTORY precedence.
+Resume uses existing navigation and returns focus to the retained map canvas.
 
 `InitiallyCompactAttributionControl` initializes native credits compact once.
 It respects user-open state through theme rehydration; the complete bounded
@@ -392,9 +407,14 @@ are unchanged. Selection reuses the ordinary owner-correct details and
 enrichment paths without moving the camera.
 
 Opening any peer disclosure closes the others without remounting the search model.
-Operational recovery and app/storage/history recovery have separate promotion
-slots beside/above the dock rather than extra default corner cards. Active
-HISTORY playback remains outside the disclosures. The existing visual-viewport
+Operational recovery and app/storage/history recovery keep their separate
+promotion slots. On phones their presentation nodes are portaled into the
+active task, provider body or expanded inspector's existing scroller; owners,
+callbacks and controllers are not moved or duplicated. Without an active
+React-owned reading surface they retain the bounded floating fallback. Native
+MapLibre credits are not a portal target because MapLibre owns that DOM.
+Active HISTORY playback remains outside the disclosures, with separate
+44px playback/speed rows and selection/orientation clearance on phones. The existing visual-viewport
 effect publishes width, height and left/top offsets as CSS variables. Both
 the interface and native MapLibre control container use that rectangle;
 named size-container queries apply responsive layout to its visible size,

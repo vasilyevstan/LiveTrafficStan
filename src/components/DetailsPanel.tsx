@@ -26,6 +26,7 @@ export function DetailsPanel({
 }: DetailsPanelProps) {
   const presentation = useContext(MobileInspectorContext)
   const compact = Boolean((presentation?.mobile || presentation?.forceCompact) && presentation?.compact)
+  const suspended = Boolean(presentation?.mobile && presentation.suspended)
   const bodyId = useId()
   const bodyRef = useRef<HTMLDivElement>(null)
   const [feedbackTarget, setFeedbackTarget] = useState<HTMLDivElement | null>(null)
@@ -43,7 +44,7 @@ export function DetailsPanel({
       scrollTopRef.current = 0
       lastBodyFocusRef.current = null
     }
-    if (compact) {
+    if (compact && !suspended) {
       if (body.contains(document.activeElement) ||
         document.activeElement === document.body && lastBodyFocusRef.current !== null) {
         presentationButtonRef.current?.focus({ preventScroll: true })
@@ -51,12 +52,14 @@ export function DetailsPanel({
     } else {
       body.scrollTop = scrollTopRef.current
     }
-  }, [compact, presentation?.identity])
+  }, [compact, suspended, presentation?.identity])
 
   return (
     <aside
       className={`details-panel${headerAction ? ' details-panel--action' : ''}${className ? ` ${className}` : ''}`}
       aria-labelledby={titleId}
+      hidden={suspended}
+      inert={suspended || undefined}
       data-compact={compact || undefined}
       data-force-compact={presentation?.forceCompact || undefined}
       onKeyDown={(event) =>
@@ -129,6 +132,7 @@ export function DetailsPanel({
       >
         {headerAction && <div ref={setFeedbackTarget} className="details-panel__action-feedback" />}
         {children}
+        {!compact && presentation?.notice}
       </div>
     </aside>
   )
