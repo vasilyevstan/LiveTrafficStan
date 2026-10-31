@@ -9,6 +9,7 @@ type DeferredModuleState<Module> =
 interface DeferredModuleProps<Module> {
   active: boolean
   load: () => Promise<Module>
+  onReady?: () => void
   children: (module: Module) => ReactNode
   pending: ReactNode
   failed: (error: Error, retry: () => void) => ReactNode
@@ -17,6 +18,7 @@ interface DeferredModuleProps<Module> {
 export function DeferredModule<Module>({
   active,
   load,
+  onReady,
   children,
   pending,
   failed,
@@ -33,6 +35,7 @@ export function DeferredModule<Module>({
       load,
       (module) => {
         setState({ phase: 'ready', module })
+        onReady?.()
       },
       (error) => {
         setState({
@@ -41,7 +44,7 @@ export function DeferredModule<Module>({
         })
       },
     )
-  }, [active, attempt, load])
+  }, [active, attempt, load, onReady])
 
   if (state.phase === 'ready') return children(state.module)
   if (!active) return null

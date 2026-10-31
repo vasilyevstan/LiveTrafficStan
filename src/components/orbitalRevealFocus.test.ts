@@ -9,11 +9,12 @@ describe('orbital reveal focus', () => {
     )
     const details = { querySelector } as unknown as HTMLDetailsElement
 
-    focusOrbitalRevealTarget(details)
+    const focusedResult = focusOrbitalRevealTarget(details)
 
     expect(querySelector).toHaveBeenCalledWith('.orbital-results button')
     expect(querySelector).toHaveBeenCalledWith('#map-tools-panel-orbits')
     expect(panel.focus).toHaveBeenCalledOnce()
+    expect(focusedResult).toBe(false)
   })
 
   it('focuses the first orbital result when it is already rendered', () => {
@@ -24,9 +25,10 @@ describe('orbital reveal focus', () => {
     )
     const details = { querySelector } as unknown as HTMLDetailsElement
 
-    focusOrbitalRevealTarget(details)
+    const focusedResult = focusOrbitalRevealTarget(details)
 
     expect(resultButton.focus).toHaveBeenCalledOnce()
     expect(panel.focus).not.toHaveBeenCalled()
+    expect(focusedResult).toBe(true)
   })
 })
