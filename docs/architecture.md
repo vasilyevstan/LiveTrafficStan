@@ -1793,6 +1793,23 @@ It is visible to anyone using the same browser profile, is not included in
 view/object links or analytics, and has no sync, export, import, alerts,
 notifications, account or service-worker refresh.
 
+Saved activity is a separate tab-session projection, not another stored
+document. A pure reducer observes exact Saved identities against accepted
+traffic revisions, existing orbital resolution and compatible prediction
+results. It silently baselines startup, Saved additions, viewport generations,
+HISTORY transitions and suspended lifecycles. Later exact current-data
+reception, identity conflicts and newly qualifying modeled crossings may append
+one of at most 20 in-memory records. Read state and deduplication trackers reset
+on reload and are not synchronized across tabs.
+
+The activity hook owns no provider, fetch, MQTT subscription, catalog demand,
+worker message, timer, camera, filter, selection or history operation.
+Aircraft/ship disappearance and freshness/provider failures remain inline
+status because viewport-scoped partial acquisition cannot establish physical
+absence. Satellite crossings exist only while the ordinary orbital controller
+already has a valid compatible prediction; activity cannot preserve or revive
+that lifecycle.
+
 ## Portable preferences, explicit sharing, and units
 
 `livetrafficstan.preferences.v1` is the one complete allowlisted preference

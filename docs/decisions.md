@@ -26,6 +26,33 @@ arrives and Returns at the ordinary 120-second expiry. Ground, stale, history,
 Flat or polar selections show a truthful unavailable reason. Ships remain
 omitted, because a 20 m eye showed only water and sky.
 
+## Session-only Saved activity without notifications
+
+Saved may expose a bounded **Saved activity** feed inside Find, but the product
+still rejects notification and watchlist semantics. The feature has no OS or
+browser permission, toast, Push API, service-worker/background execution,
+durable unread state, per-object alert preference or guaranteed delivery.
+
+The tab silently baselines startup, reload, Saved additions, viewport changes,
+HISTORY and suspended provider/orbital lifecycles. Only exact aircraft/ship
+reception in later accepted current-map data, corroboration conflicts, and
+already-computed compatible modeled satellite crossings create activity.
+Negative availability, stale, missing, filter/layer and static-place changes
+remain passive inline state because they are ambiguous or noisy under partial
+coverage.
+
+At most 20 newest-first records, deduplication state and unread membership live
+in React/controller memory. They are not added to the versioned Saved document,
+preferences, IndexedDB history, URLs, analytics or caches and are not shared
+between tabs. Opening the visible Saved activity region acknowledges the count;
+reload clears the entire activity projection.
+
+The implementation reuses existing normalized models and orbital predictions
+without initiating a fetch, catalog load, MQTT operation, worker message, timer,
+camera/filter/layer/selection change or history write. If a future product asks
+for durable/background delivery or global monitoring, it requires a separate
+architecture and privacy decision rather than expansion of this feature.
+
 ## Device-local Saved identities without tracking (#611)
 
 The accepted product scope includes aircraft, ships, satellites, airports and

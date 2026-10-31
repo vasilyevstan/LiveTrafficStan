@@ -224,6 +224,12 @@ identity are not renamed or reset.
   reception, satellites remain modeled/catalog context, and airports/ports are
   static catalog references. Anyone using the same browser profile can see the
   list; Clear Saved is separate from preferences and private history.
+- **Saved activity** keeps up to 20 in-memory events observed by the current tab:
+  a saved aircraft or ship received in current map data, a reported identity
+  conflict, or an already-modeled upcoming satellite crossing of the current
+  map area. It is not a notification or watchlist service. Startup, reload,
+  camera/layer/filter changes, HISTORY, stale/missing/offline states, and closed
+  tabs create no activity. Reloading clears the feed and unread state.
 - An explicit **Share view** action creates a fragment-only link containing a
   three-decimal camera plus validated presentation state. Opening it does not
   save those overrides, and its camera wins over a later automatic geolocation

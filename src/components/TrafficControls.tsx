@@ -42,6 +42,7 @@ import type {
   SavedObjectsLoadResult,
   SavedObjectsMutationResult,
 } from '../domain/savedObjects'
+import type { SavedActivityRecord } from '../domain/savedActivity'
 import { emptySavedObjectsDocument } from '../domain/savedObjects'
 import type {
   OrbitalDiscoveryFilters,
@@ -221,6 +222,9 @@ interface TrafficControlsProps {
   onPlaceSearchPause?: () => void
   savedEntries?: readonly SavedObject[]
   savedStatus?: SavedObjectsLoadResult
+  savedActivity?: readonly SavedActivityRecord[]
+  savedActivityUnreadCount?: number
+  onAcknowledgeSavedActivity?: () => void
   aircraftAvailability?: InViewAvailability
   vesselAvailability?: InViewAvailability
   lastSavedObservationAt?: (entry: SavedObject) => number | undefined
@@ -481,6 +485,9 @@ export function TrafficControls({
     phase: 'ready',
     document: emptySavedObjectsDocument(),
   },
+  savedActivity = [],
+  savedActivityUnreadCount = 0,
+  onAcknowledgeSavedActivity = () => undefined,
   aircraftAvailability = { available: true },
   vesselAvailability = { available: true },
   lastSavedObservationAt = () => undefined,
@@ -1331,6 +1338,9 @@ export function TrafficControls({
               discoverMarineMetadata={discoverMarineMetadata}
               savedEntries={savedEntries}
               savedStatus={savedStatus}
+              savedActivity={savedActivity}
+              savedActivityUnreadCount={savedActivityUnreadCount}
+              onAcknowledgeSavedActivity={onAcknowledgeSavedActivity}
               aircraftAvailability={aircraftAvailability}
               vesselAvailability={vesselAvailability}
               lastObservedAt={lastSavedObservationAt}

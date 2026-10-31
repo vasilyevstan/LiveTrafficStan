@@ -231,6 +231,7 @@ export interface AppConfig {
   saved: {
     maxEntries: number
     maxMovingEntriesPerKind: number
+    maxActivityEntries: number
     maxLabelLength: number
     maxRecordBytes: number
     maxDocumentBytes: number
@@ -863,6 +864,7 @@ export const createAppConfig = (
     saved: {
       maxEntries: 50,
       maxMovingEntriesPerKind: 20,
+      maxActivityEntries: 20,
       maxLabelLength: 80,
       maxRecordBytes: 512,
       maxDocumentBytes: 32 * 1_024,

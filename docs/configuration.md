@@ -221,7 +221,7 @@ spread through components:
 | Starlink cadence/sample | One actual-start SQLite reservation per 12 hours; schema 1 remains the exact 150-record `inclination-raan-systematic-v1` sample; schema 2 is exactly 512 records, 128 per fixed inclination band, selected by `inclination-shell-raan-phase-grid-v1`; no retry, truncation, rotation, viewport request, or completeness/representativeness claim |
 | Orbital catalog discovery | Query at most 64 characters; exact type/source-group filters; 20 rows per page |
 | In view | Collapsed peer below desktop Settings; direct action in the five-slot mobile dock. Aircraft and current modeled orbits reuse local search and `orbital.discovery.pageSize` (20). Ships uses the existing `VESSEL_RESULT_LIMIT` (20) for a capped Longest/Deepest draught shortlist; ranking is component-local, not a saved preference or map filter |
-| Saved objects | 50 total entries; 20 each for aircraft, vessels and satellites; 80-character labels; 512-byte records; 32 KiB versioned document; explicit additions only and no silent eviction |
+| Saved objects | 50 total entries; 20 each for aircraft, vessels and satellites; 80-character labels; 512-byte records; 32 KiB versioned document; explicit additions only and no silent eviction; 20 session-only Saved activity items per tab |
 | Mobile workspace | Width <=760px, or coarse-pointer landscape <=1024x480; one expanded nonmodal surface and compact retained selection; no saved presentation state |
 | Orbital selected track | 15 minutes; at most 31 points before gap/dateline splitting |
 | Orbital reviewed image | 5-second total deadline; exact manifest byte count, media type, and SHA-256; one fulfilled Blob URL or terminal failure per immutable asset in the running tab |
@@ -671,6 +671,35 @@ overwritten. Clear Saved is confirmed separately from Reset preferences and
 Clear history. The list is visible to anyone using the same browser profile;
 browser/PWA removal and origin backups are outside the application's deletion
 guarantee.
+
+### Saved activity
+
+Saved activity is a bounded in-memory projection over the same accepted state;
+it is not persisted in the Saved document, preferences, private history, URLs,
+analytics, caches or the application shell. Find shows at most 20 newest-first
+items and a count of activity not yet viewed in that tab. Opening the visible
+Find/Saved region acknowledges the current count without deleting the items.
+Reloading, opening another tab or restarting the browser starts with an empty
+activity list.
+
+The initial state after startup, reload, a Saved addition, a map-view change or
+return from HISTORY is a silent baseline. Later accepted provider revisions may
+report an exact saved aircraft or ship as **Received in current map data** or
+**Received again in current map data**. The wording does not distinguish global
+first observation, provider reacquisition or physical entry into the viewport.
+Registration, valid reported IMO and international-designator changes may add
+one deduplicated identity-conflict item without rebinding the Saved identity.
+
+A saved satellite may add **Upcoming modeled crossing of the current map area**
+only from an already compatible current prediction. Enabling ORBITS, loading or
+refreshing catalogs, changing filters/view, selecting an object, and keeping the
+worker alive remain outside Saved activity. The same NORAD crossing is
+deduplicated across curated and Starlink ownership.
+
+Stale, missing, offline, source-error, paused, filtered, hidden-layer, catalog
+not-loaded, hard-expired, HISTORY and captured-view states remain passive inline
+Saved status. They do not create per-object activity or unread-count storms.
+Airports and ports remain static references and create no activity.
 
 ## Scoped object discovery
 

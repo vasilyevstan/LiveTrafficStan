@@ -11,6 +11,7 @@ type ResultPrefix =
   | 'orbital-context-result'
   | 'orbital-catalog-result'
   | 'starlink-catalog-result'
+  | 'saved-activity-result'
   | 'object-find-result'
 
 interface ObjectResultButtonProps extends Omit<

@@ -25,6 +25,7 @@ import {
   type SavedObjectsLoadResult,
   type SavedObjectsMutationResult,
 } from '../domain/savedObjects'
+import type { SavedActivityRecord } from '../domain/savedActivity'
 import { matchesVesselIdentitySearch, normalizeVesselSearchQuery, orderVesselSearchResults, vesselResultContext, vesselResultLabel } from '../domain/vesselFilters'
 import { SameOriginObjectLookupProvider } from '../providers/discovery/objectLookupProvider'
 import { parseMarineMmsi } from '../providers/marine/marineSourceNormalization'
@@ -77,6 +78,9 @@ interface ObjectFindProps {
   discoverMarineMetadata?: (query: string, now: number) => CachedMarineDiscovery
   savedEntries?: readonly SavedObject[]
   savedStatus?: SavedObjectsLoadResult
+  savedActivity?: readonly SavedActivityRecord[]
+  savedActivityUnreadCount?: number
+  onAcknowledgeSavedActivity?: () => void
   aircraftAvailability?: InViewAvailability
   vesselAvailability?: InViewAvailability
   lastObservedAt?: (entry: SavedObject) => number | undefined
@@ -589,6 +593,13 @@ export function ObjectFind(props: ObjectFindProps) {
       <SavedObjects
         entries={savedEntries}
         status={savedStatus}
+        activity={props.savedActivity ?? []}
+        activityUnreadCount={props.savedActivityUnreadCount ?? 0}
+        active={props.active}
+        now={props.now}
+        onAcknowledgeActivity={
+          props.onAcknowledgeSavedActivity ?? (() => undefined)
+        }
         query={query}
         aircraft={props.aircraft}
         vessels={props.vessels}

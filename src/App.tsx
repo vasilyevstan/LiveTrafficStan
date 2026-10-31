@@ -30,6 +30,7 @@ import { useTheme } from './app/useTheme'
 import type { ThemePreference } from './app/theme'
 import { useTrafficHistory } from './app/useTrafficHistory'
 import { useSavedObjects } from './app/useSavedObjects'
+import { useSavedActivity } from './app/useSavedActivity'
 import { useTrailHistory } from './app/useTrailHistory'
 import { useWeatherObservations } from './app/useWeatherObservations'
 import { useOrbitalObjects } from './app/useOrbitalObjects'
@@ -1221,6 +1222,34 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
       viewReady,
     ],
   )
+  const savedActivityOrbitalCatalog = useMemo(
+    () =>
+      loadedOrbitalCatalog(
+        orbitalState,
+        starlinkState,
+        null,
+        now,
+        APP_CONFIG.orbital.expireAfterMs,
+      ).entries,
+    [now, orbitalState, starlinkState],
+  )
+  const savedActivity = useSavedActivity({
+    entries: savedObjects.entries,
+    savedReady: savedObjects.status.phase === 'ready',
+    contextKey: String(viewRequest.id),
+    historyActive,
+    aircraft,
+    aircraftStatus: aircraftResult.status,
+    aircraftAvailability,
+    vessels: currentVessels,
+    vesselStatus: marineResult.status,
+    vesselAvailability,
+    orbitalCatalog: savedActivityOrbitalCatalog,
+    curated: orbitalState,
+    starlink: starlinkState,
+    config: APP_CONFIG.saved,
+    now,
+  })
   const zoomContextViewport = trafficZoomContextViewport(
     lastLocalTrafficView,
     currentAssessment,
@@ -3123,6 +3152,9 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
           onPlaceSearchPause={pausePlaceSearch}
           savedEntries={savedObjects.entries}
           savedStatus={savedObjects.status}
+          savedActivity={savedActivity.records}
+          savedActivityUnreadCount={savedActivity.unreadCount}
+          onAcknowledgeSavedActivity={savedActivity.acknowledge}
           aircraftAvailability={aircraftAvailability}
           vesselAvailability={vesselAvailability}
           lastSavedObservationAt={lastSavedObservationAt}
