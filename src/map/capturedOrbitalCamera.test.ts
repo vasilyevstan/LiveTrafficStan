@@ -4,6 +4,7 @@ import type { ModeledOrbitalPosition } from '../domain/orbital'
 import { orbitalViewUnavailableReason, type CapturedOrbitalView } from '../domain/orbitalView'
 import type { AircraftViewPosition } from '../domain/aircraftView'
 import {
+  aircraftEyeCameraOptions,
   aircraftViewFraming,
   createCapturedAircraftCamera,
   createCapturedOrbitalCamera,
@@ -488,10 +489,10 @@ describe('captured orbital camera cleanup', () => {
       id: 'aircraft:511123', name: 'TST123', latitude: 0, longitude: 0,
       altitudeKm: 10, travelBearingDegrees: 90, observedAt: 0,
     }
-    const aircraftFixture = () => {
+    const aircraftFixture = (initialFlight = flight) => {
       const projection = { enter: vi.fn(), restore: vi.fn() }
       const result = fixture(position, (map, callbacks) => createCapturedAircraftCamera(
-        map, { revision: 1, viewRequestId: 2, position: flight }, projection,
+        map, { revision: 1, viewRequestId: 2, position: initialFlight }, projection,
         callbacks as unknown as Parameters<typeof createCapturedAircraftCamera>[3]))
       return { ...result, projection }
     }
@@ -564,6 +565,37 @@ describe('captured orbital camera cleanup', () => {
       expectRestoredInput()
     })
 
+    // A 20 m eye looking east: 76 deg targets about 80 m ahead, 79 deg about 103 m ahead.
+    const lowEyeZoom = (drawableBeyondDegrees: number) => (
+      _from: LngLatLike, _height: number, target: LngLatLike,
+    ): CameraOptions => ({
+      center: target, pitch: 0,
+      zoom: LngLat.convert(target).lng > drawableBeyondDegrees ? 16.5 : 16.6,
+    })
+
+    it('enters a low eye at the most oblique drawable look instead of the higher-zoom nadir', () => {
+      const low = { ...flight, altitudeKm: 0.02 }
+      const { camera, map, jumpTo, callbacks, renderReady, expectRestoredInput } = aircraftFixture(low)
+      vi.mocked(map.calculateCameraOptionsFromTo).mockImplementation(lowEyeZoom(0.0008))
+      camera.setReady(true)
+      renderReady()
+      expect(callbacks.onFailure).not.toHaveBeenCalled()
+      const placed = jumpTo.mock.calls.at(-1)?.[0]
+      expect(placed?.zoom).toBe(16.5)
+      expect(LngLat.convert(placed?.center ?? [0, 0]).lng).toBeCloseTo(0.02 * Math.tan(79 * Math.PI / 180) / 111.195, 4)
+      camera.exit(true)
+      expectRestoredInput()
+    })
+
+    it('returns with a plain low-eye reason when no look is drawable', () => {
+      const { camera, map, callbacks, expectRestoredInput } = aircraftFixture({ ...flight, altitudeKm: 0.005 })
+      vi.mocked(map.calculateCameraOptionsFromTo).mockImplementation(lowEyeZoom(1))
+      camera.setReady(true)
+      expect(callbacks.onFailure).toHaveBeenCalledExactlyOnceWith(
+        'The map cannot draw a view this close to the ground. Returned to the previous map.')
+      expectRestoredInput()
+    })
+
     it('keeps the prior aperture and rejects invalid canvases', () => {
       expect(aircraftViewFraming(315, 517, 36.86989764584402)).toEqual({
         initialPitch: 76, fieldOfView: 36.86989764584402,
@@ -571,6 +603,29 @@ describe('captured orbital camera cleanup', () => {
       expect(aircraftViewFraming(0, 517, 36.86989764584402)).toBeUndefined()
       expect(aircraftViewFraming(315, 517, 151)).toBeUndefined()
     })
+  })
+})
+
+describe('aircraft eye drawable zoom', () => {
+  const eye = { name: 'TST', latitude: 0, longitude: 0, altitudeKm: 0.3 }
+  it.each([
+    { lat: 1.29, zoom: 16.5, drawable: true },
+    { lat: 1.29, zoom: 16.6, drawable: false },
+    { lat: 40.75, zoom: 16.1, drawable: true },
+    { lat: 40.75, zoom: 16.2, drawable: false },
+    { lat: 60.17, zoom: 15.5, drawable: true },
+    { lat: 60.17, zoom: 15.6, drawable: false },
+  ])('applies the latitude-corrected vertical-perspective limit: %j', ({ lat, zoom, drawable }) => {
+    const map = geometry()
+    map.calculateCameraOptionsFromTo.mockReturnValue({ center: [0, lat], zoom, pitch: 60 })
+    expect(aircraftEyeCameraOptions(map, eye, 0, 60) !== undefined).toBe(drawable)
+  })
+
+  it('leaves orbital eyes on the native zoom limit', () => {
+    const map = geometry()
+    map.calculateCameraOptionsFromTo.mockReturnValue({ center: [0, 0], zoom: 18, pitch: 0 })
+    expect(orbitalEyeCameraOptions(map, position, 0, 0)).toBeDefined()
+    expect(aircraftEyeCameraOptions(map, eye, 0, 0)).toBeUndefined()
   })
 })
 

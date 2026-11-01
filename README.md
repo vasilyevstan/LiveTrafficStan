@@ -268,8 +268,8 @@ identity are not renamed or reset.
   and twelve ships are decluttered and faded between zoom 7 and 3; observations
   expire within two minutes. The labelled, read-only sample is not wider live
   coverage and never enters live counts, details, trails or history.
-- **Aircraft View from here (#625):** a live airborne aircraft at or above
-  300 m offers **View from here** in Auto projection. The view rides along its
+- **Aircraft View from here (#625):** a live airborne aircraft with a
+  positive reported altitude offers **View from here** in Auto projection. The view rides along its
   observed ADS-B positions at their reported barometric altitude, about 20 s
   behind and only between reports, so it never predicts. Drag or use the arrow
   keys to look around. **Pause** and **Play** work as in the satellite view,
@@ -277,6 +277,10 @@ identity are not renamed or reset.
   hidden. The view holds when reports stop and returns after the ordinary
   two-minute expiry. While it is active, a temporary globe-style projection
   is used, and it is not saved. The view makes no extra provider requests.
+  Buildings stand at full height throughout the ride. Low eyes enter when the
+  map can draw them; on a desktop this is from roughly 300 m, and lower on a
+  narrow phone. Otherwise the view Returns with a plain reason. Looking past
+  the drawable limit shows **Map display limit** instead of a blank view.
 - **Show path** in aircraft/ship details captures a session-only journey
   overview. Warm-colored past and blue remaining sections distinguish the
   journey phases; solid lines join received positions and dashed lines are
