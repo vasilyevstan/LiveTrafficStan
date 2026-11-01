@@ -4575,8 +4575,10 @@ For the viewport-driven map experience, additionally verify:
     height respond to actual workspace/visual viewport size, every exposed
     action remains at least 44 px, one panel owns scrolling, and a hit-tested
     useful map region remains. Live traffic details above the 760 px mobile
-    cutoff stay within the adaptive 340-380 px by 320-420 px coarse-pointer
-    cap, and primary traffic facts appear before optional route/photo states.
+    cutoff stay within the adaptive 340-380 px by 320-420 px cap even when the
+    browser does not report a coarse pointer. Utility actions share the
+    heading's top-right area, and primary traffic facts appear before optional
+    route/photo states.
 11. Aircraft, helicopter, and vessel artwork retains its identity over land,
    water, and busy detail at actual marker scale; stale markers remain
    recognizable and distinct from live markers.
