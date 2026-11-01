@@ -11,6 +11,7 @@ import {
   classifyAircraftProxyStatus,
   deriveOrbitalStaticAssetPaths,
   fetchPrivateRelayWithRetry,
+  formatMetarReleaseMismatch,
   hasOneYearImmutableCacheControl,
   isRetryableStaticAssetStatus,
   readOptionalJson,
@@ -596,9 +597,15 @@ const verifyMetarProxy = async () => {
     response.status === 200 || response.status === 204,
     `METAR proxy returned ${response.status}`,
   )
+  const observedReleaseSha = response.headers.get('x-livetrafficstan-release')
   assert(
-    response.headers.get('x-livetrafficstan-release') === expectedReleaseSha,
-    'METAR proxy release SHA does not match the deployed source',
+    observedReleaseSha === expectedReleaseSha,
+    formatMetarReleaseMismatch({
+      expectedReleaseSha,
+      observedReleaseSha,
+      targetOrigin: baseUrl.origin,
+      status: response.status,
+    }),
   )
   assert(
     response.headers.get('cache-control') === 'public, max-age=60',

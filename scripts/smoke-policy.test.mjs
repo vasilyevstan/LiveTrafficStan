@@ -15,6 +15,7 @@ import {
   classifyAircraftProxyStatus,
   deriveOrbitalStaticAssetPaths,
   fetchPrivateRelayWithRetry,
+  formatMetarReleaseMismatch,
   hasOneYearImmutableCacheControl,
   isRetryableStaticAssetStatus,
   readOptionalJson,
@@ -158,6 +159,82 @@ const createOrbitalRouteFixture = (mode) => {
 }
 
 describe('production smoke policy', () => {
+  const metarMismatch = (observedReleaseSha, status = 200) =>
+    formatMetarReleaseMismatch({
+      expectedReleaseSha: releaseSha,
+      observedReleaseSha,
+      targetOrigin: 'https://app.example',
+      status,
+    })
+
+  it('records exact expected and observed METAR release identities and target', () => {
+    const observedReleaseSha = 'a'.repeat(40)
+    expect(metarMismatch(observedReleaseSha)).toBe(
+      'METAR proxy release SHA does not match the deployed source: ' +
+      `expected=${releaseSha}, observed="${observedReleaseSha}", ` +
+      'target=https://app.example/api/weather/metar?ids=EETN, status=200',
+    )
+  })
+
+  it.each([
+    [null, '<missing>'],
+    ['', '""'],
+    ['not-a-sha', '"not-a-sha"'],
+    ['C'.repeat(40), `"${'C'.repeat(40)}"`],
+    [` ${releaseSha} `, `" ${releaseSha} "`],
+    ['"\\\n\r\t\u001b', '"\\"\\\\\\n\\r\\t\\u001b"'],
+  ])('safely distinguishes the observed METAR value %j', (observed, formatted) => {
+    expect(metarMismatch(observed, 204)).toContain(
+      `observed=${formatted}, target=https://app.example/api/weather/metar?ids=EETN, status=204`,
+    )
+  })
+
+  it('bounds diagnostic values without hiding truncation', () => {
+    expect(metarMismatch('a'.repeat(128))).toContain(
+      `observed="${'a'.repeat(128)}",`,
+    )
+    const message = metarMismatch('a'.repeat(128) + 'SECRET_TAIL')
+    expect(message).toContain(`observed="${'a'.repeat(128)}" (truncated),`)
+    expect(message).not.toContain('SECRET_TAIL')
+  })
+
+  it('wires diagnostics into the single-attempt raw exact METAR assertion', () => {
+    const metarCheck = smokeScript.slice(
+      smokeScript.indexOf('const verifyMetarProxy = async () => {'),
+      smokeScript.indexOf('const verifyAirportBoardBoundary'),
+    )
+    expect(metarCheck).toContain(
+      "const observedReleaseSha = response.headers.get('x-livetrafficstan-release')",
+    )
+    expect(metarCheck).toContain(
+      'assert(\n    observedReleaseSha === expectedReleaseSha,\n' +
+      '    formatMetarReleaseMismatch({\n' +
+      '      expectedReleaseSha,\n      observedReleaseSha,\n' +
+      '      targetOrigin: baseUrl.origin,\n      status: response.status,\n' +
+      '    }),\n  )',
+    )
+    expect(metarCheck.indexOf('response.status === 200 || response.status === 204'))
+      .toBeLessThan(metarCheck.indexOf('observedReleaseSha === expectedReleaseSha'))
+    expect(metarCheck.match(/await fetchWithTimeout\(/g)).toHaveLength(3)
+    expect(metarCheck).not.toMatch(/\b(?:while|for|retry|waitForWorkerRelease)\b/)
+    expect(metarCheck).toContain(
+      "new URL('/api/weather/metar?ids=EETN', baseUrl),\n  )",
+    )
+    for (const assertion of [
+      "response.headers.get('cache-control') === 'public, max-age=60'",
+      "response.headers.get('x-content-type-options') === 'nosniff'",
+      "!response.headers.has('access-control-allow-origin')",
+      'body.byteLength <= 256 * 1_024',
+      "response.headers.get('content-type')?.includes('application/json')",
+      'Array.isArray(payload)',
+      "record.icaoId === 'EETN'",
+      "invalid.status === 400",
+      "unsupportedMethod.status === 405",
+    ]) {
+      expect(metarCheck).toContain(assertion)
+    }
+  })
+
   const workerProbe = (releaseSha, overrides = {}) =>
     new Response(null, {
       status: overrides.status ?? 400,
