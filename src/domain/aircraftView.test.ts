@@ -30,8 +30,10 @@ describe('aircraft view eligibility', () => {
     ['invalid longitude', { position: { latitude: 0, longitude: 181, observedAt: 1 } }, 'auto', /cannot be represented/],
     ['polar latitude', { position: { latitude: 86, longitude: 0, observedAt: 1 } }, 'auto', /cannot be represented/],
     ['missing altitude', { altitudeMeters: undefined }, 'auto', /reported altitude/],
-    ['ground altitude', { altitudeMeters: 0 }, 'auto', /above 300 m/],
-    ['low altitude', { altitudeMeters: 299 }, 'auto', /above 300 m/],
+    ['ground altitude', { altitudeMeters: 0 }, 'auto', /reports ground/],
+    ['negative altitude', { altitudeMeters: -30 }, 'auto', /above the sea-level map/],
+    ['low airborne altitude', { altitudeMeters: 30 }, 'auto', undefined],
+    ['formerly gated altitude', { altitudeMeters: 299 }, 'auto', undefined],
     ['eligible', {}, 'auto', undefined],
   ])('%s', (_name, patch, projection, reason) => {
     const result = aircraftViewUnavailableReason(patch && { ...aircraft, ...patch }, projection)
@@ -55,7 +57,9 @@ describe('aircraft view position', () => {
     expect(aircraftViewPosition({ ...aircraft, courseDegrees: undefined })?.travelBearingDegrees).toBe(80)
     expect(aircraftViewPosition({ ...aircraft, courseDegrees: 360, headingDegrees: NaN }, 45)
       ?.travelBearingDegrees).toBe(45)
-    expect(aircraftViewPosition({ ...aircraft, altitudeMeters: 100 })).toBeUndefined()
+    expect(aircraftViewPosition({ ...aircraft, altitudeMeters: 100 })?.altitudeKm).toBe(0.1)
+    expect(aircraftViewPosition({ ...aircraft, altitudeMeters: 0 })).toBeUndefined()
+    expect(aircraftViewPosition({ ...aircraft, altitudeMeters: -1 })).toBeUndefined()
   })
 })
 

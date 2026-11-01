@@ -302,8 +302,9 @@ are duplicated or remounted.
 
 `mobileWorkspace.ts` separates selected identity from inspector presentation.
 Only one expanded task or inspector uses the nonmodal mobile reading surface.
-Map selection starts compact on phones; desktop and result-origin selection
-keep expanded details. An open phone task suspends the entire retained
+Ordinary live map selection starts expanded on phones, while captured views
+start compact; desktop and result-origin selection also keep expanded details.
+An open phone task suspends the entire retained
 `DetailsPanel` with native hidden/inert, without unmounting its
 metadata/photo/route hooks. Details suspends the actual native task; Back
 restores that task's draft, scroll and valid focus. X invokes the existing
@@ -453,10 +454,12 @@ positions changes the full-canvas viewport used by MapLibre or provider queries.
 All five detail components and captured journeys share `DetailsPanel`,
 including aircraft, ships and historical traffic. Live traffic adds one scoped
 desktop action row beneath its identity for Show path, View from here, Save,
-Share, and the 44 by 44 px accessible X. Compact mobile and forced-compact
-presentations keep primary actions in the expanded body so disabled reasons
-remain visible and non-inert. Other inspectors retain their existing heading
-contract. The full-width body is the sole scroll owner.
+Share, and the 44 by 44 px accessible X. Expanded mobile traffic details put
+the two icon-only traffic actions in the same header row as Save/Share/Close;
+forced desktop compaction retains them in the expanded body. Captured compact
+views do not expose primary actions until expansion. Disabled reasons remain
+visible and non-inert. Other inspectors retain their existing heading contract.
+The full-width body is the sole scroll owner.
 
 Shared overlay geometry uses bounded workspace/visual-viewport dimensions for
 width, padding, gaps, and reading height. Coarse-pointer landscape screens do

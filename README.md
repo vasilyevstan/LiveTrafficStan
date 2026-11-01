@@ -268,8 +268,8 @@ identity are not renamed or reset.
   and twelve ships are decluttered and faded between zoom 7 and 3; observations
   expire within two minutes. The labelled, read-only sample is not wider live
   coverage and never enters live counts, details, trails or history.
-- **Aircraft View from here (#625):** a live airborne aircraft at or above
-  300 m offers **View from here** in Auto projection. The view rides along its
+- **Aircraft View from here (#625):** a live airborne aircraft with a
+  positive reported altitude offers **View from here** in Auto projection. The view rides along its
   observed ADS-B positions at their reported barometric altitude, about 20 s
   behind and only between reports, so it never predicts. Drag or use the arrow
   keys to look around. **Pause** and **Play** work as in the satellite view,
@@ -277,6 +277,10 @@ identity are not renamed or reset.
   hidden. The view holds when reports stop and returns after the ordinary
   two-minute expiry. While it is active, a temporary globe-style projection
   is used, and it is not saved. The view makes no extra provider requests.
+  Buildings stand at full height throughout the ride. Low eyes enter when the
+  map can draw them; on a desktop this is from roughly 300 m, and lower on a
+  narrow phone. Otherwise the view Returns with a plain reason. Looking past
+  the drawable limit shows **Map display limit** instead of a blank view.
 - **Show path** in aircraft/ship details captures a session-only journey
   overview. Warm-colored past and blue remaining sections distinguish the
   journey phases; solid lines join received positions and dashed lines are
@@ -570,9 +574,10 @@ identity are not renamed or reset.
   are in mobile Layers; desktop controls keep their existing layout/defaults.
   Every object inspector has an accessible 44px X. Selected live traffic uses
   a compact identity row plus one desktop action row for **Show path**,
-  **View from here**, Save, Share, and Close; mobile/forced-compact views keep
-  those primary actions in the expanded body so their status text remains
-  visible. The body is the sole reading scroller.
+  **View from here**, Save, Share, and Close. Expanded mobile traffic details
+  put the two icon-only traffic actions in that same header row; narrowly
+  forced desktop compaction keeps them in the expanded body. Disabled reasons
+  remain visible and associated. The body is the sole reading scroller.
   Overlay widths, padding and reading heights are bounded from the actual
   workspace and visual viewport rather than growing fixed whitespace on large
   coarse-pointer landscape screens.
@@ -589,8 +594,9 @@ identity are not renamed or reset.
   Counts, marine source scope, freshness, and traffic mode remain visible;
   **Provider details** opens independent provider messages on every screen size.
 - **More** and **Settings** open beside the
-  desktop rail. **The unreleased map-first phone revision in this source**
-  starts map selections as a compact identity card with **Details** and X.
+  desktop rail. Ordinary live phone map selection opens the useful traffic
+  details on the first click; captured views retain a compact identity card
+  with **Details** and X.
   One nonmodal task, expanded inspector, provider disclosure or credits surface
   is visible at a time. Opening a task suspends the whole retained inspector
   without remounting its details. Selecting a result opens its details;
@@ -1461,6 +1467,19 @@ MapLibre canvas, compact deduplicated attribution, and zero console/runtime
 errors were retained. The compact unavailable-route and aircraft-photo cards
 also retained the required standing-data, provider/privacy, cache, and rights
 wording.
+
+The #641 responsive follow-up is deployed as application
+`f7a45c7765d98386376b33b372a99f015de122ab`, Worker
+`784dc407-c8e4-4a8c-94c5-d0062f479a1c`. At the reported 739x1047 touch
+viewport, ordinary aircraft selection opened details on the first click and
+the panel measured 400x306 px, 15.8% of the viewport, with one body scroller,
+44x44 path/view/save/share/close targets, one MapLibre canvas and no horizontal
+overflow. The 568x320 In view surface measured 272x132 px with 44 px tabs;
+Tesla-like 1920-wide In view released its former blank 620 px body and sized
+to actual tabs/results. Production smoke preserved the OCI relay and every
+enabled application input. Later documentation-only commits do not replace
+that running application or its rollback predecessor
+`5a35de847592af6c478dd3ec939ff31cde7e1715`.
 
 A later real-device report showed that the first evidence was incomplete: it
 varied the layout viewport but did not force a shorter visual viewport below

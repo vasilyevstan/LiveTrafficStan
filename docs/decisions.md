@@ -26,6 +26,40 @@ arrives and Returns at the ordinary 120-second expiry. Ground, stale, history,
 Flat or polar selections show a truthful unavailable reason. Ships remain
 omitted, because a 20 m eye showed only water and sky.
 
+### Altitude floor and ride buildings (2026 follow-up)
+
+The 300 m entry floor was only the Gate 0 validation range, not a geometric
+requirement. GPT-6.1 Sol, Claude Opus 5.5 and Grok 4.7 compared three options:
+- no floor, with truthful drawing-limit failure (chosen);
+- a configured 30 m floor;
+- raising the eye to 30 m with a disclosure. This was rejected because it
+  splits the truth.
+
+Any finite positive altitude is now eligible. 0 means on the ground, and a
+negative value is at or below the sea-level map. Mid-ride, only those
+reports finish the ride. A missing or stale report holds, then says "No
+usable report".
+
+Real-browser measurement found the real limit. MapLibre 6.10 draws no ground
+or layers under `vertical-perspective` once `zoom - log2(cos(latitude))`
+passes about 16.65. This was measured at latitudes 1.29, 40.75 and 60.17,
+pitch 0-76, and DPR 1 and 3. Mercator still draws there, but switching
+projection mid-ride would need fresh Gate 0 evidence. Instead, the aircraft
+eye rejects zooms beyond a 16.55 margin:
+- Entry tries the configured 76°, then 79° oblique, then nadir. If none of
+  these draw, entry Returns with "The map cannot draw a view this close to the
+  ground".
+- Looking down mid-ride shows the existing **Map display limit** pause.
+
+The effective floor is roughly 300 m on a 1920x1080 desktop in New York and
+about 180 m on a 315x517 phone.
+
+Buildings use one ride-only paint override. Extrusions use full
+`render_height`/`render_min_height` from the existing zoom 14.5 minzoom
+instead of the zoom 14.5-15.5 ramp, so they no longer squash while you look
+around. The override is reapplied after `style.load` and restored on Return.
+There is no terrain mesh, follow query, max-zoom raise or GNSS-altitude eye.
+
 ## Session-only Saved activity without notifications
 
 Saved may expose a bounded **Saved activity** feed inside Find, but the product

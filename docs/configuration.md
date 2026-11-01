@@ -221,9 +221,9 @@ spread through components:
 | Starlink source and publication | Fixed official `starlink` GP then SATCAT pair; 6 MiB and 15,000 rows per response, 12 MiB aggregate, 60-second total deadline; one normalization and one final aligned schema-1/schema-2 bundle write |
 | Starlink cadence/sample | One actual-start SQLite reservation per 12 hours; schema 1 remains the exact 150-record `inclination-raan-systematic-v1` sample; schema 2 is exactly 512 records, 128 per fixed inclination band, selected by `inclination-shell-raan-phase-grid-v1`; no retry, truncation, rotation, viewport request, or completeness/representativeness claim |
 | Orbital catalog discovery | Query at most 64 characters; exact type/source-group filters; 20 rows per page |
-| In view | Collapsed peer below desktop Settings; direct action in the five-slot mobile dock. Aircraft and current modeled orbits reuse local search and `orbital.discovery.pageSize` (20). Ships uses the existing `VESSEL_RESULT_LIMIT` (20) for a capped Longest/Deepest draught shortlist; ranking is component-local, not a saved preference or map filter |
+| In view | Collapsed peer below desktop Settings; direct action in the five-slot mobile dock. The surface sizes to actual content up to its viewport cap; normal counts stay in tabs and Explore orbits appears only in the Orbits context. Aircraft and current modeled orbits reuse local search only when the list is nontrivial or a query is active, with `orbital.discovery.pageSize` (20). Ships uses the existing `VESSEL_RESULT_LIMIT` (20) for a capped Longest/Deepest draught shortlist; ranking is component-local, not a saved preference or map filter |
 | Saved objects | 50 total entries; 20 each for aircraft, vessels and satellites; 80-character labels; 512-byte records; 32 KiB versioned document; explicit additions only and no silent eviction; 20 session-only Saved activity items per tab |
-| Mobile workspace | Width <=760px, or coarse-pointer landscape <=1024x480; one expanded nonmodal surface and compact retained selection; no saved presentation state |
+| Mobile workspace | Width <=760px, or coarse-pointer landscape <=1024x480; one expanded nonmodal surface; ordinary live traffic selection starts expanded, captured views start compact, and task opening retains/suspends selection without remounting; no saved presentation state |
 | Orbital selected track | 15 minutes; at most 31 points before gap/dateline splitting |
 | Orbital reviewed image | 5-second total deadline; exact manifest byte count, media type, and SHA-256; one fulfilled Blob URL or terminal failure per immutable asset in the running tab |
 | Marine metadata refresh | 5 minutes |
@@ -381,12 +381,14 @@ and automatic/error exits do not restore obsolete selection.
 
 | Setting | Default | Meaning |
 | --- | --- | --- |
-| `minimumAltitudeMeters` | 300 | Lowest reported barometric altitude that can enter. |
 | `initialLookPitchDegrees` | 76 | Initial track-relative look angle from nadir. |
 | `interpolationDelayMs` | 20,000 | Display lag behind the latest report (one aircraft cadence). |
 | `maximumInterpolationGapMs` | 60,000 | A longer report gap jumps instead of gliding. |
+| `maximumDrawableGlobeZoom` | 16.55 | Largest `zoom - log2(cos(latitude))` the eye may use; MapLibre 6.10 `vertical-perspective` draws nothing beyond about 16.65. |
 
-The hold notice and expiry reuse the aircraft `staleAfterMs` and
+Any finite altitude above 0 is eligible. There is no fixed altitude floor:
+the drawable zoom decides, and it depends on eye height, look pitch, canvas
+size and latitude. The hold notice and expiry reuse the aircraft `staleAfterMs` and
 `expireAfterMs`. There is no environment override.
 
 ## Changing the center
