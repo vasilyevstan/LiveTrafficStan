@@ -63,6 +63,7 @@ import { AircraftDiscovery } from './AircraftDiscovery'
 import { AirportContext } from './AirportContext'
 import { DeferredModule } from './DeferredModule'
 import { HistoryControls } from './HistoryControls'
+import { focusOrbitalRevealTarget } from './orbitalRevealFocus'
 import { useLocationSearchModel } from './useLocationSearchModel'
 import { VesselDiscovery } from './VesselDiscovery'
 import { WeatherContext } from './WeatherContext'
@@ -524,7 +525,6 @@ export function TrafficControls({
   const inViewBodyRef = useRef<HTMLDivElement>(null)
   const inViewEntryRef = useRef<HTMLButtonElement>(null)
   const inViewOpenedFromSettingsRef = useRef(false)
-  const orbitalToggleRef = useRef<HTMLButtonElement>(null)
   const [openWorkspaceTask, setOpenWorkspaceTask] = useState<MobileWorkspaceTask | null>(null)
   const inspector = useContext(MobileInspectorContext)
   const [noticeTarget, setNoticeTarget] = useState<HTMLElement | null>(null)
@@ -548,6 +548,14 @@ export function TrafficControls({
   const [mapToolTask, setMapToolTask] =
     useState<MapToolTask>(mobileWorkspace ? 'layers' : 'find')
   const [orbitalUiRequested, setOrbitalUiRequested] = useState(false)
+  const [orbitalUiLoaded, setOrbitalUiLoaded] = useState(false)
+  const [orbitalRevealFocusRevision, setOrbitalRevealFocusRevision] =
+    useState(0)
+  const orbitalRevealFocusPendingRef = useRef(false)
+  const markOrbitalUiLoaded = useCallback(
+    () => setOrbitalUiLoaded(true),
+    [],
+  )
   const focusedWithinMapToolsRef = useRef(false)
   const focusedWithinSettingsRef = useRef(false)
   const lastTaskFocusRef = useRef(new WeakMap<HTMLDetailsElement, HTMLElement>())
@@ -568,6 +576,26 @@ export function TrafficControls({
     closeOtherTasks(target)
     target.open = true
   }
+  useEffect(() => {
+    if (!orbitalUiLoaded || !orbitalRevealFocusPendingRef.current) return
+    const details = mapToolsDetailsRef.current
+    const panel = details?.querySelector<HTMLElement>(
+      '#map-tools-panel-orbits',
+    )
+    if (!details || document.activeElement !== panel) {
+      orbitalRevealFocusPendingRef.current = false
+      return
+    }
+    if (focusOrbitalRevealTarget(details)) {
+      orbitalRevealFocusPendingRef.current = false
+    }
+  }, [
+    orbitalDisplay.shownIds,
+    orbitalRevealFocusRevision,
+    orbitalState.prediction.results,
+    orbitalState.snapshot,
+    orbitalUiLoaded,
+  ])
   const reconcileTask = useCallback(() => {
     const task = mapToolsDetailsRef.current?.open ? mapToolTask :
       settingsDetailsRef.current?.open ? 'settings' :
@@ -774,16 +802,16 @@ export function TrafficControls({
   const revealOrbitalObjects = () => {
     const details = mapToolsDetailsRef.current
     if (!details) return
+    orbitalRevealFocusPendingRef.current = true
+    setOrbitalRevealFocusRevision((revision) => revision + 1)
     setOrbitalUiRequested(true)
     setMapToolTask('orbits')
     openTask(details)
     globalThis.requestAnimationFrame(() => {
       mapToolsBodyRef.current?.scrollTo({ top: 0 })
-      const target =
-        details.querySelector<HTMLElement>(
-          '.orbital-results button',
-        ) ?? orbitalToggleRef.current
-      target?.focus()
+      if (focusOrbitalRevealTarget(details)) {
+        orbitalRevealFocusPendingRef.current = false
+      }
     })
   }
   const selectMapToolTask = (task: MapToolTask) => {
@@ -954,7 +982,6 @@ export function TrafficControls({
           SHIPS
         </button>
         <button
-          ref={orbitalToggleRef}
           id="orbital-layer-toggle"
           type="button"
           className={orbitalVisible ? 'is-active' : undefined}
@@ -1409,6 +1436,7 @@ export function TrafficControls({
             id="map-tools-panel-orbits"
             className="control-panel__task"
             aria-labelledby="map-tools-task-orbits"
+            tabIndex={-1}
             hidden={mapToolTask !== 'orbits'}
           >
             {orbitalVisible && orbitalStatusMessage && (
@@ -1432,6 +1460,7 @@ export function TrafficControls({
             <DeferredModule
               active={orbitalUiRequested}
               load={loadAdvancedOrbitalUi}
+              onReady={markOrbitalUiLoaded}
               pending={<p className="control-note" role="status">Opening orbital tools.</p>}
               failed={(_error, retry) => (
                 <div className="control-note ports-status" role="alert">

@@ -827,6 +827,9 @@ describe('TrafficControls', () => {
     expect(html).toContain(
       'aria-label="View modeled orbital objects" aria-controls="traffic-controls-map-tools">VIEW',
     )
+    expect(html).toMatch(
+      /<section id="map-tools-panel-orbits"[^>]*tabindex="-1"/,
+    )
     expect(html).not.toContain('Modeled orbital objects')
     expect(html).not.toContain('ATLAS CENTAUR 2')
     expect(html).toContain('CelesTrak')
