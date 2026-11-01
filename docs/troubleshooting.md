@@ -695,6 +695,20 @@ immediately rather than being retried. A persistent canonical mismatch still
 fails the release; do not change the source or bypass the exact-current-`main`
 guard.
 
+METAR release mismatches remain immediate failures, without an added retry.
+Their smoke error records the full expected SHA, observed release header,
+deployment origin and fixed METAR route, and HTTP status. `<missing>` differs
+from an empty `""` header; observed values are escaped and limited to 128
+characters with explicit truncation, without changing the raw exact comparison.
+A different canonical SHA, missing header, or malformed value helps identify
+what was received but does not establish a cache, edge, or propagation cause.
+[Issue #606](https://github.com/vasilyevstan/LiveTrafficStan/issues/606) records
+a mismatch four seconds after publication whose received SHA was not logged.
+Later unchanged strict smoke passes on both hosts did not turn the original
+failed Actions run green or demonstrate an application/provider regression.
+Any new METAR retry needs separate evidence and approval; do not relax exact
+release, response-policy, or deadline checks to hide a mismatch.
+
 Production deployment credentials exist only in the protected GitHub
 `production` environment. This includes `AIRCRAFT_RELAY_AUTH_TOKEN` when
 private mode is used. Do not duplicate them in repository secrets, place them
