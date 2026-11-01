@@ -62,7 +62,6 @@ import { WeatherObservationDetails } from './components/WeatherObservationDetail
 import { CapturedAircraftDetails } from './components/CapturedAircraftDetails'
 import { formatOrbitalSummary } from './components/orbitalSummary'
 import {
-  AIRCRAFT_VIEW_CONFIG,
   APP_CONFIG,
   BASEMAP_DETAIL_CONFIG,
   ZOOM_TRAFFIC_CONTEXT_CONFIG,
@@ -131,7 +130,7 @@ import type { OrbitalViewport } from './domain/orbitalViewport'
 import { orbitalFeatureOwner, type ModeledOrbitalPosition } from './domain/orbital'
 import { orbitalViewUnavailableReason, type CapturedOrbitalView } from './domain/orbitalView'
 import {
-  aircraftViewPosition, aircraftViewUnavailableReason, type AircraftViewPosition, type CapturedAircraftView,
+  aircraftViewAltitudeReason, aircraftViewPosition, aircraftViewUnavailableReason, type AircraftViewPosition, type CapturedAircraftView,
 } from './domain/aircraftView'
 import { orbitalEnrichmentForPosition } from './domain/orbitalEnrichment'
 import {
@@ -1051,10 +1050,12 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     if (!view || !capturedAircraftCurrent) return
     const entity = aircraftResult.entities.find(candidate => candidate.id === view.position.id)
     if (entity && entity.position.observedAt > capturedAircraftCurrent.observedAt) {
-      if (entity.altitudeMeters === 0 || entity.altitudeMeters !== undefined &&
-        entity.altitudeMeters < AIRCRAFT_VIEW_CONFIG.minimumAltitudeMeters) {
-        finishCapturedAircraftView(view.revision,
-          `${view.position.name} reported an altitude below ${AIRCRAFT_VIEW_CONFIG.minimumAltitudeMeters} m. Returned to the previous map.`)
+      const altitudeReason = entity.altitudeMeters === undefined ? undefined
+        : aircraftViewAltitudeReason(entity.altitudeMeters)
+      if (altitudeReason) {
+        finishCapturedAircraftView(view.revision, entity.altitudeMeters === 0
+          ? `${view.position.name} reported ground. Returned to the previous map.`
+          : `${view.position.name} reported an altitude below the sea-level map. Returned to the previous map.`)
         return
       }
       const next = aircraftViewPosition({ ...entity, freshness: 'live' }, capturedAircraftCurrent.travelBearingDegrees)
@@ -1065,7 +1066,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     }
     if (now - capturedAircraftCurrent.observedAt > APP_CONFIG.aircraft.expireAfterMs) {
       finishCapturedAircraftView(view.revision,
-        `No new report from ${view.position.name} for ${Math.round(APP_CONFIG.aircraft.expireAfterMs / 1_000)} s. Returned to the previous map.`)
+        `No usable report from ${view.position.name} for ${Math.round(APP_CONFIG.aircraft.expireAfterMs / 1_000)} s. Returned to the previous map.`)
     }
   }, [aircraftResult.entities, capturedAircraftCurrent, capturedAircraftView, finishCapturedAircraftView, now])
   const capturedAircraftHolding = Boolean(capturedAircraftCurrent &&

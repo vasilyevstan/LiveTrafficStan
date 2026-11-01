@@ -274,12 +274,18 @@ and [actual production evidence](hosting-and-deployment.md#captured-orbital-view
 
 The disabled **View from here** button in aircraft details states its reason:
 - the selection is not live;
-- the aircraft is on the ground, below 300 m or has no altitude;
+- the aircraft is on the ground, reports an altitude at or below sea level,
+  or has no altitude;
 - the position is polar;
 - the projection is Flat, or HISTORY is active;
 - the basemap is not loaded.
 
-A hold notice means no newer report has arrived. The view does not predict
+A low aircraft may still Return at once with "The map cannot draw a view
+this close to the ground". This is a MapLibre globe drawing limit, and it
+depends on height, latitude and window size; a narrower window or a higher
+aircraft helps. **Map display limit** mid-ride means that look direction
+cannot be drawn, so look nearer the horizon. A hold notice means no newer
+usable report has arrived. The view does not predict
 movement, and it Returns with a reason after two minutes without a report.
 The ride stays on the area that was loaded when you entered, so an aircraft
 that leaves that area holds and then Returns. The globe-style projection is
