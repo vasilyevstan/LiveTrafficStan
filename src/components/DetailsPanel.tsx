@@ -10,7 +10,7 @@ interface DetailsPanelProps {
   heading: ReactNode
   headerAction?: ReactNode
   actionRow?: ReactNode
-  mobileActionPlacement?: 'body' | 'header'
+  mobileActionPlacement?: 'body' | 'header' | 'header-always'
   children: ReactNode
   className?: string
   panelRef?: Ref<HTMLDivElement>
@@ -31,8 +31,9 @@ export function DetailsPanel({
   const presentation = useContext(MobileInspectorContext)
   const responsiveActions = Boolean(presentation?.mobile || presentation?.forceCompact)
   const mobileHeaderActions = Boolean(
-    actionRow && presentation?.mobile && mobileActionPlacement === 'header',
+    actionRow && presentation?.mobile && mobileActionPlacement !== 'body',
   )
+  const persistentMobileHeaderActions = mobileActionPlacement === 'header-always'
   const compact = Boolean((presentation?.mobile || presentation?.forceCompact) && presentation?.compact)
   const suspended = Boolean(presentation?.mobile && presentation.suspended)
   const bodyId = useId()
@@ -129,7 +130,7 @@ export function DetailsPanel({
           </DetailsPanelFeedbackContext.Provider>
         </div>
       )}
-      {mobileHeaderActions && !compact && (
+      {mobileHeaderActions && (!compact || persistentMobileHeaderActions) && (
         <div className="details-panel__mobile-actions" onClickCapture={() => {
           scrollTopRef.current = 0
           if (bodyRef.current) bodyRef.current.scrollTop = 0

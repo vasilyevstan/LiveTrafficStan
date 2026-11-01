@@ -3367,16 +3367,11 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
             vesselPhotoEnabled={!historyActive}
             vesselPhoto={vesselPhoto.state}
             onRequestVesselPhoto={vesselPhoto.request}
-            aircraftPhotoTermsUrl={
-              APP_CONFIG.aircraftPhoto.sourceTermsUrl
-            }
             flightRouteEnabled={flightRouteEnabled}
             flightRoute={flightRoute.state}
             now={displayNow}
             units={units}
             historical={historyActive}
-            onRequestAircraftPhoto={aircraftPhoto.request}
-            onRequestFlightRoute={flightRoute.request}
             onShowJourney={!historyActive && mapCamera ? handleShowJourney : undefined}
             journeyMessage={journeyMessage}
             onViewFromHere={handleCaptureAircraftView}

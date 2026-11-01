@@ -20,10 +20,7 @@ import type {
   AircraftMetadataViewState,
 } from '../domain/aircraftMetadata'
 import type { AircraftPhotoViewState } from '../domain/aircraftPhoto'
-import type {
-  FlightRouteUnavailableReason,
-  FlightRouteViewState,
-} from '../domain/flightRoute'
+import type { FlightRouteViewState } from '../domain/flightRoute'
 import type { DisplayTrafficEntity } from '../domain/traffic'
 import {
   aircraftAltitudeBandLabel,
@@ -43,35 +40,11 @@ import {
   type VesselReferencePhoto,
   type VesselReferencePhotoSelection,
 } from '../domain/vesselPhoto'
+import { DetailActionIcon } from './DetailActionIcon'
 
 interface DetailRowProps {
   label: string
   value: string | number | undefined
-}
-
-function TrafficActionIcon({ name }: { name: 'path' | 'view' }) {
-  return (
-    <svg
-      className="traffic-action-icon"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      focusable="false"
-    >
-      {name === 'path' ? <>
-        <circle cx="5" cy="18" r="2" />
-        <circle cx="19" cy="6" r="2" />
-        <path d="M7 18c0-5 3.5-5 6-6s4-2 4-4" />
-      </> : <>
-        <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6S2.5 12 2.5 12Z" />
-        <circle cx="12" cy="12" r="2.5" />
-      </>}
-    </svg>
-  )
 }
 
 function DetailRow({ label, value }: DetailRowProps) {
@@ -90,7 +63,6 @@ interface TrafficDetailsProps {
   aircraftMetadata: AircraftMetadataViewState
   aircraftPhotoEnabled?: boolean
   aircraftPhoto?: AircraftPhotoViewState
-  aircraftPhotoTermsUrl?: string
   vesselPhotoEnabled?: boolean
   vesselPhoto?: VesselPhotoViewState
   flightRouteEnabled?: boolean
@@ -98,9 +70,7 @@ interface TrafficDetailsProps {
   now: number
   units: UnitSystem
   historical?: boolean
-  onRequestAircraftPhoto?: () => void
   onRequestVesselPhoto?: () => void
-  onRequestFlightRoute?: () => void
   onShowJourney?: () => void
   journeyMessage?: string
   onViewFromHere?: () => void
@@ -244,270 +214,51 @@ function AircraftMetadataDetails({
   )
 }
 
-const unavailableRouteMessage = (reason: FlightRouteUnavailableReason) => {
-  switch (reason) {
-    case 'invalid-identity':
-      return 'Needs callsign, ICAO24, and current position.'
-    case 'not-found':
-      return 'No standing route for this callsign.'
-    case 'implausible':
-      return 'Standing route does not fit the current position.'
-    case 'incomplete':
-      return 'Standing route lacks an origin or destination.'
-  }
-}
-
 const airportLabel = ({ name, code }: { name: string; code?: string }) =>
   code ? `${name} (${code})` : name
 
-function FlightRouteDetails({
-  state,
-  now,
-  onRequest,
-}: {
-  state: FlightRouteViewState
-  now: number
-  onRequest: () => void
-}) {
-  const invalidIdentity =
-    state.phase === 'unavailable' &&
-    state.reason === 'invalid-identity'
-  const loading = state.phase === 'loading'
-  const retryAt =
-    state.phase === 'error' || state.phase === 'available'
-      ? state.retryAt
-      : undefined
-  const coolingDown =
-    retryAt !== undefined && retryAt > now
-  const source =
-    state.phase === 'available'
-      ? state.route.source
-      : {
-          name: 'ADSB.lol',
-          websiteUrl: 'https://www.adsb.lol/',
-        }
-  const actionLabel =
-    state.phase === 'available'
-      ? coolingDown
-        ? 'Refresh later'
-        : 'Refresh'
-      : state.phase === 'unavailable' && !invalidIdentity
-        ? 'Try again'
-        : state.phase === 'error'
-          ? coolingDown
-            ? 'Retry later'
-            : 'Try again'
-          : undefined
-
+function FlightRouteDetails({ state }: { state: FlightRouteViewState }) {
+  if (state.phase !== 'available') return null
   return (
     <section
       className="flight-route"
-      aria-labelledby="flight-route-heading"
+      aria-label="Plausible route"
     >
-      <div className="flight-route__heading">
-        <h3 id="flight-route-heading">Plausible route</h3>
-        {actionLabel && (
-          <button
-            type="button"
-            className="flight-route__action"
-            disabled={coolingDown}
-            onClick={onRequest}
-          >
-            {actionLabel}
-          </button>
-        )}
-      </div>
-      {(state.phase === 'idle' || loading) && (
-        <p className="metadata-status" role="status">
-          Checking route…
-        </p>
-      )}
-      {state.phase === 'available' && (
-        <>
-          <dl className="details-grid aircraft-metadata__grid">
-            <DetailRow
-              label="Plausible origin"
-              value={airportLabel(state.route.departure)}
-            />
-            <DetailRow
-              label="Plausible destination"
-              value={airportLabel(state.route.arrival)}
-            />
-            {state.route.providerUpdatedAt !== undefined && (
-              <DetailRow
-                label="Standing data age"
-                value={formatAge(state.route.providerUpdatedAt, now)}
-              />
-            )}
-          </dl>
-          <p className="metadata-status">
-            Standing-data estimate; not a filed plan and may be wrong.
-          </p>
-          {coolingDown && (
-            <p className="metadata-status">
-              Refresh after {formatTimestamp(retryAt)}.
-            </p>
-          )}
-        </>
-      )}
-      {state.phase === 'unavailable' && (
-        <p className="metadata-status">
-          {unavailableRouteMessage(state.reason)}
-        </p>
-      )}
-      {state.phase === 'error' && (
-        <p className="metadata-status metadata-status--error" role="alert">
-          {state.reason === 'quota-exhausted'
-            ? 'Route lookups limited.'
-            : 'Route lookup unavailable.'}{' '}
-          {coolingDown
-            ? `Retry after ${formatTimestamp(retryAt)}. `
-            : ''}
-          Live traffic unaffected.
-        </p>
-      )}
-      <p className="metadata-attribution">
-        <a href={source.websiteUrl}>{source.name}</a> ·{' '}
-        <a href="https://github.com/vradarserver/standing-data">
-          VRS Standing Data
-        </a>
-      </p>
+      <dl className="details-grid aircraft-metadata__grid">
+        <DetailRow label="Departure" value={airportLabel(state.route.departure)} />
+        <DetailRow label="Destination" value={airportLabel(state.route.arrival)} />
+      </dl>
     </section>
   )
 }
 
-const aircraftPhotoErrorMessage = (
-  state: Extract<AircraftPhotoViewState, { phase: 'error' }>,
-  now: number,
-) => {
-  switch (state.reason) {
-    case 'timeout':
-      return 'The Planespotters photo request timed out.'
-    case 'throttled':
-      return state.retryAt !== undefined && state.retryAt > now
-        ? `Planespotters is temporarily limiting requests. Try again after ${formatTimestamp(state.retryAt)}.`
-        : 'Planespotters is temporarily limiting requests. Try again later.'
-    case 'forbidden':
-      return 'Planespotters rejected this browser request.'
-    case 'invalid-response':
-      return 'Planespotters returned an unsupported photo response.'
-    case 'network':
-      return 'The browser could not reach Planespotters.'
-    case 'provider-error':
-      return 'Planespotters could not provide a photo response.'
-  }
-}
-
-function AircraftPhotoDetails({
-  icao24,
-  state,
-  termsUrl,
-  now,
-  onRequest,
-}: {
-  icao24: string
-  state: AircraftPhotoViewState
-  termsUrl: string
-  now: number
-  onRequest: () => void
-}) {
-  const identity = state.identityKey ?? icao24.trim().toUpperCase()
-  const loading = state.phase === 'loading'
-  const invalidIdentity =
-    state.phase === 'unavailable' &&
-    state.reason === 'invalid-identity'
-  const throttled =
-    state.phase === 'error' &&
-    state.reason === 'throttled' &&
-    state.retryAt !== undefined &&
-    state.retryAt > now
-
+function AircraftPhotoDetails({ state }: { state: AircraftPhotoViewState }) {
+  if (state.phase !== 'available') return null
   return (
-    <section
+    <figure
       className="aircraft-metadata aircraft-photo"
-      aria-labelledby="aircraft-photo-heading"
     >
-      <h3 id="aircraft-photo-heading">Aircraft photo</h3>
-
-      {state.phase === 'available' ? (
-        <>
-          <p className="metadata-status">
-            Planespotters match for ICAO24 {state.photo.icao24}.
-          </p>
-          <a
-            className="aircraft-photo__link"
-            href={state.photo.photoPageUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <img
-              className="aircraft-photo__image"
-              src={state.photo.thumbnailUrl}
-              width={state.photo.thumbnailWidth}
-              height={state.photo.thumbnailHeight}
-              alt={`Aircraft photo returned by Planespotters for ICAO24 ${state.photo.icao24}`}
-              loading="lazy"
-              decoding="async"
-            />
-          </a>
-          <p className="metadata-attribution aircraft-photo__credit">
-            Photo © {state.photo.photographer} ·{' '}
-            <a href={state.photo.source.websiteUrl}>
-              {state.photo.source.name}
-            </a>
-            {' · '}Open image for original.
-          </p>
-        </>
-      ) : (
-        <>
-          <details className="context-details">
-            <summary>Photo privacy &amp; terms</summary>
-            <p className="metadata-status">
-              Planespotters receives ICAO24 {identity || 'unavailable'} plus
-              network metadata; images load from its CDN.{' '}
-              <a href={termsUrl}>Terms</a>.
-            </p>
-          </details>
-          {loading && (
-            <p className="metadata-status" role="status">
-              Loading photo…
-            </p>
-          )}
-          {state.phase === 'unavailable' && (
-            <p className="metadata-status">
-              {invalidIdentity
-                ? 'Photo needs a valid six-character ICAO24.'
-                : `No exact photo for ICAO24 ${identity} · exact matches only.`}
-            </p>
-          )}
-          {state.phase === 'error' && (
-            <p
-              className="metadata-status metadata-status--error"
-              role="alert"
-            >
-              {aircraftPhotoErrorMessage(state, now)} Live ADS-B remains
-              active.
-            </p>
-          )}
-          <button
-            type="button"
-            className="aircraft-photo__action"
-            disabled={loading || invalidIdentity || throttled}
-            onClick={onRequest}
-          >
-            {loading
-              ? 'Loading photo…'
-              : invalidIdentity
-                ? 'Photo unavailable'
-                : throttled
-                  ? 'Try again later'
-                  : state.phase === 'idle'
-                    ? 'Load photo'
-                    : 'Try again'}
-          </button>
-        </>
-      )}
-    </section>
+      <a
+        className="aircraft-photo__link"
+        href={state.photo.photoPageUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <img
+          className="aircraft-photo__image"
+          src={state.photo.thumbnailUrl}
+          width={state.photo.thumbnailWidth}
+          height={state.photo.thumbnailHeight}
+          alt={`Aircraft ${state.photo.icao24}`}
+          loading="eager"
+          decoding="async"
+        />
+      </a>
+      <figcaption className="metadata-attribution aircraft-photo__credit">
+        © {state.photo.photographer} ·{' '}
+        <a href={state.photo.source.websiteUrl}>{state.photo.source.name}</a>
+      </figcaption>
+    </figure>
   )
 }
 
@@ -659,16 +410,12 @@ export function TrafficDetails({
   aircraftPhoto = { phase: 'idle' },
   vesselPhotoEnabled = false,
   vesselPhoto = { phase: 'idle' },
-  aircraftPhotoTermsUrl =
-    'https://www.planespotters.net/photo/api',
   flightRouteEnabled = false,
   flightRoute = { phase: 'idle' },
   now,
   units,
   historical = false,
-  onRequestAircraftPhoto = () => undefined,
   onRequestVesselPhoto = () => undefined,
-  onRequestFlightRoute = () => undefined,
   onShowJourney,
   journeyMessage,
   journeyPreparing = false,
@@ -699,7 +446,18 @@ export function TrafficDetails({
       : undefined
   const dynamicVesselPhoto = entity.kind === 'vessel' && !historical && vesselPhotoEnabled
     ? dynamicVesselPhotoForSelection(entity, vesselPhoto) : undefined
-  const optionalEnrichment = (
+  const aircraftEnrichmentAvailable =
+    entity.kind === 'aircraft' &&
+    !historical &&
+    (flightRouteEnabled && flightRoute.phase === 'available' ||
+      aircraftPhotoEnabled && aircraftPhoto.phase === 'available')
+  const aircraftEnrichment = aircraftEnrichmentAvailable ? (
+    <div className="traffic-details__enrichment">
+      {flightRouteEnabled && <FlightRouteDetails state={flightRoute} />}
+      {aircraftPhotoEnabled && <AircraftPhotoDetails state={aircraftPhoto} />}
+    </div>
+  ) : null
+  const vesselEnrichment = (
     <>
       {vesselPhotoSelection?.kind === 'available' && (
         <VesselPhotoDetails
@@ -722,27 +480,6 @@ export function TrafficDetails({
           />
         )}
 
-      {entity.kind === 'aircraft' &&
-        flightRouteEnabled &&
-        !historical && (
-          <FlightRouteDetails
-            state={flightRoute}
-            now={now}
-            onRequest={onRequestFlightRoute}
-          />
-        )}
-
-      {entity.kind === 'aircraft' &&
-        aircraftPhotoEnabled &&
-        !historical && (
-          <AircraftPhotoDetails
-            icao24={entity.hex}
-            state={aircraftPhoto}
-            termsUrl={aircraftPhotoTermsUrl}
-            now={now}
-            onRequest={onRequestAircraftPhoto}
-          />
-        )}
     </>
   )
 
@@ -764,7 +501,7 @@ export function TrafficDetails({
             title={journeyPreparing ? 'Loading path' : 'Show path'}
             aria-busy={journeyPreparing || undefined}
             onClick={onShowJourney} disabled={journeyPreparing}>
-            <TrafficActionIcon name="path" />
+            <DetailActionIcon name="path" />
           </button>
         )}
         {entity.kind === 'aircraft' && onViewFromHere && (
@@ -775,7 +512,7 @@ export function TrafficDetails({
             data-aircraft-view-entry={entity.id}
             onClick={onViewFromHere} disabled={Boolean(viewFromHereUnavailable)}
             aria-describedby={viewFromHereUnavailable ? viewReasonId : undefined}>
-            <TrafficActionIcon name="view" />
+            <DetailActionIcon name="view" />
           </button>
         )}
       </> : undefined}
@@ -805,6 +542,8 @@ export function TrafficDetails({
             : 'Position is temporarily stale'}
         </p>
       )}
+
+      {aircraftEnrichment}
 
       <dl className="details-grid">
         {entity.kind === 'aircraft' ? (
@@ -982,7 +721,7 @@ export function TrafficDetails({
         />
         <DetailRow label="Source" value={entity.provider} />
       </dl>
-      {optionalEnrichment}
+      {vesselEnrichment}
       {entity.kind === 'vessel' && entity.attribution && (
         <details className="context-details">
           <summary>Contributing source credits</summary>

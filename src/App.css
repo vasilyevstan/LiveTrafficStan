@@ -1650,7 +1650,7 @@
 
 @container workspace (min-width: 761px) {
   .app-shell:not(.app-shell--mobile-workspace)
-    .details-panel--traffic-actions {
+    .details-panel {
     --details-panel-padding: 12px;
     width: clamp(340px, 19cqw, 380px);
     max-height: min(
@@ -1660,6 +1660,30 @@
           32px
       )
     );
+  }
+
+  .app-shell:not(.app-shell--mobile-workspace)
+    .details-panel--compact-actions
+    .details-panel__heading {
+    min-height: 44px;
+    padding-right: 144px;
+  }
+
+  .app-shell:not(.app-shell--mobile-workspace)
+    .details-panel--compact-actions.details-panel--action
+    .details-panel__heading {
+    padding-right: 188px;
+  }
+
+  .app-shell:not(.app-shell--mobile-workspace)
+    .details-panel--compact-actions
+    .details-panel__action-row {
+    position: absolute;
+    top: var(--details-panel-padding);
+    right: var(--details-panel-padding);
+    z-index: 3;
+    flex: none;
+    margin: 0;
   }
 
   .app-shell:not(.app-shell--mobile-workspace)
@@ -1681,14 +1705,14 @@
   }
 
   .app-shell:not(.app-shell--mobile-workspace)
-    .details-panel--traffic-actions
+    .details-panel
     .details-grid {
     gap-inline: 12px;
     margin-top: 4px;
   }
 
   .app-shell:not(.app-shell--mobile-workspace)
-    .details-panel--traffic-actions
+    .details-panel
     .detail-row {
     padding-block: 7px;
   }
@@ -1701,7 +1725,7 @@
   }
 
   .app-shell:not(.app-shell--mobile-workspace)
-    .details-panel--traffic-actions
+    .details-panel
     :is(.metadata-status, .metadata-attribution) {
     margin-top: 6px;
     line-height: 1.35;
@@ -1730,7 +1754,8 @@
   flex: 0 0 44px;
 }
 
-.traffic-details__icon-action {
+.traffic-details__icon-action,
+.details-panel__icon-action {
   display: grid;
   width: 44px;
   min-width: 44px;
@@ -1843,55 +1868,18 @@
 
 .orbital-view-heading {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 4px 8px;
-}
-
-.details-panel--orbital-view.details-panel--action .details-panel__heading {
-  padding-right: 0;
-}
-
-.details-panel--orbital-view.details-panel--action h2 {
-  padding-right: 88px;
-}
-
-.details-panel--orbital-view.details-panel--action:has(.details-panel__save):has(.details-panel__share)
-  h2 {
-  padding-right: 132px;
-}
-
-.details-panel--orbital-view.details-panel--action .orbital-view-heading {
-  grid-template-rows: minmax(40px, auto) auto;
-}
-
-.details-panel--orbital-view.details-panel--action[data-force-compact] h2 {
-  padding-right: 148px;
-}
-
-.details-panel--orbital-view.details-panel--action[data-force-compact]:has(.details-panel__save):has(.details-panel__share)
-  h2 {
-  padding-right: 192px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px;
 }
 
 .orbital-view-heading h2 {
-  grid-column: 1 / -1;
+  grid-column: 1;
 }
 
 .orbital-view-heading .metadata-status {
   margin: 0;
   font-size: 0.68rem;
   line-height: 1.35;
-}
-
-.orbital-view-return {
-  min-height: 44px;
-  padding: 6px 10px;
-}
-
-.orbital-view-actions {
-  display: flex;
-  gap: 6px;
 }
 
 .journey-actions button,
@@ -2316,25 +2304,22 @@
   overflow-wrap: anywhere;
 }
 
+.traffic-details__enrichment {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 7px;
+}
+
 .flight-route {
-  margin-top: 10px;
-  padding: 9px 10px;
+  margin: 0;
+  padding: 5px 8px;
   border: 1px solid var(--detail-divider);
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--button-background);
 }
 
-.flight-route__heading {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.flight-route__heading h3 {
-  margin: 0;
-  color: var(--detail-heading);
-  font-size: 0.81rem;
+.flight-route .aircraft-metadata__grid {
+  margin-top: 0;
 }
 
 .aircraft-metadata h3 {
@@ -2390,7 +2375,6 @@
   color: var(--accent-line);
 }
 
-.flight-route__action,
 .aircraft-photo__action {
   min-height: 36px;
   margin-top: 9px;
@@ -2403,14 +2387,6 @@
   cursor: pointer;
 }
 
-.flight-route__action {
-  flex: 0 0 auto;
-  margin-top: 0;
-  min-height: 28px;
-}
-
-.flight-route__action:hover,
-.flight-route__action:focus-visible,
 .aircraft-photo__action:hover,
 .aircraft-photo__action:focus-visible {
   color: var(--button-hover-text);
@@ -2418,7 +2394,6 @@
   outline: none;
 }
 
-.flight-route__action:disabled,
 .aircraft-photo__action:disabled {
   color: var(--button-disabled-text);
   border-color: var(--button-disabled-border);
@@ -2436,6 +2411,28 @@
   border: 1px solid var(--detail-divider);
   border-radius: 8px;
   overflow: hidden;
+}
+
+.traffic-details__enrichment .aircraft-photo {
+  margin: 0;
+}
+
+.traffic-details__enrichment .aircraft-photo__link {
+  margin: 0 auto;
+}
+
+.traffic-details__enrichment .aircraft-photo__image {
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: 150px;
+  object-fit: contain;
+}
+
+.traffic-details__enrichment .aircraft-photo__credit {
+  margin-top: 4px;
+  font-size: 0.68rem;
+  line-height: 1.3;
 }
 
 .aircraft-photo__link:focus-visible,
@@ -3648,20 +3645,6 @@
   padding-right: 184px;
 }
 
-.app-shell--mobile-workspace .details-panel--orbital-view.details-panel--action .details-panel__heading {
-  padding-right: 12px;
-}
-
-.app-shell--mobile-workspace .details-panel--orbital-view.details-panel--action h2 {
-  padding-right: 128px;
-}
-
-.app-shell--mobile-workspace
-  .details-panel--orbital-view.details-panel--action:has(.details-panel__save):has(.details-panel__share)
-  h2 {
-  padding-right: 172px;
-}
-
 .app-shell--mobile-workspace .details-panel__identity {
   flex-wrap: wrap;
 }
@@ -3769,6 +3752,48 @@
 
 .app-shell--mobile-workspace .details-panel__share {
   top: 0;
+}
+
+@container workspace (max-width: 340px) {
+  .app-shell--mobile-workspace
+    .details-panel--traffic-actions.details-panel--mobile-header-actions.details-panel--action:has(
+      .details-panel__save
+    ):has(.details-panel__share)
+    .details-panel__heading {
+    min-height: 68px;
+    padding: 0 12px 44px;
+  }
+
+  .app-shell--mobile-workspace
+    .details-panel--traffic-actions.details-panel--mobile-header-actions
+    :is(
+      .details-panel__presentation,
+      .details-panel__header-action,
+      .details-panel__mobile-actions,
+      .details-panel__close
+    ) {
+    top: 24px;
+  }
+}
+
+.app-shell--mobile-workspace[data-mobile-landscape]
+  .details-panel--traffic-actions.details-panel--mobile-header-actions.details-panel--action:has(
+    .details-panel__save
+  ):has(.details-panel__share)
+  .details-panel__heading {
+  min-height: 68px;
+  padding: 0 12px 44px;
+}
+
+.app-shell--mobile-workspace[data-mobile-landscape]
+  .details-panel--traffic-actions.details-panel--mobile-header-actions
+  :is(
+    .details-panel__presentation,
+    .details-panel__header-action,
+    .details-panel__mobile-actions,
+    .details-panel__close
+  ) {
+  top: 24px;
 }
 
 .app-shell--mobile-workspace .details-panel[data-compact] .details-panel__heading {
