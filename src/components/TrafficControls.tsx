@@ -1982,29 +1982,31 @@ export function TrafficControls({
             <OperationIcon name="inView" />
             IN VIEW
           </summary>
-          {mobileTaskHeading('In view', closeInView)}
-          <div
-            ref={inViewBodyRef}
-            id="traffic-controls-in-view"
-            className="control-panel__more-body in-view-body"
-            role="region"
-            aria-label="Aircraft, ships and orbits in view"
-          >
-            <button
-              className="close-button in-view__close"
-              type="button"
-              aria-label="Close In view"
-              onClick={closeInView}
+          <div className="control-panel__surface control-panel__surface--in-view">
+            {mobileTaskHeading('In view', closeInView)}
+            <div
+              ref={inViewBodyRef}
+              id="traffic-controls-in-view"
+              className="control-panel__more-body in-view-body"
+              role="region"
+              aria-label="Aircraft, ships and orbits in view"
             >
-              <OperationIcon name="close" />
-            </button>
-            {inView}
-            <div className="control-options control-options--one in-view__more">
-              <button type="button" onClick={revealOrbitalObjects}>
-                More: orbital discovery &amp; passes
+              <button
+                className="close-button in-view__close"
+                type="button"
+                aria-label="Close In view"
+                onClick={closeInView}
+              >
+                <OperationIcon name="close" />
               </button>
+              {inView}
+              <div className="control-options control-options--one in-view__more">
+                <button type="button" onClick={revealOrbitalObjects}>
+                  Explore orbits
+                </button>
+              </div>
+              {mobileWorkspace && openWorkspaceTask === 'in-view' && viewportNotice}
             </div>
-            {mobileWorkspace && openWorkspaceTask === 'in-view' && viewportNotice}
           </div>
         </details>
       </aside>
