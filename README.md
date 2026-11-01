@@ -935,7 +935,7 @@ operational thresholds, and examples.
 | Place search | Photon / OpenStreetMap | OSM ODbL attribution applies | Direct browser access on explicit submit |
 | Aircraft | ADSB.lol | ODbL 1.0 | Same-origin Vite/Cloudflare proxy by default; protected direct-browser build only after provider-approved CORS |
 | Aircraft metadata | Mictronics aircraft-database derivative | ODC-By 1.0 | Immutable same-origin static assets, loaded only after selection |
-| Selected-aircraft photos | Planespotters Photo API | API-specific and general terms apply | On-demand direct browser request and unchanged returned thumbnail; enabled in production |
+| Selected-aircraft photos | Planespotters Photo API | API-specific and general terms apply | Automatic selection/fine-pointer direct browser request and unchanged returned thumbnail; enabled in production |
 | Vessel photos | Open Waters / Wikimedia Commons; eight reviewed bundled files | Individual CC BY, CC BY-SA, CC0 or public-domain rights | IMO-first/MMSI-fallback same-origin metadata lookup and direct Commons image; bundled exact-IMO matches remain local |
 | Country allocations | michaeljfazio/MIDs, ibosoftnet ICAO24 transcription, Wikidata cross-check | Apache-2.0 and CC0 1.0 | Bundled deterministic local lookup |
 | Marine | Fintraffic Digitraffic | CC BY 4.0 | Direct regional REST and MQTT |
@@ -1730,13 +1730,15 @@ monitoring, privacy, and rollback procedure.
 - Plausible route lookup is callsign-based standing data checked against the
   current aircraft position. It can be stale, absent, or wrong and is not a
   date-specific schedule, filed flight plan, airport board, diversion signal,
-  or route-history service.
+  or route-history service. Only a successful result is shown, as compact
+  departure and destination rows above aircraft facts.
 - Aircraft photos are enabled through direct browser JSON and unchanged image
   URLs. The published low-volume browser path requires no API key, email,
   membership account, or prior provider contact, but the photo surface must
   remain public and free. Provider JSON stays in a bounded one-hour,
   32-entry current-tab cache, and no URL, credit, or image byte is persisted or
-  proxied.
+  proxied. Only an exact successful photo is shown above aircraft facts, with
+  its required photographer/source credit and source-page link.
 - Dynamic vessel-photo coverage depends on Open Waters / Commons. A reported
   number match is a historical reference, not live confirmation of the
   transmitting hull; MMSIs can be reassigned. Eight bundled IMOs additionally

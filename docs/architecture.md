@@ -94,10 +94,11 @@ committed selected live Aircraft
              -> direct ADSB.lol standing-route JSON
              -> exact callsign + local route-position plausibility check
              -> bounded six-hour tab cache + failure cooldown
-             -> compact details result + explicit refresh/retry only
+             -> successful departure/destination only; no empty/status card
 selected live Aircraft or 500 ms fine-pointer hover
              -> direct Planespotters hex API -> validated unchanged thumbnail
-             -> shared bounded one-hour tab cache -> credited source-page link
+             -> shared bounded one-hour tab cache
+             -> successful credited source-page image only; no empty/status card
 selected live Vessel or 500 ms fine-pointer hover -> reported IMO, else MMSI
              -> reviewed bundled IMO match, otherwise fixed Open Waters lookup
              -> licensed historical image with matching/identity caveat
@@ -451,16 +452,21 @@ while the playback controls stay reachable throughout. Mobile attribution opens
 above the command dock rather than beneath its buttons. None of these DOM/CSS
 positions changes the full-canvas viewport used by MapLibre or provider queries.
 
-All five detail components and captured journeys share `DetailsPanel`,
-including aircraft, ships and historical traffic. Live traffic adds one scoped
-desktop action row beneath its identity for Show path, View from here, Save,
-Share, and the 44 by 44 px accessible X. Expanded mobile traffic details put
-the two icon-only traffic actions in the same header row as Save/Share/Close;
-forced desktop compaction retains them in the expanded body. Captured compact
-views do not expose primary actions until expansion. Disabled reasons remain
-visible and non-inert. Other inspectors retain their existing heading contract.
-Primary report facts precede optional route/photo enrichment. The full-width
-body is the sole scroll owner.
+All detail components and captured journeys share `DetailsPanel`, including
+aircraft, ships and historical traffic. Settings retains its independent
+reading surface. Above the mobile cutoff, detail inspectors share bounded
+340-380 px by 320-420 px geometry. Detail-specific actions such as Show path,
+View from here, Hide path, Pause/Play and Return join Save, Share and the
+44 by 44 px accessible X in the top-right header row instead of consuming a
+second row. Expanded mobile live details use the same header ownership;
+captured-view Pause/Play and Return remain reachable even while the body is
+compact. Disabled reasons remain visible and non-inert.
+
+For selected aircraft, only successful route and photo enrichment renders.
+The route contains only Departure and Destination; the photo contains the
+linked unchanged image and mandatory compact credit. Loading, unavailable and
+error states create no visible route/photo card. Successful enrichment appears
+above telemetry facts. The full-width body remains the sole scroll owner.
 
 Shared overlay geometry uses bounded workspace/visual-viewport dimensions for
 width, padding, gaps, and reading height. Above the 760 px mobile cutoff, live
@@ -700,9 +706,9 @@ never changes provider health, freshness, history, or marker artwork.
 
 Aircraft photos form a separate fail-closed direct-browser boundary, explicitly
 enabled in the protected production build. They accept only the normalized
-live ICAO24. Selected details start one automatic attempt and retain an
-explicit retry action; a fine pointer can also start one
-automatic lookup only after remaining on the same live aircraft for 500 ms.
+live ICAO24. Selected details start one automatic attempt; a fine pointer can
+also start one automatic lookup only after remaining on the same live aircraft
+for 500 ms.
 One cancellable lookup targets only the fixed Planespotters hex endpoint.
 Runtime validation accepts an empty photo array or exactly one regular
 thumbnail from the exact provider origins
@@ -720,8 +726,9 @@ without a second provider request. Subscription lifetime, including React
 development Strict Mode cleanup/replay, owns that notification. Hover change,
 pointer leave, selection change, close, HISTORY entry, and unmount abort and
 revision-invalidate obsolete work. Errors are not cached, an automatic hover
-does not loop or retry, and `429` blocks another manual attempt without
-scheduling a retry. No photo JSON, URL, credit, or image byte enters traffic
+does not loop or retry, and `429` blocks another request without scheduling a
+retry. Non-success states stay visually absent from selected details. No photo
+JSON, URL, credit, or image byte enters traffic
 models, history, Web Storage, IndexedDB, Cache API, the service worker, or a
 Worker route. The published terms require no prior email or account-side API
 setup for this low-volume browser path. Production remains enabled only while
@@ -1123,7 +1130,7 @@ continues to render.
   and never alter ADS-B selection, polling, map state, or route lookup.
 - Plausible routes have an independent selected-identity controller. A new
   eligible committed aircraft identity starts one lookup; same-key position
-  updates only refresh the coordinates available to a later manual refresh.
+  updates only refresh the coordinates retained for that selection.
   Cached routes render without a request. A to B changes abort obsolete work,
   and unavailable/error results never schedule a retry after cooldown.
 - Bundled vessel photos derive an exact synchronous manifest result from

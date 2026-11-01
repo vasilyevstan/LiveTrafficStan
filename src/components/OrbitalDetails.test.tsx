@@ -55,7 +55,7 @@ describe('OrbitalDetails', () => {
       />,
     )
     expect(html).toContain('not Flat')
-    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>View from here<\/button>/)
+    expect(html).toMatch(/<button[^>]*aria-label="View from here"[^>]*disabled=""/)
   })
   it('attributes native GP/type separately from the dated CelesTrak membership reference without claiming SATCAT', () => {
     const native: OrbitalCatalogSnapshot = {

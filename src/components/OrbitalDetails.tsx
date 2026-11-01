@@ -23,6 +23,7 @@ import {
 } from '../domain/orbitalEnrichment'
 import type { UnitSystem } from '../domain/units'
 import type { OrbitalEnrichmentImageState } from '../app/useOrbitalEnrichmentImage'
+import { DetailActionIcon } from './DetailActionIcon'
 
 export type OrbitalDetailsMapDisplay =
   | { available: false }
@@ -275,10 +276,25 @@ export function OrbitalDetails({
 
   return (
     <DetailsPanel
+      className={onViewFromHere ? 'details-panel--compact-actions' : undefined}
       titleId="selected-orbital-title"
       closeLabel="Close orbital details"
       onClose={onClose}
       headerAction={shareObject}
+      mobileActionPlacement="header"
+      actionRow={onViewFromHere ? (
+        <button
+          type="button"
+          className="details-panel__icon-action orbital-view-entry"
+          aria-label="View from here"
+          title="View from here"
+          onClick={onViewFromHere}
+          disabled={Boolean(viewFromHereUnavailable)}
+          aria-describedby={viewFromHereUnavailable ? viewReasonId : undefined}
+        >
+          <DetailActionIcon name="view" />
+        </button>
+      ) : undefined}
       heading={
         <div>
           <p className="eyebrow">Selected orbit</p>
@@ -287,13 +303,7 @@ export function OrbitalDetails({
       }
     >
       {onViewFromHere && (
-        <div className="journey-actions">
-          <button type="button" className="orbital-view-entry" onClick={onViewFromHere} disabled={Boolean(viewFromHereUnavailable)}
-            aria-describedby={viewFromHereUnavailable ? viewReasonId : undefined}>
-            View from here
-          </button>
-          {viewFromHereUnavailable && <p id={viewReasonId} className="metadata-status">{viewFromHereUnavailable}</p>}
-        </div>
+        viewFromHereUnavailable && <p id={viewReasonId} className="metadata-status">{viewFromHereUnavailable}</p>
       )}
       {enrichment ? (
         <OrbitalEnrichmentDetails

@@ -23,9 +23,9 @@ The feature:
 - labels the result as plausible rather than scheduled, filed, active, or
   authoritative;
 - keeps successful results only in a bounded six-hour current-tab cache;
-- keeps a compact status/result directly below the selected-aircraft heading,
-  with manual refresh or retry only after the first automatic lookup, and
-  resets details scroll when selection changes;
+- shows only a successful compact departure/destination result above aircraft
+  facts, renders no loading/unavailable/error card, and resets details scroll
+  when selection changes;
 - honors bounded `Retry-After` guidance or a local fallback cooldown without
   scheduling a retry.
 
@@ -113,8 +113,7 @@ prove operational intent.
 
 ## Product semantics
 
-The details panel says **Plausible route** and explicitly states that the result
-is not:
+The application treats a plausible route as standing-data context and not:
 
 - a filed flight plan;
 - a schedule;
@@ -125,12 +124,12 @@ is not:
 No route data changes ADS-B marker position, freshness, polling, trails,
 selection, metadata, aircraft history, or provider health.
 
-The compact status or result appears directly below the selected-aircraft
-heading so it is visible before telemetry, photo, and metadata sections.
-Results use **Plausible origin**, **Plausible destination**, and optional
-**Standing data age**. The card keeps one short “not a filed flight plan”
-caveat and concise ADSB.lol/VRS Standing Data attribution. Changing selection
-resets the details panel scroll position to the top.
+Only a successful result appears above telemetry, photo and metadata sections.
+It contains **Departure** and **Destination** only. Loading, unavailable and
+error states create no visible route card. ADSB.lol remains identified by the
+traffic Source fact and provider disclosure; VRS Standing Data is CC0 and stays
+documented here rather than adding card text. Changing selection resets the
+details panel scroll position to the top.
 
 ## Request and cache behavior
 
@@ -144,8 +143,7 @@ request.
 Successful exact-identity results may remain in a 32-entry least-recently-used
 cache for six hours. Revisiting a cached exact identity renders it immediately
 without a provider request. Current position is used for the initial
-plausibility check but does not churn the cache as the aircraft moves. Manual
-**Refresh** makes a new provider request.
+plausibility check but does not churn the cache as the aircraft moves.
 
 Unavailable and failed results are not cached. No route response, URL, airport,
 or attribution data enters Web Storage, IndexedDB, traffic history, the
@@ -153,9 +151,8 @@ service-worker cache, the Worker Cache API, KV, R2, or a Durable Object.
 
 A readable provider `Retry-After` is honored and capped at five minutes. When
 it is absent or malformed, provider failure applies a 60-second route-local
-cooldown. Manual retry or refresh is disabled until the deadline; no timeout
-callback starts a request automatically, including when the deadline elapses
-while the aircraft remains selected.
+cooldown. No timeout callback starts a request automatically, including when
+the deadline elapses while the aircraft remains selected.
 
 ## Removed aviationstack path
 
