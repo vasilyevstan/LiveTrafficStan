@@ -204,7 +204,7 @@ describe('TrafficDetails dynamic vessel photos', () => {
     expect(html).toContain('https://creativecommons.org/licenses/by/4.0/')
     expect(html).toContain('Historical reference only')
     expect(html).not.toContain('Exact AIS-reported IMO')
-    expect(html.indexOf('Vessel photo')).toBeLessThan(html.indexOf('<dt>MMSI'))
+    expect(html.indexOf('<dt>MMSI')).toBeLessThan(html.indexOf('Vessel photo'))
   })
 
   it('guards the complete selected identity, prefers bundled imagery and excludes history', () => {
@@ -411,8 +411,8 @@ describe('TrafficDetails aircraft metadata', () => {
     expect(html).toContain('Photo © Test Photographer')
     expect(html).toContain('Open image for original')
     expect(html).not.toContain('Load photo')
-    expect(html.indexOf('Aircraft photo')).toBeLessThan(
-      html.indexOf('Callsign'),
+    expect(html.indexOf('Callsign')).toBeLessThan(
+      html.indexOf('Aircraft photo'),
     )
   })
 
@@ -516,8 +516,8 @@ describe('TrafficDetails aircraft metadata', () => {
     expect(enabledHtml.indexOf('>Refresh<')).toBeLessThan(
       enabledHtml.indexOf('Aircraft photo'),
     )
-    expect(enabledHtml.indexOf('Aircraft photo')).toBeLessThan(
-      enabledHtml.indexOf('Callsign'),
+    expect(enabledHtml.indexOf('Callsign')).toBeLessThan(
+      enabledHtml.indexOf('Plausible route'),
     )
     expect(enabledHtml).toContain('ADSB.lol')
     expect(enabledHtml).toContain('VRS Standing Data')
@@ -588,8 +588,8 @@ describe('TrafficDetails aircraft metadata', () => {
     )
 
     expect(html.indexOf('Find plausible route')).toBe(-1)
-    expect(html.indexOf('Retry later')).toBeLessThan(
-      html.indexOf('Callsign'),
+    expect(html.indexOf('Callsign')).toBeLessThan(
+      html.indexOf('Retry later'),
     )
     expect(html).toContain('disabled=""')
     expect(html).toContain('Retry after')
@@ -769,8 +769,8 @@ describe('TrafficDetails aircraft metadata', () => {
       />,
     )
 
-    expect(html.indexOf('Vessel photo')).toBeLessThan(
-      html.indexOf('MMSI'),
+    expect(html.indexOf('MMSI')).toBeLessThan(
+      html.indexOf('Vessel photo'),
     )
     expect(html).toContain('Exact AIS-reported IMO 9214379 match')
     expect(html).toContain(

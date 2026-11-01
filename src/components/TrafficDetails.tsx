@@ -699,6 +699,52 @@ export function TrafficDetails({
       : undefined
   const dynamicVesselPhoto = entity.kind === 'vessel' && !historical && vesselPhotoEnabled
     ? dynamicVesselPhotoForSelection(entity, vesselPhoto) : undefined
+  const optionalEnrichment = (
+    <>
+      {vesselPhotoSelection?.kind === 'available' && (
+        <VesselPhotoDetails
+          key={vesselPhotoSelection.photo.identityKey}
+          photo={vesselPhotoSelection.photo}
+        />
+      )}
+      {vesselPhotoSelection &&
+        vesselPhotoSelection.kind !== 'available' && (
+          dynamicVesselPhoto ? <VesselPhotoDetails
+            key={`${vesselPhoto.identityKey}|${dynamicVesselPhoto.thumbnailUrl}`}
+            photo={dynamicVesselPhoto}
+          /> : vesselPhotoEnabled && entity.kind === 'vessel' ? <DynamicVesselPhotoStatus
+            identity={vesselPhotoIdentity(entity)}
+            state={vesselPhoto}
+            now={now}
+            onRequest={onRequestVesselPhoto}
+          /> : <VesselPhotoUnavailable
+            selection={vesselPhotoSelection}
+          />
+        )}
+
+      {entity.kind === 'aircraft' &&
+        flightRouteEnabled &&
+        !historical && (
+          <FlightRouteDetails
+            state={flightRoute}
+            now={now}
+            onRequest={onRequestFlightRoute}
+          />
+        )}
+
+      {entity.kind === 'aircraft' &&
+        aircraftPhotoEnabled &&
+        !historical && (
+          <AircraftPhotoDetails
+            icao24={entity.hex}
+            state={aircraftPhoto}
+            termsUrl={aircraftPhotoTermsUrl}
+            now={now}
+            onRequest={onRequestAircraftPhoto}
+          />
+        )}
+    </>
+  )
 
   return (
     <DetailsPanel
@@ -751,49 +797,6 @@ export function TrafficDetails({
       {!historical && entity.kind === 'aircraft' && onViewFromHere && viewFromHereUnavailable && (
         <p id={viewReasonId} className="metadata-status">{viewFromHereUnavailable}</p>
       )}
-
-      {vesselPhotoSelection?.kind === 'available' && (
-        <VesselPhotoDetails
-          key={vesselPhotoSelection.photo.identityKey}
-          photo={vesselPhotoSelection.photo}
-        />
-      )}
-      {vesselPhotoSelection &&
-        vesselPhotoSelection.kind !== 'available' && (
-          dynamicVesselPhoto ? <VesselPhotoDetails
-            key={`${vesselPhoto.identityKey}|${dynamicVesselPhoto.thumbnailUrl}`}
-            photo={dynamicVesselPhoto}
-          /> : vesselPhotoEnabled && entity.kind === 'vessel' ? <DynamicVesselPhotoStatus
-            identity={vesselPhotoIdentity(entity)}
-            state={vesselPhoto}
-            now={now}
-            onRequest={onRequestVesselPhoto}
-          /> : <VesselPhotoUnavailable
-            selection={vesselPhotoSelection}
-          />
-        )}
-
-      {entity.kind === 'aircraft' &&
-        flightRouteEnabled &&
-        !historical && (
-          <FlightRouteDetails
-            state={flightRoute}
-            now={now}
-            onRequest={onRequestFlightRoute}
-          />
-        )}
-
-      {entity.kind === 'aircraft' &&
-        aircraftPhotoEnabled &&
-        !historical && (
-          <AircraftPhotoDetails
-            icao24={entity.hex}
-            state={aircraftPhoto}
-            termsUrl={aircraftPhotoTermsUrl}
-            now={now}
-            onRequest={onRequestAircraftPhoto}
-          />
-        )}
 
       {entity.freshness === 'stale' && (
         <p className="stale-notice">
@@ -979,6 +982,7 @@ export function TrafficDetails({
         />
         <DetailRow label="Source" value={entity.provider} />
       </dl>
+      {optionalEnrichment}
       {entity.kind === 'vessel' && entity.attribution && (
         <details className="context-details">
           <summary>Contributing source credits</summary>

@@ -105,6 +105,15 @@ describe('interface presentation contracts', () => {
     expect(styles).toMatch(/\.traffic-details__icon-action\s*\{[^}]*width: 44px;[^}]*height: 44px;[^}]*border-radius: 50%;/)
   })
 
+  it('caps wide coarse-pointer traffic details without changing shared panels', () => {
+    expect(styles).toMatch(
+      /@media \(pointer: coarse\)\s*\{\s*@container workspace \(min-width: 761px\)\s*\{[\s\S]*?\.app-shell:not\(\.app-shell--mobile-workspace\)\s+\.details-panel--traffic-actions\s*\{[^}]*--details-panel-padding: 12px;[^}]*width: clamp\(340px, 19cqw, 380px\);[^}]*max-height: min\(\s*clamp\(320px, 46cqh, 420px\),/,
+    )
+    expect(styles).toMatch(
+      /details-panel--traffic-actions\s+\.detail-row\s*\{\s*padding-block: 7px;/,
+    )
+  })
+
   it('sizes shared overlays from the visual workspace with clamped panel spacing and landscape width', () => {
     expect(styles).toContain('--details-panel-padding: clamp(12px, 2cqh, 18px)')
     expect(styles).toMatch(/\.details-panel\s*\{[^}]*max-height: min\(\s*620px,\s*calc\(var\(--app-visual-viewport-height\) - var\(--workspace-header-bottom\) - 32px\)/)
