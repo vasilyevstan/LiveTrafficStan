@@ -252,7 +252,6 @@ export function OrbitalDetails({
   viewFromHereUnavailable,
   shareObject,
 }: OrbitalDetailsProps) {
-  const viewReasonId = useId()
   const nativeGp = snapshot.sourceProvider === 'space-track'
   const dataSourceName = nativeGp ? 'Space-Track.org / USSPACECOM' : sourceName
   const dataSourceUrl = nativeGp ? 'https://www.space-track.org/' : sourceWebsiteUrl
@@ -287,10 +286,9 @@ export function OrbitalDetails({
           type="button"
           className="details-panel__icon-action orbital-view-entry"
           aria-label="View from here"
-          title="View from here"
+          title={viewFromHereUnavailable ?? 'View from here'}
           onClick={onViewFromHere}
           disabled={Boolean(viewFromHereUnavailable)}
-          aria-describedby={viewFromHereUnavailable ? viewReasonId : undefined}
         >
           <DetailActionIcon name="view" />
         </button>
@@ -302,9 +300,6 @@ export function OrbitalDetails({
         </div>
       }
     >
-      {onViewFromHere && (
-        viewFromHereUnavailable && <p id={viewReasonId} className="metadata-status">{viewFromHereUnavailable}</p>
-      )}
       {enrichment ? (
         <OrbitalEnrichmentDetails
           key={enrichment.identityKey}

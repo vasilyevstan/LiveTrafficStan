@@ -10,6 +10,11 @@ export interface PhotoControllerConfig {
   cacheMaxEntries: number
   cacheTtlMs: number
   rateLimitFallbackMs: number
+  /**
+   * Forget an automatic attempt that failed without a provider retry time,
+   * so a later selection makes one fresh attempt. Throttling stays blocked.
+   */
+  retryTransientAutomaticFailures?: boolean
 }
 
 export interface PhotoControllerRuntime {
@@ -226,13 +231,20 @@ export class PhotoController<Identity, Photo> {
         }
         this.requestController = undefined
         this.activeAutomaticIdentityKey = undefined
+        const retryAt =
+          error instanceof PhotoProviderError &&
+          (error.reason === 'throttled' || error.retryAfterMs !== undefined)
+            ? this.runtime.now() +
+              (error.retryAfterMs ?? this.config.rateLimitFallbackMs)
+            : undefined
+        if (
+          automatic &&
+          retryAt === undefined &&
+          this.config.retryTransientAutomaticFailures
+        ) {
+          this.automaticAttempts.delete(identityKey)
+        }
         if (error instanceof PhotoProviderError) {
-          const retryAt =
-            error.reason === 'throttled' || error.retryAfterMs !== undefined
-              ? this.runtime.now() +
-                (error.retryAfterMs ??
-                  this.config.rateLimitFallbackMs)
-              : undefined
           if (retryAt !== undefined) {
             this.session.blockedUntil = Math.max(
               this.session.blockedUntil,

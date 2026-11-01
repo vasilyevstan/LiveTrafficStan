@@ -1557,7 +1557,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     aircraftPhotoEnabled ? selectedEntity : undefined,
     aircraftPhotoProvider,
     APP_CONFIG.aircraftPhoto,
-    { automaticRequestDelayMs: 0 },
+    { automaticRequestDelayMs: 0, retryTransientAutomaticFailures: true },
   )
   const hoveredAircraftPhoto = useAircraftPhoto(
     aircraftPhotoFeatureEnabled ? hoveredAircraft : undefined,
@@ -1570,6 +1570,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
   const vesselPhoto = useVesselPhoto(
     !capturedViewActive && !historyActive && selectedEntity?.kind === 'vessel' ? selectedEntity : undefined,
     vesselPhotoProvider,
+    { retryTransientAutomaticFailures: true },
   )
   const hoveredVesselPhoto = useVesselPhoto(
     !capturedViewActive && !historyActive ? hoveredVessel : undefined,
@@ -3366,7 +3367,6 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
             aircraftPhoto={aircraftPhoto.state}
             vesselPhotoEnabled={!historyActive}
             vesselPhoto={vesselPhoto.state}
-            onRequestVesselPhoto={vesselPhoto.request}
             flightRouteEnabled={flightRouteEnabled}
             flightRoute={flightRoute.state}
             now={displayNow}

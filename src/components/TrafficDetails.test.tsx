@@ -190,21 +190,24 @@ describe('TrafficDetails dynamic vessel photos', () => {
     renderToStaticMarkup(<TrafficDetails
       entity={entity} aircraftMetadata={{ phase: 'idle' }} vesselPhotoEnabled
       vesselPhoto={photo} now={1_800_000_001_000} units="metric" historical={historical}
-      onRequestVesselPhoto={() => undefined} onClose={() => undefined}
+      onClose={() => undefined}
     />)
 
-  it('shows attributed, licensed lookup imagery without claiming reviewed exact-hull identity', () => {
+  it('shows attributed lookup imagery above facts with match context only in its title', () => {
     const html = render(state)
-    expect(html).toContain('reported IMO 8919805')
+    expect(html).toContain(
+      'title="Open Waters photo for reported IMO 8919805; not live confirmation"',
+    )
     expect(html).toContain(`src="${state.photo.thumbnailUrl}"`)
     expect(html).toContain('crossorigin="anonymous"')
     expect(html).toContain('referrerPolicy="no-referrer"')
     expect(html).toContain('Test photographer')
     expect(html).toContain('Wikimedia Commons via Open Waters')
     expect(html).toContain('https://creativecommons.org/licenses/by/4.0/')
-    expect(html).toContain('Historical reference only')
     expect(html).not.toContain('Exact AIS-reported IMO')
-    expect(html.indexOf('<dt>MMSI')).toBeLessThan(html.indexOf('Vessel photo'))
+    expect(html).not.toContain('Vessel photo')
+    expect(html).not.toContain('metadata-status')
+    expect(html.indexOf('traffic-photo__image')).toBeLessThan(html.indexOf('<dt>MMSI'))
   })
 
   it('guards the complete selected identity, prefers bundled imagery and excludes history', () => {
@@ -213,31 +216,39 @@ describe('TrafficDetails dynamic vessel photos', () => {
     const bundled = render(state, { ...vessel, imo: 9214379 })
     expect(bundled).toContain('/vessel-photos/2026-10-02-v1/imo-9214379.jpg')
     expect(bundled).not.toContain(state.photo.thumbnailUrl)
-    expect(render(state, vessel, true)).not.toContain('Vessel photo')
+    expect(render(state, vessel, true)).not.toContain('traffic-photo')
     expect(render(state, vessel, true)).not.toContain(state.photo.thumbnailUrl)
   })
 
-  it('labels an ordinary MMSI lookup as a reassignable provider match', () => {
+  it('keeps the reassignable MMSI caveat in the photo title', () => {
     const html = render({
       ...state, identityKey: 'vessel:230123456|MMSI|230123456',
       photo: { ...state.photo, lookupKind: 'MMSI', lookupNumber: '230123456' },
     }, { ...vessel, imo: undefined })
-    expect(html).toContain('reported MMSI 230123456')
-    expect(html).toContain('MMSIs can be reassigned')
-    expect(html).toContain('not verified hull identity')
+    expect(html).toContain(
+      'title="Open Waters photo for reported MMSI 230123456; MMSIs can be reassigned; not live confirmation"',
+    )
+    expect(html).not.toContain('metadata-status')
   })
 
-  it('distinguishes loading, empty, offline and provider failure with enforced cooldown', () => {
+  it('renders no photo UI for idle, loading, empty, offline or failed lookups', () => {
     const identityKey = state.identityKey
-    expect(render({ phase: 'loading', identityKey })).toContain('Loading vessel photo from Open Waters')
-    expect(render({ phase: 'unavailable', identityKey, reason: 'not-found' })).toContain('Open Waters returned no photo')
-    const offline = render({ phase: 'error', identityKey, reason: 'network' })
-    expect(offline).toContain('Vessel photos need an online connection')
-    expect(offline).not.toContain('AIS traffic remains active')
-    const failure = render({ phase: 'error', identityKey, reason: 'provider-error', retryAt: 1_800_000_101_000 })
-    expect(failure).toContain('Photo lookup can retry after')
-    expect(failure).toContain('disabled=""')
-    expect(failure).not.toContain('returned no photo')
+    const states: VesselPhotoViewState[] = [
+      { phase: 'idle' },
+      { phase: 'loading', identityKey },
+      { phase: 'unavailable', identityKey, reason: 'not-found' },
+      { phase: 'error', identityKey, reason: 'network' },
+      { phase: 'error', identityKey, reason: 'provider-error', retryAt: 1_800_000_101_000 },
+    ]
+    for (const photo of states) {
+      const html = render(photo)
+      expect(html).not.toContain('traffic-photo')
+      expect(html).not.toContain('Vessel photo')
+      expect(html).not.toContain('Open Waters returned')
+      expect(html).not.toContain('Try photo lookup')
+      expect(html).not.toContain('<button type="button" class="aircraft-photo__action"')
+      expect(html).not.toContain('metadata-status')
+    }
   })
 })
 
@@ -294,7 +305,7 @@ describe('TrafficDetails aircraft metadata', () => {
     )
   })
 
-  it('keeps conflicts and metadata failures local to the metadata section', () => {
+  it('renders no metadata section or absence text unless metadata is available', () => {
     const conflictHtml = renderToStaticMarkup(
       <TrafficDetails
         entity={aircraft}
@@ -322,10 +333,24 @@ describe('TrafficDetails aircraft metadata', () => {
       />,
     )
 
-    expect(conflictHtml).toContain('Database/live registration mismatch')
-    expect(conflictHtml).not.toContain('AIRBUS A-320')
-    expect(errorHtml).toContain('ADS-B remains live')
-    expect(errorHtml).toContain('TST123')
+    const loadingHtml = renderToStaticMarkup(
+      <TrafficDetails
+        entity={aircraft}
+        aircraftMetadata={{ phase: 'loading', identityKey: '511123|ES-ABC|A320' }}
+        now={1_800_000_001_000}
+        units="metric"
+        onClose={() => undefined}
+      />,
+    )
+    for (const html of [conflictHtml, errorHtml, loadingHtml]) {
+      expect(html).not.toContain('aircraft-metadata')
+      expect(html).not.toContain('Metadata unavailable')
+      expect(html).not.toContain('mismatch')
+      expect(html).not.toContain('Loading metadata')
+      expect(html).not.toContain('Mictronics')
+      expect(html).not.toContain('AIRBUS A-320')
+      expect(html).toContain('TST123')
+    }
   })
 
   it('renders no aircraft photo UI until an exact photo is available', () => {
@@ -409,9 +434,62 @@ describe('TrafficDetails aircraft metadata', () => {
     expect(html).not.toContain('Planespotters match')
     expect(html).not.toContain('Open image for original')
     expect(html).not.toContain('Load photo')
-    expect(html.indexOf('aircraft-photo__image')).toBeLessThan(
+    expect(html.indexOf('traffic-photo__image')).toBeLessThan(
       html.indexOf('Callsign'),
     )
+  })
+
+  it('orders an available aircraft photo before its route and facts', () => {
+    const airports = [
+      { name: 'Tallinn Airport', code: 'TLL', icao: 'EETN', latitude: 59.4133, longitude: 24.8328 },
+      { name: 'Helsinki Airport', code: 'HEL', icao: 'EFHK', latitude: 60.3172, longitude: 24.9633 },
+    ]
+    const html = renderToStaticMarkup(
+      <TrafficDetails
+        entity={aircraft}
+        aircraftMetadata={availableMetadata}
+        aircraftPhotoEnabled
+        aircraftPhoto={{
+          phase: 'available',
+          identityKey: '511123',
+          photo: {
+            icao24: '511123',
+            thumbnailUrl: 'https://cdn.planespotters.net/example/photo_t.jpg',
+            thumbnailWidth: 200,
+            thumbnailHeight: 133,
+            photoPageUrl: 'https://www.planespotters.net/photo/000001/example',
+            photographer: 'Test Photographer',
+            source: {
+              name: 'Planespotters.net',
+              websiteUrl: 'https://www.planespotters.net/',
+              termsUrl: 'https://www.planespotters.net/photo/api',
+            },
+          },
+        }}
+        flightRouteEnabled
+        flightRoute={{
+          phase: 'available',
+          identityKey: 'TST123|511123|ES-ABC',
+          route: {
+            flightIcao: 'TST123',
+            confidence: 'plausible',
+            departure: airports[0]!,
+            arrival: airports[1]!,
+            airports,
+            providerUpdatedAt: 1_800_000_000_000,
+            source: { name: 'ADSB.lol', websiteUrl: 'https://www.adsb.lol/' },
+          },
+        }}
+        now={1_800_000_001_000}
+        units="metric"
+        onClose={() => undefined}
+      />,
+    )
+    const photo = html.indexOf('traffic-photo__image')
+    const route = html.indexOf('aria-label="Plausible route"')
+    expect(photo).toBeGreaterThan(-1)
+    expect(photo).toBeLessThan(route)
+    expect(route).toBeLessThan(html.indexOf('Callsign'))
   })
 
   it('shows only an available route above aircraft facts', () => {
@@ -466,7 +544,7 @@ describe('TrafficDetails aircraft metadata', () => {
     expect(enabledHtml).not.toContain('Standing data age')
     expect(enabledHtml).not.toContain('not a filed plan')
     expect(enabledHtml).not.toContain('Refresh')
-    const routeStart = enabledHtml.indexOf('<section class="flight-route"')
+    const routeStart = enabledHtml.indexOf('<section class="traffic-route"')
     const routeEnd = enabledHtml.indexOf('</section>', routeStart)
     const routeHtml = enabledHtml.slice(routeStart, routeEnd)
     expect(routeHtml).not.toContain('ADSB.lol')
@@ -632,7 +710,8 @@ describe('TrafficDetails aircraft metadata', () => {
     expect(html).toContain('Position report')
     expect(html).toContain('Metadata report')
     expect(html).toContain('Unavailable')
-    expect(html).toContain('no ETA year or port link inferred')
+    expect(html).not.toContain('no ETA year or port link inferred')
+    expect(html).not.toContain('Reported destination')
     expect(html).not.toContain('Flag state')
   })
 
@@ -666,10 +745,14 @@ describe('TrafficDetails aircraft metadata', () => {
       />,
     )
 
-    expect(html.indexOf('MMSI')).toBeLessThan(
-      html.indexOf('Vessel photo'),
+    expect(html.indexOf('traffic-photo__image')).toBeLessThan(
+      html.indexOf('<dt>MMSI'),
     )
-    expect(html).toContain('Exact AIS-reported IMO 9214379 match')
+    expect(html).toContain(
+      'title="Exact AIS-reported IMO 9214379 reference photo; not live confirmation"',
+    )
+    expect(html).not.toContain('Vessel photo')
+    expect(html).not.toContain('metadata-status')
     expect(html).toContain(
       'src="/vessel-photos/2026-10-02-v1/imo-9214379.jpg"',
     )
@@ -683,7 +766,7 @@ describe('TrafficDetails aircraft metadata', () => {
     expect(html).toContain('not cropped or retouched')
   })
 
-  it('explains invalid and unmatched IMO photo coverage without a substitute', () => {
+  it('renders no photo UI for invalid or unmatched IMO coverage', () => {
     const vessel: DisplayVessel = {
       id: 'vessel:230361000',
       kind: 'vessel',
@@ -722,16 +805,12 @@ describe('TrafficDetails aircraft metadata', () => {
       />,
     )
 
-    expect(unmatchedHtml).toContain('Vessel photo')
-    expect(unmatchedHtml).toContain(
-      'No reviewed exact-IMO photo for AIS-reported IMO 8917601; no substitute shown.',
-    )
-    expect(unmatchedHtml).not.toContain('/vessel-photos/')
-    expect(invalidHtml).toContain('Vessel photo')
-    expect(invalidHtml).toContain(
-      'Unavailable: AIS has no valid IMO for exact-hull matching.',
-    )
-    expect(invalidHtml).not.toContain('/vessel-photos/')
+    for (const html of [unmatchedHtml, invalidHtml]) {
+      expect(html).not.toContain('traffic-photo')
+      expect(html).not.toContain('Vessel photo')
+      expect(html).not.toContain('no substitute')
+      expect(html).not.toContain('/vessel-photos/')
+    }
   })
 
   it('omits vessel photos from history playback', () => {
@@ -765,7 +844,7 @@ describe('TrafficDetails aircraft metadata', () => {
       />,
     )
 
-    expect(html).not.toContain('Vessel photo')
+    expect(html).not.toContain('traffic-photo')
     expect(html).not.toContain('/vessel-photos/')
   })
 
@@ -801,8 +880,13 @@ describe('TrafficDetails aircraft metadata', () => {
       />,
     )
 
-    expect(html).toContain('AIS-reported destination')
-    expect(html).toContain('AIS ETA (year not supplied)')
+    const route = html.indexOf('<section class="traffic-route" aria-label="Reported destination"')
+    expect(route).toBeGreaterThan(-1)
+    expect(html).toContain('<dt>Destination</dt><dd>TALLINN</dd>')
+    expect(html).toContain('<dt>ETA</dt><dd>09-18 14:30 UTC</dd>')
+    expect(route).toBeLessThan(html.indexOf('<dt>Vessel name'))
+    expect(html).not.toContain('AIS-reported destination')
+    expect(html).not.toContain('may lag position')
     expect(html).toContain('Metadata report')
     expect(html).toContain('10 min ago')
     expect(html).toContain('Position report')
@@ -945,12 +1029,14 @@ describe('TrafficDetails aircraft View from here', () => {
     expect(html).not.toMatch(/data-aircraft-view-entry[^>]*disabled/)
   })
 
-  it('disables the entry with a described reason', () => {
+  it('disables the entry with its reason only in the icon title', () => {
     const html = render(aircraft, 'View from here needs a reported altitude.')
     expect(html).toMatch(/data-aircraft-view-entry[^>]*disabled/)
-    const described = /aria-describedby="([^"]+)"/.exec(html)?.[1]
-    expect(described).toBeTruthy()
-    expect(html).toContain(`id="${described}" class="metadata-status">View from here needs a reported altitude.</p>`)
+    expect(html).toMatch(
+      /aria-label="View from here" title="View from here needs a reported altitude\."/,
+    )
+    expect(html).not.toContain('aria-describedby')
+    expect(html).not.toContain('>View from here needs a reported altitude.<')
   })
 
   it('omits the entry for history and vessels', () => {

@@ -460,13 +460,20 @@ View from here, Hide path, Pause/Play and Return join Save, Share and the
 44 by 44 px accessible X in the top-right header row instead of consuming a
 second row. Expanded mobile live details use the same header ownership;
 captured-view Pause/Play and Return remain reachable even while the body is
-compact. Disabled reasons remain visible and non-inert.
+compact. Disabled icon actions carry their truthful reason in the native
+title, which is both the hover tooltip and the computed accessible
+description; no separate reason paragraph is rendered.
 
-For selected aircraft, only successful route and photo enrichment renders.
-The route contains only Departure and Destination; the photo contains the
-linked unchanged image and mandatory compact credit. Loading, unavailable and
-error states create no visible route/photo card. Successful enrichment appears
-above telemetry facts. The full-width body remains the sole scroll owner.
+Aircraft and ship details share one order: photo, then route, then facts.
+`TrafficPhoto` renders only a successful linked unchanged image with its
+mandatory one-line credit; match basis and reference caveats live in the link
+title. `TrafficRoute` renders only rows that have values: aircraft Departure
+and Destination from a successful plausible route, or the ship's AIS-reported
+Destination and ETA. Loading, empty, unavailable, failed and image-error
+states create no visible photo/route card or explanatory prose. The static
+aircraft-metadata section likewise renders only an available record with its
+Mictronics/ODC-By snapshot credit; loading, unavailable and failed lookups
+render nothing. The full-width body remains the sole scroll owner.
 
 Shared overlay geometry uses bounded workspace/visual-viewport dimensions for
 width, padding, gaps, and reading height. Above the 760 px mobile cutoff, live
@@ -727,7 +734,10 @@ development Strict Mode cleanup/replay, owns that notification. Hover change,
 pointer leave, selection change, close, HISTORY entry, and unmount abort and
 revision-invalidate obsolete work. Errors are not cached, an automatic hover
 does not loop or retry, and `429` blocks another request without scheduling a
-retry. Non-success states stay visually absent from selected details. No photo
+retry. Non-success states stay visually absent from selected details; aircraft
+and vessel details controllers forget a failed automatic attempt that has no
+provider retry time, so closing and reselecting makes one fresh lookup, while
+hover controllers keep their one-hour attempt memory. No photo
 JSON, URL, credit, or image byte enters traffic
 models, history, Web Storage, IndexedDB, Cache API, the service worker, or a
 Worker route. The published terms require no prior email or account-side API
@@ -745,8 +755,9 @@ fallback keys.
 
 Each bundled result is tagged with entity ID, exact IMO, and manifest version, so A to
 B to A selection or hover cannot retain another hull. The full historical
-image appears near the top of live selected-ship details with author, fixed
-Commons revision, selected license, and modification notice. After the
+image is the first item in selected-ship details, above the reported
+destination and facts, with author, fixed Commons revision, selected license
+and a "modified" marker whose title holds the modification notice. After the
 existing 500 ms fine-pointer dwell, the compact map tooltip may load the same
 asset with fixed source, author, license, exact-IMO, and historical-reference
 context. Sub-dwell, search, marker, trail and HISTORY states start no photo
@@ -774,9 +785,10 @@ evaluation.
 The map corner keeps basemap credits and a full-data-credit link. Curated and
 Starlink sources use identical CelesTrak/SGP4/not-live attribution so MapLibre
 shows it once. Provider details and More -> Sources retain the named traffic,
-photo and original-source records. Vessel photos fit within the existing
-mobile inspector height and keep native scrolling for image credits/details;
-the inspector and command-dock layout are unchanged.
+photo and original-source records. Aircraft and vessel photos share a
+150 px maximum image height inside the existing inspector and keep native
+scrolling for credits/details; the inspector and command-dock layout are
+unchanged.
 
 Country allocation is a smaller bundled boundary. Pure synchronous helpers
 derive an optional country name and ISO code from an existing ICAO24 or

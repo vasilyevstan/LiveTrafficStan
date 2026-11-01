@@ -156,7 +156,8 @@ image was cropped or visually retouched.
 The seven Creative Commons Attribution-ShareAlike derivatives remain under the
 same file-specific CC BY-SA version. The CC0 image remains under CC0. Visible
 selected-details attribution includes the author, a link to the fixed Commons
-revision, the selected license and license URL, and the modification notice.
+revision, the selected license and license URL, and a visible "modified"
+marker whose title carries the full modification notice.
 The co-located
 `public/vessel-photos/2026-10-02-v1/LICENSES.md` repeats that information for
 the distributed files.
@@ -189,19 +190,25 @@ resolves the same complete identity only after its existing 500 ms
 fine-pointer dwell. An A to B to A selection or hover sequence therefore
 cannot retain another hull's presentation.
 
-The full photo card appears directly below the selected live ship heading. The
-UI says **Exact AIS-reported IMO {IMO} match** and explicitly
-describes it as a historical reference image, not a live view or independent
+The photo is the first item below the selected live ship heading, above the
+reported destination and facts, matching aircraft details. Its link title
+says **Exact AIS-reported IMO {IMO} reference photo; not live confirmation**
+(dynamic results name the Open Waters lookup number and add the MMSI
+reassignment caveat), so it is not presented as a live view or independent
 confirmation of the vessel currently reporting that AIS identity. On devices
 with a fine hover-capable pointer, remaining over the exact rendered vessel
 for 500 ms may add a compact version to the existing map tooltip. That image
 links the fixed Commons revision and retains visible author, source, license,
-historical-reference, and exact-IMO context. Touch and keyboard users continue
-to use selected details for the full record.
+historical-reference, and exact-IMO context. Touch and keyboard users use
+selected details, which show the image and visible credit; the match caveat is
+in the photo link title (its accessible description), not visible prose.
 
 Missing usable identity, successful empty response, loading, unsupported
-metadata, timeout, offline and provider failure have distinct presentation.
-No substitute image is shown. Sub-dwell hover, search results, map markers,
+metadata, timeout, offline and provider failure remain distinct controller
+states for caching, cooldown and `Retry-After`, but selected details render no
+photo card or explanatory text for any of them. Selection already starts the
+automatic lookup, so there is no manual retry control. No substitute image is
+shown. Sub-dwell hover, search results, map markers,
 trails and HISTORY start no photo lookup. The tooltip path does not mutate normalized traffic,
 provider health, freshness, selection, camera, filters, or MQTT/REST lifecycle.
 
@@ -239,8 +246,9 @@ Every changed source, transformation, manifest field, or bundled byte requires
 a new manifest/version directory; files are never replaced under an existing
 immutable path.
 
-An image load failure is reported with a source-page link. The application
-does not replace it with another photo or report success-shaped generic imagery.
+An image load failure removes the photo and its credit from selected details.
+The application does not replace it with another photo or report
+success-shaped generic imagery.
 Rollback restores the earlier application/static-asset version as one
 Cloudflare deployment.
 
@@ -271,9 +279,9 @@ committed review record and its internal consistency; they do not replace the
 required human review of the pictured hull and the fixed upstream rights
 evidence.
 
-Unit and component tests prove exact-match, distinct invalid/unmatched
-unavailable reasons with image omission, selection and tooltip identity
-guards, visible attribution, top-of-details placement, sub-dwell/HISTORY
+Unit and component tests prove exact-match, silent invalid/unmatched image
+omission, selection and tooltip identity guards, visible attribution,
+photo-before-route-before-facts placement, sub-dwell/HISTORY
 exclusion, and no service-worker shell inclusion. Real-browser acceptance must
 additionally verify the eight bundled assets return `200` with immutable cache
 headers, a stable desktop hover renders the correct linked image without an

@@ -23,7 +23,8 @@ reuses the orbital fixed-eye lifecycle with a closed `kind` branch instead of
 a policy framework. The view moves only between observed reports, about one
 aircraft cadence behind, without extrapolation. It holds when no newer report
 arrives and Returns at the ordinary 120-second expiry. Ground, stale, history,
-Flat or polar selections show a truthful unavailable reason. Ships remain
+Flat or polar selections keep a truthful unavailable reason in the disabled
+icon's tooltip and accessible description. Ships remain
 omitted, because a 20 m eye showed only water and sky.
 
 ### Altitude floor and ride buildings (2026 follow-up)
@@ -358,8 +359,8 @@ broaden a lookup. Requests are revision-guarded across A to B to A selection or
 hover changes. Only successful and no-photo JSON results may use one shared
 32-entry, one-hour current-tab LRU. A cacheable hover result publishes only to
 already-open selected details with the same exact ICAO24 and does not make a
-second request. The photo follows the prominent route section before telemetry
-so the resolved result is visible. Hover errors do not automatically retry,
+second request. The photo leads selected details, above any route and the
+telemetry facts. Hover errors do not automatically retry,
 and no photo state uses persistent storage. The image and API response never
 pass through the Worker, service worker, Cache API, IndexedDB, Web Storage, KV,
 or R2.
