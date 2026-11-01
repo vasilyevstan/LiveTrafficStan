@@ -87,8 +87,8 @@ The application deliberately tightens the permitted JSON cache to one hour.
 
 Only a live aircraft with a syntactically valid six-character ICAO24 is
 eligible. Selection now starts one automatic lookup, matching the requested
-on-demand vessel experience; the existing photo action remains available for
-retry. A fine pointer can also remain over one aircraft marker for 500 ms.
+on-demand vessel experience. A fine pointer can also remain over one aircraft
+marker for 500 ms.
 Leaving before that dwell cancels the automatic
 attempt, and vessels and HISTORY never start one.
 
@@ -123,9 +123,10 @@ after React development Strict Mode cleanup/replay. Errors are not cached,
 throttling is shared and honors `Retry-After`, and hover failures do not
 automatically retry.
 
-The prominent plausible-route section remains first. When available, the
-aircraft photo follows it before telemetry so the resolved image is visible in
-the open details panel rather than being hidden below the full field list.
+Only an exact successful result creates photo UI. The unchanged linked image
+and mandatory visible photographer/source credit follow any successful
+plausible route before telemetry. Idle, loading, not-found and error states
+create no photo card or explanatory text.
 
 No photo JSON, URL, credit, or image byte is written to Web Storage, IndexedDB,
 the Cache API, the service worker, Worker cache, KV, R2, or a LiveTrafficStan
@@ -146,8 +147,7 @@ Synthetic browser and unit fixtures prove:
 
 - zero photo requests at startup, sub-500 ms aircraft hover, vessel hover,
   and during HISTORY;
-- one request on committed live selection, explicit retry or one stable
-  500 ms aircraft hover;
+- one request on committed live selection or one stable 500 ms aircraft hover;
 - A to B to A stale-result rejection and cancellation on leave/unmount;
 - select-first/hover-second shared cache publication to the exact open details
   panel with no duplicate provider request, including Strict Mode
@@ -155,8 +155,8 @@ Synthetic browser and unit fixtures prove:
 - unchanged API, CDN, and photo-page URLs;
 - direct image loading, visible credit, an interactive popup, exact target/rel,
   and no `nofollow`;
-- truthful not-found, throttled, timeout, invalid-response, network, forbidden,
-  and provider-error states;
+- fail-closed not-found, throttled, timeout, invalid-response, network,
+  forbidden and provider-error controller states with no visible empty card;
 - successful and no-photo cache reuse, one-hour expiration, and 32-entry LRU
   eviction;
 - no route request, traffic-provider restart, map replacement, selection loss,

@@ -118,6 +118,17 @@ recovery notice from Layers into Find's scroller; native Retry recovers after
 the unchanged 60-second cooldown. Desktop 1280x900/1920x1080 and normal
 768x1024 tablet retain More's default Find tab and expanded inspectors.
 
+For every non-Settings detail inspector, verify that all available actions are
+44x44 icon controls in the top-right header row and that no action-only second
+row remains. Captured aircraft/orbital Pause/Play and Return must remain
+reachable while the mobile body is compact. At Tesla 1920x1080, desktop
+1280x720, phone 390x844, short phone and landscape sizes, measure bounded panel
+geometry, one body scroll owner, no horizontal overflow, one MapLibre canvas
+and a usable map region. Selected-aircraft enrichment must render nothing for
+idle/loading/unavailable/error states; an available route shows only Departure
+and Destination above Callsign, and an available photo shows the unchanged
+linked image plus visible credit above Callsign.
+
 Observer rules: use `checkVisibility({ visibilityProperty: true })` and
 hidden/inert ancestry, not DOM existence or rectangles alone. HISTORY's
 intentionally invisible dock can still have rectangles. Wait for the actual

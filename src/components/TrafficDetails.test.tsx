@@ -328,44 +328,43 @@ describe('TrafficDetails aircraft metadata', () => {
     expect(errorHtml).toContain('TST123')
   })
 
-  it('loads no aircraft photo until the explicit enabled-build action', () => {
-    const disabledHtml = renderToStaticMarkup(
-      <TrafficDetails
-        entity={aircraft}
-        aircraftMetadata={availableMetadata}
-        now={1_800_000_001_000}
-        units="metric"
-        onClose={() => undefined}
-      />,
-    )
-    const enabledHtml = renderToStaticMarkup(
-      <TrafficDetails
-        entity={aircraft}
-        aircraftMetadata={availableMetadata}
-        aircraftPhotoEnabled
-        aircraftPhoto={{ phase: 'idle', identityKey: '511123' }}
-        aircraftPhotoTermsUrl="https://www.planespotters.net/photo/api"
-        now={1_800_000_001_000}
-        units="metric"
-        onRequestAircraftPhoto={() => undefined}
-        onClose={() => undefined}
-      />,
-    )
+  it('renders no aircraft photo UI until an exact photo is available', () => {
+    const states = [
+      { phase: 'idle', identityKey: '511123' } as const,
+      { phase: 'loading', identityKey: '511123' } as const,
+      {
+        phase: 'unavailable',
+        identityKey: '511123',
+        reason: 'not-found',
+      } as const,
+      {
+        phase: 'error',
+        identityKey: '511123',
+        reason: 'network',
+      } as const,
+    ]
 
-    expect(disabledHtml).not.toContain('Aircraft photo')
-    expect(disabledHtml).not.toContain('api.planespotters.net')
-    expect(enabledHtml).toContain('Aircraft photo')
-    expect(enabledHtml).toContain('Load photo')
-    expect(enabledHtml).toContain(
-      'Planespotters receives ICAO24 511123 plus network metadata',
-    )
-    expect(enabledHtml).toContain('images load from its CDN')
-    expect(enabledHtml).not.toContain('JSON cache:')
-    expect(enabledHtml).toContain('Terms')
-    expect(enabledHtml).not.toContain('<img')
+    states.forEach((aircraftPhoto) => {
+      const html = renderToStaticMarkup(
+        <TrafficDetails
+          entity={aircraft}
+          aircraftMetadata={availableMetadata}
+          aircraftPhotoEnabled
+          aircraftPhoto={aircraftPhoto}
+          now={1_800_000_001_000}
+          units="metric"
+          onClose={() => undefined}
+        />,
+      )
+
+      expect(html).not.toContain('aircraft-photo')
+      expect(html).not.toContain('Load photo')
+      expect(html).not.toContain('Planespotters')
+      expect(html).not.toContain('<img')
+    })
   })
 
-  it('renders the unchanged Planespotters thumbnail as a credited source-page link', () => {
+  it('renders an available photo above facts with only its source credit', () => {
     const html = renderToStaticMarkup(
       <TrafficDetails
         entity={aircraft}
@@ -397,9 +396,6 @@ describe('TrafficDetails aircraft metadata', () => {
     )
 
     expect(html).toContain(
-      'Planespotters match for ICAO24 511123',
-    )
-    expect(html).toContain(
       'src="https://cdn.planespotters.net/example/photo_t.jpg"',
     )
     expect(html).toContain(
@@ -408,57 +404,17 @@ describe('TrafficDetails aircraft metadata', () => {
     expect(html).toContain('target="_blank"')
     expect(html).toContain('rel="noopener noreferrer"')
     expect(html).not.toContain('nofollow')
-    expect(html).toContain('Photo © Test Photographer')
-    expect(html).toContain('Open image for original')
+    expect(html).toContain('© Test Photographer')
+    expect(html).toContain('Planespotters.net')
+    expect(html).not.toContain('Planespotters match')
+    expect(html).not.toContain('Open image for original')
     expect(html).not.toContain('Load photo')
-    expect(html.indexOf('Callsign')).toBeLessThan(
-      html.indexOf('Aircraft photo'),
+    expect(html.indexOf('aircraft-photo__image')).toBeLessThan(
+      html.indexOf('Callsign'),
     )
   })
 
-  it('keeps photo failures local and never substitutes another image', () => {
-    const notFoundHtml = renderToStaticMarkup(
-      <TrafficDetails
-        entity={aircraft}
-        aircraftMetadata={availableMetadata}
-        aircraftPhotoEnabled
-        aircraftPhoto={{
-          phase: 'unavailable',
-          identityKey: '511123',
-          reason: 'not-found',
-        }}
-        now={1_800_000_001_000}
-        units="metric"
-        onClose={() => undefined}
-      />,
-    )
-    const errorHtml = renderToStaticMarkup(
-      <TrafficDetails
-        entity={aircraft}
-        aircraftMetadata={availableMetadata}
-        aircraftPhotoEnabled
-        aircraftPhoto={{
-          phase: 'error',
-          identityKey: '511123',
-          reason: 'network',
-        }}
-        now={1_800_000_001_000}
-        units="metric"
-        onClose={() => undefined}
-      />,
-    )
-
-    expect(notFoundHtml).toContain('No exact photo for ICAO24 511123')
-    expect(notFoundHtml).toContain('exact matches only')
-    expect(notFoundHtml).not.toContain('Photo lookup sends ICAO24')
-    expect(notFoundHtml).toContain('Photo privacy &amp; terms')
-    expect(notFoundHtml).not.toContain('<img')
-    expect(errorHtml).toContain('could not reach Planespotters')
-    expect(errorHtml).toContain('Live ADS-B remains active')
-    expect(errorHtml).toContain('Try again')
-  })
-
-  it('shows a compact automatic route result only after enablement', () => {
+  it('shows only an available route above aircraft facts', () => {
     const airports = [
       { name: 'Tallinn Airport', code: 'TLL', icao: 'EETN', latitude: 59.4133, longitude: 24.8328 },
       { name: 'Helsinki Airport', code: 'HEL', icao: 'EFHK', latitude: 60.3172, longitude: 24.9633 },
@@ -497,8 +453,6 @@ describe('TrafficDetails aircraft metadata', () => {
         }}
         now={1_800_000_001_000}
         units="metric"
-        onRequestAircraftPhoto={() => undefined}
-        onRequestFlightRoute={() => undefined}
         onClose={() => undefined}
       />,
     )
@@ -507,114 +461,58 @@ describe('TrafficDetails aircraft metadata', () => {
     expect(enabledHtml).toContain('Plausible route')
     expect(enabledHtml).toContain('Tallinn Airport (TLL)')
     expect(enabledHtml).toContain('Helsinki Airport (HEL)')
-    expect(enabledHtml).toContain('Plausible origin')
-    expect(enabledHtml).toContain('Plausible destination')
-    expect(enabledHtml).toContain('Standing data age')
-    expect(enabledHtml).toContain('not a filed plan')
-    expect(enabledHtml).toContain('may be wrong')
-    expect(enabledHtml).toContain('>Refresh<')
-    expect(enabledHtml.indexOf('>Refresh<')).toBeLessThan(
-      enabledHtml.indexOf('Aircraft photo'),
-    )
-    expect(enabledHtml.indexOf('Callsign')).toBeLessThan(
-      enabledHtml.indexOf('Plausible route'),
-    )
-    expect(enabledHtml).toContain('ADSB.lol')
-    expect(enabledHtml).toContain('VRS Standing Data')
-    expect(enabledHtml).not.toContain('Route status')
-    expect(enabledHtml).not.toContain('Reopening this exact flight')
-    expect(enabledHtml).not.toContain(
-      'Map positions continue to come from ADSB.lol',
+    expect(enabledHtml).toContain('Departure')
+    expect(enabledHtml).toContain('Destination')
+    expect(enabledHtml).not.toContain('Standing data age')
+    expect(enabledHtml).not.toContain('not a filed plan')
+    expect(enabledHtml).not.toContain('Refresh')
+    const routeStart = enabledHtml.indexOf('<section class="flight-route"')
+    const routeEnd = enabledHtml.indexOf('</section>', routeStart)
+    const routeHtml = enabledHtml.slice(routeStart, routeEnd)
+    expect(routeHtml).not.toContain('ADSB.lol')
+    expect(routeHtml).not.toContain('VRS Standing Data')
+    expect(enabledHtml.indexOf('Plausible route')).toBeLessThan(
+      enabledHtml.indexOf('Callsign'),
     )
   })
 
-  it('keeps invalid identity and provider failures local to route lookup', () => {
-    const invalidHtml = renderToStaticMarkup(
-      <TrafficDetails
-        entity={aircraft}
-        aircraftMetadata={availableMetadata}
-        flightRouteEnabled
-        flightRoute={{
-          phase: 'unavailable',
-          reason: 'invalid-identity',
-        }}
-        now={1_800_000_001_000}
-        units="metric"
-        onRequestFlightRoute={() => undefined}
-        onClose={() => undefined}
-      />,
-    )
-    const errorHtml = renderToStaticMarkup(
-      <TrafficDetails
-        entity={aircraft}
-        aircraftMetadata={availableMetadata}
-        flightRouteEnabled
-        flightRoute={{
-          phase: 'error',
-          identityKey: 'TST123|511123|ES-ABC',
-          reason: 'provider-error',
-        }}
-        now={1_800_000_001_000}
-        units="metric"
-        onRequestFlightRoute={() => undefined}
-        onClose={() => undefined}
-      />,
-    )
+  it('renders no route UI for idle, loading, unavailable, or error states', () => {
+    const states = [
+      { phase: 'idle' } as const,
+      {
+        phase: 'loading',
+        identityKey: 'TST123|511123|ES-ABC',
+      } as const,
+      {
+        phase: 'unavailable',
+        identityKey: 'TST123|511123|ES-ABC',
+        reason: 'not-found',
+      } as const,
+      {
+        phase: 'error',
+        identityKey: 'TST123|511123|ES-ABC',
+        reason: 'provider-error',
+      } as const,
+    ]
 
-    expect(invalidHtml).toContain('Needs callsign, ICAO24')
-    expect(invalidHtml).not.toContain('flight-route__action')
-    expect(errorHtml).toContain('Route lookup unavailable')
-    expect(errorHtml).toContain('Live traffic unaffected')
-    expect(errorHtml).toContain('>Try again<')
-  })
+    states.forEach((flightRoute) => {
+      const html = renderToStaticMarkup(
+        <TrafficDetails
+          entity={aircraft}
+          aircraftMetadata={availableMetadata}
+          flightRouteEnabled
+          flightRoute={flightRoute}
+          now={1_800_000_001_000}
+          units="metric"
+          onClose={() => undefined}
+        />,
+      )
 
-  it('keeps route retry before aircraft telemetry and disables it during cooldown', () => {
-    const html = renderToStaticMarkup(
-      <TrafficDetails
-        entity={aircraft}
-        aircraftMetadata={availableMetadata}
-        flightRouteEnabled
-        flightRoute={{
-          phase: 'error',
-          identityKey: 'TST123|511123|ES-ABC',
-          reason: 'quota-exhausted',
-          retryAt: 1_800_000_031_000,
-        }}
-        now={1_800_000_001_000}
-        units="metric"
-        onRequestFlightRoute={() => undefined}
-        onClose={() => undefined}
-      />,
-    )
-
-    expect(html.indexOf('Find plausible route')).toBe(-1)
-    expect(html.indexOf('Callsign')).toBeLessThan(
-      html.indexOf('Retry later'),
-    )
-    expect(html).toContain('disabled=""')
-    expect(html).toContain('Retry after')
-  })
-
-  it('shows a compact loading state without an initial action', () => {
-    const html = renderToStaticMarkup(
-      <TrafficDetails
-        entity={aircraft}
-        aircraftMetadata={availableMetadata}
-        flightRouteEnabled
-        flightRoute={{
-          phase: 'loading',
-          identityKey: 'TST123|511123|ES-ABC',
-        }}
-        now={1_800_000_001_000}
-        units="metric"
-        onRequestFlightRoute={() => undefined}
-        onClose={() => undefined}
-      />,
-    )
-
-    expect(html).toContain('Checking route')
-    expect(html).not.toContain('Find plausible route')
-    expect(html).not.toContain('flight-route__action')
+      expect(html).not.toContain('flight-route')
+      expect(html).not.toContain('Plausible route')
+      expect(html).not.toContain('Checking route')
+      expect(html).not.toContain('Retry')
+    })
   })
 
   it('omits current route lookup from historical aircraft details', () => {
@@ -627,7 +525,6 @@ describe('TrafficDetails aircraft metadata', () => {
         now={1_800_000_001_000}
         units="metric"
         historical
-        onRequestFlightRoute={() => undefined}
         onClose={() => undefined}
       />,
     )
