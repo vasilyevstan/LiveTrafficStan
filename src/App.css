@@ -1648,6 +1648,56 @@
   width: min(430px, calc(var(--app-visual-viewport-width) - 32px));
 }
 
+@media (pointer: coarse) {
+  @container workspace (min-width: 761px) {
+    .app-shell:not(.app-shell--mobile-workspace)
+      .details-panel--traffic-actions {
+      --details-panel-padding: 12px;
+      width: clamp(340px, 19cqw, 380px);
+      max-height: min(
+        clamp(320px, 46cqh, 420px),
+        calc(
+          var(--app-visual-viewport-height) - var(--workspace-header-bottom) -
+            32px
+        )
+      );
+    }
+
+    .app-shell:not(.app-shell--mobile-workspace)
+      .details-panel--traffic-actions
+      .details-panel__action-row {
+      margin-top: 6px;
+    }
+
+    .app-shell:not(.app-shell--mobile-workspace)
+      .details-panel--traffic-actions
+      .details-grid {
+      gap-inline: 12px;
+      margin-top: 4px;
+    }
+
+    .app-shell:not(.app-shell--mobile-workspace)
+      .details-panel--traffic-actions
+      .detail-row {
+      padding-block: 7px;
+    }
+
+    .app-shell:not(.app-shell--mobile-workspace)
+      .details-panel--traffic-actions
+      :is(.flight-route, .aircraft-metadata, .vessel-photo) {
+      margin-top: 7px;
+      padding: 8px;
+    }
+
+    .app-shell:not(.app-shell--mobile-workspace)
+      .details-panel--traffic-actions
+      :is(.metadata-status, .metadata-attribution) {
+      margin-top: 6px;
+      line-height: 1.35;
+    }
+  }
+}
+
 .details-panel--traffic-actions[data-force-compact] .details-panel__heading {
   padding-right: 148px;
 }
