@@ -105,9 +105,15 @@ describe('interface presentation contracts', () => {
     expect(styles).toMatch(/\.traffic-details__icon-action\s*\{[^}]*width: 44px;[^}]*height: 44px;[^}]*border-radius: 50%;/)
   })
 
-  it('caps wide coarse-pointer traffic details without changing shared panels', () => {
+  it('caps nonmobile traffic details and keeps utility actions in the header', () => {
     expect(styles).toMatch(
-      /@media \(pointer: coarse\)\s*\{\s*@container workspace \(min-width: 761px\)\s*\{[\s\S]*?\.app-shell:not\(\.app-shell--mobile-workspace\)\s+\.details-panel--traffic-actions\s*\{[^}]*--details-panel-padding: 12px;[^}]*width: clamp\(340px, 19cqw, 380px\);[^}]*max-height: min\(\s*clamp\(320px, 46cqh, 420px\),/,
+      /@container workspace \(min-width: 761px\)\s*\{[\s\S]*?\.app-shell:not\(\.app-shell--mobile-workspace\)\s+\.details-panel--traffic-actions\s*\{[^}]*--details-panel-padding: 12px;[^}]*width: clamp\(340px, 19cqw, 380px\);[^}]*max-height: min\(\s*clamp\(320px, 46cqh, 420px\),/,
+    )
+    expect(styles).toMatch(
+      /details-panel--traffic-actions\s+\.details-panel__heading\s*\{[^}]*min-height: 44px;[^}]*padding-right: 240px;/,
+    )
+    expect(styles).toMatch(
+      /details-panel--traffic-actions\s+\.details-panel__action-row\s*\{[^}]*position: absolute;[^}]*top: var\(--details-panel-padding\);[^}]*right: var\(--details-panel-padding\);[^}]*margin: 0;/,
     )
     expect(styles).toMatch(
       /details-panel--traffic-actions\s+\.detail-row\s*\{\s*padding-block: 7px;/,

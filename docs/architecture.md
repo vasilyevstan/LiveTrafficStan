@@ -463,11 +463,12 @@ Primary report facts precede optional route/photo enrichment. The full-width
 body is the sole scroll owner.
 
 Shared overlay geometry uses bounded workspace/visual-viewport dimensions for
-width, padding, gaps, and reading height. Coarse-pointer landscape screens do
-not inherit oversized mouse-desktop whitespace merely because their CSS width
-is large. Above the 760 px mobile cutoff, live traffic details clamp to a
-340-380 px width and 320-420 px height derived from the workspace; controls
-remain at least 44 px and required content remains scrollable.
+width, padding, gaps, and reading height. Above the 760 px mobile cutoff, live
+traffic details clamp to a 340-380 px width and 320-420 px height derived from
+the workspace regardless of pointer-capability reporting. Their utility action
+row is positioned in the heading's top-right space instead of consuming a
+second row; controls remain at least 44 px and required content remains
+scrollable.
 
 Mobile inspectors share the task reading budget rather than stacking a full
 inspector above a full task. Desktop photo/airport-board behavior and the
