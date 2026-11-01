@@ -666,8 +666,9 @@ general image proxy. AISStream and Open Waters remain complementary traffic
 feeds, but only Open Waters supplies this media lookup.
 
 Lookup prefers a checksum-valid reported IMO, then an ordinary vessel MMSI.
-The UI labels provider number/category matching separately from reviewed
-exact-hull identity and warns that MMSIs can be reassigned. Only fully
+The photo link title labels provider number/category matching separately from
+reviewed exact-hull identity, states that it is not live confirmation and
+warns that MMSIs can be reassigned. Only fully
 attributed supported CC BY, CC BY-SA, CC0 or public-domain images are accepted.
 The unchanged thumbnail loads directly from an allowlisted Commons image
 host, anonymously and without referrer. Visible artist, file-page and license
@@ -712,8 +713,8 @@ The seven ShareAlike derivatives remain under their listed file-specific
 license versions. Every source thumbnail was resized to a 640-pixel maximum
 dimension and stripped of embedded metadata without cropping or retouching.
 Visible selected-details credit includes author, fixed Commons revision,
-license link, and modification notice even for the CC0 file, where attribution
-is not required.
+license link, and a "modified" marker whose title carries the modification
+notice, even for the CC0 file, where attribution is not required.
 
 The repository's Apache-2.0 license does not relicense the image files.
 `src/config/vesselPhotoManifest.json` records the complete identity, source,

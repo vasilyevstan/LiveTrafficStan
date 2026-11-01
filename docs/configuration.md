@@ -960,9 +960,8 @@ allows an accepted application source to be redeployed with `false` if a later
 provider-contract or exact-origin check fails. It does not relax the direct
 browser, unchanged-URL, attribution, storage, or provider-origin rules.
 
-When enabled for deterministic evaluation, selecting an aircraft still makes
-no request by itself. The user can activate **Load aircraft photo**, or a fine
-pointer can remain on one live aircraft for 500 ms. Only a valid
+When enabled, selecting an aircraft makes one automatic lookup, and a fine
+pointer remaining on one live aircraft for 500 ms makes one hover lookup. Only a valid
 six-character ICAO24 is sent directly from the browser to the fixed
 Planespotters hex endpoint. Moving away before the hover dwell cancels that
 automatic attempt. Requests omit credentials, reject redirects, use
@@ -978,9 +977,10 @@ page in a new tab, and shows visible photographer credit.
 Successful and no-photo JSON results may remain in one shared 32-entry
 least-recently-used current-tab cache for at most one hour, so hover followed by
 selected details does not spend another lookup. Errors are not cached. A `429`
-blocks another manual attempt until its readable `Retry-After`, or for one
-minute when that header is unavailable. Hover errors do not automatically
-retry, and there is no selection-time prefetch.
+blocks another attempt until its readable `Retry-After`, or for one minute
+when that header is unavailable. Hover errors do not automatically retry;
+selected details make one fresh attempt only when the aircraft is reselected
+after a failure without a provider retry time.
 
 No JSON, returned URL, credit, or image byte is written to Web Storage,
 IndexedDB, Cache API, service-worker cache, Worker cache, KV, or R2. HISTORY
@@ -1128,11 +1128,10 @@ Readable `Retry-After` seconds or HTTP dates are honored up to five minutes.
 Other route-provider failures apply a 60-second local fallback. Retry or
 refresh is disabled until that time, and no timer triggers an automatic retry.
 
-The compact status or result is presented directly below the selected aircraft
-heading. The UI labels **Plausible origin**, **Plausible destination**, and
-optional **Standing data age**, and states that the result may be stale or
-wrong and is not a filed flight plan. Concise visible attribution identifies
-ADSB.lol and VRS Standing Data. See
+Only a successful result is presented, below any aircraft photo and above the
+telemetry facts, as **Departure** and **Destination** rows with no status text.
+ADSB.lol remains identified by the traffic Source fact and provider
+disclosure. See
 [Aircraft Plausible Route Enrichment](aircraft-route-enrichment-evaluation.md).
 
 ## Weather observations and proxy

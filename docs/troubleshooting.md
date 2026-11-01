@@ -208,7 +208,8 @@ The feature is deployed through #510. If an old open tab lacks the action,
 use Settings / **REFRESH APP** without clearing preferences or private history.
 Enable ORBITS, select a currently modeled object and expand Details on phones.
 View from here needs an already accepted modeled position and **Auto**
-projection. A Flat or unsafe/polar pose gets an explicit reason; entry does
+projection. A Flat or unsafe/polar pose gets an explicit reason in the
+disabled icon's tooltip (hover, or focus with a screen reader); entry does
 not switch projection, fetch another position or clamp height. Identity-only
 catalog results cannot supply an eye. A water-only scene can be the actual
 map beneath an ocean subpoint, not missing spacecraft imagery.
@@ -832,12 +833,11 @@ requires a new output version followed by
 
 For the same exact selected ICAO24, a successful 500 ms hover lookup should
 populate the already-open selected-details photo without a second
-Planespotters request. The photo appears after the prominent plausible-route
-section and before telemetry. Different aircraft identities must remain
-isolated.
+Planespotters request. The photo appears at the top of details, above any
+plausible route and the telemetry facts. Different aircraft identities must
+remain isolated.
 
-If the tooltip has the photo but matching details still show **Load aircraft
-photo**, confirm the application includes the shared-cache subscription fix,
+If the tooltip has the photo but matching details show no photo, confirm the application includes the shared-cache subscription fix,
 then record the selected ICAO24, tooltip ICAO24, request count, and whether the
 page is a development Strict Mode build. Do not click repeatedly or add a
 second request path as a workaround.
@@ -923,8 +923,9 @@ array is genuine missing coverage. `429` and `503` with Retry-After require
 waiting; in particular, Open Waters' 900-second incomplete-result cache must
 not be presented as "no photo". A timeout, malformed/oversized response,
 unsupported license or disallowed image URL is a local photo failure, not an
-AIS outage. Check the visible status before retrying. Hidden/offline tabs
-cannot start a retry or revive obsolete work.
+AIS outage. Details show no photo or status text for these states; close and
+reselect the ship to make one fresh attempt after a failure without a
+Retry-After. Hidden/offline tabs cannot start a retry or revive obsolete work.
 
 A valid image loads directly from `thumb.wikimedia.org` or
 `upload.wikimedia.org`, with `crossorigin="anonymous"` and no referrer.

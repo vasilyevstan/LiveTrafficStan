@@ -136,12 +136,12 @@ describe('interface presentation contracts', () => {
     expect(styles).toMatch(
       /\.details-panel\s+\.detail-row\s*\{\s*padding-block: 7px;/,
     )
+    expect(styles).toMatch(/\n\.traffic-photo\s*\{\s*margin: 0;/)
     expect(styles).toMatch(
-      /\.traffic-details__enrichment \.aircraft-photo\s*\{\s*margin: 0;/,
+      /\n\.traffic-photo__image\s*\{[^}]*width: auto;[^}]*max-width: 100%;[^}]*height: auto;[^}]*max-height: 150px;[^}]*object-fit: contain;/,
     )
-    expect(styles).toMatch(
-      /\.traffic-details__enrichment \.aircraft-photo__image\s*\{[^}]*width: auto;[^}]*max-width: 100%;[^}]*height: auto;[^}]*max-height: 150px;[^}]*object-fit: contain;/,
-    )
+    expect(styles).toMatch(/\.traffic-details__enrichment:empty\s*\{\s*display: none;/)
+    expect(styles).not.toMatch(/vessel-photo|aircraft-photo|flight-route/)
   })
 
   it('sizes shared overlays from the visual workspace with clamped panel spacing and landscape width', () => {

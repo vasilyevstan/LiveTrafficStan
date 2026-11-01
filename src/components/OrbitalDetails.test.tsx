@@ -54,8 +54,11 @@ describe('OrbitalDetails', () => {
         viewFromHereUnavailable="View from here is available in Auto projection, not Flat."
       />,
     )
-    expect(html).toContain('not Flat')
-    expect(html).toMatch(/<button[^>]*aria-label="View from here"[^>]*disabled=""/)
+    expect(html).toMatch(
+      /<button[^>]*aria-label="View from here" title="View from here is available in Auto projection, not Flat\."[^>]*disabled=""/,
+    )
+    expect(html).not.toContain('>View from here is available')
+    expect(html).not.toContain('aria-describedby')
   })
   it('attributes native GP/type separately from the dated CelesTrak membership reference without claiming SATCAT', () => {
     const native: OrbitalCatalogSnapshot = {

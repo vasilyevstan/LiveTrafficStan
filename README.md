@@ -514,8 +514,8 @@ identity are not renamed or reset.
   0.269 to 2.110 objects and empty time from 75.9% to 7.6%; northern Europe
   improves from 0.655 to 5.614 and from 50.3% empty to 0.7%.
 - A default-enabled ADSB.lol plausible-route lookup for a selected live
-  aircraft. A committed selection starts one lookup and shows a compact result
-  directly below the aircraft heading. Hover, HISTORY, and same-flight position
+  aircraft. A committed selection starts one lookup and shows only Departure
+  and Destination after any photo and above facts. Hover, HISTORY, and same-flight position
   updates stay passive. It validates one exact normalized callsign plus current
   position against standing-data route segments and never claims a filed plan,
   schedule, or operational status. Successful exact-identity results are
@@ -1743,7 +1743,9 @@ monitoring, privacy, and rollback procedure.
   number match is a historical reference, not live confirmation of the
   transmitting hull; MMSIs can be reassigned. Eight bundled IMOs additionally
   retain manual review. Empty, failed and unsupported responses remain
-  distinct, with no substitute image or guaranteed yacht coverage.
+  distinct internally but show no photo card, with no substitute image or
+  guaranteed yacht coverage. Ship details use the aircraft order: photo,
+  AIS-reported destination/ETA, then facts.
 - Orbital positions and map crossings are SGP4 models from a bounded reviewed
   CelesTrak catalog; the `visual` group is only one member of the curated
   source set. They are not observations, launch or reentry
