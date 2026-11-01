@@ -580,9 +580,9 @@ identity are not renamed or reset.
   remain visible and associated. Primary traffic facts precede optional
   route/photo enrichment in the body, which is the sole reading scroller.
   Overlay widths, padding and reading heights are bounded from the actual
-  workspace and visual viewport. Coarse-pointer nonmobile traffic details use
-  an adaptive 340-380 px width and 320-420 px height rather than inheriting
-  oversized mouse-desktop whitespace.
+  workspace and visual viewport. Nonmobile traffic details use an adaptive
+  340-380 px width and 320-420 px height, with utility actions in the title's
+  top-right area rather than a separate row.
   Menu text must help a decision or action, report an actual fact or meaningful
   condition, or meet an attribution, privacy or safety requirement.
   Toggle-state echoes, routine success narration and normal-behavior tutorials
