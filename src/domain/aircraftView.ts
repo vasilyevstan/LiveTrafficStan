@@ -1,4 +1,3 @@
-import { AIRCRAFT_VIEW_CONFIG } from '../config/appConfig'
 import { ORBITAL_VIEW_MAXIMUM_LATITUDE } from './orbitalView'
 import { normalizeOrbitalLongitude, unwrapOrbitalLongitude } from './orbitalViewport'
 import type { MapProjectionPreference } from './preferences'
@@ -41,9 +40,13 @@ export const aircraftViewUnavailableReason = (
   if (aircraft.altitudeMeters === undefined || !Number.isFinite(aircraft.altitudeMeters)) {
     return 'View from here needs a reported altitude.'
   }
-  if (aircraft.altitudeMeters < AIRCRAFT_VIEW_CONFIG.minimumAltitudeMeters) {
-    return `View from here needs an airborne aircraft above ${AIRCRAFT_VIEW_CONFIG.minimumAltitudeMeters} m.`
-  }
+  return aircraftViewAltitudeReason(aircraft.altitudeMeters)
+}
+
+// ADSB.lol 'ground' normalizes to 0; a nonpositive pressure altitude cannot be an eye above the sea-level map.
+export const aircraftViewAltitudeReason = (altitudeMeters: number) => {
+  if (altitudeMeters === 0) return 'View from here needs an airborne aircraft; this one reports ground.'
+  if (altitudeMeters < 0) return 'View from here needs an altitude above the sea-level map.'
   return undefined
 }
 

@@ -381,12 +381,14 @@ and automatic/error exits do not restore obsolete selection.
 
 | Setting | Default | Meaning |
 | --- | --- | --- |
-| `minimumAltitudeMeters` | 300 | Lowest reported barometric altitude that can enter. |
 | `initialLookPitchDegrees` | 76 | Initial track-relative look angle from nadir. |
 | `interpolationDelayMs` | 20,000 | Display lag behind the latest report (one aircraft cadence). |
 | `maximumInterpolationGapMs` | 60,000 | A longer report gap jumps instead of gliding. |
+| `maximumDrawableGlobeZoom` | 16.55 | Largest `zoom - log2(cos(latitude))` the eye may use; MapLibre 6.10 `vertical-perspective` draws nothing beyond about 16.65. |
 
-The hold notice and expiry reuse the aircraft `staleAfterMs` and
+Any finite altitude above 0 is eligible. There is no fixed altitude floor:
+the drawable zoom decides, and it depends on eye height, look pitch, canvas
+size and latitude. The hold notice and expiry reuse the aircraft `staleAfterMs` and
 `expireAfterMs`. There is no environment override.
 
 ## Changing the center

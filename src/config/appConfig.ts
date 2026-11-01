@@ -79,10 +79,12 @@ export const ORBITAL_VIEW_CONFIG = {
 
 // Aircraft view eye: observed positions only, presented about one ADSB.lol cadence behind.
 export const AIRCRAFT_VIEW_CONFIG = {
-  minimumAltitudeMeters: 300,
   initialLookPitchDegrees: 76,
   interpolationDelayMs: 20_000,
   maximumInterpolationGapMs: 60_000,
+  // MapLibre 6.10 vertical-perspective draws nothing once zoom - log2(cos(latitude))
+  // passes about 16.65 (measured at 1, 41 and 60 degrees); keep a small margin.
+  maximumDrawableGlobeZoom: 16.55,
 } as const
 
 export const EARTH_DAY_NIGHT_CONFIG = {
