@@ -1468,7 +1468,7 @@ errors were retained. The compact unavailable-route and aircraft-photo cards
 also retained the required standing-data, provider/privacy, cache, and rights
 wording.
 
-The #641 responsive follow-up is deployed as application
+The #641 responsive follow-up was deployed as application
 `f7a45c7765d98386376b33b372a99f015de122ab`, Worker
 `784dc407-c8e4-4a8c-94c5-d0062f479a1c`. At the reported 739x1047 touch
 viewport, ordinary aircraft selection opened details on the first click and
@@ -1481,6 +1481,21 @@ enabled application input. Later documentation-only commits do not replace
 that running application or its rollback predecessor
 `5a35de847592af6c478dd3ec939ff31cde7e1715`.
 
+The #645 aircraft View from here follow-up is deployed as application
+`65722933dee5a4ba3d8ca9106107d079d3124e0d`, Worker
+`f8c395a4-6e93-4319-9959-b9e343c62b89`. It removes the former 300 m entry
+floor: any positive reported altitude may enter, and the view returns with a
+truthful message when MapLibre cannot draw the eye. On live Heathrow traffic
+at 315x517, DAL33 at 290 m and `406a3e` at 274 m entered
+`vertical-perspective` at pitch 76 with full-height pinned buildings and
+rendered 3D content. Return restored globe, the previous camera, the
+selection, entry-button focus and the zoom building ramp. Releasing the
+emulation during the 274 m ride resized it to 1920x993, where the eye could no
+longer be drawn; it returned with "The map cannot draw a view this close to the
+ground." Production smoke preserved the OCI relay and every enabled
+application input. Later documentation-only commits do not replace that
+running application or its rollback predecessor
+`f7a45c7765d98386376b33b372a99f015de122ab`.
 A later real-device report showed that the first evidence was incomplete: it
 varied the layout viewport but did not force a shorter visual viewport below
 mobile browser chrome, and its geometry-only final-result check could not
