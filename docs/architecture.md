@@ -459,12 +459,15 @@ the two icon-only traffic actions in the same header row as Save/Share/Close;
 forced desktop compaction retains them in the expanded body. Captured compact
 views do not expose primary actions until expansion. Disabled reasons remain
 visible and non-inert. Other inspectors retain their existing heading contract.
-The full-width body is the sole scroll owner.
+Primary report facts precede optional route/photo enrichment. The full-width
+body is the sole scroll owner.
 
 Shared overlay geometry uses bounded workspace/visual-viewport dimensions for
 width, padding, gaps, and reading height. Coarse-pointer landscape screens do
 not inherit oversized mouse-desktop whitespace merely because their CSS width
-is large; controls remain at least 44 px and required content remains scrollable.
+is large. Above the 760 px mobile cutoff, live traffic details clamp to a
+340-380 px width and 320-420 px height derived from the workspace; controls
+remain at least 44 px and required content remains scrollable.
 
 Mobile inspectors share the task reading budget rather than stacking a full
 inspector above a full task. Desktop photo/airport-board behavior and the

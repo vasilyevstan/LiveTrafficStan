@@ -4574,7 +4574,9 @@ For the viewport-driven map experience, additionally verify:
     1920x1200/1920x1080 car-browser proportions: overlay padding and reading
     height respond to actual workspace/visual viewport size, every exposed
     action remains at least 44 px, one panel owns scrolling, and a hit-tested
-    useful map region remains.
+    useful map region remains. Live traffic details above the 760 px mobile
+    cutoff stay within the adaptive 340-380 px by 320-420 px coarse-pointer
+    cap, and primary traffic facts appear before optional route/photo states.
 11. Aircraft, helicopter, and vessel artwork retains its identity over land,
    water, and busy detail at actual marker scale; stale markers remain
    recognizable and distinct from live markers.
