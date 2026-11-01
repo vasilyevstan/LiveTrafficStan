@@ -48,11 +48,12 @@ supplementary marine WebSocket; use the actual local Worker for those paths.
 | `npm run check:deploy` | Bundle the Worker and Static Assets without credentials or deployment |
 | `npm run preview:worker` | Build and run the actual local Cloudflare `workerd` boundary |
 
-### Map-first phone workspace (unreleased; #540 / #554)
+### Map-first phone workspace (#540 / #554 / #641)
 
 This branch replaces overlapping phone reading surfaces, not desktop menus or
-provider geometry. Map selections start compact with Details/X; a result opens
-details with Back to its retained task. Find, Layers, In view, Settings,
+provider geometry. Ordinary live map selections open details on the first
+click; captured views start compact with Details/X, and a result opens details
+with Back to its retained task. Find, Layers, In view, Settings,
 Context/Orbits/Sources, provider details and native credits remain accessible.
 Task/inspector/provider pause instructions and promoted recovery actions use
 the existing body scroller instead of covering another panel. HISTORY keeps
