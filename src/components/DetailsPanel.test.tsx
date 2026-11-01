@@ -105,6 +105,26 @@ describe('DetailsPanel', () => {
     },
   )
 
+  it('can place expanded mobile primary actions in the utility header row', () => {
+    const html = renderToStaticMarkup(
+      <MobileInspectorContext.Provider value={{
+        mobile: true, compact: false, identity: 'traffic:test', returnToTask: true,
+        onExpand: vi.fn(), onCollapse: vi.fn(),
+      }}>
+        <DetailsPanel titleId="test-title" closeLabel="Close traffic details" onClose={vi.fn()}
+          heading={<h2 id="test-title">Selected traffic</h2>}
+          headerAction={<button type="button" aria-label="Save object">Save</button>}
+          actionRow={<button type="button">View from here</button>}
+          mobileActionPlacement="header">
+          <p>Traffic details</p>
+        </DetailsPanel>
+      </MobileInspectorContext.Provider>,
+    )
+    expect(html).toContain('details-panel--mobile-header-actions')
+    expect(html).toMatch(/details-panel__mobile-actions[\s\S]*View from here[\s\S]*>Back<\/button>/)
+    expect(html).not.toContain('details-panel__body-actions')
+  })
+
   it('supports narrowly forced desktop compaction without unmounting selected content', () => {
     const html = renderToStaticMarkup(
       <MobileInspectorContext.Provider value={{

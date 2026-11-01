@@ -24,8 +24,11 @@ export interface MobileInspectorPresentation {
   notice?: ReactNode
 }
 
-export const inspectorStartsExpanded = (mobile: boolean, captured: boolean, fromResult: boolean) =>
-  !captured && (!mobile || fromResult)
+export const inspectorStartsExpanded = (
+  _mobile: boolean,
+  captured: boolean,
+  _fromResult: boolean,
+) => !captured
 
 export const trafficPausePlacement = (
   mobile: boolean,

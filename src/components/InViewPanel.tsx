@@ -245,6 +245,7 @@ export function InViewPanel({
         const page = paged[value]
         const total = totals[value]
         const query = isAircraft ? aircraftQuery : orbitalQuery
+        const showSearch = !isShips && (total > 5 || Boolean(query))
         const selected = isAircraft ? selectedAircraftId : isShips ? selectedVesselId : selectedOrbitalId
         const onSelect = isAircraft ? onAircraftSelect : isShips ? onVesselSelect : onOrbitalSelect
         const selectable = isAircraft ? aircraftVisible : isShips ? vesselsVisible : true
@@ -275,7 +276,7 @@ export function InViewPanel({
                   </button>
                 ))}
               </div>
-            ) : <input
+            ) : showSearch ? <input
               id={`in-view-${value}-search`}
               type="search"
               aria-label={
@@ -283,7 +284,7 @@ export function InViewPanel({
               }
               value={query}
               maxLength={isAircraft ? AIRCRAFT_SEARCH_MAX_LENGTH : maximumOrbitalQueryLength}
-              placeholder={isAircraft ? 'Callsign, registration, ICAO24, type' : 'Name, NORAD ID, designator'}
+              placeholder={isAircraft ? 'Search aircraft' : 'Search orbits'}
               onChange={(event) => {
                 if (isAircraft) onAircraftQueryChange(event.currentTarget.value)
                 else {
@@ -291,15 +292,15 @@ export function InViewPanel({
                 }
                 setPages((current) => ({ ...current, [value]: 0 }))
               }}
-            />}
+            /> : null}
             <div className="in-view__status" role="status">
-              {availability.available && (
-                <p>{isAircraft
-                  ? `${total} aircraft in view${aircraftVisible ? '' : ' · layer hidden'}`
-                  : isShips
-                    ? `${rankedVessels.rows.length} of ${rankedVessels.rankableCount} ranked · ${total} in view${vesselsVisible ? '' : ' · layer hidden'}`
-                    : `${orbits.shownCount} shown of ${total} modeled in view${orbits.partial ? ' · partial' : ''}`}</p>
+              {availability.available && isAircraft && !aircraftVisible && <p>Layer hidden.</p>}
+              {availability.available && isShips && (
+                <p>{`${rankedVessels.rows.length} of ${rankedVessels.rankableCount} ranked${
+                  vesselsVisible ? '' : ' · layer hidden'
+                }`}</p>
               )}
+              {availability.available && isOrbits && orbits.partial && <p>Partial results.</p>}
               {availability.message && <p>{availability.message}</p>}
               {isOrbits && orbits.sourceMessages.map((message) => <p key={message}>{message}</p>)}
               {availability.available && !isShips && query && <p>{results[value].length} of {total} match this search.</p>}

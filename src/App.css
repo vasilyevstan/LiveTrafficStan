@@ -836,7 +836,7 @@
 
 .in-view__tabs button {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: center;
   gap: 4px;
@@ -867,6 +867,28 @@
 .in-view__paging,
 .in-view__more {
   margin-top: 12px;
+}
+
+.in-view__more {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.in-view__more button {
+  width: auto;
+  padding-inline: 12px;
+}
+
+.in-view-body:not(:has(#in-view-orbits-tab[aria-selected='true']))
+  .in-view__more {
+  display: none;
+}
+
+.in-view-results button {
+  border-color: transparent;
+  border-radius: 6px;
+  background: transparent;
+  box-shadow: inset 0 -1px var(--divider);
 }
 
 .in-view__paging p {
@@ -1645,8 +1667,35 @@
   .traffic-details__path-action,
   .orbital-view-entry
 ) {
-  flex: 1 1 auto;
-  white-space: nowrap;
+  flex: 0 0 44px;
+}
+
+.traffic-details__icon-action {
+  display: grid;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--panel-background);
+  place-items: center;
+}
+
+.traffic-action-icon {
+  width: 19px;
+  height: 19px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .traffic-details__icon-action[aria-busy='true'] .traffic-action-icon {
+    animation: traffic-action-busy 850ms ease-in-out infinite alternate;
+  }
+}
+
+@keyframes traffic-action-busy {
+  to {
+    opacity: 0.4;
+  }
 }
 
 .details-panel__body {
@@ -3374,6 +3423,52 @@
   border-radius: 0 0 12px 12px;
 }
 
+.control-panel__surface {
+  display: contents;
+}
+
+.app-shell--mobile-workspace .control-panel__more:not([open])
+  .control-panel__surface--in-view {
+  display: none;
+}
+
+.app-shell--mobile-workspace .control-panel__surface--in-view {
+  position: absolute;
+  right: 0;
+  bottom: calc(var(--mobile-dock-height) + var(--mobile-surface-gap));
+  display: flex;
+  flex-direction: column;
+  width: min(420px, var(--mobile-surface-width));
+  max-height: calc(
+    var(--app-visual-viewport-height) - var(--mobile-surface-bottom) - 8px
+  );
+  pointer-events: auto;
+}
+
+.app-shell--mobile-workspace
+  .control-panel__surface--in-view
+  .control-panel__more-body {
+  position: static;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  max-height: calc(
+    var(--app-visual-viewport-height) - var(--mobile-surface-bottom) - 52px
+  );
+}
+
+.app-shell--mobile-workspace
+  .control-panel__surface--in-view
+  .mobile-task-heading {
+  position: static;
+  flex: 0 0 44px;
+  width: 100%;
+}
+
+.app-shell--mobile-workspace .in-view__tabs {
+  margin-right: 0;
+}
+
 .app-shell--mobile-workspace .mobile-task-heading {
   position: absolute;
   right: 0;
@@ -3454,6 +3549,30 @@
   border-radius: 12px;
 }
 
+.app-shell--mobile-workspace .details-panel--traffic-actions {
+  width: min(400px, var(--mobile-surface-width));
+}
+
+.app-shell--mobile-workspace
+  .details-panel--mobile-header-actions
+  .details-panel__heading {
+  padding-right: 184px;
+}
+
+.app-shell--mobile-workspace
+  .details-panel--mobile-header-actions.details-panel--action
+  .details-panel__heading {
+  padding-right: 228px;
+}
+
+.app-shell--mobile-workspace
+  .details-panel--mobile-header-actions.details-panel--action:has(
+    .details-panel__save
+  ):has(.details-panel__share)
+  .details-panel__heading {
+  padding-right: 272px;
+}
+
 .app-shell--mobile-workspace .details-panel__heading {
   min-height: 44px;
   padding: 0 96px 0 12px;
@@ -3509,6 +3628,18 @@
   flex: 1 1 0;
 }
 
+.app-shell--mobile-workspace
+  .details-panel__body-actions
+  > .traffic-details__icon-action {
+  flex: 0 0 44px;
+}
+
+.app-shell--mobile-workspace
+  .details-panel--traffic-actions
+  .details-panel__body {
+  max-height: min(var(--mobile-body-height), 260px);
+}
+
 .app-shell--mobile-workspace .details-panel[hidden],
 .app-shell--mobile-workspace .details-panel__body[hidden] {
   display: none;
@@ -3548,6 +3679,27 @@
 
 .app-shell--mobile-workspace .details-panel__header-action {
   top: 0;
+}
+
+.app-shell--mobile-workspace .details-panel__mobile-actions {
+  position: absolute;
+  top: 0;
+  right: 96px;
+  z-index: 3;
+  display: flex;
+  gap: 4px;
+}
+
+.app-shell--mobile-workspace
+  .details-panel--action
+  .details-panel__mobile-actions {
+  right: 140px;
+}
+
+.app-shell--mobile-workspace
+  .details-panel--action:has(.details-panel__save):has(.details-panel__share)
+  .details-panel__mobile-actions {
+  right: 184px;
 }
 
 .app-shell--mobile-workspace .details-panel__close {
@@ -3781,6 +3933,15 @@
   max-height: calc(100% - var(--workspace-orientation-note) - var(--workspace-note-height));
 }
 
+.app-shell:not(.app-shell--mobile-workspace)
+  .control-panel__in-view
+  .control-panel__more-body {
+  bottom: auto;
+  max-height: calc(
+    100% - var(--workspace-orientation-note) - var(--workspace-note-height)
+  );
+}
+
 .object-find button {
   min-width: 44px;
   min-height: 44px;
@@ -4009,25 +4170,21 @@
 }
 
 .app-shell--mobile-workspace[data-mobile-landscape]
-  .control-panel__in-view
-  :is(.control-panel__more-body, .mobile-task-heading) {
+  .control-panel__surface--in-view {
   width: var(--in-view-landscape-width);
 }
 
 .app-shell--mobile-workspace[data-mobile-landscape]
   .control-panel__in-view
   .control-panel__more-body {
-  height: min(var(--mobile-body-height), 132px);
+  height: auto;
+  max-height: min(var(--mobile-body-height), 132px);
   padding: 6px 8px;
 }
 
 .app-shell--mobile-workspace[data-mobile-landscape]
   .control-panel__in-view
   .mobile-task-heading {
-  bottom: calc(
-    var(--mobile-dock-height) + var(--mobile-surface-gap) +
-      min(var(--mobile-body-height), 132px)
-  );
   padding-left: 8px;
 }
 

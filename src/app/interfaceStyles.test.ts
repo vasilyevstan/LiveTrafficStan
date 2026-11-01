@@ -101,6 +101,8 @@ describe('interface presentation contracts', () => {
     expect(styles).toMatch(/\.details-panel--traffic-actions \.details-panel__heading\s*\{\s*padding-right: 0;/)
     expect(styles).toMatch(/\.details-panel--traffic-actions\s*\{\s*width: min\(430px, calc\(var\(--app-visual-viewport-width\) - 32px\)\);/)
     expect(styles).toMatch(/\.app-shell--mobile-workspace \.details-panel__body-actions\s*\{[^}]*margin-bottom: 8px;/)
+    expect(styles).toMatch(/\.app-shell--mobile-workspace \.details-panel__mobile-actions\s*\{[^}]*right: 96px;[^}]*display: flex;/)
+    expect(styles).toMatch(/\.traffic-details__icon-action\s*\{[^}]*width: 44px;[^}]*height: 44px;[^}]*border-radius: 50%;/)
   })
 
   it('sizes shared overlays from the visual workspace with clamped panel spacing and landscape width', () => {
@@ -114,9 +116,13 @@ describe('interface presentation contracts', () => {
     expect(styles).toMatch(/\.app-shell--mobile-workspace\[data-mobile-landscape\] \.brand-panel\s*\{[^}]*width: clamp\(\s*0px,[^}]*280px\s*\);[^}]*overflow: hidden;/)
     expect(styles).toMatch(/\.app-shell--mobile-workspace\[data-mobile-landscape\] :is\(\.viewport-notice, \.map-error\)\s*\{\s*right: calc\(var\(--mobile-safe-right\) \+ var\(--mobile-surface-width\) \+ 8px\);/)
     expect(styles).toMatch(/\.app-shell--mobile-workspace\[data-mobile-landscape\] \.control-panel__in-view\s*\{[^}]*--in-view-landscape-width: min\(\s*272px,/)
-    expect(styles).toMatch(/\.control-panel__in-view\s+:is\(\.control-panel__more-body, \.mobile-task-heading\)\s*\{\s*width: var\(--in-view-landscape-width\);/)
-    expect(styles).toMatch(/\.control-panel__in-view\s+\.control-panel__more-body\s*\{[^}]*height: min\(var\(--mobile-body-height\), 132px\);[^}]*padding: 6px 8px;/)
+    expect(styles).toMatch(/\[data-mobile-landscape\][\s\S]*?\.control-panel__surface--in-view\s*\{\s*width: var\(--in-view-landscape-width\);/)
+    expect(styles).toMatch(/\[data-mobile-landscape\][\s\S]*?\.control-panel__in-view\s+\.control-panel__more-body\s*\{[^}]*height: auto;[^}]*max-height: min\(var\(--mobile-body-height\), 132px\);[^}]*padding: 6px 8px;/)
     expect(styles).toMatch(/\.control-panel__in-view\s+\.in-view__tabs\s*\{\s*margin: 0 44px 6px 0;/)
+    expect(styles).toMatch(/\.control-panel__surface--in-view\s*\{[^}]*width: min\(420px, var\(--mobile-surface-width\)\);[^}]*max-height:/)
+    expect(styles).toMatch(/\.details-panel--traffic-actions\s*\{\s*width: min\(400px, var\(--mobile-surface-width\)\);/)
+    expect(styles).toMatch(/\.app-shell:not\(\.app-shell--mobile-workspace\)[\s\S]*?\.control-panel__in-view\s+\.control-panel__more-body\s*\{\s*bottom: auto;[^}]*max-height:/)
+    expect(styles).toMatch(/\.in-view-body:not\(:has\(#in-view-orbits-tab\[aria-selected='true'\]\)\)\s+\.in-view__more\s*\{\s*display: none;/)
   })
 
   it('pairs depth and relief in the two-column grid with at least 44px targets', () => {

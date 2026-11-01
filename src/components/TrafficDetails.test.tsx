@@ -449,7 +449,9 @@ describe('TrafficDetails aircraft metadata', () => {
     )
 
     expect(notFoundHtml).toContain('No exact photo for ICAO24 511123')
-    expect(notFoundHtml).toContain('no substitute shown')
+    expect(notFoundHtml).toContain('exact matches only')
+    expect(notFoundHtml).not.toContain('Photo lookup sends ICAO24')
+    expect(notFoundHtml).toContain('Photo privacy &amp; terms')
     expect(notFoundHtml).not.toContain('<img')
     expect(errorHtml).toContain('could not reach Planespotters')
     expect(errorHtml).toContain('Live ADS-B remains active')
@@ -1039,7 +1041,10 @@ describe('TrafficDetails aircraft View from here', () => {
   it('offers the entry for a live aircraft', () => {
     const html = render(aircraft)
     expect(html).toContain('data-aircraft-view-entry="aircraft:511123"')
-    expect(html).toContain('>View from here</button>')
+    expect(html).toContain('aria-label="View from here"')
+    expect(html).toContain('title="View from here"')
+    expect(html).toMatch(/aria-label="View from here"[^>]*>[\s\S]*traffic-action-icon/)
+    expect(html).not.toContain('>View from here</button>')
     expect(html).not.toMatch(/data-aircraft-view-entry[^>]*disabled/)
   })
 
@@ -1099,8 +1104,9 @@ describe('TrafficDetails action placement', () => {
     expect(html.indexOf('selected-traffic-title')).toBeLessThan(html.indexOf('details-panel__action-row'))
     for (const label of ['Show path', 'View from here', 'Save TEST123', 'Share object', 'Close aircraft details']) {
       expect(row).toContain(label)
-      expect(html.match(new RegExp(label, 'g'))).toHaveLength(1)
     }
+    expect(html.match(/traffic-details__path-action/g)).toHaveLength(1)
+    expect(html.match(/data-aircraft-view-entry/g)).toHaveLength(1)
     expect(row.indexOf('Show path')).toBeLessThan(row.indexOf('View from here'))
     expect(row.indexOf('View from here')).toBeLessThan(row.indexOf('Save TEST123'))
     expect(row.indexOf('Save TEST123')).toBeLessThan(row.indexOf('Share object'))
@@ -1126,19 +1132,26 @@ describe('TrafficDetails action placement', () => {
     expect(html).not.toContain('Share object')
   })
 
-  it.each([
-    { compact: true, forceCompact: false },
-    { compact: true, forceCompact: true },
-  ])('keeps utilities in the compact header and primary actions inert until expansion %j', options => {
-    const html = renderActions(aircraft, options)
+  it('keeps mobile primary actions out of the compact header until expansion', () => {
+    const html = renderActions(aircraft, { compact: true, forceCompact: false })
+    const body = html.slice(html.indexOf('details-panel__body'))
+    expect(html).toMatch(/Save TEST123[\s\S]*Share object[\s\S]*>Details<\/button>[\s\S]*Close aircraft details/)
+    expect(body).toContain('hidden=""')
+    expect(body).toContain('inert=""')
+    expect(html).not.toContain('traffic-details__path-action')
+    expect(html).not.toContain('data-aircraft-view-entry')
+  })
+
+  it('keeps forced desktop primary actions mounted and inert until expansion', () => {
+    const html = renderActions(aircraft, { compact: true, forceCompact: true })
     const body = html.slice(html.indexOf('details-panel__body'))
     expect(html).toMatch(/Save TEST123[\s\S]*Share object[\s\S]*>Details<\/button>[\s\S]*Close aircraft details/)
     expect(body).toContain('hidden=""')
     expect(body).toContain('inert=""')
     expect(body).toContain('Show path')
     expect(body).toContain('View from here')
-    expect(html.match(/Show path/g)).toHaveLength(1)
-    expect(html.match(/View from here/g)).toHaveLength(1)
+    expect(html.match(/traffic-details__path-action/g)).toHaveLength(1)
+    expect(html.match(/data-aircraft-view-entry/g)).toHaveLength(1)
   })
 
   it('preserves loading and failure feedback without duplicating path controls', () => {
@@ -1155,8 +1168,9 @@ describe('TrafficDetails action placement', () => {
       />,
     )
     expect(html).toContain('disabled=""')
-    expect(html).toContain('Loading path...')
+    expect(html).toContain('aria-label="Loading path"')
+    expect(html).toContain('title="Loading path"')
+    expect(html).toContain('aria-busy="true"')
     expect(html).toContain('role="status">The path could not be prepared.')
-    expect(html.match(/Loading path/g)).toHaveLength(1)
   })
 })

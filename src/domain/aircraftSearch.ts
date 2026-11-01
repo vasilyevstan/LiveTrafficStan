@@ -6,13 +6,17 @@ export const AIRCRAFT_RESULT_LIMIT = 20
 export const aircraftResultLabel = (aircraft: Aircraft) =>
   aircraft.callsign ?? aircraft.registration ?? aircraft.hex.toUpperCase()
 
-export const aircraftResultContext = (aircraft: DisplayAircraft) =>
-  [
+export const aircraftResultContext = (aircraft: DisplayAircraft) => {
+  const values = [
     `ICAO24 ${aircraft.hex.toUpperCase()}`,
     aircraft.registration,
     aircraft.aircraftType,
     aircraft.freshness === 'stale' ? 'STALE' : undefined,
-  ].filter(Boolean).join(' · ')
+  ].filter((value): value is string => Boolean(value))
+  return values.filter((value, index) =>
+    values.findIndex((candidate) => candidate.toUpperCase() === value.toUpperCase()) === index,
+  ).join(' · ')
+}
 
 export const normalizeAircraftSearchQuery = (query: string) =>
   query.trim().replace(/\s+/g, ' ').toUpperCase()
