@@ -1644,6 +1644,11 @@ See [Hosting and Deployment](docs/hosting-and-deployment.md) for the dated
 platform matrix, request budget, proxy contract, exact-SHA workflow, smoke,
 monitoring, privacy, and rollback procedure.
 
+Deployment METAR checks allow one 60-second-spaced retry for a verified
+exact-release `504`, within a 90-second total deadline. Persistent outages,
+other errors and release mismatches still fail; browser and proxy behavior
+are unchanged. See [the timeout recovery boundary](docs/troubleshooting.md#deployment-metar-checks).
+
 ## Known limitations
 
 - Public providers offer no application SLA, and live traffic coverage varies

@@ -6,10 +6,12 @@ import portsSource from '../src/config/portsSource.json' with {
 }
 import {
   DEPLOYMENT_PROPAGATION_RETRY_DELAYS_MS,
+  METAR_SMOKE_TIMEOUT_MS,
   PRIVATE_RELAY_SMOKE_TIMEOUT_MS,
   SAME_ORIGIN_SMOKE_FETCH_INIT,
   classifyAircraftProxyStatus,
   deriveOrbitalStaticAssetPaths,
+  fetchMetarWithTimeoutRetry,
   fetchPrivateRelayWithRetry,
   formatMetarReleaseMismatch,
   hasOneYearImmutableCacheControl,
@@ -590,9 +592,16 @@ const verifyAircraftProxy = async () => {
 }
 
 const verifyMetarProxy = async () => {
-  const response = await fetchWithTimeout(
-    new URL('/api/weather/metar?ids=EETN', baseUrl),
-  )
+  const signal = AbortSignal.timeout(METAR_SMOKE_TIMEOUT_MS)
+  const response = await fetchMetarWithTimeoutRetry({
+    fetchMetar: (signal) => fetchWithTimeout(
+      new URL('/api/weather/metar?ids=EETN', baseUrl),
+      { ...SAME_ORIGIN_SMOKE_FETCH_INIT, signal },
+    ),
+    expectedReleaseSha,
+    targetOrigin: baseUrl.origin,
+    signal,
+  })
   assert(
     response.status === 200 || response.status === 204,
     `METAR proxy returned ${response.status}`,
@@ -642,12 +651,13 @@ const verifyMetarProxy = async () => {
 
   const invalid = await fetchWithTimeout(
     new URL('/api/weather/metar?ids=eetn', baseUrl),
+    { ...SAME_ORIGIN_SMOKE_FETCH_INIT, signal },
   )
   assert(invalid.status === 400, 'Invalid METAR station ID was not rejected')
 
   const unsupportedMethod = await fetchWithTimeout(
     new URL('/api/weather/metar?ids=EETN', baseUrl),
-    { method: 'POST' },
+    { ...SAME_ORIGIN_SMOKE_FETCH_INIT, method: 'POST', signal },
   )
   assert(
     unsupportedMethod.status === 405,

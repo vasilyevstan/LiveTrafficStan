@@ -1419,6 +1419,14 @@ prove public aggregate request/egress safety. Production exact-SHA smoke proves
 the deployed boundary, while provider capacity remains an external operational
 dependency rather than an application guarantee.
 
+Deployment smoke allows one retry after 60 seconds for an exact-release METAR
+`504` with the expected non-success headers and no `Retry-After`, bounded by
+90 seconds overall and the existing per-request timeout. It logs the first
+failure and still requires a genuine `200`/`204` passing all response checks;
+release mismatches, other errors and persistent timeouts fail closed. Browser
+and proxy behavior are unchanged. See [the timeout investigation and retry
+boundary](troubleshooting.md#deployment-metar-checks).
+
 ## Scheduled orbital catalog contract
 
 The orbital infrastructure is disabled unless the protected deployment sets:
