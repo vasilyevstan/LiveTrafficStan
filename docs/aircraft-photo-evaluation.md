@@ -121,11 +121,12 @@ matches, so a completed hover lookup appears there immediately without a
 second provider request. Subscription setup restores this shared notification
 after React development Strict Mode cleanup/replay. Errors are not cached,
 throttling is shared and honors `Retry-After`, and hover failures do not
-automatically retry.
+automatically retry. Selected details may make one fresh attempt when the
+aircraft is reselected after a failure without a provider retry time.
 
 Only an exact successful result creates photo UI. The unchanged linked image
-and mandatory visible photographer/source credit follow any successful
-plausible route before telemetry. Idle, loading, not-found and error states
+and mandatory visible photographer/source credit lead selected details, above
+any successful plausible route and the telemetry facts. Idle, loading, not-found and error states
 create no photo card or explanatory text.
 
 No photo JSON, URL, credit, or image byte is written to Web Storage, IndexedDB,
@@ -134,11 +135,9 @@ endpoint. CSP permits only the exact API and thumbnail origins. The service
 worker bypasses both origins.
 
 The provider response does not echo ICAO24, registration, construction number,
-or the provider's internal fallback decision. The UI therefore says only:
-
-> Photo returned by Planespotters for ICAO24 …
-
-It does not claim independent aircraft-identity verification and never
+or the provider's internal fallback decision. The visible credit therefore
+names only the photographer and Planespotters, and the photo link title says
+the image was returned for that ICAO24. It does not claim independent aircraft-identity verification and never
 substitutes a model, airline, or generic photo.
 
 ## Deterministic acceptance

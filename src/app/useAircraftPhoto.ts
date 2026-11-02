@@ -12,6 +12,7 @@ import { AircraftPhotoController } from './AircraftPhotoController'
 
 interface UseAircraftPhotoOptions {
   automaticRequestDelayMs?: number
+  retryTransientAutomaticFailures?: boolean
 }
 
 export const useAircraftPhoto = (
@@ -23,18 +24,22 @@ export const useAircraftPhoto = (
   const [state, setState] = useState<AircraftPhotoViewState>({
     phase: 'idle',
   })
+  const retryTransientAutomaticFailures =
+    options.retryTransientAutomaticFailures === true
   const controller = useMemo(
     () =>
       new AircraftPhotoController(provider, {
         cacheMaxEntries: config.cacheMaxEntries,
         cacheTtlMs: config.cacheTtlMs,
         rateLimitFallbackMs: config.rateLimitFallbackMs,
+        retryTransientAutomaticFailures,
       }),
     [
       config.cacheMaxEntries,
       config.cacheTtlMs,
       config.rateLimitFallbackMs,
       provider,
+      retryTransientAutomaticFailures,
     ],
   )
   const aircraftHex = aircraft?.hex

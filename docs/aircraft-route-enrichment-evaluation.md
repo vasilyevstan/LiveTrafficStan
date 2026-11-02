@@ -124,7 +124,8 @@ The application treats a plausible route as standing-data context and not:
 No route data changes ADS-B marker position, freshness, polling, trails,
 selection, metadata, aircraft history, or provider health.
 
-Only a successful result appears above telemetry, photo and metadata sections.
+Only a successful result appears, below any photo and above the telemetry and
+metadata sections.
 It contains **Departure** and **Destination** only. Loading, unavailable and
 error states create no visible route card. ADSB.lol remains identified by the
 traffic Source fact and provider disclosure; VRS Standing Data is CC0 and stays

@@ -4442,10 +4442,11 @@ Use `npm run dev` and verify:
     a map/source, reconnect providers or request flag images. Rehydration must
     restore actual rendered badges, not merely their image IDs.
 16. Selecting each reviewed vessel by its exact live IMO shows the correct
-    bundled reference photo directly below the ship heading, with author,
-    fixed Commons revision, selected license, modification notice, and the
-    historical/not-live caveat visible. An invalid or unmatched IMO explains
-    why coverage is unavailable and shows no image. Switching matched A to
+    bundled reference photo at the top of details, above the AIS route and
+    facts, with visible author, fixed Commons revision and selected license,
+    a visible "modified" marker whose title holds the modification notice,
+    and the exact-IMO/not-live caveat in the photo link title. An invalid or
+    unmatched IMO shows no image and no explanatory text. Switching matched A to
     matched B to A never flashes the wrong hull; HISTORY and search results
     show no vessel photo. A sub-500 ms hover adds no image request; one stable
     matched-vessel hover loads only the correct same-origin asset with
