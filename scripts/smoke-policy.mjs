@@ -17,6 +17,8 @@ export const PRIVATE_RELAY_MAX_ADMISSION_WAIT_MS =
   PRIVATE_RELAY_MAX_RETRY_AFTER_SECONDS *
   1_000
 export const PRIVATE_RELAY_SMOKE_TIMEOUT_MS = 9 * 60_000
+export const METAR_TIMEOUT_RETRY_DELAY_MS = 60_000
+export const METAR_SMOKE_TIMEOUT_MS = 90_000
 export const PRIVATE_RELAY_STATUS_HEADER =
   'x-livetrafficstan-relay-status'
 export const PRIVATE_RELAY_ADMISSION_STATUS = 'admission'
@@ -73,6 +75,53 @@ const defaultWait = (delayMs, signal) =>
     }
     signal.addEventListener('abort', handleAbort, { once: true })
   })
+
+export const fetchMetarWithTimeoutRetry = async ({
+  fetchMetar,
+  expectedReleaseSha,
+  targetOrigin,
+  signal = AbortSignal.timeout(METAR_SMOKE_TIMEOUT_MS),
+  wait = defaultWait,
+}) => {
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    signal.throwIfAborted()
+    const response = await fetchMetar(signal)
+    if (signal.aborted) {
+      await cancelResponseBody(response)
+      signal.throwIfAborted()
+    }
+
+    const observedReleaseSha = response.headers.get('x-livetrafficstan-release')
+    if (observedReleaseSha !== expectedReleaseSha) {
+      await cancelResponseBody(response)
+      throw new Error(formatMetarReleaseMismatch({
+        expectedReleaseSha,
+        observedReleaseSha,
+        targetOrigin,
+        status: response.status,
+      }))
+    }
+
+    if (
+      attempt === 2 ||
+      response.status !== 504 ||
+      response.headers.get('cache-control') !== 'no-store' ||
+      response.headers.get('x-content-type-options') !== 'nosniff' ||
+      response.headers.get('content-type') !== 'text/plain; charset=utf-8' ||
+      response.headers.has('access-control-allow-origin') ||
+      response.headers.has('retry-after')
+    ) {
+      return response
+    }
+
+    await cancelResponseBody(response)
+    console.warn(
+      `METAR proxy returned 504 for exact release ${expectedReleaseSha}; ` +
+      'retrying once after 60 seconds',
+    )
+    await wait(METAR_TIMEOUT_RETRY_DELAY_MS, signal)
+  }
+}
 
 const classifyWorkerReleaseProbe = (response, expectedReleaseSha) => {
   if (response.status !== 400) {

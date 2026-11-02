@@ -696,6 +696,8 @@ immediately rather than being retried. A persistent canonical mismatch still
 fails the release; do not change the source or bypass the exact-current-`main`
 guard.
 
+### Deployment METAR checks
+
 METAR release mismatches remain immediate failures, without an added retry.
 Their smoke error records the full expected SHA, observed release header,
 deployment origin and fixed METAR route, and HTTP status. `<missing>` differs
@@ -707,8 +709,17 @@ what was received but does not establish a cache, edge, or propagation cause.
 a mismatch four seconds after publication whose received SHA was not logged.
 Later unchanged strict smoke passes on both hosts did not turn the original
 failed Actions run green or demonstrate an application/provider regression.
-Any new METAR retry needs separate evidence and approval; do not relax exact
-release, response-policy, or deadline checks to hide a mismatch.
+The later deployment failures in runs `41355236397` and `41513087458` were
+HTTP `504` timeouts after the proxy's eight-second deadline, not release-header
+mismatches. Production and direct AWC subsequently returned valid `200`
+responses. For this distinct transient-timeout case, smoke permits **one**
+retry after 60 seconds, within a 90-second total budget. Every attempt must
+identify the exact release. Only a `504` with `no-store`, plain-text content,
+`nosniff`, no CORS and no `Retry-After` qualifies. The failed body is canceled
+and the retry is logged. Any provider retry guidance, wrong/missing release,
+other error, or second timeout still fails; a successful response must pass
+all existing body and policy checks. This changes neither browser retries nor
+the proxy's eight-second deadline and never converts an outage into success.
 
 Production deployment credentials exist only in the protected GitHub
 `production` environment. This includes `AIRCRAFT_RELAY_AUTH_TOKEN` when

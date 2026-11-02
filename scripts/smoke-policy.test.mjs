@@ -1,9 +1,11 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
   DEPLOYMENT_PROPAGATION_RETRY_DELAYS_MS,
+  METAR_SMOKE_TIMEOUT_MS,
+  METAR_TIMEOUT_RETRY_DELAY_MS,
   ORBITAL_SCHEMA2_NEGOTIATION_ACCEPT,
   PRIVATE_RELAY_MAX_ATTEMPTS,
   PRIVATE_RELAY_MAX_ADMISSION_WAIT_MS,
@@ -14,6 +16,7 @@ import {
   STARLINK_SCHEMA2_NEGOTIATION_ACCEPT,
   classifyAircraftProxyStatus,
   deriveOrbitalStaticAssetPaths,
+  fetchMetarWithTimeoutRetry,
   fetchPrivateRelayWithRetry,
   formatMetarReleaseMismatch,
   hasOneYearImmutableCacheControl,
@@ -198,7 +201,7 @@ describe('production smoke policy', () => {
     expect(message).not.toContain('SECRET_TAIL')
   })
 
-  it('wires diagnostics into the single-attempt raw exact METAR assertion', () => {
+  it('keeps strict METAR assertions after the bounded timeout-only retry', () => {
     const metarCheck = smokeScript.slice(
       smokeScript.indexOf('const verifyMetarProxy = async () => {'),
       smokeScript.indexOf('const verifyAirportBoardBoundary'),
@@ -215,10 +218,14 @@ describe('production smoke policy', () => {
     )
     expect(metarCheck.indexOf('response.status === 200 || response.status === 204'))
       .toBeLessThan(metarCheck.indexOf('observedReleaseSha === expectedReleaseSha'))
-    expect(metarCheck.match(/await fetchWithTimeout\(/g)).toHaveLength(3)
-    expect(metarCheck).not.toMatch(/\b(?:while|for|retry|waitForWorkerRelease)\b/)
+    expect(metarCheck.match(/await fetchWithTimeout\(/g)).toHaveLength(2)
+    expect(metarCheck).toContain('await fetchMetarWithTimeoutRetry({')
+    expect(metarCheck).toContain('AbortSignal.timeout(METAR_SMOKE_TIMEOUT_MS)')
+    expect(metarCheck).toContain('{ ...SAME_ORIGIN_SMOKE_FETCH_INIT, signal }')
+    expect(metarCheck).toContain("{ ...SAME_ORIGIN_SMOKE_FETCH_INIT, method: 'POST', signal }")
+    expect(metarCheck).not.toMatch(/\b(?:while|for|waitForWorkerRelease)\b/)
     expect(metarCheck).toContain(
-      "new URL('/api/weather/metar?ids=EETN', baseUrl),\n  )",
+      "new URL('/api/weather/metar?ids=EETN', baseUrl),",
     )
     for (const assertion of [
       "response.headers.get('cache-control') === 'public, max-age=60'",
@@ -233,6 +240,187 @@ describe('production smoke policy', () => {
     ]) {
       expect(metarCheck).toContain(assertion)
     }
+  })
+
+  describe('METAR timeout recovery', () => {
+    afterEach(() => {
+      vi.useRealTimers()
+      vi.restoreAllMocks()
+    })
+
+    const metarResponse = (status = 504, headers = {}) =>
+      new Response(status === 204 ? null : status === 200 ? '[]' : 'METAR upstream timed out', {
+        status,
+        headers: {
+          'X-LiveTrafficStan-Release': releaseSha,
+          'Cache-Control': status === 504 ? 'no-store' : 'public, max-age=60',
+          'Content-Type': status === 504 ? 'text/plain; charset=utf-8' : 'application/json',
+          'X-Content-Type-Options': 'nosniff',
+          ...headers,
+        },
+      })
+
+    const options = (fetchMetar, wait = vi.fn(async () => undefined)) => ({
+      fetchMetar,
+      wait,
+      expectedReleaseSha: releaseSha,
+      targetOrigin: 'https://app.example',
+    })
+
+    it.each([200, 204])('returns HTTP %i without another request', async (status) => {
+      const response = metarResponse(status)
+      const fetchMetar = vi.fn(async () => response)
+      const input = options(fetchMetar)
+      expect(await fetchMetarWithTimeoutRetry(input)).toBe(response)
+      expect(fetchMetar).toHaveBeenCalledTimes(1)
+      expect(input.wait).not.toHaveBeenCalled()
+    })
+
+    it('retries one exact-release timeout after 60 seconds and records it', async () => {
+      const timeout = metarResponse()
+      const success = metarResponse(200)
+      const warning = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+      const fetchMetar = vi.fn()
+        .mockResolvedValueOnce(timeout)
+        .mockResolvedValueOnce(success)
+      const input = options(fetchMetar)
+
+      expect(await fetchMetarWithTimeoutRetry(input)).toBe(success)
+      expect(fetchMetar).toHaveBeenCalledTimes(2)
+      expect(timeout.bodyUsed).toBe(true)
+      expect(input.wait).toHaveBeenCalledExactlyOnceWith(
+        METAR_TIMEOUT_RETRY_DELAY_MS,
+        fetchMetar.mock.calls[0][0],
+      )
+      expect(METAR_TIMEOUT_RETRY_DELAY_MS).toBe(60_000)
+      expect(warning).toHaveBeenCalledWith(
+        `METAR proxy returned 504 for exact release ${releaseSha}; retrying once after 60 seconds`,
+      )
+    })
+
+    it('leaves a second timeout as a failure, never an empty success', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+      const last = metarResponse()
+      const fetchMetar = vi.fn()
+        .mockResolvedValueOnce(metarResponse())
+        .mockResolvedValueOnce(last)
+      const input = options(fetchMetar)
+      expect(await fetchMetarWithTimeoutRetry(input)).toBe(last)
+      expect(last.status).toBe(504)
+      expect(fetchMetar).toHaveBeenCalledTimes(2)
+      expect(input.wait).toHaveBeenCalledTimes(1)
+    })
+
+    it.each([301, 400, 403, 429, 500, 502, 503])(
+      'does not retry HTTP %i',
+      async (status) => {
+        const response = metarResponse(status)
+        const fetchMetar = vi.fn(async () => response)
+        const input = options(fetchMetar)
+        expect(await fetchMetarWithTimeoutRetry(input)).toBe(response)
+        expect(fetchMetar).toHaveBeenCalledTimes(1)
+        expect(input.wait).not.toHaveBeenCalled()
+      },
+    )
+
+    it.each([
+      { 'Cache-Control': 'public, max-age=60' },
+      { 'X-Content-Type-Options': '' },
+      { 'Content-Type': 'text/html' },
+      { 'Access-Control-Allow-Origin': '*' },
+      { 'Retry-After': '120' },
+      { 'Retry-After': 'invalid' },
+    ])('does not retry a timeout with unsafe policy or provider guidance: %j', async (headers) => {
+      const response = metarResponse(504, headers)
+      const fetchMetar = vi.fn(async () => response)
+      const input = options(fetchMetar)
+      expect(await fetchMetarWithTimeoutRetry(input)).toBe(response)
+      expect(fetchMetar).toHaveBeenCalledTimes(1)
+      expect(input.wait).not.toHaveBeenCalled()
+    })
+
+    it.each([null, '', 'not-a-sha', 'a'.repeat(40)])(
+      'fails a timeout with release %j immediately',
+      async (observed) => {
+        const response = metarResponse()
+        if (observed === null) response.headers.delete('x-livetrafficstan-release')
+        else response.headers.set('x-livetrafficstan-release', observed)
+        const input = options(vi.fn(async () => response))
+        await expect(fetchMetarWithTimeoutRetry(input)).rejects.toThrow(metarMismatch(observed, 504))
+        expect(input.fetchMetar).toHaveBeenCalledTimes(1)
+        expect(input.wait).not.toHaveBeenCalled()
+        expect(response.bodyUsed).toBe(true)
+      },
+    )
+
+    it('fails a wrong release after a timeout instead of retrying again', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+      const input = options(vi.fn()
+        .mockResolvedValueOnce(metarResponse())
+        .mockResolvedValueOnce(metarResponse(200, {
+          'X-LiveTrafficStan-Release': 'a'.repeat(40),
+        })))
+      await expect(fetchMetarWithTimeoutRetry(input)).rejects.toThrow(metarMismatch('a'.repeat(40)))
+      expect(input.fetchMetar).toHaveBeenCalledTimes(2)
+      expect(input.wait).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not retry a network exception', async () => {
+      const error = new Error('network failure')
+      const input = options(vi.fn().mockRejectedValue(error))
+      await expect(fetchMetarWithTimeoutRetry(input)).rejects.toBe(error)
+      expect(input.fetchMetar).toHaveBeenCalledTimes(1)
+      expect(input.wait).not.toHaveBeenCalled()
+    })
+
+    it('stops during the 60-second wait if the total deadline expires', async () => {
+      vi.useFakeTimers()
+      vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+      const controller = new AbortController()
+      const fetchMetar = vi.fn(async () => metarResponse())
+      const pending = fetchMetarWithTimeoutRetry({
+        ...options(fetchMetar),
+        wait: undefined,
+        signal: controller.signal,
+      })
+      const error = new Error('METAR smoke deadline')
+      const rejected = expect(pending).rejects.toBe(error)
+      await vi.advanceTimersByTimeAsync(1)
+      controller.abort(error)
+      await rejected
+      await vi.advanceTimersByTimeAsync(60_000)
+      expect(fetchMetar).toHaveBeenCalledTimes(1)
+      expect(METAR_SMOKE_TIMEOUT_MS).toBe(90_000)
+    })
+
+    it('waits the full 60 seconds and aborts a pending second request at 90 seconds', async () => {
+      vi.useFakeTimers()
+      vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+      const deadline = vi.spyOn(AbortSignal, 'timeout').mockImplementation((delayMs) => {
+        const controller = new AbortController()
+        setTimeout(() => controller.abort(new Error('METAR smoke deadline')), delayMs)
+        return controller.signal
+      })
+      const fetchMetar = vi.fn()
+        .mockResolvedValueOnce(metarResponse())
+        .mockImplementationOnce((signal) => new Promise((_resolve, reject) => {
+          signal.addEventListener('abort', () => reject(signal.reason), { once: true })
+        }))
+      const pending = fetchMetarWithTimeoutRetry({
+        ...options(fetchMetar),
+        wait: undefined,
+      })
+      const rejected = expect(pending).rejects.toThrow('METAR smoke deadline')
+      await vi.advanceTimersByTimeAsync(59_999)
+      expect(fetchMetar).toHaveBeenCalledTimes(1)
+      await vi.advanceTimersByTimeAsync(1)
+      expect(fetchMetar).toHaveBeenCalledTimes(2)
+      expect(fetchMetar.mock.calls[1][0].aborted).toBe(false)
+      await vi.advanceTimersByTimeAsync(30_000)
+      await rejected
+      expect(fetchMetar.mock.calls[1][0].aborted).toBe(true)
+      expect(deadline).toHaveBeenCalledExactlyOnceWith(90_000)
+    })
   })
 
   const workerProbe = (releaseSha, overrides = {}) =>
