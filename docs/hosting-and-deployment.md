@@ -1339,7 +1339,7 @@ GET /api/aircraft/v2/point/{latitude}/{longitude}/{radiusNm}
 | Method other than GET | `405 Method Not Allowed`, `Allow: GET` |
 | Query string | `400 Bad Request` |
 | Noncanonical, malformed, non-finite, or out-of-range coordinate | `400 Bad Request` |
-| Radius outside integer 1-54 NM | `400 Bad Request` |
+| Radius outside integer 1-135 NM | `400 Bad Request` |
 | Valid request | Fixed `https://api.adsb.lol/v2/point/...` upstream |
 | Upstream redirect | `502 Bad Gateway`; never followed or forwarded |
 | Upstream network/read failure | `502 Bad Gateway` |
@@ -1370,11 +1370,12 @@ The proxy:
 - adds `X-LiveTrafficStan-Release` only when deployment supplied a valid
   40-character source SHA.
 
-The 54 NM maximum is intentionally tied to the current 100 km application
-contract. A regression test compares the Worker maximum with
-`aircraftQueryRadiusNauticalMiles(APP_CONFIG.map.maximumViewportRadiusKm)` so a
-future viewport-limit change cannot silently work in Vite while production
-rejects it.
+The 135 NM maximum is intentionally tied to the current 250 km aircraft
+application contract. A regression test compares the Worker maximum with
+`aircraftQueryRadiusNauticalMiles(APP_CONFIG.map.maximumAircraftViewportRadiusKm)`
+so a future aircraft-limit change cannot silently work in Vite while
+production rejects it. Marine and local context retain the separate 100 km
+boundary.
 
 ## METAR proxy contract
 
@@ -1959,7 +1960,7 @@ No Worker Cache API, shared response cache, `stale-while-revalidate`, or
   cached flight makes no provider request; manual **Refresh** deliberately
   does.
 
-The strict ADS-B route, 54 NM ceiling, ten-second deadline, 4 MiB body bound,
+The strict ADS-B route, 135 NM ceiling, ten-second deadline, 4 MiB body bound,
 no proxy retry, existing client schedule, and Cloudflare daily allowance
 reduce accidental load. They are not a global ADS-B abuse-control system.
 

@@ -48,11 +48,12 @@ supplementary marine WebSocket; use the actual local Worker for those paths.
 | `npm run check:deploy` | Bundle the Worker and Static Assets without credentials or deployment |
 | `npm run preview:worker` | Build and run the actual local Cloudflare `workerd` boundary |
 
-### Map-first phone workspace (unreleased; #540 / #554)
+### Map-first phone workspace (#540 / #554 / #641)
 
 This branch replaces overlapping phone reading surfaces, not desktop menus or
-provider geometry. Map selections start compact with Details/X; a result opens
-details with Back to its retained task. Find, Layers, In view, Settings,
+provider geometry. Ordinary live map selections open details on the first
+click; captured views start compact with Details/X, and a result opens details
+with Back to its retained task. Find, Layers, In view, Settings,
 Context/Orbits/Sources, provider details and native credits remain accessible.
 Task/inspector/provider pause instructions and promoted recovery actions use
 the existing body scroller instead of covering another panel. HISTORY keeps
@@ -116,6 +117,17 @@ replacing the canvas. A simulated METAR 503 moves the single visible
 recovery notice from Layers into Find's scroller; native Retry recovers after
 the unchanged 60-second cooldown. Desktop 1280x900/1920x1080 and normal
 768x1024 tablet retain More's default Find tab and expanded inspectors.
+
+For every non-Settings detail inspector, verify that all available actions are
+44x44 icon controls in the top-right header row and that no action-only second
+row remains. Captured aircraft/orbital Pause/Play and Return must remain
+reachable while the mobile body is compact. At Tesla 1920x1080, desktop
+1280x720, phone 390x844, short phone and landscape sizes, measure bounded panel
+geometry, one body scroll owner, no horizontal overflow, one MapLibre canvas
+and a usable map region. Selected-aircraft enrichment must render nothing for
+idle/loading/unavailable/error states; an available route shows only Departure
+and Destination above Callsign, and an available photo shows the unchanged
+linked image plus visible credit above Callsign.
 
 Observer rules: use `checkVisibility({ visibilityProperty: true })` and
 hidden/inert ancestry, not DOM existence or rectangles alone. HISTORY's
@@ -4430,10 +4442,11 @@ Use `npm run dev` and verify:
     a map/source, reconnect providers or request flag images. Rehydration must
     restore actual rendered badges, not merely their image IDs.
 16. Selecting each reviewed vessel by its exact live IMO shows the correct
-    bundled reference photo directly below the ship heading, with author,
-    fixed Commons revision, selected license, modification notice, and the
-    historical/not-live caveat visible. An invalid or unmatched IMO explains
-    why coverage is unavailable and shows no image. Switching matched A to
+    bundled reference photo at the top of details, above the AIS route and
+    facts, with visible author, fixed Commons revision and selected license,
+    a visible "modified" marker whose title holds the modification notice,
+    and the exact-IMO/not-live caveat in the photo link title. An invalid or
+    unmatched IMO shows no image and no explanatory text. Switching matched A to
     matched B to A never flashes the wrong hull; HISTORY and search results
     show no vessel photo. A sub-500 ms hover adds no image request; one stable
     matched-vessel hover loads only the correct same-origin asset with
@@ -4549,25 +4562,35 @@ For the viewport-driven map experience, additionally verify:
    the desired traffic viewport without snapping the camera back.
 2. Rapid camera changes resolve to the latest area without increasing aircraft
    request cadence or reconnecting marine MQTT.
-3. A view at or below the 100 km enclosing limit shows exact polygon-filtered
-   traffic; an object inside the query circle but outside the visible footprint
-   stays hidden.
-4. Wider or unsafe views hide traffic and trails, clear selection, pause both
-   providers, and show the zoom or tilt prompt. Zooming back in resumes at the
-   preserved provider boundaries.
+3. A view at or below 100 km shows exact polygon-filtered aircraft and ships.
+   Between 100 and 250 km aircraft remain exact and live while ships are
+   explicitly paused and receive no query. An object inside either query circle
+   but outside the visible footprint stays hidden.
+4. Views above 250 km or unsafe geometry hide traffic and trails, clear invalid
+   selection, pause both providers, and show the zoom or tilt prompt. Zooming
+   back in resumes each source at its preserved boundary.
 5. Center returns to session Home using the initial local framing.
 6. Already-granted location starts near the rounded browser location without a
    prompt; other permission states retain Tallinn until explicit action.
 7. Dateline, rotated, pitched, and desktop/mobile resized views remain bounded
    and do not become a falsely small query.
 8. Initial load, Home, and Center use the configured 30 km framing. The
-   resulting full-canvas assessment remains eligible and below the unchanged
-   100 km limit; camera actions do not add aircraft polls beyond cadence or
+   resulting full-canvas assessment remains below both source limits; camera
+   actions do not add aircraft polls beyond cadence or
    display aircraft outside the exact viewport polygon.
 9. Auto system changes and repeated explicit Light/Dark overrides preserve
    camera, live traffic, selected object, trail, controls, and provider
    connections.
 10. Both themes remain readable on desktop and a narrow mobile viewport.
+    Also verify 1024x600 and 1280x720 coarse-pointer landscape plus
+    1920x1200/1920x1080 car-browser proportions: overlay padding and reading
+    height respond to actual workspace/visual viewport size, every exposed
+    action remains at least 44 px, one panel owns scrolling, and a hit-tested
+    useful map region remains. Live traffic details above the 760 px mobile
+    cutoff stay within the adaptive 340-380 px by 320-420 px cap even when the
+    browser does not report a coarse pointer. Utility actions share the
+    heading's top-right area, and primary traffic facts appear before optional
+    route/photo states.
 11. Aircraft, helicopter, and vessel artwork retains its identity over land,
    water, and busy detail at actual marker scale; stale markers remain
    recognizable and distinct from live markers.
@@ -5548,6 +5571,31 @@ Real-browser CDP acceptance used built `dist` with a local fixture
 | Real ADSB.lol ride, 45 s near Frankfurt | Status advanced about 20 s behind; altitude glided 9,456-9,665 m |
 
 Initial-JS gzip grew 601,921 → 604,517 bytes (+0.43%), within the 1% ceiling.
+
+Low-altitude follow-up (no 300 m floor, ride buildings): built `dist`,
+fixture C172 over Manhattan (40.742, -73.99), headless Chrome over CDP.
+
+Forced `vertical-perspective` on a plain map (blank = screenshot std about 10;
+drawn above 20):
+
+| Latitude | Last drawn zoom | First blank zoom |
+| --- | --- | --- |
+| 1.29 | 16.6 | 16.7 |
+| 40.75 | 16.2 | 16.3 |
+| 60.17 | 15.6 | 15.7 |
+
+All three give a blank boundary at `zoom - log2(cos(latitude))` of about 16.65.
+The result is pitch-independent (0/60/76) and holds at DPR 3. Mercator draws
+at zoom 19.5.
+
+| Ride | Result |
+| --- | --- |
+| 1920x1080 Dark, 305 m | Enters at the 79° fallback, zoom 15.88; drawn (std 41.9); buildings pinned. Look-down pauses with **Map display limit** (no blank frame) |
+| 1920x1080 Dark, 152/101/30 m | Returns at once with the plain close-to-ground reason; globe and building ramp restored |
+| 315x517 Light, 305 m | Enters at 76°, zoom 15.15; look sweep drawn |
+| 315x517 Light, 183 m | Enters at 76°, zoom 15.89; drawn with full-height Midtown buildings; look-down pauses at the limit |
+| 1920x1080 Light, Return | Globe projection and zoom 14.5-15.5 building ramp restored |
+| Cadence | 20,001 ms between aircraft requests during the ride |
 
 Testing notes:
 - Auto theme follows day/night, not `prefers-color-scheme`. Switch themes with

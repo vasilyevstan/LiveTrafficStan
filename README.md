@@ -257,16 +257,19 @@ identity are not renamed or reset.
   and [setup and private statistics](docs/hosting-and-deployment.md#exact-object-sharing-operations).
 - Viewport-driven traffic after settled pan, zoom, rotation, pitch, Home, and
   resize changes.
-- A truthful 100 km enclosing-query limit: wider or unsafe views pause traffic
-  and offer **Resume live** to fit the current map center back to the reviewed
-  safe framing rather than showing partial coverage as complete.
+- Truthful source-specific enclosing-query limits: aircraft remain live through
+  250 km, while ships and local airport/weather context retain the reviewed
+  100 km boundary. In the 100-250 km band the UI explicitly reports ships
+  paused rather than presenting an empty sea; unsafe or wider views pause both.
+  **Resume ships** keeps the current center and returns to the marine-safe
+  framing without clamping or presenting partial coverage as complete.
 - A smoother zoom-out hand-off retains a small **last local traffic sample**
   at real observed positions, with no wider requests. At most twelve aircraft
   and twelve ships are decluttered and faded between zoom 7 and 3; observations
   expire within two minutes. The labelled, read-only sample is not wider live
   coverage and never enters live counts, details, trails or history.
-- **Aircraft View from here (#625):** a live airborne aircraft at or above
-  300 m offers **View from here** in Auto projection. The view rides along its
+- **Aircraft View from here (#625):** a live airborne aircraft with a
+  positive reported altitude offers **View from here** in Auto projection. The view rides along its
   observed ADS-B positions at their reported barometric altitude, about 20 s
   behind and only between reports, so it never predicts. Drag or use the arrow
   keys to look around. **Pause** and **Play** work as in the satellite view,
@@ -274,6 +277,10 @@ identity are not renamed or reset.
   hidden. The view holds when reports stop and returns after the ordinary
   two-minute expiry. While it is active, a temporary globe-style projection
   is used, and it is not saved. The view makes no extra provider requests.
+  Buildings stand at full height throughout the ride. Low eyes enter when the
+  map can draw them; on a desktop this is from roughly 300 m, and lower on a
+  narrow phone. Otherwise the view Returns with a plain reason. Looking past
+  the drawable limit shows **Map display limit** instead of a blank view.
 - **Show path** in aircraft/ship details captures a session-only journey
   overview. Warm-colored past and blue remaining sections distinguish the
   journey phases; solid lines join received positions and dashed lines are
@@ -507,8 +514,8 @@ identity are not renamed or reset.
   0.269 to 2.110 objects and empty time from 75.9% to 7.6%; northern Europe
   improves from 0.655 to 5.614 and from 50.3% empty to 0.7%.
 - A default-enabled ADSB.lol plausible-route lookup for a selected live
-  aircraft. A committed selection starts one lookup and shows a compact result
-  directly below the aircraft heading. Hover, HISTORY, and same-flight position
+  aircraft. A committed selection starts one lookup and shows only Departure
+  and Destination after any photo and above facts. Hover, HISTORY, and same-flight position
   updates stay passive. It validates one exact normalized callsign plus current
   position against standing-data route segments and never claims a filed plan,
   schedule, or operational status. Successful exact-identity results are
@@ -565,9 +572,17 @@ identity are not renamed or reset.
   16 px on desktops. Phones use a compact status card and a five-action dock:
   **Center, Layers, Find, In view, Settings**. Aircraft/Ships/ORBITS switches
   are in mobile Layers; desktop controls keep their existing layout/defaults.
-  Every object inspector has an accessible, 44px corner-attached X that stays
-  visible beside a compact identity header. **Show path** shares that header;
-  the body scrolls at full width without a close-button gutter.
+  Every object inspector has an accessible 44px X. Selected live traffic uses
+  a compact identity row plus one desktop action row for **Show path**,
+  **View from here**, Save, Share, and Close. Expanded mobile traffic details
+  put the two icon-only traffic actions in that same header row; narrowly
+  forced desktop compaction keeps them in the expanded body. Disabled reasons
+  remain visible and associated. Primary traffic facts precede optional
+  route/photo enrichment in the body, which is the sole reading scroller.
+  Overlay widths, padding and reading heights are bounded from the actual
+  workspace and visual viewport. Nonmobile traffic details use an adaptive
+  340-380 px width and 320-420 px height, with utility actions in the title's
+  top-right area rather than a separate row.
   Menu text must help a decision or action, report an actual fact or meaningful
   condition, or meet an attribution, privacy or safety requirement.
   Toggle-state echoes, routine success narration and normal-behavior tutorials
@@ -581,8 +596,9 @@ identity are not renamed or reset.
   Counts, marine source scope, freshness, and traffic mode remain visible;
   **Provider details** opens independent provider messages on every screen size.
 - **More** and **Settings** open beside the
-  desktop rail. **The unreleased map-first phone revision in this source**
-  starts map selections as a compact identity card with **Details** and X.
+  desktop rail. Ordinary live phone map selection opens the useful traffic
+  details on the first click; captured views retain a compact identity card
+  with **Details** and X.
   One nonmodal task, expanded inspector, provider disclosure or credits surface
   is visible at a time. Opening a task suspends the whole retained inspector
   without remounting its details. Selecting a result opens its details;
@@ -919,7 +935,7 @@ operational thresholds, and examples.
 | Place search | Photon / OpenStreetMap | OSM ODbL attribution applies | Direct browser access on explicit submit |
 | Aircraft | ADSB.lol | ODbL 1.0 | Same-origin Vite/Cloudflare proxy by default; protected direct-browser build only after provider-approved CORS |
 | Aircraft metadata | Mictronics aircraft-database derivative | ODC-By 1.0 | Immutable same-origin static assets, loaded only after selection |
-| Selected-aircraft photos | Planespotters Photo API | API-specific and general terms apply | On-demand direct browser request and unchanged returned thumbnail; enabled in production |
+| Selected-aircraft photos | Planespotters Photo API | API-specific and general terms apply | Automatic selection/fine-pointer direct browser request and unchanged returned thumbnail; enabled in production |
 | Vessel photos | Open Waters / Wikimedia Commons; eight reviewed bundled files | Individual CC BY, CC BY-SA, CC0 or public-domain rights | IMO-first/MMSI-fallback same-origin metadata lookup and direct Commons image; bundled exact-IMO matches remain local |
 | Country allocations | michaeljfazio/MIDs, ibosoftnet ICAO24 transcription, Wikidata cross-check | Apache-2.0 and CC0 1.0 | Bundled deterministic local lookup |
 | Marine | Fintraffic Digitraffic | CC BY 4.0 | Direct regional REST and MQTT |
@@ -979,7 +995,7 @@ provider selector.
 
 The proxy accepts only
 `GET /api/aircraft/v2/point/{latitude}/{longitude}/{radiusNm}`, validates the
-current 1-54 NM transport contract, uses a total upstream deadline and body
+current 1-135 NM transport contract, uses a total upstream deadline and body
 limit, rejects redirects, and preserves provider status, body, and
 `Retry-After`. It forwards no browser credentials or arbitrary headers and
 keeps request URL logging disabled.
@@ -1454,6 +1470,34 @@ errors were retained. The compact unavailable-route and aircraft-photo cards
 also retained the required standing-data, provider/privacy, cache, and rights
 wording.
 
+The #641 responsive follow-up was deployed as application
+`f7a45c7765d98386376b33b372a99f015de122ab`, Worker
+`784dc407-c8e4-4a8c-94c5-d0062f479a1c`. At the reported 739x1047 touch
+viewport, ordinary aircraft selection opened details on the first click and
+the panel measured 400x306 px, 15.8% of the viewport, with one body scroller,
+44x44 path/view/save/share/close targets, one MapLibre canvas and no horizontal
+overflow. The 568x320 In view surface measured 272x132 px with 44 px tabs;
+Tesla-like 1920-wide In view released its former blank 620 px body and sized
+to actual tabs/results. Production smoke preserved the OCI relay and every
+enabled application input. Later documentation-only commits do not replace
+that running application or its rollback predecessor
+`5a35de847592af6c478dd3ec939ff31cde7e1715`.
+
+The #645 aircraft View from here follow-up is deployed as application
+`65722933dee5a4ba3d8ca9106107d079d3124e0d`, Worker
+`f8c395a4-6e93-4319-9959-b9e343c62b89`. It removes the former 300 m entry
+floor: any positive reported altitude may enter, and the view returns with a
+truthful message when MapLibre cannot draw the eye. On live Heathrow traffic
+at 315x517, DAL33 at 290 m and `406a3e` at 274 m entered
+`vertical-perspective` at pitch 76 with full-height pinned buildings and
+rendered 3D content. Return restored globe, the previous camera, the
+selection, entry-button focus and the zoom building ramp. Releasing the
+emulation during the 274 m ride resized it to 1920x993, where the eye could no
+longer be drawn; it returned with "The map cannot draw a view this close to the
+ground." Production smoke preserved the OCI relay and every enabled
+application input. Later documentation-only commits do not replace that
+running application or its rollback predecessor
+`f7a45c7765d98386376b33b372a99f015de122ab`.
 A later real-device report showed that the first evidence was incomplete: it
 varied the layout viewport but did not force a shorter visual viewport below
 mobile browser chrome, and its geometry-only final-result check could not
@@ -1616,10 +1660,12 @@ monitoring, privacy, and rollback procedure.
   region or vessel is covered. Yacht type and known length at least 8 m remain
   required; absent or delayed static metadata cannot be inferred. Source
   failures, shared capacity limits and exhausted free budgets remain visible.
-- Views whose conservative enclosing radius exceeds 100 km pause live traffic.
-  **Resume live** keeps the current map center and returns to the reviewed safe
-  framing; manual zoom-in or reduced tilt remain available. Partial coverage is
-  never presented as complete. A recent preceding eligible view may leave
+- Views whose conservative enclosing radius exceeds 100 km pause ships and
+  local airport/weather context; aircraft remain live through 250 km. Wider or
+  unsafe views pause both. **Resume ships** keeps the current map center and
+  returns to the reviewed marine-safe framing; manual zoom-in or reduced tilt
+  remain available. Partial coverage is never presented as complete. A recent
+  preceding eligible view may leave
   labelled, fading local sample markers during zoom-out; an initial wide view
   has no such sample. ORBITS remains opt-in and appears only at real modeled
   positions, so an empty area is not filled with invented orbital objects.
@@ -1684,18 +1730,22 @@ monitoring, privacy, and rollback procedure.
 - Plausible route lookup is callsign-based standing data checked against the
   current aircraft position. It can be stale, absent, or wrong and is not a
   date-specific schedule, filed flight plan, airport board, diversion signal,
-  or route-history service.
+  or route-history service. Only a successful result is shown, as compact
+  departure and destination rows above aircraft facts.
 - Aircraft photos are enabled through direct browser JSON and unchanged image
   URLs. The published low-volume browser path requires no API key, email,
   membership account, or prior provider contact, but the photo surface must
   remain public and free. Provider JSON stays in a bounded one-hour,
   32-entry current-tab cache, and no URL, credit, or image byte is persisted or
-  proxied.
+  proxied. Only an exact successful photo is shown above aircraft facts, with
+  its required photographer/source credit and source-page link.
 - Dynamic vessel-photo coverage depends on Open Waters / Commons. A reported
   number match is a historical reference, not live confirmation of the
   transmitting hull; MMSIs can be reassigned. Eight bundled IMOs additionally
   retain manual review. Empty, failed and unsupported responses remain
-  distinct, with no substitute image or guaranteed yacht coverage.
+  distinct internally but show no photo card, with no substitute image or
+  guaranteed yacht coverage. Ship details use the aircraft order: photo,
+  AIS-reported destination/ETA, then facts.
 - Orbital positions and map crossings are SGP4 models from a bounded reviewed
   CelesTrak catalog; the `visual` group is only one member of the curated
   source set. They are not observations, launch or reentry

@@ -38,8 +38,8 @@ describe('CapturedOrbitalDetails', () => {
     expect(html).toContain('details-panel--action')
     expect(html.slice(0, bodyAt)).toContain('aria-label="Share view from here"')
     expect(html.match(/aria-label="Share view from here"/g)).toHaveLength(1)
-    expect(html.slice(0, bodyAt)).toContain('>Return</button>')
-    expect(html.slice(0, bodyAt)).toContain('>Play</button>')
+    expect(html.slice(0, bodyAt)).toContain('aria-label="Return to map"')
+    expect(html.slice(0, bodyAt)).toContain('aria-label="Play modeled view"')
     expect(html.slice(0, bodyAt)).toContain('aria-label="Return to map"')
     expect(html.slice(bodyAt)).toContain('hidden=""')
   })
@@ -79,7 +79,7 @@ describe('CapturedOrbitalDetails', () => {
     expect(html).toContain('not the full constellation')
     expect(html).toContain('aria-label="Return to map"')
     expect(html).not.toContain('id="orbital:')
-    expect(html).toContain('>Pause</button>')
+    expect(html).toContain('aria-label="Pause modeled view"')
     expect(html).not.toContain('eye stays fixed')
     expect(html).not.toContain('no follow')
     expect(html).not.toContain('Preparing modeled view')
@@ -101,9 +101,10 @@ describe('CapturedOrbitalDetails', () => {
       )
       const bodyAt = html.indexOf('class="details-panel__body"')
       expect(html.slice(0, bodyAt)).toContain(expected)
-      expect(html.slice(0, bodyAt)).toContain('orbital-view-return')
-      expect(html.slice(0, bodyAt)).toContain('>Play</button>')
-      expect(html.slice(0, bodyAt)).toMatch(ready ? /class="orbital-view-return">Play/ : /disabled="">Play/)
+      expect(html.slice(0, bodyAt)).toContain('aria-label="Play modeled view"')
+      expect(html.slice(0, bodyAt)).toMatch(ready
+        ? /aria-label="Play modeled view"[^>]*>/
+        : /aria-label="Play modeled view"[^>]*disabled="">/)
       expect(html.slice(bodyAt)).toContain('hidden=""')
     }
   })

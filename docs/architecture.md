@@ -94,10 +94,11 @@ committed selected live Aircraft
              -> direct ADSB.lol standing-route JSON
              -> exact callsign + local route-position plausibility check
              -> bounded six-hour tab cache + failure cooldown
-             -> compact details result + explicit refresh/retry only
+             -> successful departure/destination only; no empty/status card
 selected live Aircraft or 500 ms fine-pointer hover
              -> direct Planespotters hex API -> validated unchanged thumbnail
-             -> shared bounded one-hour tab cache -> credited source-page link
+             -> shared bounded one-hour tab cache
+             -> successful credited source-page image only; no empty/status card
 selected live Vessel or 500 ms fine-pointer hover -> reported IMO, else MMSI
              -> reviewed bundled IMO match, otherwise fixed Open Waters lookup
              -> licensed historical image with matching/identity caveat
@@ -175,7 +176,8 @@ by their existing independent controllers.
 
 `BathymetryRuntime` owns only depth imagery/values on the existing MapLibre
 instance. It consumes the already-settled full-canvas orbital viewport
-geometry and zoom, independently of the traffic 100 km contract. Stable
+geometry and zoom, independently of the 100 km marine/local and 250 km aircraft
+traffic contracts. Stable
 source-cell candidates are generated in the domain layer; rendered ocean
 polygons and projected screen spacing gate up to twelve candidates. Values
 never enter traffic entities, freshness, counts, selection, trails, captured
@@ -301,8 +303,9 @@ are duplicated or remounted.
 
 `mobileWorkspace.ts` separates selected identity from inspector presentation.
 Only one expanded task or inspector uses the nonmodal mobile reading surface.
-Map selection starts compact on phones; desktop and result-origin selection
-keep expanded details. An open phone task suspends the entire retained
+Ordinary live map selection starts expanded on phones, while captured views
+start compact; desktop and result-origin selection also keep expanded details.
+An open phone task suspends the entire retained
 `DetailsPanel` with native hidden/inert, without unmounting its
 metadata/photo/route hooks. Details suspends the actual native task; Back
 restores that task's draft, scroll and valid focus. X invokes the existing
@@ -449,12 +452,36 @@ while the playback controls stay reachable throughout. Mobile attribution opens
 above the command dock rather than beneath its buttons. None of these DOM/CSS
 positions changes the full-canvas viewport used by MapLibre or provider queries.
 
-All five detail components and captured journeys share `DetailsPanel`,
-including aircraft, ships and historical traffic. Its fixed identity header
-alone reserves clearance for the 44 by 44 px icon-only X, attached 8 px above
-the panel corner with an opaque themed backplate and object-specific accessible
-name. Show path shares the heading row. The full-width body is the sole scroll
-owner; there is no full-height close gutter or extra action ribbon.
+All detail components and captured journeys share `DetailsPanel`, including
+aircraft, ships and historical traffic. Settings retains its independent
+reading surface. Above the mobile cutoff, detail inspectors share bounded
+340-380 px by 320-420 px geometry. Detail-specific actions such as Show path,
+View from here, Hide path, Pause/Play and Return join Save, Share and the
+44 by 44 px accessible X in the top-right header row instead of consuming a
+second row. Expanded mobile live details use the same header ownership;
+captured-view Pause/Play and Return remain reachable even while the body is
+compact. Disabled icon actions carry their truthful reason in the native
+title, which is both the hover tooltip and the computed accessible
+description; no separate reason paragraph is rendered.
+
+Aircraft and ship details share one order: photo, then route, then facts.
+`TrafficPhoto` renders only a successful linked unchanged image with its
+mandatory one-line credit; match basis and reference caveats live in the link
+title. `TrafficRoute` renders only rows that have values: aircraft Departure
+and Destination from a successful plausible route, or the ship's AIS-reported
+Destination and ETA. Loading, empty, unavailable, failed and image-error
+states create no visible photo/route card or explanatory prose. The static
+aircraft-metadata section likewise renders only an available record with its
+Mictronics/ODC-By snapshot credit; loading, unavailable and failed lookups
+render nothing. The full-width body remains the sole scroll owner.
+
+Shared overlay geometry uses bounded workspace/visual-viewport dimensions for
+width, padding, gaps, and reading height. Above the 760 px mobile cutoff, live
+traffic details clamp to a 340-380 px width and 320-420 px height derived from
+the workspace regardless of pointer-capability reporting. Their utility action
+row is positioned in the heading's top-right space instead of consuming a
+second row; controls remain at least 44 px and required content remains
+scrollable.
 
 Mobile inspectors share the task reading budget rather than stacking a full
 inspector above a full task. Desktop photo/airport-board behavior and the
@@ -588,11 +615,15 @@ UI and map code never consume raw provider payloads. Each adapter:
 5. preserves unavailable data as unavailable rather than guessing it;
 6. emits application-owned `Aircraft` or `Vessel` records.
 
-An eligible map viewport produces a center rounded to three decimal places and
-a conservative enclosing radius no greater than 100 km. Aircraft requests
-convert that radius to an outward-rounded integer nautical-mile query for
-ADSB.lol. Eligibility is decided first, so an exact 100 km viewport uses 54 NM
-(100.008 km) for transport without widening the display boundary.
+One settled full-canvas sample produces a center rounded to three decimal
+places, an unwrapped polygon, and a conservative enclosing radius. Aircraft
+eligibility extends through 250 km; marine and local airport/weather context
+retain 100 km. Aircraft requests convert their eligible radius to an
+outward-rounded integer nautical-mile query for ADSB.lol. Eligibility is
+decided first, so an exact 250 km viewport uses 135 NM (250.02 km) for transport
+without widening the exact display polygon. Between 100 and 250 km the aircraft
+controller continues on its existing cadence while marine receives no query
+and retains its connection and deadlines.
 
 The same adapter can use either the root-relative checked Worker route or the
 fixed public ADSB.lol origin selected at protected build time. Current
@@ -682,9 +713,9 @@ never changes provider health, freshness, history, or marker artwork.
 
 Aircraft photos form a separate fail-closed direct-browser boundary, explicitly
 enabled in the protected production build. They accept only the normalized
-live ICAO24. Selected details start one automatic attempt and retain an
-explicit retry action; a fine pointer can also start one
-automatic lookup only after remaining on the same live aircraft for 500 ms.
+live ICAO24. Selected details start one automatic attempt; a fine pointer can
+also start one automatic lookup only after remaining on the same live aircraft
+for 500 ms.
 One cancellable lookup targets only the fixed Planespotters hex endpoint.
 Runtime validation accepts an empty photo array or exactly one regular
 thumbnail from the exact provider origins
@@ -702,8 +733,12 @@ without a second provider request. Subscription lifetime, including React
 development Strict Mode cleanup/replay, owns that notification. Hover change,
 pointer leave, selection change, close, HISTORY entry, and unmount abort and
 revision-invalidate obsolete work. Errors are not cached, an automatic hover
-does not loop or retry, and `429` blocks another manual attempt without
-scheduling a retry. No photo JSON, URL, credit, or image byte enters traffic
+does not loop or retry, and `429` blocks another request without scheduling a
+retry. Non-success states stay visually absent from selected details; aircraft
+and vessel details controllers forget a failed automatic attempt that has no
+provider retry time, so closing and reselecting makes one fresh lookup, while
+hover controllers keep their one-hour attempt memory. No photo
+JSON, URL, credit, or image byte enters traffic
 models, history, Web Storage, IndexedDB, Cache API, the service worker, or a
 Worker route. The published terms require no prior email or account-side API
 setup for this low-volume browser path. Production remains enabled only while
@@ -720,8 +755,9 @@ fallback keys.
 
 Each bundled result is tagged with entity ID, exact IMO, and manifest version, so A to
 B to A selection or hover cannot retain another hull. The full historical
-image appears near the top of live selected-ship details with author, fixed
-Commons revision, selected license, and modification notice. After the
+image is the first item in selected-ship details, above the reported
+destination and facts, with author, fixed Commons revision, selected license
+and a "modified" marker whose title holds the modification notice. After the
 existing 500 ms fine-pointer dwell, the compact map tooltip may load the same
 asset with fixed source, author, license, exact-IMO, and historical-reference
 context. Sub-dwell, search, marker, trail and HISTORY states start no photo
@@ -749,9 +785,10 @@ evaluation.
 The map corner keeps basemap credits and a full-data-credit link. Curated and
 Starlink sources use identical CelesTrak/SGP4/not-live attribution so MapLibre
 shows it once. Provider details and More -> Sources retain the named traffic,
-photo and original-source records. Vessel photos fit within the existing
-mobile inspector height and keep native scrolling for image credits/details;
-the inspector and command-dock layout are unchanged.
+photo and original-source records. Aircraft and vessel photos share a
+150 px maximum image height inside the existing inspector and keep native
+scrolling for credits/details; the inspector and command-dock layout are
+unchanged.
 
 Country allocation is a smaller bundled boundary. Pure synchronous helpers
 derive an optional country name and ISO code from an existing ICAO24 or
@@ -1105,7 +1142,7 @@ continues to render.
   and never alter ADS-B selection, polling, map state, or route lookup.
 - Plausible routes have an independent selected-identity controller. A new
   eligible committed aircraft identity starts one lookup; same-key position
-  updates only refresh the coordinates available to a later manual refresh.
+  updates only refresh the coordinates retained for that selection.
   Cached routes render without a request. A to B changes abort obsolete work,
   and unavailable/error results never schedule a retry after cooldown.
 - Bundled vessel photos derive an exact synchronous manifest result from
@@ -1547,7 +1584,7 @@ and gives only the aircraft proxy one private outbound dependency:
    orbital attribution remains visible when the corresponding data is shown.
 
 The production proxy accepts canonical finite latitude/longitude values and
-integer radii from 1 through 54 NM. It rejects query strings, other methods,
+integer radii from 1 through 135 NM. It rejects query strings, other methods,
 other paths, redirects, responses over 4 MiB, and work exceeding the ten-second
 total deadline. It constructs a fixed ADSB.lol destination, forwards only a
 JSON accept header and stable public project User-Agent, preserves upstream
@@ -1962,7 +1999,8 @@ On globe, public `getBounds()` rejects an included pole and public
 coordinates alone are insufficient: globe unprojection can snap sky to the
 limb. The guard's 0.01 px tolerance never expands the actual display polygon.
 An unsafe surface fails closed before radius or whole-world classification.
-Flat whole-world orbital behavior and the exact traffic 100 km contract remain.
+Flat whole-world orbital behavior and the exact source-specific traffic
+contracts remain.
 
 Unsafe geometry pauses aircraft/marine through their existing independent
 controllers and cadence. Orbital current positions, valid selection and tracks

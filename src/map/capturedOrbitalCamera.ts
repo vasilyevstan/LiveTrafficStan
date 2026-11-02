@@ -99,6 +99,20 @@ export const eyeCameraOptions = (
   }
 }
 
+// Rejects aircraft eyes whose latitude-corrected zoom the vertical-perspective globe cannot draw.
+export const aircraftEyeCameraOptions = (
+  map: CameraGeometry,
+  position: Readonly<EyePosition>,
+  yawDegrees: number,
+  pitchDegrees: number,
+): JumpToOptions | undefined => {
+  const options = eyeCameraOptions(map, position, yawDegrees, pitchDegrees)
+  if (!options || typeof options.zoom !== 'number' || !options.center) return options
+  const latitude = LngLat.convert(options.center).lat * Math.PI / 180
+  return options.zoom - Math.log2(Math.cos(latitude)) >
+    AIRCRAFT_VIEW_CONFIG.maximumDrawableGlobeZoom ? undefined : options
+}
+
 interface CapturedCameraCallbacks<P = Readonly<ModeledOrbitalPosition>> {
   onReturn: () => void
   onFailure: (message: string) => void
@@ -120,6 +134,9 @@ interface CapturedEyeSpec<P extends EyePosition> {
   // Sparse observations resume from the paused display instead of waiting for a fresh position.
   readonly resumeFromDisplay?: boolean
   readonly projection?: { enter: () => void; restore: () => void }
+  // Looks tried in order when the framing's initial look cannot be placed.
+  readonly entryFallbackPitches: readonly number[]
+  readonly unrepresentableMessage: string
   timeOf(position: P): number
   interpolate(first: P, last: P, time: number): P | undefined
   matches(position: P): boolean
@@ -139,6 +156,8 @@ export const createCapturedOrbitalCamera = (
   interpolationDelayMs: ORBITAL_VIEW_CONFIG.interpolationDelayMs,
   maximumGapMs: ORBITAL_VIEW_CONFIG.readinessTimeoutMs,
   stallTimeoutMs: ORBITAL_VIEW_CONFIG.readinessTimeoutMs,
+  entryFallbackPitches: [0],
+  unrepresentableMessage: 'This canvas cannot represent the captured eye. Returned to the previous map.',
   timeOf: position => position.modeledFor,
   interpolate: interpolateOrbitalViewPosition,
   matches: position => position.id === view.position.id &&
@@ -171,10 +190,13 @@ export const createCapturedAircraftCamera = (
   maximumGapMs: AIRCRAFT_VIEW_CONFIG.maximumInterpolationGapMs,
   resumeFromDisplay: true,
   projection,
+  // A low eye places the oblique look farther away, so it stays drawable longer than nadir.
+  entryFallbackPitches: [ORBITAL_VIEW_CONFIG.maximumLookPitchDegrees, 0],
+  unrepresentableMessage: 'The map cannot draw a view this close to the ground. Returned to the previous map.',
   timeOf: position => position.observedAt,
   interpolate: interpolateAircraftViewPosition,
   matches: position => position.id === view.position.id,
-  eyeOptions: eyeCameraOptions,
+  eyeOptions: aircraftEyeCameraOptions,
   framing: (_position, width, height, previousFieldOfView) =>
     aircraftViewFraming(width, height, previousFieldOfView),
 }, callbacks)
@@ -395,7 +417,9 @@ const createCapturedEyeCamera = <P extends EyePosition>(
       if (!orientationInitialized) {
         map.setMaxPitch(ORBITAL_VIEW_CONFIG.nativeMaximumPitchDegrees)
         pitch = framing.initialPitch
-        if (!lookOptions(yaw, pitch)) pitch = 0
+        if (!lookOptions(yaw, pitch)) {
+          pitch = spec.entryFallbackPitches.find(candidate => lookOptions(yaw, candidate)) ?? 0
+        }
         orientationInitialized = true
       }
       // Auto may replace its native transform on the first rendered placement.
@@ -415,7 +439,7 @@ const createCapturedEyeCamera = <P extends EyePosition>(
           fail(`Captured view failed: ${error instanceof Error ? error.message : 'native camera error'}. Returned to the previous map.`)
         }
       })
-      if (!apply()) fail('This canvas cannot represent the captured eye. Returned to the previous map.')
+      if (!apply()) fail(spec.unrepresentableMessage)
     } catch (error) {
       fail(`Captured view failed: ${error instanceof Error ? error.message : 'native camera error'}. Returned to the previous map.`)
     }

@@ -648,7 +648,9 @@ guarantees.
 
 `TrafficMap` reports two independent settled footprints:
 
-1. `ViewportAssessment` remains the unchanged aircraft/marine 100 km contract.
+1. `ViewportAssessment` validates shared geometry through the 250 km aircraft
+   boundary; application domain helpers derive the independent 100 km
+   marine/local eligibility from the same measured polygon and radius.
 2. `OrbitalViewport` is used only for local crossing prediction.
 
 The orbital footprint samples the full canvas, including the area beneath

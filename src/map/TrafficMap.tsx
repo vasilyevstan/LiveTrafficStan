@@ -68,6 +68,7 @@ import {
 import { createTrafficIcons } from './icons'
 import {
   applyBasemapCartography,
+  setBasemapBuildingsFullHeight,
   basemapSkyBackground,
   needsBasemapStyleReset,
   withBasemapSky,
@@ -1250,6 +1251,7 @@ export function TrafficMap({
         map,
         activeTheme,
         appliedStyleUrlRef.current,
+        projectionOverrideRef.current === MAP_PROJECTION_CONFIG.capturedAircraftProjection,
       )
       reliefRef.current?.install(activeTheme, appliedStyleUrlRef.current, reliefVisibleRef.current)
       bathymetryRef.current?.install(activeTheme)
@@ -3274,10 +3276,12 @@ export function TrafficMap({
           enter: () => {
             projectionOverrideRef.current = MAP_PROJECTION_CONFIG.capturedAircraftProjection
             applyMapProjection(map, projectionPreferenceRef.current, projectionOverrideRef.current)
+            setBasemapBuildingsFullHeight(map, true)
           },
           restore: () => {
             projectionOverrideRef.current = undefined
             applyMapProjection(map, projectionPreferenceRef.current)
+            setBasemapBuildingsFullHeight(map, false)
           },
         }, {
           onReturn: () => callbacks.current.return?.(view.revision),

@@ -62,10 +62,10 @@ was load-tested.
 
 The current aircraft integration requires:
 
-- a geographic query for a rounded center and conservative radius no greater
-  than 100 km;
-- an outward-rounded integer transport radius, where exactly 100 km becomes
-  54 NM or 100.008 km;
+- a geographic query for a rounded center and conservative aircraft radius no
+  greater than 250 km, independently of the 100 km marine/local boundary;
+- an outward-rounded integer transport radius, where exactly 250 km becomes
+  135 NM or 250.02 km;
 - non-overlapping requests no more often than every 20 seconds;
 - stable ICAO24 identity, coordinates, and observation age;
 - optional heading/course, speed, altitude, vertical rate, callsign,
@@ -173,6 +173,7 @@ queries remain below 25 square degrees:
 | 20 km | 0.25 square degrees | 1 | 4,320 |
 | 50 km | 1.59 square degrees | 1 | 4,320 |
 | 100 km | 6.36 square degrees | 1 | 4,320 |
+| 250 km | 39.75 square degrees | 2 | 8,640 |
 
 At one credit/request:
 
@@ -180,11 +181,18 @@ At one credit/request:
 - 4,000 standard credits cover about 22 hours 13 minutes;
 - 8,000 active-feeder credits cover one continuous session, but not two.
 
-This Tallinn calculation is not globally constant. At high latitudes a 100 km
-enclosing box can exceed 25 square degrees, and antimeridian handling could
+This Tallinn calculation is not globally constant. At high latitudes even a
+smaller enclosing box can cross OpenSky's credit boundary, and antimeridian handling could
 require more than one request. OpenSky is already excluded by its operational
 license requirement, so the calculation is capacity evidence rather than an
 implementation design.
+
+ADSB.lol documents a 250 NM technical endpoint maximum, so the application's
+135 NM request is transport-compatible. That ceiling is not capacity approval:
+the release keeps the existing 20-second cadence, 4 MiB response cap and
+timeouts, uses deterministic near-cap fixtures, and requires one bounded
+production-path 135 NM probe. A sparse successful response is not a dense-area
+load test or SLA evidence.
 
 ## Compatibility and risk conclusions
 

@@ -23,8 +23,43 @@ reuses the orbital fixed-eye lifecycle with a closed `kind` branch instead of
 a policy framework. The view moves only between observed reports, about one
 aircraft cadence behind, without extrapolation. It holds when no newer report
 arrives and Returns at the ordinary 120-second expiry. Ground, stale, history,
-Flat or polar selections show a truthful unavailable reason. Ships remain
+Flat or polar selections keep a truthful unavailable reason in the disabled
+icon's tooltip and accessible description. Ships remain
 omitted, because a 20 m eye showed only water and sky.
+
+### Altitude floor and ride buildings (2026 follow-up)
+
+The 300 m entry floor was only the Gate 0 validation range, not a geometric
+requirement. GPT-6.1 Sol, Claude Opus 5.5 and Grok 4.7 compared three options:
+- no floor, with truthful drawing-limit failure (chosen);
+- a configured 30 m floor;
+- raising the eye to 30 m with a disclosure. This was rejected because it
+  splits the truth.
+
+Any finite positive altitude is now eligible. 0 means on the ground, and a
+negative value is at or below the sea-level map. Mid-ride, only those
+reports finish the ride. A missing or stale report holds, then says "No
+usable report".
+
+Real-browser measurement found the real limit. MapLibre 6.10 draws no ground
+or layers under `vertical-perspective` once `zoom - log2(cos(latitude))`
+passes about 16.65. This was measured at latitudes 1.29, 40.75 and 60.17,
+pitch 0-76, and DPR 1 and 3. Mercator still draws there, but switching
+projection mid-ride would need fresh Gate 0 evidence. Instead, the aircraft
+eye rejects zooms beyond a 16.55 margin:
+- Entry tries the configured 76°, then 79° oblique, then nadir. If none of
+  these draw, entry Returns with "The map cannot draw a view this close to the
+  ground".
+- Looking down mid-ride shows the existing **Map display limit** pause.
+
+The effective floor is roughly 300 m on a 1920x1080 desktop in New York and
+about 180 m on a 315x517 phone.
+
+Buildings use one ride-only paint override. Extrusions use full
+`render_height`/`render_min_height` from the existing zoom 14.5 minzoom
+instead of the zoom 14.5-15.5 ramp, so they no longer squash while you look
+around. The override is reapplied after `style.load` and restored on Return.
+There is no terrain mesh, follow query, max-zoom raise or GNSS-altitude eye.
 
 ## Session-only Saved activity without notifications
 
@@ -324,8 +359,8 @@ broaden a lookup. Requests are revision-guarded across A to B to A selection or
 hover changes. Only successful and no-photo JSON results may use one shared
 32-entry, one-hour current-tab LRU. A cacheable hover result publishes only to
 already-open selected details with the same exact ICAO24 and does not make a
-second request. The photo follows the prominent route section before telemetry
-so the resolved result is visible. Hover errors do not automatically retry,
+second request. The photo leads selected details, above any route and the
+telemetry facts. Hover errors do not automatically retry,
 and no photo state uses persistent storage. The image and API response never
 pass through the Worker, service worker, Cache API, IndexedDB, Web Storage, KV,
 or R2.
@@ -659,7 +694,7 @@ The source and rights evidence is recorded in
 
 Issue #162 first added orbital context to the existing single Mercator map before
 globe projection work. The flat map already supported whole-world and
-street-level zooms, while the separate aircraft/marine 100 km contract remains
+street-level zooms, while the then-shared aircraft/marine 100 km contract was
 well understood. A globe would also change horizon geometry, off-Earth canvas
 samples, poles, style projection restoration, front/back picking, camera/share
 state, and the zoom 11-12 projection transition. Those risks belonged to
@@ -1116,16 +1151,19 @@ overlays and do not reduce the geographic area that must be covered.
 
 Domain code canonicalizes and unwraps longitudes around a center rounded to
 three decimal places. It rejects non-finite, degenerate, unsafe, or
-world-spanning geometry. The farthest footprint point defines a conservative
-enclosing circle. Views requiring more than 100 km are ineligible: traffic and
-trails are hidden, provider work pauses, invalid selection clears, and the UI
-asks the user to zoom in or reduce tilt. The app does not clamp, subdivide, or
-claim partial results are complete.
+world-spanning geometry. The farthest footprint point defines a conservative enclosing circle. Aircraft
+views through 250 km are eligible; marine and local airport/weather context
+retain 100 km. Between those limits the UI reports ships paused and sends no
+marine query while aircraft keep their existing scheduler. Views over 250 km
+or unsafe geometry pause both. The app does not clamp, subdivide, or claim
+partial results are complete.
 
-For eligible views, providers receive the enclosing circle while display
-filtering uses the actual unwrapped polygon. The 100 km decision occurs before
-ADSB.lol's required whole-nautical-mile rounding, so the boundary request uses
-54 NM (100.008 km transport coverage) but display eligibility remains 100 km.
+For eligible views, each source receives only its allowed enclosing circle
+while display filtering uses the actual unwrapped polygon. The 250 km aircraft
+decision occurs before ADSB.lol's required whole-nautical-mile rounding, so
+the boundary request uses 135 NM (250.02 km transport coverage) but display
+eligibility remains the actual polygon. The 100 km marine/local decision is
+independent and does not reconnect MQTT or bypass REST/metadata deadlines.
 Center restores a session Home framing comparable to a 30 km local view. This
 keeps fast aircraft on-screen about 50% longer than the earlier 20 km framing
 without changing provider or display geometry: the safely representable full

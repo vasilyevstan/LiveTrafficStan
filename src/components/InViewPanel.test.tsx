@@ -98,7 +98,8 @@ describe('InViewPanel', () => {
     const html = renderPanel({
       savedKeys: new Set(['aircraft:000001']),
     })
-    expect(html).toContain('45 aircraft in view')
+    expect(html).toMatch(/id="in-view-aircraft-tab"[\s\S]*in-view__count">45<\/span>/)
+    expect(html).not.toContain('45 aircraft in view')
     expect(html).toMatch(/TEST 1[\s\S]*Saved/)
   })
 
@@ -114,7 +115,7 @@ describe('InViewPanel', () => {
 
   it('bounds each page to twenty individual results while retaining the full count', () => {
     const html = renderPanel()
-    expect(html).toContain('45 aircraft in view')
+    expect(html).toMatch(/id="in-view-aircraft-tab"[\s\S]*in-view__count">45<\/span>/)
     expect(html.match(/id="in-view-aircraft-result-/g)).toHaveLength(20)
     expect(html).toContain('1–20 of 45')
     expect(html).toContain('>Previous</button>')
@@ -134,13 +135,13 @@ describe('InViewPanel', () => {
     expect(html).toMatch(/id="in-view-orbits-panel"[^>]*hidden=""/)
     expect(html).toMatch(/id="in-view-ships-panel"[^>]*hidden=""/)
     expect(html).toContain('aria-label="Search aircraft in view"')
-    expect(html).toContain('aria-label="Search modeled objects in view"')
-    expect(html.match(/maxLength="64"/g)).toHaveLength(2)
+    expect(html).not.toContain('aria-label="Search modeled objects in view"')
+    expect(html.match(/maxLength="64"/g)).toHaveLength(1)
   })
 
   it('adds a capped ship shortlist, not a second all-vessel list or another mobile search row', () => {
     const html = renderPanel()
-    expect(html).toContain('20 of 45 ranked · 45 in view')
+    expect(html).toContain('20 of 45 ranked')
     expect(html.match(/id="in-view-ships-result-/g)).toHaveLength(20)
     expect(html).toContain('>VESSEL 45</strong>')
     expect(html).toContain('>VESSEL 26</strong>')
@@ -160,7 +161,7 @@ describe('InViewPanel', () => {
       { ...vesselObservations[1], lengthMeters: undefined },
     ], now, APP_CONFIG.marine)
     const html = renderPanel({ vessels })
-    expect(html).toContain('1 of 1 ranked · 2 in view')
+    expect(html).toContain('1 of 1 ranked')
     expect(html).toContain('Draught not reported')
     expect(html).toContain('1 without reported length.')
     expect(html).not.toContain('omitted, not zero')
@@ -179,7 +180,7 @@ describe('InViewPanel', () => {
     const unknown = renderPanel({
       vessels: displayTraffic([{ ...vesselObservations[0], lengthMeters: undefined }], now, APP_CONFIG.marine),
     })
-    expect(unknown).toContain('0 of 0 ranked · 1 in view')
+    expect(unknown).toContain('0 of 0 ranked')
     expect(unknown).toContain('No ships in this view report a usable length.')
     expect(unknown).not.toContain('No current ship observations')
   })
@@ -194,7 +195,7 @@ describe('InViewPanel', () => {
       vessels, vesselsVisible: false, selectedVesselId: vessels[0].id, onVesselSelect,
       vesselAvailability: { available: true, message: 'Offline · last received, unexpired observations only.' },
     })
-    expect(html).toContain('1 of 1 ranked · 1 in view · layer hidden')
+    expect(html).toContain('1 of 1 ranked · layer hidden')
     expect(html).toMatch(/id="in-view-ships-result-[^"]+"[^>]*aria-pressed="true"[^>]*disabled=""/)
     expect(html).toContain('MMSI 257000001')
     expect(html).toContain('STALE')
@@ -220,7 +221,7 @@ describe('InViewPanel', () => {
         message: 'Offline · last received, unexpired observations only.',
       },
     })
-    expect(html).toContain('45 aircraft in view · layer hidden')
+    expect(html).toContain('Layer hidden.')
     expect(html).toContain('Offline')
     expect(html).toMatch(/id="in-view-aircraft-result-[^"]+"[^>]*disabled=""/)
     expect(onAircraftSelect).not.toHaveBeenCalled()
@@ -250,7 +251,8 @@ describe('InViewPanel', () => {
     }
     const aircraft = displayTraffic([stale, expired], now, APP_CONFIG.aircraft)
     const html = renderPanel({ aircraft, totalAircraft: aircraft.length })
-    expect(html).toContain('1 aircraft in view')
+    expect(html).toMatch(/id="in-view-aircraft-tab"[\s\S]*in-view__count">1<\/span>/)
+    expect(html).not.toContain('1 aircraft in view')
     expect(html).toContain('STALE')
     expect(html).not.toContain('TEST 2')
   })
@@ -264,9 +266,21 @@ describe('InViewPanel', () => {
     expect(unmatched).not.toContain('No unexpired aircraft')
   })
 
+  it('hides trivial search and removes duplicate aircraft metadata', () => {
+    const aircraft = displayTraffic([{
+      ...observations[0],
+      registration: 'TWR',
+      aircraftType: 'twr',
+    }], now, APP_CONFIG.aircraft)
+    const html = renderPanel({ aircraft, totalAircraft: 1 })
+    expect(html).not.toContain('aria-label="Search aircraft in view"')
+    expect(html).toContain('ICAO24 000001 · TWR')
+    expect(html).not.toContain('TWR · twr')
+  })
+
   it('retains exact orbital identity, source clocks, selection, and modeling caveats', () => {
     const html = renderPanel({ selectedOrbitalId: position.id })
-    expect(html).toContain('1 shown of 1 modeled in view')
+    expect(html).not.toContain('1 shown of 1 modeled in view')
     expect(html).toContain('NORAD 25544 · PAY · Curated')
     expect(html).not.toContain('id="in-view-orbits-result-norad:25544"')
     expect(html).toMatch(/id="in-view-orbits-result-[^"]+"[^>]*aria-pressed="true"/)
@@ -291,7 +305,7 @@ describe('InViewPanel', () => {
         },
       },
     })
-    expect(html).toContain('0 shown of 1 modeled in view · partial')
+    expect(html).toContain('Partial results.')
     expect(html).toContain('Starlink sample: unavailable')
     expect(html).toContain('Not shown at this zoom')
     expect(html).toContain('Selected outside this view: OUTSIDE.')

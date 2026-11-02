@@ -178,10 +178,31 @@ const layerPaint = (
   return []
 }
 
+const BUILDING_HEIGHT: ExpressionSpecification = ['number', ['get', 'render_height'], 0]
+const BUILDING_BASE: ExpressionSpecification = ['number', ['get', 'render_min_height'], 0]
+const buildingRise = (value: ExpressionSpecification): ExpressionSpecification =>
+  ['interpolate', ['linear'], ['zoom'],
+    BASEMAP_DETAIL_CONFIG.buildingsMinimumZoom, 0,
+    BASEMAP_DETAIL_CONFIG.buildingsFullHeightZoom, value]
+
+// The ordinary map raises buildings with zoom; an aircraft eye's zoom changes with look direction,
+// so the ride pins full height to keep blocks from squashing while looking around.
+export const setBasemapBuildingsFullHeight = (
+  map: Pick<BasemapMap, 'getLayer' | 'setPaintProperty'>,
+  fullHeight: boolean,
+): void => {
+  if (!map.getLayer(LAYER_BASEMAP_BUILDINGS)) return
+  map.setPaintProperty(LAYER_BASEMAP_BUILDINGS, 'fill-extrusion-height',
+    fullHeight ? BUILDING_HEIGHT : buildingRise(BUILDING_HEIGHT))
+  map.setPaintProperty(LAYER_BASEMAP_BUILDINGS, 'fill-extrusion-base',
+    fullHeight ? BUILDING_BASE : buildingRise(BUILDING_BASE))
+}
+
 export const applyBasemapCartography = (
   map: BasemapMap,
   theme: Theme,
   styleUrl: string,
+  buildingsFullHeight = false,
 ): void => {
   if (styleUrl !== DEFAULT_MAP_STYLE_URLS[theme]) return
 
@@ -278,8 +299,8 @@ export const applyBasemapCartography = (
   if (!layers.some(layer => 'source-layer' in layer &&
     layer.source === 'openmaptiles' && layer['source-layer'] === 'building')) return
   if (!map.getLayer(LAYER_BASEMAP_BUILDINGS)) {
-    const height: ExpressionSpecification = ['number', ['get', 'render_height'], 0]
-    const base: ExpressionSpecification = ['number', ['get', 'render_min_height'], 0]
+    const height = BUILDING_HEIGHT
+    const base = BUILDING_BASE
     map.addLayer({
       id: LAYER_BASEMAP_BUILDINGS, type: 'fill-extrusion',
       source: 'openmaptiles', 'source-layer': 'building',
@@ -295,15 +316,12 @@ export const applyBasemapCartography = (
       ],
       paint: {
         'fill-extrusion-color': colors.building,
-        'fill-extrusion-height': ['interpolate', ['linear'], ['zoom'],
-          BASEMAP_DETAIL_CONFIG.buildingsMinimumZoom, 0,
-          BASEMAP_DETAIL_CONFIG.buildingsFullHeightZoom, height],
-        'fill-extrusion-base': ['interpolate', ['linear'], ['zoom'],
-          BASEMAP_DETAIL_CONFIG.buildingsMinimumZoom, 0,
-          BASEMAP_DETAIL_CONFIG.buildingsFullHeightZoom, base],
+        'fill-extrusion-height': buildingsFullHeight ? height : buildingRise(height),
+        'fill-extrusion-base': buildingsFullHeight ? base : buildingRise(base),
         'fill-extrusion-opacity': 0.88,
       },
     }, layers.find(layer => layer.type === 'symbol')?.id)
   }
   map.setPaintProperty(LAYER_BASEMAP_BUILDINGS, 'fill-extrusion-color', colors.building)
+  setBasemapBuildingsFullHeight(map, buildingsFullHeight)
 }

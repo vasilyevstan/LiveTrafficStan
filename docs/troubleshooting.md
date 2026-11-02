@@ -208,7 +208,8 @@ The feature is deployed through #510. If an old open tab lacks the action,
 use Settings / **REFRESH APP** without clearing preferences or private history.
 Enable ORBITS, select a currently modeled object and expand Details on phones.
 View from here needs an already accepted modeled position and **Auto**
-projection. A Flat or unsafe/polar pose gets an explicit reason; entry does
+projection. A Flat or unsafe/polar pose gets an explicit reason in the
+disabled icon's tooltip (hover, or focus with a screen reader); entry does
 not switch projection, fetch another position or clamp height. Identity-only
 catalog results cannot supply an eye. A water-only scene can be the actual
 map beneath an ocean subpoint, not missing spacecraft imagery.
@@ -274,12 +275,18 @@ and [actual production evidence](hosting-and-deployment.md#captured-orbital-view
 
 The disabled **View from here** button in aircraft details states its reason:
 - the selection is not live;
-- the aircraft is on the ground, below 300 m or has no altitude;
+- the aircraft is on the ground, reports an altitude at or below sea level,
+  or has no altitude;
 - the position is polar;
 - the projection is Flat, or HISTORY is active;
 - the basemap is not loaded.
 
-A hold notice means no newer report has arrived. The view does not predict
+A low aircraft may still Return at once with "The map cannot draw a view
+this close to the ground". This is a MapLibre globe drawing limit, and it
+depends on height, latitude and window size; a narrower window or a higher
+aircraft helps. **Map display limit** mid-ride means that look direction
+cannot be drawn, so look nearer the horizon. A hold notice means no newer
+usable report has arrived. The view does not predict
 movement, and it Returns with a reason after two minutes without a report.
 The ride stays on the area that was loaded when you entered, so an aircraft
 that leaves that area holds and then Returns. The globe-style projection is
@@ -307,8 +314,8 @@ The browser can leave fullscreen or reset page magnification itself, and
 the app never automatically reenters. F11/window fullscreen and standalone
 installation are separate browser modes.
 
-Full-canvas size changes may change local traffic counts or exceed the
-existing 100km eligibility limit. That is ordinary viewport filtering, not
+Full-canvas size changes may change counts or cross the 100 km marine/local or
+250 km aircraft eligibility limits. That is ordinary viewport filtering, not
 navigation, a lost Home, a new provider connection or a reason to reset
 preferences/history.
 
@@ -319,9 +326,12 @@ of the Auto/Light/Dark theme. Automatic globe becomes flat smoothly between
 map zoom 11 and 12. Browser page magnification does not change this preference.
 Reset preferences restores automatic globe without clearing private history.
 
-Aircraft and ships intentionally pause when the full canvas includes a limb,
-pole, unsafe surface or a footprint over the existing 100 km bound. Zoom in,
-reduce tilt, or use Center; do not expect worldwide live traffic. A preceding
+Ships intentionally pause above the 100 km marine boundary while aircraft can
+remain live through 250 km. Both pause when the full canvas includes a limb,
+pole, unsafe surface or a footprint over 250 km. The notice identifies the
+paused source; **Resume ships** returns to the marine-safe framing without
+claiming aircraft were paused. Zoom in, reduce tilt, or use Center; do not
+expect worldwide live traffic. A preceding
 eligible local view may leave a **Last local traffic sample** during zoom-out:
 at most twelve representatives per kind, at their actual observed positions,
 fading from zoom 7 to zero at zoom 3 and expiring within two minutes. This
@@ -686,6 +696,20 @@ immediately rather than being retried. A persistent canonical mismatch still
 fails the release; do not change the source or bypass the exact-current-`main`
 guard.
 
+METAR release mismatches remain immediate failures, without an added retry.
+Their smoke error records the full expected SHA, observed release header,
+deployment origin and fixed METAR route, and HTTP status. `<missing>` differs
+from an empty `""` header; observed values are escaped and limited to 128
+characters with explicit truncation, without changing the raw exact comparison.
+A different canonical SHA, missing header, or malformed value helps identify
+what was received but does not establish a cache, edge, or propagation cause.
+[Issue #606](https://github.com/vasilyevstan/LiveTrafficStan/issues/606) records
+a mismatch four seconds after publication whose received SHA was not logged.
+Later unchanged strict smoke passes on both hosts did not turn the original
+failed Actions run green or demonstrate an application/provider regression.
+Any new METAR retry needs separate evidence and approval; do not relax exact
+release, response-policy, or deadline checks to hide a mismatch.
+
 Production deployment credentials exist only in the protected GitHub
 `production` environment. This includes `AIRCRAFT_RELAY_AUTH_TOKEN` when
 private mode is used. Do not duplicate them in repository secrets, place them
@@ -705,9 +729,9 @@ METAR is optional and independent of live traffic. It makes no startup request
 and has no periodic poller. First enable may need to load the pinned airport
 asset before it can derive explicit ICAO station IDs.
 
-- **Paused until the map shows an eligible view** means the live-traffic
-  viewport is still updating or exceeds the 100 km safety boundary. Zoom in or
-  reduce tilt.
+- **Paused until the map shows an eligible view** means weather/local context
+  is still updating or exceeds its 100 km boundary. Aircraft may remain live
+  independently through 250 km. Zoom in or reduce tilt.
 - **Too many qualifying stations** means more than 50 explicit four-letter
   ICAO codes are visible. The app refuses to truncate the station set; zoom in.
 - **No qualifying stations** means the reduced large/medium OurAirports
@@ -809,12 +833,11 @@ requires a new output version followed by
 
 For the same exact selected ICAO24, a successful 500 ms hover lookup should
 populate the already-open selected-details photo without a second
-Planespotters request. The photo appears after the prominent plausible-route
-section and before telemetry. Different aircraft identities must remain
-isolated.
+Planespotters request. The photo appears at the top of details, above any
+plausible route and the telemetry facts. Different aircraft identities must
+remain isolated.
 
-If the tooltip has the photo but matching details still show **Load aircraft
-photo**, confirm the application includes the shared-cache subscription fix,
+If the tooltip has the photo but matching details show no photo, confirm the application includes the shared-cache subscription fix,
 then record the selected ICAO24, tooltip ICAO24, request count, and whether the
 page is a development Strict Mode build. Do not click repeatedly or add a
 second request path as a workaround.
@@ -900,8 +923,9 @@ array is genuine missing coverage. `429` and `503` with Retry-After require
 waiting; in particular, Open Waters' 900-second incomplete-result cache must
 not be presented as "no photo". A timeout, malformed/oversized response,
 unsupported license or disallowed image URL is a local photo failure, not an
-AIS outage. Check the visible status before retrying. Hidden/offline tabs
-cannot start a retry or revive obsolete work.
+AIS outage. Details show no photo or status text for these states; close and
+reselect the ship to make one fresh attempt after a failure without a
+Retry-After. Hidden/offline tabs cannot start a retry or revive obsolete work.
 
 A valid image loads directly from `thumb.wikimedia.org` or
 `upload.wikimedia.org`, with `crossorigin="anonymous"` and no referrer.
@@ -968,16 +992,16 @@ speed is known; the below/at-least-one-knot boundary is exactly 1.852 km/h.
 Reserved AIS ship-type subcodes remain unknown rather than being grouped with
 defined passenger, cargo, or tanker codes.
 
-Settled pan, zoom, rotation, pitch, Home, and resize changes all update the
-traffic viewport. If its conservative enclosing radius exceeds 100 km, the app
-hides live traffic and trails, pauses both providers, and shows **Zoom in to see live
-traffic** or **Zoom in or reduce tilt to see live traffic**. This is not an
-empty provider response. The labelled zoom-out sample described above is only
-recent local context, never a complete wider board or feed. Use **Resume live**
-to keep the current map center and
-fit it back to the reviewed safe framing, or zoom in / reduce tilt manually.
-The existing provider instances resume at their next allowed cadence,
-reconnect, REST, or metadata boundary.
+Settled pan, zoom, rotation, pitch, Home, and resize changes all update one
+sampled full-canvas viewport. Above 100 km the app hides ships and local
+context, passes no marine query, and explicitly reports ships paused while
+aircraft can remain live. Above 250 km or for unsafe geometry it hides live
+traffic and trails and pauses both providers. This is not an empty provider
+response. The labelled zoom-out sample described above is only recent local
+context, never a complete wider board or feed. Use **Resume ships** to keep the
+current center and fit back to the reviewed 100 km framing, or zoom in / reduce
+tilt manually. Provider instances retain their cadence, backoff, reconnect,
+REST, and metadata boundaries.
 
 If camera movement causes repeated requests, verify that settled updates are
 coalesced and that unchanged enclosing queries do not restart provider work.

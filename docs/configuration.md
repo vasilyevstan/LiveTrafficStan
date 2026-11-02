@@ -155,7 +155,8 @@ spread through components:
 | Setting | Current value |
 | --- | --- |
 | Initial Home framing | Comparable to a 30 km local view |
-| Maximum eligible enclosing radius | 100 km |
+| Maximum eligible aircraft enclosing radius | 250 km |
+| Maximum eligible marine/local-context enclosing radius | 100 km |
 | Local ruler endpoint/pair bound | Two session-only points; pair distance at most 200 km, derived from twice the existing 100 km local radius |
 | Local ruler rendered geometry | At most 128 coordinates; geodesic arc step 0.05 degrees |
 | Local ruler center clearance | Hit-tested 120x120 CSS px square at the actual canvas center |
@@ -220,9 +221,9 @@ spread through components:
 | Starlink source and publication | Fixed official `starlink` GP then SATCAT pair; 6 MiB and 15,000 rows per response, 12 MiB aggregate, 60-second total deadline; one normalization and one final aligned schema-1/schema-2 bundle write |
 | Starlink cadence/sample | One actual-start SQLite reservation per 12 hours; schema 1 remains the exact 150-record `inclination-raan-systematic-v1` sample; schema 2 is exactly 512 records, 128 per fixed inclination band, selected by `inclination-shell-raan-phase-grid-v1`; no retry, truncation, rotation, viewport request, or completeness/representativeness claim |
 | Orbital catalog discovery | Query at most 64 characters; exact type/source-group filters; 20 rows per page |
-| In view | Collapsed peer below desktop Settings; direct action in the five-slot mobile dock. Aircraft and current modeled orbits reuse local search and `orbital.discovery.pageSize` (20). Ships uses the existing `VESSEL_RESULT_LIMIT` (20) for a capped Longest/Deepest draught shortlist; ranking is component-local, not a saved preference or map filter |
+| In view | Collapsed peer below desktop Settings; direct action in the five-slot mobile dock. The surface sizes to actual content up to its viewport cap; normal counts stay in tabs and Explore orbits appears only in the Orbits context. Aircraft and current modeled orbits reuse local search only when the list is nontrivial or a query is active, with `orbital.discovery.pageSize` (20). Ships uses the existing `VESSEL_RESULT_LIMIT` (20) for a capped Longest/Deepest draught shortlist; ranking is component-local, not a saved preference or map filter |
 | Saved objects | 50 total entries; 20 each for aircraft, vessels and satellites; 80-character labels; 512-byte records; 32 KiB versioned document; explicit additions only and no silent eviction; 20 session-only Saved activity items per tab |
-| Mobile workspace | Width <=760px, or coarse-pointer landscape <=1024x480; one expanded nonmodal surface and compact retained selection; no saved presentation state |
+| Mobile workspace | Width <=760px, or coarse-pointer landscape <=1024x480; one expanded nonmodal surface; ordinary live traffic selection starts expanded, captured views start compact, and task opening retains/suspends selection without remounting; no saved presentation state |
 | Orbital selected track | 15 minutes; at most 31 points before gap/dateline splitting |
 | Orbital reviewed image | 5-second total deadline; exact manifest byte count, media type, and SHA-256; one fulfilled Blob URL or terminal failure per immutable asset in the running tab |
 | Marine metadata refresh | 5 minutes |
@@ -380,12 +381,14 @@ and automatic/error exits do not restore obsolete selection.
 
 | Setting | Default | Meaning |
 | --- | --- | --- |
-| `minimumAltitudeMeters` | 300 | Lowest reported barometric altitude that can enter. |
 | `initialLookPitchDegrees` | 76 | Initial track-relative look angle from nadir. |
 | `interpolationDelayMs` | 20,000 | Display lag behind the latest report (one aircraft cadence). |
 | `maximumInterpolationGapMs` | 60,000 | A longer report gap jumps instead of gliding. |
+| `maximumDrawableGlobeZoom` | 16.55 | Largest `zoom - log2(cos(latitude))` the eye may use; MapLibre 6.10 `vertical-perspective` draws nothing beyond about 16.65. |
 
-The hold notice and expiry reuse the aircraft `staleAfterMs` and
+Any finite altitude above 0 is eligible. There is no fixed altitude floor:
+the drawable zoom decides, and it depends on eye height, look pitch, canvas
+size and latitude. The hold notice and expiry reuse the aircraft `staleAfterMs` and
 `expireAfterMs`. There is no environment override.
 
 ## Changing the center
@@ -915,16 +918,17 @@ responses. The client request remains credential-free and `no-store`, times
 out after 12 seconds, and rejects responses larger than 4 MiB. Arbitrary
 workflow endpoint URLs are not accepted.
 
-For an eligible viewport, the rounded camera center and conservative enclosing
-radius are sent to ADSB.lol. The application decides eligibility against the
-100 km limit before rounding outward to the provider's integer nautical miles.
-An exact 100 km viewport therefore requests 54 NM, or 100.008 km of transport
-coverage, while the client still displays only objects inside the actual
-viewport polygon. Deployment proxies must not alter coordinates, units, or
-this boundary behavior.
+For an aircraft-eligible viewport, the rounded camera center and conservative
+enclosing radius are sent to ADSB.lol. The application decides eligibility
+against the 250 km aircraft limit before rounding outward to the provider's
+integer nautical miles. An exact 250 km viewport therefore requests 135 NM, or
+250.02 km of transport coverage, while the client still displays only objects
+inside the actual viewport polygon. Ships, airports, and weather retain the
+separate 100 km local boundary and receive no widened query. Deployment proxies
+must not alter coordinates, units, or these boundary semantics.
 
 The production Worker enforces the exact `/v2/point` path, canonical coordinate
-ranges, and integer 1-54 NM radius. It rejects query strings and every other
+ranges, and integer 1-135 NM radius. It rejects query strings and every other
 method/path, never follows upstream redirects, keeps a ten-second total
 deadline, rejects responses over 4 MiB, and preserves upstream status, body,
 `Content-Type`, and `Retry-After`. It sends a stable public project User-Agent
@@ -956,9 +960,8 @@ allows an accepted application source to be redeployed with `false` if a later
 provider-contract or exact-origin check fails. It does not relax the direct
 browser, unchanged-URL, attribution, storage, or provider-origin rules.
 
-When enabled for deterministic evaluation, selecting an aircraft still makes
-no request by itself. The user can activate **Load aircraft photo**, or a fine
-pointer can remain on one live aircraft for 500 ms. Only a valid
+When enabled, selecting an aircraft makes one automatic lookup, and a fine
+pointer remaining on one live aircraft for 500 ms makes one hover lookup. Only a valid
 six-character ICAO24 is sent directly from the browser to the fixed
 Planespotters hex endpoint. Moving away before the hover dwell cancels that
 automatic attempt. Requests omit credentials, reject redirects, use
@@ -974,9 +977,10 @@ page in a new tab, and shows visible photographer credit.
 Successful and no-photo JSON results may remain in one shared 32-entry
 least-recently-used current-tab cache for at most one hour, so hover followed by
 selected details does not spend another lookup. Errors are not cached. A `429`
-blocks another manual attempt until its readable `Retry-After`, or for one
-minute when that header is unavailable. Hover errors do not automatically
-retry, and there is no selection-time prefetch.
+blocks another attempt until its readable `Retry-After`, or for one minute
+when that header is unavailable. Hover errors do not automatically retry;
+selected details make one fresh attempt only when the aircraft is reselected
+after a failure without a provider retry time.
 
 No JSON, returned URL, credit, or image byte is written to Web Storage,
 IndexedDB, Cache API, service-worker cache, Worker cache, KV, or R2. HISTORY
@@ -1124,11 +1128,10 @@ Readable `Retry-After` seconds or HTTP dates are honored up to five minutes.
 Other route-provider failures apply a 60-second local fallback. Retry or
 refresh is disabled until that time, and no timer triggers an automatic retry.
 
-The compact status or result is presented directly below the selected aircraft
-heading. The UI labels **Plausible origin**, **Plausible destination**, and
-optional **Standing data age**, and states that the result may be stale or
-wrong and is not a filed flight plan. Concise visible attribution identifies
-ADSB.lol and VRS Standing Data. See
+Only a successful result is presented, below any aircraft photo and above the
+telemetry facts, as **Departure** and **Destination** rows with no status text.
+ADSB.lol remains identified by the traffic Source fact and provider
+disclosure. See
 [Aircraft Plausible Route Enrichment](aircraft-route-enrichment-evaluation.md).
 
 ## Weather observations and proxy

@@ -9,6 +9,8 @@ interface DetailsPanelProps {
   onClose: () => void
   heading: ReactNode
   headerAction?: ReactNode
+  actionRow?: ReactNode
+  mobileActionPlacement?: 'body' | 'header' | 'header-always'
   children: ReactNode
   className?: string
   panelRef?: Ref<HTMLDivElement>
@@ -20,11 +22,18 @@ export function DetailsPanel({
   onClose,
   heading,
   headerAction,
+  actionRow,
+  mobileActionPlacement = 'body',
   children,
   className,
   panelRef,
 }: DetailsPanelProps) {
   const presentation = useContext(MobileInspectorContext)
+  const responsiveActions = Boolean(presentation?.mobile || presentation?.forceCompact)
+  const mobileHeaderActions = Boolean(
+    actionRow && presentation?.mobile && mobileActionPlacement !== 'body',
+  )
+  const persistentMobileHeaderActions = mobileActionPlacement === 'header-always'
   const compact = Boolean((presentation?.mobile || presentation?.forceCompact) && presentation?.compact)
   const suspended = Boolean(presentation?.mobile && presentation.suspended)
   const bodyId = useId()
@@ -56,7 +65,7 @@ export function DetailsPanel({
 
   return (
     <aside
-      className={`details-panel${headerAction ? ' details-panel--action' : ''}${className ? ` ${className}` : ''}`}
+      className={`details-panel${headerAction ? ' details-panel--action' : ''}${actionRow ? ' details-panel--action-row' : ''}${mobileHeaderActions ? ' details-panel--mobile-header-actions' : ''}${className ? ` ${className}` : ''}`}
       aria-labelledby={titleId}
       hidden={suspended}
       inert={suspended || undefined}
@@ -78,7 +87,40 @@ export function DetailsPanel({
       }}
     >
       <div className="details-panel__heading">{heading}</div>
-      {headerAction && (
+      {actionRow && !responsiveActions && (
+        <div className="details-panel__action-row" onClickCapture={() => {
+          scrollTopRef.current = 0
+          if (bodyRef.current) bodyRef.current.scrollTop = 0
+        }}>
+          {actionRow}
+          {headerAction && (
+            <DetailsPanelFeedbackContext.Provider value={feedbackTarget}>
+              {headerAction}
+            </DetailsPanelFeedbackContext.Provider>
+          )}
+          <button
+            type="button"
+            className="close-button details-panel__close"
+            aria-label={closeLabel}
+            onClick={onClose}
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <path d="m6 6 12 12M18 6 6 18" />
+            </svg>
+          </button>
+        </div>
+      )}
+      {headerAction && (!actionRow || responsiveActions) && (
         <div className="details-panel__header-action" onClickCapture={() => {
           scrollTopRef.current = 0
           if (bodyRef.current) bodyRef.current.scrollTop = 0
@@ -86,6 +128,14 @@ export function DetailsPanel({
           <DetailsPanelFeedbackContext.Provider value={feedbackTarget}>
             {headerAction}
           </DetailsPanelFeedbackContext.Provider>
+        </div>
+      )}
+      {mobileHeaderActions && (!compact || persistentMobileHeaderActions) && (
+        <div className="details-panel__mobile-actions" onClickCapture={() => {
+          scrollTopRef.current = 0
+          if (bodyRef.current) bodyRef.current.scrollTop = 0
+        }}>
+          {actionRow}
         </div>
       )}
       {(presentation?.mobile || presentation?.forceCompact) && (
@@ -100,26 +150,28 @@ export function DetailsPanel({
           {compact ? 'Details' : presentation.returnToTask ? 'Back' : 'Collapse'}
         </button>
       )}
-      <button
-        type="button"
-        className="close-button details-panel__close"
-        aria-label={closeLabel}
-        onClick={onClose}
-      >
-        <svg
-          viewBox="0 0 24 24"
-          width="18"
-          height="18"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          aria-hidden="true"
-          focusable="false"
+      {(!actionRow || responsiveActions) && (
+        <button
+          type="button"
+          className="close-button details-panel__close"
+          aria-label={closeLabel}
+          onClick={onClose}
         >
-          <path d="m6 6 12 12M18 6 6 18" />
-        </svg>
-      </button>
+          <svg
+            viewBox="0 0 24 24"
+            width="18"
+            height="18"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <path d="m6 6 12 12M18 6 6 18" />
+          </svg>
+        </button>
+      )}
       <div
         ref={bodyRef}
         id={bodyId}
@@ -131,6 +183,9 @@ export function DetailsPanel({
         }}
       >
         {headerAction && <div ref={setFeedbackTarget} className="details-panel__action-feedback" />}
+        {actionRow && responsiveActions && !mobileHeaderActions && (
+          <div className="details-panel__body-actions">{actionRow}</div>
+        )}
         {children}
         {!compact && presentation?.notice}
       </div>

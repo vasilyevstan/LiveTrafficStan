@@ -8,6 +8,7 @@ import {
   LAYER_BASEMAP_LANDMARKS,
   LAYER_BASEMAP_LANDUSE,
   needsBasemapStyleReset,
+  setBasemapBuildingsFullHeight,
   withBasemapSky,
 } from './basemapCartography'
 import { trafficIconTreatment } from './icons'
@@ -301,8 +302,39 @@ describe('atlas basemap cartography', () => {
     applyBasemapCartography(map, 'dark', DEFAULT_MAP_STYLE_URLS.dark)
     applyBasemapCartography(map, 'light', DEFAULT_MAP_STYLE_URLS.light)
     expect(map.addLayer).toHaveBeenCalledTimes(count)
-    expect(map.setPaintProperty).toHaveBeenLastCalledWith(
+    expect(map.setPaintProperty).toHaveBeenCalledWith(
       LAYER_BASEMAP_BUILDINGS, 'fill-extrusion-color', '#c6b399',
     )
+  })
+
+  it('pins full building height only for the aircraft ride, across style rehydration, and restores the zoom rise', () => {
+    const height = ['number', ['get', 'render_height'], 0]
+    const base = ['number', ['get', 'render_min_height'], 0]
+    const rise = (value: unknown[]) => ['interpolate', ['linear'], ['zoom'], 14.5, 0, 15.5, value]
+    const latest = (map: ReturnType<typeof fakeMap>, property: string) => map.setPaintProperty.mock.calls
+      .filter(([layer, name]) => layer === LAYER_BASEMAP_BUILDINGS && name === property).at(-1)?.[2]
+
+    const ride = fakeMap()
+    applyBasemapCartography(ride, 'dark', DEFAULT_MAP_STYLE_URLS.dark, true)
+    expect(ride.addLayer.mock.calls.map(([layer]) => layer).find(layer => layer.id === LAYER_BASEMAP_BUILDINGS))
+      .toMatchObject({ paint: { 'fill-extrusion-height': height, 'fill-extrusion-base': base } })
+
+    const map = fakeMap()
+    applyBasemapCartography(map, 'light', DEFAULT_MAP_STYLE_URLS.light)
+    expect(latest(map, 'fill-extrusion-height')).toEqual(rise(height))
+    setBasemapBuildingsFullHeight(map, true)
+    expect(latest(map, 'fill-extrusion-height')).toEqual(height)
+    expect(latest(map, 'fill-extrusion-base')).toEqual(base)
+    applyBasemapCartography(map, 'light', DEFAULT_MAP_STYLE_URLS.light, true)
+    expect(latest(map, 'fill-extrusion-height')).toEqual(height)
+    setBasemapBuildingsFullHeight(map, false)
+    expect(latest(map, 'fill-extrusion-height')).toEqual(rise(height))
+    expect(latest(map, 'fill-extrusion-base')).toEqual(rise(base))
+  })
+
+  it('leaves maps without the building layer untouched', () => {
+    const map = { getLayer: vi.fn(() => undefined), setPaintProperty: vi.fn() }
+    setBasemapBuildingsFullHeight(map, true)
+    expect(map.setPaintProperty).not.toHaveBeenCalled()
   })
 })

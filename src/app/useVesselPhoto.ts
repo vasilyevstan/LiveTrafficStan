@@ -15,9 +15,14 @@ import { VesselPhotoController } from './VesselPhotoController'
 export const useVesselPhoto = (
   vessel: Pick<Vessel, 'id' | 'mmsi' | 'imo'> | undefined,
   provider: PhotoProvider<VesselPhotoIdentity, DynamicVesselPhoto>,
+  options: { retryTransientAutomaticFailures?: boolean } = {},
 ) => {
   const [state, setState] = useState<VesselPhotoViewState>({ phase: 'idle' })
-  const controller = useMemo(() => new VesselPhotoController(provider, VESSEL_PHOTO_CONFIG), [provider])
+  const retryTransientAutomaticFailures = options.retryTransientAutomaticFailures === true
+  const controller = useMemo(() => new VesselPhotoController(provider, {
+    ...VESSEL_PHOTO_CONFIG,
+    retryTransientAutomaticFailures,
+  }), [provider, retryTransientAutomaticFailures])
   const id = vessel?.id
   const mmsi = vessel?.mmsi
   const imo = vessel?.imo

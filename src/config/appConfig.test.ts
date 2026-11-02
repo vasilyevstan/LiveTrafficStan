@@ -51,6 +51,7 @@ describe('createAppConfig', () => {
     expect(config.map.darkStyleUrl).toContain('/dark')
     expect(config.map.homeViewRadiusKm).toBe(30)
     expect(config.map.maximumViewportRadiusKm).toBe(100)
+    expect(config.map.maximumAircraftViewportRadiusKm).toBe(250)
     expect(config.map.touchHitTolerancePx).toBe(8)
     expect(config.map.clustering).toEqual({
       radiusPx: 42,
@@ -217,7 +218,9 @@ describe('createAppConfig', () => {
       sourceLicenseName: 'Public domain',
     })
     expect(MAX_AIRCRAFT_RADIUS_NM).toBe(
-      aircraftQueryRadiusNauticalMiles(config.map.maximumViewportRadiusKm),
+      aircraftQueryRadiusNauticalMiles(
+        config.map.maximumAircraftViewportRadiusKm,
+      ),
     )
     expect(config.marine.mqttReconnectPeriodMs).toBe(15_000)
     expect(config.marine.queryRestRefreshIntervalMs).toBe(5 * 60_000)

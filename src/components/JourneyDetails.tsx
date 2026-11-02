@@ -4,6 +4,7 @@ import type { Theme } from '../app/theme'
 import { formatTimestamp } from '../domain/format'
 import { JOURNEY_COLORS } from '../map/journeyStyle'
 import { DetailsPanel } from './DetailsPanel'
+import { DetailActionIcon } from './DetailActionIcon'
 
 interface JourneyDetailsProps {
   overview: JourneyOverview
@@ -32,9 +33,31 @@ export function JourneyDetails({
 
   return (
     <DetailsPanel
+      className="details-panel--compact-actions"
       titleId="journey-title"
       closeLabel="Close captured route overview"
       onClose={onClose}
+      mobileActionPlacement="header"
+      actionRow={<>
+        <button
+          type="button"
+          className="details-panel__icon-action"
+          aria-label="Hide captured path"
+          title="Hide path"
+          onClick={onHide}
+        >
+          <DetailActionIcon name="hide" />
+        </button>
+        <button
+          type="button"
+          className="details-panel__icon-action"
+          aria-label="Return to local view"
+          title="Return to local view"
+          onClick={onReturn}
+        >
+          <DetailActionIcon name="return" />
+        </button>
+      </>}
       heading={
         <div>
           <p className="eyebrow">Captured route</p>
@@ -44,10 +67,6 @@ export function JourneyDetails({
         </div>
       }
     >
-      <div className="journey-actions">
-        <button type="button" onClick={onHide}>Hide path</button>
-        <button type="button" onClick={onReturn}>Return to local view</button>
-      </div>
       <p className="metadata-status">Captured, not live. Not for navigation.</p>
       <p className="metadata-status">Position reported {formatTimestamp(snapshot.position.observedAt)}.</p>
       {(observed || estimated) && <div className="journey-key">

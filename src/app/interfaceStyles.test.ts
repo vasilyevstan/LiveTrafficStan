@@ -94,21 +94,84 @@ describe('interface presentation contracts', () => {
     expect(styles).not.toContain('.details-panel__close-anchor')
   })
 
+  it('gives opted-in traffic details one 44px desktop action row and responsive compact placement', () => {
+    expect(styles).toMatch(/\.details-panel__action-row,\s*\.details-panel__body-actions\s*\{[^}]*min-height: 44px;/)
+    expect(styles).toMatch(/\.details-panel__action-row\s*\{[^}]*flex: 0 0 44px;/)
+    expect(styles).toMatch(/\.details-panel__action-row \.details-panel__close\s*\{[^}]*position: static;/)
+    expect(styles).toMatch(/\.details-panel--traffic-actions \.details-panel__heading\s*\{\s*padding-right: 0;/)
+    expect(styles).toMatch(/\.details-panel--traffic-actions\s*\{\s*width: min\(430px, calc\(var\(--app-visual-viewport-width\) - 32px\)\);/)
+    expect(styles).toMatch(/\.app-shell--mobile-workspace \.details-panel__body-actions\s*\{[^}]*margin-bottom: 8px;/)
+    expect(styles).toMatch(/\.app-shell--mobile-workspace \.details-panel__mobile-actions\s*\{[^}]*right: 96px;[^}]*display: flex;/)
+    expect(styles).toMatch(
+      /@container workspace \(max-width: 340px\)\s*\{[\s\S]*?\.details-panel--traffic-actions\.details-panel--mobile-header-actions\.details-panel--action:has\([\s\S]*?\.details-panel__heading\s*\{[^}]*min-height: 68px;[^}]*padding: 0 12px 44px;/,
+    )
+    expect(styles).toMatch(
+      /\.app-shell--mobile-workspace\[data-mobile-landscape\][\s\S]*?\.details-panel--traffic-actions\.details-panel--mobile-header-actions\.details-panel--action:has\([\s\S]*?\.details-panel__heading\s*\{[^}]*min-height: 68px;[^}]*padding: 0 12px 44px;/,
+    )
+    expect(styles).toMatch(
+      /\.details-panel--traffic-actions\.details-panel--mobile-header-actions\s+:is\([^}]*\.details-panel__mobile-actions,[^}]*\.details-panel__close\s*\)\s*\{\s*top: 24px;/,
+    )
+    expect(styles).toMatch(/\.traffic-details__icon-action,\s*\.details-panel__icon-action\s*\{[^}]*width: 44px;[^}]*height: 44px;[^}]*border-radius: 50%;/)
+  })
+
+  it('caps every nonmobile detail panel and keeps opted-in utility actions in the header', () => {
+    expect(styles).toMatch(
+      /@container workspace \(min-width: 761px\)\s*\{[\s\S]*?\.app-shell:not\(\.app-shell--mobile-workspace\)\s+\.details-panel\s*\{[^}]*--details-panel-padding: 12px;[^}]*width: clamp\(340px, 19cqw, 380px\);[^}]*max-height: min\(\s*clamp\(320px, 46cqh, 420px\),/,
+    )
+    expect(styles).toMatch(
+      /details-panel--compact-actions\s+\.details-panel__heading\s*\{[^}]*min-height: 44px;[^}]*padding-right: 144px;/,
+    )
+    expect(styles).toMatch(
+      /details-panel--compact-actions\.details-panel--action\s+\.details-panel__heading\s*\{[^}]*padding-right: 188px;/,
+    )
+    expect(styles).toMatch(
+      /details-panel--compact-actions\s+\.details-panel__action-row\s*\{[^}]*position: absolute;[^}]*top: var\(--details-panel-padding\);[^}]*right: var\(--details-panel-padding\);[^}]*margin: 0;/,
+    )
+    expect(styles).toMatch(
+      /details-panel--traffic-actions\s+\.details-panel__heading\s*\{[^}]*min-height: 44px;[^}]*padding-right: 240px;/,
+    )
+    expect(styles).toMatch(
+      /details-panel--traffic-actions\s+\.details-panel__action-row\s*\{[^}]*position: absolute;[^}]*top: var\(--details-panel-padding\);[^}]*right: var\(--details-panel-padding\);[^}]*margin: 0;/,
+    )
+    expect(styles).toMatch(
+      /\.details-panel\s+\.detail-row\s*\{\s*padding-block: 7px;/,
+    )
+    expect(styles).toMatch(/\n\.traffic-photo\s*\{\s*margin: 0;/)
+    expect(styles).toMatch(
+      /\n\.traffic-photo__image\s*\{[^}]*width: auto;[^}]*max-width: 100%;[^}]*height: auto;[^}]*max-height: 150px;[^}]*object-fit: contain;/,
+    )
+    expect(styles).toMatch(/\.traffic-details__enrichment:empty\s*\{\s*display: none;/)
+    expect(styles).not.toMatch(/vessel-photo|aircraft-photo|flight-route/)
+  })
+
+  it('sizes shared overlays from the visual workspace with clamped panel spacing and landscape width', () => {
+    expect(styles).toContain('--details-panel-padding: clamp(12px, 2cqh, 18px)')
+    expect(styles).toMatch(/\.details-panel\s*\{[^}]*max-height: min\(\s*620px,\s*calc\(var\(--app-visual-viewport-height\) - var\(--workspace-header-bottom\) - 32px\)/)
+    expect(styles).toContain('--mobile-safe-left: max(8px, env(safe-area-inset-left))')
+    expect(styles).toContain('--mobile-safe-right: max(8px, env(safe-area-inset-right))')
+    expect(styles).toMatch(/--mobile-surface-width: min\(\s*460px,\s*calc\(\s*var\(--app-visual-viewport-width\) -\s*var\(--mobile-safe-left\) -\s*var\(--mobile-safe-right\)/)
+    expect(styles).toMatch(/\.app-shell--mobile-workspace \.brand-panel\s*\{[^}]*left: var\(--mobile-safe-left\);[^}]*width: min\(\s*280px,[^}]*var\(--mobile-safe-right\)/)
+    expect(styles).toMatch(/\.app-shell--mobile-workspace\[data-mobile-landscape\]\s*\{[^}]*--mobile-surface-width: min\(\s*460px,\s*calc\(var\(--app-visual-viewport-width\) \* 0\.52\),\s*calc\(\s*var\(--app-visual-viewport-width\) -\s*var\(--mobile-safe-left\) -\s*var\(--mobile-safe-right\)/)
+    expect(styles).toMatch(/\.app-shell--mobile-workspace\[data-mobile-landscape\] \.brand-panel\s*\{[^}]*width: clamp\(\s*0px,[^}]*280px\s*\);[^}]*overflow: hidden;/)
+    expect(styles).toMatch(/\.app-shell--mobile-workspace\[data-mobile-landscape\] :is\(\.viewport-notice, \.map-error\)\s*\{\s*right: calc\(var\(--mobile-safe-right\) \+ var\(--mobile-surface-width\) \+ 8px\);/)
+    expect(styles).toMatch(/\.app-shell--mobile-workspace\[data-mobile-landscape\] \.control-panel__in-view\s*\{[^}]*--in-view-landscape-width: min\(\s*272px,/)
+    expect(styles).toMatch(/\[data-mobile-landscape\][\s\S]*?\.control-panel__surface--in-view\s*\{\s*width: var\(--in-view-landscape-width\);/)
+    expect(styles).toMatch(/\[data-mobile-landscape\][\s\S]*?\.control-panel__in-view\s+\.control-panel__more-body\s*\{[^}]*height: auto;[^}]*max-height: min\(var\(--mobile-body-height\), 132px\);[^}]*padding: 6px 8px;/)
+    expect(styles).toMatch(/\.control-panel__in-view\s+\.in-view__tabs\s*\{\s*margin: 0 44px 6px 0;/)
+    expect(styles).toMatch(/\.control-panel__surface--in-view\s*\{[^}]*width: min\(420px, var\(--mobile-surface-width\)\);[^}]*max-height:/)
+    expect(styles).toMatch(/\.details-panel--traffic-actions\s*\{\s*width: min\(400px, var\(--mobile-surface-width\)\);/)
+    expect(styles).toMatch(/\.app-shell:not\(\.app-shell--mobile-workspace\)[\s\S]*?\.control-panel__in-view\s+\.control-panel__more-body\s*\{\s*bottom: auto;[^}]*max-height:/)
+    expect(styles).toMatch(/\.in-view-body:not\(:has\(#in-view-orbits-tab\[aria-selected='true'\]\)\)\s+\.in-view__more\s*\{\s*display: none;/)
+  })
+
   it('pairs depth and relief in the two-column grid with at least 44px targets', () => {
     expect(styles).toMatch(/#depths-layer-toggle,\s*#relief-layer-toggle\s*\{[^}]*min-height: 44px;/)
     expect(styles).not.toMatch(/#depths-layer-toggle[^{}]*\{[^}]*grid-column:/)
   })
 
-  it('reserves captured-title Save and Share clearance without squeezing the playback and Return row', () => {
-    expect(styles).toMatch(/\.details-panel--orbital-view\.details-panel--action \.details-panel__heading\s*\{\s*padding-right: 0;/)
-    expect(styles).toMatch(/\.details-panel--orbital-view\.details-panel--action h2\s*\{\s*padding-right: 88px;/)
-    expect(styles).toMatch(/\.details-panel--orbital-view\.details-panel--action:has\(\.details-panel__save\):has\(\.details-panel__share\)\s*h2\s*\{\s*padding-right: 132px;/)
-    expect(styles).toMatch(/\.details-panel--orbital-view\.details-panel--action \.orbital-view-heading\s*\{\s*grid-template-rows: minmax\(40px, auto\) auto;/)
-    expect(styles).toMatch(/\.details-panel--orbital-view\.details-panel--action\[data-force-compact\] h2\s*\{\s*padding-right: 148px;/)
-    expect(styles).toMatch(/\.details-panel--orbital-view\.details-panel--action\[data-force-compact\]:has\(\.details-panel__save\):has\(\.details-panel__share\)\s*h2\s*\{\s*padding-right: 192px;/)
-    expect(styles).toMatch(/\.app-shell--mobile-workspace \.details-panel--orbital-view\.details-panel--action \.details-panel__heading\s*\{\s*padding-right: 12px;/)
-    expect(styles).toMatch(/\.app-shell--mobile-workspace \.details-panel--orbital-view\.details-panel--action h2\s*\{\s*padding-right: 128px;/)
-    expect(styles).toMatch(/\.app-shell--mobile-workspace\s+\.details-panel--orbital-view\.details-panel--action:has\(\.details-panel__save\):has\(\.details-panel__share\)\s+h2\s*\{\s*padding-right: 172px;/)
+  it('keeps captured playback and Return actions outside the compact body', () => {
+    expect(styles).toMatch(/\.orbital-view-heading\s*\{[^}]*grid-template-columns: minmax\(0, 1fr\);/)
+    expect(styles).toMatch(/\.traffic-details__icon-action,\s*\.details-panel__icon-action\s*\{[^}]*width: 44px;[^}]*height: 44px;/)
     expect(styles).toMatch(/\.app-shell--mobile-workspace \.details-panel--orbital-view\.details-panel--action \.details-panel__body\s*\{\s*max-height: max\(44px, calc\(var\(--mobile-body-height\) - 20px\)\);\s*padding-block: 0;/)
   })
 

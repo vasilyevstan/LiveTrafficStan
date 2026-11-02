@@ -20,6 +20,7 @@ export interface ViewportSample {
 export interface TrafficViewport {
   center: AppCenter
   enclosingRadiusKm: number
+  measuredRadiusKm?: number
   polygon: readonly Coordinates[]
 }
 
@@ -152,6 +153,7 @@ export const assessTrafficViewport = (
   const viewport = {
     center: roundedCenter,
     enclosingRadiusKm: roundedRadiusKm,
+    measuredRadiusKm: enclosingRadiusKm,
     polygon,
   }
   if (enclosingRadiusKm - limits.maximumRadiusKm > RADIUS_EPSILON_KM) {

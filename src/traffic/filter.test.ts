@@ -61,4 +61,44 @@ describe('filterVesselsByMinimumLength', () => {
       ).map((item) => item.id),
     ).toEqual(['1'])
   })
+
+  it('uses the exact rotated polygon across the antimeridian, not the transport circle', () => {
+    const rotatedAntimeridianViewport: TrafficViewport = {
+      center: {
+        latitude: 0,
+        longitude: 179.9,
+        label: 'Map view',
+      },
+      enclosingRadiusKm: 80,
+      polygon: [
+        { latitude: 0.5, longitude: 179.9 },
+        { latitude: 0, longitude: 180.4 },
+        { latitude: -0.5, longitude: 179.9 },
+        { latitude: 0, longitude: 179.4 },
+      ],
+    }
+    const entity = (
+      id: string,
+      latitude: number,
+      longitude: number,
+    ): Vessel => ({
+      ...vessel(id, 50, latitude),
+      position: {
+        latitude,
+        longitude,
+        observedAt: 1,
+      },
+    })
+
+    expect(
+      filterTrafficByViewport(
+        [
+          entity('1', 0.2, -179.9),
+          entity('2', 0.4, -179.7),
+          entity('3', 0, 179.4),
+        ],
+        rotatedAntimeridianViewport,
+      ).map(({ id }) => id),
+    ).toEqual(['1', '3'])
+  })
 })

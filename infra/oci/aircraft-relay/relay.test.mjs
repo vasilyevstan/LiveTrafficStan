@@ -144,13 +144,18 @@ describe('OCI aircraft relay', () => {
     ['/v2/point/059/24/11', undefined],
     ['/v2/point/1e2/24/11', undefined],
     ['/v2/point/59/24/0', undefined],
-    ['/v2/point/59/24/55', undefined],
+    ['/v2/point/59/24/136', undefined],
     ['/v2/point/59/24/11.5', undefined],
     ['/v2/point/59/%2F/11', undefined],
     ['/v2/point/59/24/11', {
       latitude: '59',
       longitude: '24',
       radiusNm: '11',
+    }],
+    ['/v2/point/59/24/135', {
+      latitude: '59',
+      longitude: '24',
+      radiusNm: '135',
     }],
   ])('parses canonical path %s', (path, expected) => {
     expect(parsePointPath(path)).toEqual(expected)

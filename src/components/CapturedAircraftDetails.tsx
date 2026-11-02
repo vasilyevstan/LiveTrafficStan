@@ -4,6 +4,7 @@ import { formatAltitude } from '../domain/format'
 import type { AircraftViewPosition, CapturedAircraftView } from '../domain/aircraftView'
 import type { UnitSystem } from '../domain/units'
 import { APP_CONFIG } from '../config/appConfig'
+import { DetailActionIcon } from './DetailActionIcon'
 
 interface Props {
   view: CapturedAircraftView
@@ -28,9 +29,31 @@ export function CapturedAircraftDetails({ view, ready, playing, position: displa
   return (
     <DetailsPanel
       titleId={titleId}
-      className="details-panel--orbital-view details-panel--aircraft-view"
+      className="details-panel--orbital-view details-panel--aircraft-view details-panel--compact-actions"
       closeLabel="Return to map"
       onClose={onReturn}
+      mobileActionPlacement="header-always"
+      actionRow={<>
+        <button
+          type="button"
+          className="details-panel__icon-action"
+          aria-label={playing ? 'Pause aircraft view' : 'Play aircraft view'}
+          title={playing ? 'Pause' : 'Play'}
+          disabled={!ready}
+          onClick={onTogglePlaying}
+        >
+          <DetailActionIcon name={playing ? 'pause' : 'play'} />
+        </button>
+        <button
+          type="button"
+          className="details-panel__icon-action"
+          aria-label="Return to map"
+          title="Return"
+          onClick={onReturn}
+        >
+          <DetailActionIcon name="return" />
+        </button>
+      </>}
       heading={
         <div className="orbital-view-heading">
           <h2 id={titleId} title={`3D view from aircraft ${position.name}`}>From {position.name}</h2>
@@ -42,12 +65,6 @@ export function CapturedAircraftDetails({ view, ready, playing, position: displa
                 {' · '}{formatAltitude(position.altitudeKm * 1_000, units)}
               </span>)}
           </p>
-          <div className="orbital-view-actions">
-            <button type="button" className="orbital-view-return" disabled={!ready} onClick={onTogglePlaying}>
-              {playing ? 'Pause' : 'Play'}
-            </button>
-            <button type="button" className="orbital-view-return" onClick={onReturn}>Return</button>
-          </div>
         </div>
       }
     >

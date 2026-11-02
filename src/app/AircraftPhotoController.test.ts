@@ -422,6 +422,53 @@ describe('AircraftPhotoController', () => {
     expect(provider.lookup).toHaveBeenCalledTimes(2)
   })
 
+  it('lets details retry once on reselection after a transient automatic failure', async () => {
+    const provider: AircraftPhotoProvider = {
+      lookup: vi
+        .fn<AircraftPhotoProvider['lookup']>()
+        .mockRejectedValueOnce(new AircraftPhotoProviderError('network'))
+        .mockResolvedValueOnce(available('ABC123')),
+    }
+    const controller = new AircraftPhotoController(provider, {
+      ...config,
+      retryTransientAutomaticFailures: true,
+    })
+    const states: AircraftPhotoViewState[] = []
+    controller.subscribe((state) => states.push(state))
+
+    controller.requestIfMissing(identities.first)
+    await Promise.resolve()
+    expect(states.at(-1)).toMatchObject({ phase: 'error', reason: 'network' })
+    controller.requestIfMissing(identities.first)
+    expect(provider.lookup).toHaveBeenCalledTimes(1)
+
+    controller.select(undefined)
+    controller.requestIfMissing(identities.first)
+    await Promise.resolve()
+    expect(provider.lookup).toHaveBeenCalledTimes(2)
+    expect(states.at(-1)).toMatchObject({ phase: 'available' })
+  })
+
+  it('keeps provider retry times blocking reselection for retrying details', async () => {
+    const provider: AircraftPhotoProvider = {
+      lookup: vi
+        .fn<AircraftPhotoProvider['lookup']>()
+        .mockRejectedValue(new AircraftPhotoProviderError('throttled', 30_000)),
+    }
+    const controller = new AircraftPhotoController(provider, {
+      ...config,
+      retryTransientAutomaticFailures: true,
+    })
+    controller.subscribe(() => undefined)
+
+    controller.requestIfMissing(identities.first)
+    await Promise.resolve()
+    controller.select(undefined)
+    controller.requestIfMissing(identities.first)
+    await Promise.resolve()
+    expect(provider.lookup).toHaveBeenCalledTimes(1)
+  })
+
   it('allows a later automatic lookup after an obsolete request is aborted', () => {
     const provider: AircraftPhotoProvider = {
       lookup: vi.fn(

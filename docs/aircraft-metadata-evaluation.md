@@ -103,7 +103,8 @@ The exact normalized six-character ICAO24 address is the primary key.
 3. If both live and database type designators exist, they must exactly match.
 4. A globally duplicated registration makes the record unavailable.
 5. Missing, malformed, conflicting, future-dated, or stale records are
-   unavailable.
+   unavailable. Selected details render no metadata section or absence
+   message for unavailable, loading or failed lookups.
 
 There is no registration-only fallback, punctuation removal, callsign matching,
 owner lookup, operator inference, or airline inference. Model description stays

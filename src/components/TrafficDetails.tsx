@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { DetailsPanel } from './DetailsPanel'
 import {
   formatAge,
@@ -15,15 +15,9 @@ import {
   flagStateForMmsi,
   formatCountryAllocation,
 } from '../domain/countryAllocations'
-import type {
-  AircraftMetadataUnavailableReason,
-  AircraftMetadataViewState,
-} from '../domain/aircraftMetadata'
+import type { AircraftMetadataViewState } from '../domain/aircraftMetadata'
 import type { AircraftPhotoViewState } from '../domain/aircraftPhoto'
-import type {
-  FlightRouteUnavailableReason,
-  FlightRouteViewState,
-} from '../domain/flightRoute'
+import type { FlightRouteViewState } from '../domain/flightRoute'
 import type { DisplayTrafficEntity } from '../domain/traffic'
 import {
   aircraftAltitudeBandLabel,
@@ -35,14 +29,11 @@ import type { UnitSystem } from '../domain/units'
 import {
   vesselReferencePhotoSelection,
   dynamicVesselPhotoForSelection,
-  vesselPhotoIdentity,
-  vesselPhotoIdentityKey,
   type DynamicVesselPhoto,
-  type VesselPhotoIdentity,
   type VesselPhotoViewState,
   type VesselReferencePhoto,
-  type VesselReferencePhotoSelection,
 } from '../domain/vesselPhoto'
+import { DetailActionIcon } from './DetailActionIcon'
 
 interface DetailRowProps {
   label: string
@@ -65,7 +56,6 @@ interface TrafficDetailsProps {
   aircraftMetadata: AircraftMetadataViewState
   aircraftPhotoEnabled?: boolean
   aircraftPhoto?: AircraftPhotoViewState
-  aircraftPhotoTermsUrl?: string
   vesselPhotoEnabled?: boolean
   vesselPhoto?: VesselPhotoViewState
   flightRouteEnabled?: boolean
@@ -73,9 +63,6 @@ interface TrafficDetailsProps {
   now: number
   units: UnitSystem
   historical?: boolean
-  onRequestAircraftPhoto?: () => void
-  onRequestVesselPhoto?: () => void
-  onRequestFlightRoute?: () => void
   onShowJourney?: () => void
   journeyMessage?: string
   onViewFromHere?: () => void
@@ -83,36 +70,6 @@ interface TrafficDetailsProps {
   journeyPreparing?: boolean
   shareObject?: ReactNode
   onClose: () => void
-}
-
-const unavailableMetadataMessage = (
-  reason: AircraftMetadataUnavailableReason,
-  state: AircraftMetadataViewState,
-) => {
-  switch (reason) {
-    case 'not-found':
-      return 'No record for this ICAO24.'
-    case 'ambiguous':
-      return 'Duplicate registration; record hidden.'
-    case 'registration-conflict':
-      return 'Database/live registration mismatch.'
-    case 'type-conflict':
-      return 'Database/live type mismatch.'
-    case 'invalid-identity':
-      return 'Invalid ICAO24 for metadata.'
-    case 'stale':
-      return `Snapshot exceeds the ${
-        state.phase === 'unavailable'
-          ? (state.metadata?.staleAfterDays ?? 'configured')
-          : 'configured'
-      }-day age limit.`
-    case 'future':
-      return `Snapshot is over ${
-        state.phase === 'unavailable'
-          ? (state.metadata?.futureToleranceHours ?? 'the configured number of')
-          : 'the configured number of'
-      } hours ahead of this clock.`
-  }
 }
 
 const wakeCategoryLabel = (wakeCategory: string) => {
@@ -135,14 +92,9 @@ function AircraftMetadataDetails({
 }: {
   state: AircraftMetadataViewState
 }) {
-  if (state.phase === 'idle') return null
+  if (state.phase !== 'available') return null
 
-  const source =
-    state.phase === 'available'
-      ? state.metadata.source
-      : state.phase === 'unavailable'
-        ? state.metadata?.source
-        : undefined
+  const { source } = state.metadata
 
   return (
     <section
@@ -150,340 +102,134 @@ function AircraftMetadataDetails({
       aria-labelledby="aircraft-metadata-heading"
     >
       <h3 id="aircraft-metadata-heading">Aircraft metadata</h3>
-      {state.phase === 'loading' && (
-        <p className="metadata-status">Loading metadata…</p>
-      )}
-      {state.phase === 'error' && (
-        <p className="metadata-status metadata-status--error">
-          Metadata unavailable: {state.message}. ADS-B remains live.
-        </p>
-      )}
-      {state.phase === 'unavailable' && (
-        <p className="metadata-status">
-          Metadata unavailable:{' '}
-          {unavailableMetadataMessage(state.reason, state)}
-        </p>
-      )}
-      {state.phase === 'available' && (
-        <dl className="details-grid aircraft-metadata__grid">
+      <dl className="details-grid aircraft-metadata__grid">
+        <div className="detail-row">
+          <dt>Model description</dt>
+          <dd>{state.metadata.modelDescription}</dd>
+        </div>
+        <div className="detail-row">
+          <dt>Database registration</dt>
+          <dd>{state.metadata.databaseRegistration}</dd>
+        </div>
+        <div className="detail-row">
+          <dt>Type designator</dt>
+          <dd>{state.metadata.typeCode}</dd>
+        </div>
+        {state.metadata.configuration && (
           <div className="detail-row">
-            <dt>Model description</dt>
-            <dd>{state.metadata.modelDescription}</dd>
+            <dt>Configuration code</dt>
+            <dd>{state.metadata.configuration}</dd>
           </div>
+        )}
+        {state.metadata.wakeCategory && (
           <div className="detail-row">
-            <dt>Database registration</dt>
-            <dd>{state.metadata.databaseRegistration}</dd>
+            <dt>Wake category</dt>
+            <dd>{wakeCategoryLabel(state.metadata.wakeCategory)}</dd>
           </div>
-          <div className="detail-row">
-            <dt>Type designator</dt>
-            <dd>{state.metadata.typeCode}</dd>
-          </div>
-          {state.metadata.configuration && (
-            <div className="detail-row">
-              <dt>Configuration code</dt>
-              <dd>{state.metadata.configuration}</dd>
-            </div>
-          )}
-          {state.metadata.wakeCategory && (
-            <div className="detail-row">
-              <dt>Wake category</dt>
-              <dd>{wakeCategoryLabel(state.metadata.wakeCategory)}</dd>
-            </div>
-          )}
-          <div className="detail-row">
-            <dt>Match confidence</dt>
-            <dd>
-              {state.metadata.confidence === 'registration-verified'
-                ? 'ICAO24 and live registration verified'
-                : 'ICAO24 only · live registration unavailable'}
-            </dd>
-          </div>
-        </dl>
-      )}
-      {source && (
+        )}
+        <div className="detail-row">
+          <dt>Match confidence</dt>
+          <dd>
+            {state.metadata.confidence === 'registration-verified'
+              ? 'ICAO24 and live registration verified'
+              : 'ICAO24 only · live registration unavailable'}
+          </dd>
+        </div>
+      </dl>
+      <p className="metadata-attribution">
+        Snapshot {source.publishedAt.slice(0, 10)} ·{' '}
+        <a href={source.repositoryUrl}>Mictronics</a>{' '}
+        · <a href={source.licenseUrl}>ODC-By 1.0</a>
+      </p>
+      <details className="context-details">
+        <summary>Metadata source &amp; match</summary>
         <p className="metadata-attribution">
-          Snapshot {source.publishedAt.slice(0, 10)} ·{' '}
-          <a href={source.repositoryUrl}>Mictronics</a>{' '}
-          · <a href={source.licenseUrl}>ODC-By 1.0</a>
+          Mictronics aircraft-database · database age is not aircraft verification.
         </p>
-      )}
-      {source && (
-        <details className="context-details">
-          <summary>Metadata source &amp; match</summary>
-          <p className="metadata-attribution">
-            Mictronics aircraft-database · database age is not aircraft verification.
-          </p>
-        </details>
-      )}
+      </details>
     </section>
   )
-}
-
-const unavailableRouteMessage = (reason: FlightRouteUnavailableReason) => {
-  switch (reason) {
-    case 'invalid-identity':
-      return 'Needs callsign, ICAO24, and current position.'
-    case 'not-found':
-      return 'No standing route for this callsign.'
-    case 'implausible':
-      return 'Standing route does not fit the current position.'
-    case 'incomplete':
-      return 'Standing route lacks an origin or destination.'
-  }
 }
 
 const airportLabel = ({ name, code }: { name: string; code?: string }) =>
   code ? `${name} (${code})` : name
 
-function FlightRouteDetails({
-  state,
-  now,
-  onRequest,
-}: {
-  state: FlightRouteViewState
-  now: number
-  onRequest: () => void
-}) {
-  const invalidIdentity =
-    state.phase === 'unavailable' &&
-    state.reason === 'invalid-identity'
-  const loading = state.phase === 'loading'
-  const retryAt =
-    state.phase === 'error' || state.phase === 'available'
-      ? state.retryAt
-      : undefined
-  const coolingDown =
-    retryAt !== undefined && retryAt > now
-  const source =
-    state.phase === 'available'
-      ? state.route.source
-      : {
-          name: 'ADSB.lol',
-          websiteUrl: 'https://www.adsb.lol/',
-        }
-  const actionLabel =
-    state.phase === 'available'
-      ? coolingDown
-        ? 'Refresh later'
-        : 'Refresh'
-      : state.phase === 'unavailable' && !invalidIdentity
-        ? 'Try again'
-        : state.phase === 'error'
-          ? coolingDown
-            ? 'Retry later'
-            : 'Try again'
-          : undefined
+interface TrafficPhotoProps {
+  href: string
+  src: string
+  width?: number
+  height?: number
+  alt: string
+  title?: string
+  loading: 'eager' | 'lazy'
+  crossOrigin?: 'anonymous'
+  referrerPolicy?: 'no-referrer'
+  credit: ReactNode
+}
 
+function TrafficPhoto({ href, title, credit, ...image }: TrafficPhotoProps) {
+  const [failed, setFailed] = useState(false)
+  if (failed) return null
   return (
-    <section
-      className="flight-route"
-      aria-labelledby="flight-route-heading"
-    >
-      <div className="flight-route__heading">
-        <h3 id="flight-route-heading">Plausible route</h3>
-        {actionLabel && (
-          <button
-            type="button"
-            className="flight-route__action"
-            disabled={coolingDown}
-            onClick={onRequest}
-          >
-            {actionLabel}
-          </button>
-        )}
-      </div>
-      {(state.phase === 'idle' || loading) && (
-        <p className="metadata-status" role="status">
-          Checking route…
-        </p>
-      )}
-      {state.phase === 'available' && (
-        <>
-          <dl className="details-grid aircraft-metadata__grid">
-            <DetailRow
-              label="Plausible origin"
-              value={airportLabel(state.route.departure)}
-            />
-            <DetailRow
-              label="Plausible destination"
-              value={airportLabel(state.route.arrival)}
-            />
-            {state.route.providerUpdatedAt !== undefined && (
-              <DetailRow
-                label="Standing data age"
-                value={formatAge(state.route.providerUpdatedAt, now)}
-              />
-            )}
-          </dl>
-          <p className="metadata-status">
-            Standing-data estimate; not a filed plan and may be wrong.
-          </p>
-          {coolingDown && (
-            <p className="metadata-status">
-              Refresh after {formatTimestamp(retryAt)}.
-            </p>
-          )}
-        </>
-      )}
-      {state.phase === 'unavailable' && (
-        <p className="metadata-status">
-          Route unavailable: {unavailableRouteMessage(state.reason)}
-        </p>
-      )}
-      {state.phase === 'error' && (
-        <p className="metadata-status metadata-status--error" role="alert">
-          {state.reason === 'quota-exhausted'
-            ? 'Route lookups limited.'
-            : 'Route lookup unavailable.'}{' '}
-          {coolingDown
-            ? `Retry after ${formatTimestamp(retryAt)}. `
-            : ''}
-          Live traffic unaffected.
-        </p>
-      )}
-      <p className="metadata-attribution">
-        <a href={source.websiteUrl}>{source.name}</a> ·{' '}
-        <a href="https://github.com/vradarserver/standing-data">
-          VRS Standing Data
-        </a>
-      </p>
+    <figure className="traffic-photo">
+      <a
+        className="traffic-photo__link"
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        title={title}
+      >
+        <img
+          className="traffic-photo__image"
+          {...image}
+          decoding="async"
+          onError={() => setFailed(true)}
+        />
+      </a>
+      <figcaption className="metadata-attribution traffic-photo__credit">
+        {credit}
+      </figcaption>
+    </figure>
+  )
+}
+
+function TrafficRoute({
+  label,
+  rows,
+}: {
+  label: string
+  rows: ReadonlyArray<readonly [string, string | undefined]>
+}) {
+  if (!rows.some(([, value]) => value)) return null
+  return (
+    <section className="traffic-route" aria-label={label}>
+      <dl className="details-grid">
+        {rows.map(([rowLabel, value]) => (
+          <DetailRow key={rowLabel} label={rowLabel} value={value} />
+        ))}
+      </dl>
     </section>
   )
 }
 
-const aircraftPhotoErrorMessage = (
-  state: Extract<AircraftPhotoViewState, { phase: 'error' }>,
-  now: number,
-) => {
-  switch (state.reason) {
-    case 'timeout':
-      return 'The Planespotters photo request timed out.'
-    case 'throttled':
-      return state.retryAt !== undefined && state.retryAt > now
-        ? `Planespotters is temporarily limiting requests. Try again after ${formatTimestamp(state.retryAt)}.`
-        : 'Planespotters is temporarily limiting requests. Try again later.'
-    case 'forbidden':
-      return 'Planespotters rejected this browser request.'
-    case 'invalid-response':
-      return 'Planespotters returned an unsupported photo response.'
-    case 'network':
-      return 'The browser could not reach Planespotters.'
-    case 'provider-error':
-      return 'Planespotters could not provide a photo response.'
-  }
-}
-
 function AircraftPhotoDetails({
-  icao24,
-  state,
-  termsUrl,
-  now,
-  onRequest,
+  photo,
 }: {
-  icao24: string
-  state: AircraftPhotoViewState
-  termsUrl: string
-  now: number
-  onRequest: () => void
+  photo: Extract<AircraftPhotoViewState, { phase: 'available' }>['photo']
 }) {
-  const identity = state.identityKey ?? icao24.trim().toUpperCase()
-  const loading = state.phase === 'loading'
-  const invalidIdentity =
-    state.phase === 'unavailable' &&
-    state.reason === 'invalid-identity'
-  const throttled =
-    state.phase === 'error' &&
-    state.reason === 'throttled' &&
-    state.retryAt !== undefined &&
-    state.retryAt > now
-
   return (
-    <section
-      className="aircraft-metadata aircraft-photo"
-      aria-labelledby="aircraft-photo-heading"
-    >
-      <h3 id="aircraft-photo-heading">Aircraft photo</h3>
-
-      {state.phase === 'available' ? (
-        <>
-          <p className="metadata-status">
-            Planespotters match for ICAO24 {state.photo.icao24}.
-          </p>
-          <a
-            className="aircraft-photo__link"
-            href={state.photo.photoPageUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <img
-              className="aircraft-photo__image"
-              src={state.photo.thumbnailUrl}
-              width={state.photo.thumbnailWidth}
-              height={state.photo.thumbnailHeight}
-              alt={`Aircraft photo returned by Planespotters for ICAO24 ${state.photo.icao24}`}
-              loading="lazy"
-              decoding="async"
-            />
-          </a>
-          <p className="metadata-attribution aircraft-photo__credit">
-            Photo © {state.photo.photographer} ·{' '}
-            <a href={state.photo.source.websiteUrl}>
-              {state.photo.source.name}
-            </a>
-            {' · '}Open image for original.
-          </p>
-        </>
-      ) : (
-        <>
-          <p className="metadata-status">Photo lookup sends ICAO24 to Planespotters.</p>
-          <details className="context-details">
-            <summary>Photo privacy &amp; terms</summary>
-            <p className="metadata-status">
-              Planespotters receives ICAO24 {identity || 'unavailable'} plus
-              network metadata; images load from its CDN.{' '}
-              <a href={termsUrl}>Terms</a>.
-            </p>
-          </details>
-          {loading && (
-            <p className="metadata-status" role="status">
-              Loading photo…
-            </p>
-          )}
-          {state.phase === 'unavailable' && (
-            <p className="metadata-status">
-              {invalidIdentity
-                ? 'Photo needs a valid six-character ICAO24.'
-                : `No exact photo for ICAO24 ${identity}; no substitute shown.`}
-            </p>
-          )}
-          {state.phase === 'error' && (
-            <p
-              className="metadata-status metadata-status--error"
-              role="alert"
-            >
-              {aircraftPhotoErrorMessage(state, now)} Live ADS-B remains
-              active.
-            </p>
-          )}
-          <button
-            type="button"
-            className="aircraft-photo__action"
-            disabled={loading || invalidIdentity || throttled}
-            onClick={onRequest}
-          >
-            {loading
-              ? 'Loading photo…'
-              : invalidIdentity
-                ? 'Photo unavailable'
-                : throttled
-                  ? 'Try again later'
-                  : state.phase === 'idle'
-                    ? 'Load photo'
-                    : 'Try again'}
-          </button>
-        </>
-      )}
-    </section>
+    <TrafficPhoto
+      href={photo.photoPageUrl}
+      src={photo.thumbnailUrl}
+      width={photo.thumbnailWidth}
+      height={photo.thumbnailHeight}
+      alt={`Aircraft ${photo.icao24}`}
+      loading="eager"
+      credit={<>
+        © {photo.photographer} ·{' '}
+        <a href={photo.source.websiteUrl}>{photo.source.name}</a>
+      </>}
+    />
   )
 }
 
@@ -492,139 +238,44 @@ function VesselPhotoDetails({
 }: {
   photo: VesselReferencePhoto | DynamicVesselPhoto
 }) {
-  const headingId = useId()
-  const [failed, setFailed] = useState(false)
   const dynamic = 'lookupNumber' in photo
-  const number = dynamic ? photo.lookupNumber : photo.imo
   const pageUrl = dynamic ? photo.pageUrl : photo.identityEvidence.commonsRevisionUrl
   const licenseUrl = dynamic ? photo.licenseUrl : photo.rights.licenseUrl
   const license = dynamic ? photo.license : photo.rights.licenseName
+  const match = dynamic
+    ? `Open Waters photo for reported ${photo.lookupKind} ${photo.lookupNumber}${
+      photo.lookupKind === 'MMSI' ? '; MMSIs can be reassigned' : ''}`
+    : `Exact AIS-reported IMO ${photo.imo} reference photo`
   return (
-    <section
-      className="vessel-photo"
-      aria-labelledby={headingId}
-    >
-      <h3 id={headingId}>
-        Vessel photo
-      </h3>
-      <p className="metadata-status">
-        {dynamic
-          ? `Open Waters photo lookup for reported ${photo.lookupKind} ${number}.`
-          : `Exact AIS-reported IMO ${number} match.`}
-      </p>
-      <a
-        className="vessel-photo__link"
-        href={pageUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        {!failed && <img
-          className="vessel-photo__image"
-          crossOrigin={dynamic ? 'anonymous' : undefined}
-          src={dynamic ? photo.thumbnailUrl : photo.asset.path}
-          width={dynamic ? photo.width : photo.asset.width}
-          height={dynamic ? photo.height : photo.asset.height}
-          alt={dynamic ? photo.description ?? `Vessel image listed for ${photo.lookupKind} ${number}` : photo.alt}
-          loading="lazy"
-          decoding="async"
-          referrerPolicy="no-referrer"
-          onError={() => setFailed(true)}
-        />}
-        {failed && <span className="metadata-status metadata-status--error">Image failed to load. Open its source page.</span>}
-      </a>
-      <details className="context-details">
-        <summary>Photo credits &amp; license</summary>
-      <p className="metadata-attribution vessel-photo__credit">
+    <TrafficPhoto
+      href={pageUrl}
+      title={`${match}; not live confirmation`}
+      src={dynamic ? photo.thumbnailUrl : photo.asset.path}
+      width={dynamic ? photo.width : photo.asset.width}
+      height={dynamic ? photo.height : photo.asset.height}
+      alt={dynamic
+        ? photo.description ?? `Vessel image listed for ${photo.lookupKind} ${photo.lookupNumber}`
+        : photo.alt}
+      loading="lazy"
+      crossOrigin={dynamic ? 'anonymous' : undefined}
+      referrerPolicy="no-referrer"
+      credit={<>
         {dynamic ? photo.artist : photo.rights.author} ·{' '}
-        <a
-          href={pageUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+        <a href={pageUrl} target="_blank" rel="noopener noreferrer">
           {dynamic ? 'Wikimedia Commons via Open Waters' : photo.rights.sourceName}
         </a>
         {' · '}
-        {licenseUrl ? <a
-          href={licenseUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          {license}
-        </a> : license}
-        {!dynamic && <> · {photo.asset.modificationNotice}</>}
-      </p>
-      </details>
-      <p className="metadata-status">
-        Historical reference only; not live confirmation.
-      </p>
-      {dynamic && photo.lookupKind === 'MMSI' && (
-        <p className="metadata-status">
-          MMSIs can be reassigned; not verified hull identity.
-        </p>
-      )}
-    </section>
-  )
-}
-
-function DynamicVesselPhotoStatus({
-  identity, state, now, onRequest,
-}: {
-  identity: VesselPhotoIdentity | undefined
-  state: VesselPhotoViewState
-  now: number
-  onRequest: () => void
-}) {
-  const current = identity && state.identityKey === vesselPhotoIdentityKey(identity)
-    ? state : { phase: 'idle' } as const
-  const throttled = current.phase === 'error' &&
-    current.retryAt !== undefined && current.retryAt > now
-  return (
-    <section className="vessel-photo" aria-labelledby="vessel-photo-heading">
-      <h3 id="vessel-photo-heading">Vessel photo</h3>
-      <p className="metadata-status" role={current.phase === 'loading' ? 'status' : undefined}>
-        {!identity ? 'No usable IMO or ordinary MMSI for photo lookup.'
-          : current.phase === 'loading' ? 'Loading vessel photo from Open Waters…'
-            : current.phase === 'unavailable' ? `Open Waters returned no photo for ${identity.kind} ${identity.number}; no substitute shown.`
-              : 'Vessel-number lookup: Open Waters / Wikimedia Commons.'}
-      </p>
-      {current.phase === 'error' && (
-        <p className="metadata-status metadata-status--error" role="alert">
-          {throttled && current.retryAt !== undefined ? `Photo lookup can retry after ${formatTimestamp(current.retryAt)}.`
-            : current.reason === 'invalid-response' ? 'No supported, attributed photo in the source response.'
-              : current.reason === 'timeout' ? 'Vessel photo lookup timed out.'
-                : current.reason === 'network' ? 'Vessel photos need an online connection.'
-                : 'Vessel photo lookup is temporarily unavailable.'} Traffic data is unchanged.
-        </p>
-      )}
-      {identity && <button
-        type="button"
-        className="aircraft-photo__action"
-        disabled={current.phase === 'loading' || throttled}
-        onClick={onRequest}
-      >
-        {current.phase === 'loading' ? 'Loading photo…' : throttled ? 'Try again later' : 'Try photo lookup'}
-      </button>}
-    </section>
-  )
-}
-
-function VesselPhotoUnavailable({
-  selection,
-}: {
-  selection: Exclude<
-    VesselReferencePhotoSelection,
-    { kind: 'available' }
-  >
-}) {
-  return (
-    <section className="vessel-photo" aria-labelledby="vessel-photo-heading">
-      <h3 id="vessel-photo-heading">Vessel photo</h3>
-      <p className="metadata-status">
-        {selection.kind === 'invalid-imo'
-          ? 'Unavailable: AIS has no valid IMO for exact-hull matching.'
-          : `No reviewed exact-IMO photo for AIS-reported IMO ${selection.imo}; no substitute shown.`}
-      </p>
-    </section>
+        {licenseUrl ? (
+          <a href={licenseUrl} target="_blank" rel="noopener noreferrer">
+            {license}
+          </a>
+        ) : license}
+        {!dynamic && <>
+          {' · '}
+          <abbr title={photo.asset.modificationNotice}>modified</abbr>
+        </>}
+      </>}
+    />
   )
 }
 
@@ -635,16 +286,11 @@ export function TrafficDetails({
   aircraftPhoto = { phase: 'idle' },
   vesselPhotoEnabled = false,
   vesselPhoto = { phase: 'idle' },
-  aircraftPhotoTermsUrl =
-    'https://www.planespotters.net/photo/api',
   flightRouteEnabled = false,
   flightRoute = { phase: 'idle' },
   now,
   units,
   historical = false,
-  onRequestAircraftPhoto = () => undefined,
-  onRequestVesselPhoto = () => undefined,
-  onRequestFlightRoute = () => undefined,
   onShowJourney,
   journeyMessage,
   journeyPreparing = false,
@@ -654,7 +300,6 @@ export function TrafficDetails({
   onClose,
 }: TrafficDetailsProps) {
   const panelRef = useRef<HTMLDivElement>(null)
-  const viewReasonId = useId()
   useEffect(() => {
     if (panelRef.current) panelRef.current.scrollTop = 0
   }, [entity.id])
@@ -675,17 +320,79 @@ export function TrafficDetails({
       : undefined
   const dynamicVesselPhoto = entity.kind === 'vessel' && !historical && vesselPhotoEnabled
     ? dynamicVesselPhotoForSelection(entity, vesselPhoto) : undefined
+  const photo = entity.kind === 'aircraft'
+    ? !historical && aircraftPhotoEnabled && aircraftPhoto.phase === 'available' && (
+      <AircraftPhotoDetails
+        key={`${aircraftPhoto.identityKey}|${aircraftPhoto.photo.thumbnailUrl}`}
+        photo={aircraftPhoto.photo}
+      />
+    )
+    : vesselPhotoSelection?.kind === 'available' ? (
+      <VesselPhotoDetails
+        key={vesselPhotoSelection.photo.identityKey}
+        photo={vesselPhotoSelection.photo}
+      />
+    ) : dynamicVesselPhoto && (
+      <VesselPhotoDetails
+        key={`${vesselPhoto.identityKey}|${dynamicVesselPhoto.thumbnailUrl}`}
+        photo={dynamicVesselPhoto}
+      />
+    )
+  const route = entity.kind === 'aircraft'
+    ? !historical && flightRouteEnabled && flightRoute.phase === 'available' && (
+      <TrafficRoute
+        label="Plausible route"
+        rows={[
+          ['Departure', airportLabel(flightRoute.route.departure)],
+          ['Destination', airportLabel(flightRoute.route.arrival)],
+        ]}
+      />
+    )
+    : (entity.destination || entity.eta) && (
+      <TrafficRoute
+        label="Reported destination"
+        rows={[['Destination', entity.destination], ['ETA', entity.eta]]}
+      />
+    )
+  const enrichment = photo || route ? (
+    <div className="traffic-details__enrichment">
+      {photo}
+      {route}
+    </div>
+  ) : null
 
   return (
     <DetailsPanel
       panelRef={panelRef}
-      className={historical ? 'details-panel--historical' : undefined}
+      className={historical ? 'details-panel--historical' : 'details-panel--traffic-actions'}
       titleId="selected-traffic-title"
       closeLabel={`Close ${historical ? 'historical ' : ''}${
         entity.kind === 'aircraft' ? 'aircraft' : 'ship'
       } details`}
       onClose={onClose}
       headerAction={!historical ? shareObject : undefined}
+      mobileActionPlacement="header"
+      actionRow={!historical ? <>
+        {onShowJourney && (
+          <button type="button" className="traffic-details__icon-action traffic-details__path-action"
+            aria-label={journeyPreparing ? 'Loading path' : 'Show path'}
+            title={journeyPreparing ? 'Loading path' : 'Show path'}
+            aria-busy={journeyPreparing || undefined}
+            onClick={onShowJourney} disabled={journeyPreparing}>
+            <DetailActionIcon name="path" />
+          </button>
+        )}
+        {entity.kind === 'aircraft' && onViewFromHere && (
+          <button type="button"
+            className="traffic-details__icon-action orbital-view-entry"
+            aria-label="View from here"
+            title={viewFromHereUnavailable ?? 'View from here'}
+            data-aircraft-view-entry={entity.id}
+            onClick={onViewFromHere} disabled={Boolean(viewFromHereUnavailable)}>
+            <DetailActionIcon name="view" />
+          </button>
+        )}
+      </> : undefined}
       heading={
         <div>
           <p className="eyebrow">
@@ -694,13 +401,6 @@ export function TrafficDetails({
           </p>
           <div className="details-panel__identity">
             <h2 id="selected-traffic-title" title={title}>{title}</h2>
-            {!historical && onShowJourney && (
-              <div className="journey-action">
-                <button type="button" onClick={onShowJourney} disabled={journeyPreparing}>
-                  {journeyPreparing ? 'Loading path...' : 'Show path'}
-                </button>
-              </div>
-            )}
           </div>
         </div>
       }
@@ -708,60 +408,6 @@ export function TrafficDetails({
       {!historical && journeyMessage && (
         <p className="metadata-status" role="status">{journeyMessage}</p>
       )}
-      {!historical && entity.kind === 'aircraft' && onViewFromHere && (
-        <div className="journey-actions">
-          <button type="button" className="orbital-view-entry" data-aircraft-view-entry={entity.id}
-            onClick={onViewFromHere} disabled={Boolean(viewFromHereUnavailable)}
-            aria-describedby={viewFromHereUnavailable ? viewReasonId : undefined}>
-            View from here
-          </button>
-          {viewFromHereUnavailable && <p id={viewReasonId} className="metadata-status">{viewFromHereUnavailable}</p>}
-        </div>
-      )}
-
-      {vesselPhotoSelection?.kind === 'available' && (
-        <VesselPhotoDetails
-          key={vesselPhotoSelection.photo.identityKey}
-          photo={vesselPhotoSelection.photo}
-        />
-      )}
-      {vesselPhotoSelection &&
-        vesselPhotoSelection.kind !== 'available' && (
-          dynamicVesselPhoto ? <VesselPhotoDetails
-            key={`${vesselPhoto.identityKey}|${dynamicVesselPhoto.thumbnailUrl}`}
-            photo={dynamicVesselPhoto}
-          /> : vesselPhotoEnabled && entity.kind === 'vessel' ? <DynamicVesselPhotoStatus
-            identity={vesselPhotoIdentity(entity)}
-            state={vesselPhoto}
-            now={now}
-            onRequest={onRequestVesselPhoto}
-          /> : <VesselPhotoUnavailable
-            selection={vesselPhotoSelection}
-          />
-        )}
-
-      {entity.kind === 'aircraft' &&
-        flightRouteEnabled &&
-        !historical && (
-          <FlightRouteDetails
-            state={flightRoute}
-            now={now}
-            onRequest={onRequestFlightRoute}
-          />
-        )}
-
-      {entity.kind === 'aircraft' &&
-        aircraftPhotoEnabled &&
-        !historical && (
-          <AircraftPhotoDetails
-            icao24={entity.hex}
-            state={aircraftPhoto}
-            termsUrl={aircraftPhotoTermsUrl}
-            now={now}
-            onRequest={onRequestAircraftPhoto}
-          />
-        )}
-
       {entity.freshness === 'stale' && (
         <p className="stale-notice">
           {historical
@@ -769,6 +415,8 @@ export function TrafficDetails({
             : 'Position is temporarily stale'}
         </p>
       )}
+
+      {enrichment}
 
       <dl className="details-grid">
         {entity.kind === 'aircraft' ? (
@@ -915,14 +563,6 @@ export function TrafficDetails({
               value={entity.navigationStatus}
             />
             <DetailRow
-              label="AIS-reported destination"
-              value={entity.destination}
-            />
-            <DetailRow
-              label="AIS ETA (year not supplied)"
-              value={entity.eta}
-            />
-            <DetailRow
               label="Metadata report"
               value={
                 entity.metadataObservedAt === undefined
@@ -964,12 +604,6 @@ export function TrafficDetails({
       {historical && (
         <p className="metadata-attribution">
           Historical provider report; current weather/metadata not joined.
-        </p>
-      )}
-      {entity.kind === 'vessel' && (
-        <p className="metadata-attribution">
-          AIS static/voyage data may lag position; no ETA year or port link
-          inferred.
         </p>
       )}
     </DetailsPanel>

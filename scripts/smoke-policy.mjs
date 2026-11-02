@@ -34,6 +34,23 @@ export const STARLINK_SCHEMA2_NEGOTIATION_ACCEPT =
 
 const releaseShaPattern = /^[0-9a-f]{40}$/
 
+export const formatMetarReleaseMismatch = ({
+  expectedReleaseSha,
+  observedReleaseSha,
+  targetOrigin,
+  status,
+}) => {
+  const observed = observedReleaseSha === null
+    ? '<missing>'
+    : JSON.stringify(observedReleaseSha.slice(0, 128)) +
+      (observedReleaseSha.length > 128 ? ' (truncated)' : '')
+  return (
+    'METAR proxy release SHA does not match the deployed source: ' +
+    `expected=${expectedReleaseSha}, observed=${observed}, ` +
+    `target=${targetOrigin}/api/weather/metar?ids=EETN, status=${status}`
+  )
+}
+
 const cancelResponseBody = async (response) => {
   await response.body?.cancel().catch(() => undefined)
 }
