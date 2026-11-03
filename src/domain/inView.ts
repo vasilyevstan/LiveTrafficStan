@@ -7,7 +7,6 @@ import {
 } from './orbitalDiscovery'
 import type { OrbitalViewport } from './orbitalViewport'
 import type { ProviderStatus, Vessel } from './traffic'
-import { VESSEL_RESULT_LIMIT } from './vesselFilters'
 
 export interface InViewAvailability {
   available: boolean
@@ -115,6 +114,9 @@ export const rankVesselsInView = <T extends Vessel>(
   ranking: VesselInViewRanking,
 ) => {
   const secondary = ranking === 'length' ? 'draught' : 'length'
+  const unranked = vessels
+    .filter((vessel) => vesselInViewMeasurement(vessel, ranking) === undefined)
+    .sort((first, second) => first.mmsi - second.mmsi)
   const ranked = vessels
     .map((vessel) => ({
       vessel,
@@ -130,7 +132,7 @@ export const rankVesselsInView = <T extends Vessel>(
       first.vessel.mmsi - second.vessel.mmsi,
     )
   return {
-    rows: ranked.slice(0, VESSEL_RESULT_LIMIT).map(({ vessel }) => vessel),
+    rows: [...ranked.map(({ vessel }) => vessel), ...unranked],
     rankableCount: ranked.length,
     unrankedCount: vessels.length - ranked.length,
   }

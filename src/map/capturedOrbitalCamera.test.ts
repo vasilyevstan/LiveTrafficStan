@@ -492,7 +492,10 @@ describe('captured orbital camera cleanup', () => {
     const aircraftFixture = (initialFlight = flight) => {
       const projection = { enter: vi.fn(), restore: vi.fn() }
       const result = fixture(position, (map, callbacks) => createCapturedAircraftCamera(
-        map, { revision: 1, viewRequestId: 2, position: initialFlight }, projection,
+        map, {
+          revision: 1, viewRequestId: 2, position: initialFlight,
+          savedObject: { kind: 'aircraft', id: '511123', savedLabel: 'TST123', savedAt: 0 },
+        }, projection,
         callbacks as unknown as Parameters<typeof createCapturedAircraftCamera>[3]))
       return { ...result, projection }
     }

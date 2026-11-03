@@ -139,9 +139,9 @@ describe('InViewPanel', () => {
     expect(html.match(/maxLength="64"/g)).toHaveLength(1)
   })
 
-  it('adds a capped ship shortlist, not a second all-vessel list or another mobile search row', () => {
+  it('pages the complete ship list without another mobile search row', () => {
     const html = renderPanel()
-    expect(html).toContain('20 of 45 ranked')
+    expect(html).toContain('1–20 of 45')
     expect(html.match(/id="in-view-ships-result-/g)).toHaveLength(20)
     expect(html).toContain('>VESSEL 45</strong>')
     expect(html).toContain('>VESSEL 26</strong>')
@@ -149,23 +149,23 @@ describe('InViewPanel', () => {
     expect(html).toContain('id="in-view-ships-ranking-length"')
     expect(html).toContain('>Longest</button>')
     expect(html).toContain('>Deepest draught</button>')
-    expect(html).toContain('aria-label="Ranked ships in view"')
+    expect(html).toContain('aria-label="Ships in view"')
     expect(html).not.toContain('id="in-view-ships-search"')
     expect(html).not.toContain('Top 20 by reported size')
     expect(html).toContain('Draught is not water depth')
   })
 
-  it('shows reported measurements and missing-value exclusions without guessing', () => {
+  it('includes missing measurements last without guessing', () => {
     const vessels = displayTraffic([
       { ...vesselObservations[0], draughtMeters: undefined },
       { ...vesselObservations[1], lengthMeters: undefined },
     ], now, APP_CONFIG.marine)
     const html = renderPanel({ vessels })
-    expect(html).toContain('1 of 1 ranked')
+    expect(html).toContain('Length not reported')
     expect(html).toContain('Draught not reported')
-    expect(html).toContain('1 without reported length.')
+    expect(html).toContain('1 without reported length, listed last.')
     expect(html).not.toContain('omitted, not zero')
-    expect(html.match(/id="in-view-ships-result-/g)).toHaveLength(1)
+    expect(html.match(/id="in-view-ships-result-/g)).toHaveLength(2)
   })
 
   it('distinguishes an empty ship view, unavailable observation state and unrankable measurements', () => {
@@ -180,8 +180,9 @@ describe('InViewPanel', () => {
     const unknown = renderPanel({
       vessels: displayTraffic([{ ...vesselObservations[0], lengthMeters: undefined }], now, APP_CONFIG.marine),
     })
-    expect(unknown).toContain('0 of 0 ranked')
-    expect(unknown).toContain('No ships in this view report a usable length.')
+    expect(unknown).toContain('Length not reported')
+    expect(unknown.match(/id="in-view-ships-result-/g)).toHaveLength(1)
+    expect(unknown).not.toContain('No ships in this view report')
     expect(unknown).not.toContain('No current ship observations')
   })
 
@@ -195,7 +196,7 @@ describe('InViewPanel', () => {
       vessels, vesselsVisible: false, selectedVesselId: vessels[0].id, onVesselSelect,
       vesselAvailability: { available: true, message: 'Offline · last received, unexpired observations only.' },
     })
-    expect(html).toContain('1 of 1 ranked · layer hidden')
+    expect(html).toContain('Layer hidden.')
     expect(html).toMatch(/id="in-view-ships-result-[^"]+"[^>]*aria-pressed="true"[^>]*disabled=""/)
     expect(html).toContain('MMSI 257000001')
     expect(html).toContain('STALE')
@@ -203,9 +204,9 @@ describe('InViewPanel', () => {
     expect(onVesselSelect).not.toHaveBeenCalled()
   })
 
-  it('labels selected ships outside the shortlist without promoting them into the ranking', () => {
+  it('does not label a selected ship on another page as outside the list', () => {
     const html = renderPanel({ selectedVesselId: vesselObservations[0].id })
-    expect(html).toContain('Selected outside this shortlist: VESSEL 1.')
+    expect(html).not.toContain('Selected outside this shortlist')
     expect(html).not.toContain('Not added to the ranking.')
     expect(html.match(/id="in-view-ships-result-/g)).toHaveLength(20)
     expect(html).not.toContain('id="in-view-ships-result-vessel:257000001"')

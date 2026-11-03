@@ -363,16 +363,17 @@ const vessel = (
 })
 
 describe('ranked ships in view', () => {
-  it('returns only the twenty longest while preserving full counts and original observations', () => {
+  it('returns every ship while preserving full counts and original observations', () => {
     const observations = Object.freeze(Array.from({ length: 45 }, (_, index) =>
       Object.freeze(vessel(index + 1, { lengthMeters: 50 + index })),
     ))
     const result = rankVesselsInView(observations, 'length')
-    expect(result.rows).toHaveLength(20)
+    expect(result.rows).toHaveLength(45)
     expect(result.rankableCount).toBe(45)
     expect(result.unrankedCount).toBe(0)
     expect(result.rows[0]).toBe(observations[44])
     expect(result.rows[19]).toBe(observations[25])
+    expect(result.rows[44]).toBe(observations[0])
     expect(observations[0].lengthMeters).toBe(50)
     expect(result.rows.every((row) => observations.includes(row))).toBe(true)
   })
@@ -399,7 +400,7 @@ describe('ranked ships in view', () => {
       .toEqual([first, second, lesser])
   })
 
-  it.each(['length', 'draught'] as const)('excludes unknown/nonpositive/nonfinite %s without changing the other ranking', (ranking) => {
+  it.each(['length', 'draught'] as const)('lists unknown/nonpositive/nonfinite %s last without guessing measurements', (ranking) => {
     const invalid = [undefined, 0, -1, Number.NaN, Infinity, -Infinity]
     const observations = invalid.map((value, index) =>
       vessel(index + 1, ranking === 'length'
@@ -407,12 +408,35 @@ describe('ranked ships in view', () => {
         : { draughtMeters: value }),
     )
     const result = rankVesselsInView(observations, ranking)
-    expect(result).toEqual({ rows: [], rankableCount: 0, unrankedCount: 6 })
+    expect(result).toEqual({ rows: observations, rankableCount: 0, unrankedCount: 6 })
     for (const observation of observations) {
       expect(vesselInViewMeasurement(observation, ranking)).toBeUndefined()
     }
     expect(rankVesselsInView(observations, ranking === 'length' ? 'draught' : 'length').rows)
       .toHaveLength(6)
+  })
+
+  it.each(['length', 'draught'] as const)('orders missing %s by MMSI after all measured ships', (ranking) => {
+    const missing = (index: number) => vessel(index, ranking === 'length'
+      ? { lengthMeters: undefined, draughtMeters: 50 - index }
+      : { draughtMeters: undefined, lengthMeters: 500 - index })
+    const first = missing(1)
+    const second = missing(2)
+    const measured = vessel(3)
+    expect(rankVesselsInView([second, measured, first], ranking)).toEqual({
+      rows: [measured, first, second], rankableCount: 1, unrankedCount: 2,
+    })
+  })
+
+  it.each([0, 1, 20, 21, 45])('pages all %i admitted ships without loss or duplication', (count) => {
+    const rows = rankVesselsInView(
+      Array.from({ length: count }, (_, index) => vessel(index + 1)), 'length',
+    ).rows.map((row) => ({ ...row, key: row.id }))
+    const pages = Array.from({ length: Math.ceil(count / 20) }, (_, index) =>
+      inViewPage(rows, index, 20, null).rows)
+    expect(pages.every((page) => page.length <= 20)).toBe(true)
+    expect(pages.flat().map(({ id }) => id)).toEqual(rows.map(({ id }) => id))
+    expect(new Set(pages.flat().map(({ id }) => id)).size).toBe(count)
   })
 
   it('keeps existing filter/expiry exclusions and retains stale, complete source objects', () => {

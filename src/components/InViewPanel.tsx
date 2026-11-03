@@ -198,11 +198,6 @@ export function InViewPanel({
     orbits,
   }
   const totals = { aircraft: totalAircraft, ships: vessels.length, orbits: orbits.rows.length }
-  const selectedVesselOutside = vesselAvailability.available
-    ? vessels.find(({ id }) =>
-        id === selectedVesselId && !rankedVessels.rows.some((vessel) => vessel.id === id),
-      )
-    : undefined
 
   if (unavailableMessage) {
     return <div ref={rootRef} className="in-view">
@@ -295,11 +290,7 @@ export function InViewPanel({
             /> : null}
             <div className="in-view__status" role="status">
               {availability.available && isAircraft && !aircraftVisible && <p>Layer hidden.</p>}
-              {availability.available && isShips && (
-                <p>{`${rankedVessels.rows.length} of ${rankedVessels.rankableCount} ranked${
-                  vesselsVisible ? '' : ' · layer hidden'
-                }`}</p>
-              )}
+              {availability.available && isShips && !vesselsVisible && <p>Layer hidden.</p>}
               {availability.available && isOrbits && orbits.partial && <p>Partial results.</p>}
               {availability.message && <p>{availability.message}</p>}
               {isOrbits && orbits.sourceMessages.map((message) => <p key={message}>{message}</p>)}
@@ -309,9 +300,7 @@ export function InViewPanel({
                 : isShips
                   ? 'No current ship observations match this view and its filters.'
                   : 'No matching modeled positions in this view.'}</p>}
-              {availability.available && total > 0 && results[value].length === 0 && <p>{isShips
-                ? `No ships in this view report a usable ${vesselRanking}.`
-                : 'No objects match this search.'}</p>}
+              {availability.available && total > 0 && results[value].length === 0 && <p>No objects match this search.</p>}
             </div>
             {isShips && onFindShips && (
               <button className="in-view__find-ships" type="button" onClick={onFindShips}>
@@ -321,7 +310,7 @@ export function InViewPanel({
             {page.rows.length > 0 && (
               <ul
                 className="vessel-results in-view-results"
-                aria-label={isAircraft ? 'Aircraft in view' : isShips ? 'Ranked ships in view' : 'Modeled objects in view'}
+                aria-label={isAircraft ? 'Aircraft in view' : isShips ? 'Ships in view' : 'Modeled objects in view'}
                 onBlurCapture={(event) => {
                   if (
                     !(event.relatedTarget instanceof Node) ||
@@ -372,18 +361,13 @@ export function InViewPanel({
             )}
             {isShips && availability.available && rankedVessels.unrankedCount > 0 && (
               <p className="control-note">
-                {rankedVessels.unrankedCount} without reported {vesselRanking}.
+                {rankedVessels.unrankedCount} without reported {vesselRanking}, listed last.
               </p>
             )}
             {!isAircraft && <p className="control-note control-note--muted">
               {isShips ? 'Draught is not water depth.'
                 : 'Modeled, not live or optical. Includes a Starlink sample.'}
             </p>}
-            {isShips && selectedVesselOutside && (
-              <p className="control-note">
-                Selected outside this shortlist: {vesselResultLabel(selectedVesselOutside)}.
-              </p>
-            )}
             {isOrbits && orbits.selectedOutside && (
               <p className="control-note">
                 Selected outside this {orbits.selectedOutside.reason}: {orbits.selectedOutside.position.name}.

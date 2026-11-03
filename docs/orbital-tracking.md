@@ -72,7 +72,8 @@ the primary ORBITS toggle and compact summary remain reachable.
 
 **In view** is a collapsed peer below desktop Settings, or an entry inside
 mobile Settings rather than another dock slot. Its Ships category is a separate
-bounded length/draught shortlist and does not change orbital state. Aircraft and Orbits categories
+complete filtered ship list with length/draught ordering and 20-row pages; it
+does not change orbital state. Aircraft and Orbits categories
 reuse local search and 20-row pages without acquiring data or moving the
 camera. Aircraft counts current filtered individuals, not cluster symbols or
 fading context. Orbital rows/counts deduplicate exact NORAD identities in the
