@@ -647,7 +647,7 @@ identity are not renamed or reset.
   vessel silhouettes with generic fallbacks. Orbital payload, rocket-body,
   debris, and unknown classes use exact-SATCAT object symbols instead of
   colored dots. The duplicate traffic legend is intentionally omitted.
-  [Local refinement evidence](docs/development-and-testing.md#minimal-right-controls-local-evidence)
+  [Local refinement evidence](docs/development-and-testing.md#minimal-right-controls-291-historical-local-evidence)
   is separate from the historical production release below.
 - **Find** is one input for aircraft, ships, satellites, airports, ports,
   places and coordinates, with no class/scope/method selector. Typing matches
