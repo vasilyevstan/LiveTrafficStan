@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { spawnSync } from 'node:child_process'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
@@ -24,6 +26,10 @@ import {
   readOptionalJson,
   resolveTargetOrbitalSmokeContract,
   resolveTargetStarlinkSmokeContract,
+  runProductionSmokeChecks,
+  verifyMetarProxyContract,
+  formatProductionSmokeReport,
+  writeProductionSmokeReport,
   verifyTargetOrbitalCatalog,
   verifyTargetStarlinkCatalog,
   waitForExpectedWorkerRelease,
@@ -202,36 +208,22 @@ describe('production smoke policy', () => {
   })
 
   it('keeps strict METAR assertions after the bounded timeout-only retry', () => {
-    const metarCheck = smokeScript.slice(
-      smokeScript.indexOf('const verifyMetarProxy = async () => {'),
-      smokeScript.indexOf('const verifyAirportBoardBoundary'),
+    const metarCheck = smokePolicyScript.slice(
+      smokePolicyScript.indexOf('export const verifyMetarProxyContract'),
+      smokePolicyScript.indexOf('export const runProductionSmokeChecks'),
     )
-    expect(metarCheck).toContain(
-      "const observedReleaseSha = response.headers.get('x-livetrafficstan-release')",
-    )
-    expect(metarCheck).toContain(
-      'assert(\n    observedReleaseSha === expectedReleaseSha,\n' +
-      '    formatMetarReleaseMismatch({\n' +
-      '      expectedReleaseSha,\n      observedReleaseSha,\n' +
-      '      targetOrigin: baseUrl.origin,\n      status: response.status,\n' +
-      '    }),\n  )',
-    )
-    expect(metarCheck.indexOf('response.status === 200 || response.status === 204'))
-      .toBeLessThan(metarCheck.indexOf('observedReleaseSha === expectedReleaseSha'))
-    expect(metarCheck.match(/await fetchWithTimeout\(/g)).toHaveLength(2)
+    expect(smokeScript).toContain('const verifyMetarProxy = () => verifyMetarProxyContract({')
+    expect(smokePolicyScript).toContain('observedReleaseSha !== expectedReleaseSha')
     expect(metarCheck).toContain('await fetchMetarWithTimeoutRetry({')
     expect(metarCheck).toContain('AbortSignal.timeout(METAR_SMOKE_TIMEOUT_MS)')
     expect(metarCheck).toContain('{ ...SAME_ORIGIN_SMOKE_FETCH_INIT, signal }')
-    expect(metarCheck).toContain("{ ...SAME_ORIGIN_SMOKE_FETCH_INIT, method: 'POST', signal }")
-    expect(metarCheck).not.toMatch(/\b(?:while|for|waitForWorkerRelease)\b/)
-    expect(metarCheck).toContain(
-      "new URL('/api/weather/metar?ids=EETN', baseUrl),",
-    )
+    expect(metarCheck).toContain("...SAME_ORIGIN_SMOKE_FETCH_INIT, method: 'POST', signal")
+    expect(metarCheck).toContain('await readMetarBody(response, signal)')
+    expect(smokePolicyScript).toContain("length <= 256 * 1_024, 'METAR proxy response is oversized'")
     for (const assertion of [
       "response.headers.get('cache-control') === 'public, max-age=60'",
       "response.headers.get('x-content-type-options') === 'nosniff'",
       "!response.headers.has('access-control-allow-origin')",
-      'body.byteLength <= 256 * 1_024',
       "response.headers.get('content-type')?.includes('application/json')",
       'Array.isArray(payload)',
       "record.icaoId === 'EETN'",
@@ -420,6 +412,240 @@ describe('production smoke policy', () => {
       await rejected
       expect(fetchMetar.mock.calls[1][0].aborted).toBe(true)
       expect(deadline).toHaveBeenCalledExactlyOnceWith(90_000)
+    })
+  })
+
+  describe('METAR diagnostic continuation', () => {
+    afterEach(() => vi.restoreAllMocks())
+    const response = (status, body, headers = {}) => new Response(
+      status === 204 ? null : body,
+      { status, headers: {
+        'X-LiveTrafficStan-Release': releaseSha,
+        'Cache-Control': status === 504 ? 'no-store' : 'public, max-age=60',
+        'Content-Type': status === 504 ? 'text/plain; charset=utf-8' : 'application/json',
+        'X-Content-Type-Options': 'nosniff',
+        ...headers,
+      } },
+    )
+    const verify = (responses, overrides = {}) => {
+      const fetchResponse = vi.fn()
+        .mockResolvedValueOnce(new Response(null, { status: 400 }))
+        .mockResolvedValueOnce(new Response(null, { status: 405 }))
+      for (const response of responses) fetchResponse.mockResolvedValueOnce(response)
+      return {
+        fetchResponse,
+        run: () => verifyMetarProxyContract({
+          baseUrl: new URL('https://app.example'), expectedReleaseSha: releaseSha,
+          fetchResponse, wait: vi.fn(async () => undefined), ...overrides,
+        }),
+      }
+    }
+    const names = ['Static assets', 'Aircraft', 'METAR', 'Airport boards',
+      'Orbital catalog', 'Starlink catalog', 'Digitraffic REST', 'Digitraffic MQTT']
+    const checks = (metar, fail) => names.map((name) => ({
+      name,
+      run: vi.fn(name === 'METAR' ? metar : async () => {
+        if (name === fail) throw new Error('contract failed')
+      }),
+    }))
+
+    it.each([200, 204])('keeps HTTP %i success and moves local probes ahead of retrieval', async (status) => {
+      const fixture = verify([response(status, '[]')])
+      const runs = checks(fixture.run)
+      const result = await runProductionSmokeChecks(runs)
+      expect(result.overall).toBe('passed')
+      expect(result.exitCode).toBe(0)
+      expect(fixture.fetchResponse).toHaveBeenCalledTimes(3)
+      expect(fixture.fetchResponse.mock.calls.map(([url, init]) =>
+        [url.search, init.method ?? 'GET'])).toEqual([
+        ['?ids=eetn', 'GET'], ['?ids=EETN', 'POST'], ['?ids=EETN', 'GET'],
+      ])
+      const signals = fixture.fetchResponse.mock.calls.map(([, init]) => init.signal)
+      expect(signals.every((signal) => signal === signals[0])).toBe(true)
+      for (const { run } of runs) expect(run).toHaveBeenCalledTimes(1)
+    })
+
+    it.each(['METAR upstream timed out', 'upstream gateway timeout'])(
+      'keeps persistent 504 red and executes all diagnostics without claiming provenance: %s',
+      async (body) => {
+        vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+        const fixture = verify([response(504, body), response(504, body)])
+        const runs = checks(fixture.run)
+        const result = await runProductionSmokeChecks(runs)
+        expect(result.overall).toBe('metar-unavailable')
+        expect(result.exitCode).toBe(1)
+        expect(result.results.map(({ name }) => name)).toEqual(names)
+        for (const { run } of runs) expect(run).toHaveBeenCalledTimes(1)
+        expect(runs.map(({ run }) => run.mock.invocationCallOrder[0]))
+          .toEqual([...runs.map(({ run }) => run.mock.invocationCallOrder[0])].sort((a, b) => a - b))
+        expect(fixture.fetchResponse).toHaveBeenCalledTimes(4)
+        const report = formatProductionSmokeReport(result, 'https://app.example', releaseSha)
+        expect(report).toContain('METAR unavailable (HTTP 504)')
+        expect(report).toContain('no release regression demonstrated')
+        expect(report).not.toContain(body)
+        expect(report).not.toContain('Smoke: passed')
+      },
+    )
+
+    it('collects later failures and gives them precedence over provider-only guidance', async () => {
+      const runs = checks(async () => 'metar-unavailable', 'Orbital catalog')
+      const result = await runProductionSmokeChecks(runs)
+      expect(result.overall).toBe('check-failure')
+      expect(result.exitCode).toBe(1)
+      for (const { run } of runs) expect(run).toHaveBeenCalledTimes(1)
+      expect(result.results.find(({ name }) => name === 'Orbital catalog').status).toBe('failed')
+      expect(formatProductionSmokeReport(result, 'https://app.example', releaseSha))
+        .not.toContain('no release regression demonstrated')
+    })
+
+    it.each([
+      [504, { 'X-LiveTrafficStan-Release': 'a'.repeat(40) }],
+      [504, { 'X-LiveTrafficStan-Release': '' }],
+      [504, { 'Access-Control-Allow-Origin': '*' }],
+      [504, { 'Retry-After': '120' }],
+      [504, { 'Cache-Control': 'public, max-age=60' }],
+      [504, { 'Content-Type': 'text/html' }],
+      [504, { 'X-Content-Type-Options': '' }],
+      [502, {}],
+      [429, {}],
+    ])('fails closed without diagnostic continuation for status %i headers %j', async (status, headers) => {
+      const fixture = verify([response(status, 'bad response', headers)])
+      const runs = checks(fixture.run)
+      const result = await runProductionSmokeChecks(runs)
+      expect(result.overall).toBe('check-failure')
+      expect(result.exitCode).toBe(1)
+      expect(result.results.slice(3).every(({ status }) => status === 'not-run')).toBe(true)
+      for (const { run } of runs.slice(3)) expect(run).not.toHaveBeenCalled()
+    })
+
+    it.each([
+      ['{}', {}, 'unexpected payload'],
+      ['[{"icaoId":"KJFK"}]', {}, 'unrequested station'],
+      ['[]', { 'Content-Type': 'text/html' }, 'did not return JSON'],
+      ['[]', { 'Cache-Control': 'no-store' }, 'cache guidance'],
+      ['[]', { 'X-Content-Type-Options': '' }, 'nosniff'],
+      ['[]', { 'Access-Control-Allow-Origin': '*' }, 'cross-origin'],
+    ])('retains successful response assertions: %s %j', async (body, headers, error) => {
+      const fixture = verify([response(200, body, headers)])
+      await expect(fixture.run()).rejects.toThrow(error)
+    })
+
+    it('rejects an oversized final 504 and cancels its stream', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+      const cancel = vi.fn()
+      const body = new ReadableStream({
+        start(controller) { controller.enqueue(new Uint8Array(256 * 1_024 + 1)) },
+        cancel,
+      })
+      const fixture = verify([response(504, 'timeout'), response(504, body)])
+      await expect(fixture.run()).rejects.toThrow('oversized')
+      expect(cancel).toHaveBeenCalledTimes(1)
+    })
+
+    it('accepts the exact 256 KiB final-response cap without logging its body', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+      const fixture = verify([
+        response(504, 'timeout'), response(504, new Uint8Array(256 * 1_024)),
+      ])
+      expect(await fixture.run()).toBe('metar-unavailable')
+    })
+
+    it('reports malformed JSON without including response contents', async () => {
+      const fixture = verify([response(200, 'PRIVATE_RESPONSE_TEXT_NOT_JSON')])
+      const result = await runProductionSmokeChecks(checks(fixture.run))
+      expect(result.overall).toBe('check-failure')
+      expect(result.results.find(({ name }) => name === 'METAR').diagnostic)
+        .toBe('METAR proxy returned invalid JSON')
+    })
+
+    it('rejects unreadable and expired final bodies without classifying an outage', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+      const body = new ReadableStream({
+        start(controller) { controller.error(new Error('body read failed')) },
+      })
+      await expect(verify([response(504, 'timeout'), response(504, body)]).run())
+        .rejects.toThrow('body read failed')
+      const controller = new AbortController()
+      const cancel = vi.fn()
+      const pendingBody = new ReadableStream({ cancel })
+      const fixture = verify([response(200, pendingBody)], { signal: controller.signal })
+      const pending = fixture.run()
+      const assertion = expect(pending).rejects.toThrow('deadline')
+      await vi.waitFor(() => expect(fixture.fetchResponse).toHaveBeenCalledTimes(3))
+      controller.abort(new Error('deadline'))
+      await assertion
+      expect(cancel).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not reach upstream after a boundary failure', async () => {
+      const fixture = verify([response(200, '[]')])
+      fixture.fetchResponse.mockReset().mockResolvedValueOnce(new Response(null, { status: 200 }))
+      await expect(fixture.run()).rejects.toThrow('Invalid METAR station ID')
+      expect(fixture.fetchResponse).toHaveBeenCalledTimes(1)
+    })
+
+    it('preserves normal fail-fast and rejects unknown results', async () => {
+      const result = await runProductionSmokeChecks(checks(async () => undefined, 'Aircraft'))
+      expect(result.results.slice(2).every(({ status }) => status === 'not-run')).toBe(true)
+      expect(result.exitCode).toBe(1)
+      expect((await runProductionSmokeChecks(checks(async () => 'unknown'))).overall).toBe('check-failure')
+      expect((await runProductionSmokeChecks([])).overall).toBe('incomplete')
+    })
+
+    it('writes the same bounded escaped report to stdout and Actions and propagates write errors', async () => {
+      const directory = mkdtempSync(join(tmpdir(), 'smoke-report-'))
+      try {
+        const result = await runProductionSmokeChecks(checks(async () => 'metar-unavailable'))
+        const summaryPath = join(directory, 'summary')
+        const outputPath = join(directory, 'output')
+        const log = vi.spyOn(console, 'log').mockImplementation(() => undefined)
+        await writeProductionSmokeReport({ result, targetOrigin: 'https://app.example',
+          expectedReleaseSha: releaseSha, summaryPath, outputPath })
+        expect(readFileSync(summaryPath, 'utf8')).toBe(log.mock.calls[0][0])
+        expect(readFileSync(outputPath, 'utf8')).toBe('smoke_result=metar-unavailable\n')
+        await expect(writeProductionSmokeReport({ result, targetOrigin: 'https://app.example',
+          expectedReleaseSha: releaseSha, summaryPath: directory, outputPath }))
+          .rejects.toThrow()
+        const unsafe = await runProductionSmokeChecks([
+          { name: 'METAR', run: async () => { throw new Error('\n::error:: | <script>`' + 'x'.repeat(900)) } },
+        ])
+        expect(unsafe.results[0].diagnostic.length).toBe(512)
+        expect(formatProductionSmokeReport(unsafe, 'https://app.example', releaseSha))
+          .toContain(' \\| &lt;script&gt;\\`')
+      } finally {
+        rmSync(directory, { recursive: true })
+      }
+    })
+
+    it('uses a real nonzero Node exit for an unavailable standalone smoke result', () => {
+      const moduleUrl = new URL('./smoke-policy.mjs', import.meta.url).href
+      const child = spawnSync(process.execPath, ['--input-type=module', '-e',
+        `import {runProductionSmokeChecks, writeProductionSmokeReport} from ${JSON.stringify(moduleUrl)};
+         const result = await runProductionSmokeChecks([
+           {name:'METAR',run:async()=> 'metar-unavailable'},
+           {name:'Digitraffic MQTT',run:async()=>undefined}
+         ]);
+         await writeProductionSmokeReport({result,targetOrigin:'https://app.example',
+           expectedReleaseSha:${JSON.stringify(releaseSha)},summaryPath:null,outputPath:null});
+         process.exitCode=result.exitCode;`,
+      ], { encoding: 'utf8' })
+      expect(child.status).toBe(1)
+      expect(child.stdout).toContain('| Digitraffic MQTT | passed |')
+      expect(child.stdout).not.toContain('Smoke: passed')
+    })
+
+    it('wires the tested runner and guarded operation records into both workflows', () => {
+      expect(smokeScript).toContain('await runProductionSmokeChecks([')
+      expect(smokeScript).toContain('process.exitCode = result.exitCode')
+      for (const file of ['deploy-production.yml', 'rollback-production.yml']) {
+        const source = readFileSync(join(repositoryRoot, '.github/workflows', file), 'utf8')
+        expect(source).toContain('id: smoke')
+        expect(source).toContain("steps.smoke.outputs.smoke_result || 'incomplete'")
+        expect(source).toContain('echo "- Smoke: $SMOKE_RESULT (step $SMOKE_OUTCOME)"')
+        expect(source).not.toContain('echo "- Smoke: passed"')
+        expect(source).not.toContain('continue-on-error')
+        expect(source).toContain('if: always() && steps.')
+      }
     })
   })
 

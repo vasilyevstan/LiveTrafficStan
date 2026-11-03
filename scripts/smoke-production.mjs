@@ -6,22 +6,22 @@ import portsSource from '../src/config/portsSource.json' with {
 }
 import {
   DEPLOYMENT_PROPAGATION_RETRY_DELAYS_MS,
-  METAR_SMOKE_TIMEOUT_MS,
   PRIVATE_RELAY_SMOKE_TIMEOUT_MS,
   SAME_ORIGIN_SMOKE_FETCH_INIT,
   classifyAircraftProxyStatus,
   deriveOrbitalStaticAssetPaths,
-  fetchMetarWithTimeoutRetry,
   fetchPrivateRelayWithRetry,
-  formatMetarReleaseMismatch,
   hasOneYearImmutableCacheControl,
   isRetryableStaticAssetStatus,
   readOptionalJson,
   resolveTargetOrbitalSmokeContract,
   resolveTargetStarlinkSmokeContract,
+  runProductionSmokeChecks,
+  verifyMetarProxyContract,
   verifyTargetOrbitalCatalog,
   verifyTargetStarlinkCatalog,
   waitForExpectedWorkerRelease,
+  writeProductionSmokeReport,
 } from './smoke-policy.mjs'
 
 const MAX_AIRCRAFT_RESPONSE_BYTES = 4 * 1_024 * 1_024
@@ -591,79 +591,11 @@ const verifyAircraftProxy = async () => {
   assert(unsupported.status === 404, 'Unsupported aircraft path was not rejected')
 }
 
-const verifyMetarProxy = async () => {
-  const signal = AbortSignal.timeout(METAR_SMOKE_TIMEOUT_MS)
-  const response = await fetchMetarWithTimeoutRetry({
-    fetchMetar: (signal) => fetchWithTimeout(
-      new URL('/api/weather/metar?ids=EETN', baseUrl),
-      { ...SAME_ORIGIN_SMOKE_FETCH_INIT, signal },
-    ),
-    expectedReleaseSha,
-    targetOrigin: baseUrl.origin,
-    signal,
-  })
-  assert(
-    response.status === 200 || response.status === 204,
-    `METAR proxy returned ${response.status}`,
-  )
-  const observedReleaseSha = response.headers.get('x-livetrafficstan-release')
-  assert(
-    observedReleaseSha === expectedReleaseSha,
-    formatMetarReleaseMismatch({
-      expectedReleaseSha,
-      observedReleaseSha,
-      targetOrigin: baseUrl.origin,
-      status: response.status,
-    }),
-  )
-  assert(
-    response.headers.get('cache-control') === 'public, max-age=60',
-    'METAR proxy cache guidance is incorrect',
-  )
-  assert(
-    response.headers.get('x-content-type-options') === 'nosniff',
-    'METAR proxy nosniff header is missing',
-  )
-  assert(
-    !response.headers.has('access-control-allow-origin'),
-    'METAR proxy unexpectedly allows cross-origin browser access',
-  )
-
-  const body = new Uint8Array(await response.arrayBuffer())
-  assert(body.byteLength <= 256 * 1_024, 'METAR proxy response is oversized')
-  if (response.status === 200) {
-    assert(
-      response.headers.get('content-type')?.includes('application/json'),
-      'METAR proxy did not return JSON',
-    )
-    const payload = JSON.parse(new TextDecoder().decode(body))
-    assert(Array.isArray(payload), 'METAR proxy returned an unexpected payload')
-    assert(
-      payload.every(
-        (record) =>
-          record &&
-          typeof record === 'object' &&
-          record.icaoId === 'EETN',
-      ),
-      'METAR proxy returned an unrequested station',
-    )
-  }
-
-  const invalid = await fetchWithTimeout(
-    new URL('/api/weather/metar?ids=eetn', baseUrl),
-    { ...SAME_ORIGIN_SMOKE_FETCH_INIT, signal },
-  )
-  assert(invalid.status === 400, 'Invalid METAR station ID was not rejected')
-
-  const unsupportedMethod = await fetchWithTimeout(
-    new URL('/api/weather/metar?ids=EETN', baseUrl),
-    { ...SAME_ORIGIN_SMOKE_FETCH_INIT, method: 'POST', signal },
-  )
-  assert(
-    unsupportedMethod.status === 405,
-    'Unsupported METAR method was not rejected',
-  )
-}
+const verifyMetarProxy = () => verifyMetarProxyContract({
+  baseUrl,
+  expectedReleaseSha,
+  fetchResponse: fetchWithTimeout,
+})
 
 const verifyAirportBoardBoundary = async () => {
   // Invalid input proves the enabled/disabled boundary without spending an
@@ -684,23 +616,25 @@ const verifyAirportBoardBoundary = async () => {
   await response.body?.cancel()
 }
 
-const verifyOrbitalCatalog = () =>
-  verifyTargetOrbitalCatalog({
+const verifyOrbitalCatalog = async () => {
+  await verifyTargetOrbitalCatalog({
     baseUrl,
     enabled: orbitalCatalogEnabled === 'true',
     expectedReleaseSha,
     contract: targetOrbitalSmokeContract,
     fetchResponse: fetchWithTimeout,
   })
+}
 
-const verifyStarlinkCatalog = () =>
-  verifyTargetStarlinkCatalog({
+const verifyStarlinkCatalog = async () => {
+  await verifyTargetStarlinkCatalog({
     baseUrl,
     enabled: starlinkCatalogEnabled === 'true',
     expectedReleaseSha,
     contract: targetStarlinkSmokeContract,
     fetchResponse: fetchWithTimeout,
   })
+}
 
 const verifyDigitrafficRest = async () => {
   const endpoint = new URL(
@@ -782,13 +716,22 @@ const verifyDigitrafficMqtt = () =>
     })
   })
 
-await verifyStaticAssets()
-await verifyAircraftProxy()
-await verifyMetarProxy()
-await verifyAirportBoardBoundary()
-await verifyOrbitalCatalog()
-await verifyStarlinkCatalog()
-await verifyDigitrafficRest()
-await verifyDigitrafficMqtt()
-
-console.log(`Production smoke passed for ${baseUrl.origin} at ${expectedReleaseSha}`)
+const result = await runProductionSmokeChecks([
+  { name: 'Static assets', run: verifyStaticAssets },
+  { name: 'Aircraft', run: verifyAircraftProxy },
+  { name: 'METAR', run: verifyMetarProxy },
+  { name: 'Airport boards', run: verifyAirportBoardBoundary },
+  { name: 'Orbital catalog', run: verifyOrbitalCatalog },
+  { name: 'Starlink catalog', run: verifyStarlinkCatalog },
+  { name: 'Digitraffic REST', run: verifyDigitrafficRest },
+  { name: 'Digitraffic MQTT', run: verifyDigitrafficMqtt },
+])
+await writeProductionSmokeReport({
+  result,
+  targetOrigin: baseUrl.origin,
+  expectedReleaseSha,
+})
+process.exitCode = result.exitCode
+if (result.overall === 'passed') {
+  console.log(`Production smoke passed for ${baseUrl.origin} at ${expectedReleaseSha}`)
+}

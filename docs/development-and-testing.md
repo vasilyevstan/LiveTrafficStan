@@ -2829,6 +2829,16 @@ relay-generated admission response is retryable; an upstream/provider `503`
 fails without another provider request. Rejected local admission attempts do
 not create additional ADSB.lol requests.
 
+METAR smoke regression coverage lives in `scripts/smoke-policy.test.mjs`.
+Mocked fetches and fake clocks exercise the shipped retry and strict exclusions,
+local-boundary ordering, final-body caps/cancellation, persistent qualified
+`504` diagnostic continuation, downstream failure precedence and normal
+fail-fast behavior. Tests execute the shared runner rather than relying only
+on source text. A child Node process proves an unavailable standalone smoke
+exits nonzero; temporary summary/output files prove the same classified report
+reaches Actions without printing an overall success. These deterministic
+checks make no live provider requests.
+
 Plausible route lookup is enabled by default. To exercise the disabled state:
 
 ```bash

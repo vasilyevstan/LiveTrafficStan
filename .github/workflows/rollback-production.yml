@@ -272,6 +272,7 @@ jobs:
         run: node "$RUNNER_TEMP/prepare-production-secrets.mjs"
 
       - name: Roll back Cloudflare version
+        id: rollback
         if: steps.target-orbital.outputs.enabled == 'true'
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -285,6 +286,7 @@ jobs:
           --yes
 
       - name: Deploy disabled target with coordinator compatibility
+        id: compatible-deploy
         if: steps.target-orbital.outputs.enabled == 'false'
         env:
           AIRCRAFT_DELIVERY: ${{ inputs.aircraft_delivery }}
@@ -310,6 +312,7 @@ jobs:
         run: rm -f "$SECRETS_FILE"
 
       - name: Restore target orbital Cron state
+        id: restore-cron
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -323,6 +326,7 @@ jobs:
           npx wrangler triggers deploy --config "$config"
 
       - name: Smoke rolled-back application
+        id: smoke
         run: >-
           node scripts/smoke-production.mjs
           "${{ inputs.deployment_url }}"
@@ -333,10 +337,13 @@ jobs:
           "${{ inputs.airport_boards_enabled }}"
 
       - name: Record rollback
+        if: always() && steps.restore-cron.outcome == 'success' && (steps.rollback.outcome == 'success' || steps.compatible-deploy.outcome == 'success')
         env:
           DEPLOYMENT_URL: ${{ inputs.deployment_url }}
           TARGET_SHA: ${{ inputs.target_sha }}
           TARGET_VERSION_ID: ${{ inputs.target_version_id }}
+          SMOKE_RESULT: ${{ steps.smoke.outputs.smoke_result || 'incomplete' }}
+          SMOKE_OUTCOME: ${{ steps.smoke.outcome }}
         run: |
           {
             echo "### LiveTrafficStan production rollback"
@@ -352,5 +359,6 @@ jobs:
             echo "- Starlink catalog enabled: \`${{ steps.target-orbital.outputs.starlink_enabled }}\`"
             echo "- Airport boards enabled: \`${{ inputs.airport_boards_enabled }}\`"
             echo "- URL: $DEPLOYMENT_URL"
-            echo "- Smoke: passed"
+            echo "- Rollback: completed"
+            echo "- Smoke: $SMOKE_RESULT (step $SMOKE_OUTCOME)"
           } >> "$GITHUB_STEP_SUMMARY"

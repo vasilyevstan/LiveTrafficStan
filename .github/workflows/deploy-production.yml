@@ -312,6 +312,7 @@ jobs:
         run: rm -f "$SECRETS_FILE"
 
       - name: Smoke deployed application
+        id: smoke
         run: >-
           node scripts/smoke-production.mjs
           "${{ steps.deploy.outputs.deployment-url }}"
@@ -322,9 +323,12 @@ jobs:
           "${{ inputs.airport_boards_enabled }}"
 
       - name: Record deployment
+        if: always() && steps.deploy.outcome == 'success'
         env:
           DEPLOYMENT_URL: ${{ steps.deploy.outputs.deployment-url }}
           RELEASE_SHA: ${{ inputs.sha }}
+          SMOKE_RESULT: ${{ steps.smoke.outputs.smoke_result || 'incomplete' }}
+          SMOKE_OUTCOME: ${{ steps.smoke.outcome }}
         run: |
           {
             echo "### LiveTrafficStan production deployment"
@@ -344,10 +348,17 @@ jobs:
             echo "- Orbital KV namespace: \`${{ steps.orbital-kv.outputs.namespace-id || 'none' }}\`"
             echo "- Orbital coordinator enabled: \`${{ inputs.orbital_catalog_enabled }}\`"
             echo "- URL: $DEPLOYMENT_URL"
-            echo "- Smoke: passed"
+            echo "- Publication: completed"
+            echo "- Smoke: $SMOKE_RESULT (step $SMOKE_OUTCOME)"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Flag rollback requirement
         if: failure() && steps.deploy.outcome == 'success'
+        env:
+          SMOKE_RESULT: ${{ steps.smoke.outputs.smoke_result || 'incomplete' }}
         run: |
-          echo "::error::Deployment completed but smoke failed. Distinguish a provider outage from a release regression; for a release regression, restore the recorded prior Cloudflare version and rerun the smoke."
+          if [[ "$SMOKE_RESULT" == "metar-unavailable" ]]; then
+            echo "::error::Publication completed; METAR unavailable (HTTP 504). All other smoke checks passed, but METAR success is unverified. No release regression demonstrated; investigate METAR availability before assuming rollback is needed."
+          else
+            echo "::error::Publication completed but smoke failed or is incomplete. Inspect the check report; for a release regression, restore the recorded prior Cloudflare version and rerun the smoke."
+          fi
