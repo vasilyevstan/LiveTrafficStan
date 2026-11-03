@@ -191,6 +191,10 @@ sheet system, renderer or provider lifecycle. Keep default guidance purposeful
 and within two rendered lines, without removing full object facts, errors,
 source/privacy attribution or caveats.
 
+The later [complete Ships In view decision](#complete-ships-in-view-and-aircraft-capture-save)
+supersedes only the shortlist cap and omission of missing measurements below.
+The following records the original measured behavior.
+
 Ship matching succeeds for an eligible received fixture in all four layouts.
 Location is place/coordinate navigation, not vessel lookup; Ships In view is
 a capped measurement-ranked shortlist, while text/filter discovery is in
@@ -205,6 +209,26 @@ touch Clear activation remains unresolved evidence for targeted acceptance.
 one full-canvas MapLibre instance, Home/history/trails, focus, themes,
 fullscreen, cadence/connections, provider privacy and attribution are unchanged.
 Actual OS keyboard and physical-phone behavior are not claimed from emulation.
+
+## Complete Ships In view and aircraft capture Save
+
+Ships In view now lists the complete unexpired received viewport population
+matching active map filters, with the existing 20-row pagination. This explicitly
+replaces the former top-20 shortlist and selected-measurement omission from #393.
+Longest/Deepest draught retains the measured comparator; missing/nonpositive/
+nonfinite measurements remain unavailable and their ships appear last by exact
+MMSI. The 50 m default, unknown-length option, yacht eligibility and all existing
+map filters remain authoritative. Neither a global cache nor fading last-local
+context becomes an in-view population. There is no new search or provider path.
+The old release and acceptance evidence remains historical.
+
+Aircraft View from here adds the ordinary identity-only Save/Remove action.
+Capture retains a canonical Saved seed before clearing selection, rather than
+inferring identity from the displayed label or interpolated position. Saving
+records the action time and no camera, coordinates, observation or playback.
+The same bounded browser-profile Saved owner handles membership and feedback.
+Preparation, pause and hold do not disable identity saving. No captured aircraft
+Share or restorable view is introduced.
 
 ## Static-first V1
 

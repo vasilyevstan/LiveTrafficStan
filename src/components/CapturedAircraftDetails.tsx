@@ -1,4 +1,4 @@
-import { useId } from 'react'
+import { useId, type ReactNode } from 'react'
 import { DetailsPanel } from './DetailsPanel'
 import { formatAltitude } from '../domain/format'
 import type { AircraftViewPosition, CapturedAircraftView } from '../domain/aircraftView'
@@ -16,11 +16,12 @@ interface Props {
   notice?: string
   online: boolean
   units: UnitSystem
+  saveObject?: ReactNode
   onReturn: () => void
   onTogglePlaying: () => void
 }
 
-export function CapturedAircraftDetails({ view, ready, playing, position: displayedPosition, latestObservedAt, holding, notice, online, units, onReturn, onTogglePlaying }: Props) {
+export function CapturedAircraftDetails({ view, ready, playing, position: displayedPosition, latestObservedAt, holding, notice, online, units, saveObject, onReturn, onTogglePlaying }: Props) {
   const titleId = useId()
   const position = displayedPosition ?? view.position
   const observedAt = new Date(position.observedAt).toISOString()
@@ -32,6 +33,7 @@ export function CapturedAircraftDetails({ view, ready, playing, position: displa
       className="details-panel--orbital-view details-panel--aircraft-view details-panel--compact-actions"
       closeLabel="Return to map"
       onClose={onReturn}
+      headerAction={saveObject}
       mobileActionPlacement="header-always"
       actionRow={<>
         <button

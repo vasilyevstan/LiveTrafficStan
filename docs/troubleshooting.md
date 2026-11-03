@@ -387,8 +387,9 @@ Settings's **Find objects or places**, reuse the same draft.
 
 Live ship filters remain under **Layers -> Map filters**. A matching received
 ship hidden by a layer/filter has a disabled View and a reason; Find never
-changes those preferences. The separate Ships **In view** panel is only a
-top-20 length/draught shortlist, not every vessel or a global directory.
+changes those preferences. The separate Ships **In view** panel lists every
+unexpired received ship in the viewport matching active map filters, on 20-row
+pages; it is not a global directory or a filter bypass.
 
 Online ship search supports name prefixes of at least two characters or exact
 nine-digit MMSI; aircraft uses exact ICAO24/registration/callsign. Six hex
@@ -1508,15 +1509,16 @@ geometry says in-view counts unavailable. Fading last-local samples are not
 counted. Source failure/offline data stays explicitly qualified; a visible
 zero requires a usable source/view, not an outage.
 
-The Ships category deliberately lists only the top 20 by reported length
-or draught. Its **ranked** population can be smaller than **in view** because
-some observations lack the selected measurement. Unknown, zero and invalid
-measurements are not guessed or ranked as zero. **Longest** and **Deepest
+The Ships category lists all filtered, unexpired ships in the current viewport,
+on 20-row pages. Ships with a usable selected measurement appear first;
+unknown, zero and invalid measurements are not guessed or ranked as zero.
+Their ships are included last in MMSI order. Unknown-length ships still need
+the existing include-unknown-length filter to admit them. **Longest** and **Deepest
 draught** are independent rankings, not a tonnage/size score; reported
-draught is not water depth or a clearance estimate. The other matching ships
-remain on the map. Use desktop **More → Find** or mobile **Find** for ship search and filters;
-they refine this shortlist too. A selected ship outside the shortlist stays
-selected and is labeled separately. Rank changes add no fetch or camera move.
+draught is not water depth or a clearance estimate. Use desktop **More → Find**
+or mobile **Find** for ship search; active map filters refine this list too.
+A selected ship on another page remains selected without forcing a page change.
+Rank changes add no fetch or camera move.
 
 The drawer and its rows must not have competing vertical scroll areas.
 Close/Escape returns to the actual visible In view trigger.

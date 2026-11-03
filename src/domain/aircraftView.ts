@@ -2,6 +2,7 @@ import { ORBITAL_VIEW_MAXIMUM_LATITUDE } from './orbitalView'
 import { normalizeOrbitalLongitude, unwrapOrbitalLongitude } from './orbitalViewport'
 import type { MapProjectionPreference } from './preferences'
 import type { DisplayAircraft } from './traffic'
+import type { SavedObject } from './savedObjects'
 
 export interface AircraftViewPosition {
   readonly id: string
@@ -17,6 +18,7 @@ export interface CapturedAircraftView {
   readonly revision: number
   readonly viewRequestId: number
   readonly position: AircraftViewPosition
+  readonly savedObject: Readonly<SavedObject>
 }
 
 const validBearing = (value: number | undefined) =>
