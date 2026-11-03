@@ -1647,7 +1647,11 @@ monitoring, privacy, and rollback procedure.
 Deployment METAR checks allow one 60-second-spaced retry for a verified
 exact-release `504`, within a 90-second total deadline. Persistent outages,
 other errors and release mismatches still fail; browser and proxy behavior
-are unchanged. See [the timeout recovery boundary](docs/troubleshooting.md#deployment-metar-checks).
+are unchanged. A policy-qualified final METAR `504` keeps the workflow failed
+but runs the remaining smoke checks and reports their individual results.
+Publication and smoke success are recorded separately; a provider-only failure
+does not demonstrate a broken release.
+See [the timeout recovery boundary](docs/troubleshooting.md#deployment-metar-checks).
 
 ## Known limitations
 

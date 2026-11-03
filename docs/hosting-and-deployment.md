@@ -1427,6 +1427,25 @@ release mismatches, other errors and persistent timeouts fail closed. Browser
 and proxy behavior are unchanged. See [the timeout investigation and retry
 boundary](troubleshooting.md#deployment-metar-checks).
 
+After an exact-release, policy-qualified final METAR `504`, smoke remains
+failed but continues the airport-board, orbital, Starlink, Digitraffic REST and
+MQTT checks in their existing sequential order. Failures in this diagnostic
+mode are collected so a second failure cannot hide the remaining coverage.
+Other failures retain ordinary fail-fast behavior, with skipped checks marked
+`not-run`. The local METAR input/method probes run before upstream acquisition
+under the same 90-second budget. Final METAR bodies are streamed under the
+existing 256 KiB cap and deadline, including unavailable responses.
+
+Both deployment and rollback records distinguish a completed operation from
+smoke success. The check report includes the expected SHA, target origin,
+individual results and one overall `passed`, `metar-unavailable`,
+`check-failure` or `incomplete` outcome. Only all-passing checks produce success.
+Provider-only guidance requires a qualified METAR `504` and every other check
+passing; it reports an unverified METAR success contract and no demonstrated
+release regression, not proof that rollback could never help. Missing reports,
+identity/policy violations and additional check failures never take that path.
+Historical failed runs remain failed.
+
 ## Scheduled orbital catalog contract
 
 The orbital infrastructure is disabled unless the protected deployment sets:

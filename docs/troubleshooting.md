@@ -710,8 +710,10 @@ a mismatch four seconds after publication whose received SHA was not logged.
 Later unchanged strict smoke passes on both hosts did not turn the original
 failed Actions run green or demonstrate an application/provider regression.
 The later deployment failures in runs `41355236397` and `41513087458` were
-HTTP `504` timeouts after the proxy's eight-second deadline, not release-header
-mismatches. Production and direct AWC subsequently returned valid `200`
+HTTP `504` responses roughly eight seconds after the METAR request, not
+release-header mismatches. Their logs did not preserve response bodies, so they
+do not prove whether the proxy timed out or forwarded an upstream `504`.
+Production and direct AWC subsequently returned valid `200`
 responses. For this distinct transient-timeout case, smoke permits **one**
 retry after 60 seconds, within a 90-second total budget. Every attempt must
 identify the exact release. Only a `504` with `no-store`, plain-text content,
@@ -720,6 +722,24 @@ and the retry is logged. Any provider retry guidance, wrong/missing release,
 other error, or second timeout still fails; a successful response must pass
 all existing body and policy checks. This changes neither browser retries nor
 the proxy's eight-second deadline and never converts an outage into success.
+
+A final exact-release `504` with the same non-success policy is reported as
+`metar-unavailable` only after its bounded body is completely read within the
+existing deadline. Status, headers and even timeout text do not prove where the
+failure originated. METAR's local invalid-input and unsupported-method probes
+run first, without reaching AWC; qualified unavailability then allows the
+remaining independent smoke checks to run. Their failures are collected, not
+ignored. A downstream failure changes the overall result to `check-failure`.
+Other errors still stop normal smoke and explicitly mark later checks not run.
+
+The workflow remains red for `metar-unavailable`. Read the individual check
+report and the separate publication/rollback record before deciding what to do.
+If every other check passed, investigate METAR availability before assuming a
+release rollback is needed: METAR success is still unverified, and no release
+regression has been demonstrated. If another check failed or the report is
+incomplete, inspect that evidence and retain the normal regression/rollback
+procedure. Do not relabel a historical failed run green or repeatedly rerun
+live probes without an operational need.
 
 Production deployment credentials exist only in the protected GitHub
 `production` environment. This includes `AIRCRAFT_RELAY_AUTH_TOKEN` when

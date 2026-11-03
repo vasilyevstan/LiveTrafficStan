@@ -53,7 +53,9 @@ describe('production rollback workflow', () => {
     expect(workflow).toContain(
       'cp "$RUNNER_TEMP/smoke-production.mjs" scripts/smoke-production.mjs',
     )
-    expect(workflow).toContain('echo "- Smoke: passed"')
+    expect(workflow).toContain('echo "- Smoke: $SMOKE_RESULT (step $SMOKE_OUTCOME)"')
+    expect(workflow).toContain("steps.smoke.outputs.smoke_result || 'incomplete'")
+    expect(workflow).toContain("steps.restore-cron.outcome == 'success'")
     expect(workflow).toContain(
       '"${{ inputs.deployment_url }}"\n          "${{ inputs.target_sha }}"\n          "${{ inputs.aircraft_delivery }}"',
     )
@@ -170,7 +172,7 @@ describe('production rollback workflow', () => {
     expect(workflow).toContain('AERODATABOX_RAPIDAPI_KEY: ${{ secrets.AERODATABOX_RAPIDAPI_KEY }}')
     expect(workflow).toContain('--var AIRPORT_BOARDS_ENABLED:${{ inputs.airport_boards_enabled }}')
     expect(workflow).toContain('"${{ steps.target-orbital.outputs.starlink_enabled }}"\n          "${{ inputs.airport_boards_enabled }}"')
-    expect(smoke).toContain('await verifyAirportBoardBoundary()')
+    expect(smoke).toContain("{ name: 'Airport boards', run: verifyAirportBoardBoundary }")
     expect(smoke).toContain("new URL('/api/airports/board?icao=invalid', baseUrl)")
   })
 })
