@@ -2305,6 +2305,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     cancelSharedObject()
     const view: CapturedAircraftView = Object.freeze({
       position, revision: ++capturedAircraftRevisionRef.current, viewRequestId: viewRequest.id,
+      savedObject: Object.freeze(createSavedTrafficObject(selectedEntity, now, APP_CONFIG.saved.maxLabelLength)),
     })
     locationCameraIntent.beginExplicitViewIntent()
     cancelPlaceSearch()
@@ -2330,7 +2331,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     setInspectorExpanded(false)
   }, [
     activeAircraftViewport, cancelPlaceSearch, cancelSharedObject, clearJourney, clearLocalRuler, locationCameraIntent,
-    selectedAircraftViewUnavailable, selectedEntity, viewRequest.id,
+    selectedAircraftViewUnavailable, selectedEntity, viewRequest.id, now,
   ])
 
   const handleEnterHistory = useCallback(() => {
@@ -3354,6 +3355,14 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
             notice={aircraftViewNotice}
             online={online}
             units={units}
+            saveObject={
+              <SavedObjectControl
+                entry={{ ...capturedAircraftView.savedObject, savedAt: now }}
+                saved={savedObjects.isSaved(capturedAircraftView.savedObject)}
+                onSave={savedObjects.save}
+                onRemove={savedObjects.remove}
+              />
+            }
             onReturn={() => returnFromCapturedAircraftView(capturedAircraftView.revision)}
             onTogglePlaying={() => setCapturedAircraftPlaying(playing => !playing)}
           />

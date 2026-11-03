@@ -376,26 +376,27 @@ mobile dock. Explicit Close/Escape returns to its actual visible summary;
 opening another peer does not reopen Settings. `InViewPanel` is presentational, with
 no provider or map lifecycle. It reuses the shared aircraft query/row text
 and orbital ranking/pagination helpers. Aircraft and Orbits mount at most 20
-rows per page. Ships instead caps the entire shortlist at the existing
-`VESSEL_RESULT_LIMIT` (20): Longest by default, or Deepest draught. The other
+rows per page. Ships also pages the complete filtered population:
+Longest by default, or Deepest draught. The other
 reported measurement breaks ties, then exact MMSI; sorting never mutates the
 input array or splices source objects. Unknown/nonpositive/nonfinite values
-are excluded only from the ranking requiring that measurement.
+remain unavailable measurements, but their ships appear last in exact MMSI
+order rather than being excluded from the list.
 
 Ship candidates are the same filtered, unexpired `vessels` used by the map,
 not its cluster symbols. The complete filtered count remains separate from
-rankable and shortlisted counts. Existing More / Find search and filters
+reported and missing measurement counts. Existing More / Find search and filters
 still refine that pool; ranking occupies the search-row space rather than
 adding another mobile control row. Focus follows retained row identity;
 removal returns to the visible search field or active ship-ranking control.
-Selected ships outside the shortlist remain a separately labeled exception,
-not an extra ranked row.
+Selected ships on other pages remain ordinary members of the complete list;
+selection alone does not force a page change.
 
 `domain/inView.ts` consumes current unexpired aircraft/ships and independently
 validated modeled positions, not raw payloads. Traffic availability gates
 HISTORY, unsettled/ineligible views, failures, and offline retained data;
 last-local fading context never enters the list. A live marine aggregate may
-still report a constituent-source error; the shortlist labels that partial
+still report a constituent-source error; the list labels that partial
 operation without discarding useful observations. Orbital rows use the current
 safe footprint and exact NORAD deduplication. Curated ownership wins a tie
 unless an eligible selected owner is present. Each row retains one complete
@@ -1649,6 +1650,14 @@ the two are mutually exclusive. Shared exits, such as navigation, HISTORY,
 projection, layer-off, map error and unmount, end either view. The App resolves
 the exact `aircraft:<hex>` from the frozen pre-capture `aircraftResult` and
 Returns at the ordinary 120-second expiry measured from `observedAt`.
+
+Before selection is cleared, capture retains an immutable canonical identity-only
+Saved seed from `createSavedTrafficObject`. The captured header passes the ordinary
+`SavedObjectControl` to `DetailsPanel`; the existing Saved owner handles membership,
+limits, persistence and visible feedback. The action uses the current save time,
+not capture time. Preparation, pause, interpolation and hold cannot change the
+captured identity or disable Save/Remove. No coordinates, camera, playback,
+observation snapshot or captured Share are added to Saved.
 
 During the view, TrafficMap sets `projectionOverrideRef` to
 `MAP_PROJECTION_CONFIG.capturedAircraftProjection`. That ref is read by `installCurrentStyle` and the

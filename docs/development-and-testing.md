@@ -2671,7 +2671,61 @@ Earlier observer failures and the reused upgrade/layout provenance are retained.
 No application change or redeployment was made for them. See the
 [exact deployment and rollback receipt](hosting-and-deployment.md#in-view-production-receipt-2026-10-09).
 
-### Ranked ships in In view (#393)
+### Complete Ships In view and captured aircraft Save
+
+The complete-list decision supersedes only the cap and missing-measurement
+omission in the historical #393 receipt below. Candidates still come from the
+same filtered, unexpired viewport population. Deterministic tests cover
+0/1/20/21/45 records, complete immutable output, both measurement comparators,
+MMSI-ordered unknown/nonpositive/nonfinite values, paging without duplicates,
+existing filter/expiry/freshness paths and unavailable-versus-empty states.
+Captured aircraft header tests cover enabled Save/Remove during preparation
+and hold, and preserve existing playback/Return and compact-inspector tests.
+The shared Saved control/storage tests remain authoritative for mutation limits
+and failures.
+
+Local real-app Chrome acceptance used intercepted synthetic ADS-B and Digitraffic
+REST payloads, with live provider/WebSocket traffic blocked. Measured viewports
+were **1280x900**, **390x568** and **315x517**, each in Light and Dark.
+Forty-five admitted ships included five missing lengths and ten missing draughts.
+Both rankings produced **20/20/5** pages with all 45 exact identities once:
+reported measurement descending first, then missing values by MMSI. A ship
+beyond the former shortlist cutoff opened the ordinary inspector by keyboard
+without an outside-shortlist label. Mobile task suspension was respected by
+reopening In view before the next selection.
+
+Aircraft capture used exact ICAO24 `511123`, registration `ES-ABC` and label
+`SAVE123`. Header Save/Remove/Save while paused passed in all six layouts;
+the stored record contained only kind, ID, bounded label, registration and
+action-time timestamp. Feedback disclosed browser-profile visibility. All
+visible captured controls measured at least **44x44 px**, within the horizontal
+viewport bounds. Return retained the exact original MapLibre canvas, with one
+canvas throughout. Screenshots were inspected at the narrowest Light layout
+and desktop Dark layout. No aircraft Share or positional Saved payload was
+introduced.
+
+The observer's early failures were fixture-only: serializing a DOM node through
+CDP, clearing storage after Saved hydration, reading desktop-only status copy
+on mobile, and assuming mobile selection kept In view open. The corrected
+observer returns plain values, clears storage before hydration, reads the
+category count, and respects existing task suspension. Accepted desktop cases
+were reused while the remaining mobile cases ran.
+
+Session artifacts are `browser-acceptance.mjs`, `browser-acceptance.json`
+(mobile measurements) and six `*-aircraft-save.png` captures. This is rendered
+local fixture evidence, not physical-device, live-provider, production or
+deployment evidence. The prior release/rollback receipts below remain historical.
+
+A focused **315x517** native CDP touch check selected `VESSEL 41` from the last
+page and verified its exact `vessel:257000041` feature in the rendered
+`traffic-vessel-halo` layer. The camera center, zoom, pitch and bearing were
+unchanged, and paging/selection added zero aircraft or marine source requests.
+Both Next transitions moved focus to the first result on the new page.
+`browser-interactions.json` and `315-517-light-ships-last-page.png` retain that
+evidence. Final local validation passed lint, typecheck, **230 suites / 2,861
+tests**, all required metadata/country/vessel-photo/orbital checks, and build.
+
+### Ranked ships in In view (#393; historical)
 
 The Ships category extends the same disclosure and scroll owner; it does not
 replace Aircraft/Orbits, add a mobile dock slot or introduce a provider path.

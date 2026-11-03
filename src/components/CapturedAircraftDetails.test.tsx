@@ -3,10 +3,13 @@ import { describe, expect, it } from 'vitest'
 import type { CapturedAircraftView } from '../domain/aircraftView'
 import { CapturedAircraftDetails } from './CapturedAircraftDetails'
 import { MobileInspectorContext } from './mobileWorkspace'
+import { SavedObjectControl } from './SavedObjectControl'
+import { emptySavedObjectsDocument } from '../domain/savedObjects'
 
 const view: CapturedAircraftView = {
   revision: 1,
   viewRequestId: 2,
+  savedObject: { kind: 'aircraft', id: '511123', savedLabel: 'TEST123', savedAt: 0 },
   position: {
     id: 'aircraft:test',
     name: 'TEST123',
@@ -18,6 +21,35 @@ const view: CapturedAircraftView = {
 }
 
 describe('CapturedAircraftDetails', () => {
+  it.each([false, true])('keeps Save/Remove in the header during preparation and hold (saved=%s)', (saved) => {
+    const html = renderToStaticMarkup(
+      <CapturedAircraftDetails
+        view={view}
+        ready={false}
+        playing={false}
+        latestObservedAt={3_000}
+        holding
+        online={false}
+        units="metric"
+        saveObject={<SavedObjectControl
+          entry={{ ...view.savedObject, savedAt: 10_000 }}
+          saved={saved}
+          onSave={() => ({ ok: true, document: emptySavedObjectsDocument(), message: 'Saved.' })}
+          onRemove={() => ({ ok: true, document: emptySavedObjectsDocument(), message: 'Removed.' })}
+        />}
+        onReturn={() => undefined}
+        onTogglePlaying={() => undefined}
+      />,
+    )
+    const header = html.slice(0, html.indexOf('class="details-panel__body"'))
+    expect(header).toContain(saved
+      ? 'aria-label="Remove TEST123 from Saved"'
+      : 'aria-label="Save TEST123"')
+    expect(header).toContain(`aria-pressed="${saved}"`)
+    expect(header).not.toMatch(/class="close-button details-panel__save"[^>]*disabled/)
+    expect(header).toContain('aria-label="Return to map"')
+  })
+
   it('keeps icon-only playback and Return actions in the header', () => {
     const html = renderToStaticMarkup(
       <CapturedAircraftDetails

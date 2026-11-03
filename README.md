@@ -274,7 +274,9 @@ identity are not renamed or reset.
   behind and only between reports, so it never predicts. Drag or use the arrow
   keys to look around. **Pause** and **Play** work as in the satellite view,
   and **Return**, X or Escape restores the previous map. Other traffic is
-  hidden. The view holds when reports stop and returns after the ordinary
+  hidden. The header's **Save/Remove** bookmarks the aircraft identity using
+  the existing browser-profile Saved list, not its position, camera or playback.
+  The view holds when reports stop and returns after the ordinary
   two-minute expiry. While it is active, a temporary globe-style projection
   is used, and it is not saved. The view makes no extra provider requests.
   Buildings stand at full height throughout the ride. Low eyes enter when the
@@ -684,10 +686,11 @@ identity are not renamed or reset.
 - **In view** opens below Settings in the desktop rail or directly from the
   phone dock. Aircraft and Orbits have local search and 20-row pages, with
   complete individual counts rather than cluster-symbol counts. **Ships**
-  shows a shortlist of up to 20 **Longest** or **Deepest draught** matches,
-  not every vessel. Ranking uses reported measurements within the current
-  vessel filters; the full in-view count, rankable population and unknown
-  measurements stay distinct. **Find ships** opens the existing search/filter
+  lists every unexpired received ship in the viewport matching the current
+  vessel filters, on 20-row pages. **Longest** or **Deepest draught** sorts
+  reported measurements first; ships without that measurement are listed last
+  in MMSI order, not omitted or assigned guessed values. This is not a global
+  directory or a filter bypass. **Find ships** opens the existing search/filter
   flow (desktop **More → Find**, mobile **Find**).
   Ranking does not change the ships on the map. Current
   modeled orbits deduplicate exact NORAD across both sources and distinguish
