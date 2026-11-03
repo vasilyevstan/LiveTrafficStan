@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises'
+import { appendFile, readFile } from 'node:fs/promises'
 
 export const DEPLOYMENT_PROPAGATION_RETRY_DELAYS_MS = [
   0,
@@ -76,6 +76,14 @@ const defaultWait = (delayMs, signal) =>
     signal.addEventListener('abort', handleAbort, { once: true })
   })
 
+export const hasMetarUnavailablePolicy = (response) =>
+  response.status === 504 &&
+  response.headers.get('cache-control') === 'no-store' &&
+  response.headers.get('x-content-type-options') === 'nosniff' &&
+  response.headers.get('content-type') === 'text/plain; charset=utf-8' &&
+  !response.headers.has('access-control-allow-origin') &&
+  !response.headers.has('retry-after')
+
 export const fetchMetarWithTimeoutRetry = async ({
   fetchMetar,
   expectedReleaseSha,
@@ -104,12 +112,7 @@ export const fetchMetarWithTimeoutRetry = async ({
 
     if (
       attempt === 2 ||
-      response.status !== 504 ||
-      response.headers.get('cache-control') !== 'no-store' ||
-      response.headers.get('x-content-type-options') !== 'nosniff' ||
-      response.headers.get('content-type') !== 'text/plain; charset=utf-8' ||
-      response.headers.has('access-control-allow-origin') ||
-      response.headers.has('retry-after')
+      !hasMetarUnavailablePolicy(response)
     ) {
       return response
     }
@@ -121,6 +124,173 @@ export const fetchMetarWithTimeoutRetry = async ({
     )
     await wait(METAR_TIMEOUT_RETRY_DELAY_MS, signal)
   }
+}
+
+const assertMetar = (condition, message) => {
+  if (!condition) throw new Error(message)
+}
+
+const readMetarBody = async (response, signal) => {
+  signal.throwIfAborted()
+  if (!response.body) return new Uint8Array()
+  const reader = response.body.getReader()
+  const abort = () => { void reader.cancel(signal.reason).catch(() => undefined) }
+  signal.addEventListener('abort', abort, { once: true })
+  const chunks = []
+  let length = 0
+  try {
+    for (;;) {
+      signal.throwIfAborted()
+      const { done, value } = await reader.read()
+      signal.throwIfAborted()
+      if (done) break
+      length += value.byteLength
+      assertMetar(length <= 256 * 1_024, 'METAR proxy response is oversized')
+      chunks.push(value)
+    }
+  } catch (error) {
+    await reader.cancel().catch(() => undefined)
+    throw error
+  } finally {
+    signal.removeEventListener('abort', abort)
+    reader.releaseLock()
+  }
+  const body = new Uint8Array(length)
+  let offset = 0
+  for (const chunk of chunks) {
+    body.set(chunk, offset)
+    offset += chunk.byteLength
+  }
+  return body
+}
+
+export const verifyMetarProxyContract = async ({
+  baseUrl,
+  expectedReleaseSha,
+  fetchResponse,
+  signal = AbortSignal.timeout(METAR_SMOKE_TIMEOUT_MS),
+  wait,
+}) => {
+  const endpoint = new URL('/api/weather/metar?ids=EETN', baseUrl)
+  const invalid = await fetchResponse(
+    new URL('/api/weather/metar?ids=eetn', baseUrl),
+    { ...SAME_ORIGIN_SMOKE_FETCH_INIT, signal },
+  )
+  await cancelResponseBody(invalid)
+  assertMetar(invalid.status === 400, 'Invalid METAR station ID was not rejected')
+  const unsupportedMethod = await fetchResponse(endpoint, {
+    ...SAME_ORIGIN_SMOKE_FETCH_INIT, method: 'POST', signal,
+  })
+  await cancelResponseBody(unsupportedMethod)
+  assertMetar(unsupportedMethod.status === 405, 'Unsupported METAR method was not rejected')
+
+  const response = await fetchMetarWithTimeoutRetry({
+    fetchMetar: (signal) => fetchResponse(endpoint, { ...SAME_ORIGIN_SMOKE_FETCH_INIT, signal }),
+    expectedReleaseSha,
+    targetOrigin: baseUrl.origin,
+    signal,
+    wait,
+  })
+  try {
+    // A qualified 504 proves unavailability, not where the timeout originated.
+    if (hasMetarUnavailablePolicy(response)) {
+      await readMetarBody(response, signal)
+      return 'metar-unavailable'
+    }
+    assertMetar(response.status === 200 || response.status === 204, `METAR proxy returned ${response.status}`)
+    assertMetar(response.headers.get('cache-control') === 'public, max-age=60', 'METAR proxy cache guidance is incorrect')
+    assertMetar(response.headers.get('x-content-type-options') === 'nosniff', 'METAR proxy nosniff header is missing')
+    assertMetar(!response.headers.has('access-control-allow-origin'), 'METAR proxy unexpectedly allows cross-origin browser access')
+    const body = await readMetarBody(response, signal)
+    if (response.status === 200) {
+      assertMetar(response.headers.get('content-type')?.includes('application/json'), 'METAR proxy did not return JSON')
+      let payload
+      try {
+        payload = JSON.parse(new TextDecoder().decode(body))
+      } catch (error) {
+        if (!(error instanceof SyntaxError)) throw error
+        throw new Error('METAR proxy returned invalid JSON')
+      }
+      assertMetar(Array.isArray(payload), 'METAR proxy returned an unexpected payload')
+      assertMetar(payload.every((record) => record && typeof record === 'object' && record.icaoId === 'EETN'), 'METAR proxy returned an unrequested station')
+    }
+  } finally {
+    await cancelResponseBody(response)
+  }
+}
+
+export const runProductionSmokeChecks = async (checks) => {
+  const results = []
+  let diagnosticMode = false
+  let stopped = false
+  for (const { name, run } of checks) {
+    if (stopped) {
+      results.push({ name, status: 'not-run' })
+      continue
+    }
+    try {
+      const status = await run()
+      if (status === 'metar-unavailable' && name === 'METAR') {
+        diagnosticMode = true
+        results.push({ name, status: 'unavailable' })
+      } else {
+        if (status !== undefined) throw new Error('Unexpected smoke check result')
+        results.push({ name, status: 'passed' })
+      }
+    } catch (error) {
+      results.push({
+        name,
+        status: 'failed',
+        diagnostic: (error instanceof Error ? error.message : 'Unknown smoke error').slice(0, 512),
+      })
+      stopped = !diagnosticMode
+    }
+  }
+  const overall = results.some(({ status }) => status === 'failed')
+    ? 'check-failure'
+    : results.length === 0 || results.some(({ status }) => status === 'not-run')
+      ? 'incomplete'
+      : diagnosticMode ? 'metar-unavailable' : 'passed'
+  return { overall, results, exitCode: overall === 'passed' ? 0 : 1 }
+}
+
+const escapeSmokeText = (value) => String(value)
+  .replace(/./gs, (character) => character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127 ? ' ' : character)
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/[|`\\*_]/g, (value) => `\\${value}`)
+
+export const formatProductionSmokeReport = ({ overall, results }, targetOrigin, expectedReleaseSha) => {
+  const lines = [
+    '### Production smoke checks',
+    '',
+    `Target: ${escapeSmokeText(targetOrigin)}; expected SHA: ${escapeSmokeText(expectedReleaseSha)}`,
+    '',
+    `Smoke: ${overall}`,
+  ]
+  if (results.some(({ status }) => status === 'unavailable')) {
+    lines.push('METAR unavailable (HTTP 504); METAR success contract unverified.')
+    if (overall === 'metar-unavailable') {
+      lines.push('All other checks passed; no release regression demonstrated. Investigate METAR availability before assuming rollback is needed.')
+    }
+  }
+  lines.push('', '| Check | Result | Diagnostic |', '| --- | --- | --- |')
+  for (const { name, status, diagnostic = '' } of results) {
+    lines.push(`| ${escapeSmokeText(name)} | ${status} | ${escapeSmokeText(diagnostic)} |`)
+  }
+  return lines.join('\n') + '\n'
+}
+
+export const writeProductionSmokeReport = async ({
+  result, targetOrigin, expectedReleaseSha,
+  summaryPath = process.env.GITHUB_STEP_SUMMARY,
+  outputPath = process.env.GITHUB_OUTPUT,
+}) => {
+  const report = formatProductionSmokeReport(result, targetOrigin, expectedReleaseSha)
+  console.log(report)
+  if (summaryPath) await appendFile(summaryPath, report)
+  if (outputPath) await appendFile(outputPath, `smoke_result=${result.overall}\n`)
 }
 
 const classifyWorkerReleaseProbe = (response, expectedReleaseSha) => {
