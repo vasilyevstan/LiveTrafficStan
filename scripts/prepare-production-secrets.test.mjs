@@ -103,4 +103,61 @@ describe('atomic production credential preparation', () => {
       rmSync(directory, { recursive: true, force: true })
     }
   })
+
+  it('prepares the board credential independently of marine and relay credentials', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'airport-independent-secrets-test-'))
+    const output = join(directory, 'secrets.json')
+    const key = 'test-airport-board-key-123'
+    const relay = 'test-relay-secret'.repeat(3)
+    try {
+      for (const marineEnabled of [false, true]) {
+        for (const airportBoardsEnabled of [false, true]) {
+          const stdout = execFileSync(process.execPath, [script], {
+            encoding: 'utf8',
+            env: {
+              ...process.env,
+              SECRETS_FILE: output,
+              AIRCRAFT_DELIVERY: 'oci-private-relay',
+              AIRCRAFT_RELAY_AUTH_TOKEN: relay,
+              MARINE_ENABLED: String(marineEnabled),
+              AISSTREAM_API_KEY: 'test-aisstream-secret',
+              OPENWATERS_AIS_TOKEN: 'test-openwaters-secret',
+              AIRPORT_BOARDS_ENABLED: String(airportBoardsEnabled),
+              AERODATABOX_RAPIDAPI_KEY: key,
+            },
+          })
+          expect(JSON.parse(readFileSync(output, 'utf8'))).toEqual({
+            AIRCRAFT_RELAY_AUTH_TOKEN: relay,
+            ...(marineEnabled ? {
+              AISSTREAM_API_KEY: 'test-aisstream-secret',
+              OPENWATERS_AIS_TOKEN: 'test-openwaters-secret',
+            } : {}),
+            ...(airportBoardsEnabled ? {
+              AERODATABOX_RAPIDAPI_KEY: key,
+            } : {}),
+          })
+          expect(statSync(output).mode & 0o777).toBe(0o600)
+          expect(stdout).not.toContain('test-')
+          rmSync(output)
+        }
+      }
+
+      const stdout = execFileSync(process.execPath, [script], {
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          SECRETS_FILE: output,
+          AIRCRAFT_DELIVERY: 'worker-proxy',
+          MARINE_ENABLED: 'false',
+          AIRPORT_BOARDS_ENABLED: 'true',
+          AERODATABOX_RAPIDAPI_KEY: key,
+        },
+      })
+      expect(JSON.parse(readFileSync(output, 'utf8'))).toEqual({ AERODATABOX_RAPIDAPI_KEY: key })
+      expect(statSync(output).mode & 0o777).toBe(0o600)
+      expect(stdout).not.toContain(key)
+    } finally {
+      rmSync(directory, { recursive: true, force: true })
+    }
+  })
 })
