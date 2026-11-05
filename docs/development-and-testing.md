@@ -2716,6 +2716,24 @@ Session artifacts are `browser-acceptance.mjs`, `browser-acceptance.json`
 local fixture evidence, not physical-device, live-provider, production or
 deployment evidence. The prior release/rollback receipts below remain historical.
 
+For aircraft In view, exercise Highest altitude (default) and Fastest speed with
+reported values, tied values, zero reports, and unavailable values. Confirm the
+display uses the selected unit system, unavailable measurements are labeled and
+listed last, query exact/prefix/substring relevance remains primary, and ranking
+resets paging without changing the full count or selecting an aircraft. Verify
+keyboard operation and that ship ranking, filters, map state, and provider
+requests remain unchanged. This rendered-browser check is separate from the
+deterministic domain and component tests.
+
+A local Vite fixture rendered six synthetic aircraft at **1280x720** without
+starting traffic providers. The default list sorted by altitude; Fastest speed
+changed the order in place, keeping unavailable speed last. Searching `TEST`
+returned **4 of 6** with exact, prefix, then substring matches; the selected
+exact result retained its `aria-pressed` state when ranking changed. Both sort
+controls are native focusable buttons (`tabIndex=0`); the browser check focused
+the control and activated ranking by pointer. It did not synthesize physical
+keyboard input or test map/provider behavior.
+
 A focused **315x517** native CDP touch check selected `VESSEL 41` from the last
 page and verified its exact `vessel:257000041` feature in the rendered
 `traffic-vessel-halo` layer. The camera center, zoom, pitch and bearing were

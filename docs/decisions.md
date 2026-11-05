@@ -222,6 +222,12 @@ map filters remain authoritative. Neither a global cache nor fading last-local
 context becomes an in-view population. There is no new search or provider path.
 The old release and acceptance evidence remains historical.
 
+Aircraft In view now ranks by reported altitude by default, with reported speed
+as the alternate. Search relevance remains the primary order; measurements rank
+within exact, prefix and substring matches. Missing/invalid ranking values
+remain explicitly unavailable and list last, with stable ICAO24 ties. The
+component-local choice adds no preference, filter, map, or provider lifecycle.
+
 Aircraft View from here adds the ordinary identity-only Save/Remove action.
 Capture retains a canonical Saved seed before clearing selection, rather than
 inferring identity from the displayed label or interpolated position. Saving

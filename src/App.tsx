@@ -2998,6 +2998,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
               aircraftQuery={aircraftQuery}
               aircraftVisible={aircraftVisible}
               aircraftAvailability={aircraftAvailability}
+              units={units}
               selectedAircraftId={selectedId}
               onAircraftQueryChange={setAircraftQuery}
               onAircraftSelect={selectTraffic}
