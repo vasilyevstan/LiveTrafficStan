@@ -685,7 +685,11 @@ identity are not renamed or reset.
   unavailable free exact IMO/arbitrary aircraft-name lookup.
 - **In view** opens below Settings in the desktop rail or directly from the
   phone dock. Aircraft and Orbits have local search and 20-row pages, with
-  complete individual counts rather than cluster-symbol counts. **Ships**
+  complete individual counts rather than cluster-symbol counts. Aircraft rank
+  by **Highest altitude** by default or **Fastest speed**; search relevance
+  stays primary, measurements use the selected units, and unavailable values
+  are labeled and listed last with stable ICAO24 ties. This component-local
+  ranking does not change map traffic or acquire provider data. **Ships**
   lists every unexpired received ship in the viewport matching the current
   vessel filters, on 20-row pages. **Longest** or **Deepest draught** sorts
   reported measurements first; ships without that measurement are listed last
