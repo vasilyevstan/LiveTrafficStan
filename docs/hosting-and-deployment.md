@@ -65,6 +65,16 @@ credentials and the private-relay secret. Observability remains disabled and
 no paid fallback is enabled. Orbital activation uses the included free KV and
 SQLite Durable Object allocations; R2 is not used.
 
+For future checked `dev`-to-`main` release PRs, use a merge commit to preserve
+the release head's ancestry. Protect main permits merge, squash, and rebase and
+requires the `validate` status check, but does not require the PR head to be
+up to date with main: a merge commit itself makes the new main commit absent
+from dev, so strict up-to-date checks would make the next dev release BEHIND
+again. Protect dev retains its strict `validate` requirement. The serialized
+production workflow still verifies and deploys only the exact current `main`
+SHA; release mergeability does not replace exact-SHA validation or deployment
+guards. Historical squash releases and their ancestry repairs remain unchanged.
+
 ### Curated orbital recovery (#616)
 
 The diagnostic/Find release #617/#618 and independently evidenced reference

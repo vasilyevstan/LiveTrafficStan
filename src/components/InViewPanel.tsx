@@ -7,18 +7,22 @@ import {
 } from '../domain/aircraftSearch'
 import {
   inViewPage,
+  rankAircraftInView,
   rankVesselsInView,
+  aircraftInViewMeasurement,
   vesselInViewMeasurement,
+  type AircraftInViewRanking,
   type InViewAvailability,
   type OrbitalInView,
   type VesselInViewRanking,
 } from '../domain/inView'
-import { formatDimension } from '../domain/format'
+import { formatAltitude, formatDimension, formatSpeed } from '../domain/format'
 import {
   DEFAULT_ORBITAL_DISCOVERY_FILTERS,
   discoverOrbitalCatalog,
 } from '../domain/orbitalDiscovery'
 import type { DisplayAircraft, DisplayVessel } from '../domain/traffic'
+import type { UnitSystem } from '../domain/units'
 import { vesselResultContext, vesselResultLabel } from '../domain/vesselFilters'
 
 interface InViewPanelProps {
@@ -28,6 +32,7 @@ interface InViewPanelProps {
   aircraftQuery: string
   aircraftVisible: boolean
   aircraftAvailability: InViewAvailability
+  units?: UnitSystem
   selectedAircraftId: string | null
   onAircraftQueryChange: (query: string) => void
   onAircraftSelect: (id: string, originId: string) => void
@@ -65,6 +70,7 @@ export function InViewPanel({
   aircraftQuery,
   aircraftVisible,
   aircraftAvailability,
+  units = 'metric',
   selectedAircraftId,
   onAircraftQueryChange,
   onAircraftSelect,
@@ -83,11 +89,17 @@ export function InViewPanel({
 }: InViewPanelProps) {
   const [kind, setKind] = useState<Kind>('aircraft')
   const [orbitalQuery, setOrbitalQuery] = useState('')
+  const [aircraftRanking, setAircraftRanking] = useState<AircraftInViewRanking>('altitude')
   const [vesselRanking, setVesselRanking] = useState<VesselInViewRanking>('length')
   const [pages, setPages] = useState({ aircraft: 0, ships: 0, orbits: 0 })
   const [focusedKey, setFocusedKey] = useState<string | null>(null)
   const focusPageRef = useRef<Kind | null>(null)
   const rootRef = useRef<HTMLDivElement>(null)
+  const rankedAircraft = useMemo(() => rankAircraftInView(
+    aircraftAvailability.available ? aircraft : [],
+    aircraftRanking,
+    aircraftQuery,
+  ), [aircraft, aircraftAvailability.available, aircraftQuery, aircraftRanking])
   const rankedVessels = useMemo(() => rankVesselsInView(
     vesselAvailability.available ? vessels : [],
     vesselRanking,
@@ -102,13 +114,21 @@ export function InViewPanel({
       orbits.rows.filter(({ shown }) => shown).map(({ position }) => position.id),
     )
     const aircraftRows: ResultRow[] = aircraftAvailability.available
-      ? aircraft.map((entity) => ({
+      ? rankedAircraft.rows.map((entity) => {
+        const altitude = aircraftInViewMeasurement(entity, 'altitude')
+        const speed = aircraftInViewMeasurement(entity, 'speed')
+        return {
           key: entity.id,
           id: entity.id,
           label: aircraftResultLabel(entity),
-          context: aircraftResultContext(entity),
+          context: [
+            aircraftResultContext(entity),
+            altitude === undefined ? 'Altitude not reported' : `Altitude ${formatAltitude(altitude, units)}`,
+            speed === undefined ? 'Speed not reported' : `Speed ${formatSpeed(speed, units)}`,
+          ].join(' · '),
           detail: savedKeys.has(`aircraft:${entity.hex.toLowerCase()}`) ? 'Saved' : undefined,
-    }))
+        }
+      })
       : []
     const orbitalRows: ResultRow[] = orbitalResults.map((position) => ({
       key: `norad:${position.noradCatalogId}`,
@@ -142,7 +162,7 @@ export function InViewPanel({
       }
     })
     return { aircraft: aircraftRows, ships: vesselRows, orbits: orbitalRows }
-  }, [aircraft, aircraftAvailability.available, orbits.rows, orbitalQuery, rankedVessels.rows, savedKeys])
+  }, [aircraftAvailability.available, orbits.rows, orbitalQuery, rankedAircraft.rows, rankedVessels.rows, savedKeys, units])
   const paged = useMemo(() => ({
     aircraft: inViewPage(results.aircraft, pages.aircraft, pageSize, focusedKey),
     ships: inViewPage(results.ships, pages.ships, pageSize, focusedKey),
@@ -169,11 +189,14 @@ export function InViewPanel({
       document.activeElement === document.body &&
       rootRef.current?.getClientRects().length
     ) {
-      document.getElementById(kind === 'ships'
+      const targetId = kind === 'ships'
         ? `in-view-ships-ranking-${vesselRanking}`
-        : `in-view-${kind}-search`)?.focus()
+        : kind === 'aircraft'
+          ? `in-view-aircraft-ranking-${aircraftRanking}`
+          : `in-view-${kind}-search`
+      document.getElementById(targetId)?.focus()
     }
-  }, [focusedKey, kind, results, vesselRanking])
+  }, [aircraftRanking, focusedKey, kind, results, vesselRanking])
 
   useEffect(() => {
     const targetKind = focusPageRef.current
@@ -252,26 +275,49 @@ export function InViewPanel({
             hidden={kind !== value}
             aria-labelledby={`in-view-${value}-tab`}
           >
-            {isShips ? (
-              <div className="control-options control-options--two" role="group" aria-label="Rank ships">
-                {(['length', 'draught'] as const).map((ranking) => (
-                  <button
-                    key={ranking}
-                    id={`in-view-ships-ranking-${ranking}`}
-                    type="button"
-                    className={vesselRanking === ranking ? 'is-active' : undefined}
-                    aria-pressed={vesselRanking === ranking}
-                    onClick={() => {
-                      setFocusedKey(null)
-                      setVesselRanking(ranking)
-                      setPages((current) => ({ ...current, ships: 0 }))
-                    }}
-                  >
-                    {ranking === 'length' ? 'Longest' : 'Deepest draught'}
-                  </button>
-                ))}
+            {(isAircraft || isShips) && (
+              <div
+                className="control-options control-options--two"
+                role="group"
+                aria-label={isAircraft ? 'Rank aircraft' : 'Rank ships'}
+              >
+                {(isAircraft ? ['altitude', 'speed'] as const : ['length', 'draught'] as const).map((ranking) => {
+                  const activeRanking = isAircraft ? aircraftRanking : vesselRanking
+                  const rankingId = isAircraft
+                    ? `in-view-aircraft-ranking-${ranking}`
+                    : `in-view-ships-ranking-${ranking}`
+                  const label = ranking === 'altitude'
+                    ? 'Highest altitude'
+                    : ranking === 'speed'
+                      ? 'Fastest speed'
+                      : ranking === 'length'
+                        ? 'Longest'
+                        : 'Deepest draught'
+                  return (
+                    <button
+                      key={ranking}
+                      id={rankingId}
+                      type="button"
+                      className={activeRanking === ranking ? 'is-active' : undefined}
+                      aria-pressed={activeRanking === ranking}
+                      onClick={() => {
+                        setFocusedKey(null)
+                        if (ranking === 'altitude' || ranking === 'speed') {
+                          setAircraftRanking(ranking)
+                          setPages((current) => ({ ...current, aircraft: 0 }))
+                        } else {
+                          setVesselRanking(ranking)
+                          setPages((current) => ({ ...current, ships: 0 }))
+                        }
+                      }}
+                    >
+                      {label}
+                    </button>
+                  )
+                })}
               </div>
-            ) : showSearch ? <input
+            )}
+            {showSearch && <input
               id={`in-view-${value}-search`}
               type="search"
               aria-label={
@@ -287,7 +333,7 @@ export function InViewPanel({
                 }
                 setPages((current) => ({ ...current, [value]: 0 }))
               }}
-            /> : null}
+            />}
             <div className="in-view__status" role="status">
               {availability.available && isAircraft && !aircraftVisible && <p>Layer hidden.</p>}
               {availability.available && isShips && !vesselsVisible && <p>Layer hidden.</p>}
@@ -362,6 +408,11 @@ export function InViewPanel({
             {isShips && availability.available && rankedVessels.unrankedCount > 0 && (
               <p className="control-note">
                 {rankedVessels.unrankedCount} without reported {vesselRanking}, listed last.
+              </p>
+            )}
+            {isAircraft && availability.available && rankedAircraft.unrankedCount > 0 && (
+              <p className="control-note">
+                {rankedAircraft.unrankedCount} without reported {aircraftRanking}, listed last.
               </p>
             )}
             {!isAircraft && <p className="control-note control-note--muted">

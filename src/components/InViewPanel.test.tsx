@@ -155,6 +155,39 @@ describe('InViewPanel', () => {
     expect(html).toContain('Draught is not water depth')
   })
 
+  it('ranks aircraft by altitude by default and truthfully shows reported measurements', () => {
+    const aircraft = displayTraffic([
+      { ...observations[0], callsign: 'LOW', altitudeMeters: 1_000, speedKph: 300 },
+      { ...observations[1], callsign: 'HIGH', altitudeMeters: 10_000, speedKph: 200 },
+      { ...observations[2], callsign: 'UNKNOWN', altitudeMeters: undefined, speedKph: undefined },
+    ], now, APP_CONFIG.aircraft)
+    const html = renderPanel({ aircraft, totalAircraft: aircraft.length })
+    expect(html).toContain('role="group" aria-label="Rank aircraft"')
+    expect(html).toMatch(/id="in-view-aircraft-ranking-altitude"[^>]*class="is-active"[^>]*aria-pressed="true"/)
+    expect(html).toContain('id="in-view-aircraft-ranking-speed"')
+    expect(html.indexOf('<strong>HIGH</strong>')).toBeLessThan(html.indexOf('<strong>LOW</strong>'))
+    expect(html.indexOf('<strong>LOW</strong>')).toBeLessThan(html.indexOf('<strong>UNKNOWN</strong>'))
+    expect(html).toContain('Altitude 10,000 m')
+    expect(html).toContain('Speed 300 km/h')
+    expect(html).toContain('Altitude not reported')
+    expect(html).toContain('1 without reported altitude, listed last.')
+  })
+
+  it('formats ranked aircraft measurements in the selected unit system', () => {
+    const aircraft = displayTraffic([{
+      ...observations[0],
+      altitudeMeters: 3_048,
+      speedKph: 185.2,
+    }], now, APP_CONFIG.aircraft)
+    const html = renderPanel({
+      aircraft,
+      totalAircraft: aircraft.length,
+      units: 'aviation-nautical',
+    })
+    expect(html).toContain('Altitude 10,000 ft')
+    expect(html).toContain('Speed 100 kn')
+  })
+
   it('includes missing measurements last without guessing', () => {
     const vessels = displayTraffic([
       { ...vesselObservations[0], draughtMeters: undefined },
