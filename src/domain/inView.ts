@@ -6,7 +6,8 @@ import {
   type OrbitalDisplaySelection,
 } from './orbitalDiscovery'
 import type { OrbitalViewport } from './orbitalViewport'
-import type { ProviderStatus, Vessel } from './traffic'
+import { aircraftSearchRelevance } from './aircraftSearch'
+import type { Aircraft, ProviderStatus, Vessel } from './traffic'
 
 export interface InViewAvailability {
   available: boolean
@@ -95,6 +96,57 @@ export const vesselInViewAvailability = (options: TrafficInViewOptions) => {
     }
   }
   return availability
+}
+
+export type AircraftInViewRanking = 'altitude' | 'speed'
+
+export const aircraftInViewMeasurement = (
+  aircraft: Aircraft,
+  ranking: AircraftInViewRanking,
+) => {
+  const value = ranking === 'altitude' ? aircraft.altitudeMeters : aircraft.speedKph
+  return value !== undefined && Number.isFinite(value) &&
+    (ranking === 'altitude' || value >= 0)
+    ? value
+    : undefined
+}
+
+const compareAircraftIdentity = (first: Aircraft, second: Aircraft) => {
+  const firstHex = first.hex.toLowerCase()
+  const secondHex = second.hex.toLowerCase()
+  if (firstHex !== secondHex) return firstHex < secondHex ? -1 : 1
+  if (first.id === second.id) return 0
+  return first.id < second.id ? -1 : 1
+}
+
+const compareDescending = (first: number | undefined, second: number | undefined) =>
+  first === undefined
+    ? second === undefined ? 0 : 1
+    : second === undefined ? -1 : second - first
+
+export const rankAircraftInView = <T extends Aircraft>(
+  aircraft: readonly T[],
+  ranking: AircraftInViewRanking,
+  query: string,
+) => {
+  const secondary = ranking === 'altitude' ? 'speed' : 'altitude'
+  const ranked = aircraft.map((entity) => ({
+    entity,
+    relevance: aircraftSearchRelevance(entity, query),
+    measurement: aircraftInViewMeasurement(entity, ranking),
+    secondary: aircraftInViewMeasurement(entity, secondary),
+  })).sort((first, second) =>
+    first.relevance - second.relevance ||
+    compareDescending(first.measurement, second.measurement) ||
+    compareDescending(first.secondary, second.secondary) ||
+    compareAircraftIdentity(first.entity, second.entity),
+  )
+  const rankableCount = ranked.filter(({ measurement }) => measurement !== undefined).length
+  return {
+    rows: ranked.map(({ entity }) => entity),
+    rankableCount,
+    unrankedCount: aircraft.length - rankableCount,
+  }
 }
 
 export type VesselInViewRanking = 'length' | 'draught'

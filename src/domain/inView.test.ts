@@ -12,16 +12,18 @@ import {
 } from './orbitalDiscovery'
 import type { OrbitalViewport } from './orbitalViewport'
 import {
+  aircraftInViewMeasurement,
   aircraftInViewAvailability,
   deriveOrbitalInView,
   inViewPage,
+  rankAircraftInView,
   rankVesselsInView,
   vesselInViewAvailability,
   vesselInViewMeasurement,
 } from './inView'
 import { APP_CONFIG } from '../config/appConfig'
 import { displayTraffic } from '../traffic/freshness'
-import type { DisplayVessel } from './traffic'
+import type { DisplayAircraft, DisplayVessel } from './traffic'
 import { DEFAULT_VESSEL_FILTERS, filterVessels } from './vesselFilters'
 
 const now = Date.UTC(2026, 9, 9, 12)
@@ -360,6 +362,89 @@ const vessel = (
   markerScale: 1,
   freshness: 'live',
   ...overrides,
+})
+
+const aircraft = (
+  hex: string,
+  overrides: Partial<DisplayAircraft> = {},
+): DisplayAircraft => ({
+  id: `aircraft:${hex}`,
+  kind: 'aircraft',
+  provider: 'ADSB.lol',
+  hex,
+  callsign: `TEST ${hex}`,
+  position: { latitude: 59.4, longitude: 24.7, observedAt: now },
+  receivedAt: now,
+  markerIcon: 'aircraft',
+  markerScale: 1,
+  freshness: 'live',
+  ...overrides,
+})
+
+describe('ranked aircraft in view', () => {
+  it('ranks altitude and speed independently, preserving complete immutable input', () => {
+    const high = aircraft('bbb001', { altitudeMeters: 10_000, speedKph: 300 })
+    const fast = aircraft('aaa002', { altitudeMeters: 8_000, speedKph: 900 })
+    const low = aircraft('ccc003', { altitudeMeters: 2_000, speedKph: 100 })
+    const observations = Object.freeze([low, fast, high])
+    expect(rankAircraftInView(observations, 'altitude', '').rows)
+      .toEqual([high, fast, low])
+    expect(rankAircraftInView(observations, 'speed', '').rows)
+      .toEqual([fast, high, low])
+    expect(observations).toEqual([low, fast, high])
+  })
+
+  it('breaks measurement ties by the other reported metric and stable ICAO24 identity', () => {
+    const first = aircraft('abc001', { altitudeMeters: 8_000, speedKph: 500 })
+    const second = aircraft('abc002', { altitudeMeters: 8_000, speedKph: 600 })
+    const third = aircraft('abc003', { altitudeMeters: 8_000, speedKph: 600 })
+    const expected = [second, third, first]
+    expect(rankAircraftInView([first, third, second], 'altitude', '').rows)
+      .toEqual(expected)
+    expect(rankAircraftInView([first, third, second], 'speed', '').rows)
+      .toEqual([second, third, first])
+  })
+
+  it('keeps exact and prefix search relevance ahead of measurement ranking', () => {
+    const substring = aircraft('abc003', { callsign: 'WIDE TEST', altitudeMeters: 20_000 })
+    const prefix = aircraft('abc002', { callsign: 'TEST TWO', altitudeMeters: 5_000 })
+    const exact = aircraft('abc001', { callsign: 'TEST', altitudeMeters: 1_000 })
+    expect(rankAircraftInView([substring, prefix, exact], 'altitude', 'TEST').rows)
+      .toEqual([exact, prefix, substring])
+  })
+
+  it('keeps reported zero altitude/speed and sorts unavailable or invalid values last', () => {
+    const zero = aircraft('abc001', { altitudeMeters: 0, speedKph: 0 })
+    const measured = aircraft('abc002', { altitudeMeters: 100, speedKph: 50 })
+    const missing = aircraft('abc003', { altitudeMeters: undefined, speedKph: undefined })
+    const invalidSpeed = aircraft('abc004', { altitudeMeters: 200, speedKph: -1 })
+    const result = rankAircraftInView([missing, zero, invalidSpeed, measured], 'altitude', '')
+    expect(result).toEqual({
+      rows: [invalidSpeed, measured, zero, missing],
+      rankableCount: 3,
+      unrankedCount: 1,
+    })
+    expect(aircraftInViewMeasurement(zero, 'altitude')).toBe(0)
+    expect(aircraftInViewMeasurement(zero, 'speed')).toBe(0)
+    expect(aircraftInViewMeasurement(invalidSpeed, 'speed')).toBeUndefined()
+    expect(aircraftInViewMeasurement(
+      aircraft('abc005', { altitudeMeters: Number.NaN }), 'altitude',
+    )).toBeUndefined()
+  })
+
+  it('pages all ranked aircraft without loss or duplication', () => {
+    const rows = rankAircraftInView(
+      Array.from({ length: 45 }, (_, index) =>
+        aircraft((index + 1).toString(16).padStart(6, '0'), { altitudeMeters: index }),
+      ),
+      'altitude',
+      '',
+    ).rows.map((row) => ({ ...row, key: row.id }))
+    const pages = Array.from({ length: 3 }, (_, index) =>
+      inViewPage(rows, index, 20, null).rows)
+    expect(pages.flat().map(({ id }) => id)).toEqual(rows.map(({ id }) => id))
+    expect(new Set(pages.flat().map(({ id }) => id)).size).toBe(45)
+  })
 })
 
 describe('ranked ships in view', () => {

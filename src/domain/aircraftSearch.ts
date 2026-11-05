@@ -39,6 +39,11 @@ const searchRank = (aircraft: Aircraft, normalizedQuery: string) => {
   return 2
 }
 
+export const aircraftSearchRelevance = (aircraft: Aircraft, query: string) => {
+  const normalizedQuery = normalizeAircraftSearchQuery(query)
+  return normalizedQuery ? searchRank(aircraft, normalizedQuery) : 0
+}
+
 export const orderAircraftSearchResults = <T extends Aircraft>(
   aircraft: readonly T[],
   query: string,
