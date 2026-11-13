@@ -119,6 +119,10 @@ export const modelInstanceFixture = (overrides: Partial<ModelInstance> = {}): Mo
   lengthMeters: 40,
   beamMeters: 20,
   heightMeters: 12,
+  bounds: {
+    minimum: [-20, -10, 0],
+    maximum: [20, 10, 12],
+  },
   extentMeters: 40,
   floorPx: 28,
   opacity: 1,

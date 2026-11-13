@@ -27,6 +27,7 @@ import {
   type MercatorPoint,
   type ModelInstanceGeometry,
 } from './modelProjection'
+import type { TrafficModelBounds } from './trafficModelAsset'
 import {
   TRAFFIC_MODEL_IDS,
   orbitalModelColors,
@@ -56,6 +57,7 @@ export interface ModelDimensions {
   lengthMeters: number
   beamMeters: number
   heightMeters: number
+  bounds: TrafficModelBounds
 }
 
 export type ModelDimensionTable = ReadonlyMap<TrafficModelId, ModelDimensions>
@@ -126,6 +128,7 @@ export const trafficModelInstances = (
       lengthMeters: size.lengthMeters,
       beamMeters: size.beamMeters,
       heightMeters: size.heightMeters,
+      bounds: size.bounds,
       headingDegrees: finite(properties.heading) ? properties.heading : 0,
       lengthScale,
       extentMeters: Math.max(size.lengthMeters, size.beamMeters) * lengthScale,
@@ -171,6 +174,7 @@ export const orbitalModelInstances = (
       lengthMeters: size.lengthMeters,
       beamMeters: size.beamMeters,
       heightMeters: size.heightMeters,
+      bounds: size.bounds,
       // Earth-relative ground-track direction; not spacecraft attitude.
       headingDegrees: finite(position.travelBearingDegrees)
         ? position.travelBearingDegrees

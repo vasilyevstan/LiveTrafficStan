@@ -5686,17 +5686,17 @@ Testing notes:
 
 ## 3D traffic models acceptance (#682)
 
-The focused unit run has 99 tests in 11 files: the eight `src/map/models`
+The focused unit run has 100 tests in 11 files: the eight `src/map/models`
 suites and the traffic-style, orbital-style and bundle-budget suites they
 extend.
 
 | File | Covers |
 | --- | --- |
-| `src/map/models/trafficModelAsset.test.ts` | The committed GLB: every model identity within the byte and triangle budgets, the starboard/forward/up frame with a keel origin, closed outward-wound geometry, face normals and per-vertex sRGB accents. The validator rejects malformed containers, size-limit breaches, unsupported glTF features, inconsistent identities, and accessors or indices outside their buffers |
+| `src/map/models/trafficModelAsset.test.ts` | The committed GLB: every model identity within the byte and triangle budgets, the starboard/forward/up frame with a keel origin, converted-vertex bounds including the asymmetric sailing model, closed outward-wound geometry, face normals and per-vertex sRGB accents. The validator rejects malformed containers, size-limit breaches, unsupported glTF features, inconsistent identities, and accessors or indices outside their buffers |
 | `trafficModelRuntime.test.ts` | Fetch without credentials or referrer from the hashed bundled URL, accepted content types, HTTP failures, HTML fallback, oversized and malformed bodies, caller cancellation, the asset deadline |
 | `trafficModelCatalog.test.ts` | A model for every flat traffic and orbital image, rejected unknown identities, the Starlink spacecraft only for Starlink payloads, the flat marker palettes in both themes |
 | `modelInstances.test.ts` | Aircraft at reported altitude; grounded or unreported aircraft on the surface without drop lines; vessel length scale; stale dimming; zoom-context samples never selected; only shown curated orbital objects; antimeridian packing |
-| `modelProjection.test.ts`, `modelLayerGeometry.test.ts` | Mercator and globe placement, forward/starboard axis direction and shader scale at zoom 14/16, pitched 3D bounding-box projection, the projection transition, far-side hiding, the high-altitude footprint fade, world copies, re-anchoring, CPU picks matching the shader projection and narrow-hull hit boundaries |
+| `modelProjection.test.ts`, `modelLayerGeometry.test.ts` | Mercator and globe placement, forward/starboard axis direction and shader scale at zoom 14/16, pitched 3D bounding-box projection, asymmetric sailing bounds, the projection transition, far-side hiding, the high-altitude footprint fade, world copies, re-anchoring, CPU picks matching the shader projection and narrow-hull hit boundaries |
 | `TrafficModelLayer.test.ts` | No GL work before the first drawn frame, depth and colour passes, overlays only when needed, uploads only on change, picks from the last drawn frame, fail-closed compile errors, lost context, removal and re-add |
 | `modelActivity.test.ts`, `src/map/trafficStyle.test.ts`, `src/map/orbitalStyle.test.ts` | Flat until the runtime loads, flat captured views, the cluster zoom threshold, the per-group flat handoff and theme reinstall, nearest-first model picks |
 | `scripts/bundle-budgets.test.mjs` | The GLB build budget equals the runtime read cap |
@@ -5730,6 +5730,7 @@ The preview PNG is a render and is not byte-stable.
 | Desktop 1280x900, DPR 1, zoom 11.7, pitch 55, bearing 20 | GLB `200` as `model/gltf-binary`. Layer index 73 of 82: after the flat symbols, before `traffic-aircraft-flags`. Aircraft 5/5 (max 1.7 px), vessels 6/6 (3.5 px) |
 | Desktop hover and click | Pointer cursor. Clicking selects aircraft `4ca202`, then vessel `276100103` replaces it |
 | Desktop vessel hull picking | At zooms 14 and 16, a bow click selects vessel `276100103`; a side click outside the hull but inside its former circular hit radius clears selection. At zoom 16/pitch 55, clicking the raised silhouette selects it |
+| Desktop sailing hull picking | At zoom 18, a click on the heeled sailing model's asymmetric sail-side hull, beyond the nominal symmetric beam, selects vessel `276100106` |
 | Desktop Dark theme button | Layer re-added at index 65 of 74, still before the flags; selection kept; aircraft 5/5 (1.8 px). No aircraft, marine or WebSocket request in the 2,362 ms switch |
 | Desktop Flat projection button | Aircraft 5/5, 1.9 px |
 | Desktop context loss and restore | `WEBGL_lose_context` drops the style. After restore the layer is re-added: aircraft 5/5, 1.8 px |
@@ -5738,7 +5739,7 @@ The preview PNG is a render and is not byte-stable.
 | Mobile 315x517 CSS, measured 630x1034 canvas at DPR 2 | Aircraft 2/2 (0.5 px), vessels 2/2 (1.5 px). A touch tap selects `4ca303` |
 | Starlink, 384 objects | Flat 18/18 (2.3 px); pitched globe 32/32 (3.9 px). A click selects `orbital:starlink:54201` and adds one drop line |
 | Curated, dark, zoom 2.4: 384 objects (292 payloads, 91 rocket bodies, 1 debris) | 150/150 on-screen anchors (4.3 px). A click selects `orbital:5560` (ASTEX 1) |
-| 405 aircraft and 306 ships, DPR 2 | Frame interval p50/p95/max 16.7/18.8/21.4 ms. Layer render CPU 0.1/0.2/0.8 ms. `setTraffic` p50/p95 0.2/0.4 ms |
+| 405 aircraft and 306 ships, DPR 2, aircraft tooltip open | Frame interval p50/p95/max 16.6/18.7/20.0 ms. Layer render CPU 0.1/0.3/0.9 ms. `setTraffic` p50/p95 0.2/0.5 ms |
 
 **Bundle impact**, with matched production inputs (`/api/aircraft`; photos,
 routes, marine supplement, airport boards and sharing enabled):
@@ -5797,12 +5798,12 @@ respectively. The 16-URL shell measured 3,807,618 raw bytes.
 
 The 2026-11-13 build for #682, with default build inputs, measured:
 
-- entry: 534,256 gzip and 432,269 Brotli bytes;
+- entry: 534,256 gzip and 432,299 Brotli bytes;
 - vessel flags, orbital UI and airport details: 53,949, 7,278 and 4,313 gzip
   bytes;
-- model runtime: 13,160 gzip bytes;
+- model runtime: 13,289 gzip bytes;
 - GLB: 60,680 raw bytes;
-- 18-URL shell: 3,929,262 raw bytes.
+- 18-URL shell: 3,929,687 raw bytes.
 
 The startup change for #682, measured with matched production inputs, is in
 [3D traffic models acceptance](#3d-traffic-models-acceptance-682).

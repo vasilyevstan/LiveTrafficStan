@@ -38,12 +38,18 @@ export const MODEL_MATERIAL_ROLE_BYTES = {
 
 type MaterialRole = keyof typeof MODEL_MATERIAL_ROLE_BYTES
 
+export interface TrafficModelBounds {
+  minimum: readonly [number, number, number]
+  maximum: readonly [number, number, number]
+}
+
 export interface TrafficModelMesh {
   id: TrafficModelId
   kind: TrafficModelKind
   lengthMeters: number
   beamMeters: number
   heightMeters: number
+  bounds: TrafficModelBounds
   triangleCount: number
   vertices: ArrayBuffer
 }
@@ -357,14 +363,16 @@ export const parseTrafficModelAsset = (
     if (triangleCount > limits.maximumTrianglesPerModel) {
       fail(`${id} exceeds the triangle budget`)
     }
+    const expanded = expandPrimitives(view, primitives, triangleCount, id)
     models.set(id, {
       id,
       kind: trafficModelKind(id),
       lengthMeters: positiveNumber(extras.lts_length_m, `${id} length`),
       beamMeters: positiveNumber(extras.lts_beam_m, `${id} beam`),
       heightMeters: positiveNumber(extras.lts_height_m, `${id} height`),
+      bounds: expanded.bounds,
       triangleCount,
-      vertices: expandPrimitives(view, primitives, triangleCount, id),
+      vertices: expanded.vertices,
     })
   })
 
@@ -382,6 +390,8 @@ const expandPrimitives = (
   )
   const target = new DataView(vertices)
   const corner = new Float64Array(9)
+  const minimum = [Infinity, Infinity, Infinity]
+  const maximum = [-Infinity, -Infinity, -Infinity]
   let offset = 0
   for (const primitive of primitives) {
     for (let index = 0; index < primitive.indexCount; index += 3) {
@@ -407,6 +417,8 @@ const expandPrimitives = (
           ) {
             fail(`${id} coordinate is out of range`)
           }
+          minimum[axis] = Math.min(minimum[axis], coordinate)
+          maximum[axis] = Math.max(maximum[axis], coordinate)
           corner[vertex * 3 + axis] = coordinate
         }
       }
@@ -445,5 +457,11 @@ const expandPrimitives = (
       }
     }
   }
-  return vertices
+  return {
+    vertices,
+    bounds: {
+      minimum: minimum as [number, number, number],
+      maximum: maximum as [number, number, number],
+    },
+  }
 }

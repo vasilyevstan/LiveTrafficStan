@@ -1,4 +1,5 @@
 import { ZOOM_TRAFFIC_CONTEXT_CONFIG } from '../../config/appConfig'
+import type { TrafficModelBounds } from './trafficModelAsset'
 
 /** CPU mirror of the model shader, used for picking and per-frame uniforms. */
 export const EARTH_RADIUS_METERS = 6_371_008.8
@@ -185,6 +186,7 @@ export interface ModelInstanceGeometry {
   lengthMeters: number
   beamMeters: number
   heightMeters: number
+  bounds: TrafficModelBounds
   lengthScale: number
   extentMeters: number
   floorPx: number
@@ -405,12 +407,6 @@ export const projectModelInstance = (
   const halfLength =
     (instance.lengthMeters * instance.lengthScale * modelScale) / 2
   const halfBeam = (instance.beamMeters * instance.lengthScale * modelScale) / 2
-  const halfHeight =
-    (instance.heightMeters *
-      instance.lengthScale *
-      modelScale *
-      (lifted ? 1 : FOOTPRINT_HEIGHT_SCALE)) /
-    2
   const centerX = ((point.clip[0] / w + 1) / 2) * frame.cssWidth
   const centerY = ((1 - point.clip[1] / w) / 2) * frame.cssHeight
   const projectOffset = (east: number, north: number, up: number) => {
@@ -439,7 +435,17 @@ export const projectModelInstance = (
   const projectedBeamAxis = relative(
     projectOffset(halfBeam * Math.cos(heading), -halfBeam * Math.sin(heading), 0),
   )
-  const heightAxis = relative(projectOffset(0, 0, halfHeight * 2))
+  const verticalScale =
+    instance.lengthScale * modelScale * (lifted ? 1 : FOOTPRINT_HEIGHT_SCALE)
+  const lowerHeight =
+    instance.bounds.minimum[2] === 0
+      ? undefined
+      : projectOffset(0, 0, instance.bounds.minimum[2] * verticalScale)
+  const upperHeight = projectOffset(0, 0, instance.bounds.maximum[2] * verticalScale)
+  const heightAxis = {
+    x: (upperHeight?.x ?? centerX) - (lowerHeight?.x ?? centerX),
+    y: (upperHeight?.y ?? centerY) - (lowerHeight?.y ?? centerY),
+  }
   const minimumHalfAxis = (instance.floorPx * perspectiveScale(frame.centerW, w)) / 2
   const lengthMagnitude = Math.hypot(lengthAxis.x, lengthAxis.y)
   if (lengthMagnitude < minimumHalfAxis) {
@@ -465,16 +471,16 @@ export const projectModelInstance = (
     y: beamAlongLength * lengthUnit.y + minimumBeamAcross * perpendicular.y,
   }
   const pickPoints: { x: number; y: number }[] = []
-  for (const beamSign of [-1, 1]) {
-    for (const lengthSign of [-1, 1]) {
-      for (const heightSign of [0, 1]) {
-        const starboard = beamSign * halfBeam
-        const forward = lengthSign * halfLength
-        const up = heightSign * halfHeight * 2
+  const localScale = instance.lengthScale * modelScale
+  for (const starboard of [instance.bounds.minimum[0], instance.bounds.maximum[0]]) {
+    for (const forward of [instance.bounds.minimum[1], instance.bounds.maximum[1]]) {
+      for (const upMeters of [instance.bounds.minimum[2], instance.bounds.maximum[2]]) {
         const projected = projectOffset(
-          starboard * Math.cos(heading) + forward * Math.sin(heading),
-          -starboard * Math.sin(heading) + forward * Math.cos(heading),
-          up,
+          starboard * localScale * Math.cos(heading) +
+            forward * localScale * Math.sin(heading),
+          -starboard * localScale * Math.sin(heading) +
+            forward * localScale * Math.cos(heading),
+          upMeters * verticalScale,
         )
         if (projected) pickPoints.push(projected)
       }

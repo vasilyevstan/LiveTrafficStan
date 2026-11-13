@@ -29,7 +29,15 @@ import {
 const DIMENSIONS = new Map(
   TRAFFIC_MODEL_IDS.map((id) => [
     id,
-    { lengthMeters: 50, beamMeters: 40, heightMeters: 12 },
+    {
+      lengthMeters: 50,
+      beamMeters: 40,
+      heightMeters: 12,
+      bounds: {
+        minimum: [-25, -20, 0] as const,
+        maximum: [25, 20, 12] as const,
+      },
+    },
   ]),
 )
 const FLOOR_PX = 32 * 0.88
@@ -95,6 +103,7 @@ describe('traffic model instances', () => {
       tint: hexColorBytes(band.fill),
       detail: hexColorBytes(band.detail),
     })
+    expect(instance.bounds).toBe(DIMENSIONS.get('aircraft')?.bounds)
     expect(instance.floorPx).toBeCloseTo(FLOOR_PX * 1.08 * properties.markerScale)
   })
 
@@ -257,6 +266,10 @@ const instance = (
   lengthMeters: 50,
   beamMeters: 40,
   heightMeters: 12,
+  bounds: {
+    minimum: [-25, -20, 0] as const,
+    maximum: [25, 20, 12] as const,
+  },
   lengthScale: 1.5,
   extentMeters: 75,
   floorPx: 30,

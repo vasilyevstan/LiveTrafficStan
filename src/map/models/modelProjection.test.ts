@@ -32,6 +32,10 @@ const instance = (overrides: Partial<ModelInstanceGeometry> = {}): ModelInstance
   lengthMeters: 30,
   beamMeters: 20,
   heightMeters: 10,
+  bounds: {
+    minimum: [-10, -15, 0],
+    maximum: [10, 15, 10],
+  },
   lengthScale: 1,
   extentMeters: 30,
   floorPx: 24,
@@ -279,6 +283,10 @@ describe('model projection math', () => {
       lengthMeters: 200,
       beamMeters: 32,
       heightMeters: 36,
+      bounds: {
+        minimum: [-16, -100, 0],
+        maximum: [16, 100, 36],
+      },
       extentMeters: 200,
       floorPx: 36,
     })
@@ -320,6 +328,47 @@ describe('model projection math', () => {
         y: anchor.y + anchor.heightAxis.y * 1.5,
       }),
     ).toBeUndefined()
+  })
+
+  it('uses asymmetric mesh bounds to pick the heeled sailing-boat sail', () => {
+    const frame = frameFor({ ...TALLINN, zoom: 18, pitchDegrees: 55 })
+    const data = instance({
+      lengthMeters: 80,
+      beamMeters: 7.08,
+      heightMeters: 20,
+      bounds: {
+        minimum: [-4.9, -40, 0],
+        maximum: [2.2, 40, 20],
+      },
+      extentMeters: 80,
+      floorPx: 24,
+    })
+    const anchor = projectModelInstance(frame, data)!
+    const screenPoint = (east: number, up: number) => {
+      const clip = projectLocalPoint(
+        frame,
+        data.longitude,
+        data.latitude,
+        0,
+        east,
+        0,
+        up,
+      ).clip
+      return {
+        x: ((clip[0] / clip[3] + 1) / 2) * frame.cssWidth,
+        y: ((1 - clip[1] / clip[3]) / 2) * frame.cssHeight,
+      }
+    }
+
+    expect(modelHitDistance(anchor, screenPoint(-4.5, 12))).toBeDefined()
+    const nominalBounds = projectModelInstance(frame, {
+      ...data,
+      bounds: {
+        minimum: [-data.beamMeters / 2, -data.lengthMeters / 2, 0],
+        maximum: [data.beamMeters / 2, data.lengthMeters / 2, data.heightMeters],
+      },
+    })!
+    expect(modelHitDistance(nominalBounds, screenPoint(-4.5, 12))).toBeUndefined()
   })
 
   it('hits points and boxes against the projected model hull', () => {

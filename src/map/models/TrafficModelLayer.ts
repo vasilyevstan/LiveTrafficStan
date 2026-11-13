@@ -115,6 +115,7 @@ export class TrafficModelLayer implements CustomLayerInterface {
           lengthMeters: mesh.lengthMeters,
           beamMeters: mesh.beamMeters,
           heightMeters: mesh.heightMeters,
+          bounds: mesh.bounds,
         },
       ]),
     )

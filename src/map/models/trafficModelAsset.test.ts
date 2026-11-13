@@ -107,6 +107,7 @@ describe('committed traffic model asset', () => {
   it('uses the starboard, forward and up frame with a keel origin', () => {
     for (const model of models.values()) {
       const { minimum, maximum } = bounds(model)
+      expect(model.bounds).toEqual({ minimum, maximum })
       const tolerance = 0.02 * model.lengthMeters + 0.02
       expect(
         Math.abs(maximum[0] - minimum[0] - model.beamMeters),
@@ -123,8 +124,8 @@ describe('committed traffic model asset', () => {
       expect(Math.abs(minimum[2]), `${model.id} keel`).toBeLessThan(1e-3)
       if (model.id === 'vessel-sailing') {
         // The builder centres the hull, not the boom swung to one side.
-        expect(minimum[0]).toBeLessThan(0)
-        expect(maximum[0]).toBeGreaterThan(0)
+        expect(Math.abs(minimum[0])).toBeGreaterThan(model.beamMeters / 2)
+        expect(Math.abs(maximum[0])).toBeLessThan(model.beamMeters / 2)
       } else {
         expect(
           Math.abs(maximum[0] + minimum[0]),

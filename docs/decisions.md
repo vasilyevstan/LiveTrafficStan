@@ -48,6 +48,9 @@ These compromises were accepted:
 - Satellites face their ground-track bearing because no attitude data exists.
 - Picking uses the screen-space convex hull of each scaled 3D model bound,
   combined with the flat-icon minimum; it is not exact triangle picking.
+  Bounds come from the validated converted GLB vertices, not only nominal
+  dimensions, so asymmetric geometry such as the heeled sailing sail remains
+  selectable.
 
 Models are reviewed in a temporary scene of the live Blender MCP session,
 which is then deleted. The committed GLB comes from a headless run of

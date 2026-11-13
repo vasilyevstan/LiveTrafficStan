@@ -1597,9 +1597,11 @@ repository-original models are one validated GLB, described in
 - As the camera nears an object's altitude, the lifted model fades into a
   flattened ground footprint instead of passing through the camera.
 - Picking uses a CPU mirror of the shaders on the last drawn frame. A hit
-  falls inside the screen-space convex hull of the scaled 3D model bounds,
-  combined with the flat-icon minimum, and passes the same horizon test; hits
-  are ordered nearest first.
+  falls inside the screen-space convex hull of the validated, converted mesh
+  bounds, combined with the flat-icon minimum, and passes the same horizon
+  test; hits are ordered nearest first. This uses actual vertex extents rather
+  than nominal dimensions, preserving asymmetric silhouettes such as the
+  heeled sailing boat.
 - Hover, tooltip re-checks, click, the expanded touch fallback and the
   pointer cursor take model hits first, then the flat features that are
   still visible. Selection, details and trails reuse the existing identity
