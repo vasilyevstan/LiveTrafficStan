@@ -5731,7 +5731,7 @@ The preview PNG is a render and is not byte-stable.
 | Desktop hover and click | Pointer cursor. Clicking selects aircraft `4ca202`, then vessel `276100103` replaces it |
 | Desktop vessel hull picking | At zooms 14 and 16, a bow click selects vessel `276100103`; a side click outside the hull but inside its former circular hit radius clears selection. At zoom 16/pitch 55, clicking the raised silhouette selects it |
 | Desktop sailing hull picking | At zoom 18, a click on the heeled sailing model's asymmetric sail-side hull, beyond the nominal symmetric beam, selects vessel `276100106` |
-| Desktop Dark theme button | Layer re-added at index 65 of 74, still before the flags; selection kept; aircraft 5/5 (1.8 px). No aircraft, marine or WebSocket request in the 2,362 ms switch |
+| Desktop Dark theme button | Layer re-added at index 65 of 74, still before the flags; selection kept; aircraft 5/5 (1.8 px). No aircraft or marine HTTP request; one MQTT socket attempt occurred in the 2,354 ms window, but no handshake completed |
 | Desktop Flat projection button | Aircraft 5/5, 1.9 px |
 | Desktop context loss and restore | `WEBGL_lose_context` drops the style. After restore the layer is re-added: aircraft 5/5, 1.8 px |
 | Desktop requests | Aircraft 1, marine locations 1, marine metadata 1, preflights 2, tiles 63; no page errors |
@@ -5744,8 +5744,8 @@ The preview PNG is a render and is not byte-stable.
 **Bundle impact**, with matched production inputs (`/api/aircraft`; photos,
 routes, marine supplement, airport boards and sharing enabled):
 
-- The HTML initial module closure grew 545,918 → 547,322 Node-default gzip
-  bytes: +1,404, or 0.2572%. That is below the 551,377.18-byte 1% ceiling.
+- The HTML initial module closure grew 545,918 → 547,321 Node-default gzip
+  bytes: +1,403, or 0.2570%. That is below the 551,377.18-byte 1% ceiling.
 - `index-*.js` alone grew 532,831 → 534,255 gzip-9 bytes.
 - Rolldown moved `appConfig` from the startup `DetailsPanel` chunk into its
   own startup chunk, shared with the lazy model runtime. The base's 86-byte
