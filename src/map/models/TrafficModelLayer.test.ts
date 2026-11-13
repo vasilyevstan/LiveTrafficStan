@@ -187,25 +187,28 @@ describe('TrafficModelLayer', () => {
     )
   })
 
-  it('offsets only globe model depth by four units and restores the raster state', () => {
-    for (const transition of [0, 0.3, 1]) {
-      const { calls, render, show } = setup()
-      show('vessels')
-      render(transition)
-      expect(named(calls, 'polygonOffset').map(({ args }) => args)).toEqual(
-        transition > 0 ? [[0, -4]] : [],
-      )
-      expect(uniformValues(calls, 'u_depth_only')).toEqual([[1], [0]])
-      const firstDraw = calls.findIndex(({ name }) => name === 'drawArraysInstanced')
-      expect(calls.slice(0, firstDraw)).toContainEqual({ name: 'enable', args: ['DEPTH_TEST'] })
-      expect(calls.slice(0, firstDraw)).toContainEqual({ name: 'enable', args: ['CULL_FACE'] })
-      const lastDraw = calls.map(({ name }) => name).lastIndexOf('drawArraysInstanced')
-      expect(calls.slice(firstDraw, lastDraw)).not.toContainEqual({
-        name: 'disable', args: ['POLYGON_OFFSET_FILL'],
-      })
-      expect(tail(calls)).toEqual(RESTORED_STATE)
-    }
-  })
+  it.each(['vessels', 'aircraft', 'orbital', 'starlink'] as const)(
+    'offsets only globe %s depth and restores the raster state',
+    (group) => {
+      for (const transition of [0, 0.3, 1]) {
+        const { calls, render, show } = setup()
+        show(group)
+        render(transition)
+        expect(named(calls, 'polygonOffset').map(({ args }) => args)).toEqual(
+          transition > 0 ? [[0, group === 'vessels' ? -8 : -4]] : [],
+        )
+        expect(uniformValues(calls, 'u_depth_only')).toEqual([[1], [0]])
+        const firstDraw = calls.findIndex(({ name }) => name === 'drawArraysInstanced')
+        expect(calls.slice(0, firstDraw)).toContainEqual({ name: 'enable', args: ['DEPTH_TEST'] })
+        expect(calls.slice(0, firstDraw)).toContainEqual({ name: 'enable', args: ['CULL_FACE'] })
+        const lastDraw = calls.map(({ name }) => name).lastIndexOf('drawArraysInstanced')
+        expect(calls.slice(firstDraw, lastDraw)).not.toContainEqual({
+          name: 'disable', args: ['POLYGON_OFFSET_FILL'],
+        })
+        expect(tail(calls)).toEqual(RESTORED_STATE)
+      }
+    },
+  )
 
   it('adds footprints, drop lines and selection rings only when needed', () => {
     const { calls, render, show } = setup()

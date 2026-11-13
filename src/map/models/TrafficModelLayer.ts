@@ -340,7 +340,12 @@ export class TrafficModelLayer implements CustomLayerInterface {
     gl.frontFace(frame.frontFaceCcw ? gl.CCW : gl.CW)
     if (frame.transition > 0) {
       gl.enable(gl.POLYGON_OFFSET_FILL)
-      gl.polygonOffset(0, TRAFFIC_MODEL_CONFIG.globeDepthOffsetUnits)
+      gl.polygonOffset(
+        0,
+        group === 'vessels'
+          ? TRAFFIC_MODEL_CONFIG.vesselGlobeDepthOffsetUnits
+          : TRAFFIC_MODEL_CONFIG.globeDepthOffsetUnits,
+      )
     }
     const u = this.useProgram(gl, programs.model, frame, copy)
     gl.bindVertexArray(buffers.modelVao)
