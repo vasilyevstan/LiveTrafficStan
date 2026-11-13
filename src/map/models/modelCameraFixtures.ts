@@ -128,6 +128,7 @@ export const modelInstanceFixture = (overrides: Partial<ModelInstance> = {}): Mo
   opacity: 1,
   flags: 0,
   lengthScale: 1,
+  overviewStretch: 1,
   tint: [255, 255, 255],
   detail: [0, 0, 0],
   ...overrides,

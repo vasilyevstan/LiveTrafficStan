@@ -38,6 +38,7 @@ const instance = (overrides: Partial<ModelInstanceGeometry> = {}): ModelInstance
     maximum: [10, 15, 10],
   },
   lengthScale: 1,
+  overviewStretch: 1,
   extentMeters: 30,
   floorPx: 24,
   opacity: 1,
@@ -139,6 +140,30 @@ describe('model projection math', () => {
       expect(newClose.x).toBe(oldClose.x)
       expect(newClose.y).toBe(oldClose.y)
       expect(newClose.heightAxis).toEqual(oldClose.heightAxis)
+    }
+  })
+
+  it('keeps the overview pick target and converges to true proportions at close zoom', () => {
+    const cargo = instance({
+      lengthMeters: 200,
+      beamMeters: 32,
+      extentMeters: 200,
+      bounds: { minimum: [-16, -100, 0], maximum: [16, 100, 36] },
+      floorPx: 34,
+    })
+    const stretched = { ...cargo, overviewStretch: Math.sqrt(200 / 32 / 3.5) }
+    for (const transition of [0, 1]) {
+      const wide = frameFor({ ...TALLINN, zoom: 9 }, transition)
+      const plain = projectModelInstance(wide, cargo)!
+      const wider = projectModelInstance(wide, stretched)!
+      expect(wider.radiusPx).toBe(plain.radiusPx)
+      expect(wider.heightAxis).toEqual(plain.heightAxis)
+      for (const axis of ['lengthAxis', 'beamAxis'] as const) {
+        expect(wider[axis].x).toBeCloseTo(plain[axis].x, 3)
+        expect(wider[axis].y).toBeCloseTo(plain[axis].y, 3)
+      }
+      const close = frameFor({ ...TALLINN, zoom: 17 }, transition)
+      expect(projectModelInstance(close, stretched)).toEqual(projectModelInstance(close, cargo))
     }
   })
 

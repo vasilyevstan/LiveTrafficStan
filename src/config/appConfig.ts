@@ -307,6 +307,9 @@ export const TRAFFIC_MODEL_CONFIG = {
   },
   minimumVesselLengthMeters: 2,
   maximumVesselLengthMeters: 500,
+  // While the screen floor enlarges a hull, trade length for beam (same area)
+  // so overview ships stay at or below this length-to-beam ratio.
+  vesselOverviewMaximumLengthToBeam: 3.5,
   // Match the quantized globe surface depth without moving model geometry.
   globeDepthOffsetUnits: -4,
   vesselGlobeDepthOffsetUnits: -8,

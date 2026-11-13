@@ -149,18 +149,26 @@ export interface ModelPickHit {
   distance: number
 }
 
-/** Nearest hit per object, ordered by screen distance from the query. */
+/**
+ * Nearest hit per object, ordered by screen distance from the query. Co-located
+ * objects tie exactly; the larger drawn model encloses the others and wins,
+ * such as the ISS over its docked modules and visiting vehicles.
+ */
 export const modelPickHits = (
   group: ModelGroup,
   anchors: readonly ModelPickAnchor[],
   geometry: ScreenGeometry,
 ): ModelPickHit[] => {
-  const nearest = new Map<string, number>()
+  const nearest = new Map<string, { distance: number; radiusPx: number }>()
   for (const { id, anchor } of anchors) {
     const distance = modelHitDistance(anchor, geometry)
     if (distance === undefined) continue
     const previous = nearest.get(id)
-    if (previous === undefined || distance < previous) nearest.set(id, distance)
+    if (previous === undefined || distance < previous.distance) {
+      nearest.set(id, { distance, radiusPx: anchor.radiusPx })
+    }
   }
-  return [...nearest].map(([id, distance]) => ({ group, id, distance }))
+  return [...nearest]
+    .sort(([, a], [, b]) => a.distance - b.distance || b.radiusPx - a.radiusPx)
+    .map(([id, { distance }]) => ({ group, id, distance }))
 }

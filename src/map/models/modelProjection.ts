@@ -188,6 +188,8 @@ export interface ModelInstanceGeometry {
   heightMeters: number
   bounds: TrafficModelBounds
   lengthScale: number
+  /** Overview length-for-beam trade k; 1 keeps the uniform floor scale. */
+  overviewStretch: number
   extentMeters: number
   floorPx: number
   opacity: number
@@ -410,15 +412,17 @@ export const projectModelInstance = (
     instance.floorPx * perspectiveScale(frame.centerW, w),
     instance.extentMeters * pxPerMeter,
   )
-  const modelScale = Math.max(
-    1,
+  const enlarge =
     (instance.floorPx * perspectiveScale(frame.centerW, w)) /
-      Math.max(instance.extentMeters * pxPerMeter, 1e-6),
-  )
+    Math.max(instance.extentMeters * pxPerMeter, 1e-6)
+  const stretch = instance.overviewStretch
+  const lengthModelScale = Math.max(1, enlarge / stretch)
+  const beamModelScale = Math.max(1, enlarge * stretch)
+  const modelScale = Math.max(1, enlarge)
   const heading = instance.headingDegrees * RADIANS
   const halfLength =
-    (instance.lengthMeters * instance.lengthScale * modelScale) / 2
-  const halfBeam = (instance.beamMeters * instance.lengthScale * modelScale) / 2
+    (instance.lengthMeters * instance.lengthScale * lengthModelScale) / 2
+  const halfBeam = (instance.beamMeters * instance.lengthScale * beamModelScale) / 2
   const centerX = ((point.clip[0] / w + 1) / 2) * frame.cssWidth
   const centerY = ((1 - point.clip[1] / w) / 2) * frame.cssHeight
   const projectOffset = (east: number, north: number, up: number) => {
@@ -483,15 +487,16 @@ export const projectModelInstance = (
     y: beamAlongLength * lengthUnit.y + minimumBeamAcross * perpendicular.y,
   }
   const pickPoints: { x: number; y: number }[] = []
-  const localScale = instance.lengthScale * modelScale
+  const beamLocalScale = instance.lengthScale * beamModelScale
+  const lengthLocalScale = instance.lengthScale * lengthModelScale
   for (const starboard of [instance.bounds.minimum[0], instance.bounds.maximum[0]]) {
     for (const forward of [instance.bounds.minimum[1], instance.bounds.maximum[1]]) {
       for (const upMeters of [instance.bounds.minimum[2], instance.bounds.maximum[2]]) {
         const projected = projectOffset(
-          starboard * localScale * Math.cos(heading) +
-            forward * localScale * Math.sin(heading),
-          -starboard * localScale * Math.sin(heading) +
-            forward * localScale * Math.cos(heading),
+          starboard * beamLocalScale * Math.cos(heading) +
+            forward * lengthLocalScale * Math.sin(heading),
+          -starboard * beamLocalScale * Math.sin(heading) +
+            forward * lengthLocalScale * Math.cos(heading),
           upMeters * verticalScale,
         )
         if (projected) pickPoints.push(projected)
