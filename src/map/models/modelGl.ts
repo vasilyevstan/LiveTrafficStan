@@ -21,6 +21,7 @@ export class ModelGlError extends Error {
 const FRAME_UNIFORMS = [
   'u_mercator',
   'u_globe',
+  'u_globe_origin',
   'u_transition',
   'u_k',
   'u_center_w',

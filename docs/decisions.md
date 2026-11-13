@@ -63,6 +63,10 @@ existing instance field to both rendering and picking. Browser comparisons
 measure painted silhouettes, not selection-ring or padded hit-box diameter;
 actual DPR is measured and removed from pixel measurements. See the
 [readability follow-up](development-and-testing.md#3d-model-readability-follow-up).
+That comparison also exposed a globe-only depth precision defect in one
+enlarged tanker. Extending the existing camera-relative matrix technique to
+the globe path restored the painted hull without clearing depth, disabling
+culling, lifting ships above sea level or adding a depth bias.
 
 Models are reviewed in a temporary scene of the live Blender MCP session,
 which is then deleted. The committed GLB comes from a headless run of

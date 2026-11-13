@@ -12,6 +12,7 @@ import { ModelGlError } from './modelGl'
 import {
   MODEL_FLAG_DROP_LINE,
   MODEL_FLAG_SELECTED,
+  createModelFrame,
   mercatorX,
   wrapMercatorOffset,
 } from './modelProjection'
@@ -164,6 +165,25 @@ describe('TrafficModelLayer', () => {
       .filter((call) => call.args[0] === 3)
       .map((call) => call.args[5])
     expect(offsetPointers).toEqual([0, 112, 0, 112])
+  })
+
+  it('uploads the camera-relative globe matrix and matching origin to every program', () => {
+    const camera = { ...TALLINN, zoom: 11.7 }
+    const { calls, render, show } = setup(camera)
+    show('aircraft', [
+      modelInstanceFixture({
+        altitudeMeters: 1_000,
+        flags: MODEL_FLAG_DROP_LINE | MODEL_FLAG_SELECTED,
+      }),
+    ])
+    render(0.3)
+    const frame = createModelFrame(frameInputFixture(camera, 0.3))!
+    expect(uniformValues(calls, 'u_globe')).toEqual(
+      Array.from({ length: 3 }, () => [false, frame.globeRtcMatrix]),
+    )
+    expect(uniformValues(calls, 'u_globe_origin')).toEqual(
+      Array.from({ length: 3 }, () => [...frame.globeOrigin]),
+    )
   })
 
   it('adds footprints, drop lines and selection rings only when needed', () => {

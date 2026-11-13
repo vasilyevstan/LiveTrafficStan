@@ -18,6 +18,7 @@ import {
   perspectiveScale,
   projectLocalPoint,
   projectModelInstance,
+  transformVec4,
   wrapMercatorOffset,
   type ModelFrame,
   type ModelInstanceGeometry,
@@ -138,6 +139,33 @@ describe('model projection math', () => {
       expect(newClose.x).toBe(oldClose.x)
       expect(newClose.y).toBe(oldClose.y)
       expect(newClose.heightAxis).toEqual(oldClose.heightAxis)
+    }
+  })
+
+  it('keeps float32 globe surface depth precise with camera-relative coordinates', () => {
+    const gpuClip = (matrix: ArrayLike<number>, point: readonly number[]) =>
+      [0, 1, 2, 3].map((row) =>
+        point.reduce(
+          (sum, value, column) =>
+            Math.fround(sum + Math.fround(Math.fround(matrix[column * 4 + row]) * Math.fround(value))),
+          0,
+        ),
+      )
+    for (const zoom of [10.5, 11.7, 14]) {
+      const frame = frameFor({ ...TALLINN, zoom }, 1)
+      const { sphere } = projectLocalPoint(frame, 24.77, 59.44, 0, 500, 500, 20)
+      const exact = transformVec4(frame.globeMatrix, ...sphere!, 1)
+      const direct = gpuClip(frame.globeMatrix, [...sphere!, 1])
+      const relative = gpuClip(frame.globeRtcMatrix, [
+        sphere![0] - frame.globeOrigin[0],
+        sphere![1] - frame.globeOrigin[1],
+        sphere![2] - frame.globeOrigin[2],
+        1,
+      ])
+      const expectedDepth = exact[2] / exact[3]
+      const relativeError = Math.abs(relative[2] / relative[3] - expectedDepth)
+      expect(relativeError).toBeLessThan(2e-7)
+      expect(relativeError).toBeLessThan(Math.abs(direct[2] / direct[3] - expectedDepth))
     }
   })
 

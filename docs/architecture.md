@@ -1600,7 +1600,11 @@ repository-original models are one validated GLB, described in
 
 - The shaders follow MapLibre's globe/Mercator transition. They use
   relative-to-center float32 packing, re-anchored after 100,000 px or 0.25
-  world of drift.
+  world of drift. Globe projection also uses a camera-relative matrix and
+  matching sphere origin: multiplying near-surface models by a full-world
+  float32 matrix loses depth precision and can clip hulls behind the map.
+  The CPU projection stays in double precision; depth testing, back-face
+  culling and actual altitude are unchanged.
 - A ray-sphere horizon test hides objects on the far side of the globe.
 - As the camera nears an object's altitude, the lifted model fades into a
   flattened ground footprint instead of passing through the camera.

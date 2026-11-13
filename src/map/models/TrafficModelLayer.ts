@@ -281,7 +281,8 @@ export class TrafficModelLayer implements CustomLayerInterface {
     if (program.frameRevision !== this.frameRevision) {
       program.frameRevision = this.frameRevision
       setMatrix(gl, u.u_mercator, frame.rtcMatrix)
-      setMatrix(gl, u.u_globe, Float32Array.from(frame.globeMatrix))
+      setMatrix(gl, u.u_globe, frame.globeRtcMatrix)
+      if (u.u_globe_origin) gl.uniform3f(u.u_globe_origin, ...frame.globeOrigin)
       if (u.u_transition) gl.uniform1f(u.u_transition, frame.transition)
       if (u.u_k) gl.uniform2f(u.u_k, frame.kMercator, frame.kGlobe)
       if (u.u_center_w) gl.uniform1f(u.u_center_w, frame.centerW)

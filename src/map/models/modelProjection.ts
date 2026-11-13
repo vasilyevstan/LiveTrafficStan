@@ -211,6 +211,8 @@ export interface ModelFrame {
   mercatorMatrix: Float64Array
   globeMatrix: Float64Array
   rtcMatrix: Float32Array
+  globeRtcMatrix: Float32Array
+  globeOrigin: Vec3
   reference: MercatorPoint
   cssWidth: number
   cssHeight: number
@@ -281,6 +283,12 @@ export const createModelFrame = (input: ModelFrameInput): ModelFrame | undefined
   const cameraMercator = cameraPosition(mercatorMatrix)
   const cameraGlobe = transition > 0 ? cameraPosition(globeMatrix) : ([0, 0, 0] as Vec3)
   if (!cameraMercator || !cameraGlobe || !(cameraMercator[2] > 0)) return undefined
+  const centerSphere = sphereVector(input.centerLongitude, input.centerLatitude)
+  const globeOrigin: Vec3 = [
+    Math.fround(centerSphere[0]),
+    Math.fround(centerSphere[1]),
+    Math.fround(centerSphere[2]),
+  ]
   const frame: ModelFrame = {
     transition,
     mercatorMatrix,
@@ -288,6 +296,10 @@ export const createModelFrame = (input: ModelFrameInput): ModelFrame | undefined
     rtcMatrix: Float32Array.from(
       multiplyMat4(mercatorMatrix, translationMat4(input.reference.x, input.reference.y, 0)),
     ),
+    globeRtcMatrix: Float32Array.from(
+      multiplyMat4(globeMatrix, translationMat4(...globeOrigin)),
+    ),
+    globeOrigin,
     reference: { ...input.reference },
     cssWidth: input.cssWidth,
     cssHeight: input.cssHeight,
