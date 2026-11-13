@@ -10,6 +10,7 @@ import {
   Map as MapLibreMap,
   Popup,
   setWorkerUrl,
+  type PointLike,
   type ProjectionSpecification,
   type StyleSpecification,
 } from 'maplibre-gl'
@@ -49,6 +50,7 @@ import {
 } from '../domain/orbitalViewport'
 import type {
   DisplayAircraft,
+  DisplayTrafficEntity,
   DisplayVessel,
   TrafficEntity,
   TrailPoint,
@@ -104,6 +106,21 @@ import {
   uniqueEligibleFeatureId,
 } from './touchPicking'
 import {
+  activeModelGroups,
+  INACTIVE_MODEL_ACTIVITY,
+  modelPickFeatures,
+  ORBITAL_MODEL_GROUPS,
+  resolveModelActivity,
+  sameModelActivity,
+  TRAFFIC_MODEL_GROUPS,
+  TRAFFIC_MODEL_LAYER_ID,
+  visibleFlatOrbitalFeatures,
+  type ModelActivity,
+} from './models/modelActivity'
+import type { ModelGroup } from './models/modelInstances'
+import type { ScreenGeometry } from './models/modelProjection'
+import type { TrafficModelLayer } from './models/TrafficModelLayer'
+import {
   AIRPORT_LAYER_IDS,
   airportFeatures,
   installAirportsStyle,
@@ -129,6 +146,7 @@ import {
   orbitalPositionFeatures,
   orbitalSelectionHighlightFeatures,
   orbitalSelectionTrackFeatures,
+  setOrbitalModelsActive,
   setOrbitalPointFilter,
   setOrbitalSourceData,
   setOrbitalVisibility,
@@ -149,18 +167,17 @@ import {
 import {
   installTrafficFlagImages,
   installTrafficStyle,
-  AIRCRAFT_TRAFFIC_LAYER_IDS,
   LAYER_AIRCRAFT,
   LAYER_AIRCRAFT_CLUSTERS,
+  LAYER_AIRCRAFT_FLAGS,
   LAYER_VESSEL_CLUSTERS,
   LAYER_VESSELS,
-  setTrafficLayerVisibility,
+  setTrafficGroupVisibility,
   setTrafficSourceData,
   SOURCE_AIRCRAFT,
   SOURCE_TRAIL,
   SOURCE_VESSELS,
   type TrafficStyleImages,
-  VESSEL_TRAFFIC_LAYER_IDS,
 } from './trafficStyle'
 import {
   trafficFeatures,
@@ -635,8 +652,16 @@ export function TrafficMap({
     aircraft?: readonly Feature<Point>[]
     vessels?: readonly Feature<Point>[]
   }>({})
+  const lastTrafficEntitiesRef = useRef<{
+    aircraft?: readonly DisplayTrafficEntity[]
+    vessels?: readonly DisplayTrafficEntity[]
+  }>({})
   const lastOrbitalFeaturesRef = useRef<readonly Feature<Point>[]>([])
   const lastStarlinkFeaturesRef = useRef<readonly Feature<Point>[]>([])
+  const modelLayerRef = useRef<TrafficModelLayer | null>(null)
+  const modelActivityRef = useRef<ModelActivity>(INACTIVE_MODEL_ACTIVITY)
+  const modelContextLostRef = useRef(false)
+  const modelGenerationRef = useRef(0)
   const orbitalUpdateGenerationRef = useRef(0)
   const starlinkUpdateGenerationRef = useRef(0)
   const trafficUpdateGenerationRef = useRef({
@@ -805,6 +830,73 @@ export function TrafficMap({
     viewportSettleMs,
   ])
 
+  const feedModelLayer = useCallback(() => {
+    const layer = modelLayerRef.current
+    if (!layer) return
+    const theme = themeRef.current
+    const entities = lastTrafficEntitiesRef.current
+    const features = lastTrafficFeaturesRef.current
+    layer.setTraffic('aircraft', entities.aircraft ?? [], features.aircraft ?? [], theme)
+    layer.setTraffic('vessels', entities.vessels ?? [], features.vessels ?? [], theme)
+    const orbital = orbitalRenderStateRef.current
+    layer.setOrbital('orbital', orbital.positions, orbital.shownIds, orbital.selectedOrbitalId, theme)
+    const starlink = starlinkRenderStateRef.current
+    layer.setOrbital('starlink', starlink.positions, starlink.shownIds, starlink.selectedOrbitalId, theme)
+  }, [])
+
+  /**
+   * Hands each group to the 3D layer only while it can draw it; otherwise the
+   * flat symbols stay authoritative. `force` reapplies flat visibility after a
+   * style install or a visibility change even when activity is unchanged.
+   */
+  const applyModelActivity = useCallback((map: MapLibreMap, force = false) => {
+    const layer = modelLayerRef.current
+    const view = viewStateRef.current
+    const activity = resolveModelActivity({
+      available:
+        layer !== null &&
+        !layer.failed &&
+        !modelContextLostRef.current &&
+        loadedRef.current &&
+        map.getLayer(TRAFFIC_MODEL_LAYER_ID) !== undefined,
+      captured: capturedViewRef.current !== undefined,
+      zoom: map.getZoom(),
+      clusteringEnabled: clusteringEnabledRef.current,
+      clusterMaximumZoom: clusterConfigRef.current.maximumZoom,
+      aircraftVisible: view.aircraftVisible,
+      vesselsVisible: view.vesselsVisible,
+      orbitalVisible: view.orbitalVisible,
+      starlinkVisible: view.starlinkVisible,
+    })
+    for (const group of [...TRAFFIC_MODEL_GROUPS, ...ORBITAL_MODEL_GROUPS]) {
+      layer?.setGroupActive(group, activity[group])
+    }
+    const changed = !sameModelActivity(activity, modelActivityRef.current)
+    modelActivityRef.current = activity
+    if (!loadedRef.current || (!changed && !force)) return
+    setTrafficGroupVisibility(map, 'aircraft', view.aircraftVisible, activity.aircraft)
+    setTrafficGroupVisibility(map, 'vessels', view.vesselsVisible, activity.vessels)
+    setOrbitalModelsActive(map, 'orbital', activity.orbital)
+    setOrbitalModelsActive(map, 'starlink', activity.starlink)
+  }, [])
+
+  /** Adds or reorders the single 3D layer directly above the flat symbols. */
+  const placeModelLayer = useCallback((map: MapLibreMap) => {
+    const layer = modelLayerRef.current
+    if (!layer || layer.failed || modelContextLostRef.current) return
+    const before = map.getLayer(LAYER_AIRCRAFT_FLAGS) ? LAYER_AIRCRAFT_FLAGS : undefined
+    try {
+      if (map.getLayer(TRAFFIC_MODEL_LAYER_ID)) {
+        map.moveLayer(TRAFFIC_MODEL_LAYER_ID, before)
+      } else {
+        map.addLayer(layer, before)
+      }
+    } catch {
+      // A rejected layer leaves the flat symbols authoritative.
+    }
+    feedModelLayer()
+  }, [feedModelLayer])
+
   const renderSources = useCallback((now: number, force = false) => {
     const map = mapRef.current
     if (!map || !loadedRef.current) return
@@ -827,10 +919,11 @@ export function TrafficMap({
         vesselMotionRef.current,
       ],
     ] as const) {
+      const displayed = state.trafficContext
+        ? sampleTrafficZoomContext(map, entities)
+        : entities
       const data = trafficFeatures(
-        state.trafficContext
-          ? sampleTrafficZoomContext(map, entities)
-          : entities,
+        displayed,
         motion,
         now,
         state.selectedId,
@@ -870,6 +963,8 @@ export function TrafficMap({
         updated = true
       }
       lastTrafficFeaturesRef.current[kind] = data.features
+      lastTrafficEntitiesRef.current[kind] = displayed
+      modelLayerRef.current?.setTraffic(kind, displayed, data.features, themeRef.current)
     }
 
     if (updated) sourceDataGenerationRef.current += 1
@@ -1256,10 +1351,15 @@ export function TrafficMap({
       reliefRef.current?.install(activeTheme, appliedStyleUrlRef.current, reliefVisibleRef.current)
       bathymetryRef.current?.install(activeTheme)
       updateEarthDayNight(map)
+      const modelActivity = modelActivityRef.current
+      const aircraftEntities = renderState.trafficContext
+        ? sampleTrafficZoomContext(map, renderState.aircraft)
+        : renderState.aircraft
+      const vesselEntities = renderState.trafficContext
+        ? sampleTrafficZoomContext(map, renderState.vessels)
+        : renderState.vessels
       const aircraftFeatures = trafficFeatures(
-        renderState.trafficContext
-          ? sampleTrafficZoomContext(map, renderState.aircraft)
-          : renderState.aircraft,
+        aircraftEntities,
         aircraftMotionRef.current,
         now,
         renderState.selectedId,
@@ -1269,9 +1369,7 @@ export function TrafficMap({
         flagImagesRef.current !== undefined,
       )
       const vesselFeatures = trafficFeatures(
-        renderState.trafficContext
-          ? sampleTrafficZoomContext(map, renderState.vessels)
-          : renderState.vessels,
+        vesselEntities,
         vesselMotionRef.current,
         now,
         renderState.selectedId,
@@ -1293,6 +1391,8 @@ export function TrafficMap({
           clusterRadiusPx: clusterConfigRef.current.radiusPx,
           clusterMinimumPoints: clusterConfigRef.current.minimumPoints,
           clusterMaximumZoom: clusterConfigRef.current.maximumZoom,
+          aircraftModelsActive: modelActivity.aircraft,
+          vesselModelsActive: modelActivity.vessels,
         },
         getTrafficImages(activeTheme),
         flagImagesRef.current,
@@ -1300,6 +1400,10 @@ export function TrafficMap({
       lastTrafficFeaturesRef.current = {
         aircraft: aircraftFeatures.features,
         vessels: vesselFeatures.features,
+      }
+      lastTrafficEntitiesRef.current = {
+        aircraft: aircraftEntities,
+        vessels: vesselEntities,
       }
       sourceDataGenerationRef.current += 1
       const portState = portRenderStateRef.current
@@ -1362,6 +1466,7 @@ export function TrafficMap({
           viewState.orbitalVisible,
           getOrbitalImages(activeTheme),
           orbitalState.shownIds,
+          modelActivity.orbital,
         )
         lastOrbitalFeaturesRef.current = points.features
       }
@@ -1386,11 +1491,14 @@ export function TrafficMap({
         viewState.starlinkVisible,
         getOrbitalImages(activeTheme),
         starlinkState.shownIds,
+        modelActivity.starlink,
       )
       lastStarlinkFeaturesRef.current = starlinkPoints.features
       installJourneyStyle(map, journeySnapshotRef.current, activeTheme)
       installLocalRulerStyle(map, localRulerRef.current?.read().points ?? EMPTY_LOCAL_RULER.points, activeTheme)
+      placeModelLayer(map)
       loadedRef.current = true
+      applyModelActivity(map, true)
       errorRef.current(
         fallbackActiveRef.current
           ? {
@@ -1440,9 +1548,11 @@ export function TrafficMap({
       }
     },
     [
+      applyModelActivity,
       fitCurrentView,
       getOrbitalImages,
       getTrafficImages,
+      placeModelLayer,
       scheduleRender,
       scheduleViewportReport,
       updateEarthDayNight,
@@ -1723,6 +1833,8 @@ export function TrafficMap({
           pitch: initialCamera?.pitch ?? 0,
           attributionControl: false,
           maxPitch: 60,
+          // MSAA keeps the low-poly 3D model silhouettes smooth.
+          canvasContextAttributes: { antialias: true },
         }),
       (error) => errorRef.current(error),
     )
@@ -1734,6 +1846,41 @@ export function TrafficMap({
       map, depthsVisibleRef.current, onlineRef.current,
       status => bathymetryStatusRef.current(status),
     )
+    const modelLoad = new AbortController()
+    void import('./models/trafficModelRuntime')
+      .then(({ loadTrafficModelLayer }) =>
+        loadTrafficModelLayer({
+          signal: modelLoad.signal,
+          onFailure: () => {
+            if (mapRef.current === map) applyModelActivity(map, true)
+          },
+        }),
+      )
+      .then((layer) => {
+        if (modelLoad.signal.aborted || mapRef.current !== map) return
+        modelLayerRef.current = layer
+        if (!loadedRef.current) return
+        placeModelLayer(map)
+        applyModelActivity(map, true)
+      })
+      .catch(() => {
+        // Without the model runtime the flat symbols remain the display.
+      })
+    map.on('webglcontextlost', () => {
+      modelContextLostRef.current = true
+      modelGenerationRef.current += 1
+      applyModelActivity(map)
+    })
+    map.on('webglcontextrestored', () => {
+      // MapLibre rebuilds the lost style without custom layers.
+      const generation = ++modelGenerationRef.current
+      map.once('style.load', () => {
+        if (generation !== modelGenerationRef.current || mapRef.current !== map) return
+        modelContextLostRef.current = false
+        placeModelLayer(map)
+        applyModelActivity(map, true)
+      })
+    })
     const touchTracker = new TouchInteractionTracker()
     const canvas = map.getCanvas()
     const hoverPopup = new Popup({
@@ -1813,16 +1960,14 @@ export function TrafficMap({
         ) {
           return
         }
-        const layers = activeTrafficLayers()
-        const hoveredId =
-          layers.length > 0
-            ? exactEligibleFeatureId(
-                map.queryRenderedFeatures(lastHoverPoint, {
-                  layers,
-                }),
-                selectableTrafficIds(),
-              )
-            : null
+        const hoveredId = exactEligibleFeatureId(
+          renderedPickFeatures(
+            lastHoverPoint,
+            activeTrafficLayers(),
+            activeTrafficModelGroups(),
+          ),
+          selectableTrafficIds(),
+        )
         if (hoveredId !== entity.id) return
         const currentEntity = trafficEntity(entity.id)
         if (!currentEntity || !trafficPhotoEligible(currentEntity)) return
@@ -2022,10 +2167,19 @@ export function TrafficMap({
       if (renderStateRef.current.trafficContext) return []
       const layers: string[] = []
       const viewState = viewStateRef.current
-      if (viewState.aircraftVisible && map.getLayer(LAYER_AIRCRAFT)) {
+      const models = modelActivityRef.current
+      if (
+        viewState.aircraftVisible &&
+        !models.aircraft &&
+        map.getLayer(LAYER_AIRCRAFT)
+      ) {
         layers.push(LAYER_AIRCRAFT)
       }
-      if (viewState.vesselsVisible && map.getLayer(LAYER_VESSELS)) {
+      if (
+        viewState.vesselsVisible &&
+        !models.vessels &&
+        map.getLayer(LAYER_VESSELS)
+      ) {
         layers.push(LAYER_VESSELS)
       }
       return layers
@@ -2036,14 +2190,17 @@ export function TrafficMap({
       if (!clusteringEnabledRef.current) return []
       const layers: string[] = []
       const viewState = viewStateRef.current
+      const models = modelActivityRef.current
       if (
         viewState.aircraftVisible &&
+        !models.aircraft &&
         map.getLayer(LAYER_AIRCRAFT_CLUSTERS)
       ) {
         layers.push(LAYER_AIRCRAFT_CLUSTERS)
       }
       if (
         viewState.vesselsVisible &&
+        !models.vessels &&
         map.getLayer(LAYER_VESSEL_CLUSTERS)
       ) {
         layers.push(LAYER_VESSEL_CLUSTERS)
@@ -2074,6 +2231,38 @@ export function TrafficMap({
         viewState.starlinkVisible,
       )
     }
+
+    // Activity already requires visibility; traffic context stays unpickable.
+    const activeTrafficModelGroups = (): readonly ModelGroup[] =>
+      renderStateRef.current.trafficContext
+        ? []
+        : activeModelGroups(modelActivityRef.current, TRAFFIC_MODEL_GROUPS)
+
+    const activeOrbitalModelGroups = (): readonly ModelGroup[] =>
+      activeModelGroups(modelActivityRef.current, ORBITAL_MODEL_GROUPS)
+
+    const pickModels = (
+      geometry: ScreenGeometry,
+      groups: readonly ModelGroup[],
+    ) =>
+      groups.length > 0
+        ? modelPickFeatures(modelLayerRef.current?.pick(geometry, groups) ?? [])
+        : []
+
+    /** Drawn models nearest-first, then the flat features still visible. */
+    const renderedPickFeatures = (
+      geometry: PointLike | [PointLike, PointLike],
+      layers: string[],
+      groups: readonly ModelGroup[],
+    ) => [
+      ...pickModels(geometry, groups),
+      ...(layers.length > 0
+        ? visibleFlatOrbitalFeatures(
+            map.queryRenderedFeatures(geometry, { layers }),
+            modelActivityRef.current,
+          )
+        : []),
+    ]
 
     const selectableTrafficIds = () => {
       const ids = new Set<string>()
@@ -2171,31 +2360,27 @@ export function TrafficMap({
       }
       const hoveredTrafficId = hoveredTrafficIdRef.current
       if (hoveredTrafficId) {
-        const layers = activeTrafficLayers()
-        const renderedId =
-          layers.length > 0
-            ? exactEligibleFeatureId(
-                map.queryRenderedFeatures(lastHoverPoint, {
-                  layers,
-                }),
-                selectableTrafficIds(),
-              )
-            : null
+        const renderedId = exactEligibleFeatureId(
+          renderedPickFeatures(
+            lastHoverPoint,
+            activeTrafficLayers(),
+            activeTrafficModelGroups(),
+          ),
+          selectableTrafficIds(),
+        )
         if (renderedId !== hoveredTrafficId) hideTrafficTooltip()
         return
       }
       const hoveredOrbitalId = hoveredOrbitalIdRef.current
       if (!hoveredOrbitalId) return
-      const layers = activeOrbitalLayers()
-      const renderedId =
-        layers.length > 0
-          ? exactEligibleFeatureId(
-              map.queryRenderedFeatures(lastHoverPoint, {
-                layers,
-              }),
-              selectableOrbitalIds(),
-            )
-          : null
+      const renderedId = exactEligibleFeatureId(
+        renderedPickFeatures(
+          lastHoverPoint,
+          activeOrbitalLayers(),
+          activeOrbitalModelGroups(),
+        ),
+        selectableOrbitalIds(),
+      )
       if (renderedId !== hoveredOrbitalId) hideTrafficTooltip()
     }
 
@@ -2313,7 +2498,9 @@ export function TrafficMap({
     map.on('style.load', hideTrafficTooltip)
     map.on('render', revalidateTrafficTooltip)
     map.on('zoom', () => {
-      if (loadedRef.current) updateEarthDayNight(map)
+      if (!loadedRef.current) return
+      updateEarthDayNight(map)
+      applyModelActivity(map)
     })
 
     map.on('moveend', () => {
@@ -2372,12 +2559,17 @@ export function TrafficMap({
         event.originalEvent,
       )
       const trafficLayers = activeTrafficLayers()
+      const trafficModelGroups = activeTrafficModelGroups()
+      const trafficPickable =
+        trafficLayers.length > 0 || trafficModelGroups.length > 0
       const trafficIds = selectableTrafficIds()
-      if (trafficLayers.length > 0) {
+      if (trafficPickable) {
         const exactTraffic = exactEligibleFeatureId(
-          map.queryRenderedFeatures(event.point, {
-            layers: trafficLayers,
-          }),
+          renderedPickFeatures(
+            event.point,
+            trafficLayers,
+            trafficModelGroups,
+          ),
           trafficIds,
         )
         if (exactTraffic) {
@@ -2403,11 +2595,12 @@ export function TrafficMap({
         }
       }
 
-      if (touchFallbackAllowed && trafficLayers.length > 0) {
+      if (touchFallbackAllowed && trafficPickable) {
         const nearbyTraffic = uniqueEligibleFeatureId(
-          map.queryRenderedFeatures(
+          renderedPickFeatures(
             expandedHitBox(event.point, touchHitTolerancePx),
-            { layers: trafficLayers },
+            trafficLayers,
+            trafficModelGroups,
           ),
           trafficIds,
         )
@@ -2422,12 +2615,17 @@ export function TrafficMap({
       }
 
       const orbitalLayers = activeOrbitalLayers()
+      const orbitalModelGroups = activeOrbitalModelGroups()
+      const orbitalPickable =
+        orbitalLayers.length > 0 || orbitalModelGroups.length > 0
       const orbitalIds = selectableOrbitalIds()
-      if (orbitalLayers.length > 0) {
+      if (orbitalPickable) {
         const exactOrbital = exactEligibleFeatureId(
-          map.queryRenderedFeatures(event.point, {
-            layers: orbitalLayers,
-          }),
+          renderedPickFeatures(
+            event.point,
+            orbitalLayers,
+            orbitalModelGroups,
+          ),
           orbitalIds,
         )
         if (exactOrbital) {
@@ -2439,11 +2637,12 @@ export function TrafficMap({
           return
         }
       }
-      if (touchFallbackAllowed && orbitalLayers.length > 0) {
+      if (touchFallbackAllowed && orbitalPickable) {
         const nearbyOrbital = uniqueCanonicalOrbitalFeatureId(
-          map.queryRenderedFeatures(
+          renderedPickFeatures(
             expandedHitBox(event.point, touchHitTolerancePx),
-            { layers: orbitalLayers },
+            orbitalLayers,
+            orbitalModelGroups,
           ),
           orbitalIds,
         )
@@ -2565,24 +2764,27 @@ export function TrafficMap({
         return
       }
       const trafficLayers = activeTrafficLayers()
+      const orbitalLayers = activeOrbitalLayers()
+      const trafficModelGroups = activeTrafficModelGroups()
+      const orbitalModelGroups = activeOrbitalModelGroups()
       const layers = [
         ...trafficLayers,
         ...activeClusterLayers(),
-        ...activeOrbitalLayers(),
+        ...orbitalLayers,
         ...activeWeatherLayers(),
         ...activeAirportLayers(),
         ...activePortLayers(),
       ]
-      const features =
-        layers.length > 0
-          ? map.queryRenderedFeatures(event.point, { layers })
-          : []
+      const features = renderedPickFeatures(event.point, layers, [
+        ...trafficModelGroups,
+        ...orbitalModelGroups,
+      ])
       map.getCanvas().style.cursor = features.length > 0 ? 'pointer' : ''
 
       const hoveredId =
         hoverEnabled &&
         pointerOrigins.size === 0 &&
-        trafficLayers.length > 0
+        (trafficLayers.length > 0 || trafficModelGroups.length > 0)
           ? exactEligibleFeatureId(features, selectableTrafficIds())
           : null
       if (hoveredId) {
@@ -2608,11 +2810,10 @@ export function TrafficMap({
         return
       }
 
-      const orbitalLayers = activeOrbitalLayers()
       const hoveredOrbitalId =
         hoverEnabled &&
         pointerOrigins.size === 0 &&
-        orbitalLayers.length > 0
+        (orbitalLayers.length > 0 || orbitalModelGroups.length > 0)
           ? exactEligibleFeatureId(features, selectableOrbitalIds())
           : null
       if (!hoveredOrbitalId) {
@@ -2706,14 +2907,21 @@ export function TrafficMap({
       scaleControlRef.current = null
       localRulerInteractionRef.current?.dispose()
       localRulerInteractionRef.current = null
+      modelLoad.abort()
+      modelGenerationRef.current += 1
+      modelLayerRef.current = null
+      modelActivityRef.current = INACTIVE_MODEL_ACTIVITY
+      modelContextLostRef.current = false
       map.remove()
       mapRef.current = null
     }
   }, [
     aircraftPhotoHoverDelayMs,
+    applyModelActivity,
     clearPendingViewport,
     fitCurrentView,
     installCurrentStyle,
+    placeModelLayer,
     scheduleViewportReport,
     switchMapStyle,
     touchHitTolerancePx,
@@ -2819,6 +3027,7 @@ export function TrafficMap({
         }
 
         sourceDataGenerationRef.current += 1
+        applyModelActivity(map, true)
         if (!clusteringEnabled) {
           renderSources(performance.now(), true)
           scheduleRender()
@@ -2835,6 +3044,7 @@ export function TrafficMap({
         })
       })
   }, [
+    applyModelActivity,
     clusteringEnabled,
     renderSources,
     scheduleRender,
@@ -2958,6 +3168,13 @@ export function TrafficMap({
       trackSegments: orbitalTrackSegments,
       selectedOrbitalId,
     }
+    modelLayerRef.current?.setOrbital(
+      'orbital',
+      orbitalPositions,
+      orbitalShownIds,
+      selectedOrbitalId,
+      themeRef.current,
+    )
     const map = mapRef.current
     if (!map || !loadedRef.current) return
     if (!map.getSource(SOURCE_ORBITAL_POINTS)) {
@@ -2980,6 +3197,7 @@ export function TrafficMap({
           true,
           getOrbitalImages(themeRef.current),
           orbitalShownIds,
+          modelActivityRef.current.orbital,
         )
         lastOrbitalFeaturesRef.current = points.features
       }
@@ -3004,6 +3222,13 @@ export function TrafficMap({
       trackSegments: starlinkTrackSegments,
       selectedOrbitalId,
     }
+    modelLayerRef.current?.setOrbital(
+      'starlink',
+      starlinkPositions,
+      starlinkShownIds,
+      selectedOrbitalId,
+      themeRef.current,
+    )
     const map = mapRef.current
     if (!map || !loadedRef.current) return
     if (!map.getSource(SOURCE_STARLINK_POINTS)) {
@@ -3025,6 +3250,7 @@ export function TrafficMap({
         starlinkVisible,
         getOrbitalImages(themeRef.current),
         starlinkShownIds,
+        modelActivityRef.current.starlink,
       )
       lastStarlinkFeaturesRef.current = points.features
     } else {
@@ -3080,18 +3306,8 @@ export function TrafficMap({
   useEffect(() => {
     const map = mapRef.current
     if (!map || !loadedRef.current) return
-    for (const layerId of AIRCRAFT_TRAFFIC_LAYER_IDS) {
-      setTrafficLayerVisibility(map, layerId, aircraftVisible)
-    }
-  }, [aircraftVisible])
-
-  useEffect(() => {
-    const map = mapRef.current
-    if (!map || !loadedRef.current) return
-    for (const layerId of VESSEL_TRAFFIC_LAYER_IDS) {
-      setTrafficLayerVisibility(map, layerId, vesselsVisible)
-    }
-  }, [vesselsVisible])
+    applyModelActivity(map, true)
+  }, [aircraftVisible, applyModelActivity, vesselsVisible])
 
   useEffect(() => {
     const map = mapRef.current
@@ -3134,12 +3350,14 @@ export function TrafficMap({
         true,
         getOrbitalImages(themeRef.current),
         state.shownIds,
+        modelActivityRef.current.orbital,
       )
       lastOrbitalFeaturesRef.current = points.features
-      return
+    } else {
+      setOrbitalVisibility(map, orbitalVisible)
     }
-    setOrbitalVisibility(map, orbitalVisible)
-  }, [getOrbitalImages, orbitalVisible])
+    applyModelActivity(map, true)
+  }, [applyModelActivity, getOrbitalImages, orbitalVisible])
 
   useEffect(() => {
     const map = mapRef.current
@@ -3164,12 +3382,14 @@ export function TrafficMap({
         starlinkVisible,
         getOrbitalImages(themeRef.current),
         state.shownIds,
+        modelActivityRef.current.starlink,
       )
       lastStarlinkFeaturesRef.current = points.features
-      return
+    } else {
+      setStarlinkVisibility(map, starlinkVisible)
     }
-    setStarlinkVisibility(map, starlinkVisible)
-  }, [getOrbitalImages, starlinkVisible])
+    applyModelActivity(map, true)
+  }, [applyModelActivity, getOrbitalImages, starlinkVisible])
 
   useEffect(() => {
     const map = mapRef.current
@@ -3243,7 +3463,9 @@ export function TrafficMap({
     }
     if (obsolete) onCapturedOrbitalViewEnd?.(capturedOrbitalView.revision)
     if (aircraftObsolete) onCapturedAircraftViewEnd?.(capturedAircraftView.revision)
+    if (mapRef.current && loadedRef.current) applyModelActivity(mapRef.current)
   }, [
+    applyModelActivity,
     capturedOrbitalView, onCapturedOrbitalViewEnd, onCapturedOrbitalViewReady,
     onCapturedOrbitalViewNotice, scheduleViewportReport, viewRequestId,
     onCapturedOrbitalViewPosition, onCapturedOrbitalViewPause,

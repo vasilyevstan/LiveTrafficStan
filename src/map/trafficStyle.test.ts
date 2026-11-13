@@ -8,18 +8,27 @@ import { createPropertyExpression } from '@maplibre/maplibre-gl-style-spec'
 import { describe, expect, it, vi } from 'vitest'
 import { TRAFFIC_STYLE_IMAGE_IDS } from '../domain/trafficPresentation'
 import {
+  AIRCRAFT_ICON_SIZE,
+  AIRCRAFT_TRAFFIC_LAYER_IDS,
   LAYER_AIRCRAFT_CLUSTER_COUNT,
   LAYER_AIRCRAFT_CLUSTERS,
   LAYER_AIRCRAFT,
   LAYER_AIRCRAFT_FLAGS,
   LAYER_AIRCRAFT_HALO,
   LAYER_AIRCRAFT_STOPPED,
+  LAYER_VESSEL_CLUSTER_COUNT,
+  LAYER_VESSEL_CLUSTERS,
   LAYER_VESSEL_HALO,
   LAYER_VESSEL_FLAGS,
   LAYER_VESSEL_STOPPED,
   LAYER_VESSELS,
   SOURCE_AIRCRAFT,
+  VESSEL_ICON_SIZE,
+  VESSEL_TRAFFIC_LAYER_IDS,
   installTrafficStyle,
+  setTrafficGroupVisibility,
+  trafficObservationOpacity,
+  trafficSelectionColor,
   type TrafficStyleImages,
   type TrafficStyleSnapshot,
 } from './trafficStyle'
@@ -364,5 +373,188 @@ describe('installTrafficStyle', () => {
     installTrafficStyle(map, snapshot('light'), lightImages)
 
     expect(imageIds).toEqual(new Set(TRAFFIC_STYLE_IMAGE_IDS))
+  })
+})
+
+const createStyleMap = () => {
+  const imageIds = new Set<string>()
+  const sources = new Map<string, { setData: ReturnType<typeof vi.fn> }>()
+  const layers = new Map<string, { layout?: Record<string, unknown> }>()
+  const paint = new Map<string, unknown>()
+  const visibility = new Map<string, unknown>()
+  const map = {
+    getStyle: baseStyle,
+    hasImage: (id: string) => imageIds.has(id),
+    addImage: (id: string) => imageIds.add(id),
+    updateImage: vi.fn(),
+    getSource: (id: string) => sources.get(id),
+    addSource: (id: string) => sources.set(id, { setData: vi.fn() }),
+    getLayer: (id: string) => layers.get(id),
+    addLayer: (layer: { id: string; layout?: Record<string, unknown> }) =>
+      layers.set(layer.id, layer),
+    setPaintProperty: (id: string, property: string, value: unknown) => {
+      paint.set(`${id}:${property}`, value)
+    },
+    setLayoutProperty: (id: string, property: string, value: unknown) => {
+      visibility.set(`${id}:${property}`, value)
+    },
+  } as unknown as MapLibreMap
+  return { map, layers, paint, visibility }
+}
+
+const MODEL_REPLACED_AIRCRAFT = [
+  LAYER_AIRCRAFT,
+  LAYER_AIRCRAFT_HALO,
+  LAYER_AIRCRAFT_CLUSTERS,
+  LAYER_AIRCRAFT_CLUSTER_COUNT,
+]
+const MODEL_REPLACED_VESSELS = [
+  LAYER_VESSELS,
+  LAYER_VESSEL_HALO,
+  LAYER_VESSEL_CLUSTERS,
+  LAYER_VESSEL_CLUSTER_COUNT,
+]
+
+const visibilityOf = (
+  visibility: ReadonlyMap<string, unknown>,
+  layerIds: readonly string[],
+) =>
+  Object.fromEntries(
+    layerIds.map((id) => [id, visibility.get(`${id}:visibility`)]),
+  )
+
+const expectedVisibility = (
+  layerIds: readonly string[],
+  visible: boolean,
+  replaced: readonly string[] = [],
+) =>
+  Object.fromEntries(
+    layerIds.map((id) => [
+      id,
+      visible && !replaced.includes(id) ? 'visible' : 'none',
+    ]),
+  )
+
+describe('3D traffic model handoff', () => {
+  it('keeps the flat group unchanged when no model draws it', () => {
+    const { map, visibility } = createStyleMap()
+    installTrafficStyle(map, snapshot('light'), lightImages, VESSEL_FLAG_IMAGES)
+
+    setTrafficGroupVisibility(map, 'aircraft', true)
+    setTrafficGroupVisibility(map, 'vessels', false)
+
+    expect(visibilityOf(visibility, AIRCRAFT_TRAFFIC_LAYER_IDS)).toEqual(
+      expectedVisibility(AIRCRAFT_TRAFFIC_LAYER_IDS, true),
+    )
+    expect(visibilityOf(visibility, VESSEL_TRAFFIC_LAYER_IDS)).toEqual(
+      expectedVisibility(VESSEL_TRAFFIC_LAYER_IDS, false),
+    )
+  })
+
+  it('hides only the symbol, halo, and clusters a model replaces', () => {
+    const { map, visibility } = createStyleMap()
+    installTrafficStyle(
+      map,
+      { ...snapshot('dark'), vesselsVisible: true },
+      darkImages,
+      VESSEL_FLAG_IMAGES,
+    )
+
+    setTrafficGroupVisibility(map, 'aircraft', true, true)
+    setTrafficGroupVisibility(map, 'vessels', true, true)
+    expect(visibilityOf(visibility, AIRCRAFT_TRAFFIC_LAYER_IDS)).toEqual(
+      expectedVisibility(
+        AIRCRAFT_TRAFFIC_LAYER_IDS,
+        true,
+        MODEL_REPLACED_AIRCRAFT,
+      ),
+    )
+    expect(visibilityOf(visibility, VESSEL_TRAFFIC_LAYER_IDS)).toEqual(
+      expectedVisibility(VESSEL_TRAFFIC_LAYER_IDS, true, MODEL_REPLACED_VESSELS),
+    )
+    expect(visibility.get(`${LAYER_AIRCRAFT_FLAGS}:visibility`)).toBe(
+      'visible',
+    )
+    expect(visibility.get(`${LAYER_VESSEL_STOPPED}:visibility`)).toBe(
+      'visible',
+    )
+
+    setTrafficGroupVisibility(map, 'aircraft', false, true)
+    expect(visibilityOf(visibility, AIRCRAFT_TRAFFIC_LAYER_IDS)).toEqual(
+      expectedVisibility(AIRCRAFT_TRAFFIC_LAYER_IDS, false),
+    )
+
+    setTrafficGroupVisibility(map, 'aircraft', true, false)
+    expect(visibilityOf(visibility, AIRCRAFT_TRAFFIC_LAYER_IDS)).toEqual(
+      expectedVisibility(AIRCRAFT_TRAFFIC_LAYER_IDS, true),
+    )
+  })
+
+  it('skips layers the current style has not installed', () => {
+    const { map, visibility } = createStyleMap()
+
+    setTrafficGroupVisibility(map, 'aircraft', true, true)
+
+    expect(visibility.size).toBe(0)
+  })
+
+  it('reinstalls each group with its current model handoff', () => {
+    const { map, visibility } = createStyleMap()
+    installTrafficStyle(
+      map,
+      { ...snapshot('light'), vesselsVisible: true, aircraftModelsActive: true },
+      lightImages,
+      VESSEL_FLAG_IMAGES,
+    )
+    expect(visibilityOf(visibility, AIRCRAFT_TRAFFIC_LAYER_IDS)).toEqual(
+      expectedVisibility(
+        AIRCRAFT_TRAFFIC_LAYER_IDS,
+        true,
+        MODEL_REPLACED_AIRCRAFT,
+      ),
+    )
+    expect(visibilityOf(visibility, VESSEL_TRAFFIC_LAYER_IDS)).toEqual(
+      expectedVisibility(VESSEL_TRAFFIC_LAYER_IDS, true),
+    )
+
+    installTrafficStyle(
+      map,
+      { ...snapshot('dark'), vesselsVisible: true, vesselModelsActive: true },
+      darkImages,
+      VESSEL_FLAG_IMAGES,
+    )
+    expect(visibilityOf(visibility, AIRCRAFT_TRAFFIC_LAYER_IDS)).toEqual(
+      expectedVisibility(AIRCRAFT_TRAFFIC_LAYER_IDS, true),
+    )
+    expect(visibilityOf(visibility, VESSEL_TRAFFIC_LAYER_IDS)).toEqual(
+      expectedVisibility(VESSEL_TRAFFIC_LAYER_IDS, true, MODEL_REPLACED_VESSELS),
+    )
+  })
+
+  it('derives model size, opacity, and selection from the flat theme paint', () => {
+    const { map, layers, paint } = createStyleMap()
+    for (const [theme, images] of [
+      ['light', lightImages],
+      ['dark', darkImages],
+    ] as const) {
+      installTrafficStyle(map, snapshot(theme), images, VESSEL_FLAG_IMAGES)
+      expect(trafficObservationOpacity(theme, false)).toBe(0.98)
+      expect(paint.get(`${LAYER_AIRCRAFT}:icon-opacity`)).toEqual(
+        expectedOpacity(trafficObservationOpacity(theme, true)),
+      )
+      expect(paint.get(`${LAYER_AIRCRAFT_HALO}:circle-stroke-color`)).toBe(
+        trafficSelectionColor(theme),
+      )
+    }
+    expect(layers.get(LAYER_AIRCRAFT)?.layout?.['icon-size']).toEqual([
+      '*',
+      ['get', 'markerScale'],
+      AIRCRAFT_ICON_SIZE,
+    ])
+    expect(layers.get(LAYER_VESSELS)?.layout?.['icon-size']).toEqual([
+      '*',
+      ['get', 'markerScale'],
+      VESSEL_ICON_SIZE,
+    ])
   })
 })

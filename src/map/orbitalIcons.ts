@@ -163,7 +163,10 @@ const tracePolygons = (
   }
 }
 
-const treatment = (theme: Theme, objectType: OrbitalObjectType) => {
+export const orbitalIconTreatment = (
+  theme: Theme,
+  objectType: OrbitalObjectType,
+) => {
   const fill =
     theme === 'dark'
       ? {
@@ -213,7 +216,7 @@ export const createOrbitalIcon = (
   objectType: OrbitalObjectType,
 ) =>
   createIcon((context) => {
-    const colors = treatment(theme, objectType)
+    const colors = orbitalIconTreatment(theme, objectType)
     fillShape(context, colors, colors.fill, () => {
       tracePolygons(context, ORBITAL_ICON_SHAPES[objectType])
     })

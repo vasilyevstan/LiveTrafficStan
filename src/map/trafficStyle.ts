@@ -55,6 +55,22 @@ export const VESSEL_TRAFFIC_LAYER_IDS = [
   LAYER_VESSEL_CLUSTER_COUNT,
 ] as const
 
+/**
+ * Flat layers a 3D model group draws itself: the symbol, its selection halo,
+ * and clusters that globe tile LOD can still form in pitched distant tiles.
+ * Flags and stopped badges keep marking the ground anchor.
+ */
+const MODEL_REPLACED_TRAFFIC_LAYER_IDS: ReadonlySet<string> = new Set([
+  LAYER_AIRCRAFT,
+  LAYER_AIRCRAFT_HALO,
+  LAYER_AIRCRAFT_CLUSTERS,
+  LAYER_AIRCRAFT_CLUSTER_COUNT,
+  LAYER_VESSELS,
+  LAYER_VESSEL_HALO,
+  LAYER_VESSEL_CLUSTERS,
+  LAYER_VESSEL_CLUSTER_COUNT,
+])
+
 type TrafficGeoJson =
   | FeatureCollection<Point>
   | FeatureCollection<LineString>
@@ -72,6 +88,8 @@ export interface TrafficStyleSnapshot {
   clusterRadiusPx: number
   clusterMinimumPoints: number
   clusterMaximumZoom: number
+  aircraftModelsActive?: boolean
+  vesselModelsActive?: boolean
 }
 
 const themePaint = (theme: Theme) =>
@@ -107,6 +125,17 @@ const themePaint = (theme: Theme) =>
         staleIconOpacity: 0.54,
       }
 
+export const AIRCRAFT_ICON_SIZE = 1.08
+export const VESSEL_ICON_SIZE = 0.86
+
+export const trafficObservationOpacity = (theme: Theme, stale: boolean) => {
+  const paint = themePaint(theme)
+  return stale ? paint.staleIconOpacity : paint.liveIconOpacity
+}
+
+export const trafficSelectionColor = (theme: Theme) =>
+  themePaint(theme).selectionHalo
+
 export const setTrafficSourceData = (
   map: MapLibreMap,
   sourceId: string,
@@ -123,6 +152,23 @@ export const setTrafficLayerVisibility = (
 ) => {
   if (map.getLayer(layerId)) {
     map.setLayoutProperty(layerId, 'visibility', visible ? 'visible' : 'none')
+  }
+}
+
+export const setTrafficGroupVisibility = (
+  map: MapLibreMap,
+  group: 'aircraft' | 'vessels',
+  visible: boolean,
+  modelsActive = false,
+) => {
+  for (const layerId of group === 'aircraft'
+    ? AIRCRAFT_TRAFFIC_LAYER_IDS
+    : VESSEL_TRAFFIC_LAYER_IDS) {
+    setTrafficLayerVisibility(
+      map,
+      layerId,
+      visible && !(modelsActive && MODEL_REPLACED_TRAFFIC_LAYER_IDS.has(layerId)),
+    )
   }
 }
 
@@ -271,7 +317,7 @@ export const installTrafficStyle = (
     filter: ['!', ['has', 'point_count']],
     layout: {
       'icon-image': ['get', 'markerIcon'],
-      'icon-size': ['*', ['get', 'markerScale'], 1.08],
+      'icon-size': ['*', ['get', 'markerScale'], AIRCRAFT_ICON_SIZE],
       'icon-rotate': ['get', 'heading'],
       'icon-rotation-alignment': 'map',
       'icon-pitch-alignment': 'map',
@@ -289,7 +335,7 @@ export const installTrafficStyle = (
     filter: ['!', ['has', 'point_count']],
     layout: {
       'icon-image': ['get', 'markerIcon'],
-      'icon-size': ['*', ['get', 'markerScale'], 0.86],
+      'icon-size': ['*', ['get', 'markerScale'], VESSEL_ICON_SIZE],
       'icon-rotate': ['get', 'heading'],
       'icon-rotation-alignment': 'map',
       'icon-pitch-alignment': 'map',
@@ -526,10 +572,16 @@ export const installTrafficStyle = (
     }
   }
 
-  for (const layerId of AIRCRAFT_TRAFFIC_LAYER_IDS) {
-    setTrafficLayerVisibility(map, layerId, snapshot.aircraftVisible)
-  }
-  for (const layerId of VESSEL_TRAFFIC_LAYER_IDS) {
-    setTrafficLayerVisibility(map, layerId, snapshot.vesselsVisible)
-  }
+  setTrafficGroupVisibility(
+    map,
+    'aircraft',
+    snapshot.aircraftVisible,
+    snapshot.aircraftModelsActive,
+  )
+  setTrafficGroupVisibility(
+    map,
+    'vessels',
+    snapshot.vesselsVisible,
+    snapshot.vesselModelsActive,
+  )
 }

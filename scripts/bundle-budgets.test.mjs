@@ -1,4 +1,5 @@
 import { expect, test } from 'vitest'
+import { TRAFFIC_MODEL_CONFIG } from '../src/config/appConfig'
 import {
   BUNDLE_BUDGETS,
   compressedSize,
@@ -10,7 +11,15 @@ test('bundle budgets preserve approved startup boundaries', () => {
     vesselFlags: { gzip: 60 * 1024 },
     orbitalUi: { gzip: 12 * 1024 },
     airportDetails: { gzip: 8 * 1024 },
+    trafficModelRuntime: { gzip: 16 * 1024 },
+    trafficModelAsset: { raw: 128 * 1024 },
   })
+})
+
+test('the model asset build budget matches the runtime read cap', () => {
+  expect(BUNDLE_BUDGETS.trafficModelAsset.raw).toBe(
+    TRAFFIC_MODEL_CONFIG.maximumAssetBytes,
+  )
 })
 
 test('compressed size reports raw, gzip and Brotli bytes', () => {
