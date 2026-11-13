@@ -1585,20 +1585,35 @@ repository-original models are one validated GLB, described in
   spacecraft attitude. Selected and featured objects get drop lines.
 - Body colours come from the flat-icon palettes, including aircraft altitude
   bands. Selection draws a ring in the existing selection colour.
-- A model is drawn at its true metric size, but never smaller than its flat
-  icon (icon box × glyph fraction × icon size × marker scale).
+- A model is drawn at its metric size with a model-specific minimum screen
+  extent from `TRAFFIC_MODEL_CONFIG.minimumScreenSizePx`: aircraft 40 CSS px,
+  vessels 42, ordinary orbital objects 28, featured orbital objects 40 and
+  Starlink 30. Traffic retains its existing marker scale and vessel-class
+  normalization. Thin shaded hulls need more space than outlined flat icons;
+  the model floor therefore no longer derives from the flat raster size.
+  The existing uniform scale and perspective adjustment preserve proportions,
+  altitude and naturally larger close-up models. Selection adds only the ring,
+  not another size increase. Flat fallback symbols and flag/badge sizes are
+  unchanged.
 
 **Projection and picking** (`modelProjection.ts`, `modelShaders.ts`)
 
 - The shaders follow MapLibre's globe/Mercator transition. They use
   relative-to-center float32 packing, re-anchored after 100,000 px or 0.25
-  world of drift.
+  world of drift. Globe projection also uses a camera-relative matrix and
+  matching sphere origin: multiplying near-surface models by a full-world
+  float32 matrix loses depth precision and can clip hulls behind the map.
+  The CPU projection stays in double precision. A globe-only polygon offset
+  of four depth-buffer units, without a slope term, compensates for remaining
+  map-surface quantization in both model depth and colour passes. It is
+  disabled afterward, including failure cleanup. Depth testing, back-face
+  culling, actual altitude, screen placement and picking are unchanged.
 - A ray-sphere horizon test hides objects on the far side of the globe.
 - As the camera nears an object's altitude, the lifted model fades into a
   flattened ground footprint instead of passing through the camera.
 - Picking uses a CPU mirror of the shaders on the last drawn frame. A hit
   falls inside the screen-space convex hull of the validated, converted mesh
-  bounds, combined with the flat-icon minimum, and passes the same horizon
+  bounds, combined with the model's minimum screen extent, and passes the same horizon
   test; hits are ordered nearest first. This uses actual vertex extents rather
   than nominal dimensions, preserving asymmetric silhouettes such as the
   heeled sailing boat.

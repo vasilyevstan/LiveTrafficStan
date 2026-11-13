@@ -21,6 +21,7 @@ export class ModelGlError extends Error {
 const FRAME_UNIFORMS = [
   'u_mercator',
   'u_globe',
+  'u_globe_origin',
   'u_transition',
   'u_k',
   'u_center_w',
@@ -271,6 +272,7 @@ export const restoreModelGlState = (gl: WebGL2RenderingContext) => {
   gl.enable(gl.BLEND)
   gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
   gl.disable(gl.CULL_FACE)
+  gl.disable(gl.POLYGON_OFFSET_FILL)
   gl.cullFace(gl.BACK)
   gl.frontFace(gl.CCW)
 }

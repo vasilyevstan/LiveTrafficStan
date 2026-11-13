@@ -281,7 +281,8 @@ export class TrafficModelLayer implements CustomLayerInterface {
     if (program.frameRevision !== this.frameRevision) {
       program.frameRevision = this.frameRevision
       setMatrix(gl, u.u_mercator, frame.rtcMatrix)
-      setMatrix(gl, u.u_globe, Float32Array.from(frame.globeMatrix))
+      setMatrix(gl, u.u_globe, frame.globeRtcMatrix)
+      if (u.u_globe_origin) gl.uniform3f(u.u_globe_origin, ...frame.globeOrigin)
       if (u.u_transition) gl.uniform1f(u.u_transition, frame.transition)
       if (u.u_k) gl.uniform2f(u.u_k, frame.kMercator, frame.kGlobe)
       if (u.u_center_w) gl.uniform1f(u.u_center_w, frame.centerW)
@@ -337,6 +338,10 @@ export class TrafficModelLayer implements CustomLayerInterface {
     gl.enable(gl.CULL_FACE)
     gl.cullFace(gl.BACK)
     gl.frontFace(frame.frontFaceCcw ? gl.CCW : gl.CW)
+    if (frame.transition > 0) {
+      gl.enable(gl.POLYGON_OFFSET_FILL)
+      gl.polygonOffset(0, TRAFFIC_MODEL_CONFIG.globeDepthOffsetUnits)
+    }
     const u = this.useProgram(gl, programs.model, frame, copy)
     gl.bindVertexArray(buffers.modelVao)
     const variants = stats.airborne ? [0, 1] : [0]
@@ -354,6 +359,7 @@ export class TrafficModelLayer implements CustomLayerInterface {
         }
       }
     }
+    gl.disable(gl.POLYGON_OFFSET_FILL)
   }
 
   private fail(gl: WebGL2RenderingContext, error: unknown) {

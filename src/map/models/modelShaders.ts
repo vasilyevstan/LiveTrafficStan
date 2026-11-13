@@ -25,6 +25,7 @@ layout(location = 6) in vec4 a_size;
 
 uniform mat4 u_mercator;
 uniform mat4 u_globe;
+uniform vec3 u_globe_origin;
 uniform float u_transition;
 uniform vec2 u_k;
 uniform float u_center_w;
@@ -83,9 +84,10 @@ vec4 projectLocal(vec3 enu, float altitude, out vec4 merc, out vec4 globe, out v
   vec3 up = vec3(sin(a_geo.x) * cosine, sin(a_geo.y), cos(a_geo.x) * cosine);
   vec3 east = vec3(cos(a_geo.x), 0.0, -sin(a_geo.x));
   vec3 north = cross(up, east);
-  sphere = up * (1.0 + altitude / EARTH_RADIUS) +
-    (east * enu.x + north * enu.y + up * enu.z) / EARTH_RADIUS;
-  globe = u_globe * vec4(sphere, 1.0);
+  vec3 offset = (east * enu.x + north * enu.y + up * (altitude + enu.z)) / EARTH_RADIUS;
+  sphere = up + offset;
+  // Keep the globe's near-surface depth as precise as the Mercator RTC path.
+  globe = u_globe * vec4((up - u_globe_origin) + offset, 1.0);
   return mixT4(merc, globe);
 }
 

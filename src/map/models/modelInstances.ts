@@ -5,17 +5,10 @@ import type { ModeledOrbitalPosition } from '../../domain/orbital'
 import { orbitalFeaturedMapLabelForPosition } from '../../domain/orbitalEnrichment'
 import type { DisplayTrafficEntity } from '../../domain/traffic'
 import {
-  ORBITAL_FEATURED_ICON_SIZE,
   ORBITAL_ICON_OPACITY,
-  ORBITAL_ICON_SIZE,
   STARLINK_ICON_OPACITY,
-  STARLINK_ICON_SIZE,
 } from '../orbitalStyle'
-import {
-  AIRCRAFT_ICON_SIZE,
-  VESSEL_ICON_SIZE,
-  trafficObservationOpacity,
-} from '../trafficStyle'
+import { trafficObservationOpacity } from '../trafficStyle'
 import {
   MODEL_FLAG_DROP_LINE,
   MODEL_FLAG_SELECTED,
@@ -69,9 +62,6 @@ const RADIANS = Math.PI / 180
 const MODEL_ORDER = new Map<TrafficModelId, number>(
   TRAFFIC_MODEL_IDS.map((id, index) => [id, index]),
 )
-
-const iconFloorPx = (iconSize: number) =>
-  TRAFFIC_MODEL_CONFIG.iconBoxPx * TRAFFIC_MODEL_CONFIG.iconGlyphFraction * iconSize
 
 const finite = (value: unknown): value is number =>
   typeof value === 'number' && Number.isFinite(value)
@@ -133,7 +123,8 @@ export const trafficModelInstances = (
       lengthScale,
       extentMeters: Math.max(size.lengthMeters, size.beamMeters) * lengthScale,
       floorPx:
-        iconFloorPx(aircraft ? AIRCRAFT_ICON_SIZE : VESSEL_ICON_SIZE) * markerScale,
+        TRAFFIC_MODEL_CONFIG.minimumScreenSizePx[aircraft ? 'aircraft' : 'vessel'] *
+        markerScale,
       opacity: trafficObservationOpacity(theme, properties.stale === true),
       flags,
       ...trafficModelColors(theme, image),
@@ -181,13 +172,13 @@ export const orbitalModelInstances = (
         : 0,
       lengthScale: 1,
       extentMeters: Math.max(size.lengthMeters, size.beamMeters),
-      floorPx: iconFloorPx(
+      floorPx: TRAFFIC_MODEL_CONFIG.minimumScreenSizePx[
         starlink
-          ? STARLINK_ICON_SIZE
+          ? 'starlink'
           : featured
-            ? ORBITAL_FEATURED_ICON_SIZE
-            : ORBITAL_ICON_SIZE,
-      ),
+            ? 'featuredOrbital'
+            : 'orbital'
+      ],
       opacity: starlink ? STARLINK_ICON_OPACITY : ORBITAL_ICON_OPACITY,
       flags:
         (selected ? MODEL_FLAG_SELECTED : 0) |
