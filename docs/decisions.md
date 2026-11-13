@@ -44,13 +44,25 @@ Altitude is shown truthfully rather than flattened:
 
 These compromises were accepted:
 - The models are symbolic class shapes, not airframes, hulls or spacecraft.
-- Each model has a flat-icon minimum on-screen size.
+- Each model has a readable minimum on-screen size, independent of the flat
+  raster icon.
 - Satellites face their ground-track bearing because no attitude data exists.
 - Picking uses the screen-space convex hull of each scaled 3D model bound,
-  combined with the flat-icon minimum; it is not exact triangle picking.
+  combined with the model's minimum screen extent; it is not exact triangle picking.
   Bounds come from the validated converted GLB vertices, not only nominal
   dimensions, so asymmetric geometry such as the heeled sailing sail remains
   selectable.
+
+The first production harbor view exposed a readability mismatch: preserving
+the flat icon's length did not preserve its visual weight. Realistic slender
+hulls became a few pixels wide beside unchanged flags and stopped badges.
+Map/UI review selected separate CSS-pixel floors (aircraft 40, vessels 42,
+ordinary/featured orbital 28/40, Starlink 30) rather than widening meshes,
+doubling every population or adding a size preference. These flow through the
+existing instance field to both rendering and picking. Browser comparisons
+measure painted silhouettes, not selection-ring or padded hit-box diameter;
+actual DPR is measured and removed from pixel measurements. See the
+[readability follow-up](development-and-testing.md#3d-model-readability-follow-up).
 
 Models are reviewed in a temporary scene of the live Blender MCP session,
 which is then deleted. The committed GLB comes from a headless run of

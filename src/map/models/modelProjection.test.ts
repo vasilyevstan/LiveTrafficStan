@@ -115,6 +115,32 @@ describe('model projection math', () => {
     expect(east!.y).toBeCloseTo(300, 6)
   })
 
+  it('enlarges the readable floor without changing natural close-zoom size or position', () => {
+    const data = instance({
+      lengthMeters: 200,
+      beamMeters: 32,
+      extentMeters: 200,
+      bounds: { minimum: [-16, -100, 0], maximum: [16, 100, 10] },
+      floorPx: 32,
+    })
+    for (const transition of [0, 1]) {
+      const wideFrame = frameFor({ ...TALLINN, zoom: 11 }, transition)
+      const oldWide = projectModelInstance(wideFrame, data)!
+      const newWide = projectModelInstance(wideFrame, { ...data, floorPx: 48 })!
+      expect(newWide.radiusPx / oldWide.radiusPx).toBeCloseTo(1.5, 5)
+      expect(newWide.x).toBe(oldWide.x)
+      expect(newWide.y).toBe(oldWide.y)
+      expect(newWide.alpha).toBe(oldWide.alpha)
+      const closeFrame = frameFor({ ...TALLINN, zoom: 16 }, transition)
+      const oldClose = projectModelInstance(closeFrame, data)!
+      const newClose = projectModelInstance(closeFrame, { ...data, floorPx: 48 })!
+      expect(newClose.radiusPx).toBe(oldClose.radiusPx)
+      expect(newClose.x).toBe(oldClose.x)
+      expect(newClose.y).toBe(oldClose.y)
+      expect(newClose.heightAxis).toEqual(oldClose.heightAxis)
+    }
+  })
+
   it('lifts low aircraft by altitude and fades high ones to a ground footprint', () => {
     const fixture = cameraFixture({ ...TALLINN, zoom: 12 })
     const frame = frameFor({ ...TALLINN, zoom: 12 })
