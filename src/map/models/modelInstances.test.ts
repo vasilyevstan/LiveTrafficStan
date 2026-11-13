@@ -27,7 +27,10 @@ import {
 } from './trafficModelCatalog'
 
 const DIMENSIONS = new Map(
-  TRAFFIC_MODEL_IDS.map((id) => [id, { lengthMeters: 50, beamMeters: 40 }]),
+  TRAFFIC_MODEL_IDS.map((id) => [
+    id,
+    { lengthMeters: 50, beamMeters: 40, heightMeters: 12 },
+  ]),
 )
 const FLOOR_PX = 32 * 0.88
 const RADIANS = Math.PI / 180
@@ -253,6 +256,7 @@ const instance = (
   headingDegrees: 90,
   lengthMeters: 50,
   beamMeters: 40,
+  heightMeters: 12,
   lengthScale: 1.5,
   extentMeters: 75,
   floorPx: 30,

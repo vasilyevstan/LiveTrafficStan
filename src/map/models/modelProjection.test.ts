@@ -31,6 +31,7 @@ const instance = (overrides: Partial<ModelInstanceGeometry> = {}): ModelInstance
   headingDegrees: 0,
   lengthMeters: 30,
   beamMeters: 20,
+  heightMeters: 10,
   lengthScale: 1,
   extentMeters: 30,
   floorPx: 24,
@@ -198,6 +199,129 @@ describe('model projection math', () => {
     expect(mixedX).toBeLessThan(Math.max(mercatorX0, globeX))
   })
 
+  it('projects forward and starboard axes with shader scale at street zooms', () => {
+    for (const zoom of [14, 16]) {
+      const fixture = cameraFixture({ ...TALLINN, zoom })
+      const frame = frameFor({ ...TALLINN, zoom })
+      const instanceData = instance({
+        headingDegrees: 0,
+        lengthMeters: 200,
+        beamMeters: 32,
+        heightMeters: 36,
+        lengthScale: 1.49,
+        extentMeters: 200 * 1.49,
+        floorPx: 36,
+      })
+      const pixelsPerMeter = fixture.worldSize * mercatorUnitsPerMeter(TALLINN.latitude)
+      const scale = Math.max(
+        1,
+        instanceData.floorPx / (instanceData.extentMeters * pixelsPerMeter),
+      )
+      const northbound = projectModelInstance(frame, instanceData)!
+      const expectedLengthHalf = Math.max(
+        instanceData.floorPx / 2,
+        (instanceData.lengthMeters * instanceData.lengthScale * scale * pixelsPerMeter) / 2,
+      )
+      const expectedBeamHalf = Math.max(
+        instanceData.floorPx / 2,
+        (instanceData.beamMeters * instanceData.lengthScale * scale * pixelsPerMeter) / 2,
+      )
+      expect(Math.abs(northbound.lengthAxis.x)).toBeLessThan(0.1)
+      expect(northbound.lengthAxis.y).toBeLessThan(0)
+      expect(Math.hypot(northbound.lengthAxis.x, northbound.lengthAxis.y)).toBeCloseTo(
+        expectedLengthHalf,
+        0,
+      )
+      expect(northbound.beamAxis.x).toBeGreaterThan(0)
+      expect(Math.abs(northbound.beamAxis.y)).toBeLessThan(0.1)
+      expect(Math.hypot(northbound.beamAxis.x, northbound.beamAxis.y)).toBeCloseTo(
+        expectedBeamHalf,
+        0,
+      )
+      expect(
+        modelHitDistance(northbound, {
+          x: northbound.x + northbound.lengthAxis.x * 0.8,
+          y: northbound.y + northbound.lengthAxis.y * 0.8,
+        }),
+      ).toBeDefined()
+      const length = Math.hypot(northbound.lengthAxis.x, northbound.lengthAxis.y)
+      const perpendicular = {
+        x: -northbound.lengthAxis.y / length,
+        y: northbound.lengthAxis.x / length,
+      }
+      const beamHalf =
+        Math.abs(
+          northbound.lengthAxis.x * northbound.beamAxis.y -
+            northbound.lengthAxis.y * northbound.beamAxis.x,
+        ) / length
+      expect(
+        modelHitDistance(northbound, {
+          x: northbound.x + perpendicular.x * (beamHalf + 5),
+          y: northbound.y + perpendicular.y * (beamHalf + 5),
+        }),
+      ).toBeUndefined()
+
+      const eastbound = projectModelInstance(
+        frame,
+        { ...instanceData, headingDegrees: 90 },
+      )!
+      expect(eastbound.lengthAxis.x).toBeGreaterThan(0)
+      expect(Math.abs(eastbound.lengthAxis.y)).toBeLessThan(0.1)
+      expect(Math.abs(eastbound.beamAxis.x)).toBeLessThan(0.1)
+      expect(eastbound.beamAxis.y).toBeGreaterThan(0)
+    }
+  })
+
+  it('includes the projected upper silhouette of a tall model in its pick hull', () => {
+    const frame = frameFor({ ...TALLINN, zoom: 16, pitchDegrees: 55 })
+    const data = instance({
+      headingDegrees: 90,
+      lengthMeters: 200,
+      beamMeters: 32,
+      heightMeters: 36,
+      extentMeters: 200,
+      floorPx: 36,
+    })
+    const anchor = projectModelInstance(frame, data)!
+    const center = projectLocalPoint(frame, data.longitude, data.latitude, 0)
+    const pixelsPerMeter =
+      (frame.kMercator * mercatorUnitsPerMeter(data.latitude)) / center.mercator[3]
+    const modelScale = Math.max(
+      1,
+      (data.floorPx * perspectiveScale(frame.centerW, center.clip[3])) /
+        (data.extentMeters * pixelsPerMeter),
+    )
+    const top = projectLocalPoint(
+      frame,
+      data.longitude,
+      data.latitude,
+      0,
+      0,
+      0,
+      data.heightMeters * data.lengthScale * modelScale,
+    ).clip
+    const upperPoint = {
+      x: anchor.x + anchor.heightAxis.x * 0.8,
+      y: anchor.y + anchor.heightAxis.y * 0.8,
+    }
+    expect(anchor.heightAxis.x).toBeCloseTo(
+      ((top[0] / top[3] - center.clip[0] / center.clip[3]) / 2) * frame.cssWidth,
+      8,
+    )
+    expect(anchor.heightAxis.y).toBeCloseTo(
+      ((center.clip[1] / center.clip[3] - top[1] / top[3]) / 2) * frame.cssHeight,
+      8,
+    )
+    expect(Math.abs(anchor.heightAxis.y)).toBeGreaterThan(10)
+    expect(modelHitDistance(anchor, upperPoint)).toBeDefined()
+    expect(
+      modelHitDistance(anchor, {
+        x: anchor.x + anchor.heightAxis.x * 1.5,
+        y: anchor.y + anchor.heightAxis.y * 1.5,
+      }),
+    ).toBeUndefined()
+  })
+
   it('hits points and boxes against the projected model hull', () => {
     const anchor = {
       x: 100,
@@ -205,6 +329,13 @@ describe('model projection math', () => {
       radiusPx: 10,
       lengthAxis: { x: 10, y: 0 },
       beamAxis: { x: 0, y: 10 },
+      heightAxis: { x: 0, y: 0 },
+      hull: [
+        { x: 90, y: 90 },
+        { x: 110, y: 90 },
+        { x: 110, y: 110 },
+        { x: 90, y: 110 },
+      ],
       alpha: 1,
       lifted: true,
     }
@@ -222,6 +353,13 @@ describe('model projection math', () => {
       radiusPx: 62,
       lengthAxis: { x: 62, y: 0 },
       beamAxis: { x: 0, y: 10 },
+      heightAxis: { x: 0, y: 0 },
+      hull: [
+        { x: 38, y: 90 },
+        { x: 162, y: 90 },
+        { x: 162, y: 110 },
+        { x: 38, y: 110 },
+      ],
       alpha: 1,
       lifted: true,
     }

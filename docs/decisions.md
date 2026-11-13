@@ -46,7 +46,8 @@ These compromises were accepted:
 - The models are symbolic class shapes, not airframes, hulls or spacecraft.
 - Each model has a flat-icon minimum on-screen size.
 - Satellites face their ground-track bearing because no attitude data exists.
-- A pick hit is the drawn model's screen circle, not an exact triangle.
+- Picking uses the screen-space convex hull of each scaled 3D model bound,
+  combined with the flat-icon minimum; it is not exact triangle picking.
 
 Models are reviewed in a temporary scene of the live Blender MCP session,
 which is then deleted. The committed GLB comes from a headless run of

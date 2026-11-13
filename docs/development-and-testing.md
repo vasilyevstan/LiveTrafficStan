@@ -5686,7 +5686,7 @@ Testing notes:
 
 ## 3D traffic models acceptance (#682)
 
-The focused unit run has 97 tests in 11 files: the eight `src/map/models`
+The focused unit run has 99 tests in 11 files: the eight `src/map/models`
 suites and the traffic-style, orbital-style and bundle-budget suites they
 extend.
 
@@ -5696,7 +5696,7 @@ extend.
 | `trafficModelRuntime.test.ts` | Fetch without credentials or referrer from the hashed bundled URL, accepted content types, HTTP failures, HTML fallback, oversized and malformed bodies, caller cancellation, the asset deadline |
 | `trafficModelCatalog.test.ts` | A model for every flat traffic and orbital image, rejected unknown identities, the Starlink spacecraft only for Starlink payloads, the flat marker palettes in both themes |
 | `modelInstances.test.ts` | Aircraft at reported altitude; grounded or unreported aircraft on the surface without drop lines; vessel length scale; stale dimming; zoom-context samples never selected; only shown curated orbital objects; antimeridian packing |
-| `modelProjection.test.ts`, `modelLayerGeometry.test.ts` | Mercator and globe placement, MapLibre pixel-scale alignment, the projection transition, far-side hiding, the high-altitude footprint fade, world copies, re-anchoring, CPU picks matching the shader projection and narrow-hull hit boundaries |
+| `modelProjection.test.ts`, `modelLayerGeometry.test.ts` | Mercator and globe placement, forward/starboard axis direction and shader scale at zoom 14/16, pitched 3D bounding-box projection, the projection transition, far-side hiding, the high-altitude footprint fade, world copies, re-anchoring, CPU picks matching the shader projection and narrow-hull hit boundaries |
 | `TrafficModelLayer.test.ts` | No GL work before the first drawn frame, depth and colour passes, overlays only when needed, uploads only on change, picks from the last drawn frame, fail-closed compile errors, lost context, removal and re-add |
 | `modelActivity.test.ts`, `src/map/trafficStyle.test.ts`, `src/map/orbitalStyle.test.ts` | Flat until the runtime loads, flat captured views, the cluster zoom threshold, the per-group flat handoff and theme reinstall, nearest-first model picks |
 | `scripts/bundle-budgets.test.mjs` | The GLB build budget equals the runtime read cap |
@@ -5709,7 +5709,7 @@ The preview PNG is a render and is not byte-stable.
 **Real-browser acceptance**
 
 - **Setup:** built `dist` under `vite preview`, driven over CDP in isolated
-  headless Chrome 157 (ANGLE Metal, Apple M4) on 2026-11-12.
+  headless Chrome 157 (ANGLE Metal, Apple M4) on 2026-11-12 and 13.
 - **Fixtures**, fulfilled through `Fetch.requestPaused`:
   - five ADSB.lol aircraft around Tallinn: light, medium, heavy, a
     helicopter and one on the ground;
@@ -5729,7 +5729,7 @@ The preview PNG is a render and is not byte-stable.
 | --- | --- |
 | Desktop 1280x900, DPR 1, zoom 11.7, pitch 55, bearing 20 | GLB `200` as `model/gltf-binary`. Layer index 73 of 82: after the flat symbols, before `traffic-aircraft-flags`. Aircraft 5/5 (max 1.7 px), vessels 6/6 (3.5 px) |
 | Desktop hover and click | Pointer cursor. Clicking selects aircraft `4ca202`, then vessel `276100103` replaces it |
-| Desktop vessel hull picking | At zoom 15.5, a click beside vessel `276100103` but inside its former circular hit radius misses and clears selection; clicking the hull reselects it |
+| Desktop vessel hull picking | At zooms 14 and 16, a bow click selects vessel `276100103`; a side click outside the hull but inside its former circular hit radius clears selection. At zoom 16/pitch 55, clicking the raised silhouette selects it |
 | Desktop Dark theme button | Layer re-added at index 65 of 74, still before the flags; selection kept; aircraft 5/5 (1.8 px). No aircraft, marine or WebSocket request in the 2,362 ms switch |
 | Desktop Flat projection button | Aircraft 5/5, 1.9 px |
 | Desktop context loss and restore | `WEBGL_lose_context` drops the style. After restore the layer is re-added: aircraft 5/5, 1.8 px |
@@ -5797,12 +5797,12 @@ respectively. The 16-URL shell measured 3,807,618 raw bytes.
 
 The 2026-11-13 build for #682, with default build inputs, measured:
 
-- entry: 534,259 gzip and 432,130 Brotli bytes;
-- vessel flags, orbital UI and airport details: 53,949, 7,278 and 4,314 gzip
+- entry: 534,256 gzip and 432,269 Brotli bytes;
+- vessel flags, orbital UI and airport details: 53,949, 7,278 and 4,313 gzip
   bytes;
-- model runtime: 12,790 gzip bytes;
+- model runtime: 13,160 gzip bytes;
 - GLB: 60,680 raw bytes;
-- 18-URL shell: 3,928,413 raw bytes.
+- 18-URL shell: 3,929,262 raw bytes.
 
 The startup change for #682, measured with matched production inputs, is in
 [3D traffic models acceptance](#3d-traffic-models-acceptance-682).

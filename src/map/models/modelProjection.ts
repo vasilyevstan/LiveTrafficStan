@@ -184,6 +184,7 @@ export interface ModelInstanceGeometry {
   headingDegrees: number
   lengthMeters: number
   beamMeters: number
+  heightMeters: number
   lengthScale: number
   extentMeters: number
   floorPx: number
@@ -336,8 +337,38 @@ export interface ModelAnchor {
   radiusPx: number
   lengthAxis: { x: number; y: number }
   beamAxis: { x: number; y: number }
+  heightAxis: { x: number; y: number }
+  hull: readonly { x: number; y: number }[]
   alpha: number
   lifted: boolean
+}
+
+const convexHull = (points: readonly { x: number; y: number }[]) => {
+  const sorted = [...points]
+    .filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y))
+    .sort((a, b) => a.x - b.x || a.y - b.y)
+    .filter(
+      (point, index, values) =>
+        index === 0 ||
+        Math.hypot(point.x - values[index - 1].x, point.y - values[index - 1].y) > 1e-7,
+    )
+  if (sorted.length <= 2) return sorted
+  const cross = (
+    origin: { x: number; y: number },
+    a: { x: number; y: number },
+    b: { x: number; y: number },
+  ) => (a.x - origin.x) * (b.y - origin.y) - (a.y - origin.y) * (b.x - origin.x)
+  const lower: { x: number; y: number }[] = []
+  for (const point of sorted) {
+    while (lower.length >= 2 && cross(lower.at(-2)!, lower.at(-1)!, point) <= 0) lower.pop()
+    lower.push(point)
+  }
+  const upper: { x: number; y: number }[] = []
+  for (const point of [...sorted].reverse()) {
+    while (upper.length >= 2 && cross(upper.at(-2)!, upper.at(-1)!, point) <= 0) upper.pop()
+    upper.push(point)
+  }
+  return [...lower.slice(0, -1), ...upper.slice(0, -1)]
 }
 
 /** Screen anchor of the dominant lifted or footprint draw, in CSS pixels. */
@@ -365,26 +396,50 @@ export const projectModelInstance = (
     instance.floorPx * perspectiveScale(frame.centerW, w),
     instance.extentMeters * pxPerMeter,
   )
-  const scale = drawnPx / instance.extentMeters
+  const modelScale = Math.max(
+    1,
+    (instance.floorPx * perspectiveScale(frame.centerW, w)) /
+      Math.max(instance.extentMeters * pxPerMeter, 1e-6),
+  )
   const heading = instance.headingDegrees * RADIANS
-  const halfLength = (instance.lengthMeters * instance.lengthScale * scale) / 2
-  const halfBeam = (instance.beamMeters * instance.lengthScale * scale) / 2
-  const projectAxis = (east: number, north: number) => {
-    const endpoint = projectLocalPoint(
+  const halfLength =
+    (instance.lengthMeters * instance.lengthScale * modelScale) / 2
+  const halfBeam = (instance.beamMeters * instance.lengthScale * modelScale) / 2
+  const halfHeight =
+    (instance.heightMeters *
+      instance.lengthScale *
+      modelScale *
+      (lifted ? 1 : FOOTPRINT_HEIGHT_SCALE)) /
+    2
+  const centerX = ((point.clip[0] / w + 1) / 2) * frame.cssWidth
+  const centerY = ((1 - point.clip[1] / w) / 2) * frame.cssHeight
+  const projectOffset = (east: number, north: number, up: number) => {
+    const projected = projectLocalPoint(
       frame,
       instance.longitude,
       instance.latitude,
       lifted ? altitude : 0,
       east,
       north,
+      up,
     ).clip
+    if (!(projected[3] > 0)) return undefined
     return {
-      x: ((endpoint[0] / endpoint[3] - point.clip[0] / w) / 2) * frame.cssWidth,
-      y: ((point.clip[1] / w - endpoint[1] / endpoint[3]) / 2) * frame.cssHeight,
+      x: ((projected[0] / projected[3] + 1) / 2) * frame.cssWidth,
+      y: ((1 - projected[1] / projected[3]) / 2) * frame.cssHeight,
     }
   }
-  const lengthAxis = projectAxis(halfLength * Math.cos(heading), -halfLength * Math.sin(heading))
-  const projectedBeamAxis = projectAxis(halfBeam * Math.sin(heading), halfBeam * Math.cos(heading))
+  const relative = (projected: { x: number; y: number } | undefined) => ({
+    x: (projected?.x ?? centerX) - centerX,
+    y: (projected?.y ?? centerY) - centerY,
+  })
+  const lengthAxis = relative(
+    projectOffset(halfLength * Math.sin(heading), halfLength * Math.cos(heading), 0),
+  )
+  const projectedBeamAxis = relative(
+    projectOffset(halfBeam * Math.cos(heading), -halfBeam * Math.sin(heading), 0),
+  )
+  const heightAxis = relative(projectOffset(0, 0, halfHeight * 2))
   const minimumHalfAxis = (instance.floorPx * perspectiveScale(frame.centerW, w)) / 2
   const lengthMagnitude = Math.hypot(lengthAxis.x, lengthAxis.y)
   if (lengthMagnitude < minimumHalfAxis) {
@@ -409,12 +464,38 @@ export const projectModelInstance = (
     x: beamAlongLength * lengthUnit.x + minimumBeamAcross * perpendicular.x,
     y: beamAlongLength * lengthUnit.y + minimumBeamAcross * perpendicular.y,
   }
+  const pickPoints: { x: number; y: number }[] = []
+  for (const beamSign of [-1, 1]) {
+    for (const lengthSign of [-1, 1]) {
+      for (const heightSign of [0, 1]) {
+        const starboard = beamSign * halfBeam
+        const forward = lengthSign * halfLength
+        const up = heightSign * halfHeight * 2
+        const projected = projectOffset(
+          starboard * Math.cos(heading) + forward * Math.sin(heading),
+          -starboard * Math.sin(heading) + forward * Math.cos(heading),
+          up,
+        )
+        if (projected) pickPoints.push(projected)
+      }
+    }
+  }
+  for (const lengthSign of [-1, 1]) {
+    for (const beamSign of [-1, 1]) {
+      pickPoints.push({
+        x: centerX + lengthAxis.x * lengthSign + beamAxis.x * beamSign,
+        y: centerY + lengthAxis.y * lengthSign + beamAxis.y * beamSign,
+      })
+    }
+  }
   return {
-    x: ((point.clip[0] / w + 1) / 2) * frame.cssWidth,
-    y: ((1 - point.clip[1] / w) / 2) * frame.cssHeight,
+    x: centerX,
+    y: centerY,
     radiusPx: drawnPx / 2,
     lengthAxis,
     beamAxis,
+    heightAxis,
+    hull: convexHull(pickPoints),
     alpha,
     lifted,
   }
@@ -433,23 +514,27 @@ const isScreenBox = (
 
 /** Distance used to order hits, or undefined when the model misses. */
 export const modelHitDistance = (anchor: ModelAnchor, geometry: ScreenGeometry) => {
-  const point = (candidate: { x: number; y: number }) => {
-    const dx = candidate.x - anchor.x
-    const dy = candidate.y - anchor.y
-    const { x: lx, y: ly } = anchor.lengthAxis
-    const { x: bx, y: by } = anchor.beamAxis
-    const determinant = lx * by - ly * bx
-    if (Math.abs(determinant) < 1e-6) return false
-    const length = (dx * by - dy * bx) / determinant
-    const beam = (lx * dy - ly * dx) / determinant
-    return Math.abs(length) <= 1 && Math.abs(beam) <= 1
+  const pointInHull = (candidate: { x: number; y: number }) => {
+    let sign = 0
+    for (let index = 0; index < anchor.hull.length; index += 1) {
+      const current = anchor.hull[index]
+      const next = anchor.hull[(index + 1) % anchor.hull.length]
+      const cross =
+        (next.x - current.x) * (candidate.y - current.y) -
+        (next.y - current.y) * (candidate.x - current.x)
+      if (Math.abs(cross) <= 1e-7) continue
+      const currentSign = Math.sign(cross)
+      if (sign !== 0 && currentSign !== sign) return false
+      sign = currentSign
+    }
+    return anchor.hull.length >= 3
   }
   const distanceToCenter = (candidate: { x: number; y: number }) =>
     Math.hypot(anchor.x - candidate.x, anchor.y - candidate.y)
 
   if (!isScreenBox(geometry)) {
     const candidate = screenXY(geometry)
-    return point(candidate) ? distanceToCenter(candidate) : undefined
+    return pointInHull(candidate) ? distanceToCenter(candidate) : undefined
   }
   const a = screenXY(geometry[0])
   const b = screenXY(geometry[1])
@@ -459,20 +544,15 @@ export const modelHitDistance = (anchor: ModelAnchor, geometry: ScreenGeometry) 
     { x: Math.max(a.x, b.x), y: Math.max(a.y, b.y) },
     { x: Math.min(a.x, b.x), y: Math.max(a.y, b.y) },
   ]
-  const polygon = [
-    { x: anchor.x - anchor.lengthAxis.x - anchor.beamAxis.x, y: anchor.y - anchor.lengthAxis.y - anchor.beamAxis.y },
-    { x: anchor.x + anchor.lengthAxis.x - anchor.beamAxis.x, y: anchor.y + anchor.lengthAxis.y - anchor.beamAxis.y },
-    { x: anchor.x + anchor.lengthAxis.x + anchor.beamAxis.x, y: anchor.y + anchor.lengthAxis.y + anchor.beamAxis.y },
-    { x: anchor.x - anchor.lengthAxis.x + anchor.beamAxis.x, y: anchor.y - anchor.lengthAxis.y + anchor.beamAxis.y },
-  ]
-  const axes = [
-    { x: 1, y: 0 },
-    { x: 0, y: 1 },
-    { x: -anchor.lengthAxis.y, y: anchor.lengthAxis.x },
-    { x: -anchor.beamAxis.y, y: anchor.beamAxis.x },
-  ]
+  const axes = [{ x: 1, y: 0 }, { x: 0, y: 1 }]
+  for (let index = 0; index < anchor.hull.length; index += 1) {
+    const current = anchor.hull[index]
+    const next = anchor.hull[(index + 1) % anchor.hull.length]
+    const axis = { x: -(next.y - current.y), y: next.x - current.x }
+    if (Math.hypot(axis.x, axis.y) > 1e-7) axes.push(axis)
+  }
   for (const axis of axes) {
-    const polygonProjection = polygon.map((vertex) => vertex.x * axis.x + vertex.y * axis.y)
+    const polygonProjection = anchor.hull.map((vertex) => vertex.x * axis.x + vertex.y * axis.y)
     const boxProjection = box.map((vertex) => vertex.x * axis.x + vertex.y * axis.y)
     if (
       Math.max(...polygonProjection) < Math.min(...boxProjection) ||

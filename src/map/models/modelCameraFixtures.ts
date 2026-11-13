@@ -118,6 +118,7 @@ export const modelInstanceFixture = (overrides: Partial<ModelInstance> = {}): Mo
   headingDegrees: 0,
   lengthMeters: 40,
   beamMeters: 20,
+  heightMeters: 12,
   extentMeters: 40,
   floorPx: 28,
   opacity: 1,

@@ -55,6 +55,7 @@ export interface ModelInstance extends ModelInstanceGeometry {
 export interface ModelDimensions {
   lengthMeters: number
   beamMeters: number
+  heightMeters: number
 }
 
 export type ModelDimensionTable = ReadonlyMap<TrafficModelId, ModelDimensions>
@@ -124,6 +125,7 @@ export const trafficModelInstances = (
       altitudeMeters,
       lengthMeters: size.lengthMeters,
       beamMeters: size.beamMeters,
+      heightMeters: size.heightMeters,
       headingDegrees: finite(properties.heading) ? properties.heading : 0,
       lengthScale,
       extentMeters: Math.max(size.lengthMeters, size.beamMeters) * lengthScale,
@@ -168,6 +170,7 @@ export const orbitalModelInstances = (
       altitudeMeters,
       lengthMeters: size.lengthMeters,
       beamMeters: size.beamMeters,
+      heightMeters: size.heightMeters,
       // Earth-relative ground-track direction; not spacecraft attitude.
       headingDegrees: finite(position.travelBearingDegrees)
         ? position.travelBearingDegrees

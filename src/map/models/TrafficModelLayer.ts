@@ -111,7 +111,11 @@ export class TrafficModelLayer implements CustomLayerInterface {
     this.dimensions = new Map(
       [...meshes].map(([id, mesh]) => [
         id,
-        { lengthMeters: mesh.lengthMeters, beamMeters: mesh.beamMeters },
+        {
+          lengthMeters: mesh.lengthMeters,
+          beamMeters: mesh.beamMeters,
+          heightMeters: mesh.heightMeters,
+        },
       ]),
     )
     for (const group of MODEL_GROUPS) {
