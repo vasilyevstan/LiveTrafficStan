@@ -1587,7 +1587,7 @@ repository-original models are one validated GLB, described in
   bands. Selection draws a ring in the existing selection colour.
 - A model is drawn at its metric size with a model-specific minimum screen
   extent from `TRAFFIC_MODEL_CONFIG.minimumScreenSizePx`: aircraft 40 CSS px,
-  vessels 42, ordinary orbital objects 28, featured orbital objects 40 and
+  vessels 34, ordinary orbital objects 28, featured orbital objects 40 and
   Starlink 30. Traffic retains its existing marker scale and vessel-class
   normalization. Thin shaded hulls need more space than outlined flat icons;
   the model floor therefore no longer derives from the flat raster size.
@@ -1604,7 +1604,8 @@ repository-original models are one validated GLB, described in
   matching sphere origin: multiplying near-surface models by a full-world
   float32 matrix loses depth precision and can clip hulls behind the map.
   The CPU projection stays in double precision. A globe-only polygon offset
-  of four depth-buffer units, without a slope term, compensates for remaining
+  of eight depth-buffer units for vessels and four for other groups, without
+  a slope term, compensates for remaining
   map-surface quantization in both model depth and colour passes. It is
   disabled afterward, including failure cleanup. Depth testing, back-face
   culling, actual altitude, screen placement and picking are unchanged.

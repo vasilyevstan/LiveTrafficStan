@@ -156,7 +156,7 @@ describe('traffic model instances', () => {
         detail: hexColorBytes(treatment.vesselDetail),
       })
       expect(instances[0].floorPx).toBeCloseTo(
-        42 * features[0].properties!.markerScale,
+        34 * features[0].properties!.markerScale,
       )
     }
   })
@@ -177,10 +177,10 @@ describe('traffic model instances', () => {
       const beamPx =
         ordinary.floorPx * ordinary.beamMeters /
         Math.max(ordinary.lengthMeters, ordinary.beamMeters)
-      expect(beamPx, ordinary.model).toBeGreaterThanOrEqual(8)
+      expect(beamPx, ordinary.model).toBeGreaterThanOrEqual(6.5)
       expect(beamPx, ordinary.model).toBeLessThan(ordinary.floorPx)
-      expect(ordinary.floorPx).toBeGreaterThanOrEqual(33.6)
-      expect(ordinary.floorPx).toBeLessThanOrEqual(67.2)
+      expect(ordinary.floorPx).toBeGreaterThanOrEqual(27.2)
+      expect(ordinary.floorPx).toBeLessThanOrEqual(54.4)
       expect(ordinary.altitudeMeters).toBe(0)
       expect(ordinary.bounds).toBe(REAL_DIMENSIONS.get(ordinary.model)?.bounds)
       expect(selected.floorPx).toBe(ordinary.floorPx)
