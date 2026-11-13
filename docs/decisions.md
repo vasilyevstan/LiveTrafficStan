@@ -1,5 +1,68 @@
 # Engineering Decisions
 
+## Real-altitude 3D traffic models (#682)
+
+The request was for Blender-made plane, ship and satellite models used in the
+app, plus whatever else the map could gain from them. The smaller option was
+to render Blender models into the existing flat sprites. The user instead
+chose a real 3D layer with these properties:
+- real altitude;
+- drop lines;
+- 3D picking;
+- always on, with flat icons only as the automatic fallback;
+- no new preference.
+
+The renderer is one raw-WebGL2 MapLibre custom layer. MapLibre 6.10 already
+passes custom layers both the globe and Mercator matrices, plus the
+projection transition, so the shader can follow Auto globe, Flat and the
+zoom 11-12 interpolation on the single existing map and camera. Three.js,
+deck.gl or a threebox-style bridge would add a large dependency and a second
+scene graph to keep in step with that camera. The cost of doing it ourselves
+is a bounded amount of owned WebGL code:
+- validation;
+- relative-to-center precision;
+- horizon occlusion;
+- a CPU projection mirror for picking;
+- context-loss recovery.
+
+Each of these has deterministic tests.
+
+Models replace flat symbols only where the meaning is identical:
+- model IDs are the flat marker IDs, and body colours reuse the flat palettes;
+- clustered zooms keep flat cluster counts;
+- captured views keep their separately accepted presentation;
+- flags, stopped badges, orbital labels and highlights, trails and tracks
+  stay on their existing ground-anchored layers;
+- any failure returns to the flat path for the session, with no retry loop,
+  preference or extra status.
+
+Altitude is shown truthfully rather than flattened:
+- aircraft use the reported barometric altitude over the sea-level map;
+- satellites use their modeled altitude;
+- drop lines tie airborne aircraft, and selected or featured satellites, to
+  their ground position.
+
+These compromises were accepted:
+- The models are symbolic class shapes, not airframes, hulls or spacecraft.
+- Each model has a flat-icon minimum on-screen size.
+- Satellites face their ground-track bearing because no attitude data exists.
+- Picking uses the screen-space convex hull of each scaled 3D model bound,
+  combined with the flat-icon minimum; it is not exact triangle picking.
+  Bounds come from the validated converted GLB vertices, not only nominal
+  dimensions, so asymmetric geometry such as the heeled sailing sail remains
+  selectable.
+
+Models are reviewed in a temporary scene of the live Blender MCP session,
+which is then deleted. The committed GLB comes from a headless run of
+`scripts/blender/build-traffic-models.py`, which reproduces it byte for byte.
+The user's `.blend` file was never saved, reverted or opened. Two defects
+found during acceptance are unrelated and were filed separately rather than
+widening this change:
+- the stale production Space-Track curated snapshot
+  ([#683](https://github.com/vasilyevstan/LiveTrafficStan/issues/683));
+- the OpenFreeMap dark-style `circle-11` sprite warning
+  ([#684](https://github.com/vasilyevstan/LiveTrafficStan/issues/684)).
+
 ## Aircraft View from here (#625)
 
 The earlier aircraft fixed-eye NO-GO had a concrete root cause: Auto changes

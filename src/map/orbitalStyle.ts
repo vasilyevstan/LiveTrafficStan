@@ -63,6 +63,21 @@ const ORBITAL_SOURCE_ATTRIBUTION =
 export const STARLINK_SOURCE_ATTRIBUTION =
   ORBITAL_SOURCE_ATTRIBUTION
 
+export const ORBITAL_FEATURED_ICON_SIZE = 1.08
+export const ORBITAL_ICON_SIZE = 0.72
+export const STARLINK_ICON_SIZE = 0.78
+export const ORBITAL_ICON_OPACITY = 0.94
+export const STARLINK_ICON_OPACITY = 0.96
+
+export const orbitalSelectionColor = (theme: Theme, starlink = false) =>
+  starlink
+    ? theme === 'dark'
+      ? '#f5f0ff'
+      : '#32145f'
+    : theme === 'dark'
+      ? '#f7fcff'
+      : '#102d3b'
+
 const emptyPoints = (): FeatureCollection<Point> => ({
   type: 'FeatureCollection',
   features: [],
@@ -288,6 +303,25 @@ export const setStarlinkVisibility = (
   visible: boolean,
 ) => setLayerGroupVisibility(map, STARLINK_LAYER_IDS, visible)
 
+/**
+ * Zero icon opacity, not `visibility: none`, while 3D models draw a group:
+ * labels, highlights, rendered-visibility probes, and featured-label picks
+ * keep their ground anchor.
+ */
+export const setOrbitalModelsActive = (
+  map: MapLibreMap,
+  group: 'orbital' | 'starlink',
+  active: boolean,
+) => {
+  const [layerId, opacity] =
+    group === 'orbital'
+      ? [LAYER_ORBITAL_POINTS, ORBITAL_ICON_OPACITY]
+      : [LAYER_STARLINK_POINTS, STARLINK_ICON_OPACITY]
+  if (map.getLayer(layerId)) {
+    map.setPaintProperty(layerId, 'icon-opacity', active ? 0 : opacity)
+  }
+}
+
 export const orbitalPointFilter = (
   shownIds: readonly string[],
 ): FilterSpecification =>
@@ -356,8 +390,9 @@ export const installOrbitalStyle = (
   visible: boolean,
   images: OrbitalStyleImages,
   shownIds: readonly string[],
+  modelsActive = false,
 ) => {
-  const selection = theme === 'dark' ? '#f7fcff' : '#102d3b'
+  const selection = orbitalSelectionColor(theme)
   const trackColor = theme === 'dark' ? '#8fe7ff' : '#087fa6'
   const labelColor = theme === 'dark' ? '#f7fcff' : '#102d3b'
   const labelHalo = theme === 'dark' ? '#06131d' : '#f7fcff'
@@ -435,8 +470,8 @@ export const installOrbitalStyle = (
         'icon-size': [
           'case',
           ['has', 'featuredLabel'],
-          1.08,
-          0.72,
+          ORBITAL_FEATURED_ICON_SIZE,
+          ORBITAL_ICON_SIZE,
         ],
         'icon-rotation-alignment': 'viewport',
         'icon-pitch-alignment': 'viewport',
@@ -460,7 +495,7 @@ export const installOrbitalStyle = (
           : {}),
       },
       paint: {
-        'icon-opacity': 0.94,
+        'icon-opacity': ORBITAL_ICON_OPACITY,
         ...(textFont
           ? {
               'text-color': labelColor,
@@ -506,6 +541,7 @@ export const installOrbitalStyle = (
     )
   }
   setOrbitalPointFilter(map, shownIds)
+  setOrbitalModelsActive(map, 'orbital', modelsActive)
   setOrbitalVisibility(map, visible)
 }
 
@@ -518,8 +554,9 @@ export const installStarlinkStyle = (
   visible: boolean,
   images: OrbitalStyleImages,
   shownIds: readonly string[],
+  modelsActive = false,
 ) => {
-  const selection = theme === 'dark' ? '#f5f0ff' : '#32145f'
+  const selection = orbitalSelectionColor(theme, true)
   const trackColor = theme === 'dark' ? '#c4b5fd' : '#6d28d9'
 
   for (const imageId of [
@@ -589,14 +626,14 @@ export const installStarlinkStyle = (
       filter: orbitalPointFilter(shownIds),
       layout: {
         'icon-image': ['get', 'markerIcon'],
-        'icon-size': 0.78,
+        'icon-size': STARLINK_ICON_SIZE,
         'icon-rotation-alignment': 'viewport',
         'icon-pitch-alignment': 'viewport',
         'icon-allow-overlap': true,
         'icon-ignore-placement': true,
       },
       paint: {
-        'icon-opacity': 0.96,
+        'icon-opacity': STARLINK_ICON_OPACITY,
       },
     },
     selectedTrailLayerId,
@@ -618,5 +655,6 @@ export const installStarlinkStyle = (
     selection,
   )
   setStarlinkPointFilter(map, shownIds)
+  setOrbitalModelsActive(map, 'starlink', modelsActive)
   setStarlinkVisibility(map, visible)
 }

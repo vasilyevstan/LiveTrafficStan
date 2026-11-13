@@ -357,6 +357,18 @@ Check these project invariants:
 - Committed coordinate, result, Center, or successful Use Location navigation
   clears selection and pre-navigation trail points, but invalid input, empty
   results, and search failure do not.
+- 3D traffic models (#682) stay one lazily loaded `traffic-models-3d` custom
+  layer on the single map, directly before `traffic-aircraft-flags`. Every
+  `style.load`, including theme changes and context restore, re-adds it
+  idempotently from current data, visibility, selection and theme without a
+  request or provider reconnect. Flat symbols remain the display until the
+  layer draws, and for the rest of the session after any import, fetch,
+  validation or GPU failure, with no retry.
+  Captured views and clustered zooms stay flat. A model-drawn traffic group
+  hides only its symbol, halo and clusters; orbital icons go to zero opacity,
+  not `visibility: none`. Hover, tooltips, click, the touch fallback and the
+  cursor take model hits first and reuse the existing identity paths. Prove
+  alignment, selection and fallback with rendered framebuffer evidence.
 - Map/style failures remain visible without disabling traffic controls.
 
 For each finding, include severity, file and line, the concrete user scenario,
