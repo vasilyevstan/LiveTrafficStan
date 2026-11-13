@@ -307,6 +307,8 @@ export const TRAFFIC_MODEL_CONFIG = {
   },
   minimumVesselLengthMeters: 2,
   maximumVesselLengthMeters: 500,
+  // Match the quantized globe surface depth without moving model geometry.
+  globeDepthOffsetUnits: -4,
   // Re-anchor relative-to-center packing before float32 offsets lose precision.
   maximumReferenceDriftPx: 100_000,
   maximumReferenceDriftWorlds: 0.25,

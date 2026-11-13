@@ -1603,8 +1603,11 @@ repository-original models are one validated GLB, described in
   world of drift. Globe projection also uses a camera-relative matrix and
   matching sphere origin: multiplying near-surface models by a full-world
   float32 matrix loses depth precision and can clip hulls behind the map.
-  The CPU projection stays in double precision; depth testing, back-face
-  culling and actual altitude are unchanged.
+  The CPU projection stays in double precision. A globe-only polygon offset
+  of four depth-buffer units, without a slope term, compensates for remaining
+  map-surface quantization in both model depth and colour passes. It is
+  disabled afterward, including failure cleanup. Depth testing, back-face
+  culling, actual altitude, screen placement and picking are unchanged.
 - A ray-sphere horizon test hides objects on the far side of the globe.
 - As the camera nears an object's altitude, the lifted model fades into a
   flattened ground footprint instead of passing through the camera.

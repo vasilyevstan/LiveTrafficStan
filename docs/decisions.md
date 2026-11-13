@@ -63,10 +63,15 @@ existing instance field to both rendering and picking. Browser comparisons
 measure painted silhouettes, not selection-ring or padded hit-box diameter;
 actual DPR is measured and removed from pixel measurements. See the
 [readability follow-up](development-and-testing.md#3d-model-readability-follow-up).
-That comparison also exposed a globe-only depth precision defect in one
-enlarged tanker. Extending the existing camera-relative matrix technique to
-the globe path restored the painted hull without clearing depth, disabling
-culling, lifting ships above sea level or adding a depth bias.
+That comparison also exposed globe-only depth precision defects in two
+enlarged tankers. A camera-relative globe matrix addresses float32
+cancellation; a fixed four-depth-buffer-unit polygon offset compensates
+for the remaining quantized map-surface mismatch. It has no slope term,
+applies equally to depth and colour passes only in globe rendering, and
+is disabled before handing GL state back to the map. One unit did not
+restore the neighboring hull; four did. No geometry, altitude, culling or
+CPU picking is changed. Real MapLibre extrusion occlusion and restoration
+pass in both themes; clearing depth or lifting ships is not the solution.
 
 Models are reviewed in a temporary scene of the live Blender MCP session,
 which is then deleted. The committed GLB comes from a headless run of

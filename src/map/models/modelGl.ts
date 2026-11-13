@@ -272,6 +272,7 @@ export const restoreModelGlState = (gl: WebGL2RenderingContext) => {
   gl.enable(gl.BLEND)
   gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
   gl.disable(gl.CULL_FACE)
+  gl.disable(gl.POLYGON_OFFSET_FILL)
   gl.cullFace(gl.BACK)
   gl.frontFace(gl.CCW)
 }

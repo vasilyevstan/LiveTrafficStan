@@ -338,6 +338,10 @@ export class TrafficModelLayer implements CustomLayerInterface {
     gl.enable(gl.CULL_FACE)
     gl.cullFace(gl.BACK)
     gl.frontFace(frame.frontFaceCcw ? gl.CCW : gl.CW)
+    if (frame.transition > 0) {
+      gl.enable(gl.POLYGON_OFFSET_FILL)
+      gl.polygonOffset(0, TRAFFIC_MODEL_CONFIG.globeDepthOffsetUnits)
+    }
     const u = this.useProgram(gl, programs.model, frame, copy)
     gl.bindVertexArray(buffers.modelVao)
     const variants = stats.airborne ? [0, 1] : [0]
@@ -355,6 +359,7 @@ export class TrafficModelLayer implements CustomLayerInterface {
         }
       }
     }
+    gl.disable(gl.POLYGON_OFFSET_FILL)
   }
 
   private fail(gl: WebGL2RenderingContext, error: unknown) {

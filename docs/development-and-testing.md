@@ -5686,7 +5686,7 @@ Testing notes:
 
 ## 3D traffic models acceptance (#682)
 
-The focused unit set has 105 tests in 11 files: the eight `src/map/models`
+The focused unit set has 106 tests in 11 files: the eight `src/map/models`
 suites and the traffic-style, orbital-style and bundle-budget suites they
 extend.
 
@@ -5697,7 +5697,7 @@ extend.
 | `trafficModelCatalog.test.ts` | A model for every flat traffic and orbital image, rejected unknown identities, the Starlink spacecraft only for Starlink payloads, the flat marker palettes in both themes |
 | `modelInstances.test.ts` | Aircraft at reported altitude; grounded or unreported aircraft on the surface without drop lines; vessel length scale; model-specific CSS-pixel floors and real-asset vessel/satellite proportions; selected and ordinary sizes match; stale dimming; zoom-context samples never selected; only shown curated orbital objects; antimeridian packing |
 | `modelProjection.test.ts`, `modelLayerGeometry.test.ts` | Mercator and globe placement, readable floors preserve naturally larger close-up geometry and position, forward/starboard axis direction and shader scale at zoom 14/16, pitched 3D bounding-box projection, asymmetric sailing bounds, the projection transition, far-side hiding, the high-altitude footprint fade, world copies, re-anchoring, CPU picks matching the shader projection and narrow-hull hit boundaries |
-| `TrafficModelLayer.test.ts` | No GL work before the first drawn frame, depth and colour passes, overlays only when needed, uploads only on change, picks from the last drawn frame, fail-closed compile errors, lost context, removal and re-add |
+| `TrafficModelLayer.test.ts` | No GL work before the first drawn frame, depth and colour passes, globe-only four-unit depth offset kept across both passes and restored afterward, overlays only when needed, uploads only on change, picks from the last drawn frame, fail-closed compile errors, lost context, removal and re-add |
 | `modelActivity.test.ts`, `src/map/trafficStyle.test.ts`, `src/map/orbitalStyle.test.ts` | Flat until the runtime loads, flat captured views, the cluster zoom threshold, the per-group flat handoff and theme reinstall, nearest-first model picks |
 | `scripts/bundle-budgets.test.mjs` | The GLB build budget equals the runtime read cap |
 
@@ -5721,9 +5721,9 @@ pixels, normalized from measured DPR 2, not padded picking axes or halos:
 | Unselected model | Painted length before / after | Painted beam before / after |
 | --- | --- | --- |
 | Cargo | 30.91 / 54.24 | 6.51 / 10.75 |
-| Passenger | 35.84 / 64.37 | 7.42 / 12.23 |
+| Passenger | 35.84 / 64.37 | 7.42 / 12.24 |
 | Pleasure craft | 15.92 / 33.82 | 6.69 / 10.97 |
-| Moored cargo, 390x844 mobile | 28.50 / 45.50 | 5.50 / 8.50 |
+| Moored cargo, 390x844 mobile | 28.50 / 49.50 | 5.50 / 8.50 |
 
 Bounded length/beam assertions pass for these isolated silhouettes in Light
 at DPR 1 and Dark at DPR 2, and for the mobile moored vessel. Twenty-four
@@ -5738,15 +5738,23 @@ fallback artwork and cluster thresholds did not change.
 
 The UI reviewer also caught an isolated tanker's hull disappearing into the
 globe depth buffer at the larger floor. A camera-relative globe matrix/origin
-pair fixes float32 cancellation without changing physical placement, depth
-testing or culling. At the same unselected pose, the vessel's painted area
+pair fixes float32 cancellation. A second isolated tanker remained fragmented
+against the quantized map surface; a globe-only four-depth-buffer-unit polygon
+offset, without a slope term, restores it. Both passes use the same offset,
+then disable it. Geometry, physical placement, depth testing and culling stay
+unchanged. At the same unselected pose, the first vessel's painted area
 rose from 152 to 606 pixels at DPR 1 and its centroid offset fell from 10.9
-to 2.0 CSS px. Normal rendering retains 577-611 painted pixels across Auto
-zooms 10.5, 11, 11.3, 11.7, 11.9 and Flat; length, beam, area and centroid
-assertions catch the former fragmented silhouette. Deterministic tests cover
-float32 depth accuracy and the matrix/origin uniforms on all three programs.
+to 2.0 CSS px. Normal rendering retains 577-612 painted pixels across Auto
+zooms 10.5, 11, 11.3, 11.7, 11.9 and Flat in both themes. The neighboring
+tanker retains 430-494 pixels, with its original-pose centroid offset reduced
+from 6.6 to 1.2 CSS px in Light. Length, beam, area and centroid assertions
+catch the fragmented silhouettes. A native MapLibre 1,000 m fill-extrusion
+fixture fully occludes the neighbor (zero model pixels); removing it restores
+430/435 pixels in Light/Dark. This proves depth was not bypassed.
+Deterministic tests cover float32 depth accuracy, the matrix/origin uniforms
+on all three programs, and offset scope, two-pass parity and GL cleanup.
 The final 405-aircraft/306-vessel DPR-2 run records frame interval
-p50/p95/max 16.6/19.4/23.5 ms and model-layer CPU 0.1/0.2/0.6 ms.
+p50/p95/max 16.6/18.9/22.1 ms and model-layer CPU 0.1/0.2/0.7 ms.
 
 **Original 3D-layer browser acceptance**
 
