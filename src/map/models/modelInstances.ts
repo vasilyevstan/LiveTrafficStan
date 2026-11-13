@@ -23,10 +23,12 @@ import {
 import type { TrafficModelBounds } from './trafficModelAsset'
 import {
   TRAFFIC_MODEL_IDS,
+  featuredOrbitalModel,
   orbitalModelColors,
   orbitalModelForObject,
   trafficModelColors,
   trafficModelForMarkerIcon,
+  trafficModelKind,
   type Rgb,
   type TrafficModelId,
 } from './trafficModelCatalog'
@@ -65,6 +67,26 @@ const MODEL_ORDER = new Map<TrafficModelId, number>(
 
 const finite = (value: unknown): value is number =>
   typeof value === 'number' && Number.isFinite(value)
+
+/**
+ * Per-model overview stretch k: while the screen floor enlarges a long hull,
+ * length is divided and beam multiplied by k, capping the painted
+ * length-to-beam ratio. Shared by the shader uniform and its CPU mirror.
+ */
+export const modelOverviewStretch = (
+  model: TrafficModelId,
+  size: Pick<ModelDimensions, 'lengthMeters' | 'beamMeters'>,
+) => {
+  if (trafficModelKind(model) !== 'vessel' || !(size.beamMeters > 0)) return 1
+  return Math.sqrt(
+    Math.max(
+      1,
+      size.lengthMeters /
+        size.beamMeters /
+        TRAFFIC_MODEL_CONFIG.vesselOverviewMaximumLengthToBeam,
+    ),
+  )
+}
 
 const vesselLengthScale = (
   entity: DisplayTrafficEntity,
@@ -121,6 +143,7 @@ export const trafficModelInstances = (
       bounds: size.bounds,
       headingDegrees: finite(properties.heading) ? properties.heading : 0,
       lengthScale,
+      overviewStretch: modelOverviewStretch(image.model, size),
       extentMeters: Math.max(size.lengthMeters, size.beamMeters) * lengthScale,
       floorPx:
         TRAFFIC_MODEL_CONFIG.minimumScreenSizePx[aircraft ? 'aircraft' : 'vessel'] *
@@ -146,11 +169,15 @@ export const orbitalModelInstances = (
   const instances: ModelInstance[] = []
   for (const position of positions) {
     if (!shown.has(position.id)) continue
-    const model = orbitalModelForObject(position.objectType, starlink)
+    const featuredLabel = starlink
+      ? undefined
+      : orbitalFeaturedMapLabelForPosition(position)
+    const featured = featuredLabel !== undefined
+    const model =
+      featuredOrbitalModel(featuredLabel) ??
+      orbitalModelForObject(position.objectType, starlink)
     const size = dimensions.get(model)
     if (!size || !finite(position.longitude) || !finite(position.latitude)) continue
-    const featured =
-      !starlink && orbitalFeaturedMapLabelForPosition(position) !== undefined
     const selected = position.id === selectedId
     const altitudeMeters =
       finite(position.altitudeKm) && position.altitudeKm > 0
@@ -171,6 +198,7 @@ export const orbitalModelInstances = (
         ? position.travelBearingDegrees
         : 0,
       lengthScale: 1,
+      overviewStretch: modelOverviewStretch(model, size),
       extentMeters: Math.max(size.lengthMeters, size.beamMeters),
       floorPx: TRAFFIC_MODEL_CONFIG.minimumScreenSizePx[
         starlink

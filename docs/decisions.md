@@ -43,7 +43,8 @@ Altitude is shown truthfully rather than flattened:
   their ground position.
 
 These compromises were accepted:
-- The models are symbolic class shapes, not airframes, hulls or spacecraft.
+- The models are symbolic class shapes, not airframes, hulls or spacecraft,
+  except for the two featured spacecraft (see below).
 - Each model has a readable minimum on-screen size, independent of the flat
   raster icon.
 - Satellites face their ground-track bearing because no attitude data exists.
@@ -83,6 +84,23 @@ the isolated neighbor complete; eight did. The eight-unit offset is
 vessel-only, retaining four for aircraft and both orbital groups. Native
 extrusion occlusion still passes, without changing physical altitude.
 
+The next review found the 34 px ships still read as long needles: a 200 m
+cargo hull painted about 44 × 9 px. The user asked for wider but shorter
+ships, and three independent model reviews were consulted. This intentionally
+reverses the earlier "no length-axis compression" choice, but only in overview:
+while the screen-size floor enlarges a vessel, its length is divided and its
+beam multiplied by k = √max(1, (L/B)/3.5), so the painted area is unchanged
+and the length-to-beam ratio is at most 3.5 (cargo about 33 × 11.5 px). Height
+is not stretched. Once enlargement falls below 1/k the hull is back to true
+proportions, so close-up and reported-length geometry stay exact. Fishing,
+tug, sailing, pleasure and high-speed hulls are already within 3.5 and are
+unchanged; aircraft and orbital models never stretch. The instance buffer has
+no spare float, and AIS length scales length and beam together, so k depends
+only on the mesh and is a per-model-run uniform mirrored by CPU picking.
+Picking and the selection ring are unchanged because both stretched axes stay
+within the floor. A shorter painted length (about 32 rather than 34 px) was
+preferred over another floor cut, which would also have shrunk the beam.
+
 Models are reviewed in a temporary scene of the live Blender MCP session,
 which is then deleted. The committed GLB comes from a headless run of
 `scripts/blender/build-traffic-models.py`, which reproduces it byte for byte.
@@ -93,6 +111,28 @@ widening this change:
   ([#683](https://github.com/vasilyevstan/LiveTrafficStan/issues/683));
 - the OpenFreeMap dark-style `circle-11` sprite warning
   ([#684](https://github.com/vasilyevstan/LiveTrafficStan/issues/684)).
+
+## Featured spacecraft models
+
+The user asked for famous and special objects to have their own models. The
+app's existing featured objects, the ISS and the Hubble Space Telescope, now
+use `orbital-iss` (380 triangles) and `orbital-hubble` (140 triangles). Each is
+selected only after the existing exact reviewed-identity match that already
+labels it, never by name alone, so a renamed or unrelated payload keeps
+`orbital-payload`, and every other orbital rule (featured size, PAY colours,
+modeled altitude) is unchanged. They get a 400-triangle budget,
+above the generic orbital 120, because at most one of each is drawn. Tiangong
+and other named objects are not in the reviewed featured manifest, so adding
+them first needs a sourced manifest record, not just a mesh.
+
+The curated catalog places the ISS and seven docked modules and visiting
+vehicles at identical modeled positions. Their model hits therefore tie
+exactly, and the first packed instance (`POISK`) used to win a click on the
+visible station model. Exactly tied model hits now prefer the larger
+projected model, so the station selects `ISS (ZARYA)`; any nearer hit still
+wins. The Blender MCP connection was unavailable for this follow-up, so the
+two meshes were reviewed from the headless preview render instead of a live
+temporary scene.
 
 ## Aircraft View from here (#625)
 

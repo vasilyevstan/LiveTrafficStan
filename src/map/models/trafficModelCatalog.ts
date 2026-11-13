@@ -32,6 +32,8 @@ export const TRAFFIC_MODEL_IDS = [
   'orbital-debris',
   'orbital-unknown',
   'orbital-starlink-spacecraft',
+  'orbital-iss',
+  'orbital-hubble',
 ] as const
 
 export type TrafficModelId = (typeof TRAFFIC_MODEL_IDS)[number]
@@ -79,6 +81,19 @@ export const orbitalModelForObject = (
   starlink && objectType === 'PAY'
     ? 'orbital-starlink-spacecraft'
     : orbitalStyleImageId(objectType)
+
+const FEATURED_ORBITAL_MODELS = new Map<string, TrafficModelId>([
+  ['ISS', 'orbital-iss'],
+  ['HUBBLE', 'orbital-hubble'],
+])
+
+/** Dedicated model for a featured map label from the exact reviewed identity. */
+export const featuredOrbitalModel = (
+  featuredLabel: string | undefined,
+): TrafficModelId | undefined =>
+  featuredLabel === undefined
+    ? undefined
+    : FEATURED_ORBITAL_MODELS.get(featuredLabel)
 
 const HEX_COLOR = /^#([0-9a-f]{6})$/i
 

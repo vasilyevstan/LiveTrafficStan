@@ -116,6 +116,27 @@ describe('model picking anchors', () => {
     expect(modelPickHits('aircraft', anchors, [10, 10])).toEqual([])
   })
 
+  it('prefers the larger enclosing model when co-located objects tie', () => {
+    const camera = { longitude: 62, latitude: 1, zoom: 4.5 }
+    const frame = frameFor(camera)
+    const at = { longitude: 62, latitude: 1, altitudeMeters: 415_000 }
+    const packed = packModelInstances([
+      modelInstanceFixture({ ...at, id: 'orbital:25544', model: 'orbital-iss', floorPx: 40 }),
+      modelInstanceFixture({ ...at, id: 'orbital:36086', model: 'orbital-payload', floorPx: 28 }),
+    ], frame.reference)
+    expect(packed.instances.map(({ id }) => id)).toEqual(['orbital:36086', 'orbital:25544'])
+    const anchors = modelPickAnchors(frame, packed.instances, [0])
+    const [docked, station] = anchors
+    expect(station.anchor.radiusPx).toBeGreaterThan(docked.anchor.radiusPx)
+    const point: [number, number] = [station.anchor.x + 1, station.anchor.y]
+    expect(modelPickHits('orbital', anchors, point).map(({ id }) => id)).toEqual([
+      'orbital:25544',
+      'orbital:36086',
+    ])
+    const near = modelPickHits('orbital', [docked], [docked.anchor.x, docked.anchor.y])
+    expect(near).toEqual([{ group: 'orbital', id: 'orbital:36086', distance: 0 }])
+  })
+
   it('matches the CPU projection used by the shader for the primary copy', () => {
     const camera = { longitude: 24.75, latitude: 59.43, zoom: 9, pitchDegrees: 50, bearingDegrees: 30 }
     const frame = frameFor(camera)

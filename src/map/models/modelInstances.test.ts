@@ -17,6 +17,7 @@ import {
 import {
   MODEL_INSTANCE_FLOATS,
   MODEL_INSTANCE_STRIDE_BYTES,
+  modelOverviewStretch,
   orbitalModelInstances,
   packModelInstances,
   trafficModelInstances,
@@ -161,7 +162,7 @@ describe('traffic model instances', () => {
     }
   })
 
-  it('gives real vessel meshes readable beams without distorting their proportions', () => {
+  it('widens and shortens long overview hulls without changing small craft', () => {
     const entities = [
       vessel({ vesselCategory: 'cargo', markerIcon: 'vessel-cargo' }),
       vessel({ vesselCategory: 'passenger', markerIcon: 'vessel-passenger' }),
@@ -171,21 +172,53 @@ describe('traffic model instances', () => {
     expect(trafficModelInstances(entities, flat(entities), 'dark', REAL_DIMENSIONS).map(({ model }) => model)).toEqual([
       'vessel-cargo', 'vessel-passenger', 'vessel-sailing', 'vessel-pleasure',
     ])
+    const cap = TRAFFIC_MODEL_CONFIG.vesselOverviewMaximumLengthToBeam
     for (const entity of entities) {
       const [ordinary] = trafficModelInstances([entity], flat([entity]), 'dark', REAL_DIMENSIONS)
       const [selected] = trafficModelInstances([entity], flat([entity], entity.id), 'dark', REAL_DIMENSIONS)
-      const beamPx =
-        ordinary.floorPx * ordinary.beamMeters /
-        Math.max(ordinary.lengthMeters, ordinary.beamMeters)
+      const extent = Math.max(ordinary.lengthMeters, ordinary.beamMeters)
+      // Painted overview size while the floor enlarges the hull (shader mirror).
+      const lengthPx = (ordinary.floorPx * ordinary.lengthMeters) / extent / ordinary.overviewStretch
+      const beamPx = (ordinary.floorPx * ordinary.beamMeters * ordinary.overviewStretch) / extent
+      const ratio = ordinary.lengthMeters / ordinary.beamMeters
+      expect(lengthPx / beamPx, ordinary.model).toBeCloseTo(Math.min(ratio, cap), 9)
+      expect(lengthPx * beamPx, ordinary.model).toBeCloseTo(
+        (ordinary.floorPx ** 2 * ordinary.lengthMeters * ordinary.beamMeters) / extent ** 2,
+        9,
+      )
       expect(beamPx, ordinary.model).toBeGreaterThanOrEqual(6.5)
-      expect(beamPx, ordinary.model).toBeLessThan(ordinary.floorPx)
+      expect(lengthPx, ordinary.model).toBeLessThanOrEqual(ordinary.floorPx)
       expect(ordinary.floorPx).toBeGreaterThanOrEqual(27.2)
       expect(ordinary.floorPx).toBeLessThanOrEqual(54.4)
       expect(ordinary.altitudeMeters).toBe(0)
       expect(ordinary.bounds).toBe(REAL_DIMENSIONS.get(ordinary.model)?.bounds)
       expect(selected.floorPx).toBe(ordinary.floorPx)
       expect(selected.lengthScale).toBe(ordinary.lengthScale)
+      expect(selected.overviewStretch).toBe(ordinary.overviewStretch)
     }
+  })
+
+  it('stretches only vessel meshes longer than the overview ratio cap', () => {
+    const stretch = (model: TrafficModelId) =>
+      modelOverviewStretch(model, REAL_DIMENSIONS.get(model)!)
+    expect(stretch('vessel-cargo')).toBeCloseTo(Math.sqrt(200 / 32 / 3.5), 9)
+    expect(stretch('vessel-tanker')).toBeGreaterThan(1.2)
+    expect(stretch('vessel-passenger')).toBeGreaterThan(1.2)
+    expect(stretch('vessel')).toBeGreaterThan(1.2)
+    for (const model of [
+      'vessel-fishing',
+      'vessel-tug',
+      'vessel-sailing',
+      'vessel-pleasure',
+      'vessel-highspeed',
+      'aircraft-heavy',
+      'helicopter',
+      'orbital-iss',
+      'orbital-hubble',
+    ] as const) {
+      expect(stretch(model), model).toBe(1)
+    }
+    expect(modelOverviewStretch('vessel', { lengthMeters: 10, beamMeters: 0 })).toBe(1)
   })
 
   it('flags zoom-context samples and never marks them selected', () => {
@@ -262,11 +295,40 @@ describe('orbital model instances', () => {
     expect(instances[0].floorPx).toBe(28)
     expect(instances[1]).toMatchObject({
       id: 'orbital:25544',
+      model: 'orbital-iss',
       headingDegrees: 0,
+      overviewStretch: 1,
       flags: MODEL_FLAG_DROP_LINE,
     })
     expect(instances[1].floorPx).toBe(40)
     expect(orbitalModelInstances([satellite], [], null, 'dark', false, DIMENSIONS)).toEqual([])
+  })
+
+  it('gives featured objects their own model only after the exact reviewed identity match', () => {
+    const hubble = {
+      ...satellite,
+      id: 'orbital:20580',
+      noradCatalogId: '20580',
+      name: 'HST',
+      internationalDesignator: '1990-037B',
+    }
+    const renamedIss = { ...iss, id: 'orbital:renamed', name: 'ISS RENAMED' }
+    const positions = [iss, hubble, renamedIss]
+    const ids = positions.map(({ id }) => id)
+    const instances = orbitalModelInstances(positions, ids, null, 'dark', false, DIMENSIONS)
+    const payload = orbitalIconTreatment('dark', 'PAY')
+    expect(instances.map(({ model, floorPx }) => [model, floorPx])).toEqual([
+      ['orbital-iss', 40],
+      ['orbital-hubble', 40],
+      ['orbital-payload', 28],
+    ])
+    for (const instance of instances) {
+      expect(instance.tint).toEqual(hexColorBytes(payload.fill))
+      expect(instance.detail).toEqual(hexColorBytes(payload.detail))
+    }
+    expect(
+      orbitalModelInstances([iss], [iss.id], null, 'dark', true, DIMENSIONS)[0].model,
+    ).toBe('orbital-starlink-spacecraft')
   })
 
   it('uses the Starlink spacecraft only for Starlink payloads', () => {
@@ -324,6 +386,7 @@ const instance = (
     maximum: [25, 20, 12] as const,
   },
   lengthScale: 1.5,
+  overviewStretch: 1,
   extentMeters: 75,
   floorPx: 30,
   opacity: 0.5,

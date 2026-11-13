@@ -166,6 +166,24 @@ describe('TrafficModelLayer', () => {
       .filter((call) => call.args[0] === 3)
       .map((call) => call.args[5])
     expect(offsetPointers).toEqual([0, 112, 0, 112])
+    expect(uniformValues(calls, 'u_overview_stretch')).toEqual([[1], [1], [1], [1]])
+  })
+
+  it('uploads each vessel run its own overview stretch in both passes', () => {
+    const { calls, render, show } = setup()
+    show('vessels', [
+      modelInstanceFixture({ id: 'cargo', model: 'vessel-cargo' }),
+      modelInstanceFixture({ id: 'tug', model: 'vessel-tug' }),
+    ])
+    render()
+    const cargo = meshes.get('vessel-cargo')!
+    const stretch = Math.sqrt(
+      cargo.lengthMeters / cargo.beamMeters / TRAFFIC_MODEL_CONFIG.vesselOverviewMaximumLengthToBeam,
+    )
+    const values = uniformValues(calls, 'u_overview_stretch').map(([value]) => value as number)
+    expect(values).toHaveLength(4)
+    for (const index of [0, 2]) expect(values[index]).toBeCloseTo(stretch, 9)
+    expect([values[1], values[3]]).toEqual([1, 1])
   })
 
   it('uploads the camera-relative globe matrix and matching origin to every program', () => {

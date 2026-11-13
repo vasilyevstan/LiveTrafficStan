@@ -91,7 +91,9 @@ describe('committed traffic model asset', () => {
     expect(committed.byteLength).toBeLessThanOrEqual(128 * 1024)
     expect([...models.keys()].sort()).toEqual([...TRAFFIC_MODEL_IDS].sort())
     for (const model of models.values()) {
-      const budget = { aircraft: 300, vessel: 260, orbital: 120 }[model.kind]
+      // Named spacecraft draw at most one instance each, so they get more detail.
+      const named = model.id === 'orbital-iss' || model.id === 'orbital-hubble'
+      const budget = named ? 400 : { aircraft: 300, vessel: 260, orbital: 120 }[model.kind]
       expect(model.triangleCount, model.id).toBeLessThanOrEqual(budget)
       expect(model.vertices.byteLength).toBe(
         model.triangleCount * 3 * MODEL_VERTEX_STRIDE_BYTES,
@@ -101,7 +103,7 @@ describe('committed traffic model asset', () => {
       (sum, model) => sum + model.triangleCount,
       0,
     )
-    expect(total).toBe(2_400)
+    expect(total).toBe(2_920)
   })
 
   it('uses the starboard, forward and up frame with a keel origin', () => {
