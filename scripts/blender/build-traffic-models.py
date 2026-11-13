@@ -573,9 +573,47 @@ def model_starlink(collection):
     return finish(collection, m, 'orbital-starlink-spacecraft', 'orbital')
 
 
+# Named spacecraft, used only for exactly reviewed featured catalog identities.
+# Nominal real-world proportions; attitude is drawn along the ground track.
+
+def model_iss(collection):
+    m = new_model()
+    box(m, -54.5, 54.5, 4.4, 7.6, 2.6, 5.4, 'detail')
+    box(m, -1.0, 1.0, 4.6, 7.4, 2.0, 2.7, 'detail')
+    loft(m, [(21.0, 2.2, 2.2, 0.0), (2.0, 2.2, 2.2, 0.0)], 8, 'detail')
+    loft(m, [(2.0, 2.3, 2.3, 0.0), (-3.0, 2.3, 2.3, 0.0)], 8, 'detail')
+    loft(m, [(-3.0, 2.05, 2.05, 0.0), (-16.0, 2.05, 2.05, 0.0)], 8, 'detail')
+    loft(m, [(-16.0, 2.1, 2.1, 0.0), (-28.0, 2.1, 2.1, 0.0), (-31.0, 1.4, 1.4, 0.0)], 8, 'detail')
+    box(m, 2.0, 9.0, 13.0, 17.5, -2.0, 2.0, 'detail')
+    box(m, -13.0, -2.0, 12.5, 18.0, -2.2, 2.2, 'detail')
+    box(m, -18.0, -13.0, 13.5, 17.0, -1.0, 1.0, 'dark')
+    for side in (1.0, -1.0):
+        box(m, side * 13.0, side * 22.0, -4.0, 4.4, 3.9, 4.1, 'detail')
+        box(m, side * 2.1, side * 14.0, -22.5, -20.0, -0.06, 0.06, 'body')
+        for r0 in (32.5, 44.0):
+            r_c = side * (r0 + 5.25)
+            box(m, side * r0, side * (r0 + 10.5), 8.6, 41.6, 3.9, 4.1, 'body')
+            box(m, side * r0, side * (r0 + 10.5), -29.6, 3.4, 3.9, 4.1, 'body')
+            box(m, r_c - 0.3, r_c + 0.3, -29.6, 41.6, 3.8, 4.3, 'dark')
+    return finish(collection, m, 'orbital-iss', 'orbital')
+
+
+def model_hubble(collection):
+    m = new_model()
+    loft(m, [(6.0, 1.55, 1.55, 0.0), (-1.0, 1.55, 1.55, 0.0)], 8, 'detail', cap_mat='dark')
+    loft(m, [(-1.0, 2.1, 2.1, 0.0), (-6.6, 2.1, 2.1, 0.0)], 8, 'detail')
+    plate_r(m, [(6.0, 1.55), (8.6, 3.05), (8.54, 3.15), (5.94, 1.65)], -1.55, 1.55, 'detail')
+    for side in (1.0, -1.0):
+        box(m, side * 1.9, side * 7.4, -1.6, -1.4, -0.12, 0.12, 'dark')
+        box(m, side * 2.4, side * 7.4, -2.8, -0.2, -0.05, 0.05, 'body')
+        box(m, side * 0.15, side * -0.15, -4.2, -3.9, side * 2.0, side * 3.6, 'dark')
+    return finish(collection, m, 'orbital-hubble', 'orbital')
+
+
 def build_orbital(collection):
     return [model_payload(collection), model_rocket_body(collection), model_debris(collection),
-            model_unknown(collection), model_starlink(collection)]
+            model_unknown(collection), model_starlink(collection), model_iss(collection),
+            model_hubble(collection)]
 
 
 # Scene assembly, preview, export and render.
@@ -593,6 +631,7 @@ PREVIEW_ROWS = [
     ['vessel-tug', 'vessel-sailing', 'vessel-pleasure', 'vessel-highspeed'],
     ['orbital-payload', 'orbital-rocket-body', 'orbital-debris', 'orbital-unknown',
      'orbital-starlink-spacecraft'],
+    ['orbital-iss', 'orbital-hubble'],
 ]
 PREVIEW_SIZE = 10.0
 PREVIEW_SPACING = 14.0

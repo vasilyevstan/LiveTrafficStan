@@ -1516,7 +1516,7 @@ Aircraft, vessels, curated orbital objects and Starlink are drawn as low-poly
 3D models. They use one persistent MapLibre custom layer,
 `traffic-models-3d`, on the existing single map. The renderer is raw WebGL2
 inside MapLibre's custom-layer API: there is no Three.js, deck.gl or other
-dependency, no second canvas, and no second camera. The 18
+dependency, no second canvas, and no second camera. The 20
 repository-original models are one validated GLB, described in
 [`src/assets/models/README.md`](../src/assets/models/README.md).
 
@@ -1582,7 +1582,10 @@ repository-original models are one validated GLB, described in
     (2-500 m).
 - **Orbital** reuses the flat `shownIds` filter. Each object sits at its
   modeled altitude and faces the Earth-relative ground-track bearing, not
-  spacecraft attitude. Selected and featured objects get drop lines.
+  spacecraft attitude. Selected and featured objects get drop lines. The
+  featured ISS and Hubble use `orbital-iss` and `orbital-hubble`
+  (`featuredOrbitalModel` in `trafficModelCatalog.ts`), chosen from the same
+  exact reviewed-identity label as their map label, never by name alone.
 - Body colours come from the flat-icon palettes, including aircraft altitude
   bands. Selection draws a ring in the existing selection colour.
 - A model is drawn at its metric size with a model-specific minimum screen
@@ -1591,10 +1594,16 @@ repository-original models are one validated GLB, described in
   Starlink 30. Traffic retains its existing marker scale and vessel-class
   normalization. Thin shaded hulls need more space than outlined flat icons;
   the model floor therefore no longer derives from the flat raster size.
-  The existing uniform scale and perspective adjustment preserve proportions,
-  altitude and naturally larger close-up models. Selection adds only the ring,
-  not another size increase. Flat fallback symbols and flag/badge sizes are
-  unchanged.
+  The existing uniform scale and perspective adjustment preserve altitude and
+  naturally larger close-up models. Selection adds only the ring, not another
+  size increase. Flat fallback symbols and flag/badge sizes are unchanged.
+- Long hulls get an overview stretch (`modelOverviewStretch`). For vessel
+  meshes longer than `vesselOverviewMaximumLengthToBeam` (3.5) times their
+  beam, k = √((L/B)/3.5). While the floor enlarges the hull, length is divided
+  and beam multiplied by k, preserving painted area; height is not stretched.
+  Each axis is clamped at its true size, so close-up hulls keep true
+  proportions. k is a per-model-run uniform, `u_overview_stretch`, because
+  reported-length scaling is uniform; aircraft, orbital and short hulls use 1.
 
 **Projection and picking** (`modelProjection.ts`, `modelShaders.ts`)
 
@@ -1614,8 +1623,11 @@ repository-original models are one validated GLB, described in
   flattened ground footprint instead of passing through the camera.
 - Picking uses a CPU mirror of the shaders on the last drawn frame. A hit
   falls inside the screen-space convex hull of the validated, converted mesh
-  bounds, combined with the model's minimum screen extent, and passes the same horizon
-  test; hits are ordered nearest first. This uses actual vertex extents rather
+  bounds, scaled by the same per-axis overview stretch, combined with the
+  model's minimum screen extent, and passes the same horizon
+  test; hits are ordered nearest first, and exactly tied hits, such as the
+  ISS and its co-located docked vehicles, prefer the larger projected model.
+  This uses actual vertex extents rather
   than nominal dimensions, preserving asymmetric silhouettes such as the
   heeled sailing boat.
 - Hover, tooltip re-checks, click, the expanded touch fallback and the

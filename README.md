@@ -184,10 +184,13 @@ identity are not renamed or reset.
   direction, marks selection with a ring in the same selection colour,
   has a model-specific readable minimum screen size, and can be hovered,
   clicked or tapped. Thin hulls and solar panels get more screen space than
-  their flat icons without changing proportions or actual altitude.
-  Ships use a compact overview footprint to avoid excessive length around ports.
+  their flat icons without changing actual altitude.
+  Ships use a compact overview footprint: while enlarged for readability, long
+  hulls are drawn wider and shorter, at most 3.5 times longer than wide, and
+  return to true proportions close up. The ISS and the Hubble Space Telescope
+  have their own recognisable models.
   Clustered zooms, captured views and any load or GPU failure keep the flat
-  icons. Theme changes make no new request. The 18 repository-original
+  icons. Theme changes make no new request. The 20 repository-original
   models come from a reproducible Blender script; see
   [3D traffic models](docs/architecture.md#3d-traffic-models-682).
 - Smooth automatic globe when zooming out, with native interpolation to a

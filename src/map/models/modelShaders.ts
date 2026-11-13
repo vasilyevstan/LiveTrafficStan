@@ -121,6 +121,7 @@ layout(location = 8) in vec4 a_detail;
 
 uniform float u_footprint;
 uniform float u_depth_only;
+uniform float u_overview_stretch;
 
 out vec4 v_color;
 invariant gl_Position;
@@ -146,12 +147,20 @@ void main() {
   }
   float floorPx = a_size.x * perspectiveScale(anchor.w);
   float naturalPx = max(a_size.y * pixelsPerMeter(merc, globe), 1e-6);
-  vec3 local = a_position * (a_motion.w * max(1.0, floorPx / naturalPx));
+  float enlarge = floorPx / naturalPx;
+  // x = starboard (beam), y = forward (length), z = up.
+  vec3 scale = vec3(
+    max(1.0, enlarge * u_overview_stretch),
+    max(1.0, enlarge / u_overview_stretch),
+    max(1.0, enlarge)
+  );
+  vec3 local = a_position * (a_motion.w * scale);
   if (footprint) local.z *= 0.02;
+  vec3 n = a_normal / scale;
   float c = cos(a_motion.z);
   float s = sin(a_motion.z);
   vec3 enu = vec3(local.x * c + local.y * s, -local.x * s + local.y * c, local.z);
-  vec3 normal = vec3(a_normal.x * c + a_normal.y * s, -a_normal.x * s + a_normal.y * c, a_normal.z);
+  vec3 normal = vec3(n.x * c + n.y * s, -n.x * s + n.y * c, n.z);
   gl_Position = projectLocal(enu, anchorAltitude, merc, globe, sphere);
   float light = 0.55 + 0.45 * max(dot(normalize(normal), LIGHT), 0.0);
   float role = a_color.a;

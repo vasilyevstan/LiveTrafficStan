@@ -33,7 +33,11 @@ const FRAME_UNIFORMS = [
 ] as const
 
 const PROGRAM_SOURCES = {
-  model: [MODEL_VERTEX_SHADER, MODEL_FRAGMENT_SHADER, ['u_footprint', 'u_depth_only']],
+  model: [
+    MODEL_VERTEX_SHADER,
+    MODEL_FRAGMENT_SHADER,
+    ['u_footprint', 'u_depth_only', 'u_overview_stretch'],
+  ],
   line: [DROP_LINE_VERTEX_SHADER, DROP_LINE_FRAGMENT_SHADER, ['u_overlay_color']],
   ring: [RING_VERTEX_SHADER, RING_FRAGMENT_SHADER, ['u_overlay_color', 'u_ring_lifted_only']],
 } as const

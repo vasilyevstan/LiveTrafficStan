@@ -24,6 +24,7 @@ import {
 import { TRAFFIC_MODEL_LAYER_ID } from './modelActivity'
 import {
   MODEL_GROUPS,
+  modelOverviewStretch,
   orbitalModelInstances,
   packModelInstances,
   trafficModelInstances,
@@ -93,6 +94,7 @@ export class TrafficModelLayer implements CustomLayerInterface {
 
   private readonly meshes: ReadonlyMap<TrafficModelId, TrafficModelMesh>
   private readonly dimensions: ModelDimensionTable
+  private readonly overviewStretch: ReadonlyMap<TrafficModelId, number>
   private readonly onFailure: (error: unknown) => void
   private readonly groups = new Map<ModelGroup, GroupState>()
   private map?: MapLibreMap
@@ -118,6 +120,9 @@ export class TrafficModelLayer implements CustomLayerInterface {
           bounds: mesh.bounds,
         },
       ]),
+    )
+    this.overviewStretch = new Map(
+      [...this.dimensions].map(([id, size]) => [id, modelOverviewStretch(id, size)]),
     )
     for (const group of MODEL_GROUPS) {
       this.groups.set(group, {
@@ -359,6 +364,9 @@ export class TrafficModelLayer implements CustomLayerInterface {
         for (const run of packed.runs) {
           const range = meshRanges.get(run.model)
           if (!range) continue
+          if (u.u_overview_stretch) {
+            gl.uniform1f(u.u_overview_stretch, this.overviewStretch.get(run.model) ?? 1)
+          }
           pointInstanceAttributes(gl, buffers.buffer, run.first, true)
           gl.drawArraysInstanced(gl.TRIANGLES, range.first, range.count, run.count)
         }

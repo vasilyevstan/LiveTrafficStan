@@ -5686,27 +5686,29 @@ Testing notes:
 
 ## 3D traffic models acceptance (#682)
 
-The focused unit set has 109 tests in 11 files: the eight `src/map/models`
+The focused unit set has 115 tests in 11 files: the eight `src/map/models`
 suites and the traffic-style, orbital-style and bundle-budget suites they
 extend.
 
 | File | Covers |
 | --- | --- |
-| `src/map/models/trafficModelAsset.test.ts` | The committed GLB: every model identity within the byte and triangle budgets, the starboard/forward/up frame with a keel origin, converted-vertex bounds including the asymmetric sailing model, closed outward-wound geometry, face normals and per-vertex sRGB accents. The validator rejects malformed containers, size-limit breaches, unsupported glTF features, inconsistent identities, and accessors or indices outside their buffers |
+| `src/map/models/trafficModelAsset.test.ts` | The committed GLB: every model identity within the byte and triangle budgets, including the larger named-spacecraft budget, the starboard/forward/up frame with a keel origin, converted-vertex bounds including the asymmetric sailing model, closed outward-wound geometry, face normals and per-vertex sRGB accents. The validator rejects malformed containers, size-limit breaches, unsupported glTF features, inconsistent identities, and accessors or indices outside their buffers |
 | `trafficModelRuntime.test.ts` | Fetch without credentials or referrer from the hashed bundled URL, accepted content types, HTTP failures, HTML fallback, oversized and malformed bodies, caller cancellation, the asset deadline |
-| `trafficModelCatalog.test.ts` | A model for every flat traffic and orbital image, rejected unknown identities, the Starlink spacecraft only for Starlink payloads, the flat marker palettes in both themes |
-| `modelInstances.test.ts` | Aircraft at reported altitude; grounded or unreported aircraft on the surface without drop lines; vessel length scale; model-specific CSS-pixel floors and real-asset vessel/satellite proportions; selected and ordinary sizes match; stale dimming; zoom-context samples never selected; only shown curated orbital objects; antimeridian packing |
-| `modelProjection.test.ts`, `modelLayerGeometry.test.ts` | Mercator and globe placement, readable floors preserve naturally larger close-up geometry and position, forward/starboard axis direction and shader scale at zoom 14/16, pitched 3D bounding-box projection, asymmetric sailing bounds, the projection transition, far-side hiding, the high-altitude footprint fade, world copies, re-anchoring, CPU picks matching the shader projection and narrow-hull hit boundaries |
-| `TrafficModelLayer.test.ts` | No GL work before the first drawn frame, depth and colour passes, globe-only per-group depth offset kept across both passes and restored afterward, overlays only when needed, uploads only on change, picks from the last drawn frame, fail-closed compile errors, lost context, removal and re-add |
+| `trafficModelCatalog.test.ts` | A model for every flat traffic and orbital image, rejected unknown identities, the Starlink spacecraft only for Starlink payloads, dedicated ISS and Hubble models only for their exact featured labels, the flat marker palettes in both themes |
+| `modelInstances.test.ts` | Aircraft at reported altitude; grounded or unreported aircraft on the surface without drop lines; vessel length scale; the area-preserving vessel overview stretch and its identity value for compact hulls, aircraft and spacecraft; model-specific CSS-pixel floors and real-asset vessel/satellite proportions; selected and ordinary sizes match; stale dimming; zoom-context samples never selected; only shown curated orbital objects; antimeridian packing |
+| `modelProjection.test.ts`, `modelLayerGeometry.test.ts` | Mercator and globe placement, readable floors preserve naturally larger close-up geometry and position, forward/starboard axis direction and shader scale at zoom 14/16, pitched 3D bounding-box projection, asymmetric sailing bounds, the projection transition, far-side hiding, the high-altitude footprint fade, world copies, re-anchoring, CPU picks matching the shader projection, per-axis overview-stretch picking, narrow-hull hit boundaries and the larger-model rule for exactly co-located picks |
+| `TrafficModelLayer.test.ts` | No GL work before the first drawn frame, depth and colour passes, globe-only per-group depth offset kept across both passes and restored afterward, overlays only when needed, the per-model-run overview-stretch uniform, uploads only on change, picks from the last drawn frame, fail-closed compile errors, lost context, removal and re-add |
 | `modelActivity.test.ts`, `src/map/trafficStyle.test.ts`, `src/map/orbitalStyle.test.ts` | Flat until the runtime loads, flat captured views, the cluster zoom threshold, the per-group flat handoff and theme reinstall, nearest-first model picks |
 | `scripts/bundle-budgets.test.mjs` | The GLB build budget equals the runtime read cap |
 
 The headless command in [`src/assets/models/README.md`](../src/assets/models/README.md)
 regenerated the GLB byte for byte with Blender 5.2.3:
-SHA-256 `d2715d39fa44799a0260e9b065487abdd6d7156e77c3a7198729fcc5cbdbb84a`.
+SHA-256 `27d4a5350d52655bf2f7e71c31c496e8c9f609b1b206aa16c8813bd76a9428a5`.
 The preview PNG is a render and is not byte-stable.
 
 ### Compact vessel overview follow-up
+
+The wide-ship follow-up below supersedes these painted dimensions.
 
 A later 2026-11-13 production screenshot showed ships occupying excessive
 map length. The vessel-only screen floor drops from 42 to 34 CSS px,
@@ -5737,10 +5739,46 @@ fixture occludes the neighbor to zero pixels and removal restores it in
 both themes. Other groups keep the prior four-unit setting; tests explicitly
 cover all four groups, both rendering passes and state cleanup.
 
+### Wide-ship overview and featured spacecraft
+
+After the compact follow-up, ships still read as long needles. Three model
+reviews converged on an overview-only, area-preserving stretch: while the
+screen floor enlarges a vessel, its painted length is divided and beam
+multiplied by `k = sqrt(max(1, (L/B) / 3.5))`. Cargo uses 1.336, tanker 1.251,
+passenger 1.309 and generic vessel 1.248; fishing, tug, sailing, pleasure,
+high-speed, aircraft and all spacecraft use 1. Height, picking padding, the
+selection ring and naturally large close-ups are unchanged, and hulls return
+to true proportions once the floor no longer enlarges them.
+
+Matched 1280x900 DPR-2 framebuffer silhouettes at zoom 11.7 measure:
+
+| Model | Painted length x beam, compact | Wide overview |
+| --- | --- | --- |
+| Cargo, Dark | 43.6 x 8.6 | 33.7 x 11.1 |
+| Cargo, Light | - | 34.2 x 10.9 |
+| Passenger, Dark | 52.0 x 10.1 | 40.5 x 12.7 |
+| Pleasure craft | 27.4 x 9.0 | 27.4 x 9.0 |
+| Moored cargo, 390x844 mobile | 40.5 x 7.5 | 31.0 x 9.5 |
+
+The globe-depth tanker pair still passes in both themes at Auto zooms 10.5,
+11, 11.3, 11.7, 11.9 and Flat: target 38.2-38.6 x 12.4, neighbor
+31.1-32.1 x 10.5-11.4, 296-419 pixels and centroid offsets below 2.5 px.
+The 1,000 m extrusion occludes and then restores the neighbor.
+
+The regenerated asset has 20 models, adding dedicated ISS (380 triangles)
+and Hubble (140 triangles) meshes. They are selected only through the exact
+reviewed featured identity. At zoom 4.5, DPR 2, both themes draw one of each
+(ISS 28.6 x 42.3 CSS px; Hubble 42.8 x 41.9) and click-select them; Hubble
+opens `HST`. The ISS fixture shares exact elements with seven docked modules
+and visiting vehicles, so every click was a distance tie that previously
+selected the first packed instance, `POISK`. Exactly tied model hits now
+prefer the larger projected model, so the visible station selects
+`ISS (ZARYA)` while nearer hits still win.
+
 ### 3D model readability follow-up
 
-This is the preceding release's evidence; the compact vessel follow-up above
-supersedes its vessel floor.
+This is the preceding release's evidence; the compact vessel and wide-ship
+follow-ups above supersede its vessel floor and painted dimensions.
 
 The 2026-11-13 harbor screenshot and map/UI review showed that thin 3D hulls
 were visually subordinate to flags and stopped badges. The model-only floor

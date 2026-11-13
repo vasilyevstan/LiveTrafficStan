@@ -9,6 +9,7 @@ import {
 } from '../orbitalIcons'
 import {
   TRAFFIC_MODEL_IDS,
+  featuredOrbitalModel,
   hexColorBytes,
   isTrafficModelId,
   orbitalModelColors,
@@ -34,11 +35,12 @@ describe('traffic model catalog', () => {
       expect(isTrafficModelId(imageId), imageId).toBe(true)
       covered.add(imageId)
     }
+    for (const label of ['ISS', 'HUBBLE']) covered.add(featuredOrbitalModel(label)!)
     expect([...covered].sort()).toEqual([...TRAFFIC_MODEL_IDS].sort())
     expect(TRAFFIC_MODEL_IDS.map(trafficModelKind)).toEqual([
       ...Array(4).fill('aircraft'),
       ...Array(9).fill('vessel'),
-      ...Array(5).fill('orbital'),
+      ...Array(7).fill('orbital'),
     ])
   })
 
@@ -64,6 +66,17 @@ describe('traffic model catalog', () => {
     expect(orbitalModelForObject('R/B', true)).toBe('orbital-rocket-body')
     expect(orbitalModelForObject('DEB', true)).toBe('orbital-debris')
     expect(orbitalModelForObject('UNK', false)).toBe('orbital-unknown')
+  })
+
+  it('maps only the featured ISS and Hubble labels to dedicated models', () => {
+    expect(featuredOrbitalModel('ISS')).toBe('orbital-iss')
+    expect(featuredOrbitalModel('HUBBLE')).toBe('orbital-hubble')
+    for (const label of [undefined, '', 'iss', 'TIANGONG', 'HST']) {
+      expect(featuredOrbitalModel(label), String(label)).toBeUndefined()
+    }
+    for (const marker of ['orbital-iss', 'orbital-hubble']) {
+      expect(trafficModelForMarkerIcon(marker), marker).toBeUndefined()
+    }
   })
 
   it('reuses the flat marker palettes for both themes', () => {
