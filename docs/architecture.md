@@ -810,7 +810,10 @@ The screen-aligned `traffic-aircraft-flags` and `traffic-vessel-flags` layers
 use their existing traffic sources, omit clusters and unavailable allocations,
 and share their own kind's visibility and stale opacity. Fixed-size flags sit
 outside the heading-rotated sprites, with the larger aircraft scale accounted
-for separately and vessel placement unchanged. Theme rehydration reinstalls
+for separately and vessel placement unchanged. While aircraft are drawn as 3D
+models, the model layer draws the same flag artwork beside each lifted model
+instead (see [3D traffic models](#3d-traffic-models-682)), and the flat
+aircraft flag layer is hidden. Theme rehydration reinstalls
 images and layers through the existing installer. Aircraft/hull picking,
 stopped badges, selected halos, normalized entities, history, providers and
 country text remain unchanged. Flags represent identifier-derived country
@@ -1556,12 +1559,23 @@ repository-original models are one validated GLB, described in
   - its selection halo;
   - cluster circles and counts. A pitched globe view can still cluster
     distant lower-zoom tiles, so the models draw those objects individually
-    instead.
+    instead;
+  - for aircraft only, the flat country flag.
 - Flat orbital icons stay installed at zero opacity while models draw them.
   Featured labels, highlights and rendered-visibility probes therefore keep
   working.
-- Flags, stopped badges, orbital labels and highlights, trails and tracks stay
-  on their existing ground-anchored layers.
+- Aircraft flags follow the model (`modelFlagAtlas.ts`). The bundled flag
+  images, already loaded for the flat layers, are packed once into one
+  premultiplied atlas texture. Each aircraft instance carries its flag's atlas
+  slot from the same render-only `flagIcon`. After the models, an instanced
+  screen-aligned pass draws a 14x11 CSS-px flag at a fixed diagonal offset from
+  the projected model position, at altitude when lifted, without depth testing,
+  like the flat symbol. The flag therefore stays beside an airborne aircraft
+  instead of on the ground under its drop line. It adds no request, image or
+  source; a flag-pass GL failure, like any model failure, returns all models
+  and their flags to the flat path for the session.
+- Vessel flags, stopped badges, orbital labels and highlights, trails and
+  tracks stay on their existing ground-anchored layers.
 
 **Placement and theme**
 

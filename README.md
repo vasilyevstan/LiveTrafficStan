@@ -188,7 +188,8 @@ identity are not renamed or reset.
   Ships use a compact overview footprint: while enlarged for readability, long
   hulls are drawn wider and shorter, at most 3.5 times longer than wide, and
   return to true proportions close up. The ISS and the Hubble Space Telescope
-  have their own recognisable models.
+  have their own recognisable models. An airborne aircraft's country flag sits
+  beside the model at its altitude, not on the ground below.
   Clustered zooms, captured views and any load or GPU failure keep the flat
   icons. Theme changes make no new request. The 20 repository-original
   models come from a reproducible Blender script; see

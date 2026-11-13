@@ -55,7 +55,9 @@ describe('modelGroupStats', () => {
       airborne: false,
       anyDropLine: false,
       anySelected: false,
+      anyFlag: false,
     })
+    expect(statsFor(camera, [modelInstanceFixture({ flagSlot: 3 })]).anyFlag).toBe(true)
   })
 })
 
