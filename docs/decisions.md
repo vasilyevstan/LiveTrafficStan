@@ -31,8 +31,9 @@ Models replace flat symbols only where the meaning is identical:
 - model IDs are the flat marker IDs, and body colours reuse the flat palettes;
 - clustered zooms keep flat cluster counts;
 - captured views keep their separately accepted presentation;
-- flags, stopped badges, orbital labels and highlights, trails and tracks
-  stay on their existing ground-anchored layers;
+- vessel flags, stopped badges, orbital labels and highlights, trails and
+  tracks stay on their existing ground-anchored layers; aircraft flags follow
+  the lifted model (see [Aircraft flags beside lifted models](#aircraft-flags-beside-lifted-models));
 - any failure returns to the flat path for the session, with no retry loop,
   preference or extra status.
 
@@ -133,6 +134,20 @@ projected model, so the station selects `ISS (ZARYA)`; any nearer hit still
 wins. The Blender MCP connection was unavailable for this follow-up, so the
 two meshes were reviewed from the headless preview render instead of a live
 temporary scene.
+
+## Aircraft flags beside lifted models
+
+After real altitude shipped, the user reported that an aircraft's flag sat on
+the ground instead of near the plane. The flat flag symbol is anchored at the
+aircraft's ground position, which is right for the flat icon but far below a
+model drawn at altitude. MapLibre symbol layers cannot be lifted to an
+arbitrary altitude, and moving the flag by a screen offset would drift as the
+camera pitches. The custom model layer already projects the lifted position,
+so it now draws aircraft flags itself from the same bundled artwork, at the
+same 14x11 CSS-px size and a fixed diagonal offset. The flat aircraft flag is
+hidden only while aircraft models are active. Vessels stay on the water, so
+their flags keep the flat layer. Clustered zooms, captured views and failures
+keep the flat flag.
 
 ## Aircraft View from here (#625)
 

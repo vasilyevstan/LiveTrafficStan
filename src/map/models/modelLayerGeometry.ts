@@ -24,6 +24,7 @@ export interface ModelGroupStats {
   airborne: boolean
   anyDropLine: boolean
   anySelected: boolean
+  anyFlag: boolean
   /** Reference-relative Mercator bounds, padded by the largest model extent. */
   minX: number
   maxX: number
@@ -37,6 +38,7 @@ export const modelGroupStats = (packed: PackedModelInstances): ModelGroupStats =
     airborne: false,
     anyDropLine: false,
     anySelected: false,
+    anyFlag: false,
     minX: Infinity,
     maxX: -Infinity,
     minY: Infinity,
@@ -56,6 +58,7 @@ export const modelGroupStats = (packed: PackedModelInstances): ModelGroupStats =
     if (instance.altitudeMeters > 0) stats.airborne = true
     if (instance.flags & MODEL_FLAG_DROP_LINE) stats.anyDropLine = true
     if (instance.flags & MODEL_FLAG_SELECTED) stats.anySelected = true
+    if ((instance.flagSlot ?? 0) > 0) stats.anyFlag = true
   }
   return stats
 }

@@ -1110,6 +1110,7 @@ export function TrafficMap({
       .then(({ VESSEL_FLAG_IMAGES }) => {
         if (generation !== flagImagesGenerationRef.current) return
         flagImagesRef.current = VESSEL_FLAG_IMAGES
+        modelLayerRef.current?.setFlagImages(VESSEL_FLAG_IMAGES)
         flagArtworkErrorRef.current?.(undefined)
         const map = mapRef.current
         if (!map || !loadedRef.current) return
@@ -1859,6 +1860,7 @@ export function TrafficMap({
       .then((layer) => {
         if (modelLoad.signal.aborted || mapRef.current !== map) return
         modelLayerRef.current = layer
+        if (flagImagesRef.current) layer.setFlagImages(flagImagesRef.current)
         if (!loadedRef.current) return
         placeModelLayer(map)
         applyModelActivity(map, true)

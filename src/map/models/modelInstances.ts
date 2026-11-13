@@ -46,7 +46,12 @@ export interface ModelInstance extends ModelInstanceGeometry {
   model: TrafficModelId
   tint: Rgb
   detail: Rgb
+  /** One-based country-flag atlas cell drawn beside the model; 0 or absent draws none. */
+  flagSlot?: number
 }
+
+/** Shader flag bits occupy 0-2; the flag atlas cell is packed above them. */
+export const MODEL_FLAG_SLOT_SHIFT = 3
 
 export interface ModelDimensions {
   lengthMeters: number
@@ -104,12 +109,15 @@ const vesselLengthScale = (
  * Mirrors the flat traffic symbols one-to-one. `features` must be the
  * `trafficFeatures` output for `entities`, so positions, headings, selection,
  * staleness, and zoom-context sampling stay identical to the flat path.
+ * Aircraft carry their `flagIcon` atlas cell so the flag follows the lifted
+ * model; vessel flags stay on the flat ground-anchored layer.
  */
 export const trafficModelInstances = (
   entities: readonly DisplayTrafficEntity[],
   features: readonly Feature<Point>[],
   theme: Theme,
   dimensions: ModelDimensionTable,
+  flagSlots: ReadonlyMap<string, number> = new Map(),
 ): ModelInstance[] => {
   const instances: ModelInstance[] = []
   entities.forEach((entity, index) => {
@@ -131,6 +139,10 @@ export const trafficModelInstances = (
       (properties.zoomContext === true ? MODEL_FLAG_ZOOM_CONTEXT : 0) |
       (properties.selected === true ? MODEL_FLAG_SELECTED : 0) |
       (altitudeMeters > 0 ? MODEL_FLAG_DROP_LINE : 0)
+    const flagSlot =
+      aircraft && typeof properties.flagIcon === 'string'
+        ? flagSlots.get(properties.flagIcon)
+        : undefined
     instances.push({
       id: entity.id,
       model: image.model,
@@ -150,6 +162,7 @@ export const trafficModelInstances = (
         markerScale,
       opacity: trafficObservationOpacity(theme, properties.stale === true),
       flags,
+      ...(flagSlot ? { flagSlot } : {}),
       ...trafficModelColors(theme, image),
     })
   })
@@ -258,7 +271,7 @@ export const packModelInstances = (
     floats[offset + 8] = instance.floorPx
     floats[offset + 9] = instance.extentMeters
     floats[offset + 10] = instance.opacity
-    floats[offset + 11] = instance.flags
+    floats[offset + 11] = instance.flags | ((instance.flagSlot ?? 0) << MODEL_FLAG_SLOT_SHIFT)
     const colorOffset = index * MODEL_INSTANCE_STRIDE_BYTES + 48
     bytes.set(instance.tint, colorOffset)
     bytes[colorOffset + 3] = 255

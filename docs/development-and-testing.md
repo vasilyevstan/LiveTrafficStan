@@ -5775,6 +5775,32 @@ selected the first packed instance, `POISK`. Exactly tied model hits now
 prefer the larger projected model, so the visible station selects
 `ISS (ZARYA)` while nearer hits still win.
 
+### Aircraft flags beside lifted models
+
+The built production-input preview ran in headless Chrome over CDP with the
+Tallinn fixtures. The five aircraft are Irish `4ca...` allocations, and all
+five receive the model-layer IE flag (atlas: 226 slots, 480x360 px). Flag
+pixels were isolated by rendering the same frame with and without the flag
+atlas. Each view's measured `innerWidth`, `innerHeight` and DPR matched the
+requested 1280x900 DPR 1, 1280x900 DPR 2 and 390x844 DPR 2.
+
+| View | Highest aircraft lift | Flag to model | Flag to ground point |
+| --- | --- | --- | --- |
+| Desktop Light, pitch 55 | 186 px (2,743 m) | 40 px | 163 px |
+| Desktop Dark DPR 2, pitch 55 | 186 px | 40 px | 163 px |
+| After live Light to Dark switch | 186 px | 40 px | 163 px |
+| Mobile Dark 390x844, pitch 50 | 115 px | 39 px | 94 px |
+| Desktop top-down | 28 px | 41 px | 58 px |
+
+Across every view, each flag's centre stayed 29-41 px from its model at any
+altitude, including the grounded `4ca505`, and painted at most 15x12 CSS px.
+While models were active, `traffic-aircraft-flags` was `none` with zero
+rendered features, and vessel flags stayed visible. With clustering at zoom
+10.4, the models were inactive and the flat aircraft flag layer rendered five
+features. No page errors occurred; the only console warnings were the
+pre-existing basemap `circle-11` sprite warning and the unavailable fixture
+marine supplement.
+
 ### 3D model readability follow-up
 
 This is the preceding release's evidence; the compact vessel and wide-ship

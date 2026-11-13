@@ -17,6 +17,7 @@ import {
   wrapMercatorOffset,
 } from './modelProjection'
 import { parseTrafficModelAsset } from './trafficModelAsset'
+import { VESSEL_FLAG_IMAGES } from '../vesselFlagImages'
 
 const committed = readFileSync(new URL('../../assets/models/traffic-models-v1.glb', import.meta.url))
 const meshes = parseTrafficModelAsset(
@@ -43,6 +44,7 @@ const fakeGl = (options: { lost?: boolean; compiles?: boolean } = {}) => {
     createProgram: () => handle('program'),
     createBuffer: () => handle('buffer'),
     createVertexArray: () => handle('vao'),
+    createTexture: () => handle('texture'),
     getShaderParameter: () => options.compiles ?? true,
     getProgramParameter: () => true,
     getShaderInfoLog: () => 'ERROR: fake compiler',
@@ -136,7 +138,7 @@ describe('TrafficModelLayer', () => {
     show('aircraft')
     render()
     render()
-    expect(named(calls, 'createProgram')).toHaveLength(3)
+    expect(named(calls, 'createProgram')).toHaveLength(4)
     const totalMeshBytes = [...meshes.values()].reduce((sum, mesh) => sum + mesh.vertices.byteLength, 0)
     expect((named(calls, 'bufferData')[0].args[1] as Uint8Array).byteLength).toBe(totalMeshBytes)
     expect(tail(calls)).toEqual(RESTORED_STATE)
@@ -255,6 +257,39 @@ describe('TrafficModelLayer', () => {
     expect(uniformValues(calls, 'u_ring_lifted_only')).toEqual([[0], [1]])
   })
 
+  it('draws aircraft flags beside the model from one uploaded atlas only when a flag is present', () => {
+    const { layer, calls, gl, map, render, show } = setup()
+    show('aircraft', [modelInstanceFixture({ altitudeMeters: 10_000 })])
+    render()
+    expect(named(calls, 'createTexture')).toEqual([])
+    calls.length = 0
+    show('aircraft', [modelInstanceFixture({ altitudeMeters: 10_000, flagSlot: 2 })])
+    render()
+    expect(named(calls, 'createTexture')).toEqual([])
+
+    layer.setFlagImages(VESSEL_FLAG_IMAGES)
+    show('aircraft', [modelInstanceFixture({ altitudeMeters: 10_000, flagSlot: 2 })])
+    render()
+    render()
+    expect(named(calls, 'createTexture')).toHaveLength(1)
+    expect(named(calls, 'texImage2D')).toHaveLength(1)
+    expect(named(calls, 'pixelStorei')).toContainEqual({
+      name: 'pixelStorei',
+      args: ['UNPACK_PREMULTIPLY_ALPHA_WEBGL', false],
+    })
+    const draws = named(calls, 'drawArraysInstanced').map((call) => call.args.slice(1))
+    expect(draws.at(-1)).toEqual([0, 6, 1])
+    expect(uniformValues(calls, 'u_flag_size').at(-1)).toEqual([14, 11])
+    expect(uniformValues(calls, 'u_flag_atlas').at(-1)).toEqual([0])
+    expect(tail(calls)).toEqual(RESTORED_STATE)
+
+    layer.onRemove(map, gl)
+    expect(named(calls, 'deleteTexture')).toHaveLength(1)
+    layer.onAdd(map)
+    render()
+    expect(named(calls, 'createTexture')).toHaveLength(2)
+  })
+
   it('uploads instances only after changes and re-anchors after large camera drift', () => {
     const { calls, render, show, view } = setup()
     show('aircraft')
@@ -330,7 +365,7 @@ describe('TrafficModelLayer', () => {
     render()
     expect(layer.pick([400, 300])).toHaveLength(1)
     layer.onRemove(map, gl)
-    expect(named(calls, 'deleteProgram')).toHaveLength(3)
+    expect(named(calls, 'deleteProgram')).toHaveLength(4)
     expect(named(calls, 'deleteVertexArray')).toHaveLength(8)
     expect(named(calls, 'deleteBuffer')).toHaveLength(5)
     expect(layer.pick([400, 300])).toEqual([])
@@ -339,7 +374,7 @@ describe('TrafficModelLayer', () => {
     expect(calls).toEqual([])
     layer.onAdd(map)
     render()
-    expect(named(calls, 'createProgram')).toHaveLength(3)
+    expect(named(calls, 'createProgram')).toHaveLength(4)
     expect(named(calls, 'bufferSubData')).toHaveLength(1)
     expect(layer.pick([400, 300])).toHaveLength(1)
   })

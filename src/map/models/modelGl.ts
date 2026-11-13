@@ -1,7 +1,10 @@
+import type { ModelFlagAtlas } from './modelFlagAtlas'
 import { MODEL_INSTANCE_STRIDE_BYTES } from './modelInstances'
 import {
   DROP_LINE_FRAGMENT_SHADER,
   DROP_LINE_VERTEX_SHADER,
+  FLAG_FRAGMENT_SHADER,
+  FLAG_VERTEX_SHADER,
   MODEL_ATTRIBUTE,
   MODEL_FRAGMENT_SHADER,
   MODEL_VERTEX_SHADER,
@@ -40,6 +43,11 @@ const PROGRAM_SOURCES = {
   ],
   line: [DROP_LINE_VERTEX_SHADER, DROP_LINE_FRAGMENT_SHADER, ['u_overlay_color']],
   ring: [RING_VERTEX_SHADER, RING_FRAGMENT_SHADER, ['u_overlay_color', 'u_ring_lifted_only']],
+  flag: [
+    FLAG_VERTEX_SHADER,
+    FLAG_FRAGMENT_SHADER,
+    ['u_flag_atlas', 'u_flag_grid', 'u_flag_atlas_size', 'u_flag_size'],
+  ],
 } as const
 
 export type ModelProgramName = keyof typeof PROGRAM_SOURCES
@@ -71,6 +79,7 @@ export interface ModelGpuResources {
   meshBuffer: WebGLBuffer
   meshRanges: ReadonlyMap<TrafficModelId, MeshRange>
   groups: Map<string, ModelGroupBuffers>
+  flagTexture?: WebGLTexture
 }
 
 const compileShader = (gl: WebGL2RenderingContext, type: number, source: string) => {
@@ -243,7 +252,42 @@ export const deleteModelGpuResources = (
     gl.deleteBuffer(group.buffer)
   }
   gl.deleteBuffer(resources.meshBuffer)
+  if (resources.flagTexture) gl.deleteTexture(resources.flagTexture)
+  resources.flagTexture = undefined
   resources.groups.clear()
+}
+
+/** Uploads the premultiplied flag atlas once per GPU resource set. */
+export const ensureModelFlagTexture = (
+  gl: WebGL2RenderingContext,
+  resources: ModelGpuResources,
+  atlas: ModelFlagAtlas,
+): WebGLTexture => {
+  if (resources.flagTexture) return resources.flagTexture
+  const texture = gl.createTexture()
+  if (!texture) throw new ModelGlError('Model flag texture allocation failed')
+  gl.activeTexture(gl.TEXTURE0)
+  gl.bindTexture(gl.TEXTURE_2D, texture)
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false)
+  gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false)
+  gl.texImage2D(
+    gl.TEXTURE_2D,
+    0,
+    gl.RGBA8,
+    atlas.width,
+    atlas.height,
+    0,
+    gl.RGBA,
+    gl.UNSIGNED_BYTE,
+    atlas.pixels,
+  )
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+  gl.bindTexture(gl.TEXTURE_2D, null)
+  resources.flagTexture = texture
+  return texture
 }
 
 /** Uploads packed instances, growing the buffer geometrically. */

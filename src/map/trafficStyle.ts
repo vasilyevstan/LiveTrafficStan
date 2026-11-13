@@ -57,14 +57,16 @@ export const VESSEL_TRAFFIC_LAYER_IDS = [
 
 /**
  * Flat layers a 3D model group draws itself: the symbol, its selection halo,
- * and clusters that globe tile LOD can still form in pitched distant tiles.
- * Flags and stopped badges keep marking the ground anchor.
+ * clusters that globe tile LOD can still form in pitched distant tiles, and
+ * aircraft flags, which follow the lifted model. Vessel flags and stopped
+ * badges keep marking the ground anchor.
  */
 const MODEL_REPLACED_TRAFFIC_LAYER_IDS: ReadonlySet<string> = new Set([
   LAYER_AIRCRAFT,
   LAYER_AIRCRAFT_HALO,
   LAYER_AIRCRAFT_CLUSTERS,
   LAYER_AIRCRAFT_CLUSTER_COUNT,
+  LAYER_AIRCRAFT_FLAGS,
   LAYER_VESSELS,
   LAYER_VESSEL_HALO,
   LAYER_VESSEL_CLUSTERS,
