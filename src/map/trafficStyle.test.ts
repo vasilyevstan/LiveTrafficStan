@@ -407,6 +407,7 @@ const MODEL_REPLACED_AIRCRAFT = [
   LAYER_AIRCRAFT_HALO,
   LAYER_AIRCRAFT_CLUSTERS,
   LAYER_AIRCRAFT_CLUSTER_COUNT,
+  LAYER_AIRCRAFT_FLAGS,
 ]
 const MODEL_REPLACED_VESSELS = [
   LAYER_VESSELS,
@@ -451,7 +452,7 @@ describe('3D traffic model handoff', () => {
     )
   })
 
-  it('hides only the symbol, halo, and clusters a model replaces', () => {
+  it('hides the symbol, halo, clusters, and aircraft flags a model replaces', () => {
     const { map, visibility } = createStyleMap()
     installTrafficStyle(
       map,
@@ -472,9 +473,8 @@ describe('3D traffic model handoff', () => {
     expect(visibilityOf(visibility, VESSEL_TRAFFIC_LAYER_IDS)).toEqual(
       expectedVisibility(VESSEL_TRAFFIC_LAYER_IDS, true, MODEL_REPLACED_VESSELS),
     )
-    expect(visibility.get(`${LAYER_AIRCRAFT_FLAGS}:visibility`)).toBe(
-      'visible',
-    )
+    expect(visibility.get(`${LAYER_AIRCRAFT_FLAGS}:visibility`)).toBe('none')
+    expect(visibility.get(`${LAYER_VESSEL_FLAGS}:visibility`)).toBe('visible')
     expect(visibility.get(`${LAYER_VESSEL_STOPPED}:visibility`)).toBe(
       'visible',
     )

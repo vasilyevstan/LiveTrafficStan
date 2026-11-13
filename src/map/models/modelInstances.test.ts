@@ -15,6 +15,7 @@ import {
   mercatorY,
 } from './modelProjection'
 import {
+  MODEL_FLAG_SLOT_SHIFT,
   MODEL_INSTANCE_FLOATS,
   MODEL_INSTANCE_STRIDE_BYTES,
   modelOverviewStretch,
@@ -237,6 +238,23 @@ describe('traffic model instances', () => {
     const features = flat(entities).reverse()
     expect(trafficModelInstances(entities, features, 'dark', DIMENSIONS)).toEqual([])
   })
+
+  it('carries the aircraft flag cell while vessel flags stay on the ground layer', () => {
+    const entities = [aircraft({ hex: '511123' }), vessel()]
+    const features = trafficFeatures(entities, new Map(), 0, null, false, false, true).features
+    const aircraftFlag = features[0].properties?.flagIcon as string
+    const vesselFlag = features[1].properties?.flagIcon as string
+    expect(aircraftFlag).toBe('vessel-flag-EE')
+    expect(vesselFlag).toBe('vessel-flag-FI')
+    const slots = new Map([
+      [aircraftFlag, 7],
+      [vesselFlag, 9],
+    ])
+    const [plane, ship] = trafficModelInstances(entities, features, 'dark', DIMENSIONS, slots)
+    expect(plane.flagSlot).toBe(7)
+    expect(ship.flagSlot).toBeUndefined()
+    expect(trafficModelInstances(entities, features, 'dark', DIMENSIONS)[0].flagSlot).toBeUndefined()
+  })
 })
 
 const satellite: ModeledOrbitalPosition = {
@@ -441,5 +459,16 @@ describe('model instance packing', () => {
     expect(Array.from(bytes.slice(48, 56))).toEqual([1, 2, 3, 255, 4, 5, 6, 255])
     expect(packed.reference).toEqual(reference)
     expect(packed.reference).not.toBe(reference)
+  })
+
+  it('packs the flag atlas cell above the shader flag bits', () => {
+    const packed = packModelInstances(
+      [instance('flagged', 'aircraft', 0, { flags: 6, flagSlot: 226 })],
+      { x: 0.5, y: 0.5 },
+    )
+    const packedFlags = new Float32Array(packed.data)[11]
+    expect(packedFlags).toBe(6 | (226 << MODEL_FLAG_SLOT_SHIFT))
+    expect(packedFlags & 7).toBe(6)
+    expect(packedFlags >> MODEL_FLAG_SLOT_SHIFT).toBe(226)
   })
 })

@@ -10,9 +10,12 @@ import type { ModeledOrbitalPosition } from '../../domain/orbital'
 import type { DisplayTrafficEntity } from '../../domain/traffic'
 import { orbitalSelectionColor } from '../orbitalStyle'
 import { trafficSelectionColor } from '../trafficStyle'
+import type { VesselFlagImages } from '../vesselFlagImages'
+import { buildModelFlagAtlas, MODEL_FLAG_ATLAS_GUTTER, MODEL_FLAG_PIXEL_RATIO, type ModelFlagAtlas } from './modelFlagAtlas'
 import {
   createModelGpuResources,
   deleteModelGpuResources,
+  ensureModelFlagTexture,
   pointInstanceAttributes,
   restoreModelGlState,
   uploadGroupInstances,
@@ -103,6 +106,7 @@ export class TrafficModelLayer implements CustomLayerInterface {
   private rendered?: RenderedFrame
   private frameRevision = 0
   private failure?: unknown
+  private flagAtlas?: ModelFlagAtlas
 
   constructor(
     meshes: ReadonlyMap<TrafficModelId, TrafficModelMesh>,
@@ -158,9 +162,18 @@ export class TrafficModelLayer implements CustomLayerInterface {
   ) {
     this.setInstances(
       group,
-      trafficModelInstances(entities, features, theme, this.dimensions),
+      trafficModelInstances(entities, features, theme, this.dimensions, this.flagAtlas?.slots),
       trafficSelectionColor(theme),
     )
+  }
+
+  /**
+   * Installs the country-flag atlas once. Call before feeding the traffic that
+   * references `flagIcon`, so aircraft flags follow the lifted model.
+   */
+  setFlagImages(images: VesselFlagImages) {
+    if (this.flagAtlas) return
+    this.flagAtlas = buildModelFlagAtlas(images)
   }
 
   setOrbital(
@@ -373,6 +386,42 @@ export class TrafficModelLayer implements CustomLayerInterface {
       }
     }
     gl.disable(gl.POLYGON_OFFSET_FILL)
+
+    const atlas = this.flagAtlas
+    if (stats.anyFlag && atlas) {
+      const texture = ensureModelFlagTexture(gl, this.resources!, atlas)
+      gl.disable(gl.DEPTH_TEST)
+      gl.disable(gl.CULL_FACE)
+      gl.depthMask(false)
+      gl.colorMask(true, true, true, true)
+      const flagUniforms = this.useProgram(gl, programs.flag, frame, copy)
+      gl.activeTexture(gl.TEXTURE0)
+      gl.bindTexture(gl.TEXTURE_2D, texture)
+      if (flagUniforms.u_flag_atlas) gl.uniform1i(flagUniforms.u_flag_atlas, 0)
+      if (flagUniforms.u_flag_grid) {
+        gl.uniform4f(
+          flagUniforms.u_flag_grid,
+          atlas.columns,
+          atlas.flagWidth,
+          atlas.flagHeight,
+          MODEL_FLAG_ATLAS_GUTTER,
+        )
+      }
+      if (flagUniforms.u_flag_atlas_size) {
+        gl.uniform2f(flagUniforms.u_flag_atlas_size, atlas.width, atlas.height)
+      }
+      if (flagUniforms.u_flag_size) {
+        gl.uniform2f(
+          flagUniforms.u_flag_size,
+          atlas.flagWidth / MODEL_FLAG_PIXEL_RATIO,
+          atlas.flagHeight / MODEL_FLAG_PIXEL_RATIO,
+        )
+      }
+      gl.bindVertexArray(buffers.overlayVao)
+      pointInstanceAttributes(gl, buffers.buffer, 0, false)
+      gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, count)
+      gl.bindTexture(gl.TEXTURE_2D, null)
+    }
   }
 
   private fail(gl: WebGL2RenderingContext, error: unknown) {

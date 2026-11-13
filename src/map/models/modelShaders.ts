@@ -277,3 +277,68 @@ void main() {
   fragColor = vec4(u_overlay_color * alpha, alpha);
 }
 `
+
+/**
+ * Country flag beside the dominant lifted or footprint anchor, matching the
+ * flat flag's screen-aligned down-right placement. The 0.36 factor clears any
+ * heading: the flag's nearest corner lies outside the model's drawn radius.
+ */
+export const FLAG_VERTEX_SHADER = `${COMMON}
+uniform vec4 u_flag_grid;
+uniform vec2 u_flag_atlas_size;
+uniform vec2 u_flag_size;
+out vec2 v_uv;
+out float v_alpha;
+
+void main() {
+  int slot = instanceFlags() >> 3;
+  float altitude = max(a_motion.y, 0.0);
+  float visibility = liftedVisibility(altitude);
+  bool lifted = visibility > 0.5;
+  float alpha = baseOpacity() * (lifted ? visibility : 1.0 - visibility);
+  vec4 merc;
+  vec4 globe;
+  vec3 sphere;
+  vec4 anchor = projectLocal(vec3(0.0), lifted ? altitude : 0.0, merc, globe, sphere);
+  v_uv = vec2(0.0);
+  v_alpha = 0.0;
+  if (slot <= 0 || alpha < 0.004 || anchor.w <= 0.0 || horizonOccludes(sphere)) {
+    gl_Position = HIDDEN;
+    return;
+  }
+  float drawn = max(
+    a_size.x * perspectiveScale(anchor.w),
+    a_size.y * pixelsPerMeter(merc, globe)
+  );
+  int corner = gl_VertexID % 6;
+  vec2 unit = vec2(
+    corner == 1 || corner == 4 || corner == 5 ? 1.0 : 0.0,
+    corner == 2 || corner == 3 || corner == 5 ? 1.0 : 0.0
+  );
+  // Screen pixels with y down; whole CSS pixels keep the 2x raster crisp.
+  vec2 screen = (anchor.xy / anchor.w * vec2(0.5, -0.5) + 0.5) * u_viewport;
+  vec2 topLeft = floor(screen + vec2(0.36 * drawn + 4.0) + 0.5);
+  vec2 point = topLeft + unit * u_flag_size;
+  vec2 ndc = point / u_viewport * vec2(2.0, -2.0) + vec2(-1.0, 1.0);
+  gl_Position = vec4(ndc * anchor.w, anchor.z, anchor.w);
+  int cell = slot - 1;
+  int columns = int(u_flag_grid.x + 0.5);
+  vec2 origin = vec2(float(cell % columns), float(cell / columns)) *
+    (u_flag_grid.yz + 2.0 * u_flag_grid.w) + u_flag_grid.w;
+  v_uv = (origin + unit * u_flag_grid.yz) / u_flag_atlas_size;
+  v_alpha = alpha;
+}
+`
+
+export const FLAG_FRAGMENT_SHADER = `#version 300 es
+precision highp float;
+uniform sampler2D u_flag_atlas;
+in vec2 v_uv;
+in float v_alpha;
+out vec4 fragColor;
+void main() {
+  vec4 texel = texture(u_flag_atlas, v_uv);
+  if (texel.a <= 0.0) discard;
+  fragColor = texel * v_alpha;
+}
+`
