@@ -38,7 +38,7 @@ if (retirement) {
   )
   for (const [label, report] of Object.entries(bundleReport)) {
     console.log(
-      `${label}: ${report.gzip} gzip bytes, ${report.brotli} Brotli bytes`,
+      `${label}: ${report.raw} raw bytes, ${report.gzip} gzip bytes, ${report.brotli} Brotli bytes`,
     )
   }
 }

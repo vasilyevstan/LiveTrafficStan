@@ -1412,6 +1412,40 @@ reported barometric value over a sea-level map. The inspector keeps the
 ADSB.lol source credit and states that this is not a cockpit or camera view.
 The ordinary OpenFreeMap/OpenMapTiles/OpenStreetMap attribution stays visible.
 
+## 3D traffic models (#682)
+
+The low-poly aircraft, vessel and orbital models are original work in this
+repository. `scripts/blender/build-traffic-models.py` builds them
+procedurally from Blender mesh primitives. The script imports only Blender's
+Python API and the standard `math` module. It uses no:
+- downloaded, scanned, marketplace or AI-generated asset;
+- texture or image;
+- manufacturer drawing or livery.
+
+The GLB and its preview image are distributed under the repository's
+Apache-2.0 licence. The GLB's `asset.copyright` field records this, and
+provenance is in [`src/assets/models/README.md`](../src/assets/models/README.md).
+
+The models are symbolic shapes chosen by the existing marker class, so they
+do not depict any specific airframe, hull, operator or spacecraft.
+
+The hashed GLB is a same-origin static asset fetched once per map instance:
+- with credentials and referrer omitted;
+- through the existing offline shell.
+
+Drawing models adds no provider request, data source, cache, preference,
+analytics event or persisted state. Positions, headings, altitudes, lengths,
+selection and freshness come from data the app has already accepted, under
+those sources' existing terms and attribution:
+- ADSB.lol for aircraft;
+- Digitraffic, AISStream or Open Waters for vessels;
+- Space-Track.org or CelesTrak for modeled orbital objects.
+
+An aircraft drawn above the map shows its reported barometric altitude over a
+sea-level basemap. A satellite shows its modeled altitude and ground-track
+bearing. Neither is spacecraft attitude, terrain clearance, an optical
+observation or a navigational source.
+
 ## Native Space-Track GP-only source (schema 3)
 
 Production uses server-side `ORBITAL_CATALOG_SOURCE=space-track` as the primary
@@ -1730,3 +1764,7 @@ It does distribute the separately identified static aircraft metadata derivative
 database under ODC-By 1.0, the separately identified Apache-2.0/CC0 country
 allocation projections, and the separately identified public-domain Natural
 Earth port projection and OurAirports airport projection.
+
+The bundled 3D traffic-model GLB is repository-original Apache-2.0 work, not
+third-party data. Its provenance is in
+[3D traffic models (#682)](#3d-traffic-models-682).

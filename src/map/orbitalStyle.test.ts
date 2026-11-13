@@ -15,20 +15,24 @@ import {
   LAYER_STARLINK_HIGHLIGHT,
   LAYER_STARLINK_POINTS,
   LAYER_STARLINK_TRACK,
+  ORBITAL_ICON_OPACITY,
   orbitalPickLayerIds,
   renderedOrbitalPointMatches,
   orbitalPointFilter,
   orbitalHighlightFeatures,
   orbitalPositionFeatures,
+  orbitalSelectionColor,
   orbitalSelectionHighlightFeatures,
   orbitalSelectionTrackFeatures,
   orbitalTrackFeatures,
+  setOrbitalModelsActive,
   SOURCE_ORBITAL_HIGHLIGHT,
   SOURCE_ORBITAL_POINTS,
   SOURCE_ORBITAL_TRACK,
   SOURCE_STARLINK_HIGHLIGHT,
   SOURCE_STARLINK_POINTS,
   SOURCE_STARLINK_TRACK,
+  STARLINK_ICON_OPACITY,
   STARLINK_LAYER_IDS,
   STARLINK_SOURCE_ATTRIBUTION,
   starlinkPositionFeatures,
@@ -692,5 +696,84 @@ describe('orbital map style', () => {
       LAYER_ORBITAL_POINTS,
       orbitalPointFilter([rankHidden.id]),
     )
+  })
+
+  it('hands only point icons to 3D models while labels, highlights, and visibility stay', () => {
+    const { map, layerSpecs } = createMap()
+    const setPaintProperty = vi.mocked(map.setPaintProperty)
+    const iconOpacity = (layerId: string) =>
+      setPaintProperty.mock.calls
+        .filter(([id, property]) => id === layerId && property === 'icon-opacity')
+        .at(-1)?.[2]
+
+    setOrbitalModelsActive(map, 'orbital', true)
+    setOrbitalModelsActive(map, 'starlink', true)
+    expect(setPaintProperty).not.toHaveBeenCalled()
+
+    const install = (theme: 'light' | 'dark', modelsActive?: boolean) =>
+      installOrbitalStyle(
+        map,
+        orbitalPositionFeatures([issPosition]),
+        orbitalHighlightFeatures([issPosition], issPosition.id),
+        orbitalTrackFeatures([]),
+        theme,
+        true,
+        theme === 'light' ? lightImages : darkImages,
+        [issPosition.id],
+        modelsActive,
+      )
+    install('light')
+    expect(layerSpecs.get(LAYER_ORBITAL_POINTS)).toMatchObject({
+      paint: { 'icon-opacity': ORBITAL_ICON_OPACITY },
+    })
+    expect(iconOpacity(LAYER_ORBITAL_POINTS)).toBe(ORBITAL_ICON_OPACITY)
+
+    vi.mocked(map.setLayoutProperty).mockClear()
+    install('dark', true)
+    expect(iconOpacity(LAYER_ORBITAL_POINTS)).toBe(0)
+    for (const layerId of [LAYER_ORBITAL_POINTS, LAYER_ORBITAL_HIGHLIGHT]) {
+      expect(map.setLayoutProperty).toHaveBeenCalledWith(
+        layerId,
+        'visibility',
+        'visible',
+      )
+      expect(map.setLayoutProperty).not.toHaveBeenCalledWith(
+        layerId,
+        'visibility',
+        'none',
+      )
+    }
+    expect(map.setPaintProperty).toHaveBeenCalledWith(
+      LAYER_ORBITAL_HIGHLIGHT,
+      'circle-color',
+      orbitalSelectionColor('dark'),
+    )
+
+    setOrbitalModelsActive(map, 'orbital', false)
+    expect(iconOpacity(LAYER_ORBITAL_POINTS)).toBe(ORBITAL_ICON_OPACITY)
+
+    installStarlinkStyle(
+      map,
+      starlinkPositionFeatures([starlinkPosition]),
+      orbitalSelectionHighlightFeatures([starlinkPosition], null, 'starlink'),
+      orbitalSelectionTrackFeatures([], null, 'starlink'),
+      'light',
+      true,
+      lightImages,
+      [starlinkPosition.id],
+      true,
+    )
+    expect(iconOpacity(LAYER_STARLINK_POINTS)).toBe(0)
+    expect(iconOpacity(LAYER_ORBITAL_POINTS)).toBe(ORBITAL_ICON_OPACITY)
+
+    setOrbitalModelsActive(map, 'starlink', false)
+    expect(iconOpacity(LAYER_STARLINK_POINTS)).toBe(STARLINK_ICON_OPACITY)
+  })
+
+  it('shares one selection color per channel and theme with 3D models', () => {
+    expect(orbitalSelectionColor('dark')).toBe('#f7fcff')
+    expect(orbitalSelectionColor('light')).toBe('#102d3b')
+    expect(orbitalSelectionColor('dark', true)).toBe('#f5f0ff')
+    expect(orbitalSelectionColor('light', true)).toBe('#32145f')
   })
 })

@@ -175,6 +175,18 @@ identity are not renamed or reset.
   best effort, not a worldwide completeness promise.
 - OpenStreetMap-derived vector maps from
   [OpenFreeMap](https://openfreemap.org/), rendered with MapLibre GL JS.
+- Low-poly 3D models for aircraft, vessels, curated orbital objects and
+  Starlink, drawn on the same map by one lazily loaded raw-WebGL2 MapLibre
+  layer. Aircraft are lifted to their reported altitude with a drop line to
+  their ground position; satellites sit at their modeled altitude, with drop
+  lines when selected or featured; ships sit on the water and scale to a
+  valid reported length. Each model keeps its flat icon's class, colour and
+  direction, marks selection with a ring in the same selection colour, is
+  never smaller than that icon, and can be hovered, clicked or tapped.
+  Clustered zooms, captured views and any load or GPU failure keep the flat
+  icons. Theme changes make no new request. The 18 repository-original
+  models come from a reproducible Blender script; see
+  [3D traffic models](docs/architecture.md#3d-traffic-models-682).
 - Smooth automatic globe when zooming out, with native interpolation to a
   flat local map between zoom 11 and 12. **Settings → Appearance → AUTO GLOBE /
   FLAT** provides the persistent alternative without another toolbar control,
@@ -1738,6 +1750,13 @@ See [the timeout recovery boundary](docs/troubleshooting.md#deployment-metar-che
   [#46](https://github.com/vasilyevstan/LiveTrafficStan/issues/46).
 - Auto follows the browser's color-scheme preference, not solar time or map
   location.
+- 3D traffic models are symbolic class shapes, not specific airframes,
+  hulls, operators or spacecraft. They point the same way as the flat icons:
+  traffic by its reported direction, orbital objects by the modeled
+  ground-track bearing. There is no pitch, bank or spacecraft attitude.
+  Because models never draw smaller than the flat icon, they are not to
+  scale against the map at most zooms. Aircraft altitude is reported
+  barometric altitude over a sea-level map, not terrain clearance.
 - METAR coverage is limited by both AWC reporting and the pinned large/medium
   airport projection. It is observed aviation weather, not a forecast,
   airport board, operational status, or global coverage guarantee. Enabling it
@@ -1799,6 +1818,7 @@ silently expanded into V1.
 - [Marine Provider Evaluation](docs/marine-provider-evaluation.md)
 - [Hosting and Deployment](docs/hosting-and-deployment.md)
 - [Development and Testing](docs/development-and-testing.md)
+- [Traffic Models](src/assets/models/README.md)
 - [Troubleshooting](docs/troubleshooting.md)
 - [Engineering Decisions](docs/decisions.md)
 - [GitHub Wiki](https://github.com/vasilyevstan/LiveTrafficStan/wiki)
@@ -1815,3 +1835,5 @@ propagator retains its
 The two bundled NASA photographs are separate informational media, excluded
 from Apache-2.0, and documented in
 [`public/orbital-enrichment/2026-09-29-v1/LICENSES.md`](public/orbital-enrichment/2026-09-29-v1/LICENSES.md).
+The bundled 3D traffic models are repository-original Apache-2.0 work; see
+[`src/assets/models/README.md`](src/assets/models/README.md).

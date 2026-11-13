@@ -293,6 +293,20 @@ export const ZOOM_TRAFFIC_CONTEXT_CONFIG = {
   minimumSeparationPx: 64,
 } as const
 
+export const TRAFFIC_MODEL_CONFIG = {
+  assetDeadlineMs: 10_000,
+  maximumAssetBytes: 128 * 1024,
+  maximumTrianglesPerModel: 600,
+  // Flat markers are 64 px rasters at pixel ratio 2; their glyph spans ~88%.
+  iconBoxPx: 32,
+  iconGlyphFraction: 0.88,
+  minimumVesselLengthMeters: 2,
+  maximumVesselLengthMeters: 500,
+  // Re-anchor relative-to-center packing before float32 offsets lose precision.
+  maximumReferenceDriftPx: 100_000,
+  maximumReferenceDriftWorlds: 0.25,
+} as const
+
 export const BATHYMETRY_CONFIG = {
   tileOrigin: 'https://tiles.emodnet-bathymetry.eu',
   tileVersion: '2020',

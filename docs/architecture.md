@@ -1510,6 +1510,100 @@ worker location. `TrafficMap.tsx` imports the worker with Vite's
 development and production builds must preserve this explicit worker asset or
 vector tiles will remain in a loading state.
 
+## 3D traffic models (#682)
+
+Aircraft, vessels, curated orbital objects and Starlink are drawn as low-poly
+3D models. They use one persistent MapLibre custom layer,
+`traffic-models-3d`, on the existing single map. The renderer is raw WebGL2
+inside MapLibre's custom-layer API: there is no Three.js, deck.gl or other
+dependency, no second canvas, and no second camera. The 18
+repository-original models are one validated GLB, described in
+[`src/assets/models/README.md`](../src/assets/models/README.md).
+
+**Loading and fallback**
+
+- After map construction, `TrafficMap` dynamically imports
+  `models/trafficModelRuntime`. It fetches the hashed same-origin GLB with:
+  - credentials and referrer omitted;
+  - a 10-second deadline;
+  - an exact `200`;
+  - a `model/gltf-binary` or `application/octet-stream` body;
+  - a streamed 128 KiB cap.
+
+  It then validates the asset with `trafficModelAsset.ts`. Loading adds no
+  provider request, scheduler, preference or persisted state.
+- The flat symbol layers stay the display until the layer can draw, and
+  whenever it cannot. An import, fetch, validation or GPU failure keeps the
+  flat path for the rest of the session, with no retry. `onAdd` only stores
+  references; GL resources are allocated lazily in `render` and deleted in
+  `onRemove`.
+- `webglcontextlost` marks the layer unavailable. On restore, MapLibre rebuilds
+  the pre-loss style without custom layers. The next `style.load` re-adds the
+  model layer, or makes the flat symbols visible if the layer cannot be
+  restored.
+
+**Activity** (`modelActivity.ts`) is decided per group:
+
+- Captured views always keep the flat path.
+- Aircraft and vessels use models only when visible and unclustered. That
+  means clustering is off, or the integer zoom is above the cluster maximum,
+  matching GeoJSON clustering. At clustered zooms the whole group stays flat,
+  including its cluster bubbles.
+- Curated orbital objects and Starlink use models whenever their layer is
+  visible.
+- While aircraft or vessels are model-drawn, these flat layers are hidden:
+  - the symbol;
+  - its selection halo;
+  - cluster circles and counts. A pitched globe view can still cluster
+    distant lower-zoom tiles, so the models draw those objects individually
+    instead.
+- Flat orbital icons stay installed at zero opacity while models draw them.
+  Featured labels, highlights and rendered-visibility probes therefore keep
+  working.
+- Flags, stopped badges, orbital labels and highlights, trails and tracks stay
+  on their existing ground-anchored layers.
+
+**Placement and theme**
+
+- The layer sits directly before the aircraft flag layer, above the flat
+  traffic symbols.
+- Every `style.load`, including theme changes, idempotently re-adds it and
+  recolours it from current state. That makes no request and reconnects no
+  provider.
+
+**Instances** (`modelInstances.ts`) mirror the flat sources one to one:
+
+- **Traffic** reuses the `trafficFeatures` output: the same position,
+  heading, selection, stale opacity, zoom-context sample and marker class.
+  - An aircraft with a positive reported altitude is drawn at that altitude
+    above the sea-level map, with a drop line. A ground or missing altitude
+    stays at the surface.
+  - A vessel sits on the water and scales to a valid reported length
+    (2-500 m).
+- **Orbital** reuses the flat `shownIds` filter. Each object sits at its
+  modeled altitude and faces the Earth-relative ground-track bearing, not
+  spacecraft attitude. Selected and featured objects get drop lines.
+- Body colours come from the flat-icon palettes, including aircraft altitude
+  bands. Selection draws a ring in the existing selection colour.
+- A model is drawn at its true metric size, but never smaller than its flat
+  icon (icon box × glyph fraction × icon size × marker scale).
+
+**Projection and picking** (`modelProjection.ts`, `modelShaders.ts`)
+
+- The shaders follow MapLibre's globe/Mercator transition. They use
+  relative-to-center float32 packing, re-anchored after 100,000 px or 0.25
+  world of drift.
+- A ray-sphere horizon test hides objects on the far side of the globe.
+- As the camera nears an object's altitude, the lifted model fades into a
+  flattened ground footprint instead of passing through the camera.
+- Picking uses a CPU mirror of the shaders on the last drawn frame. A hit
+  falls inside the drawn model's screen circle and passes the same horizon
+  test; hits are ordered nearest first.
+- Hover, tooltip re-checks, click, the expanded touch fallback and the
+  pointer cursor take model hits first, then the flat features that are
+  still visible. Selection, details and trails reuse the existing identity
+  paths.
+
 ## Performance choices
 
 - MQTT is dynamically imported so it is a separate production chunk.
@@ -1521,6 +1615,11 @@ vector tiles will remain in a loading state.
   reused; style rehydration updates the same bounded 33 image IDs.
 - Motion animation samples normalized state rather than adding provider points
   on every frame.
+- 3D models are instanced draws from one custom layer. Each traffic source
+  render also repacks that group's model instances, so models follow the same
+  motion cadence as the flat GeoJSON update. With 405 aircraft and 306 ships
+  at DPR 2, `setTraffic` measured 0.4 ms and layer render CPU 0.2 ms at p95
+  per frame.
 - Session and durable history have independent time, count, and logical-byte
   bounds.
 - Network work pauses while offline, hidden, or viewport-ineligible, without
@@ -2093,6 +2192,8 @@ Startup boundaries are semantic rather than manual vendor chunks. Vessel flag
 identity remains synchronous, while the 226 raster pixels and decode work load
 only after visible traffic needs a supported flag. Cached pixels are reinstalled
 after `map.setStyle` without recreating the map or provider controllers.
+The 3D traffic-model runtime and its GLB load after map construction without
+blocking first render; flat symbols stay authoritative until they are ready.
 Orbital controls/details and airport details/boards load on first UI demand;
 orbital data/controller/worker ownership, airport selection/provider ownership,
 history runtime, and the single MapLibre instance remain eager in their existing

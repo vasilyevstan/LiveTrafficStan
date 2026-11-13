@@ -11,6 +11,10 @@ export const BUNDLE_BUDGETS = {
   vesselFlags: { gzip: 60 * 1024 },
   orbitalUi: { gzip: 12 * 1024 },
   airportDetails: { gzip: 8 * 1024 },
+  trafficModelRuntime: { gzip: 16 * 1024 },
+  // Equals TRAFFIC_MODEL_CONFIG.maximumAssetBytes; a larger GLB always falls
+  // back to flat markers at runtime.
+  trafficModelAsset: { raw: 128 * 1024 },
 }
 
 export const compressedSize = (bytes) => ({
@@ -33,13 +37,13 @@ const assertBudget = (label, sizes, budget) => {
   }
 }
 
-const namedAsset = (assetNames, prefix) => {
+const namedAsset = (assetNames, prefix, extension = '.js') => {
   const matches = assetNames.filter(
-    (name) => name.startsWith(prefix) && name.endsWith('.js'),
+    (name) => name.startsWith(prefix) && name.endsWith(extension),
   )
   if (matches.length !== 1) {
     throw new Error(
-      `Expected one ${prefix} JavaScript asset, found ${matches.length}`,
+      `Expected one ${prefix} ${extension} asset, found ${matches.length}`,
     )
   }
   return matches[0]
@@ -59,6 +63,12 @@ export const checkBundleBudgets = async (distDirectory) => {
     vesselFlags: namedAsset(assetNames, 'vesselFlagImages-'),
     orbitalUi: namedAsset(assetNames, 'AdvancedOrbitalUi-'),
     airportDetails: namedAsset(assetNames, 'AirportDetails-'),
+    trafficModelRuntime: namedAsset(assetNames, 'trafficModelRuntime-'),
+    trafficModelAsset: namedAsset(
+      assetNames,
+      'traffic-models-v1-',
+      '.glb',
+    ),
   }
   const report = {}
 
