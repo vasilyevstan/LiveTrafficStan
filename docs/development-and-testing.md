@@ -5686,7 +5686,7 @@ Testing notes:
 
 ## 3D traffic models acceptance (#682)
 
-The focused unit set has 106 tests in 11 files: the eight `src/map/models`
+The focused unit set has 109 tests in 11 files: the eight `src/map/models`
 suites and the traffic-style, orbital-style and bundle-budget suites they
 extend.
 
@@ -5697,7 +5697,7 @@ extend.
 | `trafficModelCatalog.test.ts` | A model for every flat traffic and orbital image, rejected unknown identities, the Starlink spacecraft only for Starlink payloads, the flat marker palettes in both themes |
 | `modelInstances.test.ts` | Aircraft at reported altitude; grounded or unreported aircraft on the surface without drop lines; vessel length scale; model-specific CSS-pixel floors and real-asset vessel/satellite proportions; selected and ordinary sizes match; stale dimming; zoom-context samples never selected; only shown curated orbital objects; antimeridian packing |
 | `modelProjection.test.ts`, `modelLayerGeometry.test.ts` | Mercator and globe placement, readable floors preserve naturally larger close-up geometry and position, forward/starboard axis direction and shader scale at zoom 14/16, pitched 3D bounding-box projection, asymmetric sailing bounds, the projection transition, far-side hiding, the high-altitude footprint fade, world copies, re-anchoring, CPU picks matching the shader projection and narrow-hull hit boundaries |
-| `TrafficModelLayer.test.ts` | No GL work before the first drawn frame, depth and colour passes, globe-only four-unit depth offset kept across both passes and restored afterward, overlays only when needed, uploads only on change, picks from the last drawn frame, fail-closed compile errors, lost context, removal and re-add |
+| `TrafficModelLayer.test.ts` | No GL work before the first drawn frame, depth and colour passes, globe-only per-group depth offset kept across both passes and restored afterward, overlays only when needed, uploads only on change, picks from the last drawn frame, fail-closed compile errors, lost context, removal and re-add |
 | `modelActivity.test.ts`, `src/map/trafficStyle.test.ts`, `src/map/orbitalStyle.test.ts` | Flat until the runtime loads, flat captured views, the cluster zoom threshold, the per-group flat handoff and theme reinstall, nearest-first model picks |
 | `scripts/bundle-budgets.test.mjs` | The GLB build budget equals the runtime read cap |
 
@@ -5706,11 +5706,45 @@ regenerated the GLB byte for byte with Blender 5.2.3:
 SHA-256 `d2715d39fa44799a0260e9b065487abdd6d7156e77c3a7198729fcc5cbdbb84a`.
 The preview PNG is a render and is not byte-stable.
 
+### Compact vessel overview follow-up
+
+A later 2026-11-13 production screenshot showed ships occupying excessive
+map length. The vessel-only screen floor drops from 42 to 34 CSS px,
+approximately 19%; aircraft, ordinary/featured orbital and Starlink floors
+remain 40/28/40/30. Reported vessel-length scaling, uniform mesh proportions,
+physical altitude, close-up size, flags and selection policy are unchanged.
+
+Matched 1280x900 Dark/DPR-2 framebuffer silhouettes at zoom 11.7 measure:
+
+| Model | Painted length before / after | Painted beam before / after |
+| --- | --- | --- |
+| Cargo | 54.24 / 43.63 | 10.75 / 8.63 |
+| Passenger | 64.37 / 51.97 | 12.24 / 10.07 |
+| Pleasure craft | 33.82 / 27.41 | 10.97 / 9.04 |
+| Moored cargo, 390x844 mobile | 49.50 / 40.50 | 8.50 / 7.50 |
+
+These are actual painted CSS pixels, not hit-box dimensions. The 24-extra-ship
+harbor fixture covers both themes, a zoom-13/pitch-55 harbor, mobile touch
+and 315x517 narrow layout. Bow, side-miss, raised hull, asymmetric sail,
+theme/context restoration and selection continue to use the same paths.
+
+The reduced uniform scale also lowers the symbolic hull height. The known
+globe-depth neighbor failed continuity at four and six depth-buffer units;
+a vessel-only eight-unit offset restores 298/300 pixels and a 1.1/1.2 px
+centroid offset in Light/Dark at zoom 11.7. Both isolated hulls pass across
+Auto zooms 10.5, 11, 11.3, 11.7, 11.9 and Flat. The native 1,000 m extrusion
+fixture occludes the neighbor to zero pixels and removal restores it in
+both themes. Other groups keep the prior four-unit setting; tests explicitly
+cover all four groups, both rendering passes and state cleanup.
+
 ### 3D model readability follow-up
+
+This is the preceding release's evidence; the compact vessel follow-up above
+supersedes its vessel floor.
 
 The 2026-11-13 harbor screenshot and map/UI review showed that thin 3D hulls
 were visually subordinate to flags and stopped badges. The model-only floor
-now uses 40/42 CSS px for aircraft/vessels (before existing marker scale),
+initially used 40/42 CSS px for aircraft/vessels (before existing marker scale),
 28/40 for ordinary/featured orbital objects and 30 for Starlink.
 
 The same built-app Chrome/CDP harness compared the released and changed

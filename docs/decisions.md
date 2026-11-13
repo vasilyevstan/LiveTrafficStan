@@ -73,6 +73,16 @@ restore the neighboring hull; four did. No geometry, altitude, culling or
 CPU picking is changed. Real MapLibre extrusion occlusion and restoration
 pass in both themes; clearing depth or lifting ships is not the solution.
 
+A subsequent production screenshot showed the 42 px vessel floor making
+ships excessively long around ports. The ship-only floor is now 34 px,
+about 19% shorter, rather than compressing the hull's length axis or
+remeshing it. Uniform proportions, reported-length scaling and naturally
+larger close-up geometry remain intact. Smaller hull height re-exposed the
+quantized globe-surface edge case: four- and six-unit offsets did not keep
+the isolated neighbor complete; eight did. The eight-unit offset is
+vessel-only, retaining four for aircraft and both orbital groups. Native
+extrusion occlusion still passes, without changing physical altitude.
+
 Models are reviewed in a temporary scene of the live Blender MCP session,
 which is then deleted. The committed GLB comes from a headless run of
 `scripts/blender/build-traffic-models.py`, which reproduces it byte for byte.

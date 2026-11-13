@@ -300,7 +300,7 @@ export const TRAFFIC_MODEL_CONFIG = {
   // Thin 3D silhouettes need more screen space than the outlined flat icons.
   minimumScreenSizePx: {
     aircraft: 40,
-    vessel: 42,
+    vessel: 34,
     orbital: 28,
     featuredOrbital: 40,
     starlink: 30,
@@ -309,6 +309,7 @@ export const TRAFFIC_MODEL_CONFIG = {
   maximumVesselLengthMeters: 500,
   // Match the quantized globe surface depth without moving model geometry.
   globeDepthOffsetUnits: -4,
+  vesselGlobeDepthOffsetUnits: -8,
   // Re-anchor relative-to-center packing before float32 offsets lose precision.
   maximumReferenceDriftPx: 100_000,
   maximumReferenceDriftWorlds: 0.25,

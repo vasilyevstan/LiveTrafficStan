@@ -181,10 +181,11 @@ identity are not renamed or reset.
   their ground position; satellites sit at their modeled altitude, with drop
   lines when selected or featured; ships sit on the water and scale to a
   valid reported length. Each model keeps its flat icon's class, colour and
-  direction, marks selection with a ring in the same selection colour, is
+  direction, marks selection with a ring in the same selection colour,
   has a model-specific readable minimum screen size, and can be hovered,
   clicked or tapped. Thin hulls and solar panels get more screen space than
   their flat icons without changing proportions or actual altitude.
+  Ships use a compact overview footprint to avoid excessive length around ports.
   Clustered zooms, captured views and any load or GPU failure keep the flat
   icons. Theme changes make no new request. The 18 repository-original
   models come from a reproducible Blender script; see
