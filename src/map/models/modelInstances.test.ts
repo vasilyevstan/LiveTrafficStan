@@ -1,4 +1,6 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import { TRAFFIC_MODEL_CONFIG } from '../../config/appConfig'
 import type { ModeledOrbitalPosition } from '../../domain/orbital'
 import type { DisplayAircraft, DisplayVessel } from '../../domain/traffic'
 import { aircraftAltitudeColors, trafficIconTreatment } from '../icons'
@@ -25,6 +27,7 @@ import {
   hexColorBytes,
   type TrafficModelId,
 } from './trafficModelCatalog'
+import { parseTrafficModelAsset } from './trafficModelAsset'
 
 const DIMENSIONS = new Map(
   TRAFFIC_MODEL_IDS.map((id) => [
@@ -40,8 +43,16 @@ const DIMENSIONS = new Map(
     },
   ]),
 )
-const FLOOR_PX = 32 * 0.88
 const RADIANS = Math.PI / 180
+const REAL_DIMENSIONS = parseTrafficModelAsset(
+  Uint8Array.from(
+    readFileSync(new URL('../../assets/models/traffic-models-v1.glb', import.meta.url)),
+  ).buffer,
+  {
+    maximumBytes: TRAFFIC_MODEL_CONFIG.maximumAssetBytes,
+    maximumTrianglesPerModel: TRAFFIC_MODEL_CONFIG.maximumTrianglesPerModel,
+  },
+)
 
 const aircraft = (overrides: Partial<DisplayAircraft> = {}): DisplayAircraft => ({
   id: 'aircraft:abc123',
@@ -104,7 +115,7 @@ describe('traffic model instances', () => {
       detail: hexColorBytes(band.detail),
     })
     expect(instance.bounds).toBe(DIMENSIONS.get('aircraft')?.bounds)
-    expect(instance.floorPx).toBeCloseTo(FLOOR_PX * 1.08 * properties.markerScale)
+    expect(instance.floorPx).toBeCloseTo(40 * properties.markerScale)
   })
 
   it('keeps grounded or unreported aircraft on the surface without drop lines', () => {
@@ -145,8 +156,35 @@ describe('traffic model instances', () => {
         detail: hexColorBytes(treatment.vesselDetail),
       })
       expect(instances[0].floorPx).toBeCloseTo(
-        FLOOR_PX * 0.86 * features[0].properties!.markerScale,
+        42 * features[0].properties!.markerScale,
       )
+    }
+  })
+
+  it('gives real vessel meshes readable beams without distorting their proportions', () => {
+    const entities = [
+      vessel({ vesselCategory: 'cargo', markerIcon: 'vessel-cargo' }),
+      vessel({ vesselCategory: 'passenger', markerIcon: 'vessel-passenger' }),
+      vessel({ vesselCategory: 'other', vesselType: 'Sailing vessel', markerIcon: 'vessel', markerScale: 0.8, lengthMeters: 12 }),
+      vessel({ vesselCategory: 'other', vesselType: 'Pleasure craft', markerIcon: 'vessel', markerScale: 0.8, lengthMeters: 10 }),
+    ]
+    expect(trafficModelInstances(entities, flat(entities), 'dark', REAL_DIMENSIONS).map(({ model }) => model)).toEqual([
+      'vessel-cargo', 'vessel-passenger', 'vessel-sailing', 'vessel-pleasure',
+    ])
+    for (const entity of entities) {
+      const [ordinary] = trafficModelInstances([entity], flat([entity]), 'dark', REAL_DIMENSIONS)
+      const [selected] = trafficModelInstances([entity], flat([entity], entity.id), 'dark', REAL_DIMENSIONS)
+      const beamPx =
+        ordinary.floorPx * ordinary.beamMeters /
+        Math.max(ordinary.lengthMeters, ordinary.beamMeters)
+      expect(beamPx, ordinary.model).toBeGreaterThanOrEqual(8)
+      expect(beamPx, ordinary.model).toBeLessThan(ordinary.floorPx)
+      expect(ordinary.floorPx).toBeGreaterThanOrEqual(33.6)
+      expect(ordinary.floorPx).toBeLessThanOrEqual(67.2)
+      expect(ordinary.altitudeMeters).toBe(0)
+      expect(ordinary.bounds).toBe(REAL_DIMENSIONS.get(ordinary.model)?.bounds)
+      expect(selected.floorPx).toBe(ordinary.floorPx)
+      expect(selected.lengthScale).toBe(ordinary.lengthScale)
     }
   })
 
@@ -221,13 +259,13 @@ describe('orbital model instances', () => {
       tint: hexColorBytes(treatment.fill),
       detail: hexColorBytes(treatment.detail),
     })
-    expect(instances[0].floorPx).toBeCloseTo(FLOOR_PX * 0.72)
+    expect(instances[0].floorPx).toBe(28)
     expect(instances[1]).toMatchObject({
       id: 'orbital:25544',
       headingDegrees: 0,
       flags: MODEL_FLAG_DROP_LINE,
     })
-    expect(instances[1].floorPx).toBeCloseTo(FLOOR_PX * 1.08)
+    expect(instances[1].floorPx).toBe(40)
     expect(orbitalModelInstances([satellite], [], null, 'dark', false, DIMENSIONS)).toEqual([])
   })
 
@@ -247,7 +285,22 @@ describe('orbital model instances', () => {
       ['orbital-rocket-body', 0, 0.96],
     ])
     expect(instances[0].tint).toEqual(hexColorBytes(starlinkIconTreatment('light').fill))
-    expect(instances[1].floorPx).toBeCloseTo(FLOOR_PX * 0.78)
+    expect(instances[1].floorPx).toBe(30)
+  })
+
+  it('keeps real satellite footprints readable with distinct population floors', () => {
+    for (const starlink of [false, true]) {
+      const [ordinary] = orbitalModelInstances([satellite], [satellite.id], null, 'dark', starlink, REAL_DIMENSIONS)
+      const [selected] = orbitalModelInstances([satellite], [satellite.id], satellite.id, 'dark', starlink, REAL_DIMENSIONS)
+      const depthPx =
+        ordinary.floorPx * Math.min(ordinary.lengthMeters, ordinary.beamMeters) /
+        Math.max(ordinary.lengthMeters, ordinary.beamMeters)
+      expect(depthPx).toBeGreaterThanOrEqual(18)
+      expect(depthPx).toBeLessThanOrEqual(24)
+      expect(ordinary.floorPx).toBe(starlink ? 30 : 28)
+      expect(selected.floorPx).toBe(ordinary.floorPx)
+      expect(ordinary.altitudeMeters).toBe(600_000)
+    }
   })
 })
 

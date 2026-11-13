@@ -297,11 +297,18 @@ export const TRAFFIC_MODEL_CONFIG = {
   assetDeadlineMs: 10_000,
   maximumAssetBytes: 128 * 1024,
   maximumTrianglesPerModel: 600,
-  // Flat markers are 64 px rasters at pixel ratio 2; their glyph spans ~88%.
-  iconBoxPx: 32,
-  iconGlyphFraction: 0.88,
+  // Thin 3D silhouettes need more screen space than the outlined flat icons.
+  minimumScreenSizePx: {
+    aircraft: 40,
+    vessel: 42,
+    orbital: 28,
+    featuredOrbital: 40,
+    starlink: 30,
+  },
   minimumVesselLengthMeters: 2,
   maximumVesselLengthMeters: 500,
+  // Match the quantized globe surface depth without moving model geometry.
+  globeDepthOffsetUnits: -4,
   // Re-anchor relative-to-center packing before float32 offsets lose precision.
   maximumReferenceDriftPx: 100_000,
   maximumReferenceDriftWorlds: 0.25,

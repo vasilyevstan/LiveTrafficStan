@@ -18,6 +18,7 @@ import {
   perspectiveScale,
   projectLocalPoint,
   projectModelInstance,
+  transformVec4,
   wrapMercatorOffset,
   type ModelFrame,
   type ModelInstanceGeometry,
@@ -113,6 +114,59 @@ describe('model projection math', () => {
     )
     expect(east!.x).toBeCloseTo(400 + 2000 * pixelsPerMeter, 6)
     expect(east!.y).toBeCloseTo(300, 6)
+  })
+
+  it('enlarges the readable floor without changing natural close-zoom size or position', () => {
+    const data = instance({
+      lengthMeters: 200,
+      beamMeters: 32,
+      extentMeters: 200,
+      bounds: { minimum: [-16, -100, 0], maximum: [16, 100, 10] },
+      floorPx: 32,
+    })
+    for (const transition of [0, 1]) {
+      const wideFrame = frameFor({ ...TALLINN, zoom: 11 }, transition)
+      const oldWide = projectModelInstance(wideFrame, data)!
+      const newWide = projectModelInstance(wideFrame, { ...data, floorPx: 48 })!
+      expect(newWide.radiusPx / oldWide.radiusPx).toBeCloseTo(1.5, 5)
+      expect(newWide.x).toBe(oldWide.x)
+      expect(newWide.y).toBe(oldWide.y)
+      expect(newWide.alpha).toBe(oldWide.alpha)
+      const closeFrame = frameFor({ ...TALLINN, zoom: 16 }, transition)
+      const oldClose = projectModelInstance(closeFrame, data)!
+      const newClose = projectModelInstance(closeFrame, { ...data, floorPx: 48 })!
+      expect(newClose.radiusPx).toBe(oldClose.radiusPx)
+      expect(newClose.x).toBe(oldClose.x)
+      expect(newClose.y).toBe(oldClose.y)
+      expect(newClose.heightAxis).toEqual(oldClose.heightAxis)
+    }
+  })
+
+  it('keeps float32 globe surface depth precise with camera-relative coordinates', () => {
+    const gpuClip = (matrix: ArrayLike<number>, point: readonly number[]) =>
+      [0, 1, 2, 3].map((row) =>
+        point.reduce(
+          (sum, value, column) =>
+            Math.fround(sum + Math.fround(Math.fround(matrix[column * 4 + row]) * Math.fround(value))),
+          0,
+        ),
+      )
+    for (const zoom of [10.5, 11.7, 14]) {
+      const frame = frameFor({ ...TALLINN, zoom }, 1)
+      const { sphere } = projectLocalPoint(frame, 24.77, 59.44, 0, 500, 500, 20)
+      const exact = transformVec4(frame.globeMatrix, ...sphere!, 1)
+      const direct = gpuClip(frame.globeMatrix, [...sphere!, 1])
+      const relative = gpuClip(frame.globeRtcMatrix, [
+        sphere![0] - frame.globeOrigin[0],
+        sphere![1] - frame.globeOrigin[1],
+        sphere![2] - frame.globeOrigin[2],
+        1,
+      ])
+      const expectedDepth = exact[2] / exact[3]
+      const relativeError = Math.abs(relative[2] / relative[3] - expectedDepth)
+      expect(relativeError).toBeLessThan(2e-7)
+      expect(relativeError).toBeLessThan(Math.abs(direct[2] / direct[3] - expectedDepth))
+    }
   })
 
   it('lifts low aircraft by altitude and fades high ones to a ground footprint', () => {
