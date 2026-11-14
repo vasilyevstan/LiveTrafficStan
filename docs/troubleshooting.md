@@ -1681,8 +1681,8 @@ or Service Worker response is a release defect.
 - **No `Trains:` item in the map credits.** The compact credits name only
   the feeds whose rail-network rectangles overlap the settled view, and only
   while TRAINS is on outside HISTORY and captured views. A view without
-  coverage, such as Tallinn, shows none. **Settings → Data credits** always
-  names all four feeds and a selected train's details show its exact credit.
+  coverage shows none. **Settings → Data credits** always
+  names all five feeds and a selected train's details show its exact credit.
 - **A source note says it is unavailable.** That source failed, timed out or
   was rate limited. Earlier positions stay until they expire after ten
   minutes, and other sources keep updating. Fintraffic responses can take up

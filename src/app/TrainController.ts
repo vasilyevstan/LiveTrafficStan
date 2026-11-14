@@ -29,6 +29,7 @@ export interface TrainControllerRuntime {
 export interface TrainControllerOptions {
   providers: Readonly<Record<TrainSourceId, TrainProvider>>
   pollIntervalMs: number
+  sourcePollIntervalMs?: Partial<Record<TrainSourceId, number>>
   rateLimitBackoffMaxMs: number
   course: TrainCourseLimits
   onChange: (statuses: TrainSourceStatuses) => void
@@ -84,6 +85,7 @@ const mergeObservations = (
 export class TrainController {
   private readonly providers: Readonly<Record<TrainSourceId, TrainProvider>>
   private readonly pollIntervalMs: number
+  private readonly sourcePollIntervalMs: Partial<Record<TrainSourceId, number>>
   private readonly rateLimitBackoffMaxMs: number
   private readonly course: TrainCourseLimits
   private readonly onChange: (statuses: TrainSourceStatuses) => void
@@ -97,6 +99,7 @@ export class TrainController {
   constructor(options: TrainControllerOptions) {
     this.providers = options.providers
     this.pollIntervalMs = options.pollIntervalMs
+    this.sourcePollIntervalMs = options.sourcePollIntervalMs ?? {}
     this.rateLimitBackoffMaxMs = options.rateLimitBackoffMaxMs
     this.course = options.course
     this.onChange = options.onChange
@@ -187,10 +190,11 @@ export class TrainController {
   }
 
   private nextRequestAt(source: SourceRuntime) {
+    const interval = this.sourcePollIntervalMs[source.status.sourceId] ?? this.pollIntervalMs
     const cadenceBoundary =
       source.lastStartedAt === undefined
         ? 0
-        : source.lastStartedAt + this.pollIntervalMs
+        : source.lastStartedAt + interval
     return Math.max(cadenceBoundary, source.blockedUntil)
   }
 
@@ -247,7 +251,7 @@ export class TrainController {
       if (error instanceof ProviderError && error.status === 429) {
         source.rateLimitFailures += 1
         const backoffMs = Math.min(
-          this.pollIntervalMs * 2 ** source.rateLimitFailures,
+          (this.sourcePollIntervalMs[sourceId] ?? this.pollIntervalMs) * 2 ** source.rateLimitFailures,
           this.rateLimitBackoffMaxMs,
         )
         source.blockedUntil = failedAt + Math.max(backoffMs, error.retryAfterMs ?? 0)

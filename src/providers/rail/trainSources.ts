@@ -54,4 +54,15 @@ export const TRAIN_SOURCES: Readonly<Record<TrainSourceId, TrainSource>> = {
     licenseUrl: 'https://www.mta.info/developers/terms-and-conditions',
     attribution: 'Data from the MTA, redistributed by LiveTrafficStan; not endorsed by the MTA. Reports may lag and may be incomplete.',
   },
+  elron: {
+    id: 'elron',
+    name: 'Elron · community feed',
+    coverage: 'Estonia, reported Elron passenger services',
+    areas: [{ west: 24, south: 57.5, east: 28.25, north: 59.7 }],
+    websiteUrl: 'https://transitous.org/sources/',
+    licenseName: 'Project usage policy; feed licence not specified',
+    licenseUrl: 'https://transitous.org/api/',
+    attribution: 'Elron positions via Jonah Brüchert / Transitous community feed; not an official Elron API.',
+    notice: 'Community-converted Elron reports; coverage and trip matching may be incomplete. No passenger GPS is collected by TrackStan.',
+  },
 }

@@ -31,12 +31,15 @@ describe('active train sources', () => {
     ['Narvik', 17.43, 68.44, ['entur']],
     ['Boston', -71.06, 42.35, ['mbta']],
     ['Jamaica', -73.81, 40.7, ['lirr']],
+    ['Tallinn', 24.75, 59.44, ['elron']],
+    ['Tartu', 26.73, 58.37, ['elron']],
+    ['Narva', 28.19, 59.37, ['elron']],
   ])('polls only the source covering %s', (_name, longitude, latitude, expected) => {
     expect(sourcesAt(longitude, latitude)).toEqual(expected)
   })
 
   it.each([
-    ['Tallinn', 24.75, 59.44],
+    ['Riga', 24.1, 56.95],
     ['Stockholm', 18.07, 59.33],
     ['Luleå', 22.15, 65.58],
     ['Copenhagen', 12.57, 55.68],

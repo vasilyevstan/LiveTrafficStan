@@ -1,5 +1,28 @@
 # Engineering Decisions
 
+## Elron community positions and clearer trains (#710)
+
+The user requested more visible trains and directed integration unless the
+community project clearly forbade use. Primary-source inspection corrected
+the earlier passenger-crowdsourcing description: the usable jbb-hosted Elron
+feed converts operator map reports and matches trips to timetables. The
+separate passenger GPS endpoint was not the working feed. No clear no-use
+statement was found for the hosted Elron feed; its separate data licence
+remains unspecified, not presumed CC0 or AGPL. The
+[source/policy record](data-sources-and-licensing.md#elron-provenance-and-exact-policy-scope-710)
+preserves the distinction and limitations.
+
+Reuse the existing regional scheduler, train models, parser and bounded
+same-origin GTFS proxy. Elron alone polls and reuses successful edge responses
+at 60 s; no static timetable download, operator-site scraping, GPS submission,
+new service or dependency is added. A date/trip ID survives changing entity
+timestamps so two actual observations can derive a course; absent direction
+remains a dot, and absent train numbers remain "Elron train".
+
+Improve only train readability: enlarge and widen overview models, strengthen
+the dot fallback and show labels from zoom 9. Do not distort ships/aircraft,
+invent positions or courses, or change unrelated traffic scheduling.
+
 ## Live trains from free regional feeds
 
 The request was to find real-time train data and add trains to the map.
@@ -40,7 +63,7 @@ metadata or share links in the first release.
 ## Viewport-scoped train credits (#705)
 
 After trains shipped, the expanded map credits showed four separate
-`Trains: ...` items in every view, even Tallinn where no train feed applies,
+`Trains: ...` items in every view, even Tallinn where no train feed applied then,
 including the long MTA disclaimer. In production that box measured 23-46% of
 a phone's visual viewport, and 46% on a short landscape phone. The cause was
 attaching all four credits to the `traffic-trains` source, so MapLibre listed
@@ -51,7 +74,7 @@ rail-network rectangles overlap the settled traffic viewport (the predicate
 that already gates polling) contribute their exact, unchanged credit strings
 as one `Trains:` item in the native credits control, only while TRAINS is on
 and HISTORY and captured views are inactive. Selected-train details still show
-the exact credit and **Settings → Data credits** still names all four feeds.
+the exact credit and **Settings → Data credits** names every configured feed.
 The expanded box is also capped at 40% of the visual viewport and scrolls, so
 a later provider cannot cover the map, and the mobile shell uses 0.72rem text.
 Desktop type is unchanged.

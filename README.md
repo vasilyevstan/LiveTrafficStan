@@ -188,10 +188,12 @@ identity are not renamed or reset.
   source age, confidence, and local failure isolation.
 - Live trains, on by default under **Layers → TRAINS**, from free regional
   feeds: Finland (Fintraffic / Digitraffic), Norway (Entur), Greater Boston
-  commuter rail (MBTA) and the Long Island Rail Road (MTA, through a
-  same-origin Worker route). Mainline and commuter trains, plus freight
-  where the source reports it, refresh about every 15 seconds while the view
-  overlaps a source's rail network. Close zoom draws an unbranded 3D train
+  commuter rail (MBTA), the Long Island Rail Road (MTA) and Estonia (Elron
+  reports via a community converter). LIRR and Elron use fixed same-origin
+  Worker routes. Mainline and commuter trains, plus freight where reported,
+  refresh about every 15 seconds (Elron: one minute) while the view
+  overlaps a source's rail network. Zoom 9 adds labels and a wider, more
+  visible unbranded 3D train
   or freight model pointing along the reported or derived course; a train
   without a course stays a dot. **In view** lists trains in the view, and
   details show the last reported position, speed, source and attribution.
@@ -1095,6 +1097,12 @@ for 15 seconds per edge. It needs no key, secret or binding. Fintraffic,
 Entur and MBTA trains are direct browser requests allowed by the static CSP.
 See the [LIRR proxy contract](docs/hosting-and-deployment.md#lirr-proxy-contract).
 
+`GET /api/trains/elron` uses the same bounded decoder and transport, with one
+minute of per-edge reuse. It reads the community-maintained public feed, not
+Elron's internal map endpoint, and identifies TrackStan rather than forwarding
+visitor headers. Details disclose its unofficial conversion and unspecified
+feed licence; no passenger GPS collection is added.
+
 The plausible-route path starts once when a new eligible live aircraft is
 selected. It constructs one validated ADSB.lol standing-data URL from the
 normalized callsign, omits credentials, rejects redirects, enforces a
@@ -1811,8 +1819,11 @@ See [the timeout recovery boundary](docs/troubleshooting.md#deployment-metar-che
   [#46](https://github.com/vasilyevstan/LiveTrafficStan/issues/46).
 - Auto follows the browser's color-scheme preference, not solar time or map
   location.
-- Live trains cover only Finland, Norway, Greater Boston commuter rail and
-  the Long Island Rail Road. No reliable free worldwide train-position feed
+- Live trains cover Finland, Norway, Greater Boston commuter rail,
+  the Long Island Rail Road and reported Elron services in Estonia.
+  Elron's community feed may omit services or mis-match trip identity; it is
+  not an official operator API, and no dedicated feed licence is specified.
+  No reliable free worldwide train-position feed
   exists, so other regions show a no-coverage note. Entur includes only
   participating operators, and freight appears only when a source reports
   it. Positions are last reports, not predictions, schedules or

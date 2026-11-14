@@ -24,6 +24,22 @@ const render = (train: DisplayTrain, now = 110_000) => renderToStaticMarkup(
 )
 
 describe('TrainDetails', () => {
+  it('discloses Elron conversion, matching uncertainty and unspecified feed rights', () => {
+    const html = render({
+      ...base, id: 'train:elron:20261114:opaque-trip', sourceId: 'elron',
+      name: 'Elron train', category: 'passenger', operator: undefined,
+      speedKph: undefined, courseDegrees: undefined, courseOrigin: undefined,
+    })
+    expect(html).toContain('Elron train')
+    expect(html).toContain('coverage and trip matching may be incomplete')
+    expect(html).toContain('No passenger GPS is collected by TrackStan')
+    expect(html).toContain('not an official Elron API')
+    expect(html).toContain('feed licence not specified')
+    expect(html).toContain('https://transitous.org/sources/')
+    expect(html).toContain('Unavailable; shown as a dot')
+    expect(html).not.toContain('CC BY 4.0')
+  })
+
   it('shows reported facts, derived course origin, clocks, and attribution', () => {
     const html = render(base)
     expect(html).toContain('Long-distance passenger')

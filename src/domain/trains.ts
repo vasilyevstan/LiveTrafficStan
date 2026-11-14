@@ -2,7 +2,7 @@ import { distanceKm } from './geo'
 import type { TrafficViewport } from './viewport'
 import { isCoordinateInViewport } from './viewport'
 
-export const TRAIN_SOURCE_IDS = ['fintraffic', 'entur', 'mbta', 'lirr'] as const
+export const TRAIN_SOURCE_IDS = ['fintraffic', 'entur', 'mbta', 'lirr', 'elron'] as const
 export type TrainSourceId = (typeof TRAIN_SOURCE_IDS)[number]
 
 /** Only what the source states; freight is never inferred. */
@@ -59,6 +59,7 @@ export interface TrainSource {
   licenseName: string
   licenseUrl: string
   attribution: string
+  notice?: string
 }
 
 export interface TrainSourceDataset {

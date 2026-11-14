@@ -25,6 +25,7 @@ export interface TrainProviderConfig {
   entur: { endpoint: string; maximumDataAge: string }
   mbta: { endpoint: string }
   lirr: { endpoint: string }
+  elron: { endpoint: string }
 }
 
 export type TrainFetch = (
@@ -56,9 +57,9 @@ const MAX_SPEED_KPH = 400
 const abortError = () =>
   new DOMException('The operation was aborted', 'AbortError')
 
-const text = (value: unknown) => {
+const text = (value: unknown, maximumCharacters = MAX_TEXT_CHARACTERS) => {
   const trimmed = nonEmptyString(value)
-  if (!trimmed || trimmed.length > MAX_TEXT_CHARACTERS || hasControlCharacters(trimmed)) {
+  if (!trimmed || trimmed.length > maximumCharacters || hasControlCharacters(trimmed)) {
     return undefined
   }
   return trimmed
@@ -305,16 +306,17 @@ export const parseMbtaTrains = (
   }))
 }
 
-export const parseLirrTrains = (
+const parseProxiedTrains = (
   payload: unknown,
   context: ParseContext,
 ): TrainPosition[] => {
+  const elron = context.sourceId === 'elron'
   if (!isRecord(payload) || !Array.isArray(payload.vehicles)) {
-    throw new ProviderError('LIRR returned an invalid response')
+    throw new ProviderError(`${elron ? 'Elron community feed' : 'LIRR'} returned an invalid response`)
   }
   return finalize(context, payload.vehicles.map((record): TrainPosition | undefined => {
     if (!isRecord(record)) return undefined
-    const vehicleId = text(record.id)
+    const vehicleId = text(record.id, elron ? 265 : MAX_TEXT_CHARACTERS)
     const longitude = finiteNumber(record.longitude)
     const latitude = finiteNumber(record.latitude)
     const observedAt = timestamp(record.observedAt)
@@ -322,15 +324,15 @@ export const parseLirrTrains = (
       return undefined
     }
     const tripId = text(record.tripId)
-    const trainNumber = tripId ? /^[A-Z]+\d+_\d+_(\d{1,6})(?:_|$)/.exec(tripId)?.[1] : undefined
+    const trainNumber = !elron && tripId ? /^[A-Z]+\d+_\d+_(\d{1,6})(?:_|$)/.exec(tripId)?.[1] : undefined
     const label = text(record.label)
     const bearing = course(record.bearing)
     const speed = speedKph(record.speedMetersPerSecond, 3.6)
     return {
-      id: trainId('lirr', vehicleId),
-      sourceId: 'lirr',
-      name: trainNumber ? `Train ${trainNumber}` : `Train ${label ?? vehicleId}`,
-      category: 'commuter',
+      id: trainId(context.sourceId, vehicleId),
+      sourceId: context.sourceId,
+      name: elron ? 'Elron train' : trainNumber ? `Train ${trainNumber}` : `Train ${label ?? vehicleId}`,
+      category: elron ? 'passenger' : 'commuter',
       longitude,
       latitude,
       observedAt,
@@ -341,6 +343,9 @@ export const parseLirrTrains = (
     }
   }))
 }
+
+export const parseLirrTrains = parseProxiedTrains
+export const parseElronTrains = parseProxiedTrains
 
 const fintrafficQuery = (since: string) => `{ currentlyRunningTrains(where: {trainLocations: {contains: {timestamp: {greaterThan: "${since}"}}}}) { trainNumber departureDate operator { shortCode name } trainType { name trainCategory { name } } commuterLineid trainLocations(orderBy: {timestamp: DESCENDING}, take: 1) { timestamp speed location } } }`
 
@@ -445,13 +450,13 @@ const graphqlInit = (query: string, headers: Record<string, string>): RequestIni
   body: JSON.stringify({ query }),
 })
 
-const sameOriginUrl = (path: string, origin: string | undefined) => {
+const sameOriginUrl = (path: string, origin: string | undefined, name = 'LIRR') => {
   const browserOrigin = origin ?? (typeof location === 'undefined' ? undefined : location.origin)
-  if (!browserOrigin) throw new ProviderError('LIRR requires a same-origin application endpoint')
+  if (!browserOrigin) throw new ProviderError(`${name} requires a same-origin application endpoint`)
   const applicationOrigin = new URL(browserOrigin).origin
   const url = new URL(path, applicationOrigin)
   if (url.origin !== applicationOrigin || url.search || url.hash) {
-    throw new ProviderError('LIRR endpoint must remain same-origin')
+    throw new ProviderError(`${name} endpoint must remain same-origin`)
   }
   return url
 }
@@ -493,5 +498,11 @@ export const createTrainProviders = (
     init: { method: 'GET', headers: { Accept: 'application/json' } },
     contentTypes: ['application/json'],
     parse: parseLirrTrains,
+  }), options),
+  elron: new HttpTrainProvider('elron', config, () => ({
+    url: sameOriginUrl(config.elron.endpoint, options.origin, 'Elron'),
+    init: { method: 'GET', headers: { Accept: 'application/json' } },
+    contentTypes: ['application/json'],
+    parse: parseElronTrains,
   }), options),
 })

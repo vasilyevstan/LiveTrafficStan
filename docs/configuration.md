@@ -1298,12 +1298,12 @@ Train timing and source settings live in `TRAIN_CONFIG`
 coverage rectangles, terms and attribution live in
 `src/providers/rail/trainSources.ts`. There are no environment overrides,
 keys or endpoint settings: the three direct endpoints and the same-origin
-LIRR route are fixed.
+LIRR and Elron routes are fixed.
 
 | Setting | Value |
 | --- | --- |
 | Default layer state | TRAINS on; preference and share key `trains` |
-| Poll cadence per source | 15 s from the previous request start, one request in flight |
+| Poll cadence per source | 15 s; Elron 60 s; from the previous request start, one request in flight |
 | `429` back-off | `Retry-After` when present, otherwise doubling to 5 min |
 | Request deadline | 8 s; Fintraffic 14 s (measured 4-14 s responses) |
 | Response limits | 512 KiB body, 1,000 trains, 60 s future tolerance |
@@ -1313,6 +1313,8 @@ LIRR route are fixed.
 | In view list | first 20 trains |
 | Application identifier | `livetrafficstan-trackstan` |
 | LIRR Worker | 8 s deadline, 512 KiB cap, 15 s edge reuse |
+| Elron Worker | fixed `/api/trains/elron`, 8 s deadline, 512 KiB cap, 60 s edge reuse; service-date/trip identity |
+| Train overview readability | 48 px pre-aspect screen floor, 3:1 maximum overview ratio; labels from zoom 9 |
 
 Changing a coverage rectangle changes when a source is polled, not what it
 returns. Keep rectangles on the rail network so neighbouring countries do

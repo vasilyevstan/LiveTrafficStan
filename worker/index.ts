@@ -7,6 +7,7 @@ import {
   METAR_PROXY_PATH,
 } from './metarProxy.js'
 import { handleLirrProxy, LIRR_PROXY_PATH } from './lirrProxy.js'
+import { handleElronProxy, ELRON_PROXY_PATH } from './elronProxy.js'
 import {
   handleOrbitalCatalog,
   ORBITAL_CATALOG_PATH,
@@ -180,6 +181,9 @@ const worker = {
     }
     if (pathname === LIRR_PROXY_PATH) {
       return withReleaseSha(await handleLirrProxy(request), env.RELEASE_SHA)
+    }
+    if (pathname === ELRON_PROXY_PATH) {
+      return withReleaseSha(await handleElronProxy(request), env.RELEASE_SHA)
     }
     if (pathname === '/api' || pathname.startsWith('/api/')) {
       const fetchImpl = aircraftFetch(env)
