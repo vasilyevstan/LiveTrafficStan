@@ -135,6 +135,7 @@ const resolveLayers = (value: unknown): LayerPreferences => {
       value.orbitalObjectsVisible,
       defaults.orbitalObjectsVisible,
     ),
+    trainsVisible: booleanOr(value.trainsVisible, defaults.trainsVisible),
   }
 }
 

@@ -7,6 +7,7 @@ export interface LayerPreferences {
   weatherVisible: boolean
   depthsVisible: boolean
   orbitalObjectsVisible: boolean
+  trainsVisible: boolean
 }
 
 export const DEFAULT_LAYER_PREFERENCES: LayerPreferences = {
@@ -18,6 +19,7 @@ export const DEFAULT_LAYER_PREFERENCES: LayerPreferences = {
   weatherVisible: false,
   depthsVisible: true,
   orbitalObjectsVisible: false,
+  trainsVisible: true,
 }
 
 export const updateLayerPreference = <

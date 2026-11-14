@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs'
 import type { CustomRenderMethodInput, Map as MapLibreMap } from 'maplibre-gl'
 import { describe, expect, it, vi } from 'vitest'
 import { TRAFFIC_MODEL_CONFIG } from '../../config/appConfig'
+import type { DisplayTrain } from '../../domain/trains'
+import { trafficSelectionColor } from '../trafficStyle'
 import { TrafficModelLayer } from './TrafficModelLayer'
 import {
   frameInputFixture,
@@ -17,6 +19,7 @@ import {
   wrapMercatorOffset,
 } from './modelProjection'
 import { parseTrafficModelAsset } from './trafficModelAsset'
+import { trainModelColors } from './trafficModelCatalog'
 import { VESSEL_FLAG_IMAGES } from '../vesselFlagImages'
 
 const committed = readFileSync(new URL('../../assets/models/traffic-models-v1.glb', import.meta.url))
@@ -207,7 +210,7 @@ describe('TrafficModelLayer', () => {
     )
   })
 
-  it.each(['vessels', 'aircraft', 'orbital', 'starlink'] as const)(
+  it.each(['vessels', 'trains', 'aircraft', 'orbital', 'starlink'] as const)(
     'offsets only globe %s depth and restores the raster state',
     (group) => {
       for (const transition of [0, 0.3, 1]) {
@@ -215,7 +218,9 @@ describe('TrafficModelLayer', () => {
         show(group)
         render(transition)
         expect(named(calls, 'polygonOffset').map(({ args }) => args)).toEqual(
-          transition > 0 ? [[0, group === 'vessels' ? -8 : -4]] : [],
+          transition > 0
+            ? [[0, group === 'vessels' || group === 'trains' ? -8 : -4]]
+            : [],
         )
         expect(uniformValues(calls, 'u_depth_only')).toEqual([[1], [0]])
         const firstDraw = calls.findIndex(({ name }) => name === 'drawArraysInstanced')
@@ -332,6 +337,60 @@ describe('TrafficModelLayer', () => {
     expect(layer.pick(wrapped)).toEqual([])
   })
 
+  it('feeds oriented trains to the trains group and picks them by train id', () => {
+    const { layer, calls, render } = setup()
+    const train = (overrides: Partial<DisplayTrain>): DisplayTrain => ({
+      id: 'train:fintraffic:8',
+      sourceId: 'fintraffic',
+      name: 'IC 8',
+      category: 'long-distance',
+      longitude: 24.75,
+      latitude: 59.43,
+      observedAt: 1_000,
+      courseDegrees: 90,
+      courseOrigin: 'derived',
+      freshness: 'current',
+      ...overrides,
+    })
+    layer.setTrains(
+      [
+        train({}),
+        train({ id: 'train:entur:freight', category: 'freight', longitude: 24.9, freshness: 'stale' }),
+        train({ id: 'train:mbta:unoriented', longitude: 24.6, courseDegrees: undefined }),
+      ],
+      'train:fintraffic:8',
+      'light',
+    )
+    layer.setGroupActive('trains', true)
+    render()
+    const draws = named(calls, 'drawArraysInstanced').map((call) => call.args.slice(2))
+    const passenger = meshes.get('train')!.triangleCount * 3
+    const freight = meshes.get('train-freight')!.triangleCount * 3
+    expect(draws).toEqual([
+      [6, 2],
+      [passenger, 1],
+      [freight, 1],
+      [passenger, 1],
+      [freight, 1],
+    ])
+    const [r, g, b] = trafficSelectionColor('light').match(/[0-9a-f]{2}/gi)!.map((hex) => Number.parseInt(hex, 16) / 255)
+    expect(uniformValues(calls, 'u_overlay_color')[0]).toEqual([r, g, b])
+    const stretch = uniformValues(calls, 'u_overview_stretch').map(([value]) => value as number)
+    expect(stretch).toHaveLength(4)
+    expect(stretch.every((value) => value > 1)).toBe(true)
+    const tint = trainModelColors('light', 'long-distance').tint
+    const upload = new Uint8Array((named(calls, 'bufferSubData')[0].args[2] as Uint8Array).buffer)
+    expect([...upload.slice(48, 51)]).toEqual([...tint])
+
+    expect(layer.pick([400, 300])).toEqual([
+      { group: 'trains', id: 'train:fintraffic:8', distance: expect.any(Number) },
+    ])
+    expect(layer.pick([400, 300], ['trains'])).toHaveLength(1)
+    expect(layer.pick([400, 300], ['aircraft', 'vessels'])).toEqual([])
+    layer.setGroupActive('trains', false)
+    expect(layer.pick([400, 300])).toEqual([])
+  })
+
   it('fails closed on a compile failure and reports once after the frame', async () => {
     const { layer, calls, onFailure, render, show } = setup(TALLINN, { compiles: false })
     show('aircraft')
@@ -366,8 +425,8 @@ describe('TrafficModelLayer', () => {
     expect(layer.pick([400, 300])).toHaveLength(1)
     layer.onRemove(map, gl)
     expect(named(calls, 'deleteProgram')).toHaveLength(4)
-    expect(named(calls, 'deleteVertexArray')).toHaveLength(8)
-    expect(named(calls, 'deleteBuffer')).toHaveLength(5)
+    expect(named(calls, 'deleteVertexArray')).toHaveLength(10)
+    expect(named(calls, 'deleteBuffer')).toHaveLength(6)
     expect(layer.pick([400, 300])).toEqual([])
     calls.length = 0
     render()

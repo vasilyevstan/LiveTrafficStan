@@ -1291,6 +1291,33 @@ operation only on explicit demand. See
 and [deployment](hosting-and-deployment.md#airport-board-activation-and-rollback)
 for the compatible first-activation sequence.
 
+## Live trains
+
+Train timing and source settings live in `TRAIN_CONFIG`
+(`src/config/trainConfig.ts`, re-exported from `appConfig.ts`). Source names,
+coverage rectangles, terms and attribution live in
+`src/providers/rail/trainSources.ts`. There are no environment overrides,
+keys or endpoint settings: the three direct endpoints and the same-origin
+LIRR route are fixed.
+
+| Setting | Value |
+| --- | --- |
+| Default layer state | TRAINS on; preference and share key `trains` |
+| Poll cadence per source | 15 s from the previous request start, one request in flight |
+| `429` back-off | `Retry-After` when present, otherwise doubling to 5 min |
+| Request deadline | 8 s; Fintraffic 14 s (measured 4-14 s responses) |
+| Response limits | 512 KiB body, 1,000 trains, 60 s future tolerance |
+| Stale / expired | 2 min / 10 min after the observation time |
+| Derived course | two observed positions 30 m to 3 min apart |
+| 3D model zoom | 9 and closer, for trains with a course |
+| In view list | first 20 trains |
+| Application identifier | `livetrafficstan-trackstan` |
+| LIRR Worker | 8 s deadline, 512 KiB cap, 15 s edge reuse |
+
+Changing a coverage rectangle changes when a source is polled, not what it
+returns. Keep rectangles on the rail network so neighbouring countries do
+not poll an unrelated feed.
+
 ## Map style
 
 The style must be readable by MapLibre and all referenced tiles, glyphs, and

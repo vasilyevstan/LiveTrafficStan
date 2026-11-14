@@ -1649,6 +1649,60 @@ repository-original models are one validated GLB, described in
   still visible. Selection, details and trails reuse the existing identity
   paths.
 
+## Live trains
+
+Trains are a fourth live traffic family with their own lifecycle, separate
+from aircraft, marine and orbital work. They are on by default under
+**Layers → TRAINS**, and the preference and `trains` share key travel with the
+other layer preferences.
+
+| Source | Coverage gate | Browser request |
+| --- | --- | --- |
+| Fintraffic / Digitraffic | Finland: Hanko-Kokkola plus Oulu-Tornio-Kolari rectangles | GraphQL `currentlyRunningTrains` with a 15-minute location lookback and `Digitraffic-User` |
+| Entur | Norway: southern network, Nordland line and Ofoten line rectangles | GraphQL `vehicles(mode: RAIL)` with `maxDataAge: PT10M` and `ET-Client-Name` |
+| MBTA | Greater Boston commuter rail | keyless `/vehicles?filter[route_type]=2` with sparse fields |
+| MTA LIRR | Long Island Rail Road | same-origin `GET /api/trains/lirr` |
+
+`src/providers/rail/trainSources.ts` owns names, coverage rectangles, terms
+and attribution. Each source has several rail-network rectangles instead of
+one country box: a single Norway box would also poll Entur over Helsinki,
+Stockholm and Luleå. `useTrains` polls a source only while TRAINS is on, the
+page is visible, HISTORY and captured views are inactive, and the settled
+safe traffic viewport intersects one of its rectangles. Requests carry no map
+coordinates; each returns the source's whole regional feed and the display
+is filtered locally to the viewport.
+
+`TrainController` keeps one scheduler, generation and abort controller per
+source. A source has at most one request in flight. The next starts at the
+later of `lastStartedAt + 15 s` and any `Retry-After` or `429` back-off
+boundary (doubling to at most five minutes), so camera moves cannot add
+requests. Pausing aborts only the in-flight request; resuming keeps the
+cadence and back-off boundaries. Late responses from an aborted generation
+are discarded. A failing source keeps earlier positions until they expire and
+does not affect the other train sources or any other traffic family.
+
+Providers normalize payloads into application-owned `TrainPosition` records
+with a stable `source:id`, category (`long-distance`, `commuter`, `passenger`,
+`freight` or `other`), bounded text, reported speed and observation time.
+Bodies are capped at 512 KiB and 1,000 trains; future timestamps beyond one
+minute are rejected. Fintraffic's measured GraphQL responses take 4-14 s, so
+it has a 14 s deadline below the 15 s cadence; the other sources use 8 s.
+Course is the reported bearing when present, otherwise a course derived from
+two observed positions at least 30 m apart within three minutes. Positions
+older than two minutes are stale and dimmed; after ten minutes they are
+removed. Trains have no trails, interpolation, history, Saved identities,
+metadata, photos or share links.
+
+The map uses one persistent `traffic-trains` GeoJSON source with flat
+markers, labels and a selection ring. From zoom 9 a train with a finite
+course is drawn by the shared 3D model layer as `train`, or `train-freight`
+for the freight category; a train without a course stays a flat dot. Theme
+changes reinstall the source and layers from current data without a new
+request. **In view** lists up to 20 trains in the view, and selected details
+show reported identity, category, speed, course origin, observation and
+receipt times, coordinates and the source's attribution. LIRR details
+disclose when the feed lags by more than one minute.
+
 ## Performance choices
 
 - MQTT is dynamically imported so it is a separate production chunk.

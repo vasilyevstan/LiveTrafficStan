@@ -117,6 +117,15 @@ const renderControls = (
       onWeatherSelect={() => undefined}
       onRetryWeather={() => undefined}
       onRefreshWeather={() => undefined}
+      trainsVisible={false}
+      trainsBusy={false}
+      trainNotes={[]}
+      trains={[]}
+      selectedTrainId={null}
+      trainEmptyMessage="No trains reported in this view."
+      trainResultLimit={20}
+      onTrainsVisibleChange={() => undefined}
+      onTrainSelect={() => undefined}
       orbitalVisible={false}
       orbitalState={{
         phase: 'disabled',
@@ -326,7 +335,7 @@ describe('TrafficControls', () => {
       weatherVisible: weather, weatherLoading: weather,
     })
     const context = html.slice(html.indexOf('id="map-tools-panel-context"'), html.indexOf('id="map-tools-panel-orbits"'))
-    expect(context).not.toContain('Enable AIRPORTS or METAR')
+    expect(context).not.toContain('Enable AIRPORTS, METAR or TRAINS')
     expect(context).not.toContain('No current')
     expect(context).toContain(weather ? 'Loading weather reports.' : 'Loading airports.')
   })
@@ -339,7 +348,7 @@ describe('TrafficControls', () => {
     const context = html.slice(html.indexOf('id="map-tools-panel-context"'), html.indexOf('id="map-tools-panel-orbits"'))
     expect(context).toContain('Airport checksum failed.')
     expect(context).toContain('RETRY AIRPORTS')
-    expect(context).not.toContain('Enable AIRPORTS or METAR')
+    expect(context).not.toContain('Enable AIRPORTS, METAR or TRAINS')
     expect(html).toContain('Weather source timed out.')
     expect(html.match(/RETRY METAR/g)).toHaveLength(1)
   })
@@ -723,7 +732,7 @@ describe('TrafficControls', () => {
     expect(html).toContain(
       'id="map-tools-panel-layers" class="control-panel__task" aria-labelledby="map-tools-task-layers" hidden=""',
     )
-    expect(html).toContain('Enable AIRPORTS or METAR in Layers.')
+    expect(html).toContain('Enable AIRPORTS, METAR or TRAINS in Layers.')
     expect(html).toContain('Natural Earth')
     expect(html).toContain('SGP4 modeled')
     expect(html.indexOf('id="map-tools-task-find"')).toBeLessThan(html.indexOf('id="map-tools-task-layers"'))

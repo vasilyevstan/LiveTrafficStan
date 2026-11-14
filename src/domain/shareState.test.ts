@@ -71,6 +71,7 @@ describe('shared application state', () => {
           weatherVisible: false,
           depthsVisible: true,
           orbitalObjectsVisible: false,
+          trainsVisible: true,
         },
         vesselFilters: {
           category: 'cargo',
@@ -91,7 +92,7 @@ describe('shared application state', () => {
   it('supports partial known preferences while keeping camera atomic', () => {
     expect(
       parseShareFragment(
-        '#v=1&theme=auto&ports=1&orbits=1&starlink=1',
+        '#v=1&theme=auto&ports=1&orbits=1&starlink=1&trains=0',
       ),
     ).toEqual({
       preferences: {
@@ -99,6 +100,7 @@ describe('shared application state', () => {
         layers: {
           portsVisible: true,
           orbitalObjectsVisible: true,
+          trainsVisible: false,
         },
       },
     })

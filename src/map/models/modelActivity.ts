@@ -8,12 +8,14 @@ export const TRAFFIC_MODEL_LAYER_ID = 'traffic-models-3d'
 
 export const TRAFFIC_MODEL_GROUPS = ['aircraft', 'vessels'] as const satisfies readonly ModelGroup[]
 export const ORBITAL_MODEL_GROUPS = ['orbital', 'starlink'] as const satisfies readonly ModelGroup[]
+export const TRAIN_MODEL_GROUPS = ['trains'] as const satisfies readonly ModelGroup[]
 
 export type ModelActivity = Readonly<Record<ModelGroup, boolean>>
 
 export const INACTIVE_MODEL_ACTIVITY: ModelActivity = Object.freeze({
   aircraft: false,
   vessels: false,
+  trains: false,
   orbital: false,
   starlink: false,
 })
@@ -29,11 +31,15 @@ export interface ModelActivityInput {
   vesselsVisible: boolean
   orbitalVisible: boolean
   starlinkVisible: boolean
+  trainsVisible: boolean
+  /** Trains stay flat dots below this zoom, independent of traffic clustering. */
+  trainModelMinimumZoom: number
 }
 
 /**
  * Traffic models replace only unclustered flat symbols, matching the integer
- * tile zoom GeoJSON clustering uses; captured views keep the flat path.
+ * tile zoom GeoJSON clustering uses; trains add models from their own zoom.
+ * Captured views keep the flat path.
  */
 export const resolveModelActivity = (input: ModelActivityInput): ModelActivity => {
   if (!input.available || input.captured) return INACTIVE_MODEL_ACTIVITY
@@ -42,6 +48,7 @@ export const resolveModelActivity = (input: ModelActivityInput): ModelActivity =
   return {
     aircraft: input.aircraftVisible && unclustered,
     vessels: input.vesselsVisible && unclustered,
+    trains: input.trainsVisible && input.zoom >= input.trainModelMinimumZoom,
     orbital: input.orbitalVisible,
     starlink: input.starlinkVisible,
   }
@@ -50,6 +57,7 @@ export const resolveModelActivity = (input: ModelActivityInput): ModelActivity =
 export const sameModelActivity = (a: ModelActivity, b: ModelActivity) =>
   a.aircraft === b.aircraft &&
   a.vessels === b.vessels &&
+  a.trains === b.trains &&
   a.orbital === b.orbital &&
   a.starlink === b.starlink
 

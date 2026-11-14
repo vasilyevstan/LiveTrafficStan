@@ -35,6 +35,9 @@ import type { TrailPreferences } from '../domain/trailPreferences'
 import type { UnitSystem } from '../domain/units'
 import type { VesselFilterState } from '../domain/vesselFilters'
 import type { DisplayWeatherObservation } from '../domain/weatherObservations'
+import type { DisplayTrain } from '../domain/trains'
+import { TRAIN_SOURCE_IDS } from '../domain/trains'
+import { TRAIN_SOURCES } from '../providers/rail/trainSources'
 import type { OrbitalControllerState } from '../domain/orbital'
 import type { InViewAvailability } from '../domain/inView'
 import type {
@@ -67,6 +70,7 @@ import { focusOrbitalRevealTarget } from './orbitalRevealFocus'
 import { useLocationSearchModel } from './useLocationSearchModel'
 import { VesselDiscovery } from './VesselDiscovery'
 import { WeatherContext } from './WeatherContext'
+import { TrainContext } from './TrainContext'
 import type { MobileWorkspaceTask, WorkspaceControlsHandle } from './mobileWorkspace'
 import { ObjectFind } from './ObjectFind'
 
@@ -158,6 +162,15 @@ interface TrafficControlsProps {
   onWeatherSelect: (id: string, originId: string) => void
   onRetryWeather: () => void
   onRefreshWeather: () => void
+  trainsVisible: boolean
+  trainsBusy: boolean
+  trainNotes: readonly string[]
+  trains: readonly DisplayTrain[]
+  selectedTrainId: string | null
+  trainEmptyMessage: string
+  trainResultLimit: number
+  onTrainsVisibleChange: (visible: boolean) => void
+  onTrainSelect: (id: string, originId: string) => void
   orbitalVisible: boolean
   orbitalState: OrbitalControllerState
   selectedOrbitalId: string | null
@@ -419,6 +432,15 @@ export function TrafficControls({
   onWeatherSelect,
   onRetryWeather,
   onRefreshWeather,
+  trainsVisible,
+  trainsBusy,
+  trainNotes,
+  trains,
+  selectedTrainId,
+  trainEmptyMessage,
+  trainResultLimit,
+  onTrainsVisibleChange,
+  onTrainSelect,
   orbitalVisible,
   orbitalState,
   selectedOrbitalId,
@@ -1189,6 +1211,17 @@ export function TrafficControls({
                   {weatherVisible && weatherLoading ? 'METAR...' : 'METAR'}
                 </button>
                 <button
+                  id="trains-layer-toggle"
+                  type="button"
+                  className={trainsVisible ? 'is-active' : undefined}
+                  aria-pressed={trainsVisible}
+                  aria-busy={trainsVisible && trainsBusy}
+                  aria-describedby={trainsVisible && trainNotes.length > 0 ? 'trains-layer-status' : undefined}
+                  onClick={() => onTrainsVisibleChange(!trainsVisible)}
+                >
+                  {trainsVisible && trainsBusy ? 'TRAINS...' : 'TRAINS'}
+                </button>
+                <button
                   id="depths-layer-toggle"
                   type="button"
                   className={depthsVisible ? 'is-active' : undefined}
@@ -1209,6 +1242,11 @@ export function TrafficControls({
                 >
                   RELIEF
                 </button>
+              </div>
+              <div id="trains-layer-status" role="status">
+                {trainsVisible && trainNotes.map((note) => (
+                  <p key={note} className="control-note">{note}</p>
+                ))}
               </div>
               <div id="relief-layer-status" role="status">
                 {reliefStatusMessage && <p className="control-note">{reliefStatusMessage}</p>}
@@ -1408,9 +1446,20 @@ export function TrafficControls({
               />
             )}
 
-            {!airportsVisible && !weatherVisible && (
+            {trainsVisible && (
+              <TrainContext
+                trains={trains}
+                selectedTrainId={selectedTrainId}
+                emptyMessage={trainEmptyMessage}
+                resultLimit={trainResultLimit}
+                now={now}
+                onSelect={onTrainSelect}
+              />
+            )}
+
+            {!airportsVisible && !weatherVisible && !trainsVisible && (
               <p className="control-note">
-                Enable AIRPORTS or METAR in Layers.
+                Enable AIRPORTS, METAR or TRAINS in Layers.
               </p>
             )}
             {airportsVisible && !airportsReady && !airportsError && (
@@ -1570,6 +1619,16 @@ export function TrafficControls({
                   · observations, not forecasts.
                 </li>
                 <li>
+                  Trains:{' '}
+                  {TRAIN_SOURCE_IDS.map((sourceId, index) => (
+                    <span key={sourceId}>
+                      {index > 0 && ' · '}
+                      <a href={TRAIN_SOURCES[sourceId].websiteUrl}>{TRAIN_SOURCES[sourceId].name}</a>
+                    </span>
+                  ))}{' '}
+                  · reported positions; MTA reports may lag.
+                </li>
+                <li>
                   Orbits: <a href="https://celestrak.org/">CelesTrak</a>
                   {' · '}<a href="https://www.space-track.org/">Space-Track.org / USSPACECOM</a>{' '}
                   · SGP4 modeled, not live/optical.
@@ -1596,6 +1655,7 @@ export function TrafficControls({
                 </p>
               <p className="control-note control-note--muted">
                 Browser location is rounded and not saved. METAR requests send visible station IDs.
+                Train requests fetch whole regional feeds and send no map coordinates.
                 {' '}<a href="https://github.com/vasilyevstan/LiveTrafficStan/blob/main/docs/data-sources-and-licensing.md">Full data credits &amp; privacy</a>.
               </p>
               </details>

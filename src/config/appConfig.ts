@@ -293,6 +293,8 @@ export const ZOOM_TRAFFIC_CONTEXT_CONFIG = {
   minimumSeparationPx: 64,
 } as const
 
+export { TRAIN_CONFIG } from './trainConfig'
+
 export const TRAFFIC_MODEL_CONFIG = {
   assetDeadlineMs: 10_000,
   maximumAssetBytes: 128 * 1024,
@@ -304,15 +306,18 @@ export const TRAFFIC_MODEL_CONFIG = {
     orbital: 28,
     featuredOrbital: 40,
     starlink: 30,
+    train: 34,
   },
   minimumVesselLengthMeters: 2,
   maximumVesselLengthMeters: 500,
-  // While the screen floor enlarges a hull, trade length for beam (same area)
-  // so overview ships stay at or below this length-to-beam ratio.
+  // While the screen floor enlarges a hull or train, trade length for beam
+  // (same area) so overview models stay at or below these length-to-beam ratios.
   vesselOverviewMaximumLengthToBeam: 3.5,
+  trainOverviewMaximumLengthToBeam: 4,
   // Match the quantized globe surface depth without moving model geometry.
   globeDepthOffsetUnits: -4,
   vesselGlobeDepthOffsetUnits: -8,
+  trainGlobeDepthOffsetUnits: -8,
   // Re-anchor relative-to-center packing before float32 offsets lose precision.
   maximumReferenceDriftPx: 100_000,
   maximumReferenceDriftWorlds: 0.25,

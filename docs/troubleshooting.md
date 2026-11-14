@@ -1641,6 +1641,28 @@ exact 46,716-byte and 48,741-byte lengths plus one-year immutable caching. Any
 different bytes, media type, redirect, repeated request, NASA runtime request,
 or Service Worker response is a release defect.
 
+## Trains are missing, stale, or show a coverage note
+
+- **"No live train source covers this view."** The view does not overlap
+  the Finland, Norway, Boston or Long Island coverage rectangles. This is
+  expected elsewhere; no feed is contacted.
+- **"Zoom in to see trains."** The view is too large or tilted for the
+  safe traffic footprint, the same rule as other traffic.
+- **Hidden in HISTORY or a captured view.** Trains are live only.
+- **A source note says it is unavailable.** That source failed, timed out or
+  was rate limited. Earlier positions stay until they expire after ten
+  minutes, and other sources keep updating. Fintraffic responses can take up
+  to 14 s. A `429` waits for `Retry-After` or a back-off of up to 5 min.
+- **Dots instead of 3D trains.** A model needs zoom 9 or closer and a course.
+  A train without a reported bearing gets one after two positions at least
+  30 m apart; a stopped train stays a dot.
+- **LIRR lag notice.** The MTA feed timestamp is more than one minute old.
+  Locally, `/api/trains/lirr` exists only under `npm run preview:worker`,
+  not the Vite dev server.
+- **CSP errors.** `public/_headers` `connect-src` must include
+  `https://rata.digitraffic.fi`, `https://api.entur.io` and
+  `https://api-v3.mbta.com`.
+
 ## Configuration fails at startup
 
 Review `.env.local` for:

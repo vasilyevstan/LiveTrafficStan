@@ -4,6 +4,7 @@ import { TRAFFIC_MODEL_CONFIG } from '../../config/appConfig'
 import type { ModeledOrbitalPosition } from '../../domain/orbital'
 import { orbitalFeaturedMapLabelForPosition } from '../../domain/orbitalEnrichment'
 import type { DisplayTrafficEntity } from '../../domain/traffic'
+import type { DisplayTrain } from '../../domain/trains'
 import {
   ORBITAL_ICON_OPACITY,
   STARLINK_ICON_OPACITY,
@@ -29,12 +30,15 @@ import {
   trafficModelColors,
   trafficModelForMarkerIcon,
   trafficModelKind,
+  trainModelColors,
+  trainModelForCategory,
   type Rgb,
   type TrafficModelId,
 } from './trafficModelCatalog'
 
-export type ModelGroup = 'aircraft' | 'vessels' | 'orbital' | 'starlink'
+export type ModelGroup = 'aircraft' | 'vessels' | 'trains' | 'orbital' | 'starlink'
 export const MODEL_GROUPS: readonly ModelGroup[] = [
+  'trains',
   'vessels',
   'aircraft',
   'orbital',
@@ -73,24 +77,25 @@ const MODEL_ORDER = new Map<TrafficModelId, number>(
 const finite = (value: unknown): value is number =>
   typeof value === 'number' && Number.isFinite(value)
 
+const overviewMaximumLengthToBeam = (model: TrafficModelId) => {
+  const kind = trafficModelKind(model)
+  if (kind === 'vessel') return TRAFFIC_MODEL_CONFIG.vesselOverviewMaximumLengthToBeam
+  if (kind === 'train') return TRAFFIC_MODEL_CONFIG.trainOverviewMaximumLengthToBeam
+  return undefined
+}
+
 /**
- * Per-model overview stretch k: while the screen floor enlarges a long hull,
- * length is divided and beam multiplied by k, capping the painted
+ * Per-model overview stretch k: while the screen floor enlarges a long hull or
+ * train, length is divided and beam multiplied by k, capping the painted
  * length-to-beam ratio. Shared by the shader uniform and its CPU mirror.
  */
 export const modelOverviewStretch = (
   model: TrafficModelId,
   size: Pick<ModelDimensions, 'lengthMeters' | 'beamMeters'>,
 ) => {
-  if (trafficModelKind(model) !== 'vessel' || !(size.beamMeters > 0)) return 1
-  return Math.sqrt(
-    Math.max(
-      1,
-      size.lengthMeters /
-        size.beamMeters /
-        TRAFFIC_MODEL_CONFIG.vesselOverviewMaximumLengthToBeam,
-    ),
-  )
+  const maximum = overviewMaximumLengthToBeam(model)
+  if (maximum === undefined || !(size.beamMeters > 0)) return 1
+  return Math.sqrt(Math.max(1, size.lengthMeters / size.beamMeters / maximum))
 }
 
 const vesselLengthScale = (
@@ -225,6 +230,51 @@ export const orbitalModelInstances = (
         (selected ? MODEL_FLAG_SELECTED : 0) |
         ((selected || featured) && altitudeMeters > 0 ? MODEL_FLAG_DROP_LINE : 0),
       ...orbitalModelColors(theme, position.objectType, starlink),
+    })
+  }
+  return instances
+}
+
+/**
+ * Ground-level train models for observed positions with a derived or
+ * reported course only; trains without a course stay flat dots.
+ */
+export const trainModelInstances = (
+  trains: readonly DisplayTrain[],
+  selectedId: string | null,
+  theme: Theme,
+  dimensions: ModelDimensionTable,
+): ModelInstance[] => {
+  const instances: ModelInstance[] = []
+  for (const train of trains) {
+    if (
+      !finite(train.courseDegrees) ||
+      !finite(train.longitude) ||
+      !finite(train.latitude)
+    ) {
+      continue
+    }
+    const model = trainModelForCategory(train.category)
+    const size = dimensions.get(model)
+    if (!size) continue
+    instances.push({
+      id: train.id,
+      model,
+      longitude: train.longitude,
+      latitude: train.latitude,
+      altitudeMeters: 0,
+      lengthMeters: size.lengthMeters,
+      beamMeters: size.beamMeters,
+      heightMeters: size.heightMeters,
+      bounds: size.bounds,
+      headingDegrees: train.courseDegrees,
+      lengthScale: 1,
+      overviewStretch: modelOverviewStretch(model, size),
+      extentMeters: Math.max(size.lengthMeters, size.beamMeters),
+      floorPx: TRAFFIC_MODEL_CONFIG.minimumScreenSizePx.train,
+      opacity: trafficObservationOpacity(theme, train.freshness === 'stale'),
+      flags: train.id === selectedId ? MODEL_FLAG_SELECTED : 0,
+      ...trainModelColors(theme, train.category),
     })
   }
   return instances

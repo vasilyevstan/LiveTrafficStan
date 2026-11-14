@@ -28,6 +28,10 @@ production platform:
   Commons thumbnails load directly, anonymously and without referrer;
 - OpenFreeMap, Photon, and Digitraffic REST/MQTT remain direct browser
   connections;
+- live trains use direct Fintraffic, Entur and MBTA browser requests plus one
+  fixed same-origin `GET /api/trains/lirr` route that decodes the MTA feed
+  and reuses it for 15 seconds per edge. They add no secret, binding,
+  storage or deployment flag;
 - no plausible-route secret, quota store, result database, queue, or general
   backend is added. Private aircraft delivery uses one protected
   Worker-to-relay bearer secret and one fixed VPC Service binding. Orbital
@@ -1394,6 +1398,38 @@ application contract. A regression test compares the Worker maximum with
 so a future aircraft-limit change cannot silently work in Vite while
 production rejects it. Marine and local context retain the separate 100 km
 boundary.
+
+## LIRR proxy contract
+
+The only train route is:
+
+```text
+GET /api/trains/lirr
+```
+
+| Input or behavior | Result |
+| --- | --- |
+| Method other than GET | `405 Method Not Allowed`, `Allow: GET` |
+| Any query string | `400 Bad Request` |
+| Browser cancellation | `499` when a response is still possible |
+| Edge cache hit (15 s) | Stored decoded JSON, no MTA request |
+| Valid request | Fixed `https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/lirr%2Fgtfs-lirr` upstream |
+| Upstream redirect | `502 Bad Gateway`; never followed |
+| Upstream `429` or `503` | Same status with `Retry-After` when supplied |
+| Other upstream non-200 | `502 Bad Gateway` |
+| Non-protobuf content type | `502 Bad Gateway` |
+| Body over 512 KiB, or invalid or over-limit feed | `502 Bad Gateway`; never truncated success |
+| Eight-second upstream deadline exceeded | `504 Gateway Timeout` |
+| Success | `200` JSON `{ retrievedAt, vehicles[] }` |
+
+The Worker sends only a protobuf `Accept` header, forwards no browser header
+or credential, and needs no key or binding. Decoding is bounded to 5,000
+entities, 1,000 vehicles and 128-byte strings. Each vehicle keeps only its
+identifier, label, trip and route, five-decimal position, bearing, speed and
+observation time. Browser responses are `no-store` and `nosniff`; only the
+successful decoded body is reused through the Workers cache for 15 seconds.
+A cache failure only loses reuse. The Vite dev server does not provide this
+route; use `npm run preview:worker`.
 
 ## METAR proxy contract
 

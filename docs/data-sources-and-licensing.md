@@ -1270,6 +1270,44 @@ the same record schema, stores, consent, recording epoch and existing rows.
 Rollback should disable the supplement on this compatible reader, not erase
 history or restore a version-1 reader.
 
+## Trains: Fintraffic, Entur, MBTA and MTA LIRR
+
+Live trains use four free regional feeds. They were selected because each
+publishes real-time vehicle positions under reusable terms without a paid
+plan. There is no reliable free worldwide train-position feed, so other
+regions show a truthful no-coverage note instead of inferred positions.
+
+| Source | Terms | Required credit and handling |
+| --- | --- | --- |
+| [Fintraffic / Digitraffic](https://www.digitraffic.fi/en/railway-traffic/) | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) | `Source: Fintraffic / digitraffic.fi, license CC 4.0 BY`; requests identify the application with `Digitraffic-User` |
+| [Entur](https://developer.entur.org/pages-real-time-vehicle/) | [NLOD 2.0](https://data.norge.no/nlod/en/2.0) | `Contains data from Entur, made available under NLOD 2.0`; requests identify the application with `ET-Client-Name`. Coverage is limited to participating operators |
+| [MBTA](https://www.mbta.com/developers/v3-api) | [MassDOT Developers License Agreement](https://github.com/mbta/gtfs-documentation/blob/master/developers-license-agreement.pdf) | `Data provided by MassDOT/MBTA; not endorsed by MassDOT or MBTA`; keyless requests every 15 s |
+| [MTA Long Island Rail Road](https://api.mta.info/#/lirrFeeds) | [MTA data feed terms](https://www.mta.info/developers/terms-and-conditions) | `Data from the MTA, redistributed by LiveTrafficStan; not endorsed by the MTA. Reports may lag and may be incomplete.`; one Worker fetch per edge per 15 s |
+
+The credits appear in the map attribution, **Settings → Data credits** and
+each selected train's details. The application identifier is the fixed
+`livetrafficstan-trackstan` string; no API key, account or personal data is
+sent.
+
+Fintraffic, Entur and MBTA are fetched directly by the visitor's browser,
+with credentials, referrer and cache omitted, so those providers see the
+visitor's IP address and user agent, as they do for other direct providers.
+Requests contain no map coordinates, location or search text. A source is
+contacted only while TRAINS is on and the view overlaps its rail-network
+rectangles.
+
+The MTA GTFS-Realtime protobuf is fetched by the Worker at
+`GET /api/trains/lirr`, decoded with bounded limits, reduced to vehicle
+position fields and returned as JSON. The Worker reuses a successful decoded
+feed for 15 seconds per Cloudflare edge so visitors do not each fetch the
+MTA feed. It forwards no browser headers or credentials and stores nothing
+else.
+
+Positions are last reported locations, not predictions, schedules, routes or
+track-snapped geometry. Freight appears only when a source reports it.
+Trains are not written to local history, Saved activity or shared object
+links.
+
 ## Port context: Natural Earth Ports
 
 - Repository: <https://github.com/nvkelso/natural-earth-vector>
@@ -1414,7 +1452,7 @@ The ordinary OpenFreeMap/OpenMapTiles/OpenStreetMap attribution stays visible.
 
 ## 3D traffic models (#682)
 
-The low-poly aircraft, vessel and orbital models are original work in this
+The low-poly aircraft, vessel, train and orbital models are original work in this
 repository. `scripts/blender/build-traffic-models.py` builds them
 procedurally from Blender mesh primitives. The script imports only Blender's
 Python API and the standard `math` module. It uses no:
@@ -1427,7 +1465,8 @@ Apache-2.0 licence. The GLB's `asset.copyright` field records this, and
 provenance is in [`src/assets/models/README.md`](../src/assets/models/README.md).
 
 The models are symbolic shapes chosen by the existing marker class, so they
-do not depict any specific airframe, hull, operator or spacecraft.
+do not depict any specific airframe, hull, rolling stock, operator or
+spacecraft. Train models carry no operator livery or logo.
 
 The hashed GLB is a same-origin static asset fetched once per map instance:
 - with credentials and referrer omitted;
@@ -1439,6 +1478,7 @@ selection and freshness come from data the app has already accepted, under
 those sources' existing terms and attribution:
 - ADSB.lol for aircraft;
 - Digitraffic, AISStream or Open Waters for vessels;
+- Fintraffic, Entur, MBTA or the MTA for trains;
 - Space-Track.org or CelesTrak for modeled orbital objects.
 
 An aircraft drawn above the map shows its reported barometric altitude over a
