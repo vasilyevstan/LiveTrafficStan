@@ -186,6 +186,17 @@ identity are not renamed or reset.
 - Lazily loaded selected-aircraft model, configuration, and wake-category
   context from a pinned ODC-By aircraft database, with exact identity checks,
   source age, confidence, and local failure isolation.
+- Live trains, on by default under **Layers → TRAINS**, from free regional
+  feeds: Finland (Fintraffic / Digitraffic), Norway (Entur), Greater Boston
+  commuter rail (MBTA) and the Long Island Rail Road (MTA, through a
+  same-origin Worker route). Mainline and commuter trains, plus freight
+  where the source reports it, refresh about every 15 seconds while the view
+  overlaps a source's rail network. Close zoom draws an unbranded 3D train
+  or freight model pointing along the reported or derived course; a train
+  without a course stays a dot. **In view** lists trains in the view, and
+  details show the last reported position, speed, source and attribution.
+  Requests send no map coordinates. Elsewhere, the layer says no live train
+  source covers the view. See [Live trains](docs/architecture.md#live-trains).
 - Small, upright country flags beside aircraft and vessel markers, with
   accessible country text in selected details: aircraft registration allocation
   from vetted ICAO24 ranges and vessel flag state from valid ordinary MMSIs.
@@ -205,7 +216,7 @@ identity are not renamed or reset.
   best effort, not a worldwide completeness promise.
 - OpenStreetMap-derived vector maps from
   [OpenFreeMap](https://openfreemap.org/), rendered with MapLibre GL JS.
-- Low-poly 3D models for aircraft, vessels, curated orbital objects and
+- Low-poly 3D models for aircraft, vessels, trains, curated orbital objects and
   Starlink, drawn on the same map by one lazily loaded raw-WebGL2 MapLibre
   layer. Aircraft are lifted to their reported altitude with a drop line to
   their ground position; satellites sit at their modeled altitude, with drop
@@ -221,7 +232,7 @@ identity are not renamed or reset.
   have their own recognisable models. An airborne aircraft's country flag sits
   beside the model at its altitude, not on the ground below.
   Clustered zooms, captured views and any load or GPU failure keep the flat
-  icons. Theme changes make no new request. The 20 repository-original
+  icons. Theme changes make no new request. The 22 repository-original
   models come from a reproducible Blender script; see
   [3D traffic models](docs/architecture.md#3d-traffic-models-682).
 - Smooth automatic globe when zooming out, with native interpolation to a
@@ -1002,6 +1013,10 @@ operational thresholds, and examples.
 | Airport context | OurAirports | Public domain | Immutable same-origin static asset, loaded only when enabled |
 | Weather observations | NOAA/NWS Aviation Weather Center | U.S. public domain unless marked otherwise | Strict same-origin Worker/Vite route, loaded only when METAR is enabled |
 | Selected-aircraft plausible route | ADSB.lol / VRS Standing Data | ADSB.lol ODbL 1.0; underlying standing data CC0 1.0 | One direct browser request on committed live selection; enabled by default |
+| Trains (Finland) | Fintraffic Digitraffic rail | CC BY 4.0 | Direct GraphQL every 15 s while TRAINS is on and the view overlaps Finland's rail network |
+| Trains (Norway) | Entur | NLOD 2.0 | Direct GraphQL every 15 s while the view overlaps Norway's rail network |
+| Trains (Boston) | MBTA v3 API | MassDOT Developers License Agreement | Direct keyless request every 15 s while the view overlaps Greater Boston |
+| Trains (Long Island) | MTA LIRR GTFS-Realtime | MTA data feed terms | Same-origin Worker route, decoded to JSON and reused for 15 s per edge |
 
 The repository's Apache License 2.0 applies to source code only. The bundled
 aircraft metadata is a derivative database conveyed under ODC-By 1.0 with its
@@ -1070,6 +1085,14 @@ The weather route accepts only
 four-letter IDs and no other parameters. It constructs one fixed AWC JSON
 request, follows no redirects, forwards no browser credentials, uses an
 eight-second deadline and 256 KiB response cap, and preserves `Retry-After`.
+
+The train route accepts only `GET /api/trains/lirr` with no query. It fetches
+one fixed MTA LIRR GTFS-Realtime feed with an eight-second deadline and
+512 KiB cap, rejects redirects, preserves `429`/`503` `Retry-After`, decodes
+bounded vehicle positions to `no-store` JSON and reuses a successful result
+for 15 seconds per edge. It needs no key, secret or binding. Fintraffic,
+Entur and MBTA trains are direct browser requests allowed by the static CSP.
+See the [LIRR proxy contract](docs/hosting-and-deployment.md#lirr-proxy-contract).
 
 The plausible-route path starts once when a new eligible live aircraft is
 selected. It constructs one validated ADSB.lol standing-data URL from the
@@ -1787,6 +1810,13 @@ See [the timeout recovery boundary](docs/troubleshooting.md#deployment-metar-che
   [#46](https://github.com/vasilyevstan/LiveTrafficStan/issues/46).
 - Auto follows the browser's color-scheme preference, not solar time or map
   location.
+- Live trains cover only Finland, Norway, Greater Boston commuter rail and
+  the Long Island Rail Road. No reliable free worldwide train-position feed
+  exists, so other regions show a no-coverage note. Entur includes only
+  participating operators, and freight appears only when a source reports
+  it. Positions are last reports, not predictions, schedules or
+  track-snapped geometry. MTA reports can lag. Trains have no trails,
+  history, Saved items or share links.
 - 3D traffic models are symbolic class shapes, not specific airframes,
   hulls, operators or spacecraft. They point the same way as the flat icons:
   traffic by its reported direction, orbital objects by the modeled

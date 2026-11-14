@@ -5913,6 +5913,52 @@ Testing notes:
   curated scenario uses a recorded snapshot. Aircraft, vessels and Starlink
   can be checked live.
 
+## Live trains acceptance
+
+Deterministic coverage:
+
+| Test | Covers |
+| --- | --- |
+| `src/providers/rail/trainProviders.test.ts` | Fintraffic, Entur, MBTA and LIRR normalization; categories; bounded text; byte, count and future-time limits; `429` and `Retry-After`; the shared 8 s deadline and Fintraffic's 14 s deadline below the 15 s cadence |
+| `src/app/TrainController.test.ts` | One request in flight per source, 15 s cadence from the previous start, back-off, pause/resume without resetting deadlines, stale and expired positions, derived course, obsolete-generation fencing |
+| `src/app/useTrains.test.ts` | Polling only sources whose rail-network rectangles overlap the view (Helsinki polls Fintraffic, not Entur), layer-off, hidden page, HISTORY and captured-view pauses |
+| `worker/lirrProxy.test.ts` | The [LIRR proxy contract](hosting-and-deployment.md#lirr-proxy-contract), protobuf decode limits and 15 s edge reuse |
+| `src/map/trainStyle.test.ts`, `src/app/trainLayerStatus.test.ts`, `TrainContext`, `TrainDetails` and `TrafficControls` tests | Persistent source and layers, theme reinstall, model eligibility, status copy, context list, details and attribution |
+| preference and share tests | The default-on `trains` preference and share key |
+
+The 3D asset now has 22 models, adding `train` (204 triangles) and
+`train-freight` (192 triangles). Headless Blender 5.2.3 regenerated it byte
+for byte: SHA-256
+`8f87035f0f40240f85989a044dad397b7039b5e4fdbb10c004f449e77ef976a0`,
+79,400 bytes.
+
+Real-browser acceptance ran Chrome 157 over CDP against the built `dist`
+under `wrangler dev` (local Worker, real LIRR proxy) and the live public
+train feeds on 2026-11-14. Aircraft, marine and orbital providers used local
+fixtures. All 39 checks passed. "Models with pixels" counts on-screen model
+anchors with at least six WebGL pixels that change when only the train model
+group is deactivated for one frame.
+
+| Scenario | Measured viewport | Features | Models with pixels | Train requests | Selected |
+| --- | --- | ---: | ---: | --- | --- |
+| Helsinki, light | 1280 x 900, DPR 1 | 13 | 10 of 10 | Fintraffic only (2 POST + 2 preflight) | HL 8895, commuter |
+| Oslo, dark | 1280 x 900, DPR 1 | 11 | 8 of 8 | Entur only | R22 1922, passenger |
+| Boston, light | 1280 x 900, DPR 1 | 8 | 1 of 1 | MBTA only | 8804, commuter |
+| Long Island, dark | 1280 x 900, DPR 1 | 27 | 6 of 7 | LIRR proxy only | 7921, course 253 derived from two positions |
+| Helsinki mobile, dark, touch | 390 x 844, DPR 3 | 10 | 8 of 8 | Fintraffic only | IC 147, long-distance |
+
+Boston's other trains had no reported or derived course yet and stayed flat
+dots. In every scenario no request was blocked, no map coordinate or
+credential was sent, and there were no console or CSP errors. Helsinki also
+passed theme rehydration, TRAINS off for 31 s (no request, layers hidden),
+TRAINS on (polling resumed) and HISTORY (trains hidden, no request).
+
+Acceptance found two defects, both fixed before release:
+- a single Norway coverage box polled Entur over Helsinki; coverage now uses
+  rail-network rectangles, with a `useTrains` regression test;
+- Fintraffic GraphQL took 4-14 s by curl, so the shared 8 s deadline aborted
+  it; Fintraffic now has its own 14 s deadline.
+
 ## Dependency and bundle discipline
 
 Runtime dependencies are intentionally limited to React, MapLibre GL JS, and

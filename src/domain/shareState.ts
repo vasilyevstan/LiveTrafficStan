@@ -53,6 +53,7 @@ const SHARE_KEYS = new Set([
   'depths',
   'orbits',
   'starlink',
+  'trains',
   'vesselCategory',
   'vesselNavigation',
   'vesselSpeed',
@@ -214,6 +215,7 @@ export const parseShareFragment = (
     ['weather', 'weatherVisible'],
     ['depths', 'depthsVisible'],
     ['orbits', 'orbitalObjectsVisible'],
+    ['trains', 'trainsVisible'],
   ]
   for (const [parameter, key] of layerParameters) {
     if (!params.has(parameter)) continue
@@ -332,6 +334,7 @@ export const serializeShareFragment = (
     'orbits',
     booleanValue(preferences.layers.orbitalObjectsVisible),
   )
+  params.set('trains', booleanValue(preferences.layers.trainsVisible))
   params.set('vesselCategory', preferences.vesselFilters.category)
   params.set('vesselNavigation', preferences.vesselFilters.navigation)
   params.set('vesselSpeed', preferences.vesselFilters.reportedSpeed)

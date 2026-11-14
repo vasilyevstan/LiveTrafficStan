@@ -52,6 +52,8 @@ MATERIALS = {
     'preview_debris': ('preview', 'ff7db8'),
     'preview_unknown': ('preview', 'aab8c0'),
     'preview_starlink': ('preview', 'c4b5fd'),
+    'preview_train': ('preview', 'a3e635'),
+    'preview_train_freight': ('preview', 'fb923c'),
 }
 
 try:
@@ -185,6 +187,22 @@ def hull(model, sections, bow, mat, r_c=0.0):
     add_face(model, [a + 0, a + 3, s + 1, s], mat)
     add_face(model, [a + 3, a + 2, s + 1], mat)
     add_face(model, [a + 0, s, a + 1], mat)
+
+
+def sweep(model, profiles, mat, mats=None):
+    """Closed body through equal-sized (r, f, u) profiles, flat-capped at both
+    ends. mats: {(gap, segment): material}; segment i joins points i and i + 1."""
+    mats = mats or {}
+    n = len(profiles[0])
+    rings = [add_verts(model, profile) for profile in profiles]
+    for k in range(len(rings) - 1):
+        a = rings[k]
+        b = rings[k + 1]
+        for i in range(n):
+            j = (i + 1) % n
+            add_face(model, [a + i, a + j, b + j, b + i], mats.get((k, i), mat))
+    add_face(model, [rings[0] + i for i in range(n)][::-1], mat)
+    add_face(model, [rings[-1] + i for i in range(n)], mat)
 
 
 def heel(model, start, degrees, pivot_u):
@@ -616,6 +634,64 @@ def build_orbital(collection):
             model_hubble(collection)]
 
 
+# Trains: original, unbranded generic rolling stock at real proportions. Front
+# (+f) is the reported direction of travel; u = 0 is the rail head.
+
+def car_profile(f, w, u0, u1, ch):
+    """Car-body section with a side window band between 45% and 75% of the
+    wall height. Segments 2 and 8 are the window band and segment 5 the roof."""
+    wall = u1 - ch - u0
+    uw0 = u0 + 0.45 * wall
+    uw1 = u0 + 0.75 * wall
+    return [(-w, f, u0), (w, f, u0), (w, f, uw0), (w, f, uw1), (w, f, u1 - ch), (w - ch, f, u1),
+            (-w + ch, f, u1), (-w, f, u1 - ch), (-w, f, uw1), (-w, f, uw0)]
+
+
+def model_train(collection):
+    m = new_model()
+    sections = [(-12.6, 1.5, 1.05, 3.95, 0.35), (9.4, 1.5, 1.05, 3.95, 0.35), (10.9, 1.45, 1.05, 3.7, 0.5),
+                (12.1, 1.25, 1.05, 2.75, 0.5), (12.75, 0.85, 1.1, 1.95, 0.3)]
+    mats = {(0, 2): 'glass', (0, 8): 'glass', (1, 2): 'glass', (1, 8): 'glass',
+            (2, 4): 'glass', (2, 5): 'glass', (2, 6): 'glass'}
+    sweep(m, [car_profile(*s) for s in sections], 'body', mats)
+    box(m, -0.65, 0.65, -12.75, -12.6, 1.3, 3.5, 'dark')
+    box(m, -1.35, 1.35, -11.9, 11.4, 0.7, 1.05, 'dark')
+    for f_c in (-9.0, 8.0):
+        box(m, -1.3, 1.3, f_c - 1.4, f_c + 1.4, 0.0, 0.85, 'dark')
+    box(m, -0.9, 0.9, -10.6, -3.8, 3.95, 4.25, 'detail')
+    box(m, -0.55, 0.55, -2.8, -1.2, 3.95, 4.1, 'dark')
+    box(m, -0.85, 0.85, -1.6, -1.4, 4.1, 4.25, 'dark')
+    for side in (1.0, -1.0):
+        box(m, side * 0.4, side * 0.7, 12.55, 12.8, 1.3, 1.55, 'detail')
+    return finish(collection, m, 'train', 'train')
+
+
+def model_freight_train(collection):
+    m = new_model()
+    box(m, -1.55, 1.55, -10.4, 10.4, 1.15, 1.5, 'dark')
+    for f0, f1 in ((10.4, 10.75), (-10.75, -10.4)):
+        box(m, -1.5, 1.5, f0, f1, 0.6, 1.5, 'yellow')
+    for f_c in (-6.8, 6.8):
+        box(m, -1.35, 1.35, f_c - 2.0, f_c + 2.0, 0.0, 1.15, 'dark')
+    box(m, -1.2, 1.2, -4.2, 3.8, 0.45, 1.15, 'dark')
+    long_hood = [(-1.05, 1.5), (1.05, 1.5), (1.05, 3.6), (0.8, 3.9), (-0.8, 3.9), (-1.05, 3.6)]
+    plate_f(m, long_hood, -10.2, 5.6, 'body')
+    short_hood = [(-1.0, 1.5), (1.0, 1.5), (1.0, 2.95), (0.8, 3.2), (-0.8, 3.2), (-1.0, 2.95)]
+    plate_f(m, short_hood, 8.3, 10.2, 'body')
+    box(m, -1.5, 1.5, 5.6, 8.3, 1.5, 2.95, 'body')
+    prism(m, [(-1.45, 5.65), (1.45, 5.65), (1.45, 8.25), (-1.45, 8.25)], 2.95, 3.7, 'body', side_mat='glass')
+    cab_roof = [(-1.5, 3.7), (1.5, 3.7), (1.5, 3.95), (1.2, 4.25), (-1.2, 4.25), (-1.5, 3.95)]
+    plate_f(m, cab_roof, 5.5, 8.4, 'body')
+    box(m, -0.65, 0.65, -9.6, -6.0, 3.9, 4.0, 'dark')
+    box(m, -0.3, 0.3, 1.5, 2.4, 3.9, 4.15, 'dark')
+    box(m, -0.25, 0.25, 10.15, 10.3, 2.6, 2.9, 'detail')
+    return finish(collection, m, 'train-freight', 'train')
+
+
+def build_trains(collection):
+    return [model_train(collection), model_freight_train(collection)]
+
+
 # Scene assembly, preview, export and render.
 
 PREVIEW_MATERIAL = {
@@ -624,6 +700,7 @@ PREVIEW_MATERIAL = {
     'orbital-debris': 'preview_debris',
     'orbital-unknown': 'preview_unknown',
     'orbital-starlink-spacecraft': 'preview_starlink',
+    'train-freight': 'preview_train_freight',
 }
 PREVIEW_ROWS = [
     ['aircraft', 'aircraft-light', 'aircraft-heavy', 'helicopter'],
@@ -631,7 +708,7 @@ PREVIEW_ROWS = [
     ['vessel-tug', 'vessel-sailing', 'vessel-pleasure', 'vessel-highspeed'],
     ['orbital-payload', 'orbital-rocket-body', 'orbital-debris', 'orbital-unknown',
      'orbital-starlink-spacecraft'],
-    ['orbital-iss', 'orbital-hubble'],
+    ['orbital-iss', 'orbital-hubble', 'train', 'train-freight'],
 ]
 PREVIEW_SIZE = 10.0
 PREVIEW_SPACING = 14.0
@@ -639,7 +716,8 @@ PREVIEW_HEADING = 60.0
 
 
 def build_all(collection):
-    return build_aircraft(collection) + build_vessels(collection) + build_orbital(collection)
+    return (build_aircraft(collection) + build_vessels(collection) + build_orbital(collection)
+            + build_trains(collection))
 
 
 def layout(objects):

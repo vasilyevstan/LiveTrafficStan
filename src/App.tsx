@@ -33,6 +33,8 @@ import { useSavedObjects } from './app/useSavedObjects'
 import { useSavedActivity } from './app/useSavedActivity'
 import { useTrailHistory } from './app/useTrailHistory'
 import { useWeatherObservations } from './app/useWeatherObservations'
+import { useTrains } from './app/useTrains'
+import { trainLayerStatus } from './app/trainLayerStatus'
 import { useOrbitalObjects } from './app/useOrbitalObjects'
 import { OrbitalEnrichmentImageLoader } from './app/OrbitalEnrichmentImageLoader'
 import { useOrbitalEnrichmentImage } from './app/useOrbitalEnrichmentImage'
@@ -60,6 +62,7 @@ import {
 } from './components/mobileWorkspace'
 import { TrafficDetails } from './components/TrafficDetails'
 import { WeatherObservationDetails } from './components/WeatherObservationDetails'
+import { TrainDetails } from './components/TrainDetails'
 import { CapturedAircraftDetails } from './components/CapturedAircraftDetails'
 import { formatOrbitalSummary } from './components/orbitalSummary'
 import {
@@ -68,7 +71,9 @@ import {
   ZOOM_TRAFFIC_CONTEXT_CONFIG,
   OBJECT_SHARE_CONFIG,
   FIND_VIEW_RADIUS_KM,
+  TRAIN_CONFIG,
 } from './config/appConfig'
+import { TRAIN_SOURCE_IDS, displayTrains } from './domain/trains'
 import type { AppCenter } from './config/appConfig'
 import { orderAircraftSearchResults } from './domain/aircraftSearch'
 import { airportsInViewport } from './domain/airports'
@@ -330,6 +335,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     weatherVisible,
     depthsVisible,
     orbitalObjectsVisible,
+    trainsVisible,
   } = layerPreferences
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [selectedOrbitalId, setSelectedOrbitalId] = useState<string | null>(
@@ -470,6 +476,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
   const [selectedWeatherId, setSelectedWeatherId] = useState<string | null>(
     null,
   )
+  const [selectedTrainId, setSelectedTrainId] = useState<string | null>(null)
   const [mapError, setMapError] = useState<TrafficMapError | null>(null)
   const [flagArtworkError, setFlagArtworkError] = useState<string>()
   const handleMapError = useCallback((error: TrafficMapError | null) => {
@@ -678,6 +685,10 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     (visible: boolean) => setLayerPreference('depthsVisible', visible),
     [setLayerPreference],
   )
+  const setTrainsVisible = useCallback(
+    (visible: boolean) => setLayerPreference('trainsVisible', visible),
+    [setLayerPreference],
+  )
   const setOrbitalObjectsVisible = useCallback(
     (visible: boolean) => {
       orbitalVisibilityChangedRef.current = true
@@ -828,6 +839,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
       setSelectedAirportId(null)
       setCatalogSelection(null)
       setSelectedWeatherId(null)
+      setSelectedTrainId(null)
       setHistoryResetRevision((current) => current + 1)
       setViewportReport(null)
       setLastLocalTrafficView(null)
@@ -1412,6 +1424,37 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
       weatherDataset,
     ],
   )
+  const trainViewport = viewReady && !capturedViewActive
+    ? currentAssessment?.viewport ?? null
+    : null
+  const trainStatuses = useTrains(
+    trainViewport,
+    trainsVisible,
+    historyActive || capturedViewActive,
+  )
+  const trains = useMemo(
+    () =>
+      trainsVisible && !historyActive
+        ? displayTrains(
+            TRAIN_SOURCE_IDS.flatMap((sourceId) =>
+              trainStatuses[sourceId].active ? trainStatuses[sourceId].trains : []),
+            trainViewport,
+            now,
+            TRAIN_CONFIG,
+          )
+        : [],
+    [historyActive, now, trainStatuses, trainViewport, trainsVisible],
+  )
+  const trainStatus = trainLayerStatus({
+    statuses: trainStatuses,
+    viewportAvailable: Boolean(trainViewport),
+    historyActive,
+    shownCount: trains.length,
+  })
+  const selectedTrain = useMemo(
+    () => trains.find((train) => train.id === selectedTrainId),
+    [selectedTrainId, trains],
+  )
   const displayEntities = useMemo<DisplayTrafficEntity[]>(
     () => [...aircraft, ...vessels],
     [aircraft, vessels],
@@ -1748,6 +1791,10 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     }
   }, [selectedWeather, selectedWeatherId])
 
+  useEffect(() => {
+    if (selectedTrainId && !selectedTrain) setSelectedTrainId(null)
+  }, [selectedTrain, selectedTrainId])
+
   const handleViewportChange = useCallback(
     (
       assessment: ViewportAssessment,
@@ -1987,6 +2034,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
       setSelectedPortId(null)
       setSelectedAirportId(null)
       setSelectedWeatherId(null)
+      setSelectedTrainId(null)
       setSelectedId(id)
     },
     [cancelSharedObject, clearJourney, finishCapturedViews, locationCameraIntent],
@@ -2026,6 +2074,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     setSelectedOrbitalId(null)
     setSelectedAirportId(null)
     setSelectedWeatherId(null)
+    setSelectedTrainId(null)
     setCatalogSelection(null)
     setSelectedPortId(id)
   }, [cancelSharedObject, clearJourney, finishCapturedViews, locationCameraIntent])
@@ -2045,6 +2094,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
       setSelectedOrbitalId(null)
       setSelectedPortId(null)
       setSelectedWeatherId(null)
+      setSelectedTrainId(null)
       setCatalogSelection(null)
       setSelectedAirportId(id)
     },
@@ -2092,6 +2142,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
       setSelectedOrbitalId(null)
       setSelectedPortId(null)
       setSelectedAirportId(null)
+      setSelectedTrainId(null)
       setSelectedWeatherId(id)
     },
     [cancelSharedObject, clearJourney, finishCapturedViews, locationCameraIntent],
@@ -2103,6 +2154,33 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
   const handleWeatherContextSelect = useCallback(
     (id: string, originId: string) => selectWeather(id, originId),
     [selectWeather],
+  )
+
+  const selectTrain = useCallback(
+    (id: string | null, originId: string | null) => {
+      locationCameraIntent.beginExplicitViewIntent()
+      cancelSharedObject()
+      finishCapturedViews()
+      clearJourney()
+      detailFocusOriginIdRef.current = id ? originId : null
+      setInspectorSelectionRevision(revision => revision + 1)
+      setSelectedId(null)
+      setSelectedOrbitalId(null)
+      setSelectedPortId(null)
+      setSelectedAirportId(null)
+      setSelectedWeatherId(null)
+      setCatalogSelection(null)
+      setSelectedTrainId(id)
+    },
+    [cancelSharedObject, clearJourney, finishCapturedViews, locationCameraIntent],
+  )
+  const handleMapTrainSelect = useCallback(
+    (id: string | null) => selectTrain(id, null),
+    [selectTrain],
+  )
+  const handleTrainContextSelect = useCallback(
+    (id: string, originId: string) => selectTrain(id, originId),
+    [selectTrain],
   )
 
   const selectOrbital = useCallback(
@@ -2119,6 +2197,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
       setSelectedPortId(null)
       setSelectedAirportId(null)
       setSelectedWeatherId(null)
+      setSelectedTrainId(null)
       setCatalogSelection(null)
       setSelectedOrbitalId(id)
     },
@@ -2264,6 +2343,11 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     restoreDetailFocus()
   }, [restoreDetailFocus])
 
+  const handleCloseTrain = useCallback(() => {
+    setSelectedTrainId(null)
+    restoreDetailFocus()
+  }, [restoreDetailFocus])
+
   const handleCloseOrbital = useCallback(() => {
     cancelSharedObject()
     setSelectedOrbitalId(null)
@@ -2292,6 +2376,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     setSelectedPortId(null)
     setSelectedAirportId(null)
     setSelectedWeatherId(null)
+    setSelectedTrainId(null)
     setHoveredAircraftId(null)
     setHoveredVesselId(null)
     capturedTrafficViewportRef.current = activeAircraftViewport
@@ -2334,6 +2419,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     setSelectedPortId(null)
     setSelectedAirportId(null)
     setSelectedWeatherId(null)
+    setSelectedTrainId(null)
     setHoveredAircraftId(null)
     setHoveredVesselId(null)
     capturedTrafficViewportRef.current = activeAircraftViewport
@@ -2619,7 +2705,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     setDetailsReturnToTask(mobileWorkspaceRef.current && expanded && fromResult
       ? workspaceControlsRef.current?.suspendTask() ?? false
       : false)
-  }, [capturedViewActive, catalogSelection, selectedId, selectedOrbitalId, selectedPortId, selectedAirportId, selectedWeatherId, journey?.snapshot.revision, sharedObject, inspectorSelectionRevision])
+  }, [capturedViewActive, catalogSelection, selectedId, selectedOrbitalId, selectedPortId, selectedAirportId, selectedWeatherId, selectedTrainId, journey?.snapshot.revision, sharedObject, inspectorSelectionRevision])
 
   const expandInspector = useCallback(() => {
     if (localRulerRef.current.phase === 'placing') clearLocalRuler()
@@ -2700,7 +2786,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
   const rulerDistance = formatLocalRulerDistance(localRuler.points, units)
   const inspectorIdentity = capturedOrbitalView ? `captured-orbit:${capturedOrbitalView.revision}`
     : capturedAircraftView ? `captured-aircraft:${capturedAircraftView.revision}` : journey ? `journey:${journey.snapshot.revision}` :
-    selectedId ?? selectedOrbitalId ?? selectedPortId ?? selectedAirportId ?? selectedWeatherId ?? (sharedObject ? 'shared-object' : null)
+    selectedId ?? selectedOrbitalId ?? selectedPortId ?? selectedAirportId ?? selectedWeatherId ?? selectedTrainId ?? (sharedObject ? 'shared-object' : null)
   const inspectorPresentation = {
     mobile: mobileWorkspace,
     compact: localRuler.phase === 'placing' || !inspectorExpanded || activeWorkspaceTask !== null,
@@ -2719,7 +2805,8 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     (selectedPort && portsResult.state.phase === 'ready') ||
     (selectedAirport && airportsResult.state.phase === 'ready') ||
     (selectedWeather && weatherResult.state.phase === 'ready' &&
-      weatherResult.state.stationKey === weatherStationKey),
+      weatherResult.state.stationKey === weatherStationKey) ||
+    selectedTrain,
   )
   const pausePlacement = trafficPausePlacement(
     mobileWorkspace, activeWorkspaceTask, inspectorAvailable && !inspectorPresentation.compact,
@@ -2907,6 +2994,10 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
         selectedPortId={selectedPortId}
         selectedAirportId={selectedAirportId}
         selectedWeatherId={selectedWeatherId}
+        trains={trains}
+        selectedTrainId={selectedTrainId}
+        trainsVisible={trainsVisible && !historyActive && !capturedViewActive}
+        onSelectTrain={handleMapTrainSelect}
         aircraftVisible={aircraftVisible && !capturedAircraftView && (!capturedOrbitalView || capturedGroundTraffic)}
         vesselsVisible={vesselsVisible && !capturedAircraftView && (!capturedOrbitalView || capturedGroundTraffic)}
         portsVisible={portsVisible && !capturedViewActive}
@@ -3143,6 +3234,15 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
           onWeatherSelect={handleWeatherContextSelect}
           onRetryWeather={handleRetryWeather}
           onRefreshWeather={weatherResult.refresh}
+          trainsVisible={trainsVisible}
+          trainsBusy={trainStatus.busy}
+          trainNotes={trainStatus.notes}
+          trains={trains}
+          selectedTrainId={selectedTrainId}
+          trainEmptyMessage={trainStatus.emptyMessage}
+          trainResultLimit={TRAIN_CONFIG.resultLimit}
+          onTrainsVisibleChange={setTrainsVisible}
+          onTrainSelect={handleTrainContextSelect}
           orbitalVisible={orbitalObjectsVisible}
           orbitalState={orbitalState}
           onOrbitalNavigate={handleFindOrbitalNavigate}
@@ -3577,6 +3677,17 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
               onClose={handleCloseWeather}
             />
           )}
+
+        {selectedTrain && (
+          <TrainDetails
+            train={selectedTrain}
+            receivedAt={trainStatuses[selectedTrain.sourceId].lastSuccessAt}
+            lagNoticeAfterMs={TRAIN_CONFIG.lirr.lagNoticeAfterMs}
+            now={now}
+            units={units}
+            onClose={handleCloseTrain}
+          />
+        )}
 
         {mapErrorContent && (
           <div className="map-error" role="status">

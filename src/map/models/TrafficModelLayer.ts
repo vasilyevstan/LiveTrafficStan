@@ -8,6 +8,7 @@ import type { Theme } from '../../app/theme'
 import { TRAFFIC_MODEL_CONFIG } from '../../config/appConfig'
 import type { ModeledOrbitalPosition } from '../../domain/orbital'
 import type { DisplayTrafficEntity } from '../../domain/traffic'
+import type { DisplayTrain } from '../../domain/trains'
 import { orbitalSelectionColor } from '../orbitalStyle'
 import { trafficSelectionColor } from '../trafficStyle'
 import type { VesselFlagImages } from '../vesselFlagImages'
@@ -31,6 +32,7 @@ import {
   orbitalModelInstances,
   packModelInstances,
   trafficModelInstances,
+  trainModelInstances,
   type ModelDimensionTable,
   type ModelGroup,
   type ModelInstance,
@@ -194,6 +196,15 @@ export class TrafficModelLayer implements CustomLayerInterface {
         this.dimensions,
       ),
       orbitalSelectionColor(theme, group === 'starlink'),
+    )
+  }
+
+  /** Feeds the ground-level train models; trains without a course stay flat. */
+  setTrains(trains: readonly DisplayTrain[], selectedId: string | null, theme: Theme) {
+    this.setInstances(
+      'trains',
+      trainModelInstances(trains, selectedId, theme, this.dimensions),
+      trafficSelectionColor(theme),
     )
   }
 
@@ -362,7 +373,9 @@ export class TrafficModelLayer implements CustomLayerInterface {
         0,
         group === 'vessels'
           ? TRAFFIC_MODEL_CONFIG.vesselGlobeDepthOffsetUnits
-          : TRAFFIC_MODEL_CONFIG.globeDepthOffsetUnits,
+          : group === 'trains'
+            ? TRAFFIC_MODEL_CONFIG.trainGlobeDepthOffsetUnits
+            : TRAFFIC_MODEL_CONFIG.globeDepthOffsetUnits,
       )
     }
     const u = this.useProgram(gl, programs.model, frame, copy)
