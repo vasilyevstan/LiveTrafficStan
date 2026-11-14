@@ -56,6 +56,7 @@ export const useTrains = (
     const controller = new TrainController({
       providers: createTrainProviders(TRAIN_CONFIG),
       pollIntervalMs: TRAIN_CONFIG.pollIntervalMs,
+      sourcePollIntervalMs: { elron: TRAIN_CONFIG.elron.pollIntervalMs },
       rateLimitBackoffMaxMs: TRAIN_CONFIG.rateLimitBackoffMaxMs,
       course: TRAIN_CONFIG.course,
       onChange: (next) => {

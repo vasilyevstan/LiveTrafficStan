@@ -33,4 +33,8 @@ export const TRAIN_CONFIG = {
     // MTA asks redistributors to disclose lag beyond one minute.
     lagNoticeAfterMs: 60_000,
   },
+  elron: {
+    endpoint: '/api/trains/elron',
+    pollIntervalMs: 60_000,
+  },
 } as const

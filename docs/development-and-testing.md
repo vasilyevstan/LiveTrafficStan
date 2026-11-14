@@ -5913,6 +5913,57 @@ Testing notes:
   curated scenario uses a recorded snapshot. Aircraft, vessels and Starlink
   can be checked live.
 
+## Elron and train visibility acceptance (#710)
+
+Chrome 157, 2026-11-14: compared production application `f91d14551ea0a0f573a9dcbf4c355c4fdbbf8415`
+with the updated local Worker build using identical synthetic Entur reports.
+Train requests were intercepted, not repeatedly sent to live providers.
+Measured desktop 1280 x 900 / DPR 1 and phone 390 x 844 / DPR 3, light and
+dark, at zooms 9, 11 and 13 with pitch 0. Reported coordinates, camera and
+underlying meshes were identical between before/after samples.
+
+| Measurement across those views | Before | After |
+| --- | ---: | ---: |
+| Rendered model length (CSS px) | 23.4-24.3 | 28.9-29.3 |
+| Rendered model beam (CSS px) | 6.0-6.7 | 9.8-10.9 |
+| Changed model pixels, desktop DPR 1 | 134-149 | 263-299 |
+| Changed model pixels, phone DPR 3 | 1,100-1,258 | 2,176-2,465 |
+| Labels at zoom 9 | 0 | 1 (collision-aware placement) |
+
+Pixel evidence toggles only the train model group for one WebGL frame. The
+new model, flat fallback dot and labels were visually inspected. Mouse/touch
+selection, same-map theme restoration, selected identity, layer-off clearing
+and layer-on restoration passed. The first lifecycle assertion incorrectly
+required a nonexistent halo layer to be `none` rather than allowing `missing`;
+a targeted phone rerun on both builds passed after correcting the harness.
+Production-only warnings about deliberately blocked analytics and marine
+connections were isolated from train/runtime errors, not treated as app fixes.
+
+An Elron fixture at Tallinn in the 390 x 844 dark phone layout verified:
+two initial dots with no invented bearing; visible unofficial provenance,
+matching uncertainty and unspecified licence; one moving train gaining a model
+after its second observed position; selection retained; exact 60,000 ms
+request spacing; no other train source, visitor coordinates or credentials.
+No runtime errors occurred. The separately saved public protobuf sample
+decoded all 15 positions and 15 distinct valid service-date/trip identities;
+the source observation times were retained.
+
+Deterministic regressions cover the fixed Elron route/upstream/headers,
+separate one-minute edge reuse, bad paths/methods/queries, malformed or missing
+complete-feed headers, rejected differential feeds, invalid service dates,
+stable identities despite changing entity timestamps, native clocks,
+privacy, no invented train numbers, Estonia coverage without Helsinki
+cross-polling, and cadence/back-off across coverage/page pauses. Existing
+LIRR transport/decode tests cover the shared byte caps, timeout and error path.
+The full suite passed 3,082 tests in 251 files with `--maxWorkers=2`; the first
+unbounded run hit two unchanged Earth-shading timeouts. No test timeout or
+production scheduling limit was increased. Lint, typecheck, all four required
+data validators and the build passed.
+
+Evidence files are preserved in the task's session artifacts:
+`train-visibility-before`, `train-visibility-after`,
+`train-visibility-baseline-lifecycle` and `train-visibility-new-lifecycle`.
+
 ## Live trains acceptance
 
 Deterministic coverage:

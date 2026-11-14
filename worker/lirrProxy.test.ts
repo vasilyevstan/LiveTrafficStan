@@ -13,6 +13,7 @@ import {
   type LirrProxyFetch,
 } from './lirrProxy.js'
 import { TRAIN_CONFIG } from '../src/config/trainConfig.js'
+import { ELRON_FEED_URL, ELRON_PROXY_PATH, handleElronProxy } from './elronProxy.js'
 
 const varint = (value: number) => {
   const bytes: number[] = []
@@ -47,6 +48,7 @@ interface VehicleSpec {
   vehicleId?: string
   label?: string
   tripId?: string
+  startDate?: string
   deleted?: boolean
 }
 
@@ -58,7 +60,10 @@ const entity = (spec: VehicleSpec) => {
     ...(spec.speed === undefined ? [] : floatField(5, spec.speed)),
   ]
   const vehicle = [
-    ...(spec.tripId ? bytesField(1, textField(1, spec.tripId)) : []),
+    ...(spec.tripId ? bytesField(1, [
+      ...textField(1, spec.tripId),
+      ...(spec.startDate ? textField(3, spec.startDate) : []),
+    ]) : []),
     ...bytesField(2, position),
     ...(spec.timestamp === undefined ? [] : intField(5, spec.timestamp)),
     ...bytesField(8, [
@@ -131,6 +136,111 @@ describe('GTFS-Realtime vehicle decoder', () => {
       .toThrow(GtfsDecodeError)
     const flood = feed(...Array.from({ length: 11 }, () => entity(validVehicle)))
     expect(() => decodeGtfsVehicleFeed(flood, limits)).toThrow(GtfsDecodeError)
+  })
+
+  it('rejects missing headers, unknown versions and differential feeds', () => {
+    for (const bytes of [
+      new Uint8Array(),
+      new Uint8Array(entity(validVehicle)),
+      new Uint8Array(bytesField(1, textField(1, 'future'))),
+      new Uint8Array(bytesField(1, [...textField(1, '2.0'), ...intField(2, 1)])),
+    ]) {
+      expect(() => decodeGtfsVehicleFeed(bytes, limits)).toThrow(GtfsDecodeError)
+    }
+    expect(decodeGtfsVehicleFeed(feed(), limits).vehicles).toEqual([])
+  })
+})
+
+describe('Elron community proxy', () => {
+  const tripId = `service-${'a'.repeat(150)}`
+  const elronVehicle: VehicleSpec = {
+    entityId: 'changing-timestamp-1',
+    tripId, startDate: '20261114',
+    latitude: 59.437, longitude: 24.754, timestamp: observedSeconds,
+  }
+
+  it('identifies the app and preserves observed clocks and stable trip/day identities', async () => {
+    const fetchImpl = vi.fn<LirrProxyFetch>(async () => new Response(feed(entity(elronVehicle))))
+    const first = await handleElronProxy(proxyRequest(ELRON_PROXY_PATH, {
+      headers: { Cookie: 'private=true', Authorization: 'private', Referer: 'https://private.example/' },
+    }), { fetchImpl, cache: null })
+    expect(first.status).toBe(200)
+    const body = await first.json() as LirrProxyBody
+    expect(body.vehicles[0]).toEqual({
+      id: `20261114:${tripId}`, tripId,
+      latitude: 59.437, longitude: 24.754,
+      observedAt: new Date(observedSeconds * 1_000).toISOString(),
+    })
+    expect(fetchImpl).toHaveBeenCalledWith(ELRON_FEED_URL, expect.objectContaining({
+      redirect: 'manual',
+      headers: {
+        Accept: 'application/x-protobuf, application/octet-stream',
+        'User-Agent': 'TrackStan/1.6.0 (https://trackstan.xyz)',
+      },
+    }))
+    const second = await handleElronProxy(proxyRequest(ELRON_PROXY_PATH), {
+      cache: null,
+      fetchImpl: async () => new Response(feed(entity({
+        ...elronVehicle, entityId: 'changing-timestamp-2', timestamp: observedSeconds + 60,
+      }))),
+    })
+    const updated = await second.json() as LirrProxyBody
+    expect(updated.vehicles[0]!.id).toBe(body.vehicles[0]!.id)
+    expect(updated.vehicles[0]!.observedAt).not.toBe(body.vehicles[0]!.observedAt)
+  })
+
+  it('omits missing/invalid service dates rather than joining unrelated journeys', async () => {
+    const response = await handleElronProxy(proxyRequest(ELRON_PROXY_PATH), {
+      cache: null,
+      fetchImpl: async () => new Response(feed(
+        entity({ ...elronVehicle, startDate: undefined }),
+        entity({ ...elronVehicle, startDate: '20260230' }),
+        entity({ ...elronVehicle, tripId: undefined }),
+        entity({ ...elronVehicle, startDate: '20261115' }),
+      )),
+    })
+    const body = await response.json() as LirrProxyBody
+    expect(body.vehicles.map((v) => v.id)).toEqual([`20261115:${tripId}`])
+  })
+
+  it('uses a separate one-minute cache key and keeps browser responses no-store', async () => {
+    const stored = new Map<string, Response>()
+    const cache: LirrFeedCache = {
+      match: async (request) => stored.get(request.url)?.clone(),
+      put: async (request, response) => { stored.set(request.url, response) },
+    }
+    const fetchImpl = vi.fn<LirrProxyFetch>(async () => protobufResponse(feed(entity(elronVehicle))))
+    await handleLirrProxy(proxyRequest(), { cache, fetchImpl })
+    const first = await handleElronProxy(proxyRequest(ELRON_PROXY_PATH), { cache, fetchImpl })
+    const second = await handleElronProxy(proxyRequest(ELRON_PROXY_PATH), { cache, fetchImpl })
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+    expect(await second.text()).toBe(await first.text())
+    expect(second.headers.get('cache-control')).toBe('no-store')
+    expect(stored.get(`https://app.example${ELRON_PROXY_PATH}`)?.headers.get('cache-control'))
+      .toBe(`public, max-age=${TRAIN_CONFIG.elron.pollIntervalMs / 1_000}`)
+    expect(TRAIN_CONFIG.elron.endpoint).toBe(ELRON_PROXY_PATH)
+  })
+
+  it('rejects unsupported requests and malformed bodies, and preserves Retry-After', async () => {
+    const fetchImpl = vi.fn<LirrProxyFetch>()
+    for (const [path, method, status] of [
+      ['/elsewhere', 'GET', 404], [ELRON_PROXY_PATH, 'POST', 405],
+      [`${ELRON_PROXY_PATH}?url=anything`, 'GET', 400],
+    ] as const) {
+      expect((await handleElronProxy(proxyRequest(path, { method }), { fetchImpl })).status).toBe(status)
+    }
+    expect(fetchImpl).not.toHaveBeenCalled()
+    for (const bytes of [new Uint8Array(), new TextEncoder().encode('<html>')]) {
+      const response = await handleElronProxy(proxyRequest(ELRON_PROXY_PATH), {
+        cache: null, fetchImpl: async () => new Response(bytes),
+      })
+      expect(response.status).toBe(502)
+    }
+    const response = await handleElronProxy(proxyRequest(ELRON_PROXY_PATH), {
+      cache: null, fetchImpl: async () => new Response(null, { status: 429, headers: { 'Retry-After': '120' } }),
+    })
+    expect(response.status).toBe(429)
+    expect(response.headers.get('retry-after')).toBe('120')
   })
 })
 

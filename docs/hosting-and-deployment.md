@@ -1401,7 +1401,7 @@ boundary.
 
 ## LIRR proxy contract
 
-The only train route is:
+The LIRR train route is:
 
 ```text
 GET /api/trains/lirr
@@ -1430,6 +1430,28 @@ observation time. Browser responses are `no-store` and `nosniff`; only the
 successful decoded body is reused through the Workers cache for 15 seconds.
 A cache failure only loses reuse. The Vite dev server does not provide this
 route; use `npm run preview:worker`.
+
+### Elron community proxy
+
+`GET /api/trains/elron` reuses the same bounded proxy and decoder, with a fixed
+`https://jbb.ghsq.de/gtfs/elron/VehiclePositions` upstream, 60 s per-edge
+successful-response reuse, 1,000 entities/vehicles and 256-byte strings.
+It adds only `User-Agent: TrackStan/1.6.0 (https://trackstan.xyz)` to the
+reviewed protobuf Accept header. No browser headers, credentials, coordinates,
+new secret or binding are sent. Cache reuse is per edge, not a global
+one-request-per-minute guarantee.
+
+Both feeds require a supported complete GTFS-Realtime header; malformed or
+differential feeds fail. Elron alone accepts an absent Content-Type because
+the verified source omits it; protobuf validation still applies. Its IDs use
+validated service date plus trip ID, not the changing entity ID. Position
+clocks remain the source's VehiclePosition timestamps. Existing LIRR
+identity, caps, cadence and output remain unchanged.
+
+Deploy through the normal exact-main workflow with all existing production
+feature inputs preserved. No infrastructure migration is needed. Rollback to
+the preceding application/Worker removes Elron and restores the previous train
+screen sizes, without changing stored preferences, Home or private history.
 
 ## METAR proxy contract
 

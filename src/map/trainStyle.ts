@@ -24,7 +24,7 @@ export const TRAIN_LAYER_IDS = [
 ] as const
 export const TRAIN_SELECTABLE_LAYER_IDS = [LAYER_TRAIN_POINTS, LAYER_TRAIN_LABELS] as const
 
-const LABEL_MINIMUM_ZOOM = 10
+const LABEL_MINIMUM_ZOOM = 9
 
 const sourceLink = (sourceId: TrainSourceId) => {
   const source = TRAIN_SOURCES[sourceId]
@@ -128,7 +128,7 @@ export const installTrainStyle = (
     source: SOURCE_TRAINS,
     filter: ['==', ['get', 'selected'], true],
     paint: {
-      'circle-radius': 13,
+      'circle-radius': 17,
       'circle-color': paint.halo,
       'circle-opacity': 0.16,
       'circle-stroke-color': paint.halo,
@@ -142,11 +142,11 @@ export const installTrainStyle = (
     source: SOURCE_TRAINS,
     filter: trainPointFilter(modelsActive),
     paint: {
-      'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, 3.5, 10, 6, 14, 8],
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, 5, 10, 7, 14, 9],
       'circle-color': fill,
       'circle-opacity': ['case', ['get', 'stale'], 0.5, 0.95],
       'circle-stroke-color': paint.stroke,
-      'circle-stroke-width': 1.5,
+      'circle-stroke-width': 2,
     },
   })
   if (textFont) {
@@ -158,15 +158,15 @@ export const installTrainStyle = (
       layout: {
         'text-field': ['get', 'label'],
         'text-font': textFont,
-        'text-size': 11,
-        'text-offset': [0, 1.3],
+        'text-size': 12,
+        'text-offset': [0, 1.5],
         'text-anchor': 'top',
         'text-optional': true,
       },
       paint: {
         'text-color': paint.text,
         'text-halo-color': paint.textHalo,
-        'text-halo-width': 1.2,
+        'text-halo-width': 1.5,
         'text-opacity': ['case', ['get', 'stale'], 0.6, 1],
       },
     })

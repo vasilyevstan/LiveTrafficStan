@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { readFile } from 'node:fs/promises'
 import worker, { type WorkerEnv } from './index.js'
 import { ADSB_LOL_USER_AGENT } from './aircraftProxy.js'
+import { ELRON_FEED_URL, ELRON_PROXY_PATH } from './elronProxy.js'
 import {
   ORBITAL_BOOTSTRAP_PATH,
   ORBITAL_CATALOG_V2_ACCEPT,
@@ -19,6 +20,23 @@ const releaseSha = '0123456789abcdef0123456789abcdef01234567'
 describe('Cloudflare worker routing', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
+  })
+
+  it('routes Elron independently with an exact release marker and no asset fallback', async () => {
+    const assets = vi.fn()
+    const upstream = vi.fn(async () => new Response(
+      new Uint8Array([10, 5, 10, 3, 50, 46, 48]),
+    ))
+    vi.stubGlobal('fetch', upstream)
+    const response = await worker.fetch(
+      new Request(`https://app.example${ELRON_PROXY_PATH}`),
+      { ASSETS: { fetch: assets }, RELEASE_SHA: releaseSha },
+    )
+    expect(response.status).toBe(200)
+    expect(response.headers.get('x-livetrafficstan-release')).toBe(releaseSha)
+    expect(await response.json()).toMatchObject({ vehicles: [] })
+    expect(upstream).toHaveBeenCalledWith(ELRON_FEED_URL, expect.any(Object))
+    expect(assets).not.toHaveBeenCalled()
   })
 
   it('routes airport boards independently and marks disabled and enabled responses with the exact release', async () => {

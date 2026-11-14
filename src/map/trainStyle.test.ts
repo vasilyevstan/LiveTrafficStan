@@ -139,8 +139,14 @@ describe('train style', () => {
       true,
     )
     expect(layers.get(LAYER_TRAIN_LABELS)).toMatchObject({
-      minzoom: 10,
-      layout: { 'text-font': ['Noto Sans Regular'] },
+      minzoom: 9,
+      layout: { 'text-font': ['Noto Sans Regular'], 'text-size': 12 },
+    })
+    expect(layers.get(LAYER_TRAIN_POINTS)).toMatchObject({
+      paint: {
+        'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, 5, 10, 7, 14, 9],
+        'circle-stroke-width': 2,
+      },
     })
     expect(properties.get(`${LAYER_TRAIN_POINTS}:circle-color`)).toEqual([
       'case',
@@ -171,7 +177,7 @@ describe('train map credit', () => {
   })
 
   it('keeps canonical order, one prefix and no duplicates across feeds', () => {
-    const credit = trainAttribution(['lirr', 'entur', 'lirr', 'fintraffic', 'mbta']) ?? ''
+    const credit = trainAttribution(['elron', 'lirr', 'entur', 'lirr', 'fintraffic', 'mbta']) ?? ''
     expect(credit.match(/Trains:/g)).toHaveLength(1)
     expect(credit.match(/<a /g)).toHaveLength(TRAIN_SOURCE_IDS.length)
     const positions = TRAIN_SOURCE_IDS.map((sourceId) =>

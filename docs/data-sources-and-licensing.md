@@ -1270,11 +1270,13 @@ the same record schema, stores, consent, recording epoch and existing rows.
 Rollback should disable the supplement on this compatible reader, not erase
 history or restore a version-1 reader.
 
-## Trains: Fintraffic, Entur, MBTA and MTA LIRR
+## Trains: Fintraffic, Entur, MBTA, MTA LIRR and community Elron
 
-Live trains use four free regional feeds. They were selected because each
-publishes real-time vehicle positions under reusable terms without a paid
-plan. There is no reliable free worldwide train-position feed, so other
+Live trains use four operator/open-data regional feeds plus the explicitly
+identified community Elron conversion. The original four publish positions
+under reusable terms without a paid plan. The Elron feed's separate licence
+is unspecified; its evidence and usage-policy scope are recorded below.
+There is no reliable free worldwide train-position feed, so other
 regions show a truthful no-coverage note instead of inferred positions.
 
 | Source | Terms | Required credit and handling |
@@ -1283,13 +1285,14 @@ regions show a truthful no-coverage note instead of inferred positions.
 | [Entur](https://developer.entur.org/pages-real-time-vehicle/) | [NLOD 2.0](https://data.norge.no/nlod/en/2.0) | `Contains data from Entur, made available under NLOD 2.0`; requests identify the application with `ET-Client-Name`. Coverage is limited to participating operators |
 | [MBTA](https://www.mbta.com/developers/v3-api) | [MassDOT Developers License Agreement](https://github.com/mbta/gtfs-documentation/blob/master/developers-license-agreement.pdf) | `Data provided by MassDOT/MBTA; not endorsed by MassDOT or MBTA`; keyless requests every 15 s |
 | [MTA Long Island Rail Road](https://api.mta.info/#/lirrFeeds) | [MTA data feed terms](https://www.mta.info/developers/terms-and-conditions) | `Data from the MTA, redistributed by LiveTrafficStan; not endorsed by the MTA. Reports may lag and may be incomplete.`; one Worker fetch per edge per 15 s |
+| [Elron community conversion](https://codeberg.org/jbb/elron-rt) | [Transitous project usage policy](https://transitous.org/api/); no separate licence stated for this feed | `Elron positions via Jonah Brüchert / Transitous community feed; not an official Elron API.`; fixed Worker route, 60 s per-edge reuse, application identification |
 
 The map's compact credits carry one `Trains:` item with the exact credit of
 only the feeds whose rail-network rectangles overlap the settled view. It
 appears only while TRAINS is on and HISTORY and captured views are inactive,
-so a view with no train coverage, such as Tallinn, shows no train credit. Each
+so a view with no train coverage shows no train credit. Each
 selected train's details show its own source's exact credit, and **Settings →
-Data credits** names and links all four feeds. The application identifier is
+Data credits** names and links all five feeds. The application identifier is
 the fixed `livetrafficstan-trackstan` string; no API key, account or personal
 data is sent.
 
@@ -1306,6 +1309,59 @@ position fields and returned as JSON. The Worker reuses a successful decoded
 feed for 15 seconds per Cloudflare edge so visitors do not each fetch the
 MTA feed. It forwards no browser headers or credentials and stores nothing
 else.
+
+### Elron provenance and exact policy scope (#710)
+
+Verified on 2026-11-14: [Transitous's Estonia configuration](https://github.com/public-transport/transitous/blob/main/feeds/ee.json)
+lists `https://jbb.ghsq.de/gtfs/elron/VehiclePositions`. A bounded probe returned
+HTTP 200, 3,129 bytes and 15 timestamped vehicle positions; no CORS or
+Content-Type header was present. This is not the passenger-phone crowdsourcing
+endpoint. That separate project's `ee-elron/vehicle-positions.pb` returned
+404 during the check, which is not evidence that it can never have reports.
+
+The [actual Elron converter source](https://codeberg.org/jbb/elron-rt/src/commit/4d17e3b28494567897dfa4c45e97411a5c6e5dad/src/main.rs)
+reads Elron's map-reported latitude, longitude and `asukoha_uuendus` time,
+converts Europe/Tallinn time to UTC, and matches trips to a static timetable.
+It can use a closest matching departure within ten minutes. Thus position
+origin is operator map data, but trip identity is community-matched and may
+be wrong or incomplete. Positions are not calculated from the timetable.
+The sample supplies no human train number, speed or bearing; the app shows
+"Elron train", not a guessed number, and derives course only from consecutive
+reported positions of the same service-day/trip identity.
+
+[Transitous's published API usage policy](https://transitous.org/api/) says
+"Go ahead" for open-source, non-commercial, resource-light projects that
+follow the policy. It requires published source, application/version/contact
+in User-Agent (or browser Referer plus website contact), visible linkage to
+`https://transitous.org/sources/`, and compliance with underlying sources'
+terms. Commercial use is disallowed. It describes best-effort availability
+and the right to discontinue access. High resource use, many users and
+automated routing requests require coordination; the >720 requests/day example
+names `/plan`, `/one-to-many` and `/one-to-all`, not GTFS feed reads.
+Do not treat that number as a documented quota for the jbb-hosted feed.
+The policy explicitly identifies the routing API, so it is not a blanket
+data-licence grant for every related host.
+
+The static Elron timetable is marked CC0-1.0 in Transitous's configuration,
+but the realtime entry has no licence field; neither Mobility Database's
+`mdb-3418` entry nor the inspected converter repository states a dedicated
+feed-data licence. Missing metadata is not proof of prohibition or of a
+licence grant. Integration was explicitly user-directed with that uncertainty
+retained in the source disclosure. No converter code is copied, no
+open-source code licence is presented as a licence for its output, and no
+operator endorsement is claimed.
+
+For the distinct passenger-phone project, the
+[GPS collector README](https://codeberg.org/transitous/transitous-gps-collector)
+describes submissions becoming GTFS-Realtime VehiclePositions. Its Cargo.toml
+literally contains `AGPL-2.0-or-later` (not a valid standard SPDX AGPL identifier);
+the [delay tracker](https://codeberg.org/jbb/gtfs-delay-tracker) has
+`AGPL-3.0-or-later` in its Cargo.toml. These are software-file declarations,
+not a published licence for contributed positions. Transitous's
+[privacy policy](https://transitous.org/privacy/) explicitly covers its main
+and staging routing APIs and embedded widget; its two-day log-retention
+statement must not be extended to the GPS collector or jbb feed.
+TrackStan neither submits nor collects passenger locations.
 
 Positions are last reported locations, not predictions, schedules, routes or
 track-snapped geometry. Freight appears only when a source reports it.
