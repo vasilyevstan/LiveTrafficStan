@@ -1270,12 +1270,12 @@ the same record schema, stores, consent, recording epoch and existing rows.
 Rollback should disable the supplement on this compatible reader, not erase
 history or restore a version-1 reader.
 
-## Trains: Fintraffic, Entur, MBTA, MTA LIRR and community Elron
+## Trains: Fintraffic, Entur, MBTA, MTA LIRR and Elron
 
-Live trains use four operator/open-data regional feeds plus the explicitly
-identified community Elron conversion. The original four publish positions
-under reusable terms without a paid plan. The Elron feed's separate licence
-is unspecified; its evidence and usage-policy scope are recorded below.
+Live trains use four operator/open-data regional feeds plus Elron's public
+train map. The four publish positions under reusable terms without a paid
+plan. Elron publishes no open-data licence for its map; its evidence and
+scope are recorded below.
 There is no reliable free worldwide train-position feed, so other
 regions show a truthful no-coverage note instead of inferred positions.
 
@@ -1285,7 +1285,7 @@ regions show a truthful no-coverage note instead of inferred positions.
 | [Entur](https://developer.entur.org/pages-real-time-vehicle/) | [NLOD 2.0](https://data.norge.no/nlod/en/2.0) | `Contains data from Entur, made available under NLOD 2.0`; requests identify the application with `ET-Client-Name`. Coverage is limited to participating operators |
 | [MBTA](https://www.mbta.com/developers/v3-api) | [MassDOT Developers License Agreement](https://github.com/mbta/gtfs-documentation/blob/master/developers-license-agreement.pdf) | `Data provided by MassDOT/MBTA; not endorsed by MassDOT or MBTA`; keyless requests every 15 s |
 | [MTA Long Island Rail Road](https://api.mta.info/#/lirrFeeds) | [MTA data feed terms](https://www.mta.info/developers/terms-and-conditions) | `Data from the MTA, redistributed by LiveTrafficStan; not endorsed by the MTA. Reports may lag and may be incomplete.`; one Worker fetch per edge per 15 s |
-| [Elron community conversion](https://codeberg.org/jbb/elron-rt) | [Transitous project usage policy](https://transitous.org/api/); no separate licence stated for this feed | `Elron positions via Jonah Brüchert / Transitous community feed; not an official Elron API.`; fixed Worker route, 60 s per-edge reuse, application identification |
+| [Elron (AS Eesti Liinirongid) public train map](https://elron.ee/) | [Elron terms of use](https://elron.ee/en/kasutustingimused); no published open-data licence | `Train positions and schedules from the public Elron (AS Eesti Liinirongid) train map; not an official API and not endorsed by Elron.`; fixed Worker route, 60 s per-edge reuse, application identification |
 
 The map's compact credits carry one `Trains:` item with the exact credit of
 only the feeds whose rail-network rectangles overlap the settled view. It
@@ -1310,7 +1310,36 @@ feed for 15 seconds per Cloudflare edge so visitors do not each fetch the
 MTA feed. It forwards no browser headers or credentials and stores nothing
 else.
 
+### Elron public train map (#713)
+
+Verified on 2026-11-14: the community converter below polls
+`https://elron.ee/map_data.json`, the JSON behind Elron's own public train
+map, and drops its train number, route, times and delay. A bounded probe
+returned `application/json` with `{status, data[]}`; every field is a string:
+`reis` (train number), `liin` (route, e.g. `Tallinn - Tartu`),
+`reisi_algus_aeg`/`reisi_lopp_aeg` (Tallinn departure/arrival `HH:MM`),
+`kiirus` (km/h), `rongi_suund` (heading), `erinevus_plaanist` (delay minutes),
+`viimane_peatus` (last stop) and `asukoha_uuendus` (Tallinn-local position
+time). Elron's `robots.txt` does not disallow the path, and its
+[terms of use](https://elron.ee/en/kasutustingimused) are passenger and
+ticketing terms with no prohibition on reading the map. Under the user's
+standing direction to integrate unless a source clearly forbids use, the
+Worker reads it directly. No licence grant is presumed: the source
+disclosure keeps "no published open-data licence", "not an official API"
+and "not endorsed by Elron".
+
+The Worker sends one identified `GET` per edge per minute at most, forwards no
+browser headers, coordinates or credentials, and returns only bounded,
+validated fields (train number, route, rounded position, heading, speed,
+delay, last stop, Tallinn times converted to UTC). Route text is shown as
+reported; origin and destination are split only from an unambiguous
+`A - B` route. No photo, timetable download, rider GPS or other Elron page is
+fetched. This replaced the community conversion recorded in the next section,
+which remains as the historical #710 record.
+
 ### Elron provenance and exact policy scope (#710)
+
+Historical: #713 replaced this community feed with Elron's public train map.
 
 Verified on 2026-11-14: [Transitous's Estonia configuration](https://github.com/public-transport/transitous/blob/main/feeds/ee.json)
 lists `https://jbb.ghsq.de/gtfs/elron/VehiclePositions`. A bounded probe returned

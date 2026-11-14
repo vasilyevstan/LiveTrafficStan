@@ -24,20 +24,35 @@ const render = (train: DisplayTrain, now = 110_000) => renderToStaticMarkup(
 )
 
 describe('TrainDetails', () => {
-  it('discloses Elron conversion, matching uncertainty and unspecified feed rights', () => {
+  it('shows Elron number, route, schedule, delay and last stop with operator-map attribution', () => {
     const html = render({
-      ...base, id: 'train:elron:20261114:opaque-trip', sourceId: 'elron',
-      name: 'Elron train', category: 'passenger', operator: undefined,
+      ...base, id: 'train:elron:2026-11-14:106', sourceId: 'elron',
+      name: 'Elron 106', category: 'passenger', operator: 'Elron', trainNumber: '106',
+      line: 'Tallinn - Tartu', origin: 'Tallinn', destination: 'Tartu',
+      scheduledDepartureAt: Date.parse('2026-11-14T18:34:00Z'),
+      scheduledArrivalAt: Date.parse('2026-11-14T21:22:00Z'),
+      delayMinutes: 2, lastStop: 'Kärkna',
       speedKph: undefined, courseDegrees: undefined, courseOrigin: undefined,
     })
-    expect(html).toContain('Elron train')
-    expect(html).toContain('coverage and trip matching may be incomplete')
-    expect(html).toContain('No passenger GPS is collected by TrackStan')
-    expect(html).toContain('not an official Elron API')
-    expect(html).toContain('feed licence not specified')
-    expect(html).toContain('https://transitous.org/sources/')
-    expect(html).toContain('Unavailable; shown as a dot')
+    for (const text of [
+      'Elron 106', 'Train number', '106', 'From', 'Tallinn', 'Destination', 'Tartu',
+      '20:34 EET', '23:22 EET', '2 min late', 'Last stop', 'Kärkna',
+      'public Elron (AS Eesti Liinirongid) train map', 'not an official API',
+      'No published open-data licence', 'https://elron.ee/en/kasutustingimused',
+      'No passenger GPS is collected by TrackStan', 'Unavailable; shown as a dot',
+    ]) expect(html).toContain(text)
     expect(html).not.toContain('CC BY 4.0')
+  })
+
+  it('formats schedule times in the source zone and never invents a delay', () => {
+    const html = render({
+      ...base, sourceId: 'mbta', delayMinutes: undefined,
+      scheduledDepartureAt: Date.parse('2026-07-14T18:34:00Z'),
+    })
+    expect(html).toContain('14:34 EDT')
+    expect(html).not.toContain('Delay')
+    expect(render({ ...base, delayMinutes: 0 })).toContain('On time')
+    expect(render({ ...base, delayMinutes: -3 })).toContain('3 min early')
   })
 
   it('shows reported facts, derived course origin, clocks, and attribution', () => {

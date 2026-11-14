@@ -7,6 +7,7 @@ import type { TrainSource, TrainSourceId } from '../../domain/trains'
 export const TRAIN_SOURCES: Readonly<Record<TrainSourceId, TrainSource>> = {
   fintraffic: {
     id: 'fintraffic',
+    timeZone: 'Europe/Helsinki',
     name: 'Fintraffic / Digitraffic',
     coverage: 'Finland',
     // Hanko to Kokkola, then Oulu, Tornio, and Kolari; excludes Tallinn and Sweden's coast.
@@ -21,6 +22,7 @@ export const TRAIN_SOURCES: Readonly<Record<TrainSourceId, TrainSource>> = {
   },
   entur: {
     id: 'entur',
+    timeZone: 'Europe/Oslo',
     name: 'Entur',
     coverage: 'Norway, participating operators',
     // Southern network to Trondheim, the Nordland line to Bodø, and the Ofoten line.
@@ -36,6 +38,7 @@ export const TRAIN_SOURCES: Readonly<Record<TrainSourceId, TrainSource>> = {
   },
   mbta: {
     id: 'mbta',
+    timeZone: 'America/New_York',
     name: 'MBTA',
     coverage: 'Greater Boston commuter rail',
     areas: [{ west: -72, south: 41.4, east: -70.4, north: 43 }],
@@ -46,6 +49,7 @@ export const TRAIN_SOURCES: Readonly<Record<TrainSourceId, TrainSource>> = {
   },
   lirr: {
     id: 'lirr',
+    timeZone: 'America/New_York',
     name: 'MTA Long Island Rail Road',
     coverage: 'Long Island Rail Road',
     areas: [{ west: -74.1, south: 40.5, east: -71.8, north: 41.2 }],
@@ -56,13 +60,14 @@ export const TRAIN_SOURCES: Readonly<Record<TrainSourceId, TrainSource>> = {
   },
   elron: {
     id: 'elron',
-    name: 'Elron · community feed',
-    coverage: 'Estonia, reported Elron passenger services',
-    areas: [{ west: 24, south: 57.5, east: 28.25, north: 59.7 }],
-    websiteUrl: 'https://transitous.org/sources/',
-    licenseName: 'Project usage policy; feed licence not specified',
-    licenseUrl: 'https://transitous.org/api/',
-    attribution: 'Elron positions via Jonah Brüchert / Transitous community feed; not an official Elron API.',
-    notice: 'Community-converted Elron reports; coverage and trip matching may be incomplete. No passenger GPS is collected by TrackStan.',
+    timeZone: 'Europe/Tallinn',
+    name: 'Elron · train map',
+    coverage: 'Estonia, Elron passenger services',
+    areas: [{ west: 23.4, south: 57.5, east: 28.25, north: 59.7 }],
+    websiteUrl: 'https://elron.ee/',
+    licenseName: 'No published open-data licence; Elron terms of use',
+    licenseUrl: 'https://elron.ee/en/kasutustingimused',
+    attribution: 'Train positions and schedules from the public Elron (AS Eesti Liinirongid) train map; not an official API and not endorsed by Elron.',
+    notice: 'Positions come from Elron\'s public train map and may lag or be incomplete. No passenger GPS is collected by TrackStan.',
   },
 }

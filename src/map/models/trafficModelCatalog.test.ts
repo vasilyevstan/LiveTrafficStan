@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { TrainCategory } from '../../domain/trains'
+import type { TrainCategory, TrainSourceId } from '../../domain/trains'
 import { TRAFFIC_STYLE_IMAGE_IDS } from '../../domain/trafficPresentation'
 import { aircraftAltitudeColors, trafficIconTreatment } from '../icons'
 import {
@@ -10,6 +10,7 @@ import {
 } from '../orbitalIcons'
 import {
   TRAFFIC_MODEL_IDS,
+  TRAIN_FLEET_LIVERY,
   featuredOrbitalModel,
   hexColorBytes,
   isTrafficModelId,
@@ -18,8 +19,11 @@ import {
   trafficModelColors,
   trafficModelForMarkerIcon,
   trafficModelKind,
+  trainColorsForTrain,
+  trainFleetModel,
   trainModelColors,
   trainModelForCategory,
+  trainModelForTrain,
 } from './trafficModelCatalog'
 
 const TRAIN_CATEGORIES = [
@@ -48,12 +52,13 @@ describe('traffic model catalog', () => {
     }
     for (const label of ['ISS', 'HUBBLE']) covered.add(featuredOrbitalModel(label)!)
     for (const category of TRAIN_CATEGORIES) covered.add(trainModelForCategory(category))
+    for (const model of Object.keys(TRAIN_FLEET_LIVERY.dark)) covered.add(model)
     expect([...covered].sort()).toEqual([...TRAFFIC_MODEL_IDS].sort())
     expect(TRAFFIC_MODEL_IDS.map(trafficModelKind)).toEqual([
       ...Array(4).fill('aircraft'),
       ...Array(9).fill('vessel'),
       ...Array(7).fill('orbital'),
-      ...Array(2).fill('train'),
+      ...Array(7).fill('train'),
     ])
   })
 
@@ -169,5 +174,66 @@ describe('traffic model catalog', () => {
         detail: hexColorBytes(starlink.detail),
       })
     }
+  })
+
+  describe('fleet trainsets', () => {
+    const train = (
+      sourceId: TrainSourceId,
+      fields: { category?: TrainCategory; trainType?: string; vehicleLabel?: string } = {},
+    ) => ({ sourceId: sourceId as TrainSourceId, category: 'commuter' as TrainCategory, ...fields })
+
+    it('selects Elron, MBTA and Fintraffic trainsets only from reported fields', () => {
+      expect(trainModelForTrain(train('elron'))).toBe('train-flirt')
+      expect(trainModelForTrain(train('mbta'))).toBe('train-us-push-pull')
+      expect(trainModelForTrain(train('fintraffic', { trainType: 'S' }))).toBe('train-pendolino')
+      expect(trainModelForTrain(train('fintraffic', { trainType: 'IC' }))).toBe('train-intercity')
+      expect(trainModelForTrain(train('fintraffic', { trainType: 'PYO' }))).toBe('train-intercity')
+      expect(trainModelForTrain(train('fintraffic', { trainType: 'HL' }))).toBe('train')
+      expect(trainModelForTrain(train('fintraffic'))).toBe('train')
+      expect(trainModelForTrain(train('entur'))).toBe('train')
+      expect(trainModelForTrain(train('unknown-source' as TrainSourceId))).toBe('train')
+    })
+
+    it('selects LIRR trainsets from exact roster car-number ranges', () => {
+      const lirr = (vehicleLabel?: string) =>
+        trainModelForTrain(train('lirr', { vehicleLabel }))
+      expect(lirr('399')).toBe('train')
+      expect(lirr('400')).toBe('train-us-push-pull')
+      expect(lirr('423')).toBe('train-us-push-pull')
+      expect(lirr('424')).toBe('train')
+      expect(lirr('5017')).toBe('train-us-push-pull')
+      expect(lirr('7000')).toBe('train')
+      expect(lirr('7001')).toBe('train-us-emu')
+      expect(lirr('9202')).toBe('train-us-emu')
+      expect(lirr('9203')).toBe('train')
+      expect(lirr('9936')).toBe('train')
+      expect(lirr('7001A')).toBe('train')
+      expect(lirr(undefined)).toBe('train')
+    })
+
+    it('keeps freight on the freight model for every source', () => {
+      for (const sourceId of ['elron', 'mbta', 'lirr', 'fintraffic'] as const) {
+        const freight = train(sourceId, { category: 'freight', trainType: 'S', vehicleLabel: '7001' })
+        expect(trainFleetModel(freight)).toBeUndefined()
+        expect(trainModelForTrain(freight)).toBe('train-freight')
+        expect(trainColorsForTrain('dark', freight)).toEqual(trainModelColors('dark', 'freight'))
+      }
+    })
+
+    it('applies operator liveries on both themes and generic colours otherwise', () => {
+      for (const theme of ['dark', 'light'] as const) {
+        expect(trainColorsForTrain(theme, train('elron')).tint).toEqual(
+          hexColorBytes(TRAIN_FLEET_LIVERY[theme]['train-flirt'][0]),
+        )
+        expect(trainColorsForTrain(theme, train('fintraffic', { trainType: 'S' })).detail).toEqual(
+          hexColorBytes(TRAIN_FLEET_LIVERY[theme]['train-pendolino'][1]),
+        )
+        expect(trainColorsForTrain(theme, train('entur'))).toEqual(
+          trainModelColors(theme, 'commuter'),
+        )
+      }
+      expect(TRAIN_FLEET_LIVERY.dark['train-flirt']).toEqual(['#f26a21', '#6b7280'])
+      expect(TRAIN_FLEET_LIVERY.light['train-flirt']).toEqual(['#ea580c', '#4b5563'])
+    })
   })
 })

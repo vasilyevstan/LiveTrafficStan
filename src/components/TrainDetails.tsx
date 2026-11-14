@@ -22,6 +22,24 @@ const DetailRow = ({ label, value }: { label: string; value: string | undefined 
     </div>
   ) : null
 
+/** Schedule clock in the source's own zone, e.g. `20:34 EET`. */
+const scheduleTime = (timestamp: number | undefined, timeZone: string) =>
+  timestamp === undefined
+    ? undefined
+    : new Intl.DateTimeFormat(timeZone.startsWith('America/') ? 'en-US' : 'en-GB', {
+      timeZone,
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+      timeZoneName: 'short',
+    }).format(timestamp)
+
+const delay = (minutes: number | undefined) => {
+  if (minutes === undefined) return undefined
+  if (minutes === 0) return 'On time'
+  return `${Math.abs(minutes)} min ${minutes > 0 ? 'late' : 'early'}`
+}
+
 const course = (train: DisplayTrain) =>
   train.courseDegrees === undefined
     ? 'Unavailable; shown as a dot'
@@ -54,8 +72,20 @@ export function TrainDetails({
       }
     >
       <dl className="details-grid">
+        <DetailRow label="Train number" value={train.trainNumber} />
         <DetailRow label="Line" value={train.line} />
+        <DetailRow label="From" value={train.origin} />
+        <DetailRow
+          label="Departure"
+          value={scheduleTime(train.scheduledDepartureAt, source.timeZone)}
+        />
         <DetailRow label="Destination" value={train.destination} />
+        <DetailRow
+          label="Arrival"
+          value={scheduleTime(train.scheduledArrivalAt, source.timeZone)}
+        />
+        <DetailRow label="Delay" value={delay(train.delayMinutes)} />
+        <DetailRow label="Last stop" value={train.lastStop} />
         <DetailRow label="Operator" value={train.operator} />
         <DetailRow label="Vehicle" value={train.vehicleLabel} />
         <DetailRow

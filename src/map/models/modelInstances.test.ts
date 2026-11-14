@@ -30,6 +30,7 @@ import {
 import {
   TRAFFIC_MODEL_IDS,
   hexColorBytes,
+  trainColorsForTrain,
   trainModelColors,
   type TrafficModelId,
 } from './trafficModelCatalog'
@@ -447,6 +448,28 @@ describe('train model instances', () => {
       expect(instances[1]).toMatchObject(trainModelColors(theme, 'commuter'))
     }
     expect(trafficObservationOpacity('dark', true)).toBeLessThan(trafficObservationOpacity('dark', false))
+  })
+
+  it('draws identified fleets as their trainset in operator livery', () => {
+    const trains = [
+      train({ id: 'train:elron:1', sourceId: 'elron', category: 'commuter' }),
+      train({ id: 'train:fintraffic:s', trainType: 'S' }),
+      train({ id: 'train:lirr:7001', sourceId: 'lirr', category: 'commuter', vehicleLabel: '7001' }),
+      train({ id: 'train:lirr:9936', sourceId: 'lirr', category: 'commuter', vehicleLabel: '9936' }),
+    ]
+    for (const theme of ['dark', 'light'] as const) {
+      const instances = trainModelInstances(trains, null, theme, REAL_DIMENSIONS)
+      expect(instances.map(({ model }) => model)).toEqual([
+        'train-flirt',
+        'train-pendolino',
+        'train-us-emu',
+        'train',
+      ])
+      trains.forEach((item, index) =>
+        expect(instances[index]).toMatchObject(trainColorsForTrain(theme, item)),
+      )
+      expect(instances[0].lengthMeters).toBe(REAL_DIMENSIONS.get('train-flirt')?.lengthMeters)
+    }
   })
 
   it('keeps long thin real train meshes readable at the screen floor', () => {

@@ -1696,26 +1696,33 @@ older than two minutes are stale and dimmed; after ten minutes they are
 removed. Trains have no trails, interpolation, history, Saved identities,
 metadata, photos or share links.
 
-LIRR and Elron share `worker/gtfsTrainProxy.ts` and the bounded GTFS-Realtime
-decoder, not a network lifecycle or cache key. Fixed route definitions retain
-LIRR's 15 s reuse and use 60 s for Elron. Only complete-feed GTFS headers are
-accepted; differential feeds cannot masquerade as complete snapshots.
-Elron omits Content-Type in the observed public response, so that fixed
-source alone permits an absent type after validating the complete protobuf.
-Explicit unsafe types still fail. Its stable identity is service date plus
-trip ID, never the entity ID's changing timestamp. Missing/invalid service
-dates are omitted. The community converter preserves Elron map coordinates
-and native times while matching service identities to timetables; TrackStan
-does not call that internal map endpoint, load schedules or collect rider GPS.
+LIRR and Elron share the bounded `worker/gtfsTrainProxy.ts` transport, not a
+network lifecycle or cache key. Each fixed route supplies its own decoder:
+LIRR keeps the GTFS-Realtime decoder with 15 s reuse, and only complete-feed
+headers are accepted, so differential feeds cannot masquerade as complete
+snapshots. Elron uses `worker/elronMapFeed.ts` on the JSON behind Elron's
+public train map with 60 s reuse and a JSON-only Content-Type allowlist. Its
+stable identity is service date plus train number; Tallinn wall-clock
+position and schedule times become UTC in the Worker. TrackStan loads no
+schedule and collects no rider GPS.
 
 The map uses one persistent `traffic-trains` GeoJSON source with flat
 markers, labels and a selection ring. From zoom 9 a train with a finite
-course is drawn by the shared 3D model layer as `train`, or `train-freight`
-for the freight category; a train without a course stays a flat dot. Theme
+course is drawn by the shared 3D model layer. A fleet trainset is chosen only
+from source-reported fields: Elron draws `train-flirt`; Fintraffic train type
+`S` draws `train-pendolino` and `IC`/`PYO` draw `train-intercity`; MBTA draws
+`train-us-push-pull`; LIRR car numbers 400-423, 500-522 and 5001-5017 draw
+`train-us-push-pull` and 7001-7836 and 9001-9202 draw `train-us-emu`.
+Trainsets use original, logo-free operator liveries per theme. Freight
+draws `train-freight`, and every other train draws the generic `train`
+model. A train without a course stays a flat dot. Theme
 changes reinstall the source and layers from current data without a new
 request. **In view** lists up to 20 trains in the view, and selected details
-show reported identity, category, speed, course origin, observation and
-receipt times, coordinates and the source's attribution. LIRR details
+show reported identity, train number, route, origin and destination,
+scheduled departure and arrival formatted in the source's time zone, delay,
+last stop, category, speed, course origin, observation and receipt times,
+coordinates and the source's attribution. Absent fields are omitted, never
+inferred. LIRR details
 disclose when the feed lags by more than one minute.
 
 Train overview models have a 48 px pre-aspect screen floor and maximum 3:1
