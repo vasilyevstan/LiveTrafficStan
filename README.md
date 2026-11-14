@@ -12,6 +12,32 @@ The map shows its application version, short exact release SHA and UTC build
 timestamp in the bottom-right corner so screenshots and reports identify the
 running static client without a diagnostic request.
 
+## What this demonstrates
+
+TrackStan is a live demo at [trackstan.xyz](https://trackstan.xyz). Its
+engineering centers on:
+
+- **Resilient third-party integration:** Provider-owned normalization,
+  independent aircraft and marine failure paths, revision cancellation,
+  cadence-safe polling and backoff keep partial operation truthful when a
+  best-effort source fails. Coverage and availability depend on region and
+  receiver. See [provider lifecycle and failure isolation](docs/architecture.md#lifecycle-and-failure-isolation).
+- **Stateful geospatial UI engineering:** One MapLibre instance, persistent
+  GeoJSON layers, full-viewport filtering, and idempotent theme rehydration
+  preserve the camera, selection and provider ownership. See [the data-flow
+  diagram and map architecture](#architecture) and
+  [`TrafficMap`](src/map/TrafficMap.tsx).
+- **Traceable production delivery:** Exact-current-`main` deployment checks,
+  serialized non-cancelling production runs, a protected environment, a
+  deployment smoke test and recorded receipt are defined in the
+  [deployment workflow](.github/workflows/deploy-production.yml),
+  [PR validation workflow](.github/workflows/validate.yml) and
+  [smoke policy](scripts/smoke-policy.mjs).
+
+![TrackStan live production map showing aircraft and vessels](docs/images/trackstan-live-demo.png)
+
+<sub>Live production snapshot captured 2026-11-14.</sub>
+
 **Curated orbital discovery restored (2026-10-29, #616):** Find again returns
 ISS, Hubble and Tiangong from a genuinely fresh, complete Space-Track catalog.
 One independently confirmed decayed object was removed from the reviewed
