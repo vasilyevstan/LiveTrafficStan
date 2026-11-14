@@ -4,6 +4,7 @@ import { ProviderError } from '../errors'
 import {
   createTrainProviders,
   parseEnturTrains,
+  parseElronTrains,
   parseFintrafficTrains,
   parseLirrTrains,
   parseMbtaTrains,
@@ -11,7 +12,7 @@ import {
 } from './trainProviders'
 
 const retrievedAt = Date.parse('2026-11-14T13:25:00.000Z')
-const context = (sourceId: 'fintraffic' | 'entur' | 'mbta' | 'lirr', maximumTrains = 10) => ({
+const context = (sourceId: 'fintraffic' | 'entur' | 'mbta' | 'lirr' | 'elron', maximumTrains = 10) => ({
   sourceId,
   retrievedAt,
   futureToleranceMs: 60_000,
@@ -31,6 +32,50 @@ const fintrafficTrain = (overrides: Record<string, unknown> = {}, location: Reco
     ...location,
   }],
   ...overrides,
+})
+
+describe('Elron community train parsing', () => {
+  it('keeps long trip/day identity and native observation time without inventing train numbers or motion', () => {
+    const id = `20261114:${'trip-'.repeat(35)}`
+    const row = {
+      id, tripId: 'GO203_26_1234', latitude: 59.44, longitude: 24.75,
+      observedAt: '2026-11-14T13:24:30.000Z',
+    }
+    const trains = parseElronTrains({
+      retrievedAt: new Date(retrievedAt).toISOString(),
+      vehicles: [row, { ...row, observedAt: '2026-11-14T13:23:00.000Z' }],
+    }, context('elron'))
+    expect(trains).toEqual([{
+      id: `train:elron:${id}`, sourceId: 'elron', name: 'Elron train',
+      category: 'passenger', latitude: 59.44, longitude: 24.75,
+      observedAt: Date.parse(row.observedAt),
+    }])
+    expect(parseElronTrains({ vehicles: [
+      { ...row, id: 'future', observedAt: '2026-11-14T13:26:01.000Z' },
+      { ...row, id: 'missing-time', observedAt: undefined },
+      { ...row, id: 'invalid-position', latitude: 91 },
+      { ...row, id: 'x'.repeat(266) },
+    ] }, context('elron'))).toEqual([])
+  })
+
+  it('loads only the same-origin JSON endpoint without visitor credentials or referrer', async () => {
+    const fetchImpl = vi.fn<TrainFetch>(async () => new Response('{"vehicles":[]}', {
+      headers: { 'Content-Type': 'application/json' },
+    }))
+    const providers = createTrainProviders(TRAIN_CONFIG, { fetchImpl, origin: 'https://app.example' })
+    expect(await providers.elron.load(new AbortController().signal)).toMatchObject({
+      sourceId: 'elron', trains: [],
+    })
+    expect(String(fetchImpl.mock.calls[0]![0])).toBe('https://app.example/api/trains/elron')
+    expect(fetchImpl.mock.calls[0]![1]).toMatchObject({
+      credentials: 'omit', referrerPolicy: 'no-referrer', redirect: 'error',
+    })
+    const invalid = createTrainProviders({
+      ...TRAIN_CONFIG, elron: { endpoint: 'https://elsewhere.example/positions' },
+    }, { fetchImpl, origin: 'https://app.example' })
+    await expect(invalid.elron.load(new AbortController().signal)).rejects.toThrow('same-origin')
+    expect(fetchImpl).toHaveBeenCalledTimes(1)
+  })
 })
 
 describe('Fintraffic train parsing', () => {

@@ -9,6 +9,7 @@ export interface GtfsVehiclePosition {
   vehicleId?: string
   label?: string
   tripId?: string
+  startDate?: string
   routeId?: string
   latitude: number
   longitude: number
@@ -140,6 +141,7 @@ const decodeVehicle = (
   let speed: number | undefined
   let timestamp: number | undefined
   let tripId: string | undefined
+  let startDate: string | undefined
   let routeId: string | undefined
   let vehicleId: string | undefined
   let label: string | undefined
@@ -147,6 +149,7 @@ const decodeVehicle = (
     if (field.number === 1 && field.bytes) {
       fields(field.bytes, (trip) => {
         if (trip.number === 1) tripId = text(trip, limits.maximumStringBytes)
+        if (trip.number === 3) startDate = text(trip, limits.maximumStringBytes)
         if (trip.number === 5) routeId = text(trip, limits.maximumStringBytes)
       })
     } else if (field.number === 2 && field.bytes) {
@@ -184,6 +187,7 @@ const decodeVehicle = (
     ...(vehicleId ? { vehicleId } : {}),
     ...(label ? { label } : {}),
     ...(tripId ? { tripId } : {}),
+    ...(startDate ? { startDate } : {}),
     ...(routeId ? { routeId } : {}),
     latitude,
     longitude,
@@ -200,11 +204,15 @@ export const decodeGtfsVehicleFeed = (
   limits: GtfsDecodeLimits,
 ): GtfsVehicleFeed => {
   let feedTimestamp: number | undefined
+  let version: string | undefined
+  let incrementality = 0
   let entities = 0
   const vehicles: GtfsVehiclePosition[] = []
   fields(bytes, (field) => {
     if (field.number === 1 && field.bytes) {
       fields(field.bytes, (header) => {
+        if (header.number === 1) version = text(header, limits.maximumStringBytes)
+        if (header.number === 2 && header.wireType === 0) incrementality = header.value
         if (header.number === 3 && header.wireType === 0) feedTimestamp = header.value
       })
       return
@@ -228,6 +236,9 @@ export const decodeGtfsVehicleFeed = (
     }
     vehicles.push(vehicle)
   })
+  if (!['1.0', '2.0'].includes(version ?? '') || incrementality !== 0) {
+    throw new GtfsDecodeError('Expected a complete GTFS-Realtime feed')
+  }
   return {
     ...(feedTimestamp !== undefined && feedTimestamp > 0 ? { feedTimestamp } : {}),
     vehicles,

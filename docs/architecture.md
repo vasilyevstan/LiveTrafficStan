@@ -1664,6 +1664,7 @@ other layer preferences.
 | Entur | Norway: southern network, Nordland line and Ofoten line rectangles | GraphQL `vehicles(mode: RAIL)` with `maxDataAge: PT10M` and `ET-Client-Name` |
 | MBTA | Greater Boston commuter rail | keyless `/vehicles?filter[route_type]=2` with sparse fields |
 | MTA LIRR | Long Island Rail Road | same-origin `GET /api/trains/lirr` |
+| Elron community feed | Estonia passenger network rectangle | same-origin `GET /api/trains/elron` |
 
 `src/providers/rail/trainSources.ts` owns names, coverage rectangles, terms
 and attribution. Each source has several rail-network rectangles instead of
@@ -1676,7 +1677,7 @@ is filtered locally to the viewport.
 
 `TrainController` keeps one scheduler, generation and abort controller per
 source. A source has at most one request in flight. The next starts at the
-later of `lastStartedAt + 15 s` and any `Retry-After` or `429` back-off
+later of `lastStartedAt + source cadence` (15 s; Elron 60 s) and any `Retry-After` or `429` back-off
 boundary (doubling to at most five minutes), so camera moves cannot add
 requests. Pausing aborts only the in-flight request; resuming keeps the
 cadence and back-off boundaries. Late responses from an aborted generation
@@ -1695,6 +1696,18 @@ older than two minutes are stale and dimmed; after ten minutes they are
 removed. Trains have no trails, interpolation, history, Saved identities,
 metadata, photos or share links.
 
+LIRR and Elron share `worker/gtfsTrainProxy.ts` and the bounded GTFS-Realtime
+decoder, not a network lifecycle or cache key. Fixed route definitions retain
+LIRR's 15 s reuse and use 60 s for Elron. Only complete-feed GTFS headers are
+accepted; differential feeds cannot masquerade as complete snapshots.
+Elron omits Content-Type in the observed public response, so that fixed
+source alone permits an absent type after validating the complete protobuf.
+Explicit unsafe types still fail. Its stable identity is service date plus
+trip ID, never the entity ID's changing timestamp. Missing/invalid service
+dates are omitted. The community converter preserves Elron map coordinates
+and native times while matching service identities to timetables; TrackStan
+does not call that internal map endpoint, load schedules or collect rider GPS.
+
 The map uses one persistent `traffic-trains` GeoJSON source with flat
 markers, labels and a selection ring. From zoom 9 a train with a finite
 course is drawn by the shared 3D model layer as `train`, or `train-freight`
@@ -1705,8 +1718,15 @@ show reported identity, category, speed, course origin, observation and
 receipt times, coordinates and the source's attribution. LIRR details
 disclose when the feed lags by more than one minute.
 
+Train overview models have a 48 px pre-aspect screen floor and maximum 3:1
+length-to-width ratio while enlarged, yielding at least 27x9 px with the
+bundled meshes in a flat overview. At close zoom they converge to the original
+geometry. Labels start at zoom 9 with 12 px text and a contrast halo; flat
+fallback dots have a 2 px contrasting stroke. Other model classes, train
+positions, observation opacity and course eligibility are unchanged.
+
 Train credits are not attached to the `traffic-trains` source: MapLibre would
-then show all four long credits whenever the layer is visible, including
+then show every long credit whenever the layer is visible, including
 where no feed applies. `App` derives the credited feeds with
 `activeTrainSources` from the same settled viewport that gates polling, and
 `TrafficMap` hands one `Trains: ...` item, in canonical source order, to the

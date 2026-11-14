@@ -468,8 +468,8 @@ describe('train model instances', () => {
       const lengthPx = (instance.floorPx * instance.lengthMeters) / extent / instance.overviewStretch
       const beamPx = (instance.floorPx * instance.beamMeters * instance.overviewStretch) / extent
       expect(lengthPx / beamPx, instance.model).toBeCloseTo(cap, 9)
-      expect(beamPx, instance.model).toBeGreaterThanOrEqual(5.5)
-      expect(lengthPx, instance.model).toBeGreaterThanOrEqual(20)
+      expect(beamPx, instance.model).toBeGreaterThanOrEqual(9)
+      expect(lengthPx, instance.model).toBeGreaterThanOrEqual(27)
     }
   })
 })

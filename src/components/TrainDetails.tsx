@@ -92,6 +92,7 @@ export function TrainDetails({
       <p className="metadata-status">
         Last reported position; not predicted, scheduled, or snapped to track.
       </p>
+      {source.notice && <p className="metadata-status">{source.notice}</p>}
       <p className="metadata-attribution">
         <a href={source.websiteUrl} target="_blank" rel="noreferrer">{source.name}</a> ·{' '}
         <a href={source.licenseUrl} target="_blank" rel="noreferrer">{source.licenseName}</a>

@@ -86,6 +86,7 @@ const harness = () => {
     entur: manualProvider('entur'),
     mbta: manualProvider('mbta'),
     lirr: manualProvider('lirr'),
+    elron: manualProvider('elron'),
   }
   let latest: TrainSourceStatuses | undefined
   const onWarning = vi.fn()
@@ -95,8 +96,10 @@ const harness = () => {
       entur: sources.entur.provider,
       mbta: sources.mbta.provider,
       lirr: sources.lirr.provider,
+      elron: sources.elron.provider,
     },
     pollIntervalMs: 15_000,
+    sourcePollIntervalMs: { elron: 60_000 },
     rateLimitBackoffMaxMs: 300_000,
     course: { minimumDistanceKm: 0.03, maximumIntervalMs: 180_000 },
     onChange: (statuses) => {
@@ -111,6 +114,39 @@ const harness = () => {
 const active = (...sourceIds: TrainSourceId[]) => new Set(sourceIds)
 
 describe('TrainController', () => {
+  it('preserves the slower Elron cadence and retry boundary across coverage and page pauses', async () => {
+    const { clock, sources, controller } = harness()
+    controller.start(false, active('elron', 'fintraffic'))
+    await clock.advance(0)
+    sources.elron.calls[0]!.resolve({
+      sourceId: 'elron', retrievedAt: 0, trains: [position('elron', 'trip:day')],
+    })
+    sources.fintraffic.calls[0]!.resolve({ sourceId: 'fintraffic', retrievedAt: 0, trains: [] })
+    await clock.advance(15_000)
+    expect(sources.fintraffic.calls).toHaveLength(2)
+    expect(sources.elron.calls).toHaveLength(1)
+    controller.setPaused(true)
+    controller.setActiveSources(active('fintraffic'))
+    await clock.advance(20_000)
+    controller.setActiveSources(active('elron', 'fintraffic'))
+    controller.setPaused(false)
+    await clock.advance(24_999)
+    expect(sources.elron.calls).toHaveLength(1)
+    await clock.advance(1)
+    expect(sources.elron.calls).toHaveLength(2)
+    sources.elron.calls[1]!.reject(new ProviderError('Rate limited', 429, 180_000))
+    await clock.advance(0)
+    controller.setPaused(true)
+    await clock.advance(60_000)
+    controller.setPaused(false)
+    await clock.advance(119_999)
+    expect(sources.elron.calls).toHaveLength(2)
+    await clock.advance(1)
+    expect(sources.elron.calls).toHaveLength(3)
+    controller.stop()
+    expect(sources.elron.calls[2]!.signal.aborted).toBe(true)
+  })
+
   it('polls only intersecting sources at the configured cadence', async () => {
     const { clock, sources, controller, statuses } = harness()
     controller.start(false, active('fintraffic'))
