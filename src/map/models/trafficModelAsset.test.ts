@@ -93,8 +93,12 @@ describe('committed traffic model asset', () => {
     for (const model of models.values()) {
       // Named spacecraft draw at most one instance each, so they get more detail.
       const named = model.id === 'orbital-iss' || model.id === 'orbital-hubble'
+      // Fleet trainsets model a multi-car consist rather than one car.
+      const trainset = model.kind === 'train' && model.id !== 'train' && model.id !== 'train-freight'
       const budget = named
         ? 400
+        : trainset
+        ? 450
         : { aircraft: 300, vessel: 260, orbital: 120, train: 260 }[model.kind]
       expect(model.triangleCount, model.id).toBeLessThanOrEqual(budget)
       expect(model.vertices.byteLength).toBe(
@@ -105,7 +109,7 @@ describe('committed traffic model asset', () => {
       (sum, model) => sum + model.triangleCount,
       0,
     )
-    expect(total).toBe(3_316)
+    expect(total).toBe(5_016)
   })
 
   it('uses the starboard, forward and up frame with a keel origin', () => {

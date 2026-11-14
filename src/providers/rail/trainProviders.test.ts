@@ -25,6 +25,8 @@ const fintrafficTrain = (overrides: Record<string, unknown> = {}, location: Reco
   operator: { shortCode: 'vr', name: 'VR-Yhtymä Oyj' },
   trainType: { name: 'IC', trainCategory: { name: 'Long-distance' } },
   commuterLineid: '',
+  first: [{ scheduledTime: '2026-11-14T10:57:00.000Z', station: { name: 'Helsinki asema' } }],
+  last: [{ scheduledTime: '2026-11-14T15:04:00.000Z', station: { name: 'Joensuu asema' } }],
   trainLocations: [{
     timestamp: '2026-11-14T13:24:07.000Z',
     speed: 149,
@@ -34,27 +36,51 @@ const fintrafficTrain = (overrides: Record<string, unknown> = {}, location: Reco
   ...overrides,
 })
 
-describe('Elron community train parsing', () => {
-  it('keeps long trip/day identity and native observation time without inventing train numbers or motion', () => {
-    const id = `20261114:${'trip-'.repeat(35)}`
-    const row = {
-      id, tripId: 'GO203_26_1234', latitude: 59.44, longitude: 24.75,
-      observedAt: '2026-11-14T13:24:30.000Z',
-    }
+describe('Elron train map parsing', () => {
+  const row = {
+    id: '2026-11-14:106', trainNumber: '106', route: 'Tallinn - Tartu',
+    latitude: 58.39578, longitude: 26.68131, bearing: 159, speedKph: 103,
+    delayMinutes: 2, lastStop: 'Kärkna',
+    scheduledDepartureAt: '2026-11-14T11:34:00.000Z',
+    scheduledArrivalAt: '2026-11-14T14:22:00.000Z',
+    observedAt: '2026-11-14T13:24:30.000Z',
+  }
+
+  it('keeps service-day identity, number, route ends, schedule, delay and reported heading', () => {
     const trains = parseElronTrains({
       retrievedAt: new Date(retrievedAt).toISOString(),
       vehicles: [row, { ...row, observedAt: '2026-11-14T13:23:00.000Z' }],
     }, context('elron'))
     expect(trains).toEqual([{
-      id: `train:elron:${id}`, sourceId: 'elron', name: 'Elron train',
-      category: 'passenger', latitude: 59.44, longitude: 24.75,
-      observedAt: Date.parse(row.observedAt),
+      id: 'train:elron:2026-11-14:106', sourceId: 'elron', name: 'Elron 106',
+      category: 'passenger', latitude: 58.39578, longitude: 26.68131,
+      observedAt: Date.parse(row.observedAt), trainNumber: '106', operator: 'Elron',
+      line: 'Tallinn - Tartu', origin: 'Tallinn', destination: 'Tartu',
+      scheduledDepartureAt: Date.parse(row.scheduledDepartureAt),
+      scheduledArrivalAt: Date.parse(row.scheduledArrivalAt),
+      delayMinutes: 2, lastStop: 'Kärkna', speedKph: 103,
+      courseDegrees: 159, courseOrigin: 'reported',
     }])
+  })
+
+  it('keeps parenthesised routes whole and omits absent or invalid optional fields', () => {
+    const [train] = parseElronTrains({ vehicles: [{
+      id: '2026-11-14:220', trainNumber: '220', route: 'Tartu - Tapa (Tallinn)',
+      latitude: 59.1, longitude: 26.1, delayMinutes: 1.5,
+      observedAt: '2026-11-14T13:24:30.000Z',
+    }] }, context('elron'))
+    expect(train).toEqual({
+      id: 'train:elron:2026-11-14:220', sourceId: 'elron', name: 'Elron 220',
+      category: 'passenger', latitude: 59.1, longitude: 26.1,
+      observedAt: Date.parse('2026-11-14T13:24:30.000Z'), trainNumber: '220',
+      operator: 'Elron', line: 'Tartu - Tapa (Tallinn)',
+    })
     expect(parseElronTrains({ vehicles: [
-      { ...row, id: 'future', observedAt: '2026-11-14T13:26:01.000Z' },
-      { ...row, id: 'missing-time', observedAt: undefined },
-      { ...row, id: 'invalid-position', latitude: 91 },
-      { ...row, id: 'x'.repeat(266) },
+      { ...row, observedAt: '2026-11-14T13:26:01.000Z' },
+      { ...row, observedAt: undefined },
+      { ...row, latitude: 91 },
+      { ...row, id: 'trip-without-day' },
+      { ...row, trainNumber: undefined },
     ] }, context('elron'))).toEqual([])
   })
 
@@ -100,6 +126,11 @@ describe('Fintraffic train parsing', () => {
       latitude: 61.048172,
       observedAt: Date.parse('2026-11-14T13:24:07.000Z'),
       trainNumber: '5',
+      trainType: 'IC',
+      origin: 'Helsinki asema',
+      destination: 'Joensuu asema',
+      scheduledDepartureAt: Date.parse('2026-11-14T10:57:00.000Z'),
+      scheduledArrivalAt: Date.parse('2026-11-14T15:04:00.000Z'),
       operator: 'VR-Yhtymä Oyj',
       speedKph: 149,
     })
@@ -149,6 +180,7 @@ describe('Entur train parsing', () => {
       bearing: 113.29,
       line: { lineName: 'Spikkestad-Oslo S-Lillestrøm', publicCode: 'L1' },
       operator: { name: null },
+      originName: 'Drammen',
       destinationName: 'Lillestrøm',
     }, {
       vehicleId: 'missing-location',
@@ -164,6 +196,7 @@ describe('Entur train parsing', () => {
       observedAt: Date.parse('2026-11-14T13:16:17.406Z'),
       trainNumber: '2242',
       line: 'Spikkestad-Oslo S-Lillestrøm',
+      origin: 'Drammen',
       destination: 'Lillestrøm',
       courseDegrees: 113.29,
       courseOrigin: 'reported',

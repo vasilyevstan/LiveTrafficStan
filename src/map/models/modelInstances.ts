@@ -30,8 +30,8 @@ import {
   trafficModelColors,
   trafficModelForMarkerIcon,
   trafficModelKind,
-  trainModelColors,
-  trainModelForCategory,
+  trainColorsForTrain,
+  trainModelForTrain,
   type Rgb,
   type TrafficModelId,
 } from './trafficModelCatalog'
@@ -254,7 +254,7 @@ export const trainModelInstances = (
     ) {
       continue
     }
-    const model = trainModelForCategory(train.category)
+    const model = trainModelForTrain(train)
     const size = dimensions.get(model)
     if (!size) continue
     instances.push({
@@ -274,7 +274,7 @@ export const trainModelInstances = (
       floorPx: TRAFFIC_MODEL_CONFIG.minimumScreenSizePx.train,
       opacity: trafficObservationOpacity(theme, train.freshness === 'stale'),
       flags: train.id === selectedId ? MODEL_FLAG_SELECTED : 0,
-      ...trainModelColors(theme, train.category),
+      ...trainColorsForTrain(theme, train),
     })
   }
   return instances

@@ -1431,22 +1431,27 @@ successful decoded body is reused through the Workers cache for 15 seconds.
 A cache failure only loses reuse. The Vite dev server does not provide this
 route; use `npm run preview:worker`.
 
-### Elron community proxy
+### Elron train-map proxy
 
-`GET /api/trains/elron` reuses the same bounded proxy and decoder, with a fixed
-`https://jbb.ghsq.de/gtfs/elron/VehiclePositions` upstream, 60 s per-edge
-successful-response reuse, 1,000 entities/vehicles and 256-byte strings.
-It adds only `User-Agent: TrackStan/1.6.0 (https://trackstan.xyz)` to the
-reviewed protobuf Accept header. No browser headers, credentials, coordinates,
-new secret or binding are sent. Cache reuse is per edge, not a global
-one-request-per-minute guarantee.
+`GET /api/trains/elron` reuses the same bounded proxy transport (deadline,
+512 KiB cap, redirect rejection, `429`/`503` `Retry-After`, `no-store`
+output) with a fixed `https://elron.ee/map_data.json` upstream, an
+`application/json` Accept header and Content-Type allowlist, and 60 s
+per-edge successful-response reuse. It adds only
+`User-Agent: TrackStan/1.6.0 (https://trackstan.xyz)`. No browser headers,
+credentials, coordinates, new secret or binding are sent. Cache reuse is per
+edge, not a global one-request-per-minute guarantee.
 
-Both feeds require a supported complete GTFS-Realtime header; malformed or
-differential feeds fail. Elron alone accepts an absent Content-Type because
-the verified source omits it; protobuf validation still applies. Its IDs use
-validated service date plus trip ID, not the changing entity ID. Position
-clocks remain the source's VehiclePosition timestamps. Existing LIRR
-identity, caps, cadence and output remain unchanged.
+`worker/elronMapFeed.ts` rejects invalid UTF-8/JSON, a missing `data` list
+or more than 200 trains, then keeps only records with a numeric train number,
+Estonian coordinates and a valid Tallinn position time. Text is trimmed and
+capped at 80 characters without control characters; heading, speed
+(0-250 km/h) and integer delay (at most 12 h) are range-checked; coordinates
+are rounded to five decimals. Tallinn wall-clock times become UTC with
+daylight-saving handling; a journey that departed before midnight keeps its
+service date, and an arrival before departure falls on the next day. The ID
+is service date plus train number, so the newest observation per train wins.
+LIRR keeps its GTFS-Realtime decoder, identity, caps, cadence and output.
 
 Deploy through the normal exact-main workflow with all existing production
 feature inputs preserved. No infrastructure migration is needed. Rollback to

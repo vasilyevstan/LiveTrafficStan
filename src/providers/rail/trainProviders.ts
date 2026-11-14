@@ -151,6 +151,14 @@ const fintrafficCategory = (value: unknown): TrainCategory => {
   }
 }
 
+const timetableRow = (value: unknown) => {
+  const row = Array.isArray(value) ? value[0] : undefined
+  if (!isRecord(row)) return undefined
+  const station = isRecord(row.station) ? text(row.station.name) : undefined
+  const scheduledAt = timestamp(row.scheduledTime)
+  return { station, scheduledAt }
+}
+
 export const parseFintrafficTrains = (
   payload: unknown,
   context: ParseContext,
@@ -182,6 +190,8 @@ export const parseFintrafficTrains = (
     const line = text(record.commuterLineid)
     const speed = speedKph(location.speed)
     const operatorName = text(operator.name) ?? text(operator.shortCode)?.toUpperCase()
+    const first = timetableRow(record.first)
+    const last = timetableRow(record.last)
     return {
       id: trainId('fintraffic', `${departureDate}:${trainNumber}`),
       sourceId: 'fintraffic',
@@ -191,7 +201,12 @@ export const parseFintrafficTrains = (
       latitude,
       observedAt,
       trainNumber,
+      ...(typeName ? { trainType: typeName } : {}),
       ...(line ? { line } : {}),
+      ...(first?.station ? { origin: first.station } : {}),
+      ...(last?.station ? { destination: last.station } : {}),
+      ...(first?.scheduledAt !== undefined ? { scheduledDepartureAt: first.scheduledAt } : {}),
+      ...(last?.scheduledAt !== undefined ? { scheduledArrivalAt: last.scheduledAt } : {}),
       ...(operatorName ? { operator: operatorName } : {}),
       ...(speed !== undefined ? { speedKph: speed } : {}),
     }
@@ -218,6 +233,7 @@ export const parseEnturTrains = (
     const publicCode = text(line.publicCode)
     const lineName = text(line.lineName)
     const trainNumber = /^(\d{1,6})-\d{4}-\d{2}-\d{2}$/.exec(vehicleId)?.[1]
+    const origin = text(record.originName)
     const destination = text(record.destinationName)
     const operatorName = text(operator.name)
     const bearing = course(record.bearing)
@@ -233,6 +249,7 @@ export const parseEnturTrains = (
       observedAt,
       ...(trainNumber ? { trainNumber } : {}),
       ...(lineName ? { line: lineName } : publicCode ? { line: publicCode } : {}),
+      ...(origin ? { origin } : {}),
       ...(destination ? { destination } : {}),
       ...(operatorName ? { operator: operatorName } : {}),
       // Entur speed units are not documented for this field; it is not shown.
@@ -306,17 +323,16 @@ export const parseMbtaTrains = (
   }))
 }
 
-const parseProxiedTrains = (
+export const parseLirrTrains = (
   payload: unknown,
   context: ParseContext,
 ): TrainPosition[] => {
-  const elron = context.sourceId === 'elron'
   if (!isRecord(payload) || !Array.isArray(payload.vehicles)) {
-    throw new ProviderError(`${elron ? 'Elron community feed' : 'LIRR'} returned an invalid response`)
+    throw new ProviderError('LIRR returned an invalid response')
   }
   return finalize(context, payload.vehicles.map((record): TrainPosition | undefined => {
     if (!isRecord(record)) return undefined
-    const vehicleId = text(record.id, elron ? 265 : MAX_TEXT_CHARACTERS)
+    const vehicleId = text(record.id)
     const longitude = finiteNumber(record.longitude)
     const latitude = finiteNumber(record.latitude)
     const observedAt = timestamp(record.observedAt)
@@ -324,15 +340,15 @@ const parseProxiedTrains = (
       return undefined
     }
     const tripId = text(record.tripId)
-    const trainNumber = !elron && tripId ? /^[A-Z]+\d+_\d+_(\d{1,6})(?:_|$)/.exec(tripId)?.[1] : undefined
+    const trainNumber = tripId ? /^[A-Z]+\d+_\d+_(\d{1,6})(?:_|$)/.exec(tripId)?.[1] : undefined
     const label = text(record.label)
     const bearing = course(record.bearing)
     const speed = speedKph(record.speedMetersPerSecond, 3.6)
     return {
       id: trainId(context.sourceId, vehicleId),
       sourceId: context.sourceId,
-      name: elron ? 'Elron train' : trainNumber ? `Train ${trainNumber}` : `Train ${label ?? vehicleId}`,
-      category: elron ? 'passenger' : 'commuter',
+      name: trainNumber ? `Train ${trainNumber}` : `Train ${label ?? vehicleId}`,
+      category: 'commuter',
       longitude,
       latitude,
       observedAt,
@@ -344,12 +360,67 @@ const parseProxiedTrains = (
   }))
 }
 
-export const parseLirrTrains = parseProxiedTrains
-export const parseElronTrains = parseProxiedTrains
+/** Splits only an unambiguous `A - B` route; parenthesised variants stay whole. */
+const routeEnds = (route: string | undefined) => {
+  if (!route || /[()]/.test(route)) return undefined
+  const parts = route.split(/\s*-\s*/)
+  return parts.length === 2 && parts[0] && parts[1]
+    ? { origin: parts[0], destination: parts[1] }
+    : undefined
+}
 
-const fintrafficQuery = (since: string) => `{ currentlyRunningTrains(where: {trainLocations: {contains: {timestamp: {greaterThan: "${since}"}}}}) { trainNumber departureDate operator { shortCode name } trainType { name trainCategory { name } } commuterLineid trainLocations(orderBy: {timestamp: DESCENDING}, take: 1) { timestamp speed location } } }`
+export const parseElronTrains = (
+  payload: unknown,
+  context: ParseContext,
+): TrainPosition[] => {
+  if (!isRecord(payload) || !Array.isArray(payload.vehicles)) {
+    throw new ProviderError('Elron train map returned an invalid response')
+  }
+  return finalize(context, payload.vehicles.map((record): TrainPosition | undefined => {
+    if (!isRecord(record)) return undefined
+    const identity = text(record.id)
+    const trainNumber = text(record.trainNumber)
+    const longitude = finiteNumber(record.longitude)
+    const latitude = finiteNumber(record.latitude)
+    const observedAt = timestamp(record.observedAt)
+    if (!identity || !/^\d{4}-\d{2}-\d{2}:\d{1,5}$/.test(identity) || !trainNumber ||
+      !validPosition(longitude, latitude) || latitude === undefined || observedAt === undefined) {
+      return undefined
+    }
+    const route = text(record.route)
+    const ends = routeEnds(route)
+    const bearing = course(record.bearing)
+    const speed = speedKph(record.speedKph)
+    const delay = finiteNumber(record.delayMinutes)
+    const lastStop = text(record.lastStop)
+    const departure = timestamp(record.scheduledDepartureAt)
+    const arrival = timestamp(record.scheduledArrivalAt)
+    return {
+      id: trainId('elron', identity),
+      sourceId: 'elron',
+      name: `Elron ${trainNumber}`,
+      category: 'passenger',
+      longitude,
+      latitude,
+      observedAt,
+      trainNumber,
+      operator: 'Elron',
+      ...(route ? { line: route } : {}),
+      ...(ends ?? {}),
+      ...(departure !== undefined ? { scheduledDepartureAt: departure } : {}),
+      ...(arrival !== undefined ? { scheduledArrivalAt: arrival } : {}),
+      ...(delay !== undefined && Number.isInteger(delay) && Math.abs(delay) <= 720
+        ? { delayMinutes: delay } : {}),
+      ...(lastStop ? { lastStop } : {}),
+      ...(speed !== undefined ? { speedKph: speed } : {}),
+      ...(bearing !== undefined ? { courseDegrees: bearing, courseOrigin: 'reported' as const } : {}),
+    }
+  }))
+}
 
-const enturQuery = (maximumDataAge: string) => `{ vehicles(mode: RAIL, maxDataAge: "${maximumDataAge}") { vehicleId lastUpdated location { latitude longitude } speed bearing line { lineName publicCode } operator { name } destinationName } }`
+const fintrafficQuery = (since: string) => `{ currentlyRunningTrains(where: {trainLocations: {contains: {timestamp: {greaterThan: "${since}"}}}}) { trainNumber departureDate operator { shortCode name } trainType { name trainCategory { name } } commuterLineid trainLocations(orderBy: {timestamp: DESCENDING}, take: 1) { timestamp speed location } first: timeTableRows(take: 1) { scheduledTime station { name } } last: timeTableRows(orderBy: {scheduledTime: DESCENDING}, take: 1) { scheduledTime station { name } } } }`
+
+const enturQuery = (maximumDataAge: string) => `{ vehicles(mode: RAIL, maxDataAge: "${maximumDataAge}") { vehicleId lastUpdated location { latitude longitude } speed bearing line { lineName publicCode } operator { name } originName destinationName } }`
 
 const MBTA_SEARCH = new URLSearchParams({
   'filter[route_type]': '2',

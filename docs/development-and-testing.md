@@ -5964,6 +5964,66 @@ Evidence files are preserved in the task's session artifacts:
 `train-visibility-before`, `train-visibility-after`,
 `train-visibility-baseline-lifecycle` and `train-visibility-new-lifecycle`.
 
+The Elron feed path above is historical. #713 replaced it with the public train
+map; see the next section.
+
+## Fleet trainsets and Elron train details acceptance (#713)
+
+Chrome 157.0.8103.78, 2026-11-14, against the local `wrangler dev` Worker and
+production build. The model asset is 118,720 bytes, SHA-256
+`d11c2039159e9273c9839353e21a8ba0719a789783365a9c217c5675f746fabe`, and
+contains 27 models with 5,016 triangles in total. Blender 5.2.3 rebuilt it
+byte-identically.
+
+Two Elron trains were served from intercepted fixtures. Desktop was
+1280 x 900 at DPR 1, measured after load. The camera was Tallinn Baltic
+station at zoom 16.3 and pitch 55, in light and dark themes.
+
+| Measurement | Dark | Light |
+| --- | ---: | ---: |
+| `train-flirt` instances | 2 | 2 |
+| Anchors with model pixels | 2 of 2 | 2 of 2 |
+| Train 106 rendered length x beam (CSS px) | 132 x 12 | 132 x 12 |
+| Train 106 changed pixels | 1,231 | 1,398 |
+| Train 231 changed pixels (partly behind a building) | 386 | 439 |
+
+The first fixture placed train 106 inside the extruded station building, which
+correctly hid it. Only the fixture coordinate was moved onto the open track fan.
+The orange-and-grey FLIRT livery and articulated cars were inspected visually
+in both themes.
+
+Selecting train 106 showed every expected detail row:
+
+- Title "Elron 106", train number 106, line "Tallinn - Tartu".
+- From Tallinn, departure 20:34 EET; destination Tartu, arrival 23:22 EET.
+- Delay "2 min late" and last stop Kärkna.
+- The provenance "not an official API and not endorsed by Elron".
+
+The parenthesised route of train 231 stayed whole as the line, with no invented
+destination. Only the Elron route was requested. No visitor coordinates,
+credentials or runtime errors occurred. Synthetic Entur desktop-dark and
+phone-light visibility, selection, theme and layer-off checks still passed.
+
+A single bounded live check through the local Worker decoded two current trains
+from `https://elron.ee/map_data.json`. Selecting train 147
+"(Tartu) Tapa - Tallinn" at 120 km/h showed departure 23:54 EET, arrival
+00:43 EET, last stop Tapa and the same provenance. Only the Elron route was
+requested, with no coordinates, credentials or runtime errors.
+
+Deterministic regressions cover:
+
+- The decoder's bounds, text and count limits, Tallinn-to-UTC conversion
+  (including DST) and stable `YYYY-MM-DD:train` identities.
+- Proxy caching, content-type checks and error paths.
+- Unambiguous-route splitting, origin and schedule fields for Fintraffic, Entur
+  and MBTA, and source-time-zone formatting.
+- Fleet selection, livery coverage and fleet instances.
+- The 450-triangle trainset budget.
+
+The full suite passed 3,092 tests in 252 files with `--maxWorkers=2`. Lint,
+typecheck, the four data validators and the build passed. Evidence is preserved
+in the task's `train-713` session artifacts.
+
 ## Live trains acceptance
 
 Deterministic coverage:

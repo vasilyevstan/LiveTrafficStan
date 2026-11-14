@@ -24,9 +24,7 @@ describe('Cloudflare worker routing', () => {
 
   it('routes Elron independently with an exact release marker and no asset fallback', async () => {
     const assets = vi.fn()
-    const upstream = vi.fn(async () => new Response(
-      new Uint8Array([10, 5, 10, 3, 50, 46, 48]),
-    ))
+    const upstream = vi.fn(async () => Response.json({ status: 1, data: [] }))
     vi.stubGlobal('fetch', upstream)
     const response = await worker.fetch(
       new Request(`https://app.example${ELRON_PROXY_PATH}`),
