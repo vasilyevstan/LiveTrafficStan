@@ -20,6 +20,12 @@ export class InitiallyCompactAttributionControl extends AttributionControl {
     return container
   }
 
+  /** Replaces the custom credits and refreshes a mounted control in place. */
+  setCustomAttribution(attribution: readonly string[]) {
+    this.options = { ...this.options, customAttribution: [...attribution] }
+    if (this.disclosure) this._updateAttributions()
+  }
+
   compactOnce() {
     if (this.initialized || this.userChanged || !this.disclosure) return
     this.initialized = true

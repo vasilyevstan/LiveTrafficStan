@@ -1,6 +1,7 @@
 import type { Map as MapLibreMap } from 'maplibre-gl'
 import { describe, expect, it, vi } from 'vitest'
-import type { DisplayTrain } from '../domain/trains'
+import { TRAIN_SOURCE_IDS, type DisplayTrain } from '../domain/trains'
+import { TRAIN_SOURCES } from '../providers/rail/trainSources'
 import { LAYER_SELECTED_TRAIL } from './trafficStyle'
 import {
   LAYER_TRAIN_LABELS,
@@ -9,6 +10,7 @@ import {
   TRAIN_LAYER_IDS,
   installTrainStyle,
   setTrainModelsActive,
+  trainAttribution,
   trainFeatures,
   trainPointFilter,
 } from './trainStyle'
@@ -121,7 +123,7 @@ describe('train style', () => {
     expect(trainPointFilter(true)).toEqual(['!=', ['get', 'oriented'], true])
   })
 
-  it('is idempotent, attributed, theme-aware, and installs below traffic', () => {
+  it('is idempotent, theme-aware, and installs below traffic', () => {
     const { map, sources, sourceOptions, layers, properties, filters, addSource, addLayer } =
       fakeMap()
     const data = trainFeatures([train()], null)
@@ -130,11 +132,7 @@ describe('train style', () => {
     installTrainStyle(map, data, 'dark', false, true)
 
     expect(addSource).toHaveBeenCalledTimes(1)
-    const attribution = (sourceOptions.get(SOURCE_TRAINS) as { attribution: string })
-      .attribution
-    for (const source of ['Fintraffic', 'Entur', 'MBTA', 'MTA']) {
-      expect(attribution).toContain(source)
-    }
+    expect(sourceOptions.get(SOURCE_TRAINS)).not.toHaveProperty('attribution')
     expect(sources.get(SOURCE_TRAINS)?.setData).toHaveBeenCalledTimes(1)
     expect(addLayer).toHaveBeenCalledTimes(TRAIN_LAYER_IDS.length)
     expect(addLayer.mock.calls.every(([, before]) => before === LAYER_SELECTED_TRAIL)).toBe(
@@ -155,5 +153,30 @@ describe('train style', () => {
 
     setTrainModelsActive(map, false)
     expect(filters.get(LAYER_TRAIN_POINTS)).toEqual(trainPointFilter(false))
+  })
+})
+
+describe('train map credit', () => {
+  it('credits nothing when no feed covers the view', () => {
+    expect(trainAttribution([])).toBeUndefined()
+  })
+
+  it('credits only the covering feed with one prefix and unchanged wording and link', () => {
+    const credit = trainAttribution(['fintraffic'])
+    expect(credit).toBe(
+      `Trains: <a href="${TRAIN_SOURCES.fintraffic.websiteUrl}" target="_blank" rel="noreferrer">` +
+        `${TRAIN_SOURCES.fintraffic.attribution}</a>`,
+    )
+    for (const other of ['Entur', 'MBTA', 'MTA']) expect(credit).not.toContain(other)
+  })
+
+  it('keeps canonical order, one prefix and no duplicates across feeds', () => {
+    const credit = trainAttribution(['lirr', 'entur', 'lirr', 'fintraffic', 'mbta']) ?? ''
+    expect(credit.match(/Trains:/g)).toHaveLength(1)
+    expect(credit.match(/<a /g)).toHaveLength(TRAIN_SOURCE_IDS.length)
+    const positions = TRAIN_SOURCE_IDS.map((sourceId) =>
+      credit.indexOf(TRAIN_SOURCES[sourceId].attribution))
+    expect(positions.every((position) => position >= 0)).toBe(true)
+    expect(positions).toEqual([...positions].sort((a, b) => a - b))
   })
 })

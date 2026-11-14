@@ -1284,10 +1284,14 @@ regions show a truthful no-coverage note instead of inferred positions.
 | [MBTA](https://www.mbta.com/developers/v3-api) | [MassDOT Developers License Agreement](https://github.com/mbta/gtfs-documentation/blob/master/developers-license-agreement.pdf) | `Data provided by MassDOT/MBTA; not endorsed by MassDOT or MBTA`; keyless requests every 15 s |
 | [MTA Long Island Rail Road](https://api.mta.info/#/lirrFeeds) | [MTA data feed terms](https://www.mta.info/developers/terms-and-conditions) | `Data from the MTA, redistributed by LiveTrafficStan; not endorsed by the MTA. Reports may lag and may be incomplete.`; one Worker fetch per edge per 15 s |
 
-The credits appear in the map attribution, **Settings → Data credits** and
-each selected train's details. The application identifier is the fixed
-`livetrafficstan-trackstan` string; no API key, account or personal data is
-sent.
+The map's compact credits carry one `Trains:` item with the exact credit of
+only the feeds whose rail-network rectangles overlap the settled view. It
+appears only while TRAINS is on and HISTORY and captured views are inactive,
+so a view with no train coverage, such as Tallinn, shows no train credit. Each
+selected train's details show its own source's exact credit, and **Settings →
+Data credits** names and links all four feeds. The application identifier is
+the fixed `livetrafficstan-trackstan` string; no API key, account or personal
+data is sent.
 
 Fintraffic, Entur and MBTA are fetched directly by the visitor's browser,
 with credentials, referrer and cache omitted, so those providers see the

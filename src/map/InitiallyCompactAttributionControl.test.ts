@@ -2,9 +2,18 @@ import { describe, expect, it, vi } from 'vitest'
 import { Map } from 'maplibre-gl'
 import { InitiallyCompactAttributionControl } from './InitiallyCompactAttributionControl'
 
+const updateAttributions = vi.hoisted(() => vi.fn())
+
 vi.mock('maplibre-gl', () => ({
   Map: class {},
   AttributionControl: class {
+    options: { compact?: boolean; customAttribution?: string[] }
+    constructor(options: { compact?: boolean; customAttribution?: string[] } = {}) {
+      this.options = options
+    }
+    _updateAttributions() {
+      updateAttributions()
+    }
     onAdd() {
       const summary = new EventTarget()
       const classes = new Set(['maplibregl-compact-show'])
@@ -59,5 +68,33 @@ describe('once-only native attribution compaction', () => {
     const remove = vi.spyOn(summary, 'removeEventListener')
     control.onRemove()
     expect(remove).toHaveBeenCalledWith('click', expect.any(Function))
+  })
+})
+
+describe('replaceable custom credits', () => {
+  it('replaces only the custom credits and refreshes a mounted control once', () => {
+    updateAttributions.mockClear()
+    const control = new InitiallyCompactAttributionControl(
+      { compact: true, customAttribution: ['Data credits'] },
+      false,
+    )
+    control.onAdd(new Map({ container: 'unused' }))
+    control.setCustomAttribution(['Data credits', 'Trains: Fintraffic'])
+    expect(control.options).toEqual({
+      compact: true,
+      customAttribution: ['Data credits', 'Trains: Fintraffic'],
+    })
+    expect(updateAttributions).toHaveBeenCalledTimes(1)
+  })
+  it('records credits without a refresh before mount and after removal', () => {
+    updateAttributions.mockClear()
+    const control = new InitiallyCompactAttributionControl({ compact: true }, false)
+    control.setCustomAttribution(['early'])
+    expect(control.options.customAttribution).toEqual(['early'])
+    control.onAdd(new Map({ container: 'unused' }))
+    control.onRemove()
+    control.setCustomAttribution(['late'])
+    expect(control.options.customAttribution).toEqual(['late'])
+    expect(updateAttributions).not.toHaveBeenCalled()
   })
 })

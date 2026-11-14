@@ -1649,6 +1649,11 @@ or Service Worker response is a release defect.
 - **"Zoom in to see trains."** The view is too large or tilted for the
   safe traffic footprint, the same rule as other traffic.
 - **Hidden in HISTORY or a captured view.** Trains are live only.
+- **No `Trains:` item in the map credits.** The compact credits name only
+  the feeds whose rail-network rectangles overlap the settled view, and only
+  while TRAINS is on outside HISTORY and captured views. A view without
+  coverage, such as Tallinn, shows none. **Settings → Data credits** always
+  names all four feeds and a selected train's details show its exact credit.
 - **A source note says it is unavailable.** That source failed, timed out or
   was rate limited. Earlier positions stay until they expire after ten
   minutes, and other sources keep updating. Fintraffic responses can take up
@@ -1707,6 +1712,10 @@ Do not hide MapLibre attribution controls. The application must visibly credit:
   is displayed;
 - Fintraffic Digitraffic and CC BY 4.0, including the filtering/normalization
   change notice.
+- The train feeds (Fintraffic, Entur, MBTA and the MTA) in the compact credits
+  while TRAINS is on and the view overlaps their rail networks; elsewhere they
+  are expected to be absent there but remain in **Settings → Data credits**
+  and in each selected train's details.
 - AISStream, Open Waters AIS and original-source credits when the supplement
   is enabled; retain the applicable AISHub, NLOD and volunteer-data terms.
 - Natural Earth and its public-domain terms, with generalized/incomplete

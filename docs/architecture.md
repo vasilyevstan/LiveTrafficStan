@@ -340,6 +340,8 @@ Resume uses existing navigation and returns focus to the retained map canvas.
 `InitiallyCompactAttributionControl` initializes native credits compact once.
 It respects user-open state through theme rehydration; the complete bounded
 credit surface and its own toggle remain reachable. No attribution is removed.
+Its custom credits can be replaced in place, which refreshes an open
+disclosure without collapsing it.
 
 `fullscreen.ts` owns one standard native operation at a time on the existing
 `main.app-shell`; `useFullscreen` is its React lifetime bridge. Availability
@@ -1702,6 +1704,18 @@ request. **In view** lists up to 20 trains in the view, and selected details
 show reported identity, category, speed, course origin, observation and
 receipt times, coordinates and the source's attribution. LIRR details
 disclose when the feed lags by more than one minute.
+
+Train credits are not attached to the `traffic-trains` source: MapLibre would
+then show all four long credits whenever the layer is visible, including
+where no feed applies. `App` derives the credited feeds with
+`activeTrainSources` from the same settled viewport that gates polling, and
+`TrafficMap` hands one `Trains: ...` item, in canonical source order, to the
+native credits control through `InitiallyCompactAttributionControl`. The item
+is empty when TRAINS is off, in HISTORY or a captured view, and where no feed
+overlaps the view. Selected-train details and **Settings → Data credits**
+remain unchanged. In the mobile shell and in a narrow workspace the expanded
+credits box is also capped at 40% of the visual viewport and scrolls when it
+overflows; the mobile shell sets its text at 0.72rem.
 
 ## Performance choices
 
