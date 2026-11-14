@@ -276,6 +276,8 @@ describe('interface presentation contracts', () => {
     expect(styles).toContain('--mobile-dock-height: 116px')
     expect(styles).toMatch(/\.workspace-dock\s*\{[^}]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);[^}]*grid-template-rows: repeat\(2, minmax\(0, 1fr\)\)/)
     expect(styles).toMatch(/\.app-shell--mobile-workspace \.maplibregl-ctrl-attrib\.maplibregl-compact-show \.maplibregl-ctrl-attrib-inner\s*\{[^}]*position: absolute;[^}]*width: var\(--mobile-surface-width\);[^}]*overflow: auto;/)
+    expect(styles).toMatch(/\.app-shell--mobile-workspace \.maplibregl-ctrl-attrib\.maplibregl-compact-show \.maplibregl-ctrl-attrib-inner\s*\{[^}]*max-height: min\(\s*var\(--mobile-body-height\),\s*calc\(var\(--app-visual-viewport-height\) \* 0\.4\)\s*\);[^}]*font-size: 0\.72rem;[^}]*line-height: 1\.3;/)
+    expect(styles).toMatch(/\.maplibregl-ctrl-attrib\.maplibregl-compact-show \.maplibregl-ctrl-attrib-inner\s*\{[^}]*max-height: min\(\s*calc\(var\(--app-visual-viewport-height\) - 250px\),\s*calc\(var\(--app-visual-viewport-height\) \* 0\.4\)\s*\);/)
     expect(styles).toMatch(/\.app-shell--mobile-workspace \.maplibregl-ctrl-attrib-button\s*\{[^}]*background-repeat: no-repeat;/)
     expect(styles).toContain('.control-panel__more-body button, .details-panel button, .history-mode-notice button')
   })

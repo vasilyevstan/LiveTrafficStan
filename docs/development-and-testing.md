@@ -5959,6 +5959,73 @@ Acceptance found two defects, both fixed before release:
 - Fintraffic GraphQL took 4-14 s by curl, so the shared 8 s deadline aborted
   it; Fintraffic now has its own 14 s deadline.
 
+### Compact credits acceptance (#705)
+
+Deterministic coverage: `src/map/trainStyle.test.ts` (one `Trains:` item in
+canonical source order, de-duplicated and absent when empty; the source
+carries no attribution), `src/map/InitiallyCompactAttributionControl.test.ts`
+(custom credits replaced in place without closing an open disclosure) and
+`src/app/interfaceStyles.test.ts` (the 40% caps and mobile type size).
+
+Real-browser acceptance ran Chrome 157 over CDP on 2026-11-14 in an isolated
+profile with aircraft and marine fixtures and every other provider host
+blocked. The local run used the built `dist` under `wrangler dev`; the
+"before" run used production with fixtured aircraft, so the shared aircraft
+relay was not contacted. Each standard scenario opened the credits box and
+asserted nine things: the measured `innerWidth` and `innerHeight` equal the
+requested size, the box is visible and open (`checkVisibility` with
+`visibilityProperty` and `opacityProperty`), it lies inside the visual
+viewport, its last credit is reachable, its height is at most 40% of the
+visual viewport, there is at most one `Trains:` prefix, train links open with
+`target=_blank` and `rel=noreferrer`, the credited feeds exactly match the
+view, and the Data credits link is kept.
+
+All 18 standard scenarios (six viewports by the views below) passed. The
+views were Tallinn (no feed), Helsinki (Fintraffic), Boston (MBTA), Long
+Island (LIRR) and a combined Boston and Long Island view (zoom 9.5, because a
+short landscape phone cannot span the gap between the two rectangles at
+zoom 10.5). Box heights after the change, in pixels and as a share of the
+visual viewport:
+
+| Viewport (measured) | Tallinn, no feed | One feed | MBTA + LIRR |
+| --- | ---: | ---: | ---: |
+| 320 x 568 phone | 97 px, 17% | | 157 px, 28% |
+| 360 x 640 phone | 82 px, 13% | | 142 px, 22% |
+| 390 x 844 phone | 82 px, 10% | Helsinki 97 px, 11%; Boston 97 px, 11%; Long Island 112 px, 13% | 127 px, 15% |
+| 844 x 390 landscape phone | 82 px, 21% | | 112 px, 29% |
+| 700 x 800 narrow, not mobile | 67 px, 8% | | 112 px, 14% |
+| 1280 x 900 desktop | 40 px, 4% | Helsinki and Boston 40 px, 4%; Long Island 60 px, 7% | 60 px, 7% |
+
+Mobile and narrow viewports measured 11.52 px (0.72rem) text and desktop
+stayed at 10 px. The credited feeds matched the view in every scenario, with
+exactly one `Trains:` prefix.
+
+The same script against production before the change, with every feed
+credited in every view and 12.48 px text:
+
+| Viewport | Tallinn before | Tallinn after |
+| --- | ---: | ---: |
+| 320 x 568 | 180 px, 32%, scrolling (280 px of content) | 97 px, 17% |
+| 390 x 844 | 222 px, 26% | 82 px, 10% |
+| 844 x 390 landscape | 180 px, 46%, fails the 40% bound | 82 px, 21% |
+| 700 x 800 | 182 px, 23% | 67 px, 8% |
+
+Helsinki at 390 x 844 went from 222 px, 26%, to 97 px, 11%, with only
+Fintraffic credited.
+
+No real view can show all four feeds, so five overflow scenarios injected
+synthetic extra credit links to prove the cap. Every box stopped at its cap,
+scrolled (`scrollHeight` far above `clientHeight`), kept its last link
+reachable and stayed inside the viewport: 180 px (32%) at 320 x 568, 206 px
+(32%) at 360 x 640, 308 px (36%) at 390 x 844, 156 px (40%) at 844 x 390 and
+286 px (36%) at 700 x 800. The first injection repeated the `Trains:` prefix
+and used too few copies, which produced false failures in the harness; it was
+corrected and only those scenarios were re-run.
+
+A live-update scenario kept an opened box open while the camera moved from
+Tallinn to Helsinki and back, and while TRAINS was switched off and on; the
+Fintraffic credit appeared and disappeared accordingly.
+
 ## Dependency and bundle discipline
 
 Runtime dependencies are intentionally limited to React, MapLibre GL JS, and

@@ -195,7 +195,8 @@ identity are not renamed or reset.
   or freight model pointing along the reported or derived course; a train
   without a course stays a dot. **In view** lists trains in the view, and
   details show the last reported position, speed, source and attribution.
-  Requests send no map coordinates. Elsewhere, the layer says no live train
+  Requests send no map coordinates. The map credits name only the feeds that
+  cover the view. Elsewhere, the layer says no live train
   source covers the view. See [Live trains](docs/architecture.md#live-trains).
 - Small, upright country flags beside aircraft and vessel markers, with
   accessible country text in selected details: aircraft registration allocation
