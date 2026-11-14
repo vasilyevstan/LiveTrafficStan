@@ -181,24 +181,30 @@ jobs:
       - name: Build application
         if: inputs.artifact == 'application'
         env:
+          VITE_RELEASE_SHA: ${{ inputs.sha }}
           VITE_AIRCRAFT_ENDPOINT: ${{ inputs.aircraft_delivery == 'adsb-lol-direct' && 'https://api.adsb.lol' || '/api/aircraft' }}
           VITE_AIRCRAFT_PHOTO_ENABLED: ${{ inputs.aircraft_photo_enabled }}
           VITE_FLIGHT_ROUTE_ENABLED: ${{ inputs.flight_route_enabled }}
           VITE_MARINE_SUPPLEMENT_ENABLED: ${{ inputs.marine_supplement_enabled }}
           VITE_AIRPORT_BOARDS_ENABLED: ${{ inputs.airport_boards_enabled }}
           VITE_OBJECT_SHARING_ENABLED: ${{ env.OBJECT_SHARING_ENABLED }}
-        run: npm run build
+        run: |
+          export VITE_RELEASE_TIMESTAMP="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          npm run build
 
       - name: Build PWA retirement artifact
         if: inputs.artifact == 'pwa-retirement'
         env:
+          VITE_RELEASE_SHA: ${{ inputs.sha }}
           VITE_AIRCRAFT_ENDPOINT: ${{ inputs.aircraft_delivery == 'adsb-lol-direct' && 'https://api.adsb.lol' || '/api/aircraft' }}
           VITE_AIRCRAFT_PHOTO_ENABLED: ${{ inputs.aircraft_photo_enabled }}
           VITE_FLIGHT_ROUTE_ENABLED: ${{ inputs.flight_route_enabled }}
           VITE_MARINE_SUPPLEMENT_ENABLED: ${{ inputs.marine_supplement_enabled }}
           VITE_AIRPORT_BOARDS_ENABLED: ${{ inputs.airport_boards_enabled }}
           VITE_OBJECT_SHARING_ENABLED: ${{ env.OBJECT_SHARING_ENABLED }}
-        run: npm run build:pwa-retire
+        run: |
+          export VITE_RELEASE_TIMESTAMP="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          npm run build:pwa-retire
 
       - name: Check exact deployment bundle
         run: npm run check:deploy
