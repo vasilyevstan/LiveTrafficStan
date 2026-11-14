@@ -3,9 +3,11 @@ import { describe, expect, it } from 'vitest'
 import { TRAFFIC_MODEL_CONFIG } from '../../config/appConfig'
 import type { ModeledOrbitalPosition } from '../../domain/orbital'
 import type { DisplayAircraft, DisplayVessel } from '../../domain/traffic'
+import type { DisplayTrain } from '../../domain/trains'
 import { aircraftAltitudeColors, trafficIconTreatment } from '../icons'
 import { orbitalIconTreatment, starlinkIconTreatment } from '../orbitalIcons'
 import { trafficFeatures } from '../trafficFeatures'
+import { trafficObservationOpacity } from '../trafficStyle'
 import {
   MODEL_FLAG_DROP_LINE,
   MODEL_FLAG_SELECTED,
@@ -22,11 +24,13 @@ import {
   orbitalModelInstances,
   packModelInstances,
   trafficModelInstances,
+  trainModelInstances,
   type ModelInstance,
 } from './modelInstances'
 import {
   TRAFFIC_MODEL_IDS,
   hexColorBytes,
+  trainModelColors,
   type TrafficModelId,
 } from './trafficModelCatalog'
 import { parseTrafficModelAsset } from './trafficModelAsset'
@@ -220,6 +224,7 @@ describe('traffic model instances', () => {
       expect(stretch(model), model).toBe(1)
     }
     expect(modelOverviewStretch('vessel', { lengthMeters: 10, beamMeters: 0 })).toBe(1)
+    expect(modelOverviewStretch('train', { lengthMeters: 25, beamMeters: 0 })).toBe(1)
   })
 
   it('flags zoom-context samples and never marks them selected', () => {
@@ -380,6 +385,91 @@ describe('orbital model instances', () => {
       expect(ordinary.floorPx).toBe(starlink ? 30 : 28)
       expect(selected.floorPx).toBe(ordinary.floorPx)
       expect(ordinary.altitudeMeters).toBe(600_000)
+    }
+  })
+})
+
+const train = (overrides: Partial<DisplayTrain> = {}): DisplayTrain => ({
+  id: 'train:fintraffic:2026-11-14:8',
+  sourceId: 'fintraffic',
+  name: 'IC 8',
+  category: 'long-distance',
+  longitude: 24.94,
+  latitude: 60.17,
+  observedAt: 1_000,
+  courseDegrees: 135,
+  courseOrigin: 'derived',
+  freshness: 'current',
+  ...overrides,
+})
+
+describe('train model instances', () => {
+  it('draws only trains with an observed course, at ground level on their course', () => {
+    const freight = train({ id: 'train:entur:freight', category: 'freight', courseDegrees: 0, courseOrigin: 'reported' })
+    const trains = [
+      train(),
+      train({ id: 'train:mbta:no-course', courseDegrees: undefined, courseOrigin: undefined }),
+      train({ id: 'train:mbta:nan', courseDegrees: Number.NaN }),
+      train({ id: 'train:lirr:bad-position', longitude: Number.POSITIVE_INFINITY }),
+      freight,
+    ]
+    const instances = trainModelInstances(trains, null, 'dark', DIMENSIONS)
+    expect(instances.map(({ id, model, headingDegrees }) => [id, model, headingDegrees])).toEqual([
+      ['train:fintraffic:2026-11-14:8', 'train', 135],
+      ['train:entur:freight', 'train-freight', 0],
+    ])
+    for (const instance of instances) {
+      expect(instance).toMatchObject({
+        altitudeMeters: 0,
+        lengthScale: 1,
+        floorPx: TRAFFIC_MODEL_CONFIG.minimumScreenSizePx.train,
+        opacity: trafficObservationOpacity('dark', false),
+        flags: 0,
+        extentMeters: 50,
+      })
+      expect(instance.flagSlot).toBeUndefined()
+      expect(instance.flags & MODEL_FLAG_DROP_LINE).toBe(0)
+    }
+    expect(instances[0]).toMatchObject({ longitude: 24.94, latitude: 60.17 })
+    expect(instances[0]).toMatchObject(trainModelColors('dark', 'long-distance'))
+    expect(instances[1]).toMatchObject(trainModelColors('dark', 'freight'))
+    expect(trainModelInstances([train({ courseDegrees: undefined })], null, 'dark', DIMENSIONS)).toEqual([])
+  })
+
+  it('marks only the selected train and dims stale observations per theme', () => {
+    const trains = [train(), train({ id: 'train:mbta:stale', category: 'commuter', freshness: 'stale' })]
+    for (const theme of ['dark', 'light'] as const) {
+      const instances = trainModelInstances(trains, 'train:mbta:stale', theme, DIMENSIONS)
+      expect(instances.map(({ flags, opacity }) => [flags, opacity])).toEqual([
+        [0, trafficObservationOpacity(theme, false)],
+        [MODEL_FLAG_SELECTED, trafficObservationOpacity(theme, true)],
+      ])
+      expect(instances[1]).toMatchObject(trainModelColors(theme, 'commuter'))
+    }
+    expect(trafficObservationOpacity('dark', true)).toBeLessThan(trafficObservationOpacity('dark', false))
+  })
+
+  it('keeps long thin real train meshes readable at the screen floor', () => {
+    const cap = TRAFFIC_MODEL_CONFIG.trainOverviewMaximumLengthToBeam
+    const instances = trainModelInstances(
+      [train(), train({ id: 'train:freight', category: 'freight' })],
+      null,
+      'dark',
+      REAL_DIMENSIONS,
+    )
+    expect(instances.map(({ model }) => model)).toEqual(['train', 'train-freight'])
+    for (const instance of instances) {
+      const ratio = instance.lengthMeters / instance.beamMeters
+      expect(ratio, instance.model).toBeGreaterThan(cap)
+      expect(instance.overviewStretch).toBeCloseTo(Math.sqrt(ratio / cap), 9)
+      expect(instance.bounds).toBe(REAL_DIMENSIONS.get(instance.model)?.bounds)
+      const extent = Math.max(instance.lengthMeters, instance.beamMeters)
+      expect(instance.extentMeters).toBe(extent)
+      const lengthPx = (instance.floorPx * instance.lengthMeters) / extent / instance.overviewStretch
+      const beamPx = (instance.floorPx * instance.beamMeters * instance.overviewStretch) / extent
+      expect(lengthPx / beamPx, instance.model).toBeCloseTo(cap, 9)
+      expect(beamPx, instance.model).toBeGreaterThanOrEqual(5.5)
+      expect(lengthPx, instance.model).toBeGreaterThanOrEqual(20)
     }
   })
 })

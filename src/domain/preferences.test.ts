@@ -62,6 +62,7 @@ describe('application preferences', () => {
         weatherVisible: false,
         depthsVisible: true,
         orbitalObjectsVisible: false,
+        trainsVisible: true,
       },
       vesselFilters: {
         category: 'cargo',

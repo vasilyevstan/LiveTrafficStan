@@ -1,5 +1,6 @@
 import type { Theme } from '../../app/theme'
 import type { OrbitalObjectType } from '../../domain/orbital'
+import type { TrainCategory } from '../../domain/trains'
 import {
   AIRCRAFT_ALTITUDE_BANDS,
   type AircraftAltitudeBand,
@@ -34,10 +35,12 @@ export const TRAFFIC_MODEL_IDS = [
   'orbital-starlink-spacecraft',
   'orbital-iss',
   'orbital-hubble',
+  'train',
+  'train-freight',
 ] as const
 
 export type TrafficModelId = (typeof TRAFFIC_MODEL_IDS)[number]
-export type TrafficModelKind = 'aircraft' | 'vessel' | 'orbital'
+export type TrafficModelKind = 'aircraft' | 'vessel' | 'orbital' | 'train'
 export type Rgb = readonly [number, number, number]
 
 const MODEL_IDS: ReadonlySet<string> = new Set(TRAFFIC_MODEL_IDS)
@@ -47,6 +50,7 @@ export const isTrafficModelId = (value: unknown): value is TrafficModelId =>
 
 export const trafficModelKind = (id: TrafficModelId): TrafficModelKind => {
   if (id.startsWith('orbital-')) return 'orbital'
+  if (id.startsWith('train')) return 'train'
   return id.startsWith('vessel') ? 'vessel' : 'aircraft'
 }
 
@@ -68,10 +72,9 @@ export const trafficModelForMarkerIcon = (
       return { model, band }
     }
   }
-  return isTrafficModelId(markerIcon) &&
-    trafficModelKind(markerIcon) !== 'orbital'
-    ? { model: markerIcon }
-    : undefined
+  if (!isTrafficModelId(markerIcon)) return undefined
+  const kind = trafficModelKind(markerIcon)
+  return kind === 'aircraft' || kind === 'vessel' ? { model: markerIcon } : undefined
 }
 
 export const orbitalModelForObject = (
@@ -81,6 +84,9 @@ export const orbitalModelForObject = (
   starlink && objectType === 'PAY'
     ? 'orbital-starlink-spacecraft'
     : orbitalStyleImageId(objectType)
+
+export const trainModelForCategory = (category: TrainCategory): TrafficModelId =>
+  category === 'freight' ? 'train-freight' : 'train'
 
 const FEATURED_ORBITAL_MODELS = new Map<string, TrafficModelId>([
   ['ISS', 'orbital-iss'],
@@ -141,4 +147,22 @@ export const orbitalModelColors = (
       ? starlinkIconTreatment(theme)
       : orbitalIconTreatment(theme, objectType)
   return colors(treatment.fill, treatment.detail)
+}
+
+// Lime passenger and orange freight stay clear of the aircraft, vessel,
+// orbital, Starlink, and weather hues on both basemaps.
+export const TRAIN_MODEL_PALETTE: Readonly<
+  Record<Theme, Readonly<Record<'passenger' | 'freight', readonly [string, string]>>>
+> = {
+  dark: { passenger: ['#a3e635', '#f7fee7'], freight: ['#fb923c', '#fff7ed'] },
+  light: { passenger: ['#4d7c0f', '#f7fee7'], freight: ['#c2410c', '#fff7ed'] },
+}
+
+export const trainModelColors = (
+  theme: Theme,
+  category: TrainCategory,
+): TrafficModelColors => {
+  const [tint, detail] =
+    TRAIN_MODEL_PALETTE[theme][category === 'freight' ? 'freight' : 'passenger']
+  return colors(tint, detail)
 }

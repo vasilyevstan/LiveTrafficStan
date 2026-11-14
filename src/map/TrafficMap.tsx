@@ -17,7 +17,7 @@ import {
 import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
 import type { Theme } from '../app/theme'
 import { workspaceOwnsFullscreen } from '../app/fullscreen'
-import { EARTH_DAY_NIGHT_CONFIG, MAP_PROJECTION_CONFIG, type AppCenter } from '../config/appConfig'
+import { EARTH_DAY_NIGHT_CONFIG, MAP_PROJECTION_CONFIG, TRAIN_CONFIG, type AppCenter } from '../config/appConfig'
 import type { JourneySnapshot } from '../domain/journey'
 import type { AircraftPhotoViewState } from '../domain/aircraftPhoto'
 import { vesselPhotoIdentity, type VesselPhotoViewState } from '../domain/vesselPhoto'
@@ -57,6 +57,7 @@ import type {
 } from '../domain/traffic'
 import type { UnitSystem } from '../domain/units'
 import { vesselReferencePhotoForSelection } from '../domain/vesselPhoto'
+import type { DisplayTrain } from '../domain/trains'
 import type { DisplayWeatherObservation } from '../domain/weatherObservations'
 import {
   assessTrafficViewport,
@@ -114,6 +115,7 @@ import {
   sameModelActivity,
   TRAFFIC_MODEL_GROUPS,
   TRAFFIC_MODEL_LAYER_ID,
+  TRAIN_MODEL_GROUPS,
   visibleFlatOrbitalFeatures,
   type ModelActivity,
 } from './models/modelActivity'
@@ -138,6 +140,13 @@ import {
   setWeatherVisibility,
   weatherFeatures,
 } from './weatherStyle'
+import {
+  TRAIN_SELECTABLE_LAYER_IDS,
+  installTrainStyle,
+  setTrainModelsActive,
+  setTrainVisibility,
+  trainFeatures,
+} from './trainStyle'
 import {
   installOrbitalStyle,
   installStarlinkStyle,
@@ -215,6 +224,8 @@ type CapturedHostedView =
   | { kind: 'aircraft'; view: CapturedAircraftView }
 const EMPTY_ORBITAL_IDS: readonly string[] = []
 const EMPTY_ORBITAL_TRACK: readonly OrbitalTrackSegment[] = []
+const EMPTY_TRAINS: readonly DisplayTrain[] = []
+const ignoreTrainSelection = () => undefined
 
 interface TrafficMapProps {
   orbitalVisibilityRef?: Ref<(id: string) => boolean>
@@ -278,6 +289,7 @@ interface TrafficMapProps {
   ports: readonly Port[]
   airports: readonly Airport[]
   weatherObservations: readonly DisplayWeatherObservation[]
+  trains?: readonly DisplayTrain[]
   orbitalPositions: readonly ModeledOrbitalPosition[]
   orbitalShownIds: readonly string[]
   orbitalTrackSegments: readonly OrbitalTrackSegment[]
@@ -291,11 +303,13 @@ interface TrafficMapProps {
   selectedPortId: string | null
   selectedAirportId: string | null
   selectedWeatherId: string | null
+  selectedTrainId?: string | null
   aircraftVisible: boolean
   vesselsVisible: boolean
   portsVisible: boolean
   airportsVisible: boolean
   weatherVisible: boolean
+  trainsVisible?: boolean
   depthsVisible: boolean
   onBathymetryStatus: (status: BathymetryStatus) => void
   reliefVisible: boolean
@@ -319,6 +333,7 @@ interface TrafficMapProps {
   onSelectPort: (id: string | null) => void
   onSelectAirport: (id: string | null) => void
   onSelectWeather: (id: string | null) => void
+  onSelectTrain?: (id: string | null) => void
   onViewportChange: (
     assessment: ViewportAssessment,
     orbitalViewport: OrbitalViewport,
@@ -354,6 +369,11 @@ interface WeatherRenderState {
   selectedWeatherId: string | null
 }
 
+interface TrainRenderState {
+  trains: readonly DisplayTrain[]
+  selectedTrainId: string | null
+}
+
 interface OrbitalRenderState {
   positions: readonly ModeledOrbitalPosition[]
   shownIds: readonly string[]
@@ -367,6 +387,7 @@ interface ViewState {
   portsVisible: boolean
   airportsVisible: boolean
   weatherVisible: boolean
+  trainsVisible: boolean
   orbitalVisible: boolean
   starlinkVisible: boolean
   trailSegments: readonly (readonly TrailPoint[])[]
@@ -505,6 +526,7 @@ export function TrafficMap({
   ports,
   airports,
   weatherObservations,
+  trains = EMPTY_TRAINS,
   orbitalPositions,
   orbitalShownIds,
   orbitalTrackSegments,
@@ -518,11 +540,13 @@ export function TrafficMap({
   selectedPortId,
   selectedAirportId,
   selectedWeatherId,
+  selectedTrainId = null,
   aircraftVisible,
   vesselsVisible,
   portsVisible,
   airportsVisible,
   weatherVisible,
+  trainsVisible = false,
   depthsVisible,
   onBathymetryStatus,
   reliefVisible,
@@ -546,6 +570,7 @@ export function TrafficMap({
   onSelectPort,
   onSelectAirport,
   onSelectWeather,
+  onSelectTrain = ignoreTrainSelection,
   onViewportChange,
   onCameraChange,
   onManualViewChange,
@@ -707,6 +732,10 @@ export function TrafficMap({
     observations: weatherObservations,
     selectedWeatherId,
   })
+  const trainRenderStateRef = useRef<TrainRenderState>({
+    trains,
+    selectedTrainId,
+  })
   const orbitalRenderStateRef = useRef<OrbitalRenderState>({
     positions: orbitalPositions,
     shownIds: orbitalShownIds,
@@ -725,6 +754,7 @@ export function TrafficMap({
     portsVisible,
     airportsVisible,
     weatherVisible,
+    trainsVisible,
     orbitalVisible,
     starlinkVisible,
     trailSegments,
@@ -742,6 +772,7 @@ export function TrafficMap({
   const selectPortRef = useRef(onSelectPort)
   const selectAirportRef = useRef(onSelectAirport)
   const selectWeatherRef = useRef(onSelectWeather)
+  const selectTrainRef = useRef(onSelectTrain)
   const viewportChangeRef = useRef(onViewportChange)
   const cameraChangeRef = useRef(onCameraChange)
   const manualViewChangeRef = useRef(onManualViewChange)
@@ -838,6 +869,8 @@ export function TrafficMap({
     const features = lastTrafficFeaturesRef.current
     layer.setTraffic('aircraft', entities.aircraft ?? [], features.aircraft ?? [], theme)
     layer.setTraffic('vessels', entities.vessels ?? [], features.vessels ?? [], theme)
+    const train = trainRenderStateRef.current
+    layer.setTrains(train.trains, train.selectedTrainId, theme)
     const orbital = orbitalRenderStateRef.current
     layer.setOrbital('orbital', orbital.positions, orbital.shownIds, orbital.selectedOrbitalId, theme)
     const starlink = starlinkRenderStateRef.current
@@ -867,8 +900,10 @@ export function TrafficMap({
       vesselsVisible: view.vesselsVisible,
       orbitalVisible: view.orbitalVisible,
       starlinkVisible: view.starlinkVisible,
+      trainsVisible: view.trainsVisible,
+      trainModelMinimumZoom: TRAIN_CONFIG.modelMinimumZoom,
     })
-    for (const group of [...TRAFFIC_MODEL_GROUPS, ...ORBITAL_MODEL_GROUPS]) {
+    for (const group of [...TRAFFIC_MODEL_GROUPS, ...TRAIN_MODEL_GROUPS, ...ORBITAL_MODEL_GROUPS]) {
       layer?.setGroupActive(group, activity[group])
     }
     const changed = !sameModelActivity(activity, modelActivityRef.current)
@@ -878,6 +913,7 @@ export function TrafficMap({
     setTrafficGroupVisibility(map, 'vessels', view.vesselsVisible, activity.vessels)
     setOrbitalModelsActive(map, 'orbital', activity.orbital)
     setOrbitalModelsActive(map, 'starlink', activity.starlink)
+    setTrainModelsActive(map, activity.trains)
   }, [])
 
   /** Adds or reorders the single 3D layer directly above the flat symbols. */
@@ -1443,6 +1479,16 @@ export function TrafficMap({
           viewState.weatherVisible,
         )
       }
+      const trainState = trainRenderStateRef.current
+      if (viewState.trainsVisible || trainState.trains.length > 0) {
+        installTrainStyle(
+          map,
+          trainFeatures(trainState.trains, trainState.selectedTrainId),
+          activeTheme,
+          viewState.trainsVisible,
+          modelActivity.trains,
+        )
+      }
       const orbitalState = orbitalRenderStateRef.current
       if (
         viewState.orbitalVisible ||
@@ -1717,6 +1763,10 @@ export function TrafficMap({
   }, [onSelectWeather])
 
   useEffect(() => {
+    selectTrainRef.current = onSelectTrain
+  }, [onSelectTrain])
+
+  useEffect(() => {
     viewportChangeRef.current = onViewportChange
   }, [onViewportChange])
 
@@ -1801,6 +1851,7 @@ export function TrafficMap({
       portsVisible,
       airportsVisible,
       weatherVisible,
+      trainsVisible,
       orbitalVisible,
       starlinkVisible,
       trailSegments,
@@ -1809,6 +1860,7 @@ export function TrafficMap({
     aircraftVisible,
     airportsVisible,
     weatherVisible,
+    trainsVisible,
     orbitalVisible,
     starlinkVisible,
     portsVisible,
@@ -2225,6 +2277,11 @@ export function TrafficMap({
         ? WEATHER_LAYER_IDS.filter((layerId) => map.getLayer(layerId))
         : []
 
+    const activeTrainLayers = () =>
+      viewStateRef.current.trainsVisible
+        ? TRAIN_SELECTABLE_LAYER_IDS.filter((layerId) => map.getLayer(layerId))
+        : []
+
     const activeOrbitalLayers = () => {
       const viewState = viewStateRef.current
       return orbitalPickLayerIds(
@@ -2242,6 +2299,9 @@ export function TrafficMap({
 
     const activeOrbitalModelGroups = (): readonly ModelGroup[] =>
       activeModelGroups(modelActivityRef.current, ORBITAL_MODEL_GROUPS)
+
+    const activeTrainModelGroups = (): readonly ModelGroup[] =>
+      activeModelGroups(modelActivityRef.current, TRAIN_MODEL_GROUPS)
 
     const pickModels = (
       geometry: ScreenGeometry,
@@ -2395,6 +2455,13 @@ export function TrafficMap({
     const selectableWeatherIds = () =>
       new Set(
         weatherRenderStateRef.current.observations.map(({ id }) => id),
+      )
+
+    const selectableTrainIds = () =>
+      new Set(
+        viewStateRef.current.trainsVisible
+          ? trainRenderStateRef.current.trains.map(({ id }) => id)
+          : [],
       )
 
     const selectableOrbitalIds = () => {
@@ -2579,6 +2646,7 @@ export function TrafficMap({
           selectPortRef.current(null)
           selectAirportRef.current(null)
           selectWeatherRef.current(null)
+          selectTrainRef.current(null)
           selectRef.current(exactTraffic)
           return
         }
@@ -2611,7 +2679,38 @@ export function TrafficMap({
           selectPortRef.current(null)
           selectAirportRef.current(null)
           selectWeatherRef.current(null)
+          selectTrainRef.current(null)
           selectRef.current(nearbyTraffic)
+          return
+        }
+      }
+
+      const trainLayers = activeTrainLayers()
+      const trainModelGroups = activeTrainModelGroups()
+      if (trainLayers.length > 0 || trainModelGroups.length > 0) {
+        const trainIds = selectableTrainIds()
+        const train =
+          exactEligibleFeatureId(
+            renderedPickFeatures(event.point, trainLayers, trainModelGroups),
+            trainIds,
+          ) ??
+          (touchFallbackAllowed
+            ? uniqueEligibleFeatureId(
+                renderedPickFeatures(
+                  expandedHitBox(event.point, touchHitTolerancePx),
+                  trainLayers,
+                  trainModelGroups,
+                ),
+                trainIds,
+              )
+            : undefined)
+        if (train) {
+          selectRef.current(null)
+          selectOrbitalRef.current(null)
+          selectPortRef.current(null)
+          selectAirportRef.current(null)
+          selectWeatherRef.current(null)
+          selectTrainRef.current(train)
           return
         }
       }
@@ -2635,6 +2734,7 @@ export function TrafficMap({
           selectPortRef.current(null)
           selectAirportRef.current(null)
           selectWeatherRef.current(null)
+          selectTrainRef.current(null)
           selectOrbitalRef.current(exactOrbital)
           return
         }
@@ -2653,6 +2753,7 @@ export function TrafficMap({
           selectPortRef.current(null)
           selectAirportRef.current(null)
           selectWeatherRef.current(null)
+          selectTrainRef.current(null)
           selectOrbitalRef.current(nearbyOrbital)
           return
         }
@@ -2731,6 +2832,7 @@ export function TrafficMap({
         selectOrbitalRef.current(null)
         selectPortRef.current(null)
         selectAirportRef.current(null)
+        selectTrainRef.current(null)
         selectWeatherRef.current(contextPick.id)
         return
       }
@@ -2739,6 +2841,7 @@ export function TrafficMap({
         selectOrbitalRef.current(null)
         selectPortRef.current(null)
         selectWeatherRef.current(null)
+        selectTrainRef.current(null)
         selectAirportRef.current(contextPick.id)
         return
       }
@@ -2747,6 +2850,7 @@ export function TrafficMap({
         selectOrbitalRef.current(null)
         selectAirportRef.current(null)
         selectWeatherRef.current(null)
+        selectTrainRef.current(null)
         selectPortRef.current(contextPick.id)
         return
       }
@@ -2756,6 +2860,7 @@ export function TrafficMap({
       selectPortRef.current(null)
       selectAirportRef.current(null)
       selectWeatherRef.current(null)
+      selectTrainRef.current(null)
     })
 
     map.on('mousemove', (event) => {
@@ -2772,6 +2877,7 @@ export function TrafficMap({
       const layers = [
         ...trafficLayers,
         ...activeClusterLayers(),
+        ...activeTrainLayers(),
         ...orbitalLayers,
         ...activeWeatherLayers(),
         ...activeAirportLayers(),
@@ -2779,6 +2885,7 @@ export function TrafficMap({
       ]
       const features = renderedPickFeatures(event.point, layers, [
         ...trafficModelGroups,
+        ...activeTrainModelGroups(),
         ...orbitalModelGroups,
       ])
       map.getCanvas().style.cursor = features.length > 0 ? 'pointer' : ''
@@ -3164,6 +3271,22 @@ export function TrafficMap({
   ])
 
   useEffect(() => {
+    trainRenderStateRef.current = { trains, selectedTrainId }
+    modelLayerRef.current?.setTrains(trains, selectedTrainId, themeRef.current)
+    const map = mapRef.current
+    if (!map || !loadedRef.current || (!trainsVisible && trains.length === 0)) {
+      return
+    }
+    installTrainStyle(
+      map,
+      trainFeatures(trains, selectedTrainId),
+      themeRef.current,
+      viewStateRef.current.trainsVisible,
+      modelActivityRef.current.trains,
+    )
+  }, [selectedTrainId, trains, trainsVisible])
+
+  useEffect(() => {
     orbitalRenderStateRef.current = {
       positions: orbitalPositions,
       shownIds: orbitalShownIds,
@@ -3328,6 +3451,13 @@ export function TrafficMap({
     if (!map || !loadedRef.current) return
     setWeatherVisibility(map, weatherVisible)
   }, [weatherVisible])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !loadedRef.current) return
+    setTrainVisibility(map, trainsVisible)
+    applyModelActivity(map, true)
+  }, [applyModelActivity, trainsVisible])
 
   useEffect(() => {
     const map = mapRef.current

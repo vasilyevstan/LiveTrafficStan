@@ -1,5 +1,42 @@
 # Engineering Decisions
 
+## Live trains from free regional feeds
+
+The request was to find real-time train data and add trains to the map.
+The research found no reliable free worldwide train-position feed. Global
+aggregators are commercial, and most operators publish timetables or
+predictions rather than positions. The user chose all reliable free feeds,
+mainline and commuter trains plus reported freight, 3D models in the first
+release, and trains on by default.
+
+The first release uses four sources that publish real-time positions under
+reusable terms: Fintraffic (Finland, CC BY 4.0), Entur (Norway, NLOD 2.0),
+the MBTA (Boston commuter rail) and the MTA Long Island Rail Road. Others
+were deferred:
+- feeds that need paid plans or approval;
+- schedule-only or prediction-only feeds;
+- feeds whose terms do not allow display in this application.
+
+Unsupported regions show a no-coverage note, never inferred positions.
+
+Fintraffic, Entur and MBTA allow browser CORS and need no secret, so they
+are direct browser connections like Digitraffic marine. The MTA feed is
+protobuf without browser CORS, and its terms ask for limited fetching, so a
+fixed same-origin Worker route decodes it and reuses each result for 15 s
+per edge. No coordinates are sent: each feed is a whole regional snapshot,
+filtered locally to the viewport.
+
+Polling is gated by rail-network rectangles rather than one country box.
+Acceptance showed the first Norway box polled Entur while viewing Helsinki.
+The per-source scheduler is independent of the camera, so panning cannot add
+requests. Fintraffic's measured 4-14 s GraphQL responses got a dedicated 14 s
+deadline instead of a shared longer timeout.
+
+Trains reuse the shared 3D layer with two original unbranded models, and keep
+flat dots when no reported or derived course exists, so an orientation is
+never invented. Trains are live-only: no trails, history, Saved items,
+metadata or share links in the first release.
+
 ## Real-altitude 3D traffic models (#682)
 
 The request was for Blender-made plane, ship and satellite models used in the

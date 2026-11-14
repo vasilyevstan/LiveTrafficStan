@@ -20,7 +20,7 @@ interface MetarProxyOptions {
 
 const stationPattern = /^[A-Z]{4}$/
 
-class ResponseTooLargeError extends Error {}
+export class ResponseTooLargeError extends Error {}
 
 const textResponse = (
   message: string,
@@ -67,7 +67,7 @@ const parseStationIds = (url: URL) => {
     : undefined
 }
 
-const readBoundedBody = async (
+export const readBoundedBody = async (
   response: Response,
   maximumBytes: number,
   abort: () => void,

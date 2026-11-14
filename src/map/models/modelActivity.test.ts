@@ -19,6 +19,7 @@ import {
   resolveModelActivity,
   sameModelActivity,
   TRAFFIC_MODEL_GROUPS,
+  TRAIN_MODEL_GROUPS,
   visibleFlatOrbitalFeatures,
   type ModelActivity,
   type ModelActivityInput,
@@ -36,12 +37,15 @@ const input = (
   vesselsVisible: true,
   orbitalVisible: true,
   starlinkVisible: true,
+  trainsVisible: true,
+  trainModelMinimumZoom: 9,
   ...overrides,
 })
 
 const ALL_ACTIVE: ModelActivity = {
   aircraft: true,
   vessels: true,
+  trains: true,
   orbital: true,
   starlink: true,
 }
@@ -52,6 +56,7 @@ describe('resolveModelActivity', () => {
       INACTIVE_MODEL_ACTIVITY,
     )
     expect(Object.values(INACTIVE_MODEL_ACTIVITY)).toEqual([
+      false,
       false,
       false,
       false,
@@ -71,12 +76,12 @@ describe('resolveModelActivity', () => {
       resolveModelActivity(
         input({ aircraftVisible: false, starlinkVisible: false }),
       ),
-    ).toEqual({ aircraft: false, vessels: true, orbital: true, starlink: false })
+    ).toEqual({ aircraft: false, vessels: true, trains: true, orbital: true, starlink: false })
     expect(
       resolveModelActivity(
         input({ vesselsVisible: false, orbitalVisible: false }),
       ),
-    ).toEqual({ aircraft: true, vessels: false, orbital: false, starlink: true })
+    ).toEqual({ aircraft: true, vessels: false, trains: true, orbital: false, starlink: true })
   })
 
   it.each([
@@ -91,6 +96,7 @@ describe('resolveModelActivity', () => {
       expect(resolveModelActivity(input({ zoom }))).toEqual({
         aircraft: traffic,
         vessels: traffic,
+        trains: true,
         orbital: true,
         starlink: true,
       })
@@ -99,15 +105,57 @@ describe('resolveModelActivity', () => {
 
   it('replaces traffic at any zoom when clustering is disabled', () => {
     expect(
-      resolveModelActivity(input({ zoom: 2, clusteringEnabled: false })),
+      resolveModelActivity(
+        input({ zoom: 2, clusteringEnabled: false, trainModelMinimumZoom: 2 }),
+      ),
     ).toEqual(ALL_ACTIVE)
+  })
+
+  it.each([
+    { zoom: 2, trains: false },
+    { zoom: 8.99, trains: false },
+    { zoom: 9, trains: true },
+    { zoom: 9.5, trains: true },
+    { zoom: 16, trains: true },
+  ])(
+    'draws visible train models from their own minimum zoom ($zoom)',
+    ({ zoom, trains }) => {
+      for (const clusteringEnabled of [true, false]) {
+        expect(
+          resolveModelActivity(input({ zoom, clusteringEnabled })).trains,
+        ).toBe(trains)
+      }
+      expect(
+        resolveModelActivity(input({ zoom, trainsVisible: false })).trains,
+      ).toBe(false)
+    },
+  )
+
+  it('keeps trains flat while unavailable, captured, or hidden', () => {
+    for (const overrides of [
+      { available: false },
+      { captured: true },
+      { trainsVisible: false },
+    ]) {
+      expect(
+        resolveModelActivity(input({ zoom: 14, ...overrides })).trains,
+        JSON.stringify(overrides),
+      ).toBe(false)
+    }
+    expect(
+      resolveModelActivity(input({ trainsVisible: false })),
+    ).toEqual({ ...ALL_ACTIVE, trains: false })
   })
 })
 
 describe('model activity groups', () => {
   it('detects a change in any one group', () => {
     expect(sameModelActivity(ALL_ACTIVE, { ...ALL_ACTIVE })).toBe(true)
-    for (const group of [...TRAFFIC_MODEL_GROUPS, ...ORBITAL_MODEL_GROUPS]) {
+    for (const group of [
+      ...TRAFFIC_MODEL_GROUPS,
+      ...TRAIN_MODEL_GROUPS,
+      ...ORBITAL_MODEL_GROUPS,
+    ]) {
       expect(
         sameModelActivity(ALL_ACTIVE, { ...ALL_ACTIVE, [group]: false }),
       ).toBe(false)
@@ -118,6 +166,7 @@ describe('model activity groups', () => {
     const activity: ModelActivity = {
       aircraft: false,
       vessels: true,
+      trains: true,
       orbital: true,
       starlink: false,
     }
@@ -127,9 +176,14 @@ describe('model activity groups', () => {
     expect(activeModelGroups(activity, ORBITAL_MODEL_GROUPS)).toEqual([
       'orbital',
     ])
+    expect(activeModelGroups(activity, TRAIN_MODEL_GROUPS)).toEqual(['trains'])
+    expect(
+      activeModelGroups({ ...activity, trains: false }, TRAIN_MODEL_GROUPS),
+    ).toEqual([])
     expect(
       activeModelGroups(INACTIVE_MODEL_ACTIVITY, [
         ...TRAFFIC_MODEL_GROUPS,
+        ...TRAIN_MODEL_GROUPS,
         ...ORBITAL_MODEL_GROUPS,
       ]),
     ).toEqual([])
@@ -207,6 +261,7 @@ describe('visibleFlatOrbitalFeatures', () => {
         ...INACTIVE_MODEL_ACTIVITY,
         aircraft: true,
         vessels: true,
+        trains: true,
       }),
     ).toEqual(features)
   })

@@ -5,6 +5,7 @@ type ResultPrefix =
   | 'vessel-discovery-result'
   | 'airport-context-result'
   | 'weather-context-result'
+  | 'train-context-result'
   | 'in-view-aircraft-result'
   | 'in-view-ships-result'
   | 'in-view-orbits-result'
