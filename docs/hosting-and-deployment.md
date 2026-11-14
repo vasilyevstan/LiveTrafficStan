@@ -75,6 +75,14 @@ production workflow still verifies and deploys only the exact current `main`
 SHA; release mergeability does not replace exact-SHA validation or deployment
 guards. Historical squash releases and their ancestry repairs remain unchanged.
 
+Application and rollback builds inject the exact source SHA and a UTC build
+timestamp into the static client. The main map presents `package.json`'s
+application version, the short SHA and that timestamp above the bottom-right
+attribution. Missing or malformed metadata fails closed by omitting the label.
+This adds no runtime request and does not replace the full
+`X-LiveTrafficStan-Release` response header used by production smoke and
+rollback guards.
+
 ### Curated orbital recovery (#616)
 
 The diagnostic/Find release #617/#618 and independently evidenced reference

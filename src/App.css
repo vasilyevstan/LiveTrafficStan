@@ -58,6 +58,32 @@
   z-index: 7;
 }
 
+.release-info {
+  position: absolute;
+  right: 10px;
+  bottom: 40px;
+  z-index: 6;
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  max-width: calc(var(--app-visual-viewport-width) - 20px);
+  padding: 3px 7px;
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  pointer-events: none;
+  color: var(--subtle-text);
+  background: var(--panel-background);
+  box-shadow: 0 2px 8px var(--panel-shadow);
+  font-size: 0.625rem;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.release-info__version {
+  color: var(--heading-text);
+  font-weight: 700;
+}
+
 .maplibregl-ctrl.local-map-scale {
   pointer-events: none;
   margin: 0 0 12px 12px;
@@ -3181,6 +3207,11 @@
 
 .app-shell--mobile-workspace .interface-layer {
   --workspace-header-bottom: 76px;
+}
+
+.app-shell--mobile-workspace .release-info {
+  right: var(--mobile-safe-right);
+  bottom: calc(var(--mobile-surface-bottom) + 4px);
 }
 
 .viewport-announcement {

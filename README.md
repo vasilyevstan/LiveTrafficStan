@@ -8,6 +8,10 @@ user accounts or a server-side vessel history archive.
 
 Public production: <https://trackstan.xyz>
 
+The map shows its application version, short exact release SHA and UTC build
+timestamp in the bottom-right corner so screenshots and reports identify the
+running static client without a diagnostic request.
+
 **Curated orbital discovery restored (2026-10-29, #616):** Find again returns
 ISS, Hubble and Tiangong from a genuinely fresh, complete Space-Track catalog.
 One independently confirmed decayed object was removed from the reviewed
