@@ -1284,10 +1284,14 @@ regions show a truthful no-coverage note instead of inferred positions.
 | [MBTA](https://www.mbta.com/developers/v3-api) | [MassDOT Developers License Agreement](https://github.com/mbta/gtfs-documentation/blob/master/developers-license-agreement.pdf) | `Data provided by MassDOT/MBTA; not endorsed by MassDOT or MBTA`; keyless requests every 15 s |
 | [MTA Long Island Rail Road](https://api.mta.info/#/lirrFeeds) | [MTA data feed terms](https://www.mta.info/developers/terms-and-conditions) | `Data from the MTA, redistributed by LiveTrafficStan; not endorsed by the MTA. Reports may lag and may be incomplete.`; one Worker fetch per edge per 15 s |
 
-The credits appear in the map attribution, **Settings → Data credits** and
-each selected train's details. The application identifier is the fixed
-`livetrafficstan-trackstan` string; no API key, account or personal data is
-sent.
+The map's compact credits carry one `Trains:` item with the exact credit of
+only the feeds whose rail-network rectangles overlap the settled view. It
+appears only while TRAINS is on and HISTORY and captured views are inactive,
+so a view with no train coverage, such as Tallinn, shows no train credit. Each
+selected train's details show its own source's exact credit, and **Settings →
+Data credits** names and links all four feeds. The application identifier is
+the fixed `livetrafficstan-trackstan` string; no API key, account or personal
+data is sent.
 
 Fintraffic, Entur and MBTA are fetched directly by the visitor's browser,
 with credentials, referrer and cache omitted, so those providers see the
@@ -1517,8 +1521,9 @@ There is **no SATCAT request, fabricated SATCAT URL/count, advanced-data request
 browser login, cookie persistence, credential-bearing URL, or arbitrary proxy**.
 
 Curated membership is pinned in `src/config/spaceTrackCurationReference.json`:
-460 exact NORAD IDs and ordered memberships derived from the validated CelesTrak
-snapshot retrieved `2026-10-17T12:17:07.523Z`, source digest
+458 exact NORAD IDs and ordered memberships derived from the validated CelesTrak
+snapshot retrieved `2026-10-17T12:17:07.523Z` (the 461 original IDs less the
+reviewed retirements below), source digest
 `d062e417f365701d3ef2951e400a9196700c514ced47960305f010681d0da5c0`.
 Only identity, membership, reference date, and provenance are retained: old
 names, elements, and types are not carried forward. Every pinned ID must have
@@ -1538,6 +1543,45 @@ The original membership source date/digest remain unchanged; all other IDs
 and memberships, including ISS/HST/Tiangong, are preserved. This is an
 offline reviewed retirement, not a new runtime SATCAT request, automatic
 pruning, partial publication, or a fresh timestamp on retained elements.
+
+Revision `curated-reference-2026-10-17-v3`, reviewed on 2026-11-14 for #683,
+removes NORAD `28485` (SWIFT, `2004-047A`) and `67687` (LEOPARD, `1998-067YE`)
+from v2's 460 IDs, leaving 458. The ordinary native attempt started
+`2026-11-12T20:17:27.684Z` returned 459 of 460 required records, identifying
+only 28485. The last complete curated publication (`2026-11-05T13:17:29.550Z`)
+had passed the 24-hour hard expiry, so ORBITS reported the catalog as too old.
+Both removals rest on CelesTrak's public SATCAT, which reports
+`OPS_STATUS_CODE: D` and a `DECAY_DATE` for each:
+
+| NORAD | Object | `DECAY_DATE` | Single-record response (retrieved UTC) | SHA-256 |
+| --- | --- | --- | --- | --- |
+| `28485` | SWIFT, `2004-047A` | 2026-11-04 | 2026-11-14 16:17:39, 338 bytes | `712fea1e54b0823e97787dca7bba734b6d459a16ff74c60a040442a0bddfdf46` |
+| `67687` | LEOPARD, `1998-067YE` | 2026-11-03 | 2026-11-14 16:20:22, 339 bytes | `33137696c9dbca47caba0d2120327a9d7232930d9765d6e831ad3c48a26a3d12` |
+
+SWIFT's re-entry is independently confirmed by
+[NASA](https://science.nasa.gov/blogs/swift/2026/11/02/nasas-swift-observatory-to-re-enter-atmosphere/)
+(U.S. Space Force confirmation, 2026-11-04 12:39 UTC, over North Sumatra) and
+[Spaceflight Now](https://spaceflightnow.com/2026/11/04/nasas-neil-gehrels-swift-observatory-reenters-over-western-indonesia/).
+For LEOPARD, [N2YO](https://www.n2yo.com/satellite/?s=67687) publishes no
+element set later than epoch 2026-11-03 (about 09:50 UTC), which corroborates
+the timing only; its amateur-radio "Status: Active" field is not an orbit
+status. To find any second decayed member, all 460 IDs were looked up in
+CelesTrak's published
+[`satcat.csv`](https://celestrak.org/pub/satcat.csv) (retrieved
+2026-11-14 16:18:25 UTC, 6,797,019 bytes, 71,307 rows, SHA-256
+`e944162a858eba6af93e1ff96a02b1944c7b9a8bac17a629aa46b1a5f89a7984`): every ID
+was present and exactly these two carry a decay date. LEOPARD was not yet
+reported missing by the 2026-11-12 attempt; it is removed on the same primary
+evidence so that one release repairs the whole set instead of failing on the
+next ID. The three CelesTrak SATCAT fetches above were one-off offline review
+requests, not an application request path.
+
+The original membership source date/digest remain unchanged; all other IDs and
+memberships, including ISS/HST/Tiangong, are preserved. This is an offline
+reviewed retirement, not a new runtime SATCAT request, automatic pruning,
+partial publication, or a fresh timestamp on retained elements. An object that
+is merely low or has an old element set stays pinned until a decay record
+exists.
 
 The separate Starlink GP predicate requests public, undecayed `PAYLOAD` rows
 whose names contain `STARLINK` and whose epochs satisfy the source's ten-day

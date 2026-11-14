@@ -1380,6 +1380,35 @@ The browser feature is implemented separately from this storage boundary.
 Aircraft, vessels, weather, search, map, and PWA behavior must remain usable
 when the orbital catalog is unavailable.
 
+### A curated refresh reports missing pinned IDs (#616, #683)
+
+`Last-Outcome-Reason` of `Space-Track curated GP records N of M, missing <ids>,
+unpinned <ids>` means the fixed GP query returned fewer complete rows than the
+pinned reference requires, so nothing was published and the previous snapshot
+ages toward its 24-hour hard expiry; ORBITS then says the catalog is too old.
+The reason names at most three missing IDs plus a count, and Space-Track does
+not register every decay at the same moment, so a one-ID diagnostic can hide a
+second decayed member that fails the next attempt (#683 found 67687 beside
+28485).
+
+Before authoring a reviewed removal:
+
+1. Read each named ID's CelesTrak SATCAT record and require
+   `OPS_STATUS_CODE: D` with a `DECAY_DATE`, plus an independent source when
+   one exists. Record each response's retrieval time, size and SHA-256.
+2. Audit every pinned ID once against CelesTrak's published `satcat.csv`,
+   recording its retrieval time, size, row count and SHA-256, and remove every
+   decayed member in the same revision so one release repairs the whole set.
+3. Keep objects that are merely low, or whose element set is old, pinned and
+   list them in the Issue. A removal needs a decay record, not a prediction.
+4. Publish the change as a new `curated-reference-<date>-vN` id with the original
+   `retrievedAt` and `sha256`, and update the pinned id/count tests and docs.
+
+These SATCAT reads are offline review requests, not an application request
+path. Do not loosen the completeness rule, expiry or element-age limits, force
+acquisition, shorten the cadence or reset the coordinator: the next ordinary
+admitted curated attempt after deployment publishes the repaired snapshot.
+
 ## STARLINK is unavailable, stale, or shows fewer objects than expected
 
 The bounded Starlink sample is automatically included with ORBITS. There is
@@ -1649,6 +1678,11 @@ or Service Worker response is a release defect.
 - **"Zoom in to see trains."** The view is too large or tilted for the
   safe traffic footprint, the same rule as other traffic.
 - **Hidden in HISTORY or a captured view.** Trains are live only.
+- **No `Trains:` item in the map credits.** The compact credits name only
+  the feeds whose rail-network rectangles overlap the settled view, and only
+  while TRAINS is on outside HISTORY and captured views. A view without
+  coverage, such as Tallinn, shows none. **Settings → Data credits** always
+  names all four feeds and a selected train's details show its exact credit.
 - **A source note says it is unavailable.** That source failed, timed out or
   was rate limited. Earlier positions stay until they expire after ten
   minutes, and other sources keep updating. Fintraffic responses can take up
@@ -1707,6 +1741,10 @@ Do not hide MapLibre attribution controls. The application must visibly credit:
   is displayed;
 - Fintraffic Digitraffic and CC BY 4.0, including the filtering/normalization
   change notice.
+- The train feeds (Fintraffic, Entur, MBTA and the MTA) in the compact credits
+  while TRAINS is on and the view overlaps their rail networks; elsewhere they
+  are expected to be absent there but remain in **Settings → Data credits**
+  and in each selected train's details.
 - AISStream, Open Waters AIS and original-source credits when the supplement
   is enabled; retain the applicable AISHub, NLOD and volunteer-data terms.
 - Natural Earth and its public-domain terms, with generalized/incomplete

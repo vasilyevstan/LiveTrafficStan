@@ -37,6 +37,34 @@ flat dots when no reported or derived course exists, so an orientation is
 never invented. Trains are live-only: no trails, history, Saved items,
 metadata or share links in the first release.
 
+## Viewport-scoped train credits (#705)
+
+After trains shipped, the expanded map credits showed four separate
+`Trains: ...` items in every view, even Tallinn where no train feed applies,
+including the long MTA disclaimer. In production that box measured 23-46% of
+a phone's visual viewport, and 46% on a short landscape phone. The cause was
+attaching all four credits to the `traffic-trains` source, so MapLibre listed
+every one whenever the layer was visible.
+
+The credit now follows the same evidence as the request. The feeds whose
+rail-network rectangles overlap the settled traffic viewport (the predicate
+that already gates polling) contribute their exact, unchanged credit strings
+as one `Trains:` item in the native credits control, only while TRAINS is on
+and HISTORY and captured views are inactive. Selected-train details still show
+the exact credit and **Settings → Data credits** still names all four feeds.
+The expanded box is also capped at 40% of the visual viewport and scrolls, so
+a later provider cannot cover the map, and the mobile shell uses 0.72rem text.
+Desktop type is unchanged.
+
+Alternatives rejected:
+- shrinking the box with CSS alone, which would keep crediting feeds that are
+  not in use for the view;
+- shortening the credit strings, which are provider licence and disclaimer
+  wording rather than layout text.
+
+Real-browser evidence is in
+[Compact credits acceptance](development-and-testing.md#compact-credits-acceptance-705).
+
 ## Real-altitude 3D traffic models (#682)
 
 The request was for Blender-made plane, ship and satellite models used in the

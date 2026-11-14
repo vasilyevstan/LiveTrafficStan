@@ -7,7 +7,7 @@ import type {
   Map as MapLibreMap,
 } from 'maplibre-gl'
 import type { Theme } from '../app/theme'
-import type { DisplayTrain, TrainSourceId } from '../domain/trains'
+import { TRAIN_SOURCE_IDS, type DisplayTrain, type TrainSourceId } from '../domain/trains'
 import { TRAIN_SOURCES } from '../providers/rail/trainSources'
 import { TRAIN_MODEL_PALETTE } from './models/trafficModelCatalog'
 import { mapTextFont } from './textFont'
@@ -28,12 +28,20 @@ const LABEL_MINIMUM_ZOOM = 10
 
 const sourceLink = (sourceId: TrainSourceId) => {
   const source = TRAIN_SOURCES[sourceId]
-  return `Trains: <a href="${source.websiteUrl}" target="_blank" rel="noreferrer">${source.attribution}</a>`
+  return `<a href="${source.websiteUrl}" target="_blank" rel="noreferrer">${source.attribution}</a>`
 }
 
-export const TRAIN_SOURCE_ATTRIBUTION = (Object.keys(TRAIN_SOURCES) as TrainSourceId[])
-  .map(sourceLink)
-  .join(' · ')
+/**
+ * One `Trains:` credit for only the given feeds, in canonical order. It is
+ * given to the attribution control rather than the GeoJSON source, so a feed
+ * that does not cover the view is not credited and a style reload needs no
+ * credit reinstall. Settings and train details keep listing every feed.
+ */
+export const trainAttribution = (sourceIds: Iterable<TrainSourceId>) => {
+  const credited = new Set(sourceIds)
+  const links = TRAIN_SOURCE_IDS.filter((sourceId) => credited.has(sourceId)).map(sourceLink)
+  return links.length > 0 ? `Trains: ${links.join(' · ')}` : undefined
+}
 
 // Flat dots share the model palette so a train keeps its hue across zoom 9.
 const categoryColor = (theme: Theme): ExpressionSpecification => [
@@ -111,11 +119,7 @@ export const installTrainStyle = (
   if (map.getSource(SOURCE_TRAINS)) {
     setTrainSourceData(map, data)
   } else {
-    map.addSource(SOURCE_TRAINS, {
-      type: 'geojson',
-      data,
-      attribution: TRAIN_SOURCE_ATTRIBUTION,
-    })
+    map.addSource(SOURCE_TRAINS, { type: 'geojson', data })
   }
 
   ensureLayer(map, {
