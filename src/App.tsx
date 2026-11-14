@@ -157,6 +157,7 @@ import {
   trafficZoomContextViewport,
   type LastLocalTrafficView,
 } from './map/trafficZoomContext'
+import { marineResumeCamera } from './map/trafficResumeCamera'
 
 const loadAdvancedOrbitalUi = () => import('./components/AdvancedOrbitalUi')
 const loadAirportDetails = () => import('./components/AirportDetails')
@@ -910,6 +911,16 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
               aircraftPaused: false,
             }
           : undefined
+  const marineResumeViewCamera =
+    trafficPauseNotice?.aircraftPaused === false &&
+    trafficPauseNotice.viewport &&
+    mapCamera
+      ? marineResumeCamera(
+          mapCamera,
+          trafficPauseNotice.viewport,
+          APP_CONFIG.map.maximumViewportRadiusKm,
+        )
+      : undefined
   const currentOrbitalViewport =
     viewReady && viewportReport?.viewRequestId === viewRequest.id
       ? viewportReport.orbitalViewport
@@ -1794,15 +1805,19 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
 
   const handleResumeLiveTraffic = useCallback(() => {
     if (!trafficPauseNotice?.viewport) return
+    if (!trafficPauseNotice.aircraftPaused && !marineResumeViewCamera) return
     commitNavigation(
       {
         ...trafficPauseNotice.viewport.center,
         label: 'Current map area',
       },
       'Current map area',
+      trafficPauseNotice.aircraftPaused
+        ? undefined
+        : { camera: marineResumeViewCamera },
     )
     requestAnimationFrame(() => rulerMapRef.current?.focusMap())
-  }, [commitNavigation, trafficPauseNotice])
+  }, [commitNavigation, marineResumeViewCamera, trafficPauseNotice])
 
   const handleUseLocation = useCallback(() => {
     cancelSharedObject()
@@ -2711,7 +2726,9 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
   const pauseContent = visibleTrafficPause && (
     <TrafficPauseNotice retainedSample={hasTrafficContext} message={visibleTrafficPause.message}
       aircraftPaused={visibleTrafficPause.aircraftPaused}
-      onResume={visibleTrafficPause.viewport ? handleResumeLiveTraffic : undefined}
+      onResume={visibleTrafficPause.viewport &&
+        (visibleTrafficPause.aircraftPaused || marineResumeViewCamera)
+        ? handleResumeLiveTraffic : undefined}
       inline={pausePlacement !== 'map'} />
   )
   useLayoutEffect(() => {
