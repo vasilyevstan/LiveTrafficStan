@@ -189,6 +189,7 @@ jobs:
       - name: Build target application
         if: inputs.artifact == 'application'
         env:
+          VITE_RELEASE_SHA: ${{ inputs.target_sha }}
           AIRCRAFT_ENDPOINT: ${{ inputs.aircraft_delivery == 'adsb-lol-direct' && 'https://api.adsb.lol' || '/api/aircraft' }}
           AIRCRAFT_ENDPOINT_EXPLICIT: ${{ inputs.aircraft_endpoint_explicit }}
           VITE_AIRCRAFT_PHOTO_ENABLED: ${{ inputs.aircraft_photo_enabled }}
@@ -211,11 +212,13 @@ jobs:
             echo "Target source does not support airport boards." >&2
             exit 1
           fi
+          export VITE_RELEASE_TIMESTAMP="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           npm run build
 
       - name: Build target PWA retirement artifact
         if: inputs.artifact == 'pwa-retirement'
         env:
+          VITE_RELEASE_SHA: ${{ inputs.target_sha }}
           AIRCRAFT_ENDPOINT: ${{ inputs.aircraft_delivery == 'adsb-lol-direct' && 'https://api.adsb.lol' || '/api/aircraft' }}
           AIRCRAFT_ENDPOINT_EXPLICIT: ${{ inputs.aircraft_endpoint_explicit }}
           VITE_AIRCRAFT_PHOTO_ENABLED: ${{ inputs.aircraft_photo_enabled }}
@@ -238,6 +241,7 @@ jobs:
             echo "Target source does not support airport boards." >&2
             exit 1
           fi
+          export VITE_RELEASE_TIMESTAMP="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           npm run build:pwa-retire
 
       - name: Check exact rollback bundle

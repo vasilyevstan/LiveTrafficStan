@@ -290,4 +290,9 @@ describe('interface presentation contracts', () => {
     expect(styles).toMatch(/\.traffic-pause-notice\s*\{[^}]*display: grid;/)
     expect(styles).not.toMatch(/\.traffic-pause-notice\s*\{[^}]*(?:overflow|height|position):/)
   })
+
+  it('keeps release identity above attribution and clear of the mobile dock', () => {
+    expect(styles).toMatch(/\.release-info\s*\{[^}]*right: 10px;[^}]*bottom: 40px;[^}]*pointer-events: none;/)
+    expect(styles).toMatch(/\.app-shell--mobile-workspace \.release-info\s*\{[^}]*right: var\(--mobile-safe-right\);[^}]*bottom: calc\(var\(--mobile-surface-bottom\) \+ 4px\);/)
+  })
 })

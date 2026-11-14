@@ -46,6 +46,7 @@ import { LocalRulerPlacement } from './components/LocalRulerPlacement'
 import { InViewPanel } from './components/InViewPanel'
 import { LiveStatus } from './components/LiveStatus'
 import { PortDetails } from './components/PortDetails'
+import { ReleaseInfo } from './components/ReleaseInfo'
 import { TrafficControls } from './components/TrafficControls'
 import { TrafficPauseNotice } from './components/TrafficPauseNotice'
 import {
@@ -142,6 +143,7 @@ import {
   type OrbitalDiscoveryFilters,
 } from './domain/orbitalDiscovery'
 import { formatTimestamp } from './domain/format'
+import { RELEASE_INFO } from './domain/releaseInfo'
 import {
   displayWeatherObservations,
   selectWeatherStationIds,
@@ -3584,6 +3586,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
         )}
       </div>
       </MobileInspectorContext>
+      {RELEASE_INFO && <ReleaseInfo info={RELEASE_INFO} />}
     </main>
   )
 }
