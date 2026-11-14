@@ -27,5 +27,4 @@ export const handleLirrProxy = (request: Request, options: GtfsTrainProxyOptions
     name: 'LIRR',
     cacheSeconds: LIRR_EDGE_CACHE_SECONDS,
     decodeLimits: LIRR_DECODE_LIMITS,
-    identity: 'vehicle',
   }, options)

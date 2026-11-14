@@ -32,10 +32,19 @@ export interface GtfsTrainProxyConfig {
   upstreamUrl: string
   name: string
   cacheSeconds: number
-  decodeLimits: GtfsDecodeLimits
-  identity: 'vehicle' | 'trip-day'
+  /** Required unless `decoder` replaces GTFS-RT decoding. */
+  decodeLimits?: GtfsDecodeLimits
   allowMissingContentType?: boolean
   userAgent?: string
+  /** Replaces GTFS-RT decoding for a non-protobuf upstream with the same bounds. */
+  decoder?: TrainFeedDecoder
+}
+
+export interface TrainFeedDecoder {
+  accept: string
+  contentTypes: readonly string[]
+  /** Throws GtfsDecodeError for an invalid feed. */
+  decode(body: Uint8Array): object[]
 }
 
 export interface GtfsTrainProxyVehicle {
@@ -52,7 +61,7 @@ export interface GtfsTrainProxyVehicle {
 
 export interface GtfsTrainProxyBody {
   retrievedAt: string
-  vehicles: GtfsTrainProxyVehicle[]
+  vehicles: object[]
 }
 
 const protobufTypes = [
@@ -60,6 +69,12 @@ const protobufTypes = [
   'application/x-protobuf',
   'application/protobuf',
 ]
+
+const DEFAULT_DECODE_LIMITS: GtfsDecodeLimits = {
+  maximumEntities: 1_000,
+  maximumVehicles: 1_000,
+  maximumStringBytes: 256,
+}
 
 const baseHeaders = {
   'Cache-Control': 'no-store',
@@ -125,13 +140,6 @@ const storeBody = async (
   }
 }
 
-const validServiceDate = (value: string | undefined): value is string => {
-  if (!value || !/^\d{8}$/.test(value)) return false
-  const iso = `${value.slice(0, 4)}-${value.slice(4, 6)}-${value.slice(6, 8)}`
-  const parsed = Date.parse(iso)
-  return Number.isFinite(parsed) && new Date(parsed).toISOString().startsWith(iso)
-}
-
 export const handleGtfsTrainProxy = async (
   request: Request,
   config: GtfsTrainProxyConfig,
@@ -178,7 +186,7 @@ export const handleGtfsTrainProxy = async (
       redirect: 'manual',
       cache: 'no-store',
       headers: {
-        Accept: 'application/x-protobuf, application/octet-stream',
+        Accept: config.decoder?.accept ?? 'application/x-protobuf, application/octet-stream',
         ...(config.userAgent ? { 'User-Agent': config.userAgent } : {}),
       },
     })
@@ -199,7 +207,8 @@ export const handleGtfsTrainProxy = async (
     }
     const contentType = (upstream.headers.get('Content-Type') ?? '')
       .split(';')[0]!.trim().toLowerCase()
-    if (!protobufTypes.includes(contentType) && !(config.allowMissingContentType && !contentType)) {
+    const allowedTypes = config.decoder?.contentTypes ?? protobufTypes
+    if (!allowedTypes.includes(contentType) && !(config.allowMissingContentType && !contentType)) {
       await upstream.body?.cancel()
       return textResponse(`${config.name} upstream returned an unsafe content type`, 502)
     }
@@ -214,19 +223,15 @@ export const handleGtfsTrainProxy = async (
       return textResponse(`${config.name} request canceled`, 499)
     }
 
-    const feed = decodeGtfsVehicleFeed(
-      body ?? new Uint8Array(),
-      config.decodeLimits,
-    )
     const payload: GtfsTrainProxyBody = {
       retrievedAt: new Date(now()).toISOString(),
-      vehicles: feed.vehicles.flatMap((vehicle) => {
-        if (config.identity === 'trip-day' &&
-          (!vehicle.tripId || !validServiceDate(vehicle.startDate))) return []
-        return [{
-          id: config.identity === 'trip-day'
-            ? `${vehicle.startDate}:${vehicle.tripId}`
-            : vehicle.vehicleId ?? vehicle.entityId,
+      vehicles: config.decoder
+        ? config.decoder.decode(body ?? new Uint8Array())
+        : decodeGtfsVehicleFeed(
+          body ?? new Uint8Array(),
+          config.decodeLimits ?? DEFAULT_DECODE_LIMITS,
+        ).vehicles.map((vehicle): GtfsTrainProxyVehicle => ({
+          id: vehicle.vehicleId ?? vehicle.entityId,
           ...(vehicle.label ? { label: vehicle.label } : {}),
           ...(vehicle.tripId ? { tripId: vehicle.tripId } : {}),
           ...(vehicle.routeId ? { routeId: vehicle.routeId } : {}),
@@ -238,8 +243,7 @@ export const handleGtfsTrainProxy = async (
             ? { speedMetersPerSecond: round(vehicle.speedMetersPerSecond, 1) }
             : {}),
           observedAt: new Date(vehicle.timestamp * 1_000).toISOString(),
-        }]
-      }),
+        })),
     }
     const json = JSON.stringify(payload)
     await storeBody(cache, cacheKey, json, config.cacheSeconds)

@@ -29,8 +29,17 @@ export interface TrainPosition {
   /** Source position time, never the feed or HTTP time. */
   observedAt: number
   trainNumber?: string
+  /** Source train-type code, e.g. Fintraffic `IC` or `S`. */
+  trainType?: string
   line?: string
+  origin?: string
   destination?: string
+  /** Scheduled first departure and final arrival, epoch milliseconds. */
+  scheduledDepartureAt?: number
+  scheduledArrivalAt?: number
+  /** Positive is late; only when the source states it. */
+  delayMinutes?: number
+  lastStop?: string
   operator?: string
   vehicleLabel?: string
   speedKph?: number
@@ -55,6 +64,8 @@ export interface TrainSource {
   coverage: string
   /** Rail-network rectangles; one country box would also poll its neighbours. */
   areas: readonly TrainSourceBounds[]
+  /** IANA zone used to present the source's schedule times. */
+  timeZone: string
   websiteUrl: string
   licenseName: string
   licenseUrl: string

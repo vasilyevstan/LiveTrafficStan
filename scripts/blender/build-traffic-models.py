@@ -20,8 +20,9 @@ Model frame: r = starboard, f = forward (nose or bow), u = up, in metres.
 Vertices map to Blender (-r, -f, u), so the default glTF +Y-up export yields
 +Z forward, +Y up and -X starboard. Each model is centred on its footprint
 and rests on u = 0. Body faces are tinted by the app per traffic class and
-theme, detail faces use the theme's neutral detail colour, and accent faces
-keep their exported colour.
+theme, or per operator livery for fleet trainsets; detail faces use the
+theme's neutral detail colour or the livery stripe, and accent faces keep
+their exported colour.
 """
 
 import math
@@ -54,6 +55,9 @@ MATERIALS = {
     'preview_starlink': ('preview', 'c4b5fd'),
     'preview_train': ('preview', 'a3e635'),
     'preview_train_freight': ('preview', 'fb923c'),
+    'preview_train_elron': ('preview', 'f26a21'),
+    'preview_train_vr': ('preview', 'f8fafc'),
+    'preview_train_silver': ('preview', 'c9d1d9'),
 }
 
 try:
@@ -688,8 +692,171 @@ def model_freight_train(collection):
     return finish(collection, m, 'train-freight', 'train')
 
 
+# Fleet trainsets: original geometry after published dimensions, with no logos.
+# The app selects them only from a reported source, train type or vehicle
+# number and tints them in the operator's livery: body is the main colour,
+# detail the stripe or skirt, and glass the dark window band.
+
+def livery_profile(f, w, u0, u1, ch):
+    """Car-body section with a stripe at 30-45% and a window band at 45-75% of
+    the wall height. Segments: 0 floor, 1 and 11 lower walls, 2 and 10 stripes,
+    3 and 9 windows, 4 and 8 upper walls, 5 and 7 roof chamfers, 6 roof."""
+    wall = u1 - ch - u0
+    us = [u0 + 0.3 * wall, u0 + 0.45 * wall, u0 + 0.75 * wall, u1 - ch]
+    return ([(-w, f, u0), (w, f, u0)] + [(w, f, u) for u in us] + [(w - ch, f, u1), (-w + ch, f, u1)]
+            + [(-w, f, u) for u in us[::-1]])
+
+
+def bilevel_profile(f, w, u0, u1, ch):
+    """Double-deck section with lower windows at 12-32% and upper windows at
+    50-72% of the wall height. Segments: 0 floor, 1 and 13 lower walls, 2 and
+    12 lower windows, 3 and 11 belts, 4 and 10 upper windows, 5 and 9 upper
+    walls, 6 and 8 roof chamfers, 7 roof."""
+    wall = u1 - ch - u0
+    us = [u0 + k * wall for k in (0.12, 0.32, 0.5, 0.72)] + [u1 - ch]
+    return ([(-w, f, u0), (w, f, u0)] + [(w, f, u) for u in us] + [(w - ch, f, u1), (-w + ch, f, u1)]
+            + [(-w, f, u) for u in us[::-1]])
+
+
+def mirrored_end(sections):
+    """Rear sections of a double-ended unit from its front sections."""
+    return [(-s[0],) + tuple(s[1:]) for s in sections[::-1]]
+
+
+def body_run(model, sections, gaps, detail):
+    """One livery_profile sweep through (f, w, u0, u1, ch) sections. gaps[k]
+    names gap k: 'screen' (windscreen and cab windows), 'cab' (cab windows),
+    'car' (window band), 'blank' (no windows) or 'joint' (dark gangway).
+    detail lists the segments drawn in the livery's detail colour."""
+    mats = {}
+    for k in range(len(gaps)):
+        kind = gaps[k]
+        if kind == 'joint':
+            for i in range(12):
+                mats[(k, i)] = 'dark'
+            continue
+        for i in detail:
+            mats[(k, i)] = 'detail'
+        if kind != 'blank':
+            mats[(k, 3)] = 'glass'
+            mats[(k, 9)] = 'glass'
+        if kind == 'screen':
+            for i in (5, 6, 7):
+                mats[(k, i)] = 'glass'
+    sweep(model, [livery_profile(*s) for s in sections], 'body', mats)
+
+
+def bilevel_coach(model, f0, f1, w, u1, detail, cab=False):
+    """Double-deck coach from f0 (front) to f1; cab adds a control cab at f1."""
+    mats = {}
+    for i in (2, 4, 10, 12):
+        mats[(0, i)] = 'glass'
+    for i in detail:
+        mats[(0, i)] = 'detail'
+    sweep(model, [bilevel_profile(f0, w, 0.6, u1, 0.45), bilevel_profile(f1, w, 0.6, u1, 0.45)], 'body', mats)
+    box(model, -w + 0.2, w - 0.2, f1 + 1.5, f0 - 1.5, 0.0, 0.6, 'dark')
+    if cab:
+        box(model, -w + 0.45, w - 0.45, f1 - 0.05, f1, 2.5, 3.3, 'glass')
+
+
+def model_train_flirt(collection):
+    """Stadler FLIRT three-car unit as run by Elron: 58.6 m over a 3.2 m
+    broad-gauge body, raked cabs at both ends and Jacobs bogies at the joints."""
+    m = new_model()
+    h = 29.3
+    nose = [(h, 1.15, 0.5, 2.0, 0.35), (h - 0.9, 1.5, 0.45, 3.45, 0.55), (h - 2.1, 1.6, 0.45, 4.0, 0.4)]
+    joints = []
+    for j in (8.9, -8.9):
+        joints += [(j + 0.3, 1.6, 0.45, 4.0, 0.4), (j - 0.3, 1.6, 0.45, 4.0, 0.4)]
+    body_run(m, nose + joints + mirrored_end(nose),
+             ['screen', 'cab', 'car', 'joint', 'car', 'joint', 'car', 'cab', 'screen'], (1, 11))
+    for f_c in (-26.0, -8.9, 8.9, 26.0):
+        box(m, -1.3, 1.3, f_c - 1.4, f_c + 1.4, 0.0, 0.45, 'dark')
+    box(m, -0.8, 0.8, -6.5, 6.5, 4.0, 4.3, 'detail')
+    for f0 in (14.0, -24.0):
+        box(m, -0.9, 0.9, f0, f0 + 10.0, 4.0, 4.25, 'detail')
+    return finish(collection, m, 'train-flirt', 'train')
+
+
+def model_train_pendolino(collection):
+    """Alstom Pendolino six-car unit as VR class Sm3: 158.9 m, long pointed
+    cabs at both ends and a tilting body drawn with a deep roof chamfer."""
+    m = new_model()
+    h = 79.45
+    nose = [(h, 0.75, 0.75, 1.7, 0.35), (h - 2.4, 1.35, 0.6, 3.05, 0.65), (h - 5.2, 1.6, 0.55, 3.7, 0.7)]
+    joints = []
+    for j in (52.3, 26.15, 0.0, -26.15, -52.3):
+        joints += [(j + 0.3, 1.6, 0.55, 3.7, 0.7), (j - 0.3, 1.6, 0.55, 3.7, 0.7)]
+    gaps = ['blank', 'screen', 'car'] + ['joint', 'car'] * 5 + ['screen', 'blank']
+    body_run(m, nose + joints + mirrored_end(nose), gaps, (2, 10))
+    box(m, -1.25, 1.25, -h + 4.0, h - 4.0, 0.05, 0.55, 'dark')
+    for f_c in (40.0, -40.0):
+        box(m, -0.5, 0.5, f_c - 1.0, f_c + 1.0, 3.7, 4.05, 'dark')
+    return finish(collection, m, 'train-pendolino', 'train')
+
+
+def model_train_intercity(collection):
+    """VR InterCity: class Sr2 locomotive and three 26.4 m double-deck coaches,
+    the last a control car."""
+    m = new_model()
+    nose = [(50.0, 1.3, 0.9, 2.6, 0.4), (49.2, 1.5, 0.85, 3.6, 0.45), (48.3, 1.55, 0.85, 4.1, 0.4)]
+    tail = [(31.0 + 50.0 - s[0],) + tuple(s[1:]) for s in nose[::-1]]
+    body_run(m, nose + tail, ['screen', 'cab', 'blank', 'cab', 'screen'], (2, 10))
+    for f_c in (46.0, 35.0):
+        box(m, -1.3, 1.3, f_c - 1.5, f_c + 1.5, 0.0, 0.85, 'dark')
+        box(m, -0.5, 0.5, f_c - 1.0, f_c + 1.0, 4.1, 4.45, 'dark')
+    f0 = 30.2
+    for k in range(3):
+        bilevel_coach(m, f0, f0 - 26.4, 1.6, 5.1, (1, 13), k == 2)
+        f0 -= 27.2
+    return finish(collection, m, 'train-intercity', 'train')
+
+
+def model_train_us_push_pull(collection):
+    """North American push-pull consist (MBTA, LIRR diesel): hood-unit
+    passenger locomotive and three 25.9 m bilevel coaches, the last a cab car."""
+    m = new_model()
+    box(m, -1.55, 1.55, 29.0, 50.0, 1.15, 1.5, 'dark')
+    for f_c in (46.0, 33.0):
+        box(m, -1.35, 1.35, f_c - 2.0, f_c + 2.0, 0.0, 1.15, 'dark')
+    nose = [(-1.0, 1.5), (1.0, 1.5), (1.0, 2.75), (0.8, 2.95), (-0.8, 2.95), (-1.0, 2.75)]
+    plate_f(m, nose, 48.4, 49.9, 'body')
+    box(m, -1.5, 1.5, 45.4, 48.4, 1.5, 2.2, 'detail')
+    box(m, -1.5, 1.5, 45.4, 48.4, 2.2, 3.0, 'body')
+    prism(m, [(-1.45, 45.45), (1.45, 45.45), (1.45, 48.35), (-1.45, 48.35)], 3.0, 3.7, 'body', side_mat='glass')
+    roof = [(-1.5, 3.7), (1.5, 3.7), (1.5, 3.95), (1.2, 4.25), (-1.2, 4.25), (-1.5, 3.95)]
+    plate_f(m, roof, 45.3, 48.5, 'body')
+    box(m, -1.2, 1.2, 29.3, 45.4, 1.5, 2.2, 'detail')
+    hood = [(-1.2, 2.2), (1.2, 2.2), (1.2, 3.75), (0.95, 4.0), (-0.95, 4.0), (-1.2, 3.75)]
+    plate_f(m, hood, 29.3, 45.4, 'body')
+    f0 = 28.0
+    for k in range(3):
+        bilevel_coach(m, f0, f0 - 25.9, 1.6, 4.8, (3, 11), k == 2)
+        f0 -= 26.7
+    return finish(collection, m, 'train-us-push-pull', 'train')
+
+
+def model_train_us_emu(collection):
+    """LIRR M7/M9-style electric multiple unit: three 25.9 m stainless cars
+    with flat cab fronts, a yellow front panel and full-length underframes."""
+    m = new_model()
+    h = 38.85
+    front = [(h, 1.45, 0.95, 3.5, 0.55), (h - 0.35, 1.6, 0.95, 3.9, 0.45)]
+    joints = []
+    for j in (12.95, -12.95):
+        joints += [(j + 0.3, 1.6, 0.95, 3.9, 0.45), (j - 0.3, 1.6, 0.95, 3.9, 0.45)]
+    body_run(m, front + joints + mirrored_end(front),
+             ['blank', 'car', 'joint', 'car', 'joint', 'car', 'blank'], (2, 10))
+    box(m, -1.3, 1.3, -h + 1.0, h - 1.0, 0.1, 0.95, 'dark')
+    box(m, -1.1, 1.1, h, h + 0.05, 2.45, 3.2, 'glass')
+    box(m, -1.2, 1.2, h, h + 0.05, 1.2, 2.3, 'yellow')
+    return finish(collection, m, 'train-us-emu', 'train')
+
+
 def build_trains(collection):
-    return [model_train(collection), model_freight_train(collection)]
+    return [model_train(collection), model_freight_train(collection), model_train_flirt(collection),
+            model_train_pendolino(collection), model_train_intercity(collection),
+            model_train_us_push_pull(collection), model_train_us_emu(collection)]
 
 
 # Scene assembly, preview, export and render.
@@ -701,6 +868,11 @@ PREVIEW_MATERIAL = {
     'orbital-unknown': 'preview_unknown',
     'orbital-starlink-spacecraft': 'preview_starlink',
     'train-freight': 'preview_train_freight',
+    'train-flirt': 'preview_train_elron',
+    'train-pendolino': 'preview_train_vr',
+    'train-intercity': 'preview_train_vr',
+    'train-us-push-pull': 'preview_train_silver',
+    'train-us-emu': 'preview_train_silver',
 }
 PREVIEW_ROWS = [
     ['aircraft', 'aircraft-light', 'aircraft-heavy', 'helicopter'],
@@ -709,8 +881,11 @@ PREVIEW_ROWS = [
     ['orbital-payload', 'orbital-rocket-body', 'orbital-debris', 'orbital-unknown',
      'orbital-starlink-spacecraft'],
     ['orbital-iss', 'orbital-hubble', 'train', 'train-freight'],
+    ['train-flirt', 'train-pendolino', 'train-intercity', 'train-us-push-pull', 'train-us-emu'],
 ]
 PREVIEW_SIZE = 10.0
+# Multi-car trainsets get a longer preview so their cars stay legible.
+PREVIEW_TRAINSET_SIZE = 26.0
 PREVIEW_SPACING = 14.0
 PREVIEW_HEADING = 60.0
 
@@ -722,7 +897,8 @@ def build_all(collection):
 
 def layout(objects):
     """Preview grid of centred PREVIEW_ROWS; each model is scaled so that its
-    larger footprint side is PREVIEW_SIZE. Run only after any export."""
+    larger footprint side is PREVIEW_SIZE, or PREVIEW_TRAINSET_SIZE for a
+    multi-car trainset. Run only after any export."""
     by_id = {}
     for obj in objects:
         by_id[obj['lts_model_id']] = obj
@@ -730,7 +906,10 @@ def layout(objects):
         ids = PREVIEW_ROWS[row]
         for column in range(len(ids)):
             obj = by_id[ids[column]]
-            factor = PREVIEW_SIZE / max(obj['lts_length_m'], obj['lts_beam_m'])
+            size = PREVIEW_SIZE
+            if obj['lts_kind'] == 'train' and obj['lts_length_m'] > 30.0:
+                size = PREVIEW_TRAINSET_SIZE
+            factor = size / max(obj['lts_length_m'], obj['lts_beam_m'])
             obj.scale = (factor, factor, factor)
             obj.rotation_euler = (0.0, 0.0, math.radians(PREVIEW_HEADING))
             x = (column - (len(ids) - 1) / 2.0) * PREVIEW_SPACING

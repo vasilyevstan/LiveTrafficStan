@@ -1,5 +1,30 @@
 # Engineering Decisions
 
+## Fleet train models, liveries and Elron train details (#713)
+
+The user asked for train models that look like the actual trains, and for
+train number, departure, destination and, if possible, a picture. Five
+original, logo-free Blender trainsets were added: `train-flirt` (Elron Stadler
+FLIRT), `train-pendolino` (VR Sm3), `train-intercity` (VR InterCity
+double-deck), `train-us-push-pull` (MBTA/LIRR coaches) and `train-us-emu`
+(LIRR M7/M9). A trainset is chosen only from source-reported fields: the
+Elron source, Fintraffic train type `S`, `IC` or `PYO`, the MBTA source, or
+an exact LIRR car number within the published roster ranges. Anything else,
+including Fintraffic `HL`, Entur and freight, keeps the generic model. Each
+trainset uses an original operator-coloured livery on both themes, never a
+logo or wordmark; it is representative of the fleet, not a specific unit.
+
+Elron details now come from Elron's own public train-map JSON instead of the
+community GTFS conversion, which discarded the train number, route, times
+and delay (see the
+[source record](data-sources-and-licensing.md#elron-public-train-map-713)).
+Fintraffic and Entur details add reported origin, destination and scheduled
+times from their existing queries; MBTA adds the trip name and headsign.
+
+Photos were skipped: no source publishes per-unit photos under reusable
+terms, and representative class photos would need a new manifest, asset
+pipeline and licence review, which is disproportionate to this change.
+
 ## Elron community positions and clearer trains (#710)
 
 The user requested more visible trains and directed integration unless the

@@ -1,6 +1,6 @@
 import type { Theme } from '../../app/theme'
 import type { OrbitalObjectType } from '../../domain/orbital'
-import type { TrainCategory } from '../../domain/trains'
+import type { TrainCategory, TrainPosition } from '../../domain/trains'
 import {
   AIRCRAFT_ALTITUDE_BANDS,
   type AircraftAltitudeBand,
@@ -37,6 +37,11 @@ export const TRAFFIC_MODEL_IDS = [
   'orbital-hubble',
   'train',
   'train-freight',
+  'train-flirt',
+  'train-pendolino',
+  'train-intercity',
+  'train-us-push-pull',
+  'train-us-emu',
 ] as const
 
 export type TrafficModelId = (typeof TRAFFIC_MODEL_IDS)[number]
@@ -87,6 +92,62 @@ export const orbitalModelForObject = (
 
 export const trainModelForCategory = (category: TrainCategory): TrafficModelId =>
   category === 'freight' ? 'train-freight' : 'train'
+
+export type TrainFleetModelId =
+  | 'train-flirt'
+  | 'train-pendolino'
+  | 'train-intercity'
+  | 'train-us-push-pull'
+  | 'train-us-emu'
+
+const FINTRAFFIC_FLEET = new Map<string, TrainFleetModelId>([
+  ['S', 'train-pendolino'],
+  ['IC', 'train-intercity'],
+  ['PYO', 'train-intercity'],
+])
+
+// LIRR car-number ranges from the operator fleet roster.
+const LIRR_FLEET: readonly (readonly [number, number, TrainFleetModelId])[] = [
+  [400, 423, 'train-us-push-pull'],
+  [500, 522, 'train-us-push-pull'],
+  [5001, 5017, 'train-us-push-pull'],
+  [7001, 7836, 'train-us-emu'],
+  [9001, 9202, 'train-us-emu'],
+]
+
+const lirrFleetModel = (label: string | undefined): TrainFleetModelId | undefined => {
+  if (label === undefined || !/^\d{1,5}$/.test(label)) return undefined
+  const number = Number(label)
+  return LIRR_FLEET.find(([first, last]) => number >= first && number <= last)?.[2]
+}
+
+/**
+ * Representative fleet trainset selected only from source-reported fields;
+ * unidentified rolling stock keeps the generic category model.
+ */
+export const trainFleetModel = (
+  train: Pick<TrainPosition, 'sourceId' | 'category' | 'trainType' | 'vehicleLabel'>,
+): TrainFleetModelId | undefined => {
+  if (train.category === 'freight') return undefined
+  switch (train.sourceId) {
+    case 'elron':
+      return 'train-flirt'
+    case 'mbta':
+      return 'train-us-push-pull'
+    case 'lirr':
+      return lirrFleetModel(train.vehicleLabel)
+    case 'fintraffic':
+      return train.trainType === undefined
+        ? undefined
+        : FINTRAFFIC_FLEET.get(train.trainType)
+    default:
+      return undefined
+  }
+}
+
+export const trainModelForTrain = (
+  train: Pick<TrainPosition, 'sourceId' | 'category' | 'trainType' | 'vehicleLabel'>,
+): TrafficModelId => trainFleetModel(train) ?? trainModelForCategory(train.category)
 
 const FEATURED_ORBITAL_MODELS = new Map<string, TrafficModelId>([
   ['ISS', 'orbital-iss'],
@@ -164,5 +225,36 @@ export const trainModelColors = (
 ): TrafficModelColors => {
   const [tint, detail] =
     TRAIN_MODEL_PALETTE[theme][category === 'freight' ? 'freight' : 'passenger']
+  return colors(tint, detail)
+}
+
+// Original, logo-free operator liveries: body tint and stripe detail.
+// Light-theme bodies are darkened so white and silver keep basemap contrast.
+export const TRAIN_FLEET_LIVERY: Readonly<
+  Record<Theme, Readonly<Record<TrainFleetModelId, readonly [string, string]>>>
+> = {
+  dark: {
+    'train-flirt': ['#f26a21', '#6b7280'],
+    'train-pendolino': ['#f8fafc', '#16a34a'],
+    'train-intercity': ['#f8fafc', '#16a34a'],
+    'train-us-push-pull': ['#c9d1d9', '#7c3aed'],
+    'train-us-emu': ['#c9d1d9', '#2563eb'],
+  },
+  light: {
+    'train-flirt': ['#ea580c', '#4b5563'],
+    'train-pendolino': ['#cbd5e1', '#15803d'],
+    'train-intercity': ['#cbd5e1', '#15803d'],
+    'train-us-push-pull': ['#a8b2bd', '#6d28d9'],
+    'train-us-emu': ['#a8b2bd', '#1d4ed8'],
+  },
+}
+
+export const trainColorsForTrain = (
+  theme: Theme,
+  train: Pick<TrainPosition, 'sourceId' | 'category' | 'trainType' | 'vehicleLabel'>,
+): TrafficModelColors => {
+  const fleet = trainFleetModel(train)
+  if (fleet === undefined) return trainModelColors(theme, train.category)
+  const [tint, detail] = TRAIN_FLEET_LIVERY[theme][fleet]
   return colors(tint, detail)
 }
