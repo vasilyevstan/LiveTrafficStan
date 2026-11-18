@@ -69,6 +69,7 @@ import {
   type MotionStates,
 } from '../traffic/interpolation'
 import { createTrafficIcons } from './icons'
+import { resolveDarkBasemapPlaceImage } from './basemapImageAliases'
 import {
   applyBasemapCartography,
   setBasemapBuildingsFullHeight,
@@ -1910,6 +1911,9 @@ export function TrafficMap({
     if (!map) return
 
     mapRef.current = map
+    map.on('styleimagemissing', ({ id }) =>
+      resolveDarkBasemapPlaceImage(map, id),
+    )
     reliefRef.current = createBasemapRelief(map, status => reliefStatusRef.current(status))
     bathymetryRef.current = new BathymetryRuntime(
       map, depthsVisibleRef.current, onlineRef.current,

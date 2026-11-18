@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "id": "curated-reference-2026-10-17-v3",
+  "id": "curated-reference-2026-10-17-v4",
   "sourceCatalogId": "celestrak-curated-v1",
   "retrievedAt": "2026-10-17T12:17:07.523Z",
   "sha256": "d062e417f365701d3ef2951e400a9196700c514ced47960305f010681d0da5c0",
@@ -49,12 +49,6 @@
     },
     {
       "noradCatalogId": "4327",
-      "sourceGroups": [
-        "visual"
-      ]
-    },
-    {
-      "noradCatalogId": "5118",
       "sourceGroups": [
         "visual"
       ]
@@ -784,12 +778,6 @@
     },
     {
       "noradCatalogId": "28499",
-      "sourceGroups": [
-        "visual"
-      ]
-    },
-    {
-      "noradCatalogId": "28738",
       "sourceGroups": [
         "visual"
       ]
@@ -2255,12 +2243,6 @@
       ]
     },
     {
-      "noradCatalogId": "54039",
-      "sourceGroups": [
-        "visual"
-      ]
-    },
-    {
       "noradCatalogId": "54149",
       "sourceGroups": [
         "visual"
@@ -2615,13 +2597,6 @@
       ]
     },
     {
-      "noradCatalogId": "66515",
-      "sourceGroups": [
-        "visual",
-        "stations"
-      ]
-    },
-    {
       "noradCatalogId": "66906",
       "sourceGroups": [
         "stations"
@@ -2659,12 +2634,6 @@
     },
     {
       "noradCatalogId": "67685",
-      "sourceGroups": [
-        "stations"
-      ]
-    },
-    {
-      "noradCatalogId": "67688",
       "sourceGroups": [
         "stations"
       ]

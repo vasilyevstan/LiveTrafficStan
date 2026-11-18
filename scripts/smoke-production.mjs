@@ -11,6 +11,8 @@ import {
   classifyAircraftProxyStatus,
   deriveOrbitalStaticAssetPaths,
   fetchPrivateRelayWithRetry,
+  fetchWorkerResponseWithReleaseRetry,
+  formatWorkerReleaseMismatch,
   hasOneYearImmutableCacheControl,
   isRetryableStaticAssetStatus,
   readOptionalJson,
@@ -387,23 +389,26 @@ const verifyStaticAssets = async () => {
   }
 }
 
-const waitForWorkerRelease = async () => {
-  const releaseProbePath = '/api/aircraft/v2/point/91/24.754/11'
+const aircraftReleaseProbePath = '/api/aircraft/v2/point/91/24.754/11'
+
+const waitForWorkerRelease = async (signal) => {
   await waitForExpectedWorkerRelease({
-    fetchProbe: () =>
+    fetchProbe: (signal) =>
       fetchWithTimeout(
-        new URL(releaseProbePath, baseUrl),
-        SAME_ORIGIN_SMOKE_FETCH_INIT,
+        new URL(aircraftReleaseProbePath, baseUrl),
+        { ...SAME_ORIGIN_SMOKE_FETCH_INIT, signal },
       ),
     expectedReleaseSha,
+    signal,
+    probeLabel: 'Invalid aircraft coordinates',
+    target: aircraftReleaseProbePath,
   })
 }
 
 const verifyAircraftProxy = async () => {
-  await waitForWorkerRelease()
-  const startedAt = performance.now()
-
   if (aircraftDelivery === 'adsb-lol-direct') {
+    await waitForWorkerRelease(AbortSignal.timeout(180_000))
+    const startedAt = performance.now()
     const endpoint = new URL(
       '/v2/point/59.437/24.754/135',
       'https://api.adsb.lol',
@@ -481,6 +486,8 @@ const verifyAircraftProxy = async () => {
     aircraftDelivery === 'oci-private-relay'
       ? new AbortController()
       : undefined
+  const aircraftSmokeSignal =
+    privateRelayDeadlineController?.signal ?? AbortSignal.timeout(180_000)
   const privateRelayDeadline = privateRelayDeadlineController
     ? setTimeout(
         () =>
@@ -494,21 +501,37 @@ const verifyAircraftProxy = async () => {
     : undefined
 
   try {
-    const response =
-      aircraftDelivery === 'oci-private-relay'
-        ? await fetchPrivateRelayWithRetry({
-            fetchRelay: (signal) =>
-              fetchWithTimeout(validUrl, {
-                ...SAME_ORIGIN_SMOKE_FETCH_INIT,
-                signal,
-              }),
-            expectedReleaseSha,
-            signal: privateRelayDeadlineController?.signal,
-          })
-        : await fetchWithTimeout(
-            validUrl,
-            SAME_ORIGIN_SMOKE_FETCH_INIT,
-          )
+    const startedAt = performance.now()
+    let response
+    if (aircraftDelivery === 'oci-private-relay') {
+      await waitForWorkerRelease(aircraftSmokeSignal)
+      response = await fetchPrivateRelayWithRetry({
+        fetchRelay: (signal) =>
+          fetchWithTimeout(validUrl, {
+            ...SAME_ORIGIN_SMOKE_FETCH_INIT,
+            signal,
+          }),
+        expectedReleaseSha,
+        signal: aircraftSmokeSignal,
+      })
+    } else {
+      response = await fetchWorkerResponseWithReleaseRetry({
+        fetchProbe: (signal) =>
+          fetchWithTimeout(
+            new URL(aircraftReleaseProbePath, baseUrl),
+            { ...SAME_ORIGIN_SMOKE_FETCH_INIT, signal },
+          ),
+        fetchResponse: (signal) =>
+          fetchWithTimeout(validUrl, {
+            ...SAME_ORIGIN_SMOKE_FETCH_INIT,
+            signal,
+          }),
+        expectedReleaseSha,
+        signal: aircraftSmokeSignal,
+        target: '/api/aircraft/v2/point/{lat}/{lon}/{radiusNm}',
+        probeLabel: 'Invalid aircraft coordinates',
+      })
+    }
     const status =
       aircraftDelivery === 'oci-private-relay'
         ? response.status === 200
@@ -525,7 +548,12 @@ const verifyAircraftProxy = async () => {
     )
     assert(
       response.headers.get('x-livetrafficstan-release') === expectedReleaseSha,
-      'Aircraft proxy release SHA does not match the deployed source',
+      formatWorkerReleaseMismatch({
+        expectedReleaseSha,
+        observedReleaseSha: response.headers.get('x-livetrafficstan-release'),
+        target: '/api/aircraft/v2/point/{lat}/{lon}/{radiusNm}',
+        status: response.status,
+      }),
     )
     assert(
       response.headers.get('cache-control') === 'no-store',
@@ -574,9 +602,7 @@ const verifyAircraftProxy = async () => {
       )
     }
   } catch (error) {
-    if (privateRelayDeadlineController?.signal.aborted) {
-      throw privateRelayDeadlineController.signal.reason
-    }
+    if (aircraftSmokeSignal.aborted) throw aircraftSmokeSignal.reason
     throw error
   } finally {
     if (privateRelayDeadline !== undefined) {

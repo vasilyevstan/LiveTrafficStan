@@ -36,22 +36,34 @@ export const STARLINK_SCHEMA2_NEGOTIATION_ACCEPT =
 
 const releaseShaPattern = /^[0-9a-f]{40}$/
 
+const displayReleaseSha = (value) =>
+  value === null
+    ? '<missing>'
+    : JSON.stringify(value.slice(0, 128)) +
+      (value.length > 128 ? ' (truncated)' : '')
+
 export const formatMetarReleaseMismatch = ({
   expectedReleaseSha,
   observedReleaseSha,
   targetOrigin,
   status,
 }) => {
-  const observed = observedReleaseSha === null
-    ? '<missing>'
-    : JSON.stringify(observedReleaseSha.slice(0, 128)) +
-      (observedReleaseSha.length > 128 ? ' (truncated)' : '')
   return (
     'METAR proxy release SHA does not match the deployed source: ' +
-    `expected=${expectedReleaseSha}, observed=${observed}, ` +
+    `expected=${expectedReleaseSha}, observed=${displayReleaseSha(observedReleaseSha)}, ` +
     `target=${targetOrigin}/api/weather/metar?ids=EETN, status=${status}`
   )
 }
+
+export const formatWorkerReleaseMismatch = ({
+  expectedReleaseSha,
+  observedReleaseSha,
+  target,
+  status,
+}) =>
+  'Worker release SHA does not match the deployed source: ' +
+  `expected=${expectedReleaseSha}, observed=${displayReleaseSha(observedReleaseSha)}, ` +
+  `target=${target}, status=${status}`
 
 const cancelResponseBody = async (response) => {
   await response.body?.cancel().catch(() => undefined)
@@ -172,12 +184,6 @@ export const verifyMetarProxyContract = async ({
   wait,
 }) => {
   const endpoint = new URL('/api/weather/metar?ids=EETN', baseUrl)
-  const invalid = await fetchResponse(
-    new URL('/api/weather/metar?ids=eetn', baseUrl),
-    { ...SAME_ORIGIN_SMOKE_FETCH_INIT, signal },
-  )
-  await cancelResponseBody(invalid)
-  assertMetar(invalid.status === 400, 'Invalid METAR station ID was not rejected')
   const unsupportedMethod = await fetchResponse(endpoint, {
     ...SAME_ORIGIN_SMOKE_FETCH_INIT, method: 'POST', signal,
   })
@@ -185,7 +191,27 @@ export const verifyMetarProxyContract = async ({
   assertMetar(unsupportedMethod.status === 405, 'Unsupported METAR method was not rejected')
 
   const response = await fetchMetarWithTimeoutRetry({
-    fetchMetar: (signal) => fetchResponse(endpoint, { ...SAME_ORIGIN_SMOKE_FETCH_INIT, signal }),
+    fetchMetar: (signal) => fetchWorkerResponseWithReleaseRetry({
+      fetchResponse: (requestSignal) =>
+        fetchResponse(endpoint, { ...SAME_ORIGIN_SMOKE_FETCH_INIT, signal: requestSignal }),
+      fetchProbe: (requestSignal) =>
+        fetchResponse(
+          new URL('/api/weather/metar?ids=eetn', baseUrl),
+          { ...SAME_ORIGIN_SMOKE_FETCH_INIT, signal: requestSignal },
+        ),
+      expectedReleaseSha,
+      signal,
+      wait,
+      retryDelaysMs: DEPLOYMENT_PROPAGATION_RETRY_DELAYS_MS,
+      target: '/api/weather/metar?ids=EETN',
+      probeLabel: 'Invalid METAR station ID',
+      formatMismatch: (staleResponse) => formatMetarReleaseMismatch({
+        expectedReleaseSha,
+        observedReleaseSha: staleResponse.headers.get('x-livetrafficstan-release'),
+        targetOrigin: baseUrl.origin,
+        status: staleResponse.status,
+      }),
+    }),
     expectedReleaseSha,
     targetOrigin: baseUrl.origin,
     signal,
@@ -293,17 +319,19 @@ export const writeProductionSmokeReport = async ({
   if (outputPath) await appendFile(outputPath, `smoke_result=${result.overall}\n`)
 }
 
-const classifyWorkerReleaseProbe = (response, expectedReleaseSha) => {
+const classifyWorkerReleaseProbe = (
+  response,
+  expectedReleaseSha,
+  probeLabel,
+) => {
   if (response.status !== 400) {
-    throw new Error('Invalid aircraft coordinates were not rejected')
+    throw new Error(`${probeLabel} was not rejected`)
   }
   if (response.headers.get('cache-control') !== 'no-store') {
-    throw new Error('Aircraft proxy validation response is cacheable')
+    throw new Error(`${probeLabel} response is cacheable`)
   }
   if (response.headers.has('access-control-allow-origin')) {
-    throw new Error(
-      'Aircraft proxy validation unexpectedly allows cross-origin browser access',
-    )
+    throw new Error(`${probeLabel} unexpectedly allows cross-origin access`)
   }
 
   const releaseSha = response.headers.get('x-livetrafficstan-release')
@@ -319,24 +347,89 @@ export const waitForExpectedWorkerRelease = async ({
   expectedReleaseSha,
   retryDelaysMs = DEPLOYMENT_PROPAGATION_RETRY_DELAYS_MS,
   wait = defaultWait,
+  signal,
+  probeLabel = 'Invalid aircraft coordinates',
+  target = '/api/aircraft/v2/point/{lat}/{lon}/{radiusNm}',
 }) => {
+  let lastObservedReleaseSha = null
+  let lastStatus = 0
   for (const delayMs of retryDelaysMs) {
-    if (delayMs > 0) await wait(delayMs)
+    if (delayMs > 0) await wait(delayMs, signal)
+    signal?.throwIfAborted()
 
-    const response = await fetchProbe()
+    const response = await fetchProbe(signal)
+    if (signal?.aborted) {
+      await cancelResponseBody(response)
+      signal.throwIfAborted()
+    }
     let state
     try {
-      state = classifyWorkerReleaseProbe(response, expectedReleaseSha)
+      state = classifyWorkerReleaseProbe(response, expectedReleaseSha, probeLabel)
     } catch (error) {
       await cancelResponseBody(response)
       throw error
     }
 
+    lastObservedReleaseSha = response.headers.get('x-livetrafficstan-release')
+    lastStatus = response.status
     await cancelResponseBody(response)
     if (state === 'current') return
   }
 
-  throw new Error('Worker release SHA does not match the deployed source')
+  throw new Error(formatWorkerReleaseMismatch({
+    expectedReleaseSha,
+    observedReleaseSha: lastObservedReleaseSha,
+    target,
+    status: lastStatus,
+  }))
+}
+
+export const fetchWorkerResponseWithReleaseRetry = async ({
+  fetchResponse,
+  fetchProbe,
+  expectedReleaseSha,
+  signal,
+  wait = defaultWait,
+  retryDelaysMs = DEPLOYMENT_PROPAGATION_RETRY_DELAYS_MS,
+  target,
+  probeLabel,
+  formatMismatch,
+}) => {
+  const waitForRelease = () => waitForExpectedWorkerRelease({
+    fetchProbe,
+    expectedReleaseSha,
+    retryDelaysMs,
+    wait,
+    signal,
+    probeLabel,
+    target,
+  })
+  const mismatch = (response) => new Error(
+    formatMismatch?.(response) ?? formatWorkerReleaseMismatch({
+      expectedReleaseSha,
+      observedReleaseSha: response.headers.get('x-livetrafficstan-release'),
+      target,
+      status: response.status,
+    }),
+  )
+
+  await waitForRelease()
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    signal?.throwIfAborted()
+    const response = await fetchResponse(signal)
+    if (signal?.aborted) {
+      await cancelResponseBody(response)
+      signal.throwIfAborted()
+    }
+    const observedReleaseSha = response.headers.get('x-livetrafficstan-release')
+    if (observedReleaseSha === expectedReleaseSha) return response
+    await cancelResponseBody(response)
+    if (!releaseShaPattern.test(observedReleaseSha ?? '') || attempt === 1) {
+      throw mismatch(response)
+    }
+    await waitForRelease()
+  }
+  throw new Error('Worker release retry loop exhausted')
 }
 
 export const fetchPrivateRelayWithRetry = async ({

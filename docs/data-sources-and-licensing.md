@@ -1606,7 +1606,7 @@ There is **no SATCAT request, fabricated SATCAT URL/count, advanced-data request
 browser login, cookie persistence, credential-bearing URL, or arbitrary proxy**.
 
 Curated membership is pinned in `src/config/spaceTrackCurationReference.json`:
-458 exact NORAD IDs and ordered memberships derived from the validated CelesTrak
+453 exact NORAD IDs and ordered memberships derived from the validated CelesTrak
 snapshot retrieved `2026-10-17T12:17:07.523Z` (the 461 original IDs less the
 reviewed retirements below), source digest
 `d062e417f365701d3ef2951e400a9196700c514ced47960305f010681d0da5c0`.
@@ -1664,9 +1664,22 @@ requests, not an application request path.
 The original membership source date/digest remain unchanged; all other IDs and
 memberships, including ISS/HST/Tiangong, are preserved. This is an offline
 reviewed retirement, not a new runtime SATCAT request, automatic pruning,
-partial publication, or a fresh timestamp on retained elements. An object that
-is merely low or has an old element set stays pinned until a decay record
-exists.
+partial publication, or a fresh timestamp on retained elements. Other objects
+remain pinned unless a reviewed decay retirement or the separate low-perigee
+screen applies; an old element set alone does not remove an object.
+
+Revision `curated-reference-2026-10-17-v4`, reviewed for #709, removes the five
+remaining objects whose 2026-11-14 native GP rows had estimated mean-motion
+perigees below 300 km: `67688` (HMU-SAT2, 205 km), `54039` (CZ-2C R/B, 247 km),
+`28738` (CZ-2D R/B, 279 km), `66515` (SZ-21 MODULE, 275 km), and `5118`
+(SL-3 R/B, 292 km). The 300 km floor is a conservative curation screen using
+the GP mean motion, eccentricity, Earth's standard gravitational parameter,
+and equatorial radius; it is not an instantaneous osculating-orbit claim.
+Curated snapshot generation rejects any pinned GP row below that threshold,
+so a future reference addition cannot silently reintroduce the same risk.
+This reviewed removal uses already-available issue evidence, preserves the
+original membership-source date and digest, adds no provider request, and
+does not relax exact membership, element age, hard expiry, or refresh cadence.
 
 The separate Starlink GP predicate requests public, undecayed `PAYLOAD` rows
 whose names contain `STARLINK` and whose epochs satisfy the source's ten-day
