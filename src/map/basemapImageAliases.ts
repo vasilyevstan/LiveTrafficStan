@@ -1,10 +1,30 @@
-import type { Map as MapLibreMap } from 'maplibre-gl'
-
 const DARK_PLACE_IMAGE_ALIAS = 'circle-11'
 const DARK_PLACE_IMAGE_SOURCE = 'circle_11'
 
+interface PlaceImageData {
+  width: number
+  height: number
+  data: Uint8Array
+}
+
+interface PlaceImage {
+  data: PlaceImageData
+  pixelRatio: number
+  sdf: boolean
+}
+
+interface PlaceImageMap {
+  hasImage(id: string): boolean
+  getImage(id: string): PlaceImage | undefined
+  addImage(
+    id: string,
+    image: PlaceImageData,
+    options: Pick<PlaceImage, 'pixelRatio' | 'sdf'>,
+  ): unknown
+}
+
 export const resolveDarkBasemapPlaceImage = (
-  map: Pick<MapLibreMap, 'addImage' | 'getImage' | 'hasImage'>,
+  map: PlaceImageMap,
   imageId: string,
 ) => {
   if (

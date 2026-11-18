@@ -51,7 +51,9 @@ const EARTH_GRAVITATIONAL_PARAMETER_KM3_PER_S2 = 398600.4418
 const EARTH_EQUATORIAL_RADIUS_KM = 6378.137
 const SECONDS_PER_DAY = 86_400
 
-const meanMotionPerigeeKm = (record: OrbitalObject) => {
+const meanMotionPerigeeKm = (
+  record: Pick<OrbitalObject, 'meanMotion' | 'eccentricity'>,
+) => {
   const meanMotionRadiansPerSecond =
     record.meanMotion * 2 * Math.PI / SECONDS_PER_DAY
   const semiMajorAxisKm = Math.cbrt(

@@ -16,7 +16,7 @@ describe('dark basemap place image aliases', () => {
     const map = {
       hasImage: vi.fn((id: string) => images.has(id)),
       getImage: vi.fn((id: string) => id === 'circle_11' ? source : undefined),
-      addImage: vi.fn((id: string) => images.add(id)),
+      addImage: vi.fn((id: string) => { images.add(id) }),
     }
 
     resolveDarkBasemapPlaceImage(map, 'circle-11')
