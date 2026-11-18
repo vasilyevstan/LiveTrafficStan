@@ -20,7 +20,9 @@ import {
   deriveOrbitalStaticAssetPaths,
   fetchMetarWithTimeoutRetry,
   fetchPrivateRelayWithRetry,
+  fetchWorkerResponseWithReleaseRetry,
   formatMetarReleaseMismatch,
+  formatWorkerReleaseMismatch,
   hasOneYearImmutableCacheControl,
   isRetryableStaticAssetStatus,
   readOptionalJson,
@@ -207,6 +209,19 @@ describe('production smoke policy', () => {
     expect(message).not.toContain('SECRET_TAIL')
   })
 
+  it('formats Worker release mismatches with bounded observed identity', () => {
+    expect(formatWorkerReleaseMismatch({
+      expectedReleaseSha: releaseSha,
+      observedReleaseSha: 'a'.repeat(128) + 'SECRET_TAIL',
+      target: '/api/aircraft/v2/point/{lat}/{lon}/{radiusNm}',
+      status: 200,
+    })).toBe(
+      'Worker release SHA does not match the deployed source: ' +
+      `expected=${releaseSha}, observed="${'a'.repeat(128)}" (truncated), ` +
+      'target=/api/aircraft/v2/point/{lat}/{lon}/{radiusNm}, status=200',
+    )
+  })
+
   it('keeps strict METAR assertions after the bounded timeout-only retry', () => {
     const metarCheck = smokePolicyScript.slice(
       smokePolicyScript.indexOf('export const verifyMetarProxyContract'),
@@ -215,9 +230,13 @@ describe('production smoke policy', () => {
     expect(smokeScript).toContain('const verifyMetarProxy = () => verifyMetarProxyContract({')
     expect(smokePolicyScript).toContain('observedReleaseSha !== expectedReleaseSha')
     expect(metarCheck).toContain('await fetchMetarWithTimeoutRetry({')
+    expect(metarCheck).toContain('fetchWorkerResponseWithReleaseRetry({')
     expect(metarCheck).toContain('AbortSignal.timeout(METAR_SMOKE_TIMEOUT_MS)')
-    expect(metarCheck).toContain('{ ...SAME_ORIGIN_SMOKE_FETCH_INIT, signal }')
+    expect(metarCheck).toContain(
+      '{ ...SAME_ORIGIN_SMOKE_FETCH_INIT, signal: requestSignal }',
+    )
     expect(metarCheck).toContain("...SAME_ORIGIN_SMOKE_FETCH_INIT, method: 'POST', signal")
+    expect(metarCheck).toContain("probeLabel: 'Invalid METAR station ID'")
     expect(metarCheck).toContain('await readMetarBody(response, signal)')
     expect(smokePolicyScript).toContain("length <= 256 * 1_024, 'METAR proxy response is oversized'")
     for (const assertion of [
@@ -227,11 +246,11 @@ describe('production smoke policy', () => {
       "response.headers.get('content-type')?.includes('application/json')",
       'Array.isArray(payload)',
       "record.icaoId === 'EETN'",
-      "invalid.status === 400",
       "unsupportedMethod.status === 405",
     ]) {
       expect(metarCheck).toContain(assertion)
     }
+    expect(smokePolicyScript).toContain('if (response.status !== 400)')
   })
 
   describe('METAR timeout recovery', () => {
@@ -428,10 +447,28 @@ describe('production smoke policy', () => {
       } },
     )
     const verify = (responses, overrides = {}) => {
-      const fetchResponse = vi.fn()
-        .mockResolvedValueOnce(new Response(null, { status: 400 }))
-        .mockResolvedValueOnce(new Response(null, { status: 405 }))
-      for (const response of responses) fetchResponse.mockResolvedValueOnce(response)
+      const actualResponses = [...responses]
+      let lastActualResponse
+      const fetchResponse = vi.fn(async (input, init = {}) => {
+        const url = input instanceof URL ? input : new URL(input)
+        if (init.method === 'POST') return new Response(null, { status: 405 })
+        if (url.search === '?ids=eetn') return workerProbe(releaseSha)
+        const response = actualResponses.shift()
+        if (response) {
+          lastActualResponse = new Response(null, {
+            status: response.status,
+            headers: response.headers,
+          })
+          return response
+        }
+        if (lastActualResponse) {
+          return new Response(null, {
+            status: lastActualResponse.status,
+            headers: lastActualResponse.headers,
+          })
+        }
+        throw new Error('No METAR response fixture')
+      })
       return {
         fetchResponse,
         run: () => verifyMetarProxyContract({
@@ -458,7 +495,7 @@ describe('production smoke policy', () => {
       expect(fixture.fetchResponse).toHaveBeenCalledTimes(3)
       expect(fixture.fetchResponse.mock.calls.map(([url, init]) =>
         [url.search, init.method ?? 'GET'])).toEqual([
-        ['?ids=eetn', 'GET'], ['?ids=EETN', 'POST'], ['?ids=EETN', 'GET'],
+        ['?ids=EETN', 'POST'], ['?ids=eetn', 'GET'], ['?ids=EETN', 'GET'],
       ])
       const signals = fixture.fetchResponse.mock.calls.map(([, init]) => init.signal)
       expect(signals.every((signal) => signal === signals[0])).toBe(true)
@@ -478,7 +515,7 @@ describe('production smoke policy', () => {
         for (const { run } of runs) expect(run).toHaveBeenCalledTimes(1)
         expect(runs.map(({ run }) => run.mock.invocationCallOrder[0]))
           .toEqual([...runs.map(({ run }) => run.mock.invocationCallOrder[0])].sort((a, b) => a - b))
-        expect(fixture.fetchResponse).toHaveBeenCalledTimes(4)
+        expect(fixture.fetchResponse).toHaveBeenCalledTimes(5)
         const report = formatProductionSmokeReport(result, 'https://app.example', releaseSha)
         expect(report).toContain('METAR unavailable (HTTP 504)')
         expect(report).toContain('no release regression demonstrated')
@@ -580,7 +617,7 @@ describe('production smoke policy', () => {
     it('does not reach upstream after a boundary failure', async () => {
       const fixture = verify([response(200, '[]')])
       fixture.fetchResponse.mockReset().mockResolvedValueOnce(new Response(null, { status: 200 }))
-      await expect(fixture.run()).rejects.toThrow('Invalid METAR station ID')
+      await expect(fixture.run()).rejects.toThrow('Unsupported METAR method')
       expect(fixture.fetchResponse).toHaveBeenCalledTimes(1)
     })
 
@@ -690,9 +727,9 @@ describe('production smoke policy', () => {
     )
   })
 
-  it('waits on a local Worker response before the single provider request', () => {
+  it('checks the local Worker release before the bounded provider request', () => {
     const releaseProbeIndex = smokeScript.indexOf(
-      "const releaseProbePath = '/api/aircraft/v2/point/91/24.754/11'",
+      "const aircraftReleaseProbePath = '/api/aircraft/v2/point/91/24.754/11'",
     )
     const providerRequestIndex = smokeScript.indexOf(
       "const validPath = '/api/aircraft/v2/point/59.437/24.754/135'",
@@ -700,10 +737,27 @@ describe('production smoke policy', () => {
 
     expect(releaseProbeIndex).toBeGreaterThan(-1)
     expect(providerRequestIndex).toBeGreaterThan(releaseProbeIndex)
+    expect(smokeScript).toContain('fetchWorkerResponseWithReleaseRetry({')
     expect(smokeScript).toContain(
       "response.headers.get('x-livetrafficstan-release') === expectedReleaseSha",
     )
-    expect(smokeScript).toContain('await waitForWorkerRelease()')
+    expect(smokeScript).toContain('await waitForWorkerRelease(AbortSignal.timeout(180_000))')
+  })
+
+  it('keeps private-relay admission as the only relay retry authority', () => {
+    const aircraftRequest = smokeScript.slice(
+      smokeScript.indexOf('const startedAt = performance.now()', smokeScript.indexOf('const validPath')),
+    )
+    const relayStart = aircraftRequest.indexOf(
+      "if (aircraftDelivery === 'oci-private-relay') {",
+    )
+    const relayEnd = aircraftRequest.indexOf('} else {', relayStart)
+    const relayBranch = aircraftRequest.slice(relayStart, relayEnd)
+
+    expect(relayBranch).toContain('await waitForWorkerRelease(aircraftSmokeSignal)')
+    expect(relayBranch).toContain('fetchPrivateRelayWithRetry({')
+    expect(relayBranch).toContain('signal: aircraftSmokeSignal')
+    expect(relayBranch).not.toContain('fetchWorkerResponseWithReleaseRetry')
   })
 
   it('recovers from a transient canonical stale Worker release', async () => {
@@ -771,7 +825,74 @@ describe('production smoke policy', () => {
         retryDelaysMs: [0, 1],
         wait: async () => undefined,
       }),
-    ).rejects.toThrow('Invalid aircraft coordinates were not rejected')
+    ).rejects.toThrow('Invalid aircraft coordinates was not rejected')
+  })
+
+  it('retries one stale Worker response only after a bounded safe release probe', async () => {
+    const expectedReleaseSha = 'b'.repeat(40)
+    const staleReleaseSha = 'a'.repeat(40)
+    const probes = vi.fn()
+      .mockResolvedValueOnce(workerProbe(expectedReleaseSha))
+      .mockResolvedValueOnce(workerProbe(staleReleaseSha))
+      .mockResolvedValueOnce(workerProbe(expectedReleaseSha))
+    const stale = new Response('stale', {
+      status: 200,
+      headers: { 'X-LiveTrafficStan-Release': staleReleaseSha },
+    })
+    const current = new Response('current', {
+      status: 200,
+      headers: { 'X-LiveTrafficStan-Release': expectedReleaseSha },
+    })
+    const fetchResponse = vi.fn()
+      .mockResolvedValueOnce(stale)
+      .mockResolvedValueOnce(current)
+    const waits = []
+
+    await expect(fetchWorkerResponseWithReleaseRetry({
+      fetchProbe: probes,
+      fetchResponse,
+      expectedReleaseSha,
+      retryDelaysMs: [0, 1_000],
+      wait: async (delayMs) => waits.push(delayMs),
+      probeLabel: 'Invalid aircraft coordinates',
+      target: '/api/aircraft/v2/point/{lat}/{lon}/{radiusNm}',
+    })).resolves.toBe(current)
+
+    expect(fetchResponse).toHaveBeenCalledTimes(2)
+    expect(probes).toHaveBeenCalledTimes(3)
+    expect(waits).toEqual([1_000])
+    expect(stale.bodyUsed).toBe(true)
+  })
+
+  it('fails after one stale-response retry and reports the final SHA', async () => {
+    const expectedReleaseSha = 'b'.repeat(40)
+    const staleReleaseSha = 'a'.repeat(40)
+    const probes = vi.fn(async () => workerProbe(expectedReleaseSha))
+    const stale = () => new Response(null, {
+      status: 200,
+      headers: { 'X-LiveTrafficStan-Release': staleReleaseSha },
+    })
+    const fetchResponse = vi.fn()
+      .mockResolvedValueOnce(stale())
+      .mockResolvedValueOnce(stale())
+
+    await expect(fetchWorkerResponseWithReleaseRetry({
+      fetchProbe: probes,
+      fetchResponse,
+      expectedReleaseSha,
+      retryDelaysMs: [0],
+      wait: vi.fn(),
+      probeLabel: 'Invalid aircraft coordinates',
+      target: '/api/aircraft/v2/point/{lat}/{lon}/{radiusNm}',
+    })).rejects.toThrow(formatWorkerReleaseMismatch({
+      expectedReleaseSha,
+      observedReleaseSha: staleReleaseSha,
+      target: '/api/aircraft/v2/point/{lat}/{lon}/{radiusNm}',
+      status: 200,
+    }))
+
+    expect(fetchResponse).toHaveBeenCalledTimes(2)
+    expect(probes).toHaveBeenCalledTimes(2)
   })
 
   it('supports a browser-origin ADSB.lol delivery smoke', () => {

@@ -46,6 +46,22 @@ const nativeTypes = new Map<string, OrbitalObjectType>([
   ['PAYLOAD', 'PAY'], ['ROCKET BODY', 'R/B'], ['DEBRIS', 'DEB'], ['UNKNOWN', 'UNK'],
 ])
 
+const MIN_CURATED_PERIGEE_KM = 300
+const EARTH_GRAVITATIONAL_PARAMETER_KM3_PER_S2 = 398600.4418
+const EARTH_EQUATORIAL_RADIUS_KM = 6378.137
+const SECONDS_PER_DAY = 86_400
+
+const meanMotionPerigeeKm = (record: OrbitalObject) => {
+  const meanMotionRadiansPerSecond =
+    record.meanMotion * 2 * Math.PI / SECONDS_PER_DAY
+  const semiMajorAxisKm = Math.cbrt(
+    EARTH_GRAVITATIONAL_PARAMETER_KM3_PER_S2 /
+      meanMotionRadiansPerSecond ** 2,
+  )
+  return semiMajorAxisKm * (1 - record.eccentricity) -
+    EARTH_EQUATORIAL_RADIUS_KM
+}
+
 export class SpaceTrackCatalogDiagnosticError extends SpaceTrackCatalogContractError {
   readonly diagnostic: string
   constructor(diagnostic: string) {
@@ -131,6 +147,12 @@ export const createSpaceTrackCuratedSnapshot = async (
     `${ids.slice(0, 3).join(', ') || 'none'}${ids.length > 3 ? ` and ${ids.length - 3} more` : ''}`
   if (joined.length !== expected.size || missing.length || unpinned.length) {
     invalid(`records ${joined.length} of ${expected.size}, missing ${list(missing)}, unpinned ${list(unpinned)}`)
+  }
+  const lowPerigee = joined
+    .filter(({ record }) => meanMotionPerigeeKm(record) < MIN_CURATED_PERIGEE_KM)
+    .map(({ record }) => record.noradCatalogId)
+  if (lowPerigee.length) {
+    invalid(`pinned perigee below ${MIN_CURATED_PERIGEE_KM} km: ${list(lowPerigee)}`)
   }
   const records: OrbitalObject[] = curationReference.records.map((membership) => {
     const record = byId.get(membership.noradCatalogId)
