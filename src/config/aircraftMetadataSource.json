@@ -2,34 +2,34 @@
   "source": {
     "name": "Mictronics aircraft-database",
     "repositoryUrl": "https://github.com/Mictronics/aircraft-database",
-    "commit": "d31104a82bdc429be7fe94726247fc45aa0c49a4",
-    "publishedAt": "2026-10-25T09:05:04Z",
-    "databaseVersion": 528,
-    "archiveUrl": "https://raw.githubusercontent.com/Mictronics/aircraft-database/d31104a82bdc429be7fe94726247fc45aa0c49a4/indexedDB.zip",
-    "archiveSha256": "fdff9ab076f279658d21aa4bc61f7b2b8310410000a8e51b7cd3c29989a094f7",
-    "licenseUrl": "https://raw.githubusercontent.com/Mictronics/aircraft-database/d31104a82bdc429be7fe94726247fc45aa0c49a4/LICENSE",
+    "commit": "2473c04e7d9e34c33c65e1fdc60395de7bcfbf4c",
+    "publishedAt": "2026-11-15T08:55:47Z",
+    "databaseVersion": 531,
+    "archiveUrl": "https://raw.githubusercontent.com/Mictronics/aircraft-database/2473c04e7d9e34c33c65e1fdc60395de7bcfbf4c/indexedDB.zip",
+    "archiveSha256": "1b4b27b58a189c37710d424525cfba9889aa4566d493e350f795a9262ce61291",
+    "licenseUrl": "https://raw.githubusercontent.com/Mictronics/aircraft-database/2473c04e7d9e34c33c65e1fdc60395de7bcfbf4c/LICENSE",
     "licenseSha256": "11a6d83734845ad09d809667aa219857a5b985b28c258a2eebf5677668a6bd3b",
     "licenseName": "ODC Attribution License (ODC-By) 1.0",
     "licenseCanonicalUrl": "https://opendatacommons.org/licenses/by/1-0/"
   },
   "projection": {
     "schemaVersion": 1,
-    "outputVersion": "2026-10-25-v1",
+    "outputVersion": "2026-11-15-v1",
     "prefixLength": 2,
     "staleAfterDays": 45,
     "futureToleranceHours": 24,
     "expected": {
-      "sourceAircraftRecords": 452321,
+      "sourceAircraftRecords": 456950,
       "sourceTypeRecords": 2788,
       "projectedTypeRecords": 2774,
-      "availableRecords": 408105,
-      "ambiguousRecords": 421,
-      "duplicateRegistrations": 205,
+      "availableRecords": 408414,
+      "ambiguousRecords": 428,
+      "duplicateRegistrations": 208,
       "shardCount": 123,
-      "shardRawBytes": 6856915,
-      "shardGzipBytes": 2559876,
-      "largestShardRawBytes": 377888,
-      "largestShardGzipBytes": 145178
+      "shardRawBytes": 6862312,
+      "shardGzipBytes": 2561909,
+      "largestShardRawBytes": 378005,
+      "largestShardGzipBytes": 145195
     }
   }
 }

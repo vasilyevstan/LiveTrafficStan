@@ -850,10 +850,10 @@ live ADS-B marker, trail, selection, or provider status.
   registration for multiple aircraft, so the projection marks it ambiguous.
 - **Snapshot exceeded its 45-day limit** means the immutable source version
   needs a reviewed refresh. The current version becomes stale only after
-  `2026-12-09T09:05:04Z`.
+  `2026-12-30T08:55:47Z`.
 - A timeout, HTTP error, malformed asset, checksum error, or blocked static path
   remains local to the metadata section. Check `index.json` and the selected
-  two-hex-prefix shard under `/aircraft-metadata/2026-10-25-v1/`.
+  two-hex-prefix shard under `/aircraft-metadata/2026-11-15-v1/`.
 
 Run `npm run check:aircraft-metadata` to validate the committed data without a
 network request. Do not edit a deployed immutable version in place or bypass
