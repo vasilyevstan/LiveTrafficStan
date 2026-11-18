@@ -877,18 +877,18 @@ points, or cached plausible-route lookups.
 - Source repository:
   <https://github.com/Mictronics/aircraft-database>
 - Pinned commit:
-  `d31104a82bdc429be7fe94726247fc45aa0c49a4`
-- Source publication instant: `2026-10-25T09:05:04Z`
-- Internal database version: 528
+  `2473c04e7d9e34c33c65e1fdc60395de7bcfbf4c`
+- Source publication instant: `2026-11-15T08:55:47Z`
+- Internal database version: 531
 - License:
   [Open Data Commons Attribution License 1.0](https://opendatacommons.org/licenses/by/1-0/)
 - Pinned archive SHA-256:
-  `fdff9ab076f279658d21aa4bc61f7b2b8310410000a8e51b7cd3c29989a094f7`
+  `1b4b27b58a189c37710d424525cfba9889aa4566d493e350f795a9262ce61291`
 - Pinned license SHA-256:
   `11a6d83734845ad09d809667aa219857a5b985b28c258a2eebf5677668a6bd3b`
-- Immutable projected path: `/aircraft-metadata/2026-10-25-v1`
+- Immutable projected path: `/aircraft-metadata/2026-11-15-v1`
 
-This decision was last re-verified on 2026-10-28. The source README explicitly
+This decision was last re-verified on 2026-11-18. The source README explicitly
 makes its exports available under ODC-By and describes a weekly update process.
 ODC-By permits use, extraction, modification, creation and conveyance of a
 derivative database subject to its attribution and notice requirements.
@@ -923,7 +923,7 @@ never changes the live provider or its marker category.
 
 The source publication date is dataset-wide age rather than per-aircraft
 verification. This snapshot remains valid through the exact 45-day boundary
-and becomes unavailable after `2026-12-09T09:05:04Z`. A date more than 24 hours
+and becomes unavailable after `2026-12-30T08:55:47Z`. A date more than 24 hours
 ahead of the client clock is invalid. Any source, schema, generator, or
 generated-byte update uses a new immutable output path.
 
@@ -1606,7 +1606,7 @@ There is **no SATCAT request, fabricated SATCAT URL/count, advanced-data request
 browser login, cookie persistence, credential-bearing URL, or arbitrary proxy**.
 
 Curated membership is pinned in `src/config/spaceTrackCurationReference.json`:
-458 exact NORAD IDs and ordered memberships derived from the validated CelesTrak
+453 exact NORAD IDs and ordered memberships derived from the validated CelesTrak
 snapshot retrieved `2026-10-17T12:17:07.523Z` (the 461 original IDs less the
 reviewed retirements below), source digest
 `d062e417f365701d3ef2951e400a9196700c514ced47960305f010681d0da5c0`.
@@ -1664,9 +1664,22 @@ requests, not an application request path.
 The original membership source date/digest remain unchanged; all other IDs and
 memberships, including ISS/HST/Tiangong, are preserved. This is an offline
 reviewed retirement, not a new runtime SATCAT request, automatic pruning,
-partial publication, or a fresh timestamp on retained elements. An object that
-is merely low or has an old element set stays pinned until a decay record
-exists.
+partial publication, or a fresh timestamp on retained elements. Other objects
+remain pinned unless a reviewed decay retirement or the separate low-perigee
+screen applies; an old element set alone does not remove an object.
+
+Revision `curated-reference-2026-10-17-v4`, reviewed for #709, removes the five
+remaining objects whose 2026-11-14 native GP rows had estimated mean-motion
+perigees below 300 km: `67688` (HMU-SAT2, 205 km), `54039` (CZ-2C R/B, 247 km),
+`28738` (CZ-2D R/B, 279 km), `66515` (SZ-21 MODULE, 275 km), and `5118`
+(SL-3 R/B, 292 km). The 300 km floor is a conservative curation screen using
+the GP mean motion, eccentricity, Earth's standard gravitational parameter,
+and equatorial radius; it is not an instantaneous osculating-orbit claim.
+Curated snapshot generation rejects any pinned GP row below that threshold,
+so a future reference addition cannot silently reintroduce the same risk.
+This reviewed removal uses already-available issue evidence, preserves the
+original membership-source date and digest, adds no provider request, and
+does not relax exact membership, element age, hard expiry, or refresh cadence.
 
 The separate Starlink GP predicate requests public, undecayed `PAYLOAD` rows
 whose names contain `STARLINK` and whose epochs satisfy the source's ten-day

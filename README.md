@@ -1044,6 +1044,11 @@ dated [Marine Provider Evaluation](docs/marine-provider-evaluation.md), and the
 contracts, official links, measured/request-volume evidence, and unresolved
 authorization gates.
 
+The current aircraft metadata snapshot is `2026-11-15-v1`, published by
+Mictronics on November 15 and valid through December 30, 2026 at 08:55:47 UTC.
+Prior immutable versions remain available for predecessor clients and rollback;
+the 45-day age limit and exact-identity matching policy are unchanged.
+
 ## Deployment
 
 Cloudflare Workers with Static Assets is the selected production boundary. It

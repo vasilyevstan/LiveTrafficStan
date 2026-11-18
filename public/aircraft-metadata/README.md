@@ -7,8 +7,8 @@ Database rights are licensed under the
 [Open Data Commons Attribution License 1.0](https://opendatacommons.org/licenses/by/1-0/),
 not under LiveTrafficStan's Apache-2.0 source-code license.
 
-The current immutable version is `2026-10-25-v1`, generated from commit
-`d31104a82bdc429be7fe94726247fc45aa0c49a4`, internal database version 528.
+The current immutable version is `2026-11-15-v1`, generated from commit
+`2473c04e7d9e34c33c65e1fdc60395de7bcfbf4c`, internal database version 531.
 Its co-located `LICENSE` file is the full ODC-By 1.0 text.
 
 The projection keeps only:
