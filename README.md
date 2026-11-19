@@ -229,7 +229,9 @@ identity are not renamed or reset.
   layer. Aircraft are lifted to their reported altitude with a drop line to
   their ground position; satellites sit at their modeled altitude, with drop
   lines when selected or featured; ships sit on the water and scale to a
-  valid reported length. Each model keeps its flat icon's class, colour and
+  valid reported length. Model sizing follows the globe-to-flat transition
+  without offscreen footprints expanding over the map.
+  Each model keeps its flat icon's class, colour and
   direction, marks selection with a ring in the same selection colour,
   has a model-specific readable minimum screen size, and can be hovered,
   clicked or tapped. Thin hulls and solar panels get more screen space than

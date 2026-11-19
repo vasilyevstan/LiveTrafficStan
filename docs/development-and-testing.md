@@ -5854,6 +5854,31 @@ on all three programs, and offset scope, two-pass parity and GL cleanup.
 The final 405-aircraft/306-vessel DPR-2 run records frame interval
 p50/p95/max 16.6/18.9/22.1 ms and model-layer CPU 0.1/0.2/0.7 ms.
 
+### Globe-transition canvas-wash regression (#714)
+
+On 2026-11-19, a provider-free fixture using the real model layer reproduced
+the wash in Chrome 157 at a measured 1845x1156 CSS and framebuffer size, DPR 1.
+The map was centered at 24.75E, 59.3N, zoom 11.7, pitch 60, bearing 90; native
+projection transition was 0.3. A single Starlink fixture at 10E, 65S and 550 km
+altitude generated a footprint covering 4,752 of 8,468 sampled pixels
+(56.12%). Multiple global fixtures covered the whole canvas.
+
+The object's Mercator depth was negative while globe and mixed depths were
+positive. Mixing the separately divided pixel scales produced a negative
+natural size; its epsilon floor then enlarged the geometry dramatically.
+`modelProjection.test.ts` now reproduces the false whole-viewport pick hull
+and checks that the offscreen footprint stays bounded. It failed before the
+shader/CPU correction and passes afterward.
+
+The same Chrome scene after correction has zero violet samples. A 15-case
+sweep across zooms 11.1/11.3/11.5/11.7/11.9 and bearings 0/90/180 with 2,377
+fixtures had at most two violet samples (ordinary model pixels) per frame.
+With the real OpenFreeMap light vector style fully loaded, toggling the
+offscreen model changed zero of 2,132,820 framebuffer pixels; adding a
+foreground control model changed 27 pixels. No map errors occurred in that
+comparison. These are local browser results, not a production verification.
+The fixture made no aircraft, marine, orbital catalog or geolocation request.
+
 **Original 3D-layer browser acceptance**
 
 - **Setup:** built `dist` under `vite preview`, driven over CDP in isolated
