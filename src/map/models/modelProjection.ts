@@ -404,10 +404,10 @@ export const projectModelInstance = (
   if (!(w > 0) || occluded(frame, point)) return undefined
   const mpm = mercatorUnitsPerMeter(instance.latitude)
   const pxPerMeter = mixTransition(
-    (frame.kMercator * mpm) / point.mercator[3],
-    frame.kGlobe / (EARTH_RADIUS_METERS * (point.globe?.[3] ?? 1)),
+    frame.kMercator * mpm,
+    frame.kGlobe / EARTH_RADIUS_METERS,
     frame.transition,
-  )
+  ) / w
   const drawnPx = Math.max(
     instance.floorPx * perspectiveScale(frame.centerW, w),
     instance.extentMeters * pxPerMeter,

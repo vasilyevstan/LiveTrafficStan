@@ -104,7 +104,8 @@ bool horizonOccludes(vec3 point) {
 }
 
 float pixelsPerMeter(vec4 merc, vec4 globe) {
-  return mixT(u_k.x * a_motion.x / merc.w, u_k.y / (EARTH_RADIUS * globe.w));
+  // Mix homogeneous scales before division: the separate depths can have opposite signs.
+  return mixT(u_k.x * a_motion.x, u_k.y / EARTH_RADIUS) / mixT(merc.w, globe.w);
 }
 
 float perspectiveScale(float w) {

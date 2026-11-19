@@ -1635,6 +1635,12 @@ repository-original models are one validated GLB, described in
   disabled afterward, including failure cleanup. Depth testing, back-face
   culling, actual altitude, screen placement and picking are unchanged.
 - A ray-sphere horizon test hides objects on the far side of the globe.
+- Readable-size scaling interpolates the homogeneous projection scales before
+  dividing by the mixed clip depth. During the zoom-11-to-12 transition, an
+  offscreen object's Mercator and globe depths can have opposite signs.
+  Interpolating already-divided scales can become negative and expand a
+  footprint across the canvas. The shader and CPU picking mirror use the
+  same mixed-depth calculation; pure Globe and Flat scaling is unchanged.
 - As the camera nears an object's altitude, the lifted model fades into a
   flattened ground footprint instead of passing through the camera.
 - Picking uses a CPU mirror of the shaders on the last drawn frame. A hit
