@@ -343,6 +343,7 @@ export const createAircraftRelayHandler = async ({
   now = Date.now,
   timeoutMs = UPSTREAM_TIMEOUT_MS,
   maximumResponseBytes = MAXIMUM_RESPONSE_BYTES,
+  log = () => {},
 }) => {
   if (typeof authToken !== 'string' || authToken.length < 32) {
     throw new Error('Relay authentication token must contain at least 32 characters')
@@ -438,6 +439,12 @@ export const createAircraftRelayHandler = async ({
           'User-Agent': ADSB_LOL_USER_AGENT,
         },
       })
+      const retryAfter = upstream.headers.get('Retry-After')
+      const retryAfterMs = parseRetryAfterMs(retryAfter, now())
+      const readableRetryAfter = Number.isSafeInteger(retryAfterMs)
+      log(
+        `relay_upstream_response status=${upstream.status} retry_after_ms=${readableRetryAfter ? retryAfterMs : 'unavailable'} retry_after_kind=${retryAfter === null ? 'absent' : readableRetryAfter ? 'parsed' : 'unreadable'}\n`,
+      )
 
       if (upstream.status >= 300 && upstream.status < 400) {
         lease.release()

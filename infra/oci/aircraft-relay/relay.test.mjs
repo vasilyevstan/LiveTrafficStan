@@ -250,6 +250,29 @@ describe('OCI aircraft relay', () => {
     ).toBe('admission')
   })
 
+  it.each([
+    ['120', '120000', 'parsed'],
+    ['Thu, 01 Jan 1970 00:01:00 GMT', '50000', 'parsed'],
+    [undefined, 'unavailable', 'absent'],
+    ['private.invalid/59.437/24.7536?token=secret', 'unavailable', 'unreadable'],
+    ['9'.repeat(400), 'unavailable', 'unreadable'],
+  ])('logs only safe provider receipt fields for Retry-After %s', async (retryAfter, delay, kind) => {
+    const log = vi.fn()
+    const fetchImpl = vi.fn(async () => new Response('private provider body', {
+      status: 429,
+      headers: retryAfter === undefined ? {} : { 'Retry-After': retryAfter },
+    }))
+    const handler = await createHandler({ log, fetchImpl, now: () => 10_000 })
+
+    expect((await handler(authorizedRequest())).status).toBe(429)
+    expect(log).toHaveBeenCalledExactlyOnceWith(
+      `relay_upstream_response status=429 retry_after_ms=${delay} retry_after_kind=${kind}\n`,
+    )
+    expect((await handler(authorizedRequest())).status).toBe(503)
+    expect(log).toHaveBeenCalledTimes(1)
+    expect(fetchImpl).toHaveBeenCalledTimes(1)
+  })
+
   it('uses bounded exponential backoff when Retry-After is absent', async () => {
     let nowMs = 0
     const stateStore = createMemoryAdmissionStateStore()

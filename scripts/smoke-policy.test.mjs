@@ -1006,6 +1006,32 @@ describe('production smoke policy', () => {
     expect(waits).toEqual([1_000, 1_000])
   })
 
+  it.each(['0', '31', '170', '300', '9'.repeat(400)])(
+    'reports unsafe local admission guidance without retrying: %s',
+    async (retryAfter) => {
+      const expectedReleaseSha = 'b'.repeat(40)
+      const fetchRelay = vi.fn(async () => new Response(null, {
+        status: 503,
+        headers: {
+          'Cache-Control': 'no-store',
+          'Retry-After': retryAfter,
+          'X-LiveTrafficStan-Release': expectedReleaseSha,
+          'X-LiveTrafficStan-Relay-Status': 'admission',
+        },
+      }))
+      const wait = vi.fn()
+      await expect(fetchPrivateRelayWithRetry({
+        fetchRelay, expectedReleaseSha, wait,
+      })).rejects.toThrow(
+        'Private aircraft relay returned an unsafe Retry-After: ' +
+          `${Number.isSafeInteger(Number(retryAfter)) ? Number(retryAfter) : 'unrepresentable'} seconds ` +
+          '(allowed 1-30; local admission; attempt 1)',
+      )
+      expect(fetchRelay).toHaveBeenCalledTimes(1)
+      expect(wait).not.toHaveBeenCalled()
+    },
+  )
+
   it('rejects malformed private relay guidance immediately', async () => {
     const expectedReleaseSha = 'b'.repeat(40)
     await expect(
