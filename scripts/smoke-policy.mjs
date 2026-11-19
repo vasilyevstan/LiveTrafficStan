@@ -487,7 +487,11 @@ export const fetchPrivateRelayWithRetry = async ({
       retryAfterSeconds > maxRetryAfterSeconds
     ) {
       await cancelResponseBody(response)
-      throw new Error('Private aircraft relay returned an unsafe Retry-After')
+      throw new Error(
+        'Private aircraft relay returned an unsafe Retry-After: ' +
+          `${Number.isSafeInteger(retryAfterSeconds) ? retryAfterSeconds : 'unrepresentable'} seconds ` +
+          `(allowed 1-${maxRetryAfterSeconds}; local admission; attempt ${attempt})`,
+      )
     }
 
     await cancelResponseBody(response)

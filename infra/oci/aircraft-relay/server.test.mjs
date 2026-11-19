@@ -11,7 +11,7 @@ import {
 const servers = []
 const directories = []
 
-const startServer = async (fetchImpl) => {
+const startServer = async (fetchImpl, log = () => {}) => {
   const directory = await mkdtemp(join(tmpdir(), 'lts-relay-server-'))
   directories.push(directory)
 
@@ -23,7 +23,7 @@ const startServer = async (fetchImpl) => {
       host: '127.0.0.1',
       port: 0,
     },
-    { fetchImpl, log: () => {} },
+    { fetchImpl, log },
   )
   servers.push(server)
 
@@ -75,13 +75,14 @@ describe('relay HTTP server', () => {
   })
 
   it('serves health and authenticated proxy responses over HTTP', async () => {
+    const log = vi.fn()
     const fetchImpl = vi.fn(async () =>
       new Response('{"aircraft":[]}', {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
       }),
     )
-    const origin = await startServer(fetchImpl)
+    const origin = await startServer(fetchImpl, log)
 
     const health = await fetch(`${origin}/healthz`)
     expect(health.status).toBe(200)
@@ -95,6 +96,7 @@ describe('relay HTTP server', () => {
     )
     expect(unauthorized.status).toBe(401)
     expect(fetchImpl).not.toHaveBeenCalled()
+    expect(log).toHaveBeenCalledTimes(1)
 
     const proxied = await fetch(`${origin}/v2/point/59.437/24.7536/10`, {
       headers: {
@@ -104,5 +106,9 @@ describe('relay HTTP server', () => {
     expect(proxied.status).toBe(200)
     await expect(proxied.json()).resolves.toEqual({ aircraft: [] })
     expect(fetchImpl).toHaveBeenCalledOnce()
+    expect(log).toHaveBeenCalledTimes(2)
+    expect(log).toHaveBeenLastCalledWith(
+      'relay_upstream_response status=200 retry_after_ms=unavailable retry_after_kind=absent\n',
+    )
   })
 })

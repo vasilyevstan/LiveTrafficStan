@@ -67,6 +67,7 @@ export const startRelayServer = async (
     releaseSha: configuration.releaseSha,
     stateStore,
     fetchImpl,
+    log,
   })
 
   const server = createServer(async (request, response) => {
