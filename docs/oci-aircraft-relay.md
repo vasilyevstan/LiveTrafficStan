@@ -184,7 +184,13 @@ The implementation:
 - preserves upstream status, bounded body, `Content-Type`, and `Retry-After`;
 - uses no response cache, retry loop, queue, provider fallback, or stale
   success;
-- logs no path, coordinate, authorization value, header, or provider body.
+- logs no path, coordinate, authorization value, raw header, or provider body.
+  One `relay_upstream_response` receipt records only the HTTP status, parsed
+  safe-integer `retry_after_ms` (or `unavailable`), and whether guidance was
+  absent, parsed, or unreadable. It records receipt of response headers, not
+  successful body completion. Local admission denials do not produce provider
+  receipts or initiate requests. Read these bounded fields through protected
+  journal diagnostics; they do not establish an account quota cause.
 
 Cloudflare and OCI still process ordinary transport metadata. Rounded query
 coordinates transit Cloudflare and ADSB.lol, but the application does not

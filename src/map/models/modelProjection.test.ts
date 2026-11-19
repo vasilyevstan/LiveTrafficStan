@@ -282,6 +282,39 @@ describe('model projection math', () => {
     expect(mixedX).toBeLessThan(Math.max(mercatorX0, globeX))
   })
 
+  it('keeps an offscreen footprint bounded when projection depths have opposite signs', () => {
+    const frame = frameFor({
+      longitude: 24.75,
+      latitude: 59.3,
+      zoom: 11.7,
+      pitchDegrees: 60,
+      bearingDegrees: 90,
+      cssWidth: 1845,
+      cssHeight: 1156,
+    }, 0.3)
+    const satellite = instance({
+      longitude: 10,
+      latitude: -65,
+      altitudeMeters: 550_000,
+      lengthMeters: 15.18,
+      beamMeters: 19.14,
+      heightMeters: 0.5,
+      bounds: { minimum: [-9.57, -7.59, 0], maximum: [9.57, 7.59, 0.5] },
+      extentMeters: 19.14,
+      floorPx: 30,
+    })
+    const point = projectLocalPoint(frame, satellite.longitude, satellite.latitude, 0)
+    expect(point.mercator[3]).toBeLessThan(0)
+    expect(point.globe![3]).toBeGreaterThan(0)
+    expect(point.clip[3]).toBeGreaterThan(0)
+    const anchor = projectModelInstance(frame, satellite)!
+    expect(anchor.lifted).toBe(false)
+    expect(modelHitDistance(anchor, [[0, 0], [1845, 1156]])).toBeUndefined()
+    for (const vertex of anchor.hull) {
+      expect(Math.hypot(vertex.x - anchor.x, vertex.y - anchor.y)).toBeLessThan(100)
+    }
+  })
+
   it('projects forward and starboard axes with shader scale at street zooms', () => {
     for (const zoom of [14, 16]) {
       const fixture = cameraFixture({ ...TALLINN, zoom })
