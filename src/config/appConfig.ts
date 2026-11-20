@@ -77,7 +77,7 @@ export const ORBITAL_VIEW_CONFIG = {
   readinessTimeoutMs: 5_000,
 } as const
 
-// Aircraft view eye: observed positions only, presented about one ADSB.lol cadence behind.
+// Aircraft view eye: observed positions only, presented about one aircraft cadence behind.
 export const AIRCRAFT_VIEW_CONFIG = {
   initialLookPitchDegrees: 76,
   interpolationDelayMs: 20_000,

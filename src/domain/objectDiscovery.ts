@@ -20,7 +20,7 @@ export interface DiscoveryMatch {
     imo?: string
   }
   source: {
-    name: 'ADSB.lol' | 'Open Waters AIS' | 'Digitraffic'
+    name: 'ADSB.fi' | 'Open Waters AIS' | 'Digitraffic'
     code: string
     credit: string
   }

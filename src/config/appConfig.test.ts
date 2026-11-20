@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { MAX_AIRCRAFT_RADIUS_NM } from '../../worker/aircraftProxy'
-import { aircraftQueryRadiusNauticalMiles } from '../providers/aircraft/adsbLolProvider'
+import { aircraftQueryRadiusNauticalMiles } from '../providers/aircraft/adsbFiProvider'
 import { BASEMAP_DETAIL_CONFIG, createAppConfig } from './appConfig'
 
 describe('createAppConfig', () => {

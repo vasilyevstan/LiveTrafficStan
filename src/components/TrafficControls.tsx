@@ -1573,7 +1573,7 @@ export function TrafficControls({
                   {' / '}<a href="https://www.gebco.net/">GEBCO</a>.
                 </li>
                 <li>
-                  Aircraft: <a href="https://www.adsb.lol/">ADSB.lol</a>.
+                  Aircraft: <a href="https://adsb.fi/">ADSB.fi</a> (personal, non-commercial use).
                 </li>
                 <li>
                   Marine: {marineProviderName}.

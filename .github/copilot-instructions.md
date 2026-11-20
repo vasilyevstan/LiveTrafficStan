@@ -1,7 +1,7 @@
 # LiveTrafficStan repository instructions
 
 LiveTrafficStan is a static-first React, TypeScript, Vite, and MapLibre browser
-application. It displays normalized live aircraft from ADSB.lol and marine
+application. It displays normalized live aircraft from ADSB.fi and marine
 traffic from Digitraffic. Keep provider protocols outside React components and
 preserve truthful partial operation when one provider fails.
 
@@ -61,13 +61,13 @@ preserve truthful partial operation when one provider fails.
   do not shrink that footprint.
 - Normalize wrapped longitudes around the rounded camera center, reject invalid
   or world-spanning geometry, and apply the 100 km eligibility limit before
-  ADSB.lol's whole-nautical-mile outward transport rounding. Query the
+  ADSB.fi's whole-nautical-mile outward transport rounding. Query the
   conservative enclosing circle, then filter display to the actual viewport.
 - An ineligible viewport hides traffic and trails, clears invalid selection,
   pauses providers, and shows a truthful zoom/tilt prompt. Never clamp,
   subdivide, or present partial coverage as complete.
 - Settled camera changes may replace the latest desired query, but must not add
-  ADSB.lol requests beyond the configured aircraft polling cadence. Cancel or
+  ADSB.fi requests beyond the configured aircraft polling cadence. Cancel or
   ignore obsolete revisions and handle `429`/`Retry-After` explicitly.
 - Viewport query changes must reuse the Digitraffic MQTT connection and refilter
   cached global messages. Do not reconnect MQTT or issue a new REST request for
@@ -157,10 +157,17 @@ preserve truthful partial operation when one provider fails.
   and both Mercator latitude limits; invalid geometry reports crossing counts
   unavailable while valid current points may remain. Theme rehydration restores
   orbital points, highlight, track, visibility, selection, and paint.
-- Production aircraft proxy changes must keep the fixed ADSB.lol origin, exact
+- Production aircraft proxy changes must keep the fixed ADSB.fi origin
+  (`https://opendata.adsb.fi`) behind the private OCI relay, exact
   `/api/aircraft/v2/point/{lat}/{lon}/{radiusNm}` allowlist, canonical
-  coordinate validation, 1-54 NM bound, total deadline, response-size cap,
+  coordinate validation, 1-135 NM bound, total deadline, response-size cap,
   redirect rejection, no-store policy, and upstream status/body/`Retry-After`.
+  Translate the app-owned point path to `/api/v3/lat/{lat}/lon/{lon}/dist/{nm}`;
+  never use the deprecated v2 point response or direct Workers egress.
+  Keep the current checked 1-135 NM transport bound and 250 km eligibility.
+  ADSB.fi attribution links its home page and states personal non-commercial
+  terms, not ODbL. Legacy ADSB.lol history and separate route enrichment retain
+  their own provenance; do not relabel old records or reset admission state.
   Never forward browser credentials or arbitrary headers, add wildcard CORS,
   log coordinate-bearing URLs, or introduce a shared live cache without
   provider-rights and measured-value evidence.
@@ -183,7 +190,7 @@ preserve truthful partial operation when one provider fails.
   unavailable, stale, historical, and offline states truthful and distinct.
 - Keep `docs/` canonical and update the README and Wiki when released behavior
   changes.
-- Preserve visible OpenFreeMap/OpenStreetMap, ADSB.lol, Digitraffic,
+- Preserve visible OpenFreeMap/OpenStreetMap, ADSB.fi, Digitraffic,
   OurAirports, Natural Earth, NOAA/NWS AWC, and CelesTrak attribution and
   provider licensing/use-policy records. Weather presentation must retain
   source/retrieval time, public-domain caveat, and

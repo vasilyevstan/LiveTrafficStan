@@ -181,7 +181,7 @@ identity are not renamed or reset.
   exact-host data appeared in Cloudflare's statistics. #448 records the
   resolved configuration/ingestion blocker. See
   [collection boundaries and metric interpretation](docs/data-sources-and-licensing.md#visitor-analytics).
-- Live aircraft from [ADSB.lol](https://www.adsb.lol/) with approximately
+- Live aircraft from [ADSB.fi](https://adsb.fi/) with approximately
   20-second refreshes.
 - Lazily loaded selected-aircraft model, configuration, and wake-category
   context from a pinned ODC-By aircraft database, with exact identity checks,
@@ -834,7 +834,7 @@ Provider-specific code validates and normalizes external payloads before React
 or MapLibre sees them:
 
 ```text
-ADSB.lol polling ───────┐
+ADSB.fi polling ────────┐
                        ├─> normalized traffic -> live display + bounded session history
 Digitraffic REST/MQTT ──┘                         |
                                                   ├─> optional private IndexedDB
@@ -1010,7 +1010,7 @@ operational thresholds, and examples.
 | Map | OpenFreeMap / OpenMapTiles / OpenStreetMap | Provider and OSM attribution applies | Direct browser access |
 | Modeled water depths | EMODnet / GEBCO | EMODnet published product reuse terms; GEBCO public domain with attribution/disclaimers | Default-on anonymous matched imagery; bounded automatic grid values at close zoom |
 | Place search | Photon / OpenStreetMap | OSM ODbL attribution applies | Direct browser access on explicit submit |
-| Aircraft | ADSB.lol | ODbL 1.0 | Same-origin Vite/Cloudflare proxy by default; protected direct-browser build only after provider-approved CORS |
+| Aircraft | [ADSB.fi](https://adsb.fi/) | Personal, non-commercial use only; not ODbL | Same-origin route through the private OCI relay; no Workers-egress or browser-direct fallback |
 | Aircraft metadata | Mictronics aircraft-database derivative | ODC-By 1.0 | Immutable same-origin static assets, loaded only after selection |
 | Selected-aircraft photos | Planespotters Photo API | API-specific and general terms apply | Automatic selection/fine-pointer direct browser request and unchanged returned thumbnail; enabled in production |
 | Vessel photos | Open Waters / Wikimedia Commons; eight reviewed bundled files | Individual CC BY, CC BY-SA, CC0 or public-domain rights | IMO-first/MMSI-fallback same-origin metadata lookup and direct Commons image; bundled exact-IMO matches remain local |
@@ -1054,7 +1054,7 @@ the 45-day age limit and exact-identity matching policy are unchanged.
 ## Deployment
 
 Cloudflare Workers with Static Assets is the selected production boundary. It
-deploys the Vite client with strict same-origin ADSB.lol point and AWC METAR
+deploys the Vite client with strict same-origin aircraft point and AWC METAR
 paths as one atomic unit. Plausible route lookup is a credential-free direct
 browser request to ADSB.lol standing data, so it needs no Worker route, secret,
 quota service, or Durable Object. Hashed assets, including the MapLibre worker,
@@ -1062,22 +1062,18 @@ use immutable browser caching; live aircraft responses use no shared cache and
 successful METAR responses receive only the source-aligned 60-second cache
 guidance.
 
-The protected workflow records one fixed `aircraft_delivery` choice:
-
-- `worker-proxy` uses the same-origin Worker with shared Cloudflare egress;
-- `oci-private-relay` uses the same browser route but sends only its validated
-  request through the bound VPC Service, private Tunnel, and loopback OCI
-  relay;
-- `adsb-lol-direct` builds the browser with
-  `VITE_AIRCRAFT_ENDPOINT=https://api.adsb.lol`.
+The protected workflow requires `aircraft_delivery=oci-private-relay`.
+The same browser route sends only validated requests through the bound VPC
+Service, private Tunnel, and loopback OCI relay. The relay translates the
+app-owned point path to ADSB.fi `/api/v3/lat/{lat}/lon/{lon}/dist/{nm}` and
+exact identity paths to its documented `/api/v2` endpoints.
 
 The private mode requires the fixed checked VPC Service and a protected
 Worker-to-relay bearer secret. Missing or invalid private configuration fails
 closed with `503 Retry-After`; it never falls back to shared Cloudflare egress.
-Direct mode must not be deployed until ADSB.lol explicitly approves browser
-production use and the deployed API returns browser-readable CORS on both
-success and throttling responses. None of these modes is a browser-controlled
-provider selector.
+Current live aircraft delivery has no direct-browser or Workers-egress mode.
+Legacy rollback source retains its own original delivery contract. This is
+not a browser-controlled provider selector.
 
 The proxy accepts only
 `GET /api/aircraft/v2/point/{latitude}/{longitude}/{radiusNm}`, validates the
@@ -1088,12 +1084,20 @@ keeps request URL logging disabled.
 
 Reliable aircraft recovery uses a private
 Cloudflare Worker -> Workers VPC Service -> Cloudflare Tunnel -> isolated OCI
-E2 Micro relay path. The relay is fixed to ADSB.lol, globally limits upstream
+E2 Micro relay path. The relay is fixed to `https://opendata.adsb.fi`, globally limits upstream
 starts to one per 20 seconds, persists only provider admission state, and has
 no cache, generic proxy surface, public ingress, or sensitive application
 logging. The Tunnel connector uses pinned `cloudflared`, IPv6 QUIC, and a
 token file readable only by its dedicated service account. See
 [OCI Aircraft Relay](docs/oci-aircraft-relay.md).
+
+ADSB.fi permits personal, non-commercial use only; its data/service cannot be
+licensed, sold, rented or leased. It is not ODbL, is provided as-is, and access
+may be suspended. Its published public limit is one request per second; the
+existing relay's 20-second aggregate minimum is unchanged. Personal local
+history records its own ADSB.fi rights decision; legacy ADSB.lol rows retain
+their original ODbL provenance. Selected-aircraft ADSB.lol/VRS route enrichment
+is a separate unchanged provider, not a live-aircraft fallback.
 
 The weather route accepts only
 `GET /api/weather/metar?ids=EETN%2CEFHK`, with 1-50 sorted unique uppercase

@@ -139,9 +139,9 @@ describe('fixed object lookup Worker boundary', () => {
     const fetchImpl = vi.fn<AircraftProxyFetch>()
     const response = await handleObjectLookup(request('/api/find/aircraft', { by: 'hex', q: 'ABC123' }), { aircraftFetchImpl, fetchImpl })
     expect(response.status).toBe(200)
-    expect(aircraftFetchImpl).toHaveBeenCalledWith('https://api.adsb.lol/v2/hex/abc123', expect.objectContaining({ method: 'GET' }))
+    expect(aircraftFetchImpl).toHaveBeenCalledWith('http://livetrafficstan-aircraft-relay/v2/hex/abc123', expect.objectContaining({ method: 'GET' }))
     expect(fetchImpl).not.toHaveBeenCalled()
-    expect(await response.json()).toMatchObject({ matches: [{ key: 'adsb-lol:abc123', location: { latitude: 59.44 } }] })
+    expect(await response.json()).toMatchObject({ matches: [{ key: 'adsb-fi:abc123', location: { latitude: 59.44 } }] })
   })
   it('keeps a shared-aircraft admission response busy and preserves Retry-After', async () => {
     const aircraftFetchImpl = vi.fn<AircraftProxyFetch>(async () => new Response('wait', { status: 503, headers: { 'Retry-After': '20' } }))

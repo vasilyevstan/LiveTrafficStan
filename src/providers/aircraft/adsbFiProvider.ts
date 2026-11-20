@@ -13,10 +13,10 @@ import type { AircraftDataProvider, TrafficQuery } from '../types'
 const KNOTS_TO_KPH = 1.852
 const FEET_TO_METERS = 0.3048
 const FEET_PER_MINUTE_TO_METERS_PER_SECOND = 0.00508
-export const ADSB_LOL_REQUEST_TIMEOUT_MS = 12_000
-export const MAX_ADSB_LOL_RESPONSE_BYTES = 4 * 1_024 * 1_024
+export const ADSB_FI_REQUEST_TIMEOUT_MS = 12_000
+export const MAX_ADSB_FI_RESPONSE_BYTES = 4 * 1_024 * 1_024
 
-interface AdsbLolAircraftProviderOptions {
+interface AdsbFiAircraftProviderOptions {
   timeoutMs?: number
   maximumBytes?: number
 }
@@ -29,7 +29,7 @@ const readBoundedText = async (
   if (Number.isFinite(contentLength) && contentLength > maximumBytes) {
     void response.body?.cancel().catch(() => undefined)
     throw new ProviderError(
-      `ADSB.lol response exceeded the ${maximumBytes}-byte limit`,
+      `ADSB.fi response exceeded the ${maximumBytes}-byte limit`,
     )
   }
 
@@ -48,7 +48,7 @@ const readBoundedText = async (
     if (totalBytes > maximumBytes) {
       void reader.cancel().catch(() => undefined)
       throw new ProviderError(
-        `ADSB.lol response exceeded the ${maximumBytes}-byte limit`,
+        `ADSB.fi response exceeded the ${maximumBytes}-byte limit`,
       )
     }
     chunks.push(value)
@@ -69,7 +69,7 @@ const responseError = (
 ) => {
   const detail = body.trim().slice(0, 180)
   return new ProviderError(
-    `ADSB.lol returned HTTP ${response.status}${detail ? `: ${detail}` : ''}`,
+    `ADSB.fi returned HTTP ${response.status}${detail ? `: ${detail}` : ''}`,
     response.status,
     parseRetryAfterMs(response.headers.get('retry-after')),
   )
@@ -122,16 +122,19 @@ const positiveNumber = (value: unknown) => {
   return number !== undefined && number >= 0 ? number : undefined
 }
 
-export const normalizeAdsbLolResponse = (
+export const normalizeAdsbFiResponse = (
   payload: unknown,
   query: TrafficQuery,
   receivedAt: number,
 ): Aircraft[] => {
-  if (!isRecord(payload) || !Array.isArray(payload.ac)) {
-    throw new ProviderError('ADSB.lol returned a malformed aircraft response')
+  if (!isRecord(payload) || !Array.isArray(payload.ac) ||
+    typeof payload.now !== 'number' || !Number.isFinite(payload.now) ||
+    payload.now < 1_000_000_000_000 ||
+    (payload.total !== undefined && payload.total !== payload.ac.length)) {
+    throw new ProviderError('ADSB.fi returned a malformed aircraft response')
   }
 
-  const responseTime = finiteNumber(payload.now) ?? receivedAt
+  const responseTime = payload.now
   const aircraft: Aircraft[] = []
 
   for (const candidate of payload.ac) {
@@ -173,7 +176,7 @@ export const normalizeAdsbLolResponse = (
     aircraft.push({
       id: `aircraft:${hex.toLowerCase()}`,
       kind: 'aircraft',
-      provider: 'ADSB.lol',
+      provider: 'ADSB.fi',
       hex: hex.toUpperCase(),
       position: {
         latitude,
@@ -206,19 +209,19 @@ export const normalizeAdsbLolResponse = (
   return aircraft
 }
 
-export class AdsbLolAircraftProvider implements AircraftDataProvider {
+export class AdsbFiAircraftProvider implements AircraftDataProvider {
   private readonly endpointBaseUrl: string
   private readonly maximumBytes: number
   private readonly timeoutMs: number
 
   constructor(
     endpointBaseUrl: string,
-    options: AdsbLolAircraftProviderOptions = {},
+    options: AdsbFiAircraftProviderOptions = {},
   ) {
     this.endpointBaseUrl = endpointBaseUrl
     this.maximumBytes =
-      options.maximumBytes ?? MAX_ADSB_LOL_RESPONSE_BYTES
-    this.timeoutMs = options.timeoutMs ?? ADSB_LOL_REQUEST_TIMEOUT_MS
+      options.maximumBytes ?? MAX_ADSB_FI_RESPONSE_BYTES
+    this.timeoutMs = options.timeoutMs ?? ADSB_FI_REQUEST_TIMEOUT_MS
   }
 
   async fetchSnapshot(query: TrafficQuery, signal: AbortSignal) {
@@ -257,14 +260,14 @@ export class AdsbLolAircraftProvider implements AircraftDataProvider {
       try {
         payload = JSON.parse(body)
       } catch {
-        throw new ProviderError('ADSB.lol returned invalid JSON')
+        throw new ProviderError('ADSB.fi returned invalid JSON')
       }
 
-      return normalizeAdsbLolResponse(payload, query, Date.now())
+      return normalizeAdsbFiResponse(payload, query, Date.now())
     } catch (error) {
       if (signal.aborted) throw error
       if (timedOut) {
-        throw new ProviderError('ADSB.lol request timed out')
+        throw new ProviderError('ADSB.fi request timed out')
       }
       throw error
     } finally {

@@ -407,7 +407,7 @@ Nominatim directly would therefore require an operational control this
 static-first client does not have. Photon was the smaller compliant current
 choice; no geocoder proxy or credential was added.
 
-## Explicit object lookup: ADSB.lol and Open Waters
+## Explicit object lookup: ADSB.fi and Open Waters
 
 One Find input combines distinct source contracts, not a global directory or
 merged traffic feed. Typing searches received observations, cached Digitraffic
@@ -425,10 +425,11 @@ navigation opens static OurAirports/Natural Earth details, not a live entity
 or inferred airport/port operation. Markers may stay completely off; airport
 boards and weather retain their own explicit request/enable boundaries.
 
-Explicit aircraft lookup uses only ADSB.lol's documented
-`/v2/hex/{icao24}`, `/v2/reg/{registration}` and `/v2/callsign/{callsign}`.
+Explicit aircraft lookup uses only ADSB.fi's documented
+`/api/v2/hex/{icao24}`, `/api/v2/registration/{registration}` and
+`/api/v2/callsign/{callsign}`, through the private relay's app-owned paths.
 It is partial receiver coverage, not an aircraft-name directory. Preserve
-ADSB.lol/ODbL attribution. Snapshot `now` is epoch milliseconds and `seen_pos`
+linked ADSB.fi personal/non-commercial attribution. Snapshot `now` is epoch milliseconds and `seen_pos`
 is seconds: only `now - seen_pos * 1000` establishes position time.
 Receipt time or ordinary `seen` is not a substitute. Missing/old positions
 remain identity-only; a qualified **Go to last report** is not a live selection.
@@ -495,7 +496,43 @@ The same private aircraft relay identity and persistent global 20-second
 admission handle point and identifier work together. No direct fallback,
 new quota identity or extra traffic polling is introduced.
 
-## Aircraft: ADSB.lol
+## Live aircraft: ADSB.fi (2026-11-19 decision)
+
+- API/terms: <https://github.com/adsbfi/opendata>; attribution: <https://adsb.fi/>.
+- Fixed upstream: `https://opendata.adsb.fi`, exclusively through the existing
+  private OCI relay in production. No direct Workers/browser fallback.
+- Point queries: `/api/v3/lat/{lat}/lon/{lon}/dist/{nm}`; use v3, not deprecated
+  v2 point responses. Exact lookups use `/api/v2/hex/{hex}`,
+  `/api/v2/registration/{reg}` and `/api/v2/callsign/{callsign}`.
+- Terms: **personal, non-commercial use only**; not ODbL. Do not license,
+  sell, rent or lease the data/service. As-is, no warranty, access may be
+  suspended. Cite adsb.fi with its home-page link. Source Apache-2.0 does not
+  relicense provider data.
+- Public limit: one request/second. Invalid 400/401/403/404/429 responses count
+  toward temporary restrictions. Keep the existing stricter aggregate
+  20-second start gate, one in flight, persisted backoff, total deadline,
+  byte cap, canonical allowlist, no-store and upstream status/Retry-After.
+- Live markers, Find results and newly created share context identify ADSB.fi,
+  never ODbL. Existing shared ADSB.lol context remains attributed to its
+  original source; resolving it may find a fresh ADSB.fi observation.
+
+### Personal device-local history decision
+
+ADSB.fi's personal non-commercial terms permit the existing personal-use
+application, including its explicit opt-in, origin-local bounded playback.
+No operator receives this database; no export, bulk redistribution,
+cross-device synchronization or sale is added. New ADSB.fi rows carry
+`adsb-fi-personal-noncommercial-local-playback-2026-11-19`. Their provider and
+rights decision must match when read. Retained ADSB.lol rows keep the original
+ODbL decision and are never relabeled. Current live credits link ADSB.fi and
+explain its terms; historical ADSB.lol playback retains its separate credit.
+Selected-aircraft ADSB.lol/VRS plausible routes remain separately attributed
+and unchanged. Their presence does not make live ADSB.fi observations ODbL.
+
+### Historical ADSB.lol live-aircraft record (superseded)
+
+The following transport and license statements apply to prior ADSB.lol live
+releases and retained ADSB.lol history, not the current ADSB.fi feed.
 
 - API: <https://api.adsb.lol>
 - Documentation: <https://api.adsb.lol/docs>
@@ -1532,11 +1569,11 @@ and the [production receipt](hosting-and-deployment.md#captured-orbital-view-pro
 
 ## Captured aircraft view (#625)
 
-The aircraft view reuses only ADSB.lol observations that are already
+The aircraft view reuses only ADSB.fi observations that are already
 accepted. It does not request metadata, photos, routes, bathymetry, terrain
-or imagery, and it makes no extra ADSB.lol request. The altitude is the
+or imagery, and it makes no extra ADSB.fi request. The altitude is the
 reported barometric value over a sea-level map. The inspector keeps the
-ADSB.lol source credit and states that this is not a cockpit or camera view.
+ADSB.fi source credit and states that this is not a cockpit or camera view.
 The ordinary OpenFreeMap/OpenMapTiles/OpenStreetMap attribution stays visible.
 
 ## 3D traffic models (#682)
@@ -1565,7 +1602,7 @@ Drawing models adds no provider request, data source, cache, preference,
 analytics event or persisted state. Positions, headings, altitudes, lengths,
 selection and freshness come from data the app has already accepted, under
 those sources' existing terms and attribution:
-- ADSB.lol for aircraft;
+- ADSB.fi for current aircraft, with original ADSB.lol credits on legacy history;
 - Digitraffic, AISStream or Open Waters for vessels;
 - Fintraffic, Entur, MBTA or the MTA for trains;
 - Space-Track.org or CelesTrak for modeled orbital objects.
@@ -1919,7 +1956,7 @@ separate licenses and attribution requirements:
 
 - map data: OpenStreetMap/OpenMapTiles/OpenFreeMap attribution
 - place-search data: Photon with OpenStreetMap contributor/ODbL attribution
-- live aircraft data: ADSB.lol, ODbL 1.0
+- live aircraft data: ADSB.fi, personal non-commercial use (not ODbL)
 - static aircraft metadata derivative database: Mictronics
   aircraft-database, ODC-By 1.0
 - bundled vessel MID projection: michaeljfazio/MIDs, Apache-2.0, intersected

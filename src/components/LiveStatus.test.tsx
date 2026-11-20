@@ -71,7 +71,7 @@ describe('LiveStatus', () => {
     expect(summary).not.toContain('0 aircraft')
     expect(html).toContain('Aircraft paused')
     expect(html).toContain('Marine stream paused')
-    expect(html).toContain('https://www.adsb.lol/')
+    expect(html).toContain('https://adsb.fi/')
     expect(html).toContain('https://www.digitraffic.fi/en/marine-traffic/')
   })
 
@@ -112,7 +112,7 @@ describe('LiveStatus', () => {
     expect(html).toContain('reception is not guaranteed')
     expect(html).toContain('Marine stream connected')
     expect(html).not.toContain('0 ships shown · regional source')
-    for (const source of ['ADSB.lol', 'Digitraffic', 'AISStream', 'Open Waters AIS', 'AISHub', 'Kystverket', 'BarentsWatch']) {
+    for (const source of ['ADSB.fi', 'Digitraffic', 'AISStream', 'Open Waters AIS', 'AISHub', 'Kystverket', 'BarentsWatch']) {
       expect(html).toContain(source)
     }
     expect(html).toContain('https://aisstream.io/')
@@ -273,7 +273,7 @@ describe('LiveStatus', () => {
     expect(html).not.toContain('<strong>OFFLINE</strong>')
     expect(html).toContain('Aircraft source failed.')
     expect(html).toContain('Marine source failed.')
-    expect(html).toContain('ODbL 1.0')
+    expect(html).toContain('personal, non-commercial use only')
     expect(html).toContain('CC 4.0 BY')
     expect(html).toContain('Norwegian licence for Open Government data')
   })

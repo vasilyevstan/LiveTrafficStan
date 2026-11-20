@@ -1,5 +1,16 @@
 # Development and Testing
 
+## ADSB.fi provider replacement acceptance
+
+Current live aircraft use the private OCI relay's fixed ADSB.fi v3 point and
+documented v2 identity endpoints. Use local fixtures for normalization, units,
+ages, exact lookup, rights provenance and forwarding/privacy regressions.
+Preserve legacy ADSB.lol history rows and independent standing-route credits.
+The historical ADSB.lol/direct-mode acceptance below does not qualify ADSB.fi.
+Production activation additionally requires an actual relay-egress success
+and complete canonical exact-main smoke with unchanged guards. No account,
+key, spending, direct Workers fallback or repeated invalid request is needed.
+
 ## Prerequisites and install
 
 Use Node.js 24 or newer and npm 10 or newer. Node 24 is required because the

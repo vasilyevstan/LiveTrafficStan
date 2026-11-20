@@ -52,11 +52,11 @@ const limits = {
 }
 
 describe('IndexedDbHistoryRepository', () => {
-  it('upgrades version 1 without losing records and fences destructive older readers', async () => {
+  it.each([1, 2])('upgrades version %i without losing records and fences destructive older readers', async (oldVersion) => {
     const databaseName = `history-upgrade-${crypto.randomUUID()}`
     const existing = record(10_000)
     const database = await new Promise<IDBDatabase>((resolve, reject) => {
-      const request = indexedDB.open(databaseName, 1)
+      const request = indexedDB.open(databaseName, oldVersion)
       request.onupgradeneeded = () => {
         const observations = request.result.createObjectStore('observations', {
           keyPath: ['provider', 'entityId', 'observedAt'],
@@ -93,10 +93,11 @@ describe('IndexedDbHistoryRepository', () => {
     expect(migrated.invalidRecordsRemoved).toBe(0)
     expect(migrated.metadata).toMatchObject({ recordingEnabled: true, recordingEpoch: 7 })
     await expect(new Promise<IDBDatabase>((resolve, reject) => {
-      const request = indexedDB.open(databaseName, 1)
+      const request = indexedDB.open(databaseName, oldVersion)
       request.onsuccess = () => resolve(request.result)
       request.onerror = () => reject(request.error)
     })).rejects.toMatchObject({ name: 'VersionError' })
+    expect(HISTORY_DATABASE_VERSION).toBe(3)
     expect((await history.readAll()).records).toEqual([existing])
     history.close()
   })

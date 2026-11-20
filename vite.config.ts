@@ -2,10 +2,13 @@ import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
 const aircraftProxy = {
-  target: 'https://api.adsb.lol',
+  target: 'https://opendata.adsb.fi',
   changeOrigin: true,
   secure: true,
-  rewrite: (path: string) => path.replace(/^\/api\/aircraft/, ''),
+  rewrite: (path: string) => path.replace(
+    /^\/api\/aircraft\/v2\/point\/([^/]+)\/([^/]+)\/([^/?]+)$/,
+    '/api/v3/lat/$1/lon/$2/dist/$3',
+  ),
 }
 
 const metarProxy = {

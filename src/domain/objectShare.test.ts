@@ -36,6 +36,11 @@ beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(now) })
 afterEach(() => vi.useRealTimers())
 
 describe('minimal public object context', () => {
+  it('uses the observation provider for new ADSB.fi shares without relabeling legacy context', () => {
+    expect(shareTrafficObject({ ...aircraft, provider: 'ADSB.fi' })).toMatchObject({ source: 'ADSB.fi' })
+    expect(parseObjectShareContext(shareTrafficObject(aircraft), now)).toMatchObject({ source: 'ADSB.lol' })
+  })
+
   it('allows only an optional concrete sender theme for every public object kind', () => {
     for (const context of [shareTrafficObject(aircraft), shareTrafficObject(vessel), shareOrbitalObject(position, snapshot)]) {
       expect(parseObjectShareContext(context, now).theme).toBeUndefined()

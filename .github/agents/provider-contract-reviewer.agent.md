@@ -10,10 +10,10 @@ affect provider load, data truthfulness, privacy, or recovery.
 
 Check these project invariants:
 
-- ADSB.lol requests remain non-overlapping and no more frequent than the
+- ADSB.fi requests remain non-overlapping and no more frequent than the
   configured polling cadence, including rapid viewport and Home changes.
-- The protected aircraft-delivery value is one fixed build-time choice:
-  `worker-proxy`, `oci-private-relay`, or `adsb-lol-direct`. It must not become
+- The current protected aircraft-delivery value is `oci-private-relay`.
+  Absent/unsupported modes fail closed. It must not become
   a browser-controlled URL, runtime failover, provider rotation, or second
   scheduler.
 - Private relay mode uses only the exact VPC Service binding and a protected
@@ -22,10 +22,9 @@ Check these project invariants:
   live responses, log coordinates, or fall back to shared Cloudflare egress.
   Relay-local `503 Retry-After` must pause the existing aircraft lifecycle
   without reporting an empty sky or adding another scheduler.
-- Direct aircraft delivery may activate only after the provider approves it
-  and successful plus throttled responses expose browser-readable CORS. It
-  remains credential-free and `no-store`, and it must preserve exact point
-  construction, cancellation, cadence, normalization, attribution, and
+- No direct Worker/browser aircraft delivery or automatic fallback is enabled.
+  Keep the fixed ADSB.fi v3 point mapping and v2 exact-identity mapping,
+  credential-free upstream, no-store, bounded cancellation/cadence and
   `Retry-After` backoff.
 - Latest-query revisions win; obsolete requests are aborted and obsolete
   responses cannot replace current-area data.
@@ -86,9 +85,9 @@ Check these project invariants:
   registration, callsign, operator, route, or location. Invalid,
   special-purpose, unresolved, conflicting, and excluded allocations remain
   unavailable, with source pins, hashes, exclusions, and licenses explicit.
-- Viewport eligibility is decided against 100 km before ADSB.lol's outward
-  nautical-mile rounding. A 100 km eligible request therefore uses 54 NM
-  (100.008 km transport coverage) without widening display eligibility.
+- Aircraft viewport eligibility is decided against 250 km before ADSB.fi's
+  outward nautical-mile rounding (135 NM maximum transport). Marine retains
+  its independent 100 km limit. Rounding never widens display eligibility.
 - Successful empty results, unknown or regional coverage, updating, paused,
   stale, historical, offline, and provider failure states remain distinct.
 - Depths is authorized default-on model context, independent from live
@@ -124,7 +123,7 @@ Check these project invariants:
   provider-qualified, time/count/byte bounded, clearable, and independently
   fallible. No export, sharing, cross-device synchronization, backend history,
   service-worker live cache, or public retained-history output is covered by
-  the current ADSB.lol/ODbL, Fintraffic/CC BY and attributed per-source marine
+  the current ADSB.fi personal-use, legacy ADSB.lol/ODbL, Fintraffic/CC BY and attributed per-source marine
   decisions. Database-version fencing must preserve existing rows, consent
   and epoch while preventing old readers from deleting unfamiliar providers;
   primary rollback uses the compatible updated reader with supplementation off.
@@ -272,8 +271,12 @@ Check these project invariants:
 - Credentials stay server-side behind allowlisted routes. A missing authorized
   provider or account becomes an explicit blocker rather than client-side
   secrets, scraping, or success-shaped placeholder data.
-- The production aircraft proxy accepts only the exact ADSB.lol point route,
-  canonical coordinates, and integer 1-54 NM radius. It uses a fixed upstream,
+- The production aircraft proxy accepts only the app-owned point route,
+  canonical coordinates, and integer 1-135 NM radius. The private OCI relay
+  translates to fixed ADSB.fi `/api/v3/lat/{lat}/lon/{lon}/dist/{nm}` and exact
+  v2 hex/registration/callsign endpoints. No direct Workers/browser fallback.
+  ADSB.fi terms are personal non-commercial, not ODbL; preserve distinct
+  legacy ADSB.lol history and selected-route credits. It uses a fixed upstream,
   bounded total timeout and body size, manual redirect rejection, no-store in
   both directions, stable public project identification, and preserves
   upstream status/body/`Content-Type`/`Retry-After`.
