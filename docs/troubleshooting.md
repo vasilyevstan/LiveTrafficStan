@@ -1,5 +1,20 @@
 # Troubleshooting
 
+## Current aircraft provider
+
+The 2026-11-19 provider replacement uses ADSB.fi through the existing private
+OCI relay only. Current live credits and terms are ADSB.fi (personal,
+non-commercial), not ODbL. Historical ADSB.lol failures and prior delivery-mode
+diagnostics below remain historical; selected ADSB.lol/VRS route enrichment
+is separate. See [the provider decision](aircraft-provider-evaluation.md)
+and [relay contract](oci-aircraft-relay.md).
+
+Before activation, verify the fixed ADSB.fi host is reachable from the actual
+relay egress. A timeout is not proof of an HTTP 403, quota or terms failure.
+Check DNS/address-family and configured routes without revealing addresses or
+changing networking. No provider switch is accepted from fixtures alone.
+Preserve admission state; do not reset it or loosen smoke limits to recover.
+
 ## Visitor statistics are missing or look different from Worker requests
 
 Use the account **Web Analytics** dashboard and select `trackstan.xyz`.

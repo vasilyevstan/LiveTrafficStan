@@ -8,7 +8,7 @@ import { DIGITRAFFIC_PROVIDER_NAME } from '../providers/marine/digitrafficCapabi
 
 const marineSources = [DIGITRAFFIC_PROVIDER_NAME, 'AISStream', 'Open Waters AIS'] as const
 type MarineShareSource = typeof marineSources[number]
-type ShareSource = 'ADSB.lol' | MarineShareSource | 'Space-Track.org / USSPACECOM' | 'CelesTrak'
+type ShareSource = 'ADSB.fi' | 'ADSB.lol' | MarineShareSource | 'Space-Track.org / USSPACECOM' | 'CelesTrak'
 interface ShareBase {
   version: 1
   theme?: 'light' | 'dark'
@@ -49,7 +49,7 @@ const onlyKeys = (value: Record<string, unknown>, allowed: readonly string[]) =>
   Object.keys(value).every(key => allowed.includes(key))
 const marineSource = (value: unknown): value is MarineShareSource => marineSources.some(name => name === value)
 const source = (value: unknown): value is ShareSource =>
-  value === 'ADSB.lol' || marineSource(value) ||
+  value === 'ADSB.fi' || value === 'ADSB.lol' || marineSource(value) ||
   value === 'Space-Track.org / USSPACECOM' || value === 'CelesTrak'
 const round = (value: number) => Number(value.toFixed(config.coordinatePrecision))
 
@@ -79,7 +79,8 @@ export const parseObjectShareContext = (value: unknown, now: number): ObjectShar
     ...(position ? { position } : {}),
   }
   let context: ObjectShareContext
-  if (value.kind === 'aircraft' && /^[0-9a-f]{6}$/.test(value.identifier) && value.source === 'ADSB.lol') {
+  if (value.kind === 'aircraft' && /^[0-9a-f]{6}$/.test(value.identifier) &&
+    (value.source === 'ADSB.fi' || value.source === 'ADSB.lol')) {
     allowed.push('registration')
     if (value.registration !== undefined && (!text(value.registration, 20) ||
       !/^[A-Z0-9 .-]+$/.test(value.registration))) throw new Error('Invalid shared registration')
@@ -140,7 +141,7 @@ export const shareTrafficObject = (entity: TrafficEntity): ObjectShareContext =>
   return parseObjectShareContext(entity.kind === 'aircraft' ? {
     version: 1, kind: 'aircraft', identifier: entity.hex.toLowerCase(),
     label: (entity.callsign ?? entity.registration ?? entity.hex).trim().slice(0, config.maximumLabelLength),
-    source: 'ADSB.lol', position,
+    source: entity.provider, position,
     ...(entity.registration ? { registration: entity.registration.trim().toUpperCase() } : {}),
   } : {
     version: 1, kind: 'vessel', identifier: String(entity.mmsi),

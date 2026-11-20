@@ -173,7 +173,7 @@ describe('unified compact Find presentation boundaries', () => {
       id: 'aircraft:4840d6',
       hex: '4840d6',
       callsign: 'TEST FLIGHT',
-      provider: 'ADSB.lol',
+      provider: 'ADSB.fi',
       markerIcon: 'aircraft',
       markerScale: 1,
       receivedAt: now,
@@ -322,7 +322,7 @@ describe('unified compact Find presentation boundaries', () => {
   it('shows mixed received, catalog and place results with flags and source-qualified locality hints', () => {
     const aircraft: DisplayAircraft = {
       kind: 'aircraft', id: 'aircraft:4840d6', hex: '4840d6', callsign: 'TEST FLIGHT',
-      provider: 'ADSB.lol', markerIcon: 'aircraft', markerScale: 1, receivedAt: now, freshness: 'live',
+      provider: 'ADSB.fi', markerIcon: 'aircraft', markerScale: 1, receivedAt: now, freshness: 'live',
       position: { latitude: 59.4, longitude: 24.7, observedAt: now },
     }
     const vessel: DisplayVessel = {
@@ -461,8 +461,8 @@ describe('unified explicit submission and immediate cancellation', () => {
 
 describe('last-report navigation qualification at display and action time', () => {
   const match: DiscoveryMatch = {
-    objectClass: 'aircraft', key: 'adsb-lol:abc123', identifiers: { icao24: 'abc123' },
-    source: { name: 'ADSB.lol', code: 'ADSB.lol', credit: 'ADSB.lol · ODbL 1.0' },
+    objectClass: 'aircraft', key: 'adsb-fi:abc123', identifiers: { icao24: 'abc123' },
+    source: { name: 'ADSB.fi', code: 'ADSB.fi', credit: 'ADSB.fi · personal, non-commercial use' },
     metadataReportedAt: now, location: { latitude: 59, longitude: 24, reportedAt: now },
   }
   const result: DiscoveryResponse = { objectClass: 'aircraft', retrievedAt: now, matches: [match], truncated: false, rejectedRecords: 0 }
@@ -532,8 +532,8 @@ describe('explicit ship Locate row presentation', () => {
     expect(html).not.toContain('>Locate</button>')
     expect(resultActions).toHaveLength(0)
     const aircraft: DiscoveryMatch = {
-      objectClass: 'aircraft', key: 'adsb-lol:abc123', identifiers: { icao24: 'abc123' },
-      metadataReportedAt: now, source: { name: 'ADSB.lol', code: 'ADSB.lol', credit: 'ADSB.lol · ODbL 1.0' },
+      objectClass: 'aircraft', key: 'adsb-fi:abc123', identifiers: { icao24: 'abc123' },
+      metadataReportedAt: now, source: { name: 'ADSB.fi', code: 'ADSB.fi', credit: 'ADSB.fi · personal, non-commercial use' },
       location: { latitude: 59.44, longitude: 24.75, reportedAt: now },
     }
     const aircraftHtml = renderToStaticMarkup(<IdentityResults

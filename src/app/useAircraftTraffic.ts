@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { AppConfig } from '../config/appConfig'
 import type { Aircraft, TrafficProviderResult } from '../domain/traffic'
-import { AdsbLolAircraftProvider } from '../providers/aircraft/adsbLolProvider'
+import { AdsbFiAircraftProvider } from '../providers/aircraft/adsbFiProvider'
 import type { TrafficQuery } from '../providers/types'
 import { AircraftTrafficController } from './AircraftTrafficController'
 import { shouldPauseTraffic } from './trafficPause'
@@ -63,7 +63,7 @@ export const useAircraftTraffic = (
       if (disposed || controllerRef.current) return
 
       const controller = new AircraftTrafficController({
-        provider: new AdsbLolAircraftProvider(config.endpointBaseUrl),
+        provider: new AdsbFiAircraftProvider(config.endpointBaseUrl),
         initialQuery,
         refreshIntervalMs: config.refreshIntervalMs,
         rateLimitBackoffMaxMs: config.rateLimitBackoffMaxMs,

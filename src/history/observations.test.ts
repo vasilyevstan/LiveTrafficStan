@@ -7,6 +7,7 @@ import {
 } from '../domain/vesselFilters'
 import {
   ADSB_HISTORY_LICENSE_DECISION,
+  ADSB_FI_HISTORY_LICENSE_DECISION,
   DIGITRAFFIC_HISTORY_LICENSE_DECISION,
   historicalObservationToEntity,
   projectHistoricalObservation,
@@ -56,6 +57,18 @@ const vessel: Vessel = {
 }
 
 describe('historical observation projection', () => {
+  it('keeps new ADSB.fi and legacy ADSB.lol history rights distinct', () => {
+    const projected = projectHistoricalObservation({ ...aircraft, provider: 'ADSB.fi' }, context)
+    expect(projected).toMatchObject({
+      provider: 'ADSB.fi', licenseDecisionId: ADSB_FI_HISTORY_LICENSE_DECISION,
+    })
+    expect(validateHistoricalObservation(projected)).toEqual(projected)
+    expect(historicalObservationToEntity(projected!, 11_000)).toMatchObject({ provider: 'ADSB.fi' })
+    expect(validateHistoricalObservation({ ...projected, licenseDecisionId: ADSB_HISTORY_LICENSE_DECISION })).toBeUndefined()
+    const legacy = projectHistoricalObservation(aircraft, context)
+    expect(validateHistoricalObservation(legacy)).toEqual(legacy)
+  })
+
   it('allowlists aircraft fields and provider rights provenance', () => {
     const projected = projectHistoricalObservation(aircraft, context)
 

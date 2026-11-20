@@ -14,12 +14,15 @@ export const HISTORY_SCHEMA_VERSION = 1
 export const HISTORY_NORMALIZATION_VERSION = '2026-09-19-v1'
 export const ADSB_HISTORY_LICENSE_DECISION =
   'adsb-lol-odbl-local-playback-2026-09-19'
+export const ADSB_FI_HISTORY_LICENSE_DECISION =
+  'adsb-fi-personal-noncommercial-local-playback-2026-11-19'
 export const DIGITRAFFIC_HISTORY_LICENSE_DECISION =
   'fintraffic-cc-by-local-playback-2026-09-19'
 export const MARINE_HISTORY_LICENSE_DECISION =
   'marine-per-source-local-playback-2026-10-04'
 export const HISTORY_LICENSE_DECISIONS = [
   ADSB_HISTORY_LICENSE_DECISION,
+  ADSB_FI_HISTORY_LICENSE_DECISION,
   DIGITRAFFIC_HISTORY_LICENSE_DECISION,
   MARINE_HISTORY_LICENSE_DECISION,
 ] as const
@@ -337,7 +340,7 @@ const withLogicalBytes = <const T extends Record<string, unknown>>(
 const projectAircraft = (
   entity: Aircraft,
   context: ObservationProjectionContext,
-  licenseDecisionId: typeof ADSB_HISTORY_LICENSE_DECISION,
+  licenseDecisionId: typeof ADSB_HISTORY_LICENSE_DECISION | typeof ADSB_FI_HISTORY_LICENSE_DECISION,
 ): HistoricalAircraftObservation =>
   withLogicalBytes({
     schemaVersion: HISTORY_SCHEMA_VERSION,
@@ -412,7 +415,9 @@ export const projectHistoricalObservation = (
   context: ObservationProjectionContext,
 ): HistoricalObservation | undefined => {
   if (entity.kind === 'aircraft') {
-    return entity.provider === 'ADSB.lol'
+    return entity.provider === 'ADSB.fi'
+      ? projectAircraft(entity, context, ADSB_FI_HISTORY_LICENSE_DECISION)
+      : entity.provider === 'ADSB.lol'
       ? projectAircraft(entity, context, ADSB_HISTORY_LICENSE_DECISION)
       : undefined
   }
@@ -482,8 +487,8 @@ export const validateHistoricalObservation = (
 
   if (
     value.kind === 'aircraft' &&
-    value.provider === 'ADSB.lol' &&
-    value.licenseDecisionId === ADSB_HISTORY_LICENSE_DECISION &&
+    ((value.provider === 'ADSB.lol' && value.licenseDecisionId === ADSB_HISTORY_LICENSE_DECISION) ||
+      (value.provider === 'ADSB.fi' && value.licenseDecisionId === ADSB_FI_HISTORY_LICENSE_DECISION)) &&
     typeof value.hex === 'string' &&
     value.hex.length > 0 &&
     optionalString(value.callsign) &&
@@ -512,7 +517,7 @@ export const validateHistoricalObservation = (
     return withLogicalBytes({
       schemaVersion: HISTORY_SCHEMA_VERSION,
       normalizationVersion: HISTORY_NORMALIZATION_VERSION,
-      provider: 'ADSB.lol',
+      provider: aircraft.provider,
       entityId: aircraft.entityId,
       kind: 'aircraft',
       observedAt: aircraft.observedAt,
@@ -526,7 +531,7 @@ export const validateHistoricalObservation = (
       markerScale: aircraft.markerScale,
       sessionId: aircraft.sessionId,
       segmentId: aircraft.segmentId,
-      licenseDecisionId: ADSB_HISTORY_LICENSE_DECISION,
+      licenseDecisionId: aircraft.licenseDecisionId,
       hex: aircraft.hex,
       callsign: aircraft.callsign,
       registration: aircraft.registration,

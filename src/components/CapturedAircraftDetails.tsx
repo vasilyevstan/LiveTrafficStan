@@ -89,7 +89,7 @@ export function CapturedAircraftDetails({ view, ready, playing, position: displa
         </dl>
         {!online && <p className="metadata-status">Offline; only already available basemap tiles may draw.</p>}
         <p className="metadata-attribution">
-          Aircraft positions: <a href={APP_CONFIG.flightRoute.sourceWebsiteUrl}>ADSB.lol</a>
+          Aircraft positions: <a href="https://adsb.fi/">ADSB.fi</a> (personal, non-commercial use)
         </p>
       </details>
     </DetailsPanel>

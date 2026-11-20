@@ -2,6 +2,57 @@
 
 ## Decision
 
+### Superseding decision: 2026-11-19
+
+The user selected **ADSB.fi** for live aircraft, through the existing private
+OCI relay, without an account, key, receiver-feeder requirement or spending.
+The [official API and terms](https://github.com/adsbfi/opendata) document the
+fixed `https://opendata.adsb.fi/api` base, v3 point endpoint
+`/v3/lat/{lat}/lon/{lon}/dist/{nm}` (up to 250 NM), and v2 exact hex,
+registration and callsign endpoints. The deprecated v2 point response is not
+used. Public endpoints allow one request per second; invalid 400/401/403/404/429
+responses count toward temporary restrictions. The existing aggregate
+20-second spacing and 135 NM maximum remain unchanged.
+
+ADSB.fi is personal, non-commercial use only, not ODbL. Data/service cannot be
+licensed, sold, rented or leased; it is as-is, may be suspended, and requires
+linked adsb.fi attribution. The application's Apache-2.0 license does not
+relicense it. The prior Workers-egress 403 means production must retain the
+private OCI relay; there is no direct Worker/browser fallback.
+
+The provider decision was reopened after an ordinary production upstream 429
+without Retry-After was recorded (#724), and ADSB.lol's live OpenAPI description
+documented 500 unauthenticated v2 requests/day/IP. A 20-second boundary allows
+up to 4,320 starts/day, so it is not sufficient to guarantee that allowance.
+That makes exhaustion plausible, but does not establish the cause of the
+observed 429 without Retry-After or retrospectively diagnose #500 HTTP 504s.
+No ADSB.lol keys, feeder status or operator contact is requested.
+
+Preserve the admission state during the provider switch: any remaining
+deadline is honored, and the next completed non-429 response resets the
+failure counter through the existing path. No speculative state reset, new
+quota scheduler, provider fallback or external support submission is needed.
+Personal opt-in local playback uses a separate ADSB.fi rights decision;
+retained ADSB.lol rows and route-enrichment attribution remain unchanged.
+
+Actual OCI egress qualification (#725) subsequently returned HTTP 200 in
+310 ms (1,121 bytes, three `ac` records). The observed `now` value
+1795155990002 was 863 ms before the guest receipt clock, establishing
+millisecond epoch units; `seen`/`seen_pos` were numeric seconds. The
+privacy-safe fixture preserves that envelope/clock/age, with synthetic
+identities and positions; it is not a retained raw provider response.
+The existing Always Free Micro uses its included ephemeral IPv4, stable
+across stop/start, and stateful outbound HTTPS only. Oracle forbids the
+existing All Services SGW route alongside IGW; the user authorized the
+documented workaround retaining private Object Storage while other HTTPS
+uses the existing IGW. No NAT, new compute/storage, credential or paid
+resource was added. This qualification is not production release acceptance.
+
+The earlier evaluation and historical transport receipts below are retained
+as evidence, not the current provider selection or current ADSB.fi terms.
+
+### Historical decision (superseded)
+
 Evaluation date: **2026-09-19**
 
 Cloud-delivery re-evaluation: **2026-09-24**

@@ -161,7 +161,7 @@ export function LiveStatus({
           )}
           <div title={aircraftStatus.error}>
             {providerLabel('Aircraft', aircraftStatus)}
-            {' · '}<a href="https://www.adsb.lol/" target="_blank" rel="noreferrer">ADSB.lol</a>
+            {' · '}<a href="https://adsb.fi/" target="_blank" rel="noreferrer">ADSB.fi</a>
             {aircraftStatus.error && (
               <details className="context-details">
                 <summary>Aircraft error details</summary>
@@ -199,7 +199,11 @@ export function LiveStatus({
             </span>
           )}
           <span className="live-status__credits">
-            ADSB.lol: <a href="https://opendatacommons.org/licenses/odbl/1-0/" target="_blank" rel="noreferrer">ODbL 1.0</a>.
+            <a href="https://adsb.fi/" target="_blank" rel="noreferrer">ADSB.fi</a>:
+            {' '}personal, non-commercial use only; not ODbL.
+            {' '}No licensing, sale, rental or leasing of its data or service.
+            {' '}Legacy aircraft playback: <a href="https://www.adsb.lol/" target="_blank" rel="noreferrer">ADSB.lol</a>
+            {' '}(<a href="https://opendatacommons.org/licenses/odbl/1-0/" target="_blank" rel="noreferrer">ODbL 1.0</a>).
             {' '}Source: Fintraffic / digitraffic.fi, license{' '}
             <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">CC 4.0 BY</a>.
             {' '}Traffic is filtered, normalized and deduplicated.

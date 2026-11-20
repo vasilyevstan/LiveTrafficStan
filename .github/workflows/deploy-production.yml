@@ -23,12 +23,10 @@ on:
       aircraft_delivery:
         description: Aircraft delivery path used by the browser
         required: true
-        default: worker-proxy
+        default: oci-private-relay
         type: choice
         options:
-          - worker-proxy
           - oci-private-relay
-          - adsb-lol-direct
       flight_route_enabled:
         description: Enable direct ADSB.lol plausible-route lookup
         required: true
@@ -182,7 +180,7 @@ jobs:
         if: inputs.artifact == 'application'
         env:
           VITE_RELEASE_SHA: ${{ inputs.sha }}
-          VITE_AIRCRAFT_ENDPOINT: ${{ inputs.aircraft_delivery == 'adsb-lol-direct' && 'https://api.adsb.lol' || '/api/aircraft' }}
+          VITE_AIRCRAFT_ENDPOINT: /api/aircraft
           VITE_AIRCRAFT_PHOTO_ENABLED: ${{ inputs.aircraft_photo_enabled }}
           VITE_FLIGHT_ROUTE_ENABLED: ${{ inputs.flight_route_enabled }}
           VITE_MARINE_SUPPLEMENT_ENABLED: ${{ inputs.marine_supplement_enabled }}
@@ -196,7 +194,7 @@ jobs:
         if: inputs.artifact == 'pwa-retirement'
         env:
           VITE_RELEASE_SHA: ${{ inputs.sha }}
-          VITE_AIRCRAFT_ENDPOINT: ${{ inputs.aircraft_delivery == 'adsb-lol-direct' && 'https://api.adsb.lol' || '/api/aircraft' }}
+          VITE_AIRCRAFT_ENDPOINT: /api/aircraft
           VITE_AIRCRAFT_PHOTO_ENABLED: ${{ inputs.aircraft_photo_enabled }}
           VITE_FLIGHT_ROUTE_ENABLED: ${{ inputs.flight_route_enabled }}
           VITE_MARINE_SUPPLEMENT_ENABLED: ${{ inputs.marine_supplement_enabled }}

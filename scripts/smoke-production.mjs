@@ -31,7 +31,7 @@ const MAX_AIRCRAFT_RESPONSE_BYTES = 4 * 1_024 * 1_024
 const [
   deploymentUrl,
   expectedReleaseSha,
-  aircraftDelivery = 'worker-proxy',
+  aircraftDelivery = 'oci-private-relay',
   orbitalCatalogEnabled = 'false',
   starlinkCatalogEnabled = 'false',
   airportBoardsEnabled = 'false',
@@ -49,14 +49,8 @@ if (!/^[0-9a-f]{40}$/.test(expectedReleaseSha)) {
   throw new Error('The expected release SHA must be 40 lowercase hex characters')
 }
 
-if (
-  aircraftDelivery !== 'worker-proxy' &&
-  aircraftDelivery !== 'oci-private-relay' &&
-  aircraftDelivery !== 'adsb-lol-direct'
-) {
-  throw new Error(
-    'The aircraft delivery must be "worker-proxy", "oci-private-relay", or "adsb-lol-direct"',
-  )
+if (aircraftDelivery !== 'oci-private-relay') {
+  throw new Error('ADSB.fi live aircraft delivery requires "oci-private-relay"')
 }
 if (
   orbitalCatalogEnabled !== 'true' &&
@@ -406,80 +400,6 @@ const waitForWorkerRelease = async (signal) => {
 }
 
 const verifyAircraftProxy = async () => {
-  if (aircraftDelivery === 'adsb-lol-direct') {
-    await waitForWorkerRelease(AbortSignal.timeout(180_000))
-    const startedAt = performance.now()
-    const endpoint = new URL(
-      '/v2/point/59.437/24.754/135',
-      'https://api.adsb.lol',
-    )
-    const response = await fetchWithTimeout(endpoint, {
-      method: 'GET',
-      redirect: 'error',
-      cache: 'no-store',
-      credentials: 'omit',
-      headers: {
-        Accept: 'application/json',
-        Origin: baseUrl.origin,
-        'User-Agent':
-          'Mozilla/5.0 AppleWebKit/537.36 Chrome/140.0.0.0 Safari/537.36',
-      },
-    })
-    const status = classifyAircraftProxyStatus(response.status)
-    assert(
-      status !== 'failure',
-      `Direct aircraft provider returned ${response.status}`,
-    )
-    const allowedOrigin = response.headers.get(
-      'access-control-allow-origin',
-    )
-    assert(
-      allowedOrigin === '*' || allowedOrigin === baseUrl.origin,
-      'Direct aircraft provider did not allow the deployed origin',
-    )
-
-    if (status === 'available') {
-      assert(
-        response.headers.get('content-type')?.includes('application/json'),
-        'Direct aircraft provider did not return JSON',
-      )
-      const declaredBytes = Number(
-        response.headers.get('content-length'),
-      )
-      assert(
-        !Number.isFinite(declaredBytes) ||
-          declaredBytes <= MAX_AIRCRAFT_RESPONSE_BYTES,
-        'Direct aircraft provider declared an oversized response',
-      )
-      const body = new Uint8Array(await response.arrayBuffer())
-      assert(
-        body.byteLength <= MAX_AIRCRAFT_RESPONSE_BYTES,
-        'Direct aircraft provider returned an oversized response',
-      )
-      let payload
-      try {
-        payload = JSON.parse(new TextDecoder().decode(body))
-      } catch {
-        throw new Error('Direct aircraft provider returned invalid JSON')
-      }
-      assert(
-        payload && typeof payload === 'object' && Array.isArray(payload.ac),
-        'Direct aircraft provider returned an unexpected payload',
-      )
-      console.log(
-        `Aircraft wide-view probe passed delivery=${aircraftDelivery} ` +
-          `status=${response.status} bytes=${body.byteLength} ` +
-          `duration_ms=${Math.round(performance.now() - startedAt)}`,
-      )
-    } else {
-      void response.body?.cancel().catch(() => undefined)
-      console.warn(
-        'Direct aircraft provider throttled the verified browser-origin request with HTTP 429',
-      )
-    }
-    return
-  }
-
   const validPath = '/api/aircraft/v2/point/59.437/24.754/135'
   const validUrl = new URL(validPath, baseUrl)
   const privateRelayDeadlineController =
@@ -587,7 +507,9 @@ const verifyAircraftProxy = async () => {
         throw new Error('Aircraft proxy returned invalid JSON')
       }
       assert(
-        payload && typeof payload === 'object' && Array.isArray(payload.ac),
+        payload && typeof payload === 'object' && Array.isArray(payload.ac) &&
+          typeof payload.now === 'number' && Number.isFinite(payload.now) &&
+          payload.now >= 1_000_000_000_000 && payload.total === payload.ac.length,
         'Aircraft proxy returned an unexpected payload',
       )
       console.log(

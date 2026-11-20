@@ -1,15 +1,16 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import qualifiedPoint from './fixtures/adsb-fi-point.json'
 import {
   AIRCRAFT_PROXY_TIMEOUT_MS,
   MAX_AIRCRAFT_RESPONSE_BYTES,
 } from '../../../worker/aircraftProxy'
 import {
-  ADSB_LOL_REQUEST_TIMEOUT_MS,
-  AdsbLolAircraftProvider,
-  MAX_ADSB_LOL_RESPONSE_BYTES,
+  ADSB_FI_REQUEST_TIMEOUT_MS,
+  AdsbFiAircraftProvider,
+  MAX_ADSB_FI_RESPONSE_BYTES,
   aircraftQueryRadiusNauticalMiles,
-  normalizeAdsbLolResponse,
-} from './adsbLolProvider'
+  normalizeAdsbFiResponse,
+} from './adsbFiProvider'
 
 const query = {
   center: {
@@ -20,10 +21,30 @@ const query = {
   radiusKm: 20,
 }
 
-describe('normalizeAdsbLolResponse', () => {
+describe('normalizeAdsbFiResponse', () => {
+  it('uses the actual-egress millisecond envelope and second-based position age', () => {
+    // Schema/clock/age receipt from #725; identities and positions are synthetic.
+    const receivedAt = 1_795_155_990_865
+    const result = normalizeAdsbFiResponse(qualifiedPoint, query, receivedAt)
+    expect(result).toHaveLength(3)
+    expect(result[0]).toMatchObject({
+      provider: 'ADSB.fi',
+      hex: 'ABC123',
+      position: { observedAt: qualifiedPoint.now - 1_923 },
+    })
+  })
+
+  it.each([undefined, null, '1795155990002', NaN, Infinity, 1_795_155_990])(
+    'rejects an absent, invalid or seconds-based snapshot clock %s',
+    (now) => {
+      expect(() => normalizeAdsbFiResponse({ ac: [], now }, query, 1_795_155_990_865))
+        .toThrow(/malformed aircraft response/)
+    },
+  )
+
   it('normalizes reliable aircraft fields and metric units', () => {
     const receivedAt = 1_800_000_000_000
-    const result = normalizeAdsbLolResponse(
+    const result = normalizeAdsbFiResponse(
       {
         now: receivedAt,
         ac: [
@@ -109,12 +130,12 @@ describe('normalizeAdsbLolResponse', () => {
       category: 'A3',
       gs: 100,
     }
-    const baseline = normalizeAdsbLolResponse(
+    const baseline = normalizeAdsbFiResponse(
       { now: receivedAt, ac: [candidate] },
       query,
       receivedAt,
     )
-    const result = normalizeAdsbLolResponse(
+    const result = normalizeAdsbFiResponse(
       { now: receivedAt, ac: [{ ...candidate, squawk }] },
       query,
       receivedAt,
@@ -124,7 +145,7 @@ describe('normalizeAdsbLolResponse', () => {
   })
 
   it('uses a ground altitude and ignores entries outside the requested radius', () => {
-    const result = normalizeAdsbLolResponse(
+    const result = normalizeAdsbFiResponse(
       {
         now: 1_800_000_000_000,
         ac: [
@@ -159,7 +180,7 @@ describe('normalizeAdsbLolResponse', () => {
       center: { latitude: 0, longitude: 0, label: 'Wide view' },
       radiusKm: 250,
     }
-    const result = normalizeAdsbLolResponse(
+    const result = normalizeAdsbFiResponse(
       {
         now: 1_800_000_000_000,
         ac: [
@@ -175,7 +196,7 @@ describe('normalizeAdsbLolResponse', () => {
   })
 
   it('maps only reported emitter categories to the bounded icon vocabulary', () => {
-    const aircraft = normalizeAdsbLolResponse(
+    const aircraft = normalizeAdsbFiResponse(
       {
         now: 1_800_000_000_000,
         ac: [
@@ -264,7 +285,7 @@ describe('normalizeAdsbLolResponse', () => {
 
   it('rejects a malformed top-level response', () => {
     expect(() =>
-      normalizeAdsbLolResponse({ aircraft: [] }, query, Date.now()),
+      normalizeAdsbFiResponse({ aircraft: [] }, query, Date.now()),
     ).toThrow(/malformed aircraft response/)
   })
 })
@@ -278,15 +299,15 @@ describe('aircraftQueryRadiusNauticalMiles', () => {
   })
 })
 
-describe('AdsbLolAircraftProvider', () => {
+describe('AdsbFiAircraftProvider', () => {
   afterEach(() => {
     vi.useRealTimers()
     vi.unstubAllGlobals()
   })
 
   it('retains the Worker response limit and allows its timeout to complete', () => {
-    expect(MAX_ADSB_LOL_RESPONSE_BYTES).toBe(MAX_AIRCRAFT_RESPONSE_BYTES)
-    expect(ADSB_LOL_REQUEST_TIMEOUT_MS).toBeGreaterThan(
+    expect(MAX_ADSB_FI_RESPONSE_BYTES).toBe(MAX_AIRCRAFT_RESPONSE_BYTES)
+    expect(ADSB_FI_REQUEST_TIMEOUT_MS).toBeGreaterThan(
       AIRCRAFT_PROXY_TIMEOUT_MS,
     )
   })
@@ -303,7 +324,7 @@ describe('AdsbLolAircraftProvider', () => {
     )
     vi.stubGlobal('fetch', fetchMock)
     const signal = new AbortController().signal
-    const provider = new AdsbLolAircraftProvider(
+    const provider = new AdsbFiAircraftProvider(
       'https://aircraft.example.test',
     )
 
@@ -336,7 +357,7 @@ describe('AdsbLolAircraftProvider', () => {
     )
     vi.stubGlobal('fetch', fetchMock)
     const controller = new AbortController()
-    const provider = new AdsbLolAircraftProvider('/api/aircraft')
+    const provider = new AdsbFiAircraftProvider('/api/aircraft')
     const request = provider.fetchSnapshot(query, controller.signal)
 
     controller.abort()
@@ -350,13 +371,13 @@ describe('AdsbLolAircraftProvider', () => {
       'fetch',
       vi.fn(async () => new Response('123456789', { status: 200 })),
     )
-    const provider = new AdsbLolAircraftProvider('/api/aircraft', {
+    const provider = new AdsbFiAircraftProvider('/api/aircraft', {
       maximumBytes: 8,
     })
 
     await expect(
       provider.fetchSnapshot(query, new AbortController().signal),
-    ).rejects.toThrow('ADSB.lol response exceeded the 8-byte limit')
+    ).rejects.toThrow('ADSB.fi response exceeded the 8-byte limit')
   })
 
   it('times out a provider request that does not complete', async () => {
@@ -374,12 +395,12 @@ describe('AdsbLolAircraftProvider', () => {
           }),
       ),
     )
-    const provider = new AdsbLolAircraftProvider('/api/aircraft', {
+    const provider = new AdsbFiAircraftProvider('/api/aircraft', {
       timeoutMs: 100,
     })
     const request = expect(
       provider.fetchSnapshot(query, new AbortController().signal),
-    ).rejects.toThrow('ADSB.lol request timed out')
+    ).rejects.toThrow('ADSB.fi request timed out')
 
     await vi.advanceTimersByTimeAsync(100)
     await request
@@ -390,11 +411,11 @@ describe('AdsbLolAircraftProvider', () => {
       'fetch',
       vi.fn(async () => new Response('{', { status: 200 })),
     )
-    const provider = new AdsbLolAircraftProvider('/api/aircraft')
+    const provider = new AdsbFiAircraftProvider('/api/aircraft')
 
     await expect(
       provider.fetchSnapshot(query, new AbortController().signal),
-    ).rejects.toThrow('ADSB.lol returned invalid JSON')
+    ).rejects.toThrow('ADSB.fi returned invalid JSON')
   })
 
   it('preserves upstream status, body, and Retry-After guidance', async () => {
@@ -409,14 +430,14 @@ describe('AdsbLolAircraftProvider', () => {
         }),
       ),
     )
-    const provider = new AdsbLolAircraftProvider('/api/aircraft')
+    const provider = new AdsbFiAircraftProvider('/api/aircraft')
 
     await expect(
       provider.fetchSnapshot(query, new AbortController().signal),
     ).rejects.toMatchObject({
       status: 429,
       retryAfterMs: 30_000,
-      message: 'ADSB.lol returned HTTP 429: slow down',
+      message: 'ADSB.fi returned HTTP 429: slow down',
     })
   })
 
@@ -432,14 +453,14 @@ describe('AdsbLolAircraftProvider', () => {
         }),
       ),
     )
-    const provider = new AdsbLolAircraftProvider('/api/aircraft')
+    const provider = new AdsbFiAircraftProvider('/api/aircraft')
 
     await expect(
       provider.fetchSnapshot(query, new AbortController().signal),
     ).rejects.toMatchObject({
       status: 503,
       retryAfterMs: 20_000,
-      message: 'ADSB.lol returned HTTP 503: Relay admission delayed',
+      message: 'ADSB.fi returned HTTP 503: Relay admission delayed',
     })
   })
 })

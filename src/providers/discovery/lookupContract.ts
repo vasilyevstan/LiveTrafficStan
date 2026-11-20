@@ -89,7 +89,8 @@ export const normalizeAircraftLookup = (
   retrievedAt: number,
 ): DiscoveryResponse => {
   if (!isRecord(value) || !Array.isArray(value.ac) ||
-    !validTime(value.now) || value.now > retrievedAt + config.futureToleranceMs ||
+    !validTime(value.now) || value.now < 1_000_000_000_000 ||
+    value.now > retrievedAt + config.futureToleranceMs ||
     value.total !== value.ac.length || (value.msg !== undefined && value.msg !== 'No error')) throw invalid()
   const snapshotAt = value.now
   return finish(request, value.ac, retrievedAt, false, (record) => {
@@ -114,10 +115,10 @@ export const normalizeAircraftLookup = (
       ? { latitude: record.lat, longitude: record.lon, reportedAt: positionAt } : null
     const metadataAt = snapshotAt - record.seen * 1_000
     return {
-      objectClass: 'aircraft', key: `adsb-lol:${icao24}`,
+      objectClass: 'aircraft', key: `adsb-fi:${icao24}`,
       name: callsign || registration || undefined,
       identifiers: { icao24, registration: registration || undefined, callsign: callsign || undefined },
-      source: { name: 'ADSB.lol', code: 'ADSB.lol', credit: 'ADSB.lol · ODbL 1.0' },
+      source: { name: 'ADSB.fi', code: 'ADSB.fi', credit: 'ADSB.fi · personal, non-commercial use' },
       metadataReportedAt: validTime(metadataAt) ? metadataAt : null,
       location,
     }
@@ -260,8 +261,8 @@ export const validateDiscoveryResponse = (
           : match.location !== null) ||
         request.by === 'mmsi' && ids.mmsi !== request.query ||
         ids.icao24 !== undefined || ids.registration !== undefined) throw invalid()
-    } else if (match.source.name !== 'ADSB.lol' || typeof ids.icao24 !== 'string' ||
-      !/^[a-f\d]{6}$/.test(ids.icao24) || match.key !== `adsb-lol:${ids.icao24}` ||
+    } else if (match.source.name !== 'ADSB.fi' || typeof ids.icao24 !== 'string' ||
+      !/^[a-f\d]{6}$/.test(ids.icao24) || match.key !== `adsb-fi:${ids.icao24}` ||
       request.by === 'hex' && ids.icao24 !== request.query ||
       request.by === 'reg' && (typeof ids.registration !== 'string' || ids.registration.toUpperCase() !== request.query) ||
       request.by === 'callsign' && (typeof ids.callsign !== 'string' || ids.callsign.toUpperCase() !== request.query) ||
@@ -294,7 +295,7 @@ export const validateDiscoveryResponse = (
         imo: typeof ids.imo === 'string' ? ids.imo : undefined,
       },
       source: {
-        name: request.objectClass === 'ships' ? 'Open Waters AIS' : 'ADSB.lol',
+        name: request.objectClass === 'ships' ? 'Open Waters AIS' : 'ADSB.fi',
         code: match.source.code,
         credit: match.source.credit,
       },
