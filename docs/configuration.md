@@ -730,7 +730,7 @@ filter has a disabled **View** and a reason, not a silent preference override.
 
 **Search** is the explicit online operation. Non-coordinate text goes to
 Photon for places, to Open Waters when compatible with ship name/MMSI lookup,
-and to at most one compatible ADSB.lol exact lookup. The first named Search
+and to at most one compatible ADSB.fi exact lookup. The first named Search
 also demands the existing OurAirports and Natural Earth assets once for this
 session, independently of marker visibility. Existing Layers/weather demand
 and fulfilled caches are reused; closing Find never creates a second loader.
@@ -894,22 +894,14 @@ The default browser request is root-relative:
 /api/aircraft/v2/point/{latitude}/{longitude}/{radiusNm}
 ```
 
-Vite development and preview rewrite `/api/aircraft` to
-`https://api.adsb.lol`. Production uses the checked Cloudflare Worker.
-Setting `VITE_AIRCRAFT_ENDPOINT` to an absolute URL bypasses those same-origin
-routes, but it works only if the target explicitly allows browser CORS.
-
-The protected deployment and rollback workflows expose only three fixed
-aircraft-delivery values:
-
-- `worker-proxy` builds with `/api/aircraft` and uses shared Cloudflare
-  outbound identity;
-- `oci-private-relay` also builds with `/api/aircraft`, but the Worker sends
-  only the validated fixed path through the checked `AIRCRAFT_RELAY` VPC
-  Service binding with the protected `AIRCRAFT_RELAY_AUTH_TOKEN`; the workflow
-  supplies that secret through a mode-600 temporary Wrangler secrets file in
-  the same exact-source deployment and removes the file afterward;
-- `adsb-lol-direct` builds with `https://api.adsb.lol`.
+Vite development and preview translate the point route to ADSB.fi's
+`https://opendata.adsb.fi/api/v3/lat/{lat}/lon/{lon}/dist/{nm}`.
+Production uses only `oci-private-relay`: the checked Worker sends the
+validated app-owned path through `AIRCRAFT_RELAY` and the private Tunnel to
+the fixed ADSB.fi relay. The protected token stays in the existing mode-600
+temporary Wrangler secrets file, removed after exact-source deployment.
+No current deployment choice enables shared Workers egress or browser-direct
+live delivery. Historical rollback source retains its original contract.
 
 Private mode never changes the browser endpoint and never falls back to
 `worker-proxy`. Missing binding, missing/short secret, VPC failure, Tunnel
@@ -917,15 +909,12 @@ failure, or relay failure remains an explicit unavailable response. A
 relay-local `503 Retry-After` pauses the existing aircraft scheduler without
 resetting cadence or presenting an empty sky.
 
-The direct mode is source-ready but not authorization: deploy it only after
-ADSB.lol confirms the browser path and the live API returns an accepted
-`Access-Control-Allow-Origin` value for both successful and throttled
-responses. The client request remains credential-free and `no-store`, times
+The client request remains credential-free and `no-store`, times
 out after 12 seconds, and rejects responses larger than 4 MiB. Arbitrary
 workflow endpoint URLs are not accepted.
 
 For an aircraft-eligible viewport, the rounded camera center and conservative
-enclosing radius are sent to ADSB.lol. The application decides eligibility
+enclosing radius are sent to ADSB.fi. The application decides eligibility
 against the 250 km aircraft limit before rounding outward to the provider's
 integer nautical miles. An exact 250 km viewport therefore requests 135 NM, or
 250.02 km of transport coverage, while the client still displays only objects
@@ -938,7 +927,7 @@ ranges, and integer 1-135 NM radius. It rejects query strings and every other
 method/path, never follows upstream redirects, keeps a ten-second total
 deadline, rejects responses over 4 MiB, and preserves upstream status, body,
 `Content-Type`, and `Retry-After`. It sends a stable public project User-Agent
-because ADSB.lol rejects generic Worker identification; no browser cookie,
+to identify the public project; no browser cookie,
 authorization, or arbitrary header is forwarded.
 
 Live aircraft responses are never placed in a shared deployment cache.
@@ -1110,7 +1099,7 @@ and a finite current position. The stable request identity is callsign,
 ICAO24, and optional registration; moving coordinates update the identity
 snapshot used by a later manual refresh but do not start another request.
 Selection, identity, history-mode, or unmount changes abort obsolete work.
-Hover, ordinary ADSB.lol refreshes, map movement, theme changes, and provider
+Hover, ordinary ADSB.fi refreshes, map movement, theme changes, and provider
 refreshes do not start or repeat a lookup.
 
 The browser makes one direct credential-free GET, rejects redirects, disables
@@ -1136,8 +1125,8 @@ refresh is disabled until that time, and no timer triggers an automatic retry.
 
 Only a successful result is presented, below any aircraft photo and above the
 telemetry facts, as **Departure** and **Destination** rows with no status text.
-ADSB.lol remains identified by the traffic Source fact and provider
-disclosure. See
+ADSB.lol/VRS remains credited for the separate plausible-route enrichment;
+live traffic identifies ADSB.fi in its Source fact and provider disclosure. See
 [Aircraft Plausible Route Enrichment](aircraft-route-enrichment-evaluation.md).
 
 ## Weather observations and proxy
@@ -1351,7 +1340,7 @@ environment variable, zoom handler, animation loop, or provider setting.
 and surface guards: a one-CSS-pixel outward safety perimeter and 0.01 px
 project/unproject tolerance. The guard does not enlarge the actual full-canvas
 display polygon. Pole bounds and failed surface round trips make the footprint
-unsafe; neither the traffic 100 km bound nor ADSB.lol transport rounding changes.
+unsafe; neither the configured traffic bounds nor ADSB.fi transport rounding changes.
 
 The default URLs are centralized in `DEFAULT_MAP_STYLE_URLS`. Their existing
 OpenFreeMap layers receive the application's atlas paint treatment: blue water,

@@ -32,6 +32,20 @@ const createHandler = async (options = {}) =>
 
 describe('OCI aircraft relay', () => {
   it.each([
+    ['/v2/hex/abc123', '/api/v2/hex/abc123'],
+    ['/v2/reg/G-ABCD', '/api/v2/registration/G-ABCD'],
+    ['/v2/callsign/TST123', '/api/v2/callsign/TST123'],
+    ['/v2/point/59/24/135', '/api/v3/lat/59/lon/24/dist/135'],
+  ])('translates app-owned %s only to documented ADSB.fi paths', async (path, upstreamPath) => {
+    const fetchImpl = vi.fn(async () => Response.json({ ac: [], now: 1_800_000_000_000 }))
+    const handler = await createHandler({ fetchImpl })
+    expect((await handler(authorizedRequest(path))).status).toBe(200)
+    expect(fetchImpl).toHaveBeenCalledExactlyOnceWith(
+      `https://opendata.adsb.fi${upstreamPath}`, expect.objectContaining({ redirect: 'manual' }),
+    )
+  })
+
+  it.each([
     ['/v2/hex/abc123', { by: 'hex', identifier: 'abc123' }],
     ['/v2/reg/G-ABCD', { by: 'reg', identifier: 'G-ABCD' }],
     ['/v2/callsign/TST123', { by: 'callsign', identifier: 'TST123' }],
@@ -50,7 +64,7 @@ describe('OCI aircraft relay', () => {
     const fetchImpl = vi.fn(async () => new Response('{}', { headers: { 'Content-Type': 'application/json' } }))
     const handler = await createHandler({ stateStore, fetchImpl, now: () => nowMs })
     expect((await handler(authorizedRequest('/v2/hex/abc123'))).status).toBe(200)
-    expect(fetchImpl.mock.calls[0][0]).toBe('https://api.adsb.lol/v2/hex/abc123')
+    expect(fetchImpl.mock.calls[0][0]).toBe('https://opendata.adsb.fi/api/v2/hex/abc123')
     expect((await handler(authorizedRequest())).status).toBe(503)
     expect((await handler(authorizedRequest('/v2/reg/G-ABCD'))).status).toBe(503)
     const restarted = await createHandler({ stateStore, fetchImpl, now: () => nowMs })
@@ -123,7 +137,7 @@ describe('OCI aircraft relay', () => {
     expect(response.status).toBe(200)
     expect(await response.text()).toBe(body)
     expect(fetchImpl).toHaveBeenCalledWith(
-      'https://api.adsb.lol/v2/point/59.437/24.7536/11',
+      'https://opendata.adsb.fi/api/v3/lat/59.437/lon/24.7536/dist/11',
       expect.objectContaining({
         method: 'GET',
         redirect: 'manual',

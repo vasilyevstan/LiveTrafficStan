@@ -113,13 +113,6 @@ const aircraftFetch = (env: WorkerEnv) => {
   if (env.AIRCRAFT_DELIVERY === 'oci-private-relay') {
     return privateRelayFetch(env)
   }
-  if (
-    env.AIRCRAFT_DELIVERY === undefined ||
-    env.AIRCRAFT_DELIVERY === 'worker-proxy' ||
-    env.AIRCRAFT_DELIVERY === 'adsb-lol-direct'
-  ) {
-    return undefined
-  }
   return unavailableRelayFetch
 }
 
@@ -190,7 +183,7 @@ const worker = {
       return withReleaseSha(
         await handleAircraftProxy(
           request,
-          fetchImpl ? { fetchImpl } : {},
+          { fetchImpl },
         ),
         env.RELEASE_SHA,
       )

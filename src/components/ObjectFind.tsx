@@ -676,7 +676,7 @@ export function ObjectFind(props: ObjectFindProps) {
         }}>Next</button>
       </div>}
       <details className="context-details object-find-sources"><summary>Sources</summary>
-        <p><a href="https://www.adsb.lol/docs/open-data/api/" target="_blank" rel="noreferrer">ADSB.lol · ODbL 1.0</a> · <a href="https://openwaters.io/api/ais/" target="_blank" rel="noreferrer">Open Waters AIS</a> · OurAirports / Natural Earth (public domain).</p>
+        <p><a href="https://adsb.fi/" target="_blank" rel="noreferrer">ADSB.fi · personal, non-commercial use</a> · <a href="https://openwaters.io/api/ais/" target="_blank" rel="noreferrer">Open Waters AIS</a> · OurAirports / Natural Earth (public domain).</p>
         {lookupCredits.length > 0 && <p>{lookupCredits.join(' · ')}</p>}
         <p>Satellites: Space-Track / CelesTrak. Modeled, not live or optical.</p>
         {query && (!props.airportsReady || !props.portsReady) && <p>Some static catalogs are not yet available.{catalogLoading && ' Loading.'}</p>}

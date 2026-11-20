@@ -1,8 +1,8 @@
 import { BoundedResponseError, readBoundedBytes } from '../src/providers/boundedResponse.js'
 
 export const AIRCRAFT_PROXY_PREFIX = '/api/aircraft'
-export const ADSB_LOL_ORIGIN = 'https://api.adsb.lol'
-export const ADSB_LOL_USER_AGENT =
+export const AIRCRAFT_RELAY_ORIGIN = 'http://livetrafficstan-aircraft-relay'
+export const AIRCRAFT_USER_AGENT =
   'LiveTrafficStan (+https://github.com/vasilyevstan/LiveTrafficStan)'
 export const MAX_AIRCRAFT_RADIUS_NM = 135
 export const AIRCRAFT_PROXY_TIMEOUT_MS = 10_000
@@ -207,7 +207,7 @@ export const forwardAircraftRequest = async (
     upstreamController.abort(new Error('Aircraft upstream timed out'))
   }, timeoutMs)
 
-  const upstreamUrl = `${ADSB_LOL_ORIGIN}${upstreamPath}`
+  const upstreamUrl = `${AIRCRAFT_RELAY_ORIGIN}${upstreamPath}`
 
   try {
     const upstream = await fetchImpl(upstreamUrl, {
@@ -217,7 +217,7 @@ export const forwardAircraftRequest = async (
       cache: 'no-store',
       headers: {
         Accept: 'application/json',
-        'User-Agent': ADSB_LOL_USER_AGENT,
+        'User-Agent': AIRCRAFT_USER_AGENT,
       },
     })
 

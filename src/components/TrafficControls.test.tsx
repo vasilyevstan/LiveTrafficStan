@@ -760,7 +760,7 @@ describe('TrafficControls', () => {
       marineProviderName: 'Digitraffic, AISStream and Open Waters AIS',
     })
     const sources = html.slice(html.indexOf('id="map-tools-panel-sources"'), html.indexOf('id="traffic-controls-settings"'))
-    expect(sources).toContain('ADSB.lol')
+    expect(sources).toContain('ADSB.fi')
     expect(sources).toContain('Marine: Digitraffic, AISStream and Open Waters AIS')
     expect(sources).toContain('Planespotters')
     expect(sources).toContain('Wikimedia Commons')

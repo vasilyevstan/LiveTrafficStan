@@ -2,8 +2,8 @@ import { createHash, randomUUID, timingSafeEqual } from 'node:crypto'
 import { mkdir, readFile, rename, unlink, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 
-export const ADSB_LOL_ORIGIN = 'https://api.adsb.lol'
-export const ADSB_LOL_USER_AGENT =
+export const ADSB_FI_ORIGIN = 'https://opendata.adsb.fi'
+export const AIRCRAFT_USER_AGENT =
   'LiveTrafficStan (+https://github.com/vasilyevstan/LiveTrafficStan)'
 export const MINIMUM_UPSTREAM_INTERVAL_MS = 20_000
 export const MAXIMUM_FALLBACK_BACKOFF_MS = 5 * 60_000
@@ -427,8 +427,8 @@ export const createAircraftRelayHandler = async ({
 
     try {
       const upstreamUrl = point
-        ? `${ADSB_LOL_ORIGIN}/v2/point/${point.latitude}/${point.longitude}/${point.radiusNm}`
-        : `${ADSB_LOL_ORIGIN}/v2/${identifier.by}/${identifier.identifier}`
+        ? `${ADSB_FI_ORIGIN}/api/v3/lat/${point.latitude}/lon/${point.longitude}/dist/${point.radiusNm}`
+        : `${ADSB_FI_ORIGIN}/api/v2/${identifier.by === 'reg' ? 'registration' : identifier.by}/${identifier.identifier}`
       const upstream = await fetchImpl(upstreamUrl, {
         method: 'GET',
         signal: upstreamController.signal,
@@ -436,7 +436,7 @@ export const createAircraftRelayHandler = async ({
         cache: 'no-store',
         headers: {
           Accept: 'application/json',
-          'User-Agent': ADSB_LOL_USER_AGENT,
+          'User-Agent': AIRCRAFT_USER_AGENT,
         },
       })
       const retryAfter = upstream.headers.get('Retry-After')

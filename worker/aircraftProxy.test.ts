@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
-  ADSB_LOL_ORIGIN,
-  ADSB_LOL_USER_AGENT,
+  AIRCRAFT_RELAY_ORIGIN,
+  AIRCRAFT_USER_AGENT,
   handleAircraftProxy,
   type AircraftProxyFetch,
 } from './aircraftProxy.js'
@@ -42,14 +42,14 @@ describe('aircraft proxy', () => {
     expect(response.headers.get('content-type')).toBe('application/json')
     expect(response.headers.get('cache-control')).toBe('no-store')
     expect(fetchImpl).toHaveBeenCalledWith(
-      `${ADSB_LOL_ORIGIN}/v2/point/59.437/24.7536/11`,
+      `${AIRCRAFT_RELAY_ORIGIN}/v2/point/59.437/24.7536/11`,
       expect.objectContaining({
         method: 'GET',
         redirect: 'manual',
         cache: 'no-store',
         headers: {
           Accept: 'application/json',
-          'User-Agent': ADSB_LOL_USER_AGENT,
+          'User-Agent': AIRCRAFT_USER_AGENT,
         },
       }),
     )
@@ -94,7 +94,7 @@ describe('aircraft proxy', () => {
     )
     expect(response.status).toBe(200)
     expect(fetchImpl).toHaveBeenCalledWith(
-      `${ADSB_LOL_ORIGIN}/v2/point/59/24/135`,
+      `${AIRCRAFT_RELAY_ORIGIN}/v2/point/59/24/135`,
       expect.any(Object),
     )
   })

@@ -741,7 +741,7 @@ describe('production smoke policy', () => {
     expect(smokeScript).toContain(
       "response.headers.get('x-livetrafficstan-release') === expectedReleaseSha",
     )
-    expect(smokeScript).toContain('await waitForWorkerRelease(AbortSignal.timeout(180_000))')
+    expect(smokeScript).toContain('await waitForWorkerRelease(aircraftSmokeSignal)')
   })
 
   it('keeps private-relay admission as the only relay retry authority', () => {
@@ -895,25 +895,14 @@ describe('production smoke policy', () => {
     expect(probes).toHaveBeenCalledTimes(2)
   })
 
-  it('supports a browser-origin ADSB.lol delivery smoke', () => {
-    expect(smokeScript).toContain(
-      "aircraftDelivery = 'worker-proxy'",
-    )
-    expect(smokeScript).toContain(
-      "aircraftDelivery === 'adsb-lol-direct'",
-    )
+  it('requires private relay delivery without a direct provider fallback', () => {
+    expect(smokeScript).not.toContain('https://api.adsb.lol')
+    expect(smokeScript).not.toContain('https://opendata.adsb.fi')
+    expect(smokeScript).toContain('ADSB.fi live aircraft delivery requires')
     expect(smokeScript).toContain(
       "aircraftDelivery === 'oci-private-relay'",
     )
-    expect(smokeScript).toContain(
-      "new URL(\n      '/v2/point/59.437/24.754/135',\n      'https://api.adsb.lol',",
-    )
-    expect(smokeScript).toContain(
-      "'Direct aircraft provider did not allow the deployed origin'",
-    )
-    expect(smokeScript).toContain("redirect: 'error'")
-    expect(smokeScript).toContain("cache: 'no-store'")
-    expect(smokeScript).toContain("credentials: 'omit'")
+    expect(smokeScript).toContain('SAME_ORIGIN_SMOKE_FETCH_INIT')
     expect(smokeScript).toContain(
       'body.byteLength <= MAX_AIRCRAFT_RESPONSE_BYTES',
     )

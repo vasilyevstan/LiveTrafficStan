@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { readFile } from 'node:fs/promises'
 import worker, { type WorkerEnv } from './index.js'
-import { ADSB_LOL_USER_AGENT } from './aircraftProxy.js'
+import { AIRCRAFT_USER_AGENT } from './aircraftProxy.js'
 import { ELRON_FEED_URL, ELRON_PROXY_PATH } from './elronProxy.js'
 import {
   ORBITAL_BOOTSTRAP_PATH,
@@ -58,7 +58,7 @@ describe('Cloudflare worker routing', () => {
     expect(assets).not.toHaveBeenCalled()
   })
 
-  it('routes API requests through the proxy and marks the release', async () => {
+  it('fails closed without explicit private delivery instead of using Workers egress', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async () =>
@@ -80,9 +80,10 @@ describe('Cloudflare worker routing', () => {
       env,
     )
 
-    expect(response.status).toBe(200)
+    expect(response.status).toBe(503)
     expect(response.headers.get('x-livetrafficstan-release')).toBe(releaseSha)
     expect(assetsFetch).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
   })
 
   it('routes the protected aircraft mode only through the private relay binding', async () => {
@@ -133,7 +134,7 @@ describe('Cloudflare worker routing', () => {
     })
     expect(new Headers(init?.headers).get('accept')).toBe('application/json')
     expect(new Headers(init?.headers).get('user-agent')).toBe(
-      ADSB_LOL_USER_AGENT,
+      AIRCRAFT_USER_AGENT,
     )
     expect(new Headers(init?.headers).get('authorization')).toBe(
       `Bearer ${authToken}`,

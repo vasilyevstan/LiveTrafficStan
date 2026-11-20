@@ -1,5 +1,35 @@
 # OCI Aircraft Relay
 
+## Current upstream: ADSB.fi
+
+The 2026-11-19 user-directed provider replacement keeps the same private
+transport, credentials, app-owned paths, canonical coordinate/135 NM bounds,
+ten-second deadline, 4 MiB cap, no redirects/cache/CORS, and persistent
+aggregate admission. Only the fixed upstream and wire-payload adapter change.
+The relay translates `/v2/point/{lat}/{lon}/{nm}` to
+`https://opendata.adsb.fi/api/v3/lat/{lat}/lon/{lon}/dist/{nm}` and exact
+`/v2/reg/{reg}` to `/api/v2/registration/{reg}` (hex/callsign keep those names).
+No browser credentials or arbitrary headers reach the provider.
+
+ADSB.fi documents one request/second, personal non-commercial use, linked
+home-page credit, no licensing/sale/rental/leasing, as-is service and possible
+suspension: <https://github.com/adsbfi/opendata>. Keep 20-second starts and one
+in flight. Preserve existing admission state and any current deadline during
+activation; a completed non-429 response clears its failure count normally.
+Do not reset state, rotate identity or introduce fallback. Historical ADSB.lol
+receipts below remain historical, not guarantees about ADSB.fi.
+
+The user-approved free-only IPv4 transport change retains the existing VM,
+VNIC, subnet and gateways. Object Storage routes through the Service Gateway;
+other IPv4 HTTPS uses the existing Internet Gateway. Oracle explicitly
+prohibits an All Services SGW route alongside an IGW target, so the user
+authorized its documented workaround, including Oracle management HTTPS.
+Only stateful outbound IPv4 TCP443 was added; effective public application
+and SSH ingress remain blocked. The included Micro public IP is ephemeral
+but stable across stop/start, never rotated to evade restrictions. The
+protected #725 check returned ADSB.fi HTTP200 and both relay/Tunnel active.
+Keep this network/egress receipt separate from production migration acceptance.
+
 ## Purpose and activation status
 
 Cloudflare Workers' shared outbound network identity can receive an immediate
@@ -68,9 +98,11 @@ The provisioned workload is intentionally limited to:
 - one `VM.Standard.E2.1.Micro`;
 - one 50 GB boot volume;
 - one dedicated VCN, subnet, NSG, Internet Gateway, and Service Gateway;
-- no public IPv4;
-- one stable reserved IPv6 address used for ADSB.lol egress;
-- no public ingress;
+- one included ephemeral public IPv4 on the existing primary VNIC/private IP,
+  stable across stop/start, for ADSB.fi HTTPS egress (no address rotation);
+- one stable reserved IPv6 address retained for existing service/Tunnel paths;
+- no public application/SSH ingress (platform DHCP reply and IPv6
+  packet-too-big control exceptions remain);
 - loopback relay listener `127.0.0.1:8788`;
 - Cloudflare Tunnel egress over QUIC/UDP 7844;
 - expected incremental monthly OCI cost of zero.

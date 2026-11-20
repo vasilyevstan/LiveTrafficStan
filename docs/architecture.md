@@ -77,7 +77,7 @@ weather, and static-asset partial operation remained truthful throughout.
 ```text
                        visibility lifecycle
                                |
-ADSB.lol <- private OCI relay <- Tunnel/VPC <- same-origin aircraft proxy
+ADSB.fi <- private OCI relay <- Tunnel/VPC <- same-origin aircraft proxy
                                                     |
                                      aircraft adapter -> normalized Aircraft[]
                                                         |
@@ -123,7 +123,7 @@ session Home / one-shot location -----------------------+
 
 Local development and preview use fixed Vite same-origin proxies for aircraft
 and weather. Production uses a strict Cloudflare Worker that accepts only the
-validated ADSB.lol point route and canonical AWC METAR route. Plausible route
+validated aircraft point route and canonical AWC METAR route. Plausible route
 lookup is a credential-free direct GET with no Worker state. Ordinary Vite
 development leaves the orbital route disabled; local enabled acceptance runs
 the built client through `wrangler dev --local` so it exercises the actual
@@ -218,7 +218,7 @@ are part of the feature contract.
 | --- | --- |
 | `src/config/` | Typed defaults and validation of browser-safe environment overrides |
 | `src/domain/` | Application-owned traffic/port/airport/weather/flight-route/orbital types, independent traffic and orbital viewport geometry, local discovery and filters, pure country-allocation, exact-IMO vessel-photo, exact-NORAD orbital-enrichment lookup, canonical Saved identities/passive resolution, location-input parsing, versioned preferences/share state, unit conversion, and formatting |
-| `src/providers/aircraft/` | ADSB.lol request, runtime payload checks, normalization, and unit conversion |
+| `src/providers/aircraft/` | ADSB.fi request, runtime payload checks, normalization, and unit conversion |
 | `src/providers/aircraftMetadata/` | Bounded same-origin static metadata loading, provenance/schema/hash validation, exact identity matching, and shard LRU |
 | `src/providers/aircraftPhoto/` | Disabled-by-default direct Planespotters hex lookup, bounded response validation, exact returned-origin enforcement, and typed local failures |
 | `src/providers/flightRoute/` | Direct ADSB.lol standing-route requests, bounded response validation, geographic plausibility checks, typed unavailable/error results, and attribution |
@@ -236,7 +236,7 @@ are part of the feature contract.
 | `src/workers/` | Dedicated orbital protocol, validated pure SGP4 propagation, local crossing prediction, selected-track splitting, and revision fencing |
 | `src/components/` | Status, controls, selected-object details, accessible Save/Remove actions, and Find-integrated Saved presentation |
 | `worker/` | Fixed aircraft and weather proxies plus the feature-gated CelesTrak orbital snapshot scheduler/reader, with sanitized route matching, explicit protected aircraft delivery mode, VPC/KV/Durable Object binding injection, atomic orbital cadence admission, and fail-closed relay authentication |
-| `infra/oci/aircraft-relay/` | Dependency-free fixed ADSB.lol relay, persistent global admission, loopback HTTP adapter, hardened systemd units, exact-SHA deployment, and Tunnel installation |
+| `infra/oci/aircraft-relay/` | Dependency-free fixed ADSB.fi relay, persistent global admission, loopback HTTP adapter, hardened systemd units, exact-SHA deployment, and Tunnel installation |
 | `scripts/pwa-shell.mjs` | Deterministic shell allowlist/versioning, request classification, two-generation cleanup, and normal/retirement worker source |
 | `public/manifest.webmanifest` | Root-scoped standalone install metadata and versioned maskable icons |
 | `public/vessel-photos/` | Immutable reviewed vessel-photo derivatives plus co-located file-specific license records; excluded from the application-shell cache |
@@ -622,20 +622,18 @@ One settled full-canvas sample produces a center rounded to three decimal
 places, an unwrapped polygon, and a conservative enclosing radius. Aircraft
 eligibility extends through 250 km; marine and local airport/weather context
 retain 100 km. Aircraft requests convert their eligible radius to an
-outward-rounded integer nautical-mile query for ADSB.lol. Eligibility is
+outward-rounded integer nautical-mile query for ADSB.fi. Eligibility is
 decided first, so an exact 250 km viewport uses 135 NM (250.02 km) for transport
 without widening the exact display polygon. Between 100 and 250 km the aircraft
 controller continues on its existing cadence while marine receives no query
 and retains its connection and deadlines.
 
-The same adapter can use either the root-relative checked Worker route or the
-fixed public ADSB.lol origin selected at protected build time. Current
-production uses the Worker route. The direct-browser mode changes only
-transport: it preserves the controller, query construction, normalization,
-viewport filtering, cancellation, cadence, and backoff. Browser reads retain a
-12-second timeout and the Worker's 4 MiB response-size ceiling. It may be
-activated only after provider-approved CORS is live; there is no runtime
-failover, aggregation, or client-selected destination.
+The adapter uses the root-relative checked Worker route, with the private OCI
+relay translating to ADSB.fi's fixed v3 point endpoint. Browser reads retain a
+12-second timeout and the Worker's 4 MiB ceiling. There is no direct Worker
+egress, browser fallback, aggregation or client-selected destination. Current
+Find results use ADSB.fi provenance; retained history/share context preserves
+the original provider instead of relabeling historical ADSB.lol data.
 
 Digitraffic REST supplies an initial location snapshot for the same enclosing
 circle and the current vessel metadata set. MQTT then updates location and
@@ -1209,7 +1207,7 @@ The history boundary has two stores:
 - an explicit opt-in IndexedDB store bounded to 1, 6, or 24 hours, 100,000
   records, and 32 MiB logical payload.
 
-Both store only versioned normalized ADSB.lol, Fintraffic Digitraffic or
+Both store only versioned normalized ADSB.fi, legacy ADSB.lol, Fintraffic Digitraffic or
 attributed AISStream/Open Waters observations with provider, license-decision, source-time, receipt-time,
 session, and navigation-segment identity. Interpolation frames, route data,
 destination/ETA, browser location, current METAR, and third-party aircraft
@@ -1220,8 +1218,8 @@ its own observation time, or no earlier than receipt when mixed-source
 metadata has no trustworthy report time. Playback deduplicates vessel IDs
 across providers and retains separate source trail segments.
 
-IndexedDB database version 2 retains the existing record schema, stores,
-consent, recording epoch and rows. It fences old version-1 readers whose
+IndexedDB database version 3 retains the existing record schema, stores,
+consent, recording epoch and rows. It fences old version-1/2 readers whose
 unknown-provider repair would delete new records. Use updated code with the
 supplement disabled for rollback; older code may report a database version
 error but must not be used to erase the store.
@@ -1832,7 +1830,7 @@ and gives only the aircraft proxy one private outbound dependency:
 The production proxy accepts canonical finite latitude/longitude values and
 integer radii from 1 through 135 NM. It rejects query strings, other methods,
 other paths, redirects, responses over 4 MiB, and work exceeding the ten-second
-total deadline. It constructs a fixed ADSB.lol destination, forwards only a
+total deadline. The private relay constructs a fixed ADSB.fi destination, forwards only a
 JSON accept header and stable public project User-Agent, preserves upstream
 status/body/content type/`Retry-After`, and sets no-store behavior in both
 directions.

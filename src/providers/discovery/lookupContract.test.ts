@@ -52,7 +52,7 @@ describe('explicit object query contracts', () => {
   })
 })
 
-describe('qualified ADSB.lol identities', () => {
+describe('qualified ADSB.fi identities', () => {
   it('uses the millisecond snapshot and original seen_pos, never receipt or seen', () => {
     const result = normalizeAircraftLookup(envelope(), aircraftRequest, now + 5_000)
     expect(result.matches[0]).toMatchObject({
@@ -84,6 +84,7 @@ describe('qualified ADSB.lol identities', () => {
     expect(() => normalizeAircraftLookup(envelope([aircraft({ hex: 'def456' })]), aircraftRequest, now)).toThrow()
     expect(() => normalizeAircraftLookup({ ...envelope(), total: 5 }, aircraftRequest, now)).toThrow()
     expect(() => normalizeAircraftLookup(envelope([], now + 120_001), aircraftRequest, now)).toThrow()
+    expect(() => normalizeAircraftLookup(envelope([], now / 1_000), aircraftRequest, now)).toThrow()
   })
   it('accepts documented missing optional identifiers without inventing them', () => {
     expect(normalizeAircraftLookup(envelope([aircraft({ r: null, flight: undefined })]), aircraftRequest, now).matches[0].name).toBeUndefined()

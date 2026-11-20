@@ -1,0 +1,9 @@
+{
+  "now": 1795155990002,
+  "total": 3,
+  "ac": [
+    { "hex": "abc123", "flight": "TEST001", "r": "TEST-1", "t": "A320", "lat": 59.44, "lon": 24.75, "seen": 1.9, "seen_pos": 1.923 },
+    { "hex": "abc124", "flight": "TEST002", "r": "TEST-2", "t": "A320", "lat": 59.45, "lon": 24.76, "seen": 1.9, "seen_pos": 1.923 },
+    { "hex": "abc125", "flight": "TEST003", "r": "TEST-3", "t": "A320", "lat": 59.46, "lon": 24.77, "seen": 1.9, "seen_pos": 1.923 }
+  ]
+}
