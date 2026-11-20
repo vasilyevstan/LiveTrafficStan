@@ -12,7 +12,7 @@ import {
 } from './observations'
 
 export const HISTORY_DATABASE_NAME = 'livetrafficstan-history'
-export const HISTORY_DATABASE_VERSION = 2
+export const HISTORY_DATABASE_VERSION = 3
 const OBSERVATIONS_STORE = 'observations'
 const METADATA_STORE = 'metadata'
 const METADATA_KEY = 'state'

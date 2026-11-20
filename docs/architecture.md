@@ -1218,8 +1218,8 @@ its own observation time, or no earlier than receipt when mixed-source
 metadata has no trustworthy report time. Playback deduplicates vessel IDs
 across providers and retains separate source trail segments.
 
-IndexedDB database version 2 retains the existing record schema, stores,
-consent, recording epoch and rows. It fences old version-1 readers whose
+IndexedDB database version 3 retains the existing record schema, stores,
+consent, recording epoch and rows. It fences old version-1/2 readers whose
 unknown-provider repair would delete new records. Use updated code with the
 supplement disabled for rollback; older code may report a database version
 error but must not be used to erase the store.
