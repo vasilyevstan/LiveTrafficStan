@@ -12,7 +12,7 @@ export function TrafficPauseNotice({
   return (
     <div className={inline ? 'traffic-pause-notice' : 'viewport-notice'}>
       <strong>{retainedSample
-        ? 'Last local traffic sample'
+        ? aircraftPaused ? 'Last local traffic sample' : 'Last reported ships'
         : aircraftPaused ? 'Aircraft and ships paused' : 'Ships paused'}</strong>
       <span>{retainedSample && 'Last local sample; not wider live coverage. '}{message}</span>
       {onResume && (

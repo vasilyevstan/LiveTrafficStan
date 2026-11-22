@@ -63,6 +63,7 @@ interface TrafficDetailsProps {
   now: number
   units: UnitSystem
   historical?: boolean
+  lastReported?: boolean
   onShowJourney?: () => void
   journeyMessage?: string
   onViewFromHere?: () => void
@@ -291,6 +292,7 @@ export function TrafficDetails({
   now,
   units,
   historical = false,
+  lastReported = false,
   onShowJourney,
   journeyMessage,
   journeyPreparing = false,
@@ -315,7 +317,7 @@ export function TrafficDetails({
       : flagStateForMmsi(entity.mmsi)
   const presentation = trafficPresentation(entity)
   const vesselPhotoSelection =
-    entity.kind === 'vessel' && !historical
+    entity.kind === 'vessel' && !historical && !lastReported
       ? vesselReferencePhotoSelection(entity)
       : undefined
   const dynamicVesselPhoto = entity.kind === 'vessel' && !historical && vesselPhotoEnabled
@@ -372,7 +374,7 @@ export function TrafficDetails({
       onClose={onClose}
       headerAction={!historical ? shareObject : undefined}
       mobileActionPlacement="header"
-      actionRow={!historical ? <>
+      actionRow={!historical && !lastReported ? <>
         {onShowJourney && (
           <button type="button" className="traffic-details__icon-action traffic-details__path-action"
             aria-label={journeyPreparing ? 'Loading path' : 'Show path'}
@@ -396,7 +398,7 @@ export function TrafficDetails({
       heading={
         <div>
           <p className="eyebrow">
-            {historical ? 'Historical ' : 'Selected '}
+            {lastReported ? 'Last reported ' : historical ? 'Historical ' : 'Selected '}
             {entity.kind === 'aircraft' ? 'aircraft' : 'ship'}
           </p>
           <div className="details-panel__identity">
@@ -405,6 +407,10 @@ export function TrafficDetails({
         </div>
       }
     >
+      {lastReported && (
+        <p className="metadata-status">Last reported {formatTimestamp(entity.position.observedAt)}.
+          {' '}This position is from the last local area, not the whole map.</p>
+      )}
       {!historical && journeyMessage && (
         <p className="metadata-status" role="status">{journeyMessage}</p>
       )}

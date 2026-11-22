@@ -499,7 +499,9 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     rawZoom?: number
     viewRequestId: number
   } | null>(null)
-  const [lastLocalTrafficView, setLastLocalTrafficView] =
+  const [lastMarineView, setLastMarineView] =
+    useState<LastLocalTrafficView | null>(null)
+  const [lastAircraftView, setLastAircraftView] =
     useState<LastLocalTrafficView | null>(null)
   const [viewRequest, setViewRequest] = useState<ViewRequest>(() => {
     const camera = sharedState?.camera
@@ -842,7 +844,8 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
       setSelectedTrainId(null)
       setHistoryResetRevision((current) => current + 1)
       setViewportReport(null)
-      setLastLocalTrafficView(null)
+      setLastMarineView(null)
+      setLastAircraftView(null)
       setViewReady(true)
       setActiveLocationLabel(label)
       setViewRequest((current) => ({
@@ -1307,31 +1310,32 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     config: APP_CONFIG.saved,
     now,
   })
-  const zoomContextViewport = trafficZoomContextViewport(
-    lastLocalTrafficView,
-    currentAssessment,
-    currentOrbitalRawZoom,
-    viewRequest.id,
-    viewReady && online && !historyActive,
-  )
+  const overviewEnabled = viewReady && online && !historyActive && !capturedViewActive
+  const visibleFootprint = currentAssessment?.viewport ?? null
+  const aircraftReportArea = trafficZoomContextViewport(lastAircraftView, currentAssessment,
+    currentOrbitalRawZoom, viewRequest.id, overviewEnabled, Boolean(currentTrafficViewports.aircraft))
+  const marineReportArea = trafficZoomContextViewport(lastMarineView, currentAssessment,
+    currentOrbitalRawZoom, viewRequest.id, overviewEnabled, Boolean(currentTrafficViewports.marine))
   const contextAircraft = useMemo(
     () =>
       trafficZoomContextEntities(
         aircraftResult.entities,
-        zoomContextViewport,
+        aircraftReportArea,
         now,
         APP_CONFIG.aircraft,
+        visibleFootprint,
       ),
-    [aircraftResult.entities, now, zoomContextViewport],
+    [aircraftResult.entities, now, aircraftReportArea, visibleFootprint],
   )
   const contextVessels = useMemo(
     () =>
       filterVessels(
         trafficZoomContextEntities(
           marineResult.entities,
-          zoomContextViewport,
+          marineReportArea,
           now,
           APP_CONFIG.marine,
+          visibleFootprint,
         ),
         vesselFilters,
         {
@@ -1339,15 +1343,14 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
           expireAfterMs: ZOOM_TRAFFIC_CONTEXT_CONFIG.maximumAgeMs,
         },
       ),
-    [marineResult.entities, now, vesselFilters, zoomContextViewport],
+    [marineResult.entities, now, vesselFilters, marineReportArea, visibleFootprint],
   )
-  const trafficContext = zoomContextViewport !== null
-  const hasTrafficContext =
-    trafficContext &&
-    currentOrbitalRawZoom !== undefined &&
-    currentOrbitalRawZoom > ZOOM_TRAFFIC_CONTEXT_CONFIG.minimumZoom &&
-    ((aircraftVisible && contextAircraft.length > 0) ||
-      (vesselsVisible && contextVessels.length > 0))
+  const reportDots = useMemo(() => [
+    ...(aircraftVisible ? contextAircraft : []),
+    ...(vesselsVisible ? contextVessels : []),
+  ], [aircraftVisible, contextAircraft, vesselsVisible, contextVessels])
+  const hasTrafficContext = reportDots.length > 0
+  const inspectedReport = reportDots.find(report => report.id === selectedId)
   const ports = useMemo(
     () =>
       portsResult.state.phase === 'ready'
@@ -1701,7 +1704,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
   )
 
   useEffect(() => {
-    if (!selectedId) return
+    if (!selectedId || inspectedReport) return
     if (
       !selectedEntity ||
       (selectedEntity.kind === 'aircraft' && !aircraftVisible) ||
@@ -1709,7 +1712,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     ) {
       setSelectedId(null)
     }
-  }, [aircraftVisible, selectedEntity, selectedId, vesselsVisible])
+  }, [aircraftVisible, inspectedReport, selectedEntity, selectedId, vesselsVisible])
 
   useEffect(() => {
     if (!portsVisible && selectedPortId &&
@@ -1815,24 +1818,16 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
         rawZoom,
         viewRequestId: reportViewRequestId,
       })
-      const localViewport =
-        assessment.kind === 'eligible'
-          ? viewportWithinMaximum(
-              assessment.viewport,
-              APP_CONFIG.map.maximumViewportRadiusKm,
-            )
-          : null
+      const { aircraft, marine } = trafficViewportScopes(assessment, APP_CONFIG.map.maximumViewportRadiusKm)
       if (
         reportViewRequestId === viewRequest.id &&
-        localViewport &&
+        aircraft &&
         rawZoom !== undefined &&
         Number.isFinite(rawZoom)
       ) {
-        setLastLocalTrafficView({
-          viewport: localViewport,
-          zoom: rawZoom,
-          viewRequestId: reportViewRequestId,
-        })
+        const at = { zoom: rawZoom, viewRequestId: reportViewRequestId }
+        setLastAircraftView({ ...at, viewport: aircraft })
+        if (marine) setLastMarineView({ ...at, viewport: marine })
       }
     },
     [viewRequest.id],
@@ -2807,7 +2802,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
   const visibleTrafficPause = !sharedObjectNotice && !sharedObject && !capturedViewActive &&
     !orbitalViewMessage && !historyActive && !journey ? trafficPauseNotice : undefined
   const inspectorAvailable = Boolean(
-    selectedEntity ||
+    selectedEntity || inspectedReport ||
     (orbitalObjectsVisible && selectedOrbitalPosition && selectedOrbitalState.snapshot) ||
     (selectedPort && portsResult.state.phase === 'ready') ||
     (selectedAirport && airportsResult.state.phase === 'ready') ||
@@ -2980,9 +2975,10 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
           capturedViewActive || mapError !== null || historyActive || localRuler.phase === 'placing' ||
           (mobileWorkspace && (activeWorkspaceTask !== null || inspectorIdentity !== null))
         }
-        aircraft={capturedAircraftView || capturedOrbitalView && !capturedGroundTraffic ? EMPTY_VIEW_OUTPUT : trafficContext ? contextAircraft : aircraft}
-        vessels={capturedAircraftView || capturedOrbitalView && !capturedGroundTraffic ? EMPTY_VIEW_OUTPUT : trafficContext ? contextVessels : vessels}
-        trafficContext={trafficContext || capturedLocalTraffic}
+        aircraft={capturedAircraftView || capturedOrbitalView && !capturedGroundTraffic ? EMPTY_VIEW_OUTPUT : aircraft}
+        vessels={capturedAircraftView || capturedOrbitalView && !capturedGroundTraffic ? EMPTY_VIEW_OUTPUT : vessels}
+        trafficContext={capturedLocalTraffic}
+        reportDots={reportDots}
         ports={ports}
         airports={airports}
         weatherObservations={weatherObservations}
@@ -3017,8 +3013,8 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
         onReliefStatus={setReliefStatus}
         orbitalVisible={orbitalObjectsVisible && !historyActive && !capturedViewActive}
         starlinkVisible={orbitalObjectsVisible && !historyActive && !capturedViewActive}
-        clusteringEnabled={clusteringEnabled && !trafficContext && !capturedViewActive}
-        interpolateTraffic={!capturedViewActive && !historyActive && !trafficContext}
+        clusteringEnabled={clusteringEnabled && !capturedViewActive}
+        interpolateTraffic={!capturedViewActive && !historyActive}
         interpolationDurationMs={APP_CONFIG.interpolationDurationMs}
         aircraftPhotoEnabled={aircraftPhotoFeatureEnabled && !capturedViewActive}
         aircraftPhoto={hoveredAircraftPhoto.state}
@@ -3496,6 +3492,10 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
           />
         )}
 
+        {!selectedEntity && inspectedReport && !journey && (
+          <TrafficDetails entity={inspectedReport} lastReported aircraftMetadata={{ phase: 'idle' }}
+            now={displayNow} units={units} onClose={handleCloseTraffic} />
+        )}
         {selectedEntity && !journey && (
           <TrafficDetails
             entity={selectedEntity}
