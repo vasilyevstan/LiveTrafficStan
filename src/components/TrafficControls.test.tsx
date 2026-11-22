@@ -747,11 +747,16 @@ describe('TrafficControls', () => {
     props?.onAircraftSelect('aircraft:abcdef', 'find-aircraft')
     props?.onVesselSelect('vessel:230123456', 'find-vessel')
     props?.onNavigate({ latitude: 59, longitude: 24, label: 'Dated report' }, 'aircraft')
+    const target = { liveId: 'aircraft:abcdef', name: 'ES-TST', reportedAt: 1, originId: 'find-report', onOutcome: vi.fn() }
+    props?.onNavigate({ latitude: 59, longitude: 24, label: 'Dated report' }, 'aircraft', target)
     expect(onFindTrafficNavigate.mock.calls).toEqual([
       ['aircraft:abcdef', 'find-aircraft'], ['vessel:230123456', 'find-vessel'],
     ])
     expect(onFindReportNavigate).toHaveBeenCalledWith(
       { latitude: 59, longitude: 24, label: 'Dated report' }, 'aircraft',
+    )
+    expect(onFindReportNavigate).toHaveBeenLastCalledWith(
+      { latitude: 59, longitude: 24, label: 'Dated report' }, 'aircraft', target,
     )
   })
 

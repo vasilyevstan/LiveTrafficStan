@@ -600,8 +600,23 @@ geolocation may update Home silently without taking the camera.
 Before destructive commit, a stable map ref preflights the existing unobstructed
 point-framing calculation. Unsupported latitude or insufficient visual-viewport
 space preserves selection, shared/journey context, trail and view label.
-Successful Locate uses the same persistent map's point framing with a 5 km radius.
-No live entity, marker, metadata/photo request or history record is fabricated.
+Successful Locate uses the same persistent map's point framing with the 20 km ship category radius.
+No live entity, metadata/photo request or history record is fabricated.
+Ship and aircraft Locate then hold one pending live-selection intent
+(`PendingLocatedReport`) tagged with the committed camera-intent revision and a
+`locateLiveSelectionWaitMs` deadline. `evaluateLocatedReport` selects the exact
+`vessel:<mmsi>`/`aircraft:<icao24>` through `selectTraffic` with the Locate button as
+the Find result origin, exactly like a Find live-result **View**: phone details
+suspend Find behind **Back**, and closing details returns focus to Locate. It
+selects only when the current viewport assessment is eligible and
+the object is in received, displayed traffic. Hidden layers/filters report
+immediately; HISTORY, captured views, manual camera intent, framing failure or
+a newer navigation cancel silently; hidden/offline pages report an interrupted
+check rather than absence. Until then `installLocatedReportStyle` draws one
+non-interactive dated `located-last-report` circle/label overlay. It is not
+traffic: no counts, picking, trails, clustering, enrichment or history. It is
+restored after `style.load` and cleared by navigation, HISTORY/captured views
+or selecting that object.
 Original aircraft clocks (`now - seen_pos * 1000`) continue to qualify their
 separate last-report path. Static/modeled/last-reported navigation reuses
 `commitNavigation`, clears old selection/trails and preserves Home, map,

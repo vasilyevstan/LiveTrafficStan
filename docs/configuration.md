@@ -828,9 +828,13 @@ identities remain searchable but cannot use this position operation.
 Cached metadata remains identity-only until that explicit Locate succeeds.
 
 Locate keeps the query, row ordering, result controls and focus. A qualified
-report receives ordinary local framing with a 5 km radius; report and retrieval
-times plus complete track credits are in **Source & age**. This is a dated
-report, not a live marker/selection or a guarantee the vessel remains there.
+report receives ordinary framing with the 20 km ship category radius; report and retrieval
+times plus complete track credits are in **Source & age**. A dated report is
+not a guarantee the vessel remains there. When the same MMSI is received live
+in the framed eligible view within `locateLiveSelectionWaitMs` (30 seconds),
+it is selected exactly as if clicked. Otherwise one temporary dated
+last-report marker remains on the map and the row states whether the ship was
+not received live, hidden by SHIPS/filters, or the check was interrupted.
 No report in the window, a timeout, HTTP/source limits and malformed data are
 distinct outcomes and do not move the map. A newer navigation, selection,
 HISTORY, draft changes, closing Find, hidden/offline state
@@ -844,7 +848,8 @@ not a provider-coverage rule. Successful explicit navigation clears previous
 selection/trails, but never changes Home, filters, layer preferences or provider
 lifetimes/cadence. Ordinary reception may subsequently supply the ship.
 Aircraft original clocks still qualify the compact **Locate** action
-(accessible name **Go to last report**) separately;
+(accessible name **Go to last report**) separately; it uses the same live
+selection wait and dated marker for its exact ICAO24.
 static and modeled points retain their own labels.
 
 Editing/Clear immediately cancels pending object and place work. Closing,
@@ -872,7 +877,8 @@ server boundary. There is no endpoint override, new credential or polling flag.
 | Received metadata age / scan bound | Original timestamps, 24 hours / 50,000 existing records |
 | Aircraft snapshot / position age | At most 10 minutes / 24 hours |
 | Ship position window / snapshot age | 24 hours / at most 10 minutes |
-| Ship local framing / supported latitude | 5 km radius / at most 85 degrees absolute |
+| Ship Locate framing / supported latitude | 20 km category radius / at most 85 degrees absolute |
+| Locate live-selection wait (`locateLiveSelectionWaitMs`) | 30 seconds, covering one aircraft poll cadence |
 | Future-clock tolerance | 120 seconds |
 | Navigable modeled-point age | At most 15 seconds, exact snapshot/owner/element identity |
 

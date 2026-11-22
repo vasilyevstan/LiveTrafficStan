@@ -36,6 +36,8 @@ import { EMPTY_LOCAL_RULER, rulerAllowsDeferredInteraction, type LocalRulerState
 import type { Coordinates } from '../domain/center'
 import { createLocalRulerInteraction, isRulerPlacementTap, rulerCenterIsUsable, type LocalRulerHandle } from './localRulerInteraction'
 import { installLocalRulerStyle } from './localRulerStyle'
+import { installLocatedReportStyle } from './locatedReportStyle'
+import type { LocatedReportMarker } from '../domain/locatedReport'
 import { installEarthDayNightStyle, type EarthDayNightStyleState } from './earthDayNightStyle'
 import type { Port } from '../domain/ports'
 import type { MapProjectionPreference } from '../domain/preferences'
@@ -292,6 +294,7 @@ interface TrafficMapProps {
     onAvailability: (availability: LocalRulerAvailability) => void
     onCancel: () => void
   }
+  locatedReport?: LocatedReportMarker
   aircraft: readonly DisplayAircraft[]
   vessels: readonly DisplayVessel[]
   trafficContext?: boolean
@@ -532,6 +535,7 @@ export function TrafficMap({
   units,
   scaleSuppressed = false,
   ruler,
+  locatedReport,
   aircraft,
   vessels,
   trafficContext = false,
@@ -667,6 +671,7 @@ export function TrafficMap({
   const attributionControlRef = useRef<InitiallyCompactAttributionControl | null>(null)
   const scaleControlRef = useRef<LocalScaleControl | null>(null)
   const localRulerRef = useRef(ruler)
+  const locatedReportRef = useRef(locatedReport)
   const localRulerInteractionRef = useRef<ReturnType<typeof createLocalRulerInteraction> | null>(null)
   const scalePresentationRef = useRef({
     projection: projectionPreference,
@@ -1561,6 +1566,7 @@ export function TrafficMap({
       lastStarlinkFeaturesRef.current = starlinkPoints.features
       installJourneyStyle(map, journeySnapshotRef.current, activeTheme)
       installLocalRulerStyle(map, localRulerRef.current?.read().points ?? EMPTY_LOCAL_RULER.points, activeTheme)
+      installLocatedReportStyle(map, locatedReportRef.current, activeTheme)
       placeModelLayer(map)
       loadedRef.current = true
       applyModelActivity(map, true)
@@ -1754,6 +1760,12 @@ export function TrafficMap({
       installLocalRulerStyle(map, ruler?.read().points ?? EMPTY_LOCAL_RULER.points, theme)
     }
   }, [projectionPreference, ruler, theme])
+
+  useEffect(() => {
+    locatedReportRef.current = locatedReport
+    const map = mapRef.current
+    if (map && loadedRef.current) installLocatedReportStyle(map, locatedReport, theme)
+  }, [locatedReport, theme])
 
   useEffect(() => {
     selectRef.current = onSelect
