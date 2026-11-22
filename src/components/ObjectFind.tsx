@@ -11,6 +11,12 @@ import { countryForAircraftHex, flagStateForMmsi, type CountryAllocation } from 
 import { formatAge } from '../domain/format'
 import type { CachedMarineDiscovery, DiscoveryMatch, DiscoveryResponse } from '../domain/objectDiscovery'
 import { qualifiedLastReport } from '../domain/objectDiscovery'
+import {
+  locatedReportLiveId,
+  locatedReportMessage,
+  type LocatedReportKind,
+  type LocatedReportTarget,
+} from '../domain/locatedReport'
 import { orbitalObjectTypeLabel, type OrbitalControllerState } from '../domain/orbital'
 import { orbitalCatalogPage, orbitalSearchAliases } from '../domain/orbitalDiscovery'
 import { matchesSavedObjectQuery } from '../domain/savedObjectResolution'
@@ -34,7 +40,12 @@ import { ObjectResultButton } from './ObjectResultButton'
 import { SavedObjects } from './SavedObjects'
 import type { LocationSearchModel } from './useLocationSearchModel'
 
-export type ShipLocateNavigation = (center: AppCenter, onFramingError: (message: string) => void) => boolean
+export type ShipLocateNavigation = (
+  center: AppCenter,
+  onFramingError: (message: string) => void,
+  target?: LocatedReportTarget,
+) => boolean
+export type ReportNavigation = (center: AppCenter, kind: LocatedReportKind, target?: LocatedReportTarget) => void
 
 interface ObjectFindProps {
   model: LocationSearchModel
@@ -46,7 +57,7 @@ interface ObjectFindProps {
   paused: boolean
   now: number
   navigationDisabled: boolean
-  onNavigate: (center: AppCenter, kind: 'aircraft' | 'vessel') => void
+  onNavigate: ReportNavigation
   onBeginShipLocate: () => ShipLocateNavigation | null
   aircraft: readonly DisplayAircraft[]
   vessels: readonly DisplayVessel[]
@@ -143,18 +154,25 @@ interface ShipLocateResults {
   state: ObjectLookupState
   message?: string
   disabled: boolean
-  onLocate: (match: DiscoveryMatch) => void
+  onLocate: (match: DiscoveryMatch, originId: string) => void
+}
+
+interface ReportLocateResults {
+  key: string | null
+  message?: string
+  onLocate: (match: DiscoveryMatch, center: AppCenter, kind: LocatedReportKind, name: string, originId: string) => void
 }
 
 function IdentityRow({
-  match, result, now, navigationDisabled, onNavigate, shipLocate,
+  match, result, now, navigationDisabled, onNavigate, shipLocate, reportLocate,
 }: {
   match: DiscoveryMatch
   result: DiscoveryResponse
   now: number
   navigationDisabled: boolean
-  onNavigate: (center: AppCenter, kind: 'aircraft' | 'vessel') => void
+  onNavigate: ReportNavigation
   shipLocate?: ShipLocateResults
+  reportLocate?: ReportLocateResults
 }) {
   const canNavigate = !navigationDisabled && qualifiedLastReport(match, result, now) !== null
   const ownsLocate = shipLocate?.key === match.key
@@ -192,19 +210,22 @@ function IdentityRow({
           aria-label={`Locate ${match.name ?? 'ship'}, MMSI ${match.identifiers.mmsi}`}
           disabled={navigationDisabled || shipLocate.disabled || !supportedMmsi}
           aria-disabled={locating || undefined} aria-busy={locating || undefined}
-          onSelect={() => { if (!locating) shipLocate.onLocate(match) }}>{locating ? 'Locating…' : 'Locate'}</ObjectResultButton>
+          onSelect={(originId) => { if (!locating) shipLocate.onLocate(match, originId) }}>{locating ? 'Locating…' : 'Locate'}</ObjectResultButton>
       ) : canNavigate && match.location ? (
-        <ObjectResultButton prefix="object-find-result" aria-label={`Go to last report for ${label}`} onSelect={() => {
+        <ObjectResultButton prefix="object-find-result" aria-label={`Go to last report for ${label}`} onSelect={(originId) => {
           if (!qualifiedLastReport(match, result, Date.now()) || !match.location) return
-          onNavigate({ latitude: match.location.latitude, longitude: match.location.longitude, label: `Last report: ${label}` },
-            ship ? 'vessel' : 'aircraft')
+          const center = { latitude: match.location.latitude, longitude: match.location.longitude, label: `Last report: ${label}` }
+          const kind = ship ? 'vessel' : 'aircraft'
+          if (reportLocate) reportLocate.onLocate(match, center, kind, label, originId)
+          else onNavigate(center, kind)
         }}>Locate</ObjectResultButton>
       ) : undefined}
       meta={<span title={provenance}>{source.name} · {location
         ? <time dateTime={new Date(location.reportedAt).toISOString()} role={located?.location ? 'status' : undefined}>Last report {formatAge(location.reportedAt, now)}</time>
         : 'Identity only'}</span>}
       status={ship && !supportedMmsi ? 'Position lookup requires a supported nine-digit MMSI.' :
-        ownsLocate && !locating ? shipLocate.state.phase === 'error' ? shipLocate.state.message : shipLocate.message : undefined} />
+        ownsLocate && !locating ? shipLocate.state.phase === 'error' ? shipLocate.state.message : shipLocate.message :
+          !ship && reportLocate?.key === match.key ? reportLocate.message : undefined} />
   )
 }
 
@@ -212,8 +233,9 @@ export function IdentityResults(props: {
   result: DiscoveryResponse
   now: number
   navigationDisabled: boolean
-  onNavigate: (center: AppCenter, kind: 'aircraft' | 'vessel') => void
+  onNavigate: ReportNavigation
   shipLocate?: ShipLocateResults
+  reportLocate?: ReportLocateResults
 }) {
   return <>
     <p className="control-note" role="status">{props.result.matches.length} {props.result.matches.length === 1 ? 'match' : 'matches'}{props.result.truncated && ' · partial, limit reached'}.</p>
@@ -252,6 +274,7 @@ export function ObjectFind(props: ObjectFindProps) {
   const [locateKey, setLocateKey] = useState<string | null>(null)
   const [locateMessage, setLocateMessage] = useState<string>()
   const locateOwnerRef = useRef<{ key: string; navigate: ShipLocateNavigation } | null>(null)
+  const locateOutcomeRef = useRef<object | null>(null)
   const locatingRef = useRef<string | null>(null)
   const [locator] = useState(() => new ObjectLookupController({ provider: lookupProvider, onState: setLocateState }))
   const remoteActive = active && !paused
@@ -273,6 +296,7 @@ export function ObjectFind(props: ObjectFindProps) {
   }, [remoteActive, navigationDisabled, locateState])
   const cancelShipLocate = useCallback(() => {
     locateOwnerRef.current = null
+    locateOutcomeRef.current = null
     locatingRef.current = null
     locator.cancel()
     setLocateKey(null)
@@ -351,11 +375,26 @@ export function ObjectFind(props: ObjectFindProps) {
   ), [props.curated, props.starlink, props.selectedOrbitalId, now])
   const cachedShips = useMemo(() => [...query].length >= 2 ? discoverMarineMetadata?.(query, now) : undefined,
     [query, now, discoverMarineMetadata])
-  const locateShip = async (match: DiscoveryMatch) => {
+  const locatedReportTarget = (
+    match: DiscoveryMatch, kind: LocatedReportKind, name: string, reportedAt: number, originId: string,
+  ): LocatedReportTarget | undefined => {
+    const liveId = locatedReportLiveId(match)
+    if (!liveId) return undefined
+    const token = {}
+    locateOutcomeRef.current = token
+    return {
+      liveId, name, reportedAt, originId,
+      onOutcome: (outcome) => {
+        if (locateOutcomeRef.current === token) setLocateMessage(locatedReportMessage(outcome, kind))
+      },
+    }
+  }
+  const locateShip = async (match: DiscoveryMatch, originId: string) => {
     const mmsi = match.identifiers.mmsi
     if (!locateAllowedRef.current || document.hidden || !navigator.onLine ||
       parseMarineMmsi(mmsi) === undefined || !mmsi || locatingRef.current === match.key) return
     locateOwnerRef.current = null
+    locateOutcomeRef.current = null
     locatingRef.current = null
     locator.cancel()
     const navigate = props.onBeginShipLocate()
@@ -383,18 +422,28 @@ export function ObjectFind(props: ObjectFindProps) {
       return
     }
     let framingError: string | undefined
+    const name = match.name ?? mmsi
     const navigated = owner.navigate({
-      latitude: point.latitude, longitude: point.longitude, label: `Last report: ${match.name ?? mmsi}`,
+      latitude: point.latitude, longitude: point.longitude, label: `Last report: ${name}`,
     }, (message) => {
       framingError = message
       if (locateOwnerRef.current === owner) setLocateMessage(message)
-    })
+    }, locatedReportTarget(match, 'vessel', name, point.reportedAt, originId))
     setLocateMessage(framingError ?? (navigated ? undefined :
       'Report found; a newer action kept the map unchanged.'))
   }
   const shipLocate: ShipLocateResults = {
     key: locateKey, state: locateState, message: locateMessage, disabled: !remoteActive,
-    onLocate: (match) => { void locateShip(match) },
+    onLocate: (match, originId) => { void locateShip(match, originId) },
+  }
+  const reportLocate: ReportLocateResults = {
+    key: locateKey, message: locateMessage,
+    onLocate: (match, center, kind, name, originId) => {
+      if (!match.location) return
+      cancelShipLocate()
+      setLocateKey(match.key)
+      onNavigate(center, kind, locatedReportTarget(match, kind, name, match.location.reportedAt, originId))
+    },
   }
   const rows: Result[] = []
   const savedMatches = savedEntries.filter((entry) => matchesSavedObjectQuery(entry, query))
@@ -454,7 +503,8 @@ export function ObjectFind(props: ObjectFindProps) {
         rows.push({
           key: identity, label, identities: Object.values(match.identifiers).filter((value): value is string => Boolean(value)),
           content: <IdentityRow match={match} result={result} now={now} navigationDisabled={navigationDisabled}
-            onNavigate={onNavigate} shipLocate={match.objectClass === 'ships' ? shipLocate : undefined} />,
+            onNavigate={onNavigate} shipLocate={match.objectClass === 'ships' ? shipLocate : undefined}
+            reportLocate={match.objectClass === 'ships' ? undefined : reportLocate} />,
         })
       }
     }

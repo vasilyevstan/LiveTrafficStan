@@ -455,9 +455,12 @@ fallback, token use, cache, polling or archive download.
 
 A qualified report may navigate once to a dated local view. Report/retrieval
 times and original track credits remain visible, with no current-position or
-live-reception promise. Locate does not manufacture a traffic entity, marker,
-count, selection, trail, enrichment/photo request or history record. Ordinary
-reception after navigation keeps its independent filters/freshness contract.
+live-reception promise. Locate does not manufacture a traffic entity, count,
+trail, enrichment/photo request or history record. It selects only the exact
+object already received through ordinary reception in the framed view; its
+temporary dated last-report overlay is a non-interactive annotation of that
+report, not a traffic marker or current position.
+Ordinary reception after navigation keeps its independent filters/freshness contract.
 Safe map framing, including the conservative absolute 85-degree latitude bound,
 is separate from whether the provider has a geographically valid point.
 

@@ -21,6 +21,7 @@ export const DISCOVERY_CONFIG = {
   shipPositionMaximumCredits: 8,
   maximumShipSnapshotAgeMs: 10 * 60_000,
   shipPositionMaximumLatitude: 85,
+  locateLiveSelectionWaitMs: 30_000,
   aircraftCooldownMs: 20_000,
   shipsCooldownMs: 5_000,
   rateLimitFallbackMs: 60_000,

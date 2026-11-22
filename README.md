@@ -93,7 +93,11 @@ and [delivery evidence](https://github.com/vasilyevstan/LiveTrafficStan/issues/5
 **Locate a ship outside the view (#574):** Find's explicit ship search first
 returns identities. Choose a row's **Locate** to request its newest reported
 position in the last 24 hours and move the existing map there at useful local
-zoom. The report keeps its actual time and credits; it is not a live marker.
+zoom. The report keeps its actual time and credits. If that ship is received
+live in the framed view within 30 seconds, it is selected exactly as if
+clicked and its details open (on phones, **Back** returns to Find). Otherwise a temporary dated **last report** map marker and a row note
+say it was not received live there (or is hidden by SHIPS/filters); the marker
+is not traffic and clears on the next navigation or selection of that object.
 Missing reports, errors or unsafe framing leave the current view and context intact.
 Query/list/focus stay intact and newer user intent wins over delayed work.
 There is no new account, feed, poller, dependency or saved-state change.
@@ -734,7 +738,9 @@ identity are not renamed or reset.
   time attributes; complete credits and the limits link stay under **Sources**.
   Ship search supplies no position or city: **Locate** explicitly requests
   one newest original-clock report within 24 hours. Aircraft **Locate**
-  navigates only to a qualified last report, not a synthetic live selection.
+  navigates only to a qualified last report. Either Locate selects the object
+  as if clicked when it is received live in the framed view within 30 seconds;
+  otherwise a temporary dated last-report marker and row note stay truthful.
   Received objects use normal **View**; hidden layers/filters keep a reason.
   Activating a result frames geographic context appropriate to its category:
   aircraft 25 km, ships 20 km, airports/ports 40 km, places 50 km, and satellites
