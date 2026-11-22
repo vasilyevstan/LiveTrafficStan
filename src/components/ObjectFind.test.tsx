@@ -6,6 +6,7 @@ import { qualifiedLastReport, SHIP_POSITION_SOURCE } from '../domain/objectDisco
 import { DISCOVERY_CONFIG } from '../config/discoveryConfig'
 import { APP_CONFIG } from '../config/appConfig'
 import { IdentityResults, ObjectFind } from './ObjectFind'
+import { locatedReportLiveId, locatedReportMessage } from '../domain/locatedReport'
 import type { LocationSearchModel } from './useLocationSearchModel'
 import type { DisplayAircraft, DisplayVessel } from '../domain/traffic'
 import { parseLocationInput } from '../domain/locationInput'
@@ -524,7 +525,7 @@ describe('explicit ship Locate row presentation', () => {
     expect(onLocate).not.toHaveBeenCalled()
     expect(fetchMock).not.toHaveBeenCalled()
     resultActions[0]('opaque-origin')
-    expect(onLocate).toHaveBeenCalledExactlyOnceWith(ship)
+    expect(onLocate).toHaveBeenCalledExactlyOnceWith(ship, 'opaque-origin')
   })
   it('keeps Received identity-only and retains qualified aircraft last-report navigation', () => {
     const html = renderShips()
@@ -625,5 +626,41 @@ describe('explicit ship Locate row presentation', () => {
     const html = renderShips(locator({ disabled: true }))
     expect(html.match(/ disabled=""/g)).toHaveLength(2)
     expect(renderShips(locator(), true).match(/ disabled=""/g)).toHaveLength(2)
+  })
+  it.each(['hidden', 'not-live', 'interrupted'] as const)('shows the live-check outcome beside the located ship row: %s', (outcome) => {
+    const message = locatedReportMessage(outcome, 'vessel')!
+    const html = renderShips(locator({ key: ship.key, message }))
+    expect(html).toContain(message)
+    expect(html.indexOf(message)).toBeGreaterThan(html.indexOf('TEST SHIP'))
+    expect(html.indexOf(message)).toBeLessThan(html.indexOf('OTHER SHIP'))
+  })
+})
+
+describe('aircraft last-report Locate ownership', () => {
+  const aircraft: DiscoveryMatch = {
+    objectClass: 'aircraft', key: 'adsb-fi:abc123', identifiers: { icao24: 'ABC123', registration: 'ES-TST' },
+    metadataReportedAt: now, source: { name: 'ADSB.fi', code: 'ADSB.fi', credit: 'ADSB.fi · personal, non-commercial use' },
+    location: { latitude: 59.44, longitude: 24.75, reportedAt: now - 30_000 },
+  }
+  const other: DiscoveryMatch = { ...aircraft, key: 'adsb-fi:def456', identifiers: { icao24: 'DEF456', registration: 'ES-OTH' } }
+  const result: DiscoveryResponse = {
+    objectClass: 'aircraft', retrievedAt: now, truncated: false, rejectedRecords: 0, matches: [aircraft, other],
+  }
+  it('routes Locate through the owner with the dated report and shows only that row’s outcome', () => {
+    vi.spyOn(Date, 'now').mockReturnValue(now)
+    const onNavigate = vi.fn()
+    const onLocate = vi.fn()
+    const message = locatedReportMessage('not-live', 'aircraft')!
+    const html = renderToStaticMarkup(<IdentityResults result={result} now={now} navigationDisabled={false}
+      onNavigate={onNavigate} reportLocate={{ key: aircraft.key, message, onLocate }} />)
+    expect(html.match(new RegExp(message.replace(/[.]/g, '\\.'), 'g'))).toHaveLength(1)
+    expect(html.indexOf(message)).toBeLessThan(html.indexOf('ES-OTH'))
+    resultActions[0]('opaque-origin')
+    expect(onLocate).toHaveBeenCalledExactlyOnceWith(aircraft,
+      { latitude: 59.44, longitude: 24.75, label: 'Last report: ES-TST' }, 'aircraft', 'ES-TST', 'opaque-origin')
+    expect(onNavigate).not.toHaveBeenCalled()
+  })
+  it('derives the exact live traffic identity used for selection', () => {
+    expect(locatedReportLiveId(aircraft)).toBe('aircraft:abc123')
   })
 })

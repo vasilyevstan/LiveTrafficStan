@@ -105,6 +105,13 @@ import type { Coordinates } from './domain/center'
 import type { ShipLocateNavigation } from './components/ObjectFind'
 import { DISCOVERY_CONFIG } from './config/discoveryConfig'
 import {
+  evaluateLocatedReport,
+  type LocatedReportKind,
+  type LocatedReportMarker,
+  type LocatedReportTarget,
+  type PendingLocatedReport,
+} from './domain/locatedReport'
+import {
   createShareUrl,
   readBrowserShareState,
 } from './domain/shareState'
@@ -214,6 +221,8 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
   const sharedOrbitalVisibilityRef = useRef<((id: string) => boolean) | null>(null)
   const sharedObjectMountRef = useRef(0)
   const findTrafficSelectionRef = useRef<{ entity: DisplayTrafficEntity; viewRequestId: number } | undefined>(undefined)
+  const pendingLocatedReportRef = useRef<PendingLocatedReport | undefined>(undefined)
+  const [locatedReport, setLocatedReport] = useState<LocatedReportMarker>()
   const appShellRef = useRef<HTMLElement>(null)
   const workspaceControlsRef = useRef<WorkspaceControlsHandle>(null)
   const rulerMapRef = useRef<LocalRulerHandle>(null)
@@ -631,7 +640,12 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
   const online = useOnlineStatus()
   useEffect(() => {
     const pause = () => {
-      if (document.hidden || !navigator.onLine || !online) cancelJourneyPreparation()
+      if (document.hidden || !navigator.onLine || !online) {
+        cancelJourneyPreparation()
+        const pending = pendingLocatedReportRef.current
+        pendingLocatedReportRef.current = undefined
+        pending?.onOutcome('interrupted')
+      }
     }
     pause()
     document.addEventListener('visibilitychange', pause)
@@ -834,6 +848,8 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
       if (options.explicit !== false) {
         locationCameraIntent.beginExplicitViewIntent()
       }
+      pendingLocatedReportRef.current = undefined
+      setLocatedReport(undefined)
       detailFocusOriginIdRef.current = null
       setSelectedId(null)
       setSelectedOrbitalId(null)
@@ -856,7 +872,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
         onFramingError: options.onFramingError,
       }))
     },
-    [cancelPlaceSearch, cancelSharedObject, clearJourney, clearLocalRuler, finishCapturedViews, locationCameraIntent],
+    [cancelPlaceSearch, cancelSharedObject, clearJourney, clearLocalRuler, finishCapturedViews, locationCameraIntent, setLocatedReport],
   )
 
   useEffect(() => {
@@ -1896,11 +1912,52 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     },
     [commitNavigation],
   )
-  const handleFindReportNavigate = useCallback(
-    (center: AppCenter, kind: 'aircraft' | 'vessel') => {
-      commitNavigation(center, center.label, { radiusKm: FIND_VIEW_RADIUS_KM[kind] })
+  const navigateToLocatedReport = useCallback(
+    (
+      center: AppCenter,
+      kind: LocatedReportKind,
+      target: LocatedReportTarget | undefined,
+      onFramingError?: (message: string) => void,
+    ) => {
+      const revision = locationCameraIntent.beginExplicitViewIntent()
+      let pending: PendingLocatedReport | undefined
+      let marker: LocatedReportMarker | undefined
+      const reportFramingError = (message: string) => {
+        if (pending && pendingLocatedReportRef.current === pending) pendingLocatedReportRef.current = undefined
+        const failed = marker
+        if (failed) setLocatedReport(current => current === failed ? undefined : current)
+        ;(onFramingError ?? setSharedObjectNotice)(message)
+      }
+      commitNavigation(center, center.label, {
+        explicit: false, radiusKm: FIND_VIEW_RADIUS_KM[kind], onFramingError: target ? reportFramingError : onFramingError,
+      })
+      if (!target) return
+      pending = {
+        liveId: target.liveId,
+        kind,
+        revision,
+        deadline: performance.now() + DISCOVERY_CONFIG.locateLiveSelectionWaitMs,
+        originId: target.originId,
+        onOutcome: target.onOutcome,
+      }
+      marker = {
+        liveId: target.liveId,
+        kind,
+        name: target.name,
+        latitude: center.latitude,
+        longitude: center.longitude,
+        reportedAt: target.reportedAt,
+      }
+      pendingLocatedReportRef.current = pending
+      setLocatedReport(marker)
     },
-    [commitNavigation],
+    [commitNavigation, locationCameraIntent, setLocatedReport],
+  )
+  const handleFindReportNavigate = useCallback(
+    (center: AppCenter, kind: LocatedReportKind, target?: LocatedReportTarget) => {
+      navigateToLocatedReport(center, kind, target)
+    },
+    [navigateToLocatedReport],
   )
   const handleBeginShipLocate = useCallback((): ShipLocateNavigation | null => {
     if (!shipLocateAllowedRef.current || document.hidden || !navigator.onLine) return null
@@ -1909,7 +1966,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
       cancelSharedObject()
       setViewReady(true)
     }
-    return (center, onFramingError) => {
+    return (center, onFramingError, target) => {
       if (!shipLocateAllowedRef.current || !locationCameraIntent.isCurrent(revision) ||
         document.hidden || !navigator.onLine) return false
       if (Math.abs(center.latitude) > DISCOVERY_CONFIG.shipPositionMaximumLatitude) {
@@ -1920,12 +1977,10 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
         onFramingError('Close a menu or enlarge the view to frame this position. Your view was kept.')
         return false
       }
-      commitNavigation(center, center.label, {
-        radiusKm: FIND_VIEW_RADIUS_KM.vessel, onFramingError,
-      })
+      navigateToLocatedReport(center, 'vessel', target, onFramingError)
       return true
     }
-  }, [cancelSharedObject, commitNavigation, locationCameraIntent, objectShareStartup])
+  }, [cancelSharedObject, locationCameraIntent, navigateToLocatedReport, objectShareStartup])
 
   const handlePlaceResultSelect = useCallback(
     (result: PlaceSearchResult) => {
@@ -2038,8 +2093,9 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
       setSelectedWeatherId(null)
       setSelectedTrainId(null)
       setSelectedId(id)
+      if (id) setLocatedReport(current => current?.liveId === id ? undefined : current)
     },
-    [cancelSharedObject, clearJourney, finishCapturedViews, locationCameraIntent],
+    [cancelSharedObject, clearJourney, finishCapturedViews, locationCameraIntent, setLocatedReport],
   )
 
   const handleMapTrafficSelect = useCallback(
@@ -2549,6 +2605,40 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     currentOrbitalViewport, displayEntities, handleCaptureOrbitalView, historyActive, now, orbitalFilters, orbitalObjectsVisible,
     selectOrbital, selectTraffic, sharedObject, sharedObjectFilters, vesselsVisible, orbitalState, starlinkState])
 
+  useEffect(() => {
+    if (historyActive || capturedViewActive) setLocatedReport(undefined)
+  }, [capturedViewActive, historyActive])
+
+  useEffect(() => {
+    const pending = pendingLocatedReportRef.current
+    if (!pending) return
+    const liveList = pending.kind === 'aircraft' ? aircraft : currentVessels
+    const live = liveList.some(entity => entity.id === pending.liveId)
+    const selectable = pending.kind === 'aircraft'
+      ? aircraftVisible && live
+      : vesselsVisible && vessels.some(entity => entity.id === pending.liveId)
+    const decision = evaluateLocatedReport(pending, {
+      now: performance.now(),
+      current: locationCameraIntent.isCurrent(pending.revision),
+      paused: historyActive || capturedViewActive,
+      interrupted: document.hidden || !online,
+      assessment: currentAssessment?.kind ?? 'pending',
+      live,
+      selectable,
+    })
+    if (decision === 'wait') return
+    pendingLocatedReportRef.current = undefined
+    if (decision === 'cancel') return
+    if (decision === 'select') {
+      // Same origin as a Find "View" result: phone details suspend Find, and closing returns to Locate.
+      selectTraffic(pending.liveId, pending.originId)
+      pending.onOutcome('selected')
+      return
+    }
+    pending.onOutcome(decision)
+  }, [aircraft, aircraftVisible, capturedViewActive, currentAssessment, currentVessels, historyActive,
+    locationCameraIntent, now, online, selectTraffic, vessels, vesselsVisible])
+
   const sharedOrbitalView = sharedObject?.context.kind === 'orbital' && sharedObject.context.view === 'from-here'
   const sharedObjectMessage = sharedOrbitalView
     ? orbitalViewMessage ?? (projectionPreference !== 'auto'
@@ -2971,6 +3061,7 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
         projectionPreference={projectionPreference}
         units={units}
         ruler={rulerBinding}
+        locatedReport={locatedReport}
         scaleSuppressed={
           capturedViewActive || mapError !== null || historyActive || localRuler.phase === 'placing' ||
           (mobileWorkspace && (activeWorkspaceTask !== null || inspectorIdentity !== null))

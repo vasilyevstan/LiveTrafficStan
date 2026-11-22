@@ -422,7 +422,15 @@ rate limits are not empty reports.
 
 A successful Locate frames a dated report, not a synthetic live ship. The
 normal enabled layers, filters, reception and observation expiry still decide
-whether a live marker/details appears. The compact source/age line uses the
+whether a live marker/details appears. If the exact ship or aircraft is
+received live in the framed view within 30 seconds, it is selected as if
+clicked. Otherwise a temporary dated **last report** marker shows where the
+report was, and the row explains the outcome: **Not received live in this
+view** (the object may have moved or left coverage), **hidden by SHIPS/AIRCRAFT
+or map filters** (enable the layer or relax filters, then select it), or
+**Live check stopped** (the page was hidden/offline before traffic was
+confirmed). The marker is not traffic and clears on the next navigation. The
+compact source/age line uses the
 original report clock, not retrieval time. Exact clocks remain in native
 provenance tooltips; **Sources** retains full contributing credits. Result
 names no longer expand into explanatory dossiers. No filter or Home override
@@ -430,8 +438,8 @@ occurs. If a newer action kept the map unchanged, Locate again deliberately;
 there is no following or automatic retry. If framing is unavailable, close a
 menu or enlarge the visible view; reports beyond 85 degrees latitude cannot use
 this conservative local fit. Failed framing preserves the previous context.
-Aircraft last reports still require their own original clocks and do not
-become live selections.
+Aircraft last reports still require their own original clocks and use the
+same live-selection check and dated marker.
 
 Registry flags are MMSI flag state/ICAO24 allocation, not the object's current
 country or city. Ship search supplies no city; the app does not invent one.

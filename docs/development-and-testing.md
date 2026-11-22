@@ -364,6 +364,41 @@ are distinct from the already accepted three anonymous feasibility reads.
 The [#574 delivery receipt](https://github.com/vasilyevstan/LiveTrafficStan/issues/574)
 separately records actual released/public behavior and publication.
 
+### Locate live selection and dated last-report marker (#728)
+
+Open Waters can return a report up to 24 hours old, while live ships expire
+after ten minutes and aircraft after 120 seconds, so Locate alone could frame
+an empty map. Deterministic `locatedReport`, `locatedReportStyle`, ObjectFind
+and TrafficControls regressions cover live-ID derivation, the
+cancel/interrupted/select/hidden/wait/not-live order, row-scoped messages,
+the Locate result origin and the idempotent, theme-aware overlay install.
+All eight local gates pass: lint at the 205-warning `dev` baseline, typecheck,
+**255 files / 3,144 tests**, the four data checks and build.
+
+Native headless Chrome 157.0.8103.79 accepted the final code, rebased on
+#731, at 2026-11-22 21:46:21-21:49:08 UTC against the local dev server with
+real Digitraffic and ADSB.fi traffic; CDP fixtures replaced only
+`/api/find/*`. Each phase measured its actual viewport and one MapLibre map.
+Successive ship searches wait out the existing 5-second ships lookup
+cooldown; an earlier immediate resubmit correctly showed "Lookup is limited".
+
+- Desktop 1280x900: live `vessel:246830000` Located from an away view was
+  selected in **2,425 ms** with its details open and no marker. A 3-hour-old
+  fixture report rendered three marker features in canvas after 1,833 ms and
+  showed "Not received live in this view..." after a further 28,537 ms. The
+  marker survived Light to Dark style replacement and cleared on navigation.
+  SHIPS off showed the hidden note in 1,361 ms; offline emulation during a
+  pending check showed "Live check stopped..." in 65 ms. Live
+  `aircraft:4ba9f9` was selected through **Go to last report** in 2,324 ms
+  and its marker cleared.
+- Phone 390x844, emulated touch: live `vessel:236111974` was selected in
+  **2,666 ms**; details replaced Find exactly like a Find **View** result,
+  and **Back** restored Find with focus on that row's Locate button. A stale
+  fixture rendered the marker in canvas after 1,767 ms and the not-live note
+  after the 30-second wait.
+
+These are not physical-device, GPU or real Open Waters report claims.
+
 ### Ordinary top-down map detail (#522)
 
 The #518 automatic land-cover fills were too subtle to establish noticeably
