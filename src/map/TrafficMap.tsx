@@ -196,6 +196,7 @@ import {
 } from './trafficFeatures'
 import type { VesselFlagImages } from './vesselFlagImages'
 import { sampleTrafficZoomContext } from './trafficZoomContext'
+import { REPORT_DOTS, renderReportDots } from './reportDots'
 import {
   createTrafficTooltipElement,
 } from './trafficTooltip'
@@ -227,6 +228,7 @@ type CapturedHostedView =
 const EMPTY_ORBITAL_IDS: readonly string[] = []
 const EMPTY_ORBITAL_TRACK: readonly OrbitalTrackSegment[] = []
 const EMPTY_TRAINS: readonly DisplayTrain[] = []
+const NO_REPORTS: readonly DisplayTrafficEntity[] = []
 const EMPTY_TRAIN_SOURCES: readonly TrainSourceId[] = []
 const DATA_CREDITS_LINK =
   '<a href="https://github.com/vasilyevstan/LiveTrafficStan/blob/main/docs/data-sources-and-licensing.md" target="_blank" rel="noreferrer">Data credits</a>'
@@ -293,6 +295,7 @@ interface TrafficMapProps {
   aircraft: readonly DisplayAircraft[]
   vessels: readonly DisplayVessel[]
   trafficContext?: boolean
+  reportDots?: readonly DisplayTrafficEntity[]
   ports: readonly Port[]
   airports: readonly Airport[]
   weatherObservations: readonly DisplayWeatherObservation[]
@@ -532,6 +535,7 @@ export function TrafficMap({
   aircraft,
   vessels,
   trafficContext = false,
+  reportDots = NO_REPORTS,
   ports,
   airports,
   weatherObservations,
@@ -697,6 +701,7 @@ export function TrafficMap({
   const lastStarlinkFeaturesRef = useRef<readonly Feature<Point>[]>([])
   const modelLayerRef = useRef<TrafficModelLayer | null>(null)
   const modelActivityRef = useRef<ModelActivity>(INACTIVE_MODEL_ACTIVITY)
+  const reportDotsRef = useRef({ reports: reportDots, selectedId })
   const modelContextLostRef = useRef(false)
   const modelGenerationRef = useRef(0)
   const orbitalUpdateGenerationRef = useRef(0)
@@ -1401,6 +1406,7 @@ export function TrafficMap({
       bathymetryRef.current?.install(activeTheme)
       updateEarthDayNight(map)
       const modelActivity = modelActivityRef.current
+      renderReportDots(map, reportDotsRef.current.reports, reportDotsRef.current.selectedId, activeTheme)
       const aircraftEntities = renderState.trafficContext
         ? sampleTrafficZoomContext(map, renderState.aircraft)
         : renderState.aircraft
@@ -2240,6 +2246,7 @@ export function TrafficMap({
     const activeTrafficLayers = () => {
       if (renderStateRef.current.trafficContext) return []
       const layers: string[] = []
+      if (reportDotsRef.current.reports.length && map.getLayer(REPORT_DOTS)) layers.push(REPORT_DOTS)
       const viewState = viewStateRef.current
       const models = modelActivityRef.current
       if (
@@ -2349,6 +2356,7 @@ export function TrafficMap({
     const selectableTrafficIds = () => {
       const ids = new Set<string>()
       if (renderStateRef.current.trafficContext) return ids
+      for (const report of reportDotsRef.current.reports) ids.add(report.id)
       const renderState = renderStateRef.current
       const viewState = viewStateRef.current
       if (viewState.aircraftVisible) {
@@ -2594,6 +2602,9 @@ export function TrafficMap({
 
     map.on('moveend', () => {
       scheduleViewportReport(map)
+      if (loadedRef.current && reportDotsRef.current.reports.length) {
+        renderReportDots(map, reportDotsRef.current.reports, reportDotsRef.current.selectedId, themeRef.current)
+      }
       if (renderStateRef.current.trafficContext) scheduleRender()
     })
 
@@ -3178,6 +3189,12 @@ export function TrafficMap({
   ])
 
   useEffect(() => {
+    const map = mapRef.current
+    if (loadedRef.current && map && (reportDots.length || reportDotsRef.current.reports.length) &&
+      (reportDots !== reportDotsRef.current.reports || selectedId !== reportDotsRef.current.selectedId)) {
+      renderReportDots(map, reportDots, selectedId, themeRef.current)
+    }
+    reportDotsRef.current = { reports: reportDots, selectedId }
     renderStateRef.current = {
       aircraft,
       vessels,
@@ -3218,6 +3235,7 @@ export function TrafficMap({
     selectedId,
     trafficContext,
     interpolateTraffic,
+    reportDots,
     interpolationDurationMs,
     scheduleRender,
   ])

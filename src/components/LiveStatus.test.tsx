@@ -78,7 +78,7 @@ describe('LiveStatus', () => {
   it('reports partial operation when aircraft remain live and marine is view-paused', () => {
     const html = renderToStaticMarkup(
       <LiveStatus
-        compact
+        compact trafficContext
         aircraftCount={18}
         vesselCount={0}
         aircraftStatus={{ phase: 'live', paused: false }}
@@ -89,6 +89,8 @@ describe('LiveStatus', () => {
       />,
     )
     expect(html).toContain('<strong>PARTIAL</strong>')
+    expect(html).toContain('18 aircraft · last local ships')
+    expect(html).not.toContain('Live updates paused')
     expect(html).toContain('Aircraft current')
     expect(html).toContain('Marine stream paused')
     expect(html).not.toContain('VIEW PAUSED')

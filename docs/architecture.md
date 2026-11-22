@@ -1358,7 +1358,7 @@ response as proof of coverage.
 
 The #370 zoom-out hand-off adds one explicit display-only exception: a
 **last local traffic sample**, not wider live coverage. App retains only the
-last eligible footprint/zoom/navigation revision and reuses the provider's
+last eligible footprint/zoom/navigation revision **per source** and reuses the provider's
 already-held observations inside that footprint. It creates no second
 observation cache or acquisition lifecycle. Context requires a lower zoom in
 the same navigation, online live mode, and observations no older than two
@@ -1367,18 +1367,19 @@ views have no sample; committed navigation clears its footprint. HISTORY
 hides context without resetting observation age; returning to live may reuse
 only still-recent provider observations, never historical playback records.
 
-`map/trafficZoomContext.ts` deterministically selects at most twelve entities
-per kind, separated by at least 64 CSS pixels within each kind's projected
-sample, without changing observed coordinates. A separate render-only
-`zoomContext` property drives native opacity: 85% of the normal freshness
-opacity at zoom 7 and above, continuously down to zero at zoom 3. The existing
-sources, icon/flag/badge layers and source-diff path are reused; sampled
-context disables interpolation and source clustering without changing the
-saved clustering preference. Settled movement/resize resamples through the
-existing render scheduler; style/theme reload reinstalls the current sample.
+`map/reportDots.ts` renders a separate, unclustered GeoJSON circle layer.
+`map/trafficZoomContext.ts` deterministically selects at most twelve reports
+per kind, at least 64 CSS pixels apart, preferring the inspected ID. A report
+must be in both its last local polygon and the current representable footprint.
+There is no arbitrary zoom fade. A new observation for the last marine area
+may move a dot on the existing connection; the display makes no requests,
+never extrapolates and never substitutes an old area for a live query.
+Style reload reinstalls the latest dots independently of live clustering.
 
-Samples are excluded from picking, live counts/search, selected-object
-metadata/photos, trails and all history inputs. The masthead labels the sample
+Picking opens timestamped, read-only details in place. Samples are excluded
+from live counts/search, metadata/photo requests, trails and all history inputs.
+In the 100–250 km band, last-area ships coexist with normal live aircraft.
+The masthead labels the sample
 instead of claiming that zero ships are shown; the zoom notice retains the
 paused/no-wider-coverage warning even on compact layouts. Eligible views
 restore normal clustering, interpolation, count and interaction behavior.

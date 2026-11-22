@@ -26,11 +26,13 @@ export const trafficZoomContextViewport = (
   zoom: number | undefined,
   viewRequestId: number,
   enabled: boolean,
+  sourceEligible = assessment?.kind === 'eligible',
 ): TrafficViewport | null =>
   enabled &&
   lastView !== null &&
   lastView.viewRequestId === viewRequestId &&
-  assessment?.kind === 'ineligible' &&
+  assessment?.viewport !== undefined &&
+  !sourceEligible &&
   zoom !== undefined &&
   Number.isFinite(zoom) &&
   zoom < lastView.zoom
@@ -42,9 +44,13 @@ export const trafficZoomContextEntities = <T extends TrafficEntity>(
   viewport: TrafficViewport | null,
   now: number,
   thresholds: FreshnessThresholds,
+  visibleFootprint: TrafficViewport | null = viewport,
 ) =>
-  viewport
-    ? displayTraffic(filterTrafficByViewport(entities, viewport), now, {
+  viewport && visibleFootprint
+    ? displayTraffic(filterTrafficByViewport(
+        filterTrafficByViewport(entities, viewport),
+        visibleFootprint,
+      ), now, {
         staleAfterMs: thresholds.staleAfterMs,
         expireAfterMs: Math.min(
           thresholds.expireAfterMs,
@@ -63,8 +69,10 @@ interface ContextMap {
 export const sampleTrafficZoomContext = (
   map: ContextMap,
   entities: readonly DisplayTrafficEntity[],
+  inspection?: { id: string | null },
 ): readonly DisplayTrafficEntity[] => {
-  if (map.getZoom() <= ZOOM_TRAFFIC_CONTEXT_CONFIG.minimumZoom) return []
+  // Captured views keep the native fade; report dots use geographic eligibility.
+  if (!inspection && map.getZoom() <= ZOOM_TRAFFIC_CONTEXT_CONFIG.minimumZoom) return []
 
   const { clientWidth: width, clientHeight: height } = map.getCanvas()
   const longitude = map.getCenter().lng
@@ -75,7 +83,8 @@ export const sampleTrafficZoomContext = (
   }[] = []
 
   for (const entity of [...entities].sort((left, right) =>
-    left.id < right.id ? -1 : left.id > right.id ? 1 : 0,
+    Number(right.id === inspection?.id) - Number(left.id === inspection?.id) ||
+    (left.id < right.id ? -1 : left.id > right.id ? 1 : 0),
   )) {
     const { x, y } = map.project([
       unwrapLongitude(entity.position.longitude, longitude),
