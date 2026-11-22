@@ -62,6 +62,15 @@ const availableMetadata: AircraftMetadataViewState = {
 }
 
 describe('TrafficDetails reported squawk', () => {
+  it.each([aircraft, vessel])('inspects a last-reported $kind without starting live actions', entity => {
+    const html = renderToStaticMarkup(<TrafficDetails entity={entity} lastReported
+      aircraftMetadata={{ phase: 'idle' }} now={entity.receivedAt} units="metric"
+      onClose={() => undefined} />)
+    expect(html).toContain('Last reported')
+    expect(html).toContain('last local area, not the whole map')
+    expect(html).not.toContain('aria-label="View from here"')
+    expect(html).not.toContain('aria-label="Show path"')
+  })
   it.each(['0000', '0042', '7000', '7500', '7600', '7700'])(
     'displays normalized code %s without interpreting it',
     (squawk) => {

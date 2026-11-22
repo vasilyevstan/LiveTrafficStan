@@ -6220,3 +6220,14 @@ These splits reduce initial navigation work, not installed-shell transfer:
 every emitted asset is preinstalled so first use remains available cold
 offline, and the predecessor cache remains searchable for an older tab's
 deferred hashed import.
+
+## Zoom-out report inspection (#729)
+
+In an isolated 1260 × 840 Chromium viewport, replay a local ADS-B response and
+two Digitraffic positions for the same ferry. From zoom 9, zoom to 7.6:
+aircraft remain on the normal live path, while the ferry becomes a last-area
+dot. Click the ferry and send the next MQTT location. The rendered dot moves
+and retains its selected identity without changing the camera. At zoom 5.9,
+tap the aircraft dot; its timestamped last-reported details open without a
+camera change or a wide aircraft query. These are synthetic observations
+through the actual map and provider paths, not evidence of wider ADS-B coverage.

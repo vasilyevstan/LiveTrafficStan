@@ -333,11 +333,12 @@ identity are not renamed or reset.
   paused rather than presenting an empty sea; unsafe or wider views pause both.
   **Resume ships** keeps the current center and returns to the marine-safe
   framing without clamping or presenting partial coverage as complete.
-- A smoother zoom-out hand-off retains a small **last local traffic sample**
-  at real observed positions, with no wider requests. At most twelve aircraft
-  and twelve ships are decluttered and faded between zoom 7 and 3; observations
-  expire within two minutes. The labelled, read-only sample is not wider live
-  coverage and never enters live counts, details, trails or history.
+- When zooming out, each source keeps its own **last local traffic sample**.
+  Between 100 and 250 km you can inspect last-reported ships while aircraft
+  remain live. Click or tap a dot to see its report time without moving the map.
+  A new ship report already received for its last area updates the dot; paused
+  aircraft do not coast. Up to twelve dots per kind remain on representable
+  maps, expire within two minutes, and do not enter live counts, trails or history.
 - **Aircraft View from here (#625):** a live airborne aircraft with a
   positive reported altitude offers **View from here** in Auto projection. The view rides along its
   observed ADS-B positions at their reported barometric altitude, about 20 s

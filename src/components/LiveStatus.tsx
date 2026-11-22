@@ -108,8 +108,8 @@ export function LiveStatus({
               <span title={`${aircraftCount} aircraft · ${vesselCount} ships shown`}>{scopeLabel}</span>
             ) : trafficContext && historicalAt === undefined ? (
               <>
-                <span>Last local sample</span>
-                {(!compact || !viewportPaused) && <span>Live updates paused</span>}
+                <span>{aircraftStatus.paused ? 'Last local sample' : `${aircraftCount} aircraft · last local ships`}</span>
+                {aircraftStatus.paused && (!compact || !viewportPaused) && <span>Live updates paused</span>}
               </>
             ) : (
               <>

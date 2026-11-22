@@ -48,6 +48,7 @@ const tooWide: ViewportAssessment = {
   kind: 'ineligible',
   reason: 'too-wide',
   message: 'Zoom in to see live traffic',
+  viewport,
 }
 
 describe('last local traffic context', () => {
@@ -87,7 +88,7 @@ describe('last local traffic context', () => {
     },
   )
 
-  it('allows a visual sample at a globe limb without authorizing a query footprint', () => {
+  it('hides report dots at a globe limb with no representable footprint', () => {
     const invalid: ViewportAssessment = {
       kind: 'ineligible',
       reason: 'invalid',
@@ -95,8 +96,14 @@ describe('last local traffic context', () => {
     }
     expect(
       trafficZoomContextViewport(lastView, invalid, 4, 7, true),
-    ).toBe(viewport)
+    ).toBeNull()
     expect(invalid).not.toHaveProperty('viewport')
+  })
+
+  it('retains only the paused source in a mixed aircraft/ship viewport', () => {
+    const current: ViewportAssessment = { kind: 'eligible', viewport }
+    expect(trafficZoomContextViewport(lastView, current, 7, 7, true, false)).toBe(viewport)
+    expect(trafficZoomContextViewport(lastView, current, 7, 7, true, true)).toBeNull()
   })
 
   it('hides context when the live-view presentation is disabled', () => {
@@ -117,6 +124,9 @@ describe('last local traffic context', () => {
     expect(result.map(({ id }) => id)).toEqual([inside.id])
     expect(source).toEqual(original)
     expect(result[0]?.position).toEqual(inside.position)
+    expect(trafficZoomContextEntities(source, viewport, now, {
+      staleAfterMs: 45_000, expireAfterMs: 120_000,
+    }, { ...viewport, polygon: viewport.polygon.map(p => ({ ...p, latitude: p.latitude - 5 })) })).toEqual([])
     expect(trafficZoomContextEntities(source, null, now, {
       staleAfterMs: 45_000,
       expireAfterMs: 120_000,
@@ -175,6 +185,13 @@ describe('screen-space traffic representatives', () => {
       aircraft(index.toString(16).padStart(6, '0'), index * 8, 0),
     )
     expect(sampleTrafficZoomContext(map, entities)).toHaveLength(12)
+  })
+
+  it('keeps the inspected report in a crowded group below the captured-view fade', () => {
+    const first = aircraft('000001', 0, 0)
+    const selected = aircraft('000002', 0, 0)
+    expect(sampleTrafficZoomContext({ ...map, getZoom: () => 2 }, [first, selected], { id: selected.id }))
+      .toEqual([selected])
   })
 
   it('reduces the same group further as its projected spacing shrinks', () => {
