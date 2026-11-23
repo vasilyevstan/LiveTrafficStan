@@ -1403,12 +1403,16 @@ The browser feature is implemented separately from this storage boundary.
 Aircraft, vessels, weather, search, map, and PWA behavior must remain usable
 when the orbital catalog is unavailable.
 
-### A curated refresh reports missing pinned IDs (#616, #683)
+### A curated refresh reports missing pinned IDs or a low perigee (#616, #683, #735)
 
 `Last-Outcome-Reason` of `Space-Track curated GP records N of M, missing <ids>,
 unpinned <ids>` means the fixed GP query returned fewer complete rows than the
 pinned reference requires, so nothing was published and the previous snapshot
 ages toward its 24-hour hard expiry; ORBITS then says the catalog is too old.
+`Space-Track curated GP pinned perigee below 300 km: <ids>` has the same effect:
+a complete row set contains a pinned object below the #709 floor. The
+completeness check runs first, so a missing-ID diagnostic can hide perigee
+failures (#735 found three behind Dragon CRS-35).
 The reason names at most three missing IDs plus a count, and Space-Track does
 not register every decay at the same moment, so a one-ID diagnostic can hide a
 second decayed member that fails the next attempt (#683 found 67687 beside
@@ -1422,8 +1426,12 @@ Before authoring a reviewed removal:
 2. Audit every pinned ID once against CelesTrak's published `satcat.csv`,
    recording its retrieval time, size, row count and SHA-256, and remove every
    decayed member in the same revision so one release repairs the whole set.
-3. Keep objects that are merely low, or whose element set is old, pinned and
-   list them in the Issue. A removal needs a decay record, not a prediction.
+3. Keep objects whose element set is merely old pinned. A decay removal needs
+   a decay record, not a prediction. Also compute every pinned object's current
+   GP mean-motion perigee with the Worker formula, for example from the last
+   native snapshot plus fresh public GP rows for candidates, and remove those
+   already below 300 km in the same revision. List near-threshold objects in
+   the Issue rather than removing them.
 4. Publish the change as a new `curated-reference-<date>-vN` id with the original
    `retrievedAt` and `sha256`, and update the pinned id/count tests and docs.
 

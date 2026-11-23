@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "id": "curated-reference-2026-10-17-v4",
+  "id": "curated-reference-2026-10-17-v5",
   "sourceCatalogId": "celestrak-curated-v1",
   "retrievedAt": "2026-10-17T12:17:07.523Z",
   "sha256": "d062e417f365701d3ef2951e400a9196700c514ced47960305f010681d0da5c0",
@@ -205,12 +205,6 @@
     },
     {
       "noradCatalogId": "16496",
-      "sourceGroups": [
-        "visual"
-      ]
-    },
-    {
-      "noradCatalogId": "16719",
       "sourceGroups": [
         "visual"
       ]
@@ -1248,12 +1242,6 @@
       "noradCatalogId": "39260",
       "sourceGroups": [
         "weather"
-      ]
-    },
-    {
-      "noradCatalogId": "39265",
-      "sourceGroups": [
-        "science"
       ]
     },
     {
@@ -2633,12 +2621,6 @@
       ]
     },
     {
-      "noradCatalogId": "67685",
-      "sourceGroups": [
-        "stations"
-      ]
-    },
-    {
       "noradCatalogId": "68791",
       "sourceGroups": [
         "gnss"
@@ -2718,12 +2700,6 @@
     },
     {
       "noradCatalogId": "100882",
-      "sourceGroups": [
-        "stations"
-      ]
-    },
-    {
-      "noradCatalogId": "101031",
       "sourceGroups": [
         "stations"
       ]
