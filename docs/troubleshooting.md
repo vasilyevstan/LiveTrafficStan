@@ -330,7 +330,7 @@ the app never automatically reenters. F11/window fullscreen and standalone
 installation are separate browser modes.
 
 Full-canvas size changes may change counts or cross the 100 km marine/local or
-250 km aircraft eligibility limits. That is ordinary viewport filtering, not
+463 km aircraft eligibility limits. That is ordinary viewport filtering, not
 navigation, a lost Home, a new provider connection or a reason to reset
 preferences/history.
 
@@ -342,8 +342,8 @@ map zoom 11 and 12. Browser page magnification does not change this preference.
 Reset preferences restores automatic globe without clearing private history.
 
 Ships intentionally pause above the 100 km marine boundary while aircraft can
-remain live through 250 km. Both pause when the full canvas includes a limb,
-pole, unsafe surface or a footprint over 250 km. The notice identifies the
+remain live through 463 km. Both pause when the full canvas includes a limb,
+pole, unsafe surface or a footprint over 463 km. The notice identifies the
 paused source; **Resume ships** returns to the marine-safe framing without
 claiming aircraft were paused. Zoom in, reduce tilt, or use Center; do not
 expect worldwide live traffic. A preceding
@@ -786,7 +786,7 @@ asset before it can derive explicit ICAO station IDs.
 
 - **Paused until the map shows an eligible view** means weather/local context
   is still updating or exceeds its 100 km boundary. Aircraft may remain live
-  independently through 250 km. Zoom in or reduce tilt.
+  independently through 463 km. Zoom in or reduce tilt.
 - **Too many qualifying stations** means more than 50 explicit four-letter
   ICAO codes are visible. The app refuses to truncate the station set; zoom in.
 - **No qualifying stations** means the reduced large/medium OurAirports
@@ -1050,7 +1050,7 @@ defined passenger, cargo, or tanker codes.
 Settled pan, zoom, rotation, pitch, Home, and resize changes all update one
 sampled full-canvas viewport. Above 100 km the app hides ships and local
 context, passes no marine query, and explicitly reports ships paused while
-aircraft can remain live. Above 250 km or for unsafe geometry it hides live
+aircraft can remain live. Above 463 km or for unsafe geometry it hides live
 traffic and trails and pauses both providers. This is not an empty provider
 response. The labelled zoom-out sample described above is only recent local
 context, never a complete wider board or feed. Use **Resume ships** to keep the

@@ -68,7 +68,7 @@ describe('aircraft proxy', () => {
     ['/api/aircraft/v2/point/59/%2F/11', 400],
     ['/api/aircraft/v2/point/59/%/11', 400],
     ['/api/aircraft/v2/point/59/24/0', 400],
-    ['/api/aircraft/v2/point/59/24/136', 400],
+    ['/api/aircraft/v2/point/59/24/251', 400],
     ['/api/aircraft/v2/point/59/24/11.5', 400],
     ['/api/aircraft/v2/point/59/24/-1', 400],
     ['/api/aircraft/v2/point/59/24/11?', 400],
@@ -86,15 +86,15 @@ describe('aircraft proxy', () => {
     expect(fetchImpl).not.toHaveBeenCalled()
   })
 
-  it('accepts the exact 135 NM aircraft transport boundary', async () => {
+  it.each([135, 199, 250])('accepts the %i NM aircraft transport radius', async (radiusNm) => {
     const fetchImpl = vi.fn<AircraftProxyFetch>(async () => new Response('{}'))
     const response = await handleAircraftProxy(
-      proxyRequest('/api/aircraft/v2/point/59/24/135'),
+      proxyRequest(`/api/aircraft/v2/point/59/24/${radiusNm}`),
       { fetchImpl },
     )
     expect(response.status).toBe(200)
     expect(fetchImpl).toHaveBeenCalledWith(
-      `${AIRCRAFT_RELAY_ORIGIN}/v2/point/59/24/135`,
+      `${AIRCRAFT_RELAY_ORIGIN}/v2/point/59/24/${radiusNm}`,
       expect.any(Object),
     )
   })

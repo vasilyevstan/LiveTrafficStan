@@ -6,6 +6,8 @@ The 2026-11-19 user-directed provider replacement keeps the same private
 transport, credentials, app-owned paths, canonical coordinate/135 NM bounds,
 ten-second deadline, 4 MiB cap, no redirects/cache/CORS, and persistent
 aggregate admission. Only the fixed upstream and wire-payload adapter change.
+The later 2026-11-23 user-directed widening raises only the radius bound to
+ADSB.fi's documented 250 NM maximum; cadence, cap and admission stay as-is.
 The relay translates `/v2/point/{lat}/{lon}/{nm}` to
 `https://opendata.adsb.fi/api/v3/lat/{lat}/lon/{lon}/dist/{nm}` and exact
 `/v2/reg/{reg}` to `/api/v2/registration/{reg}` (hex/callsign keep those names).
@@ -205,9 +207,9 @@ GET /v2/callsign/{canonical-callsign}
 The implementation:
 
 - requires a bearer token before starting upstream work;
-- accepts only canonical finite coordinates and integer radius 1-135 NM;
+- accepts only canonical finite coordinates and integer radius 1-250 NM;
 - rejects query strings, other methods, encoded separators, and redirects;
-- constructs only the fixed ADSB.lol point or exact identifier URL;
+- constructs only the fixed ADSB.fi v3 point or exact identifier URL;
 - forwards only `Accept: application/json` and the stable LiveTrafficStan
   `User-Agent`;
 - never forwards browser cookies, browser authorization, client IP, range,

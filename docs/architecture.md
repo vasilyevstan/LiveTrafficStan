@@ -176,7 +176,7 @@ by their existing independent controllers.
 
 `BathymetryRuntime` owns only depth imagery/values on the existing MapLibre
 instance. It consumes the already-settled full-canvas orbital viewport
-geometry and zoom, independently of the 100 km marine/local and 250 km aircraft
+geometry and zoom, independently of the 100 km marine/local and 463 km aircraft
 traffic contracts. Stable
 source-cell candidates are generated in the domain layer; rendered ocean
 polygons and projected screen spacing gate up to twelve candidates. Values
@@ -635,11 +635,13 @@ UI and map code never consume raw provider payloads. Each adapter:
 
 One settled full-canvas sample produces a center rounded to three decimal
 places, an unwrapped polygon, and a conservative enclosing radius. Aircraft
-eligibility extends through 250 km; marine and local airport/weather context
+eligibility extends through 463 km; marine and local airport/weather context
 retain 100 km. Aircraft requests convert their eligible radius to an
 outward-rounded integer nautical-mile query for ADSB.fi. Eligibility is
-decided first, so an exact 250 km viewport uses 135 NM (250.02 km) for transport
-without widening the exact display polygon. Between 100 and 250 km the aircraft
+decided first, so a 250 km viewport uses 135 NM (250.02 km) and the exact
+463 km maximum uses ADSB.fi's documented 250 NM maximum (463.0 km) for
+transport without widening the exact display polygon. Between 100 and 463 km
+the aircraft
 controller continues on its existing cadence while marine receives no query
 and retains its connection and deadlines.
 
@@ -1393,7 +1395,7 @@ Style reload reinstalls the latest dots independently of live clustering.
 
 Picking opens timestamped, read-only details in place. Samples are excluded
 from live counts/search, metadata/photo requests, trails and all history inputs.
-In the 100–250 km band, last-area ships coexist with normal live aircraft.
+In the 100–463 km band, last-area ships coexist with normal live aircraft.
 The masthead labels the sample
 instead of claiming that zero ships are shown; the zoom notice retains the
 paused/no-wider-coverage warning even on compact layouts. Eligible views
@@ -1844,7 +1846,7 @@ and gives only the aircraft proxy one private outbound dependency:
    orbital attribution remains visible when the corresponding data is shown.
 
 The production proxy accepts canonical finite latitude/longitude values and
-integer radii from 1 through 135 NM. It rejects query strings, other methods,
+integer radii from 1 through 250 NM. It rejects query strings, other methods,
 other paths, redirects, responses over 4 MiB, and work exceeding the ten-second
 total deadline. The private relay constructs a fixed ADSB.fi destination, forwards only a
 JSON accept header and stable public project User-Agent, preserves upstream

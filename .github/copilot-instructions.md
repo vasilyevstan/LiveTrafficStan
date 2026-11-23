@@ -160,11 +160,12 @@ preserve truthful partial operation when one provider fails.
 - Production aircraft proxy changes must keep the fixed ADSB.fi origin
   (`https://opendata.adsb.fi`) behind the private OCI relay, exact
   `/api/aircraft/v2/point/{lat}/{lon}/{radiusNm}` allowlist, canonical
-  coordinate validation, 1-135 NM bound, total deadline, response-size cap,
+  coordinate validation, 1-250 NM bound, total deadline, response-size cap,
   redirect rejection, no-store policy, and upstream status/body/`Retry-After`.
   Translate the app-owned point path to `/api/v3/lat/{lat}/lon/{lon}/dist/{nm}`;
   never use the deprecated v2 point response or direct Workers egress.
-  Keep the current checked 1-135 NM transport bound and 250 km eligibility.
+  Keep the current checked 1-250 NM transport bound (ADSB.fi's documented
+  maximum) and 463 km eligibility.
   ADSB.fi attribution links its home page and states personal non-commercial
   terms, not ODbL. Legacy ADSB.lol history and separate route enrichment retain
   their own provenance; do not relabel old records or reset admission state.

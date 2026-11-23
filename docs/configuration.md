@@ -155,7 +155,7 @@ spread through components:
 | Setting | Current value |
 | --- | --- |
 | Initial Home framing | Comparable to a 30 km local view |
-| Maximum eligible aircraft enclosing radius | 250 km |
+| Maximum eligible aircraft enclosing radius | 463 km (ADSB.fi's 250 NM maximum) |
 | Maximum eligible marine/local-context enclosing radius | 100 km |
 | Local ruler endpoint/pair bound | Two session-only points; pair distance at most 200 km, derived from twice the existing 100 km local radius |
 | Local ruler rendered geometry | At most 128 coordinates; geodesic arc step 0.05 degrees |
@@ -921,15 +921,16 @@ workflow endpoint URLs are not accepted.
 
 For an aircraft-eligible viewport, the rounded camera center and conservative
 enclosing radius are sent to ADSB.fi. The application decides eligibility
-against the 250 km aircraft limit before rounding outward to the provider's
-integer nautical miles. An exact 250 km viewport therefore requests 135 NM, or
-250.02 km of transport coverage, while the client still displays only objects
+against the 463 km aircraft limit before rounding outward to the provider's
+integer nautical miles. A 250 km viewport therefore requests 135 NM, or
+250.02 km of transport coverage, and the exact 463 km maximum requests
+ADSB.fi's documented 250 NM maximum, while the client still displays only objects
 inside the actual viewport polygon. Ships, airports, and weather retain the
 separate 100 km local boundary and receive no widened query. Deployment proxies
 must not alter coordinates, units, or these boundary semantics.
 
 The production Worker enforces the exact `/v2/point` path, canonical coordinate
-ranges, and integer 1-135 NM radius. It rejects query strings and every other
+ranges, and integer 1-250 NM radius. It rejects query strings and every other
 method/path, never follows upstream redirects, keeps a ten-second total
 deadline, rejects responses over 4 MiB, and preserves upstream status, body,
 `Content-Type`, and `Retry-After`. It sends a stable public project User-Agent
