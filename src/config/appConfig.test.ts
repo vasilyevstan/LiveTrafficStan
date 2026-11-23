@@ -51,7 +51,7 @@ describe('createAppConfig', () => {
     expect(config.map.darkStyleUrl).toContain('/dark')
     expect(config.map.homeViewRadiusKm).toBe(30)
     expect(config.map.maximumViewportRadiusKm).toBe(100)
-    expect(config.map.maximumAircraftViewportRadiusKm).toBe(250)
+    expect(config.map.maximumAircraftViewportRadiusKm).toBe(463)
     expect(config.map.touchHitTolerancePx).toBe(8)
     expect(config.map.clustering).toEqual({
       radiusPx: 42,

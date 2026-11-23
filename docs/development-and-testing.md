@@ -4691,10 +4691,10 @@ For the viewport-driven map experience, additionally verify:
 2. Rapid camera changes resolve to the latest area without increasing aircraft
    request cadence or reconnecting marine MQTT.
 3. A view at or below 100 km shows exact polygon-filtered aircraft and ships.
-   Between 100 and 250 km aircraft remain exact and live while ships are
+   Between 100 and 463 km aircraft remain exact and live while ships are
    explicitly paused and receive no query. An object inside either query circle
    but outside the visible footprint stays hidden.
-4. Views above 250 km or unsafe geometry hide traffic and trails, clear invalid
+4. Views above 463 km or unsafe geometry hide traffic and trails, clear invalid
    selection, pause both providers, and show the zoom or tilt prompt. Zooming
    back in resumes each source at its preserved boundary.
 5. Center returns to session Home using the initial local framing.

@@ -1,5 +1,22 @@
 # Engineering Decisions
 
+## Wider no-receiver aircraft coverage: ADSB.fi 250 NM (#729/#730)
+
+The user wanted planes to stay live on zoom-out like trains and has no ADS-B
+receiver, so feeder-only, account, key or paid providers do not qualify
+(evidence on #730). ADSB.fi's public terms document point queries up to
+250 NM without a receiver. The aircraft maximum therefore rises from 135 NM
+to exactly 250 NM, and display eligibility from 250 km to 463 km
+(250 × 1.852 km), the largest radius that never rounds above the provider
+limit. A one-off Frankfurt 250 NM probe returned HTTP 200 with 540 aircraft
+in 84 KB compressed / 345 KB raw, far below the unchanged 4 MiB cap.
+
+Only the bound changes. The relay keeps one request in flight, 20-second
+aggregate starts, `429`/`Retry-After` admission, the ten-second deadline, the
+fixed origin and no-store/no-credentials rules. Marine and local context keep
+100 km. Wider views keep the dated last-report sample. The relay must deploy
+before the Worker, because production smoke now probes 250 NM.
+
 ## Fleet train models, liveries and Elron train details (#713)
 
 The user asked for train models that look like the actual trains, and for

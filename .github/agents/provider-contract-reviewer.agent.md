@@ -85,8 +85,9 @@ Check these project invariants:
   registration, callsign, operator, route, or location. Invalid,
   special-purpose, unresolved, conflicting, and excluded allocations remain
   unavailable, with source pins, hashes, exclusions, and licenses explicit.
-- Aircraft viewport eligibility is decided against 250 km before ADSB.fi's
-  outward nautical-mile rounding (135 NM maximum transport). Marine retains
+- Aircraft viewport eligibility is decided against 463 km before ADSB.fi's
+  outward nautical-mile rounding (250 NM maximum transport, ADSB.fi's
+  documented maximum). Marine retains
   its independent 100 km limit. Rounding never widens display eligibility.
 - Successful empty results, unknown or regional coverage, updating, paused,
   stale, historical, offline, and provider failure states remain distinct.
@@ -272,7 +273,7 @@ Check these project invariants:
   provider or account becomes an explicit blocker rather than client-side
   secrets, scraping, or success-shaped placeholder data.
 - The production aircraft proxy accepts only the app-owned point route,
-  canonical coordinates, and integer 1-135 NM radius. The private OCI relay
+  canonical coordinates, and integer 1-250 NM radius. The private OCI relay
   translates to fixed ADSB.fi `/api/v3/lat/{lat}/lon/{lon}/dist/{nm}` and exact
   v2 hex/registration/callsign endpoints. No direct Workers/browser fallback.
   ADSB.fi terms are personal non-commercial, not ODbL; preserve distinct

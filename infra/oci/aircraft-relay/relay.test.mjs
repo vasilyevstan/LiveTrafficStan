@@ -35,7 +35,7 @@ describe('OCI aircraft relay', () => {
     ['/v2/hex/abc123', '/api/v2/hex/abc123'],
     ['/v2/reg/G-ABCD', '/api/v2/registration/G-ABCD'],
     ['/v2/callsign/TST123', '/api/v2/callsign/TST123'],
-    ['/v2/point/59/24/135', '/api/v3/lat/59/lon/24/dist/135'],
+    ['/v2/point/59/24/250', '/api/v3/lat/59/lon/24/dist/250'],
   ])('translates app-owned %s only to documented ADSB.fi paths', async (path, upstreamPath) => {
     const fetchImpl = vi.fn(async () => Response.json({ ac: [], now: 1_800_000_000_000 }))
     const handler = await createHandler({ fetchImpl })
@@ -158,7 +158,8 @@ describe('OCI aircraft relay', () => {
     ['/v2/point/059/24/11', undefined],
     ['/v2/point/1e2/24/11', undefined],
     ['/v2/point/59/24/0', undefined],
-    ['/v2/point/59/24/136', undefined],
+    ['/v2/point/59/24/251', undefined],
+    ['/v2/point/59/24/300', undefined],
     ['/v2/point/59/24/11.5', undefined],
     ['/v2/point/59/%2F/11', undefined],
     ['/v2/point/59/24/11', {
@@ -170,6 +171,11 @@ describe('OCI aircraft relay', () => {
       latitude: '59',
       longitude: '24',
       radiusNm: '135',
+    }],
+    ['/v2/point/59/24/250', {
+      latitude: '59',
+      longitude: '24',
+      radiusNm: '250',
     }],
   ])('parses canonical path %s', (path, expected) => {
     expect(parsePointPath(path)).toEqual(expected)
