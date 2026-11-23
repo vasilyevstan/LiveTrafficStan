@@ -5,7 +5,8 @@ import { dirname } from 'node:path'
 export const ADSB_FI_ORIGIN = 'https://opendata.adsb.fi'
 export const AIRCRAFT_USER_AGENT =
   'LiveTrafficStan (+https://github.com/vasilyevstan/LiveTrafficStan)'
-export const MINIMUM_UPSTREAM_INTERVAL_MS = 20_000
+export const MINIMUM_UPSTREAM_INTERVAL_MS = 2_000
+export const FALLBACK_BACKOFF_BASE_MS = 20_000
 export const MAXIMUM_FALLBACK_BACKOFF_MS = 5 * 60_000
 export const UPSTREAM_TIMEOUT_MS = 10_000
 export const MAXIMUM_RESPONSE_BYTES = 4 * 1024 * 1024
@@ -105,7 +106,7 @@ export const parseRetryAfterMs = (value, nowMs) => {
 
 const fallbackBackoffMs = (failureCount) =>
   Math.min(
-    MINIMUM_UPSTREAM_INTERVAL_MS * 2 ** Math.max(0, failureCount - 1),
+    FALLBACK_BACKOFF_BASE_MS * 2 ** Math.max(0, failureCount - 1),
     MAXIMUM_FALLBACK_BACKOFF_MS,
   )
 

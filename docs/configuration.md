@@ -888,8 +888,8 @@ a source limit. Only one logical operation is active. No typing/startup request,
 automatic retry, success cache or persisted
 query/result is added. The named upstream receives submitted text and ordinary
 transport metadata; a fixed POST keeps that text out of browser resource URLs.
-Aircraft lookup shares the private relay's existing persistent global
-20-second admission with viewport work. Busy/Retry-After is expected, not
+Aircraft lookup shares the private relay's persistent global 2-second
+admission with viewport work. Busy/Retry-After is expected, not
 permission to bypass the relay or add requests.
 
 ## Aircraft endpoint and proxy

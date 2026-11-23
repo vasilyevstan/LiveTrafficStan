@@ -11,8 +11,9 @@ fixed `https://opendata.adsb.fi/api` base, v3 point endpoint
 `/v3/lat/{lat}/lon/{lon}/dist/{nm}` (up to 250 NM), and v2 exact hex,
 registration and callsign endpoints. The deprecated v2 point response is not
 used. Public endpoints allow one request per second; invalid 400/401/403/404/429
-responses count toward temporary restrictions. The existing aggregate
-20-second spacing remains unchanged. On 2026-11-23 the user, who has no
+responses count toward temporary restrictions. The aggregate start spacing
+later fell from 20 to 2 seconds (#740) so concurrent viewers are not starved.
+On 2026-11-23 the user, who has no
 receiver to contribute, directed wider no-receiver coverage; the maximum rose
 from 135 NM to ADSB.fi's documented 250 NM (463 km eligibility).
 

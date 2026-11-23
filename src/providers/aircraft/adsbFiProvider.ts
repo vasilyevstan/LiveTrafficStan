@@ -1,7 +1,11 @@
 import { normalizeAircraftSquawk } from '../../domain/aircraftSquawk'
 import { distanceKm, isValidCoordinate } from '../../domain/geo'
 import type { Aircraft } from '../../domain/traffic'
-import { ProviderError, parseRetryAfterMs } from '../errors'
+import {
+  ProviderError,
+  RelayAdmissionError,
+  parseRetryAfterMs,
+} from '../errors'
 import {
   finiteNumber,
   isRecord,
@@ -68,11 +72,15 @@ const responseError = (
   body: string,
 ) => {
   const detail = body.trim().slice(0, 180)
-  return new ProviderError(
-    `ADSB.fi returned HTTP ${response.status}${detail ? `: ${detail}` : ''}`,
-    response.status,
-    parseRetryAfterMs(response.headers.get('retry-after')),
-  )
+  const message = `ADSB.fi returned HTTP ${response.status}${detail ? `: ${detail}` : ''}`
+  const retryAfterMs = parseRetryAfterMs(response.headers.get('retry-after'))
+  if (
+    response.status === 503 &&
+    response.headers.get('x-livetrafficstan-relay-status') === 'admission'
+  ) {
+    return new RelayAdmissionError(message, retryAfterMs)
+  }
+  return new ProviderError(message, response.status, retryAfterMs)
 }
 
 const aircraftCategory = (category: string | undefined) => {

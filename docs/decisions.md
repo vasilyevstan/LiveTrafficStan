@@ -1,5 +1,26 @@
 # Engineering Decisions
 
+## Shared aircraft relay capacity: 2-second starts and one guided retry (#740)
+
+Production showed that the relay's single upstream start per 20 seconds,
+combined with each browser's own 20-second cadence, let the first viewer
+phase-lock the only slot: every other concurrent viewer received admission
+`503` on every poll and saw zero aircraft. An orphaned test browser held that
+slot for eight days, and after it stopped a second, previously starved viewer
+took it over. The 20-second spacing came from the ADSB.lol no-key quota era;
+ADSB.fi documents one request per second for public endpoints.
+
+The relay now starts at most one upstream request per 2 seconds (half the
+documented rate, about ten 20-second viewers) and still allows one in flight.
+`429`/`Retry-After` handling and the 20-second to five-minute fallback backoff
+are unchanged. The browser keeps its 20-second cadence for upstream starts;
+only a marked relay-local admission `503`, which never reached ADSB.fi, is
+retried once after its `Retry-After` without spending that cadence. This shifts
+a colliding viewer off the shared phase. A second consecutive rejection uses
+the normal cadence, so each viewer sends at most two Worker requests per cycle.
+No cache, queue, fairness scheduler, or new provider identity is added. Deploy
+the relay before the application; either order is compatible.
+
 ## Wider no-receiver aircraft coverage: ADSB.fi 250 NM (#729/#730)
 
 The user wanted planes to stay live on zoom-out like trains and has no ADS-B
