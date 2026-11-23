@@ -12,7 +12,9 @@ fixed `https://opendata.adsb.fi/api` base, v3 point endpoint
 registration and callsign endpoints. The deprecated v2 point response is not
 used. Public endpoints allow one request per second; invalid 400/401/403/404/429
 responses count toward temporary restrictions. The existing aggregate
-20-second spacing and 135 NM maximum remain unchanged.
+20-second spacing remains unchanged. On 2026-11-23 the user, who has no
+receiver to contribute, directed wider no-receiver coverage; the maximum rose
+from 135 NM to ADSB.fi's documented 250 NM (463 km eligibility).
 
 ADSB.fi is personal, non-commercial use only, not ODbL. Data/service cannot be
 licensed, sold, rented or leased; it is as-is, may be suspended, and requires
@@ -114,9 +116,9 @@ was load-tested.
 The current aircraft integration requires:
 
 - a geographic query for a rounded center and conservative aircraft radius no
-  greater than 250 km, independently of the 100 km marine/local boundary;
-- an outward-rounded integer transport radius, where exactly 250 km becomes
-  135 NM or 250.02 km;
+  greater than 463 km, independently of the 100 km marine/local boundary;
+- an outward-rounded integer transport radius, where exactly 463 km becomes
+  ADSB.fi's documented 250 NM maximum;
 - non-overlapping requests no more often than every 20 seconds;
 - stable ICAO24 identity, coordinates, and observation age;
 - optional heading/course, speed, altitude, vertical rate, callsign,

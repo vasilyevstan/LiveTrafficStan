@@ -732,7 +732,7 @@ describe('production smoke policy', () => {
       "const aircraftReleaseProbePath = '/api/aircraft/v2/point/91/24.754/11'",
     )
     const providerRequestIndex = smokeScript.indexOf(
-      "const validPath = '/api/aircraft/v2/point/59.437/24.754/135'",
+      "const validPath = '/api/aircraft/v2/point/59.437/24.754/250'",
     )
 
     expect(releaseProbeIndex).toBeGreaterThan(-1)

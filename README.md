@@ -332,13 +332,14 @@ identity are not renamed or reset.
 - Viewport-driven traffic after settled pan, zoom, rotation, pitch, Home, and
   resize changes.
 - Truthful source-specific enclosing-query limits: aircraft remain live through
-  250 km, while ships and local airport/weather context retain the reviewed
-  100 km boundary. In the 100-250 km band the UI explicitly reports ships
+  463 km (ADSB.fi's 250 NM maximum, no receiver required), while ships and
+  local airport/weather context retain the reviewed 100 km boundary. In the
+  100-463 km band the UI explicitly reports ships
   paused rather than presenting an empty sea; unsafe or wider views pause both.
   **Resume ships** keeps the current center and returns to the marine-safe
   framing without clamping or presenting partial coverage as complete.
 - When zooming out, each source keeps its own **last local traffic sample**.
-  Between 100 and 250 km you can inspect last-reported ships while aircraft
+  Between 100 and 463 km you can inspect last-reported ships while aircraft
   remain live. Click or tap a dot to see its report time without moving the map.
   A new ship report already received for its last area updates the dot; paused
   aircraft do not coast. Up to twelve dots per kind remain on representable
@@ -1084,7 +1085,7 @@ not a browser-controlled provider selector.
 
 The proxy accepts only
 `GET /api/aircraft/v2/point/{latitude}/{longitude}/{radiusNm}`, validates the
-current 1-135 NM transport contract, uses a total upstream deadline and body
+current 1-250 NM transport contract, uses a total upstream deadline and body
 limit, rejects redirects, and preserves provider status, body, and
 `Retry-After`. It forwards no browser credentials or arbitrary headers and
 keeps request URL logging disabled.
@@ -1782,7 +1783,7 @@ See [the timeout recovery boundary](docs/troubleshooting.md#deployment-metar-che
   required; absent or delayed static metadata cannot be inferred. Source
   failures, shared capacity limits and exhausted free budgets remain visible.
 - Views whose conservative enclosing radius exceeds 100 km pause ships and
-  local airport/weather context; aircraft remain live through 250 km. Wider or
+  local airport/weather context; aircraft remain live through 463 km. Wider or
   unsafe views pause both. **Resume ships** keeps the current map center and
   returns to the reviewed marine-safe framing; manual zoom-in or reduced tilt
   remain available. Partial coverage is never presented as complete. A recent

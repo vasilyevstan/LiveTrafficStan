@@ -400,7 +400,7 @@ const waitForWorkerRelease = async (signal) => {
 }
 
 const verifyAircraftProxy = async () => {
-  const validPath = '/api/aircraft/v2/point/59.437/24.754/135'
+  const validPath = '/api/aircraft/v2/point/59.437/24.754/250'
   const validUrl = new URL(validPath, baseUrl)
   const privateRelayDeadlineController =
     aircraftDelivery === 'oci-private-relay'

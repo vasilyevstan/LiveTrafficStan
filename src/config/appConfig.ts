@@ -564,7 +564,8 @@ export const createAppConfig = (
       ),
       homeViewRadiusKm: 30,
       maximumViewportRadiusKm: 100,
-      maximumAircraftViewportRadiusKm: 250,
+      // ADSB.fi's documented 250 NM point maximum is exactly 463 km.
+      maximumAircraftViewportRadiusKm: 463,
       touchHitTolerancePx: 8,
       clustering: {
         radiusPx: 42,

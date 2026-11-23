@@ -291,11 +291,14 @@ describe('normalizeAdsbFiResponse', () => {
 })
 
 describe('aircraftQueryRadiusNauticalMiles', () => {
-  it('rounds eligible viewport radii outward through the 250 km boundary', () => {
+  it('rounds eligible viewport radii outward through the 463 km boundary', () => {
     expect(aircraftQueryRadiusNauticalMiles(100)).toBe(54)
     expect(54 * 1.852).toBeCloseTo(100.008)
     expect(aircraftQueryRadiusNauticalMiles(250)).toBe(135)
     expect(135 * 1.852).toBeCloseTo(250.02)
+    expect(aircraftQueryRadiusNauticalMiles(462.999)).toBe(250)
+    expect(aircraftQueryRadiusNauticalMiles(463)).toBe(250)
+    expect(aircraftQueryRadiusNauticalMiles(463.001)).toBe(251)
   })
 })
 
