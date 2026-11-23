@@ -10,6 +10,14 @@ export class ProviderError extends Error {
   }
 }
 
+// A relay-local admission rejection never reached the upstream provider.
+export class RelayAdmissionError extends ProviderError {
+  constructor(message: string, retryAfterMs?: number) {
+    super(message, 503, retryAfterMs)
+    this.name = 'RelayAdmissionError'
+  }
+}
+
 export const parseRetryAfterMs = (
   value: string | null,
   now = Date.now(),

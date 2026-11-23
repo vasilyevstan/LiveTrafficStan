@@ -196,7 +196,7 @@ describe('OCI aircraft relay', () => {
     expect(fetchImpl).not.toHaveBeenCalled()
   })
 
-  it('allows only one in-flight request and one start per 20 seconds', async () => {
+  it('allows only one in-flight request and one start per 2 seconds', async () => {
     let nowMs = 1_000
     let finishFirst
     const firstUpstream = new Promise((resolve) => {
@@ -216,16 +216,16 @@ describe('OCI aircraft relay', () => {
 
     const concurrent = await handler(authorizedRequest())
     expect(concurrent.status).toBe(503)
-    expect(concurrent.headers.get('retry-after')).toBe('20')
+    expect(concurrent.headers.get('retry-after')).toBe('2')
     expect(
       concurrent.headers.get('x-livetrafficstan-relay-status'),
     ).toBe('admission')
     finishFirst(new Response('{}'))
     expect((await first).status).toBe(200)
 
-    nowMs = 20_999
+    nowMs = 2_999
     expect((await handler(authorizedRequest())).status).toBe(503)
-    nowMs = 21_000
+    nowMs = 3_000
     expect((await handler(authorizedRequest())).status).toBe(200)
     expect(fetchImpl).toHaveBeenCalledTimes(2)
   })

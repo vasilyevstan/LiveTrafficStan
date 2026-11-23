@@ -584,15 +584,15 @@ eventual valid `200` aircraft payload. Only the relay's explicit local
 admission marker is retryable; an upstream/provider `503` fails immediately.
 Provider `429`, authentication failure, VPC failure, and other unexpected
 statuses fail activation. This larger bounded window prevents an ordinary
-polling client from repeatedly winning the relay's shared 20-second slot;
+polling client from repeatedly winning the relay's shared admission slot;
 rejected admission attempts still create no provider request.
 
 The private OCI path is documented in
 [OCI Aircraft Relay](oci-aircraft-relay.md). In `oci-private-relay` mode,
 interpret a relay-local `503` with `Retry-After` as aggregate admission or
-persisted provider backoff: that request did not reach ADSB.lol. The existing
-aircraft scheduler waits for that guidance without adding another scheduler or
-resetting its normal cadence. A VPC
+persisted provider backoff: that request did not reach ADSB.fi. The existing
+aircraft scheduler retries once after that guidance without spending its
+20-second cadence (#740), then returns to its normal cadence. A VPC
 `fetch()` exception indicates VPC Service, Tunnel, connector, or loopback
 origin failure; `401` indicates a Worker/relay secret mismatch. Do not respond
 by rotating the OCI address, falling back to shared Cloudflare egress, exposing

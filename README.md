@@ -1093,7 +1093,7 @@ keeps request URL logging disabled.
 Reliable aircraft recovery uses a private
 Cloudflare Worker -> Workers VPC Service -> Cloudflare Tunnel -> isolated OCI
 E2 Micro relay path. The relay is fixed to `https://opendata.adsb.fi`, globally limits upstream
-starts to one per 20 seconds, persists only provider admission state, and has
+starts to one per 2 seconds, persists only provider admission state, and has
 no cache, generic proxy surface, public ingress, or sensitive application
 logging. The Tunnel connector uses pinned `cloudflared`, IPv6 QUIC, and a
 token file readable only by its dedicated service account. See
@@ -1102,7 +1102,8 @@ token file readable only by its dedicated service account. See
 ADSB.fi permits personal, non-commercial use only; its data/service cannot be
 licensed, sold, rented or leased. It is not ODbL, is provided as-is, and access
 may be suspended. Its published public limit is one request per second; the
-existing relay's 20-second aggregate minimum is unchanged. Personal local
+relay's 2-second aggregate minimum stays at half that rate while letting
+concurrent viewers share it, and each viewer keeps its 20-second cadence (#740). Personal local
 history records its own ADSB.fi rights decision; legacy ADSB.lol rows retain
 their original ODbL provenance. Selected-aircraft ADSB.lol/VRS route enrichment
 is a separate unchanged provider, not a live-aircraft fallback.
@@ -1807,7 +1808,7 @@ See [the timeout recovery boundary](docs/troubleshooting.md#deployment-metar-che
   checks one MMSI's newest original-clock report in the last 24 hours, with
   contributing credits. No report is not proof of no ship or no coverage.
   Free exact IMO is unavailable. Aircraft lookup shares the private relay's
-  existing global 20-second admission with viewport polling and can be busy.
+  global 2-second admission with viewport polling and can be busy.
   Fixed same-origin POST bodies keep submitted object text out of browser
   resource URLs; the named upstream still receives the submitted identifier.
   Queries/results are not persisted, polled or automatically retried.

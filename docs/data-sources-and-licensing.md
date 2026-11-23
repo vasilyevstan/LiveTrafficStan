@@ -495,7 +495,7 @@ traffic, trails, freshness, counts, photos, metadata enrichment or history.
 
 Lookup has one active operation, finite body/result/deadline limits,
 cancellation and source-specific cooldown/Retry-After, without auto-retry.
-The same private aircraft relay identity and persistent global 20-second
+The same private aircraft relay identity and persistent global 2-second
 admission handle point and identifier work together. No direct fallback,
 new quota identity or extra traffic polling is introduced.
 
@@ -512,8 +512,8 @@ new quota identity or extra traffic polling is introduced.
   suspended. Cite adsb.fi with its home-page link. Source Apache-2.0 does not
   relicense provider data.
 - Public limit: one request/second. Invalid 400/401/403/404/429 responses count
-  toward temporary restrictions. Keep the existing stricter aggregate
-  20-second start gate, one in flight, persisted backoff, total deadline,
+  toward temporary restrictions. Keep the stricter aggregate 2-second start
+  gate (#740), one in flight, persisted backoff, total deadline,
   byte cap, canonical allowlist, no-store and upstream status/Retry-After.
 - Live markers, Find results and newly created share context identify ADSB.fi,
   never ODbL. Existing shared ADSB.lol context remains attributed to its

@@ -1857,10 +1857,12 @@ In private-relay mode, the Worker keeps that public validation contract but
 replaces only the upstream transport. The VPC Service is fixed to HTTP
 `127.0.0.1:8788` through one named Tunnel. The relay repeats canonical
 validation, authenticates the Worker, enforces one in-flight request and one
-upstream start per 20 seconds across all clients, and persists only bounded
+upstream start per 2 seconds across all clients, and persists only bounded
 backoff state. It has no public hostname, cache, queue, provider fallback, or
-coordinate-bearing application log. See
-[OCI Aircraft Relay](oci-aircraft-relay.md).
+coordinate-bearing application log. A browser retries a marked relay
+admission `503` once after its `Retry-After` without spending its 20-second
+cadence, so concurrent viewers share starts instead of phase-locking (#740).
+See [OCI Aircraft Relay](oci-aircraft-relay.md).
 
 The coordinator table, class, binding, namespace, and fixed object name do not
 change for catalog schema 2. Its schema-1 cadence state therefore preserves
