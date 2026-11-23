@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Aircraft } from '../domain/traffic'
-import { ProviderError } from '../providers/errors'
+import { ProviderError, RelayAdmissionError } from '../providers/errors'
 import type { AircraftDataProvider, TrafficQuery } from '../providers/types'
 import { AircraftTrafficController } from './AircraftTrafficController'
 
@@ -137,7 +137,7 @@ describe('AircraftTrafficController', () => {
     controller.stop()
   })
 
-  it('honors relay-local Retry-After without adding rate-limit backoff', async () => {
+  it('honors an unmarked 503 Retry-After without adding rate-limit backoff', async () => {
     vi.useFakeTimers()
     vi.setSystemTime(0)
     const provider: AircraftDataProvider = {
@@ -166,6 +166,107 @@ describe('AircraftTrafficController', () => {
     expect(provider.fetchSnapshot).toHaveBeenCalledTimes(1)
     await vi.advanceTimersByTimeAsync(1)
     expect(provider.fetchSnapshot).toHaveBeenCalledTimes(2)
+    controller.stop()
+  })
+
+  it('retries one relay admission rejection after Retry-After without spending cadence', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+    const provider: AircraftDataProvider = {
+      fetchSnapshot: vi
+        .fn()
+        .mockRejectedValueOnce(new RelayAdmissionError('relay busy', 2_000))
+        .mockResolvedValue([]),
+    }
+    const controller = new AircraftTrafficController({
+      provider,
+      initialQuery: query(59.437, 24.754),
+      refreshIntervalMs: 20_000,
+      rateLimitBackoffMaxMs: 300_000,
+      onResult: vi.fn(),
+      runtime,
+      onWarning: vi.fn(),
+    })
+
+    controller.start()
+    await flush()
+    expect(provider.fetchSnapshot).toHaveBeenCalledTimes(1)
+    await vi.advanceTimersByTimeAsync(1_999)
+    expect(provider.fetchSnapshot).toHaveBeenCalledTimes(1)
+    await vi.advanceTimersByTimeAsync(1)
+    expect(provider.fetchSnapshot).toHaveBeenCalledTimes(2)
+
+    await vi.advanceTimersByTimeAsync(19_999)
+    expect(provider.fetchSnapshot).toHaveBeenCalledTimes(2)
+    await vi.advanceTimersByTimeAsync(1)
+    expect(provider.fetchSnapshot).toHaveBeenCalledTimes(3)
+    controller.stop()
+  })
+
+  it('returns to cadence when the guided admission retry is also rejected', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+    const provider: AircraftDataProvider = {
+      fetchSnapshot: vi
+        .fn()
+        .mockRejectedValueOnce(new RelayAdmissionError('relay busy', 2_000))
+        .mockRejectedValueOnce(new RelayAdmissionError('relay busy', 2_000))
+        .mockRejectedValueOnce(new RelayAdmissionError('relay busy', 2_000))
+        .mockResolvedValue([]),
+    }
+    const controller = new AircraftTrafficController({
+      provider,
+      initialQuery: query(59.437, 24.754),
+      refreshIntervalMs: 20_000,
+      rateLimitBackoffMaxMs: 300_000,
+      onResult: vi.fn(),
+      runtime,
+      onWarning: vi.fn(),
+    })
+
+    controller.start()
+    await flush()
+    await vi.advanceTimersByTimeAsync(2_000)
+    expect(provider.fetchSnapshot).toHaveBeenCalledTimes(2)
+    await vi.advanceTimersByTimeAsync(19_999)
+    expect(provider.fetchSnapshot).toHaveBeenCalledTimes(2)
+    await vi.advanceTimersByTimeAsync(1)
+    expect(provider.fetchSnapshot).toHaveBeenCalledTimes(3)
+    await vi.advanceTimersByTimeAsync(2_000)
+    expect(provider.fetchSnapshot).toHaveBeenCalledTimes(4)
+    controller.stop()
+  })
+
+  it('never retries provider 503 or 429 responses before their guidance', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(0)
+    const provider: AircraftDataProvider = {
+      fetchSnapshot: vi
+        .fn()
+        .mockRejectedValueOnce(new ProviderError('provider busy', 503, 2_000))
+        .mockRejectedValueOnce(new ProviderError('rate limited', 429, 2_000))
+        .mockResolvedValue([]),
+    }
+    const controller = new AircraftTrafficController({
+      provider,
+      initialQuery: query(59.437, 24.754),
+      refreshIntervalMs: 20_000,
+      rateLimitBackoffMaxMs: 300_000,
+      onResult: vi.fn(),
+      runtime,
+      onWarning: vi.fn(),
+    })
+
+    controller.start()
+    await flush()
+    await vi.advanceTimersByTimeAsync(19_999)
+    expect(provider.fetchSnapshot).toHaveBeenCalledTimes(1)
+    await vi.advanceTimersByTimeAsync(1)
+    expect(provider.fetchSnapshot).toHaveBeenCalledTimes(2)
+    await vi.advanceTimersByTimeAsync(39_999)
+    expect(provider.fetchSnapshot).toHaveBeenCalledTimes(2)
+    await vi.advanceTimersByTimeAsync(1)
+    expect(provider.fetchSnapshot).toHaveBeenCalledTimes(3)
     controller.stop()
   })
 

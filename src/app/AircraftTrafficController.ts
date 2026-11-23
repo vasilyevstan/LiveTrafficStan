@@ -6,6 +6,7 @@ import type {
 import type { AircraftDataProvider, TrafficQuery } from '../providers/types'
 import {
   ProviderError,
+  RelayAdmissionError,
   errorMessage,
 } from '../providers/errors'
 
@@ -64,6 +65,7 @@ export class AircraftTrafficController {
   private lastRequestStartedAt?: number
   private blockedUntil = 0
   private rateLimitFailures = 0
+  private admissionRetryUsed = false
   private lastLoggedError?: string
 
   constructor(options: AircraftTrafficControllerOptions) {
@@ -167,6 +169,7 @@ export class AircraftTrafficController {
     const controller = new AbortController()
     this.controller = controller
     this.inFlight = true
+    const previousRequestStartedAt = this.lastRequestStartedAt
     this.lastRequestStartedAt = now
 
     if (!this.result.status.lastSuccessAt && this.result.status.phase !== 'error') {
@@ -195,6 +198,7 @@ export class AircraftTrafficController {
       )
       this.rateLimitFailures = 0
       this.blockedUntil = 0
+      this.admissionRetryUsed = false
       this.lastLoggedError = undefined
       this.setResult({
         entities,
@@ -215,7 +219,17 @@ export class AircraftTrafficController {
         return
       }
 
-      if (error instanceof ProviderError && error.status === 429) {
+      const admissionRetry =
+        error instanceof RelayAdmissionError &&
+        error.retryAfterMs !== undefined &&
+        !this.admissionRetryUsed
+      this.admissionRetryUsed = admissionRetry
+      if (admissionRetry) {
+        // Local relay admission never reached ADSB.fi, so one guided retry
+        // keeps upstream starts on cadence while shifting off a shared slot.
+        this.lastRequestStartedAt = previousRequestStartedAt
+        this.blockedUntil = this.runtime.now() + (error.retryAfterMs ?? 0)
+      } else if (error instanceof ProviderError && error.status === 429) {
         this.rateLimitFailures += 1
         const exponentialBackoff = Math.min(
           this.refreshIntervalMs * 2 ** this.rateLimitFailures,

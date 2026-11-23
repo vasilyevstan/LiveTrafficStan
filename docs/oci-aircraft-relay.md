@@ -15,8 +15,8 @@ No browser credentials or arbitrary headers reach the provider.
 
 ADSB.fi documents one request/second, personal non-commercial use, linked
 home-page credit, no licensing/sale/rental/leasing, as-is service and possible
-suspension: <https://github.com/adsbfi/opendata>. Keep 20-second starts and one
-in flight. Preserve existing admission state and any current deadline during
+suspension: <https://github.com/adsbfi/opendata>. Keep 2-second aggregate
+starts (half the documented rate) and one in flight (#740). Preserve existing admission state and any current deadline during
 activation; a completed non-429 response clears its failure count normally.
 Do not reset state, rotate identity or introduce fallback. Historical ADSB.lol
 receipts below remain historical, not guarantees about ADSB.fi.
@@ -241,15 +241,23 @@ All tabs and Worker invocations share one provider admission boundary:
 
 - at most one upstream request is in flight;
 - viewport point and exact identifier requests share that same admission;
-- upstream requests start no more often than once every 20 seconds;
+- upstream requests start no more often than once every 2 seconds across all
+  viewers (before #740 this was 20 seconds, which let the first viewer hold the
+  only slot and starve every other concurrent viewer);
 - an excess request receives local `503` plus bounded `Retry-After` and does
-  not reach ADSB.lol;
+  not reach ADSB.fi;
 - that local response alone carries
   `X-LiveTrafficStan-Relay-Status: admission`; upstream responses cannot
   supply the marker because the relay forwards only reviewed response headers;
 - an upstream `429` with readable `Retry-After` sets relay-wide backoff;
 - an upstream `429` without readable guidance uses bounded exponential backoff
-  from 20 seconds through five minutes.
+  from 20 seconds through five minutes, independent of the start spacing.
+
+Each browser still starts at most one upstream request per 20-second aircraft
+cadence. On a marked admission `503` it retries once after that `Retry-After`
+without spending its cadence slot, which moves it off a colliding viewer's
+phase; a second consecutive admission rejection returns to the normal cadence.
+Unmarked `503` and `429` responses never take that early retry.
 
 The relay atomically persists only `nextAllowedAtMs` and `failureCount` under
 the systemd-managed private state directory. It never persists a coordinate,

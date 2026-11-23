@@ -11,6 +11,7 @@ import {
   aircraftQueryRadiusNauticalMiles,
   normalizeAdsbFiResponse,
 } from './adsbFiProvider'
+import { ProviderError, RelayAdmissionError } from '../errors'
 
 const query = {
   center: {
@@ -451,19 +452,42 @@ describe('AdsbFiAircraftProvider', () => {
         new Response('Relay admission delayed', {
           status: 503,
           headers: {
-            'Retry-After': '20',
+            'Retry-After': '2',
+            'X-LiveTrafficStan-Relay-Status': 'admission',
           },
         }),
       ),
     )
     const provider = new AdsbFiAircraftProvider('/api/aircraft')
 
-    await expect(
-      provider.fetchSnapshot(query, new AbortController().signal),
-    ).rejects.toMatchObject({
+    const error = await provider
+      .fetchSnapshot(query, new AbortController().signal)
+      .catch((reason: unknown) => reason)
+    expect(error).toBeInstanceOf(RelayAdmissionError)
+    expect(error).toMatchObject({
       status: 503,
-      retryAfterMs: 20_000,
+      retryAfterMs: 2_000,
       message: 'ADSB.fi returned HTTP 503: Relay admission delayed',
     })
+  })
+
+  it('keeps an unmarked 503 as an ordinary provider error', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        new Response('Upstream unavailable', {
+          status: 503,
+          headers: { 'Retry-After': '20' },
+        }),
+      ),
+    )
+    const provider = new AdsbFiAircraftProvider('/api/aircraft')
+
+    const error = await provider
+      .fetchSnapshot(query, new AbortController().signal)
+      .catch((reason: unknown) => reason)
+    expect(error).toBeInstanceOf(ProviderError)
+    expect(error).not.toBeInstanceOf(RelayAdmissionError)
+    expect(error).toMatchObject({ status: 503, retryAfterMs: 20_000 })
   })
 })
