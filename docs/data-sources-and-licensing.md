@@ -1646,7 +1646,7 @@ There is **no SATCAT request, fabricated SATCAT URL/count, advanced-data request
 browser login, cookie persistence, credential-bearing URL, or arbitrary proxy**.
 
 Curated membership is pinned in `src/config/spaceTrackCurationReference.json`:
-453 exact NORAD IDs and ordered memberships derived from the validated CelesTrak
+449 exact NORAD IDs and ordered memberships derived from the validated CelesTrak
 snapshot retrieved `2026-10-17T12:17:07.523Z` (the 461 original IDs less the
 reviewed retirements below), source digest
 `d062e417f365701d3ef2951e400a9196700c514ced47960305f010681d0da5c0`.
@@ -1720,6 +1720,33 @@ so a future reference addition cannot silently reintroduce the same risk.
 This reviewed removal uses already-available issue evidence, preserves the
 original membership-source date and digest, adds no provider request, and
 does not relax exact membership, element age, hard expiry, or refresh cadence.
+
+Revision `curated-reference-2026-10-17-v5`, reviewed on 2026-11-23 for #735,
+removes four IDs from v4's 453, leaving 449. The native snapshot published at
+`2026-11-18T17:17:29.348Z` passed the 24-hour hard expiry, and every later
+attempt failed closed; the current diagnostic was `records 452 of 453, missing
+101031`. `101031` (DRAGON CRS-35, `2026-233A`, a visiting ISS cargo vehicle)
+has a decay record. The other three remain on orbit but are below the #709
+300 km mean-motion perigee floor, which would reject the next complete row set:
+
+| NORAD | Object | Basis | Response (retrieved UTC) | SHA-256 |
+| --- | --- | --- | --- | --- |
+| `101031` | DRAGON CRS-35 | SATCAT `OPS_STATUS_CODE: D`, `DECAY_DATE` 2026-11-21 | SATCAT, 2026-11-23 18:03:26, 345 bytes | `2b3493a5b5ab9618ec5859c988be8e758bce6d7364f70899bbd46209a7056a76` |
+| `39265` | CASSIOPE | GP perigee 285.2 km, epoch 2026-11-23 10:38 | GP, 2026-11-23 18:04:44, 429 bytes | `316185cb7dd0a960dde45c24cad612bba876256b8ff6a0650e73dc099f91bffe` |
+| `67685` | GXIBA-1 | GP perigee 278.7 km, epoch 2026-11-23 00:48 | GP, 2026-11-23 18:04:44, 432 bytes | `8ad6926f75d90436820c85fb2a1eee47979adc96624affa8eae7b1d8970c0dc9` |
+| `16719` | COSMOS 1743 | GP perigee 298.9 km, epoch 2026-11-23 10:37 | GP, 2026-11-23 18:05:39, 428 bytes | `def142ea79023e10a23de99456b7a671bc9602df11b7d5986b6e68328b5bad08` |
+
+All 453 v4 IDs were looked up in CelesTrak's published `satcat.csv`
+(retrieved 2026-11-23 18:03:52 UTC, 6,807,486 bytes, 71,423 rows, SHA-256
+`76b3b1f54d944f8817ff0ce2bdcd4dbdc0837c0a5b106ae669559438e98eb314`): every
+ID was present and only `101031` carries a decay date. CASSIOPE and GXIBA-1
+were already below 300 km in the 2026-11-17/18 snapshot rows, so v4 could not
+have published even before Dragon's decay. Objects above the floor stay pinned;
+#735 lists the near-threshold and visiting-vehicle recurrence risk for a
+separate decision. These five CelesTrak reads were one-off offline review
+requests. The revision preserves the original membership-source date and
+digest and does not relax exact membership, element age, hard expiry, the
+perigee floor, or refresh cadence.
 
 The separate Starlink GP predicate requests public, undecayed `PAYLOAD` rows
 whose names contain `STARLINK` and whose epochs satisfy the source's ten-day

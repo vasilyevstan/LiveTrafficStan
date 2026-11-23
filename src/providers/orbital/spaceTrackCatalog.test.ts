@@ -127,11 +127,14 @@ afterEach(() => {
 describe('native Space-Track catalog contract', () => {
   it('pins only current exact IDs/groups, not old names, types, or elements', () => {
     const reference = spaceTrackCurationReference()
-    expect(reference.id).toBe('curated-reference-2026-10-17-v4')
-    expect(reference.records).toHaveLength(453)
+    expect(reference.id).toBe('curated-reference-2026-10-17-v5')
+    expect(reference.records).toHaveLength(449)
     expect(reference.retrievedAt).toBe('2026-10-17T12:17:07.523Z')
     expect(reference.sha256).toBe('d062e417f365701d3ef2951e400a9196700c514ced47960305f010681d0da5c0')
-    for (const excluded of ['67686', '28485', '67687', '5118', '28738', '54039', '66515', '67688']) {
+    for (const excluded of [
+      '67686', '28485', '67687', '5118', '28738', '54039', '66515', '67688',
+      '101031', '39265', '67685', '16719',
+    ]) {
       expect(reference.records.some((record) => record.noradCatalogId === excluded)).toBe(false)
     }
     expect(reference.records.map((record) => record.noradCatalogId)).toEqual(
@@ -157,7 +160,7 @@ describe('native Space-Track catalog contract', () => {
     if (snapshot.channel === 'curated') {
       const parsed = await parseSpaceTrackSnapshot(snapshot, 'curated')
       const model = spaceTrackApplicationSnapshot(parsed)
-      expect(model.curationReference?.id).toBe('curated-reference-2026-10-17-v4')
+      expect(model.curationReference?.id).toBe('curated-reference-2026-10-17-v5')
       expect(model.sources.every((source) => source.satcatSourceUrl === undefined)).toBe(true)
     } else {
       const parsed = await parseSpaceTrackSnapshot(snapshot, 'starlink')
