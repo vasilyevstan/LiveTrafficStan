@@ -57,12 +57,6 @@ export const STARLINK_LAYER_IDS = [
   LAYER_STARLINK_POINTS,
 ] as const
 
-const ORBITAL_SOURCE_ATTRIBUTION =
-  '<a href="https://www.space-track.org/" target="_blank" rel="noreferrer">Space-Track.org / USSPACECOM</a> · <a href="https://celestrak.org/" target="_blank" rel="noreferrer">CelesTrak</a> · SGP4 · not live'
-
-export const STARLINK_SOURCE_ATTRIBUTION =
-  ORBITAL_SOURCE_ATTRIBUTION
-
 export const ORBITAL_FEATURED_ICON_SIZE = 1.08
 export const ORBITAL_ICON_SIZE = 0.72
 export const STARLINK_ICON_SIZE = 0.78
@@ -241,7 +235,6 @@ const ensureSource = (
   map: MapLibreMap,
   id: string,
   data: OrbitalGeoJson,
-  attribution?: string,
 ) => {
   const source = map.getSource(id)
   if (source) {
@@ -250,7 +243,6 @@ const ensureSource = (
     map.addSource(id, {
       type: 'geojson',
       data,
-      ...(attribution ? { attribution } : {}),
     })
   }
 }
@@ -402,12 +394,7 @@ export const installOrbitalStyle = (
     ensureImage(map, imageId, images[imageId])
   }
 
-  ensureSource(
-    map,
-    SOURCE_ORBITAL_POINTS,
-    positions,
-    ORBITAL_SOURCE_ATTRIBUTION,
-  )
+  ensureSource(map, SOURCE_ORBITAL_POINTS, positions)
   ensureSource(map, SOURCE_ORBITAL_HIGHLIGHT, highlight)
   ensureSource(map, SOURCE_ORBITAL_TRACK, track)
 
@@ -566,12 +553,7 @@ export const installStarlinkStyle = (
     ensureImage(map, imageId, images[imageId])
   }
 
-  ensureSource(
-    map,
-    SOURCE_STARLINK_POINTS,
-    positions,
-    STARLINK_SOURCE_ATTRIBUTION,
-  )
+  ensureSource(map, SOURCE_STARLINK_POINTS, positions)
   ensureSource(map, SOURCE_STARLINK_HIGHLIGHT, highlight)
   ensureSource(map, SOURCE_STARLINK_TRACK, track)
 
