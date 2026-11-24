@@ -1,5 +1,22 @@
 # Development and Testing
 
+## Compact map credits acceptance (#743)
+
+Use a real browser at measured 320px and 390px phone widths and at 853px and
+1280px desktop widths, in both themes. Wait for actual basemap source metadata
+and tiles, not just the initial DOM: delayed attribution must not reopen the
+control. Initially the credit text is hidden. Opening the native control shows
+one line of OpenFreeMap/OpenMapTiles/OpenStreetMap credits, at most 24px tall,
+with room for the full text line and its vertical padding. Source/style updates
+and resizing preserve the explicit disclosure choice and the same map canvas.
+Sources retains the complete provider list and basemap links.
+
+Local measurements are pre-release evidence only. For a production-facing fix,
+repeat these checks at `https://trackstan.xyz/` and record both the deployed
+`X-LiveTrafficStan-Release` SHA and the browser's release label/script asset.
+An uncommitted patch, localhost preview, merged feature PR, or green deployment
+without inspecting the live page is not completion evidence.
+
 ## ADSB.fi provider replacement acceptance
 
 Current live aircraft use the private OCI relay's fixed ADSB.fi v3 point and

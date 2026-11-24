@@ -52,7 +52,6 @@ export const createBasemapRelief = (
           type: 'raster-dem', encoding: 'terrarium', tileSize: 256,
           tiles: [BASEMAP_DETAIL_CONFIG.reliefTileTemplate],
           maxzoom: BASEMAP_DETAIL_CONFIG.reliefSourceMaximumZoom,
-          attribution: 'Relief: <a href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md" target="_blank" rel="noreferrer">Mapzen and terrain contributors</a>',
         })
       }
       const paint = {

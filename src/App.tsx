@@ -33,7 +33,7 @@ import { useSavedObjects } from './app/useSavedObjects'
 import { useSavedActivity } from './app/useSavedActivity'
 import { useTrailHistory } from './app/useTrailHistory'
 import { useWeatherObservations } from './app/useWeatherObservations'
-import { activeTrainSources, useTrains } from './app/useTrains'
+import { useTrains } from './app/useTrains'
 import { trainLayerStatus } from './app/trainLayerStatus'
 import { useOrbitalObjects } from './app/useOrbitalObjects'
 import { OrbitalEnrichmentImageLoader } from './app/OrbitalEnrichmentImageLoader'
@@ -1450,13 +1450,6 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
     trainViewport,
     trainsVisible,
     historyActive || capturedViewActive,
-  )
-  const trainCreditSourceIds = useMemo(
-    () =>
-      trainsVisible && !historyActive && !capturedViewActive
-        ? [...activeTrainSources(trainViewport)]
-        : [],
-    [capturedViewActive, historyActive, trainViewport, trainsVisible],
   )
   const trains = useMemo(
     () =>
@@ -3032,7 +3025,6 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
         onCapturedAircraftViewNotice={handleCapturedAircraftNotice}
         onCapturedAircraftViewPosition={handleCapturedAircraftPosition}
         onCapturedAircraftViewPause={handleCapturedAircraftPause}
-        compactAttribution={mobileWorkspace}
         viewCenter={viewRequest.center}
         northResetRequest={northResetRequest}
         northResetDurationMs={APP_CONFIG.navigation.northResetDurationMs}
@@ -3091,7 +3083,6 @@ function App({ objectShareStartup }: { objectShareStartup?: ObjectShareStartup }
         trains={trains}
         selectedTrainId={selectedTrainId}
         trainsVisible={trainsVisible && !historyActive && !capturedViewActive}
-        trainCreditSourceIds={trainCreditSourceIds}
         onSelectTrain={handleMapTrainSelect}
         aircraftVisible={aircraftVisible && !capturedAircraftView && (!capturedOrbitalView || capturedGroundTraffic)}
         vesselsVisible={vesselsVisible && !capturedAircraftView && (!capturedOrbitalView || capturedGroundTraffic)}

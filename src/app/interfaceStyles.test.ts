@@ -18,6 +18,14 @@ const contrast = (a: string, b: string) => {
 }
 
 describe('interface presentation contracts', () => {
+  it('keeps map credits to one line without cropping the text line vertically', () => {
+    expect(styles).toMatch(/\.maplibregl-ctrl-attrib-inner\s*\{[^}]*white-space: nowrap;/)
+    const rules = [...styles.matchAll(/\.maplibregl-ctrl-attrib-inner\s*\{([^}]*)\}/g)]
+    expect(rules).toHaveLength(3)
+    for (const [, rule] of rules) {
+      expect(rule).not.toMatch(/(?:^|;)\s*(?:max-|min-)?height:/)
+    }
+  })
   it('keeps the temporary ruler actions reachable, center reticle passive and desktop compact bodies hidden', () => {
     expect(styles).toMatch(/\.ruler-reticle\s*\{[^}]*top: 50%;[^}]*left: 50%;[^}]*pointer-events: none;/)
     expect(styles).toMatch(/\.ruler-placement-strip \.ruler-placement-actions button,[^}]*min-width: 44px;[^}]*min-height: 44px;/)
@@ -275,9 +283,9 @@ describe('interface presentation contracts', () => {
     expect(styles).toContain('@container workspace (max-width: 280px)')
     expect(styles).toContain('--mobile-dock-height: 116px')
     expect(styles).toMatch(/\.workspace-dock\s*\{[^}]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\);[^}]*grid-template-rows: repeat\(2, minmax\(0, 1fr\)\)/)
-    expect(styles).toMatch(/\.app-shell--mobile-workspace \.maplibregl-ctrl-attrib\.maplibregl-compact-show \.maplibregl-ctrl-attrib-inner\s*\{[^}]*position: absolute;[^}]*width: var\(--mobile-surface-width\);[^}]*overflow: auto;/)
-    expect(styles).toMatch(/\.app-shell--mobile-workspace \.maplibregl-ctrl-attrib\.maplibregl-compact-show \.maplibregl-ctrl-attrib-inner\s*\{[^}]*max-height: min\(\s*var\(--mobile-body-height\),\s*calc\(var\(--app-visual-viewport-height\) \* 0\.4\)\s*\);[^}]*font-size: 0\.72rem;[^}]*line-height: 1\.3;/)
-    expect(styles).toMatch(/\.maplibregl-ctrl-attrib\.maplibregl-compact-show \.maplibregl-ctrl-attrib-inner\s*\{[^}]*max-height: min\(\s*calc\(var\(--app-visual-viewport-height\) - 250px\),\s*calc\(var\(--app-visual-viewport-height\) \* 0\.4\)\s*\);/)
+    expect(styles).toMatch(/\.app-shell--mobile-workspace \.maplibregl-ctrl-attrib\.maplibregl-compact-show \.maplibregl-ctrl-attrib-inner\s*\{[^}]*position: absolute;[^}]*width: min\(280px, var\(--mobile-surface-width\)\);[^}]*padding: 2px 6px;/)
+    expect(styles).toMatch(/\.maplibregl-ctrl-attrib-inner\s*\{[^}]*white-space: nowrap;[^}]*font-size: 9px;[^}]*line-height: 1\.3;/)
+    expect(styles).toMatch(/\.maplibregl-ctrl-attrib\.maplibregl-compact-show \.maplibregl-ctrl-attrib-inner\s*\{[^}]*width: min\(280px, calc\(var\(--app-visual-viewport-width\) - 20px\)\);/)
     expect(styles).toMatch(/\.app-shell--mobile-workspace \.maplibregl-ctrl-attrib-button\s*\{[^}]*background-repeat: no-repeat;/)
     expect(styles).toContain('.control-panel__more-body button, .details-panel button, .history-mode-notice button')
   })

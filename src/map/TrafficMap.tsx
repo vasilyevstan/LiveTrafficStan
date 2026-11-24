@@ -59,7 +59,7 @@ import type {
 } from '../domain/traffic'
 import type { UnitSystem } from '../domain/units'
 import { vesselReferencePhotoForSelection } from '../domain/vesselPhoto'
-import type { DisplayTrain, TrainSourceId } from '../domain/trains'
+import type { DisplayTrain } from '../domain/trains'
 import type { DisplayWeatherObservation } from '../domain/weatherObservations'
 import {
   assessTrafficViewport,
@@ -148,7 +148,6 @@ import {
   installTrainStyle,
   setTrainModelsActive,
   setTrainVisibility,
-  trainAttribution,
   trainFeatures,
 } from './trainStyle'
 import {
@@ -231,11 +230,6 @@ const EMPTY_ORBITAL_IDS: readonly string[] = []
 const EMPTY_ORBITAL_TRACK: readonly OrbitalTrackSegment[] = []
 const EMPTY_TRAINS: readonly DisplayTrain[] = []
 const NO_REPORTS: readonly DisplayTrafficEntity[] = []
-const EMPTY_TRAIN_SOURCES: readonly TrainSourceId[] = []
-const DATA_CREDITS_LINK =
-  '<a href="https://github.com/vasilyevstan/LiveTrafficStan/blob/main/docs/data-sources-and-licensing.md" target="_blank" rel="noreferrer">Data credits</a>'
-const mapCredits = (trainCredit: string | undefined) =>
-  trainCredit ? [DATA_CREDITS_LINK, trainCredit] : [DATA_CREDITS_LINK]
 const ignoreTrainSelection = () => undefined
 
 interface TrafficMapProps {
@@ -260,7 +254,6 @@ interface TrafficMapProps {
   onCapturedAircraftViewNotice?: (revision: number, message: string | undefined) => void
   onCapturedAircraftViewPosition?: (revision: number, position: AircraftViewPosition) => void
   onCapturedAircraftViewPause?: (revision: number) => void
-  compactAttribution?: boolean
   northResetRequest?: NorthResetRequest
   northResetDurationMs: number
   viewCenter: AppCenter
@@ -323,8 +316,6 @@ interface TrafficMapProps {
   airportsVisible: boolean
   weatherVisible: boolean
   trainsVisible?: boolean
-  /** Feeds whose coverage overlaps the view; only these are credited on the map. */
-  trainCreditSourceIds?: readonly TrainSourceId[]
   depthsVisible: boolean
   onBathymetryStatus: (status: BathymetryStatus) => void
   reliefVisible: boolean
@@ -509,7 +500,6 @@ export function TrafficMap({
   onCapturedAircraftViewNotice,
   onCapturedAircraftViewPosition,
   onCapturedAircraftViewPause,
-  compactAttribution = false,
   northResetRequest,
   northResetDurationMs,
   viewCenter,
@@ -564,7 +554,6 @@ export function TrafficMap({
   airportsVisible,
   weatherVisible,
   trainsVisible = false,
-  trainCreditSourceIds = EMPTY_TRAIN_SOURCES,
   depthsVisible,
   onBathymetryStatus,
   reliefVisible,
@@ -668,7 +657,6 @@ export function TrafficMap({
   })
   const styleGenerationRef = useRef(0)
   const sourceDataGenerationRef = useRef(0)
-  const attributionControlRef = useRef<InitiallyCompactAttributionControl | null>(null)
   const scaleControlRef = useRef<LocalScaleControl | null>(null)
   const localRulerRef = useRef(ruler)
   const locatedReportRef = useRef(locatedReport)
@@ -687,9 +675,6 @@ export function TrafficMap({
     const map = mapRef.current
     return Boolean(map && loadedRef.current && journeyFitPadding(map.getCanvas().getBoundingClientRect()))
   }, [])
-  const compactAttributionRef = useRef(compactAttribution)
-  const trainCredit = trainAttribution(trainCreditSourceIds)
-  const trainCreditRef = useRef(trainCredit)
   const clusterOptionsGenerationRef = useRef(0)
   const interactionGenerationRef = useRef(0)
   const clusterExpansionGenerationRef = useRef(0)
@@ -1772,16 +1757,6 @@ export function TrafficMap({
   }, [onSelect])
 
   useEffect(() => {
-    compactAttributionRef.current = compactAttribution
-    if (compactAttribution) attributionControlRef.current?.compactOnce()
-  }, [compactAttribution])
-
-  useEffect(() => {
-    trainCreditRef.current = trainCredit
-    attributionControlRef.current?.setCustomAttribution(mapCredits(trainCredit))
-  }, [trainCredit])
-
-  useEffect(() => {
     selectOrbitalRef.current = onSelectOrbital
   }, [onSelectOrbital])
 
@@ -2626,11 +2601,7 @@ export function TrafficMap({
       if (renderStateRef.current.trafficContext) scheduleRender()
     })
 
-    const attributionControl = new InitiallyCompactAttributionControl({
-        compact: true,
-        customAttribution: mapCredits(trainCreditRef.current),
-      }, compactAttributionRef.current)
-    attributionControlRef.current = attributionControl
+    const attributionControl = new InitiallyCompactAttributionControl({ compact: true })
     map.addControl(attributionControl, 'bottom-right')
     const scaleControl = new LocalScaleControl(
       viewportLimitsRef.current,

@@ -87,6 +87,11 @@ This adds no runtime request and does not replace the full
 `X-LiveTrafficStan-Release` response header used by production smoke and
 rollback guards.
 
+For production-facing UI fixes, verify the deployed header and the live
+browser's release label/script asset, then repeat the requested rendered
+acceptance on `https://trackstan.xyz/`. A localhost preview or a merged feature
+branch does not prove that production contains the fix.
+
 ### Curated orbital recovery (#616)
 
 The diagnostic/Find release #617/#618 and independently evidenced reference

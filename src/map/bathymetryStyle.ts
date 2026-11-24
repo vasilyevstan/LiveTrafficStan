@@ -54,7 +54,6 @@ export const installBathymetryStyle = (
     type: 'raster', tiles: [DEPTH_TILE_TEMPLATE],
     tileSize: BATHYMETRY_CONFIG.tileSize,
     maxzoom: BATHYMETRY_CONFIG.maximumTileZoom,
-    attribution: 'Depths: <a href="https://emodnet.ec.europa.eu/en/bathymetry" target="_blank" rel="noreferrer">EMODnet</a> / <a href="https://www.gebco.net/" target="_blank" rel="noreferrer">GEBCO</a> · model, not navigation',
   })
   const data = depthFeatures(state)
   const source = map.getSource<GeoJSONSource>(SOURCE_DEPTH_VALUES)
