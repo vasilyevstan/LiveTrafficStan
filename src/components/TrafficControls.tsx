@@ -1563,6 +1563,12 @@ export function TrafficControls({
             <fieldset className="control-group" aria-label="Sources">
               <ul className="control-source-list">
                 <li>
+                  Basemap:{' '}
+                  <a href="https://openfreemap.org/">OpenFreeMap</a>
+                  {' · '}<a href="https://openmaptiles.org/">OpenMapTiles</a>
+                  {' · '}<a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors</a>.
+                </li>
+                <li>
                   Relief:{' '}
                   <a href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md">
                     Mapzen terrain contributors

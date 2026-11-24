@@ -24,9 +24,6 @@ export const WEATHER_LAYER_IDS = [
   LAYER_WEATHER_HALO,
 ] as const
 
-const SOURCE_ATTRIBUTION =
-  'METAR/SPECI: <a href="https://aviationweather.gov/data/api/" target="_blank" rel="noreferrer">NOAA/NWS Aviation Weather Center</a> (U.S. public domain unless marked otherwise)'
-
 const categoryColor = (theme: Theme): ExpressionSpecification => [
   'match',
   ['get', 'category'],
@@ -81,7 +78,6 @@ const ensureSource = (
     map.addSource(SOURCE_WEATHER, {
       type: 'geojson',
       data,
-      attribution: SOURCE_ATTRIBUTION,
     })
   }
 }

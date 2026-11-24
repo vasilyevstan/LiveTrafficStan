@@ -40,7 +40,6 @@ describe('optional basemap relief', () => {
     expect(map.addSource).toHaveBeenCalledExactlyOnceWith('basemap-relief-1', {
       type: 'raster-dem', encoding: 'terrarium', tileSize: 256,
       tiles: [BASEMAP_DETAIL_CONFIG.reliefTileTemplate], maxzoom: 7,
-      attribution: expect.stringContaining('Mapzen and terrain contributors'),
     })
     expect(map.addLayer).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
       id: LAYER_BASEMAP_RELIEF, type: 'hillshade', source: 'basemap-relief-1',

@@ -34,17 +34,9 @@ import {
   SOURCE_STARLINK_TRACK,
   STARLINK_ICON_OPACITY,
   STARLINK_LAYER_IDS,
-  STARLINK_SOURCE_ATTRIBUTION,
   starlinkPositionFeatures,
 } from './orbitalStyle'
 import { LAYER_SELECTED_TRAIL } from './trafficStyle'
-
-it('credits native GP and legacy/reference sources without presenting modeled positions as live data', () => {
-  expect(STARLINK_SOURCE_ATTRIBUTION).toContain('https://www.space-track.org/')
-  expect(STARLINK_SOURCE_ATTRIBUTION).toContain('Space-Track.org / USSPACECOM')
-  expect(STARLINK_SOURCE_ATTRIBUTION).toContain('https://celestrak.org/')
-  expect(STARLINK_SOURCE_ATTRIBUTION).toContain('SGP4 · not live')
-})
 
 const position: ModeledOrbitalPosition = {
   id: 'orbital:694',
@@ -482,15 +474,7 @@ describe('orbital map style', () => {
         'none',
       )
     }
-    expect(sourceSpecs.get(SOURCE_STARLINK_POINTS)).toMatchObject({
-      attribution: STARLINK_SOURCE_ATTRIBUTION,
-    })
-    expect(STARLINK_SOURCE_ATTRIBUTION).toContain('CelesTrak')
-    expect(STARLINK_SOURCE_ATTRIBUTION).toContain('SGP4')
-    expect(STARLINK_SOURCE_ATTRIBUTION).toContain('not live')
-    expect(STARLINK_SOURCE_ATTRIBUTION).not.toMatch(
-      /active fleet|optical/i,
-    )
+    expect(sourceSpecs.get(SOURCE_STARLINK_POINTS)).not.toHaveProperty('attribution')
     installOrbitalStyle(
       map,
       orbitalPositionFeatures([]),
@@ -501,9 +485,7 @@ describe('orbital map style', () => {
       lightImages,
       [],
     )
-    expect(sourceSpecs.get(SOURCE_ORBITAL_POINTS)).toMatchObject({
-      attribution: STARLINK_SOURCE_ATTRIBUTION,
-    })
+    expect(sourceSpecs.get(SOURCE_ORBITAL_POINTS)).not.toHaveProperty('attribution')
   })
 
   it('keeps selected highlights and predicted tracks on the owning channel only', () => {

@@ -1,7 +1,6 @@
 import type { Map as MapLibreMap } from 'maplibre-gl'
 import { describe, expect, it, vi } from 'vitest'
-import { TRAIN_SOURCE_IDS, type DisplayTrain } from '../domain/trains'
-import { TRAIN_SOURCES } from '../providers/rail/trainSources'
+import type { DisplayTrain } from '../domain/trains'
 import { LAYER_SELECTED_TRAIL } from './trafficStyle'
 import {
   LAYER_TRAIN_LABELS,
@@ -10,7 +9,6 @@ import {
   TRAIN_LAYER_IDS,
   installTrainStyle,
   setTrainModelsActive,
-  trainAttribution,
   trainFeatures,
   trainPointFilter,
 } from './trainStyle'
@@ -159,30 +157,5 @@ describe('train style', () => {
 
     setTrainModelsActive(map, false)
     expect(filters.get(LAYER_TRAIN_POINTS)).toEqual(trainPointFilter(false))
-  })
-})
-
-describe('train map credit', () => {
-  it('credits nothing when no feed covers the view', () => {
-    expect(trainAttribution([])).toBeUndefined()
-  })
-
-  it('credits only the covering feed with one prefix and unchanged wording and link', () => {
-    const credit = trainAttribution(['fintraffic'])
-    expect(credit).toBe(
-      `Trains: <a href="${TRAIN_SOURCES.fintraffic.websiteUrl}" target="_blank" rel="noreferrer">` +
-        `${TRAIN_SOURCES.fintraffic.attribution}</a>`,
-    )
-    for (const other of ['Entur', 'MBTA', 'MTA']) expect(credit).not.toContain(other)
-  })
-
-  it('keeps canonical order, one prefix and no duplicates across feeds', () => {
-    const credit = trainAttribution(['elron', 'lirr', 'entur', 'lirr', 'fintraffic', 'mbta']) ?? ''
-    expect(credit.match(/Trains:/g)).toHaveLength(1)
-    expect(credit.match(/<a /g)).toHaveLength(TRAIN_SOURCE_IDS.length)
-    const positions = TRAIN_SOURCE_IDS.map((sourceId) =>
-      credit.indexOf(TRAIN_SOURCES[sourceId].attribution))
-    expect(positions.every((position) => position >= 0)).toBe(true)
-    expect(positions).toEqual([...positions].sort((a, b) => a - b))
   })
 })

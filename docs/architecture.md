@@ -337,11 +337,13 @@ App owns a stable status announcement so relocation is not a new announcement;
 the compact status card keeps VIEW PAUSED, with OFFLINE/HISTORY precedence.
 Resume uses existing navigation and returns focus to the retained map canvas.
 
-`InitiallyCompactAttributionControl` initializes native credits compact once.
-It respects user-open state through theme rehydration; the complete bounded
-credit surface and its own toggle remain reachable. No attribution is removed.
-Its custom credits can be replaced in place, which refreshes an open
-disclosure without collapsing it.
+`InitiallyCompactAttributionControl` starts collapsed at every viewport size,
+including when native basemap credits arrive after the control is mounted.
+It preserves an explicit open/closed choice through source and theme updates.
+Opening it reveals one text line, with natural height so the text is not cropped.
+Provider, terrain, depth, train, weather and orbital credits remain in Sources
+and the existing provider/detail surfaces rather than duplicating a multi-line
+banner on the map. Sources also includes the basemap links.
 
 `fullscreen.ts` owns one standard native operation at a time on the existing
 `main.app-shell`; `useFullscreen` is its React lifetime bridge. Availability
@@ -800,10 +802,11 @@ automatic retries. Hidden, offline, HISTORY, changed identity and unmount
 cannot revive obsolete work. The complete contracts are in the vessel-photo
 evaluation.
 
-The map corner keeps basemap credits and a full-data-credit link. Curated and
-Starlink sources use identical CelesTrak/SGP4/not-live attribution so MapLibre
-shows it once. Provider details and More -> Sources retain the named traffic,
-photo and original-source records. Aircraft and vessel photos share a
+The map corner keeps only native basemap credits in a collapsed, single-line
+disclosure. Provider details and More -> Sources retain the named traffic,
+photo, terrain, depth, orbital and original-source records and the full-credit
+link. CelesTrak/Space-Track and SGP4/not-live caveats remain in Sources and orbital
+details, not the corner control. Aircraft and vessel photos share a
 150 px maximum image height inside the existing inspector and keep native
 scrolling for credits/details; the inspector and command-dock layout are
 unchanged.

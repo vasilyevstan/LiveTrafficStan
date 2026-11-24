@@ -92,9 +92,7 @@ describe('weather style', () => {
     installWeatherStyle(map, data, 'dark', false)
 
     expect(addSource).toHaveBeenCalledTimes(1)
-    expect(sourceOptions.get(SOURCE_WEATHER)).toMatchObject({
-      attribution: expect.stringContaining('Aviation Weather Center'),
-    })
+    expect(sourceOptions.get(SOURCE_WEATHER)).not.toHaveProperty('attribution')
     expect(sources.get(SOURCE_WEATHER)?.setData).toHaveBeenCalledTimes(1)
     expect(addLayer).toHaveBeenCalledTimes(WEATHER_LAYER_IDS.length)
     expect(

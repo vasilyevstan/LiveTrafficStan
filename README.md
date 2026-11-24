@@ -615,8 +615,9 @@ identity are not renamed or reset.
 - Pointed ship hulls with container decks, tanker tanks, passenger
   superstructures, outriggers, sails or twin hulls, retaining blue colors,
   reported-length scale, bearings, flags and stopped/stale cues. Provider
-  details and More → Sources name the feeds; the corner keeps basemap
-  attribution and a compact Data credits link.
+  details and More → Sources retain the full credits. The map corner starts
+  collapsed on all screens and opens only a single line of native basemap
+  attribution, not a duplicate provider-credit banner.
 - Honest detail cards, provider-specific health, stale/expired handling, and
   partial operation when one provider fails.
 - Short interpolation only between observed positions and a selected-object
